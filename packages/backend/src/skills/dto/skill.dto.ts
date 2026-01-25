@@ -12,11 +12,32 @@ import {
   IsObject,
   IsBoolean,
   IsInt,
+  IsNumber,
   Min,
   Max,
+  ValidateNested,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import type { SkillType, SkillStatus } from '../entities/skill.entity';
+
+/**
+ * Trigger definition for skill routing
+ */
+export class TriggerDto {
+  @IsEnum(['keyword', 'intent', 'pattern', 'context'])
+  type: 'keyword' | 'intent' | 'pattern' | 'context';
+
+  @IsString()
+  value: string;
+
+  @IsOptional()
+  @IsNumber()
+  priority?: number;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
 
 /**
  * Create skill request
@@ -51,12 +72,9 @@ export class CreateSkillDto {
 
   @IsOptional()
   @IsArray()
-  triggers?: Array<{
-    type: 'keyword' | 'intent' | 'pattern' | 'context';
-    value: string;
-    priority?: number;
-    description?: string;
-  }>;
+  @ValidateNested({ each: true })
+  @Type(() => TriggerDto)
+  triggers?: TriggerDto[];
 }
 
 /**
@@ -86,12 +104,9 @@ export class UpdateSkillDto {
 
   @IsOptional()
   @IsArray()
-  triggers?: Array<{
-    type: 'keyword' | 'intent' | 'pattern' | 'context';
-    value: string;
-    priority?: number;
-    description?: string;
-  }>;
+  @ValidateNested({ each: true })
+  @Type(() => TriggerDto)
+  triggers?: TriggerDto[];
 
   @IsOptional()
   @IsBoolean()
