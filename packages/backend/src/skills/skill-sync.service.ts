@@ -68,10 +68,13 @@ export class SkillSyncService {
         const skillDir = path.join(skillsDir, skill.slug);
         await fs.mkdir(skillDir, { recursive: true });
 
+        // Build SKILL.md with proper frontmatter for Claude Code
+        const skillMdContent = this.buildSkillMd(skill);
+
         // Write SKILL.md
         await fs.writeFile(
           path.join(skillDir, 'SKILL.md'),
-          skill.content,
+          skillMdContent,
           'utf-8',
         );
 
@@ -173,5 +176,48 @@ export class SkillSyncService {
     await fs.mkdir(skillDir, { recursive: true });
     await fs.writeFile(path.join(skillDir, 'SKILL.md'), content, 'utf-8');
     this.logger.log(`Wrote test skill ${slug} to ${sessionDir}`);
+  }
+
+  /**
+   * Build SKILL.md content with proper frontmatter for Claude Code
+   *
+   * Claude Code uses the frontmatter description to determine when to
+   * automatically load and use a skill. The description should include
+   * trigger keywords so Claude can discover the skill.
+   */
+  private buildSkillMd(skill: {
+    slug: string;
+    name: string;
+    description?: string;
+    content: string;
+    triggers?: Array<{ type: string; value: string }>;
+  }): string {
+    // Build description that includes trigger keywords
+    let description = skill.description || skill.name;
+
+    // Append trigger keywords to description for better discovery
+    if (skill.triggers && skill.triggers.length > 0) {
+      const keywords = skill.triggers
+        .filter((t) => t.type === 'keyword')
+        .map((t) => t.value);
+
+      if (keywords.length > 0) {
+        description += ` Activate when user mentions: ${keywords.join(', ')}.`;
+      }
+    }
+
+    // Escape any quotes in description for YAML
+    const safeDescription = description.replace(/"/g, '\\"');
+
+    // Build frontmatter
+    const frontmatter = [
+      '---',
+      `name: ${skill.slug}`,
+      `description: "${safeDescription}"`,
+      '---',
+    ].join('\n');
+
+    // Combine frontmatter with content
+    return `${frontmatter}\n\n${skill.content}`;
   }
 }
