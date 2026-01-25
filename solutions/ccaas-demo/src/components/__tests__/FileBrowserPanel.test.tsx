@@ -229,4 +229,145 @@ describe('FileBrowserPanel', () => {
       expect(screen.queryByText(/NEW/)).not.toBeInTheDocument()
     })
   })
+
+  describe('uploading state', () => {
+    it('should show uploading indicator when uploading is true', () => {
+      render(<FileBrowserPanel {...defaultProps} uploading={true} />)
+
+      expect(screen.getByText('Uploading...')).toBeInTheDocument()
+    })
+
+    it('should not show uploading indicator when uploading is false', () => {
+      render(<FileBrowserPanel {...defaultProps} uploading={false} />)
+
+      expect(screen.queryByText('Uploading...')).not.toBeInTheDocument()
+    })
+
+    it('should not show uploading indicator by default', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      expect(screen.queryByText('Uploading...')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('drag and drop', () => {
+    const createDragEvent = (type: string, files: File[] = []) => {
+      const event = new Event(type, { bubbles: true })
+      Object.defineProperty(event, 'dataTransfer', {
+        value: {
+          files,
+          items: files.map(f => ({ kind: 'file', getAsFile: () => f })),
+          types: ['Files'],
+        },
+      })
+      Object.defineProperty(event, 'preventDefault', { value: vi.fn() })
+      return event
+    }
+
+    it('should show drop zone indicator on drag over', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      fireEvent.dragOver(panel!)
+
+      expect(screen.getByText('Drop files here to upload')).toBeInTheDocument()
+    })
+
+    it('should hide drop zone indicator on drag leave', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      // First drag over to show indicator
+      fireEvent.dragOver(panel!)
+      expect(screen.getByText('Drop files here to upload')).toBeInTheDocument()
+
+      // Then drag leave to hide it
+      fireEvent.dragLeave(panel!)
+      expect(screen.queryByText('Drop files here to upload')).not.toBeInTheDocument()
+    })
+
+    it('should call onUploadFiles when files are dropped', async () => {
+      const onUploadFiles = vi.fn().mockResolvedValue(undefined)
+      render(<FileBrowserPanel {...defaultProps} onUploadFiles={onUploadFiles} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+      const dropEvent = createDragEvent('drop', [testFile])
+
+      fireEvent(panel!, dropEvent)
+
+      expect(onUploadFiles).toHaveBeenCalledTimes(1)
+      expect(onUploadFiles).toHaveBeenCalledWith([testFile])
+    })
+
+    it('should call onUploadFiles with multiple files', async () => {
+      const onUploadFiles = vi.fn().mockResolvedValue(undefined)
+      render(<FileBrowserPanel {...defaultProps} onUploadFiles={onUploadFiles} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      const file1 = new File(['content1'], 'file1.txt', { type: 'text/plain' })
+      const file2 = new File(['content2'], 'file2.txt', { type: 'text/plain' })
+      const dropEvent = createDragEvent('drop', [file1, file2])
+
+      fireEvent(panel!, dropEvent)
+
+      expect(onUploadFiles).toHaveBeenCalledTimes(1)
+      expect(onUploadFiles).toHaveBeenCalledWith([file1, file2])
+    })
+
+    it('should not call onUploadFiles when no files are dropped', () => {
+      const onUploadFiles = vi.fn().mockResolvedValue(undefined)
+      render(<FileBrowserPanel {...defaultProps} onUploadFiles={onUploadFiles} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      const dropEvent = createDragEvent('drop', [])
+
+      fireEvent(panel!, dropEvent)
+
+      expect(onUploadFiles).not.toHaveBeenCalled()
+    })
+
+    it('should not error when onUploadFiles is not provided', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      const testFile = new File(['test'], 'test.txt', { type: 'text/plain' })
+      const dropEvent = createDragEvent('drop', [testFile])
+
+      // Should not throw
+      expect(() => fireEvent(panel!, dropEvent)).not.toThrow()
+    })
+
+    it('should hide drop zone indicator after drop', () => {
+      const onUploadFiles = vi.fn().mockResolvedValue(undefined)
+      render(<FileBrowserPanel {...defaultProps} onUploadFiles={onUploadFiles} />)
+
+      const panel = screen.getByText('Files').closest('div')?.parentElement
+      expect(panel).toBeTruthy()
+
+      // Drag over to show indicator
+      fireEvent.dragOver(panel!)
+      expect(screen.getByText('Drop files here to upload')).toBeInTheDocument()
+
+      // Drop file
+      const testFile = new File(['test'], 'test.txt', { type: 'text/plain' })
+      const dropEvent = createDragEvent('drop', [testFile])
+      fireEvent(panel!, dropEvent)
+
+      // Indicator should be hidden
+      expect(screen.queryByText('Drop files here to upload')).not.toBeInTheDocument()
+    })
+  })
 })

@@ -530,6 +530,136 @@ describe('useFileBrowser', () => {
     })
   })
 
+  describe('uploadFile', () => {
+    it('should upload file without messageId', async () => {
+      const { result } = renderHook(() =>
+        useFileBrowser({ sessionId: 'session-1', socket: null })
+      )
+
+      await waitFor(() => {
+        expect(result.current.tree.length).toBeGreaterThan(0)
+      })
+
+      mockFetch.mockClear()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'new-file-id', filename: 'test.txt' }),
+      }).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTreeResponse),
+      })
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+
+      await act(async () => {
+        await result.current.uploadFile(testFile)
+      })
+
+      // Check that fetch was called with FormData
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/files/upload'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.any(FormData),
+        })
+      )
+
+      // Verify FormData contains sessionId but not messageId
+      const fetchCall = mockFetch.mock.calls.find(call => call[0].includes('/upload'))
+      expect(fetchCall).toBeTruthy()
+      const formData = fetchCall![1].body as FormData
+      expect(formData.get('sessionId')).toBe('session-1')
+      expect(formData.get('file')).toBeInstanceOf(File)
+    })
+
+    it('should upload file with targetPath', async () => {
+      const { result } = renderHook(() =>
+        useFileBrowser({ sessionId: 'session-1', socket: null })
+      )
+
+      await waitFor(() => {
+        expect(result.current.tree.length).toBeGreaterThan(0)
+      })
+
+      mockFetch.mockClear()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'new-file-id', filename: 'test.txt' }),
+      }).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTreeResponse),
+      })
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+
+      await act(async () => {
+        await result.current.uploadFile(testFile, '/uploads')
+      })
+
+      const fetchCall = mockFetch.mock.calls.find(call => call[0].includes('/upload'))
+      expect(fetchCall).toBeTruthy()
+      const formData = fetchCall![1].body as FormData
+      expect(formData.get('targetPath')).toBe('/uploads')
+    })
+
+    it('should refresh file tree after upload', async () => {
+      const { result } = renderHook(() =>
+        useFileBrowser({ sessionId: 'session-1', socket: null })
+      )
+
+      await waitFor(() => {
+        expect(result.current.tree.length).toBeGreaterThan(0)
+      })
+
+      mockFetch.mockClear()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ id: 'new-file-id', filename: 'test.txt' }),
+      }).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTreeResponse),
+      })
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+
+      await act(async () => {
+        await result.current.uploadFile(testFile)
+      })
+
+      // Should have called upload and then tree refresh
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenLastCalledWith(
+        expect.stringContaining('/tree'),
+        expect.any(Object)
+      )
+    })
+
+    it('should throw error on upload failure', async () => {
+      const { result } = renderHook(() =>
+        useFileBrowser({ sessionId: 'session-1', socket: null })
+      )
+
+      await waitFor(() => {
+        expect(result.current.tree.length).toBeGreaterThan(0)
+      })
+
+      mockFetch.mockClear()
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+      })
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+
+      await expect(
+        act(async () => {
+          await result.current.uploadFile(testFile)
+        })
+      ).rejects.toThrow('API error: 400 Bad Request')
+    })
+  })
+
   describe('session change', () => {
     it('should reset state when session changes', async () => {
       const { result, rerender } = renderHook(
