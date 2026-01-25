@@ -235,10 +235,29 @@ describe('FilesController', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw NotFoundException when messageId is missing', async () => {
-      await expect(
-        controller.uploadFile(mockMulterFile, 'session-1', ''),
-      ).rejects.toThrow(NotFoundException);
+    it('should allow upload without messageId for user uploads', async () => {
+      service.uploadFile.mockResolvedValue({
+        id: 'new-uuid',
+        filename: 'test.txt',
+        originalPath: 'test.txt',
+        mimeType: 'text/plain',
+        size: 100,
+        status: 'new',
+        uploadedBy: 'user',
+        createdAt: new Date(),
+      });
+
+      const result = await controller.uploadFile(mockMulterFile, 'session-1', '');
+
+      expect(service.uploadFile).toHaveBeenCalledWith(
+        mockMulterFile.buffer,
+        mockMulterFile.originalname,
+        'session-1',
+        null, // messageId should be null
+        undefined, // tenantId
+        undefined, // targetPath
+      );
+      expect(result.id).toBe('new-uuid');
     });
 
     it('should propagate validation errors', async () => {

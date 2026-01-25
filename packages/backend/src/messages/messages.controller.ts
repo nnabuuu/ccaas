@@ -68,7 +68,7 @@ export class MessagesController {
       filename: string;
       mimeType: string | null;
       size: number;
-      messageId: string;
+      messageId: string | null;
       createdAt: Date;
       downloadUrl: string;
     }>;

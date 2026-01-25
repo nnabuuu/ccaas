@@ -425,7 +425,7 @@ export class FilesService {
     fileBuffer: Buffer,
     originalFilename: string,
     sessionId: string,
-    messageId: string,
+    messageId: string | null,
     tenantId?: string,
     targetPath?: string,
   ): Promise<FileUploadResult> {
@@ -438,11 +438,13 @@ export class FilesService {
       : filename;
 
     // Create persistent storage path
+    // For user uploads without messageId, use sessionId as subdirectory
     const tenantDir = tenantId || 'default';
+    const subDir = messageId || `session-${sessionId}`;
     const storedDir = path.join(
       this.persistentStorageBase,
       tenantDir,
-      messageId,
+      subDir,
     );
     const storedPath = path.join(storedDir, filename);
 

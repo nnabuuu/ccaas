@@ -16,12 +16,15 @@ export class AgentFile {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
-  messageId!: string;
+  @Column({ type: 'varchar', nullable: true })
+  messageId!: string | null;
 
-  @ManyToOne(() => Message, (message) => message.files, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Message, (message) => message.files, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
   @JoinColumn({ name: 'messageId' })
-  message!: Message;
+  message!: Message | null;
 
   @Column()
   @Index('IDX_agent_files_session_id_col')

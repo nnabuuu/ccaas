@@ -33,7 +33,7 @@ export class FilesController {
     mimeType: string | null;
     size: number;
     sessionId: string;
-    messageId: string;
+    messageId: string | null;
     createdAt: Date;
     downloadUrl: string;
   }> {
@@ -97,7 +97,7 @@ export class FilesController {
       originalPath: string;
       mimeType: string | null;
       size: number;
-      messageId: string;
+      messageId: string | null;
       status: 'new' | 'modified' | 'synced';
       uploadedBy: 'agent' | 'user';
       createdAt: Date;
@@ -182,14 +182,12 @@ export class FilesController {
     // Validate file
     this.filesService.validateUpload(file);
 
-    // Use placeholder messageId for user uploads without chat context
-    const effectiveMessageId = messageId || `user-upload-${Date.now()}`;
-
+    // For user uploads without chat context, pass null messageId
     return this.filesService.uploadFile(
       file.buffer,
       file.originalname,
       sessionId,
-      effectiveMessageId,
+      messageId || null,
       tenantId,
       targetPath,
     );
