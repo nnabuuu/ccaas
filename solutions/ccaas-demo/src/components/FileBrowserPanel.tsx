@@ -5,7 +5,7 @@
  * collapsible folders, status indicators, and drag-drop upload.
  */
 
-import { useState, useCallback, DragEvent } from 'react'
+import { useState, useCallback, useRef, DragEvent, ChangeEvent } from 'react'
 import { FileTreeItem } from './FileTreeItem'
 import { FilePreviewModal } from './FilePreviewModal'
 import { DropZone } from './DropZone'
@@ -49,6 +49,23 @@ export function FileBrowserPanel({
   onUploadFiles,
 }: FileBrowserPanelProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Click to upload handler
+  const handleUploadClick = useCallback(() => {
+    fileInputRef.current?.click()
+  }, [])
+
+  const handleFileInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0 && onUploadFiles) {
+      onUploadFiles(files)
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [onUploadFiles])
 
   // Count files (including nested)
   const countFiles = useCallback((nodes: FileNode[]): number => {
@@ -148,6 +165,14 @@ export function FileBrowserPanel({
         </div>
         <div className="flex items-center gap-1">
           <button
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
+            title="Upload files"
+          >
+            <span>📤</span>
+          </button>
+          <button
             onClick={onRefresh}
             disabled={loading}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
@@ -163,6 +188,15 @@ export function FileBrowserPanel({
             <span>◀</span>
           </button>
         </div>
+        {/* Hidden file input for click-to-upload */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileInputChange}
+          disabled={uploading}
+        />
       </div>
 
       {/* Error Banner */}
@@ -180,7 +214,7 @@ export function FileBrowserPanel({
             Loading files...
           </div>
         ) : tree.length === 0 ? (
-          <DropZone isEmpty={true} />
+          <DropZone isEmpty={true} onUploadFiles={onUploadFiles} disabled={uploading} />
         ) : (
           <div className="space-y-0.5">
             {tree.map(node => (

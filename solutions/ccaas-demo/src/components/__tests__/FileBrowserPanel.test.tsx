@@ -370,4 +370,45 @@ describe('FileBrowserPanel', () => {
       expect(screen.queryByText('Drop files here to upload')).not.toBeInTheDocument()
     })
   })
+
+  describe('click to upload', () => {
+    it('should have an upload button in header', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      const uploadButton = screen.getByTitle('Upload files')
+      expect(uploadButton).toBeInTheDocument()
+    })
+
+    it('should have a hidden file input', () => {
+      render(<FileBrowserPanel {...defaultProps} />)
+
+      const fileInput = document.querySelector('input[type="file"]')
+      expect(fileInput).toBeInTheDocument()
+      expect(fileInput).toHaveClass('hidden')
+    })
+
+    it('should call onUploadFiles when files are selected via input', () => {
+      const onUploadFiles = vi.fn().mockResolvedValue(undefined)
+      render(<FileBrowserPanel {...defaultProps} onUploadFiles={onUploadFiles} />)
+
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
+
+      const testFile = new File(['test content'], 'test.txt', { type: 'text/plain' })
+      Object.defineProperty(fileInput, 'files', {
+        value: [testFile],
+        writable: false,
+      })
+
+      fireEvent.change(fileInput)
+
+      expect(onUploadFiles).toHaveBeenCalledWith([testFile])
+    })
+
+    it('should disable upload button when uploading', () => {
+      render(<FileBrowserPanel {...defaultProps} uploading={true} />)
+
+      const uploadButton = screen.getByTitle('Upload files')
+      expect(uploadButton).toBeDisabled()
+    })
+  })
 })
