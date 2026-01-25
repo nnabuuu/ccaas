@@ -8,10 +8,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
 import type { Skill, Message, FileInfo, SessionState, SkillHeader } from '../types'
+import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 const API_KEY = import.meta.env.VITE_API_KEY || ''
+const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'default'
 
 // API helper
 async function fetchAPI<T>(
@@ -152,10 +154,10 @@ export function useRealSession() {
       console.log('Received client ID:', data.clientId)
     })
 
-    socket.on('agent_status', (data: { status: string; sessionId?: string; error?: string }) => {
+    socket.on('agent_status', (data: AgentStatusEvent) => {
       console.log('Agent status:', data)
 
-      if (data.status === 'running') {
+      if (data.status === 'running' || data.status === 'executing') {
         setSession(prev => ({ ...prev, isProcessing: true }))
       } else if (data.status === 'complete' || data.status === 'idle') {
         setSession(prev => ({
@@ -167,12 +169,12 @@ export function useRealSession() {
           ),
         }))
       } else if (data.status === 'error') {
-        setError(data.error || 'Unknown error')
+        setError(data.error?.message || 'Unknown error')
         setSession(prev => ({ ...prev, isProcessing: false }))
       }
     })
 
-    socket.on('text_delta', (data: { text: string }) => {
+    socket.on('text_delta', (data: TextDeltaEvent) => {
       currentMessageRef.current += data.text
 
       setSession(prev => ({
@@ -185,12 +187,13 @@ export function useRealSession() {
       }))
     })
 
-    socket.on('tool_activity', (data: { tool: string; status: string; input?: unknown }) => {
+    socket.on('tool_activity', (data: ToolActivityEvent) => {
       console.log('Tool activity:', data)
 
-      // If Write tool completed, we could update file info
-      if (data.tool === 'Write' && data.status === 'end' && data.input) {
-        const input = data.input as { file_path?: string }
+      // Backend sends tool_activity with payload: { toolName, phase, toolInput }
+      const { payload } = data
+      if (payload?.toolName === 'Write' && payload?.phase === 'end' && payload?.toolInput) {
+        const input = payload.toolInput as { file_path?: string }
         if (input.file_path) {
           const fileName = input.file_path.split('/').pop() || 'file'
           setSession(prev => ({
@@ -319,11 +322,12 @@ export function useRealSession() {
       isProcessing: true,
     }))
 
-    // Send to backend with tenant ID from API key
+    // Send to backend with tenant ID from environment
     socketRef.current.emit('chat', {
       sessionId: session.sessionId,
       message: content,
       resumeSession: session.messages.length > 0,
+      tenantId: TENANT_ID,
     })
   }, [connected, session.sessionId, session.messages.length, session.isProcessing])
 

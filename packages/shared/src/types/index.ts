@@ -179,59 +179,44 @@ export interface SessionAnalytics {
 
 // ============================================================================
 // Event Types (Socket.io)
+// Re-exported from schemas for runtime validation support
 // ============================================================================
 
-export type FrontendEventType =
-  | 'text_delta'
-  | 'tool_activity'
-  | 'thinking_delta'
-  | 'agent_status'
-  | 'token_usage'
-  | 'error'
-  | 'output_update';
+export {
+  // Types inferred from Zod schemas
+  type BaseEvent,
+  type TextDeltaEvent,
+  type ToolActivityPayload,
+  type ToolActivityEvent,
+  type AgentStatusContext,
+  type AgentStatusError,
+  type AgentStatusEvent,
+  type TokenUsagePayload,
+  type TokenUsageEvent,
+  type OutputUpdatePayload,
+  type OutputUpdateEvent,
+  type AgentThinkingPayload,
+  type AgentThinkingEvent,
+  type ExplorationActivityPayload,
+  type ExplorationActivityEvent,
+  type TodoItem as EventTodoItem,
+  type TodoUpdatePayload,
+  type TodoUpdateEvent,
+  type ErrorEvent,
+  type FrontendEvent,
+  type FrontendEventType,
+  type DecisionLogic,
+  type GoalNarrative,
+  type ActiveSubAgent,
+} from '../schemas/events';
 
-export interface FrontendEvent {
-  type: FrontendEventType;
-  sessionId: string;
-  timestamp: string;
-}
-
-export interface TextDeltaEvent extends FrontendEvent {
-  type: 'text_delta';
-  content: string;
-}
-
-export interface ToolActivityEvent extends FrontendEvent {
-  type: 'tool_activity';
-  toolName: string;
-  status: 'started' | 'completed' | 'error';
-  input?: unknown;
-  output?: unknown;
-  error?: string;
-  duration?: number;
-}
-
-export interface ThinkingDeltaEvent extends FrontendEvent {
+// Legacy type alias for backward compatibility
+/** @deprecated Use AgentThinkingEvent instead */
+export interface ThinkingDeltaEvent {
   type: 'thinking_delta';
+  sessionId: string;
+  timestamp?: string;
   content: string;
-}
-
-export interface AgentStatusEvent extends FrontendEvent {
-  type: 'agent_status';
-  status: 'idle' | 'processing' | 'complete' | 'error';
-  message?: string;
-}
-
-export interface TokenUsageEvent extends FrontendEvent {
-  type: 'token_usage';
-  usage: TokenUsage;
-}
-
-export interface ErrorEvent extends FrontendEvent {
-  type: 'error';
-  code: string;
-  message: string;
-  recoverable: boolean;
 }
 
 // ============================================================================

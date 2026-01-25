@@ -26,6 +26,16 @@
         "types": "./dist/types/index.d.cts",
         "default": "./dist/types/index.cjs"
       }
+    },
+    "./schemas": {
+      "import": {
+        "types": "./dist/schemas/index.d.ts",
+        "default": "./dist/schemas/index.js"
+      },
+      "require": {
+        "types": "./dist/schemas/index.d.cts",
+        "default": "./dist/schemas/index.cjs"
+      }
     }
   },
   "scripts": {
@@ -35,7 +45,9 @@
     "clean": "rimraf dist",
     "prepublishOnly": "npm run build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^3.23.0"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "jest": "^29.7.0",
