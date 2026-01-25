@@ -4,7 +4,17 @@
  * REST endpoints for health checks and session status.
  */
 
-import { Controller, Get, Post, Body, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Body,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { SessionService } from './session.service';
 import { ChatGateway } from './chat.gateway';
 import { ChatMessageDto } from './dto/chat-message.dto';
@@ -95,5 +105,44 @@ export class ChatController {
       this.logger.error(`Error initiating chat: ${error}`);
       throw new BadRequestException(error instanceof Error ? error.message : 'Unknown error');
     }
+  }
+
+  /**
+   * Get session status including restart flag
+   */
+  @Get('sessions/:sessionId/status')
+  getSessionStatus(@Param('sessionId') sessionId: string) {
+    const status = this.sessionService.getSessionStatus(sessionId);
+
+    if (!status) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    return status;
+  }
+
+  /**
+   * Restart a session to pick up new skills
+   * Kills the CLI process so next message spawns fresh
+   */
+  @Post('sessions/:sessionId/restart')
+  restartSession(
+    @Param('sessionId') sessionId: string,
+    @Body() body?: { tenantId?: string },
+  ) {
+    const success = this.sessionService.restartSession(sessionId, body?.tenantId);
+
+    if (!success) {
+      const status = this.sessionService.getSessionStatus(sessionId);
+      if (!status) {
+        throw new NotFoundException(`Session not found: ${sessionId}`);
+      }
+      throw new ForbiddenException('Cannot restart session');
+    }
+
+    return {
+      success: true,
+      message: 'Session restarted. Next message will use updated skills.',
+    };
   }
 }

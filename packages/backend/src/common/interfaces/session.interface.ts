@@ -33,6 +33,10 @@ export interface ManagedSession {
   currentUserMessageId?: string;
   currentAssistantMessageId?: string;
   tenantId?: string;
+
+  // Session restart tracking (for new skill visibility)
+  needsRestart?: boolean;
+  skillSyncedAt?: Date;
 }
 
 /**

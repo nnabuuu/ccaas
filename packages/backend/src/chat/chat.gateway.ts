@@ -37,6 +37,7 @@ import {
   createTokenUsageTracker,
   createProcessLifecycleTracker,
 } from '../hooks';
+import { SkillChangeNotifier, SkillChangeCallback } from '../common/skill-change-notifier';
 
 @WebSocketGateway({
   cors: {
@@ -56,6 +57,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
   // Process lifecycle tracker instance (for access across methods)
   private processLifecycleTracker: ReturnType<typeof createProcessLifecycleTracker> | null = null;
+
+  // Skill change callback (stored for cleanup)
+  private skillChangeCallback: SkillChangeCallback | null = null;
 
   constructor(
     private readonly sessionService: SessionService,
@@ -117,6 +121,58 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       getSession: (sessionId) => this.sessionService.getSession(sessionId),
     });
     this.logger.log('Created ProcessLifecycleTracker');
+
+    // Register skill change listener
+    this.skillChangeCallback = (tenantId, skillId, skillSlug, action) => {
+      this.handleSkillChange(tenantId, skillId, skillSlug, action);
+    };
+    SkillChangeNotifier.addListener(this.skillChangeCallback);
+    this.logger.log('Registered skill change listener');
+  }
+
+  /**
+   * Handle skill change notification
+   * Marks affected sessions for restart and notifies connected clients
+   */
+  private handleSkillChange(
+    tenantId: string,
+    skillId: string,
+    skillSlug: string,
+    action: 'created' | 'updated' | 'published' | 'archived',
+  ): void {
+    this.logger.log(`Skill change: ${action} ${skillSlug} for tenant ${tenantId}`);
+
+    // Mark all sessions for this tenant as needing restart
+    const affectedSessionIds = this.sessionService.markSessionsForRestart(tenantId);
+
+    if (affectedSessionIds.length === 0) {
+      this.logger.debug('No active sessions affected by skill change');
+      return;
+    }
+
+    // Notify connected clients about the skill change
+    for (const [clientId, socket] of this.clientSockets) {
+      // Find if this client has any affected sessions
+      const clientSessions = this.sessionService.getClientSessions(clientId);
+      const hasAffectedSession = clientSessions.some(
+        (s) => affectedSessionIds.includes(s.sessionId),
+      );
+
+      if (hasAffectedSession) {
+        socket.emit('skill_updated', {
+          skillId,
+          skillSlug,
+          action,
+          message: `Skill "${skillSlug}" was ${action}. Restart session to use updated skills.`,
+          requiresRestart: true,
+          affectedSessions: clientSessions
+            .filter((s) => affectedSessionIds.includes(s.sessionId))
+            .map((s) => s.sessionId),
+        });
+
+        this.logger.debug(`Notified client ${clientId} of skill change`);
+      }
+    }
   }
 
   /**
@@ -175,6 +231,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
             session.workspaceDir,
             tenantId,
           );
+          session.skillSyncedAt = new Date();
           this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId}`);
         } catch (error) {
           this.logger.warn(`Failed to sync skills: ${error}`);

@@ -21,6 +21,7 @@ import {
   ListSkillsDto,
   CreateVersionDto,
 } from './dto/skill.dto';
+import { SkillChangeNotifier } from '../common/skill-change-notifier';
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -75,6 +76,10 @@ export class SkillsService {
     await this.createVersion(saved.id, { changelog: 'Initial version' });
 
     this.logger.log(`Created skill ${saved.name} (${saved.slug}) for tenant ${tenantId}`);
+
+    // Notify listeners of skill creation
+    SkillChangeNotifier.notify(tenantId, saved.id, saved.slug, 'created');
+
     return saved;
   }
 
@@ -203,6 +208,10 @@ export class SkillsService {
     }
 
     this.logger.log(`Updated skill ${saved.name} (${saved.slug})`);
+
+    // Notify listeners of skill update
+    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'updated');
+
     return saved;
   }
 
@@ -219,6 +228,9 @@ export class SkillsService {
     await this.skillRepository.save(skill);
 
     this.logger.log(`Archived skill ${skill.name} (${skill.slug})`);
+
+    // Notify listeners of skill archive
+    SkillChangeNotifier.notify(skill.tenantId, skill.id, skill.slug, 'archived');
   }
 
   /**
@@ -235,6 +247,10 @@ export class SkillsService {
 
     const saved = await this.skillRepository.save(skill);
     this.logger.log(`Published skill ${saved.name} (${saved.slug})`);
+
+    // Notify listeners of skill publish (this is when it becomes available to sessions)
+    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'published');
+
     return saved;
   }
 

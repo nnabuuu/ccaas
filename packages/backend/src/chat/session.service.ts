@@ -487,6 +487,101 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * Restart a session by killing its CLI process
+   * Next message will spawn fresh CLI with updated skills
+   */
+  restartSession(sessionId: string, tenantId?: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      this.logger.warn(`Session ${sessionId} not found for restart`);
+      return false;
+    }
+
+    // Verify tenant ownership if provided
+    if (tenantId && session.tenantId !== tenantId) {
+      this.logger.warn(`Tenant ${tenantId} cannot restart session owned by ${session.tenantId}`);
+      return false;
+    }
+
+    // Kill CLI process if running
+    if (session.cliProcess && !session.cliProcess.killed) {
+      this.logger.log(`Killing CLI process for session restart: ${sessionId}`);
+      session.cliProcess.kill('SIGTERM');
+      session.cliProcess = null;
+      session.stdin = null;
+    }
+
+    // Clear restart flag
+    session.needsRestart = false;
+    session.status = 'idle';
+    session.lastActivity = new Date();
+
+    this.logger.log(`Session ${sessionId} restarted successfully`);
+    return true;
+  }
+
+  /**
+   * Get all sessions for a tenant
+   */
+  getSessionsByTenant(tenantId: string): ManagedSession[] {
+    const sessions: ManagedSession[] = [];
+    for (const session of this.sessions.values()) {
+      if (session.tenantId === tenantId) {
+        sessions.push(session);
+      }
+    }
+    return sessions;
+  }
+
+  /**
+   * Mark all sessions for a tenant as needing restart
+   * Called when skills are updated
+   */
+  markSessionsForRestart(tenantId: string): string[] {
+    const affectedSessionIds: string[] = [];
+
+    for (const session of this.sessions.values()) {
+      if (session.tenantId === tenantId) {
+        session.needsRestart = true;
+        affectedSessionIds.push(session.sessionId);
+        this.logger.debug(`Marked session ${session.sessionId} as needing restart`);
+      }
+    }
+
+    if (affectedSessionIds.length > 0) {
+      this.logger.log(
+        `Marked ${affectedSessionIds.length} sessions for tenant ${tenantId} as needing restart`,
+      );
+    }
+
+    return affectedSessionIds;
+  }
+
+  /**
+   * Get session status including restart flag
+   */
+  getSessionStatus(sessionId: string): {
+    sessionId: string;
+    status: string;
+    needsRestart: boolean;
+    messageCount: number;
+    hasActiveProcess: boolean;
+  } | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+
+    return {
+      sessionId,
+      status: session.status,
+      needsRestart: session.needsRestart || false,
+      messageCount: session.messageCount,
+      hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
+    };
+  }
+
+  /**
    * Start the cleanup timer
    */
   private startCleanupTimer(): void {
