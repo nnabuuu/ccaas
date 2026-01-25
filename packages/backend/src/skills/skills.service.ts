@@ -255,6 +255,27 @@ export class SkillsService {
   }
 
   /**
+   * Unpublish a skill (set status back to draft)
+   */
+  async unpublish(tenantId: string, idOrSlug: string): Promise<Skill> {
+    const skill = await this.findOne(tenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+
+    skill.status = 'draft';
+    skill.publishedAt = null;
+
+    const saved = await this.skillRepository.save(skill);
+    this.logger.log(`Unpublished skill ${saved.name} (${saved.slug})`);
+
+    // Notify listeners of skill unpublish
+    SkillChangeNotifier.notify(skill.tenantId, saved.id, saved.slug, 'unpublished');
+
+    return saved;
+  }
+
+  /**
    * Create a new version of a skill
    */
   async createVersion(skillId: string, dto: CreateVersionDto): Promise<SkillVersion> {

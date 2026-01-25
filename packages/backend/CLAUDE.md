@@ -216,6 +216,7 @@ GET    /api/v1/skills/:id
 PUT    /api/v1/skills/:id
 DELETE /api/v1/skills/:id
 POST   /api/v1/skills/:id/publish
+POST   /api/v1/skills/:id/unpublish
 ```
 
 ### MCP Servers

@@ -20,6 +20,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
+import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ToolEventsService } from '../messages/tool-events.service';
 import { ThinkingBlocksService } from '../messages/thinking-blocks.service';
@@ -65,6 +66,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     private readonly sessionService: SessionService,
     private readonly eventMapperService: EventMapperService,
     private readonly skillSyncService: SkillSyncService,
+    private readonly tenantsService: TenantsService,
     private readonly messagesService: MessagesService,
     private readonly toolEventsService: ToolEventsService,
     private readonly thinkingBlocksService: ThinkingBlocksService,
@@ -138,7 +140,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     tenantId: string,
     skillId: string,
     skillSlug: string,
-    action: 'created' | 'updated' | 'published' | 'archived',
+    action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
   ): void {
     this.logger.log(`Skill change: ${action} ${skillSlug} for tenant ${tenantId}`);
 
@@ -217,39 +219,63 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
     this.logger.log(`Received chat message: ${data.message?.slice(0, 50)}...`);
 
+    // Require tenantId for skill sync to work
+    if (!tenantId) {
+      this.logger.error('tenantId is required for chat - skills cannot be loaded without a tenant');
+      client.emit('agent_status', {
+        status: 'error',
+        sessionId,
+        error: 'tenantId is required. Skills cannot be loaded without a tenant.',
+      });
+      return;
+    }
+
     try {
+      // Resolve tenant slug/id to actual tenant UUID
+      // This is needed because skills are stored with tenant UUID, not slug
+      let resolvedTenantId = tenantId;
+      try {
+        const tenant = await this.tenantsService.findOne(tenantId);
+        if (tenant) {
+          resolvedTenantId = tenant.id;
+          this.logger.debug(`Resolved tenant ${tenantId} to UUID ${resolvedTenantId}`);
+        } else {
+          this.logger.warn(`Tenant not found: ${tenantId}, using as-is`);
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to resolve tenant: ${error}`);
+      }
+
       // Get or create session
       const session = this.sessionService.getOrCreateSession(sessionId, clientId, client);
 
-      // Store tenant context on session
-      session.tenantId = tenantId;
+      // Store tenant context on session (use original for display, resolved for queries)
+      session.tenantId = resolvedTenantId;
 
-      // Sync tenant skills to session workspace if tenantId provided
-      if (tenantId) {
-        try {
-          const syncResult = await this.skillSyncService.syncToSession(
-            session.workspaceDir,
-            tenantId,
-          );
-          session.skillSyncedAt = new Date();
-          this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId}`);
-        } catch (error) {
-          this.logger.warn(`Failed to sync skills: ${error}`);
-          // Continue without skills - non-fatal
-        }
+      // Sync tenant skills to session workspace
+      try {
+        const syncResult = await this.skillSyncService.syncToSession(
+          session.workspaceDir,
+          resolvedTenantId,
+        );
+        session.skillSyncedAt = new Date();
+        this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
+      } catch (error) {
+        this.logger.warn(`Failed to sync skills: ${error}`);
+        // Continue without skills - non-fatal
       }
 
       // Create message records for persistence
       const userMessage = await this.messagesService.create({
         sessionId,
-        tenantId,
+        tenantId: resolvedTenantId,
         role: 'user',
         content: data.message,
       });
 
       const assistantMessage = await this.messagesService.create({
         sessionId,
-        tenantId,
+        tenantId: resolvedTenantId,
         role: 'assistant',
         content: '', // Will be accumulated as response streams in
       });
@@ -267,7 +293,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         try {
           await this.conversationContextService.createOrUpdate({
             sessionId,
-            tenantId,
+            tenantId: resolvedTenantId,
             workspaceDir: session.workspaceDir,
             clientId,
           });

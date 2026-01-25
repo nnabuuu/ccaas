@@ -104,6 +104,17 @@ export class SkillsController {
   }
 
   /**
+   * Unpublish a skill (set status back to draft)
+   */
+  @Post(':id/unpublish')
+  async unpublish(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.skillsService.unpublish(tenantId, id);
+  }
+
+  /**
    * List versions of a skill
    */
   @Get(':id/versions')

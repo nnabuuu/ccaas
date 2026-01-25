@@ -7,13 +7,39 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { Skill, Message, FileInfo, SessionState, SkillHeader } from '../types'
+import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData } from '../types'
 import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 const API_KEY = import.meta.env.VITE_API_KEY || ''
 const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'default'
+
+/**
+ * Derive MIME type from filename extension.
+ */
+function getMimeType(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  const mimeMap: Record<string, string> = {
+    md: 'text/markdown',
+    json: 'application/json',
+    txt: 'text/plain',
+    ts: 'text/typescript',
+    tsx: 'text/typescript',
+    js: 'text/javascript',
+    jsx: 'text/javascript',
+    html: 'text/html',
+    css: 'text/css',
+    yaml: 'text/yaml',
+    yml: 'text/yaml',
+    xml: 'application/xml',
+    py: 'text/x-python',
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    doc: 'application/msword',
+  }
+  return mimeMap[ext || ''] || 'application/octet-stream'
+}
 
 // API helper
 async function fetchAPI<T>(
@@ -83,10 +109,13 @@ function convertSkill(backendSkill: BackendSkill): Skill {
   return {
     id: backendSkill.id,
     name: backendSkill.name,
+    slug: backendSkill.slug,
     icon,
     description: backendSkill.description || '',
     enabled: backendSkill.status === 'published',
     header,
+    content: backendSkill.content,
+    type: backendSkill.type as 'skill' | 'sub-agent',
   }
 }
 
@@ -105,6 +134,7 @@ export function useRealSession() {
 
   const socketRef = useRef<Socket | null>(null)
   const currentMessageRef = useRef<string>('')
+  const sessionIdRef = useRef(session.sessionId)
 
   // Fetch skills from backend
   const fetchSkills = useCallback(async () => {
@@ -154,12 +184,13 @@ export function useRealSession() {
       console.log('Received client ID:', data.clientId)
     })
 
-    socket.on('agent_status', (data: AgentStatusEvent) => {
+    socket.on('agent_status', (data: AgentStatusEvent & { error?: string | { message: string } }) => {
       console.log('Agent status:', data)
 
       if (data.status === 'running' || data.status === 'executing') {
         setSession(prev => ({ ...prev, isProcessing: true }))
       } else if (data.status === 'complete' || data.status === 'idle') {
+        // First mark messages as complete
         setSession(prev => ({
           ...prev,
           isProcessing: false,
@@ -168,8 +199,43 @@ export function useRealSession() {
             m.status === 'streaming' ? { ...m, status: 'complete' } : m
           ),
         }))
+
+        // Then fetch actual file info from backend to update sizes
+        fetchAPI<Array<{ id: string; filename: string; size: number; mimeType?: string }>>(
+          `/api/v1/sessions/${sessionIdRef.current}/files`
+        )
+          .then(backendFiles => {
+            if (backendFiles && backendFiles.length > 0) {
+              setSession(prev => ({
+                ...prev,
+                messages: prev.messages.map(m => ({
+                  ...m,
+                  files: m.files?.map(f => {
+                    const backendFile = backendFiles.find(bf => bf.filename === f.name)
+                    if (backendFile) {
+                      return {
+                        ...f,
+                        id: backendFile.id,
+                        size: backendFile.size,
+                        type: backendFile.mimeType || f.type,
+                      }
+                    }
+                    return f
+                  }),
+                })),
+              }))
+            }
+          })
+          .catch(err => {
+            // Silently ignore - files will show "Calculating..." but still work
+            console.log('Could not fetch file info:', err)
+          })
       } else if (data.status === 'error') {
-        setError(data.error?.message || 'Unknown error')
+        // Handle both string and object error formats from backend
+        const errorMsg = typeof data.error === 'string'
+          ? data.error
+          : data.error?.message || 'Unknown error'
+        setError(errorMsg)
         setSession(prev => ({ ...prev, isProcessing: false }))
       }
     })
@@ -196,13 +262,20 @@ export function useRealSession() {
         const input = payload.toolInput as { file_path?: string }
         if (input.file_path) {
           const fileName = input.file_path.split('/').pop() || 'file'
+          const newFile: FileInfo = {
+            name: fileName,
+            size: 'Calculating...',
+            type: getMimeType(fileName),
+          }
+
+          // Accumulate files in array instead of replacing
           setSession(prev => ({
             ...prev,
             messages: prev.messages.map(m =>
               m.status === 'streaming'
                 ? {
                     ...m,
-                    file: { name: fileName, size: 'Unknown', type: 'text/plain' },
+                    files: [...(m.files || []), newFile],
                   }
                 : m
             ),
@@ -232,10 +305,9 @@ export function useRealSession() {
 
     try {
       if (skill.enabled) {
-        // Unpublish: Update status to draft
-        await fetchAPI(`/api/v1/skills/${skillId}`, {
-          method: 'PUT',
-          body: JSON.stringify({ status: 'draft' }),
+        // Unpublish the skill (set status back to draft)
+        await fetchAPI(`/api/v1/skills/${skillId}/unpublish`, {
+          method: 'POST',
         })
       } else {
         // Publish the skill
@@ -252,14 +324,17 @@ export function useRealSession() {
       )
 
       // Mark session as needing restart if there are messages
-      if (session.messages.length > 0) {
-        setSession(prev => ({ ...prev, needsRestart: true }))
-      }
+      setSession(prev => {
+        if (prev.messages.length > 0) {
+          return { ...prev, needsRestart: true }
+        }
+        return prev
+      })
     } catch (err) {
       console.error('Failed to toggle skill:', err)
       setError(`切换 skill 失败: ${err instanceof Error ? err.message : err}`)
     }
-  }, [skills, session.messages.length])
+  }, [skills])
 
   // Restart session
   const restartSession = useCallback(async () => {
@@ -275,6 +350,7 @@ export function useRealSession() {
 
       // Generate new session ID
       const newSessionId = `session-${Date.now()}`
+      sessionIdRef.current = newSessionId
 
       setSession({
         sessionId: newSessionId,
@@ -334,9 +410,15 @@ export function useRealSession() {
   // Download file from backend
   const downloadFile = useCallback(async (file: FileInfo) => {
     try {
-      // Try to fetch from backend files API
+      // If file has an ID from backend, use direct download
+      if (file.id) {
+        window.open(`${BACKEND_URL}/api/v1/files/${file.id}/download`, '_blank')
+        return
+      }
+
+      // Fallback: try to fetch from backend files API by name
       const response = await fetch(
-        `${BACKEND_URL}/api/v1/sessions/${session.sessionId}/files`,
+        `${BACKEND_URL}/api/v1/sessions/${sessionIdRef.current}/files`,
         {
           headers: API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {},
         }
@@ -349,7 +431,6 @@ export function useRealSession() {
         )
 
         if (targetFile?.id) {
-          // Download the actual file
           window.open(
             `${BACKEND_URL}/api/v1/files/${targetFile.id}/download`,
             '_blank'
@@ -358,20 +439,98 @@ export function useRealSession() {
         }
       }
 
-      // Fallback: create a placeholder file
-      const content = `# ${file.name}\n\nFile from CCAAS session.\nGenerated at ${new Date().toISOString()}`
-      const blob = new Blob([content], { type: 'text/plain' })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = file.name
-      a.click()
-      URL.revokeObjectURL(url)
+      // File not ready yet
+      setError('File not ready yet. Please wait a moment and try again.')
     } catch (err) {
       console.error('Failed to download file:', err)
       setError(`下载文件失败: ${err instanceof Error ? err.message : err}`)
     }
-  }, [session.sessionId])
+  }, [])
+
+  // Create a new skill
+  const createSkill = useCallback(async (data: SkillFormData) => {
+    try {
+      await fetchAPI('/api/v1/skills', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: data.name,
+          slug: data.slug,
+          description: data.description,
+          content: data.content,
+          type: data.type,
+          triggers: data.triggers,
+          config: data.config,
+          tenantId: TENANT_ID,
+        }),
+      })
+      await fetchSkills()
+    } catch (err) {
+      console.error('Failed to create skill:', err)
+      throw new Error(`创建 skill 失败: ${err instanceof Error ? err.message : err}`)
+    }
+  }, [fetchSkills])
+
+  // Update an existing skill
+  const updateSkill = useCallback(async (id: string, data: SkillFormData) => {
+    try {
+      await fetchAPI(`/api/v1/skills/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: data.name,
+          slug: data.slug,
+          description: data.description,
+          content: data.content,
+          type: data.type,
+          triggers: data.triggers,
+          config: data.config,
+        }),
+      })
+      await fetchSkills()
+
+      // Mark session as needing restart if there are messages
+      setSession(prev => {
+        if (prev.messages.length > 0) {
+          return { ...prev, needsRestart: true }
+        }
+        return prev
+      })
+    } catch (err) {
+      console.error('Failed to update skill:', err)
+      throw new Error(`更新 skill 失败: ${err instanceof Error ? err.message : err}`)
+    }
+  }, [fetchSkills])
+
+  // Delete a skill
+  const deleteSkill = useCallback(async (id: string) => {
+    try {
+      await fetchAPI(`/api/v1/skills/${id}`, {
+        method: 'DELETE',
+      })
+      await fetchSkills()
+
+      // Mark session as needing restart if there are messages
+      setSession(prev => {
+        if (prev.messages.length > 0) {
+          return { ...prev, needsRestart: true }
+        }
+        return prev
+      })
+    } catch (err) {
+      console.error('Failed to delete skill:', err)
+      throw new Error(`删除 skill 失败: ${err instanceof Error ? err.message : err}`)
+    }
+  }, [fetchSkills])
+
+  // Get full skill details (including content)
+  const getSkillDetails = useCallback(async (id: string): Promise<Skill> => {
+    try {
+      const backendSkill = await fetchAPI<BackendSkill>(`/api/v1/skills/${id}`)
+      return convertSkill(backendSkill)
+    } catch (err) {
+      console.error('Failed to get skill details:', err)
+      throw new Error(`获取 skill 详情失败: ${err instanceof Error ? err.message : err}`)
+    }
+  }, [])
 
   return {
     skills,
@@ -384,5 +543,9 @@ export function useRealSession() {
     sendMessage,
     downloadFile,
     refreshSkills: fetchSkills,
+    createSkill,
+    updateSkill,
+    deleteSkill,
+    getSkillDetails,
   }
 }

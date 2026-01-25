@@ -67,7 +67,7 @@ export class Skill {
   updatedAt: Date;
 
   @Column({ type: 'datetime', nullable: true })
-  publishedAt: Date;
+  publishedAt: Date | null;
 
   @OneToMany(() => SkillVersion, (version) => version.skill)
   versions: SkillVersion[];

@@ -10,7 +10,7 @@ export type SkillChangeCallback = (
   tenantId: string,
   skillId: string,
   skillSlug: string,
-  action: 'created' | 'updated' | 'published' | 'archived',
+  action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
 ) => void;
 
 class SkillChangeNotifierClass {
@@ -40,7 +40,7 @@ class SkillChangeNotifierClass {
     tenantId: string,
     skillId: string,
     skillSlug: string,
-    action: 'created' | 'updated' | 'published' | 'archived',
+    action: 'created' | 'updated' | 'published' | 'unpublished' | 'archived',
   ): void {
     for (const listener of this.listeners) {
       try {
