@@ -45,6 +45,15 @@ export class AgentFile {
   @Column({ type: 'integer', default: 0 })
   size!: number;
 
+  @Column({ type: 'varchar', default: 'new' })
+  status!: 'new' | 'modified' | 'synced';
+
+  @Column({ type: 'datetime', nullable: true })
+  downloadedAt!: Date | null;
+
+  @Column({ type: 'varchar', default: 'agent' })
+  uploadedBy!: 'agent' | 'user';
+
   @CreateDateColumn()
   createdAt!: Date;
 }

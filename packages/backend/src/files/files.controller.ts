@@ -1,15 +1,22 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Res,
+  Body,
+  Query,
   ParseUUIDPipe,
   NotFoundException,
   StreamableFile,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { FilesService } from './files.service';
 import { createReadStream } from 'fs';
+import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
 @Controller('api/v1/files')
 export class FilesController {
@@ -87,9 +94,12 @@ export class FilesController {
     files: Array<{
       id: string;
       filename: string;
+      originalPath: string;
       mimeType: string | null;
       size: number;
       messageId: string;
+      status: 'new' | 'modified' | 'synced';
+      uploadedBy: 'agent' | 'user';
       createdAt: Date;
       downloadUrl: string;
     }>;
@@ -100,12 +110,86 @@ export class FilesController {
       files: files.map((f) => ({
         id: f.id,
         filename: f.filename,
+        originalPath: f.originalPath,
         mimeType: f.mimeType,
         size: f.size,
         messageId: f.messageId,
+        status: f.status,
+        uploadedBy: f.uploadedBy,
         createdAt: f.createdAt,
         downloadUrl: `/api/v1/files/${f.id}/download`,
       })),
     };
+  }
+
+  /**
+   * Get session files as tree structure
+   * GET /api/v1/files/session/:sessionId/tree
+   */
+  @Get('session/:sessionId/tree')
+  async getSessionFilesTree(
+    @Param('sessionId') sessionId: string,
+  ): Promise<{ tree: FileTreeNode[] }> {
+    const tree = await this.filesService.getSessionFilesAsTree(sessionId);
+    return { tree };
+  }
+
+  /**
+   * Get file preview content
+   * GET /api/v1/files/:fileId/preview
+   */
+  @Get(':fileId/preview')
+  async getFilePreview(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Query('maxBytes') maxBytesStr?: string,
+  ): Promise<FilePreviewResponse> {
+    const maxBytes = maxBytesStr ? parseInt(maxBytesStr, 10) : undefined;
+    return this.filesService.getFilePreview(fileId, maxBytes);
+  }
+
+  /**
+   * Mark file as synced (downloaded)
+   * POST /api/v1/files/:fileId/sync
+   */
+  @Post(':fileId/sync')
+  async markFileAsSynced(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+  ): Promise<{ success: boolean; status: string }> {
+    const file = await this.filesService.markAsSynced(fileId);
+    return { success: true, status: file.status };
+  }
+
+  /**
+   * Upload a file
+   * POST /api/v1/files/upload
+   */
+  @Post('upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Body('sessionId') sessionId: string,
+    @Body('messageId') messageId: string,
+    @Body('tenantId') tenantId?: string,
+    @Body('targetPath') targetPath?: string,
+  ): Promise<FileUploadResult> {
+    // Validate input
+    if (!sessionId) {
+      throw new NotFoundException('sessionId is required');
+    }
+    if (!messageId) {
+      throw new NotFoundException('messageId is required');
+    }
+
+    // Validate file
+    this.filesService.validateUpload(file);
+
+    return this.filesService.uploadFile(
+      file.buffer,
+      file.originalname,
+      sessionId,
+      messageId,
+      tenantId,
+      targetPath,
+    );
   }
 }

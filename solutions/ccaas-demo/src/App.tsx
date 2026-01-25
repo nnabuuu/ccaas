@@ -5,6 +5,7 @@
  * - Real skills from backend API
  * - Real Claude Code CLI interactions
  * - File creation and download
+ * - File browser with tree view
  * - Skill management (CRUD)
  */
 
@@ -13,7 +14,9 @@ import { SkillsSidebar } from './components/SkillsSidebar'
 import { ChatPanel } from './components/ChatPanel'
 import { SkillEditor } from './components/SkillEditor'
 import { ConfirmDialog } from './components/ConfirmDialog'
+import { FileBrowserPanel } from './components/FileBrowserPanel'
 import { useRealSession } from './hooks/useRealSession'
+import { useFileBrowser } from './hooks/useFileBrowser'
 import type { Skill, SkillFormData } from './types'
 
 export default function App() {
@@ -23,6 +26,7 @@ export default function App() {
     connected,
     error,
     loading,
+    socket,
     toggleSkill,
     restartSession,
     sendMessage,
@@ -34,8 +38,17 @@ export default function App() {
     getSkillDetails,
   } = useRealSession()
 
+  // File browser hook
+  const fileBrowser = useFileBrowser({
+    sessionId: session.sessionId,
+    socket,
+  })
+
   // Sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // File browser state
+  const [fileBrowserCollapsed, setFileBrowserCollapsed] = useState(false)
 
   // Editor state
   const [editorOpen, setEditorOpen] = useState(false)
@@ -194,6 +207,24 @@ export default function App() {
           isProcessing={session.isProcessing}
           onSend={sendMessage}
           onDownload={downloadFile}
+        />
+
+        {/* File Browser Panel */}
+        <FileBrowserPanel
+          tree={fileBrowser.tree}
+          expandedFolders={fileBrowser.expandedFolders}
+          loading={fileBrowser.loading}
+          error={fileBrowser.error}
+          previewFile={fileBrowser.previewFile}
+          previewContent={fileBrowser.previewContent}
+          previewLoading={fileBrowser.previewLoading}
+          collapsed={fileBrowserCollapsed}
+          onToggleCollapse={() => setFileBrowserCollapsed(!fileBrowserCollapsed)}
+          onToggleFolder={fileBrowser.toggleFolder}
+          onPreviewFile={fileBrowser.openPreview}
+          onClosePreview={fileBrowser.closePreview}
+          onDownloadFile={fileBrowser.downloadFile}
+          onRefresh={fileBrowser.fetchFileTree}
         />
       </div>
 

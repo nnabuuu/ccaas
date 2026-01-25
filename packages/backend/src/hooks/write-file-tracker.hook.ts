@@ -3,6 +3,7 @@
  *
  * PostHook for the Write tool that copies written files to persistent storage
  * and creates database records linking them to the current assistant message.
+ * Also emits file_created WebSocket event for real-time updates.
  */
 
 import { Logger } from '@nestjs/common';
@@ -13,6 +14,22 @@ import type { ManagedSession } from '../common/interfaces';
 export interface WriteFileTrackerDeps {
   filesService: FilesService;
   getSession: (sessionId: string) => ManagedSession | undefined;
+}
+
+export interface FileCreatedEvent {
+  type: 'file_created';
+  payload: {
+    id: string;
+    filename: string;
+    originalPath: string;
+    mimeType: string | null;
+    size: number;
+    status: 'new' | 'modified' | 'synced';
+    uploadedBy: 'agent' | 'user';
+    createdAt: Date;
+    sessionId: string;
+    messageId: string;
+  };
 }
 
 const logger = new Logger('WriteFileTrackerHook');
@@ -67,6 +84,27 @@ export function createWriteFileTrackerHook(deps: WriteFileTrackerDeps): ToolHook
         logger.log(
           `Tracked file ${agentFile.filename} (${agentFile.size} bytes) for message ${session.currentAssistantMessageId}`,
         );
+
+        // Emit file_created event to the client for real-time updates
+        if (session.socket) {
+          const fileCreatedEvent: FileCreatedEvent = {
+            type: 'file_created',
+            payload: {
+              id: agentFile.id,
+              filename: agentFile.filename,
+              originalPath: agentFile.originalPath,
+              mimeType: agentFile.mimeType,
+              size: agentFile.size,
+              status: agentFile.status,
+              uploadedBy: agentFile.uploadedBy,
+              createdAt: agentFile.createdAt,
+              sessionId: context.sessionId,
+              messageId: session.currentAssistantMessageId,
+            },
+          };
+          session.socket.emit('file_created', fileCreatedEvent);
+          logger.debug(`Emitted file_created event for ${agentFile.filename}`);
+        }
       } catch (error) {
         // Log but don't throw - file tracking is non-critical
         logger.error(

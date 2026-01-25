@@ -43,6 +43,47 @@ export interface FileInfo {
   type: string                   // MIME type or "unknown"
 }
 
+// File Browser Types
+export type FileStatus = 'new' | 'modified' | 'synced'
+
+export interface FileNode {
+  id: string
+  name: string
+  type: 'file' | 'folder'
+  path: string
+  children?: FileNode[]
+  fileId?: string
+  mimeType?: string
+  size?: number
+  status?: FileStatus
+  uploadedBy?: 'agent' | 'user'
+  createdAt?: Date
+}
+
+export interface FilePreview {
+  content: string
+  truncated: boolean
+  encoding: 'utf8' | 'base64'
+  mimeType: string
+  size: number
+}
+
+export interface FileCreatedEvent {
+  type: 'file_created'
+  payload: {
+    id: string
+    filename: string
+    originalPath: string
+    mimeType: string | null
+    size: number
+    status: FileStatus
+    uploadedBy: 'agent' | 'user'
+    createdAt: string
+    sessionId: string
+    messageId: string
+  }
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'

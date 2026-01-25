@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import { AgentFile } from './entities/agent-file.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { lookup as mimeLookup } from 'mime-types';
+import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
 export interface CreateFromWriteToolDto {
   messageId: string;
@@ -230,6 +232,288 @@ export class FilesService {
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Get session files organized as a tree structure
+   */
+  async getSessionFilesAsTree(sessionId: string): Promise<FileTreeNode[]> {
+    const files = await this.findBySessionId(sessionId);
+    return this.buildFileTree(files);
+  }
+
+  /**
+   * Build a hierarchical file tree from flat file list
+   */
+  private buildFileTree(files: AgentFile[]): FileTreeNode[] {
+    const root: FileTreeNode[] = [];
+    const folderMap = new Map<string, FileTreeNode>();
+
+    for (const file of files) {
+      // Normalize path - remove leading slash and split
+      const normalizedPath = file.originalPath.replace(/^\/+/, '');
+      const pathParts = normalizedPath.split('/').filter(Boolean);
+      const fileName = pathParts.pop()!;
+
+      let currentLevel = root;
+      let currentPath = '';
+
+      // Create/find parent folders
+      for (const folderName of pathParts) {
+        currentPath += '/' + folderName;
+        let folder = folderMap.get(currentPath);
+        if (!folder) {
+          folder = {
+            id: `folder-${currentPath}`,
+            name: folderName,
+            type: 'folder',
+            path: currentPath,
+            children: [],
+          };
+          folderMap.set(currentPath, folder);
+          currentLevel.push(folder);
+        }
+        currentLevel = folder.children!;
+      }
+
+      // Add file node
+      currentLevel.push({
+        id: `file-${file.id}`,
+        name: fileName,
+        type: 'file',
+        path: file.originalPath,
+        fileId: file.id,
+        mimeType: file.mimeType || undefined,
+        size: file.size,
+        status: file.status,
+        uploadedBy: file.uploadedBy,
+        createdAt: file.createdAt,
+      });
+    }
+
+    // Sort each level: folders first, then files, alphabetically
+    const sortLevel = (nodes: FileTreeNode[]) => {
+      nodes.sort((a, b) => {
+        if (a.type !== b.type) {
+          return a.type === 'folder' ? -1 : 1;
+        }
+        return a.name.localeCompare(b.name);
+      });
+      for (const node of nodes) {
+        if (node.children) {
+          sortLevel(node.children);
+        }
+      }
+    };
+    sortLevel(root);
+
+    return root;
+  }
+
+  /**
+   * Get file preview content
+   */
+  async getFilePreview(
+    id: string,
+    maxBytes = 100 * 1024, // Default 100KB limit
+  ): Promise<FilePreviewResponse> {
+    const file = await this.findByIdOrFail(id);
+
+    // Check if file exists
+    const exists = await this.fileExists(id);
+    if (!exists) {
+      throw new NotFoundException('File content not available');
+    }
+
+    // Determine encoding based on MIME type
+    const isText = this.isTextFile(file.mimeType);
+    const isImage = file.mimeType?.startsWith('image/');
+
+    try {
+      const stats = await fs.stat(file.storedPath);
+      const actualSize = stats.size;
+      const truncated = actualSize > maxBytes;
+      const readSize = truncated ? maxBytes : actualSize;
+
+      if (isImage) {
+        // For images, return base64 encoded content
+        const buffer = await this.readFilePartial(file.storedPath, readSize);
+        return {
+          content: buffer.toString('base64'),
+          truncated,
+          encoding: 'base64',
+          mimeType: file.mimeType || 'application/octet-stream',
+          size: actualSize,
+        };
+      } else if (isText) {
+        // For text files, return UTF-8 content
+        const buffer = await this.readFilePartial(file.storedPath, readSize);
+        return {
+          content: buffer.toString('utf8'),
+          truncated,
+          encoding: 'utf8',
+          mimeType: file.mimeType || 'text/plain',
+          size: actualSize,
+        };
+      } else {
+        // For binary files, return base64
+        const buffer = await this.readFilePartial(file.storedPath, readSize);
+        return {
+          content: buffer.toString('base64'),
+          truncated,
+          encoding: 'base64',
+          mimeType: file.mimeType || 'application/octet-stream',
+          size: actualSize,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`Failed to read file preview: ${error.message}`);
+      throw new InternalServerErrorException('Failed to read file preview');
+    }
+  }
+
+  /**
+   * Read partial file content
+   */
+  private async readFilePartial(
+    filePath: string,
+    maxBytes: number,
+  ): Promise<Buffer> {
+    const handle = await fs.open(filePath, 'r');
+    try {
+      const buffer = Buffer.alloc(maxBytes);
+      const { bytesRead } = await handle.read(buffer, 0, maxBytes, 0);
+      return buffer.subarray(0, bytesRead);
+    } finally {
+      await handle.close();
+    }
+  }
+
+  /**
+   * Check if MIME type indicates a text file
+   */
+  private isTextFile(mimeType: string | null): boolean {
+    if (!mimeType) return false;
+    return (
+      mimeType.startsWith('text/') ||
+      mimeType === 'application/json' ||
+      mimeType === 'application/javascript' ||
+      mimeType === 'application/typescript' ||
+      mimeType === 'application/xml' ||
+      mimeType === 'application/x-yaml' ||
+      mimeType === 'application/x-sh'
+    );
+  }
+
+  /**
+   * Mark a file as synced (downloaded by user)
+   */
+  async markAsSynced(fileId: string): Promise<AgentFile> {
+    const file = await this.findByIdOrFail(fileId);
+
+    file.status = 'synced';
+    file.downloadedAt = new Date();
+
+    return this.fileRepository.save(file);
+  }
+
+  /**
+   * Upload a file from user
+   */
+  async uploadFile(
+    fileBuffer: Buffer,
+    originalFilename: string,
+    sessionId: string,
+    messageId: string,
+    tenantId?: string,
+    targetPath?: string,
+  ): Promise<FileUploadResult> {
+    const filename = path.basename(originalFilename);
+    const mimeType = mimeLookup(filename) || null;
+
+    // Determine the original path (virtual path in file system)
+    const originalPath = targetPath
+      ? path.join(targetPath, filename)
+      : filename;
+
+    // Create persistent storage path
+    const tenantDir = tenantId || 'default';
+    const storedDir = path.join(
+      this.persistentStorageBase,
+      tenantDir,
+      messageId,
+    );
+    const storedPath = path.join(storedDir, filename);
+
+    // Ensure directory exists
+    await fs.mkdir(storedDir, { recursive: true });
+
+    // Write file to storage
+    try {
+      await fs.writeFile(storedPath, fileBuffer);
+      this.logger.debug(`Uploaded file to ${storedPath}`);
+    } catch (error) {
+      this.logger.error(`Failed to write uploaded file: ${error.message}`);
+      throw new InternalServerErrorException('Failed to store uploaded file');
+    }
+
+    // Create database record
+    const agentFile = this.fileRepository.create({
+      messageId,
+      sessionId,
+      tenantId: tenantId || null,
+      originalPath,
+      storedPath,
+      filename,
+      mimeType,
+      size: fileBuffer.length,
+      status: 'new',
+      uploadedBy: 'user',
+    });
+
+    const saved = await this.fileRepository.save(agentFile);
+    this.logger.log(
+      `Created user upload record ${saved.id} for ${filename} (${saved.size} bytes)`,
+    );
+
+    return {
+      id: saved.id,
+      filename: saved.filename,
+      originalPath: saved.originalPath,
+      mimeType: saved.mimeType,
+      size: saved.size,
+      status: saved.status,
+      uploadedBy: saved.uploadedBy,
+      createdAt: saved.createdAt,
+    };
+  }
+
+  /**
+   * Validate file upload
+   */
+  validateUpload(
+    file: Express.Multer.File,
+    maxSizeBytes = 10 * 1024 * 1024, // Default 10MB
+    allowedTypes?: string[],
+  ): void {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    if (file.size > maxSizeBytes) {
+      throw new BadRequestException(
+        `File size exceeds limit of ${Math.round(maxSizeBytes / 1024 / 1024)}MB`,
+      );
+    }
+
+    if (allowedTypes && allowedTypes.length > 0) {
+      const mimeType = file.mimetype;
+      if (!allowedTypes.includes(mimeType)) {
+        throw new BadRequestException(
+          `File type ${mimeType} is not allowed. Allowed types: ${allowedTypes.join(', ')}`,
+        );
+      }
     }
   }
 }

@@ -538,6 +538,7 @@ export function useRealSession() {
     connected,
     error,
     loading,
+    socket: socketRef.current,
     toggleSkill,
     restartSession,
     sendMessage,
