@@ -1,0 +1,13 @@
+{
+  "name": "Hello World",
+  "slug": "hello-world",
+  "description": "A friendly greeting skill for demonstration",
+  "type": "skill",
+  "content": "# Hello World Skill\n\nWhen the user says hello, respond with a warm greeting and offer to help with their tasks.\n\n## Behavior\n- Greet the user warmly\n- Ask how you can help today\n- Be friendly and welcoming",
+  "triggers": [
+    { "type": "keyword", "value": "hello" },
+    { "type": "keyword", "value": "hi" },
+    { "type": "keyword", "value": "你好" }
+  ],
+  "allowedTools": []
+}

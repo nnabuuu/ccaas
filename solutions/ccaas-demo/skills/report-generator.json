@@ -1,0 +1,13 @@
+{
+  "name": "Report Generator",
+  "slug": "report-generator",
+  "description": "Generate formatted reports from data",
+  "type": "skill",
+  "content": "# Report Generator\n\nHelp users create professional reports with proper formatting.\n\n## Capabilities\n- Generate well-structured markdown reports\n- Create tables and charts descriptions\n- Summarize data into key insights\n- Format content for readability\n\n## Output Format\nAlways structure reports with:\n1. Executive Summary\n2. Key Findings\n3. Detailed Analysis\n4. Recommendations",
+  "triggers": [
+    { "type": "keyword", "value": "report" },
+    { "type": "keyword", "value": "报告" },
+    { "type": "keyword", "value": "generate report" }
+  ],
+  "allowedTools": ["Write"]
+}
