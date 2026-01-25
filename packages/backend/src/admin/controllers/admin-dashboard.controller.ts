@@ -5,7 +5,7 @@
  */
 
 import { Controller, Get, Query } from '@nestjs/common';
-import { Auth, TenantId } from '../../auth/decorators';
+import { Auth } from '../../auth/decorators';
 import { SessionService } from '../../chat/session.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
@@ -30,27 +30,34 @@ export class AdminDashboardController {
    * Get dashboard summary metrics
    */
   @Get('summary')
-  async getSummary(@TenantId() tenantId: string): Promise<DashboardSummary> {
+  async getSummary(@Query('tenantId') tenantId?: string): Promise<DashboardSummary> {
     const [
       sessionStats,
       messages24h,
       tokens24h,
       errorRate24h,
-      skills,
     ] = await Promise.all([
       this.sessionService.getStats(),
-      this.analyticsService.getMessagesCount24h(),
-      this.analyticsService.getTotalTokens24h(),
-      this.sessionManagerService.getErrorRate24h(),
-      this.skillsService.findAll(tenantId, { page: 1, limit: 1 }),
+      this.analyticsService.getMessagesCount24h(tenantId),
+      this.analyticsService.getTotalTokens24h(tenantId),
+      this.sessionManagerService.getErrorRate24h(tenantId),
     ]);
 
-    // Get active API keys count
-    const apiKeys = await this.apiKeyService.findByTenantId(tenantId);
-    const activeApiKeys = apiKeys.filter((k) => k.status === 'active').length;
+    // Get skills and API keys count (tenant-scoped if tenantId provided)
+    let totalSkills = 0;
+    let publishedSkillsCount = 0;
+    let activeApiKeys = 0;
 
-    // Get published skills count
-    const publishedSkills = await this.skillsService.findPublished(tenantId);
+    if (tenantId) {
+      const [skills, publishedSkills, apiKeys] = await Promise.all([
+        this.skillsService.findAll(tenantId, { page: 1, limit: 1 }),
+        this.skillsService.findPublished(tenantId),
+        this.apiKeyService.findByTenantId(tenantId),
+      ]);
+      totalSkills = skills.total;
+      publishedSkillsCount = publishedSkills.length;
+      activeApiKeys = apiKeys.filter((k) => k.status === 'active').length;
+    }
 
     return {
       activeSessions: sessionStats.processingSessions,
@@ -60,8 +67,8 @@ export class AdminDashboardController {
       totalTokens24h: tokens24h,
       errorRate24h,
       activeApiKeys,
-      totalSkills: skills.total,
-      publishedSkills: publishedSkills.length,
+      totalSkills,
+      publishedSkills: publishedSkillsCount,
     };
   }
 
@@ -73,9 +80,11 @@ export class AdminDashboardController {
   @Get('recent-sessions')
   async getRecentSessions(
     @Query('limit') limit?: string,
+    @Query('tenantId') tenantId?: string,
   ): Promise<RecentSession[]> {
     return this.sessionManagerService.getRecentSessions(
       limit ? parseInt(limit, 10) : 10,
+      tenantId,
     );
   }
 

@@ -224,8 +224,7 @@ export class TokenUsageService {
   }>> {
     const qb = this.usageRepository
       .createQueryBuilder('usage')
-      .innerJoin('messages', 'msg', 'msg.id = usage.messageId')
-      .where('msg.tenantId = :tenantId', { tenantId })
+      .where('usage.tenantId = :tenantId', { tenantId })
       .select('usage.model', 'model')
       .addSelect('SUM(usage.inputTokens)', 'totalInputTokens')
       .addSelect('SUM(usage.outputTokens)', 'totalOutputTokens')

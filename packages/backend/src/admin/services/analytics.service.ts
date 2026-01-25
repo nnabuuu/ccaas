@@ -107,7 +107,7 @@ export class AnalyticsService {
    * Get cost breakdown by tenant, model, and skill
    */
   async getCostBreakdown(query: AnalyticsQueryDto): Promise<CostAnalytics> {
-    const { startDate, endDate, days = 30 } = query;
+    const { startDate, endDate, days = 30, tenantId } = query;
 
     const end = endDate ? new Date(endDate) : new Date();
     const start = startDate
@@ -115,13 +115,19 @@ export class AnalyticsService {
       : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
 
     // Get usage grouped by tenant
-    const usageByTenant = await this.tokenUsageRepository
+    const usageByTenantQb = this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select('usage.tenantId', 'tenantId')
       .addSelect('SUM(usage.inputTokens)', 'inputTokens')
       .addSelect('SUM(usage.outputTokens)', 'outputTokens')
       .addSelect('SUM(usage.cachedInputTokens)', 'cachedTokens')
-      .where('usage.createdAt BETWEEN :start AND :end', { start, end })
+      .where('usage.createdAt BETWEEN :start AND :end', { start, end });
+
+    if (tenantId) {
+      usageByTenantQb.andWhere('usage.tenantId = :tenantId', { tenantId });
+    }
+
+    const usageByTenant = await usageByTenantQb
       .groupBy('usage.tenantId')
       .getRawMany();
 
@@ -153,13 +159,19 @@ export class AnalyticsService {
     });
 
     // Get usage by model (from message metadata)
-    const usageByModel = await this.messageRepository
+    const usageByModelQb = this.messageRepository
       .createQueryBuilder('message')
       .select("json_extract(message.metadata, '$.model')", 'model')
       .addSelect("SUM(json_extract(message.metadata, '$.inputTokens'))", 'inputTokens')
       .addSelect("SUM(json_extract(message.metadata, '$.outputTokens'))", 'outputTokens')
       .where('message.createdAt BETWEEN :start AND :end', { start, end })
-      .andWhere("json_extract(message.metadata, '$.model') IS NOT NULL")
+      .andWhere("json_extract(message.metadata, '$.model') IS NOT NULL");
+
+    if (tenantId) {
+      usageByModelQb.andWhere('message.tenantId = :tenantId', { tenantId });
+    }
+
+    const usageByModel = await usageByModelQb
       .groupBy("json_extract(message.metadata, '$.model')")
       .getRawMany();
 

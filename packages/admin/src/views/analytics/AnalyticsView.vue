@@ -41,10 +41,6 @@ const queryParams = computed(() => ({
   tenantId: authStore.selectedTenantId || undefined
 }))
 
-onMounted(() => {
-  loadAnalytics()
-})
-
 // Watch tenant selection changes
 watch(() => authStore.selectedTenantId, () => {
   loadAnalytics().then(updateChart)

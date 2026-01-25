@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { tenantsApi } from '@/api/admin'
+import { message } from 'ant-design-vue'
 import {
   DashboardOutlined,
   DesktopOutlined,
@@ -55,8 +56,8 @@ onMounted(async () => {
     const tenants = await tenantsApi.list()
     authStore.setTenantList(tenants)
     authStore.loadSelectedTenant()
-  } catch (error) {
-    console.error('Failed to load tenants:', error)
+  } catch {
+    message.error('Failed to load tenants')
   } finally {
     loadingTenants.value = false
   }

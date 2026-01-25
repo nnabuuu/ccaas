@@ -309,10 +309,15 @@ export class SessionManagerService {
   /**
    * Get recent sessions (for dashboard)
    */
-  async getRecentSessions(limit: number = 10): Promise<RecentSession[]> {
-    const allSessions = this.getAllManagedSessions();
+  async getRecentSessions(limit: number = 10, tenantId?: string): Promise<RecentSession[]> {
+    let sessions = this.getAllManagedSessions();
 
-    return allSessions
+    // Filter by tenant if specified
+    if (tenantId) {
+      sessions = sessions.filter((s) => s.tenantId === tenantId);
+    }
+
+    return sessions
       .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
       .slice(0, limit)
       .map((session) => ({
@@ -328,16 +333,23 @@ export class SessionManagerService {
   /**
    * Get error rate in last 24 hours
    */
-  async getErrorRate24h(): Promise<number> {
+  async getErrorRate24h(tenantId?: string): Promise<number> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+    const errorQb = this.apiErrorRepository.createQueryBuilder('error')
+      .where('error.createdAt >= :oneDayAgo', { oneDayAgo });
+
+    const messageQb = this.messageRepository.createQueryBuilder('message')
+      .where('message.createdAt >= :oneDayAgo', { oneDayAgo });
+
+    if (tenantId) {
+      errorQb.andWhere('error.tenantId = :tenantId', { tenantId });
+      messageQb.andWhere('message.tenantId = :tenantId', { tenantId });
+    }
+
     const [errorCount, totalMessages] = await Promise.all([
-      this.apiErrorRepository.count({
-        where: { createdAt: MoreThanOrEqual(oneDayAgo) },
-      }),
-      this.messageRepository.count({
-        where: { createdAt: MoreThanOrEqual(oneDayAgo) },
-      }),
+      errorQb.getCount(),
+      messageQb.getCount(),
     ]);
 
     if (totalMessages === 0) return 0;

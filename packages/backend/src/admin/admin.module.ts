@@ -22,6 +22,7 @@ import { AdminSessionsController } from './controllers/admin-sessions.controller
 import { AdminAnalyticsController } from './controllers/admin-analytics.controller';
 import { AdminAuditController } from './controllers/admin-audit.controller';
 import { AdminSkillsController } from './controllers/admin-skills.controller';
+import { AdminTenantsController } from './controllers/admin-tenants.controller';
 
 // Dependent modules
 import { ChatModule } from '../chat/chat.module';
@@ -71,6 +72,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminAnalyticsController,
     AdminAuditController,
     AdminSkillsController,
+    AdminTenantsController,
   ],
   providers: [
     AuditService,
