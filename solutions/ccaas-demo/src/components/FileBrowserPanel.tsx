@@ -20,12 +20,14 @@ interface FileBrowserPanelProps {
   previewContent: FilePreview | null
   previewLoading: boolean
   collapsed: boolean
+  uploading?: boolean
   onToggleCollapse: () => void
   onToggleFolder: (folderId: string) => void
   onPreviewFile: (file: FileNode) => void
   onClosePreview: () => void
   onDownloadFile: (file: FileNode) => void
   onRefresh: () => void
+  onUploadFiles?: (files: File[]) => Promise<void>
 }
 
 export function FileBrowserPanel({
@@ -37,12 +39,14 @@ export function FileBrowserPanel({
   previewContent,
   previewLoading,
   collapsed,
+  uploading,
   onToggleCollapse,
   onToggleFolder,
   onPreviewFile,
   onClosePreview,
   onDownloadFile,
   onRefresh,
+  onUploadFiles,
 }: FileBrowserPanelProps) {
   const [isDragOver, setIsDragOver] = useState(false)
 
@@ -86,12 +90,17 @@ export function FileBrowserPanel({
     setIsDragOver(false)
   }, [])
 
-  const handleDrop = useCallback((e: DragEvent) => {
+  const handleDrop = useCallback(async (e: DragEvent) => {
     e.preventDefault()
     setIsDragOver(false)
-    // File upload handling would be done by parent component
-    // This is just for visual feedback
-  }, [])
+
+    if (!onUploadFiles) return
+
+    const files = Array.from(e.dataTransfer.files)
+    if (files.length > 0) {
+      await onUploadFiles(files)
+    }
+  }, [onUploadFiles])
 
   if (collapsed) {
     return (
@@ -114,7 +123,7 @@ export function FileBrowserPanel({
 
   return (
     <div
-      className={`w-80 bg-white border-l border-gray-200 flex flex-col transition-all ${
+      className={`w-80 bg-white border-l border-gray-200 flex flex-col transition-all relative ${
         isDragOver ? 'bg-blue-50' : ''
       }`}
       onDragOver={handleDragOver}
@@ -191,9 +200,19 @@ export function FileBrowserPanel({
 
       {/* Drop Zone Indicator */}
       {isDragOver && (
-        <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-dashed border-blue-500 rounded-lg flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 bg-blue-100 bg-opacity-50 border-2 border-dashed border-blue-500 rounded-lg flex items-center justify-center pointer-events-none z-10">
           <div className="text-blue-600 font-medium">
             Drop files here to upload
+          </div>
+        </div>
+      )}
+
+      {/* Uploading Indicator */}
+      {uploading && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+          <div className="flex items-center gap-2 text-blue-600">
+            <span className="animate-spin">⏳</span>
+            <span className="font-medium">Uploading...</span>
           </div>
         </div>
       )}

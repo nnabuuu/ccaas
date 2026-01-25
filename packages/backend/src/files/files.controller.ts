@@ -162,13 +162,15 @@ export class FilesController {
   /**
    * Upload a file
    * POST /api/v1/files/upload
+   *
+   * messageId is optional - if not provided, a placeholder will be used for user uploads
    */
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('sessionId') sessionId: string,
-    @Body('messageId') messageId: string,
+    @Body('messageId') messageId?: string,
     @Body('tenantId') tenantId?: string,
     @Body('targetPath') targetPath?: string,
   ): Promise<FileUploadResult> {
@@ -176,18 +178,18 @@ export class FilesController {
     if (!sessionId) {
       throw new NotFoundException('sessionId is required');
     }
-    if (!messageId) {
-      throw new NotFoundException('messageId is required');
-    }
 
     // Validate file
     this.filesService.validateUpload(file);
+
+    // Use placeholder messageId for user uploads without chat context
+    const effectiveMessageId = messageId || `user-upload-${Date.now()}`;
 
     return this.filesService.uploadFile(
       file.buffer,
       file.originalname,
       sessionId,
-      messageId,
+      effectiveMessageId,
       tenantId,
       targetPath,
     );

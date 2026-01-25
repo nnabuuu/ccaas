@@ -49,6 +49,21 @@ export default function App() {
 
   // File browser state
   const [fileBrowserCollapsed, setFileBrowserCollapsed] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  // Handle file upload
+  const handleUploadFiles = useCallback(async (files: File[]) => {
+    setUploading(true)
+    try {
+      for (const file of files) {
+        await fileBrowser.uploadFile(file)
+      }
+    } catch (err) {
+      console.error('Failed to upload files:', err)
+    } finally {
+      setUploading(false)
+    }
+  }, [fileBrowser])
 
   // Editor state
   const [editorOpen, setEditorOpen] = useState(false)
@@ -219,12 +234,14 @@ export default function App() {
           previewContent={fileBrowser.previewContent}
           previewLoading={fileBrowser.previewLoading}
           collapsed={fileBrowserCollapsed}
+          uploading={uploading}
           onToggleCollapse={() => setFileBrowserCollapsed(!fileBrowserCollapsed)}
           onToggleFolder={fileBrowser.toggleFolder}
           onPreviewFile={fileBrowser.openPreview}
           onClosePreview={fileBrowser.closePreview}
           onDownloadFile={fileBrowser.downloadFile}
           onRefresh={fileBrowser.fetchFileTree}
+          onUploadFiles={handleUploadFiles}
         />
       </div>
 

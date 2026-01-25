@@ -177,16 +177,14 @@ export function useFileBrowser({ sessionId, socket }: UseFileBrowserOptions) {
     }
   }, [])
 
-  // Upload a file
+  // Upload a file (messageId is optional for user uploads)
   const uploadFile = useCallback(async (
     file: File,
-    messageId: string,
     targetPath?: string
   ) => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('sessionId', sessionIdRef.current)
-    formData.append('messageId', messageId)
     if (targetPath) {
       formData.append('targetPath', targetPath)
     }
