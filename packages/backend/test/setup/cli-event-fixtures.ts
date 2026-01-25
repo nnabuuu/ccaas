@@ -317,6 +317,118 @@ export const errorResultEvent = {
 };
 
 // ============================================================================
+// CLI Format Events (type: 'user' with tool_result content blocks)
+// ============================================================================
+
+/**
+ * Create a CLI format tool result event
+ * CLI sends tool results as user messages with tool_result content blocks
+ */
+export const createCliToolResultEvent = (
+  toolUseId: string,
+  content: string | object,
+  isError: boolean = false,
+) => ({
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: toolUseId,
+        content: typeof content === 'string' ? content : JSON.stringify(content),
+        is_error: isError,
+      },
+    ],
+  },
+});
+
+/**
+ * CLI format Write tool result
+ */
+export const cliWriteToolResultEvent = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_write_123',
+        content: 'File written successfully',
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format Read tool result
+ */
+export const cliReadToolResultEvent = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_read_456',
+        content: 'Test content from Claude',
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format Bash tool result
+ */
+export const cliBashToolResultEvent = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_bash_789',
+        content: 'Hello from bash\n',
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format error result
+ */
+export const cliErrorToolResultEvent = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_error_cli',
+        content: 'Command failed: nonexistent-command not found',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format with multiple tool results in one message
+ */
+export const cliMultipleToolResultsEvent = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_multi_1',
+        content: 'First result',
+      },
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_multi_2',
+        content: 'Second result',
+      },
+    ],
+  },
+};
+
+// ============================================================================
 // Complete Interaction Sequences
 // ============================================================================
 
@@ -434,3 +546,54 @@ export function createBashToolEvents(
     result: createToolResultEvent(toolId, output, isError),
   };
 }
+
+// ============================================================================
+// CLI Format Complete Sequences
+// ============================================================================
+
+/**
+ * CLI format: Write file sequence using user messages for tool results
+ */
+export const cliWriteFileSequence = [
+  assistantMessageStartEvent,
+  createTextDeltaEvent("I'll create a file for you."),
+  writeToolCallEvent,
+  cliWriteToolResultEvent, // CLI format result (type: 'user')
+  createTextDeltaEvent('File created successfully.'),
+  createUsageEvent(150, 100),
+  createResultEvent(),
+];
+
+/**
+ * CLI format: Read file sequence
+ */
+export const cliReadFileSequence = [
+  assistantMessageStartEvent,
+  createTextDeltaEvent('Let me read that file.'),
+  readToolCallEvent,
+  cliReadToolResultEvent, // CLI format result
+  createTextDeltaEvent('Here is the content.'),
+  createUsageEvent(100, 50),
+  createResultEvent(),
+];
+
+/**
+ * CLI format: Error handling sequence
+ */
+export const cliErrorSequence = [
+  assistantMessageStartEvent,
+  createTextDeltaEvent('Running the command...'),
+  {
+    type: 'content_block_start',
+    content_block: {
+      type: 'tool_use',
+      id: 'toolu_error_cli',
+      name: 'Bash',
+      input: { command: 'nonexistent-command' },
+    },
+  },
+  cliErrorToolResultEvent, // CLI format error result
+  createTextDeltaEvent('The command failed.'),
+  createUsageEvent(80, 40),
+  createResultEvent(),
+];

@@ -52,6 +52,10 @@ import {
   thinkingEndEvent,
   readToolCallEvent,
   readToolResultEvent,
+  cliWriteToolResultEvent,
+  cliReadToolResultEvent,
+  cliErrorToolResultEvent,
+  createCliToolResultEvent,
 } from '../setup/cli-event-fixtures';
 
 /**
@@ -627,6 +631,266 @@ describe('Chat Flow Integration Tests', () => {
       const usage = await tokenUsageService.getBySessionId(mockSession.sessionId);
       expect(usage.length).toBeGreaterThanOrEqual(1);
       expect(usage[0].tenantId).toBe(testTenantId);
+    });
+  });
+
+  describe('CLI Tool Result Format (type: user)', () => {
+    it('should track file when CLI emits user message with tool_result', async () => {
+      // This tests the CLI format where tool results come as:
+      // { type: 'user', message: { content: [{ type: 'tool_result', ... }] } }
+
+      const toolUseId = 'toolu_cli_track_file';
+      const fileName = 'cli-tracked-file.txt';
+
+      // 1. Emit tool_use start (content_block_start format)
+      emitCLIEvent({
+        type: 'content_block_start',
+        content_block: {
+          type: 'tool_use',
+          id: toolUseId,
+          name: 'Write',
+          input: { file_path: fileName, content: 'CLI format test content' },
+        },
+      });
+
+      // 2. Create actual file (simulating what CLI does)
+      const filePath = path.join(mockSession.workspaceDir, fileName);
+      fs.writeFileSync(filePath, 'CLI format test content');
+
+      // 3. Emit CLI format tool result (type: 'user')
+      emitCLIEvent(createCliToolResultEvent(toolUseId, 'File written successfully'));
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 4. Verify file was tracked via WriteFileTracker hook
+      const files = await filesService.findBySessionId(mockSession.sessionId);
+      expect(files.some(f => f.filename === fileName)).toBe(true);
+    });
+
+    it('should emit tool_activity end event for CLI format', () => {
+      // Register the tool call first
+      emitCLIEvent(writeToolCallEvent);
+
+      // Emit CLI format tool result
+      const events = emitCLIEvent(cliWriteToolResultEvent);
+
+      const endEvent = events.find(
+        e => e.type === 'tool_activity' && (e as any).payload?.phase === 'end'
+      );
+      expect(endEvent).toBeDefined();
+      expect((endEvent as any).payload.success).toBe(true);
+      expect((endEvent as any).payload.toolName).toBe('Write');
+      expect((endEvent as any).payload.toolOutput).toBe('File written successfully');
+    });
+
+    it('should handle CLI tool errors with is_error flag', () => {
+      // Register the tool call
+      emitCLIEvent({
+        type: 'content_block_start',
+        content_block: {
+          type: 'tool_use',
+          id: 'toolu_error_cli',
+          name: 'Bash',
+          input: { command: 'nonexistent-command' },
+        },
+      });
+
+      // Emit CLI format error result
+      const events = emitCLIEvent(cliErrorToolResultEvent);
+
+      const endEvent = events.find(
+        e => e.type === 'tool_activity' && (e as any).payload?.phase === 'end'
+      );
+      expect(endEvent).toBeDefined();
+      expect((endEvent as any).payload.success).toBe(false);
+      expect((endEvent as any).payload.toolError).toBeDefined();
+    });
+
+    it('should track tool events in database for CLI format', async () => {
+      // Emit tool start
+      emitCLIEvent(readToolCallEvent);
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      // Emit CLI format tool result
+      emitCLIEvent(cliReadToolResultEvent);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify tool events were recorded
+      const toolEvents = await toolEventsService.findBySessionId(mockSession.sessionId);
+
+      const startEvent = toolEvents.find(e => e.phase === 'start' && e.toolName === 'Read');
+      const endEvent = toolEvents.find(e => e.phase === 'end' && e.toolName === 'Read');
+
+      expect(startEvent).toBeDefined();
+      expect(endEvent).toBeDefined();
+      expect(endEvent!.success).toBe(true);
+    });
+
+    it('should produce same results as tool_result format', () => {
+      // Test that CLI format produces equivalent frontend events as the older tool_result format
+
+      // CLI format
+      emitCLIEvent(writeToolCallEvent);
+      const cliEvents = emitCLIEvent(cliWriteToolResultEvent);
+      const cliEndEvent = cliEvents.find(
+        e => e.type === 'tool_activity' && (e as any).payload?.phase === 'end'
+      );
+
+      // Old tool_result format (for comparison)
+      emitCLIEvent({
+        type: 'content_block_start',
+        content_block: {
+          type: 'tool_use',
+          id: 'toolu_write_456',
+          name: 'Write',
+          input: { file_path: 'other.txt', content: 'test' },
+        },
+      });
+      const toolResultEvents = emitCLIEvent({
+        type: 'tool_result',
+        tool_result: {
+          tool_use_id: 'toolu_write_456',
+          content: 'File written successfully',
+          is_error: false,
+        },
+      });
+      const toolResultEndEvent = toolResultEvents.find(
+        e => e.type === 'tool_activity' && (e as any).payload?.phase === 'end'
+      );
+
+      // Both should produce valid end events
+      expect(cliEndEvent).toBeDefined();
+      expect(toolResultEndEvent).toBeDefined();
+
+      // Both should have same structure
+      expect((cliEndEvent as any).payload.phase).toBe((toolResultEndEvent as any).payload.phase);
+      expect((cliEndEvent as any).payload.success).toBe((toolResultEndEvent as any).payload.success);
+    });
+
+    it('should handle complete CLI format conversation flow', async () => {
+      // Full flow using CLI format for tool results
+
+      // Text response
+      emitCLIEvent({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'Creating file...' } });
+
+      // Tool start
+      emitCLIEvent({
+        type: 'content_block_start',
+        content_block: {
+          type: 'tool_use',
+          id: 'toolu_cli_flow',
+          name: 'Write',
+          input: { file_path: 'cli-flow.txt', content: 'CLI format flow test' },
+        },
+      });
+
+      // Create file
+      const filePath = path.join(mockSession.workspaceDir, 'cli-flow.txt');
+      fs.writeFileSync(filePath, 'CLI format flow test');
+
+      // CLI format tool result
+      emitCLIEvent(createCliToolResultEvent('toolu_cli_flow', 'File written: cli-flow.txt'));
+
+      // Token usage
+      emitCLIEvent({
+        type: 'message_delta',
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+        },
+        message: { model: 'claude-sonnet-4-20250514' },
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+
+      // Verify file tracking
+      const files = await filesService.findBySessionId(mockSession.sessionId);
+      expect(files.some(f => f.filename === 'cli-flow.txt')).toBe(true);
+
+      // Verify tool events
+      const toolEvents = await toolEventsService.findBySessionId(mockSession.sessionId);
+      const writeEvents = toolEvents.filter(e => e.toolName === 'Write');
+      expect(writeEvents.length).toBeGreaterThanOrEqual(2); // start + end
+
+      // Verify token usage
+      const usage = await tokenUsageService.getBySessionId(mockSession.sessionId);
+      expect(usage.length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('Agent Status Events', () => {
+    it('should emit agent_status: complete when result event is received', () => {
+      // This tests the fix for the "Waiting for response" bug
+      // When CLI emits a 'result' event, frontend should receive 'agent_status: complete'
+      // so that isProcessing is set to false and user can send new messages
+
+      const resultEvent = {
+        type: 'result',
+        subtype: 'success',
+        cost_usd: 0.0025,
+        is_error: false,
+        duration_ms: 1500,
+        result: 'Task completed successfully',
+        session_id: mockSession.sessionId,
+      };
+
+      const frontendEvents = emitCLIEvent(resultEvent);
+
+      // Should emit both chat_response (for the result text) and agent_status: complete
+      const chatResponseEvent = frontendEvents.find(e => e.type === 'chat_response');
+      const agentStatusEvent = frontendEvents.find(e => e.type === 'agent_status');
+
+      expect(chatResponseEvent).toBeDefined();
+      expect(chatResponseEvent!.text).toBe('Task completed successfully');
+
+      expect(agentStatusEvent).toBeDefined();
+      expect((agentStatusEvent as any).status).toBe('complete');
+    });
+
+    it('should emit agent_status: complete even for result without text', () => {
+      // Some result events have empty result text - we should still emit complete status
+
+      const resultEvent = {
+        type: 'result',
+        subtype: 'success',
+        is_error: false,
+        result: '', // Empty result
+        session_id: mockSession.sessionId,
+      };
+
+      const frontendEvents = emitCLIEvent(resultEvent);
+
+      // Should emit agent_status: complete even without chat_response
+      const agentStatusEvent = frontendEvents.find(e => e.type === 'agent_status');
+
+      expect(agentStatusEvent).toBeDefined();
+      expect((agentStatusEvent as any).status).toBe('complete');
+
+      // chat_response should NOT be emitted for empty result
+      const chatResponseEvent = frontendEvents.find(e => e.type === 'chat_response');
+      expect(chatResponseEvent).toBeUndefined();
+    });
+
+    it('should emit agent_status: complete for error results', () => {
+      // Error results should also complete the agent status
+
+      const errorResultEvent = {
+        type: 'result',
+        subtype: 'error',
+        is_error: true,
+        error: 'API rate limit exceeded',
+        session_id: mockSession.sessionId,
+      };
+
+      const frontendEvents = emitCLIEvent(errorResultEvent);
+
+      // Should emit agent_status: complete even on error
+      const agentStatusEvent = frontendEvents.find(e => e.type === 'agent_status');
+
+      expect(agentStatusEvent).toBeDefined();
+      expect((agentStatusEvent as any).status).toBe('complete');
     });
   });
 });
