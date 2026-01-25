@@ -43,9 +43,9 @@ export function MessageBubble({ message, onDownload }: MessageBubbleProps) {
           )}
         </div>
 
-        {message.file && (
-          <FileCard file={message.file} onDownload={onDownload} />
-        )}
+        {message.files?.map((file, index) => (
+          <FileCard key={file.id || index} file={file} onDownload={onDownload} />
+        ))}
       </div>
     </div>
   )

@@ -63,7 +63,7 @@ const PRESET_SKILLS: Skill[] = [
 interface SimulatedResponse {
   text: string
   skill: string | null
-  file: FileInfo | null
+  files: FileInfo[] | null
   thinkingSteps: string[]
 }
 
@@ -81,11 +81,11 @@ function generateResponse(
     return {
       text: "👋 Hello there! I'm your friendly CCAAS assistant!\n\nI've created a special Hello World file just for you! This demonstrates how skills can generate files that you can download.\n\nThe file contains:\n- A friendly greeting\n- Current timestamp\n- A simple code example\n\nClick the download button below to get your personalized Hello World file!",
       skill: 'hello-world',
-      file: {
+      files: [{
         name: 'hello-world.txt',
-        size: '256 B',
+        size: 256,
         type: 'text/plain',
-      },
+      }],
       thinkingSteps: [
         'Recognizing greeting pattern...',
         'Activating Hello World skill...',
@@ -100,11 +100,11 @@ function generateResponse(
     return {
       text: "I'll use the Report Generator skill to create your report. Let me analyze the data and format it for you...\n\nI've created a comprehensive sales report with the following sections:\n- Executive Summary\n- Monthly Performance Metrics\n- Product Category Breakdown\n- Regional Analysis\n- Recommendations\n\nThe report includes charts and visualizations for better understanding.",
       skill: 'report',
-      file: {
+      files: [{
         name: 'sales-report-2025-01.md',
-        size: '23.5 KB',
+        size: 24064,
         type: 'text/markdown',
-      },
+      }],
       thinkingSteps: [
         'Analyzing the request for report generation...',
         'Gathering relevant data points...',
@@ -119,11 +119,11 @@ function generateResponse(
     return {
       text: "I'll use the Document Writer skill to help you create this document. Here's what I've prepared:\n\nI've drafted a professional document with proper formatting, headers, and structure. The document follows best practices for readability and includes:\n- Clear section headers\n- Bullet points for key information\n- Professional formatting",
       skill: 'document',
-      file: {
+      files: [{
         name: 'document-draft.docx',
-        size: '15.2 KB',
-        type: 'application/docx',
-      },
+        size: 15565,
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      }],
       thinkingSteps: [
         'Understanding document requirements...',
         'Choosing appropriate structure...',
@@ -137,11 +137,11 @@ function generateResponse(
     return {
       text: "I'll use the Data Analyzer skill to examine your data. Based on my analysis:\n\n**Key Findings:**\n- Pattern A: Increasing trend in Q4\n- Pattern B: Strong correlation between X and Y\n- Anomaly detected in dataset row 47\n\n**Recommendations:**\n1. Focus resources on high-performing segments\n2. Investigate the anomaly for potential issues\n3. Consider seasonal adjustments",
       skill: 'analysis',
-      file: {
+      files: [{
         name: 'analysis-results.json',
-        size: '8.7 KB',
+        size: 8909,
         type: 'application/json',
-      },
+      }],
       thinkingSteps: [
         'Loading data for analysis...',
         'Running statistical analysis...',
@@ -155,7 +155,7 @@ function generateResponse(
   return {
     text: "I'm here to help! I can assist with various tasks. You can enable skills in the sidebar to unlock additional capabilities:\n\n- **Report Generator**: Create formatted reports\n- **Document Writer**: Write professional documents\n- **Data Analyzer**: Analyze data and find insights\n\nTry saying something like \"generate a report\" or \"analyze this data\" after enabling the relevant skill.",
     skill: null,
-    file: null,
+    files: null,
     thinkingSteps: [],
   }
 }
@@ -171,7 +171,6 @@ export function useSimulatedSession() {
   })
 
   const streamingRef = useRef<boolean>(false)
-  const enabledSkillsBeforeRestart = useRef<string[]>([])
 
   // Track which skills were enabled when session was last "restarted"
   const restartedWithSkills = useRef<string[]>([])
@@ -243,7 +242,7 @@ export function useSimulatedSession() {
       role: 'assistant',
       content: '',
       skill: response.skill || undefined,
-      file: response.file || undefined,
+      files: response.files || undefined,
       status: 'streaming',
       timestamp: new Date(),
     }

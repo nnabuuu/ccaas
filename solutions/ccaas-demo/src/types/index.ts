@@ -11,10 +11,36 @@ export interface SkillHeader {
 export interface Skill {
   id: string
   name: string
+  slug?: string
   icon: string
   description: string
   enabled: boolean
   header?: SkillHeader
+  content?: string                   // Full markdown content
+  type?: 'skill' | 'sub-agent'
+}
+
+export interface TriggerInput {
+  type: 'keyword' | 'intent' | 'pattern'
+  value: string
+  description?: string
+}
+
+export interface SkillFormData {
+  name: string
+  slug: string
+  description: string
+  content: string                    // Markdown content
+  type: 'skill' | 'sub-agent'
+  triggers: TriggerInput[]
+  config: { icon?: string }
+}
+
+export interface FileInfo {
+  id?: string                    // Backend file ID (for download)
+  name: string
+  size: number | string          // Bytes (number) or "Calculating..." (string)
+  type: string                   // MIME type or "unknown"
 }
 
 export interface Message {
@@ -22,15 +48,9 @@ export interface Message {
   role: 'user' | 'assistant'
   content: string
   skill?: string
-  file?: FileInfo
+  files?: FileInfo[]             // Changed from file?: FileInfo
   status?: 'sending' | 'streaming' | 'complete'
   timestamp: Date
-}
-
-export interface FileInfo {
-  name: string
-  size: string
-  type: string
 }
 
 export interface SessionState {

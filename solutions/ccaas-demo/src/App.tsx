@@ -5,11 +5,16 @@
  * - Real skills from backend API
  * - Real Claude Code CLI interactions
  * - File creation and download
+ * - Skill management (CRUD)
  */
 
+import { useState, useCallback } from 'react'
 import { SkillsSidebar } from './components/SkillsSidebar'
 import { ChatPanel } from './components/ChatPanel'
+import { SkillEditor } from './components/SkillEditor'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { useRealSession } from './hooks/useRealSession'
+import type { Skill, SkillFormData } from './types'
 
 export default function App() {
   const {
@@ -23,7 +28,73 @@ export default function App() {
     sendMessage,
     downloadFile,
     refreshSkills,
+    createSkill,
+    updateSkill,
+    deleteSkill,
+    getSkillDetails,
   } = useRealSession()
+
+  // Sidebar state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Editor state
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
+  const [editingSkillContent, setEditingSkillContent] = useState<string>('')
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [skillToDelete, setSkillToDelete] = useState<Skill | null>(null)
+
+  // Handle add skill
+  const handleAddSkill = useCallback(() => {
+    setEditingSkill(null)
+    setEditingSkillContent('')
+    setEditorOpen(true)
+  }, [])
+
+  // Handle edit skill
+  const handleEditSkill = useCallback(async (skill: Skill) => {
+    try {
+      // Fetch full skill details including content
+      const fullSkill = await getSkillDetails(skill.id)
+      setEditingSkill(fullSkill)
+      setEditingSkillContent(fullSkill.content || '')
+      setEditorOpen(true)
+    } catch (err) {
+      console.error('Failed to fetch skill details:', err)
+      // Fallback: use the skill data we already have
+      setEditingSkill(skill)
+      setEditingSkillContent(skill.content || '')
+      setEditorOpen(true)
+    }
+  }, [getSkillDetails])
+
+  // Handle save skill
+  const handleSaveSkill = useCallback(async (data: SkillFormData) => {
+    if (editingSkill) {
+      await updateSkill(editingSkill.id, data)
+    } else {
+      await createSkill(data)
+    }
+  }, [editingSkill, createSkill, updateSkill])
+
+  // Handle delete skill
+  const handleDeleteClick = useCallback((skill: Skill) => {
+    setSkillToDelete(skill)
+    setDeleteDialogOpen(true)
+  }, [])
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (skillToDelete) {
+      try {
+        await deleteSkill(skillToDelete.id)
+      } catch (err) {
+        console.error('Failed to delete skill:', err)
+      }
+      setSkillToDelete(null)
+    }
+  }, [skillToDelete, deleteSkill])
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
@@ -96,7 +167,7 @@ export default function App() {
         <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 flex items-center gap-3">
           <span className="text-amber-500">💡</span>
           <span className="text-amber-700">
-            没有找到 Skills。请先在后端创建 Skills，或检查 API Key 配置。
+            没有找到 Skills。点击侧边栏的 "+" 按钮创建新的 Skill。
           </span>
         </div>
       )}
@@ -107,8 +178,13 @@ export default function App() {
         <SkillsSidebar
           skills={skills}
           needsRestart={session.needsRestart}
+          collapsed={sidebarCollapsed}
           onToggle={toggleSkill}
           onRestart={restartSession}
+          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+          onAddSkill={handleAddSkill}
+          onEditSkill={handleEditSkill}
+          onDeleteSkill={handleDeleteClick}
         />
 
         {/* Chat Panel */}
@@ -120,6 +196,26 @@ export default function App() {
           onDownload={downloadFile}
         />
       </div>
+
+      {/* Skill Editor Modal */}
+      <SkillEditor
+        isOpen={editorOpen}
+        onClose={() => setEditorOpen(false)}
+        onSave={handleSaveSkill}
+        skill={editingSkill}
+        initialContent={editingSkillContent}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Skill"
+        message={`Are you sure you want to delete "${skillToDelete?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="danger"
+      />
     </div>
   )
 }

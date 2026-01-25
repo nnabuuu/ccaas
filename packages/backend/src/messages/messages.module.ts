@@ -24,6 +24,7 @@ import { ThinkingBlocksService } from './thinking-blocks.service';
 import { TokenUsageService } from './token-usage.service';
 import { UserContextService } from './user-context.service';
 import { MessagesController } from './messages.controller';
+import { FilesModule } from '../files/files.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { MessagesController } from './messages.controller';
       TokenUsageEvent,
       UserContextEvent,
     ]),
+    FilesModule,
   ],
   controllers: [MessagesController],
   providers: [

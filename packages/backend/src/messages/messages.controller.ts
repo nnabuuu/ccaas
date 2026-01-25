@@ -14,6 +14,7 @@ import { ApiErrorService } from './api-error.service';
 import { ThinkingBlocksService } from './thinking-blocks.service';
 import { TokenUsageService } from './token-usage.service';
 import { UserContextService } from './user-context.service';
+import { FilesService } from '../files/files.service';
 import { MessageQueryDto, MessageResponseDto, ToolEventResponseDto } from './dto/message.dto';
 import { Message } from './entities/message.entity';
 import { ToolEvent } from './entities/tool-event.entity';
@@ -29,6 +30,7 @@ export class MessagesController {
     private readonly thinkingBlocksService: ThinkingBlocksService,
     private readonly tokenUsageService: TokenUsageService,
     private readonly userContextService: UserContextService,
+    private readonly filesService: FilesService,
   ) {}
 
   /**
@@ -50,6 +52,38 @@ export class MessagesController {
 
     return {
       messages: messages.map((m) => this.toResponseDto(m)),
+    };
+  }
+
+  /**
+   * Get all files for a session
+   * GET /api/v1/sessions/:sessionId/files
+   */
+  @Get('sessions/:sessionId/files')
+  async getSessionFiles(
+    @Param('sessionId') sessionId: string,
+  ): Promise<{
+    files: Array<{
+      id: string;
+      filename: string;
+      mimeType: string | null;
+      size: number;
+      messageId: string;
+      createdAt: Date;
+      downloadUrl: string;
+    }>;
+  }> {
+    const files = await this.filesService.findBySessionId(sessionId);
+    return {
+      files: files.map((file) => ({
+        id: file.id,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        size: file.size,
+        messageId: file.messageId,
+        createdAt: file.createdAt,
+        downloadUrl: `/api/v1/files/${file.id}/download`,
+      })),
     };
   }
 

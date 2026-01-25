@@ -179,9 +179,54 @@ for i in {1..60}; do
     fi
 done
 
-# Step 4: 创建示例 Skills
+# Step 4: 配置 Demo 租户
 echo ""
-echo -e "${YELLOW}📝 Step 4: 创建示例 Skills...${NC}"
+echo -e "${YELLOW}🔑 Step 4: 配置 Demo 租户...${NC}"
+
+BACKEND_URL="http://localhost:$BACKEND_PORT"
+API_KEY=""
+TENANT_ID="ccaas-demo"
+
+# Create demo tenant (API key is auto-generated with tenant)
+echo "   创建租户..."
+TENANT_RESPONSE=$(curl -s -X POST "$BACKEND_URL/api/v1/tenants" \
+    -H "Content-Type: application/json" \
+    -d '{"name":"CCAAS Demo","slug":"ccaas-demo","description":"Demo tenant for showcase"}' 2>/dev/null)
+
+if echo "$TENANT_RESPONSE" | grep -q '"id"'; then
+    # Extract API key from tenant creation response
+    API_KEY=$(echo "$TENANT_RESPONSE" | grep -o '"apiKey":"[^"]*"' | head -1 | cut -d'"' -f4)
+    echo -e "   ${GREEN}✓ 租户已创建: $TENANT_ID${NC}"
+elif echo "$TENANT_RESPONSE" | grep -q "already exists"; then
+    echo -e "   ${GREEN}✓ 租户已存在: $TENANT_ID${NC}"
+    # Fetch existing tenant to get API key
+    EXISTING_TENANT=$(curl -s "$BACKEND_URL/api/v1/tenants/$TENANT_ID" 2>/dev/null)
+    API_KEY=$(echo "$EXISTING_TENANT" | grep -o '"apiKey":"[^"]*"' | head -1 | cut -d'"' -f4)
+else
+    echo -e "   ${YELLOW}⚠ 租户创建响应: $TENANT_RESPONSE${NC}"
+fi
+
+if [ -n "$API_KEY" ]; then
+    echo -e "   ${GREEN}✓ API Key 已获取: ${API_KEY:0:20}...${NC}"
+
+    # Write .env file for demo frontend
+    cat > "$SCRIPT_DIR/.env" << EOF
+VITE_BACKEND_URL=$BACKEND_URL
+VITE_TENANT_ID=$TENANT_ID
+VITE_API_KEY=$API_KEY
+EOF
+    echo -e "   ${GREEN}✓ 已写入 .env 文件${NC}"
+else
+    echo -e "   ${YELLOW}⚠ 无法创建 API Key，使用默认配置${NC}"
+    cat > "$SCRIPT_DIR/.env" << EOF
+VITE_BACKEND_URL=$BACKEND_URL
+VITE_TENANT_ID=default
+EOF
+fi
+
+# Step 5: 创建示例 Skills
+echo ""
+echo -e "${YELLOW}📝 Step 5: 创建示例 Skills...${NC}"
 
 SKILLS_DIR="$SCRIPT_DIR/skills"
 
@@ -202,18 +247,30 @@ else
             display_name=$(echo "$json_data" | grep -o '"name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | cut -d'"' -f4)
             [ -z "$display_name" ] && display_name="$skill_name"
 
-            # 创建 skill
-            response=$(curl -s -X POST "http://localhost:$BACKEND_PORT/api/v1/skills" \
-                -H "Content-Type: application/json" \
-                -d "$json_data" 2>/dev/null)
+            # 创建 skill (with API key if available)
+            if [ -n "$API_KEY" ]; then
+                response=$(curl -s -X POST "$BACKEND_URL/api/v1/skills" \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer $API_KEY" \
+                    -d "$json_data" 2>/dev/null)
+            else
+                response=$(curl -s -X POST "$BACKEND_URL/api/v1/skills" \
+                    -H "Content-Type: application/json" \
+                    -d "$json_data" 2>/dev/null)
+            fi
 
             # 检查是否成功创建
             if echo "$response" | grep -q '"id"'; then
                 skill_id=$(echo "$response" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
 
                 if [ -n "$skill_id" ]; then
-                    # 发布 skill
-                    curl -s -X POST "http://localhost:$BACKEND_PORT/api/v1/skills/$skill_id/publish" > /dev/null 2>&1
+                    # 发布 skill (with API key if available)
+                    if [ -n "$API_KEY" ]; then
+                        curl -s -X POST "$BACKEND_URL/api/v1/skills/$skill_id/publish" \
+                            -H "Authorization: Bearer $API_KEY" > /dev/null 2>&1
+                    else
+                        curl -s -X POST "$BACKEND_URL/api/v1/skills/$skill_id/publish" > /dev/null 2>&1
+                    fi
                     echo -e "   ${GREEN}✓ 已创建并发布: $display_name${NC}"
                 fi
             elif echo "$response" | grep -q "already exists"; then
@@ -225,9 +282,9 @@ else
     done
 fi
 
-# Step 5: 启动 Demo
+# Step 6: 启动 Demo
 echo ""
-echo -e "${YELLOW}🎨 Step 5: 启动 Demo...${NC}"
+echo -e "${YELLOW}🎨 Step 6: 启动 Demo...${NC}"
 cd "$SCRIPT_DIR"
 
 # 确保端口没有被占用
@@ -264,9 +321,15 @@ echo "   - Demo:    http://localhost:$DEMO_PORT"
 echo "   - Backend: http://localhost:$BACKEND_PORT"
 echo ""
 echo -e "${YELLOW}📋 已创建的 Skills：${NC}"
-curl -s "http://localhost:$BACKEND_PORT/api/v1/skills" 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | while read name; do
-    echo "   - $name"
-done
+if [ -n "$API_KEY" ]; then
+    curl -s "$BACKEND_URL/api/v1/skills" -H "Authorization: Bearer $API_KEY" 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | while read name; do
+        echo "   - $name"
+    done
+else
+    curl -s "$BACKEND_URL/api/v1/skills" 2>/dev/null | grep -o '"name":"[^"]*"' | cut -d'"' -f4 | while read name; do
+        echo "   - $name"
+    done
+fi
 echo ""
 echo -e "${YELLOW}💡 提示：${NC}"
 echo "   - 按 Ctrl+C 停止所有服务"

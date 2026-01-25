@@ -10,11 +10,12 @@ import { ChatController } from './chat.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { SkillsModule } from '../skills/skills.module';
+import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
 
 @Module({
-  imports: [SkillsModule, MessagesModule, FilesModule],
+  imports: [SkillsModule, TenantsModule, MessagesModule, FilesModule],
   controllers: [ChatController],
   providers: [ChatGateway, SessionService, EventMapperService],
   exports: [SessionService, EventMapperService],

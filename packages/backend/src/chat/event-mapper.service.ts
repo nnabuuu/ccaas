@@ -262,9 +262,98 @@ export class EventMapperService {
         break;
       }
 
-      case 'user':
-        // User message echo
+      case 'user': {
+        // Handle CLI tool_result format: user messages contain tool_result content blocks
+        const userMsg = (cliEvent as any).message;
+        if (userMsg?.content && Array.isArray(userMsg.content)) {
+          for (const block of userMsg.content) {
+            if (block.type === 'tool_result') {
+              // Extract tool result info
+              const toolUseId = block.tool_use_id;
+              const toolCall = this.findToolCall(toolUseId);
+              const duration = toolCall ? Date.now() - toolCall.startTime : 0;
+              const toolName = toolCall?.toolName || 'unknown';
+              const isError = block.is_error || false;
+              const agentType = this.extractAgentType(sessionId, toolName);
+
+              // Emit tool_activity end event
+              events.push({
+                type: 'tool_activity',
+                sessionId,
+                clientId,
+                payload: {
+                  toolName,
+                  toolId: toolUseId,
+                  phase: 'end',
+                  description: `Completed: ${this.getToolDescription(toolName, toolCall?.input)}`,
+                  success: !isError,
+                  duration,
+                  toolInput: toolCall?.input,
+                  toolOutput: block.content,
+                  toolError: isError ? String(block.content) : undefined,
+                  agentType,
+                  nestingLevel: agentType === 'main' ? 0 : 1,
+                  timestamp,
+                },
+              });
+
+              // Emit exploration_activity if applicable
+              if (toolCall && this.isExplorationTool(toolName) && agentType !== 'main') {
+                const resultCount = this.getExplorationResultCount(block.content);
+                events.push({
+                  type: 'exploration_activity',
+                  sessionId,
+                  timestamp,
+                  payload: {
+                    action: this.getExplorationAction(toolName),
+                    target: this.getExplorationTarget(toolName, toolCall.input),
+                    agentType,
+                    phase: 'complete',
+                    resultCount,
+                    resultSummary: this.getExplorationResultSummary(toolName, block.content, resultCount),
+                    durationMs: duration,
+                  },
+                });
+              }
+
+              // Handle special tools (write_output, todo_write, etc.)
+              if (toolCall) {
+                const specialEvents = this.handleSpecialToolResult(
+                  toolName,
+                  block.content,
+                  sessionId,
+                  clientId,
+                  timestamp,
+                );
+                events.push(...specialEvents);
+
+                // Execute registered tool hooks (async, non-blocking)
+                // This is critical for WriteFileTracker to track written files
+                const hookResult: ToolResult = {
+                  toolName,
+                  input: toolCall.input,
+                  output: block.content,
+                  isError,
+                  durationMs: duration,
+                };
+                const hookContext: ToolHookContext = {
+                  sessionId,
+                  clientId,
+                  toolUseId,
+                  timestamp,
+                };
+                // Fire and forget - hooks should not block event processing
+                this.executeToolHooks(toolName, hookResult, hookContext).catch((err) => {
+                  this.logger.error(`Tool hook execution failed: ${err}`);
+                });
+
+                this.activeToolCalls.delete(toolUseId);
+              }
+            }
+          }
+        }
         break;
+      }
 
       case 'result': {
         const result = cliEvent as any;
@@ -277,6 +366,16 @@ export class EventMapperService {
             timestamp,
           });
         }
+
+        // Emit agent_status complete when result is received
+        // This signals the frontend that the response is complete
+        // (CLI stays alive with --input-format stream-json, so we can't rely on process exit)
+        events.push({
+          type: 'agent_status',
+          status: 'complete',
+          sessionId,
+          timestamp,
+        });
         break;
       }
 
