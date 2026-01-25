@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #F4F6F6; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header { background: #1C2833; padding: 20pt 40pt; }
+.header-title { color: #ffffff; font-size: 28pt; font-weight: bold; margin: 0; }
+.content { padding: 25pt 40pt; flex: 1; }
+.subtitle { color: #2E4053; font-size: 14pt; margin-bottom: 20pt; }
+.flow-container { display: flex; align-items: center; justify-content: center; gap: 10pt; margin-bottom: 25pt; }
+.flow-box { background: #ffffff; border: 2pt solid #5DADE2; border-radius: 6pt; padding: 12pt 16pt; text-align: center; min-width: 90pt; }
+.flow-text { color: #1C2833; font-size: 11pt; font-weight: bold; margin: 0; }
+.flow-desc { color: #5D6D7E; font-size: 9pt; margin: 5pt 0 0 0; }
+.arrow { color: #5DADE2; font-size: 20pt; }
+.code-box { background: #1C2833; border-radius: 6pt; padding: 15pt; }
+.code-text { color: #5DADE2; font-size: 10pt; font-family: Courier New, monospace; margin: 0; white-space: pre; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">useAIEditing Workflow</h1>
+</div>
+<div class="content">
+  <p class="subtitle">State machine for AI-powered content generation with section tracking</p>
+  <div class="flow-container">
+    <div class="flow-box">
+      <p class="flow-text">startAIEditing()</p>
+      <p class="flow-desc">Init sections</p>
+    </div>
+    <p class="arrow">-></p>
+    <div class="flow-box">
+      <p class="flow-text">updateFromAI()</p>
+      <p class="flow-desc">Update content</p>
+    </div>
+    <p class="arrow">-></p>
+    <div class="flow-box">
+      <p class="flow-text">completeSection()</p>
+      <p class="flow-desc">Mark done</p>
+    </div>
+    <p class="arrow">-></p>
+    <div class="flow-box">
+      <p class="flow-text">finishAIEditing()</p>
+      <p class="flow-desc">End mode</p>
+    </div>
+  </div>
+  <div class="code-box">
+    <p class="code-text">const { progress, aiCurrentSection, startAIEditing } = useAIEditing({
+  allSections: ['intro', 'body', 'conclusion'],
+  onSectionUpdate: (id, content) => form[id] = content,
+  onComplete: () => toast.success('Done!')
+})</p>
+  </div>
+</div>
+</body>
+</html>

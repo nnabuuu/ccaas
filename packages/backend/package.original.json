@@ -1,0 +1,51 @@
+{
+  "name": "claude-code-as-a-service",
+  "version": "2.0.0",
+  "description": "Claude Code as a Service - A business platform for AI skills, legacy integration, and multi-tenant support",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "dev:platform": "tsx watch src/platform-server.ts",
+    "start": "node dist/server.js",
+    "start:platform": "node dist/platform-server.js",
+    "typecheck": "tsc --noEmit",
+    "db:init": "psql -f database/schema.sql",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:manual": "tsx scripts/test-enhanced-events.ts",
+    "test:skill-provisioning": "tsx scripts/test-skill-provisioning.ts"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "agent",
+    "socket.io",
+    "relay",
+    "skills",
+    "mcp",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "express": "^4.21.0",
+    "node-pty": "^1.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.0.0",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

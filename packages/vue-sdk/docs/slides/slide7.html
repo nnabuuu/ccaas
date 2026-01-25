@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #F4F6F6; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header { background: #1C2833; padding: 20pt 40pt; }
+.header-title { color: #ffffff; font-size: 28pt; font-weight: bold; margin: 0; }
+.content { padding: 15pt 40pt; flex: 1; display: flex; gap: 20pt; }
+.col { flex: 1; }
+.metric-card { background: #ffffff; border-radius: 6pt; padding: 12pt; margin-bottom: 10pt; text-align: center; box-shadow: 0 2pt 4pt rgba(0,0,0,0.1); }
+.metric-value { color: #5DADE2; font-size: 28pt; font-weight: bold; margin: 0; }
+.metric-label { color: #5D6D7E; font-size: 10pt; margin: 5pt 0 0 0; }
+.test-list { background: #ffffff; border-radius: 6pt; padding: 12pt; }
+.test-item { display: flex; justify-content: space-between; padding: 6pt 0; border-bottom: 1pt solid #E5E8E8; }
+.test-item:last-child { border-bottom: none; }
+.test-name { color: #2E4053; font-size: 10pt; margin: 0; }
+.test-count { color: #27AE60; font-size: 10pt; font-weight: bold; margin: 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">Test Coverage</h1>
+</div>
+<div class="content">
+  <div class="col">
+    <div class="metric-card">
+      <p class="metric-value">64</p>
+      <p class="metric-label">Total Tests</p>
+    </div>
+    <div class="metric-card">
+      <p class="metric-value">100%</p>
+      <p class="metric-label">Pass Rate</p>
+    </div>
+    <div class="metric-card">
+      <p class="metric-value">4</p>
+      <p class="metric-label">Test Files</p>
+    </div>
+  </div>
+  <div class="col">
+    <div class="test-list">
+      <div class="test-item">
+        <p class="test-name">useAIEditing.spec.ts</p>
+        <p class="test-count">21 tests</p>
+      </div>
+      <div class="test-item">
+        <p class="test-name">FormStateSynchronizer.spec.ts</p>
+        <p class="test-count">18 tests</p>
+      </div>
+      <div class="test-item">
+        <p class="test-name">exports.spec.ts</p>
+        <p class="test-count">14 tests</p>
+      </div>
+      <div class="test-item">
+        <p class="test-name">useTodoProgress.spec.ts</p>
+        <p class="test-count">11 tests</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

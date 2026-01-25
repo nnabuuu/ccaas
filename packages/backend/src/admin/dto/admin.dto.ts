@@ -1,0 +1,312 @@
+/**
+ * Admin DTOs
+ *
+ * Data transfer objects for admin API endpoints.
+ */
+
+import { IsOptional, IsString, IsNumber, IsBoolean, IsEnum, IsArray, Min, Max, IsDateString } from 'class-validator';
+import type { AdminAction, TargetType, AlertType, AlertThreshold } from '../entities';
+
+// =============================================================================
+// Dashboard DTOs
+// =============================================================================
+
+export interface DashboardSummary {
+  activeSessions: number;
+  totalSessions: number;
+  maxSessions: number;
+  totalMessages24h: number;
+  totalTokens24h: {
+    input: number;
+    output: number;
+    total: number;
+  };
+  errorRate24h: number;
+  activeApiKeys: number;
+  totalSkills: number;
+  publishedSkills: number;
+}
+
+export interface RecentSession {
+  sessionId: string;
+  tenantId: string | null;
+  status: string;
+  messageCount: number;
+  createdAt: Date;
+  lastActivity: Date;
+}
+
+// =============================================================================
+// Session DTOs
+// =============================================================================
+
+export class SessionQueryDto {
+  @IsOptional()
+  @IsString()
+  tenantId?: string;
+
+  @IsOptional()
+  @IsString()
+  status?: 'idle' | 'processing' | 'error' | 'closed';
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offset?: number = 0;
+}
+
+export interface SessionListItem {
+  sessionId: string;
+  tenantId: string | null;
+  clientId: string;
+  status: string;
+  messageCount: number;
+  createdAt: Date;
+  lastActivity: Date;
+  hasActiveProcess: boolean;
+}
+
+export interface SessionDetail extends SessionListItem {
+  workspaceDir: string;
+}
+
+export interface SessionTimelineEvent {
+  id: string;
+  type: 'message' | 'tool_event' | 'thinking_block' | 'process_event' | 'api_error';
+  timestamp: Date;
+  data: unknown;
+}
+
+export interface SessionTimeline {
+  sessionId: string;
+  events: SessionTimelineEvent[];
+  totalEvents: number;
+}
+
+// =============================================================================
+// Analytics DTOs
+// =============================================================================
+
+export class AnalyticsQueryDto {
+  @IsOptional()
+  @IsString()
+  tenantId?: string;
+
+  @IsOptional()
+  @IsEnum(['hourly', 'daily', 'weekly', 'monthly'])
+  granularity?: 'hourly' | 'daily' | 'weekly' | 'monthly' = 'daily';
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(365)
+  days?: number = 7;
+}
+
+export interface TokenUsageDataPoint {
+  timestamp: Date;
+  inputTokens: number;
+  outputTokens: number;
+  totalTokens: number;
+  cachedTokens: number;
+  reasoningTokens: number;
+}
+
+export interface TokenUsageAnalytics {
+  dataPoints: TokenUsageDataPoint[];
+  summary: {
+    totalInput: number;
+    totalOutput: number;
+    totalTokens: number;
+    totalCached: number;
+    totalReasoning: number;
+    avgPerSession: number;
+  };
+}
+
+export interface CostBreakdown {
+  tenantId: string;
+  tenantName: string;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  estimatedCost: number;
+  percentage: number;
+}
+
+export interface CostAnalytics {
+  byTenant: CostBreakdown[];
+  byModel: Array<{
+    model: string;
+    inputTokens: number;
+    outputTokens: number;
+    estimatedCost: number;
+  }>;
+  bySkill: Array<{
+    skillId: string;
+    skillName: string;
+    inputTokens: number;
+    outputTokens: number;
+    estimatedCost: number;
+  }>;
+  totalEstimatedCost: number;
+}
+
+export interface ApiKeyUsageStats {
+  apiKeyId: string;
+  keyPrefix: string;
+  name: string;
+  tenantId: string;
+  requestCount: number;
+  lastUsedAt: Date | null;
+  rateLimitHits: number;
+  errorCount: number;
+}
+
+// =============================================================================
+// Audit DTOs
+// =============================================================================
+
+export class AuditLogQueryDto {
+  @IsOptional()
+  @IsString()
+  adminId?: string;
+
+  @IsOptional()
+  @IsString()
+  action?: AdminAction;
+
+  @IsOptional()
+  @IsString()
+  targetType?: TargetType;
+
+  @IsOptional()
+  @IsString()
+  targetId?: string;
+
+  @IsOptional()
+  @IsString()
+  tenantId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  success?: boolean;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 50;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  offset?: number = 0;
+}
+
+// =============================================================================
+// Alert DTOs
+// =============================================================================
+
+export class CreateAlertDto {
+  @IsString()
+  alertType!: AlertType;
+
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  threshold!: AlertThreshold;
+
+  @IsOptional()
+  @IsString()
+  webhookUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  emailAddresses?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean = true;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  cooldownMinutes?: number = 5;
+}
+
+export class UpdateAlertDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  threshold?: AlertThreshold;
+
+  @IsOptional()
+  @IsString()
+  webhookUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  emailAddresses?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  cooldownMinutes?: number;
+}
+
+// =============================================================================
+// Skill Version DTOs
+// =============================================================================
+
+export interface VersionDiff {
+  version1: string;
+  version2: string;
+  contentDiff: string;
+  configDiff: string;
+  toolsDiff: string[];
+}

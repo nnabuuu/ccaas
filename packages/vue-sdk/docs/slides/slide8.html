@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #F4F6F6; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header { background: #1C2833; padding: 20pt 40pt; }
+.header-title { color: #ffffff; font-size: 28pt; font-weight: bold; margin: 0; }
+.content { padding: 15pt 40pt; flex: 1; }
+.subtitle { color: #2E4053; font-size: 12pt; margin-bottom: 15pt; }
+.build-grid { display: flex; gap: 15pt; margin-bottom: 15pt; }
+.build-card { background: #ffffff; border-radius: 6pt; padding: 12pt; flex: 1; text-align: center; }
+.build-icon { color: #5DADE2; font-size: 20pt; margin-bottom: 6pt; }
+.build-name { color: #1C2833; font-size: 10pt; font-weight: bold; margin: 0; }
+.build-size { color: #5D6D7E; font-size: 9pt; margin: 4pt 0 0 0; }
+.deps-section { background: #ffffff; border-radius: 6pt; padding: 12pt; }
+.deps-title { color: #1C2833; font-size: 12pt; font-weight: bold; margin: 0 0 8pt 0; }
+.deps-grid { display: flex; gap: 25pt; }
+.dep-item { color: #2E4053; font-size: 10pt; margin: 0 0 4pt 0; }
+.dep-version { color: #5DADE2; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">Build Output</h1>
+</div>
+<div class="content">
+  <p class="subtitle">Production-ready package with ESM, CommonJS, and TypeScript declarations</p>
+  <div class="build-grid">
+    <div class="build-card">
+      <p class="build-icon">ES</p>
+      <p class="build-name">index.js</p>
+      <p class="build-size">20.04 KB</p>
+    </div>
+    <div class="build-card">
+      <p class="build-icon">CJS</p>
+      <p class="build-name">index.cjs</p>
+      <p class="build-size">22.57 KB</p>
+    </div>
+    <div class="build-card">
+      <p class="build-icon">TS</p>
+      <p class="build-name">index.d.ts</p>
+      <p class="build-size">32.98 KB</p>
+    </div>
+    <div class="build-card">
+      <p class="build-icon">CTS</p>
+      <p class="build-name">index.d.cts</p>
+      <p class="build-size">32.98 KB</p>
+    </div>
+  </div>
+  <div class="deps-section">
+    <h3 class="deps-title">Dependencies</h3>
+    <div class="deps-grid">
+      <div>
+        <p class="dep-item">Peer: vue <span class="dep-version">^3.3.0</span></p>
+        <p class="dep-item">Peer: socket.io-client <span class="dep-version">^4.0.0</span></p>
+      </div>
+      <div>
+        <p class="dep-item">Dep: @ccaas/shared</p>
+        <p class="dep-item">Dev: tsup, vitest, typescript</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #F4F6F6; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header { background: #1C2833; padding: 20pt 40pt; }
+.header-title { color: #ffffff; font-size: 28pt; font-weight: bold; margin: 0; }
+.content { padding: 15pt 40pt; flex: 1; }
+.subtitle { color: #2E4053; font-size: 12pt; margin-bottom: 10pt; }
+.symbols-grid { display: flex; flex-wrap: wrap; gap: 8pt; }
+.symbol-card { background: #ffffff; border-radius: 4pt; padding: 6pt 10pt; min-width: 130pt; }
+.symbol-name { color: #5DADE2; font-size: 9pt; font-family: Courier New, monospace; margin: 0; }
+.symbol-desc { color: #5D6D7E; font-size: 8pt; margin: 2pt 0 0 0; }
+.section-label { color: #1C2833; font-size: 11pt; font-weight: bold; margin: 10pt 0 6pt 0; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">Type-Safe Injection Symbols</h1>
+</div>
+<div class="content">
+  <p class="subtitle">40+ typed injection keys for Vue provide/inject pattern</p>
+  <h3 class="section-label">Connection</h3>
+  <div class="symbols-grid">
+    <div class="symbol-card">
+      <p class="symbol-name">AgentClientIdKey</p>
+      <p class="symbol-desc">Client ID</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">AgentConnectedKey</p>
+      <p class="symbol-desc">Connection status</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">AgentSessionIdKey</p>
+      <p class="symbol-desc">Session ID</p>
+    </div>
+  </div>
+  <h3 class="section-label">State & Progress</h3>
+  <div class="symbols-grid">
+    <div class="symbol-card">
+      <p class="symbol-name">IsAgentProcessingKey</p>
+      <p class="symbol-desc">Processing flag</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">TodoItemsKey</p>
+      <p class="symbol-desc">Todo list</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">CurrentToolNameKey</p>
+      <p class="symbol-desc">Active tool</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">AiOutputProgressKey</p>
+      <p class="symbol-desc">Generation progress</p>
+    </div>
+  </div>
+  <h3 class="section-label">Plan Mode</h3>
+  <div class="symbols-grid">
+    <div class="symbol-card">
+      <p class="symbol-name">PendingPlanProposalKey</p>
+      <p class="symbol-desc">Proposal data</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">ConfirmPlanProposalKey</p>
+      <p class="symbol-desc">Confirm function</p>
+    </div>
+    <div class="symbol-card">
+      <p class="symbol-name">RejectPlanProposalKey</p>
+      <p class="symbol-desc">Reject function</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

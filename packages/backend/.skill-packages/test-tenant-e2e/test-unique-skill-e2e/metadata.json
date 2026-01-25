@@ -1,0 +1,16 @@
+{
+  "id": "90cbf4fd-2a08-4a00-86fa-dd284d1149bd",
+  "tenantId": "test-tenant-e2e",
+  "name": "Test Unique Skill E2E",
+  "slug": "test-unique-skill-e2e",
+  "description": "E2E test skill for verifying skill provisioning",
+  "type": "skill",
+  "config": {},
+  "allowedTools": [],
+  "triggers": [],
+  "currentVersion": "1.0.0",
+  "status": "published",
+  "createdAt": "2026-01-23T14:18:39.857Z",
+  "updatedAt": "2026-01-23T14:19:06.916Z",
+  "publishedAt": "2026-01-23T14:19:06.916Z"
+}

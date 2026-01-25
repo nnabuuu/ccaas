@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+html { background: #ffffff; }
+body {
+  width: 720pt; height: 405pt; margin: 0; padding: 0;
+  background: #F4F6F6; font-family: Arial, sans-serif;
+  display: flex; flex-direction: column;
+}
+.header { background: #1C2833; padding: 20pt 40pt; }
+.header-title { color: #ffffff; font-size: 28pt; font-weight: bold; margin: 0; }
+.content { padding: 25pt 40pt; flex: 1; display: flex; gap: 30pt; }
+.column { flex: 1; }
+.card { background: #ffffff; border-radius: 8pt; padding: 15pt; margin-bottom: 12pt; box-shadow: 0 2pt 4pt rgba(0,0,0,0.1); }
+.card-title { color: #1C2833; font-size: 13pt; font-weight: bold; margin: 0 0 8pt 0; }
+.card-text { color: #5D6D7E; font-size: 11pt; margin: 0; }
+.badge { display: inline-block; background: #5DADE2; color: #ffffff; font-size: 9pt; padding: 3pt 8pt; border-radius: 3pt; margin-top: 8pt; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1 class="header-title">Core Composables</h1>
+</div>
+<div class="content">
+  <div class="column">
+    <div class="card">
+      <h3 class="card-title">useAgentState</h3>
+      <p class="card-text">Centralized agent state access via Vue inject. Processing status, tool activity, todos.</p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">useFormBridge</h3>
+      <p class="card-text">Form registration with agent. Auto lifecycle management, data sync, submit handling.</p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">useAIEditing</h3>
+      <p class="card-text">AI editing mode for section-based content. Progress tracking, callbacks, state machine.</p>
+    </div>
+  </div>
+  <div class="column">
+    <div class="card">
+      <h3 class="card-title">usePlanMode</h3>
+      <p class="card-text">Plan proposal handling. Confirm/reject workflows, section preview, human-in-the-loop.</p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">useTodoProgress</h3>
+      <p class="card-text">Todo tracking with computed helpers. Stats, progress percentage, filtering.</p>
+    </div>
+    <div class="card">
+      <h3 class="card-title">useToolActivity</h3>
+      <p class="card-text">Tool execution tracking. Current tool, history, duration, decision logic.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
