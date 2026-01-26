@@ -83,6 +83,7 @@ interface UseLessonPlanSessionReturn {
   canUndo: (field: SyncField) => boolean
   updateField: <K extends keyof LessonPlan>(field: K, value: LessonPlan[K]) => void
   loadPlan: (id: string) => Promise<void>
+  syncContext: (lessonPlan: LessonPlan | null) => void
 }
 
 export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}): UseLessonPlanSessionReturn {
@@ -571,6 +572,42 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     })
   }, [])
 
+  // Sync context to backend (for Claude Code to read current form state)
+  const syncContext = useCallback(async (plan: LessonPlan | null) => {
+    if (!plan) return
+
+    try {
+      const response = await fetch(`/api/v1/sessions/${sessionIdRef.current}/context`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonPlanId: plan.id,
+          currentForm: {
+            title: plan.title,
+            subject: plan.subject,
+            gradeLevel: plan.gradeLevel,
+            publisher: plan.publisher,
+            volume: plan.volume,
+            chapterTitle: plan.chapterTitle,
+            duration: plan.duration,
+            objectives: plan.objectives,
+            standards: plan.standards,
+            materials: plan.materials,
+            activities: plan.activities,
+            assessment: plan.assessment,
+            differentiation: plan.differentiation,
+          },
+        }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to sync context:', response.status)
+      }
+    } catch (err) {
+      console.error('Failed to sync context:', err)
+    }
+  }, [])
+
   return {
     // Connection state
     connected,
@@ -600,6 +637,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     canUndo,
     updateField,
     loadPlan,
+    syncContext,
   }
 }
 

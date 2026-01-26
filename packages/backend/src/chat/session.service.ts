@@ -144,6 +144,20 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * Get a session by clientId (returns the most recent active session)
+   * Used by REST API to find session when sessionId is not provided
+   */
+  getSessionByClientId(clientId: string): ManagedSession | undefined {
+    const sessions = this.getClientSessions(clientId);
+    if (sessions.length === 0) return undefined;
+
+    // Return the most recently active session
+    return sessions.reduce((latest, session) =>
+      session.lastActivity > latest.lastActivity ? session : latest,
+    );
+  }
+
+  /**
    * Spawn or reuse CLI process for a session
    */
   async ensureCLIProcess(
@@ -159,7 +173,17 @@ export class SessionService implements OnModuleDestroy {
 
     this.logger.log(`Spawning new CLI process for session ${session.sessionId}`);
 
-    const shellCommand = 'claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions';
+    // Build base command
+    let shellCommand = 'claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions';
+
+    // Add MCP servers if configured (passed from solution backends)
+    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
+      const mcpConfig = JSON.stringify({ mcpServers: session.mcpServers });
+      // Escape single quotes in JSON for shell
+      const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
+      shellCommand += ` --mcp-config '${escapedConfig}'`;
+      this.logger.log(`Session ${session.sessionId} using MCP servers: ${Object.keys(session.mcpServers).join(', ')}`);
+    }
 
     this.logger.log(`Running command: ${shellCommand}`);
     this.logger.log(`Working directory: ${session.workspaceDir}`);
@@ -235,7 +259,16 @@ export class SessionService implements OnModuleDestroy {
 
     this.logger.log('CLI process not running, spawning new with --resume');
 
-    const shellCommand = `claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
+    // Build base command with --resume
+    let shellCommand = `claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
+
+    // Add MCP servers if configured (passed from solution backends)
+    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
+      const mcpConfig = JSON.stringify({ mcpServers: session.mcpServers });
+      // Escape single quotes in JSON for shell
+      const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
+      shellCommand += ` --mcp-config '${escapedConfig}'`;
+    }
 
     this.logger.log(`Running follow-up command: ${shellCommand}`);
 
@@ -579,6 +612,44 @@ export class SessionService implements OnModuleDestroy {
       messageCount: session.messageCount,
       hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
     };
+  }
+
+  /**
+   * Update session context
+   *
+   * Writes frontend form state to a file in the session workspace
+   * so Claude Code can read current form values.
+   */
+  async updateContext(
+    sessionId: string,
+    context: { lessonPlanId?: string; currentForm?: Record<string, unknown> },
+  ): Promise<void> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      // Session doesn't exist yet - create workspace directory and write context
+      // This handles the case where context is synced before first message
+      const workspaceDir = path.join(this.workspaceDir, 'sessions', sessionId);
+      fs.mkdirSync(workspaceDir, { recursive: true });
+
+      const contextDir = path.join(workspaceDir, '.context');
+      fs.mkdirSync(contextDir, { recursive: true });
+
+      const contextPath = path.join(contextDir, 'lesson-plan.json');
+      fs.writeFileSync(contextPath, JSON.stringify(context, null, 2), 'utf-8');
+
+      this.logger.log(`Context written for pre-session ${sessionId}`);
+      return;
+    }
+
+    // Ensure .context directory exists
+    const contextDir = path.join(session.workspaceDir, '.context');
+    fs.mkdirSync(contextDir, { recursive: true });
+
+    // Write JSON file
+    const contextPath = path.join(contextDir, 'lesson-plan.json');
+    fs.writeFileSync(contextPath, JSON.stringify(context, null, 2), 'utf-8');
+
+    this.logger.log(`Context updated for session ${sessionId}`);
   }
 
   /**

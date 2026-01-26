@@ -9,6 +9,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Param,
   Body,
@@ -25,6 +26,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completion.dto';
+import { UpdateContextDto } from './dto/update-context.dto';
 import type { FrontendEvent } from '../common/interfaces';
 
 @Controller('api/v1/sessions')
@@ -265,6 +267,22 @@ export class SessionsController {
     if (!success) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
+    return { success: true };
+  }
+
+  /**
+   * Update session context
+   * PUT /api/v1/sessions/:sessionId/context
+   *
+   * Syncs frontend form state to a file in the session workspace
+   * so Claude Code can read current form values.
+   */
+  @Put(':sessionId/context')
+  async updateContext(
+    @Param('sessionId') sessionId: string,
+    @Body() data: UpdateContextDto,
+  ) {
+    await this.sessionService.updateContext(sessionId, data);
     return { success: true };
   }
 }

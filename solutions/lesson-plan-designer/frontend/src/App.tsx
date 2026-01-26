@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useLessonPlanSession } from './hooks/useLessonPlanSession'
 import { useScrollSpy } from './hooks/useScrollSpy'
 import { useSectionEditor } from './hooks/useSectionEditor'
@@ -55,10 +55,33 @@ function App() {
     undoSync,
     canUndo,
     updateField,
+    syncContext,
   } = useLessonPlanSession({
     tenantId: TENANT_ID,
     enabledSkillSlugs,
   })
+
+  // Debounced context sync - sync form state to backend for Claude Code to read
+  const contextSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  useEffect(() => {
+    if (!lessonPlan) return
+
+    // Clear previous timeout
+    if (contextSyncTimeoutRef.current) {
+      clearTimeout(contextSyncTimeoutRef.current)
+    }
+
+    // Debounce: sync after 500ms of no changes
+    contextSyncTimeoutRef.current = setTimeout(() => {
+      syncContext(lessonPlan)
+    }, 500)
+
+    return () => {
+      if (contextSyncTimeoutRef.current) {
+        clearTimeout(contextSyncTimeoutRef.current)
+      }
+    }
+  }, [lessonPlan, syncContext])
 
   // Section IDs for scroll spy
   const sectionIds = useMemo(() => OUTLINE_ITEMS.map(item => item.id), [])
