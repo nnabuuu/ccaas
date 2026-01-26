@@ -42,3 +42,7 @@ export type { UseAgentChatOptions, UseAgentChatReturn } from './useAgentChat'
 
 export { useEntityBridge } from './useEntityBridge'
 export type { UseEntityBridgeReturn } from './useEntityBridge'
+
+// Lesson Plan Designer
+export { useLessonPlanSync } from './useLessonPlanSync'
+export type { UseLessonPlanSyncOptions, UseLessonPlanSyncReturn } from './useLessonPlanSync'

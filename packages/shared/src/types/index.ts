@@ -237,3 +237,9 @@ export interface PaginatedResult<T> {
   limit: number;
   totalPages: number;
 }
+
+// ============================================================================
+// Lesson Plan Types
+// ============================================================================
+
+export * from './lesson-plan';

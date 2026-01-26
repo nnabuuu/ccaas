@@ -34,6 +34,8 @@ import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
 import { AdminAuditLog, SessionAlert } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
+import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
+import { LessonPlanEntity } from './lesson-plans/entities/lesson-plan.entity';
 
 @Module({
   imports: [
@@ -70,6 +72,8 @@ import { StorageModule } from './storage/storage.module';
         // Admin entities
         AdminAuditLog,
         SessionAlert,
+        // Lesson Plan entities
+        LessonPlanEntity,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.DEBUG === 'true',
@@ -90,6 +94,9 @@ import { StorageModule } from './storage/storage.module';
 
     // Admin module
     AdminModule,
+
+    // Lesson Plan module
+    LessonPlansModule,
   ],
 })
 export class AppModule {}

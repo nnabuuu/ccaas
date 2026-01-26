@@ -80,6 +80,23 @@ const routes: RouteRecordRaw[] = [
         path: 'audit',
         name: 'Audit',
         component: () => import('@/views/audit/AuditLogView.vue')
+      },
+      // Lesson Plans
+      {
+        path: 'lesson-plans',
+        name: 'LessonPlans',
+        component: () => import('@/views/lesson-plans/LessonPlanListView.vue')
+      },
+      {
+        path: 'lesson-plans/new',
+        name: 'NewLessonPlan',
+        component: () => import('@/views/lesson-plans/LessonPlanDesignerView.vue')
+      },
+      {
+        path: 'lesson-plans/:id',
+        name: 'LessonPlanDesigner',
+        component: () => import('@/views/lesson-plans/LessonPlanDesignerView.vue'),
+        props: true
       }
     ]
   }

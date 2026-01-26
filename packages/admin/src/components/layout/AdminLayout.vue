@@ -13,7 +13,8 @@ import {
   AuditOutlined,
   LogoutOutlined,
   SettingOutlined,
-  GlobalOutlined
+  GlobalOutlined,
+  BookOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -27,6 +28,7 @@ const selectedKeys = computed(() => {
   if (path.startsWith('/dashboard')) return ['dashboard']
   if (path.startsWith('/sessions')) return ['sessions']
   if (path.startsWith('/skills')) return ['skills']
+  if (path.startsWith('/lesson-plans')) return ['lesson-plans']
   if (path.startsWith('/analytics')) return ['analytics']
   if (path.startsWith('/tenants')) return ['tenants']
   if (path.startsWith('/audit')) return ['audit']
@@ -109,6 +111,13 @@ function handleLogout() {
           <router-link to="/skills">
             <ThunderboltOutlined />
             <span>Skills</span>
+          </router-link>
+        </a-menu-item>
+
+        <a-menu-item key="lesson-plans">
+          <router-link to="/lesson-plans">
+            <BookOutlined />
+            <span>备课管理</span>
           </router-link>
         </a-menu-item>
 
