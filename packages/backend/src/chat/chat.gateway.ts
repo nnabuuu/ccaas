@@ -17,6 +17,8 @@ import {
 import { Logger, UseFilters, OnModuleInit } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
@@ -252,17 +254,41 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       // Store tenant context on session (use original for display, resolved for queries)
       session.tenantId = resolvedTenantId;
 
+      // Store MCP servers configuration from solution backend (if provided)
+      if (data.mcpServers && Object.keys(data.mcpServers).length > 0) {
+        session.mcpServers = data.mcpServers;
+        this.logger.log(`Session ${sessionId} configured with MCP servers: ${Object.keys(data.mcpServers).join(', ')}`);
+      }
+
       // Sync tenant skills to session workspace
       try {
         const syncResult = await this.skillSyncService.syncToSession(
           session.workspaceDir,
           resolvedTenantId,
+          {
+            publishedOnly: true,
+            skillSlugs: data.enabledSkillSlugs,
+          },
         );
         session.skillSyncedAt = new Date();
         this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
       } catch (error) {
         this.logger.warn(`Failed to sync skills: ${error}`);
         // Continue without skills - non-fatal
+      }
+
+      // If solution provided a skill file path, copy it to session workspace
+      if (data.skillPath && fs.existsSync(data.skillPath)) {
+        try {
+          const skillName = path.basename(path.dirname(data.skillPath));
+          const targetDir = path.join(session.workspaceDir, '.claude', 'skills', skillName);
+          fs.mkdirSync(targetDir, { recursive: true });
+          fs.copyFileSync(data.skillPath, path.join(targetDir, 'SKILL.md'));
+          this.logger.log(`Copied skill ${skillName} to session workspace from ${data.skillPath}`);
+        } catch (error) {
+          this.logger.warn(`Failed to copy skill file: ${error}`);
+          // Continue without skill - non-fatal
+        }
       }
 
       // Create message records for persistence

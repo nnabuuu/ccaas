@@ -19,6 +19,7 @@ interface UseLessonPlanSessionOptions {
   planId?: string
   tenantId?: string
   autoConnect?: boolean
+  enabledSkillSlugs?: string[]
 }
 
 /**
@@ -85,7 +86,7 @@ interface UseLessonPlanSessionReturn {
 }
 
 export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}): UseLessonPlanSessionReturn {
-  const { planId, tenantId = 'lesson-plan-designer', autoConnect = true } = options
+  const { planId, tenantId = 'lesson-plan-designer', autoConnect = true, enabledSkillSlugs } = options
 
   // Socket state
   const [connected, setConnected] = useState(false)
@@ -169,7 +170,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Handle text streaming
     socket.on('text_delta', (data: TextDeltaEvent) => {
       setCurrentStreamContent(prev => {
-        const newContent = prev + data.content
+        const newContent = prev + data.text
         streamContentRef.current = newContent // Keep ref in sync
         return newContent
       })
@@ -435,6 +436,14 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         }
       }
 
+      // Include enabled skill slugs (for tenant skill filtering)
+      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+        chatPayload.enabledSkillSlugs = enabledSkillSlugs
+        if (retryCount === 0) {
+          console.log('🔧 Sending with enabled skills:', enabledSkillSlugs)
+        }
+      }
+
       const response = await fetch(`/api/v1/sessions/${sessionIdRef.current}/completion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -468,7 +477,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       setError(`发送失败: ${err instanceof Error ? err.message : err}`)
       setIsProcessing(false)
     }
-  }, [connected, isProcessing, tenantId, solutionConfig, waitForReconnection])
+  }, [connected, isProcessing, tenantId, solutionConfig, enabledSkillSlugs, waitForReconnection])
 
   // Save lesson plan
   const saveLessonPlan = useCallback(async () => {
