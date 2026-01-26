@@ -412,10 +412,10 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Attempt to send message with auto-retry on WebSocket disconnection
     const attemptSend = async (retryCount = 0): Promise<void> => {
       // Build chat payload with latest clientId (may have changed after reconnection)
+      // Note: sessionId is already in the URL path, not in the body
       const chatPayload: Record<string, unknown> = {
         clientId: clientIdRef.current,
         message: content,
-        sessionId: sessionIdRef.current,
         tenantId,
       }
 
