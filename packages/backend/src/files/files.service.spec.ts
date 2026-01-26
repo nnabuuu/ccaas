@@ -2,6 +2,7 @@
  * FilesService Tests
  *
  * Tests for file management service including:
+ * - createFromWriteTool (Write tool file tracking)
  * - getSessionFilesAsTree (FB-001)
  * - getFilePreview (FB-003)
  * - markAsSynced (FB-002)
@@ -69,6 +70,250 @@ describe('FilesService', () => {
 
     // Reset mocks
     jest.clearAllMocks();
+  });
+
+  describe('createFromWriteTool', () => {
+    const baseDto = {
+      messageId: 'msg-uuid-1',
+      sessionId: 'session-uuid-1',
+      tenantId: 'tenant-1',
+      originalPath: 'docs/test.md',
+      workspaceDir: '/tmp/workspace',
+    };
+
+    beforeEach(() => {
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.stat.mockResolvedValue({ size: 256 } as any);
+      mockFs.mkdir.mockResolvedValue(undefined);
+      mockFs.copyFile.mockResolvedValue(undefined);
+    });
+
+    describe('success path', () => {
+      it('should copy file from workspace to persistent storage', async () => {
+        const file = mockFile();
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool(baseDto);
+
+        expect(mockFs.copyFile).toHaveBeenCalledWith(
+          '/tmp/workspace/docs/test.md',
+          expect.stringContaining('test.md'),
+        );
+      });
+
+      it('should create database record with correct fields', async () => {
+        const file = mockFile();
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool(baseDto);
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-uuid-1',
+            sessionId: 'session-uuid-1',
+            tenantId: 'tenant-1',
+            originalPath: 'docs/test.md',
+            filename: 'test.md',
+          }),
+        );
+        expect(repository.save).toHaveBeenCalled();
+      });
+
+      it('should resolve relative paths correctly', async () => {
+        const file = mockFile();
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          originalPath: 'relative/path/file.txt',
+        });
+
+        expect(mockFs.access).toHaveBeenCalledWith(
+          '/tmp/workspace/relative/path/file.txt',
+        );
+      });
+
+      it('should resolve absolute paths correctly', async () => {
+        const file = mockFile();
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          originalPath: '/absolute/path/file.txt',
+        });
+
+        // Absolute paths should not be joined with workspaceDir
+        expect(mockFs.access).toHaveBeenCalledWith('/absolute/path/file.txt');
+      });
+
+      it('should detect MIME type from filename', async () => {
+        const file = mockFile({ mimeType: 'text/markdown' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          originalPath: 'docs/readme.md',
+        });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            mimeType: 'text/markdown',
+          }),
+        );
+      });
+
+      it('should detect JSON MIME type', async () => {
+        const file = mockFile({ mimeType: 'application/json' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          originalPath: 'data/config.json',
+        });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            mimeType: 'application/json',
+          }),
+        );
+      });
+
+      it('should create storage directory with recursive option', async () => {
+        const file = mockFile();
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool(baseDto);
+
+        expect(mockFs.mkdir).toHaveBeenCalledWith(
+          expect.stringContaining('tenant-1'),
+          { recursive: true },
+        );
+      });
+    });
+
+    describe('error handling', () => {
+      it('should throw NotFoundException when source file missing', async () => {
+        mockFs.access.mockRejectedValue(new Error('ENOENT: no such file'));
+
+        await expect(service.createFromWriteTool(baseDto)).rejects.toThrow(
+          NotFoundException,
+        );
+      });
+
+      it('should throw InternalServerErrorException when copy fails', async () => {
+        mockFs.copyFile.mockRejectedValue(new Error('Permission denied'));
+
+        await expect(service.createFromWriteTool(baseDto)).rejects.toThrow(
+          InternalServerErrorException,
+        );
+      });
+    });
+
+    describe('field values', () => {
+      it('should set status to "new" for new files', async () => {
+        const file = mockFile({ status: 'new' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        const result = await service.createFromWriteTool(baseDto);
+
+        expect(result.status).toBe('new');
+      });
+
+      it('should set uploadedBy to "agent"', async () => {
+        const file = mockFile({ uploadedBy: 'agent' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        const result = await service.createFromWriteTool(baseDto);
+
+        expect(result.uploadedBy).toBe('agent');
+      });
+
+      it('should store correct originalPath', async () => {
+        const file = mockFile({ originalPath: 'docs/test.md' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        const result = await service.createFromWriteTool(baseDto);
+
+        expect(result.originalPath).toBe('docs/test.md');
+      });
+
+      it('should store file size from stat', async () => {
+        mockFs.stat.mockResolvedValue({ size: 4096 } as any);
+        const file = mockFile({ size: 4096 });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool(baseDto);
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            size: 4096,
+          }),
+        );
+      });
+    });
+
+    describe('tenantId handling', () => {
+      it('should use provided tenantId', async () => {
+        const file = mockFile({ tenantId: 'custom-tenant' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          tenantId: 'custom-tenant',
+        });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            tenantId: 'custom-tenant',
+          }),
+        );
+      });
+
+      it('should use default tenant directory when tenantId not provided', async () => {
+        const file = mockFile({ tenantId: null });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          tenantId: undefined,
+        });
+
+        expect(mockFs.mkdir).toHaveBeenCalledWith(
+          expect.stringContaining('default'),
+          { recursive: true },
+        );
+      });
+
+      it('should set tenantId to null in record when not provided', async () => {
+        const file = mockFile({ tenantId: null });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.createFromWriteTool({
+          ...baseDto,
+          tenantId: undefined,
+        });
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            tenantId: null,
+          }),
+        );
+      });
+    });
   });
 
   describe('getSessionFilesAsTree', () => {
