@@ -43,6 +43,19 @@ export interface FileInfo {
   type: string                   // MIME type or "unknown"
 }
 
+// Tool activity tracking
+export interface ToolActivity {
+  toolName: string
+  toolId: string
+  phase: 'start' | 'progress' | 'end'
+  timestamp: Date
+  duration?: number
+  success?: boolean
+  toolInput?: unknown
+  toolOutput?: unknown
+  toolError?: string
+}
+
 // File Browser Types
 export type FileStatus = 'new' | 'modified' | 'synced'
 
@@ -90,6 +103,7 @@ export interface Message {
   content: string
   skill?: string
   files?: FileInfo[]             // Changed from file?: FileInfo
+  tools?: ToolActivity[]         // Track tool usage
   status?: 'sending' | 'streaming' | 'complete'
   timestamp: Date
 }

@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData } from '../types'
+import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity } from '../types'
 import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
 
 // Backend configuration
@@ -256,32 +256,50 @@ export function useRealSession() {
     socket.on('tool_activity', (data: ToolActivityEvent) => {
       console.log('Tool activity:', data)
 
-      // Backend sends tool_activity with payload: { toolName, phase, toolInput }
+      // Backend sends tool_activity with payload: { toolName, phase, toolInput, toolOutput, etc. }
       const { payload } = data
-      if (payload?.toolName === 'Write' && payload?.phase === 'end' && payload?.toolInput) {
+      if (!payload) return
+
+      // Create tool activity record
+      const toolActivity: ToolActivity = {
+        toolName: payload.toolName,
+        toolId: payload.toolId || `tool-${Date.now()}`,
+        phase: payload.phase,
+        timestamp: new Date(),
+        duration: payload.duration,
+        success: payload.success,
+        toolInput: payload.toolInput,
+        toolOutput: payload.toolOutput,
+        toolError: payload.toolError,
+      }
+
+      // Extract file info for Write tool
+      let newFile: FileInfo | null = null
+      if (payload.toolName === 'Write' && payload.phase === 'end' && payload.toolInput) {
         const input = payload.toolInput as { file_path?: string }
         if (input.file_path) {
           const fileName = input.file_path.split('/').pop() || 'file'
-          const newFile: FileInfo = {
+          newFile = {
             name: fileName,
             size: 'Calculating...',
             type: getMimeType(fileName),
           }
-
-          // Accumulate files in array instead of replacing
-          setSession(prev => ({
-            ...prev,
-            messages: prev.messages.map(m =>
-              m.status === 'streaming'
-                ? {
-                    ...m,
-                    files: [...(m.files || []), newFile],
-                  }
-                : m
-            ),
-          }))
         }
       }
+
+      // Add tool activity to current streaming message
+      setSession(prev => ({
+        ...prev,
+        messages: prev.messages.map(m =>
+          m.status === 'streaming'
+            ? {
+                ...m,
+                tools: [...(m.tools || []), toolActivity],
+                files: newFile ? [...(m.files || []), newFile] : m.files,
+              }
+            : m
+        ),
+      }))
     })
 
     socket.on('skill_updated', (data: { skillId: string; requiresRestart: boolean }) => {

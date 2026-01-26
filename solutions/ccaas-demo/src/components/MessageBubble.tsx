@@ -6,6 +6,7 @@
 
 import type { Message, FileInfo } from '../types'
 import { FileCard } from './FileCard'
+import { ToolActivityItem } from './ToolActivityItem'
 
 interface MessageBubbleProps {
   message: Message
@@ -42,6 +43,18 @@ export function MessageBubble({ message, onDownload }: MessageBubbleProps) {
             <span className="inline-block w-2 h-4 bg-current animate-blink ml-1">|</span>
           )}
         </div>
+
+        {/* Tool Activities */}
+        {message.tools && message.tools.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {message.tools
+              .filter(t => t.phase === 'end')  // Only show completed tools
+              .map((tool, i) => (
+                <ToolActivityItem key={tool.toolId || i} tool={tool} />
+              ))
+            }
+          </div>
+        )}
 
         {message.files?.map((file, index) => (
           <FileCard key={file.id || index} file={file} onDownload={onDownload} />
