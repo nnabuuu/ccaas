@@ -100,6 +100,12 @@ export function createToolEventTrackerHook(deps: ToolEventTrackerDeps): ToolHook
           success: !result.isError,
           durationMs: result.durationMs,
           agentType: extractAgentType(context.sessionId, result.toolName),
+          // Enhanced error tracking fields
+          errorMessage: result.errorMessage,
+          errorType: result.errorType,
+          parentToolUseId: result.parentToolUseId,
+          nestingLevel: result.nestingLevel,
+          executionOrder: result.executionOrder,
         });
 
         logger.debug(

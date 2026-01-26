@@ -22,6 +22,12 @@ export interface CreateToolEventDto {
   durationMs?: number | null;
   agentType?: string | null;
   decisionLogic?: ToolDecisionLogic | null;
+  // Enhanced error tracking fields
+  errorMessage?: string | null;
+  errorType?: string | null;
+  parentToolUseId?: string | null;
+  nestingLevel?: number | null;
+  executionOrder?: number | null;
 }
 
 export interface ToolEventQueryDto {
@@ -59,6 +65,12 @@ export class ToolEventsService {
       durationMs: dto.durationMs ?? null,
       agentType: dto.agentType || null,
       decisionLogic: dto.decisionLogic || null,
+      // Enhanced error tracking fields
+      errorMessage: dto.errorMessage ?? null,
+      errorType: dto.errorType ?? null,
+      parentToolUseId: dto.parentToolUseId ?? null,
+      nestingLevel: dto.nestingLevel ?? null,
+      executionOrder: dto.executionOrder ?? null,
     });
 
     const saved = await this.toolEventRepository.save(toolEvent);
@@ -108,6 +120,12 @@ export class ToolEventsService {
     success: boolean;
     durationMs?: number;
     agentType?: string;
+    // Enhanced error tracking fields
+    errorMessage?: string;
+    errorType?: string;
+    parentToolUseId?: string;
+    nestingLevel?: number;
+    executionOrder?: number;
   }): Promise<ToolEvent> {
     return this.create({
       messageId: params.messageId,
@@ -121,6 +139,11 @@ export class ToolEventsService {
       success: params.success,
       durationMs: params.durationMs,
       agentType: params.agentType,
+      errorMessage: params.errorMessage,
+      errorType: params.errorType,
+      parentToolUseId: params.parentToolUseId,
+      nestingLevel: params.nestingLevel,
+      executionOrder: params.executionOrder,
     });
   }
 

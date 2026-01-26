@@ -15,6 +15,7 @@ import type {
   DecisionLogic,
 } from '../common/interfaces';
 import type { ToolHook, ToolResult, ToolHookContext, ToolStartInfo } from '../hooks';
+import { classifyToolError } from '../hooks/error-classifier';
 import type { ThinkingEvent } from '../hooks/thinking-tracker.hook';
 import type { TokenUsageEvent } from '../hooks/token-usage-tracker.hook';
 
@@ -35,6 +36,12 @@ export class EventMapperService {
 
   // Track active tool calls for mapping start/end
   private activeToolCalls = new Map<string, TrackedToolCall>();
+
+  // Track active Task tool calls for parent-child relationship tracking
+  private activeTaskToolIds = new Map<string, string>(); // sessionId -> toolUseId
+
+  // Track execution order per session (messageId -> counter)
+  private sessionExecutionCounters = new Map<string, number>();
 
   // Track token usage per session
   private sessionTokenAccumulators = new Map<string, TokenAccumulator>();
@@ -329,12 +336,20 @@ export class EventMapperService {
 
                 // Execute registered tool hooks (async, non-blocking)
                 // This is critical for WriteFileTracker to track written files
+                const nestingLevel = agentType === 'main' ? 0 : 1;
+                const executionOrder = this.getNextExecutionOrder(sessionId);
                 const hookResult: ToolResult = {
                   toolName,
                   input: toolCall.input,
                   output: block.content,
                   isError,
                   durationMs: duration,
+                  // Enhanced error tracking fields
+                  errorMessage: isError ? this.extractErrorMessage(block.content) : undefined,
+                  errorType: isError ? classifyToolError(block.content) : undefined,
+                  parentToolUseId: this.findParentTaskToolId(toolUseId),
+                  nestingLevel,
+                  executionOrder,
                 };
                 const hookContext: ToolHookContext = {
                   sessionId,
@@ -527,12 +542,21 @@ export class EventMapperService {
           events.push(...specialEvents);
 
           // Execute registered tool hooks (async, non-blocking)
+          const isError = toolResult.is_error || false;
+          const nestingLevel = agentType === 'main' ? 0 : 1;
+          const executionOrder = this.getNextExecutionOrder(sessionId);
           const hookResult: ToolResult = {
             toolName,
             input: toolCall.input,
             output: toolResult.content,
-            isError: toolResult.is_error || false,
+            isError,
             durationMs: duration,
+            // Enhanced error tracking fields
+            errorMessage: isError ? this.extractErrorMessage(toolResult.content) : undefined,
+            errorType: isError ? classifyToolError(toolResult.content) : undefined,
+            parentToolUseId: this.findParentTaskToolId(toolResult.tool_use_id),
+            nestingLevel,
+            executionOrder,
           };
           const hookContext: ToolHookContext = {
             sessionId,
@@ -701,6 +725,8 @@ export class EventMapperService {
   clearSessionState(sessionId: string): void {
     this.sessionTokenAccumulators.delete(sessionId);
     this.activeThinkingBlocks.delete(sessionId);
+    this.sessionExecutionCounters.delete(sessionId);
+    this.activeTaskToolIds.delete(sessionId);
   }
 
   // =========================================================================
@@ -1011,5 +1037,71 @@ export class EventMapperService {
     accumulator.cachedTokens += usage.cachedTokens ?? 0;
     accumulator.reasoningTokens += usage.reasoningTokens ?? 0;
     accumulator.requestCount++;
+  }
+
+  /**
+   * Extract error message from tool output
+   */
+  private extractErrorMessage(content: unknown): string | undefined {
+    if (typeof content === 'string') {
+      // Truncate very long error messages
+      return content.length > 2000 ? content.slice(0, 2000) + '...' : content;
+    }
+    if (typeof content === 'object' && content !== null) {
+      // Try to extract error message from object
+      const obj = content as Record<string, unknown>;
+      if (typeof obj.error === 'string') return obj.error;
+      if (typeof obj.message === 'string') return obj.message;
+      // Fallback to JSON stringification
+      const json = JSON.stringify(content);
+      return json.length > 2000 ? json.slice(0, 2000) + '...' : json;
+    }
+    return undefined;
+  }
+
+  /**
+   * Find the parent Task tool ID for a given tool use ID
+   * Returns the active Task tool ID if one exists (sub-agent context)
+   */
+  private findParentTaskToolId(toolUseId: string): string | undefined {
+    // Check all active tool calls for a Task tool
+    for (const [id, call] of this.activeToolCalls.entries()) {
+      if (call.toolName === 'Task' && id !== toolUseId) {
+        return id;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Track Task tool start for parent-child relationship
+   */
+  trackTaskToolStart(sessionId: string, toolUseId: string): void {
+    this.activeTaskToolIds.set(sessionId, toolUseId);
+  }
+
+  /**
+   * Clear Task tool tracking on completion
+   */
+  clearTaskToolTracking(sessionId: string): void {
+    this.activeTaskToolIds.delete(sessionId);
+  }
+
+  /**
+   * Get the next execution order for a session
+   */
+  private getNextExecutionOrder(sessionId: string): number {
+    const current = this.sessionExecutionCounters.get(sessionId) || 0;
+    const next = current + 1;
+    this.sessionExecutionCounters.set(sessionId, next);
+    return next;
+  }
+
+  /**
+   * Reset execution order counter for a session
+   * Should be called when a new message starts
+   */
+  resetExecutionOrder(sessionId: string): void {
+    this.sessionExecutionCounters.delete(sessionId);
   }
 }

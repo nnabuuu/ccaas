@@ -80,6 +80,42 @@ export class ToolEvent {
   decisionLogic!: ToolDecisionLogic | null;
 
   /**
+   * Error message text when tool execution fails (success = false)
+   * Captures the actual error content for debugging
+   */
+  @Column({ type: 'text', nullable: true })
+  errorMessage!: string | null;
+
+  /**
+   * Classified error type for analytics
+   * Values: file_not_found, permission_denied, timeout, command_failed,
+   *         network_error, parse_error, validation_error, unknown
+   */
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  errorType!: string | null;
+
+  /**
+   * Execution order within the message (1-based)
+   * Tracks the sequence of tool calls
+   */
+  @Column({ type: 'int', nullable: true })
+  executionOrder!: number | null;
+
+  /**
+   * Parent tool use ID if this tool was spawned by a Task sub-agent
+   * Enables tracing tool call chains across agent hierarchy
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  parentToolUseId!: string | null;
+
+  /**
+   * Nesting level in the agent hierarchy
+   * 0 = main agent, 1+ = sub-agent depth
+   */
+  @Column({ type: 'int', nullable: true, default: 0 })
+  nestingLevel!: number | null;
+
+  /**
    * SHA-256 hash of large output content (stored in LargeContent table)
    * If set, toolOutput will be null and content should be fetched from LargeContent
    */

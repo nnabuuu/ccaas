@@ -352,4 +352,202 @@ describe('ToolEventTrackerHook', () => {
       );
     });
   });
+
+  describe('enhanced error tracking fields', () => {
+    it('should pass errorMessage to recordEnd when tool fails', async () => {
+      const errorResult: ToolResult = {
+        ...createResult(),
+        isError: true,
+        output: 'Error: ENOENT: no such file or directory',
+        errorMessage: 'Error: ENOENT: no such file or directory',
+      };
+
+      await hook.afterToolResult!(errorResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          errorMessage: 'Error: ENOENT: no such file or directory',
+        }),
+      );
+    });
+
+    it('should pass undefined errorMessage when tool succeeds', async () => {
+      const successResult: ToolResult = {
+        ...createResult(),
+        isError: false,
+        errorMessage: undefined,
+      };
+
+      await hook.afterToolResult!(successResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          errorMessage: undefined,
+        }),
+      );
+    });
+
+    it('should pass parentToolUseId for sub-agent tools', async () => {
+      const subAgentResult: ToolResult = {
+        ...createResult(),
+        parentToolUseId: 'toolu_task_parent_123',
+        nestingLevel: 1,
+      };
+
+      await hook.afterToolResult!(subAgentResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentToolUseId: 'toolu_task_parent_123',
+        }),
+      );
+    });
+
+    it('should pass undefined parentToolUseId for main agent tools', async () => {
+      const mainAgentResult: ToolResult = {
+        ...createResult(),
+        parentToolUseId: undefined,
+      };
+
+      await hook.afterToolResult!(mainAgentResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentToolUseId: undefined,
+        }),
+      );
+    });
+
+    it('should pass nestingLevel 0 for main agent', async () => {
+      const mainAgentResult: ToolResult = {
+        ...createResult(),
+        nestingLevel: 0,
+      };
+
+      await hook.afterToolResult!(mainAgentResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nestingLevel: 0,
+        }),
+      );
+    });
+
+    it('should pass nestingLevel 1 for sub-agent context', async () => {
+      const subAgentResult: ToolResult = {
+        ...createResult(),
+        nestingLevel: 1,
+        parentToolUseId: 'toolu_task_parent_456',
+      };
+
+      await hook.afterToolResult!(subAgentResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          nestingLevel: 1,
+        }),
+      );
+    });
+
+    it('should pass all enhanced fields together', async () => {
+      const errorInSubAgent: ToolResult = {
+        toolName: 'Read',
+        input: { file_path: '/nonexistent/path' },
+        output: 'Error: ENOENT: no such file or directory',
+        isError: true,
+        durationMs: 25,
+        errorMessage: 'Error: ENOENT: no such file or directory',
+        parentToolUseId: 'toolu_task_explore_789',
+        nestingLevel: 1,
+      };
+
+      await hook.afterToolResult!(errorInSubAgent, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          errorMessage: 'Error: ENOENT: no such file or directory',
+          parentToolUseId: 'toolu_task_explore_789',
+          nestingLevel: 1,
+        }),
+      );
+    });
+
+    it('should pass errorType to recordEnd when tool fails', async () => {
+      const errorResult: ToolResult = {
+        ...createResult(),
+        isError: true,
+        output: 'Error: ENOENT: no such file or directory',
+        errorMessage: 'Error: ENOENT: no such file or directory',
+        errorType: 'file_not_found',
+      };
+
+      await hook.afterToolResult!(errorResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          errorType: 'file_not_found',
+        }),
+      );
+    });
+
+    it('should pass undefined errorType when tool succeeds', async () => {
+      const successResult: ToolResult = {
+        ...createResult(),
+        isError: false,
+        errorType: undefined,
+      };
+
+      await hook.afterToolResult!(successResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          errorType: undefined,
+        }),
+      );
+    });
+
+    it('should pass executionOrder to recordEnd', async () => {
+      const resultWithOrder: ToolResult = {
+        ...createResult(),
+        executionOrder: 3,
+      };
+
+      await hook.afterToolResult!(resultWithOrder, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          executionOrder: 3,
+        }),
+      );
+    });
+
+    it('should pass all fields including errorType and executionOrder', async () => {
+      const fullResult: ToolResult = {
+        toolName: 'Read',
+        input: { file_path: '/protected/file' },
+        output: 'Error: EACCES: permission denied',
+        isError: true,
+        durationMs: 30,
+        errorMessage: 'Error: EACCES: permission denied',
+        errorType: 'permission_denied',
+        parentToolUseId: 'toolu_task_parent',
+        nestingLevel: 1,
+        executionOrder: 5,
+      };
+
+      await hook.afterToolResult!(fullResult, createContext());
+
+      expect(mockToolEventsService.recordEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          errorMessage: 'Error: EACCES: permission denied',
+          errorType: 'permission_denied',
+          parentToolUseId: 'toolu_task_parent',
+          nestingLevel: 1,
+          executionOrder: 5,
+        }),
+      );
+    });
+  });
 });

@@ -407,6 +407,180 @@ export const cliErrorToolResultEvent = {
   },
 };
 
+// ============================================================================
+// Error-Specific Test Fixtures
+// ============================================================================
+
+/**
+ * CLI format file not found error (ENOENT)
+ */
+export const cliFileNotFoundError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_enoent',
+        content: "Error: ENOENT: no such file or directory, open '/test/nonexistent.txt'",
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format permission denied error (EACCES)
+ */
+export const cliPermissionDeniedError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_eacces',
+        content: "Error: EACCES: permission denied, open '/root/secret.txt'",
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format timeout error (ETIMEDOUT)
+ */
+export const cliTimeoutError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_timeout',
+        content: 'Command timed out after 30000ms',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format command failed error (exit code)
+ */
+export const cliCommandFailedError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_cmd_fail',
+        content: 'Command failed with exit code 127: npm: command not found',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format network error (ECONNREFUSED)
+ */
+export const cliNetworkError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_network',
+        content: 'Error: connect ECONNREFUSED 127.0.0.1:5000',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format JSON parse error
+ */
+export const cliParseError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_parse',
+        content: 'SyntaxError: Unexpected token < in JSON at position 0',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * CLI format validation error
+ */
+export const cliValidationError = {
+  type: 'user',
+  message: {
+    content: [
+      {
+        type: 'tool_result',
+        tool_use_id: 'toolu_validation',
+        content: 'Validation error: required field "file_path" is missing',
+        is_error: true,
+      },
+    ],
+  },
+};
+
+/**
+ * Factory function to create error tool events
+ */
+export function createErrorToolEvents(
+  toolId: string,
+  toolName: string,
+  errorContent: string,
+  input: Record<string, unknown> = {},
+): { start: object; result: object } {
+  return {
+    start: createToolUseStartEvent(toolId, toolName, input),
+    result: createCliToolResultEvent(toolId, errorContent, true),
+  };
+}
+
+/**
+ * Pre-built error sequences for common scenarios
+ */
+export const errorScenarios = {
+  fileNotFound: createErrorToolEvents(
+    'toolu_enoent_seq',
+    'Read',
+    "Error: ENOENT: no such file or directory, open '/nonexistent.txt'",
+    { file_path: '/nonexistent.txt' },
+  ),
+  permissionDenied: createErrorToolEvents(
+    'toolu_eacces_seq',
+    'Read',
+    "Error: EACCES: permission denied, open '/root/secret'",
+    { file_path: '/root/secret' },
+  ),
+  timeout: createErrorToolEvents(
+    'toolu_timeout_seq',
+    'Bash',
+    'Command timed out after 30000ms',
+    { command: 'sleep 60' },
+  ),
+  commandFailed: createErrorToolEvents(
+    'toolu_cmd_seq',
+    'Bash',
+    'Command failed with exit code 1: npm test',
+    { command: 'npm test' },
+  ),
+  networkError: createErrorToolEvents(
+    'toolu_net_seq',
+    'WebFetch',
+    'Error: connect ECONNREFUSED localhost:3000',
+    { url: 'http://localhost:3000' },
+  ),
+};
+
 /**
  * CLI format with multiple tool results in one message
  */

@@ -23,12 +23,20 @@ export interface ToolStartInfo {
   };
 }
 
+import type { ToolErrorType } from './error-classifier';
+
 export interface ToolResult {
   toolName: string;
   input: Record<string, unknown>;
   output: string | object;
   isError: boolean;
   durationMs: number;
+  // Enhanced error tracking
+  errorMessage?: string;           // Actual error text when isError is true
+  errorType?: ToolErrorType;       // Classified error type
+  parentToolUseId?: string;        // Parent tool if spawned by Task sub-agent
+  nestingLevel?: number;           // 0=main agent, 1+=sub-agent depth
+  executionOrder?: number;         // Execution sequence within message
 }
 
 /**
