@@ -11,6 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
 import { SkillVersion } from './skill-version.entity';
 
@@ -18,6 +19,7 @@ export type SkillType = 'skill' | 'sub-agent';
 export type SkillStatus = 'draft' | 'review' | 'published' | 'deprecated' | 'archived';
 
 @Entity('skills')
+@Index('idx_skills_tenant_slug', ['tenantId', 'slug'], { unique: true })
 export class Skill {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -28,7 +30,7 @@ export class Skill {
   @Column()
   name: string;
 
-  @Column({ unique: true })
+  @Column()
   slug: string;
 
   @Column({ type: 'text', nullable: true })
