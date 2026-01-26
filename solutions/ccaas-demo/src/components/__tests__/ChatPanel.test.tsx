@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ChatPanel } from '../ChatPanel'
-import type { Message, FileInfo } from '../../types'
+import type { Message } from '../../types'
 
 // Mock scrollIntoView which doesn't exist in jsdom
 beforeAll(() => {

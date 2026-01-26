@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import App from '../App'
+import type { Skill } from '../types'
 
 // Mock scrollIntoView
 beforeAll(() => {
@@ -22,7 +23,29 @@ const mockUpdateSkill = vi.fn()
 const mockDeleteSkill = vi.fn()
 const mockGetSkillDetails = vi.fn()
 
-const defaultMockState = {
+const defaultMockState: {
+  skills: Skill[]
+  session: {
+    sessionId: string
+    messages: never[]
+    activeSkill: null
+    needsRestart: boolean
+    isProcessing: boolean
+  }
+  connected: boolean
+  error: string | null
+  loading: boolean
+  socket: null
+  toggleSkill: typeof mockToggleSkill
+  restartSession: typeof mockRestartSession
+  sendMessage: typeof mockSendMessage
+  downloadFile: typeof mockDownloadFile
+  refreshSkills: typeof mockRefreshSkills
+  createSkill: typeof mockCreateSkill
+  updateSkill: typeof mockUpdateSkill
+  deleteSkill: typeof mockDeleteSkill
+  getSkillDetails: typeof mockGetSkillDetails
+} = {
   skills: [],
   session: {
     sessionId: 'test-session-123456',
@@ -34,6 +57,7 @@ const defaultMockState = {
   connected: true,
   error: null,
   loading: false,
+  socket: null,
   toggleSkill: mockToggleSkill,
   restartSession: mockRestartSession,
   sendMessage: mockSendMessage,
@@ -49,6 +73,25 @@ let mockState = { ...defaultMockState }
 
 vi.mock('../hooks/useRealSession', () => ({
   useRealSession: () => mockState,
+}))
+
+// Mock useFileBrowser hook
+vi.mock('../hooks/useFileBrowser', () => ({
+  useFileBrowser: () => ({
+    tree: [],
+    expandedFolders: new Set<string>(),
+    loading: false,
+    error: null,
+    previewFile: null,
+    previewContent: null,
+    previewLoading: false,
+    fetchFileTree: vi.fn(),
+    toggleFolder: vi.fn(),
+    openPreview: vi.fn(),
+    closePreview: vi.fn(),
+    downloadFile: vi.fn(),
+    uploadFile: vi.fn(),
+  }),
 }))
 
 describe('App', () => {
@@ -122,7 +165,7 @@ describe('App', () => {
           description: 'A test skill',
           enabled: false,
         },
-      ]
+      ] as Skill[]
       render(<App />)
       expect(screen.queryByText('正在从后端加载 Skills...')).not.toBeInTheDocument()
     })
@@ -183,7 +226,7 @@ describe('App', () => {
           description: 'A test skill',
           enabled: false,
         },
-      ]
+      ] as Skill[]
       render(<App />)
 
       // Find collapse button by its title
@@ -206,7 +249,7 @@ describe('App', () => {
           description: 'A test skill',
           enabled: false,
         },
-      ]
+      ] as Skill[]
     })
 
     it('opens editor when add skill button is clicked', () => {
@@ -319,7 +362,7 @@ describe('App', () => {
           description: 'A test skill',
           enabled: false,
         },
-      ]
+      ] as Skill[]
       render(<App />)
 
       expect(screen.getByText('Skills Updated')).toBeInTheDocument()
@@ -338,7 +381,7 @@ describe('App', () => {
           description: 'A test skill',
           enabled: false,
         },
-      ]
+      ] as Skill[]
       render(<App />)
 
       const restartButton = screen.getByText('Restart Session')

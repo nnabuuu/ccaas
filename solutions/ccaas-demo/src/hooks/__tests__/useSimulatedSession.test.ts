@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useSimulatedSession } from '../useSimulatedSession'
 
 // Mock URL.createObjectURL and URL.revokeObjectURL
@@ -146,8 +146,8 @@ describe('useSimulatedSession', () => {
       })
 
       expect(result.current.session.messages).toHaveLength(2) // user + assistant
-      expect(result.current.session.messages[0].role).toBe('user')
-      expect(result.current.session.messages[0].content).toBe('Hello there')
+      expect(result.current.session.messages[0]!.role).toBe('user')
+      expect(result.current.session.messages[0]!.content).toBe('Hello there')
     })
 
     it('sets isProcessing to true while streaming', () => {
@@ -193,7 +193,7 @@ describe('useSimulatedSession', () => {
       const assistantMsg = result.current.session.messages.find(m => m.role === 'assistant')
       expect(assistantMsg?.skill).toBe('hello-world')
       expect(assistantMsg?.files).toBeDefined()
-      expect(assistantMsg?.files?.[0].name).toBe('hello-world.txt')
+      expect(assistantMsg?.files?.[0]?.name).toBe('hello-world.txt')
     })
 
     it('uses report skill when enabled and report requested', async () => {
@@ -316,14 +316,15 @@ describe('useSimulatedSession', () => {
       // Capture Blob content by replacing Blob after hook is rendered
       let blobContent = ''
       const OriginalBlob = global.Blob
-      global.Blob = class MockBlob extends OriginalBlob {
-        constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+      class MockBlob extends OriginalBlob {
+        constructor(parts?: BlobPart[], options?: BlobPropertyBag) {
           super(parts, options)
           if (parts && parts.length > 0 && typeof parts[0] === 'string') {
             blobContent = parts[0]
           }
         }
       }
+      global.Blob = MockBlob as typeof Blob
 
       act(() => {
         result.current.downloadFile({
@@ -345,14 +346,15 @@ describe('useSimulatedSession', () => {
       // Capture Blob content by replacing Blob after hook is rendered
       let blobContent = ''
       const OriginalBlob = global.Blob
-      global.Blob = class MockBlob extends OriginalBlob {
-        constructor(parts: BlobPart[], options?: BlobPropertyBag) {
+      class MockBlob extends OriginalBlob {
+        constructor(parts?: BlobPart[], options?: BlobPropertyBag) {
           super(parts, options)
           if (parts && parts.length > 0 && typeof parts[0] === 'string') {
             blobContent = parts[0]
           }
         }
       }
+      global.Blob = MockBlob as typeof Blob
 
       act(() => {
         result.current.downloadFile({

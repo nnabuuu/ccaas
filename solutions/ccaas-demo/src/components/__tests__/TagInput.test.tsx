@@ -82,7 +82,9 @@ describe('TagInput', () => {
   it('removes specific tag when remove button is clicked', () => {
     render(<TagInput tags={['tag1', 'tag2', 'tag3']} onChange={mockOnChange} />)
     const removeButtons = screen.getAllByRole('button')
-    fireEvent.click(removeButtons[1]) // Remove 'tag2'
+    const buttonToClick = removeButtons[1]
+    expect(buttonToClick).toBeDefined()
+    fireEvent.click(buttonToClick!) // Remove 'tag2'
     expect(mockOnChange).toHaveBeenCalledWith(['tag1', 'tag3'])
   })
 

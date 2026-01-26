@@ -173,8 +173,8 @@ describe('useRealSession', () => {
 
       await waitFor(() => {
         expect(result.current.skills).toHaveLength(1)
-        expect(result.current.skills[0].name).toBe('Test Skill')
-        expect(result.current.skills[0].enabled).toBe(true) // published = enabled
+        expect(result.current.skills[0]!.name).toBe('Test Skill')
+        expect(result.current.skills[0]!.enabled).toBe(true) // published = enabled
       })
     })
 
@@ -280,7 +280,7 @@ describe('useRealSession', () => {
 
       await waitFor(() => {
         expect(result.current.skills).toHaveLength(1)
-        expect(result.current.skills[0].enabled).toBe(true)
+        expect(result.current.skills[0]!.enabled).toBe(true)
       })
 
       // Toggle skill (disable it)
@@ -347,8 +347,8 @@ describe('useRealSession', () => {
       })
 
       expect(result.current.session.messages).toHaveLength(2) // user + placeholder assistant
-      expect(result.current.session.messages[0].role).toBe('user')
-      expect(result.current.session.messages[0].content).toBe('Hello')
+      expect(result.current.session.messages[0]!.role).toBe('user')
+      expect(result.current.session.messages[0]!.content).toBe('Hello')
     })
 
     it('sets isProcessing to true', async () => {

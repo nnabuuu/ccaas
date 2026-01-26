@@ -11,7 +11,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { FileBrowserPanel } from '../FileBrowserPanel'
-import type { FileNode, FilePreview } from '../../types'
+import type { FileNode } from '../../types'
 
 describe('FileBrowserPanel', () => {
   const mockTree: FileNode[] = [
