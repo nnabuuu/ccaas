@@ -12,11 +12,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
+import { SessionService } from '../chat/session.service';
 import type { FileTreeNode, FilePreviewResponse } from './dto/file.dto';
 
 describe('FilesController', () => {
   let controller: FilesController;
   let service: jest.Mocked<FilesService>;
+  let sessionService: jest.Mocked<SessionService>;
 
   const mockTreeNode = (overrides: Partial<FileTreeNode> = {}): FileTreeNode => ({
     id: 'file-1',
@@ -40,7 +42,7 @@ describe('FilesController', () => {
   });
 
   beforeEach(async () => {
-    const mockService = {
+    const mockFilesService = {
       getSessionFilesAsTree: jest.fn(),
       getFilePreview: jest.fn(),
       markAsSynced: jest.fn(),
@@ -53,18 +55,27 @@ describe('FilesController', () => {
       getFilePath: jest.fn(),
     };
 
+    const mockSessionService = {
+      getSession: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FilesController],
       providers: [
         {
           provide: FilesService,
-          useValue: mockService,
+          useValue: mockFilesService,
+        },
+        {
+          provide: SessionService,
+          useValue: mockSessionService,
         },
       ],
     }).compile();
 
     controller = module.get<FilesController>(FilesController);
     service = module.get(FilesService);
+    sessionService = module.get(SessionService);
 
     jest.clearAllMocks();
   });
@@ -184,6 +195,7 @@ describe('FilesController', () => {
         createdAt: new Date(),
       };
       service.uploadFile.mockResolvedValue(uploadResult);
+      sessionService.getSession.mockReturnValue(undefined);
 
       const result = await controller.uploadFile(
         mockMulterFile,
@@ -202,6 +214,44 @@ describe('FilesController', () => {
         'msg-1',
         'tenant-1',
         undefined,
+        undefined, // workspaceDir (no session)
+      );
+    });
+
+    it('should pass workspaceDir when session exists', async () => {
+      const uploadResult = {
+        id: 'new-uuid',
+        filename: 'document.pdf',
+        originalPath: 'document.pdf',
+        mimeType: 'application/pdf',
+        size: 5000,
+        status: 'new' as const,
+        uploadedBy: 'user' as const,
+        createdAt: new Date(),
+      };
+      service.uploadFile.mockResolvedValue(uploadResult);
+      sessionService.getSession.mockReturnValue({
+        sessionId: 'session-1',
+        workspaceDir: '/tmp/workspace/sessions/session-1',
+      } as any);
+
+      await controller.uploadFile(
+        mockMulterFile,
+        'session-1',
+        'msg-1',
+        'tenant-1',
+        undefined,
+      );
+
+      expect(sessionService.getSession).toHaveBeenCalledWith('session-1');
+      expect(service.uploadFile).toHaveBeenCalledWith(
+        mockMulterFile.buffer,
+        'document.pdf',
+        'session-1',
+        'msg-1',
+        'tenant-1',
+        undefined,
+        '/tmp/workspace/sessions/session-1', // workspaceDir from session
       );
     });
 
@@ -210,6 +260,7 @@ describe('FilesController', () => {
         id: 'uuid',
         originalPath: 'uploads/docs/document.pdf',
       } as any);
+      sessionService.getSession.mockReturnValue(undefined);
 
       await controller.uploadFile(
         mockMulterFile,
@@ -226,6 +277,7 @@ describe('FilesController', () => {
         'msg-1',
         'tenant-1',
         'uploads/docs',
+        undefined,
       );
     });
 
@@ -246,6 +298,7 @@ describe('FilesController', () => {
         uploadedBy: 'user',
         createdAt: new Date(),
       });
+      sessionService.getSession.mockReturnValue(undefined);
 
       const result = await controller.uploadFile(mockMulterFile, 'session-1', '');
 
@@ -256,6 +309,7 @@ describe('FilesController', () => {
         null, // messageId should be null
         undefined, // tenantId
         undefined, // targetPath
+        undefined, // workspaceDir
       );
       expect(result.id).toBe('new-uuid');
     });

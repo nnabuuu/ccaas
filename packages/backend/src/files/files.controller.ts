@@ -11,16 +11,23 @@ import {
   StreamableFile,
   UseInterceptors,
   UploadedFile,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { FilesService } from './files.service';
+import { SessionService } from '../chat/session.service';
 import { createReadStream } from 'fs';
 import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
 @Controller('api/v1/files')
 export class FilesController {
-  constructor(private readonly filesService: FilesService) {}
+  constructor(
+    private readonly filesService: FilesService,
+    @Inject(forwardRef(() => SessionService))
+    private readonly sessionService: SessionService,
+  ) {}
 
   /**
    * Get file metadata
@@ -164,6 +171,10 @@ export class FilesController {
    * POST /api/v1/files/upload
    *
    * messageId is optional - if not provided, a placeholder will be used for user uploads
+   *
+   * Files are written to:
+   * 1. Session workspace (for agent access): .agent-workspace/sessions/{sessionId}/{targetPath}/{filename}
+   * 2. Persistent storage (for versioning): .agent-workspace/files/{tenantId}/{messageId}/{filename}
    */
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -182,6 +193,10 @@ export class FilesController {
     // Validate file
     this.filesService.validateUpload(file);
 
+    // Get session workspace directory (if session exists)
+    const session = this.sessionService.getSession(sessionId);
+    const workspaceDir = session?.workspaceDir;
+
     // For user uploads without chat context, pass null messageId
     return this.filesService.uploadFile(
       file.buffer,
@@ -190,6 +205,7 @@ export class FilesController {
       messageId || null,
       tenantId,
       targetPath,
+      workspaceDir, // Pass workspace directory for agent access
     );
   }
 }

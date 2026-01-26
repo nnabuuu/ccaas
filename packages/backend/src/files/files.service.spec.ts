@@ -679,6 +679,157 @@ describe('FilesService', () => {
         { recursive: true },
       );
     });
+
+    describe('workspace-first behavior', () => {
+      it('should write file to workspace FIRST when workspaceDir provided', async () => {
+        const buffer = Buffer.from('test content');
+        repository.create.mockReturnValue(mockFile());
+        repository.save.mockResolvedValue(mockFile());
+
+        const writeFileCalls: string[] = [];
+        mockFs.writeFile.mockImplementation((filePath) => {
+          writeFileCalls.push(filePath as string);
+          return Promise.resolve();
+        });
+
+        await service.uploadFile(
+          buffer,
+          'welcome.md',
+          'session-1',
+          'msg-1',
+          'tenant-1',
+          undefined,
+          '/tmp/workspace',
+        );
+
+        // First call should be to workspace
+        expect(writeFileCalls[0]).toBe('/tmp/workspace/welcome.md');
+        // Second call should be to persistent storage
+        expect(writeFileCalls[1]).toContain('tenant-1');
+      });
+
+      it('should also write file to persistent storage', async () => {
+        const buffer = Buffer.from('test content');
+        repository.create.mockReturnValue(mockFile());
+        repository.save.mockResolvedValue(mockFile());
+
+        await service.uploadFile(
+          buffer,
+          'welcome.md',
+          'session-1',
+          'msg-1',
+          'tenant-1',
+          undefined,
+          '/tmp/workspace',
+        );
+
+        // Should have two writeFile calls (workspace + storage)
+        expect(mockFs.writeFile).toHaveBeenCalledTimes(2);
+      });
+
+      it('should create database record with correct paths', async () => {
+        const buffer = Buffer.from('test content');
+        const file = mockFile({ originalPath: 'welcome.md' });
+        repository.create.mockReturnValue(file);
+        repository.save.mockResolvedValue(file);
+
+        await service.uploadFile(
+          buffer,
+          'welcome.md',
+          'session-1',
+          'msg-1',
+          'tenant-1',
+          undefined,
+          '/tmp/workspace',
+        );
+
+        expect(repository.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            originalPath: 'welcome.md',
+            filename: 'welcome.md',
+            sessionId: 'session-1',
+            messageId: 'msg-1',
+          }),
+        );
+      });
+
+      it('should handle nested targetPath (e.g., docs/reports/)', async () => {
+        const buffer = Buffer.from('test content');
+        repository.create.mockReturnValue(mockFile());
+        repository.save.mockResolvedValue(mockFile());
+
+        await service.uploadFile(
+          buffer,
+          'report.pdf',
+          'session-1',
+          'msg-1',
+          'tenant-1',
+          'docs/reports',
+          '/tmp/workspace',
+        );
+
+        // Should create nested directory in workspace
+        expect(mockFs.mkdir).toHaveBeenCalledWith(
+          '/tmp/workspace/docs/reports',
+          { recursive: true },
+        );
+        // Should write to nested path in workspace
+        expect(mockFs.writeFile).toHaveBeenCalledWith(
+          '/tmp/workspace/docs/reports/report.pdf',
+          buffer,
+        );
+      });
+
+      it('should skip workspace write when workspaceDir is undefined', async () => {
+        const buffer = Buffer.from('test content');
+        repository.create.mockReturnValue(mockFile());
+        repository.save.mockResolvedValue(mockFile());
+
+        await service.uploadFile(
+          buffer,
+          'welcome.md',
+          'session-1',
+          'msg-1',
+          'tenant-1',
+        );
+
+        // Should have only one writeFile call (to persistent storage)
+        expect(mockFs.writeFile).toHaveBeenCalledTimes(1);
+        expect(mockFs.writeFile).toHaveBeenCalledWith(
+          expect.stringContaining('tenant-1'),
+          buffer,
+        );
+      });
+
+      it('should still write to persistent storage if workspace write fails', async () => {
+        const buffer = Buffer.from('test content');
+        repository.create.mockReturnValue(mockFile());
+        repository.save.mockResolvedValue(mockFile());
+
+        let callCount = 0;
+        mockFs.writeFile.mockImplementation(() => {
+          callCount++;
+          if (callCount === 1) {
+            // First call (workspace) fails
+            return Promise.reject(new Error('Workspace write failed'));
+          }
+          return Promise.resolve();
+        });
+
+        // Should throw because workspace write failed
+        await expect(
+          service.uploadFile(
+            buffer,
+            'welcome.md',
+            'session-1',
+            'msg-1',
+            'tenant-1',
+            undefined,
+            '/tmp/workspace',
+          ),
+        ).rejects.toThrow();
+      });
+    });
   });
 
   describe('validateUpload', () => {

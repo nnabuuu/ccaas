@@ -420,6 +420,18 @@ export class FilesService {
 
   /**
    * Upload a file from user
+   *
+   * Files are written to two locations:
+   * 1. Session workspace (for agent access): workspaceDir/{targetPath}/{filename}
+   * 2. Persistent storage (for versioning): .agent-workspace/files/{tenantId}/{subDir}/{filename}
+   *
+   * @param fileBuffer - The file content
+   * @param originalFilename - Original filename from upload
+   * @param sessionId - Session ID
+   * @param messageId - Message ID (null for pre-chat uploads)
+   * @param tenantId - Tenant ID (optional)
+   * @param targetPath - Target path within workspace (optional)
+   * @param workspaceDir - Session workspace directory (optional, for agent access)
    */
   async uploadFile(
     fileBuffer: Buffer,
@@ -428,17 +440,34 @@ export class FilesService {
     messageId: string | null,
     tenantId?: string,
     targetPath?: string,
+    workspaceDir?: string,
   ): Promise<FileUploadResult> {
     const filename = path.basename(originalFilename);
     const mimeType = mimeLookup(filename) || null;
 
-    // Determine the original path (virtual path in file system)
+    // Determine the virtual path (relative path in workspace)
     const originalPath = targetPath
       ? path.join(targetPath, filename)
       : filename;
 
-    // Create persistent storage path
-    // For user uploads without messageId, use sessionId as subdirectory
+    // ==========================================
+    // STEP 1: Write to session workspace FIRST
+    // (So agent can access the file immediately)
+    // ==========================================
+    if (workspaceDir) {
+      const workspacePath = path.join(workspaceDir, originalPath);
+      const workspaceParentDir = path.dirname(workspacePath);
+
+      await fs.mkdir(workspaceParentDir, { recursive: true });
+      await fs.writeFile(workspacePath, fileBuffer);
+
+      this.logger.debug(`Uploaded file to workspace: ${workspacePath}`);
+    }
+
+    // ==========================================
+    // STEP 2: Copy to persistent storage
+    // (For version history, survives session cleanup)
+    // ==========================================
     const tenantDir = tenantId || 'default';
     const subDir = messageId || `session-${sessionId}`;
     const storedDir = path.join(
@@ -448,19 +477,19 @@ export class FilesService {
     );
     const storedPath = path.join(storedDir, filename);
 
-    // Ensure directory exists
     await fs.mkdir(storedDir, { recursive: true });
 
-    // Write file to storage
     try {
       await fs.writeFile(storedPath, fileBuffer);
-      this.logger.debug(`Uploaded file to ${storedPath}`);
+      this.logger.debug(`Stored file version: ${storedPath}`);
     } catch (error) {
-      this.logger.error(`Failed to write uploaded file: ${error.message}`);
+      this.logger.error(`Failed to store file version: ${error.message}`);
       throw new InternalServerErrorException('Failed to store uploaded file');
     }
 
-    // Create database record
+    // ==========================================
+    // STEP 3: Create database record
+    // ==========================================
     const agentFile = this.fileRepository.create({
       messageId,
       sessionId,
