@@ -9,6 +9,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
@@ -59,6 +60,10 @@ describe('FilesController', () => {
       getSession: jest.fn(),
     };
 
+    const mockConfigService = {
+      get: jest.fn().mockReturnValue('.agent-workspace'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [FilesController],
       providers: [
@@ -69,6 +74,10 @@ describe('FilesController', () => {
         {
           provide: SessionService,
           useValue: mockSessionService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -214,7 +223,7 @@ describe('FilesController', () => {
         'msg-1',
         'tenant-1',
         undefined,
-        undefined, // workspaceDir (no session)
+        expect.stringContaining('sessions/session-1'), // fallback workspaceDir
       );
     });
 
@@ -277,7 +286,7 @@ describe('FilesController', () => {
         'msg-1',
         'tenant-1',
         'uploads/docs',
-        undefined,
+        expect.stringContaining('sessions/session-1'), // fallback workspaceDir
       );
     });
 
@@ -309,7 +318,7 @@ describe('FilesController', () => {
         null, // messageId should be null
         undefined, // tenantId
         undefined, // targetPath
-        undefined, // workspaceDir
+        expect.stringContaining('sessions/session-1'), // fallback workspaceDir
       );
       expect(result.id).toBe('new-uuid');
     });
