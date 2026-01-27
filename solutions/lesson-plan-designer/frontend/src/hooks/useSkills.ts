@@ -3,7 +3,7 @@ import type { Skill } from '../types'
 
 export interface UseSkillsReturn {
   /**
-   * List of all skills fetched from the API
+   * List of all skills fetched from the CCAAS API
    */
   skills: Skill[]
 
@@ -33,12 +33,12 @@ export interface UseSkillsReturn {
   filteredSkills: Skill[]
 
   /**
-   * Toggle skill enabled/disabled state
+   * Toggle skill enabled/disabled state (calls CCAAS API)
    */
-  toggleSkill: (skillId: string) => void
+  toggleSkill: (skillId: string) => Promise<void>
 
   /**
-   * Set of enabled skill IDs
+   * Set of enabled skill IDs (derived from skill.enabled)
    */
   enabledSkillIds: Set<string>
 
@@ -55,8 +55,8 @@ export interface UseSkillsReturn {
 
 /**
  * Hook for managing skills data and state.
- * Fetches skills from API, provides search/filter functionality,
- * and manages enabled/disabled state for skills.
+ * Fetches skills from CCAAS API, provides search/filter functionality,
+ * and manages enabled/disabled state (persisted to CCAAS).
  *
  * @param tenantId - Tenant ID to fetch skills for
  */
@@ -65,21 +65,27 @@ export function useSkills(tenantId: string): UseSkillsReturn {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [enabledSkillIds, setEnabledSkillIds] = useState<Set<string>>(new Set())
 
   const fetchSkills = useCallback(async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const response = await fetch(`/api/v1/skills?tenantId=${tenantId}`)
+      // Fetch from CCAAS skills API (via vite proxy)
+      const response = await fetch('/api/v1/skills', {
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+      })
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
-      setSkills(data)
+      // CCAAS returns { items: Skill[], total, page, limit, totalPages }
+      const skillItems = Array.isArray(data) ? data : (data.items || [])
+      setSkills(skillItems)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch skills')
     } finally {
@@ -107,17 +113,35 @@ export function useSkills(tenantId: string): UseSkillsReturn {
     )
   }, [skills, searchQuery])
 
-  const toggleSkill = useCallback((skillId: string) => {
-    setEnabledSkillIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(skillId)) {
-        next.delete(skillId)
-      } else {
-        next.add(skillId)
+  // Derive enabled skill IDs from skill.enabled property
+  const enabledSkillIds = useMemo(() => {
+    return new Set(skills.filter(s => s.enabled).map(s => s.id))
+  }, [skills])
+
+  // Toggle skill enabled state via CCAAS API
+  const toggleSkill = useCallback(async (skillId: string) => {
+    try {
+      const response = await fetch(`/api/v1/skills/${skillId}/toggle`, {
+        method: 'PATCH',
+        headers: {
+          'X-Tenant-Id': tenantId,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      return next
-    })
-  }, [])
+
+      const updatedSkill = await response.json()
+
+      // Update local state with the toggled skill
+      setSkills((prev) =>
+        prev.map((s) => (s.id === skillId ? updatedSkill : s))
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to toggle skill')
+    }
+  }, [tenantId])
 
   const isSkillEnabled = useCallback(
     (skillId: string): boolean => {

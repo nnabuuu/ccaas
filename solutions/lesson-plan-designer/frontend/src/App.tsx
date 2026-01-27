@@ -9,14 +9,18 @@ import LessonPlanContent, { OUTLINE_ITEMS } from './components/LessonPlanContent
 import ChatPanel from './components/ChatPanel'
 import SkillsPanel from './components/SkillsPanel'
 import CreateLessonPlanDialog from './components/CreateLessonPlanDialog'
+import SkillEditorModal from './components/SkillEditorModal'
+import { api } from './utils/api'
 import type { Skill } from './types'
 
-const TENANT_ID = 'default-tenant'
+const TENANT_ID = 'lesson-plan-designer'
 
 function App() {
   const [showNewDialog, setShowNewDialog] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
+  const [skillSaving, setSkillSaving] = useState(false)
 
   // Skills hook (must be before session hook to provide enabledSkillSlugs)
   const {
@@ -28,6 +32,7 @@ function App() {
     filteredSkills,
     toggleSkill,
     enabledSkillIds,
+    refresh: refreshSkills,
   } = useSkills(TENANT_ID)
 
   // Convert enabled skill IDs to slugs for the session hook
@@ -47,6 +52,10 @@ function App() {
     messages,
     isProcessing,
     modifiedFields,
+    activeTools,
+    isThinking,
+    thinkingContent,
+    tokenUsage,
     sendMessage,
     saveLessonPlan,
     createNewPlan,
@@ -163,11 +172,27 @@ function App() {
     }
   }, [sendMessage])
 
-  // Handle skill edit (placeholder for now)
+  // Handle skill edit - open modal
   const handleEditSkill = useCallback((skill: Skill) => {
-    // TODO: Open skill editor modal or navigate to skill edit page
-    console.log('Edit skill:', skill)
+    setEditingSkill(skill)
   }, [])
+
+  // Handle skill editor close
+  const handleCloseSkillEditor = useCallback(() => {
+    setEditingSkill(null)
+  }, [])
+
+  // Handle skill save
+  const handleSaveSkill = useCallback(async (skillId: string, content: string) => {
+    setSkillSaving(true)
+    try {
+      await api.updateSkill(skillId, { content })
+      await refreshSkills()
+      setEditingSkill(null)
+    } finally {
+      setSkillSaving(false)
+    }
+  }, [refreshSkills])
 
   // Create savingSections set from isSaving function
   const savingSections = useMemo(() => {
@@ -296,15 +321,31 @@ function App() {
         {/* Right Panel - Chat + Skills (400px) */}
         <aside className="w-[400px] flex-shrink-0 flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
           {/* Chat Panel */}
-          <div className="flex-1 overflow-hidden">
-            <ChatPanel
-              messages={messages}
-              isProcessing={isProcessing}
-              connected={connected}
-              onSendMessage={sendMessage}
-              onSync={syncToForm}
-              onDiscard={discardUpdate}
-            />
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="flex-1 overflow-hidden">
+              <ChatPanel
+                messages={messages}
+                isProcessing={isProcessing}
+                connected={connected}
+                activeTools={activeTools}
+                isThinking={isThinking}
+                thinkingContent={thinkingContent}
+                onSendMessage={sendMessage}
+                onSync={syncToForm}
+                onDiscard={discardUpdate}
+              />
+            </div>
+            {/* Token Usage Status Bar */}
+            {tokenUsage && (
+              <div className="px-4 py-1.5 bg-gray-100 border-t border-gray-200 text-xs text-gray-500 flex items-center justify-between">
+                <span>
+                  Tokens: {tokenUsage.sessionInputTokens?.toLocaleString() ?? tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.sessionOutputTokens?.toLocaleString() ?? tokenUsage.outputTokens.toLocaleString()} out
+                </span>
+                {tokenUsage.model && (
+                  <span className="text-gray-400">{tokenUsage.model}</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Skills Panel */}
@@ -328,6 +369,15 @@ function App() {
         hasUnsavedChanges={hasUnsavedChanges}
         onClose={() => setShowNewDialog(false)}
         onCreate={handleCreateNew}
+      />
+
+      {/* Skill Editor Modal */}
+      <SkillEditorModal
+        skill={editingSkill}
+        open={editingSkill !== null}
+        saving={skillSaving}
+        onClose={handleCloseSkillEditor}
+        onSave={handleSaveSkill}
       />
     </div>
   )

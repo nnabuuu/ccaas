@@ -1,0 +1,139 @@
+import type { LessonPlan, CreateLessonPlanInput, UpdateLessonPlanInput, SyncField, Skill } from '../types'
+
+const API_BASE = '/api'
+
+class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new ApiError(response.status, error.error || 'Request failed')
+  }
+  return response.json()
+}
+
+// Types for CCAAS messages
+export interface CcaasToolEvent {
+  id: string
+  toolUseId: string
+  toolName: string
+  phase: string
+  toolInput: Record<string, unknown> | null
+  toolOutput: unknown
+  success: boolean | null
+  durationMs: number | null
+  createdAt: string
+}
+
+export interface CcaasMessage {
+  id: string
+  sessionId: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+  toolEvents?: CcaasToolEvent[]
+}
+
+// Solution config from backend
+export interface SolutionConfig {
+  mcpServers: Record<string, {
+    command: string
+    args: string[]
+    description?: string
+  }>
+  skillPath: string | null
+  skillSlug: string | null
+}
+
+export const api = {
+  // Get solution config (mcpServers, skillPath for CCAAS)
+  async getSolutionConfig(): Promise<SolutionConfig> {
+    const response = await fetch(`${API_BASE}/config`)
+    return handleResponse<SolutionConfig>(response)
+  },
+
+  // List all lesson plans
+  async listLessonPlans(tenantId?: string): Promise<LessonPlan[]> {
+    const url = tenantId
+      ? `${API_BASE}/lesson-plans?tenantId=${encodeURIComponent(tenantId)}`
+      : `${API_BASE}/lesson-plans`
+    const response = await fetch(url)
+    return handleResponse<LessonPlan[]>(response)
+  },
+
+  // Get a single lesson plan
+  async getLessonPlan(id: string): Promise<LessonPlan> {
+    const response = await fetch(`${API_BASE}/lesson-plans/${id}`)
+    return handleResponse<LessonPlan>(response)
+  },
+
+  // Create a new lesson plan
+  async createLessonPlan(input: CreateLessonPlanInput): Promise<LessonPlan> {
+    const response = await fetch(`${API_BASE}/lesson-plans`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return handleResponse<LessonPlan>(response)
+  },
+
+  // Update a lesson plan
+  async updateLessonPlan(id: string, input: UpdateLessonPlanInput): Promise<LessonPlan> {
+    const response = await fetch(`${API_BASE}/lesson-plans/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    })
+    return handleResponse<LessonPlan>(response)
+  },
+
+  // Patch a single field
+  async patchField(id: string, field: SyncField, value: unknown): Promise<LessonPlan> {
+    const response = await fetch(`${API_BASE}/lesson-plans/${id}/field`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ field, value }),
+    })
+    return handleResponse<LessonPlan>(response)
+  },
+
+  // Delete a lesson plan
+  async deleteLessonPlan(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE}/lesson-plans/${id}`, {
+      method: 'DELETE',
+    })
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to delete lesson plan')
+    }
+  },
+
+  // Get session messages from CCAAS (via solution backend proxy)
+  async getSessionMessages(sessionId: string, includeToolEvents = true): Promise<{
+    messages: CcaasMessage[]
+  }> {
+    const url = `${API_BASE}/sessions/${sessionId}/messages${includeToolEvents ? '?includeToolEvents=true' : ''}`
+    const response = await fetch(url)
+    return handleResponse(response)
+  },
+
+  // Update a skill (content)
+  async updateSkill(id: string, updates: { content?: string }, tenantId = 'lesson-plan-designer'): Promise<Skill> {
+    const response = await fetch(`${API_BASE}/v1/skills/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-Id': tenantId,
+      },
+      body: JSON.stringify(updates),
+    })
+    return handleResponse<Skill>(response)
+  },
+}
+
+export { ApiError }
+export default api

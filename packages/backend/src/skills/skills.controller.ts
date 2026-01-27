@@ -9,6 +9,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -25,6 +26,7 @@ import {
 } from './dto/skill.dto';
 import { TenantGuard } from '../tenants/tenant.guard';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
 
 @Controller('api/v1/skills')
 @UseGuards(TenantGuard)
@@ -155,5 +157,16 @@ export class SkillsController {
     @Param('version') version: string,
   ) {
     return this.skillsService.rollbackToVersion(tenantId, id, version);
+  }
+
+  /**
+   * Toggle skill enabled/disabled state
+   */
+  @Patch(':id/toggle')
+  async toggle(
+    @CurrentTenant() tenantId: string,
+    @Param('id', ParseIdOrSlugPipe) id: string,
+  ) {
+    return this.skillsService.toggle(tenantId, id);
   }
 }

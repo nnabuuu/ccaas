@@ -371,6 +371,22 @@ export class SkillsService {
     });
   }
 
+  /**
+   * Toggle the enabled state of a skill
+   */
+  async toggle(tenantId: string, idOrSlug: string): Promise<Skill> {
+    const skill = await this.findOne(tenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+
+    skill.enabled = !skill.enabled;
+    const saved = await this.skillRepository.save(skill);
+
+    this.logger.log(`Toggled skill ${saved.name} (${saved.slug}) enabled=${saved.enabled}`);
+    return saved;
+  }
+
   // =========================================================================
   // Helper Methods
   // =========================================================================

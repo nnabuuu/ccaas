@@ -59,6 +59,9 @@ export class Skill {
   @Column({ default: 'draft' })
   status: SkillStatus;
 
+  @Column({ default: true })
+  enabled: boolean;
+
   @Column({ default: '1.0.0' })
   currentVersion: string;
 

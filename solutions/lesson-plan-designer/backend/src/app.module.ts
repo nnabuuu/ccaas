@@ -4,7 +4,6 @@ import { DatabaseModule } from './database/database.module';
 import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SolutionConfigModule } from './config/config.module';
-import { SkillsModule } from './skills/skills.module';
 import { TextbookModule } from './textbook/textbook.module';
 import { CurriculumStandardsModule } from './curriculum-standards/curriculum-standards.module';
 
@@ -18,7 +17,7 @@ import { CurriculumStandardsModule } from './curriculum-standards/curriculum-sta
     LessonPlansModule,
     SessionsModule,
     SolutionConfigModule,
-    SkillsModule,
+    // Skills are now managed by CCAAS backend, not solution backend
     TextbookModule,
     CurriculumStandardsModule,
   ],
