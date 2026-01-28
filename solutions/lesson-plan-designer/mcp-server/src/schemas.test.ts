@@ -31,7 +31,7 @@ import {
   validateAndFixField,
   parseJsonSafely,
   FieldSchemas,
-} from './schemas';
+} from './schemas.js';
 
 // ============================================================================
 // 基础字段测试
@@ -190,7 +190,7 @@ describe('Learning Objectives Schema', () => {
       ];
       const result = ObjectivesSchema.safeParse(objectives);
       expect(result.success).toBe(true);
-      result.data?.forEach((obj) => {
+      result.data?.forEach((obj: { id: string }) => {
         expect(obj.id).toMatch(/^obj-\d+-[a-z0-9]+$/);
       });
     });
@@ -770,7 +770,7 @@ describe('Integration: AI Output Simulation', () => {
     const result = validateAndFixField('objectives', aiOutput);
     expect(result.success).toBe(true);
     expect(result.data).toHaveLength(2);
-    result.data?.forEach((obj) => {
+    result.data?.forEach((obj: { id: string }) => {
       expect(obj.id).toBeDefined();
       expect(obj.id).toMatch(/^obj-\d+-[a-z0-9]+$/);
     });

@@ -4,7 +4,8 @@
  * Data transfer object for creating a completion (sending a message).
  */
 
-import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 /**
  * MCP Server configuration passed from solution backends
@@ -14,6 +15,17 @@ export interface McpServerConfig {
   args: string[];
   description?: string;
   env?: Record<string, string>;
+}
+
+/**
+ * Attachment sent with a completion request (e.g. an uploaded image)
+ */
+export class AttachmentDto {
+  @IsString()
+  type: string; // 'image' | 'document'
+
+  @IsString()
+  path: string; // workspace-relative path, e.g. "images/photo.png"
 }
 
 /**
@@ -42,6 +54,12 @@ export class CreateCompletionDto {
   @IsArray()
   @IsString({ each: true })
   enabledSkillSlugs?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => AttachmentDto)
+  attachments?: AttachmentDto[];
 }
 
 /**

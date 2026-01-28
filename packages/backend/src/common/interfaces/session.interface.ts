@@ -37,6 +37,14 @@ export interface ManagedSession {
   // Session restart tracking (for new skill visibility)
   needsRestart?: boolean;
   skillSyncedAt?: Date;
+
+  // MCP servers configuration passed from solution backends
+  mcpServers?: Record<string, {
+    command: string;
+    args: string[];
+    description?: string;
+    env?: Record<string, string>;
+  }>;
 }
 
 /**

@@ -25,6 +25,12 @@ import type {
   FrontendEvent,
 } from '../common/interfaces';
 
+export interface ResolvedAttachment {
+  type: string;        // 'image' | 'document'
+  absolutePath: string;
+  mimeType: string;
+}
+
 @Injectable()
 export class SessionService implements OnModuleDestroy {
   private readonly logger = new Logger(SessionService.name);
@@ -36,6 +42,7 @@ export class SessionService implements OnModuleDestroy {
   private readonly sessionTtlMs: number;
   private readonly maxSessions: number;
   private readonly cleanupIntervalMs: number;
+  private readonly claudeCliPath: string;
 
   constructor(
     private readonly configService: ConfigService,
@@ -45,7 +52,9 @@ export class SessionService implements OnModuleDestroy {
     this.sessionTtlMs = this.configService.get('workspace.sessionTtlMs', 1800000);
     this.maxSessions = this.configService.get('workspace.maxSessions', 100);
     this.cleanupIntervalMs = this.configService.get('workspace.cleanupIntervalMs', 300000);
+    this.claudeCliPath = this.configService.get('CLAUDE_CLI_PATH', 'claude');
 
+    this.logger.log(`Using Claude CLI: ${this.claudeCliPath}`);
     this.startCleanupTimer();
   }
 
@@ -164,17 +173,18 @@ export class SessionService implements OnModuleDestroy {
     session: ManagedSession,
     initialMessage: string,
     onEvent: (event: FrontendEvent) => void,
+    attachments?: ResolvedAttachment[],
   ): Promise<void> {
     if (session.cliProcess && session.stdin && !session.cliProcess.killed) {
       this.logger.log(`Reusing CLI process for session ${session.sessionId}`);
-      this.sendMessageToProcess(session, initialMessage);
+      this.sendMessageToProcess(session, initialMessage, attachments);
       return;
     }
 
     this.logger.log(`Spawning new CLI process for session ${session.sessionId}`);
 
     // Build base command
-    let shellCommand = 'claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions';
+    let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions`;
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
@@ -183,6 +193,9 @@ export class SessionService implements OnModuleDestroy {
       const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
       shellCommand += ` --mcp-config '${escapedConfig}'`;
       this.logger.log(`Session ${session.sessionId} using MCP servers: ${Object.keys(session.mcpServers).join(', ')}`);
+      this.logger.debug(`MCP config: ${mcpConfig}`);
+    } else {
+      this.logger.warn(`Session ${session.sessionId} has NO MCP servers configured`);
     }
 
     this.logger.log(`Running command: ${shellCommand}`);
@@ -208,7 +221,7 @@ export class SessionService implements OnModuleDestroy {
 
     cli.on('spawn', () => {
       this.logger.log(`Process spawn confirmed for session ${session.sessionId}`);
-      this.sendMessageToProcess(session, initialMessage);
+      this.sendMessageToProcess(session, initialMessage, attachments);
     });
 
     cli.stdout.on('data', (chunk: Buffer) => {
@@ -243,12 +256,13 @@ export class SessionService implements OnModuleDestroy {
     session: ManagedSession,
     message: string,
     onEvent: (event: FrontendEvent) => void,
+    attachments?: ResolvedAttachment[],
   ): Promise<void> {
     this.logger.log(`Sending follow-up message to session ${session.sessionId}`);
 
     if (session.cliProcess && !session.cliProcess.killed && session.stdin) {
       this.logger.log('Reusing existing CLI process for follow-up');
-      this.sendMessageToProcess(session, message);
+      this.sendMessageToProcess(session, message, attachments);
       onEvent({
         type: 'agent_status',
         status: 'running',
@@ -260,7 +274,7 @@ export class SessionService implements OnModuleDestroy {
     this.logger.log('CLI process not running, spawning new with --resume');
 
     // Build base command with --resume
-    let shellCommand = `claude --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
+    let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
@@ -296,7 +310,7 @@ export class SessionService implements OnModuleDestroy {
     });
 
     cli.on('spawn', () => {
-      this.sendMessageToProcess(session, message);
+      this.sendMessageToProcess(session, message, attachments);
     });
 
     cli.stdout.on('data', (chunk: Buffer) => {
@@ -397,27 +411,70 @@ export class SessionService implements OnModuleDestroy {
       status: code === 0 ? 'complete' : 'error',
       sessionId: session.sessionId,
       exitCode: code,
+      ...(code !== 0 && { error: `CLI process exited with code ${code}` }),
     });
   }
 
   /**
-   * Send message to CLI stdin
+   * Send message to CLI stdin, optionally with image attachments as multi-block content
    */
-  private sendMessageToProcess(session: ManagedSession, message: string): void {
-    if (session.stdin && !session.stdin.destroyed) {
-      const jsonMessage = JSON.stringify({
-        type: 'user',
-        message: {
-          role: 'user',
-          content: message,
-        },
-      });
-      this.logger.debug(`Sending message to CLI: ${jsonMessage.slice(0, 100)}...`);
-      session.stdin.write(jsonMessage + '\n');
-      session.lastActivity = new Date();
-      session.status = 'processing';
-      session.messageCount++;
+  private sendMessageToProcess(
+    session: ManagedSession,
+    message: string,
+    attachments?: ResolvedAttachment[],
+  ): void {
+    if (!session.stdin || session.stdin.destroyed) return;
+
+    let content: string | object[];
+
+    if (attachments && attachments.length > 0) {
+      // Build multi-block content: text + images (Anthropic Messages API format)
+      const blocks: object[] = [];
+
+      // Text block
+      blocks.push({ type: 'text', text: message });
+
+      // Attachment blocks
+      for (const att of attachments) {
+        if (att.type === 'image') {
+          try {
+            const fileBuffer = fs.readFileSync(att.absolutePath);
+            const base64Data = fileBuffer.toString('base64');
+            blocks.push({
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: att.mimeType,
+                data: base64Data,
+              },
+            });
+            this.logger.log(
+              `Attached image: ${att.absolutePath} (${Math.round(fileBuffer.length / 1024)}KB)`,
+            );
+          } catch (err) {
+            this.logger.error(`Failed to read attachment ${att.absolutePath}: ${err}`);
+          }
+        }
+      }
+
+      content = blocks;
+    } else {
+      content = message;
     }
+
+    const jsonMessage = JSON.stringify({
+      type: 'user',
+      message: {
+        role: 'user',
+        content,
+      },
+    });
+
+    this.logger.debug(`Sending message to CLI: ${jsonMessage.slice(0, 200)}...`);
+    session.stdin.write(jsonMessage + '\n');
+    session.lastActivity = new Date();
+    session.status = 'processing';
+    session.messageCount++;
   }
 
   /**

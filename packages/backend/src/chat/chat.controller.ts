@@ -17,9 +17,9 @@ import {
 } from '@nestjs/common';
 import { SessionService } from './session.service';
 import { ChatGateway } from './chat.gateway';
-import { ChatMessageDto } from './dto/chat-message.dto';
+import { ChatMessageDto, SendMessageDto, CancelOperationDto } from './dto/chat-message.dto';
 
-@Controller()
+@Controller('api/v1/chat')
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
@@ -105,6 +105,90 @@ export class ChatController {
       this.logger.error(`Error initiating chat: ${error}`);
       throw new BadRequestException(error instanceof Error ? error.message : 'Unknown error');
     }
+  }
+
+  /**
+   * Send message via REST API (primary entry point for unidirectional WebSocket architecture)
+   * Response streams via WebSocket events
+   */
+  @Post('send')
+  async sendMessage(@Body() data: SendMessageDto) {
+    const { clientId, message, sessionId, tenantId, resumeSession, mcpServers } = data;
+
+    // Validate clientId
+    if (!clientId) {
+      throw new BadRequestException('clientId is required');
+    }
+
+    // Find WebSocket connection
+    const socket = this.chatGateway.getClientSocket(clientId);
+    if (!socket) {
+      throw new BadRequestException('Client not connected via WebSocket');
+    }
+
+    // Get or create session
+    const finalSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    this.logger.log(`REST send initiated for client ${clientId}, session ${finalSessionId}`);
+
+    try {
+      const session = this.sessionService.getOrCreateSession(finalSessionId, clientId, socket);
+
+      // Set tenant and MCP configuration
+      if (tenantId) session.tenantId = tenantId;
+      if (mcpServers) session.mcpServers = mcpServers;
+
+      // Notify frontend that agent is starting
+      socket.emit('agent_status', {
+        status: 'running',
+        sessionId: finalSessionId,
+      });
+
+      // Start processing (async, response streams via WebSocket)
+      if (session.messageCount > 0 || resumeSession) {
+        this.sessionService.sendFollowUp(session, message, (event) => {
+          socket.emit(event.type, event);
+        });
+      } else {
+        this.sessionService.ensureCLIProcess(session, message, (event) => {
+          socket.emit(event.type, event);
+        });
+      }
+
+      return { success: true, sessionId: finalSessionId };
+    } catch (error) {
+      this.logger.error(`Error in sendMessage: ${error}`);
+      throw new BadRequestException(error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
+  /**
+   * Cancel current operation via REST API
+   */
+  @Post('cancel')
+  async cancelOperation(@Body() data: CancelOperationDto) {
+    const { clientId, sessionId } = data;
+
+    const socket = this.chatGateway.getClientSocket(clientId);
+    if (!socket) {
+      throw new BadRequestException('Client not connected');
+    }
+
+    // Find session to cancel
+    const session = sessionId
+      ? this.sessionService.getSession(sessionId)
+      : this.sessionService.getSessionByClientId(clientId);
+
+    if (session) {
+      this.sessionService.cancelSession(session.sessionId);
+      socket.emit('agent_status', {
+        status: 'cancelled',
+        sessionId: session.sessionId,
+      });
+      this.logger.log(`Cancelled session ${session.sessionId} via REST`);
+    }
+
+    return { success: true };
   }
 
   /**

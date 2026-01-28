@@ -36,6 +36,7 @@ import { AdminAuditLog, SessionAlert } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
 import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
 import { LessonPlanEntity } from './lesson-plans/entities/lesson-plan.entity';
+import { SessionsModule } from './sessions/sessions.module';
 
 @Module({
   imports: [
@@ -97,6 +98,9 @@ import { LessonPlanEntity } from './lesson-plans/entities/lesson-plan.entity';
 
     // Lesson Plan module
     LessonPlansModule,
+
+    // Sessions REST API module
+    SessionsModule,
   ],
 })
 export class AppModule {}

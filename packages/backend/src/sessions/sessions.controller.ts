@@ -53,9 +53,10 @@ export class SessionsController {
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
   ) {
-    const { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs } = data;
+    const { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
 
     this.logger.log(`Creating completion for session ${sessionId}`);
+    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}`);
 
     // Find WebSocket connection
     const socket = this.chatGateway.getClientSocket(clientId);
@@ -125,6 +126,50 @@ export class SessionsController {
           fs.mkdirSync(targetDir, { recursive: true });
           fs.copyFileSync(skillPath, path.join(targetDir, 'SKILL.md'));
           this.logger.log(`Copied skill ${skillName} to session workspace from ${skillPath}`);
+
+          // Create CLAUDE.md to instruct Claude to read context and use skill
+          const claudeMdPath = path.join(session.workspaceDir, 'CLAUDE.md');
+          const claudeMdContent = `# AI备课助手
+
+## 强制执行步骤
+
+**在回复用户的任何消息之前，你必须按顺序执行以下步骤：**
+
+### 第一步：读取当前备课方案
+
+使用 Read 工具读取上下文文件：
+\`\`\`
+Read(".context/lesson-plan.json")
+\`\`\`
+
+这个文件包含用户当前正在编辑的备课方案，包括：
+- 基本信息：科目、年级、教材版本、章节
+- 教学目标、教学活动、评估方案、差异化策略
+
+### 第二步：阅读技能指南
+
+使用 Read 工具读取备课技能的完整指南：
+\`\`\`
+Read(".claude/skills/${skillName}/SKILL.md")
+\`\`\`
+
+### 第三步：根据上下文回复
+
+- 根据已有信息提供针对性的建议
+- **禁止**询问用户已经在表单中填写的信息
+- 如果某个字段为空，可以主动建议填充内容
+- 使用 \`write_output\` 工具将建议写入表单
+
+## 可用 MCP 工具
+
+- \`write_output(field, value, preview)\`: 将内容写入前端表单字段
+
+## 响应语言
+
+使用中文回复用户。
+`;
+          fs.writeFileSync(claudeMdPath, claudeMdContent, 'utf-8');
+          this.logger.log(`Created CLAUDE.md for session ${sessionId}`);
         } catch (error) {
           this.logger.warn(`Failed to copy skill file: ${error}`);
         }
@@ -195,13 +240,24 @@ export class SessionsController {
         }
       };
 
+      // Resolve attachment paths to absolute paths
+      const resolvedAttachments = attachments?.map(a => ({
+        type: a.type,
+        absolutePath: path.join(session.workspaceDir, a.path),
+        mimeType: this.guessMimeType(a.path),
+      }));
+
+      if (resolvedAttachments?.length) {
+        this.logger.log(`Resolved ${resolvedAttachments.length} attachments for session ${sessionId}`);
+      }
+
       // Check if this is a follow-up message
       if (session.messageCount > 0) {
         // Follow-up message - use --resume
-        await this.sessionService.sendFollowUp(session, message, handleEvent);
+        await this.sessionService.sendFollowUp(session, message, handleEvent, resolvedAttachments);
       } else {
         // First message - spawn new CLI process
-        await this.sessionService.ensureCLIProcess(session, message, handleEvent);
+        await this.sessionService.ensureCLIProcess(session, message, handleEvent, resolvedAttachments);
       }
 
       return { success: true, sessionId };
@@ -214,6 +270,18 @@ export class SessionsController {
       });
       throw error;
     }
+  }
+
+  private guessMimeType(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    const map: Record<string, string> = {
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+    };
+    return map[ext] || 'application/octet-stream';
   }
 
   /**

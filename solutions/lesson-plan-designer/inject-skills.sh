@@ -34,7 +34,7 @@ fi
 
 # Check if CCAAS is running
 echo "Checking CCAAS connectivity..."
-if ! curl -s "$CCAAS_URL/api/v1/chat/health" > /dev/null 2>&1; then
+if ! curl -s "$CCAAS_URL/api/v1/health" > /dev/null 2>&1; then
   echo -e "${RED}Error: Cannot connect to CCAAS at $CCAAS_URL${NC}"
   echo "Please start CCAAS first: cd packages/backend && npm run start:dev"
   exit 1

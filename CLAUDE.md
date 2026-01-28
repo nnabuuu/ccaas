@@ -141,6 +141,32 @@ See: `packages/shared/README.md`
 - Output update protocol definitions
 - Field mapping utilities
 
+## Development Principles
+
+### TDD 强制规则 (2025-01 教训)
+
+**背景**：曾因"信任计划文档 > 信任测试"导致 API 格式不兼容，前端功能完全失效。
+
+**根本原因**：修改代码前没有运行测试，修改后也没有验证。
+
+**强制检查清单**：
+
+```
+修改任何代码前：
+□ 运行 npm test 确认当前所有测试通过
+□ 如果计划要改变 API/接口，先检查前端类型定义和现有测试
+
+修改代码后：
+□ 立即运行相关测试，不要等到最后
+□ 测试失败 = 停下来分析，不要继续前进
+```
+
+**核心原则**：
+```
+测试是代码的契约，计划只是意图的表达。
+当计划与测试冲突时，应该质疑计划，而不是忽略测试。
+```
+
 ## Response Language
 
 Respond in the same language as the user's message.

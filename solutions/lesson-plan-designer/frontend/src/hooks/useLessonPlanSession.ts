@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client'
 import { v4 as uuidv4 } from 'uuid'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { api, type SolutionConfig, type CcaasToolEvent } from '../utils/api'
+import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
 import type {
   LessonPlan,
   Message,
@@ -11,6 +12,10 @@ import type {
   OutputUpdateEvent,
   AgentStatusEvent,
   CreateLessonPlanInput,
+  ToolActivityEvent,
+  AgentThinkingEvent,
+  TokenUsageEvent,
+  ExplorationActivityEvent,
 } from '../types'
 
 const SOCKET_URL = '/' // Use relative URL, proxied by Vite
@@ -23,6 +28,17 @@ interface UseLessonPlanSessionOptions {
 }
 
 /**
+ * Normalize MCP tool name by removing prefixes
+ * e.g., "mcp__lesson-plan-tools__write_output" -> "write_output"
+ */
+function normalizeToolName(toolName: string | undefined): string {
+  if (!toolName) return ''
+  return toolName
+    .replace(/^mcp__[^_]+__/, '') // Remove mcp__{server}__ prefix
+    .replace(/^mcp__/, '')        // Remove mcp__ prefix
+}
+
+/**
  * Extract output_update events from write_output tool calls
  * This rebuilds sync buttons from persisted tool events
  */
@@ -32,8 +48,9 @@ function extractOutputUpdatesFromToolEvents(
   const updates: Array<{ field: SyncField; value: unknown; preview: string }> = []
 
   for (const event of toolEvents) {
-    // Look for write_output tool calls
-    if (event.toolName === 'write_output' && event.toolInput) {
+    // Look for write_output tool calls (handle both plain and MCP-prefixed names)
+    const normalizedName = normalizeToolName(event.toolName)
+    if (normalizedName === 'write_output' && event.toolInput) {
       const input = event.toolInput as Record<string, unknown>
       const field = input.field as SyncField
       const value = input.value
@@ -73,6 +90,12 @@ interface UseLessonPlanSessionReturn {
   pendingUpdates: Map<SyncField, { field: SyncField; value: unknown; preview: string }>
   modifiedFields: Set<SyncField>
 
+  // Tool activity state
+  activeTools: Map<string, ToolActivityEvent>
+  isThinking: boolean
+  thinkingContent: string
+  tokenUsage: TokenUsageEvent | null
+
   // Actions
   sendMessage: (content: string) => void
   saveLessonPlan: () => Promise<void>
@@ -111,6 +134,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const currentMessageRef = useRef<Message | null>(null)
   // Ref to track latest stream content for use in socket handlers (avoids stale closure)
   const streamContentRef = useRef('')
+
+  // Tool activity state
+  const [activeTools, setActiveTools] = useState<Map<string, ToolActivityEvent>>(new Map())
+  const [isThinking, setIsThinking] = useState(false)
+  const [thinkingContent, setThinkingContent] = useState('')
+  const [tokenUsage, setTokenUsage] = useState<TokenUsageEvent | null>(null)
 
   // Sync state
   const {
@@ -178,46 +207,41 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     })
 
     // Handle output updates (sync buttons)
-    socket.on('output_update', (data: OutputUpdateEvent) => {
-      console.log('📦 Output update received:', data.field, data.preview)
+    // Backend sends nested structure: { payload: { data: { field, value, preview } } }
+    socket.on('output_update', (event: OutputUpdateEvent) => {
+      const parsed = parseOutputUpdateEvent(event)
 
-      // Skip if no field
-      if (!data.field) {
-        console.warn('⚠️ Output update missing field, skipping')
+      console.log('📦 Output update received:', parsed?.field, parsed?.preview)
+
+      // Skip if parsing failed (no field found)
+      if (!parsed) {
+        console.warn('⚠️ Output update missing field, skipping. Raw event:', event)
         return
       }
 
-      const preview = data.preview || `更新 ${data.field}`
-
       addPendingUpdate({
-        field: data.field,
-        value: data.value,
-        preview,
+        field: parsed.field,
+        value: parsed.value,
+        preview: parsed.preview,
       })
 
       // Also update current message's output updates (deduplicated by field)
       if (currentMessageRef.current) {
-        const update = {
-          field: data.field,
-          value: data.value,
-          preview,
-          synced: false,
-        }
         setMessages(prev => {
           const updated = [...prev]
           const lastMsg = updated[updated.length - 1]
           if (lastMsg && lastMsg.role === 'assistant') {
             const existingUpdates = lastMsg.outputUpdates || []
-            const existingIndex = existingUpdates.findIndex(u => u.field === data.field)
+            const existingIndex = existingUpdates.findIndex(u => u.field === parsed.field)
 
             if (existingIndex >= 0) {
               // Replace existing update for this field
               lastMsg.outputUpdates = existingUpdates.map((u, i) =>
-                i === existingIndex ? update : u
+                i === existingIndex ? { ...parsed } : u
               )
             } else {
               // Add new update
-              lastMsg.outputUpdates = [...existingUpdates, update]
+              lastMsg.outputUpdates = [...existingUpdates, { ...parsed }]
             }
           }
           return updated
@@ -250,8 +274,14 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         streamContentRef.current = ''
         currentMessageRef.current = null
 
-        if (data.status === 'error' && data.error) {
-          setError(data.error)
+        // Clear active tools and thinking state
+        setActiveTools(new Map())
+        setIsThinking(false)
+        setThinkingContent('')
+
+        if (data.status === 'error') {
+          const errorMsg = data.error || `处理失败 (退出码: ${data.exitCode ?? 'unknown'})`
+          setError(errorMsg)
         }
 
         // On completion, fetch full messages with toolEvents to rebuild sync buttons
@@ -301,6 +331,46 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
           }
         }
       }
+    })
+
+    // Handle tool activity
+    socket.on('tool_activity', (data: { payload: ToolActivityEvent }) => {
+      console.log('🔧 Tool:', data.payload.toolName, data.payload.phase, data.payload.description)
+
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        if (data.payload.phase === 'start') {
+          updated.set(data.payload.toolId, data.payload)
+        } else {
+          updated.delete(data.payload.toolId)
+        }
+        return updated
+      })
+    })
+
+    // Handle agent thinking
+    socket.on('agent_thinking', (data: { payload: AgentThinkingEvent }) => {
+      console.log('🧠 Thinking:', data.payload.phase)
+
+      if (data.payload.phase === 'start') {
+        setIsThinking(true)
+        setThinkingContent('')
+      } else if (data.payload.phase === 'delta' && data.payload.content) {
+        setThinkingContent(prev => prev + data.payload.content)
+      } else if (data.payload.phase === 'end') {
+        setIsThinking(false)
+      }
+    })
+
+    // Handle token usage
+    socket.on('token_usage', (data: { payload: TokenUsageEvent }) => {
+      console.log('📊 Tokens:', data.payload.inputTokens, 'in /', data.payload.outputTokens, 'out')
+      setTokenUsage(data.payload)
+    })
+
+    // Handle exploration activity
+    socket.on('exploration_activity', (data: { payload: ExplorationActivityEvent }) => {
+      console.log('🔍 Explore:', data.payload.action, data.payload.target)
     })
 
     return () => {
@@ -626,6 +696,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Sync state
     pendingUpdates,
     modifiedFields,
+
+    // Tool activity state
+    activeTools,
+    isThinking,
+    thinkingContent,
+    tokenUsage,
 
     // Actions
     sendMessage,

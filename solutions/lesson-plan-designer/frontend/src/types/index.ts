@@ -96,6 +96,7 @@ export interface OutputUpdate {
   value: unknown
   preview: string
   synced?: boolean
+  syncedAt?: Date
 }
 
 // Sync state types

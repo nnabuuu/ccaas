@@ -959,6 +959,18 @@ export class EventMapperService {
       } catch {
         parsedResult = { raw: result };
       }
+    } else if (Array.isArray(result)) {
+      // MCP tool results come as content block arrays: [{ type: 'text', text: '...' }]
+      const textBlock = result.find(
+        (b: any) => b.type === 'text' && typeof b.text === 'string',
+      );
+      if (textBlock) {
+        try {
+          parsedResult = JSON.parse(textBlock.text);
+        } catch {
+          parsedResult = { raw: textBlock.text };
+        }
+      }
     } else if (typeof result === 'object' && result !== null) {
       parsedResult = result as Record<string, unknown>;
     }

@@ -22,6 +22,7 @@ import {
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult } from './types.js';
+import { validateAndFixField, type ValidationResult } from './schemas.js';
 import {
   searchCurriculumStandards,
   searchTextbook,
@@ -350,32 +351,162 @@ Example response:
   },
 };
 
+// JSON Schema definitions for write_output value field
+const ObjectiveSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: '唯一标识符，如 "obj-1"' },
+    description: { type: 'string', description: '教学目标描述' },
+    bloomLevel: {
+      type: 'string',
+      enum: ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'],
+      description: 'Bloom 认知层级',
+    },
+    assessmentCriteria: { type: 'string', description: '评估标准（可选）' },
+  },
+  required: ['id', 'description', 'bloomLevel'],
+};
+
+const StandardSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: '唯一标识符' },
+    code: { type: 'string', description: '课程标准代码' },
+    description: { type: 'string', description: '标准描述' },
+  },
+  required: ['id', 'code', 'description'],
+};
+
+const MaterialSchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: '唯一标识符' },
+    name: { type: 'string', description: '材料名称' },
+    type: {
+      type: 'string',
+      enum: ['textbook', 'handout', 'digital', 'manipulative', 'other'],
+      description: '材料类型',
+    },
+    url: { type: 'string', description: '资源链接（可选）' },
+    notes: { type: 'string', description: '备注（可选）' },
+  },
+  required: ['id', 'name', 'type'],
+};
+
+const ActivitySchema = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', description: '唯一标识符，如 "act-1"' },
+    title: { type: 'string', description: '活动标题' },
+    description: { type: 'string', description: '活动描述' },
+    duration: { type: 'number', description: '时长（分钟）' },
+    type: {
+      type: 'string',
+      enum: ['introduction', 'direct-instruction', 'guided-practice', 'independent-practice', 'group', 'assessment', 'closure'],
+      description: '活动类型',
+    },
+    instructions: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '步骤说明',
+    },
+    materials: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '所需材料（可选）',
+    },
+    teacherNotes: { type: 'string', description: '教师备注（可选）' },
+  },
+  required: ['id', 'title', 'description', 'duration', 'type', 'instructions'],
+};
+
+const AssessmentSchema = {
+  type: 'object',
+  properties: {
+    formative: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '形成性评估方法',
+    },
+    summative: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '总结性评估方法',
+    },
+    rubric: { type: 'string', description: '评分标准（可选）' },
+  },
+  required: ['formative', 'summative'],
+};
+
+const DifferentiationSchema = {
+  type: 'object',
+  properties: {
+    struggling: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '学困生支持策略',
+    },
+    onLevel: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '普通学生策略',
+    },
+    advanced: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '优秀学生拓展',
+    },
+    ell: {
+      type: 'array',
+      items: { type: 'string' },
+      description: 'ELL学生支持（可选）',
+    },
+    accommodations: {
+      type: 'array',
+      items: { type: 'string' },
+      description: '特殊需求调适（可选）',
+    },
+  },
+  required: ['struggling', 'onLevel', 'advanced'],
+};
+
 // Define the write_output tool
 const writeOutputTool: Tool = {
   name: 'write_output',
   description: `Write structured lesson plan content to the frontend form. The frontend will display a "Sync to Form" button allowing the user to apply the changes.
 
+**IMPORTANT**: Data is validated with Zod schemas. Missing 'id' fields will be auto-generated, but other required fields must be provided.
+
 Valid fields: ${SYNC_FIELDS.join(', ')}
 
 Field schemas:
-- title: string (lesson title)
-- subject: string (subject area, e.g., "数学", "语文")
-- gradeLevel: string (e.g., "三年级", "高一")
-- duration: string (e.g., "45分钟", "2课时")
-- objectives: Array of { id: string, description: string, bloomLevel: "remember"|"understand"|"apply"|"analyze"|"evaluate"|"create", assessmentCriteria?: string }
-- standards: Array of { id: string, code: string, description: string }
-- materials: Array of { id: string, name: string, type: "textbook"|"handout"|"digital"|"manipulative"|"other", url?: string, notes?: string }
-- activities: Array of { id: string, title: string, description: string, duration: number, type: "introduction"|"direct-instruction"|"guided-practice"|"independent-practice"|"group"|"assessment"|"closure", instructions: string[], materials?: string[], teacherNotes?: string }
-- assessment: { formative: string[], summative: string[], rubric?: string }
-- differentiation: { struggling: string[], onLevel: string[], advanced: string[], ell?: string[], accommodations?: string[] }
+- title: string (课程标题)
+- subject: string (学科，如 "数学", "语文")
+- gradeLevel: string (年级，如 "三年级", "高一")
+- duration: string (课时，如 "45分钟", "2课时")
+- objectives: Array<{ id, description, bloomLevel, assessmentCriteria? }>
+- standards: Array<{ id, code, description }>
+- materials: Array<{ id, name, type, url?, notes? }>
+- activities: Array<{ id, title, description, duration, type, instructions[], materials?, teacherNotes? }>
+- assessment: { formative[], summative[], rubric? }
+- differentiation: { struggling[], onLevel[], advanced[], ell?, accommodations? }
 
-Example usage for objectives:
+Example for objectives:
 {
   "field": "objectives",
   "value": [
     { "id": "obj-1", "description": "学生能够理解核心概念", "bloomLevel": "understand", "assessmentCriteria": "能用自己的话解释" }
   ],
   "preview": "1个教学目标"
+}
+
+Example for activities:
+{
+  "field": "activities",
+  "value": [
+    { "id": "act-1", "title": "情境导入", "description": "通过生活场景引入", "duration": 5, "type": "introduction", "instructions": ["展示图片", "提问学生"] }
+  ],
+  "preview": "1个教学活动"
 }`,
   inputSchema: {
     type: 'object',
@@ -386,7 +517,23 @@ Example usage for objectives:
         description: 'The lesson plan field to update',
       },
       value: {
-        description: 'Structured data matching the field schema',
+        oneOf: [
+          // String fields
+          { type: 'string', description: 'For title, subject, gradeLevel, duration' },
+          // objectives array
+          { type: 'array', items: ObjectiveSchema, description: 'For objectives field' },
+          // standards array
+          { type: 'array', items: StandardSchema, description: 'For standards field' },
+          // materials array
+          { type: 'array', items: MaterialSchema, description: 'For materials field' },
+          // activities array
+          { type: 'array', items: ActivitySchema, description: 'For activities field' },
+          // assessment object
+          AssessmentSchema,
+          // differentiation object
+          DifferentiationSchema,
+        ],
+        description: 'Structured data matching the field schema. Must be valid JSON, not a string.',
       },
       preview: {
         type: 'string',
@@ -424,7 +571,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === 'write_output') {
     const input = args as unknown as WriteOutputInput;
 
-    // Validate the field
+    // Validate the field name
     if (!SYNC_FIELDS.includes(input.field as SyncField)) {
       return {
         content: [
@@ -440,12 +587,41 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
-    // Return the result in the format that CCAAS EventMapper expects
+    // Validate and fix the value using Zod schema
+    const validation = validateAndFixField(input.field as SyncField, input.value);
+
+    if (!validation.success) {
+      // Schema validation failed - return error with details
+      console.error(`[write_output] Validation failed for ${input.field}:`, validation.errors);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: {
+                error: `Data validation failed for field "${input.field}": ${validation.errors.join('; ')}`,
+                field: input.field,
+                originalValue: input.value,
+              },
+              status: 'error',
+            } satisfies WriteOutputResult),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Log if data was auto-fixed
+    if (validation.fixed) {
+      console.error(`[write_output] Data for ${input.field} was auto-fixed:`, validation.warnings);
+    }
+
+    // Return the result with validated/fixed data
     // EventMapper looks for { data: ..., status: ... } structure
     const result: WriteOutputResult = {
       data: {
         field: input.field,
-        value: input.value,
+        value: validation.data, // Use validated/fixed data
         preview: input.preview,
       },
       status: 'success',

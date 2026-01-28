@@ -145,7 +145,7 @@ When using `setup.sh`, logs are available at:
 
 ### Skills not loading
 
-1. Verify backend is running: `curl http://localhost:3001/api/v1/chat/health`
+1. Verify backend is running: `curl http://localhost:3001/api/v1/health`
 2. Check skills exist: `curl http://localhost:3001/api/v1/skills`
 3. Check browser console for CORS errors
 

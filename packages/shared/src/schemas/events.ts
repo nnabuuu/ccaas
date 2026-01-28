@@ -143,6 +143,59 @@ export const TokenUsageEventSchema = BaseEventSchema.extend({
 // Output Update Event
 // ============================================================================
 
+/**
+ * Output Update Event - 用于 write_output MCP 工具同步内容到前端
+ *
+ * 该事件由 CCAAS 后端在 Claude 调用 `write_output` 工具时发送。
+ * 前端应监听 `output_update` Socket.io 事件来接收这些更新。
+ *
+ * ## 事件结构
+ *
+ * 后端发送的实际结构使用嵌套的 `payload.data` 模式：
+ *
+ * ```typescript
+ * {
+ *   type: 'output_update',
+ *   sessionId: 'session-123',
+ *   timestamp: '2025-01-27T10:00:00.000Z',
+ *   payload: {
+ *     data: {
+ *       field: 'solutionSteps',      // 目标字段名
+ *       value: [...],                 // 字段值 (类型由 field 决定)
+ *       preview: '解题步骤 1...'      // 可选的预览文本
+ *     },
+ *     status: 'success'              // 'success' | 'error'
+ *   }
+ * }
+ * ```
+ *
+ * ## 前端使用示例
+ *
+ * ```typescript
+ * // 监听事件
+ * socket.on('output_update', (event: OutputUpdateEvent) => {
+ *   // 注意: 数据在 payload.data 中，不是直接在 payload 上
+ *   const { field, value, preview } = event.payload.data;
+ *
+ *   // 更新对应字段
+ *   switch (field) {
+ *     case 'solutionSteps':
+ *       setSolutionSteps(value);
+ *       break;
+ *     case 'answer':
+ *       setAnswer(value);
+ *       break;
+ *   }
+ * });
+ * ```
+ *
+ * ## 常见错误
+ *
+ * ❌ 错误: 直接访问 `event.payload.field`
+ * ✅ 正确: 访问 `event.payload.data.field`
+ *
+ * @see write_output MCP 工具定义
+ */
 export const OutputUpdatePayloadSchema = z.object({
   field: z.string().optional(),
   value: z.unknown().optional(),
