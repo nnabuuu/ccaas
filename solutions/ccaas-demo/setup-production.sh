@@ -111,13 +111,20 @@ echo "Demo port: $DEMO_PORT"
 echo ""
 echo -e "${YELLOW}🔍 Step 1: Verifying production backend...${NC}"
 
+# Try /health first, fall back to /api/v1/tenants
 HEALTH=$(curl -s --max-time 10 "$BACKEND_URL/health" 2>/dev/null || echo "")
 if echo "$HEALTH" | grep -q '"ok"'; then
     echo -e "   ${GREEN}✓ Backend is healthy ($BACKEND_URL)${NC}"
 else
-    echo -e "   ${RED}✗ Cannot reach backend at $BACKEND_URL${NC}"
-    echo -e "   ${RED}  Health response: $HEALTH${NC}"
-    exit 1
+    # Fallback: check if API is responding via tenants endpoint
+    FALLBACK=$(curl -s --max-time 10 "$BACKEND_URL/api/v1/tenants" 2>/dev/null || echo "")
+    if echo "$FALLBACK" | grep -q '"id"'; then
+        echo -e "   ${GREEN}✓ Backend is reachable ($BACKEND_URL)${NC}"
+    else
+        echo -e "   ${RED}✗ Cannot reach backend at $BACKEND_URL${NC}"
+        echo -e "   ${RED}  Response: $HEALTH${NC}"
+        exit 1
+    fi
 fi
 
 # Step 2: Create/fetch tenant and API key
