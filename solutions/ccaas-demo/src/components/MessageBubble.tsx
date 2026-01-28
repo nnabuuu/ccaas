@@ -4,7 +4,7 @@
  * Displays a chat message with optional file attachment.
  */
 
-import type { Message, FileInfo } from '../types'
+import type { Message, FileInfo, ContentBlock } from '../types'
 import { FileCard } from './FileCard'
 import { ToolActivityItem } from './ToolActivityItem'
 
@@ -37,22 +37,26 @@ export function MessageBubble({ message, onDownload }: MessageBubbleProps) {
           </div>
         )}
 
-        <div className="whitespace-pre-wrap">
-          {message.content}
-          {message.status === 'streaming' && (
-            <span className="inline-block w-2 h-4 bg-current animate-blink ml-1">|</span>
-          )}
-        </div>
-
-        {/* Tool Activities */}
-        {message.tools && message.tools.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {message.tools
-              .filter(t => t.phase === 'end')  // Only show completed tools
-              .map((tool, i) => (
-                <ToolActivityItem key={tool.toolId || i} tool={tool} />
-              ))
-            }
+        {/* Render content blocks inline if available */}
+        {message.contentBlocks && message.contentBlocks.length > 0 ? (
+          <div>
+            {message.contentBlocks.map((block: ContentBlock, i: number) =>
+              block.type === 'text' ? (
+                <span key={i} className="whitespace-pre-wrap">{block.text}</span>
+              ) : (
+                <ToolActivityItem key={block.tool.toolId || i} tool={block.tool} inline />
+              )
+            )}
+            {message.status === 'streaming' && (
+              <span className="inline-block w-2 h-4 bg-current animate-blink ml-1">|</span>
+            )}
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap">
+            {message.content}
+            {message.status === 'streaming' && (
+              <span className="inline-block w-2 h-4 bg-current animate-blink ml-1">|</span>
+            )}
           </div>
         )}
 

@@ -65,10 +65,26 @@ export interface Subject {
   hasFormula: boolean;
 }
 
+// Tool activity tracking
+export interface ToolActivity {
+  toolName: string;
+  toolId: string;
+  phase: 'start' | 'progress' | 'end';
+  timestamp: Date;
+  duration?: number;
+  success?: boolean;
+}
+
+// Content block types for inline tool cards in chat
+export interface TextBlock { type: 'text'; text: string }
+export interface ToolBlock { type: 'tool'; tool: ToolActivity }
+export type ContentBlock = TextBlock | ToolBlock
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  contentBlocks?: ContentBlock[];
   createdAt: string;
   isStreaming?: boolean;
 }

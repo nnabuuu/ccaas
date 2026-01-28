@@ -56,6 +56,11 @@ export interface ToolActivity {
   toolError?: string
 }
 
+// Content block types for inline tool cards in chat
+export interface TextBlock { type: 'text'; text: string }
+export interface ToolBlock { type: 'tool'; tool: ToolActivity }
+export type ContentBlock = TextBlock | ToolBlock
+
 // File Browser Types
 export type FileStatus = 'new' | 'modified' | 'synced'
 
@@ -104,6 +109,7 @@ export interface Message {
   skill?: string
   files?: FileInfo[]             // Changed from file?: FileInfo
   tools?: ToolActivity[]         // Track tool usage
+  contentBlocks?: ContentBlock[] // Inline content blocks (text + tool cards)
   status?: 'sending' | 'streaming' | 'complete'
   timestamp: Date
 }

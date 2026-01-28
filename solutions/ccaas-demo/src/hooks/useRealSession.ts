@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity } from '../types'
+import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity, ContentBlock } from '../types'
 import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
 
 // Backend configuration
@@ -133,8 +133,9 @@ export function useRealSession() {
   const [loading, setLoading] = useState(true)
 
   const socketRef = useRef<Socket | null>(null)
-  const currentMessageRef = useRef<string>('')
+  const contentBlocksRef = useRef<ContentBlock[]>([])
   const sessionIdRef = useRef(session.sessionId)
+  const clientIdRef = useRef<string | null>(null)
 
   // Fetch skills from backend
   const fetchSkills = useCallback(async () => {
@@ -182,6 +183,7 @@ export function useRealSession() {
 
     socket.on('client_id', (data: { clientId: string }) => {
       console.log('Received client ID:', data.clientId)
+      clientIdRef.current = data.clientId
     })
 
     socket.on('agent_status', (data: AgentStatusEvent & { error?: string | { message: string } }) => {
@@ -241,13 +243,25 @@ export function useRealSession() {
     })
 
     socket.on('text_delta', (data: TextDeltaEvent) => {
-      currentMessageRef.current += data.text
+      const blocks = contentBlocksRef.current
+      const last = blocks[blocks.length - 1]
+      if (last && last.type === 'text') {
+        last.text += data.text
+      } else {
+        blocks.push({ type: 'text', text: data.text })
+      }
+
+      // Derive content string for backward compatibility
+      const content = blocks
+        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+        .map(b => b.text)
+        .join('')
 
       setSession(prev => ({
         ...prev,
         messages: prev.messages.map(m =>
           m.status === 'streaming'
-            ? { ...m, content: currentMessageRef.current }
+            ? { ...m, content, contentBlocks: [...blocks] }
             : m
         ),
       }))
@@ -287,6 +301,21 @@ export function useRealSession() {
         }
       }
 
+      // Update content blocks
+      const blocks = contentBlocksRef.current
+      if (payload.phase === 'start') {
+        blocks.push({ type: 'tool', tool: toolActivity })
+      } else if (payload.phase === 'end') {
+        // Find matching ToolBlock by toolId and update in place
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const block = blocks[i]
+          if (block && block.type === 'tool' && block.tool.toolId === toolActivity.toolId) {
+            blocks[i] = { type: 'tool', tool: toolActivity }
+            break
+          }
+        }
+      }
+
       // Add tool activity to current streaming message
       setSession(prev => ({
         ...prev,
@@ -296,6 +325,7 @@ export function useRealSession() {
                 ...m,
                 tools: [...(m.tools || []), toolActivity],
                 files: newFile ? [...(m.files || []), newFile] : m.files,
+                contentBlocks: [...blocks],
               }
             : m
         ),
@@ -358,8 +388,9 @@ export function useRealSession() {
   const restartSession = useCallback(async () => {
     try {
       // Call backend restart endpoint if session exists
+      // RESTful API: POST /api/v1/sessions/{sessionId}/restart
       if (session.messages.length > 0) {
-        await fetchAPI(`/api/v1/chat/sessions/${session.sessionId}/restart`, {
+        await fetchAPI(`/api/v1/sessions/${session.sessionId}/restart`, {
           method: 'POST',
         }).catch(() => {
           // Ignore error if session doesn't exist on backend
@@ -382,9 +413,9 @@ export function useRealSession() {
     }
   }, [session.sessionId, session.messages.length])
 
-  // Send message
+  // Send message via REST API (response streams via WebSocket)
   const sendMessage = useCallback(async (content: string) => {
-    if (!socketRef.current || !connected) {
+    if (!connected || !clientIdRef.current) {
       setError('未连接到后端')
       return
     }
@@ -404,11 +435,12 @@ export function useRealSession() {
       id: `msg-${Date.now() + 1}`,
       role: 'assistant',
       content: '',
+      contentBlocks: [],
       status: 'streaming',
       timestamp: new Date(),
     }
 
-    currentMessageRef.current = ''
+    contentBlocksRef.current = []
 
     setSession(prev => ({
       ...prev,
@@ -416,14 +448,21 @@ export function useRealSession() {
       isProcessing: true,
     }))
 
-    // Send to backend with tenant ID from environment
-    socketRef.current.emit('chat', {
-      sessionId: session.sessionId,
-      message: content,
-      resumeSession: session.messages.length > 0,
-      tenantId: TENANT_ID,
-    })
-  }, [connected, session.sessionId, session.messages.length, session.isProcessing])
+    // Send via RESTful API: POST /api/v1/sessions/{sessionId}/completion
+    try {
+      await fetchAPI(`/api/v1/sessions/${session.sessionId}/completion`, {
+        method: 'POST',
+        body: JSON.stringify({
+          clientId: clientIdRef.current,
+          message: content,
+          tenantId: TENANT_ID,
+        }),
+      })
+    } catch (err) {
+      setError(`发送失败: ${err instanceof Error ? err.message : err}`)
+      setSession(prev => ({ ...prev, isProcessing: false }))
+    }
+  }, [connected, session.sessionId, session.isProcessing])
 
   // Download file from backend
   const downloadFile = useCallback(async (file: FileInfo) => {
