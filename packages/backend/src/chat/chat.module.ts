@@ -7,17 +7,16 @@
 import { Module } from '@nestjs/common';
 import { ChatGateway } from './chat.gateway';
 import { ChatController } from './chat.controller';
-import { SessionService } from './session.service';
-import { EventMapperService } from './event-mapper.service';
+import { SessionModule } from './session.module';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
 
 @Module({
-  imports: [SkillsModule, TenantsModule, MessagesModule, FilesModule],
+  imports: [SessionModule, SkillsModule, TenantsModule, MessagesModule, FilesModule],
   controllers: [ChatController],
-  providers: [ChatGateway, SessionService, EventMapperService],
-  exports: [SessionService, EventMapperService],
+  providers: [ChatGateway],
+  exports: [ChatGateway, SessionModule],
 })
 export class ChatModule {}

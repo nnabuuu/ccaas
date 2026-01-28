@@ -4,7 +4,7 @@
  * Provides admin dashboard, session management, analytics, and audit capabilities.
  */
 
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Entities
@@ -25,7 +25,7 @@ import { AdminSkillsController } from './controllers/admin-skills.controller';
 import { AdminTenantsController } from './controllers/admin-tenants.controller';
 
 // Dependent modules
-import { ChatModule } from '../chat/chat.module';
+import { SessionModule } from '../chat/session.module';
 import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
@@ -59,12 +59,11 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       Skill,
       Tenant,
     ]),
-    // Use forwardRef to avoid circular dependencies
-    forwardRef(() => ChatModule),
-    forwardRef(() => SkillsModule),
-    forwardRef(() => AuthModule),
-    forwardRef(() => MessagesModule),
-    forwardRef(() => TenantsModule),
+    SessionModule,
+    SkillsModule,
+    AuthModule,
+    MessagesModule,
+    TenantsModule,
   ],
   controllers: [
     AdminDashboardController,

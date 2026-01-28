@@ -11,23 +11,27 @@ import {
   StreamableFile,
   UseInterceptors,
   UploadedFile,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { FilesService } from './files.service';
 import { SessionService } from '../chat/session.service';
 import { createReadStream } from 'fs';
+import * as path from 'path';
 import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
 @Controller('api/v1/files')
 export class FilesController {
+  private readonly workspaceBaseDir: string;
+
   constructor(
     private readonly filesService: FilesService,
-    @Inject(forwardRef(() => SessionService))
     private readonly sessionService: SessionService,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.workspaceBaseDir = this.configService.get('workspace.dir', '.agent-workspace');
+  }
 
   /**
    * Get file metadata
@@ -193,9 +197,12 @@ export class FilesController {
     // Validate file
     this.filesService.validateUpload(file);
 
-    // Get session workspace directory (if session exists)
+    // Get session workspace directory
+    // If session doesn't exist in SessionService yet, construct the path directly
+    // This allows file uploads before the first chat message creates the session
     const session = this.sessionService.getSession(sessionId);
-    const workspaceDir = session?.workspaceDir;
+    const workspaceDir = session?.workspaceDir ||
+      path.join(this.workspaceBaseDir, 'sessions', sessionId);
 
     // For user uploads without chat context, pass null messageId
     return this.filesService.uploadFile(
