@@ -51,6 +51,7 @@ export interface ToolActivity {
   timestamp: Date
   duration?: number
   success?: boolean
+  description?: string
   toolInput?: unknown
   toolOutput?: unknown
   toolError?: string

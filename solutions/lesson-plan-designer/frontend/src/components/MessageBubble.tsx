@@ -1,10 +1,78 @@
-import type { Message, SyncField } from '../types'
+import type { Message, SyncField, ContentBlock, ToolActivity } from '../types'
 import SyncButton from './SyncButton'
 
 interface MessageBubbleProps {
   message: Message
   onSync?: (field: SyncField) => void
   onDiscard?: (field: SyncField) => void
+}
+
+const TOOL_ICONS: Record<string, string> = {
+  Read: '📖',
+  Write: '✍️',
+  Edit: '✏️',
+  Bash: '💻',
+  Glob: '🔍',
+  Grep: '🔎',
+  Task: '📋',
+  WebFetch: '🌐',
+  WebSearch: '🔍',
+  write_output: '📤',
+}
+
+function getToolSummary(tool: ToolActivity): string {
+  if (tool.description) return tool.description
+  const input = tool.toolInput as Record<string, unknown> | undefined
+  if (!input) return ''
+  const name = tool.toolName.replace(/^mcp__[^_]+__/, '')
+  if (name === 'Read' || name === 'Write' || name === 'Edit') {
+    const p = (input.file_path as string) || ''
+    if (!p) return ''
+    const parts = p.split('/')
+    return parts.length <= 2 ? p : '.../' + parts.slice(-2).join('/')
+  }
+  if (name === 'Bash') {
+    const cmd = (input.command as string) || ''
+    return cmd.length > 50 ? cmd.slice(0, 47) + '...' : cmd
+  }
+  if (name === 'Glob' || name === 'Grep') return (input.pattern as string) || ''
+  if (name === 'write_output') return (input.field as string) || ''
+  if (name === 'Task') return (input.description as string) || ''
+  return ''
+}
+
+function InlineToolCard({ tool }: { tool: ToolActivity }) {
+  const rawName = tool.toolName
+  const displayName = rawName.replace(/^mcp__[^_]+__/, '')
+  const icon = TOOL_ICONS[displayName] || TOOL_ICONS[rawName] || '🔧'
+  const summary = getToolSummary(tool)
+
+  const durationText = tool.duration
+    ? tool.duration > 1000
+      ? `${(tool.duration / 1000).toFixed(1)}s`
+      : `${tool.duration}ms`
+    : null
+
+  return (
+    <div
+      className="flex items-center gap-1.5 px-2.5 py-1 my-1 text-xs bg-white border border-gray-200 rounded-md text-gray-600"
+      title={tool.toolError || `${displayName} ${tool.phase}`}
+    >
+      <span>{icon}</span>
+      <span className="font-medium text-gray-700">{displayName}</span>
+      {summary && (
+        <span className="text-gray-500 truncate max-w-[180px]">{summary}</span>
+      )}
+      {tool.phase === 'start' ? (
+        <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+      ) : tool.success !== false ? (
+        <span>✅</span>
+      ) : (
+        <span>❌</span>
+      )}
+      {durationText && <span className="text-gray-400">{durationText}</span>}
+    </div>
+  )
 }
 
 export function MessageBubble({ message, onSync, onDiscard }: MessageBubbleProps) {
@@ -32,9 +100,19 @@ export function MessageBubble({ message, onSync, onDiscard }: MessageBubbleProps
           </div>
 
           <div className="flex-1">
-            {/* Message Content */}
+            {/* Message Content with inline tool cards */}
             <div className={isUser ? 'message-user' : 'message-assistant'}>
-              {message.content ? (
+              {message.contentBlocks && message.contentBlocks.length > 0 ? (
+                <div className="text-sm leading-relaxed">
+                  {message.contentBlocks.map((block: ContentBlock, i: number) =>
+                    block.type === 'text' ? (
+                      <span key={i} className="whitespace-pre-wrap">{block.text}</span>
+                    ) : (
+                      <InlineToolCard key={block.tool.toolId || i} tool={block.tool} />
+                    )
+                  )}
+                </div>
+              ) : message.content ? (
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
                   {message.content}
                 </div>

@@ -16,6 +16,8 @@ import type {
   AgentThinkingEvent,
   TokenUsageEvent,
   ExplorationActivityEvent,
+  ContentBlock,
+  ToolActivity,
 } from '../types'
 
 const SOCKET_URL = '/' // Use relative URL, proxied by Vite
@@ -134,6 +136,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const currentMessageRef = useRef<Message | null>(null)
   // Ref to track latest stream content for use in socket handlers (avoids stale closure)
   const streamContentRef = useRef('')
+  // Ref to track content blocks (text + tool cards)
+  const contentBlocksRef = useRef<ContentBlock[]>([])
 
   // Tool activity state
   const [activeTools, setActiveTools] = useState<Map<string, ToolActivityEvent>>(new Map())
@@ -199,10 +203,34 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
     // Handle text streaming
     socket.on('text_delta', (data: TextDeltaEvent) => {
-      setCurrentStreamContent(prev => {
-        const newContent = prev + data.text
-        streamContentRef.current = newContent // Keep ref in sync
-        return newContent
+      // Accumulate into content blocks
+      const blocks = contentBlocksRef.current
+      const last = blocks[blocks.length - 1]
+      if (last && last.type === 'text') {
+        last.text += data.text
+      } else {
+        blocks.push({ type: 'text', text: data.text })
+      }
+
+      // Derive content string for backward compatibility
+      const content = blocks
+        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+        .map(b => b.text)
+        .join('')
+
+      streamContentRef.current = content
+
+      setCurrentStreamContent(content)
+
+      // Update message with contentBlocks
+      setMessages(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.content = content
+          lastMsg.contentBlocks = [...blocks]
+        }
+        return updated
       })
     })
 
@@ -336,13 +364,53 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Handle tool activity
     socket.on('tool_activity', (data: { payload: ToolActivityEvent }) => {
       console.log('🔧 Tool:', data.payload.toolName, data.payload.phase, data.payload.description)
+      const payload = data.payload
 
+      // Update active tools indicator
       setActiveTools(prev => {
         const updated = new Map(prev)
-        if (data.payload.phase === 'start') {
-          updated.set(data.payload.toolId, data.payload)
+        if (payload.phase === 'start') {
+          updated.set(payload.toolId, payload)
         } else {
-          updated.delete(data.payload.toolId)
+          updated.delete(payload.toolId)
+        }
+        return updated
+      })
+
+      // Create ToolActivity for inline rendering
+      const toolActivity: ToolActivity = {
+        toolName: payload.toolName,
+        toolId: payload.toolId,
+        phase: payload.phase,
+        timestamp: new Date(),
+        duration: payload.duration,
+        success: payload.success,
+        description: payload.description,
+        toolInput: payload.toolInput,
+        toolOutput: payload.toolOutput,
+      }
+
+      // Update content blocks
+      const blocks = contentBlocksRef.current
+      if (payload.phase === 'start') {
+        blocks.push({ type: 'tool', tool: toolActivity })
+      } else if (payload.phase === 'end') {
+        // Find matching ToolBlock by toolId and update in place
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const block = blocks[i]
+          if (block && block.type === 'tool' && block.tool.toolId === toolActivity.toolId) {
+            blocks[i] = { type: 'tool', tool: toolActivity }
+            break
+          }
+        }
+      }
+
+      // Update message with contentBlocks
+      setMessages(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.contentBlocks = [...blocks]
         }
         return updated
       })
@@ -470,15 +538,17 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       id: uuidv4(),
       role: 'assistant',
       content: '',
+      contentBlocks: [],
       timestamp: new Date(),
       outputUpdates: [],
     }
     currentMessageRef.current = assistantMessage
     setMessages(prev => [...prev, assistantMessage])
 
-    // Clear stream content
+    // Clear stream content and content blocks
     setCurrentStreamContent('')
     streamContentRef.current = ''
+    contentBlocksRef.current = []
     setIsProcessing(true)
 
     // Attempt to send message with auto-retry on WebSocket disconnection

@@ -31,10 +31,31 @@ const TOOL_ICONS: Record<string, string> = {
   write_output: '📤',
 };
 
+function getToolSummary(tool: ToolActivity): string {
+  if (tool.description) return tool.description;
+  const input = tool.toolInput as Record<string, unknown> | undefined;
+  if (!input) return '';
+  const name = tool.toolName.replace(/^mcp__[^_]+__/, '');
+  if (name === 'Read' || name === 'Write' || name === 'Edit') {
+    const p = (input.file_path as string) || '';
+    if (!p) return '';
+    const parts = p.split('/');
+    return parts.length <= 2 ? p : '.../' + parts.slice(-2).join('/');
+  }
+  if (name === 'Bash') {
+    const cmd = (input.command as string) || '';
+    return cmd.length > 60 ? cmd.slice(0, 57) + '...' : cmd;
+  }
+  if (name === 'Glob' || name === 'Grep') return (input.pattern as string) || '';
+  if (name === 'write_output') return (input.field as string) || '';
+  return '';
+}
+
 function InlineToolCard({ tool }: { tool: ToolActivity }) {
   const t = tool;
   const icon = TOOL_ICONS[t.toolName] || (t.toolName.includes('write_output') ? '📤' : '🔧');
   const displayName = t.toolName.replace(/^mcp__[^_]+__/, '');
+  const summary = getToolSummary(t);
 
   const durationText = t.duration
     ? t.duration > 1000
@@ -43,9 +64,15 @@ function InlineToolCard({ tool }: { tool: ToolActivity }) {
     : null;
 
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1 my-1 text-xs bg-white/80 border border-gray-200 rounded-md text-gray-600">
+    <div
+      className="flex items-center gap-1.5 px-2.5 py-1 my-1 text-xs bg-white/80 border border-gray-200 rounded-md text-gray-600"
+      title={t.toolError || `${displayName} ${t.phase}`}
+    >
       <span>{icon}</span>
       <span className="font-medium text-gray-700">{displayName}</span>
+      {summary && (
+        <span className="text-gray-500 truncate max-w-[200px]">{summary}</span>
+      )}
       {t.phase === 'start' ? (
         <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
       ) : t.success !== false ? (

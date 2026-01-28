@@ -82,11 +82,31 @@ export const SYNC_FIELDS = [
 
 export type SyncField = typeof SYNC_FIELDS[number]
 
+// Tool activity for inline rendering
+export interface ToolActivity {
+  toolName: string
+  toolId: string
+  phase: 'start' | 'progress' | 'end'
+  timestamp: Date
+  duration?: number
+  success?: boolean
+  description?: string
+  toolInput?: unknown
+  toolOutput?: unknown
+  toolError?: string
+}
+
+// Content block types for inline tool cards in chat
+export interface TextBlock { type: 'text'; text: string }
+export interface ToolBlock { type: 'tool'; tool: ToolActivity }
+export type ContentBlock = TextBlock | ToolBlock
+
 // Message types
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
+  contentBlocks?: ContentBlock[]
   timestamp: Date
   outputUpdates?: OutputUpdate[]
 }

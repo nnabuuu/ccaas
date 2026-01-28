@@ -282,6 +282,7 @@ export function useRealSession() {
         timestamp: new Date(),
         duration: payload.duration,
         success: payload.success,
+        description: payload.description,
         toolInput: payload.toolInput,
         toolOutput: payload.toolOutput,
         toolError: payload.toolError,

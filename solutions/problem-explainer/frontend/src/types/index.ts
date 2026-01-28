@@ -73,6 +73,10 @@ export interface ToolActivity {
   timestamp: Date;
   duration?: number;
   success?: boolean;
+  description?: string;
+  toolInput?: unknown;
+  toolOutput?: unknown;
+  toolError?: string;
 }
 
 // Content block types for inline tool cards in chat
