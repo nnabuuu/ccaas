@@ -90,3 +90,17 @@ export function mapFieldsToBackend(data: Record<string, unknown>): Record<string
 export function safeValidateOutputUpdateEvent(event: unknown) {
   return OutputUpdateEventSchema.safeParse(event)
 }
+
+// ============================================================================
+// Output Update Parser
+// ============================================================================
+
+export { parseOutputUpdate } from './parseOutputUpdate'
+export type { WriteOutputData } from './parseOutputUpdate'
+
+// ============================================================================
+// API Client
+// ============================================================================
+
+export { createApiClient, ApiError } from './apiClient'
+export type { ApiClient } from './apiClient'

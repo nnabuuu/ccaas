@@ -46,3 +46,9 @@ export type { UseEntityBridgeReturn } from './useEntityBridge'
 // Lesson Plan Designer
 export { useLessonPlanSync } from './useLessonPlanSync'
 export type { UseLessonPlanSyncOptions, UseLessonPlanSyncReturn } from './useLessonPlanSync'
+
+// Generic Output Sync
+export { useOutputSync } from './useOutputSync'
+
+// Skills Management
+export { useSkills } from './useSkills'

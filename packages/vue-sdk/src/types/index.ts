@@ -26,3 +26,6 @@ export type {
   EntityOutputUpdateEvent,
   EntityBridgeConfig,
 } from './entity-bridge'
+
+// Output sync, skills, and API client types
+export * from './output-sync'
