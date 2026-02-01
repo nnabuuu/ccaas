@@ -7,6 +7,7 @@ import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
 import type {
   LessonPlan,
   Message,
+  MessageTokenUsage,
   SyncField,
   TextDeltaEvent,
   OutputUpdateEvent,
@@ -18,6 +19,8 @@ import type {
   ExplorationActivityEvent,
   ContentBlock,
   ToolActivity,
+  TodoItem,
+  TodoStats,
 } from '../types'
 
 const SOCKET_URL = '/' // Use relative URL, proxied by Vite
@@ -38,6 +41,34 @@ function normalizeToolName(toolName: string | undefined): string {
   return toolName
     .replace(/^mcp__[^_]+__/, '') // Remove mcp__{server}__ prefix
     .replace(/^mcp__/, '')        // Remove mcp__ prefix
+}
+
+// Token pricing per million tokens
+const MODEL_PRICING: Record<string, { input: number; output: number; cached: number }> = {
+  'claude-opus-4-5-20251101': { input: 15, output: 75, cached: 1.5 },
+  'claude-opus-4.5': { input: 15, output: 75, cached: 1.5 },
+  'claude-sonnet-4-20250514': { input: 3, output: 15, cached: 0.3 },
+  'claude-sonnet-4': { input: 3, output: 15, cached: 0.3 },
+  'claude-haiku-3-5-20241022': { input: 0.8, output: 4, cached: 0.08 },
+  'claude-haiku-3.5': { input: 0.8, output: 4, cached: 0.08 },
+}
+
+function calculateCost(model: string, input: number, output: number, cached: number): number {
+  const defaultPricing = { input: 3, output: 15, cached: 0.3 }
+  const direct = MODEL_PRICING[model]
+  let pricing: { input: number; output: number; cached: number }
+  if (direct) {
+    pricing = direct
+  } else {
+    const base = Object.keys(MODEL_PRICING).find(m => model.toLowerCase().includes(m.toLowerCase().replace(/-\d+$/, '')))
+    pricing = (base && MODEL_PRICING[base]) || defaultPricing
+  }
+  const billable = Math.max(0, input - cached)
+  return Math.round(((billable / 1e6) * pricing.input + (cached / 1e6) * pricing.cached + (output / 1e6) * pricing.output) * 1e6) / 1e6
+}
+
+function createEmptyTokenUsageAcc(): MessageTokenUsage {
+  return { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, estimatedCostUsd: 0, model: '', requestCount: 0 }
 }
 
 /**
@@ -98,10 +129,15 @@ interface UseLessonPlanSessionReturn {
   thinkingContent: string
   tokenUsage: TokenUsageEvent | null
 
+  // Todo state
+  todoItems: TodoItem[]
+  todoStats: TodoStats | null
+
   // Actions
+  cancelProcessing: () => void
   sendMessage: (content: string) => void
   saveLessonPlan: () => Promise<void>
-  createNewPlan: (input: Omit<CreateLessonPlanInput, 'tenantId'>) => Promise<LessonPlan>
+  createNewPlan: (input: CreateLessonPlanInput) => Promise<LessonPlan>
   syncToForm: (field: SyncField) => void
   discardUpdate: (field: SyncField) => void
   undoSync: (field: SyncField) => void
@@ -138,12 +174,18 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const streamContentRef = useRef('')
   // Ref to track content blocks (text + tool cards)
   const contentBlocksRef = useRef<ContentBlock[]>([])
+  // Ref to accumulate token usage across multiple API calls within a single message
+  const tokenUsageAccRef = useRef<MessageTokenUsage>(createEmptyTokenUsageAcc())
 
   // Tool activity state
   const [activeTools, setActiveTools] = useState<Map<string, ToolActivityEvent>>(new Map())
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingContent, setThinkingContent] = useState('')
   const [tokenUsage, setTokenUsage] = useState<TokenUsageEvent | null>(null)
+
+  // Todo state
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([])
+  const [todoStats, setTodoStats] = useState<TodoStats | null>(null)
 
   // Sync state
   const {
@@ -281,31 +323,39 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     socket.on('agent_status', async (data: AgentStatusEvent) => {
       console.log('🤖 Agent status:', data.status)
 
-      if (data.status === 'complete' || data.status === 'error') {
+      if (data.status === 'complete' || data.status === 'error' || data.status === 'cancelled') {
         setIsProcessing(false)
 
-        // Finalize current message using ref (avoids stale closure)
+        // Snapshot accumulated token usage for this message
+        const messageUsage = tokenUsageAccRef.current.requestCount > 0
+          ? { ...tokenUsageAccRef.current }
+          : undefined
+        // Reset accumulator for next message
+        tokenUsageAccRef.current = createEmptyTokenUsageAcc()
+
+        // Finalize current message: attach content + token usage
         const finalContent = streamContentRef.current
-        if (currentMessageRef.current && finalContent) {
-          setMessages(prev => {
-            const updated = [...prev]
-            const lastMsg = updated[updated.length - 1]
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = finalContent
-            }
-            return updated
-          })
-        }
+        setMessages(prev => {
+          const updated = [...prev]
+          const lastMsg = updated[updated.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant') {
+            if (finalContent) lastMsg.content = finalContent
+            if (messageUsage) lastMsg.tokenUsage = messageUsage
+          }
+          return updated
+        })
 
         // Reset stream state
         setCurrentStreamContent('')
         streamContentRef.current = ''
         currentMessageRef.current = null
 
-        // Clear active tools and thinking state
+        // Clear active tools, thinking, and todo state
         setActiveTools(new Map())
         setIsThinking(false)
         setThinkingContent('')
+        setTodoItems([])
+        setTodoStats(null)
 
         if (data.status === 'error') {
           const errorMsg = data.error || `处理失败 (退出码: ${data.exitCode ?? 'unknown'})`
@@ -335,20 +385,31 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
               if (outputUpdates.length > 0) {
                 console.log(`📝 Extracted ${outputUpdates.length} output updates from tool events`)
 
-                // Update messages with output updates
+                // Update messages with output updates — merge with existing synced state
                 setMessages((prev) => {
                   const updated = [...prev]
                   const lastMsg = updated[updated.length - 1]
                   if (lastMsg && lastMsg.role === 'assistant') {
-                    lastMsg.outputUpdates = outputUpdates.map((u) => ({
-                      ...u,
-                      synced: false,
-                    }))
+                    const existing = lastMsg.outputUpdates || []
+                    // Build lookup of already-synced fields
+                    const syncedFields = new Map<string, { synced?: boolean; syncedAt?: Date }>()
+                    for (const u of existing) {
+                      if (u.synced) {
+                        syncedFields.set(u.field, { synced: u.synced, syncedAt: u.syncedAt })
+                      }
+                    }
+                    // Merge: preserve synced state for fields that were already synced
+                    lastMsg.outputUpdates = outputUpdates.map((u) => {
+                      const prev = syncedFields.get(u.field)
+                      return prev
+                        ? { ...u, synced: prev.synced, syncedAt: prev.syncedAt }
+                        : { ...u, synced: false }
+                    })
                   }
                   return updated
                 })
 
-                // Add to pending updates
+                // Add to pending updates (Map.set is idempotent, won't create duplicates)
                 for (const update of outputUpdates) {
                   addPendingUpdate(update)
                 }
@@ -430,10 +491,30 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       }
     })
 
-    // Handle token usage
+    // Handle token usage - accumulate per message
     socket.on('token_usage', (data: { payload: TokenUsageEvent }) => {
       console.log('📊 Tokens:', data.payload.inputTokens, 'in /', data.payload.outputTokens, 'out')
       setTokenUsage(data.payload)
+
+      // Accumulate for per-message usage
+      const acc = tokenUsageAccRef.current
+      acc.inputTokens += data.payload.inputTokens
+      acc.outputTokens += data.payload.outputTokens
+      acc.cachedInputTokens += (data.payload.cachedInputTokens || 0)
+      acc.model = data.payload.model || acc.model
+      acc.requestCount += 1
+      acc.estimatedCostUsd = calculateCost(acc.model, acc.inputTokens, acc.outputTokens, acc.cachedInputTokens)
+    })
+
+    // Handle todo updates
+    socket.on('todo_update', (data: { payload: { todos: TodoItem[]; completed: number; inProgress: number; pending: number; total: number } }) => {
+      setTodoItems(data.payload.todos)
+      setTodoStats({
+        completed: data.payload.completed,
+        inProgress: data.payload.inProgress,
+        pending: data.payload.pending,
+        total: data.payload.total,
+      })
     })
 
     // Handle exploration activity
@@ -545,10 +626,11 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     currentMessageRef.current = assistantMessage
     setMessages(prev => [...prev, assistantMessage])
 
-    // Clear stream content and content blocks
+    // Clear stream content, content blocks, and token accumulator
     setCurrentStreamContent('')
     streamContentRef.current = ''
     contentBlocksRef.current = []
+    tokenUsageAccRef.current = createEmptyTokenUsageAcc()
     setIsProcessing(true)
 
     // Attempt to send message with auto-retry on WebSocket disconnection
@@ -640,12 +722,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   }, [lessonPlan])
 
   // Create new plan
-  const createNewPlan = useCallback(async (input: Omit<CreateLessonPlanInput, 'tenantId'>): Promise<LessonPlan> => {
+  const createNewPlan = useCallback(async (input: CreateLessonPlanInput): Promise<LessonPlan> => {
     setLoading(true)
     setError(null)
 
     try {
-      const plan = await api.createLessonPlan({ tenantId, ...input })
+      const plan = await api.createLessonPlan(input)
       setLessonPlan(plan)
       resetSyncState()
       setMessages([])
@@ -657,7 +739,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     } finally {
       setLoading(false)
     }
-  }, [tenantId, resetSyncState])
+  }, [resetSyncState])
 
   // Sync to form
   const syncToForm = useCallback((field: SyncField) => {
@@ -712,6 +794,13 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     })
   }, [])
 
+  // Cancel processing
+  const cancelProcessing = useCallback(() => {
+    const socket = socketRef.current
+    if (!socket || !isProcessing) return
+    socket.emit('cancel', { sessionId: sessionIdRef.current })
+  }, [isProcessing])
+
   // Sync context to backend (for Claude Code to read current form state)
   const syncContext = useCallback(async (plan: LessonPlan | null) => {
     if (!plan) return
@@ -726,16 +815,21 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
             title: plan.title,
             subject: plan.subject,
             gradeLevel: plan.gradeLevel,
+            durationMinutes: plan.durationMinutes,
+            lessonPlanCode: plan.lessonPlanCode,
             publisher: plan.publisher,
             volume: plan.volume,
+            chapterId: plan.chapterId,
             chapterTitle: plan.chapterTitle,
-            duration: plan.duration,
             objectives: plan.objectives,
-            standards: plan.standards,
-            materials: plan.materials,
-            activities: plan.activities,
-            assessment: plan.assessment,
-            differentiation: plan.differentiation,
+            content: plan.content,
+            teachingMethods: plan.teachingMethods,
+            materialsNeeded: plan.materialsNeeded,
+            assessmentMethods: plan.assessmentMethods,
+            curriculumRequirements: plan.curriculumRequirements,
+            studentAnalysis: plan.studentAnalysis,
+            extraProperties: plan.extraProperties,
+            status: plan.status,
           },
         }),
       })
@@ -773,7 +867,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     thinkingContent,
     tokenUsage,
 
+    // Todo state
+    todoItems,
+    todoStats,
+
     // Actions
+    cancelProcessing,
     sendMessage,
     saveLessonPlan,
     createNewPlan,
