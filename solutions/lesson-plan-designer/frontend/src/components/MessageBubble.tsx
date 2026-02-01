@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Message, SyncField, ContentBlock, ToolActivity } from '../types'
 import SyncButton from './SyncButton'
 
@@ -42,6 +43,7 @@ function getToolSummary(tool: ToolActivity): string {
 }
 
 function InlineToolCard({ tool }: { tool: ToolActivity }) {
+  const [expanded, setExpanded] = useState(false)
   const rawName = tool.toolName
   const displayName = rawName.replace(/^mcp__[^_]+__/, '')
   const icon = TOOL_ICONS[displayName] || TOOL_ICONS[rawName] || '🔧'
@@ -53,24 +55,64 @@ function InlineToolCard({ tool }: { tool: ToolActivity }) {
       : `${tool.duration}ms`
     : null
 
+  const hasDetails = tool.toolInput || tool.toolOutput || tool.toolError
+
   return (
-    <div
-      className="flex items-center gap-1.5 px-2.5 py-1 my-1 text-xs bg-white border border-gray-200 rounded-md text-gray-600"
-      title={tool.toolError || `${displayName} ${tool.phase}`}
-    >
-      <span>{icon}</span>
-      <span className="font-medium text-gray-700">{displayName}</span>
-      {summary && (
-        <span className="text-gray-500 truncate max-w-[180px]">{summary}</span>
+    <div className="my-1">
+      <div
+        className={`flex items-center gap-1.5 px-2.5 py-1 text-xs bg-white border border-gray-200 rounded-md text-gray-600 ${hasDetails ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+        title={tool.toolError || `${displayName} ${tool.phase}`}
+        onClick={hasDetails ? () => setExpanded(!expanded) : undefined}
+      >
+        {hasDetails && (
+          <svg
+            className={`w-3 h-3 text-gray-400 transition-transform flex-shrink-0 ${expanded ? 'rotate-90' : ''}`}
+            viewBox="0 0 16 16"
+            fill="currentColor"
+          >
+            <path d="M6 4l4 4-4 4z" />
+          </svg>
+        )}
+        <span>{icon}</span>
+        <span className="font-medium text-gray-700">{displayName}</span>
+        {summary && (
+          <span className="text-gray-500 truncate max-w-[180px]">{summary}</span>
+        )}
+        {tool.phase === 'start' ? (
+          <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+        ) : tool.success !== false ? (
+          <span>✅</span>
+        ) : (
+          <span>❌</span>
+        )}
+        {durationText && <span className="text-gray-400">{durationText}</span>}
+      </div>
+      {expanded && (
+        <div className="mt-1 ml-4 p-2 text-xs bg-gray-50 border rounded space-y-2 max-h-[300px] overflow-y-auto">
+          {tool.toolInput != null && (
+            <div>
+              <div className="font-medium text-gray-500 mb-1">Input</div>
+              <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
+                {typeof tool.toolInput === 'string' ? tool.toolInput : JSON.stringify(tool.toolInput, null, 2)}
+              </pre>
+            </div>
+          )}
+          {tool.toolOutput != null && (
+            <div>
+              <div className="font-medium text-gray-500 mb-1">Output</div>
+              <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
+                {typeof tool.toolOutput === 'string' ? tool.toolOutput : JSON.stringify(tool.toolOutput, null, 2)}
+              </pre>
+            </div>
+          )}
+          {tool.toolError && (
+            <div>
+              <div className="font-medium text-red-500 mb-1">Error</div>
+              <pre className="text-red-600 whitespace-pre-wrap break-all font-mono text-[11px]">{tool.toolError}</pre>
+            </div>
+          )}
+        </div>
       )}
-      {tool.phase === 'start' ? (
-        <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-      ) : tool.success !== false ? (
-        <span>✅</span>
-      ) : (
-        <span>❌</span>
-      )}
-      {durationText && <span className="text-gray-400">{durationText}</span>}
     </div>
   )
 }

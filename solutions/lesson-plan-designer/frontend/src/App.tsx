@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { useLessonPlanSession } from './hooks/useLessonPlanSession'
 import { useScrollSpy } from './hooks/useScrollSpy'
 import { useSectionEditor } from './hooks/useSectionEditor'
 import { useSkills } from './hooks/useSkills'
+import { useChatLayout } from './hooks/useChatLayout'
 import Header from './components/Header'
 import OutlinePanel from './components/OutlinePanel'
 import LessonPlanContent, { OUTLINE_ITEMS } from './components/LessonPlanContent'
 import ChatPanel from './components/ChatPanel'
-import SkillsPanel from './components/SkillsPanel'
+import ChatLayoutControls from './components/ChatLayoutControls'
+import CollapsedChatTab from './components/CollapsedChatTab'
 import CreateLessonPlanDialog from './components/CreateLessonPlanDialog'
 import SkillEditorModal from './components/SkillEditorModal'
 import { api } from './utils/api'
@@ -15,22 +18,72 @@ import type { Skill } from './types'
 
 const TENANT_ID = 'lesson-plan-designer'
 
+/** Chat section (controls + panel + token bar) shared across all layout modes */
+function ChatSection({
+  mode,
+  isCollapsed,
+  onModeChange,
+  onToggleCollapse,
+  chatPanelProps,
+  tokenUsage,
+}: {
+  mode: ReturnType<typeof useChatLayout>['mode']
+  isCollapsed: boolean
+  onModeChange: (m: typeof mode) => void
+  onToggleCollapse: () => void
+  chatPanelProps: Record<string, unknown>
+  tokenUsage: { sessionInputTokens?: number; inputTokens: number; sessionOutputTokens?: number; outputTokens: number; model?: string } | null
+}) {
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <ChatLayoutControls
+        mode={mode}
+        isCollapsed={isCollapsed}
+        onModeChange={onModeChange}
+        onToggleCollapse={onToggleCollapse}
+      />
+      <div className="flex-1 overflow-hidden">
+        <ChatPanel {...(chatPanelProps as any)} />
+      </div>
+      {tokenUsage && (
+        <div className="px-4 py-1.5 bg-gray-100 border-t border-gray-200 text-xs text-gray-500 flex items-center justify-between flex-shrink-0">
+          <span>
+            Tokens: {tokenUsage.sessionInputTokens?.toLocaleString() ?? tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.sessionOutputTokens?.toLocaleString() ?? tokenUsage.outputTokens.toLocaleString()} out
+          </span>
+          {tokenUsage.model && (
+            <span className="text-gray-400">{tokenUsage.model}</span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function App() {
   const [showNewDialog, setShowNewDialog] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  const [showSaveToast, setShowSaveToast] = useState(false)
   const [editingSkill, setEditingSkill] = useState<Skill | null>(null)
   const [skillSaving, setSkillSaving] = useState(false)
+
+  // Chat layout hook
+  const {
+    mode: layoutMode,
+    setMode: setLayoutMode,
+    isCollapsed,
+    setCollapsed,
+    overlayWidth,
+    isResizing,
+    overlayResizeProps,
+  } = useChatLayout()
+
+  // Panel ref for side-by-side mode
+  const chatPanelRef = usePanelRef()
 
   // Skills hook (must be before session hook to provide enabledSkillSlugs)
   const {
     skills,
-    loading: skillsLoading,
-    error: skillsError,
-    searchQuery,
-    setSearchQuery,
-    filteredSkills,
-    toggleSkill,
     enabledSkillIds,
     refresh: refreshSkills,
   } = useSkills(TENANT_ID)
@@ -56,6 +109,9 @@ function App() {
     isThinking,
     thinkingContent,
     tokenUsage,
+    todoItems,
+    todoStats,
+    cancelProcessing,
     sendMessage,
     saveLessonPlan,
     createNewPlan,
@@ -130,6 +186,8 @@ function App() {
     try {
       await saveLessonPlan()
       setHasUnsavedChanges(false)
+      setShowSaveToast(true)
+      setTimeout(() => setShowSaveToast(false), 2000)
     } catch {
       // Error is already handled in the hook
     }
@@ -139,7 +197,9 @@ function App() {
   const handleCreateNew = async (data: {
     title: string
     subject: string
-    gradeLevel: string
+    gradeLevel: number
+    durationMinutes: number
+    lessonPlanCode?: string
     publisher?: string
     volume?: string
     chapterId?: number
@@ -161,21 +221,20 @@ function App() {
   const handleAiAssist = useCallback((sectionId: string) => {
     const sectionPrompts: Record<string, string> = {
       basic: '帮我完善这个课程的基本信息',
-      objectives: '帮我设计本课的教学目标',
-      activities: '帮我设计教学活动',
-      assessment: '帮我设计评估方案',
-      differentiation: '帮我设计差异化教学策略',
+      curriculumRequirements: '帮我编写课程要求',
+      objectives: '帮我设计本课的学习目标',
+      studentAnalysis: '帮我编写学情分析',
+      materialsNeeded: '帮我列出课前准备内容',
+      content: '帮我设计学习过程',
+      assessmentMethods: '帮我设计作业检测方案',
+      teachingMethods: '帮我设计教学方法',
+      extraProperties: '帮我补充其他教学属性',
     }
     const prompt = sectionPrompts[sectionId]
     if (prompt) {
       sendMessage(prompt)
     }
   }, [sendMessage])
-
-  // Handle skill edit - open modal
-  const handleEditSkill = useCallback((skill: Skill) => {
-    setEditingSkill(skill)
-  }, [])
 
   // Handle skill editor close
   const handleCloseSkillEditor = useCallback(() => {
@@ -202,6 +261,43 @@ function App() {
     })
     return set
   }, [sectionIds, isSaving])
+
+  // Chat panel props (shared across all modes)
+  const chatPanelProps = useMemo(() => ({
+    messages,
+    isProcessing,
+    connected,
+    activeTools,
+    isThinking,
+    thinkingContent,
+    todoItems,
+    todoStats,
+    onSendMessage: sendMessage,
+    onSync: syncToForm,
+    onDiscard: discardUpdate,
+    onCancel: cancelProcessing,
+  }), [messages, isProcessing, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+
+  // Collapse/expand handlers
+  const handleToggleCollapse = useCallback(() => {
+    if (layoutMode === 'side-by-side') {
+      if (isCollapsed) {
+        chatPanelRef.current?.expand()
+      } else {
+        chatPanelRef.current?.collapse()
+      }
+    } else {
+      setCollapsed(!isCollapsed)
+    }
+  }, [layoutMode, isCollapsed, setCollapsed])
+
+  const handleModeChange = useCallback((newMode: typeof layoutMode) => {
+    setLayoutMode(newMode)
+    // If we were collapsed in side-by-side and switching away, ensure panel state is clean
+    if (layoutMode === 'side-by-side' && isCollapsed) {
+      setCollapsed(false)
+    }
+  }, [setLayoutMode, layoutMode, isCollapsed, setCollapsed])
 
   // Show loading state
   if (loading) {
@@ -270,6 +366,47 @@ function App() {
     )
   }
 
+  // Shared chat section element
+  const chatSection = (
+    <ChatSection
+      mode={layoutMode}
+      isCollapsed={isCollapsed}
+      onModeChange={handleModeChange}
+      onToggleCollapse={handleToggleCollapse}
+      chatPanelProps={chatPanelProps}
+      tokenUsage={tokenUsage}
+    />
+  )
+
+  // Lesson plan content element
+  const lessonPlanEl = (
+    <LessonPlanContent
+      lessonPlan={lessonPlan}
+      modifiedFields={modifiedFields}
+      editingSections={editingSections}
+      savingSections={savingSections}
+      canUndo={canUndo}
+      onUndo={undoSync}
+      onChange={updateField}
+      onStartEdit={startEdit}
+      onSaveEdit={saveEdit}
+      onCancelEdit={cancelEdit}
+      onAiAssist={handleAiAssist}
+    />
+  )
+
+  // Outline element
+  const outlineEl = (
+    <div className="w-[200px] flex-shrink-0 bg-white border-r border-gray-200 overflow-hidden">
+      <OutlinePanel
+        items={[...OUTLINE_ITEMS]}
+        activeSection={activeSection}
+        onSelect={handleOutlineSelect}
+        title="目录"
+      />
+    </div>
+  )
+
   return (
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Header */}
@@ -289,77 +426,85 @@ function App() {
         </div>
       )}
 
-      {/* Main Content - Three Column Layout */}
+      {/* Main Content - Layout depends on mode */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Outline (200px) */}
-        <div className="w-[200px] flex-shrink-0 bg-white border-r border-gray-200 overflow-hidden">
-          <OutlinePanel
-            items={[...OUTLINE_ITEMS]}
-            activeSection={activeSection}
-            onSelect={handleOutlineSelect}
-            title="目录"
-          />
-        </div>
+        {/* Outline - always present */}
+        {outlineEl}
 
-        {/* Center Panel - Content (flex-1) */}
-        <main className="flex-1 bg-gray-50 overflow-hidden">
-          <LessonPlanContent
-            lessonPlan={lessonPlan}
-            modifiedFields={modifiedFields}
-            editingSections={editingSections}
-            savingSections={savingSections}
-            canUndo={canUndo}
-            onUndo={undoSync}
-            onChange={updateField}
-            onStartEdit={startEdit}
-            onSaveEdit={saveEdit}
-            onCancelEdit={cancelEdit}
-            onAiAssist={handleAiAssist}
-          />
-        </main>
+        {/* === DEFAULT MODE === */}
+        {layoutMode === 'default' && (
+          <>
+            <main className="flex-1 bg-gray-50 overflow-hidden">
+              {lessonPlanEl}
+            </main>
+            <aside className="w-[400px] flex-shrink-0 flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
+              {chatSection}
+            </aside>
+          </>
+        )}
 
-        {/* Right Panel - Chat + Skills (400px) */}
-        <aside className="w-[400px] flex-shrink-0 flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
-          {/* Chat Panel */}
-          <div className="flex-1 overflow-hidden flex flex-col">
-            <div className="flex-1 overflow-hidden">
-              <ChatPanel
-                messages={messages}
-                isProcessing={isProcessing}
-                connected={connected}
-                activeTools={activeTools}
-                isThinking={isThinking}
-                thinkingContent={thinkingContent}
-                onSendMessage={sendMessage}
-                onSync={syncToForm}
-                onDiscard={discardUpdate}
-              />
-            </div>
-            {/* Token Usage Status Bar */}
-            {tokenUsage && (
-              <div className="px-4 py-1.5 bg-gray-100 border-t border-gray-200 text-xs text-gray-500 flex items-center justify-between">
-                <span>
-                  Tokens: {tokenUsage.sessionInputTokens?.toLocaleString() ?? tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.sessionOutputTokens?.toLocaleString() ?? tokenUsage.outputTokens.toLocaleString()} out
-                </span>
-                {tokenUsage.model && (
-                  <span className="text-gray-400">{tokenUsage.model}</span>
+        {/* === SIDE-BY-SIDE MODE === */}
+        {layoutMode === 'side-by-side' && (
+          <>
+            <Group orientation="horizontal" id="lesson-plan-sidebyside">
+              <Panel id="content" minSize="20%">
+                <main className="h-full bg-gray-50 overflow-hidden">
+                  {lessonPlanEl}
+                </main>
+              </Panel>
+              <Separator className="w-1.5 bg-gray-200 hover:bg-blue-400 transition-colors" />
+              <Panel
+                id="chat"
+                panelRef={chatPanelRef}
+                defaultSize="35%"
+                minSize="20%"
+                maxSize="60%"
+                collapsible
+                collapsedSize="0%"
+                onResize={(size) => {
+                  const collapsed = size.asPercentage === 0
+                  setCollapsed(collapsed)
+                }}
+              >
+                {!isCollapsed && (
+                  <aside className="h-full flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
+                    {chatSection}
+                  </aside>
                 )}
+              </Panel>
+            </Group>
+
+            {/* Collapsed tab */}
+            {isCollapsed && (
+              <div className="relative flex-shrink-0">
+                <CollapsedChatTab onClick={() => chatPanelRef.current?.expand()} />
               </div>
             )}
-          </div>
+          </>
+        )}
 
-          {/* Skills Panel */}
-          <SkillsPanel
-            skills={filteredSkills}
-            loading={skillsLoading}
-            error={skillsError}
-            searchQuery={searchQuery}
-            enabledSkillIds={enabledSkillIds}
-            onSearchChange={setSearchQuery}
-            onToggleSkill={toggleSkill}
-            onEditSkill={handleEditSkill}
-          />
-        </aside>
+        {/* === OVERLAY MODE === */}
+        {layoutMode === 'overlay' && (
+          <main className="flex-1 relative bg-gray-50 overflow-hidden">
+            {lessonPlanEl}
+
+            {!isCollapsed ? (
+              <div
+                className={`absolute top-0 right-0 bottom-0 flex flex-col bg-gray-50 border-l border-gray-200 shadow-xl z-10 ${isResizing ? 'select-none' : ''}`}
+                style={{ width: overlayWidth }}
+              >
+                {/* Resize handle on left edge */}
+                <div
+                  className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400/60 transition-colors z-20"
+                  {...overlayResizeProps}
+                />
+                {chatSection}
+              </div>
+            ) : (
+              <CollapsedChatTab onClick={() => setCollapsed(false)} />
+            )}
+          </main>
+        )}
       </div>
 
       {/* Create Lesson Plan Dialog */}
@@ -379,6 +524,13 @@ function App() {
         onClose={handleCloseSkillEditor}
         onSave={handleSaveSkill}
       />
+
+      {/* Save Success Toast */}
+      {showSaveToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-green-600 text-white text-sm rounded-lg shadow-lg animate-fade-in">
+          保存成功
+        </div>
+      )}
     </div>
   )
 }
