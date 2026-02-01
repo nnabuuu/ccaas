@@ -8,6 +8,12 @@ import type { Message, FileInfo, ContentBlock } from '../types'
 import { FileCard } from './FileCard'
 import { ToolActivityItem } from './ToolActivityItem'
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
 interface MessageBubbleProps {
   message: Message
   onDownload: (file: FileInfo) => void
@@ -63,6 +69,17 @@ export function MessageBubble({ message, onDownload }: MessageBubbleProps) {
         {message.files?.map((file, index) => (
           <FileCard key={file.id || index} file={file} onDownload={onDownload} />
         ))}
+
+        {!isUser && message.tokenUsage && message.status === 'complete' && (
+          <div className="mt-2 pt-1.5 border-t border-gray-200/60 flex items-center gap-3 text-[11px] text-gray-400">
+            <span>{message.tokenUsage.model.replace('claude-', '').replace(/-\d+$/, '')}</span>
+            <span>{'\u2193'}{formatTokens(message.tokenUsage.inputTokens)} {'\u2191'}{formatTokens(message.tokenUsage.outputTokens)}</span>
+            {message.tokenUsage.cachedInputTokens > 0 && (
+              <span>{'\u26A1'}{formatTokens(message.tokenUsage.cachedInputTokens)} cached</span>
+            )}
+            <span>${message.tokenUsage.estimatedCostUsd.toFixed(4)}</span>
+          </div>
+        )}
       </div>
     </div>
   )

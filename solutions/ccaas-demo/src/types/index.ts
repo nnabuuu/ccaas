@@ -103,6 +103,15 @@ export interface FileCreatedEvent {
   }
 }
 
+export interface TokenUsageInfo {
+  inputTokens: number
+  outputTokens: number
+  cachedInputTokens: number
+  estimatedCostUsd: number
+  model: string
+  requestCount: number  // number of API calls in this message
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -112,6 +121,7 @@ export interface Message {
   tools?: ToolActivity[]         // Track tool usage
   contentBlocks?: ContentBlock[] // Inline content blocks (text + tool cards)
   status?: 'sending' | 'streaming' | 'complete'
+  tokenUsage?: TokenUsageInfo
   timestamp: Date
 }
 
@@ -122,6 +132,24 @@ export interface SessionState {
   needsRestart: boolean
   isProcessing: boolean
 }
+
+// Todo tracking types
+export interface TodoItem {
+  id?: string
+  content: string
+  status: 'pending' | 'in_progress' | 'completed' | 'failed'
+  activeForm?: string
+  progress?: number
+}
+
+export interface TodoStats {
+  completed: number
+  inProgress: number
+  pending: number
+  total: number
+}
+
+export type ChatLayout = 'default' | 'overlay' | 'expanded';
 
 export type ProtocolEvent =
   | { type: 'text_delta'; text: string }

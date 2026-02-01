@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
-import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity, ContentBlock } from '../types'
+import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity, ContentBlock, TodoItem, TodoStats, TokenUsageInfo } from '../types'
 import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
 
 // Backend configuration
@@ -119,6 +119,30 @@ function convertSkill(backendSkill: BackendSkill): Skill {
   }
 }
 
+// Token pricing per million tokens
+const MODEL_PRICING: Record<string, { input: number; output: number; cached: number }> = {
+  'claude-opus-4-5-20251101': { input: 15, output: 75, cached: 1.5 },
+  'claude-opus-4.5': { input: 15, output: 75, cached: 1.5 },
+  'claude-sonnet-4-20250514': { input: 3, output: 15, cached: 0.3 },
+  'claude-sonnet-4': { input: 3, output: 15, cached: 0.3 },
+  'claude-haiku-3-5-20241022': { input: 0.8, output: 4, cached: 0.08 },
+  'claude-haiku-3.5': { input: 0.8, output: 4, cached: 0.08 },
+}
+
+function calculateCost(model: string, input: number, output: number, cached: number): number {
+  const defaultPricing = { input: 3, output: 15, cached: 0.3 }
+  const direct = MODEL_PRICING[model]
+  let pricing: { input: number; output: number; cached: number }
+  if (direct) {
+    pricing = direct
+  } else {
+    const base = Object.keys(MODEL_PRICING).find(m => model.toLowerCase().includes(m.toLowerCase().replace(/-\d+$/, '')))
+    pricing = (base && MODEL_PRICING[base]) || defaultPricing
+  }
+  const billable = Math.max(0, input - cached)
+  return Math.round(((billable / 1e6) * pricing.input + (cached / 1e6) * pricing.cached + (output / 1e6) * pricing.output) * 1e6) / 1e6
+}
+
 export function useRealSession() {
   const [skills, setSkills] = useState<Skill[]>([])
   const [session, setSession] = useState<SessionState>({
@@ -131,11 +155,18 @@ export function useRealSession() {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [todoItems, setTodoItems] = useState<TodoItem[]>([])
+  const [todoStats, setTodoStats] = useState<TodoStats | null>(null)
+  const [activeTools, setActiveTools] = useState<Map<string, ToolActivity>>(new Map())
 
   const socketRef = useRef<Socket | null>(null)
   const contentBlocksRef = useRef<ContentBlock[]>([])
   const sessionIdRef = useRef(session.sessionId)
   const clientIdRef = useRef<string | null>(null)
+  const tokenUsageAccRef = useRef<TokenUsageInfo>({
+    inputTokens: 0, outputTokens: 0, cachedInputTokens: 0,
+    estimatedCostUsd: 0, model: '', requestCount: 0,
+  })
 
   // Fetch skills from backend
   const fetchSkills = useCallback(async () => {
@@ -191,14 +222,22 @@ export function useRealSession() {
 
       if (data.status === 'running' || data.status === 'executing') {
         setSession(prev => ({ ...prev, isProcessing: true }))
-      } else if (data.status === 'complete' || data.status === 'idle') {
-        // First mark messages as complete
+      } else if (data.status === 'complete' || data.status === 'idle' || data.status === 'cancelled') {
+        // Clear todo and tool state
+        setTodoItems([])
+        setTodoStats(null)
+        setActiveTools(new Map())
+
+        // First mark messages as complete, attaching accumulated token usage
+        const usage = { ...tokenUsageAccRef.current }
         setSession(prev => ({
           ...prev,
           isProcessing: false,
           activeSkill: null,
           messages: prev.messages.map(m =>
-            m.status === 'streaming' ? { ...m, status: 'complete' } : m
+            m.status === 'streaming'
+              ? { ...m, status: 'complete', tokenUsage: usage.requestCount > 0 ? usage : undefined }
+              : m
           ),
         }))
 
@@ -302,6 +341,17 @@ export function useRealSession() {
         }
       }
 
+      // Track active tools
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        if (payload.phase === 'start') {
+          updated.set(toolActivity.toolId, toolActivity)
+        } else {
+          updated.delete(toolActivity.toolId)
+        }
+        return updated
+      })
+
       // Update content blocks
       const blocks = contentBlocksRef.current
       if (payload.phase === 'start') {
@@ -331,6 +381,27 @@ export function useRealSession() {
             : m
         ),
       }))
+    })
+
+    socket.on('todo_update', (data: { payload: { todos: TodoItem[]; completed: number; inProgress: number; pending: number; total: number } }) => {
+      setTodoItems(data.payload.todos)
+      setTodoStats({
+        completed: data.payload.completed,
+        inProgress: data.payload.inProgress,
+        pending: data.payload.pending,
+        total: data.payload.total,
+      })
+    })
+
+    socket.on('token_usage', (data: { payload: { inputTokens: number; outputTokens: number; cachedInputTokens?: number; model: string; estimatedCostUsd?: number; messageId?: string } }) => {
+      const p = data.payload
+      const acc = tokenUsageAccRef.current
+      acc.inputTokens += p.inputTokens
+      acc.outputTokens += p.outputTokens
+      acc.cachedInputTokens += (p.cachedInputTokens || 0)
+      acc.model = p.model
+      acc.requestCount += 1
+      acc.estimatedCostUsd = calculateCost(p.model, acc.inputTokens, acc.outputTokens, acc.cachedInputTokens)
     })
 
     socket.on('skill_updated', (data: { skillId: string; requiresRestart: boolean }) => {
@@ -442,6 +513,7 @@ export function useRealSession() {
     }
 
     contentBlocksRef.current = []
+    tokenUsageAccRef.current = { inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, estimatedCostUsd: 0, model: '', requestCount: 0 }
 
     setSession(prev => ({
       ...prev,
@@ -590,6 +662,12 @@ export function useRealSession() {
     }
   }, [])
 
+  const cancelProcessing = useCallback(() => {
+    const socket = socketRef.current
+    if (!socket || !session.isProcessing) return
+    socket.emit('cancel', { sessionId: sessionIdRef.current })
+  }, [session.isProcessing])
+
   return {
     skills,
     session,
@@ -597,10 +675,14 @@ export function useRealSession() {
     error,
     loading,
     socket: socketRef.current,
+    todoItems,
+    todoStats,
+    activeTools,
     toggleSkill,
     restartSession,
     sendMessage,
     downloadFile,
+    cancelProcessing,
     refreshSkills: fetchSkills,
     createSkill,
     updateSkill,
