@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Message, SyncField, ContentBlock, ToolActivity } from '../types'
+import type { Message, MessageTokenUsage, SyncField, ContentBlock, ToolActivity } from '../types'
 import SyncButton from './SyncButton'
 
 interface MessageBubbleProps {
@@ -74,6 +74,9 @@ function InlineToolCard({ tool }: { tool: ToolActivity }) {
           </svg>
         )}
         <span>{icon}</span>
+        {tool.nestingLevel != null && tool.nestingLevel >= 1 && tool.agentType && (
+          <span className="px-1 py-0.5 rounded bg-indigo-100 text-indigo-600 font-medium leading-none">{tool.agentType}</span>
+        )}
         <span className="font-medium text-gray-700">{displayName}</span>
         {summary && (
           <span className="text-gray-500 truncate max-w-[180px]">{summary}</span>
@@ -113,6 +116,29 @@ function InlineToolCard({ tool }: { tool: ToolActivity }) {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
+function formatModelName(model: string): string {
+  return model.replace('claude-', '').replace(/-\d+$/, '')
+}
+
+function TokenUsageFooter({ usage }: { usage: MessageTokenUsage }) {
+  return (
+    <div className="mt-1.5 pt-1.5 border-t border-gray-200/60 flex items-center gap-3 text-[11px] text-gray-400">
+      <span>{formatModelName(usage.model)}</span>
+      <span>{'\u2193'}{formatTokens(usage.inputTokens)} {'\u2191'}{formatTokens(usage.outputTokens)}</span>
+      {usage.cachedInputTokens > 0 && (
+        <span>{'\u26A1'}{formatTokens(usage.cachedInputTokens)} cached</span>
+      )}
+      <span>${usage.estimatedCostUsd.toFixed(4)}</span>
     </div>
   )
 }
@@ -182,6 +208,11 @@ export function MessageBubble({ message, onSync, onDiscard }: MessageBubbleProps
                   />
                 ))}
               </div>
+            )}
+
+            {/* Token Usage (assistant messages only) */}
+            {!isUser && message.tokenUsage && (
+              <TokenUsageFooter usage={message.tokenUsage} />
             )}
 
             {/* Timestamp */}

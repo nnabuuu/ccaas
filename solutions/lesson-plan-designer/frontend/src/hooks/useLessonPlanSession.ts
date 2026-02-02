@@ -449,6 +449,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         description: payload.description,
         toolInput: payload.toolInput,
         toolOutput: payload.toolOutput,
+        agentType: payload.agentType,
+        nestingLevel: payload.nestingLevel,
       }
 
       // Update content blocks
