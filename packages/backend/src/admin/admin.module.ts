@@ -10,6 +10,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 // Entities
 import { AdminAuditLog } from './entities/admin-audit-log.entity';
 import { SessionAlert } from './entities/session-alert.entity';
+import { TenantQuota } from './entities/tenant-quota.entity';
 
 // Services
 import { AuditService } from './services/audit.service';
@@ -23,8 +24,10 @@ import { AdminAnalyticsController } from './controllers/admin-analytics.controll
 import { AdminAuditController } from './controllers/admin-audit.controller';
 import { AdminSkillsController } from './controllers/admin-skills.controller';
 import { AdminTenantsController } from './controllers/admin-tenants.controller';
+import { AdminSdkController } from './controllers/admin-sdk.controller';
 
 // Dependent modules
+import { ChatModule } from '../chat/chat.module';
 import { SessionModule } from '../chat/session.module';
 import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
@@ -48,6 +51,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       // Admin entities
       AdminAuditLog,
       SessionAlert,
+      TenantQuota,
       // External entities for queries
       Message,
       ToolEvent,
@@ -59,6 +63,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       Skill,
       Tenant,
     ]),
+    ChatModule,
     SessionModule,
     SkillsModule,
     AuthModule,
@@ -72,6 +77,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminAuditController,
     AdminSkillsController,
     AdminTenantsController,
+    AdminSdkController,
   ],
   providers: [
     AuditService,

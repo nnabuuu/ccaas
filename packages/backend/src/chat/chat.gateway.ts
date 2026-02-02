@@ -58,6 +58,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   private readonly logger = new Logger(ChatGateway.name);
   private clientSockets = new Map<string, Socket>();
 
+  /** Track SDK connection metadata for admin dashboard */
+  private sdkConnections = new Map<string, {
+    clientId: string;
+    socketId: string;
+    sdkType: string;
+    sdkVersion: string;
+    tenantId: string;
+    solutionName: string;
+    connectedAt: Date;
+  }>();
+
   // Process lifecycle tracker instance (for access across methods)
   private processLifecycleTracker: ReturnType<typeof createProcessLifecycleTracker> | null = null;
 
@@ -189,6 +200,28 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
     this.logger.log(`Client connected: ${clientId} (socket: ${client.id})`);
 
+    // Capture SDK metadata from handshake query
+    const query = client.handshake?.query || {};
+    const sdkType = (query.sdkType as string) || 'unknown';
+    const sdkVersion = (query.sdkVersion as string) || 'unknown';
+    const tenantId = (query.tenantId as string) || '';
+    const solutionName = (query.solutionName as string) || '';
+
+    const connectionInfo = {
+      clientId,
+      socketId: client.id,
+      sdkType,
+      sdkVersion,
+      tenantId,
+      solutionName,
+      connectedAt: new Date(),
+    };
+    this.sdkConnections.set(clientId, connectionInfo);
+
+    // Notify admin namespace
+    this.server.emit('admin:sdk_connected', connectionInfo);
+    this.logger.log(`SDK connected: ${sdkType}@${sdkVersion} tenant=${tenantId} solution=${solutionName}`);
+
     // Send client ID to frontend
     client.emit('client_id', { clientId });
 
@@ -202,6 +235,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   handleDisconnect(client: Socket) {
     const clientId = client.data.clientId;
     this.logger.log(`Client disconnected: ${clientId}`);
+
+    // Remove SDK connection tracking and notify admin
+    const connectionInfo = this.sdkConnections.get(clientId);
+    if (connectionInfo) {
+      this.sdkConnections.delete(clientId);
+      this.server.emit('admin:sdk_disconnected', {
+        ...connectionInfo,
+        disconnectedAt: new Date(),
+      });
+    }
+
     this.clientSockets.delete(clientId);
     // Note: We don't immediately close sessions on disconnect
     // to allow for reconnection. Sessions will be cleaned up by TTL.
@@ -463,6 +507,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   handleGetStats(@ConnectedSocket() client: Socket) {
     const stats = this.sessionService.getStats();
     client.emit('stats', stats);
+  }
+
+  /**
+   * Handle get_sdk_connections request — returns all active SDK connections
+   */
+  @SubscribeMessage('get_sdk_connections')
+  handleGetSdkConnections(@ConnectedSocket() client: Socket) {
+    const connections = Array.from(this.sdkConnections.values());
+    client.emit('sdk_connections', { connections });
+  }
+
+  /**
+   * Get all SDK connections (for REST API / admin controller)
+   */
+  getSdkConnections() {
+    return Array.from(this.sdkConnections.values());
   }
 
   /**

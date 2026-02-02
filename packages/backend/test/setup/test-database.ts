@@ -26,6 +26,7 @@ import { SkillVersion } from '../../src/skills/entities/skill-version.entity';
 import { Tenant } from '../../src/tenants/entities/tenant.entity';
 import { ApiKey } from '../../src/auth/entities/api-key.entity';
 import { McpServer } from '../../src/mcp/entities/mcp-server.entity';
+import { JobEntity } from '../../src/jobs/entities/job.entity';
 
 export const TEST_ENTITIES = [
   Message,
@@ -46,6 +47,7 @@ export const TEST_ENTITIES = [
   McpServer,
   SessionAlert,
   AdminAuditLog,
+  JobEntity,
 ];
 
 /**

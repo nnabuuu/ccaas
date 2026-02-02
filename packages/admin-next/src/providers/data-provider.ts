@@ -1,0 +1,98 @@
+import type { DataProvider } from '@refinedev/core'
+import { apiClient } from '@/lib/api-client'
+
+export const dataProvider: DataProvider = {
+  getList: async ({ resource, pagination, filters, sorters }) => {
+    const params: Record<string, unknown> = {}
+
+    if (pagination) {
+      const { current = 1, pageSize = 10 } = pagination
+      params.page = current
+      params.limit = pageSize
+    }
+
+    if (sorters && sorters.length > 0) {
+      params.sortBy = sorters[0].field
+      params.sortOrder = sorters[0].order
+    }
+
+    if (filters) {
+      for (const filter of filters) {
+        if ('field' in filter && filter.value !== undefined) {
+          params[filter.field] = filter.value
+        }
+      }
+    }
+
+    const url = getResourceUrl(resource)
+    const { data } = await apiClient.get(url, { params })
+
+    // Handle both paginated and array responses
+    if (Array.isArray(data)) {
+      return { data, total: data.length }
+    }
+
+    return {
+      data: data.data ?? data.items ?? data.sessions ?? data.skills ?? data.tenants ?? data.logs ?? data,
+      total: data.total ?? data.pagination?.total ?? 0,
+    }
+  },
+
+  getOne: async ({ resource, id }) => {
+    const url = getResourceUrl(resource)
+    const { data } = await apiClient.get(`${url}/${id}`)
+    return { data }
+  },
+
+  create: async ({ resource, variables }) => {
+    const url = getResourceUrl(resource)
+    const { data } = await apiClient.post(url, variables)
+    return { data }
+  },
+
+  update: async ({ resource, id, variables }) => {
+    const url = getResourceUrl(resource)
+    const { data } = await apiClient.put(`${url}/${id}`, variables)
+    return { data }
+  },
+
+  deleteOne: async ({ resource, id }) => {
+    const url = getResourceUrl(resource)
+    const { data } = await apiClient.delete(`${url}/${id}`)
+    return { data }
+  },
+
+  getApiUrl: () => '/api/v1',
+
+  custom: async ({ url, method = 'get', payload, query }) => {
+    let response
+    if (method === 'get') {
+      response = await apiClient.get(url, { params: query })
+    } else if (method === 'post') {
+      response = await apiClient.post(url, payload, { params: query })
+    } else if (method === 'put') {
+      response = await apiClient.put(url, payload, { params: query })
+    } else if (method === 'delete') {
+      response = await apiClient.delete(url, { params: query })
+    } else {
+      response = await apiClient.request({ url, method, data: payload, params: query })
+    }
+    return { data: response.data }
+  },
+}
+
+function getResourceUrl(resource: string): string {
+  const map: Record<string, string> = {
+    dashboard: '/admin/dashboard',
+    sessions: '/admin/sessions',
+    'sessions/active': '/admin/sessions/active',
+    skills: '/admin/skills',
+    tenants: '/admin/tenants',
+    audit: '/admin/audit/log',
+    'analytics/tokens': '/admin/analytics/tokens',
+    'analytics/costs': '/admin/analytics/costs',
+    'analytics/api-keys': '/admin/analytics/api-keys',
+    scheduler: '/scheduler/tasks',
+  }
+  return map[resource] ?? `/admin/${resource}`
+}

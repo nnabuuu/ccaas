@@ -6,8 +6,12 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { AdminTenantsController } from './admin-tenants.controller';
 import { TenantsService } from '../../tenants/tenants.service';
+import { SkillsService } from '../../skills/skills.service';
+import { AuditService } from '../services/audit.service';
+import { TenantQuota } from '../entities/tenant-quota.entity';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
 
@@ -24,6 +28,30 @@ describe('AdminTenantsController', () => {
           useValue: {
             findAll: jest.fn().mockResolvedValue([]),
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: SkillsService,
+          useValue: {
+            findOne: jest.fn(),
+            toggle: jest.fn(),
+            findAll: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: AuditService,
+          useValue: {
+            logSuccess: jest.fn(),
+            logFailure: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(TenantQuota),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            findOne: jest.fn(),
+            save: jest.fn(),
+            create: jest.fn(),
           },
         },
       ],

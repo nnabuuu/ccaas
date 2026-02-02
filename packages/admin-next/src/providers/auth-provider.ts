@@ -1,0 +1,51 @@
+import type { AuthProvider } from '@refinedev/core'
+import { apiClient } from '@/lib/api-client'
+
+const API_KEY_STORAGE = 'admin_api_key'
+
+export const authProvider: AuthProvider = {
+  login: async ({ apiKey }: { apiKey: string }) => {
+    try {
+      localStorage.setItem(API_KEY_STORAGE, apiKey)
+      // Validate the key by hitting the dashboard endpoint
+      await apiClient.get('/admin/dashboard/summary')
+      return { success: true, redirectTo: '/' }
+    } catch {
+      localStorage.removeItem(API_KEY_STORAGE)
+      return {
+        success: false,
+        error: { name: 'Login Error', message: 'Invalid API key' },
+      }
+    }
+  },
+
+  logout: async () => {
+    localStorage.removeItem(API_KEY_STORAGE)
+    return { success: true, redirectTo: '/login' }
+  },
+
+  check: async () => {
+    const apiKey = localStorage.getItem(API_KEY_STORAGE)
+    if (!apiKey) {
+      return { authenticated: false, redirectTo: '/login' }
+    }
+    return { authenticated: true }
+  },
+
+  getIdentity: async () => {
+    const apiKey = localStorage.getItem(API_KEY_STORAGE)
+    if (!apiKey) return null
+    return {
+      id: 'admin',
+      name: 'Admin',
+      avatar: undefined,
+    }
+  },
+
+  onError: async (error) => {
+    if (error?.statusCode === 401) {
+      return { logout: true, redirectTo: '/login' }
+    }
+    return { error }
+  },
+}

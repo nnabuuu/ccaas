@@ -1,0 +1,128 @@
+import { lazy, Suspense } from 'react'
+import { Refine, Authenticated } from '@refinedev/core'
+import routerProvider, { NavigateToResource, CatchAllNavigate } from '@refinedev/react-router-v6'
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
+import { dataProvider } from '@/providers/data-provider'
+import { authProvider } from '@/providers/auth-provider'
+import { liveProvider } from '@/providers/live-provider'
+import { AppLayout } from '@/components/layout/app-layout'
+import { Toaster } from 'sonner'
+
+// Lazy-loaded pages
+const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.LoginPage })))
+const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))
+const SessionListPage = lazy(() => import('@/pages/sessions/list').then((m) => ({ default: m.SessionListPage })))
+const SessionDetailPage = lazy(() => import('@/pages/sessions/detail').then((m) => ({ default: m.SessionDetailPage })))
+const SkillListPage = lazy(() => import('@/pages/skills/list').then((m) => ({ default: m.SkillListPage })))
+const SkillEditorPage = lazy(() => import('@/pages/skills/editor').then((m) => ({ default: m.SkillEditorPage })))
+const TenantListPage = lazy(() => import('@/pages/tenants/list').then((m) => ({ default: m.TenantListPage })))
+const TenantDetailPage = lazy(() => import('@/pages/tenants/detail').then((m) => ({ default: m.TenantDetailPage })))
+const AuditLogPage = lazy(() => import('@/pages/audit').then((m) => ({ default: m.AuditLogPage })))
+const AnalyticsPage = lazy(() => import('@/pages/analytics').then((m) => ({ default: m.AnalyticsPage })))
+const SchedulerListPage = lazy(() => import('@/pages/scheduler/list').then((m) => ({ default: m.SchedulerListPage })))
+const SchedulerDetailPage = lazy(() => import('@/pages/scheduler/detail').then((m) => ({ default: m.SchedulerDetailPage })))
+const SkillAnalyticsPage = lazy(() => import('@/pages/analytics/skills').then((m) => ({ default: m.SkillAnalyticsPage })))
+
+function PageLoader() {
+  return (
+    <div className="flex items-center justify-center h-64 text-muted-foreground">
+      Loading...
+    </div>
+  )
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Refine
+        routerProvider={routerProvider}
+        dataProvider={dataProvider}
+        authProvider={authProvider}
+        liveProvider={liveProvider}
+        resources={[
+          {
+            name: 'dashboard',
+            list: '/',
+            meta: { label: 'Dashboard' },
+          },
+          {
+            name: 'sessions',
+            list: '/sessions',
+            show: '/sessions/:sessionId',
+            meta: { label: 'Sessions' },
+          },
+          {
+            name: 'skills',
+            list: '/skills',
+            show: '/skills/:idOrSlug',
+            meta: { label: 'Skills' },
+          },
+          {
+            name: 'tenants',
+            list: '/tenants',
+            show: '/tenants/:tenantId',
+            meta: { label: 'Tenants' },
+          },
+          {
+            name: 'audit',
+            list: '/audit',
+            meta: { label: 'Audit Log' },
+          },
+          {
+            name: 'analytics',
+            list: '/analytics',
+            meta: { label: 'Analytics' },
+          },
+          {
+            name: 'scheduler',
+            list: '/scheduler',
+            show: '/scheduler/:id',
+            meta: { label: 'Scheduler' },
+          },
+        ]}
+        options={{
+          syncWithLocation: true,
+          warnWhenUnsavedChanges: true,
+          liveMode: 'auto',
+        }}
+      >
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route
+              element={
+                <Authenticated key="auth" fallback={<CatchAllNavigate to="/login" />}>
+                  <AppLayout />
+                </Authenticated>
+              }
+            >
+              <Route index element={<DashboardPage />} />
+              <Route path="/sessions" element={<SessionListPage />} />
+              <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
+              <Route path="/skills" element={<SkillListPage />} />
+              <Route path="/skills/:idOrSlug" element={<SkillEditorPage />} />
+              <Route path="/tenants" element={<TenantListPage />} />
+              <Route path="/tenants/:tenantId" element={<TenantDetailPage />} />
+              <Route path="/audit" element={<AuditLogPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/analytics/skills" element={<SkillAnalyticsPage />} />
+              <Route path="/scheduler" element={<SchedulerListPage />} />
+              <Route path="/scheduler/:id" element={<SchedulerDetailPage />} />
+            </Route>
+            <Route
+              element={
+                <Authenticated key="auth" fallback={<Outlet />}>
+                  <NavigateToResource resource="dashboard" />
+                </Authenticated>
+              }
+            >
+              <Route path="/login" element={<LoginPage />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </Refine>
+      <Toaster />
+    </BrowserRouter>
+  )
+}
+
+export default App

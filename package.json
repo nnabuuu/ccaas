@@ -18,7 +18,10 @@
     "build:shared": "npm run build -w @ccaas/shared",
     "build:backend": "npm run build -w @ccaas/backend",
     "build:admin": "npm run build -w @ccaas/admin",
-    "build:vue-sdk": "npm run build -w @ccaas/vue-sdk"
+    "build:vue-sdk": "npm run build -w @ccaas/vue-sdk",
+    "build:react-sdk": "npm run build -w @ccaas/react-sdk",
+    "dev:admin-next": "npm run dev -w @ccaas/admin-next",
+    "build:admin-next": "npm run build -w @ccaas/admin-next"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -32,5 +35,6 @@
     "monorepo"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {}
 }

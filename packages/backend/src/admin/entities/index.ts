@@ -3,3 +3,6 @@ export type { AdminAction, TargetType, AuditMetadata } from './admin-audit-log.e
 
 export { SessionAlert } from './session-alert.entity';
 export type { AlertType, AlertThreshold } from './session-alert.entity';
+
+export { TenantQuota } from './tenant-quota.entity';
+export type { QuotaPeriod } from './tenant-quota.entity';

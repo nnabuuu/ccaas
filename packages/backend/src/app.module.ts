@@ -32,11 +32,16 @@ import { AgentFile } from './files/entities/agent-file.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
 import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
-import { AdminAuditLog, SessionAlert } from './admin/entities';
+import { AdminAuditLog, SessionAlert, TenantQuota } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
 import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
 import { LessonPlanEntity } from './lesson-plans/entities/lesson-plan.entity';
 import { SessionsModule } from './sessions/sessions.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
+import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
+import { ScheduledTaskExecution } from './scheduler/entities/scheduled-task-execution.entity';
+import { JobModule } from './jobs/job.module';
+import { JobEntity } from './jobs/entities/job.entity';
 
 @Module({
   imports: [
@@ -73,8 +78,14 @@ import { SessionsModule } from './sessions/sessions.module';
         // Admin entities
         AdminAuditLog,
         SessionAlert,
+        TenantQuota,
         // Lesson Plan entities
         LessonPlanEntity,
+        // Scheduler entities
+        ScheduledTask,
+        ScheduledTaskExecution,
+        // Job entities
+        JobEntity,
       ],
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.DEBUG === 'true',
@@ -101,6 +112,12 @@ import { SessionsModule } from './sessions/sessions.module';
 
     // Sessions REST API module
     SessionsModule,
+
+    // Scheduler module
+    SchedulerModule,
+
+    // Background jobs module
+    JobModule,
   ],
 })
 export class AppModule {}
