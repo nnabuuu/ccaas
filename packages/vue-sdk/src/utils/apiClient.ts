@@ -1,5 +1,5 @@
 import type { ApiClientOptions, CompletionParams, SolutionConfig } from '../types'
-import type { Skill } from '@ccaas/shared'
+import type { Skill } from '@ccaas/common'
 
 export interface ApiClient {
   sendCompletion: (sessionId: string, params: CompletionParams) => Promise<Response>

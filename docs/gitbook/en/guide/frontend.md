@@ -227,7 +227,7 @@ export function useSyncManager() {
 
 ## Best Practices
 
-1. **Use type definitions** -- Import event types from `@ccaas/shared`
+1. **Use type definitions** -- Import event types from `@ccaas/common`
 2. **Unified parsing** -- Use `parseOutputUpdateEvent` for handling output\_update
 3. **Error handling** -- Listen for `error` events and provide user feedback
 4. **Status indicators** -- Use `agent_status` and `tool_activity` to display execution progress

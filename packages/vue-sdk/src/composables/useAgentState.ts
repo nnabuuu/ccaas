@@ -94,6 +94,7 @@ export interface UseAgentStateReturn {
   // Computed helpers
   hasActiveTodo: ComputedRef<boolean>
   isAnyToolRunning: ComputedRef<boolean>
+  currentActivity: ComputedRef<string>
 }
 
 // Default fallback values
@@ -172,6 +173,18 @@ export function useAgentState(): UseAgentStateReturn {
       currentToolActivity.value?.phase === 'progress'
   })
 
+  const currentActivity = computed(() => {
+    const activeTodo = todoItems.value.find(t => t.status === 'in_progress')
+    if (activeTodo?.activeForm) return activeTodo.activeForm
+
+    if (currentToolActivity.value?.phase === 'start' && currentToolActivity.value?.description) {
+      return currentToolActivity.value.description
+    }
+
+    if (reasoningPhase.value === 'analyzing') return '思考中...'
+    return ''
+  })
+
   return {
     clientId,
     sessionId,
@@ -198,6 +211,7 @@ export function useAgentState(): UseAgentStateReturn {
     goalNarrative,
     hasActiveTodo,
     isAnyToolRunning,
+    currentActivity,
   }
 }
 

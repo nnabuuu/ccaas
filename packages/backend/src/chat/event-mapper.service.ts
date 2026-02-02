@@ -29,6 +29,19 @@ export type ThinkingEventCallback = (event: ThinkingEvent, sessionId: string) =>
  */
 export type TokenUsageCallback = (usage: TokenUsageEvent, sessionId: string) => void | Promise<void>;
 
+/**
+ * SubAgent tracker interface
+ */
+interface SubAgentTracker {
+  subAgentId: string;
+  agentType: string;
+  description?: string;
+  startedAt: Date;
+  status: 'running' | 'completed' | 'failed';
+  toolName?: string;
+  nestingLevel: number;
+}
+
 @Injectable()
 export class EventMapperService {
   private readonly logger = new Logger(EventMapperService.name);
@@ -39,6 +52,9 @@ export class EventMapperService {
 
   // Track active Task tool calls for parent-child relationship tracking
   private activeTaskToolIds = new Map<string, string>(); // sessionId -> toolUseId
+
+  // Track active subagents per session
+  private activeSubAgentsMap = new Map<string, Map<string, SubAgentTracker>>(); // sessionId -> Map<toolUseId, SubAgentTracker>
 
   // Track execution order per session (messageId -> counter)
   private sessionExecutionCounters = new Map<string, number>();
@@ -250,6 +266,28 @@ export class EventMapperService {
                 this.logger.error(`Tool start hook execution failed: ${err}`);
               });
 
+              // Track subagent start and emit subagent_started event
+              const nestingLevel = agentType === 'main' ? 0 : 1;
+              if (toolName === 'Task' || nestingLevel > 0) {
+                const description = this.getToolDescription(toolName, block.input);
+                this.trackSubAgentStart(sessionId, toolId, agentType, description, nestingLevel);
+
+                events.push({
+                  type: 'subagent_started',
+                  sessionId,
+                  clientId,
+                  timestamp,
+                  payload: {
+                    subAgentId: toolId,
+                    agentType,
+                    description,
+                    startedAt: new Date().toISOString(),
+                    status: 'running',
+                    nestingLevel,
+                  },
+                });
+              }
+
               if (this.isExplorationTool(toolName) && agentType !== 'main') {
                 events.push({
                   type: 'exploration_activity',
@@ -362,6 +400,32 @@ export class EventMapperService {
                   this.logger.error(`Tool hook execution failed: ${err}`);
                 });
 
+                // Track subagent completion and emit subagent_completed event
+                if (toolName === 'Task' || nestingLevel > 0) {
+                  const tracker = this.trackSubAgentComplete(
+                    sessionId,
+                    toolUseId,
+                    isError ? 'failed' : 'completed',
+                    isError ? this.extractErrorMessage(block.content) : undefined,
+                  );
+
+                  if (tracker) {
+                    const durationMs = Date.now() - tracker.startedAt.getTime();
+                    events.push({
+                      type: 'subagent_completed',
+                      sessionId,
+                      clientId,
+                      timestamp,
+                      payload: {
+                        subAgentId: toolUseId,
+                        status: tracker.status,
+                        durationMs,
+                        error: isError ? this.extractErrorMessage(block.content) : undefined,
+                      },
+                    });
+                  }
+                }
+
                 this.activeToolCalls.delete(toolUseId);
               }
             }
@@ -390,6 +454,9 @@ export class EventMapperService {
           status: 'complete',
           sessionId,
           timestamp,
+          context: {
+            activeSubAgents: this.getActiveSubAgents(sessionId),
+          },
         });
         break;
       }
@@ -1115,5 +1182,82 @@ export class EventMapperService {
    */
   resetExecutionOrder(sessionId: string): void {
     this.sessionExecutionCounters.delete(sessionId);
+  }
+
+  /**
+   * Track sub-agent start
+   */
+  private trackSubAgentStart(
+    sessionId: string,
+    toolUseId: string,
+    agentType: string,
+    description?: string,
+    nestingLevel: number = 1,
+  ): SubAgentTracker {
+    if (!this.activeSubAgentsMap.has(sessionId)) {
+      this.activeSubAgentsMap.set(sessionId, new Map());
+    }
+
+    const tracker: SubAgentTracker = {
+      subAgentId: toolUseId,
+      agentType,
+      description,
+      startedAt: new Date(),
+      status: 'running',
+      nestingLevel,
+    };
+
+    this.activeSubAgentsMap.get(sessionId)!.set(toolUseId, tracker);
+    return tracker;
+  }
+
+  /**
+   * Track sub-agent completion
+   */
+  private trackSubAgentComplete(
+    sessionId: string,
+    toolUseId: string,
+    status: 'completed' | 'failed',
+    error?: string,
+  ): SubAgentTracker | undefined {
+    const sessionAgents = this.activeSubAgentsMap.get(sessionId);
+    if (!sessionAgents) return undefined;
+
+    const tracker = sessionAgents.get(toolUseId);
+    if (tracker) {
+      tracker.status = status;
+      sessionAgents.delete(toolUseId);
+
+      if (sessionAgents.size === 0) {
+        this.activeSubAgentsMap.delete(sessionId);
+      }
+
+      return tracker;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get active sub-agents for a session
+   */
+  private getActiveSubAgents(sessionId: string): Array<{
+    subAgentId: string;
+    agentType: string;
+    description?: string;
+    startedAt: string;
+    status: 'running' | 'completed' | 'failed';
+    nestingLevel?: number;
+  }> {
+    const sessionAgents = this.activeSubAgentsMap.get(sessionId);
+    if (!sessionAgents) return [];
+
+    return Array.from(sessionAgents.values()).map((tracker) => ({
+      subAgentId: tracker.subAgentId,
+      agentType: tracker.agentType,
+      description: tracker.description,
+      startedAt: tracker.startedAt.toISOString(),
+      status: tracker.status,
+      nestingLevel: tracker.nestingLevel,
+    }));
   }
 }

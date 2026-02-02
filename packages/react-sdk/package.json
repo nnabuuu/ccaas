@@ -49,7 +49,7 @@
     "vitest": "^1.0.0"
   },
   "dependencies": {
-    "@ccaas/shared": "^1.0.0"
+    "@ccaas/common": "^1.0.0"
   },
   "keywords": [
     "react",

@@ -94,7 +94,9 @@ describe('useSkills', () => {
         expect(result.current.loading).toBe(false)
       })
 
-      expect(fetch).toHaveBeenCalledWith('/api/v1/skills?tenantId=test-tenant')
+      expect(fetch).toHaveBeenCalledWith('/api/v1/skills', {
+        headers: { 'X-Tenant-Id': 'test-tenant' },
+      })
       expect(result.current.skills.length).toBe(3)
     })
 
@@ -232,8 +234,14 @@ describe('useSkills', () => {
         expect(result.current.loading).toBe(false)
       })
 
-      act(() => {
-        result.current.toggleSkill('1')
+      // Mock toggle API response returning the skill with enabled=true
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[0], enabled: true }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('1')
       })
 
       expect(result.current.enabledSkillIds.has('1')).toBe(true)
@@ -246,14 +254,26 @@ describe('useSkills', () => {
         expect(result.current.loading).toBe(false)
       })
 
-      act(() => {
-        result.current.toggleSkill('1')
+      // First toggle: enable
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[0], enabled: true }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('1')
       })
 
       expect(result.current.enabledSkillIds.has('1')).toBe(true)
 
-      act(() => {
-        result.current.toggleSkill('1')
+      // Second toggle: disable
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[0], enabled: false }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('1')
       })
 
       expect(result.current.enabledSkillIds.has('1')).toBe(false)
@@ -266,9 +286,24 @@ describe('useSkills', () => {
         expect(result.current.loading).toBe(false)
       })
 
-      act(() => {
-        result.current.toggleSkill('1')
-        result.current.toggleSkill('2')
+      // Toggle skill 1
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[0], enabled: true }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('1')
+      })
+
+      // Toggle skill 2
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[1], enabled: true }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('2')
       })
 
       expect(result.current.enabledSkillIds.size).toBe(2)
@@ -292,8 +327,14 @@ describe('useSkills', () => {
         expect(result.current.loading).toBe(false)
       })
 
-      act(() => {
-        result.current.toggleSkill('1')
+      // Mock toggle API response
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ ...mockSkills[0], enabled: true }),
+      } as Response)
+
+      await act(async () => {
+        await result.current.toggleSkill('1')
       })
 
       expect(result.current.isSkillEnabled('1')).toBe(true)

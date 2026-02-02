@@ -8,7 +8,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
 import type { Skill, Message, FileInfo, SessionState, SkillHeader, SkillFormData, ToolActivity, ContentBlock, TodoItem, TodoStats, TokenUsageInfo } from '../types'
-import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/shared'
+import type { ToolActivityEvent, AgentStatusEvent, TextDeltaEvent } from '@ccaas/common'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'

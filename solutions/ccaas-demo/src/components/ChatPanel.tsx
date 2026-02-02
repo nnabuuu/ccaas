@@ -5,23 +5,42 @@
  */
 
 import { useState, useRef, useEffect } from 'react'
-import type { Message, FileInfo } from '../types'
+import type { Message, FileInfo, ChatLayout, TodoItem, TodoStats, ToolActivity } from '../types'
 import { MessageBubble } from './MessageBubble'
+import { AgentActivityLine } from './AgentActivityLine'
+
+const layoutSegments: { key: ChatLayout; label: string }[] = [
+  { key: 'default', label: '侧栏' },
+  { key: 'overlay', label: '浮层' },
+  { key: 'expanded', label: '展开' },
+]
 
 interface ChatPanelProps {
   messages: Message[]
   activeSkill: string | null
   isProcessing: boolean
+  todoItems: TodoItem[]
+  todoStats: TodoStats | null
+  activeTools: Map<string, ToolActivity>
   onSend: (message: string) => void
   onDownload: (file: FileInfo) => void
+  onCancel?: () => void
+  chatLayout: ChatLayout
+  onLayoutChange: (layout: ChatLayout) => void
 }
 
 export function ChatPanel({
   messages,
   activeSkill,
   isProcessing,
+  todoItems,
+  todoStats,
+  activeTools,
   onSend,
   onDownload,
+  onCancel,
+  chatLayout,
+  onLayoutChange,
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -50,6 +69,26 @@ export function ChatPanel({
 
   return (
     <div className="flex-1 flex flex-col h-full bg-gray-50">
+      {/* Header with layout segment control */}
+      <div className="px-4 py-2 border-b flex items-center justify-between">
+        <h2 className="font-medium text-gray-700">对话</h2>
+        <div className="flex bg-gray-100 rounded-lg p-0.5 text-xs">
+          {layoutSegments.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => onLayoutChange(key)}
+              className={`px-2 py-1 rounded-md transition-colors ${
+                chatLayout === key
+                  ? 'bg-white text-blue-600 shadow-sm font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Active Skill Banner */}
       {activeSkill && (
         <div className="bg-blue-50 border-b border-blue-100 px-4 py-2 flex items-center gap-2">
@@ -86,6 +125,15 @@ export function ChatPanel({
           </>
         )}
       </div>
+
+      {/* Activity Status Line */}
+      <AgentActivityLine
+        isProcessing={isProcessing}
+        todoItems={todoItems}
+        todoStats={todoStats}
+        activeTools={activeTools}
+        onCancel={onCancel}
+      />
 
       {/* Input */}
       <div className="border-t border-gray-200 bg-white p-4">

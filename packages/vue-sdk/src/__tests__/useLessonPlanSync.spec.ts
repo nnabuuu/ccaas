@@ -7,7 +7,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ref, nextTick, reactive } from 'vue'
 import { useLessonPlanSync } from '../composables/useLessonPlanSync'
-import type { LessonPlan, LessonPlanSyncField } from '@ccaas/shared'
+import type { LessonPlan, LessonPlanSyncField } from '@ccaas/common'
 
 describe('useLessonPlanSync', () => {
   const createMockLessonPlan = (): LessonPlan => ({

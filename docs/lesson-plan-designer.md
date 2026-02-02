@@ -209,12 +209,12 @@ http://localhost:5174/admin/lesson-plans
 
 ```bash
 # 运行所有相关测试
-npm run test -w @ccaas/shared
+npm run test -w @ccaas/common
 npm run test -w @ccaas/backend -- --testPathPattern="lesson-plans"
 npm run test -w @ccaas/vue-sdk -- useLessonPlanSync
 
 # 测试统计
-# @ccaas/shared: 18 tests
+# @ccaas/common: 18 tests
 # @ccaas/backend: 43 tests
 # @ccaas/vue-sdk: 18 tests
 # Total: 79 tests
@@ -255,7 +255,7 @@ packages/
 
 ### 添加新字段
 
-1. 在 `@ccaas/shared/src/types/lesson-plan.ts` 添加类型
+1. 在 `@ccaas/common/src/types/lesson-plan.ts` 添加类型
 2. 在 `LESSON_PLAN_SYNC_FIELDS` 常量中添加字段名
 3. 更新 Entity 和 DTO
 4. 在 `LessonPlanForm.vue` 中添加表单控件

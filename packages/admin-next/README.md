@@ -1,73 +1,132 @@
-# React + TypeScript + Vite
+# @ccaas/admin-next
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Admin dashboard for Claude Code as a Service, built with React, Refine, shadcn/ui, and Tailwind CSS.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📊 **Dashboard** - Real-time metrics and system overview
+- 👥 **Sessions** - Active session monitoring and management
+- ⚡ **Skills** - Skill CRUD, versioning, and editor
+- 🏢 **Tenants** - Multi-tenant management and quotas
+- 📝 **Audit Log** - System activity tracking
+- 📈 **Analytics** - Usage analytics and insights
+- ⏰ **Scheduler** - Scheduled task management
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite
+- **UI Library**: [Refine](https://refine.dev/) + [shadcn/ui](https://ui.shadcn.com/)
+- **Styling**: Tailwind CSS
+- **Routing**: React Router v6
+- **Real-time**: Socket.io client
+- **Charts**: Recharts
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Install Dependencies
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Start Development Server
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+The dashboard will be available at `http://localhost:5175`.
+
+### Disable Authentication (Development Only)
+
+To bypass authentication during local development:
+
+1. Create a `.env.local` file (already exists with default config):
+   ```env
+   VITE_DISABLE_AUTH=true
+   ```
+
+2. Restart the dev server
+3. You'll be automatically logged in as "Dev Admin (No Auth)"
+
+**⚠️ WARNING**: Do NOT use this in production. The `.env.local` file is already gitignored.
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_DISABLE_AUTH` | `false` | Disable authentication (dev only) |
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable components
+│   ├── layout/         # Layout components (AppLayout, Sidebar)
+│   ├── shared/         # Shared components (StatusBadge, etc.)
+│   └── ui/             # shadcn/ui components
+├── lib/                # Utilities and configurations
+│   ├── api-client.ts   # Axios client with auth interceptor
+│   └── utils.ts        # Helper functions
+├── pages/              # Page components (routes)
+│   ├── dashboard/      # Dashboard page
+│   ├── sessions/       # Sessions list & detail
+│   ├── skills/         # Skills list & editor
+│   ├── tenants/        # Tenants list & detail
+│   ├── audit/          # Audit log
+│   ├── analytics/      # Analytics
+│   └── scheduler/      # Scheduled tasks
+├── providers/          # Refine providers
+│   ├── auth-provider.ts      # Production auth provider
+│   ├── auth-provider.dev.ts  # Development auth bypass
+│   ├── data-provider.ts      # Data provider
+│   └── live-provider.ts      # Real-time updates
+├── App.tsx             # App entry point
+└── main.tsx            # Vite entry point
+```
+
+## Authentication
+
+The admin dashboard uses API key authentication:
+
+1. Enter your admin API key on the login page
+2. The key is stored in localStorage as `admin_api_key`
+3. All API requests include the key in the `x-api-key` header
+
+For development, you can bypass authentication by setting `VITE_DISABLE_AUTH=true` in `.env.local`.
+
+## API Proxy
+
+The dev server proxies API requests to the backend:
+
+- `/api` → `http://localhost:3001`
+- `/socket.io` → `http://localhost:3001` (WebSocket)
+
+Configure the backend URL in `vite.config.ts` if needed.
+
+## Component Library
+
+This project uses [shadcn/ui](https://ui.shadcn.com/) components. To add new components:
+
+```bash
+npx shadcn@latest add <component-name>
+```
+
+## Related Packages
+
+- `@ccaas/backend` - NestJS API server
+- `@ccaas/shared` - Shared types and schemas
+- `@ccaas/react-sdk` - React SDK for client integration

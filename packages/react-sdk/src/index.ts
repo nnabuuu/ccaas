@@ -83,7 +83,7 @@ export type { ToolActivityIndicatorProps } from './components/ToolActivityIndica
 export type { ChatLayoutControlsProps } from './components/ChatLayoutControls'
 export type { CollapsedChatTabProps } from './components/CollapsedChatTab'
 
-// Re-export commonly used @ccaas/shared types for convenience
+// Re-export commonly used @ccaas/common types for convenience
 export type {
   TextDeltaEvent,
   OutputUpdateEvent,
@@ -94,6 +94,6 @@ export type {
   TodoUpdateEvent,
   TodoUpdatePayload,
   Skill,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 
-export type { EventTodoItem as TodoItem } from '@ccaas/shared'
+export type { EventTodoItem as TodoItem } from '@ccaas/common'

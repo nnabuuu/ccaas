@@ -21,6 +21,9 @@ import type {
   ToolActivity,
   TodoItem,
   TodoStats,
+  ActiveSubAgent,
+  SubAgentStartedEvent,
+  SubAgentCompletedEvent,
 } from '../types'
 
 const SOCKET_URL = '/' // Use relative URL, proxied by Vite
@@ -129,6 +132,9 @@ interface UseLessonPlanSessionReturn {
   thinkingContent: string
   tokenUsage: TokenUsageEvent | null
 
+  // SubAgent tracking
+  activeSubAgents: ActiveSubAgent[]
+
   // Todo state
   todoItems: TodoItem[]
   todoStats: TodoStats | null
@@ -182,6 +188,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingContent, setThinkingContent] = useState('')
   const [tokenUsage, setTokenUsage] = useState<TokenUsageEvent | null>(null)
+
+  // SubAgent tracking state
+  const [activeSubAgents, setActiveSubAgents] = useState<ActiveSubAgent[]>([])
 
   // Todo state
   const [todoItems, setTodoItems] = useState<TodoItem[]>([])
@@ -320,8 +329,13 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     })
 
     // Handle agent status
-    socket.on('agent_status', async (data: AgentStatusEvent) => {
+    socket.on('agent_status', async (data: AgentStatusEvent & { context?: { activeSubAgents?: ActiveSubAgent[] } }) => {
       console.log('🤖 Agent status:', data.status)
+
+      // Update active subagents if provided
+      if (data.context?.activeSubAgents) {
+        setActiveSubAgents(data.context.activeSubAgents)
+      }
 
       if (data.status === 'complete' || data.status === 'error' || data.status === 'cancelled') {
         setIsProcessing(false)
@@ -522,6 +536,17 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Handle exploration activity
     socket.on('exploration_activity', (data: { payload: ExplorationActivityEvent }) => {
       console.log('🔍 Explore:', data.payload.action, data.payload.target)
+    })
+
+    // Handle subagent lifecycle events
+    socket.on('subagent_started', (data: SubAgentStartedEvent) => {
+      console.log('🤖 SubAgent started:', data.payload.agentType, data.payload.description)
+      setActiveSubAgents(prev => [...prev, data.payload])
+    })
+
+    socket.on('subagent_completed', (data: SubAgentCompletedEvent) => {
+      console.log('✅ SubAgent completed:', data.payload.subAgentId, data.payload.status)
+      setActiveSubAgents(prev => prev.filter(agent => agent.subAgentId !== data.payload.subAgentId))
     })
 
     return () => {
@@ -868,6 +893,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     isThinking,
     thinkingContent,
     tokenUsage,
+
+    // SubAgent tracking
+    activeSubAgents,
 
     // Todo state
     todoItems,

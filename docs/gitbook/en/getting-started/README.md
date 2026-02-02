@@ -24,7 +24,7 @@ ccaas/
 │   ├── backend/                # @ccaas/backend - NestJS backend service
 │   ├── admin/                  # @ccaas/admin - Vue 3 admin dashboard
 │   ├── vue-sdk/                # @ccaas/vue-sdk - Vue frontend SDK
-│   └── shared/                 # @ccaas/shared - Shared types and protocols
+│   └── shared/                 # @ccaas/common - Shared types and protocols
 ├── solutions/                  # Solution example projects
 │   ├── ccaas-demo/             # Basic demo
 │   ├── lesson-plan-designer/   # Lesson Plan Designer

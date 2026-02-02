@@ -13,7 +13,7 @@ import type {
   Activity,
   Assessment,
   Differentiation,
-} from '@ccaas/shared';
+} from '@ccaas/common';
 
 export class CreateLessonPlanDto {
   @IsString()

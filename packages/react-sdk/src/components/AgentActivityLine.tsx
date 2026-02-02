@@ -1,5 +1,5 @@
 import type { ToolActivity, TodoStats } from '../types'
-import type { EventTodoItem } from '@ccaas/shared'
+import type { EventTodoItem } from '@ccaas/common'
 
 export interface AgentActivityLineProps {
   isProcessing: boolean

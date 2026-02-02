@@ -77,6 +77,29 @@ The platform pushes a rich set of real-time events via WebSocket:
 | `todo_update` | Task list update |
 | `token_usage` | Token usage statistics |
 
+## Scheduled Task Execution
+
+LoopAI supports background task scheduling for automated, unattended AI operations:
+
+- **Cron Scheduling** -- Run tasks on cron schedules (e.g., daily at 4 AM)
+- **Interval Scheduling** -- Execute tasks at fixed intervals (e.g., every 60 seconds)
+- **One-Time Scheduling** -- Schedule a single execution at a specific date/time
+- **Headless Execution** -- Tasks run Claude Code CLI without an active WebSocket connection
+- **Concurrency Control** -- Configurable maximum concurrent executions per task
+- **Retry Logic** -- Automatic retries with configurable delay on failure
+- **Execution History** -- Full audit trail of all executions with results, token usage, and duration
+- **Real-Time Notifications** -- Socket.io events pushed to the `scheduler:{tenantId}` room
+- **Missed Run Detection** -- On server restart, automatically triggers tasks that missed their schedule
+
+### Use Cases
+
+| Scenario | Schedule Type | Example |
+|----------|--------------|---------|
+| Daily content aggregation | Cron | `0 4 * * *` (4 AM daily) |
+| Periodic monitoring | Interval | Every 5 minutes |
+| One-time report generation | Once | Specific date/time |
+| Automated email summaries | Cron | `0 9 * * 1` (Monday 9 AM) |
+
 ## Multi-Tenant Management
 
 - **Tenant Isolation** -- Each tenant has independent configuration, Skills, and data

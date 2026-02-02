@@ -111,6 +111,7 @@ function App() {
     tokenUsage,
     todoItems,
     todoStats,
+    activeSubAgents,
     cancelProcessing,
     sendMessage,
     saveLessonPlan,
@@ -272,11 +273,12 @@ function App() {
     thinkingContent,
     todoItems,
     todoStats,
+    activeSubAgents,
     onSendMessage: sendMessage,
     onSync: syncToForm,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+  }), [messages, isProcessing, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, sendMessage, syncToForm, discardUpdate, cancelProcessing])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {

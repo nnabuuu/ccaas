@@ -20,7 +20,7 @@ LoopAI uses a layered architecture where each layer has clear responsibilities a
 ├─────────────────────────────────────────────┤
 │            Execution Layer                   │
 │   AI Agent Processes · Tool Invocation ·     │
-│   File Management                            │
+│   Scheduled Tasks · File Management          │
 ├─────────────────────────────────────────────┤
 │            MCP Service Layer                 │
 │   Built-in Tools · REST Adapters · Custom    │
@@ -58,6 +58,15 @@ The MCP (Model Context Protocol) service layer provides a standardized tool inte
 - **REST Adapters** -- Wrap REST APIs as MCP tools
 - **Tool Pool Management** -- Manage tool service lifecycles and health checks
 - **Multiple Auth Methods** -- Support for OAuth2, API Key, Bearer Token, and Basic Auth
+
+### Scheduler Engine
+
+The Scheduler Engine enables automated, unattended task execution:
+
+- **Dynamic Schedule Registration** -- Register and manage cron jobs, intervals, and timeouts at runtime via `SchedulerRegistry`
+- **Headless CLI Execution** -- Spawn Claude Code CLI without WebSocket, collecting results in-process
+- **Concurrency & Retry** -- Per-task concurrency limits and configurable retry policies
+- **Missed Run Recovery** -- On startup, detect and trigger tasks that missed their scheduled time
 
 ### Solution Framework
 

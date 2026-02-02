@@ -31,10 +31,14 @@ const mockMessages: Message[] = [
 describe('ChatPanel', () => {
   const mockOnSend = vi.fn()
   const mockOnDownload = vi.fn()
+  const mockOnLayoutChange = vi.fn()
+  const defaultLayoutProps = { chatLayout: 'default' as const, onLayoutChange: mockOnLayoutChange }
+  const defaultActivityProps = { todoItems: [] as import('../../types').TodoItem[], todoStats: null, activeTools: new Map() as Map<string, import('../../types').ToolActivity> }
 
   beforeEach(() => {
     mockOnSend.mockClear()
     mockOnDownload.mockClear()
+    mockOnLayoutChange.mockClear()
   })
 
   it('renders empty state when no messages', () => {
@@ -45,6 +49,8 @@ describe('ChatPanel', () => {
         isProcessing={false}
         onSend={mockOnSend}
         onDownload={mockOnDownload}
+        {...defaultLayoutProps}
+        {...defaultActivityProps}
       />
     )
     expect(screen.getByText('Start a Conversation')).toBeInTheDocument()
@@ -59,6 +65,8 @@ describe('ChatPanel', () => {
         isProcessing={false}
         onSend={mockOnSend}
         onDownload={mockOnDownload}
+        {...defaultLayoutProps}
+        {...defaultActivityProps}
       />
     )
     expect(screen.getByText('Hello, create a report')).toBeInTheDocument()
@@ -73,6 +81,8 @@ describe('ChatPanel', () => {
         isProcessing={false}
         onSend={mockOnSend}
         onDownload={mockOnDownload}
+        {...defaultLayoutProps}
+        {...defaultActivityProps}
       />
     )
     expect(screen.getByText('Using: Report Generator')).toBeInTheDocument()
@@ -86,6 +96,8 @@ describe('ChatPanel', () => {
         isProcessing={false}
         onSend={mockOnSend}
         onDownload={mockOnDownload}
+        {...defaultLayoutProps}
+        {...defaultActivityProps}
       />
     )
     expect(screen.queryByText(/Using:/)).not.toBeInTheDocument()
@@ -101,6 +113,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -116,6 +130,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -132,6 +148,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -148,6 +166,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -164,6 +184,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -183,6 +205,8 @@ describe('ChatPanel', () => {
           isProcessing={true}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Waiting for response...')
@@ -197,6 +221,8 @@ describe('ChatPanel', () => {
           isProcessing={true}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const sendButton = screen.getByText('Send')
@@ -211,6 +237,8 @@ describe('ChatPanel', () => {
           isProcessing={true}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Waiting for response...')
@@ -230,6 +258,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const sendButton = screen.getByText('Send')
@@ -244,6 +274,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       const input = screen.getByPlaceholderText('Type a message...')
@@ -263,6 +295,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       expect(screen.getByText('Using: Hello World')).toBeInTheDocument()
@@ -276,6 +310,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       expect(screen.getByText('Using: Document Writer')).toBeInTheDocument()
@@ -289,6 +325,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       expect(screen.getByText('Using: Data Analyzer')).toBeInTheDocument()
@@ -302,6 +340,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
       expect(screen.getByText('Using: custom-skill')).toBeInTheDocument()
@@ -327,6 +367,8 @@ describe('ChatPanel', () => {
           isProcessing={false}
           onSend={mockOnSend}
           onDownload={mockOnDownload}
+          {...defaultLayoutProps}
+          {...defaultActivityProps}
         />
       )
 

@@ -1,0 +1,62 @@
+{
+  "name": "LEGO Playground",
+  "slug": "lego-playground",
+  "version": "1.0.0",
+  "description": "AI 乐高马赛克设计师 - 将图片转换为 2D 乐高拼图，生成零件清单和 PDF 拼装指南",
+
+  "mcpServers": {
+    "lego-mosaic-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/stdio-server.js"],
+      "description": "LEGO Mosaic Designer MCP tools: write_output, analyze_image, generate_mosaic, generate_mosaic_from_grid, generate_mosaic_from_coarse_grid, refine_mosaic_regions, generate_assembly_pdf, get_lego_colors, get_lego_bricks"
+    }
+  },
+
+  "skill": {
+    "name": "LEGO Mosaic Designer",
+    "description": "AI 乐高马赛克设计师 - 分析图片、生成砖块排布、质量评估、迭代优化、导出拼装指南",
+    "triggers": [
+      { "type": "keyword", "value": "mosaic", "priority": 10 },
+      { "type": "keyword", "value": "LEGO", "priority": 10 },
+      { "type": "keyword", "value": "乐高", "priority": 10 },
+      { "type": "keyword", "value": "马赛克", "priority": 10 },
+      { "type": "keyword", "value": "convert", "priority": 7 },
+      { "type": "keyword", "value": "brick", "priority": 8 },
+      { "type": "keyword", "value": "砖块", "priority": 8 },
+      { "type": "keyword", "value": "refine", "priority": 8 },
+      { "type": "keyword", "value": "拼图", "priority": 8 }
+    ],
+    "allowedTools": [
+      "write_output", "analyze_image", "generate_mosaic",
+      "generate_mosaic_from_grid", "generate_mosaic_from_coarse_grid",
+      "refine_mosaic_regions",
+      "generate_assembly_pdf", "get_lego_colors", "get_lego_bricks",
+      "Read", "Write", "Skill"
+    ],
+    "skillFile": "skills/lego-mosaic-designer/SKILL.md",
+    "relatedSkills": ["example-skills:pdf"]
+  },
+
+  "syncFields": [
+    "mosaicConfig",
+    "placements",
+    "billOfMaterials",
+    "assessment",
+    "iterationHistory",
+    "generationStatus",
+    "assemblyGuideUrl"
+  ],
+
+  "backend": {
+    "port": 3005,
+    "ccaasUrl": "http://localhost:3001"
+  },
+
+  "frontend": {
+    "port": 5282
+  },
+
+  "mcpServer": {
+    "port": 3006
+  }
+}

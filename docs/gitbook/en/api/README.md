@@ -1,6 +1,6 @@
 # API Overview
 
-LoopAI provides both REST API and WebSocket interfaces, along with complete type definitions through the `@ccaas/shared` package.
+LoopAI provides both REST API and WebSocket interfaces, along with complete type definitions through the `@ccaas/common` package.
 
 ## Interface Model
 
@@ -47,4 +47,4 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 |---------|---------|
 | [REST API Endpoints](rest.md) | Complete reference for all HTTP endpoints |
 | [WebSocket Events](websocket.md) | Format definitions for all WebSocket events |
-| [@ccaas/shared Types](shared-types.md) | Shared TypeScript type definitions |
+| [@ccaas/common Types](shared-types.md) | Shared TypeScript type definitions |

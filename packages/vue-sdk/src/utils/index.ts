@@ -6,7 +6,7 @@
  * and safe Zod validation wrappers.
  */
 
-import { OutputUpdateEventSchema } from '@ccaas/shared'
+import { OutputUpdateEventSchema } from '@ccaas/common'
 
 export const CCAAS_VERSION = '1.0.0'
 

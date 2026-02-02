@@ -16,7 +16,7 @@ ccaas/
 │   ├── admin-next/              # @ccaas/admin-next - React admin UI (Refine + shadcn/ui)
 │   ├── vue-sdk/                 # @ccaas/vue-sdk - Vue composables
 │   ├── react-sdk/               # @ccaas/react-sdk - React hooks
-│   └── shared/                  # @ccaas/shared - Shared types
+│   └── shared/                  # @ccaas/common - Shared types
 └── docs/                        # Consolidated documentation
 ```
 
@@ -28,7 +28,7 @@ ccaas/
 | `@ccaas/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
 | `@ccaas/vue-sdk` | Vue 3 Composition API | Vue client integration |
 | `@ccaas/react-sdk` | React hooks, Socket.io | React client integration |
-| `@ccaas/shared` | TypeScript, Zod | Types and protocols |
+| `@ccaas/common` | TypeScript, Zod | Types and protocols |
 
 ## Build Commands
 
@@ -54,7 +54,7 @@ npm run dev:admin       # Start admin on :5175
 ## Package Dependencies
 
 ```
-@ccaas/shared           <- No internal deps
+@ccaas/common           <- No internal deps
     ↑
 @ccaas/vue-sdk         <- Depends on shared
 @ccaas/react-sdk       <- Depends on shared
@@ -72,21 +72,21 @@ npm run dev:admin       # Start admin on :5175
 
 ```typescript
 // Import from workspace packages
-import { Session, Skill, TokenUsage } from '@ccaas/shared'
+import { Session, Skill, TokenUsage } from '@ccaas/common'
 import { useAgentState, useFormBridge } from '@ccaas/vue-sdk'
 ```
 
 ### Adding New Types
 
-1. Add interface to `packages/shared/src/types/index.ts`
-2. Re-export from `packages/shared/src/index.ts`
+1. Add interface to `packages/common/src/types/index.ts`
+2. Re-export from `packages/common/src/index.ts`
 3. Run `npm run build:shared`
-4. Import from `@ccaas/shared` in consumer packages
+4. Import from `@ccaas/common` in consumer packages
 
 ### Adding New Protocols
 
-1. Add to `packages/shared/src/protocols/`
-2. Export from `packages/shared/src/protocols/index.ts`
+1. Add to `packages/common/src/protocols/`
+2. Export from `packages/common/src/protocols/index.ts`
 3. Run `npm run build:shared`
 
 ### Adding New Composables (vue-sdk)
@@ -104,7 +104,7 @@ npm run test
 # Run specific package tests
 npm run test -w @ccaas/backend
 npm run test -w @ccaas/vue-sdk
-npm run test -w @ccaas/shared
+npm run test -w @ccaas/common
 ```
 
 ## Individual Package Details
@@ -147,9 +147,9 @@ See: `packages/react-sdk/README.md`
 - Form synchronization utilities
 - Type-safe event handling
 
-### @ccaas/shared
+### @ccaas/common
 
-See: `packages/shared/README.md`
+See: `packages/common/README.md`
 
 - TypeScript interfaces for all entities
 - Zod schemas for runtime validation

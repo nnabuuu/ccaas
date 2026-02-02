@@ -7,20 +7,26 @@ import type { LessonPlan, OutputUpdate } from '../src/types'
 function createMockLessonPlan(): LessonPlan {
   return {
     id: 'test-id',
-    tenantId: 'test-tenant',
     title: 'Original Title',
     subject: '数学',
-    gradeLevel: '三年级',
-    duration: '1课时',
-    objectives: [],
-    standards: [],
-    materials: [],
-    activities: [],
-    assessment: { formative: [], summative: [] },
-    differentiation: { struggling: [], onLevel: [], advanced: [] },
-    status: 'draft',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    gradeLevel: 3,
+    durationMinutes: 45,
+    lessonPlanCode: null,
+    status: 'DRAFT',
+    curriculumRequirements: null,
+    objectives: null,
+    studentAnalysis: null,
+    materialsNeeded: null,
+    content: null,
+    assessmentMethods: null,
+    teachingMethods: null,
+    extraProperties: {},
+    createBy: null,
+    createTime: new Date().toISOString(),
+    updateBy: null,
+    updateTime: new Date().toISOString(),
+    remark: null,
+    deleted: 0,
   }
 }
 
@@ -101,7 +107,9 @@ describe('useLessonPlanSync', () => {
       expect(setLessonPlan).toHaveBeenCalled()
       expect(updatedPlan?.title).toBe('New Title')
       expect(result.current.modifiedFields.has('title')).toBe(true)
-      expect(result.current.pendingUpdates.has('title')).toBe(false)
+      // After sync, update stays in pendingUpdates but is marked as synced
+      expect(result.current.pendingUpdates.has('title')).toBe(true)
+      expect(result.current.pendingUpdates.get('title')?.synced).toBe(true)
     })
 
     it('should add to undo stack after sync', () => {
@@ -244,7 +252,7 @@ describe('useLessonPlanSync', () => {
         result.current.syncToForm('title', mockPlan, setLessonPlan)
       })
 
-      expect(result.current.pendingUpdates.size).toBe(1) // subject only
+      expect(result.current.pendingUpdates.size).toBe(2) // subject + synced title
       expect(result.current.modifiedFields.size).toBe(1)
       expect(result.current.undoStack.length).toBe(1)
 

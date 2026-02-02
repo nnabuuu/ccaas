@@ -4,10 +4,10 @@
 
 ### 使用共享类型
 
-始终从 `@ccaas/shared` 导入共享类型，保持前后端类型一致：
+始终从 `@ccaas/common` 导入共享类型，保持前后端类型一致：
 
 ```typescript
-import { Session, Skill, TokenUsage } from '@ccaas/shared'
+import { Session, Skill, TokenUsage } from '@ccaas/common'
 ```
 
 ### 运行时验证

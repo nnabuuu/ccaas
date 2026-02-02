@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react'
-import type { Message, SyncField, ToolActivityEvent } from '../types'
+import type { Message, SyncField, ToolActivityEvent, TodoItem, TodoStats, ActiveSubAgent } from '../types'
 import MessageBubble from './MessageBubble'
 import QuickPrompts from './QuickPrompts'
 import ToolActivityIndicator from './ToolActivityIndicator'
 import ThinkingIndicator from './ThinkingIndicator'
+import { AgentActivityLine } from './AgentActivityLine'
 
 interface ChatPanelProps {
   messages: Message[]
@@ -12,9 +13,13 @@ interface ChatPanelProps {
   activeTools?: Map<string, ToolActivityEvent>
   isThinking?: boolean
   thinkingContent?: string
+  todoItems?: TodoItem[]
+  todoStats?: TodoStats | null
+  activeSubAgents?: ActiveSubAgent[]
   onSendMessage: (content: string) => void
   onSync: (field: SyncField) => void
   onDiscard: (field: SyncField) => void
+  onCancel?: () => void
 }
 
 export function ChatPanel({
@@ -24,9 +29,13 @@ export function ChatPanel({
   activeTools = new Map(),
   isThinking = false,
   thinkingContent = '',
+  todoItems = [],
+  todoStats = null,
+  activeSubAgents = [],
   onSendMessage,
   onSync,
   onDiscard,
+  onCancel,
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -100,6 +109,16 @@ export function ChatPanel({
         <ToolActivityIndicator activeTools={activeTools} />
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Activity Status Line */}
+      <AgentActivityLine
+        isProcessing={isProcessing}
+        todoItems={todoItems}
+        todoStats={todoStats}
+        activeTools={activeTools}
+        activeSubAgents={activeSubAgents}
+        onCancel={onCancel}
+      />
 
       {/* Quick Prompts */}
       <div className="px-4 py-2 bg-white border-t border-gray-100">

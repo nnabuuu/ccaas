@@ -5,7 +5,7 @@
  */
 
 import type { Ref, ComputedRef } from 'vue'
-import type { Skill } from '@ccaas/shared'
+import type { Skill } from '@ccaas/common'
 
 // ============================================================================
 // Output Update Types

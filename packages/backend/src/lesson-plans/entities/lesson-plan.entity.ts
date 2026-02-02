@@ -20,7 +20,7 @@ import type {
   Activity,
   Assessment,
   Differentiation,
-} from '@ccaas/shared';
+} from '@ccaas/common';
 
 @Entity('lesson_plans')
 export class LessonPlanEntity {

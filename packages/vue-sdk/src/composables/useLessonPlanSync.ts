@@ -17,9 +17,9 @@ import type {
   LessonPlan,
   LessonPlanSyncField,
   LESSON_PLAN_SYNC_FIELDS,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 
-// Valid sync fields (matching @ccaas/shared)
+// Valid sync fields (matching @ccaas/common)
 const VALID_SYNC_FIELDS: readonly string[] = [
   'title',
   'subject',

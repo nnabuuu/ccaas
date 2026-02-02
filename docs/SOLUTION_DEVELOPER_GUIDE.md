@@ -1948,7 +1948,7 @@ socket.on('agent_thinking', (data: {
 
 ### 9.3 类型定义
 
-完整的 TypeScript 类型定义请参考 `@ccaas/shared` 包：
+完整的 TypeScript 类型定义请参考 `@ccaas/common` 包：
 
 ```typescript
 import {
@@ -1977,7 +1977,7 @@ import {
   ToolActivityEvent,
   TokenUsageEvent,
   AgentThinkingEvent,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 ```
 
 ---
@@ -2209,7 +2209,7 @@ npx @anthropic-ai/claude-code \
 
 - [lesson-plan-designer](../solutions/lesson-plan-designer/) - 完整示例
 - [@ccaas/backend](../packages/backend/) - CCAAS 后端
-- [@ccaas/shared](../packages/shared/) - 共享类型
+- [@ccaas/common](../packages/shared/) - 共享类型
 
 ### B. 相关文档
 

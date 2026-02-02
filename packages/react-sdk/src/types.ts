@@ -5,7 +5,7 @@
  * (e.g., LessonPlan, Explanation) remain in each solution.
  */
 
-// Re-export event types from @ccaas/shared
+// Re-export event types from @ccaas/common
 export type {
   TextDeltaEvent,
   OutputUpdateEvent,
@@ -21,10 +21,10 @@ export type {
   TodoUpdatePayload,
   TodoUpdateEvent,
   Skill,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 
 // Re-export EventTodoItem as TodoItem for convenience
-export type { EventTodoItem as TodoItem } from '@ccaas/shared'
+export type { EventTodoItem as TodoItem } from '@ccaas/common'
 
 // ============================================================================
 // Todo Types
@@ -179,7 +179,7 @@ export interface UseAgentStatusReturn {
   isThinking: boolean
   thinkingContent: string
   tokenUsage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null
-  todoItems: import('@ccaas/shared').EventTodoItem[]
+  todoItems: import('@ccaas/common').EventTodoItem[]
   todoStats: TodoStats
   currentActivity: string
 }
@@ -211,12 +211,12 @@ export interface UseSkillsOptions {
 }
 
 export interface UseSkillsReturn {
-  skills: import('@ccaas/shared').Skill[]
+  skills: import('@ccaas/common').Skill[]
   loading: boolean
   error: string | null
   searchQuery: string
   setSearchQuery: (q: string) => void
-  filteredSkills: import('@ccaas/shared').Skill[]
+  filteredSkills: import('@ccaas/common').Skill[]
   toggleSkill: (skillId: string) => Promise<void>
   enabledSkillIds: Set<string>
   isSkillEnabled: (skillId: string) => boolean
@@ -277,7 +277,7 @@ export interface ChatPanelProps {
   activeTools?: Map<string, ToolActivity>
   isThinking?: boolean
   thinkingContent?: string
-  todoItems?: import('@ccaas/shared').EventTodoItem[]
+  todoItems?: import('@ccaas/common').EventTodoItem[]
   todoStats?: TodoStats | null
   onSendMessage: (content: string) => void
   onCancel?: () => void

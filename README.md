@@ -9,7 +9,7 @@ A production-ready relay service for Claude Code CLI, built with NestJS. This mo
 | [`@ccaas/backend`](./packages/backend) | NestJS API server, session management, skill routing | 3001 |
 | [`@ccaas/admin`](./packages/admin) | Vue 3 admin dashboard for skill/session management | 5174 |
 | [`@ccaas/vue-sdk`](./packages/vue-sdk) | Vue composables for agent integration | - |
-| [`@ccaas/shared`](./packages/shared) | Shared TypeScript types and protocols | - |
+| [`@ccaas/common`](./packages/shared) | Shared TypeScript types and protocols | - |
 
 ## Architecture
 
@@ -21,7 +21,7 @@ A production-ready relay service for Claude Code CLI, built with NestJS. This mo
       │                     │
       └──────@ccaas/vue-sdk │
              │              │
-             └──@ccaas/shared
+             └──@ccaas/common
 ```
 
 ## Quick Start
@@ -113,7 +113,7 @@ npm run build:shared      # Build types/protocols
 - **useToolActivity**: Tool execution tracking
 - **useTokenUsage**: Real-time token metrics
 
-### Shared (`@ccaas/shared`)
+### Shared (`@ccaas/common`)
 
 - **Types**: Session, Message, Skill, Tenant, ApiKey interfaces
 - **Protocols**: Output update event definitions

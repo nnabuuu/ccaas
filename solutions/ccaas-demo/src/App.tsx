@@ -9,7 +9,7 @@
  * - Skill management (CRUD)
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { SkillsSidebar } from './components/SkillsSidebar'
 import { ChatPanel } from './components/ChatPanel'
 import { SkillEditor } from './components/SkillEditor'
@@ -17,7 +17,7 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { FileBrowserPanel } from './components/FileBrowserPanel'
 import { useRealSession } from './hooks/useRealSession'
 import { useFileBrowser } from './hooks/useFileBrowser'
-import type { Skill, SkillFormData } from './types'
+import type { Skill, SkillFormData, ChatLayout } from './types'
 
 export default function App() {
   const {
@@ -27,10 +27,14 @@ export default function App() {
     error,
     loading,
     socket,
+    todoItems,
+    todoStats,
+    activeTools,
     toggleSkill,
     restartSession,
     sendMessage,
     downloadFile,
+    cancelProcessing,
     refreshSkills,
     createSkill,
     updateSkill,
@@ -46,6 +50,15 @@ export default function App() {
 
   // Sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Chat layout mode + resizable width
+  const DEFAULT_CHAT_WIDTH = 384   // w-96
+  const MIN_CHAT_WIDTH = 384
+  const MAX_CHAT_WIDTH = 800
+  const [chatLayout, setChatLayout] = useState<ChatLayout>('default')
+  const [chatWidth, setChatWidth] = useState(600) // shared by overlay/expanded
+  const [isDragging, setIsDragging] = useState(false)
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // File browser state
   const [fileBrowserCollapsed, setFileBrowserCollapsed] = useState(false)
@@ -215,14 +228,70 @@ export default function App() {
           onDeleteSkill={handleDeleteClick}
         />
 
-        {/* Chat Panel */}
-        <ChatPanel
-          messages={session.messages}
-          activeSkill={session.activeSkill}
-          isProcessing={session.isProcessing}
-          onSend={sendMessage}
-          onDownload={downloadFile}
-        />
+        {/* Main area (flex-1) + Chat Panel (resizable) */}
+        <div className="flex-1 flex min-w-0 relative">
+          {/* Functional area placeholder — currently empty, flex-1 takes remaining space */}
+          <div className="flex-1 min-w-0" />
+
+          {/* Chat Panel with layout modes */}
+          <div
+            ref={chatContainerRef}
+            className={[
+              'flex flex-col border-l border-gray-200 bg-white',
+              chatLayout === 'overlay'
+                ? 'absolute right-0 top-0 bottom-0 z-10 shadow-xl'
+                : 'shrink-0',
+              !isDragging && 'transition-[width] duration-300 ease-in-out',
+            ].filter(Boolean).join(' ')}
+            style={{
+              width: chatLayout === 'default' ? DEFAULT_CHAT_WIDTH : chatWidth,
+            }}
+          >
+            {/* Resize handle on left edge (overlay/expanded only) */}
+            {chatLayout !== 'default' && (
+              <div
+                className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-20 hover:bg-blue-400 active:bg-blue-500 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  const startX = e.clientX
+                  const startWidth = chatWidth
+                  setIsDragging(true)
+
+                  const onMouseMove = (ev: MouseEvent) => {
+                    const delta = startX - ev.clientX
+                    const newWidth = Math.min(MAX_CHAT_WIDTH, Math.max(MIN_CHAT_WIDTH, startWidth + delta))
+                    setChatWidth(newWidth)
+                  }
+                  const onMouseUp = () => {
+                    setIsDragging(false)
+                    document.removeEventListener('mousemove', onMouseMove)
+                    document.removeEventListener('mouseup', onMouseUp)
+                    document.body.style.cursor = ''
+                    document.body.style.userSelect = ''
+                  }
+                  document.body.style.cursor = 'col-resize'
+                  document.body.style.userSelect = 'none'
+                  document.addEventListener('mousemove', onMouseMove)
+                  document.addEventListener('mouseup', onMouseUp)
+                }}
+              />
+            )}
+
+            <ChatPanel
+              messages={session.messages}
+              activeSkill={session.activeSkill}
+              isProcessing={session.isProcessing}
+              todoItems={todoItems}
+              todoStats={todoStats}
+              activeTools={activeTools}
+              onSend={sendMessage}
+              onDownload={downloadFile}
+              onCancel={cancelProcessing}
+              chatLayout={chatLayout}
+              onLayoutChange={setChatLayout}
+            />
+          </div>
+        </div>
 
         {/* File Browser Panel */}
         <FileBrowserPanel

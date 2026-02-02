@@ -24,7 +24,7 @@ ccaas/
 │   ├── backend/                # @ccaas/backend - NestJS 后端服务
 │   ├── admin/                  # @ccaas/admin - Vue 3 管理后台
 │   ├── vue-sdk/                # @ccaas/vue-sdk - Vue 前端 SDK
-│   └── shared/                 # @ccaas/shared - 共享类型与协议
+│   └── shared/                 # @ccaas/common - 共享类型与协议
 ├── solutions/                  # Solution 示例项目
 │   ├── ccaas-demo/             # 基础演示
 │   ├── lesson-plan-designer/   # 教案设计助手

@@ -265,3 +265,98 @@
 ### DELETE /api-keys/:id
 
 吊销 API Key。
+
+## 定时任务管理
+
+### POST /scheduled-tasks
+
+创建定时任务。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `tenantId` | string | 是 | 租户 ID |
+| `name` | string | 是 | 任务名称 |
+| `description` | string | 否 | 任务描述 |
+| `message` | string | 是 | 发送给 Claude 的 Prompt |
+| `scheduleType` | string | 是 | `cron`、`interval` 或 `once` |
+| `scheduleValue` | string | 是 | Cron 表达式、毫秒间隔或 ISO 日期 |
+| `mcpServers` | object | 否 | MCP Server 配置 |
+| `enabledSkillSlugs` | string[] | 否 | 启用的 Skill slug 列表 |
+| `maxConcurrent` | number | 否 | 最大并发执行数（默认：1） |
+| `maxRetries` | number | 否 | 失败重试次数（默认：0） |
+| `retryDelayMs` | number | 否 | 重试间隔（默认：60000ms） |
+| `timeoutMs` | number | 否 | 执行超时（默认：600000ms） |
+
+**响应**：
+
+```json
+{
+  "id": "task-uuid",
+  "name": "每日摘要",
+  "scheduleType": "cron",
+  "scheduleValue": "0 4 * * *",
+  "status": "active"
+}
+```
+
+### GET /scheduled-tasks
+
+获取定时任务列表。
+
+**查询参数**：`tenantId`, `status`, `page`, `limit`
+
+**响应**：
+
+```json
+{
+  "data": [{ "id": "...", "name": "...", "status": "active", "scheduleType": "cron" }],
+  "total": 10
+}
+```
+
+### GET /scheduled-tasks/:id
+
+获取任务详情（包含最近执行记录）。
+
+### PUT /scheduled-tasks/:id
+
+更新任务（调度配置、消息、参数等）。
+
+### DELETE /scheduled-tasks/:id
+
+软删除任务（状态设为 `deleted`，停止调度）。
+
+### POST /scheduled-tasks/:id/pause
+
+暂停任务（状态设为 `paused`，移除 cron job）。
+
+### POST /scheduled-tasks/:id/resume
+
+恢复暂停的任务（状态设为 `active`，重新注册 cron job）。
+
+### POST /scheduled-tasks/:id/trigger
+
+手动触发一次执行（不影响正常调度）。
+
+**响应**：
+
+```json
+{
+  "id": "execution-uuid",
+  "taskId": "task-uuid",
+  "status": "running",
+  "startedAt": "2025-01-15T04:00:00Z"
+}
+```
+
+### GET /scheduled-tasks/:id/executions
+
+获取任务的执行历史。
+
+**查询参数**：`page`, `limit`, `status`
+
+### GET /scheduled-tasks/:id/executions/:execId
+
+获取执行详情（结果文本、Token 用量、耗时、错误信息）。

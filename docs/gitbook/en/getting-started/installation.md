@@ -15,7 +15,7 @@ npm install
 
 ## 3. Build the Shared Package
 
-The shared package (`@ccaas/shared`) must be built first, as other packages depend on its type definitions:
+The shared package (`@ccaas/common`) must be built first, as other packages depend on its type definitions:
 
 ```bash
 npm run build:shared
@@ -63,7 +63,7 @@ npm run test
 # Run tests for a specific package
 npm run test -w @ccaas/backend
 npm run test -w @ccaas/vue-sdk
-npm run test -w @ccaas/shared
+npm run test -w @ccaas/common
 ```
 
 ## Service Ports

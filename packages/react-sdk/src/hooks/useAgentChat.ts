@@ -14,7 +14,7 @@ import type {
   AgentStatusEvent,
   OutputUpdateEvent,
   ToolActivityPayload,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
 

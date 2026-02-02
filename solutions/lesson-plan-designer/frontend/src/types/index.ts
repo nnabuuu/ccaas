@@ -12,6 +12,19 @@ export interface CurriculumStandard {
   contentDomain: string
 }
 
+// Lesson plan attachment
+export interface LessonPlanAttachment {
+  id: string
+  fileId: string
+  fileName: string
+  fileType: 'script' | 'audio' | 'ppt' | 'pdf' | 'other'
+  mimeType: string
+  size: number
+  downloadUrl: string
+  uploadedAt: string
+  description?: string
+}
+
 export interface LessonPlan {
   id: string
   title: string
@@ -41,6 +54,9 @@ export interface LessonPlan {
   // Extra properties (key-value pairs)
   extraProperties: Record<string, string>
 
+  // File attachments
+  attachments: LessonPlanAttachment[]
+
   // Audit fields
   createBy: string | null
   createTime: string
@@ -55,7 +71,7 @@ export const SYNC_FIELDS = [
   'title', 'subject', 'gradeLevel', 'durationMinutes', 'lessonPlanCode',
   'objectives', 'content', 'teachingMethods', 'materialsNeeded',
   'assessmentMethods', 'curriculumRequirements', 'studentAnalysis',
-  'extraProperties', 'status'
+  'extraProperties', 'status', 'attachments'
 ] as const
 
 export type SyncField = typeof SYNC_FIELDS[number]
@@ -134,10 +150,16 @@ export interface ChatEvent {
   }
 }
 
-// Re-export from @ccaas/shared for type consistency
-export type { TextDeltaEvent, OutputUpdateEvent } from '@ccaas/shared'
+// Re-export from @ccaas/common for type consistency
+export type {
+  TextDeltaEvent,
+  OutputUpdateEvent,
+  ActiveSubAgent,
+  SubAgentStartedEvent,
+  SubAgentCompletedEvent,
+} from '@ccaas/common'
 
-// Note: AgentStatusEvent is kept local because @ccaas/shared has nested AgentStatusError
+// Note: AgentStatusEvent is kept local because @ccaas/common has nested AgentStatusError
 // but the backend actually sends `error: string` directly
 export interface AgentStatusEvent {
   status: 'running' | 'complete' | 'error' | 'cancelled'
@@ -243,6 +265,7 @@ export function createEmptyLessonPlan(): Omit<LessonPlan, 'id' | 'createTime' | 
     assessmentMethods: null,
     teachingMethods: null,
     extraProperties: {},
+    attachments: [],
     createBy: null,
     updateBy: null,
     remark: null,

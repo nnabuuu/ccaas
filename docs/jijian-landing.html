@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jijian — The Production Platform for AI Agents</title>
+<meta name="description" content="即见 · Agent as a Service. Turn AI agents from chatboxes into production-grade services with session management, skill routing, scheduling, and full observability.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1419;
+    --ink-secondary: #536471;
+    --ink-muted: #8899a6;
+    --surface: #fafbfc;
+    --surface-elevated: #ffffff;
+    --surface-subtle: #f0f2f4;
+    --border: #e1e4e8;
+    --border-subtle: #eef0f2;
+    --accent: #4a7c6f;
+    --accent-light: #e8f0ed;
+    --accent-dark: #3a6359;
+    --warm: #b8a088;
+    --warm-light: #f5f0eb;
+    --navy: #1a2332;
+    --navy-light: #2d3a4a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    line-height: 1.6;
+  }
+
+  .serif { font-family: 'Noto Serif', Georgia, serif; }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    background: rgba(250, 251, 252, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: box-shadow 0.3s ease;
+  }
+  nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .nav-logo-mark {
+    width: 32px; height: 32px;
+    background: var(--navy);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .nav-logo-text { font-weight: 600; font-size: 18px; letter-spacing: -0.3px; }
+  .nav-links { display: flex; align-items: center; gap: 32px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    padding: 8px 20px;
+    background: var(--navy);
+    color: #fff !important;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.15s;
+    cursor: pointer;
+  }
+  .nav-cta:hover { background: var(--navy-light); transform: translateY(-1px); }
+
+  /* ─── HERO ─── */
+  .hero {
+    padding: 160px 24px 100px;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 32px;
+    letter-spacing: 0.02em;
+  }
+  .hero-badge-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+  .hero h1 .cn {
+    display: block;
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 400;
+    color: var(--ink-muted);
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+    font-family: 'Noto Serif', serif;
+  }
+  .hero-sub {
+    font-size: 18px;
+    line-height: 1.7;
+    color: var(--ink-secondary);
+    max-width: 560px;
+    margin: 0 auto 40px;
+  }
+  .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    padding: 14px 32px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--navy-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(26,35,50,0.2);
+  }
+  .btn-secondary {
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+  }
+  .btn-secondary:hover { border-color: var(--ink-muted); background: var(--surface-subtle); }
+
+  /* ─── SECTIONS ─── */
+  section { padding: 100px 24px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+  .section-desc {
+    font-size: 17px;
+    color: var(--ink-secondary);
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  /* ─── NARRATIVE ─── */
+  .narrative { background: var(--surface); }
+  .narrative-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .narrative-quote {
+    font-family: 'Noto Serif', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    margin-top: 32px;
+    padding-left: 20px;
+    border-left: 2px solid var(--border);
+  }
+  .narrative-cards { display: flex; flex-direction: column; gap: 20px; }
+  .narrative-card {
+    padding: 28px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .narrative-card:hover {
+    border-color: var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .narrative-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .narrative-card p {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+  }
+  .narrative-card-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  /* ─── FEATURES ─── */
+  .features { background: var(--navy); color: #fff; }
+  .features .section-label { color: var(--accent); opacity: 0.9; }
+  .features .section-title { color: #fff; }
+  .features .section-desc { color: rgba(255,255,255,0.6); }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+  .feature-card {
+    padding: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .feature-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    background: rgba(74, 124, 111, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .feature-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+  }
+
+  /* ─── ARCHITECTURE ─── */
+  .architecture { background: var(--surface-subtle); }
+  .arch-diagram {
+    margin-top: 56px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    overflow-x: auto;
+  }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-width: 700px;
+  }
+  .arch-node {
+    padding: 20px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    min-width: 140px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .arch-node:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(74,124,111,0.1);
+  }
+  .arch-node-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .arch-node-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .arch-node-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: var(--ink-muted);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .arch-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .arch-outputs {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-output {
+    padding: 12px 20px;
+    background: var(--warm-light);
+    border: 1px solid rgba(184,160,136,0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+
+  /* ─── USE CASES ─── */
+  .usecases { background: var(--surface); }
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+  .usecase-card {
+    padding: 36px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .usecase-card:hover {
+    border-color: var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+  }
+  .usecase-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .usecase-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .usecase-card p {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    line-height: 1.7;
+  }
+  .usecase-detail {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 13px;
+    color: var(--ink-muted);
+    display: flex;
+    gap: 16px;
+  }
+  .usecase-detail span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ─── CTA ─── */
+  .cta-section {
+    background: var(--surface-subtle);
+    text-align: center;
+  }
+  .cta-section .section-title { max-width: 500px; margin: 0 auto 16px; }
+  .cta-section .section-desc { margin: 0 auto 40px; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    padding: 60px 24px;
+    background: var(--navy);
+    color: rgba(255,255,255,0.5);
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .footer-brand { max-width: 280px; }
+  .footer-brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .footer-brand p { font-size: 14px; line-height: 1.6; }
+  .footer-cols { display: flex; gap: 64px; }
+  .footer-col h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 16px;
+    letter-spacing: 0.03em;
+  }
+  .footer-col a {
+    display: block;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .footer-col a:hover { color: rgba(255,255,255,0.8); }
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    .usecase-grid { grid-template-columns: repeat(2, 1fr); }
+    .narrative-grid { gap: 48px; }
+  }
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hero { padding: 120px 24px 80px; }
+    .section { padding: 80px 24px; }
+    .narrative-grid { grid-template-columns: 1fr; gap: 40px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .usecase-grid { grid-template-columns: 1fr; }
+    .arch-diagram { padding: 24px; }
+    .footer-cols { gap: 40px; }
+    .footer-inner { flex-direction: column; }
+    .footer-bottom { flex-direction: column; gap: 8px; }
+  }
+
+  /* ─── ANIMATION ─── */
+  @media (prefers-reduced-motion: no-preference) {
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">JJ</div>
+      <span class="nav-logo-text">Jijian</span>
+    </a>
+    <div class="nav-links">
+      <a href="#narrative">Why Jijian</a>
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#usecases">Use Cases</a>
+      <a href="gitbook/en/getting-started/quickstart.md" class="nav-cta">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Agent as a Service
+  </div>
+  <h1>
+    <span class="cn">即见 · 见即所得</span>
+    The Production Platform<br>for AI Agents
+  </h1>
+  <p class="hero-sub">
+    Turn AI agents from chatboxes into production-grade services.
+    Manage sessions, route skills, orchestrate tools,
+    schedule tasks — all with full observability.
+  </p>
+  <div class="hero-actions">
+    <a href="gitbook/en/getting-started/quickstart.md" class="btn-primary">
+      Start Building
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.33 8h9.34M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="gitbook/en/README.md" class="btn-secondary">Documentation</a>
+  </div>
+</section>
+
+<!-- NARRATIVE -->
+<section class="narrative" id="narrative">
+  <div class="container">
+    <div class="narrative-grid">
+      <div>
+        <div class="section-label">Why Jijian</div>
+        <h2 class="section-title">From chatbox<br>to production</h2>
+        <p class="section-desc">
+          Today's AI agents live in chat windows. You open a dialog, type a question, wait for a reply.
+          That's like browsing the web in 1995 — manually, one page at a time.
+        </p>
+        <p class="section-desc" style="margin-top:16px;">
+          Real value unlocks when agents can run on schedules, respond to API calls,
+          operate under access control, and leave a full audit trail.
+          Jijian makes that possible.
+        </p>
+        <p class="narrative-quote">
+          凡所有相，皆为虚妄。<br>若见诸相非相，即见如来。
+        </p>
+      </div>
+      <div class="narrative-cards">
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>Not a chatbot builder</h3>
+          <p>A production runtime for agents — with session management, process isolation, and context preservation across messages.</p>
+        </div>
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3>Not another API wrapper</h3>
+          <p>Long-running persistent sessions, 20+ event types streaming in real-time, deep tool tracking with hooks — not stateless request-response.</p>
+        </div>
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3>Not just interactive</h3>
+          <p>Agents run on cron schedules, in headless mode, with no human watching. Background execution with retry logic and concurrency control.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">Platform Capabilities</div>
+    <h2 class="section-title">Everything agents need<br>to run in production</h2>
+    <p class="section-desc">Enterprise-grade infrastructure for deploying, managing, and observing AI agents at scale.</p>
+    <div class="feature-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>Session Management</h3>
+        <p>Long-running CLI processes with context preservation, session resume, idle timeout, and process isolation per session.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </div>
+        <h3>Skill Routing</h3>
+        <p>Keyword, regex, intent, and context-based triggers automatically dispatch messages to specialized agent skills.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+        </div>
+        <h3>MCP Tool Orchestration</h3>
+        <p>Centralized tool pool with health checks, REST API adapter for wrapping legacy services, and multi-auth support.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>Scheduled Execution</h3>
+        <p>Cron, interval, and one-time scheduling with headless CLI execution, retry logic, concurrency control, and missed-run recovery.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3>Full Observability</h3>
+        <p>22 entity types tracked — every tool call, thinking block, token usage, and process lifecycle event persisted and queryable.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h3>Multi-Tenant & Auth</h3>
+        <p>API key authentication with 9 scopes, tenant isolation, rate limiting, and complete audit logging.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="architecture" id="architecture">
+  <div class="container">
+    <div class="section-label">How It Works</div>
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-desc">A layered system where each component has clear responsibilities.</p>
+    <div class="arch-diagram fade-in">
+      <div class="arch-flow">
+        <div class="arch-node">
+          <div class="arch-node-label">Input</div>
+          <div class="arch-node-title">User Intent</div>
+          <div class="arch-node-desc">Prompt / API call / Cron</div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-label">Routing</div>
+          <div class="arch-node-title">Skill Router</div>
+          <div class="arch-node-desc">Trigger matching</div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-node" style="border-color: var(--accent); background: var(--accent-light);">
+          <div class="arch-node-label">Engine</div>
+          <div class="arch-node-title">Agent Runtime</div>
+          <div class="arch-node-desc">Claude Code CLI</div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-branch">
+          <div class="arch-node">
+            <div class="arch-node-label">Tools</div>
+            <div class="arch-node-title">MCP Pool</div>
+            <div class="arch-node-desc">Built-in + REST adapters</div>
+          </div>
+          <div class="arch-node">
+            <div class="arch-node-label">Scheduler</div>
+            <div class="arch-node-title">Task Engine</div>
+            <div class="arch-node-desc">Cron / Interval / Once</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-outputs">
+        <div class="arch-output">Event Stream (20+ types)</div>
+        <div class="arch-output">Message Persistence</div>
+        <div class="arch-output">Structured Output</div>
+        <div class="arch-output">Admin Dashboard</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="usecases" id="usecases">
+  <div class="container">
+    <div class="section-label">Use Cases</div>
+    <h2 class="section-title">Built for real workloads</h2>
+    <p class="section-desc">From interactive co-pilots to unattended background agents.</p>
+    <div class="usecase-grid">
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">Scheduled</div>
+        <h3>Daily Content Aggregation</h3>
+        <p>Agent runs at 4 AM daily, crawls configured websites, summarizes updates, and sends an email digest via MCP tools.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Cron: 0 4 * * *
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            Headless
+          </span>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">Interactive</div>
+        <h3>Lesson Plan Designer</h3>
+        <p>60/40 split screen with form and AI chat. Agent generates curriculum content and syncs structured data to form fields in real-time.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+            9 MCP tools
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
+            Real-time sync
+          </span>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">Monitoring</div>
+        <h3>Automated System Checks</h3>
+        <p>Agent runs every 5 minutes, checks service health across endpoints, and alerts on anomalies with context-aware analysis.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Interval: 5min
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Full audit trail
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="section-label">Get Started</div>
+    <h2 class="section-title">Ready to put your agents to work?</h2>
+    <p class="section-desc">Deploy production-grade AI agents in minutes, not months.</p>
+    <div class="hero-actions">
+      <a href="gitbook/en/getting-started/quickstart.md" class="btn-primary">
+        Start Building
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.33 8h9.34M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="gitbook/en/README.md" class="btn-secondary">Read the Docs</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-brand-name">
+        <div class="nav-logo-mark" style="width:28px;height:28px;font-size:12px;border-radius:6px;">JJ</div>
+        Jijian
+      </div>
+      <p>The production platform for AI agents. Built for teams that ship agents, not chatbots.</p>
+    </div>
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="gitbook/en/platform/capabilities.md">Features</a>
+        <a href="gitbook/en/platform/architecture.md">Architecture</a>
+        <a href="gitbook/en/platform/solutions.md">Solutions</a>
+        <a href="gitbook/en/platform/value.md">Why Jijian</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="gitbook/en/README.md">Documentation</a>
+        <a href="gitbook/en/api/rest.md">REST API</a>
+        <a href="gitbook/en/api/websocket.md">WebSocket API</a>
+        <a href="gitbook/en/guide/skill-writing.md">Skill Guide</a>
+      </div>
+      <div class="footer-col">
+        <h4>Getting Started</h4>
+        <a href="gitbook/en/getting-started/installation.md">Installation</a>
+        <a href="gitbook/en/getting-started/quickstart.md">Quickstart</a>
+        <a href="gitbook/en/guide/mcp-server.md">MCP Server</a>
+        <a href="gitbook/en/reference/best-practices.md">Best Practices</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2025 Jijian. All rights reserved.</span>
+    <span style="font-family:'Noto Serif',serif; font-style:italic; opacity:0.6;">见即所得</span>
+  </div>
+</footer>
+
+<script>
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 10);
+}, { passive: true });
+
+// Fade in on scroll
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+}
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>

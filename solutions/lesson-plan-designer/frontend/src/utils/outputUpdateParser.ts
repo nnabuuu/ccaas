@@ -1,4 +1,4 @@
-import type { OutputUpdateEvent } from '@ccaas/shared'
+import type { OutputUpdateEvent } from '@ccaas/common'
 import type { SyncField, OutputUpdate } from '../types'
 
 /**

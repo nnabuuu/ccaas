@@ -1,21 +1,21 @@
-# @ccaas/shared 类型
+# @ccaas/common 类型
 
-`@ccaas/shared` 包提供所有 CCAAS 包共享的 TypeScript 类型定义和 Zod 运行时验证 Schema。
+`@ccaas/common` 包提供所有 CCAAS 包共享的 TypeScript 类型定义和 Zod 运行时验证 Schema。
 
 ## 安装
 
 ```bash
-npm install @ccaas/shared
+npm install @ccaas/common
 ```
 
 ## 导入方式
 
 ```typescript
 // 导入类型
-import { Session, Skill, Message, TokenUsage } from '@ccaas/shared'
+import { Session, Skill, Message, TokenUsage } from '@ccaas/common'
 
 // 导入 Zod Schema
-import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/shared'
+import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
 ```
 
 ## 核心类型
@@ -167,12 +167,12 @@ interface TokenUsageSummary {
 
 ## 事件 Schema（Zod）
 
-`@ccaas/shared` 提供 Zod Schema 进行运行时事件验证：
+`@ccaas/common` 提供 Zod Schema 进行运行时事件验证：
 
 ### OutputUpdateEvent
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/shared'
+import { OutputUpdateEventSchema } from '@ccaas/common'
 
 const result = OutputUpdateEventSchema.safeParse(rawEvent)
 if (result.success) {
@@ -184,7 +184,7 @@ if (result.success) {
 ### AgentStatusEvent
 
 ```typescript
-import { AgentStatusEventSchema } from '@ccaas/shared'
+import { AgentStatusEventSchema } from '@ccaas/common'
 
 // Status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error'
 ```
@@ -192,7 +192,7 @@ import { AgentStatusEventSchema } from '@ccaas/shared'
 ### ToolActivityEvent
 
 ```typescript
-import { ToolActivityEventSchema } from '@ccaas/shared'
+import { ToolActivityEventSchema } from '@ccaas/common'
 
 // Phase: 'start' | 'progress' | 'end'
 // Includes: toolName, toolId, description, decisionLogic, duration, success
@@ -202,10 +202,10 @@ import { ToolActivityEventSchema } from '@ccaas/shared'
 
 ### 字段映射
 
-`@ccaas/shared` 提供后端字段名到前端字段名的映射：
+`@ccaas/common` 提供后端字段名到前端字段名的映射：
 
 ```typescript
-import { fieldMapping } from '@ccaas/shared'
+import { fieldMapping } from '@ccaas/common'
 
 // 示例映射：
 // 'learningTasks' → 'learningProcess'
@@ -215,7 +215,7 @@ import { fieldMapping } from '@ccaas/shared'
 ### 验证函数
 
 ```typescript
-import { validate, safeValidate } from '@ccaas/shared'
+import { validate, safeValidate } from '@ccaas/common'
 
 // validate: 抛出异常
 // safeValidate: 返回 { success, data?, error? }
@@ -223,7 +223,7 @@ import { validate, safeValidate } from '@ccaas/shared'
 
 ## 教案特定类型
 
-`@ccaas/shared` 还包含教案相关的领域类型：
+`@ccaas/common` 还包含教案相关的领域类型：
 
 ```typescript
 type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
@@ -248,5 +248,5 @@ interface Activity {
 }
 
 // 工具函数
-import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/shared'
+import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/common'
 ```

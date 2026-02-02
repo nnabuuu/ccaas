@@ -5,7 +5,7 @@
  */
 
 import { IsString, IsNotEmpty } from 'class-validator';
-import type { LessonPlanSyncField } from '@ccaas/shared';
+import type { LessonPlanSyncField } from '@ccaas/common';
 
 export class UpdateFieldDto {
   @IsString()

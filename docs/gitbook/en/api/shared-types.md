@@ -1,21 +1,21 @@
-# @ccaas/shared Types
+# @ccaas/common Types
 
-The `@ccaas/shared` package provides TypeScript type definitions and Zod runtime validation schemas shared across all CCAAS packages.
+The `@ccaas/common` package provides TypeScript type definitions and Zod runtime validation schemas shared across all CCAAS packages.
 
 ## Installation
 
 ```bash
-npm install @ccaas/shared
+npm install @ccaas/common
 ```
 
 ## Import Usage
 
 ```typescript
 // Import types
-import { Session, Skill, Message, TokenUsage } from '@ccaas/shared'
+import { Session, Skill, Message, TokenUsage } from '@ccaas/common'
 
 // Import Zod schemas
-import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/shared'
+import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
 ```
 
 ## Core Types
@@ -167,12 +167,12 @@ interface TokenUsageSummary {
 
 ## Event Schemas (Zod)
 
-`@ccaas/shared` provides Zod schemas for runtime event validation:
+`@ccaas/common` provides Zod schemas for runtime event validation:
 
 ### OutputUpdateEvent
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/shared'
+import { OutputUpdateEventSchema } from '@ccaas/common'
 
 const result = OutputUpdateEventSchema.safeParse(rawEvent)
 if (result.success) {
@@ -184,7 +184,7 @@ if (result.success) {
 ### AgentStatusEvent
 
 ```typescript
-import { AgentStatusEventSchema } from '@ccaas/shared'
+import { AgentStatusEventSchema } from '@ccaas/common'
 
 // Status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error'
 ```
@@ -192,7 +192,7 @@ import { AgentStatusEventSchema } from '@ccaas/shared'
 ### ToolActivityEvent
 
 ```typescript
-import { ToolActivityEventSchema } from '@ccaas/shared'
+import { ToolActivityEventSchema } from '@ccaas/common'
 
 // Phase: 'start' | 'progress' | 'end'
 // Includes: toolName, toolId, description, decisionLogic, duration, success
@@ -202,10 +202,10 @@ import { ToolActivityEventSchema } from '@ccaas/shared'
 
 ### Field Mapping
 
-`@ccaas/shared` provides mappings from backend field names to frontend field names:
+`@ccaas/common` provides mappings from backend field names to frontend field names:
 
 ```typescript
-import { fieldMapping } from '@ccaas/shared'
+import { fieldMapping } from '@ccaas/common'
 
 // Example mappings:
 // 'learningTasks' -> 'learningProcess'
@@ -215,7 +215,7 @@ import { fieldMapping } from '@ccaas/shared'
 ### Validation Functions
 
 ```typescript
-import { validate, safeValidate } from '@ccaas/shared'
+import { validate, safeValidate } from '@ccaas/common'
 
 // validate: Throws an exception on failure
 // safeValidate: Returns { success, data?, error? }
@@ -223,7 +223,7 @@ import { validate, safeValidate } from '@ccaas/shared'
 
 ## Lesson Plan Domain Types
 
-`@ccaas/shared` also includes domain-specific types for lesson plans:
+`@ccaas/common` also includes domain-specific types for lesson plans:
 
 ```typescript
 type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
@@ -248,5 +248,5 @@ interface Activity {
 }
 
 // Utility functions
-import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/shared'
+import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/common'
 ```

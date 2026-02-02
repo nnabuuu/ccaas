@@ -1,6 +1,6 @@
 # API 概述
 
-LoopAI 提供 REST API 和 WebSocket 两种接口，配合 `@ccaas/shared` 包提供完整的类型定义。
+LoopAI 提供 REST API 和 WebSocket 两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
 
 ## 接口模式
 
@@ -47,4 +47,4 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 |------|------|
 | [REST API 端点](rest.md) | 所有 HTTP 端点的完整参考 |
 | [WebSocket 事件](websocket.md) | 所有 WebSocket 事件的格式定义 |
-| [@ccaas/shared 类型](shared-types.md) | 共享 TypeScript 类型定义 |
+| [@ccaas/common 类型](shared-types.md) | 共享 TypeScript 类型定义 |

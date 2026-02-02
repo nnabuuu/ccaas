@@ -4,10 +4,10 @@
 
 ### Use Shared Types
 
-Always import shared types from `@ccaas/shared` to keep frontend and backend types consistent:
+Always import shared types from `@ccaas/common` to keep frontend and backend types consistent:
 
 ```typescript
-import { Session, Skill, TokenUsage } from '@ccaas/shared'
+import { Session, Skill, TokenUsage } from '@ccaas/common'
 ```
 
 ### Runtime Validation

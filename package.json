@@ -15,7 +15,7 @@
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "dev:backend": "npm run start:dev -w @ccaas/backend",
     "dev:admin": "npm run dev -w @ccaas/admin-next",
-    "build:shared": "npm run build -w @ccaas/shared",
+    "build:common": "npm run build -w @ccaas/common",
     "build:backend": "npm run build -w @ccaas/backend",
     "build:admin": "npm run build -w @ccaas/admin-next",
     "build:vue-sdk": "npm run build -w @ccaas/vue-sdk",

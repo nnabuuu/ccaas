@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useCustom } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,27 +10,13 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { ArrowLeft, Upload, Archive, RotateCcw, GitCompare } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
+import type { Skill, SkillVersion } from '@ccaas/common'
 
-interface SkillDetail {
-  id: string
-  name: string
-  slug: string
-  type: string
-  status: string
+interface SkillDetail extends Skill {
   enabled: boolean
-  prompt: string
-  version: number
-  tenantId: string
-  createdAt: string
-  updatedAt: string
-  triggers?: Array<{ type: string; pattern: string }>
-  toolWhitelist?: string[]
 }
 
-interface SkillVersion {
-  version: number
-  prompt: string
-  createdAt: string
+type SkillVersionWithMeta = SkillVersion & {
   publishedBy?: string
 }
 
@@ -50,6 +36,8 @@ interface DiffResult {
 export function SkillEditorPage() {
   const { idOrSlug } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const tenantIdParam = searchParams.get('tenantId')
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
   const [compareVersions, setCompareVersions] = useState<{ v1: number; v2: number } | null>(null)
@@ -57,11 +45,17 @@ export function SkillEditorPage() {
   const { data: skillData, isLoading, refetch } = useCustom<SkillDetail>({
     url: `/admin/skills/${idOrSlug}`,
     method: 'get',
+    config: {
+      query: tenantIdParam ? { tenantId: tenantIdParam } : undefined,
+    },
   })
 
   const { data: versionsData } = useCustom({
     url: `/admin/skills/${idOrSlug}/versions`,
     method: 'get',
+    config: {
+      query: tenantIdParam ? { tenantId: tenantIdParam } : undefined,
+    },
   })
 
   const skill = skillData?.data as SkillDetail | undefined
@@ -166,7 +160,7 @@ export function SkillEditorPage() {
           <Card>
             <CardContent className="pt-6">
               <pre className="whitespace-pre-wrap text-sm bg-muted rounded-lg p-4 max-h-[600px] overflow-auto">
-                {skill.prompt}
+                {skill.content}
               </pre>
             </CardContent>
           </Card>

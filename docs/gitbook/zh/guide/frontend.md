@@ -227,7 +227,7 @@ export function useSyncManager() {
 
 ## 最佳实践
 
-1. **使用类型定义** —— 从 `@ccaas/shared` 导入事件类型
+1. **使用类型定义** —— 从 `@ccaas/common` 导入事件类型
 2. **统一解析** —— 使用 `parseOutputUpdateEvent` 处理 output\_update
 3. **错误处理** —— 监听 `error` 事件并提供用户反馈
 4. **状态指示** —— 利用 `agent_status` 和 `tool_activity` 展示执行进度

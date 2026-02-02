@@ -66,6 +66,13 @@ claude-code-as-a-service/
 │   ├── tenants/                  # Multi-tenancy
 │   ├── messages/                 # Message persistence
 │   ├── files/                    # File management
+│   ├── scheduler/                # Scheduled task execution
+│   │   ├── scheduler.service.ts  # CRUD + cron registration + execution orchestration
+│   │   ├── scheduler.controller.ts # REST API endpoints
+│   │   ├── headless-execution.service.ts # Headless CLI execution (no WebSocket)
+│   │   ├── entities/             # ScheduledTask, ScheduledTaskExecution
+│   │   └── dto/                  # Create/Update DTOs
+│   │
 │   ├── hooks/                    # Tool hooks
 │   └── common/                   # Shared utilities
 │
@@ -148,6 +155,31 @@ Skill CRUD, versioning, and routing.
 - `sub-agent` - Specialized sub-agents
 - `tool-config` - Tool configuration
 
+### SchedulerModule (scheduler/)
+
+Scheduled background task execution with cron, interval, and one-time scheduling. Runs Claude Code CLI in headless mode without WebSocket dependency.
+
+**Schedule Types:**
+- `cron` - Cron expressions (e.g., `0 4 * * *`)
+- `interval` - Millisecond intervals (e.g., `60000`)
+- `once` - One-time ISO date execution
+
+**Key Services:**
+- `SchedulerService` - CRUD, cron registration via `SchedulerRegistry`, execution orchestration, retry logic, missed run detection on startup
+- `HeadlessExecutionService` - Spawns CLI with `--output-format stream-json --permission-mode bypassPermissions`, parses output via `EventMapperService`, manages workspace lifecycle
+
+**REST Endpoints (SchedulerController):**
+- `POST /api/v1/scheduled-tasks` - Create task
+- `GET /api/v1/scheduled-tasks` - List tasks (with pagination/filters)
+- `GET /api/v1/scheduled-tasks/:id` - Task detail
+- `PUT /api/v1/scheduled-tasks/:id` - Update task
+- `DELETE /api/v1/scheduled-tasks/:id` - Soft delete
+- `POST /api/v1/scheduled-tasks/:id/pause` - Pause scheduling
+- `POST /api/v1/scheduled-tasks/:id/resume` - Resume scheduling
+- `POST /api/v1/scheduled-tasks/:id/trigger` - Manual trigger
+- `GET /api/v1/scheduled-tasks/:id/executions` - Execution history
+- `GET /api/v1/scheduled-tasks/:id/executions/:execId` - Execution detail
+
 ### ProtocolModule (protocol/)
 
 Frontend-backend protocol definitions.
@@ -197,6 +229,8 @@ Using TypeORM with SQLite (configurable to PostgreSQL):
 - **mcp_servers** - MCP server configuration
 - **messages** - Chat message persistence
 - **agent_files** - Written files tracking
+- **scheduled_tasks** - Scheduled task definitions (cron/interval/once)
+- **scheduled_task_executions** - Task execution history and results
 
 ## API Endpoints
 
@@ -235,6 +269,20 @@ GET    /api/v1/sessions/:id/messages
 GET    /api/v1/messages/:id
 GET    /api/v1/messages/:id/files
 GET    /api/v1/files/:id/download
+```
+
+### Scheduled Tasks
+```
+POST   /api/v1/scheduled-tasks
+GET    /api/v1/scheduled-tasks
+GET    /api/v1/scheduled-tasks/:id
+PUT    /api/v1/scheduled-tasks/:id
+DELETE /api/v1/scheduled-tasks/:id
+POST   /api/v1/scheduled-tasks/:id/pause
+POST   /api/v1/scheduled-tasks/:id/resume
+POST   /api/v1/scheduled-tasks/:id/trigger
+GET    /api/v1/scheduled-tasks/:id/executions
+GET    /api/v1/scheduled-tasks/:id/executions/:execId
 ```
 
 ## Adding Custom Features
@@ -294,6 +342,23 @@ export type FrontendEventType =
 8. CLI exits → agent_status: complete
 9. Follow-up message → CLI spawned with --resume
 10. Idle timeout → session cleanup
+```
+
+## Headless Execution Lifecycle (Scheduled Tasks)
+
+```
+1. Cron/interval/timeout fires → SchedulerService.triggerExecution()
+2. Concurrency check (count running < maxConcurrent)
+3. Create ScheduledTaskExecution record (status=running)
+4. Update task.lastRunAt / nextRunAt
+5. HeadlessExecutionService creates workspace
+6. Write .claude/settings.local.json (permissions whitelist)
+7. SkillSyncService syncs enabled skills
+8. CLI spawned with --output-format stream-json --permission-mode bypassPermissions
+9. stdin receives user message, stdout parsed via EventMapperService
+10. Events emitted to Socket.io room scheduler:{tenantId}
+11. On completion: persist messages, update execution status
+12. Cleanup workspace directory
 ```
 
 ## Testing

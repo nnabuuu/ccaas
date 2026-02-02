@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { LessonPlanEntity } from './entities/lesson-plan.entity';
 import { CreateLessonPlanDto } from './dto/create-lesson-plan.dto';
 import { UpdateLessonPlanDto } from './dto/update-lesson-plan.dto';
-import { LESSON_PLAN_SYNC_FIELDS, type LessonPlanSyncField } from '@ccaas/shared';
+import { LESSON_PLAN_SYNC_FIELDS, type LessonPlanSyncField } from '@ccaas/common';
 
 interface FindAllOptions {
   status?: string;

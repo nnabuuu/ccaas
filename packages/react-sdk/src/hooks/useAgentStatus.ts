@@ -13,7 +13,7 @@ import type {
   TokenUsagePayload,
   TodoUpdatePayload,
   EventTodoItem,
-} from '@ccaas/shared'
+} from '@ccaas/common'
 
 /**
  * Tracks agent status, tool activity, thinking state, and token usage.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseOutputUpdateEvent } from '../src/utils/outputUpdateParser'
-import type { OutputUpdateEvent } from '@ccaas/shared'
+import type { OutputUpdateEvent } from '@ccaas/common'
 import type { SyncField } from '../src/types'
 
 describe('parseOutputUpdateEvent', () => {
@@ -13,8 +13,8 @@ describe('parseOutputUpdateEvent', () => {
       payload: {
         data: {
           field: 'objectives',
-          value: [{ id: 'obj-1', description: '学习目标1' }],
-          preview: '1个教学目标',
+          value: '1. 学习目标1\n2. 学习目标2',
+          preview: '2个学习目标',
         },
         status: 'success',
       },
@@ -24,8 +24,8 @@ describe('parseOutputUpdateEvent', () => {
 
     expect(result).not.toBeNull()
     expect(result?.field).toBe('objectives')
-    expect(result?.value).toEqual([{ id: 'obj-1', description: '学习目标1' }])
-    expect(result?.preview).toBe('1个教学目标')
+    expect(result?.value).toBe('1. 学习目标1\n2. 学习目标2')
+    expect(result?.preview).toBe('2个学习目标')
     expect(result?.synced).toBe(false)
   })
 
@@ -80,10 +80,10 @@ describe('parseOutputUpdateEvent', () => {
 
   it('should handle all sync field types', () => {
     const syncFields: SyncField[] = [
-      'title', 'subject', 'gradeLevel', 'duration',
-      'publisher', 'volume', 'chapterId', 'chapterTitle',
-      'objectives', 'standards', 'materials', 'activities',
-      'assessment', 'differentiation'
+      'title', 'subject', 'gradeLevel', 'durationMinutes', 'lessonPlanCode',
+      'objectives', 'content', 'teachingMethods', 'materialsNeeded',
+      'assessmentMethods', 'curriculumRequirements', 'studentAnalysis',
+      'extraProperties', 'status'
     ]
 
     for (const field of syncFields) {
@@ -105,11 +105,10 @@ describe('parseOutputUpdateEvent', () => {
     }
   })
 
-  it('should handle complex nested value objects', () => {
-    const complexValue = {
-      formative: ['观察学生参与度', '课堂提问'],
-      summative: ['单元测验'],
-      rubric: '评分标准详情',
+  it('should handle extraProperties record value', () => {
+    const extraProps = {
+      '教材分析': '本课是分数单元的第一课',
+      '课件': 'PPT 12页',
     }
 
     const event: OutputUpdateEvent = {
@@ -117,9 +116,9 @@ describe('parseOutputUpdateEvent', () => {
       sessionId: 'test-session',
       payload: {
         data: {
-          field: 'assessment',
-          value: complexValue,
-          preview: '评估方案',
+          field: 'extraProperties',
+          value: extraProps,
+          preview: '2个额外属性',
         },
       },
     }
@@ -127,6 +126,6 @@ describe('parseOutputUpdateEvent', () => {
     const result = parseOutputUpdateEvent(event)
 
     expect(result).not.toBeNull()
-    expect(result?.value).toEqual(complexValue)
+    expect(result?.value).toEqual(extraProps)
   })
 })
