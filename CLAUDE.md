@@ -13,8 +13,9 @@ ccaas/
 ├── package.json                 # Workspace root (npm workspaces)
 ├── packages/
 │   ├── backend/                 # @ccaas/backend - NestJS server
-│   ├── admin/                   # @ccaas/admin - Vue 3 admin UI
+│   ├── admin-next/              # @ccaas/admin-next - React admin UI (Refine + shadcn/ui)
 │   ├── vue-sdk/                 # @ccaas/vue-sdk - Vue composables
+│   ├── react-sdk/               # @ccaas/react-sdk - React hooks
 │   └── shared/                  # @ccaas/shared - Shared types
 └── docs/                        # Consolidated documentation
 ```
@@ -23,9 +24,10 @@ ccaas/
 
 | Package | Tech Stack | Purpose |
 |---------|------------|---------|
-| `@ccaas/backend` | NestJS, TypeORM, Socket.io | API server, session management |
-| `@ccaas/admin` | Vue 3, Ant Design, ECharts | Admin dashboard |
-| `@ccaas/vue-sdk` | Vue 3 Composition API | Client integration |
+| `@ccaas/backend` | NestJS, TypeORM, Socket.io | API server, session management, scheduled tasks |
+| `@ccaas/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
+| `@ccaas/vue-sdk` | Vue 3 Composition API | Vue client integration |
+| `@ccaas/react-sdk` | React hooks, Socket.io | React client integration |
 | `@ccaas/shared` | TypeScript, Zod | Types and protocols |
 
 ## Build Commands
@@ -42,10 +44,11 @@ npm run build:shared    # Build shared first (required)
 npm run build:backend
 npm run build:admin
 npm run build:vue-sdk
+npm run build:react-sdk
 
 # Development
 npm run dev:backend     # Start backend on :3001
-npm run dev:admin       # Start admin on :5174
+npm run dev:admin       # Start admin on :5175
 ```
 
 ## Package Dependencies
@@ -54,13 +57,14 @@ npm run dev:admin       # Start admin on :5174
 @ccaas/shared           <- No internal deps
     ↑
 @ccaas/vue-sdk         <- Depends on shared
+@ccaas/react-sdk       <- Depends on shared
     ↑
-@ccaas/admin           <- Can use vue-sdk (optional)
+@ccaas/admin-next      <- Can use react-sdk (optional)
 
 @ccaas/backend         <- Can use shared types (optional)
 ```
 
-**Build order:** shared → vue-sdk → admin/backend
+**Build order:** shared → vue-sdk/react-sdk → admin-next/backend
 
 ## Key Conventions
 
@@ -114,21 +118,32 @@ See: `packages/backend/CLAUDE.md`
 - API key authentication with scopes
 - MCP server pool management
 
-### @ccaas/admin
+### @ccaas/admin-next
 
-See: `packages/admin/README.md`
+See: `packages/admin-next/README.md`
 
-- Vue 3 with Composition API
-- Ant Design Vue 4.x components
-- ECharts for analytics visualizations
+- React 18 with TypeScript
+- Refine framework for data management
+- shadcn/ui components + Tailwind CSS
 - Socket.io for real-time updates
+- Recharts for analytics visualizations
 
 ### @ccaas/vue-sdk
 
 See: `packages/vue-sdk/docs/ARCHITECTURE.md`
 
-- Composables for state management
+- Vue 3 composables for state management
 - Socket.io connection management
+- Form synchronization utilities
+- Type-safe event handling
+
+### @ccaas/react-sdk
+
+See: `packages/react-sdk/README.md`
+
+- React hooks for state management
+- Socket.io connection management
+- Chat UI components (ChatPanel, MessageBubble, etc.)
 - Form synchronization utilities
 - Type-safe event handling
 

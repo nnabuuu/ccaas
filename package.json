@@ -14,14 +14,12 @@
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
     "dev:backend": "npm run start:dev -w @ccaas/backend",
-    "dev:admin": "npm run dev -w @ccaas/admin",
+    "dev:admin": "npm run dev -w @ccaas/admin-next",
     "build:shared": "npm run build -w @ccaas/shared",
     "build:backend": "npm run build -w @ccaas/backend",
-    "build:admin": "npm run build -w @ccaas/admin",
+    "build:admin": "npm run build -w @ccaas/admin-next",
     "build:vue-sdk": "npm run build -w @ccaas/vue-sdk",
-    "build:react-sdk": "npm run build -w @ccaas/react-sdk",
-    "dev:admin-next": "npm run dev -w @ccaas/admin-next",
-    "build:admin-next": "npm run build -w @ccaas/admin-next"
+    "build:react-sdk": "npm run build -w @ccaas/react-sdk"
   },
   "engines": {
     "node": ">=18.0.0"
