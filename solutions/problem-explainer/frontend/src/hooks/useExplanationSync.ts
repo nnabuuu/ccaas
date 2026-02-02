@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import type { OutputUpdate as SdkOutputUpdate } from '@ccaas/react-sdk';
 import { Explanation, OutputUpdate, SyncField, SYNC_FIELDS } from '../types';
 
 interface UndoEntry {
@@ -28,9 +29,11 @@ export function useExplanationSync() {
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([]);
 
   // Handle output update from AI - auto-sync to explanation
-  const handleOutputUpdate = useCallback((update: OutputUpdate) => {
+  // Accepts SDK's broader OutputUpdate type (field: string) and casts internally
+  const handleOutputUpdate = useCallback((update: SdkOutputUpdate) => {
+    const field = update.field as SyncField;
     console.log('[handleOutputUpdate] Received update:', {
-      field: update.field,
+      field,
       valueType: typeof update.value,
       valueIsArray: Array.isArray(update.value),
       preview: update.preview,
@@ -47,13 +50,13 @@ export function useExplanationSync() {
     if (typeof parsedValue === 'string') {
       console.log('[handleOutputUpdate] Value is string, checking if needs JSON parse');
       // Try to parse as JSON if the field expects an array/object
-      if (arrayFields.includes(update.field)) {
+      if (arrayFields.includes(field)) {
         try {
           parsedValue = JSON.parse(parsedValue);
-          console.log('[handleOutputUpdate] Parsed JSON string for field:', update.field, 'result:', parsedValue);
+          console.log('[handleOutputUpdate] Parsed JSON string for field:', field, 'result:', parsedValue);
         } catch (e) {
           // If parsing fails, wrap string in array for array fields
-          console.warn('[handleOutputUpdate] Failed to parse JSON for', update.field, 'wrapping in array. Error:', e);
+          console.warn('[handleOutputUpdate] Failed to parse JSON for', field, 'wrapping in array. Error:', e);
           parsedValue = [parsedValue];
         }
       }
@@ -65,16 +68,16 @@ export function useExplanationSync() {
     setExplanation((prev) => {
       const newExplanation = {
         ...prev,
-        [update.field]: parsedValue,
+        [field]: parsedValue,
       };
       console.log('[handleOutputUpdate] New explanation state:', newExplanation);
       return newExplanation;
     });
 
     // Mark as modified
-    setModifiedFields((prev) => new Set(prev).add(update.field));
+    setModifiedFields((prev) => new Set(prev).add(field));
 
-    console.log('[handleOutputUpdate] Auto-synced field:', update.field);
+    console.log('[handleOutputUpdate] Auto-synced field:', field);
   }, []);
 
   // Sync a pending update to the explanation
