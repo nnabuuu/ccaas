@@ -32,16 +32,62 @@ export class AdminSkillsController {
   ) {}
 
   /**
+   * GET /api/v1/admin/skills
+   *
+   * List all skills with pagination
+   */
+  @Get()
+  async findAll(
+    @Query('tenantId') tenantId?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '50',
+    @TenantId() defaultTenantId?: string,
+  ): Promise<{ skills: any[]; total: number }> {
+    // Admin can query any tenant by passing tenantId parameter
+    const targetTenantId = tenantId || defaultTenantId;
+
+    if (!targetTenantId) {
+      throw new NotFoundException('Tenant ID is required');
+    }
+
+    const result = await this.skillsService.findAll(targetTenantId, {
+      page: Number(page),
+      limit: Number(limit),
+    });
+
+    return {
+      skills: result.items.map(skill => ({
+        id: skill.id,
+        tenantId: skill.tenantId,
+        name: skill.name,
+        slug: skill.slug,
+        description: skill.description,
+        type: skill.type,
+        status: skill.status,
+        enabled: skill.enabled,
+        currentVersion: skill.currentVersion,
+        createdAt: skill.createdAt,
+        updatedAt: skill.updatedAt,
+      })),
+      total: result.total,
+    };
+  }
+
+  /**
    * GET /api/v1/admin/skills/:idOrSlug/versions
    *
    * Get version history for a skill
    */
   @Get(':idOrSlug/versions')
   async getVersionHistory(
-    @TenantId() tenantId: string,
+    @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
+    @Query('tenantId') tenantId?: string,
   ): Promise<SkillVersion[]> {
-    const skill = await this.skillsService.findOne(tenantId, idOrSlug);
+    // Admin can query any tenant by passing tenantId parameter
+    const targetTenantId = tenantId || defaultTenantId;
+
+    const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
@@ -163,6 +209,27 @@ export class AdminSkillsController {
       configDiff,
       toolsDiff: [...removedTools, ...addedTools],
     };
+  }
+
+  /**
+   * GET /api/v1/admin/skills/:idOrSlug
+   *
+   * Get skill details by ID or slug
+   */
+  @Get(':idOrSlug')
+  async findOne(
+    @TenantId() defaultTenantId: string,
+    @Param('idOrSlug') idOrSlug: string,
+    @Query('tenantId') tenantId?: string,
+  ): Promise<Skill> {
+    // Admin can query any tenant by passing tenantId parameter
+    const targetTenantId = tenantId || defaultTenantId;
+
+    const skill = await this.skillsService.findOneWithVersions(targetTenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+    return skill;
   }
 
   /**
