@@ -52,6 +52,8 @@ export interface ToolActivity {
   toolInput?: unknown
   toolOutput?: unknown
   toolError?: string
+  agentType?: string
+  nestingLevel?: number
 }
 
 export interface TextBlock {

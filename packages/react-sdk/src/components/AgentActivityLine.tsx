@@ -19,7 +19,10 @@ export function AgentActivityLine({ isProcessing, todoItems, todoStats, activeTo
   if (activeTodo?.activeForm) {
     label = activeTodo.activeForm
   } else if (firstTool?.description) {
-    label = firstTool.description
+    const prefix = firstTool.nestingLevel && firstTool.nestingLevel >= 1 && firstTool.agentType
+      ? `[${firstTool.agentType}] `
+      : ''
+    label = prefix + firstTool.description
   } else {
     label = '处理中...'
   }

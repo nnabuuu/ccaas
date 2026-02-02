@@ -67,6 +67,9 @@ export function InlineToolCard({ tool }: { tool: ToolActivity }) {
           </svg>
         )}
         <span>{icon}</span>
+        {tool.nestingLevel != null && tool.nestingLevel >= 1 && tool.agentType && (
+          <span className="px-1 py-0.5 rounded bg-indigo-100 text-indigo-600 font-medium leading-none">{tool.agentType}</span>
+        )}
         <span className="font-medium text-gray-700">{displayName}</span>
         {summary && (
           <span className="text-gray-500 truncate max-w-[180px]">{summary}</span>
