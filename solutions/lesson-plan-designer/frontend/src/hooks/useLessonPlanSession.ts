@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { v4 as uuidv4 } from 'uuid'
 import { useLessonPlanSync } from './useLessonPlanSync'
+import { useSubAgentPolling } from './useSubAgentPolling'
 import { api, type SolutionConfig, type CcaasToolEvent } from '../utils/api'
 import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
 import type {
@@ -119,7 +120,9 @@ interface UseLessonPlanSessionReturn {
 
   // Chat state
   messages: Message[]
-  isProcessing: boolean
+  isProcessing: boolean  // 向后兼容别名
+  isMainProcessing: boolean
+  hasActiveSubAgents: boolean
   currentStreamContent: string
 
   // Sync state (from useLessonPlanSync)
@@ -158,6 +161,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
   // Socket state
   const [connected, setConnected] = useState(false)
+  const [socketConnected, setSocketConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const socketRef = useRef<Socket | null>(null)
   const sessionIdRef = useRef<string>(`lpd_${uuidv4()}`)
@@ -173,7 +177,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [isMainProcessing, setIsMainProcessing] = useState(false)
+  const [hasActiveSubAgents, setHasActiveSubAgents] = useState(false)
   const [currentStreamContent, setCurrentStreamContent] = useState('')
   const currentMessageRef = useRef<Message | null>(null)
   // Ref to track latest stream content for use in socket handlers (avoids stale closure)
@@ -208,6 +213,40 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     resetSyncState,
   } = useLessonPlanSync()
 
+  // Merge polling data with WebSocket events
+  // Prefer WebSocket timing, use polling as verification
+  const mergeSubAgentData = useCallback((polledAgents: ActiveSubAgent[]) => {
+    setActiveSubAgents(prev => {
+      // Update hasActiveSubAgents based on polling data
+      setHasActiveSubAgents(polledAgents.length > 0)
+
+      // If WebSocket recently updated (within 5s), trust it
+      const now = Date.now()
+      const hasRecentUpdate = prev.some(agent => {
+        const startedMs = new Date(agent.startedAt).getTime()
+        return now - startedMs < 5000
+      })
+
+      if (hasRecentUpdate && socketConnected) {
+        // WebSocket is working, ignore polling
+        return prev
+      }
+
+      // WebSocket is stale or disconnected, use polling data
+      return polledAgents
+    })
+  }, [socketConnected])
+
+  // Adaptive polling as fallback when WebSocket unreliable
+  useSubAgentPolling({
+    sessionId: sessionIdRef.current,
+    enabled: isMainProcessing || hasActiveSubAgents,
+    onUpdate: mergeSubAgentData,
+    onError: (err) => {
+      console.error('Sub-agent polling error:', err)
+    },
+  })
+
   // Load solution config on mount
   useEffect(() => {
     api.getSolutionConfig()
@@ -234,6 +273,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     socket.on('connect', () => {
       console.log('🔌 Socket connected to CCAAS')
       setConnected(true)
+      setSocketConnected(true)
       setError(null)
     })
 
@@ -245,6 +285,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     socket.on('disconnect', () => {
       console.log('🔌 Socket disconnected')
       setConnected(false)
+      setSocketConnected(false)
     })
 
     socket.on('connect_error', (err) => {
@@ -338,7 +379,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       }
 
       if (data.status === 'complete' || data.status === 'error' || data.status === 'cancelled') {
-        setIsProcessing(false)
+        setIsMainProcessing(false)
 
         // Snapshot accumulated token usage for this message
         const messageUsage = tokenUsageAccRef.current.requestCount > 0
@@ -542,11 +583,26 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     socket.on('subagent_started', (data: SubAgentStartedEvent) => {
       console.log('🤖 SubAgent started:', data.payload.agentType, data.payload.description)
       setActiveSubAgents(prev => [...prev, data.payload])
+
+      // 标记有活跃 SubAgent
+      setHasActiveSubAgents(true)
+
+      // 主 Claude 已经返回（启动了后台任务）
+      setIsMainProcessing(false)
     })
 
     socket.on('subagent_completed', (data: SubAgentCompletedEvent) => {
       console.log('✅ SubAgent completed:', data.payload.subAgentId, data.payload.status)
-      setActiveSubAgents(prev => prev.filter(agent => agent.subAgentId !== data.payload.subAgentId))
+      setActiveSubAgents(prev => {
+        const updated = prev.filter(agent => agent.subAgentId !== data.payload.subAgentId)
+
+        // 如果没有活跃 SubAgent 了
+        if (updated.length === 0) {
+          setHasActiveSubAgents(false)
+        }
+
+        return updated
+      })
     })
 
     return () => {
@@ -630,7 +686,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
   // Send chat message via REST API (response streams via WebSocket)
   const sendMessage = useCallback(async (content: string) => {
-    if (!connected || !clientIdRef.current || isProcessing) return
+    if (!connected || !clientIdRef.current || isMainProcessing) return
 
     // Add user message
     const userMessage: Message = {
@@ -658,7 +714,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     streamContentRef.current = ''
     contentBlocksRef.current = []
     tokenUsageAccRef.current = createEmptyTokenUsageAcc()
-    setIsProcessing(true)
+    setIsMainProcessing(true)
 
     // Attempt to send message with auto-retry on WebSocket disconnection
     const attemptSend = async (retryCount = 0): Promise<void> => {
@@ -725,9 +781,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     } catch (err) {
       console.error('Failed to send message:', err)
       setError(`发送失败: ${err instanceof Error ? err.message : err}`)
-      setIsProcessing(false)
+      setIsMainProcessing(false)
     }
-  }, [connected, isProcessing, tenantId, solutionConfig, enabledSkillSlugs, waitForReconnection])
+  }, [connected, isMainProcessing, tenantId, solutionConfig, enabledSkillSlugs, waitForReconnection])
 
   // Save lesson plan
   const saveLessonPlan = useCallback(async () => {
@@ -769,9 +825,43 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   }, [resetSyncState])
 
   // Sync to form
-  const syncToForm = useCallback((field: SyncField) => {
+  const syncToForm = useCallback(async (field: SyncField) => {
     if (!lessonPlan) return
-    doSyncToForm(field, lessonPlan, setLessonPlan)
+
+    // Special handling for attachments: upload files to backend first
+    if (field === 'attachments') {
+      const update = pendingUpdates.get(field)
+      if (!update) return
+
+      const attachmentData = update.value as Array<{
+        fileId: string
+        fileName: string
+        fileType?: string
+        mimeType?: string
+        size?: number
+        description?: string
+        _originalPath?: string
+      }>
+
+      try {
+        // Upload attachments to backend with sessionId
+        await api.addAttachments(
+          lessonPlan.id,
+          attachmentData,
+          sessionIdRef.current,
+        )
+
+        // After successful upload, sync to form
+        doSyncToForm(field, lessonPlan, setLessonPlan)
+      } catch (err) {
+        console.error('Failed to upload attachments:', err)
+        setError(`附件上传失败: ${err instanceof Error ? err.message : String(err)}`)
+        return
+      }
+    } else {
+      // Other fields: sync directly
+      doSyncToForm(field, lessonPlan, setLessonPlan)
+    }
 
     // Mark as synced in messages
     setMessages(prev => {
@@ -787,7 +877,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         return msg
       })
     })
-  }, [lessonPlan, doSyncToForm])
+  }, [lessonPlan, pendingUpdates, doSyncToForm, sessionIdRef])
 
   // Discard update
   const discardUpdate = useCallback((field: SyncField) => {
@@ -824,9 +914,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   // Cancel processing
   const cancelProcessing = useCallback(() => {
     const socket = socketRef.current
-    if (!socket || !isProcessing) return
+    if (!socket || !isMainProcessing) return
     socket.emit('cancel', { sessionId: sessionIdRef.current })
-  }, [isProcessing])
+  }, [isMainProcessing])
 
   // Sync context to backend (for Claude Code to read current form state)
   const syncContext = useCallback(async (plan: LessonPlan | null) => {
@@ -881,7 +971,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
     // Chat state
     messages,
-    isProcessing,
+    isProcessing: isMainProcessing,  // 向后兼容别名
+    isMainProcessing,
+    hasActiveSubAgents,
     currentStreamContent,
 
     // Sync state

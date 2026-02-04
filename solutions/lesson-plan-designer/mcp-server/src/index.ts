@@ -4,14 +4,15 @@
  *
  * Provides tools for:
  * 1. write_output - Send structured lesson plan data to the frontend
- * 2. search_curriculum_standards - Search curriculum standards/requirements (legacy mock)
- * 3. search_textbook - Search textbook content (legacy mock)
- * 4. search_teaching_resources - Search teaching resources (legacy mock)
- * 5. get_textbook_subjects - Get available subjects
- * 6. get_textbook_grades - Get grades for a subject
- * 7. get_textbook_volumes - Get volumes (上册/下册)
- * 8. get_textbook_chapters - Get chapter tree for a textbook edition (from real data)
- * 9. get_curriculum_standards - Get curriculum standards (from real data)
+ * 2. attach_file - Attach generated files to the lesson plan
+ * 3. search_curriculum_standards - Search curriculum standards/requirements (legacy mock)
+ * 4. search_textbook - Search textbook content (legacy mock)
+ * 5. search_teaching_resources - Search teaching resources (legacy mock)
+ * 6. get_textbook_subjects - Get available subjects
+ * 7. get_textbook_grades - Get grades for a subject
+ * 8. get_textbook_volumes - Get volumes (上册/下册)
+ * 9. get_textbook_chapters - Get chapter tree for a textbook edition (from real data)
+ * 10. get_curriculum_standards - Get curriculum standards (from real data)
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -21,7 +22,7 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult } from './types.js';
+import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type LessonPlanAttachment } from './types.js';
 import { validateAndFixField, type ValidationResult } from './schemas.js';
 import {
   searchCurriculumStandards,
@@ -37,6 +38,9 @@ import {
   getCurriculumStages,
   getCurriculumStandards,
 } from './data-loader.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 
 // Create the MCP server
 const server = new Server(
@@ -351,162 +355,41 @@ Example response:
   },
 };
 
-// JSON Schema definitions for write_output value field
-const ObjectiveSchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', description: '唯一标识符，如 "obj-1"' },
-    description: { type: 'string', description: '教学目标描述' },
-    bloomLevel: {
-      type: 'string',
-      enum: ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'],
-      description: 'Bloom 认知层级',
-    },
-    assessmentCriteria: { type: 'string', description: '评估标准（可选）' },
-  },
-  required: ['id', 'description', 'bloomLevel'],
-};
-
-const StandardSchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', description: '唯一标识符' },
-    code: { type: 'string', description: '课程标准代码' },
-    description: { type: 'string', description: '标准描述' },
-  },
-  required: ['id', 'code', 'description'],
-};
-
-const MaterialSchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', description: '唯一标识符' },
-    name: { type: 'string', description: '材料名称' },
-    type: {
-      type: 'string',
-      enum: ['textbook', 'handout', 'digital', 'manipulative', 'other'],
-      description: '材料类型',
-    },
-    url: { type: 'string', description: '资源链接（可选）' },
-    notes: { type: 'string', description: '备注（可选）' },
-  },
-  required: ['id', 'name', 'type'],
-};
-
-const ActivitySchema = {
-  type: 'object',
-  properties: {
-    id: { type: 'string', description: '唯一标识符，如 "act-1"' },
-    title: { type: 'string', description: '活动标题' },
-    description: { type: 'string', description: '活动描述' },
-    duration: { type: 'number', description: '时长（分钟）' },
-    type: {
-      type: 'string',
-      enum: ['introduction', 'direct-instruction', 'guided-practice', 'independent-practice', 'group', 'assessment', 'closure'],
-      description: '活动类型',
-    },
-    instructions: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '步骤说明',
-    },
-    materials: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '所需材料（可选）',
-    },
-    teacherNotes: { type: 'string', description: '教师备注（可选）' },
-  },
-  required: ['id', 'title', 'description', 'duration', 'type', 'instructions'],
-};
-
-const AssessmentSchema = {
-  type: 'object',
-  properties: {
-    formative: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '形成性评估方法',
-    },
-    summative: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '总结性评估方法',
-    },
-    rubric: { type: 'string', description: '评分标准（可选）' },
-  },
-  required: ['formative', 'summative'],
-};
-
-const DifferentiationSchema = {
-  type: 'object',
-  properties: {
-    struggling: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '学困生支持策略',
-    },
-    onLevel: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '普通学生策略',
-    },
-    advanced: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '优秀学生拓展',
-    },
-    ell: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'ELL学生支持（可选）',
-    },
-    accommodations: {
-      type: 'array',
-      items: { type: 'string' },
-      description: '特殊需求调适（可选）',
-    },
-  },
-  required: ['struggling', 'onLevel', 'advanced'],
-};
-
 // Define the write_output tool
 const writeOutputTool: Tool = {
   name: 'write_output',
-  description: `Write structured lesson plan content to the frontend form. The frontend will display a "Sync to Form" button allowing the user to apply the changes.
-
-**IMPORTANT**: Data is validated with Zod schemas. Missing 'id' fields will be auto-generated, but other required fields must be provided.
+  description: `Write lesson plan content to the frontend form. The frontend will display a "Sync to Form" button allowing the user to apply the changes.
 
 Valid fields: ${SYNC_FIELDS.join(', ')}
 
 Field schemas:
 - title: string (课程标题)
 - subject: string (学科，如 "数学", "语文")
-- gradeLevel: string (年级，如 "三年级", "高一")
-- duration: string (课时，如 "45分钟", "2课时")
-- objectives: Array<{ id, description, bloomLevel, assessmentCriteria? }>
-- standards: Array<{ id, code, description }>
-- materials: Array<{ id, name, type, url?, notes? }>
-- activities: Array<{ id, title, description, duration, type, instructions[], materials?, teacherNotes? }>
-- assessment: { formative[], summative[], rubric? }
-- differentiation: { struggling[], onLevel[], advanced[], ell?, accommodations? }
+- gradeLevel: number (年级，1-12)
+- durationMinutes: number (课时分钟数)
+- lessonPlanCode: string (教案编号)
+- objectives: string (学习目标，纯文本)
+- content: string (学习过程，纯文本)
+- teachingMethods: string (教学方法，纯文本)
+- materialsNeeded: string (课前准备，纯文本)
+- assessmentMethods: string (作业检测，纯文本)
+- curriculumRequirements: CurriculumStandard[] (课程要求，结构化数组，每项包含 id, standardCode, title, stage, standardType, contentDomain)
+- studentAnalysis: string (学情分析，纯文本)
+- extraProperties: Record<string, string> (额外属性，如教材分析、课件等)
+- status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
 
 Example for objectives:
 {
   "field": "objectives",
-  "value": [
-    { "id": "obj-1", "description": "学生能够理解核心概念", "bloomLevel": "understand", "assessmentCriteria": "能用自己的话解释" }
-  ],
-  "preview": "1个教学目标"
+  "value": "1. 学生能够理解分数的基本概念\\n2. 学生能够比较分数的大小",
+  "preview": "2个学习目标"
 }
 
-Example for activities:
+Example for extraProperties:
 {
-  "field": "activities",
-  "value": [
-    { "id": "act-1", "title": "情境导入", "description": "通过生活场景引入", "duration": 5, "type": "introduction", "instructions": ["展示图片", "提问学生"] }
-  ],
-  "preview": "1个教学活动"
+  "field": "extraProperties",
+  "value": { "教材分析": "本课是分数单元的第一课...", "课件": "PPT 12页" },
+  "preview": "2个额外属性"
 }`,
   inputSchema: {
     type: 'object',
@@ -518,29 +401,62 @@ Example for activities:
       },
       value: {
         oneOf: [
-          // String fields
-          { type: 'string', description: 'For title, subject, gradeLevel, duration' },
-          // objectives array
-          { type: 'array', items: ObjectiveSchema, description: 'For objectives field' },
-          // standards array
-          { type: 'array', items: StandardSchema, description: 'For standards field' },
-          // materials array
-          { type: 'array', items: MaterialSchema, description: 'For materials field' },
-          // activities array
-          { type: 'array', items: ActivitySchema, description: 'For activities field' },
-          // assessment object
-          AssessmentSchema,
-          // differentiation object
-          DifferentiationSchema,
+          { type: 'string', description: 'For text fields (title, subject, objectives, content, etc.)' },
+          { type: 'number', description: 'For numeric fields (gradeLevel, durationMinutes)' },
+          { type: 'object', description: 'For extraProperties (Record<string, string>)' },
+          { type: 'array', description: 'For curriculumRequirements (CurriculumStandard[])' },
         ],
-        description: 'Structured data matching the field schema. Must be valid JSON, not a string.',
+        description: 'The value for the field.',
       },
       preview: {
         type: 'string',
-        description: 'Human-readable summary shown on the sync button (e.g., "3个教学目标", "4个教学活动")',
+        description: 'Human-readable summary shown on the sync button',
       },
     },
     required: ['field', 'value', 'preview'],
+  },
+};
+
+// Define the attach_file tool
+const attachFileTool: Tool = {
+  name: 'attach_file',
+  description: `Attach a generated file to the current lesson plan.
+
+This tool allows you to attach files (teaching scripts, audio, PPT, PDF, etc.) that you've created in the session workspace to the lesson plan. The frontend will display a sync button allowing the user to add the attachment.
+
+File types:
+- script: Teaching scripts (.md, .txt)
+- audio: Audio files (.mp3, .wav, .ogg, .m4a)
+- ppt: PowerPoint presentations (.ppt, .pptx)
+- pdf: PDF documents (.pdf)
+- other: Other file types
+
+Example usage:
+{
+  "filePath": "教学讲稿.md",
+  "fileType": "script",
+  "description": "教学讲稿 - 包含9个章节的完整授课指南"
+}
+
+Note: The filePath should be relative to the session workspace directory.`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      filePath: {
+        type: 'string',
+        description: 'Path to file in session workspace (relative path)',
+      },
+      fileType: {
+        type: 'string',
+        enum: ['script', 'audio', 'ppt', 'pdf', 'other'],
+        description: 'Type of file being attached',
+      },
+      description: {
+        type: 'string',
+        description: 'Optional description of the file',
+      },
+    },
+    required: ['filePath', 'fileType'],
   },
 };
 
@@ -549,6 +465,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       writeOutputTool,
+      attachFileTool,
       // Real data tools (recommended)
       getTextbookSubjectsTool,
       getTextbookGradesTool,
@@ -623,6 +540,108 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         field: input.field,
         value: validation.data, // Use validated/fixed data
         preview: input.preview,
+      },
+      status: 'success',
+    };
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(result),
+        },
+      ],
+    };
+  }
+
+  // Handle attach_file tool
+  if (name === 'attach_file') {
+    const { filePath, fileType, description } = args as {
+      filePath: string;
+      fileType: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
+      description?: string;
+    };
+
+    // Get absolute path to the file in the session workspace
+    const absolutePath = path.resolve(process.cwd(), filePath);
+
+    // Check if file exists
+    if (!fs.existsSync(absolutePath)) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: {
+                error: `File not found: ${filePath}`,
+              },
+              status: 'error',
+            } satisfies WriteOutputResult),
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    // Get file stats
+    const stats = fs.statSync(absolutePath);
+    const fileName = path.basename(filePath);
+
+    // Infer MIME type from file extension
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      '.md': 'text/markdown',
+      '.txt': 'text/plain',
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.ogg': 'audio/ogg',
+      '.m4a': 'audio/mp4',
+      '.ppt': 'application/vnd.ms-powerpoint',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      '.pdf': 'application/pdf',
+    };
+    const mimeType = mimeTypes[ext] || 'application/octet-stream';
+
+    // Create attachment metadata
+    // Note: fileId will be generated by the backend when the file is actually copied to persistent storage
+    // For now, we use a placeholder that includes the file path
+    const attachmentId = randomUUID();
+    const fileId = randomUUID(); // Temporary ID, backend will assign real one
+
+    // Format file size for preview
+    const formatBytes = (bytes: number): string => {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    // Create attachment object
+    const attachment: Partial<LessonPlanAttachment> = {
+      id: attachmentId,
+      fileId, // Placeholder, backend will replace
+      fileName,
+      fileType,
+      mimeType,
+      size: stats.size,
+      downloadUrl: `/api/v1/files/${fileId}/download`, // Placeholder URL
+      uploadedAt: new Date().toISOString(),
+      description,
+    };
+
+    // Add metadata about the original file path for backend processing
+    // Send absolute path so the backend can copy the file directly
+    const attachmentWithPath = {
+      ...attachment,
+      _originalPath: absolutePath, // Absolute path to file in workspace
+    };
+
+    // Return result in the same format as write_output
+    // This will trigger an output_update event with field='attachments'
+    const result: WriteOutputResult = {
+      data: {
+        field: 'attachments',
+        value: [attachmentWithPath], // Single attachment in array
+        preview: `📎 ${fileName} (${formatBytes(stats.size)})`,
       },
       status: 'success',
     };

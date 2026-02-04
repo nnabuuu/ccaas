@@ -58,11 +58,8 @@ export const api = {
   },
 
   // List all lesson plans
-  async listLessonPlans(tenantId?: string): Promise<LessonPlan[]> {
-    const url = tenantId
-      ? `${API_BASE}/lesson-plans?tenantId=${encodeURIComponent(tenantId)}`
-      : `${API_BASE}/lesson-plans`
-    const response = await fetch(url)
+  async listLessonPlans(): Promise<LessonPlan[]> {
+    const response = await fetch(`${API_BASE}/lesson-plans`)
     return handleResponse<LessonPlan[]>(response)
   },
 
@@ -132,6 +129,37 @@ export const api = {
       body: JSON.stringify(updates),
     })
     return handleResponse<Skill>(response)
+  },
+
+  // Add attachments to lesson plan
+  async addAttachments(
+    planId: string,
+    attachments: Array<{
+      fileId: string
+      fileName: string
+      fileType?: string
+      mimeType?: string
+      size?: number
+      description?: string
+      _originalPath?: string
+    }>,
+    sessionId: string,
+  ): Promise<void> {
+    for (const attachment of attachments) {
+      const response = await fetch(`${API_BASE}/lesson-plans/${planId}/attachments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-Id': sessionId,
+        },
+        body: JSON.stringify(attachment),
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new ApiError(response.status, error.error || `Failed to add attachment: ${attachment.fileName}`)
+      }
+    }
   },
 }
 

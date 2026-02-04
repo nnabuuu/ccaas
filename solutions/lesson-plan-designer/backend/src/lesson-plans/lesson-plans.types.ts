@@ -1,114 +1,127 @@
-import { IsString, IsOptional, IsArray, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsObject, IsUUID, IsIn, IsArray, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
-// Domain types
-export interface LearningObjective {
-  id: string;
-  description: string;
-  bloomLevel: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
-  assessmentCriteria?: string;
-}
-
-export interface Standard {
-  id: string;
-  code: string;
-  description: string;
-}
-
-export interface Material {
-  id: string;
-  name: string;
-  type: 'textbook' | 'handout' | 'digital' | 'manipulative' | 'other';
-  url?: string;
-  notes?: string;
-}
-
-export interface Activity {
-  id: string;
-  title: string;
-  description: string;
-  duration: number;
-  type: 'introduction' | 'direct-instruction' | 'guided-practice' | 'independent-practice' | 'group' | 'assessment' | 'closure';
-  instructions: string[];
-  materials?: string[];
-  teacherNotes?: string;
-}
-
-export interface Assessment {
-  formative: string[];
-  summative: string[];
-  rubric?: string;
-}
-
-export interface Differentiation {
-  struggling: string[];
-  onLevel: string[];
-  advanced: string[];
-  ell?: string[];
-  accommodations?: string[];
-}
-
-export interface LessonPlan {
-  id: string;
-  tenantId: string;
-  title: string;
-  subject: string;
-  gradeLevel: string;
-  duration: string;
-  // Textbook information
-  publisher?: string;
-  volume?: string;
-  chapterId?: number;
-  chapterTitle?: string;
-  // Content
-  objectives: LearningObjective[];
-  standards: Standard[];
-  materials: Material[];
-  activities: Activity[];
-  assessment: Assessment;
-  differentiation: Differentiation;
-  status: 'draft' | 'review' | 'published';
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Sync fields
+// Fields that can be synced via write_output
 export const SYNC_FIELDS = [
-  'title', 'subject', 'gradeLevel', 'duration',
-  'publisher', 'volume', 'chapterId', 'chapterTitle',
-  'objectives', 'standards', 'materials', 'activities',
-  'assessment', 'differentiation',
+  'title',
+  'subject',
+  'gradeLevel',
+  'durationMinutes',
+  'lessonPlanCode',
+  'objectives',
+  'content',
+  'teachingMethods',
+  'materialsNeeded',
+  'assessmentMethods',
+  'curriculumRequirements',
+  'studentAnalysis',
+  'extraProperties',
+  'status',
+  'attachments',
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
 
-// Database row type
-export interface LessonPlanRow {
+export type LessonPlanStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface CurriculumStandard {
+  id: number;
+  standardCode: string;
+  title: string;
+  stage: string;
+  standardType: string;
+  contentDomain: string;
+}
+
+export interface LessonPlanAttachment {
   id: string;
-  tenant_id: string;
+  fileId: string;
+  fileName: string;
+  fileType: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
+  mimeType: string;
+  size: number;
+  downloadUrl: string;
+  uploadedAt: string;
+  description?: string;
+}
+
+export interface LessonPlan {
+  id: string;
   title: string;
   subject: string;
-  grade_level: string;
-  duration: string;
+  gradeLevel: number;
+  durationMinutes: number;
+  lessonPlanCode: string | null;
+  status: LessonPlanStatus;
+
+  // Textbook metadata
+  publisher: string | null;
+  volume: string | null;
+  chapterId: number | null;
+  chapterTitle: string | null;
+
+  // Curriculum standards (structured array, stored as JSON)
+  curriculumRequirements: CurriculumStandard[];
+
+  // 6 content fields (all plain text)
+  objectives: string | null;
+  studentAnalysis: string | null;
+  materialsNeeded: string | null;
+  content: string | null;
+  assessmentMethods: string | null;
+  teachingMethods: string | null;
+
+  // Extra properties (key-value pairs)
+  extraProperties: Record<string, string>;
+
+  // File attachments
+  attachments: LessonPlanAttachment[];
+
+  // Audit fields
+  createBy: string | null;
+  createTime: string;
+  updateBy: string | null;
+  updateTime: string;
+  remark: string | null;
+  deleted: number;
+}
+
+// Database row type (snake_case)
+export interface LessonPlanRow {
+  id: string;
+  title: string;
+  subject: string;
+  grade_level: number;
+  duration_minutes: number;
+  lesson_plan_code: string | null;
+  status: string;
+
   publisher: string | null;
   volume: string | null;
   chapter_id: number | null;
   chapter_title: string | null;
-  objectives: string;
-  standards: string;
-  materials: string;
-  activities: string;
-  assessment: string;
-  differentiation: string;
-  status: string;
-  created_at: string;
-  updated_at: string;
+
+  curriculum_requirements: string | null; // JSON string of CurriculumStandard[]
+  objectives: string | null;
+  student_analysis: string | null;
+  materials_needed: string | null;
+  content: string | null;
+  assessment_methods: string | null;
+  teaching_methods: string | null;
+
+  extra_properties: string | null; // JSON string
+  attachments: string | null; // JSON string of LessonPlanAttachment[]
+
+  create_by: string | null;
+  create_time: string;
+  update_by: string | null;
+  update_time: string;
+  remark: string | null;
+  deleted: number;
 }
 
 // DTOs
 export class CreateLessonPlanDto {
-  @IsString()
-  tenantId: string;
-
   @IsString()
   title: string;
 
@@ -117,12 +130,16 @@ export class CreateLessonPlanDto {
   subject?: string;
 
   @IsOptional()
-  @IsString()
-  gradeLevel?: string;
+  @IsNumber()
+  gradeLevel?: number;
+
+  @IsOptional()
+  @IsNumber()
+  durationMinutes?: number;
 
   @IsOptional()
   @IsString()
-  duration?: string;
+  lessonPlanCode?: string;
 
   @IsOptional()
   @IsString()
@@ -133,6 +150,7 @@ export class CreateLessonPlanDto {
   volume?: string;
 
   @IsOptional()
+  @IsNumber()
   chapterId?: number;
 
   @IsOptional()
@@ -150,55 +168,71 @@ export class UpdateLessonPlanDto {
   subject?: string;
 
   @IsOptional()
-  @IsString()
-  gradeLevel?: string;
+  @IsNumber()
+  gradeLevel?: number;
+
+  @IsOptional()
+  @IsNumber()
+  durationMinutes?: number;
 
   @IsOptional()
   @IsString()
-  duration?: string;
+  lessonPlanCode?: string | null;
 
   @IsOptional()
   @IsString()
-  publisher?: string;
+  status?: LessonPlanStatus;
 
   @IsOptional()
   @IsString()
-  volume?: string;
-
-  @IsOptional()
-  chapterId?: number;
+  publisher?: string | null;
 
   @IsOptional()
   @IsString()
-  chapterTitle?: string;
+  volume?: string | null;
 
   @IsOptional()
-  @IsArray()
-  objectives?: LearningObjective[];
+  @IsNumber()
+  chapterId?: number | null;
 
   @IsOptional()
-  @IsArray()
-  standards?: Standard[];
+  @IsString()
+  chapterTitle?: string | null;
 
   @IsOptional()
-  @IsArray()
-  materials?: Material[];
+  curriculumRequirements?: CurriculumStandard[];
 
   @IsOptional()
-  @IsArray()
-  activities?: Activity[];
+  @IsString()
+  objectives?: string | null;
+
+  @IsOptional()
+  @IsString()
+  studentAnalysis?: string | null;
+
+  @IsOptional()
+  @IsString()
+  materialsNeeded?: string | null;
+
+  @IsOptional()
+  @IsString()
+  content?: string | null;
+
+  @IsOptional()
+  @IsString()
+  assessmentMethods?: string | null;
+
+  @IsOptional()
+  @IsString()
+  teachingMethods?: string | null;
 
   @IsOptional()
   @IsObject()
-  assessment?: Assessment;
-
-  @IsOptional()
-  @IsObject()
-  differentiation?: Differentiation;
+  extraProperties?: Record<string, string>;
 
   @IsOptional()
   @IsString()
-  status?: 'draft' | 'review' | 'published';
+  remark?: string | null;
 }
 
 export class PatchFieldDto {
@@ -206,4 +240,34 @@ export class PatchFieldDto {
   field: SyncField;
 
   value: unknown;
+}
+
+export class AddAttachmentDto {
+  @IsUUID()
+  fileId: string;
+
+  @IsOptional()
+  @IsString()
+  fileName?: string;
+
+  @IsOptional()
+  @IsIn(['script', 'audio', 'ppt', 'pdf', 'other'])
+  fileType?: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  // MCP-provided metadata (when adding attachment from MCP)
+  @IsOptional()
+  @IsString()
+  _originalPath?: string;  // Relative path in session workspace
+
+  @IsOptional()
+  @IsString()
+  mimeType?: string;
+
+  @IsOptional()
+  @IsNumber()
+  size?: number;
 }

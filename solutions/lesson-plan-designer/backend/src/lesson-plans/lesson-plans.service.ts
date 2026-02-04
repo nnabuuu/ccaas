@@ -1,62 +1,105 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
+import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
 import { DATABASE_TOKEN } from '../database/database.module';
 import {
   LessonPlan,
   LessonPlanRow,
+  CurriculumStandard,
   CreateLessonPlanDto,
   UpdateLessonPlanDto,
   SyncField,
+  LessonPlanStatus,
+  LessonPlanAttachment,
+  AddAttachmentDto,
 } from './lesson-plans.types';
+
+const UPLOAD_DIR = path.join(__dirname, '..', '..', '..', 'uploads', 'attachments');
 
 @Injectable()
 export class LessonPlansService {
   constructor(
     @Inject(DATABASE_TOKEN) private readonly db: Database.Database,
-  ) {}
+  ) {
+    // Ensure upload directory exists
+    fs.mkdir(UPLOAD_DIR, { recursive: true })
+      .catch(err => console.error('Failed to create upload directory:', err));
+  }
 
   private rowToLessonPlan(row: LessonPlanRow): LessonPlan {
+    let extraProperties: Record<string, string> = {};
+    if (row.extra_properties) {
+      try {
+        extraProperties = JSON.parse(row.extra_properties);
+      } catch {
+        extraProperties = {};
+      }
+    }
+
+    let curriculumRequirements: CurriculumStandard[] = [];
+    if (row.curriculum_requirements) {
+      try {
+        curriculumRequirements = JSON.parse(row.curriculum_requirements);
+      } catch {
+        curriculumRequirements = [];
+      }
+    }
+
+    let attachments: LessonPlanAttachment[] = [];
+    if (row.attachments) {
+      try {
+        attachments = JSON.parse(row.attachments);
+      } catch {
+        attachments = [];
+      }
+    }
+
     return {
       id: row.id,
-      tenantId: row.tenant_id,
       title: row.title,
       subject: row.subject,
       gradeLevel: row.grade_level,
-      duration: row.duration,
-      publisher: row.publisher || undefined,
-      volume: row.volume || undefined,
-      chapterId: row.chapter_id || undefined,
-      chapterTitle: row.chapter_title || undefined,
-      objectives: JSON.parse(row.objectives),
-      standards: JSON.parse(row.standards),
-      materials: JSON.parse(row.materials),
-      activities: JSON.parse(row.activities),
-      assessment: JSON.parse(row.assessment),
-      differentiation: JSON.parse(row.differentiation),
-      status: row.status as LessonPlan['status'],
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      durationMinutes: row.duration_minutes,
+      lessonPlanCode: row.lesson_plan_code,
+      status: row.status as LessonPlanStatus,
+
+      publisher: row.publisher,
+      volume: row.volume,
+      chapterId: row.chapter_id,
+      chapterTitle: row.chapter_title,
+
+      curriculumRequirements,
+      objectives: row.objectives,
+      studentAnalysis: row.student_analysis,
+      materialsNeeded: row.materials_needed,
+      content: row.content,
+      assessmentMethods: row.assessment_methods,
+      teachingMethods: row.teaching_methods,
+
+      extraProperties,
+      attachments,
+
+      createBy: row.create_by,
+      createTime: row.create_time,
+      updateBy: row.update_by,
+      updateTime: row.update_time,
+      remark: row.remark,
+      deleted: row.deleted,
     };
   }
 
-  findAll(tenantId?: string): LessonPlan[] {
-    let rows: LessonPlanRow[];
-    if (tenantId) {
-      rows = this.db
-        .prepare('SELECT * FROM lesson_plans WHERE tenant_id = ? ORDER BY updated_at DESC')
-        .all(tenantId) as LessonPlanRow[];
-    } else {
-      rows = this.db
-        .prepare('SELECT * FROM lesson_plans ORDER BY updated_at DESC')
-        .all() as LessonPlanRow[];
-    }
+  findAll(): LessonPlan[] {
+    const rows = this.db
+      .prepare('SELECT * FROM lesson_plans WHERE deleted = 0 ORDER BY update_time DESC')
+      .all() as LessonPlanRow[];
     return rows.map((row) => this.rowToLessonPlan(row));
   }
 
   findById(id: string): LessonPlan | null {
     const row = this.db
-      .prepare('SELECT * FROM lesson_plans WHERE id = ?')
+      .prepare('SELECT * FROM lesson_plans WHERE id = ? AND deleted = 0')
       .get(id) as LessonPlanRow | undefined;
     return row ? this.rowToLessonPlan(row) : null;
   }
@@ -73,63 +116,32 @@ export class LessonPlansService {
     const now = new Date().toISOString();
     const id = uuidv4();
 
-    const plan: LessonPlan = {
-      id,
-      tenantId: dto.tenantId,
-      title: dto.title,
-      subject: dto.subject || '',
-      gradeLevel: dto.gradeLevel || '',
-      duration: dto.duration || '',
-      publisher: dto.publisher,
-      volume: dto.volume,
-      chapterId: dto.chapterId,
-      chapterTitle: dto.chapterTitle,
-      objectives: [],
-      standards: [],
-      materials: [],
-      activities: [],
-      assessment: { formative: [], summative: [] },
-      differentiation: { struggling: [], onLevel: [], advanced: [] },
-      status: 'draft',
-      createdAt: now,
-      updatedAt: now,
-    };
-
     this.db.prepare(`
       INSERT INTO lesson_plans (
-        id, tenant_id, title, subject, grade_level, duration,
-        publisher, volume, chapter_id, chapter_title,
-        objectives, standards, materials, activities,
-        assessment, differentiation, status, created_at, updated_at
+        id, title, subject, grade_level, duration_minutes,
+        lesson_plan_code, publisher, volume, chapter_id, chapter_title,
+        status, create_time, update_time
       ) VALUES (
-        ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?,
-        ?, ?, ?, ?,
-        ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?,
+        'DRAFT', ?, ?
       )
     `).run(
-      plan.id,
-      plan.tenantId,
-      plan.title,
-      plan.subject,
-      plan.gradeLevel,
-      plan.duration,
-      plan.publisher || null,
-      plan.volume || null,
-      plan.chapterId || null,
-      plan.chapterTitle || null,
-      JSON.stringify(plan.objectives),
-      JSON.stringify(plan.standards),
-      JSON.stringify(plan.materials),
-      JSON.stringify(plan.activities),
-      JSON.stringify(plan.assessment),
-      JSON.stringify(plan.differentiation),
-      plan.status,
-      plan.createdAt,
-      plan.updatedAt,
+      id,
+      dto.title,
+      dto.subject || '',
+      dto.gradeLevel || 1,
+      dto.durationMinutes || 45,
+      dto.lessonPlanCode || null,
+      dto.publisher || null,
+      dto.volume || null,
+      dto.chapterId || null,
+      dto.chapterTitle || null,
+      now,
+      now,
     );
 
-    return plan;
+    return this.findByIdOrFail(id);
   }
 
   update(id: string, dto: UpdateLessonPlanDto): LessonPlan {
@@ -141,45 +153,57 @@ export class LessonPlansService {
       title: dto.title ?? existing.title,
       subject: dto.subject ?? existing.subject,
       gradeLevel: dto.gradeLevel ?? existing.gradeLevel,
-      duration: dto.duration ?? existing.duration,
-      publisher: dto.publisher ?? existing.publisher,
-      volume: dto.volume ?? existing.volume,
-      chapterId: dto.chapterId ?? existing.chapterId,
-      chapterTitle: dto.chapterTitle ?? existing.chapterTitle,
-      objectives: dto.objectives ?? existing.objectives,
-      standards: dto.standards ?? existing.standards,
-      materials: dto.materials ?? existing.materials,
-      activities: dto.activities ?? existing.activities,
-      assessment: dto.assessment ?? existing.assessment,
-      differentiation: dto.differentiation ?? existing.differentiation,
+      durationMinutes: dto.durationMinutes ?? existing.durationMinutes,
+      lessonPlanCode: dto.lessonPlanCode !== undefined ? dto.lessonPlanCode : existing.lessonPlanCode,
       status: dto.status ?? existing.status,
-      updatedAt: now,
+      publisher: dto.publisher !== undefined ? dto.publisher : existing.publisher,
+      volume: dto.volume !== undefined ? dto.volume : existing.volume,
+      chapterId: dto.chapterId !== undefined ? dto.chapterId : existing.chapterId,
+      chapterTitle: dto.chapterTitle !== undefined ? dto.chapterTitle : existing.chapterTitle,
+      curriculumRequirements: dto.curriculumRequirements !== undefined ? dto.curriculumRequirements : existing.curriculumRequirements,
+      objectives: dto.objectives !== undefined ? dto.objectives : existing.objectives,
+      studentAnalysis: dto.studentAnalysis !== undefined ? dto.studentAnalysis : existing.studentAnalysis,
+      materialsNeeded: dto.materialsNeeded !== undefined ? dto.materialsNeeded : existing.materialsNeeded,
+      content: dto.content !== undefined ? dto.content : existing.content,
+      assessmentMethods: dto.assessmentMethods !== undefined ? dto.assessmentMethods : existing.assessmentMethods,
+      teachingMethods: dto.teachingMethods !== undefined ? dto.teachingMethods : existing.teachingMethods,
+      extraProperties: dto.extraProperties ?? existing.extraProperties,
+      remark: dto.remark !== undefined ? dto.remark : existing.remark,
+      updateTime: now,
     };
 
     this.db.prepare(`
       UPDATE lesson_plans SET
-        title = ?, subject = ?, grade_level = ?, duration = ?,
+        title = ?, subject = ?, grade_level = ?, duration_minutes = ?,
+        lesson_plan_code = ?, status = ?,
         publisher = ?, volume = ?, chapter_id = ?, chapter_title = ?,
-        objectives = ?, standards = ?, materials = ?, activities = ?,
-        assessment = ?, differentiation = ?, status = ?, updated_at = ?
+        curriculum_requirements = ?, objectives = ?, student_analysis = ?,
+        materials_needed = ?, content = ?, assessment_methods = ?,
+        teaching_methods = ?, extra_properties = ?, attachments = ?,
+        remark = ?, update_time = ?
       WHERE id = ?
     `).run(
       updated.title,
       updated.subject,
       updated.gradeLevel,
-      updated.duration,
-      updated.publisher || null,
-      updated.volume || null,
-      updated.chapterId || null,
-      updated.chapterTitle || null,
-      JSON.stringify(updated.objectives),
-      JSON.stringify(updated.standards),
-      JSON.stringify(updated.materials),
-      JSON.stringify(updated.activities),
-      JSON.stringify(updated.assessment),
-      JSON.stringify(updated.differentiation),
+      updated.durationMinutes,
+      updated.lessonPlanCode,
       updated.status,
-      updated.updatedAt,
+      updated.publisher,
+      updated.volume,
+      updated.chapterId,
+      updated.chapterTitle,
+      JSON.stringify(updated.curriculumRequirements),
+      updated.objectives,
+      updated.studentAnalysis,
+      updated.materialsNeeded,
+      updated.content,
+      updated.assessmentMethods,
+      updated.teachingMethods,
+      JSON.stringify(updated.extraProperties),
+      JSON.stringify(updated.attachments),
+      updated.remark,
+      updated.updateTime,
       id,
     );
 
@@ -194,24 +218,27 @@ export class LessonPlansService {
       title: 'title',
       subject: 'subject',
       gradeLevel: 'grade_level',
-      duration: 'duration',
-      publisher: 'publisher',
-      volume: 'volume',
-      chapterId: 'chapter_id',
-      chapterTitle: 'chapter_title',
+      durationMinutes: 'duration_minutes',
+      lessonPlanCode: 'lesson_plan_code',
       objectives: 'objectives',
-      standards: 'standards',
-      materials: 'materials',
-      activities: 'activities',
-      assessment: 'assessment',
-      differentiation: 'differentiation',
+      content: 'content',
+      teachingMethods: 'teaching_methods',
+      materialsNeeded: 'materials_needed',
+      assessmentMethods: 'assessment_methods',
+      curriculumRequirements: 'curriculum_requirements',
+      studentAnalysis: 'student_analysis',
+      extraProperties: 'extra_properties',
+      status: 'status',
+      attachments: 'attachments',
     };
 
     const column = fieldToColumn[field];
-    const isJsonField = ['objectives', 'standards', 'materials', 'activities', 'assessment', 'differentiation'].includes(field);
-    const dbValue = isJsonField ? JSON.stringify(value) : value;
+    // extraProperties, curriculumRequirements, and attachments need JSON serialization
+    const dbValue = (field === 'extraProperties' || field === 'curriculumRequirements' || field === 'attachments')
+      ? JSON.stringify(value)
+      : value;
 
-    this.db.prepare(`UPDATE lesson_plans SET ${column} = ?, updated_at = ? WHERE id = ?`).run(
+    this.db.prepare(`UPDATE lesson_plans SET ${column} = ?, update_time = ? WHERE id = ?`).run(
       dbValue,
       now,
       id,
@@ -223,5 +250,179 @@ export class LessonPlansService {
   delete(id: string): boolean {
     const result = this.db.prepare('DELETE FROM lesson_plans WHERE id = ?').run(id);
     return result.changes > 0;
+  }
+
+  // Attachment methods
+  addAttachment(
+    lessonPlanId: string,
+    dto: AddAttachmentDto,
+  ): LessonPlan {
+    const plan = this.findByIdOrFail(lessonPlanId);
+
+    const attachment: LessonPlanAttachment = {
+      id: uuidv4(),
+      fileId: dto.fileId,
+      fileName: dto.fileName || `file-${dto.fileId}`,
+      fileType: dto.fileType || this.inferFileType(dto.fileName || ''),
+      mimeType: this.inferMimeType(dto.fileName || ''),
+      size: 0, // Size would need to be provided or fetched from file system
+      downloadUrl: `/api/v1/files/${dto.fileId}/download`,
+      uploadedAt: new Date().toISOString(),
+      description: dto.description,
+    };
+
+    const attachments = [...(plan.attachments || []), attachment];
+
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
+      JSON.stringify(attachments),
+      now,
+      lessonPlanId,
+    );
+
+    return this.findByIdOrFail(lessonPlanId);
+  }
+
+  removeAttachment(lessonPlanId: string, attachmentId: string): LessonPlan {
+    const plan = this.findByIdOrFail(lessonPlanId);
+    const attachments = (plan.attachments || []).filter(a => a.id !== attachmentId);
+
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
+      JSON.stringify(attachments),
+      now,
+      lessonPlanId,
+    );
+
+    return this.findByIdOrFail(lessonPlanId);
+  }
+
+  getAttachments(lessonPlanId: string): LessonPlanAttachment[] {
+    const plan = this.findByIdOrFail(lessonPlanId);
+    return plan.attachments || [];
+  }
+
+  /**
+   * Add attachment from MCP _originalPath (absolute path to file in workspace)
+   */
+  async addAttachmentFromMcp(
+    lessonPlanId: string,
+    sessionId: string,
+    dto: AddAttachmentDto,
+  ): Promise<LessonPlan> {
+    const { _originalPath, fileId, fileName, fileType, mimeType, size, description } = dto;
+
+    if (!_originalPath || !fileId || !fileName) {
+      throw new BadRequestException('Missing required fields: _originalPath, fileId, fileName');
+    }
+
+    // _originalPath is now an absolute path from MCP server
+    const sourcePath = _originalPath;
+
+    // Verify file exists
+    try {
+      await fs.access(sourcePath);
+    } catch {
+      throw new NotFoundException(`Source file not found: ${_originalPath}`);
+    }
+
+    // Copy file to persistent storage
+    const ext = path.extname(fileName);
+    const destPath = path.join(UPLOAD_DIR, `${fileId}${ext}`);
+    await fs.copyFile(sourcePath, destPath);
+
+    // Create attachment metadata
+    const attachment: LessonPlanAttachment = {
+      id: uuidv4(),
+      fileId,
+      fileName,
+      fileType: fileType || this.inferFileType(fileName),
+      mimeType: mimeType || this.inferMimeType(fileName),
+      size: size || 0,
+      downloadUrl: `/api/v1/files/${fileId}/download`,
+      uploadedAt: new Date().toISOString(),
+      description,
+    };
+
+    // Add to lesson plan
+    return this.addAttachmentToLessonPlan(lessonPlanId, attachment);
+  }
+
+  /**
+   * Common: Add attachment to lesson plan
+   */
+  private addAttachmentToLessonPlan(
+    lessonPlanId: string,
+    attachment: LessonPlanAttachment,
+  ): LessonPlan {
+    const plan = this.findByIdOrFail(lessonPlanId);
+    const attachments = [...(plan.attachments || []), attachment];
+
+    const now = new Date().toISOString();
+    this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
+      JSON.stringify(attachments),
+      now,
+      lessonPlanId,
+    );
+
+    return this.findByIdOrFail(lessonPlanId);
+  }
+
+  /**
+   * Get file metadata for download
+   */
+  async getFileMetadata(fileId: string): Promise<{ filePath: string; fileName: string; mimeType: string }> {
+    // Search all lesson plans for the attachment with this fileId
+    const allPlans = this.findAll();
+
+    for (const plan of allPlans) {
+      const attachment = plan.attachments?.find(a => a.fileId === fileId);
+      if (attachment) {
+        const ext = path.extname(attachment.fileName);
+        const filePath = path.join(UPLOAD_DIR, `${fileId}${ext}`);
+
+        // Verify file exists
+        try {
+          await fs.access(filePath);
+        } catch {
+          throw new NotFoundException(`File not found: ${fileId}`);
+        }
+
+        return {
+          filePath,
+          fileName: attachment.fileName,
+          mimeType: attachment.mimeType,
+        };
+      }
+    }
+
+    throw new NotFoundException(`Attachment not found for fileId: ${fileId}`);
+  }
+
+  // Helper: Infer file type from file name or MIME type
+  private inferFileType(fileName: string): 'script' | 'audio' | 'ppt' | 'pdf' | 'other' {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    if (ext === 'md' || ext === 'txt') return 'script';
+    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return 'audio';
+    if (['ppt', 'pptx'].includes(ext)) return 'ppt';
+    if (ext === 'pdf') return 'pdf';
+    return 'other';
+  }
+
+  // Helper: Infer MIME type from file name
+  private inferMimeType(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    const mimeTypes: Record<string, string> = {
+      'md': 'text/markdown',
+      'txt': 'text/plain',
+      'mp3': 'audio/mpeg',
+      'wav': 'audio/wav',
+      'ogg': 'audio/ogg',
+      'm4a': 'audio/mp4',
+      'ppt': 'application/vnd.ms-powerpoint',
+      'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'pdf': 'application/pdf',
+    };
+    return mimeTypes[ext] || 'application/octet-stream';
   }
 }
