@@ -103,6 +103,19 @@ Before starting workflows, verify the CLI is ready:
 - If user has added sources to NotebookLM and asks for slides → Use **NotebookLM**
 - If unclear, prefer **lesson-plan-pptx** for teaching context
 
+## Response Language
+
+**IMPORTANT:** Always respond in the same language as the user's input.
+
+- If user writes in **Chinese** (中文), respond in Chinese
+- If user writes in **English**, respond in English
+- Match the user's language for all explanations, progress updates, and artifact descriptions
+- This applies to all responses, including status messages, error handling, and workflow explanations
+
+**Examples:**
+- User: "生成一个关于数学的播客" → Respond in Chinese: "好的，我来为您创建一个关于数学的NotebookLM播客..."
+- User: "Create a podcast about math" → Respond in English: "I'll create a NotebookLM podcast about math..."
+
 ## Autonomy Rules
 
 **Run automatically (no confirmation):**
