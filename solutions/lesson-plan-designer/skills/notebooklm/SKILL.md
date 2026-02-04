@@ -105,16 +105,76 @@ Before starting workflows, verify the CLI is ready:
 
 ## Response Language
 
-**IMPORTANT:** Always respond in the same language as the user's input.
+**CRITICAL:** Match the user's input language in ALL aspects of the workflow.
 
+### 1. Claude's Responses
 - If user writes in **Chinese** (中文), respond in Chinese
 - If user writes in **English**, respond in English
 - Match the user's language for all explanations, progress updates, and artifact descriptions
-- This applies to all responses, including status messages, error handling, and workflow explanations
 
-**Examples:**
-- User: "生成一个关于数学的播客" → Respond in Chinese: "好的，我来为您创建一个关于数学的NotebookLM播客..."
-- User: "Create a podcast about math" → Respond in English: "I'll create a NotebookLM podcast about math..."
+### 2. NotebookLM Instructions (Most Important!)
+When calling `notebooklm generate` commands, **the instructions parameter MUST be in the same language as the user's input**:
+
+**Chinese input example:**
+```bash
+# ❌ Wrong - English instructions when user spoke Chinese
+notebooklm generate audio "Focus on key mathematical concepts"
+
+# ✅ Correct - Chinese instructions
+notebooklm generate audio "重点讲解关键数学概念，使用中文，适合中国学生"
+```
+
+**English input example:**
+```bash
+# ✅ Correct - English instructions
+notebooklm generate audio "Focus on key mathematical concepts, explain in English"
+```
+
+### 3. Generated Content Language
+The instructions must explicitly specify the target language to ensure NotebookLM generates content in the correct language:
+
+- **Chinese user** → Instructions like: "用中文讲解...", "以中文生成...", "适合中文用户"
+- **English user** → Instructions like: "Explain in English...", "Generate in English...", "For English speakers"
+
+### 4. Complete Workflow Example
+
+**User says (Chinese):** "生成一个关于一元一次方程的播客"
+
+```bash
+# Step 1: Create notebook (title can be Chinese)
+notebooklm create "一元一次方程教学"
+
+# Step 2: Add sources
+notebooklm source add "https://..."
+
+# Step 3: Generate with Chinese instructions
+notebooklm generate audio "请用中文讲解一元一次方程的概念、解法和应用，语言生动，适合初中生理解"
+
+# Step 4: Respond to user in Chinese
+# "正在生成关于一元一次方程的中文播客，大约需要5-8分钟..."
+```
+
+**User says (English):** "Create a podcast about linear equations"
+
+```bash
+# Step 1: Create notebook (title in English)
+notebooklm create "Linear Equations Teaching"
+
+# Step 2: Add sources
+notebooklm source add "https://..."
+
+# Step 3: Generate with English instructions
+notebooklm generate audio "Explain linear equations in English, covering concepts, solving methods, and applications in an engaging way for middle school students"
+
+# Step 4: Respond to user in English
+# "Generating an English podcast about linear equations, will take about 5-8 minutes..."
+```
+
+### 5. Language Detection Rules
+- Detect user's language from their **most recent message**
+- If user switches language mid-conversation, switch accordingly
+- If unclear, default to English
+- For mixed language input, use the **primary language** (the one with more content)
 
 ## Autonomy Rules
 
