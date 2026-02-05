@@ -20,10 +20,12 @@ export function ChatPanel({
   thinkingContent = '',
   todoItems = [],
   todoStats = null,
+  activeSubAgents = [],
   onSendMessage,
   onCancel,
   renderMessage,
   renderQuickActions,
+  renderActivityDetails,
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -96,11 +98,17 @@ export function ChatPanel({
       {/* Activity Status Line */}
       <AgentActivityLine
         isProcessing={isProcessing}
+        isThinking={isThinking}
+        thinkingContent={thinkingContent}
         todoItems={todoItems}
         todoStats={todoStats}
         activeTools={activeTools}
+        activeSubAgents={activeSubAgents}
         onCancel={onCancel}
       />
+
+      {/* Optional custom activity details slot */}
+      {renderActivityDetails && renderActivityDetails()}
 
       {/* Quick Actions slot */}
       {renderQuickActions && (

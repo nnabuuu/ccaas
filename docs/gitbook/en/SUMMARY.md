@@ -24,6 +24,8 @@
 * [MCP Server Development](guide/mcp-server.md)
 * [write\_output Best Practices](guide/write-output.md)
 * [Frontend Integration Guide](guide/frontend.md)
+* [Chat Integration with React SDK](guide/chat-integration.md)
+* [File Explorer Component](guide/file-explorer.md)
 
 ## API Reference <a href="#api" id="api"></a>
 

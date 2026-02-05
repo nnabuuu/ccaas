@@ -13,6 +13,9 @@ import type {
   TokenUsagePayload,
   TodoUpdatePayload,
   EventTodoItem,
+  ActiveSubAgent,
+  SubAgentStartedEvent,
+  SubAgentCompletedEvent,
 } from '@ccaas/common'
 
 /**
@@ -31,6 +34,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   const [tokenUsage, setTokenUsage] = useState<UseAgentStatusReturn['tokenUsage']>(null)
   const [todoItems, setTodoItems] = useState<EventTodoItem[]>([])
   const [todoStats, setTodoStats] = useState<TodoStats>({ completed: 0, inProgress: 0, pending: 0, total: 0 })
+  const [activeSubAgents, setActiveSubAgents] = useState<ActiveSubAgent[]>([])
 
   const isProcessing = agentStatus === 'thinking' || agentStatus === 'running' ||
     agentStatus === 'exploring' || agentStatus === 'executing'
@@ -54,6 +58,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     setThinkingContent('')
     setTodoItems([])
     setTodoStats({ completed: 0, inProgress: 0, pending: 0, total: 0 })
+    setActiveSubAgents([])
   }, [])
 
   useEffect(() => {
@@ -119,11 +124,41 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       })
     }
 
+    const onSubAgentStarted = (data: SubAgentStartedEvent) => {
+      const agent = data.payload
+      setActiveSubAgents(prev => {
+        // Check if already exists
+        const exists = prev.some(a => a.subAgentId === agent.subAgentId)
+        if (exists) return prev
+        return [...prev, agent]
+      })
+    }
+
+    const onSubAgentCompleted = (data: SubAgentCompletedEvent) => {
+      const { subAgentId, status } = data.payload
+      setActiveSubAgents(prev =>
+        prev.map(agent =>
+          agent.subAgentId === subAgentId
+            ? { ...agent, status: status as 'completed' | 'failed' }
+            : agent
+        )
+      )
+
+      // Remove completed/failed agents after 3 seconds
+      setTimeout(() => {
+        setActiveSubAgents(prev =>
+          prev.filter(agent => agent.subAgentId !== subAgentId)
+        )
+      }, 3000)
+    }
+
     socket.on('agent_status', onAgentStatus)
     socket.on('tool_activity', onToolActivity)
     socket.on('agent_thinking', onAgentThinking)
     socket.on('token_usage', onTokenUsage)
     socket.on('todo_update', onTodoUpdate)
+    socket.on('subagent_started', onSubAgentStarted)
+    socket.on('subagent_completed', onSubAgentCompleted)
 
     return () => {
       socket.off('agent_status', onAgentStatus)
@@ -131,6 +166,8 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       socket.off('agent_thinking', onAgentThinking)
       socket.off('token_usage', onTokenUsage)
       socket.off('todo_update', onTodoUpdate)
+      socket.off('subagent_started', onSubAgentStarted)
+      socket.off('subagent_completed', onSubAgentCompleted)
     }
   }, [connection.socket, handleComplete])
 
@@ -143,6 +180,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     tokenUsage,
     todoItems,
     todoStats,
+    activeSubAgents,
     currentActivity,
   }
 }

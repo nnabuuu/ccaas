@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { v4 as uuidv4 } from 'uuid'
+import { type ToolActivity } from '@ccaas/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { useSubAgentPolling } from './useSubAgentPolling'
 import { api, type SolutionConfig, type CcaasToolEvent } from '../utils/api'
@@ -19,7 +20,6 @@ import type {
   TokenUsageEvent,
   ExplorationActivityEvent,
   ContentBlock,
-  ToolActivity,
   TodoItem,
   TodoStats,
   ActiveSubAgent,
@@ -130,7 +130,7 @@ interface UseLessonPlanSessionReturn {
   modifiedFields: Set<SyncField>
 
   // Tool activity state
-  activeTools: Map<string, ToolActivityEvent>
+  activeTools: Map<string, ToolActivity>
   isThinking: boolean
   thinkingContent: string
   tokenUsage: TokenUsageEvent | null
@@ -189,7 +189,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const tokenUsageAccRef = useRef<MessageTokenUsage>(createEmptyTokenUsageAcc())
 
   // Tool activity state
-  const [activeTools, setActiveTools] = useState<Map<string, ToolActivityEvent>>(new Map())
+  const [activeTools, setActiveTools] = useState<Map<string, ToolActivity>>(new Map())
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingContent, setThinkingContent] = useState('')
   const [tokenUsage, setTokenUsage] = useState<TokenUsageEvent | null>(null)
@@ -482,18 +482,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       console.log('🔧 Tool:', data.payload.toolName, data.payload.phase, data.payload.description)
       const payload = data.payload
 
-      // Update active tools indicator
-      setActiveTools(prev => {
-        const updated = new Map(prev)
-        if (payload.phase === 'start') {
-          updated.set(payload.toolId, payload)
-        } else {
-          updated.delete(payload.toolId)
-        }
-        return updated
-      })
-
-      // Create ToolActivity for inline rendering
+      // Create ToolActivity for both inline rendering and active tools tracking
       const toolActivity: ToolActivity = {
         toolName: payload.toolName,
         toolId: payload.toolId,
@@ -507,6 +496,17 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         agentType: payload.agentType,
         nestingLevel: payload.nestingLevel,
       }
+
+      // Update active tools indicator
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        if (payload.phase === 'start') {
+          updated.set(payload.toolId, toolActivity)
+        } else {
+          updated.delete(payload.toolId)
+        }
+        return updated
+      })
 
       // Update content blocks
       const blocks = contentBlocksRef.current

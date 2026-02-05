@@ -10,59 +10,74 @@
  */
 
 import { useState, useCallback, useRef } from 'react'
+import {
+  ChatPanel,
+  MessageBubble,
+  ChatLayoutControls,
+} from '@ccaas/react-sdk'
 import { SkillsSidebar } from './components/SkillsSidebar'
-import { ChatPanel } from './components/ChatPanel'
 import { SkillEditor } from './components/SkillEditor'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { FileBrowserPanel } from './components/FileBrowserPanel'
-import { useRealSession } from './hooks/useRealSession'
+import { FileExplorer } from './components/FileExplorer/FileExplorer'
+import { useDemoSession } from './hooks/useDemoSession'
 import { useFileBrowser } from './hooks/useFileBrowser'
-import type { Skill, SkillFormData, ChatLayout } from './types'
+import type { Skill, SkillFormData } from './types'
 
 export default function App() {
+  const demoSession = useDemoSession()
   const {
     skills,
-    session,
+    skillsLoading: loading,
     connected,
     error,
-    loading,
+    sessionId,
     socket,
+    messages,
+    isProcessing,
+    sendMessage,
+    cancelProcessing,
+    activeTools,
+    isThinking,
+    thinkingContent,
     todoItems,
     todoStats,
-    activeTools,
+    activeSubAgents,
+    layout,
     toggleSkill,
     restartSession,
-    sendMessage,
     downloadFile,
-    cancelProcessing,
     refreshSkills,
     createSkill,
     updateSkill,
     deleteSkill,
     getSkillDetails,
-  } = useRealSession()
+    filesInMessages,
+  } = demoSession
 
   // File browser hook
   const fileBrowser = useFileBrowser({
-    sessionId: session.sessionId,
+    sessionId,
     socket,
   })
 
   // Sidebar state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
-  // Chat layout mode + resizable width
-  const DEFAULT_CHAT_WIDTH = 384   // w-96
+  // Chat layout mode + resizable width (migrated to SDK useChatLayout)
+  const DEFAULT_CHAT_WIDTH = 384 // w-96
   const MIN_CHAT_WIDTH = 384
   const MAX_CHAT_WIDTH = 800
-  const [chatLayout, setChatLayout] = useState<ChatLayout>('default')
-  const [chatWidth, setChatWidth] = useState(600) // shared by overlay/expanded
+  const [chatWidth, setChatWidth] = useState(600)
   const [isDragging, setIsDragging] = useState(false)
   const chatContainerRef = useRef<HTMLDivElement>(null)
 
   // File browser state
   const [fileBrowserCollapsed, setFileBrowserCollapsed] = useState(false)
   const [uploading, setUploading] = useState(false)
+
+  // File explorer state
+  const [fileExplorerOpen, setFileExplorerOpen] = useState(false)
 
   // Handle file upload
   const handleUploadFiles = useCallback(async (files: File[]) => {
@@ -162,6 +177,19 @@ export default function App() {
             </span>
           </div>
 
+          {/* File Explorer Toggle */}
+          <button
+            onClick={() => setFileExplorerOpen(!fileExplorerOpen)}
+            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+              fileExplorerOpen
+                ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+            title={fileExplorerOpen ? 'Close Workspace Files' : 'Open Workspace Files'}
+          >
+            📁 Workspace Files
+          </button>
+
           {/* Refresh Skills Button */}
           <button
             onClick={refreshSkills}
@@ -175,7 +203,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Session:</span>
             <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-              {session.sessionId.slice(0, 16)}...
+              {sessionId.slice(0, 16)}...
             </code>
           </div>
         </div>
@@ -218,7 +246,7 @@ export default function App() {
         {/* Skills Sidebar */}
         <SkillsSidebar
           skills={skills}
-          needsRestart={session.needsRestart}
+          needsRestart={false}
           collapsed={sidebarCollapsed}
           onToggle={toggleSkill}
           onRestart={restartSession}
@@ -231,24 +259,57 @@ export default function App() {
         {/* Main area (flex-1) + Chat Panel (resizable) */}
         <div className="flex-1 flex min-w-0 relative">
           {/* Functional area placeholder — currently empty, flex-1 takes remaining space */}
-          <div className="flex-1 min-w-0" />
+          <div className="flex-1 min-w-0 relative">
+            {/* File Explorer Modal Overlay */}
+            {fileExplorerOpen && (
+              <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-8">
+                <div className="bg-slate-900 rounded-lg shadow-2xl w-full max-w-2xl h-full max-h-[80vh] flex flex-col">
+                  {/* Modal Header */}
+                  <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                    <h2 className="text-lg font-semibold text-slate-100">Workspace Files</h2>
+                    <button
+                      onClick={() => setFileExplorerOpen(false)}
+                      className="p-2 hover:bg-slate-800 rounded-md transition-colors"
+                      aria-label="Close file explorer"
+                    >
+                      <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* File Explorer */}
+                  <div className="flex-1 overflow-hidden">
+                    <FileExplorer
+                      sessionId={sessionId}
+                      onFileSelect={(file) => {
+                        console.log('File selected:', file)
+                        // Optional: close modal after file download
+                        // setFileExplorerOpen(false)
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Chat Panel with layout modes */}
           <div
             ref={chatContainerRef}
             className={[
               'flex flex-col border-l border-gray-200 bg-white',
-              chatLayout === 'overlay'
+              layout.mode === 'overlay'
                 ? 'absolute right-0 top-0 bottom-0 z-10 shadow-xl'
                 : 'shrink-0',
               !isDragging && 'transition-[width] duration-300 ease-in-out',
             ].filter(Boolean).join(' ')}
             style={{
-              width: chatLayout === 'default' ? DEFAULT_CHAT_WIDTH : chatWidth,
+              width: layout.mode === 'default' ? DEFAULT_CHAT_WIDTH : chatWidth,
             }}
           >
-            {/* Resize handle on left edge (overlay/expanded only) */}
-            {chatLayout !== 'default' && (
+            {/* Resize handle on left edge (overlay/side-by-side only) */}
+            {layout.mode !== 'default' && (
               <div
                 className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-20 hover:bg-blue-400 active:bg-blue-500 transition-colors"
                 onMouseDown={(e) => {
@@ -277,18 +338,45 @@ export default function App() {
               />
             )}
 
+            {/* Header with layout controls */}
+            <div className="px-4 py-2 border-b flex items-center justify-between bg-white">
+              <h2 className="font-medium text-gray-700">对话</h2>
+              <ChatLayoutControls
+                mode={layout.mode}
+                onModeChange={layout.setMode}
+                isCollapsed={layout.isCollapsed}
+                onToggleCollapse={() => layout.setCollapsed(!layout.isCollapsed)}
+                colorScheme="blue"
+              />
+            </div>
+
             <ChatPanel
-              messages={session.messages}
-              activeSkill={session.activeSkill}
-              isProcessing={session.isProcessing}
+              messages={messages}
+              isProcessing={isProcessing}
+              connected={connected}
+              activeTools={activeTools}
+              isThinking={isThinking}
+              thinkingContent={thinkingContent}
               todoItems={todoItems}
               todoStats={todoStats}
-              activeTools={activeTools}
-              onSend={sendMessage}
-              onDownload={downloadFile}
+              activeSubAgents={activeSubAgents}
+              onSendMessage={sendMessage}
               onCancel={cancelProcessing}
-              chatLayout={chatLayout}
-              onLayoutChange={setChatLayout}
+              renderMessage={(msg) => (
+                <MessageBubble message={msg} colorScheme="blue">
+                  {/* Render file attachments */}
+                  {filesInMessages.get(sessionId)?.map((file, idx) => (
+                    <div key={idx} className="mt-2 p-2 bg-gray-100 rounded text-xs">
+                      <button
+                        onClick={() => downloadFile(file.name)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        📎 {file.name} ({file.size})
+                      </button>
+                    </div>
+                  ))}
+                </MessageBubble>
+              )}
             />
           </div>
         </div>

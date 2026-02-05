@@ -24,6 +24,8 @@
 * [MCP Server 开发](guide/mcp-server.md)
 * [write\_output 最佳实践](guide/write-output.md)
 * [前端集成指南](guide/frontend.md)
+* [React SDK 聊天集成](guide/chat-integration.md)
+* [File Explorer 组件](guide/file-explorer.md)
 
 ## API 参考 <a href="#api" id="api"></a>
 

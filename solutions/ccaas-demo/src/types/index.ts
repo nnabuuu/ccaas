@@ -32,8 +32,9 @@ export interface SkillFormData {
   description: string
   content: string                    // Markdown content
   type: 'skill' | 'sub-agent'
-  triggers: TriggerInput[]
-  config: { icon?: string }
+  icon?: string
+  whenToUse?: string
+  triggers: string[]                 // Trigger keywords
 }
 
 export interface FileInfo {
@@ -149,7 +150,7 @@ export interface TodoStats {
   total: number
 }
 
-export type ChatLayout = 'default' | 'overlay' | 'expanded';
+// ChatLayout removed - now using ChatLayoutMode from @ccaas/react-sdk
 
 export type ProtocolEvent =
   | { type: 'text_delta'; text: string }
@@ -157,3 +158,28 @@ export type ProtocolEvent =
   | { type: 'file_created'; file: FileInfo }
   | { type: 'skill_updated'; skillId: string; requiresRestart: boolean }
   | { type: 'agent_status'; status: 'idle' | 'running' | 'complete' | 'error' }
+
+// Workspace File Explorer Types
+export interface FileTreeNode {
+  id: string
+  name: string
+  type: 'file' | 'folder'
+  path: string
+  size?: number
+  mimeType?: string
+  children?: FileTreeNode[]
+}
+
+export interface WorkspaceTreeResponse {
+  tree: FileTreeNode[]
+}
+
+export interface FileExplorerState {
+  tree: FileTreeNode[]
+  loading: boolean
+  error: string | null
+  expandedFolders: Set<string>
+  searchQuery: string
+  sortBy: 'name' | 'size' | 'type'
+  sortOrder: 'asc' | 'desc'
+}

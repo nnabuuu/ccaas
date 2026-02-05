@@ -24,6 +24,9 @@ export { ToolActivityIndicator } from './components/ToolActivityIndicator'
 export { ChatLayoutControls } from './components/ChatLayoutControls'
 export { CollapsedChatTab } from './components/CollapsedChatTab'
 export { ChatSection } from './components/ChatSection'
+export { SubAgentCard } from './components/SubAgentCard'
+export { OutputUpdateCard } from './components/OutputUpdateCard'
+export { QuickActions } from './components/QuickActions'
 
 // Utilities
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
@@ -82,6 +85,9 @@ export type { ThinkingIndicatorProps } from './components/ThinkingIndicator'
 export type { ToolActivityIndicatorProps } from './components/ToolActivityIndicator'
 export type { ChatLayoutControlsProps } from './components/ChatLayoutControls'
 export type { CollapsedChatTabProps } from './components/CollapsedChatTab'
+export type { SubAgentCardProps } from './components/SubAgentCard'
+export type { OutputUpdateCardProps } from './components/OutputUpdateCard'
+export type { QuickAction, QuickActionsProps } from './components/QuickActions'
 
 // Re-export commonly used @ccaas/common types for convenience
 export type {
@@ -94,6 +100,7 @@ export type {
   TodoUpdateEvent,
   TodoUpdatePayload,
   Skill,
+  ActiveSubAgent,
 } from '@ccaas/common'
 
 export type { EventTodoItem as TodoItem } from '@ccaas/common'

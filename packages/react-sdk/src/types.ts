@@ -21,6 +21,7 @@ export type {
   TodoUpdatePayload,
   TodoUpdateEvent,
   Skill,
+  ActiveSubAgent,
 } from '@ccaas/common'
 
 // Re-export EventTodoItem as TodoItem for convenience
@@ -181,6 +182,7 @@ export interface UseAgentStatusReturn {
   tokenUsage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null
   todoItems: import('@ccaas/common').EventTodoItem[]
   todoStats: TodoStats
+  activeSubAgents: import('@ccaas/common').ActiveSubAgent[]
   currentActivity: string
 }
 
@@ -279,10 +281,12 @@ export interface ChatPanelProps {
   thinkingContent?: string
   todoItems?: import('@ccaas/common').EventTodoItem[]
   todoStats?: TodoStats | null
+  activeSubAgents?: import('@ccaas/common').ActiveSubAgent[]
   onSendMessage: (content: string) => void
   onCancel?: () => void
   renderMessage?: (message: Message) => React.ReactNode
   renderQuickActions?: () => React.ReactNode
+  renderActivityDetails?: () => React.ReactNode
 }
 
 export interface MessageBubbleProps {

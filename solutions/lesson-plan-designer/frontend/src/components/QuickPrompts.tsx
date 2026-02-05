@@ -1,30 +1,36 @@
+import { QuickActions, type QuickAction } from '@ccaas/react-sdk'
+
 interface QuickPromptsProps {
   onSelect: (prompt: string) => void
   disabled?: boolean
 }
 
-const QUICK_PROMPTS = [
-  { icon: '🎯', label: '教学目标', prompt: '帮我设计本课的教学目标' },
-  { icon: '📚', label: '教学活动', prompt: '帮我规划教学活动流程' },
-  { icon: '📊', label: '评估方案', prompt: '帮我设计评估方案' },
-  { icon: '🎨', label: '差异化', prompt: '帮我设计差异化教学策略' },
+const LESSON_PLAN_ACTIONS: QuickAction[] = [
+  { id: 'requirements', label: '课程要求', prompt: '帮我编写课程要求' },
+  { id: 'objectives', label: '学习目标', prompt: '帮我设计本课的学习目标' },
+  { id: 'analysis', label: '学情分析', prompt: '帮我编写学情分析' },
+  { id: 'materials', label: '课前准备', prompt: '帮我列出课前准备内容' },
+  { id: 'content', label: '学习过程', prompt: '帮我设计学习过程' },
+  { id: 'assessment', label: '作业检测', prompt: '帮我设计作业检测方案' },
+  { id: 'methods', label: '教学方法', prompt: '帮我设计教学方法' },
 ]
 
 export function QuickPrompts({ onSelect, disabled }: QuickPromptsProps) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {QUICK_PROMPTS.map((item) => (
+    <QuickActions
+      actions={LESSON_PLAN_ACTIONS.map(action => ({ ...action, disabled }))}
+      onAction={onSelect}
+      renderAction={(action, onClick) => (
         <button
-          key={item.label}
-          onClick={() => onSelect(item.prompt)}
-          disabled={disabled}
+          key={action.id}
+          onClick={onClick}
+          disabled={action.disabled}
           className="quick-prompt disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span className="mr-1">{item.icon}</span>
-          {item.label}
+          {action.label}
         </button>
-      ))}
-    </div>
+      )}
+    />
   )
 }
 

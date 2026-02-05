@@ -134,11 +134,9 @@ export function SkillEditor({
       description: description.trim(),
       content: content,
       type,
-      triggers: triggers.map(t => ({
-        type: 'keyword' as const,
-        value: t,
-      })),
-      config: { icon },
+      icon,
+      whenToUse: description.trim(),
+      triggers: triggers,
     }
 
     try {

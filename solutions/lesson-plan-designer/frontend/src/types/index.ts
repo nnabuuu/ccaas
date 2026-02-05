@@ -159,12 +159,22 @@ export type {
   SubAgentCompletedEvent,
 } from '@ccaas/common'
 
+// Import for local use in SessionState
+import type { ActiveSubAgent } from '@ccaas/common'
+
 // Note: AgentStatusEvent is kept local because @ccaas/common has nested AgentStatusError
 // but the backend actually sends `error: string` directly
 export interface AgentStatusEvent {
   status: 'running' | 'complete' | 'error' | 'cancelled'
   error?: string
   exitCode?: number | null
+}
+
+// Session state types for non-blocking chat
+export interface SessionState {
+  isMainProcessing: boolean      // 主 Claude 正在响应
+  hasActiveSubAgents: boolean     // 有活跃的 SubAgent
+  activeSubAgents: ActiveSubAgent[]
 }
 
 // Tool activity event (from event-mapper.service.ts)
@@ -179,6 +189,7 @@ export interface ToolActivityEvent {
   duration?: number
   agentType?: string
   nestingLevel?: number
+  parentToolUseId?: string  // Parent tool ID for hierarchical tracking
   timestamp?: string
 }
 
@@ -301,15 +312,10 @@ export interface TextbookChapter {
   children?: TextbookChapter[]
 }
 
-// Todo tracking types
-export interface TodoItem {
-  id?: string
-  content: string
-  status: 'pending' | 'in_progress' | 'completed' | 'failed'
-  activeForm?: string
-  progress?: number
-}
+// Todo tracking types - now using types from @ccaas/common
+export type { EventTodoItem as TodoItem } from '@ccaas/common'
 
+// TodoStats is solution-specific (extends common type)
 export interface TodoStats {
   completed: number
   inProgress: number
