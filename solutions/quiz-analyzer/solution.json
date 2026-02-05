@@ -1,0 +1,52 @@
+{
+  "name": "Quiz Analyzer",
+  "slug": "quiz-analyzer",
+  "version": "1.0.0",
+  "description": "教育题目智能分析系统 - 标签生成、解题思路、错题分析、批量处理",
+
+  "mcpServers": {
+    "quiz-analyzer-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "env": {
+        "MCP_PORT": "3006"
+      }
+    }
+  },
+
+  "skill": {
+    "name": "Quiz Analyzer",
+    "triggers": [
+      { "type": "keyword", "value": "分析这道题", "priority": 10 },
+      { "type": "keyword", "value": "解题思路", "priority": 9 },
+      { "type": "keyword", "value": "知识点", "priority": 8 },
+      { "type": "keyword", "value": "批量分析", "priority": 10 }
+    ],
+    "allowedTools": [
+      "write_output",
+      "get_knowledge_points_tree",
+      "verify_knowledge_point_tags",
+      "calculate_difficulty",
+      "generate_thinking_process_template",
+      "search_quizzes",
+      "search_knowledge_points",
+      "get_quiz_details"
+    ]
+  },
+
+  "backend": { "port": 3005 },
+  "frontend": { "port": 5282 },
+
+  "syncFields": [
+    "quizAnalysis",
+    "knowledgePointTags",
+    "thinkingProcess",
+    "solutionSteps",
+    "correctAnswer",
+    "commonMistakes",
+    "knowledgeGapAnalysis",
+    "difficulty",
+    "relatedQuizzes",
+    "timeEstimate"
+  ]
+}

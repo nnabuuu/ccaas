@@ -19,7 +19,18 @@
     "build:backend": "npm run build -w @ccaas/backend",
     "build:admin": "npm run build -w @ccaas/admin-next",
     "build:vue-sdk": "npm run build -w @ccaas/vue-sdk",
-    "build:react-sdk": "npm run build -w @ccaas/react-sdk"
+    "build:react-sdk": "npm run build -w @ccaas/react-sdk",
+    "quiz:analyze": "cd solutions/quiz-analyzer/scripts && node analyze-excel-structure.js",
+    "quiz:import": "cd solutions/quiz-analyzer/scripts && node import-excel-to-db.js",
+    "quiz:sample": "cd solutions/quiz-analyzer/scripts && node create-sample-data.js",
+    "quiz:verify": "sqlite3 solutions/quiz-analyzer/data/quiz-analyzer.db 'SELECT COUNT(*) as subjects FROM subjects; SELECT COUNT(*) as knowledge_points FROM knowledge_points; SELECT COUNT(*) as quizzes FROM quizzes;'",
+    "quiz:mcp:build": "cd solutions/quiz-analyzer/mcp-server && npm run build",
+    "quiz:mcp:start": "cd solutions/quiz-analyzer/mcp-server && npm start",
+    "quiz:mcp:test": "cd solutions/quiz-analyzer && bash -c 'npm run quiz:mcp:start & sleep 3 && curl -s http://localhost:3006/health && lsof -ti:3006 | xargs kill -9'",
+    "quiz:backend:build": "cd solutions/quiz-analyzer/backend && npm run build",
+    "quiz:backend:start": "cd solutions/quiz-analyzer/backend && npm start",
+    "quiz:backend:dev": "cd solutions/quiz-analyzer/backend && npm run start:dev",
+    "quiz:setup": "cd solutions/quiz-analyzer && ./setup.sh"
   },
   "engines": {
     "node": ">=18.0.0"

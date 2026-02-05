@@ -1,0 +1,93 @@
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { v4 as uuidv4 } from 'uuid';
+import { QuizAnalysis, Quiz } from '../database/entities';
+import { CreateAnalysisDto } from './dto/create-analysis.dto';
+
+@Injectable()
+export class AnalysesService {
+  constructor(
+    @InjectRepository(QuizAnalysis)
+    private analysisRepository: Repository<QuizAnalysis>,
+    @InjectRepository(Quiz)
+    private quizRepository: Repository<Quiz>,
+  ) {}
+
+  async create(dto: CreateAnalysisDto) {
+    // Check if quiz exists
+    const quiz = await this.quizRepository.findOne({ where: { id: dto.quiz_id } });
+    if (!quiz) {
+      throw new NotFoundException(`Quiz with ID ${dto.quiz_id} not found`);
+    }
+
+    // Check if analysis already exists
+    const existing = await this.analysisRepository.findOne({ where: { quiz_id: dto.quiz_id } });
+    if (existing) {
+      throw new ConflictException(`Analysis for quiz ${dto.quiz_id} already exists`);
+    }
+
+    const analysis = this.analysisRepository.create({
+      id: uuidv4(),
+      quiz_id: dto.quiz_id,
+      thinking_process: dto.thinking_process,
+      solution_steps: dto.solution_steps ? JSON.stringify(dto.solution_steps) : null,
+      common_mistakes: dto.common_mistakes ? JSON.stringify(dto.common_mistakes) : null,
+      knowledge_gap_analysis: dto.knowledge_gap_analysis,
+      difficulty_rationale: dto.difficulty_rationale,
+      time_estimate: dto.time_estimate,
+      analyzer_version: dto.analyzer_version || '1.0',
+      analysis_duration_ms: dto.analysis_duration_ms,
+    });
+
+    return this.analysisRepository.save(analysis);
+  }
+
+  async findByQuizId(quizId: string) {
+    const analysis = await this.analysisRepository.findOne({
+      where: { quiz_id: quizId },
+      relations: ['quiz'],
+    });
+
+    if (!analysis) {
+      throw new NotFoundException(`Analysis for quiz ${quizId} not found`);
+    }
+
+    return {
+      ...analysis,
+      solution_steps: analysis.solution_steps ? JSON.parse(analysis.solution_steps) : null,
+      common_mistakes: analysis.common_mistakes ? JSON.parse(analysis.common_mistakes) : null,
+    };
+  }
+
+  async update(quizId: string, dto: Partial<CreateAnalysisDto>) {
+    const analysis = await this.analysisRepository.findOne({ where: { quiz_id: quizId } });
+    if (!analysis) {
+      throw new NotFoundException(`Analysis for quiz ${quizId} not found`);
+    }
+
+    Object.assign(analysis, {
+      ...(dto.thinking_process !== undefined && { thinking_process: dto.thinking_process }),
+      ...(dto.solution_steps && { solution_steps: JSON.stringify(dto.solution_steps) }),
+      ...(dto.common_mistakes && { common_mistakes: JSON.stringify(dto.common_mistakes) }),
+      ...(dto.knowledge_gap_analysis !== undefined && { knowledge_gap_analysis: dto.knowledge_gap_analysis }),
+      ...(dto.difficulty_rationale !== undefined && { difficulty_rationale: dto.difficulty_rationale }),
+      ...(dto.time_estimate !== undefined && { time_estimate: dto.time_estimate }),
+      ...(dto.analyzer_version !== undefined && { analyzer_version: dto.analyzer_version }),
+      ...(dto.analysis_duration_ms !== undefined && { analysis_duration_ms: dto.analysis_duration_ms }),
+    });
+
+    await this.analysisRepository.save(analysis);
+    return this.findByQuizId(quizId);
+  }
+
+  async remove(quizId: string) {
+    const analysis = await this.analysisRepository.findOne({ where: { quiz_id: quizId } });
+    if (!analysis) {
+      throw new NotFoundException(`Analysis for quiz ${quizId} not found`);
+    }
+
+    await this.analysisRepository.remove(analysis);
+    return { message: 'Analysis deleted successfully', quiz_id: quizId };
+  }
+}
