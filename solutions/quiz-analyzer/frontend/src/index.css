@@ -102,7 +102,7 @@
 
   /* Loading spinner */
   .spinner {
-    @apply inline-block w-5 h-5 border-3 border-slate-200 border-t-primary-600 rounded-full animate-spin;
+    @apply inline-block w-5 h-5 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin;
   }
 }
 
