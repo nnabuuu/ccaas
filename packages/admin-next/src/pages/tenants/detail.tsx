@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useCustom } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -235,7 +235,12 @@ export function TenantDetailPage() {
                       <div className="flex items-center gap-3">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm">{skill.name}</span>
+                            <Link
+                              to={`/skills/${skill.slug}?tenantId=${tenantId}`}
+                              className="font-medium text-sm text-primary hover:underline"
+                            >
+                              {skill.name}
+                            </Link>
                             <StatusBadge status={skill.status} />
                             <Badge variant="outline" className="text-xs">{skill.type}</Badge>
                           </div>

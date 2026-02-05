@@ -93,6 +93,7 @@ function getResourceUrl(resource: string): string {
     'analytics/costs': '/admin/analytics/costs',
     'analytics/api-keys': '/admin/analytics/api-keys',
     scheduler: '/scheduler/tasks',
+    'api-keys': '/admin/api-keys',
   }
   return map[resource] ?? `/admin/${resource}`
 }

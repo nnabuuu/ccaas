@@ -78,17 +78,8 @@ export class LessonPlansController {
     @Headers('x-session-id') sessionId: string,
     @Body() dto: AddAttachmentDto,
   ) {
-    // Case 1: MCP metadata with _originalPath (from session workspace)
-    if (dto._originalPath && sessionId) {
-      return this.lessonPlansService.addAttachmentFromMcp(id, sessionId, dto);
-    }
-
-    // Case 2: Legacy addAttachment (for backward compatibility)
-    if (!dto._originalPath) {
-      return this.lessonPlansService.addAttachment(id, dto);
-    }
-
-    throw new BadRequestException('Either provide _originalPath + sessionId, or use legacy format');
+    // All attachments are now CCAAS-registered files
+    return this.lessonPlansService.addAttachmentFromMcp(id, sessionId, dto);
   }
 
   @Delete(':id/attachments/:attachmentId')

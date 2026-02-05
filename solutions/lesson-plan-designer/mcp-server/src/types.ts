@@ -7,71 +7,35 @@ export const SYNC_FIELDS = [
   'title',
   'subject',
   'gradeLevel',
-  'duration',
+  'durationMinutes',
+  'lessonPlanCode',
   'objectives',
-  'standards',
-  'materials',
-  'activities',
-  'assessment',
-  'differentiation'
+  'content',
+  'teachingMethods',
+  'materialsNeeded',
+  'assessmentMethods',
+  'curriculumRequirements',
+  'studentAnalysis',
+  'extraProperties',
+  'status',
+  'attachments',
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
 
 /**
- * Bloom's Taxonomy levels for learning objectives
+ * LessonPlanAttachment type
  */
-export type BloomLevel =
-  | 'remember'
-  | 'understand'
-  | 'apply'
-  | 'analyze'
-  | 'evaluate'
-  | 'create';
-
-/**
- * Learning objective structure
- */
-export interface LearningObjective {
+export interface LessonPlanAttachment {
   id: string;
-  description: string;
-  bloomLevel: BloomLevel;
-  assessmentCriteria?: string;
-}
-
-/**
- * Activity types
- */
-export type ActivityType =
-  | 'introduction'
-  | 'direct-instruction'
-  | 'guided-practice'
-  | 'independent-practice'
-  | 'group'
-  | 'assessment'
-  | 'closure';
-
-/**
- * Teaching activity structure
- */
-export interface Activity {
-  id: string;
-  title: string;
-  description: string;
-  duration: number;
-  type: ActivityType;
-  instructions: string[];
-  materials?: string[];
-  teacherNotes?: string;
-}
-
-/**
- * Assessment structure
- */
-export interface Assessment {
-  formative: string[];
-  summative: string[];
-  rubric?: string;
+  fileId: string;
+  fileName: string;
+  fileType: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
+  mimeType: string;
+  size: number;
+  downloadUrl: string;
+  uploadedAt: string;
+  description?: string;
 }
 
 /**
@@ -93,7 +57,7 @@ export interface WriteOutputResult {
     value?: unknown;
     preview?: string;
     error?: string;
-    originalValue?: unknown; // 校验失败时的原始值（用于调试）
+    originalValue?: unknown;
   };
   status: 'success' | 'error';
 }

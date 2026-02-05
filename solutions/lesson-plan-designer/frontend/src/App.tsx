@@ -104,6 +104,8 @@ function App() {
     saving,
     messages,
     isProcessing,
+    isMainProcessing,
+    hasActiveSubAgents,
     modifiedFields,
     activeTools,
     isThinking,
@@ -267,6 +269,8 @@ function App() {
   const chatPanelProps = useMemo(() => ({
     messages,
     isProcessing,
+    isMainProcessing,
+    hasActiveSubAgents,
     connected,
     activeTools,
     isThinking,
@@ -278,7 +282,7 @@ function App() {
     onSync: syncToForm,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, sendMessage, syncToForm, discardUpdate, cancelProcessing])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {

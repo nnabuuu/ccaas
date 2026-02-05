@@ -4,6 +4,8 @@ Admin dashboard for Claude Code as a Service, built with React, Refine, shadcn/u
 
 ## Features
 
+### ✅ Implemented Features
+
 - 📊 **Dashboard** - Real-time metrics and system overview
 - 👥 **Sessions** - Active session monitoring and management
 - ⚡ **Skills** - Skill CRUD, versioning, and editor
@@ -11,6 +13,19 @@ Admin dashboard for Claude Code as a Service, built with React, Refine, shadcn/u
 - 📝 **Audit Log** - System activity tracking
 - 📈 **Analytics** - Usage analytics and insights
 - ⏰ **Scheduler** - Scheduled task management
+
+### 🚧 Planned Features
+
+See [ROADMAP.md](./ROADMAP.md) for the complete feature roadmap with 14 tracked issues in Linear.
+
+**Highest Priority (Backend Ready):**
+- 🔑 API Key Management - Full CRUD UI ([NIE-44](https://linear.app/niex/issue/NIE-44))
+- 💰 Quota Management - Edit Limits & Alerts ([NIE-45](https://linear.app/niex/issue/NIE-45))
+- 📜 Skills Version History - Timeline, Diff, Rollback ([NIE-46](https://linear.app/niex/issue/NIE-46))
+- 📁 File Browser - Session Workspace Explorer ([NIE-47](https://linear.app/niex/issue/NIE-47))
+- 🔌 SDK Connection Inspector ([NIE-48](https://linear.app/niex/issue/NIE-48))
+
+[View Full Roadmap →](./ROADMAP.md) | [Linear Project](https://linear.app/niex/project/ccaas-42d2a7c1ccd9)
 
 ## Tech Stack
 

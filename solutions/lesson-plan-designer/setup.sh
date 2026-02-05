@@ -65,6 +65,26 @@ else
     echo "   如需注入技能，请先启动 CCAAS 后运行: ./inject-skills.sh"
 fi
 
+# 检查并清理端口冲突
+echo ""
+echo "🔍 检查端口占用..."
+
+# 检查端口 3002 (后端)
+if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo "⚠️  端口 3002 已被占用，正在清理旧进程..."
+    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    echo "✅ 端口 3002 已释放"
+fi
+
+# 检查端口 5280 (前端)
+if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo "⚠️  端口 5280 已被占用，正在清理旧进程..."
+    lsof -ti:5280 | xargs kill -9 2>/dev/null || true
+    sleep 1
+    echo "✅ 端口 5280 已释放"
+fi
+
 # 启动后端
 echo ""
 echo "🔧 启动后端服务 (端口 3002)..."
@@ -72,8 +92,26 @@ cd "$BACKEND_DIR"
 npm run dev &
 BACKEND_PID=$!
 
-# 等待后端启动
-sleep 2
+# 等待后端启动并验证
+echo "⏳ 等待后端启动..."
+
+# 重试检查端口绑定 (最多等待10秒)
+BACKEND_RETRY=0
+BACKEND_MAX_RETRY=10
+while [ $BACKEND_RETRY -lt $BACKEND_MAX_RETRY ]; do
+    if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "✅ 后端启动成功 (端口 3002)"
+        break
+    fi
+    BACKEND_RETRY=$((BACKEND_RETRY + 1))
+    if [ $BACKEND_RETRY -eq $BACKEND_MAX_RETRY ]; then
+        echo "❌ 错误: 后端未能成功启动在端口 3002"
+        echo "   请检查后端日志或手动运行: cd backend && npm run dev"
+        kill $BACKEND_PID 2>/dev/null || true
+        exit 1
+    fi
+    sleep 1
+done
 
 # 启动前端
 echo ""
@@ -82,11 +120,29 @@ cd "$FRONTEND_DIR"
 npm run dev &
 FRONTEND_PID=$!
 
-# 等待前端启动
-sleep 3
+# 等待前端启动并验证
+echo "⏳ 等待前端启动..."
+
+# 重试检查端口绑定 (最多等待10秒)
+FRONTEND_RETRY=0
+FRONTEND_MAX_RETRY=10
+while [ $FRONTEND_RETRY -lt $FRONTEND_MAX_RETRY ]; do
+    if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "✅ 前端启动成功 (端口 5280)"
+        break
+    fi
+    FRONTEND_RETRY=$((FRONTEND_RETRY + 1))
+    if [ $FRONTEND_RETRY -eq $FRONTEND_MAX_RETRY ]; then
+        echo "❌ 错误: 前端未能成功启动在端口 5280"
+        echo "   请检查前端日志或手动运行: cd frontend && npm run dev"
+        cleanup
+        exit 1
+    fi
+    sleep 1
+done
 
 echo ""
-echo "✅ 启动完成!"
+echo "✅ 所有服务启动完成!"
 echo ""
 echo "📍 访问地址:"
 echo "   前端: http://localhost:5280"
@@ -101,8 +157,22 @@ echo "按 Ctrl+C 停止所有服务"
 cleanup() {
     echo ""
     echo "🛑 停止服务..."
+
+    # 停止后台进程
     kill $BACKEND_PID 2>/dev/null || true
     kill $FRONTEND_PID 2>/dev/null || true
+
+    # 确保端口被释放
+    if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "   清理端口 3002..."
+        lsof -ti:3002 | xargs kill -9 2>/dev/null || true
+    fi
+
+    if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "   清理端口 5280..."
+        lsof -ti:5280 | xargs kill -9 2>/dev/null || true
+    fi
+
     echo "✅ 服务已停止"
     exit 0
 }

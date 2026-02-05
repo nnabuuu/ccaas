@@ -27,21 +27,15 @@
     ],
     "allowedTools": ["write_output", "Read", "Write", "Skill"],
     "skillFile": "skills/lesson-plan-designer/SKILL.md",
-    "relatedSkills": ["notebooklm", "example-skills:pptx"]
+    "relatedSkills": ["notebooklm"]
   },
 
   "chainedSkills": {
     "notebooklm": {
-      "description": "生成教案讲解音频",
-      "triggerPhrase": "生成音频",
-      "inputFrom": "教案讲稿内容",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/教案讲解音频.mp3"
-    },
-    "example-skills:pptx": {
-      "description": "生成教案PPT",
-      "triggerPhrase": "生成PPT",
-      "inputFrom": "教案设计内容",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/教案PPT.pptx"
+      "description": "生成教案讲解音频、PDF文档等内容",
+      "triggerPhrase": "生成音频|生成PDF|生成文档",
+      "inputFrom": "教案内容",
+      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
     }
   },
 

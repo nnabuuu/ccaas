@@ -171,6 +171,44 @@ export class FilesController {
   }
 
   /**
+   * Register a file from session workspace (for MCP servers)
+   * POST /api/v1/files/register
+   */
+  @Post('register')
+  async registerFile(
+    @Body() dto: {
+      originalPath: string;   // Absolute path in session workspace
+      sessionId?: string;     // Session context
+      messageId?: string;     // Optional message context
+      tenantId?: string;      // Optional tenant
+    },
+  ): Promise<{
+    fileId: string;
+    filename: string;
+    downloadUrl: string;
+  }> {
+    // Get or create session workspace
+    const workspaceDir = dto.sessionId
+      ? path.join(this.workspaceBaseDir, 'sessions', dto.sessionId)
+      : path.dirname(dto.originalPath);
+
+    // Create AgentFile record and copy to persistent storage
+    const file = await this.filesService.createFromSessionFile({
+      sessionId: dto.sessionId || 'unknown',
+      messageId: dto.messageId || null,
+      tenantId: dto.tenantId,
+      originalPath: dto.originalPath,
+      workspaceDir,
+    });
+
+    return {
+      fileId: file.id,
+      filename: file.filename,
+      downloadUrl: `http://localhost:3001/api/v1/files/${file.id}/download`,
+    };
+  }
+
+  /**
    * Upload a file
    * POST /api/v1/files/upload
    *

@@ -10,6 +10,7 @@ import {
   Put,
   Param,
   Body,
+  Query,
   HttpCode,
   HttpStatus,
   NotFoundException,
@@ -125,6 +126,42 @@ export class AdminTenantsController {
   }
 
   /**
+   * GET /api/v1/admin/tenants/:tenantId/skills
+   *
+   * Get all skills for a tenant
+   */
+  @Get(':tenantId/skills')
+  async getSkills(
+    @Param('tenantId') tenantId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    // Validate tenant exists
+    const tenant = await this.tenantsService.findOne(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+    }
+
+    // Fetch all skills for this tenant
+    const result = await this.skillsService.findAll(tenant.id, {
+      page: page || 1,
+      limit: limit || 100,  // Return all skills by default
+    });
+
+    // Return in format frontend expects: { skills: [...] }
+    return {
+      skills: result.items.map(skill => ({
+        id: skill.id,
+        name: skill.name,
+        slug: skill.slug,
+        type: skill.type,
+        status: skill.status,
+        enabled: skill.enabled,
+      })),
+    };
+  }
+
+  /**
    * PUT /api/v1/admin/tenants/:tenantId/sdk-config
    *
    * Update SDK configuration for a tenant
@@ -179,11 +216,32 @@ export class AdminTenantsController {
       order: { createdAt: 'DESC' },
     });
 
+    // Find monthly quota (preferred) or fallback to first quota
+    const monthlyQuota = quotas.find(q => q.period === 'monthly') || quotas[0];
+
+    if (!monthlyQuota) {
+      // Return zero values if no quota exists
+      return {
+        tokens: { used: 0, limit: 0 },
+        sessions: { used: 0, limit: 0 },
+        apiCalls: { used: 0, limit: 0 },
+      };
+    }
+
+    // Transform to frontend format
     return {
-      tenantId: tenant.id,
-      tenantName: tenant.name,
-      plan: tenant.plan,
-      quotas,
+      tokens: {
+        used: monthlyQuota.currentTokens || 0,
+        limit: monthlyQuota.maxTokens || 0,
+      },
+      sessions: {
+        used: monthlyQuota.currentSessions || 0,
+        limit: monthlyQuota.maxSessions || 0,
+      },
+      apiCalls: {
+        used: monthlyQuota.currentApiCalls || 0,
+        limit: monthlyQuota.maxApiCalls || 0,
+      },
     };
   }
 

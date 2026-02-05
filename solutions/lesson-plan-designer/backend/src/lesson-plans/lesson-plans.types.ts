@@ -246,22 +246,12 @@ export class AddAttachmentDto {
   @IsUUID()
   fileId: string;
 
-  @IsOptional()
   @IsString()
-  fileName?: string;
+  fileName: string;
 
   @IsOptional()
   @IsIn(['script', 'audio', 'ppt', 'pdf', 'other'])
   fileType?: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  // MCP-provided metadata (when adding attachment from MCP)
-  @IsOptional()
-  @IsString()
-  _originalPath?: string;  // Relative path in session workspace
 
   @IsOptional()
   @IsString()
@@ -270,4 +260,11 @@ export class AddAttachmentDto {
   @IsOptional()
   @IsNumber()
   size?: number;
+
+  @IsString()
+  downloadUrl: string;  // CCAAS download URL
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

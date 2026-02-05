@@ -4,8 +4,8 @@ import { DatabaseModule } from './database/database.module';
 import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { SolutionConfigModule } from './config/config.module';
-import { TextbookModule } from './textbook/textbook.module';
 import { CurriculumStandardsModule } from './curriculum-standards/curriculum-standards.module';
+import { TextbookModule } from './textbook/textbook.module';
 
 @Module({
   imports: [
@@ -18,8 +18,8 @@ import { CurriculumStandardsModule } from './curriculum-standards/curriculum-sta
     SessionsModule,
     SolutionConfigModule,
     // Skills are now managed by CCAAS backend, not solution backend
-    TextbookModule,
     CurriculumStandardsModule,
+    TextbookModule,
   ],
 })
 export class AppModule {}

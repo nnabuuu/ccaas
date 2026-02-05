@@ -146,6 +146,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   }
 
   /**
+   * Get active sub-agents for a session
+   * Exposes EventMapper's internal state to REST endpoints
+   */
+  getActiveSubAgents(sessionId: string): Array<{
+    subAgentId: string;
+    agentType: string;
+    description?: string;
+    startedAt: string;
+    status: 'running' | 'completed' | 'failed';
+    nestingLevel?: number;
+  }> {
+    return this.eventMapperService.getActiveSubAgents(sessionId);
+  }
+
+  /**
    * Handle skill change notification
    * Marks affected sessions for restart and notifies connected clients
    */

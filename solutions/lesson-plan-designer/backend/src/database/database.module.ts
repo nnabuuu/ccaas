@@ -26,52 +26,69 @@ export const DATABASE_TOKEN = 'DATABASE_CONNECTION';
         db.pragma('journal_mode = WAL');
         db.pragma('foreign_keys = ON');
 
-        // Initialize schema
+        // Migration: if old schema detected (tenant_id column exists), drop and recreate
+        const tableExists = db.prepare(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='lesson_plans'"
+        ).get();
+
+        if (tableExists) {
+          const tableInfo = db.prepare("PRAGMA table_info(lesson_plans)").all() as Array<{ name: string }>;
+          const columnNames = tableInfo.map(col => col.name);
+
+          if (columnNames.includes('tenant_id') || !columnNames.includes('publisher')) {
+            logger.warn('Detected old schema. Dropping and recreating lesson_plans table.');
+            db.exec('DROP TABLE IF EXISTS lesson_plans');
+          }
+        }
+
+        // Initialize schema (new plain-text model)
         db.exec(`
           CREATE TABLE IF NOT EXISTS lesson_plans (
             id TEXT PRIMARY KEY,
-            tenant_id TEXT NOT NULL,
             title TEXT NOT NULL,
             subject TEXT DEFAULT '',
-            grade_level TEXT DEFAULT '',
-            duration TEXT DEFAULT '',
+            grade_level INTEGER DEFAULT 1,
+            duration_minutes INTEGER DEFAULT 45,
+            lesson_plan_code TEXT DEFAULT NULL,
+            status TEXT DEFAULT 'DRAFT',
+
             publisher TEXT DEFAULT NULL,
             volume TEXT DEFAULT NULL,
             chapter_id INTEGER DEFAULT NULL,
             chapter_title TEXT DEFAULT NULL,
-            objectives TEXT DEFAULT '[]',
-            standards TEXT DEFAULT '[]',
-            materials TEXT DEFAULT '[]',
-            activities TEXT DEFAULT '[]',
-            assessment TEXT DEFAULT '{"formative":[],"summative":[]}',
-            differentiation TEXT DEFAULT '{"struggling":[],"onLevel":[],"advanced":[]}',
-            status TEXT DEFAULT 'draft',
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
+
+            curriculum_requirements TEXT DEFAULT NULL,
+            objectives TEXT DEFAULT NULL,
+            student_analysis TEXT DEFAULT NULL,
+            materials_needed TEXT DEFAULT NULL,
+            content TEXT DEFAULT NULL,
+            assessment_methods TEXT DEFAULT NULL,
+            teaching_methods TEXT DEFAULT NULL,
+
+            extra_properties TEXT DEFAULT NULL,
+
+            create_by TEXT DEFAULT NULL,
+            create_time TEXT NOT NULL,
+            update_by TEXT DEFAULT NULL,
+            update_time TEXT NOT NULL,
+            remark TEXT DEFAULT NULL,
+            deleted INTEGER DEFAULT 0
           )
         `);
 
-        // Add new columns if they don't exist (migration for existing databases)
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_lesson_plans_status
+          ON lesson_plans(status)
+        `);
+
+        // Migration: Add attachments column if it doesn't exist
         const tableInfo = db.prepare("PRAGMA table_info(lesson_plans)").all() as Array<{ name: string }>;
         const columnNames = tableInfo.map(col => col.name);
 
-        if (!columnNames.includes('publisher')) {
-          db.exec('ALTER TABLE lesson_plans ADD COLUMN publisher TEXT DEFAULT NULL');
+        if (!columnNames.includes('attachments')) {
+          logger.log('Adding attachments column to lesson_plans table');
+          db.exec('ALTER TABLE lesson_plans ADD COLUMN attachments TEXT DEFAULT NULL');
         }
-        if (!columnNames.includes('volume')) {
-          db.exec('ALTER TABLE lesson_plans ADD COLUMN volume TEXT DEFAULT NULL');
-        }
-        if (!columnNames.includes('chapter_id')) {
-          db.exec('ALTER TABLE lesson_plans ADD COLUMN chapter_id INTEGER DEFAULT NULL');
-        }
-        if (!columnNames.includes('chapter_title')) {
-          db.exec('ALTER TABLE lesson_plans ADD COLUMN chapter_title TEXT DEFAULT NULL');
-        }
-
-        db.exec(`
-          CREATE INDEX IF NOT EXISTS idx_lesson_plans_tenant_id
-          ON lesson_plans(tenant_id)
-        `);
 
         db.exec(`
           CREATE TABLE IF NOT EXISTS chat_messages (

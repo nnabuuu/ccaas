@@ -7,6 +7,7 @@ import {
   ScrollText,
   BarChart3,
   Calendar,
+  Key,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react'
@@ -21,6 +22,7 @@ const navigation = [
   { name: 'Sessions', href: '/sessions', icon: MessageSquare },
   { name: 'Skills', href: '/skills', icon: Zap },
   { name: 'Tenants', href: '/tenants', icon: Building2 },
+  { name: 'API Keys', href: '/api-keys', icon: Key },
   { name: 'Audit Log', href: '/audit', icon: ScrollText },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Scheduler', href: '/scheduler', icon: Calendar },

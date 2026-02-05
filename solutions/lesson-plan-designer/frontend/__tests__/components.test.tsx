@@ -208,7 +208,7 @@ describe('SyncButton', () => {
       />
     )
 
-    expect(screen.getByText('建议更新「教学目标」')).toBeInTheDocument()
+    expect(screen.getByText('建议更新「学习目标」')).toBeInTheDocument()
     expect(screen.getByText('3个教学目标')).toBeInTheDocument()
     expect(screen.getByText('同步到表单')).toBeInTheDocument()
   })
@@ -224,7 +224,7 @@ describe('SyncButton', () => {
       />
     )
 
-    expect(screen.getByText('已同步到「教学目标」')).toBeInTheDocument()
+    expect(screen.getByText('已同步到「学习目标」')).toBeInTheDocument()
   })
 
   it('should call onSync when sync button clicked', () => {
@@ -264,18 +264,18 @@ describe('QuickPrompts', () => {
   it('should render all quick prompts', () => {
     render(<QuickPrompts onSelect={vi.fn()} />)
 
-    expect(screen.getByText('教学目标')).toBeInTheDocument()
-    expect(screen.getByText('教学活动')).toBeInTheDocument()
-    expect(screen.getByText('评估方案')).toBeInTheDocument()
-    expect(screen.getByText('差异化')).toBeInTheDocument()
+    expect(screen.getByText('课程要求')).toBeInTheDocument()
+    expect(screen.getByText('学习目标')).toBeInTheDocument()
+    expect(screen.getByText('学情分析')).toBeInTheDocument()
+    expect(screen.getByText('课前准备')).toBeInTheDocument()
   })
 
   it('should call onSelect with prompt when clicked', () => {
     const onSelect = vi.fn()
     render(<QuickPrompts onSelect={onSelect} />)
 
-    fireEvent.click(screen.getByText('教学目标'))
-    expect(onSelect).toHaveBeenCalledWith('帮我设计本课的教学目标')
+    fireEvent.click(screen.getByText('课程要求'))
+    expect(onSelect).toHaveBeenCalledWith('帮我编写课程要求')
   })
 
   it('should disable buttons when disabled prop is true', () => {

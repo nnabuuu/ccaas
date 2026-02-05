@@ -4,9 +4,16 @@ import routerProvider, { NavigateToResource, CatchAllNavigate } from '@refinedev
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { dataProvider } from '@/providers/data-provider'
 import { authProvider } from '@/providers/auth-provider'
+import { devAuthProvider } from '@/providers/auth-provider.dev'
 import { liveProvider } from '@/providers/live-provider'
 import { AppLayout } from '@/components/layout/app-layout'
 import { Toaster } from 'sonner'
+
+// Use dev auth provider if VITE_DISABLE_AUTH or VITE_DEV_API_KEY is set
+const shouldUseDevAuth =
+  import.meta.env.VITE_DISABLE_AUTH === 'true' ||
+  !!import.meta.env.VITE_DEV_API_KEY
+const activeAuthProvider = shouldUseDevAuth ? devAuthProvider : authProvider
 
 // Lazy-loaded pages
 const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.LoginPage })))
@@ -22,6 +29,7 @@ const AnalyticsPage = lazy(() => import('@/pages/analytics').then((m) => ({ defa
 const SchedulerListPage = lazy(() => import('@/pages/scheduler/list').then((m) => ({ default: m.SchedulerListPage })))
 const SchedulerDetailPage = lazy(() => import('@/pages/scheduler/detail').then((m) => ({ default: m.SchedulerDetailPage })))
 const SkillAnalyticsPage = lazy(() => import('@/pages/analytics/skills').then((m) => ({ default: m.SkillAnalyticsPage })))
+const ApiKeysListPage = lazy(() => import('@/pages/api-keys/list').then((m) => ({ default: m.ApiKeysListPage })))
 
 function PageLoader() {
   return (
@@ -37,7 +45,7 @@ function App() {
       <Refine
         routerProvider={routerProvider}
         dataProvider={dataProvider}
-        authProvider={authProvider}
+        authProvider={activeAuthProvider}
         liveProvider={liveProvider}
         resources={[
           {
@@ -79,6 +87,11 @@ function App() {
             show: '/scheduler/:id',
             meta: { label: 'Scheduler' },
           },
+          {
+            name: 'api-keys',
+            list: '/api-keys',
+            meta: { label: 'API Keys' },
+          },
         ]}
         options={{
           syncWithLocation: true,
@@ -107,6 +120,7 @@ function App() {
               <Route path="/analytics/skills" element={<SkillAnalyticsPage />} />
               <Route path="/scheduler" element={<SchedulerListPage />} />
               <Route path="/scheduler/:id" element={<SchedulerDetailPage />} />
+              <Route path="/api-keys" element={<ApiKeysListPage />} />
             </Route>
             <Route
               element={

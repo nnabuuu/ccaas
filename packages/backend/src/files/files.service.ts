@@ -36,6 +36,79 @@ export class FilesService {
   }
 
   /**
+   * Create a file record from session workspace (for MCP servers)
+   */
+  async createFromSessionFile(dto: {
+    sessionId: string;
+    messageId: string | null;
+    tenantId?: string;
+    originalPath: string;
+    workspaceDir: string;
+  }): Promise<AgentFile> {
+    const { messageId, sessionId, tenantId, originalPath, workspaceDir } = dto;
+
+    // Resolve the source file path
+    const sourcePath = path.isAbsolute(originalPath)
+      ? originalPath
+      : path.join(workspaceDir, originalPath);
+
+    // Check if file exists
+    try {
+      await fs.access(sourcePath);
+    } catch {
+      this.logger.warn(`File not found at ${sourcePath}`);
+      throw new NotFoundException(`File not found: ${originalPath}`);
+    }
+
+    // Get file stats
+    const stats = await fs.stat(sourcePath);
+    const filename = path.basename(originalPath);
+    const mimeType = mimeLookup(filename) || null;
+
+    // Create persistent storage path: files/{tenantId}/{messageId}/{filename}
+    const tenantDir = tenantId || 'default';
+    const storedDir = path.join(
+      this.persistentStorageBase,
+      tenantDir,
+      messageId || 'mcp-generated',
+    );
+    const storedPath = path.join(storedDir, filename);
+
+    // Ensure directory exists
+    await fs.mkdir(storedDir, { recursive: true });
+
+    // Copy file to persistent storage
+    try {
+      await fs.copyFile(sourcePath, storedPath);
+      this.logger.debug(`Copied file from ${sourcePath} to ${storedPath}`);
+    } catch (error) {
+      this.logger.error(`Failed to copy file: ${error.message}`);
+      throw new InternalServerErrorException('Failed to copy file to storage');
+    }
+
+    // Create database record
+    const agentFile = this.fileRepository.create({
+      messageId: messageId || null,
+      sessionId,
+      tenantId: tenantId || null,
+      originalPath,
+      storedPath,
+      filename,
+      mimeType,
+      size: stats.size,
+      uploadedBy: 'agent' as const,
+      status: 'new' as const,
+    });
+
+    const saved = await this.fileRepository.save(agentFile);
+    this.logger.log(
+      `Created file record ${saved.id} for ${filename} (${stats.size} bytes)`,
+    );
+
+    return saved;
+  }
+
+  /**
    * Create a file record from Write tool result
    * Copies the file from session workspace to persistent storage
    */

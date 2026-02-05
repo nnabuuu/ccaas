@@ -1,8 +1,6 @@
 import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import Database from 'better-sqlite3';
-import * as path from 'node:path';
-import * as fs from 'node:fs/promises';
 import { DATABASE_TOKEN } from '../database/database.module';
 import {
   LessonPlan,
@@ -16,17 +14,13 @@ import {
   AddAttachmentDto,
 } from './lesson-plans.types';
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', '..', 'uploads', 'attachments');
-
 @Injectable()
 export class LessonPlansService {
+  private readonly logger = { log: console.log, error: console.error };
+
   constructor(
     @Inject(DATABASE_TOKEN) private readonly db: Database.Database,
-  ) {
-    // Ensure upload directory exists
-    fs.mkdir(UPLOAD_DIR, { recursive: true })
-      .catch(err => console.error('Failed to create upload directory:', err));
-  }
+  ) {}
 
   private rowToLessonPlan(row: LessonPlanRow): LessonPlan {
     let extraProperties: Record<string, string> = {};
@@ -253,36 +247,6 @@ export class LessonPlansService {
   }
 
   // Attachment methods
-  addAttachment(
-    lessonPlanId: string,
-    dto: AddAttachmentDto,
-  ): LessonPlan {
-    const plan = this.findByIdOrFail(lessonPlanId);
-
-    const attachment: LessonPlanAttachment = {
-      id: uuidv4(),
-      fileId: dto.fileId,
-      fileName: dto.fileName || `file-${dto.fileId}`,
-      fileType: dto.fileType || this.inferFileType(dto.fileName || ''),
-      mimeType: this.inferMimeType(dto.fileName || ''),
-      size: 0, // Size would need to be provided or fetched from file system
-      downloadUrl: `/api/v1/files/${dto.fileId}/download`,
-      uploadedAt: new Date().toISOString(),
-      description: dto.description,
-    };
-
-    const attachments = [...(plan.attachments || []), attachment];
-
-    const now = new Date().toISOString();
-    this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
-      JSON.stringify(attachments),
-      now,
-      lessonPlanId,
-    );
-
-    return this.findByIdOrFail(lessonPlanId);
-  }
-
   removeAttachment(lessonPlanId: string, attachmentId: string): LessonPlan {
     const plan = this.findByIdOrFail(lessonPlanId);
     const attachments = (plan.attachments || []).filter(a => a.id !== attachmentId);
@@ -303,100 +267,77 @@ export class LessonPlansService {
   }
 
   /**
-   * Add attachment from MCP _originalPath (absolute path to file in workspace)
+   * Add attachment from MCP (file already registered with CCAAS)
    */
   async addAttachmentFromMcp(
     lessonPlanId: string,
     sessionId: string,
     dto: AddAttachmentDto,
   ): Promise<LessonPlan> {
-    const { _originalPath, fileId, fileName, fileType, mimeType, size, description } = dto;
+    this.logger.log(`[Attachment] Received request - lessonPlanId: ${lessonPlanId}`);
+    this.logger.log(`[Attachment] DTO:`, JSON.stringify(dto, null, 2));
 
-    if (!_originalPath || !fileId || !fileName) {
-      throw new BadRequestException('Missing required fields: _originalPath, fileId, fileName');
+    const { fileId, fileName, fileType, mimeType, size, description, downloadUrl } = dto;
+
+    if (!fileId || !fileName) {
+      this.logger.error('[Attachment] Missing required fields:', { fileId, fileName });
+      throw new BadRequestException('Missing required fields: fileId, fileName');
     }
 
-    // _originalPath is now an absolute path from MCP server
-    const sourcePath = _originalPath;
-
-    // Verify file exists
-    try {
-      await fs.access(sourcePath);
-    } catch {
-      throw new NotFoundException(`Source file not found: ${_originalPath}`);
-    }
-
-    // Copy file to persistent storage
-    const ext = path.extname(fileName);
-    const destPath = path.join(UPLOAD_DIR, `${fileId}${ext}`);
-    await fs.copyFile(sourcePath, destPath);
-
-    // Create attachment metadata
+    // Just create metadata reference (no file copying)
     const attachment: LessonPlanAttachment = {
       id: uuidv4(),
-      fileId,
+      fileId,        // From CCAAS
       fileName,
       fileType: fileType || this.inferFileType(fileName),
       mimeType: mimeType || this.inferMimeType(fileName),
       size: size || 0,
-      downloadUrl: `/api/v1/files/${fileId}/download`,
+      downloadUrl: downloadUrl || `http://localhost:3001/api/v1/files/${fileId}/download`,
       uploadedAt: new Date().toISOString(),
       description,
     };
 
-    // Add to lesson plan
-    return this.addAttachmentToLessonPlan(lessonPlanId, attachment);
+    this.logger.log('[Attachment] Created attachment metadata:', JSON.stringify(attachment, null, 2));
+
+    const result = this.addAttachmentToLessonPlan(lessonPlanId, attachment);
+    this.logger.log('[Attachment] Successfully added to lesson plan');
+
+    return result;
   }
 
   /**
-   * Common: Add attachment to lesson plan
+   * Add attachment to lesson plan
    */
   private addAttachmentToLessonPlan(
     lessonPlanId: string,
     attachment: LessonPlanAttachment,
   ): LessonPlan {
+    this.logger.log(`[DB] Adding attachment to lesson plan: ${lessonPlanId}`);
+
     const plan = this.findByIdOrFail(lessonPlanId);
+    this.logger.log(`[DB] Found lesson plan: ${plan.id}, current attachments count: ${plan.attachments?.length || 0}`);
+
     const attachments = [...(plan.attachments || []), attachment];
+    this.logger.log(`[DB] New attachments count: ${attachments.length}`);
 
     const now = new Date().toISOString();
-    this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
-      JSON.stringify(attachments),
-      now,
-      lessonPlanId,
-    );
 
-    return this.findByIdOrFail(lessonPlanId);
-  }
-
-  /**
-   * Get file metadata for download
-   */
-  async getFileMetadata(fileId: string): Promise<{ filePath: string; fileName: string; mimeType: string }> {
-    // Search all lesson plans for the attachment with this fileId
-    const allPlans = this.findAll();
-
-    for (const plan of allPlans) {
-      const attachment = plan.attachments?.find(a => a.fileId === fileId);
-      if (attachment) {
-        const ext = path.extname(attachment.fileName);
-        const filePath = path.join(UPLOAD_DIR, `${fileId}${ext}`);
-
-        // Verify file exists
-        try {
-          await fs.access(filePath);
-        } catch {
-          throw new NotFoundException(`File not found: ${fileId}`);
-        }
-
-        return {
-          filePath,
-          fileName: attachment.fileName,
-          mimeType: attachment.mimeType,
-        };
-      }
+    try {
+      this.db.prepare('UPDATE lesson_plans SET attachments = ?, update_time = ? WHERE id = ?').run(
+        JSON.stringify(attachments),
+        now,
+        lessonPlanId,
+      );
+      this.logger.log(`[DB] Successfully saved attachment to database - fileId: ${attachment.fileId}`);
+    } catch (error) {
+      this.logger.error(`[DB] Failed to save attachment to database: ${error.message}`);
+      throw error;
     }
 
-    throw new NotFoundException(`Attachment not found for fileId: ${fileId}`);
+    const updatedPlan = this.findByIdOrFail(lessonPlanId);
+    this.logger.log(`[DB] Verified - updated plan has ${updatedPlan.attachments?.length || 0} attachments`);
+
+    return updatedPlan;
   }
 
   // Helper: Infer file type from file name or MIME type

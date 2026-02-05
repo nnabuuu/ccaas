@@ -104,6 +104,13 @@ Core relay functionality. Manages WebSocket connections and CLI process lifecycl
 - `GET /api/v1/chat/health` - Health check
 - `GET /api/v1/chat/status` - Session stats
 
+**Background Task Monitoring (SessionService):**
+- Automatically detects Task tool calls with `run_in_background: true`
+- Polls output file every 3 seconds to detect completion
+- Sends `subagent_completed` WebSocket event when task finishes
+- 30-minute timeout protection with automatic cleanup
+- Session cleanup automatically stops all monitors
+
 ### AuthModule (auth/)
 
 API key authentication with scope-based authorization.
@@ -271,6 +278,38 @@ GET    /api/v1/messages/:id/files
 GET    /api/v1/files/:id/download
 ```
 
+### Admin - API Keys
+```
+GET    /api/v1/admin/api-keys                    # List keys (requires tenantId query param)
+POST   /api/v1/admin/api-keys                    # Create key (returns raw key once)
+GET    /api/v1/admin/api-keys/:id                # Get single key
+PUT    /api/v1/admin/api-keys/:id                # Update key
+POST   /api/v1/admin/api-keys/:id/revoke         # Revoke key
+DELETE /api/v1/admin/api-keys/:id                # Delete key
+```
+
+**List API Keys:**
+- Query params: `tenantId` (required), `page` (default: 1), `limit` (default: 50, max: 100)
+- Returns: `{ items: ApiKeyResponse[], total, page, limit }`
+- Validates: Tenant exists
+
+**Create API Key:**
+- Body: `{ tenantId, name, scopes?, rateLimitRpm?, rateLimitRpd?, expiresAt? }`
+- Returns: `{ apiKey, rawKey, warning }` (⚠️ rawKey shown only once)
+- Creates audit log entry
+
+**Update API Key:**
+- Body: `{ name?, scopes?, rateLimitRpm?, rateLimitRpd?, status?, expiresAt? }`
+- Logs before/after values in audit
+
+**Revoke API Key:**
+- Sets status to 'revoked'
+- Validates key is not already revoked
+
+**Delete API Key:**
+- Permanently deletes key
+- Creates audit log BEFORE deletion
+
 ### Scheduled Tasks
 ```
 POST   /api/v1/scheduled-tasks
@@ -342,6 +381,26 @@ export type FrontendEventType =
 8. CLI exits → agent_status: complete
 9. Follow-up message → CLI spawned with --resume
 10. Idle timeout → session cleanup
+```
+
+## Background Task Lifecycle
+
+```
+1. Task tool called with run_in_background: true
+2. EventMapperService detects isPersistent flag
+3. Tool result contains output_file path
+4. EventMapperService triggers callback → SessionService
+5. SessionService starts monitor (3s polling interval)
+6. Monitor reads last 20 lines of output_file
+7. Detects completion markers:
+   - "Agent completed successfully"
+   - '"type":"result"'
+   - "agentId:"
+8. SessionService calls EventMapperService.markBackgroundTaskComplete()
+9. Socket.io emits subagent_completed event
+10. Frontend removes SubAgentCard
+11. Timeout: 30 minutes → auto-fail
+12. Session cleanup → all monitors stopped
 ```
 
 ## Headless Execution Lifecycle (Scheduled Tasks)

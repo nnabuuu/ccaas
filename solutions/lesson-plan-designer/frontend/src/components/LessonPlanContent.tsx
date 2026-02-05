@@ -1,18 +1,99 @@
-import type { LessonPlan, SyncField } from '../types'
+import { useState } from 'react'
+import type { LessonPlan, SyncField, LessonPlanStatus, CurriculumStandard } from '../types'
 import EditorSection from './EditorSection'
-import ObjectivesEditor from './ObjectivesEditor'
-import ActivitiesEditor from './ActivitiesEditor'
+import AttachmentCard from './AttachmentCard'
+
+// Grade level labels
+const GRADE_LABELS: Record<number, string> = {
+  1: '一年级', 2: '二年级', 3: '三年级',
+  4: '四年级', 5: '五年级', 6: '六年级',
+  7: '初一', 8: '初二', 9: '初三',
+  10: '高一', 11: '高二', 12: '高三',
+}
 
 // Section definitions for the outline
 export const OUTLINE_ITEMS = [
   { id: 'basic', label: '1. 基本信息' },
-  { id: 'objectives', label: '2. 教学目标' },
-  { id: 'activities', label: '3. 教学活动' },
-  { id: 'assessment', label: '4. 评估方式' },
-  { id: 'differentiation', label: '5. 差异化教学' },
+  { id: 'curriculumRequirements', label: '2. 课程要求' },
+  { id: 'objectives', label: '3. 学习目标' },
+  { id: 'studentAnalysis', label: '4. 学情分析' },
+  { id: 'materialsNeeded', label: '5. 课前准备' },
+  { id: 'content', label: '6. 学习过程' },
+  { id: 'assessmentMethods', label: '7. 作业检测' },
+  { id: 'teachingMethods', label: '8. 教学方法' },
+  { id: 'extraProperties', label: '9. 其他' },
+  { id: 'attachments', label: '10. 附件' },
 ] as const
 
 export type SectionId = typeof OUTLINE_ITEMS[number]['id']
+
+// Content section config
+const CONTENT_SECTIONS: Array<{
+  id: SyncField
+  title: string
+  placeholder: string
+  rows: number
+}> = [
+  { id: 'objectives', title: '学习目标', placeholder: '输入学习目标...', rows: 6 },
+  { id: 'studentAnalysis', title: '学情分析', placeholder: '输入学情分析...', rows: 4 },
+  { id: 'materialsNeeded', title: '课前准备', placeholder: '输入课前准备...', rows: 4 },
+  { id: 'content', title: '学习过程', placeholder: '输入学习过程...', rows: 10 },
+  { id: 'assessmentMethods', title: '作业检测', placeholder: '输入作业检测...', rows: 4 },
+  { id: 'teachingMethods', title: '教学方法', placeholder: '输入教学方法...', rows: 4 },
+]
+
+/**
+ * CurriculumStandards list display
+ */
+function CurriculumStandardsList({
+  standards,
+  onRemove,
+}: {
+  standards: CurriculumStandard[]
+  onRemove?: (id: number) => void
+}) {
+  if (standards.length === 0) {
+    return (
+      <p className="text-sm text-gray-400">暂无课程要求，请使用AI助手查询并添加</p>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      {standards.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg group"
+        >
+          <div className="flex-shrink-0 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-mono rounded">
+            {s.standardCode}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-gray-800">{s.title}</p>
+            <div className="flex gap-2 mt-1">
+              <span className="text-xs text-gray-500">{s.stage}</span>
+              <span className="text-xs text-gray-400">|</span>
+              <span className="text-xs text-gray-500">{s.standardType}</span>
+              <span className="text-xs text-gray-400">|</span>
+              <span className="text-xs text-gray-500">{s.contentDomain}</span>
+            </div>
+          </div>
+          {onRemove && (
+            <button
+              onClick={() => onRemove(s.id)}
+              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1"
+              title="删除"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 interface LessonPlanContentProps {
   lessonPlan: LessonPlan
@@ -29,8 +110,91 @@ interface LessonPlanContentProps {
 }
 
 /**
+ * ExtraProperties key-value editor
+ */
+function ExtraPropertiesEditor({
+  extraProperties,
+  onChange,
+  disabled,
+}: {
+  extraProperties: Record<string, string>
+  onChange: (props: Record<string, string>) => void
+  disabled: boolean
+}) {
+  const [newKey, setNewKey] = useState('')
+  const entries = Object.entries(extraProperties)
+
+  const handleAdd = () => {
+    const key = newKey.trim()
+    if (!key || key in extraProperties) return
+    onChange({ ...extraProperties, [key]: '' })
+    setNewKey('')
+  }
+
+  const handleRemove = (key: string) => {
+    const next = { ...extraProperties }
+    delete next[key]
+    onChange(next)
+  }
+
+  const handleValueChange = (key: string, value: string) => {
+    onChange({ ...extraProperties, [key]: value })
+  }
+
+  return (
+    <div className="space-y-3">
+      {entries.map(([key, value]) => (
+        <div key={key} className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">{key}</span>
+            {!disabled && (
+              <button
+                onClick={() => handleRemove(key)}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                删除
+              </button>
+            )}
+          </div>
+          <textarea
+            value={value}
+            onChange={(e) => handleValueChange(key, e.target.value)}
+            disabled={disabled}
+            rows={3}
+            className={`textarea-field ${disabled ? 'bg-gray-50' : ''}`}
+          />
+        </div>
+      ))}
+
+      {!disabled && (
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={newKey}
+            onChange={(e) => setNewKey(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            placeholder="添加新属性名..."
+            className="input-field flex-1"
+          />
+          <button
+            onClick={handleAdd}
+            disabled={!newKey.trim()}
+            className="px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          >
+            添加
+          </button>
+        </div>
+      )}
+
+      {entries.length === 0 && disabled && (
+        <p className="text-sm text-gray-400">暂无额外属性</p>
+      )}
+    </div>
+  )
+}
+
+/**
  * LessonPlanContent - Main content area with editable sections.
- * Each section has independent edit/save/cancel controls.
  */
 export function LessonPlanContent({
   lessonPlan,
@@ -77,6 +241,21 @@ export function LessonPlanContent({
             />
           </div>
 
+          {/* Lesson Plan Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              教案编号
+            </label>
+            <input
+              type="text"
+              value={lessonPlan.lessonPlanCode || ''}
+              onChange={(e) => onChange('lessonPlanCode', e.target.value || null)}
+              placeholder="教案编号（可选）"
+              disabled={!isEditing('basic')}
+              className={`input-field ${modifiedFields.has('lessonPlanCode') ? 'ai-modified' : ''} ${!isEditing('basic') ? 'bg-gray-50' : ''}`}
+            />
+          </div>
+
           {/* Subject */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -105,51 +284,83 @@ export function LessonPlanContent({
             </select>
           </div>
 
-          {/* Grade Level */}
+          {/* Grade Level (1-12 select) */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               年级
             </label>
             <select
               value={lessonPlan.gradeLevel}
-              onChange={(e) => onChange('gradeLevel', e.target.value)}
+              onChange={(e) => onChange('gradeLevel', Number(e.target.value))}
               disabled={!isEditing('basic')}
               className={`input-field ${modifiedFields.has('gradeLevel') ? 'ai-modified' : ''} ${!isEditing('basic') ? 'bg-gray-50' : ''}`}
             >
-              <option value="">选择年级</option>
-              <option value="一年级">一年级</option>
-              <option value="二年级">二年级</option>
-              <option value="三年级">三年级</option>
-              <option value="四年级">四年级</option>
-              <option value="五年级">五年级</option>
-              <option value="六年级">六年级</option>
-              <option value="初一">初一</option>
-              <option value="初二">初二</option>
-              <option value="初三">初三</option>
-              <option value="高一">高一</option>
-              <option value="高二">高二</option>
-              <option value="高三">高三</option>
+              {Object.entries(GRADE_LABELS).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
             </select>
           </div>
 
-          {/* Duration */}
+          {/* Duration Minutes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              课时
+              课时（分钟）
             </label>
-            <select
-              value={lessonPlan.duration}
-              onChange={(e) => onChange('duration', e.target.value)}
+            <input
+              type="number"
+              value={lessonPlan.durationMinutes}
+              onChange={(e) => onChange('durationMinutes', Number(e.target.value) || 45)}
+              min={1}
+              max={600}
               disabled={!isEditing('basic')}
-              className={`input-field ${modifiedFields.has('duration') ? 'ai-modified' : ''} ${!isEditing('basic') ? 'bg-gray-50' : ''}`}
-            >
-              <option value="">选择课时</option>
-              <option value="1课时（40分钟）">1课时（40分钟）</option>
-              <option value="1课时（45分钟）">1课时（45分钟）</option>
-              <option value="2课时">2课时</option>
-              <option value="3课时">3课时</option>
-            </select>
+              className={`input-field ${modifiedFields.has('durationMinutes') ? 'ai-modified' : ''} ${!isEditing('basic') ? 'bg-gray-50' : ''}`}
+            />
           </div>
+
+          {/* Publisher (read-only, set at creation) */}
+          {lessonPlan.publisher && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                出版社
+              </label>
+              <input
+                type="text"
+                value={lessonPlan.publisher}
+                disabled
+                className="input-field bg-gray-50"
+              />
+            </div>
+          )}
+
+          {/* Volume (read-only, set at creation) */}
+          {lessonPlan.volume && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                册别
+              </label>
+              <input
+                type="text"
+                value={lessonPlan.volume}
+                disabled
+                className="input-field bg-gray-50"
+              />
+            </div>
+          )}
+
+          {/* Chapter (read-only, set at creation) */}
+          {lessonPlan.chapterTitle && (
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                章节
+              </label>
+              <input
+                type="text"
+                value={lessonPlan.chapterTitle}
+                disabled
+                className="input-field bg-gray-50"
+              />
+            </div>
+          )}
 
           {/* Status */}
           <div>
@@ -158,201 +369,116 @@ export function LessonPlanContent({
             </label>
             <select
               value={lessonPlan.status}
-              onChange={(e) => onChange('status', e.target.value as LessonPlan['status'])}
+              onChange={(e) => onChange('status', e.target.value as LessonPlanStatus)}
               disabled={!isEditing('basic')}
               className={`input-field ${!isEditing('basic') ? 'bg-gray-50' : ''}`}
             >
-              <option value="draft">草稿</option>
-              <option value="review">审核中</option>
-              <option value="published">已发布</option>
+              <option value="DRAFT">草稿</option>
+              <option value="PUBLISHED">已发布</option>
+              <option value="ARCHIVED">已归档</option>
             </select>
           </div>
         </div>
       </EditorSection>
 
-      {/* Learning Objectives */}
+      {/* Curriculum Requirements (structured array) */}
       <EditorSection
-        id="objectives"
-        title="教学目标"
-        isEditing={isEditing('objectives')}
-        isSaving={isSaving('objectives')}
-        isModified={modifiedFields.has('objectives')}
-        canUndo={canUndo('objectives')}
-        onUndo={() => onUndo('objectives')}
-        onStartEdit={() => onStartEdit('objectives')}
-        onSave={() => onSaveEdit('objectives')}
-        onCancel={() => onCancelEdit('objectives')}
-        onAiAssist={onAiAssist ? () => onAiAssist('objectives') : undefined}
+        id="curriculumRequirements"
+        title="课程要求"
+        isEditing={false}
+        isSaving={isSaving('curriculumRequirements')}
+        isModified={modifiedFields.has('curriculumRequirements')}
+        canUndo={canUndo('curriculumRequirements')}
+        onUndo={() => onUndo('curriculumRequirements')}
+        onStartEdit={() => {}}
+        onSave={() => {}}
+        onCancel={() => {}}
+        onAiAssist={onAiAssist ? () => onAiAssist('curriculumRequirements') : undefined}
       >
-        <ObjectivesEditor
-          objectives={lessonPlan.objectives}
-          onChange={(objectives) => onChange('objectives', objectives)}
-          isModified={modifiedFields.has('objectives')}
+        <CurriculumStandardsList
+          standards={lessonPlan.curriculumRequirements}
+          onRemove={(id) => {
+            const updated = lessonPlan.curriculumRequirements.filter(s => s.id !== id)
+            onChange('curriculumRequirements', updated)
+          }}
         />
       </EditorSection>
 
-      {/* Teaching Activities */}
+      {/* Content Sections (6 plain-text sections) */}
+      {CONTENT_SECTIONS.map((section) => (
+        <EditorSection
+          key={section.id}
+          id={section.id}
+          title={section.title}
+          isEditing={isEditing(section.id)}
+          isSaving={isSaving(section.id)}
+          isModified={modifiedFields.has(section.id)}
+          canUndo={canUndo(section.id)}
+          onUndo={() => onUndo(section.id)}
+          onStartEdit={() => onStartEdit(section.id)}
+          onSave={() => onSaveEdit(section.id)}
+          onCancel={() => onCancelEdit(section.id)}
+          onAiAssist={onAiAssist ? () => onAiAssist(section.id) : undefined}
+        >
+          <textarea
+            value={(lessonPlan[section.id as keyof LessonPlan] as string | null) || ''}
+            onChange={(e) => onChange(section.id as keyof LessonPlan, e.target.value as never)}
+            placeholder={section.placeholder}
+            rows={section.rows}
+            disabled={!isEditing(section.id)}
+            className={`textarea-field w-full ${modifiedFields.has(section.id) ? 'ai-modified' : ''} ${!isEditing(section.id) ? 'bg-gray-50' : ''}`}
+          />
+        </EditorSection>
+      ))}
+
+      {/* Extra Properties */}
       <EditorSection
-        id="activities"
-        title="教学活动"
-        isEditing={isEditing('activities')}
-        isSaving={isSaving('activities')}
-        isModified={modifiedFields.has('activities')}
-        canUndo={canUndo('activities')}
-        onUndo={() => onUndo('activities')}
-        onStartEdit={() => onStartEdit('activities')}
-        onSave={() => onSaveEdit('activities')}
-        onCancel={() => onCancelEdit('activities')}
-        onAiAssist={onAiAssist ? () => onAiAssist('activities') : undefined}
+        id="extraProperties"
+        title="其他"
+        isEditing={isEditing('extraProperties')}
+        isSaving={isSaving('extraProperties')}
+        isModified={modifiedFields.has('extraProperties')}
+        canUndo={canUndo('extraProperties')}
+        onUndo={() => onUndo('extraProperties')}
+        onStartEdit={() => onStartEdit('extraProperties')}
+        onSave={() => onSaveEdit('extraProperties')}
+        onCancel={() => onCancelEdit('extraProperties')}
+        onAiAssist={onAiAssist ? () => onAiAssist('extraProperties') : undefined}
       >
-        <ActivitiesEditor
-          activities={lessonPlan.activities}
-          onChange={(activities) => onChange('activities', activities)}
-          isModified={modifiedFields.has('activities')}
+        <ExtraPropertiesEditor
+          extraProperties={lessonPlan.extraProperties}
+          onChange={(props) => onChange('extraProperties', props)}
+          disabled={!isEditing('extraProperties')}
         />
       </EditorSection>
 
-      {/* Assessment */}
-      <EditorSection
-        id="assessment"
-        title="评估方式"
-        isEditing={isEditing('assessment')}
-        isSaving={isSaving('assessment')}
-        isModified={modifiedFields.has('assessment')}
-        canUndo={canUndo('assessment')}
-        onUndo={() => onUndo('assessment')}
-        onStartEdit={() => onStartEdit('assessment')}
-        onSave={() => onSaveEdit('assessment')}
-        onCancel={() => onCancelEdit('assessment')}
-        onAiAssist={onAiAssist ? () => onAiAssist('assessment') : undefined}
-      >
-        <div className="space-y-4">
-          {/* Formative Assessment */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              形成性评估
-            </label>
-            <textarea
-              value={lessonPlan.assessment.formative.join('\n')}
-              onChange={(e) => onChange('assessment', {
-                ...lessonPlan.assessment,
-                formative: e.target.value.split('\n').filter(s => s.trim()),
-              })}
-              placeholder="每行一项评估方式..."
-              rows={3}
-              disabled={!isEditing('assessment')}
-              className={`textarea-field ${!isEditing('assessment') ? 'bg-gray-50' : ''}`}
-            />
+      {/* Attachments */}
+      {lessonPlan.attachments && lessonPlan.attachments.length > 0 && (
+        <EditorSection
+          id="attachments"
+          title="附件"
+          isEditing={false}
+          isSaving={false}
+          isModified={false}
+          canUndo={false}
+          onStartEdit={() => {}}
+          onSave={() => {}}
+          onCancel={() => {}}
+        >
+          <div className="space-y-3">
+            {lessonPlan.attachments.map((attachment) => (
+              <AttachmentCard
+                key={attachment.id}
+                attachment={attachment}
+                onRemove={(id) => {
+                  const updated = lessonPlan.attachments.filter((a) => a.id !== id)
+                  onChange('attachments', updated as never)
+                }}
+              />
+            ))}
           </div>
-
-          {/* Summative Assessment */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              总结性评估
-            </label>
-            <textarea
-              value={lessonPlan.assessment.summative.join('\n')}
-              onChange={(e) => onChange('assessment', {
-                ...lessonPlan.assessment,
-                summative: e.target.value.split('\n').filter(s => s.trim()),
-              })}
-              placeholder="每行一项评估方式..."
-              rows={3}
-              disabled={!isEditing('assessment')}
-              className={`textarea-field ${!isEditing('assessment') ? 'bg-gray-50' : ''}`}
-            />
-          </div>
-
-          {/* Rubric */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              评分标准
-            </label>
-            <textarea
-              value={lessonPlan.assessment.rubric || ''}
-              onChange={(e) => onChange('assessment', {
-                ...lessonPlan.assessment,
-                rubric: e.target.value,
-              })}
-              placeholder="描述评分标准..."
-              rows={2}
-              disabled={!isEditing('assessment')}
-              className={`textarea-field ${!isEditing('assessment') ? 'bg-gray-50' : ''}`}
-            />
-          </div>
-        </div>
-      </EditorSection>
-
-      {/* Differentiation */}
-      <EditorSection
-        id="differentiation"
-        title="差异化教学"
-        isEditing={isEditing('differentiation')}
-        isSaving={isSaving('differentiation')}
-        isModified={modifiedFields.has('differentiation')}
-        canUndo={canUndo('differentiation')}
-        onUndo={() => onUndo('differentiation')}
-        onStartEdit={() => onStartEdit('differentiation')}
-        onSave={() => onSaveEdit('differentiation')}
-        onCancel={() => onCancelEdit('differentiation')}
-        onAiAssist={onAiAssist ? () => onAiAssist('differentiation') : undefined}
-      >
-        <div className="space-y-4">
-          {/* Struggling */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              学困生支持
-            </label>
-            <textarea
-              value={lessonPlan.differentiation.struggling.join('\n')}
-              onChange={(e) => onChange('differentiation', {
-                ...lessonPlan.differentiation,
-                struggling: e.target.value.split('\n').filter(s => s.trim()),
-              })}
-              placeholder="每行一项支持策略..."
-              rows={2}
-              disabled={!isEditing('differentiation')}
-              className={`textarea-field ${!isEditing('differentiation') ? 'bg-gray-50' : ''}`}
-            />
-          </div>
-
-          {/* On Level */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              普通学生
-            </label>
-            <textarea
-              value={lessonPlan.differentiation.onLevel.join('\n')}
-              onChange={(e) => onChange('differentiation', {
-                ...lessonPlan.differentiation,
-                onLevel: e.target.value.split('\n').filter(s => s.trim()),
-              })}
-              placeholder="每行一项教学策略..."
-              rows={2}
-              disabled={!isEditing('differentiation')}
-              className={`textarea-field ${!isEditing('differentiation') ? 'bg-gray-50' : ''}`}
-            />
-          </div>
-
-          {/* Advanced */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              优秀学生拓展
-            </label>
-            <textarea
-              value={lessonPlan.differentiation.advanced.join('\n')}
-              onChange={(e) => onChange('differentiation', {
-                ...lessonPlan.differentiation,
-                advanced: e.target.value.split('\n').filter(s => s.trim()),
-              })}
-              placeholder="每行一项拓展策略..."
-              rows={2}
-              disabled={!isEditing('differentiation')}
-              className={`textarea-field ${!isEditing('differentiation') ? 'bg-gray-50' : ''}`}
-            />
-          </div>
-        </div>
-      </EditorSection>
+        </EditorSection>
+      )}
     </div>
   )
 }

@@ -10,7 +10,9 @@ interface CreateLessonPlanDialogProps {
   onCreate: (data: {
     title: string
     subject: string
-    gradeLevel: string
+    gradeLevel: number
+    durationMinutes: number
+    lessonPlanCode?: string
     publisher?: string
     volume?: string
     chapterId?: number
@@ -54,6 +56,8 @@ export default function CreateLessonPlanDialog({
   // Custom title override
   const [customTitle, setCustomTitle] = useState('')
   const [useCustomTitle, setUseCustomTitle] = useState(false)
+  const [durationMinutes, setDurationMinutes] = useState<number>(45)
+  const [lessonPlanCode, setLessonPlanCode] = useState('')
 
   // Get grade label
   const selectedGradeLabel = useMemo(() => {
@@ -84,12 +88,14 @@ export default function CreateLessonPlanDialog({
   }, [selectedSubject, selectedGradeId, finalTitle])
 
   const handleCreate = useCallback(() => {
-    if (!canCreate) return
+    if (!canCreate || !selectedGradeId) return
 
     onCreate({
       title: finalTitle.trim(),
       subject: selectedSubjectLabel,
-      gradeLevel: selectedGradeLabel,
+      gradeLevel: selectedGradeId,
+      durationMinutes,
+      lessonPlanCode: lessonPlanCode.trim() || undefined,
       publisher: selectedPublisher || undefined,
       volume: selectedVolume || undefined,
       chapterId: selectedChapterId || undefined,
@@ -99,7 +105,9 @@ export default function CreateLessonPlanDialog({
     canCreate,
     finalTitle,
     selectedSubjectLabel,
-    selectedGradeLabel,
+    selectedGradeId,
+    durationMinutes,
+    lessonPlanCode,
     selectedPublisher,
     selectedVolume,
     selectedChapterId,
@@ -111,6 +119,8 @@ export default function CreateLessonPlanDialog({
     reset()
     setCustomTitle('')
     setUseCustomTitle(false)
+    setDurationMinutes(45)
+    setLessonPlanCode('')
     onClose()
   }, [reset, onClose])
 
@@ -294,6 +304,35 @@ export default function CreateLessonPlanDialog({
                 {autoTitle || <span className="text-gray-400">请先选择学科和年级</span>}
               </div>
             )}
+          </div>
+
+          {/* Duration and Lesson Plan Code */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                课时（分钟）
+              </label>
+              <input
+                type="number"
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value) || 45)}
+                min={1}
+                max={600}
+                className="input-field"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                教案编号
+              </label>
+              <input
+                type="text"
+                value={lessonPlanCode}
+                onChange={(e) => setLessonPlanCode(e.target.value)}
+                placeholder="可选"
+                className="input-field"
+              />
+            </div>
           </div>
         </div>
 

@@ -40,6 +40,8 @@ interface SubAgentTracker {
   status: 'running' | 'completed' | 'failed';
   toolName?: string;
   nestingLevel: number;
+  isPersistent?: boolean;  // 是否为持久化后台任务（run_in_background=true）
+  outputFile?: string;     // 后台任务的输出文件路径
 }
 
 @Injectable()
@@ -70,6 +72,9 @@ export class EventMapperService {
 
   // Callbacks for thinking events
   private thinkingCallbacks: ThinkingEventCallback[] = [];
+
+  // Callbacks for background task registration
+  private backgroundTaskCallbacks: Array<(sessionId: string, tracker: SubAgentTracker) => void> = [];
 
   // Callbacks for token usage events
   private tokenUsageCallbacks: TokenUsageCallback[] = [];
@@ -268,9 +273,21 @@ export class EventMapperService {
 
               // Track subagent start and emit subagent_started event
               const nestingLevel = agentType === 'main' ? 0 : 1;
-              if (toolName === 'Task' || nestingLevel > 0) {
+
+              // Track all potentially background tasks
+              const isBackgroundTask =
+                toolName === 'Task' ||           // Task tool (subagent spawning)
+                nestingLevel > 0 ||              // Nested tools (subagent context)
+                agentType !== 'main' ||          // Non-main agents
+                block.input?.run_in_background === true; // Explicitly marked as background
+
+              this.logger.log(
+                `[SubAgent] Tool use detected: toolName=${toolName}, toolUseId=${toolId}, isBackgroundTask=${isBackgroundTask}, nestingLevel=${nestingLevel}, agentType=${agentType}, run_in_background=${block.input?.run_in_background}`,
+              );
+
+              if (isBackgroundTask) {
                 const description = this.getToolDescription(toolName, block.input);
-                this.trackSubAgentStart(sessionId, toolId, agentType, description, nestingLevel);
+                this.trackSubAgentStart(sessionId, toolId, agentType, description, nestingLevel, block.input);
 
                 events.push({
                   type: 'subagent_started',
@@ -279,7 +296,7 @@ export class EventMapperService {
                   timestamp,
                   payload: {
                     subAgentId: toolId,
-                    agentType,
+                    agentType: toolName,  // Use toolName for better visibility
                     description,
                     startedAt: new Date().toISOString(),
                     status: 'running',
@@ -401,28 +418,58 @@ export class EventMapperService {
                 });
 
                 // Track subagent completion and emit subagent_completed event
-                if (toolName === 'Task' || nestingLevel > 0) {
-                  const tracker = this.trackSubAgentComplete(
-                    sessionId,
-                    toolUseId,
-                    isError ? 'failed' : 'completed',
-                    isError ? this.extractErrorMessage(block.content) : undefined,
-                  );
+                // Match the same conditions as subagent_started
+                const isBackgroundTask =
+                  toolName === 'Task' ||
+                  nestingLevel > 0 ||
+                  agentType !== 'main' ||
+                  toolCall?.input?.run_in_background === true;
 
-                  if (tracker) {
-                    const durationMs = Date.now() - tracker.startedAt.getTime();
-                    events.push({
-                      type: 'subagent_completed',
+                if (isBackgroundTask) {
+                  // 检查是否为持久化后台任务
+                  const tracker = this.activeSubAgentsMap.get(sessionId)?.get(toolUseId);
+                  if (tracker?.isPersistent && !isError) {
+                    // Task 工具使用 run_in_background，不立即完成
+                    // 提取 output_file 路径
+                    const resultContent = String(block.content);
+                    const outputMatch = resultContent.match(/output_file:\s*(.+?)(\n|$)/);
+                    if (outputMatch) {
+                      tracker.outputFile = outputMatch[1].trim();
+                      this.logger.log(
+                        `[SubAgent] Persistent task detected: toolUseId=${toolUseId}, outputFile=${tracker.outputFile}`,
+                      );
+                      // 通知 SessionService 开始监控
+                      this.emitBackgroundTaskRegistration(sessionId, tracker);
+                      // 不发送 subagent_completed，保持 running 状态
+                    } else {
+                      this.logger.warn(
+                        `[SubAgent] Persistent task missing output_file: toolUseId=${toolUseId}`,
+                      );
+                    }
+                  } else {
+                    // 非持久化任务，正常完成流程
+                    const completedTracker = this.trackSubAgentComplete(
                       sessionId,
-                      clientId,
-                      timestamp,
-                      payload: {
-                        subAgentId: toolUseId,
-                        status: tracker.status,
-                        durationMs,
-                        error: isError ? this.extractErrorMessage(block.content) : undefined,
-                      },
-                    });
+                      toolUseId,
+                      isError ? 'failed' : 'completed',
+                      isError ? this.extractErrorMessage(block.content) : undefined,
+                    );
+
+                    if (completedTracker) {
+                      const durationMs = Date.now() - completedTracker.startedAt.getTime();
+                      events.push({
+                        type: 'subagent_completed',
+                        sessionId,
+                        clientId,
+                        timestamp,
+                        payload: {
+                          subAgentId: toolUseId,
+                          status: completedTracker.status,
+                          durationMs,
+                          error: isError ? this.extractErrorMessage(block.content) : undefined,
+                        },
+                      });
+                    }
                   }
                 }
 
@@ -1044,6 +1091,7 @@ export class EventMapperService {
 
     switch (normalizedName) {
       case 'write_output':
+      case 'attach_file':
         events.push({
           type: 'output_update',
           sessionId,
@@ -1193,7 +1241,12 @@ export class EventMapperService {
     agentType: string,
     description?: string,
     nestingLevel: number = 1,
+    toolInput?: Record<string, unknown>,
   ): SubAgentTracker {
+    this.logger.log(
+      `[SubAgent] Tracking start: sessionId=${sessionId}, subAgentId=${toolUseId}, agentType=${agentType}, description="${description}", nestingLevel=${nestingLevel}`,
+    );
+
     if (!this.activeSubAgentsMap.has(sessionId)) {
       this.activeSubAgentsMap.set(sessionId, new Map());
     }
@@ -1205,6 +1258,8 @@ export class EventMapperService {
       startedAt: new Date(),
       status: 'running',
       nestingLevel,
+      isPersistent: toolInput?.run_in_background === true,
+      outputFile: undefined, // 将在 tool_result 时设置
     };
 
     this.activeSubAgentsMap.get(sessionId)!.set(toolUseId, tracker);
@@ -1220,8 +1275,17 @@ export class EventMapperService {
     status: 'completed' | 'failed',
     error?: string,
   ): SubAgentTracker | undefined {
+    this.logger.log(
+      `[SubAgent] Tracking completion: sessionId=${sessionId}, toolUseId=${toolUseId}, status=${status}, error="${error || 'none'}"`,
+    );
+
     const sessionAgents = this.activeSubAgentsMap.get(sessionId);
-    if (!sessionAgents) return undefined;
+    if (!sessionAgents) {
+      this.logger.warn(
+        `[SubAgent] No active agents found for session: ${sessionId}`,
+      );
+      return undefined;
+    }
 
     const tracker = sessionAgents.get(toolUseId);
     if (tracker) {
@@ -1232,15 +1296,23 @@ export class EventMapperService {
         this.activeSubAgentsMap.delete(sessionId);
       }
 
+      this.logger.log(
+        `[SubAgent] Completed tracking: subAgentId=${tracker.subAgentId}, duration=${Date.now() - tracker.startedAt.getTime()}ms`,
+      );
+
       return tracker;
     }
+
+    this.logger.warn(
+      `[SubAgent] No tracker found for toolUseId: ${toolUseId}`,
+    );
     return undefined;
   }
 
   /**
    * Get active sub-agents for a session
    */
-  private getActiveSubAgents(sessionId: string): Array<{
+  public getActiveSubAgents(sessionId: string): Array<{
     subAgentId: string;
     agentType: string;
     description?: string;
@@ -1259,5 +1331,40 @@ export class EventMapperService {
       status: tracker.status,
       nestingLevel: tracker.nestingLevel,
     }));
+  }
+
+  /**
+   * Register callback for background task registration
+   */
+  registerBackgroundTaskCallback(callback: (sessionId: string, tracker: SubAgentTracker) => void): void {
+    this.backgroundTaskCallbacks.push(callback);
+  }
+
+  /**
+   * Emit background task registration event
+   */
+  private emitBackgroundTaskRegistration(sessionId: string, tracker: SubAgentTracker): void {
+    for (const callback of this.backgroundTaskCallbacks) {
+      try {
+        callback(sessionId, tracker);
+      } catch (error) {
+        this.logger.error(`Background task callback error: ${error}`);
+      }
+    }
+  }
+
+  /**
+   * Mark background task as complete (called by SessionService)
+   */
+  markBackgroundTaskComplete(
+    sessionId: string,
+    subAgentId: string,
+    status: 'completed' | 'failed',
+    error?: string,
+  ): SubAgentTracker | undefined {
+    this.logger.log(
+      `[SubAgent] Marking background task complete: sessionId=${sessionId}, subAgentId=${subAgentId}, status=${status}`,
+    );
+    return this.trackSubAgentComplete(sessionId, subAgentId, status, error);
   }
 }

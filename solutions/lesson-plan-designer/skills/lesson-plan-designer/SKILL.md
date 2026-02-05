@@ -257,11 +257,15 @@ Read(".context/lesson-plan.json")
 ```
 
 这个文件包含用户当前正在编辑的备课方案的完整信息，包括：
-- 基本信息：科目、年级、教材版本、章节
-- 教学目标
-- 教学活动
-- 评估方案
-- 差异化策略
+- 基本信息：科目、年级、课时、教案编号
+- 课程要求 (curriculumRequirements)
+- 学习目标 (objectives)
+- 学情分析 (studentAnalysis)
+- 课前准备 (materialsNeeded)
+- 学习过程 (content)
+- 作业检测 (assessmentMethods)
+- 教学方法 (teachingMethods)
+- 其他属性 (extraProperties)
 
 **严格要求**：
 - **必须**先读取上下文文件，再回复用户
