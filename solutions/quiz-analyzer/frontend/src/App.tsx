@@ -4,6 +4,7 @@ import QuizList from './pages/QuizList';
 import QuizDetail from './pages/QuizDetail';
 import BatchAnalysis from './pages/BatchAnalysis';
 import KnowledgePoints from './pages/KnowledgePoints';
+import Analytics from './pages/Analytics';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="quizzes/:id" element={<QuizDetail />} />
           <Route path="batch" element={<BatchAnalysis />} />
           <Route path="knowledge-points" element={<KnowledgePoints />} />
+          <Route path="analytics" element={<Analytics />} />
         </Route>
       </Routes>
     </BrowserRouter>
