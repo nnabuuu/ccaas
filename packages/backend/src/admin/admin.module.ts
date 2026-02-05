@@ -25,6 +25,7 @@ import { AdminAuditController } from './controllers/admin-audit.controller';
 import { AdminSkillsController } from './controllers/admin-skills.controller';
 import { AdminTenantsController } from './controllers/admin-tenants.controller';
 import { AdminSdkController } from './controllers/admin-sdk.controller';
+import { AdminApiKeysController } from './controllers/admin-api-keys.controller';
 
 // Dependent modules
 import { ChatModule } from '../chat/chat.module';
@@ -78,6 +79,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminSkillsController,
     AdminTenantsController,
     AdminSdkController,
+    AdminApiKeysController,
   ],
   providers: [
     AuditService,

@@ -23,6 +23,7 @@ export type AdminAction =
   | 'apikey.create'
   | 'apikey.revoke'
   | 'apikey.update'
+  | 'apikey.delete'
   | 'tenant.create'
   | 'tenant.update'
   | 'alert.create'
