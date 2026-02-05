@@ -19,6 +19,12 @@ export class QuizKnowledgeLink {
   @Column('varchar', { default: 'manual' })
   link_type: string; // manual, ai-generated, ai-verified
 
+  @Column('varchar', { default: 'question' })
+  source: 'question' | 'solution' | 'both'; // Source of knowledge point identification
+
+  @Column('text', { nullable: true })
+  note: string | null; // Explanation when using parent node (fallback strategy)
+
   @CreateDateColumn({ type: 'text' })
   created_at: string;
 

@@ -41,4 +41,24 @@ export class QuizzesController {
   async remove(@Param('id') id: string) {
     return this.quizzesService.remove(id);
   }
+
+  @Post(':id/knowledge-points')
+  async saveKnowledgePointTags(
+    @Param('id') id: string,
+    @Body() body: {
+      tags: Array<{
+        id: string;
+        confidence: number;
+        source: 'question' | 'solution' | 'both';
+        note?: string;
+      }>;
+    },
+  ) {
+    return this.quizzesService.saveKnowledgePointTags(id, body.tags);
+  }
+
+  @Get(':id/knowledge-points/by-source')
+  async getKnowledgePointsBySource(@Param('id') id: string) {
+    return this.quizzesService.getKnowledgePointsBySource(id);
+  }
 }

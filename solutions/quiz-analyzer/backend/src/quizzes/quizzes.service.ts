@@ -90,8 +90,74 @@ export class QuizzesService {
         level: link.knowledge_point.level,
         confidence_score: link.confidence_score,
         link_type: link.link_type,
+        source: link.source,
+        note: link.note,
       })) || [],
       analysis: quiz.analysis || null,
+    };
+  }
+
+  /**
+   * Save AI-generated knowledge point tags with source classification
+   */
+  async saveKnowledgePointTags(quizId: string, tags: Array<{
+    id: string;
+    confidence: number;
+    source: 'question' | 'solution' | 'both';
+    note?: string;
+  }>) {
+    // Remove existing AI-generated links
+    await this.linksRepository.delete({
+      quiz_id: quizId,
+      link_type: 'ai-generated',
+    });
+
+    // Create new links with source and note
+    const links = tags.map(tag => ({
+      id: uuidv4(),
+      quiz_id: quizId,
+      knowledge_point_id: tag.id,
+      confidence_score: tag.confidence,
+      link_type: 'ai-generated',
+      source: tag.source,
+      note: tag.note || null,
+      created_by: 'ai',
+    }));
+
+    return await this.linksRepository.save(links);
+  }
+
+  /**
+   * Get knowledge points grouped by source
+   */
+  async getKnowledgePointsBySource(quizId: string) {
+    const links = await this.linksRepository.find({
+      where: { quiz_id: quizId },
+      relations: ['knowledge_point'],
+    });
+
+    const grouped = {
+      question: links.filter(link => link.source === 'question'),
+      solution: links.filter(link => link.source === 'solution'),
+      both: links.filter(link => link.source === 'both'),
+    };
+
+    return {
+      question: grouped.question.map(link => ({
+        ...link.knowledge_point,
+        confidence_score: link.confidence_score,
+        note: link.note,
+      })),
+      solution: grouped.solution.map(link => ({
+        ...link.knowledge_point,
+        confidence_score: link.confidence_score,
+        note: link.note,
+      })),
+      both: grouped.both.map(link => ({
+        ...link.knowledge_point,
+        confidence_score: link.confidence_score,
+        note: link.note,
+      })),
     };
   }
 
