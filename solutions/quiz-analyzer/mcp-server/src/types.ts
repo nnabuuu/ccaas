@@ -22,6 +22,11 @@ export interface KnowledgePointTag {
   verified: boolean;
   level: number;           // Tree depth
   path: string[];          // ["代数", "方程", "一元二次方程"]
+  note?: string;           // Optional: Explanation when using parent node instead of leaf node
+  source: 'question' | 'solution' | 'both';  // Where this knowledge point is identified from
+  // 'question': Identified from the question text itself
+  // 'solution': Identified from the answer/solution process
+  // 'both': Required by both question context and solution method
 }
 
 export interface SolutionStep {

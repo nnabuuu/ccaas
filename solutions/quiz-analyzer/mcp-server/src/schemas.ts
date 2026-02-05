@@ -9,6 +9,8 @@ const KnowledgePointTagSchema = z.object({
   verified: z.boolean(),
   level: z.number().int().min(0),
   path: z.array(z.string()),
+  note: z.string().optional(),  // Explanation when using parent node (fallback)
+  source: z.enum(['question', 'solution', 'both']),  // Source of knowledge point identification
 });
 
 const SolutionStepSchema = z.object({
