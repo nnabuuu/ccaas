@@ -69,6 +69,8 @@ CREATE TABLE IF NOT EXISTS quiz_knowledge_links (
   knowledge_point_id TEXT NOT NULL,
   confidence_score REAL DEFAULT 1.0, -- AI confidence 0.0-1.0
   link_type TEXT DEFAULT 'manual', -- 'manual', 'ai-generated', 'ai-verified'
+  source TEXT DEFAULT 'question', -- 'question', 'solution', 'both' - where this knowledge point is identified from
+  note TEXT, -- Optional explanation when using parent node (fallback strategy)
   created_at TEXT DEFAULT (datetime('now')),
   created_by TEXT, -- 'system', 'ai', or user_id
   FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
