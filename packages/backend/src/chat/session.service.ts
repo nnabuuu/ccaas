@@ -10,11 +10,14 @@ import {
   Injectable,
   OnModuleDestroy,
   Logger,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { spawn, ChildProcess } from 'node:child_process';
 import type { Writable } from 'node:stream';
 import * as fs from 'node:fs';
+import { promises as fsPromises } from 'node:fs';
 import * as path from 'node:path';
 import { Socket } from 'socket.io';
 import { EventMapperService } from './event-mapper.service';
@@ -23,6 +26,9 @@ import type {
   SessionStats,
   CLIEvent,
   FrontendEvent,
+  WorkspaceFileInfo,
+  WorkspaceTreeResponse,
+  FileTreeNode,
 } from '../common/interfaces';
 
 export interface ResolvedAttachment {
@@ -44,6 +50,9 @@ export class SessionService implements OnModuleDestroy {
   private readonly cleanupIntervalMs: number;
   private readonly claudeCliPath: string;
 
+  // 后台任务监控映射 (sessionId:subAgentId -> intervalId)
+  private backgroundTaskMonitors = new Map<string, NodeJS.Timeout>();
+
   constructor(
     private readonly configService: ConfigService,
     private readonly eventMapperService: EventMapperService,
@@ -56,6 +65,11 @@ export class SessionService implements OnModuleDestroy {
 
     this.logger.log(`Using Claude CLI: ${this.claudeCliPath}`);
     this.startCleanupTimer();
+
+    // 注册后台任务回调
+    this.eventMapperService.registerBackgroundTaskCallback((sessionId, tracker) => {
+      this.startBackgroundTaskMonitor(sessionId, tracker);
+    });
   }
 
   onModuleDestroy() {
@@ -100,6 +114,9 @@ export class SessionService implements OnModuleDestroy {
           allow: ['Bash(*)', 'Write(*)', 'Edit(*)', 'Read(*)'],
           deny: [],
         },
+        // Disable global plugins to prevent conflicts with workspace skills
+        // Solutions should manage their own skills via CCAAS database
+        enabledPlugins: {},
       }, null, 2),
     );
 
@@ -502,6 +519,15 @@ export class SessionService implements OnModuleDestroy {
 
     this.logger.log(`Closing session ${sessionId}`);
 
+    // 停止该 session 的所有后台任务监控
+    for (const [monitorKey, intervalId] of this.backgroundTaskMonitors.entries()) {
+      if (monitorKey.startsWith(`${sessionId}:`)) {
+        clearInterval(intervalId);
+        this.backgroundTaskMonitors.delete(monitorKey);
+        this.logger.log(`[BackgroundTask] Stopped monitor on session close: ${monitorKey}`);
+      }
+    }
+
     if (session.cliProcess && !session.cliProcess.killed) {
       session.cliProcess.kill('SIGTERM');
     }
@@ -780,6 +806,321 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * 启动后台任务监控
+   */
+  private startBackgroundTaskMonitor(sessionId: string, tracker: any): void {
+    const monitorKey = `${sessionId}:${tracker.subAgentId}`;
+
+    // 避免重复监控
+    if (this.backgroundTaskMonitors.has(monitorKey)) {
+      return;
+    }
+
+    this.logger.log(
+      `[BackgroundTask] Starting monitor: ${monitorKey}, outputFile=${tracker.outputFile}`,
+    );
+
+    // 每 3 秒检查一次输出文件
+    const intervalId = setInterval(async () => {
+      try {
+        await this.checkBackgroundTaskStatus(sessionId, tracker);
+      } catch (error) {
+        this.logger.error(`[BackgroundTask] Monitor error: ${monitorKey}`, error);
+      }
+    }, 3000);
+
+    this.backgroundTaskMonitors.set(monitorKey, intervalId);
+
+    // 30 分钟后超时
+    setTimeout(() => {
+      this.stopBackgroundTaskMonitor(monitorKey, sessionId, tracker.subAgentId, 'timeout');
+    }, 30 * 60 * 1000);
+  }
+
+  /**
+   * 检查后台任务状态
+   */
+  private async checkBackgroundTaskStatus(sessionId: string, tracker: any): Promise<void> {
+    if (!tracker.outputFile) {
+      return;
+    }
+
+    try {
+      const content = await fsPromises.readFile(tracker.outputFile, 'utf-8');
+      const lines = content.split('\n');
+      const lastLines = lines.slice(-20).join('\n'); // 读取最后 20 行
+
+      // 检测完成标记
+      if (
+        lastLines.includes('Agent completed successfully') ||
+        lastLines.includes('"type":"result"') ||
+        lastLines.includes('agentId:') // Task tool 返回的标记
+      ) {
+        this.logger.log(`[BackgroundTask] Task completed: ${tracker.subAgentId}`);
+        this.stopBackgroundTaskMonitor(
+          `${sessionId}:${tracker.subAgentId}`,
+          sessionId,
+          tracker.subAgentId,
+          'completed',
+        );
+      } else if (lastLines.includes('Error') || lastLines.includes('Failed')) {
+        this.logger.warn(`[BackgroundTask] Task failed: ${tracker.subAgentId}`);
+        this.stopBackgroundTaskMonitor(
+          `${sessionId}:${tracker.subAgentId}`,
+          sessionId,
+          tracker.subAgentId,
+          'failed',
+        );
+      }
+    } catch (error: any) {
+      // 文件不存在或无法读取，继续等待
+      if (error.code !== 'ENOENT') {
+        this.logger.debug(`[BackgroundTask] Cannot read output file: ${tracker.outputFile}`);
+      }
+    }
+  }
+
+  /**
+   * 停止后台任务监控
+   */
+  private stopBackgroundTaskMonitor(
+    monitorKey: string,
+    sessionId: string,
+    subAgentId: string,
+    status: 'completed' | 'failed' | 'timeout',
+  ): void {
+    const intervalId = this.backgroundTaskMonitors.get(monitorKey);
+    if (intervalId) {
+      clearInterval(intervalId);
+      this.backgroundTaskMonitors.delete(monitorKey);
+    }
+
+    // 通知 EventMapper 标记任务完成
+    const finalStatus = status === 'timeout' ? 'failed' : status;
+    const error = status === 'timeout' ? 'Task timeout after 30 minutes' : undefined;
+
+    const tracker = this.eventMapperService.markBackgroundTaskComplete(
+      sessionId,
+      subAgentId,
+      finalStatus,
+      error,
+    );
+
+    if (tracker) {
+      // 发送 subagent_completed 事件
+      const session = this.getSession(sessionId);
+      if (session?.socket) {
+        const durationMs = Date.now() - tracker.startedAt.getTime();
+        const event: FrontendEvent = {
+          type: 'subagent_completed',
+          sessionId,
+          clientId: session.clientId,
+          timestamp: new Date().toISOString(),
+          payload: {
+            subAgentId,
+            status: finalStatus,
+            durationMs,
+            error,
+          },
+        };
+        session.socket.emit('subagent_completed', event);
+        this.logger.log(
+          `[BackgroundTask] Sent subagent_completed event: ${subAgentId}, status=${finalStatus}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Get workspace file for download
+   * Security: Validates path to prevent directory traversal
+   */
+  async getWorkspaceFile(
+    sessionId: string,
+    relativePath: string,
+  ): Promise<WorkspaceFileInfo> {
+    // 1. Get workspace directory
+    const session = this.getSession(sessionId);
+    const workspaceDir = session?.workspaceDir ||
+      path.join(this.workspaceDir, 'sessions', sessionId);
+
+    if (!fs.existsSync(workspaceDir)) {
+      throw new NotFoundException(`Session workspace not found: ${sessionId}`);
+    }
+
+    // 2. Sanitize path (CRITICAL SECURITY)
+    const sanitizedPath = this.sanitizeFilePath(relativePath);
+    const absolutePath = path.join(workspaceDir, sanitizedPath);
+
+    // 3. Prevent directory traversal
+    const resolvedPath = path.resolve(absolutePath);
+    const resolvedWorkspace = path.resolve(workspaceDir);
+
+    if (!resolvedPath.startsWith(resolvedWorkspace + path.sep) && resolvedPath !== resolvedWorkspace) {
+      this.logger.warn(`[Security] Path traversal blocked: ${relativePath}`);
+      throw new BadRequestException('Invalid file path');
+    }
+
+    // 4. Check file exists and is a regular file
+    if (!fs.existsSync(absolutePath)) {
+      throw new NotFoundException(`File not found: ${relativePath}`);
+    }
+
+    const stats = fs.lstatSync(absolutePath);
+
+    if (stats.isSymbolicLink()) {
+      this.logger.warn(`[Security] Symlink blocked: ${relativePath}`);
+      throw new BadRequestException('Symlinks not allowed');
+    }
+
+    if (!stats.isFile()) {
+      throw new BadRequestException('Path does not point to a file');
+    }
+
+    // 5. Return file info
+    const filename = path.basename(absolutePath);
+    return {
+      filename,
+      absolutePath,
+      mimeType: this.detectMimeType(filename),
+      size: stats.size,
+    };
+  }
+
+  /**
+   * Get directory tree for session workspace
+   */
+  async getWorkspaceTree(sessionId: string): Promise<WorkspaceTreeResponse> {
+    const session = this.getSession(sessionId);
+    const workspaceDir = session?.workspaceDir ||
+      path.join(this.workspaceDir, 'sessions', sessionId);
+
+    if (!fs.existsSync(workspaceDir)) {
+      throw new NotFoundException(`Session workspace not found: ${sessionId}`);
+    }
+
+    const tree = this.buildDirectoryTree(workspaceDir, '');
+    return { tree };
+  }
+
+  /**
+   * Sanitize file path to prevent traversal attacks
+   */
+  private sanitizeFilePath(filePath: string): string {
+    // Block absolute paths (must be caught before any processing)
+    if (path.isAbsolute(filePath)) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    // Block null bytes (poison null terminator attack)
+    if (filePath.includes('\0')) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    // Block backslash (Windows path traversal)
+    if (filePath.includes('\\')) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    // Block URL-encoded special characters (double encoding attack)
+    if (filePath.includes('%')) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    // Remove leading/trailing slashes
+    let sanitized = filePath.replace(/^\/+|\/+$/g, '');
+
+    // Normalize path (resolves .. and .)
+    sanitized = path.normalize(sanitized);
+
+    // Block paths that still contain ..
+    if (sanitized.includes('..')) {
+      throw new BadRequestException('Invalid file path');
+    }
+
+    return sanitized;
+  }
+
+  /**
+   * Build directory tree recursively
+   */
+  private buildDirectoryTree(basePath: string, relativePath: string): FileTreeNode[] {
+    const fullPath = path.join(basePath, relativePath);
+    const entries = fs.readdirSync(fullPath, { withFileTypes: true });
+
+    const nodes: FileTreeNode[] = [];
+
+    for (const entry of entries) {
+      const entryPath = path.join(relativePath, entry.name);
+
+      if (entry.isDirectory()) {
+        nodes.push({
+          id: `folder-${entryPath}`,
+          name: entry.name,
+          type: 'folder',
+          path: entryPath,
+          children: this.buildDirectoryTree(basePath, entryPath),
+        });
+      } else if (entry.isFile()) {
+        const stats = fs.statSync(path.join(basePath, entryPath));
+        nodes.push({
+          id: `file-${entryPath}`,
+          name: entry.name,
+          type: 'file',
+          path: entryPath,
+          size: stats.size,
+          mimeType: this.detectMimeType(entry.name),
+        });
+      }
+    }
+
+    // Sort: folders first, then files (alphabetically)
+    return nodes.sort((a, b) => {
+      if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  /**
+   * Detect MIME type from filename
+   */
+  private detectMimeType(filename: string): string {
+    const ext = path.extname(filename).toLowerCase();
+
+    const mimeMap: Record<string, string> = {
+      // Text
+      '.txt': 'text/plain',
+      '.md': 'text/markdown',
+      '.json': 'application/json',
+      '.xml': 'application/xml',
+      '.html': 'text/html',
+      '.css': 'text/css',
+      '.js': 'application/javascript',
+      '.ts': 'text/typescript',
+
+      // Images
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.webp': 'image/webp',
+      '.svg': 'image/svg+xml',
+
+      // Audio
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.ogg': 'audio/ogg',
+
+      // Documents
+      '.pdf': 'application/pdf',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    };
+
+    return mimeMap[ext] || 'application/octet-stream';
+  }
+
+  /**
    * Graceful shutdown
    */
   shutdown(): void {
@@ -789,6 +1130,13 @@ export class SessionService implements OnModuleDestroy {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = null;
     }
+
+    // 停止所有后台任务监控
+    for (const [monitorKey, intervalId] of this.backgroundTaskMonitors.entries()) {
+      clearInterval(intervalId);
+      this.logger.log(`[BackgroundTask] Stopped monitor: ${monitorKey}`);
+    }
+    this.backgroundTaskMonitors.clear();
 
     for (const sessionId of this.sessions.keys()) {
       this.closeSession(sessionId);

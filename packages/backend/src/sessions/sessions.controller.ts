@@ -16,7 +16,11 @@ import {
   BadRequestException,
   NotFoundException,
   Logger,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
+import { createReadStream } from 'fs';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ChatGateway } from '../chat/chat.gateway';
@@ -127,46 +131,24 @@ export class SessionsController {
           fs.copyFileSync(skillPath, path.join(targetDir, 'SKILL.md'));
           this.logger.log(`Copied skill ${skillName} to session workspace from ${skillPath}`);
 
-          // Create CLAUDE.md to instruct Claude to read context and use skill
+          // Create CLAUDE.md to instruct Claude to read the skill guide
           const claudeMdPath = path.join(session.workspaceDir, 'CLAUDE.md');
-          const claudeMdContent = `# AI备课助手
+          const claudeMdContent = `# Session Workspace
 
 ## 强制执行步骤
 
-**在回复用户的任何消息之前，你必须按顺序执行以下步骤：**
+**在回复用户的任何消息之前，你必须先阅读技能指南：**
 
-### 第一步：读取当前备课方案
-
-使用 Read 工具读取上下文文件：
-\`\`\`
-Read(".context/lesson-plan.json")
-\`\`\`
-
-这个文件包含用户当前正在编辑的备课方案，包括：
-- 基本信息：科目、年级、教材版本、章节
-- 教学目标、教学活动、评估方案、差异化策略
-
-### 第二步：阅读技能指南
-
-使用 Read 工具读取备课技能的完整指南：
+使用 Read 工具读取技能的完整指南：
 \`\`\`
 Read(".claude/skills/${skillName}/SKILL.md")
 \`\`\`
 
-### 第三步：根据上下文回复
-
-- 根据已有信息提供针对性的建议
-- **禁止**询问用户已经在表单中填写的信息
-- 如果某个字段为空，可以主动建议填充内容
-- 使用 \`write_output\` 工具将建议写入表单
-
-## 可用 MCP 工具
-
-- \`write_output(field, value, preview)\`: 将内容写入前端表单字段
+严格按照技能指南中的流程和工具说明来处理用户请求。
 
 ## 响应语言
 
-使用中文回复用户。
+使用与用户相同的语言回复。
 `;
           fs.writeFileSync(claudeMdPath, claudeMdContent, 'utf-8');
           this.logger.log(`Created CLAUDE.md for session ${sessionId}`);
@@ -323,6 +305,30 @@ Read(".claude/skills/${skillName}/SKILL.md")
   }
 
   /**
+   * Get active sub-agents for a session
+   * GET /api/v1/sessions/:sessionId/sub-agents
+   *
+   * Returns list of currently running sub-agents.
+   * Used by frontend for polling fallback when WebSocket is unreliable.
+   */
+  @Get(':sessionId/sub-agents')
+  getActiveSubAgents(@Param('sessionId') sessionId: string) {
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    // Get active sub-agents from ChatGateway → EventMapper
+    const activeSubAgents = this.chatGateway.getActiveSubAgents(sessionId);
+
+    return {
+      sessionId,
+      activeSubAgents,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Restart session
    * POST /api/v1/sessions/:sessionId/restart
    */
@@ -352,5 +358,42 @@ Read(".claude/skills/${skillName}/SKILL.md")
   ) {
     await this.sessionService.updateContext(sessionId, data);
     return { success: true };
+  }
+
+  /**
+   * List files in session workspace
+   * GET /api/v1/sessions/:sessionId/workspace
+   */
+  @Get(':sessionId/workspace')
+  async listWorkspaceFiles(@Param('sessionId') sessionId: string) {
+    this.logger.log(`[Workspace] List files for session ${sessionId}`);
+    return this.sessionService.getWorkspaceTree(sessionId);
+  }
+
+  /**
+   * Download file from session workspace
+   * GET /api/v1/sessions/:sessionId/workspace/*
+   */
+  @Get(':sessionId/workspace/*')
+  async downloadWorkspaceFile(
+    @Param('sessionId') sessionId: string,
+    @Param('*') filePath: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    this.logger.log(`[Workspace] Download file: ${sessionId}/${filePath}`);
+
+    // Get file info with security validation
+    const fileInfo = await this.sessionService.getWorkspaceFile(sessionId, filePath);
+
+    // Set response headers
+    res.set({
+      'Content-Type': fileInfo.mimeType,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(fileInfo.filename)}"`,
+      'Content-Length': fileInfo.size.toString(),
+    });
+
+    // Stream the file
+    const fileStream = createReadStream(fileInfo.absolutePath);
+    return new StreamableFile(fileStream);
   }
 }
