@@ -252,19 +252,179 @@
 
 获取租户详情。
 
-## API Key 管理
+## 管理员 - API Key 管理
 
-### POST /api-keys
+用于管理租户 API Key 的管理员接口。所有端点都需要 `admin` 权限范围。
 
-创建 API Key。
+### GET /admin/api-keys
 
-### GET /api-keys
+获取指定租户的 API Key 列表，支持分页。
 
-获取 API Key 列表。
+**查询参数**：
 
-### DELETE /api-keys/:id
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `tenantId` | string | 是 | 租户 ID（用于过滤） |
+| `page` | number | 否 | 页码（默认：1） |
+| `limit` | number | 否 | 每页条数（默认：50，最大：100） |
 
-吊销 API Key。
+**响应**：
+
+```json
+{
+  "items": [
+    {
+      "id": "key-uuid",
+      "keyPrefix": "ccaas_live_abc123",
+      "name": "生产环境 API Key",
+      "tenantId": "tenant-uuid",
+      "scopes": ["chat", "skills:read", "skills:write"],
+      "status": "active",
+      "rateLimitRpm": 60,
+      "rateLimitRpd": 1000,
+      "usageCount": 1523,
+      "lastUsedAt": "2025-01-15T10:30:00Z",
+      "expiresAt": null,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "total": 15,
+  "page": 1,
+  "limit": 50
+}
+```
+
+### POST /admin/api-keys
+
+创建新的 API Key。完整密钥仅在创建时返回一次，之后无法再次获取。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `tenantId` | string | 是 | 租户 ID |
+| `name` | string | 是 | 可读的名称 |
+| `scopes` | string[] | 否 | 权限范围（默认：`["chat"]`） |
+| `rateLimitRpm` | number | 否 | 每分钟请求数（默认：60） |
+| `rateLimitRpd` | number | 否 | 每天请求数（默认：1000） |
+| `expiresAt` | string | 否 | 过期时间（ISO 8601 格式） |
+
+**可用权限范围**：
+- `chat` - 发送聊天消息
+- `skills:read` - 查看技能
+- `skills:write` - 创建/更新技能
+- `skills:execute` - 执行技能
+- `skills:delete` - 删除技能
+- `mcp:read` - 查看 MCP 服务器
+- `mcp:write` - 管理 MCP 服务器
+- `analytics:read` - 查看分析数据
+- `admin` - 完整管理权限
+
+**响应**：
+
+```json
+{
+  "apiKey": {
+    "id": "key-uuid",
+    "keyPrefix": "ccaas_live_abc123",
+    "name": "生产环境 API Key",
+    "tenantId": "tenant-uuid",
+    "scopes": ["chat", "skills:read"],
+    "status": "active",
+    "createdAt": "2025-01-15T12:00:00Z"
+  },
+  "rawKey": "ccaas_live_abc123def456ghi789jkl012mno345pqr678stu901",
+  "warning": "这是唯一一次显示完整密钥。请妥善保存。"
+}
+```
+
+**⚠️ 安全提示**：`rawKey` 字段包含完整的 API 密钥，仅在创建时显示一次。请妥善保存 - 之后无法再次获取。
+
+### GET /admin/api-keys/:id
+
+获取指定 API Key 的详细信息。
+
+**响应**：
+
+```json
+{
+  "id": "key-uuid",
+  "keyPrefix": "ccaas_live_abc123",
+  "name": "生产环境 API Key",
+  "tenantId": "tenant-uuid",
+  "scopes": ["chat", "skills:read"],
+  "status": "active",
+  "rateLimitRpm": 60,
+  "rateLimitRpd": 1000,
+  "usageCount": 1523,
+  "lastUsedAt": "2025-01-15T10:30:00Z",
+  "expiresAt": null,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "updatedAt": "2025-01-15T10:30:00Z"
+}
+```
+
+### PUT /admin/api-keys/:id
+
+更新现有 API Key。所有更改都会记录在审计日志中。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 否 | 更新名称 |
+| `scopes` | string[] | 否 | 更新权限范围 |
+| `rateLimitRpm` | number | 否 | 更新每分钟请求数 |
+| `rateLimitRpd` | number | 否 | 更新每天请求数 |
+| `status` | string | 否 | 更新状态（`active`、`revoked`） |
+| `expiresAt` | string | 否 | 更新过期时间（ISO 8601 格式） |
+
+**响应**：
+
+```json
+{
+  "id": "key-uuid",
+  "keyPrefix": "ccaas_live_abc123",
+  "name": "已更新名称",
+  "scopes": ["chat", "skills:read", "skills:write"],
+  "status": "active",
+  "updatedAt": "2025-01-15T12:30:00Z"
+}
+```
+
+**审计日志**：所有更新都会记录修改前后的值，以便追踪变更。
+
+### POST /admin/api-keys/:id/revoke
+
+吊销 API Key，禁止后续使用。此操作无法撤销。
+
+**响应**：
+
+```json
+{
+  "id": "key-uuid",
+  "status": "revoked",
+  "revokedAt": "2025-01-15T12:45:00Z"
+}
+```
+
+**注意**：已吊销的密钥会保留在数据库中用于审计，但无法再用于身份验证。
+
+### DELETE /admin/api-keys/:id
+
+永久删除 API Key。此操作会在删除前创建审计日志记录。
+
+**响应**：
+
+```json
+{
+  "success": true,
+  "message": "API Key 已成功删除"
+}
+```
+
+**⚠️ 警告**：此操作会永久从数据库中删除密钥。建议使用吊销功能以保留审计记录。
 
 ## 定时任务管理
 

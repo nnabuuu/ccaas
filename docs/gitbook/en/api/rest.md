@@ -252,19 +252,179 @@ Create a tenant.
 
 Get tenant details.
 
-## API Key Management
+## Admin - API Key Management
 
-### POST /api-keys
+Admin API for managing API keys across tenants. All endpoints require `admin` scope.
 
-Create an API Key.
+### GET /admin/api-keys
 
-### GET /api-keys
+List API keys for a specific tenant with pagination support.
 
-Get the API Key list.
+**Query Parameters**:
 
-### DELETE /api-keys/:id
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tenantId` | string | Yes | Tenant ID to filter keys |
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 50, max: 100) |
 
-Revoke an API Key.
+**Response**:
+
+```json
+{
+  "items": [
+    {
+      "id": "key-uuid",
+      "keyPrefix": "ccaas_live_abc123",
+      "name": "Production API Key",
+      "tenantId": "tenant-uuid",
+      "scopes": ["chat", "skills:read", "skills:write"],
+      "status": "active",
+      "rateLimitRpm": 60,
+      "rateLimitRpd": 1000,
+      "usageCount": 1523,
+      "lastUsedAt": "2025-01-15T10:30:00Z",
+      "expiresAt": null,
+      "createdAt": "2025-01-01T00:00:00Z",
+      "updatedAt": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "total": 15,
+  "page": 1,
+  "limit": 50
+}
+```
+
+### POST /admin/api-keys
+
+Create a new API key. The raw key is returned only once and cannot be retrieved later.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tenantId` | string | Yes | Tenant ID for the key |
+| `name` | string | Yes | Human-readable name |
+| `scopes` | string[] | No | Permission scopes (default: `["chat"]`) |
+| `rateLimitRpm` | number | No | Requests per minute (default: 60) |
+| `rateLimitRpd` | number | No | Requests per day (default: 1000) |
+| `expiresAt` | string | No | Expiration date (ISO 8601) |
+
+**Available Scopes**:
+- `chat` - Send chat messages
+- `skills:read` - View skills
+- `skills:write` - Create/update skills
+- `skills:execute` - Execute skills
+- `skills:delete` - Delete skills
+- `mcp:read` - View MCP servers
+- `mcp:write` - Manage MCP servers
+- `analytics:read` - View analytics
+- `admin` - Full admin access
+
+**Response**:
+
+```json
+{
+  "apiKey": {
+    "id": "key-uuid",
+    "keyPrefix": "ccaas_live_abc123",
+    "name": "Production API Key",
+    "tenantId": "tenant-uuid",
+    "scopes": ["chat", "skills:read"],
+    "status": "active",
+    "createdAt": "2025-01-15T12:00:00Z"
+  },
+  "rawKey": "ccaas_live_abc123def456ghi789jkl012mno345pqr678stu901",
+  "warning": "This is the only time the full key will be displayed. Store it securely."
+}
+```
+
+**⚠️ Security Note**: The `rawKey` field contains the complete API key and is shown only once during creation. Store it securely - it cannot be retrieved later.
+
+### GET /admin/api-keys/:id
+
+Get details of a specific API key.
+
+**Response**:
+
+```json
+{
+  "id": "key-uuid",
+  "keyPrefix": "ccaas_live_abc123",
+  "name": "Production API Key",
+  "tenantId": "tenant-uuid",
+  "scopes": ["chat", "skills:read"],
+  "status": "active",
+  "rateLimitRpm": 60,
+  "rateLimitRpd": 1000,
+  "usageCount": 1523,
+  "lastUsedAt": "2025-01-15T10:30:00Z",
+  "expiresAt": null,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "updatedAt": "2025-01-15T10:30:00Z"
+}
+```
+
+### PUT /admin/api-keys/:id
+
+Update an existing API key. Changes are logged in the audit log.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | No | Update the name |
+| `scopes` | string[] | No | Update permission scopes |
+| `rateLimitRpm` | number | No | Update requests per minute |
+| `rateLimitRpd` | number | No | Update requests per day |
+| `status` | string | No | Update status (`active`, `revoked`) |
+| `expiresAt` | string | No | Update expiration date (ISO 8601) |
+
+**Response**:
+
+```json
+{
+  "id": "key-uuid",
+  "keyPrefix": "ccaas_live_abc123",
+  "name": "Updated Name",
+  "scopes": ["chat", "skills:read", "skills:write"],
+  "status": "active",
+  "updatedAt": "2025-01-15T12:30:00Z"
+}
+```
+
+**Audit Log**: All updates are logged with before/after values for tracking changes.
+
+### POST /admin/api-keys/:id/revoke
+
+Revoke an API key, preventing further use. This action cannot be undone.
+
+**Response**:
+
+```json
+{
+  "id": "key-uuid",
+  "status": "revoked",
+  "revokedAt": "2025-01-15T12:45:00Z"
+}
+```
+
+**Note**: Revoked keys remain in the database for audit purposes but cannot be used for authentication.
+
+### DELETE /admin/api-keys/:id
+
+Permanently delete an API key. This action creates an audit log entry before deletion.
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "API key deleted successfully"
+}
+```
+
+**⚠️ Warning**: This permanently removes the key from the database. Consider using revoke instead for audit trail preservation.
 
 ## Scheduled Task Management
 

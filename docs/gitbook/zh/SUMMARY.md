@@ -26,6 +26,7 @@
 * [前端集成指南](guide/frontend.md)
 * [React SDK 聊天集成](guide/chat-integration.md)
 * [File Explorer 组件](guide/file-explorer.md)
+* [管理员 API Key 管理](guide/admin-api-keys.md)
 
 ## API 参考 <a href="#api" id="api"></a>
 
