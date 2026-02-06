@@ -49,8 +49,8 @@ npm run dev
 │                                    │                                     │
 │  ┌────────────────────────────────▼────────────────────────────────────┐│
 │  │                      EXECUTION LAYER                                ││
-│  │  Relay Server (Claude Code CLI + MCP Servers)                       ││
-│  │  • Persistent CLI processes per session                             ││
+│  │  Relay Server (AgentEngine + MCP Servers)                           ││
+│  │  • Persistent AgentEngine processes per session                     ││
 │  │  • Tenant-isolated workspaces                                       ││
 │  └─────────────────────────────────────────────────────────────────────┘│
 │                                    │                                     │

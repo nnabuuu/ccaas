@@ -84,7 +84,7 @@ LoopAI supports background task scheduling for automated, unattended AI operatio
 - **Cron Scheduling** -- Run tasks on cron schedules (e.g., daily at 4 AM)
 - **Interval Scheduling** -- Execute tasks at fixed intervals (e.g., every 60 seconds)
 - **One-Time Scheduling** -- Schedule a single execution at a specific date/time
-- **Headless Execution** -- Tasks run Claude Code CLI without an active WebSocket connection
+- **Headless Execution** -- Tasks run in the background without an active WebSocket connection
 - **Concurrency Control** -- Configurable maximum concurrent executions per task
 - **Retry Logic** -- Automatic retries with configurable delay on failure
 - **Execution History** -- Full audit trail of all executions with results, token usage, and duration

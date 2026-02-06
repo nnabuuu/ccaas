@@ -1,7 +1,7 @@
 /**
  * Process Lifecycle Tracker Hook
  *
- * Captures CLI process lifecycle events (spawn, exit, crash, kill).
+ * Captures AgentEngine process lifecycle events (spawn, exit, crash, kill).
  */
 
 import { Logger } from '@nestjs/common';

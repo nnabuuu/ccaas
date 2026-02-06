@@ -1,6 +1,6 @@
 # Claude Code as a Service (CCAAS)
 
-A production-ready relay service for Claude Code CLI, built with NestJS. This monorepo contains all packages needed to run and interact with the service.
+A production-ready relay service for AgentEngine instances (Claude Code, OpenCode, custom engines), built with NestJS. This monorepo contains all packages needed to run and interact with the service.
 
 ## Packages
 
@@ -15,14 +15,19 @@ A production-ready relay service for Claude Code CLI, built with NestJS. This mo
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   Frontend  │◄───►│  @ccaas/backend  │◄───►│  Claude Code CLI    │
-│ (Vue 3)     │     │  (NestJS)        │     │ (npx claude-code)   │
+│   Frontend  │◄───►│  @ccaas/backend  │◄───►│  AgentEngine        │
+│ (Vue 3)     │     │  (NestJS)        │     │ (claude/opencode)   │
 └─────────────┘     └──────────────────┘     └─────────────────────┘
       │                     │
       └──────@ccaas/vue-sdk │
              │              │
              └──@ccaas/common
 ```
+
+**Supported AgentEngine Types:**
+- **Claude Code** - Anthropic's official CLI (default)
+- **OpenCode** - Open-source alternative
+- **Custom Engines** - Your own implementation
 
 ## Quick Start
 
@@ -90,7 +95,7 @@ npm run build:shared      # Build types/protocols
 
 ### Backend (`@ccaas/backend`)
 
-- **Session Management**: Spawn and manage Claude Code CLI processes
+- **AgentEngine Lifecycle Management**: Spawn and manage AgentEngine instances (Claude Code, OpenCode, custom)
 - **Skill Routing**: Trigger-based routing (keyword, pattern, intent)
 - **Multi-tenancy**: Tenant isolation with API key authentication
 - **MCP Integration**: MCP server pool with REST adapter

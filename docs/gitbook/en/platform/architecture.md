@@ -36,6 +36,10 @@ LoopAI uses a layered architecture where each layer has clear responsibilities a
 
 ### Agent Engine
 
+{% hint style="info" %}
+**Internal Platform Component**: AgentEngine is managed by the CCAAS platform. As a Solution developer or platform user, you interact with AI capabilities through APIs and SDKs without needing to configure or manage the underlying engine.
+{% endhint %}
+
 The Agent Engine is the platform's core execution engine, responsible for:
 
 - **Session Lifecycle Management** -- Creating, resuming, and terminating AI Agent sessions
@@ -64,7 +68,7 @@ The MCP (Model Context Protocol) service layer provides a standardized tool inte
 The Scheduler Engine enables automated, unattended task execution:
 
 - **Dynamic Schedule Registration** -- Register and manage cron jobs, intervals, and timeouts at runtime via `SchedulerRegistry`
-- **Headless CLI Execution** -- Spawn Claude Code CLI without WebSocket, collecting results in-process
+- **Headless Execution** -- Spawn AgentEngine without WebSocket, collecting results in-process
 - **Concurrency & Retry** -- Per-task concurrency limits and configurable retry policies
 - **Missed Run Recovery** -- On startup, detect and trigger tasks that missed their scheduled time
 

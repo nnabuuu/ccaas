@@ -30,6 +30,10 @@ LoopAI 采用分层架构设计，每一层职责明确，可独立扩展。
 
 ### Agent Engine
 
+{% hint style="info" %}
+**平台内部组件**：AgentEngine 由 CCAAS 平台统一管理。作为 Solution 开发者或平台用户，你通过 API 和 SDK 使用 AI 能力，无需配置或管理底层引擎。
+{% endhint %}
+
 Agent Engine 是平台的核心执行引擎，负责：
 
 - **会话生命周期管理** —— 创建、恢复、终止 AI Agent 会话
@@ -58,7 +62,7 @@ MCP（Model Context Protocol）服务层提供标准化的工具接口：
 调度引擎实现自动化的无人值守任务执行：
 
 - **动态调度注册** —— 通过 `SchedulerRegistry` 在运行时注册和管理 cron 作业、间隔任务和延时任务
-- **无头 CLI 执行** —— 无需 WebSocket 即可启动 Claude Code CLI，在进程内收集结果
+- **无头执行** —— 无需 WebSocket 即可启动 AgentEngine，在进程内收集结果
 - **并发与重试** —— 每任务并发限制和可配置的重试策略
 - **漏跑恢复** —— 启动时检测并触发错过调度时间的任务
 

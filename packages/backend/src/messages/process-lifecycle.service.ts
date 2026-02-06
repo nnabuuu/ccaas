@@ -1,7 +1,7 @@
 /**
  * Process Lifecycle Service
  *
- * Tracks CLI process lifecycle events for debugging and analysis.
+ * Tracks AgentEngine process lifecycle events for debugging and analysis.
  */
 
 import { Injectable, Logger } from '@nestjs/common';

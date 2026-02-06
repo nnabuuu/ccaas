@@ -1,7 +1,8 @@
 /**
  * Event Mapper Service
  *
- * Maps Claude CLI stream-json events to frontend-compatible events.
+ * Maps AgentEngine stream-json events to frontend-compatible events.
+ * Supports: Claude Code, OpenCode, and custom engine outputs.
  * Maintains compatibility with existing frontend event handlers.
  */
 

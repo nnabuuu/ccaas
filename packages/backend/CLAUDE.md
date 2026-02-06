@@ -4,14 +4,14 @@ This file provides context for AI assistants working with this codebase.
 
 ## Project Overview
 
-**Claude Code as a Service** is a production-ready relay server built with NestJS that spawns Claude Code CLI as a subprocess and streams events to frontend clients via Socket.io. It provides multi-tenant API key authentication, skill management, MCP server integration, and message persistence.
+**Claude Code as a Service** is a production-ready relay server built with NestJS that spawns AgentEngine instances (Claude Code, OpenCode, custom engines) as subprocesses and streams events to frontend clients via Socket.io. It provides multi-tenant API key authentication, skill management, MCP server integration, and message persistence.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   Frontend  │◄───►│  NestJS Server   │◄───►│  Claude Code CLI    │
-│ (Socket.io) │     │  (ChatGateway)   │     │ (npx claude-code)   │
+│   Frontend  │◄───►│  NestJS Server   │◄───►│  AgentEngine        │
+│ (Socket.io) │     │  (ChatGateway)   │     │ (claude/opencode)   │
 └─────────────┘     └──────────────────┘     └─────────────────────┘
                            │
                     ┌──────┴──────┐
@@ -20,6 +20,11 @@ This file provides context for AI assistants working with this codebase.
               │MCP Pool  │  │ Skill Router │
               └──────────┘  └──────────────┘
 ```
+
+**Supported AgentEngine Types:**
+- **Claude Code** - Default, `npx claude-code`
+- **OpenCode** - Open-source, configurable via `AGENT_ENGINE_PATH`
+- **Custom Engines** - Your own implementation
 
 ## Directory Structure
 
@@ -92,7 +97,13 @@ claude-code-as-a-service/
 
 ### ChatModule (chat/)
 
-Core relay functionality. Manages WebSocket connections and CLI process lifecycle.
+Core relay functionality. Manages WebSocket connections and AgentEngine process lifecycle.
+
+**AgentEngine Lifecycle:**
+- `SessionService` spawns and manages AgentEngine instances
+- Supports resume via `--resume <session-id>`
+- Handles process cleanup, cancellation (SIGTERM/SIGKILL), and timeout
+- See [docs/advanced/AGENT_ENGINE_LIFECYCLE.md](../../docs/advanced/AGENT_ENGINE_LIFECYCLE.md) for details
 
 **WebSocket Events (ChatGateway):**
 - `chat` - Send message to Claude
@@ -164,7 +175,7 @@ Skill CRUD, versioning, and routing.
 
 ### SchedulerModule (scheduler/)
 
-Scheduled background task execution with cron, interval, and one-time scheduling. Runs Claude Code CLI in headless mode without WebSocket dependency.
+Scheduled background task execution with cron, interval, and one-time scheduling. Runs AgentEngine in headless mode without WebSocket dependency.
 
 **Schedule Types:**
 - `cron` - Cron expressions (e.g., `0 4 * * *`)
@@ -173,7 +184,7 @@ Scheduled background task execution with cron, interval, and one-time scheduling
 
 **Key Services:**
 - `SchedulerService` - CRUD, cron registration via `SchedulerRegistry`, execution orchestration, retry logic, missed run detection on startup
-- `HeadlessExecutionService` - Spawns CLI with `--output-format stream-json --permission-mode bypassPermissions`, parses output via `EventMapperService`, manages workspace lifecycle
+- `HeadlessExecutionService` - Spawns AgentEngine with `--output-format stream-json --permission-mode bypassPermissions`, parses output via `EventMapperService`, manages workspace lifecycle
 
 **REST Endpoints (SchedulerController):**
 - `POST /api/v1/scheduled-tasks` - Create task

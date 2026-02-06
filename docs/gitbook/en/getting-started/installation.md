@@ -1,5 +1,15 @@
 # Installation & Setup
 
+This guide shows you how to run CCAAS platform locally for **Solution development**.
+
+{% hint style="info" %}
+**For Solution Developers**: This setup runs the full CCAAS platform on your local machine. The platform comes with built-in AI capabilities - you don't need to install or configure any AI engines separately.
+{% endhint %}
+
+{% hint style="warning" %}
+**For Production Deployment**: If you're deploying CCAAS to production servers, you'll need to configure the AI engine backend. Contact your platform administrator for deployment documentation.
+{% endhint %}
+
 ## 1. Clone the Repository
 
 ```bash

@@ -238,7 +238,7 @@ Read(".claude/skills/${skillName}/SKILL.md")
         // Follow-up message - use --resume
         await this.sessionService.sendFollowUp(session, message, handleEvent, resolvedAttachments);
       } else {
-        // First message - spawn new CLI process
+        // First message - spawn new AgentEngine
         await this.sessionService.ensureCLIProcess(session, message, handleEvent, resolvedAttachments);
       }
 

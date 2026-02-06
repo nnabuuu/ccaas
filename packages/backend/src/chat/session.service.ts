@@ -1,9 +1,10 @@
 /**
  * Session Service
  *
- * Manages persistent Claude Code CLI sessions with lifecycle management.
- * Each session maintains a long-running CLI process that can handle
- * multiple messages while preserving context.
+ * Manages persistent AgentEngine sessions with lifecycle management.
+ * Supports: Claude Code, OpenCode, and custom engine implementations.
+ * Each session maintains an AgentEngine process that can handle
+ * multiple messages while preserving context via --resume.
  */
 
 import {
@@ -184,7 +185,8 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Spawn or reuse CLI process for a session
+   * Spawn or reuse AgentEngine process for a session
+   * Supports: Claude Code, OpenCode, custom engines
    */
   async ensureCLIProcess(
     session: ManagedSession,
@@ -193,12 +195,12 @@ export class SessionService implements OnModuleDestroy {
     attachments?: ResolvedAttachment[],
   ): Promise<void> {
     if (session.cliProcess && session.stdin && !session.cliProcess.killed) {
-      this.logger.log(`Reusing CLI process for session ${session.sessionId}`);
+      this.logger.log(`Reusing AgentEngine for session ${session.sessionId}`);
       this.sendMessageToProcess(session, initialMessage, attachments);
       return;
     }
 
-    this.logger.log(`Spawning new CLI process for session ${session.sessionId}`);
+    this.logger.log(`Spawning new AgentEngine for session ${session.sessionId}`);
 
     // Build base command
     let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions`;
@@ -234,7 +236,7 @@ export class SessionService implements OnModuleDestroy {
     session.status = 'processing';
     session.lastActivity = new Date();
 
-    this.logger.log(`CLI process spawned with PID ${cli.pid} for session ${session.sessionId}`);
+    this.logger.log(`AgentEngine spawned with PID ${cli.pid} for session ${session.sessionId}`);
 
     cli.on('spawn', () => {
       this.logger.log(`Process spawn confirmed for session ${session.sessionId}`);
@@ -246,16 +248,16 @@ export class SessionService implements OnModuleDestroy {
     });
 
     cli.stderr.on('data', (chunk: Buffer) => {
-      this.logger.error(`CLI stderr (${session.sessionId}): ${chunk.toString()}`);
+      this.logger.error(`AgentEngine stderr (${session.sessionId}): ${chunk.toString()}`);
     });
 
     cli.on('close', (code: number | null) => {
-      this.logger.log(`CLI exited with code ${code} for session ${session.sessionId}`);
+      this.logger.log(`AgentEngine exited with code ${code} for session ${session.sessionId}`);
       this.handleCLIClose(session, code, onEvent);
     });
 
     cli.on('error', (error: Error) => {
-      this.logger.error(`CLI error for session ${session.sessionId}: ${error.message}`);
+      this.logger.error(`AgentEngine error for session ${session.sessionId}: ${error.message}`);
       session.status = 'error';
       onEvent({
         type: 'agent_status',
@@ -267,7 +269,8 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Send a follow-up message to an existing CLI process
+   * Send a follow-up message to an existing AgentEngine process
+   * Uses --resume to restore session context
    */
   async sendFollowUp(
     session: ManagedSession,
@@ -278,7 +281,7 @@ export class SessionService implements OnModuleDestroy {
     this.logger.log(`Sending follow-up message to session ${session.sessionId}`);
 
     if (session.cliProcess && !session.cliProcess.killed && session.stdin) {
-      this.logger.log('Reusing existing CLI process for follow-up');
+      this.logger.log('Reusing existing AgentEngine for follow-up');
       this.sendMessageToProcess(session, message, attachments);
       onEvent({
         type: 'agent_status',
@@ -288,7 +291,7 @@ export class SessionService implements OnModuleDestroy {
       return;
     }
 
-    this.logger.log('CLI process not running, spawning new with --resume');
+    this.logger.log('AgentEngine not running, spawning new with --resume');
 
     // Build base command with --resume
     let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
@@ -356,7 +359,8 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Handle CLI stdout output
+   * Handle AgentEngine stdout output
+   * Parses stream-json format and maps to frontend events
    */
   private handleCLIOutput(
     session: ManagedSession,
@@ -381,7 +385,7 @@ export class SessionService implements OnModuleDestroy {
         );
 
         this.logger.debug(
-          `Mapped ${frontendEvents.length} events from CLI event type: ${cliEvent.type}`,
+          `Mapped ${frontendEvents.length} events from AgentEngine event type: ${cliEvent.type}`,
         );
 
         for (const event of frontendEvents) {
@@ -389,13 +393,14 @@ export class SessionService implements OnModuleDestroy {
           onEvent(event);
         }
       } catch (parseError) {
-        this.logger.warn(`Failed to parse CLI output: ${line.slice(0, 100)}...`);
+        this.logger.warn(`Failed to parse AgentEngine output: ${line.slice(0, 100)}...`);
       }
     }
   }
 
   /**
-   * Handle CLI process close
+   * Handle AgentEngine process close
+   * Detects cancellation vs normal completion
    */
   private handleCLIClose(
     session: ManagedSession,
@@ -418,29 +423,55 @@ export class SessionService implements OnModuleDestroy {
       }
     }
 
+    // Check if this was a user cancellation
+    const wasCancelled = session.status === 'cancelling';
+
     session.buffer = '';
-    session.status = code === 0 ? 'idle' : 'error';
     session.cliProcess = null;
     session.stdin = null;
 
-    onEvent({
-      type: 'agent_status',
-      status: code === 0 ? 'complete' : 'error',
-      sessionId: session.sessionId,
-      exitCode: code,
-      ...(code !== 0 && { error: `CLI process exited with code ${code}` }),
-    });
+    // Set final status based on cancellation or exit code
+    if (wasCancelled) {
+      session.status = 'idle';  // Cancelled - back to idle
+      // Cancelled event already sent in cancelSession, don't send again
+    } else {
+      session.status = code === 0 ? 'idle' : 'error';
+      onEvent({
+        type: 'agent_status',
+        status: code === 0 ? 'complete' : 'error',
+        sessionId: session.sessionId,
+        exitCode: code,
+        ...(code !== 0 && { error: `AgentEngine exited with code ${code}` }),
+      });
+    }
   }
 
   /**
-   * Send message to CLI stdin, optionally with image attachments as multi-block content
+   * Send message to AgentEngine stdin
+   * Supports image attachments as multi-block content
    */
   private sendMessageToProcess(
     session: ManagedSession,
     message: string,
     attachments?: ResolvedAttachment[],
   ): void {
-    if (!session.stdin || session.stdin.destroyed) return;
+    // More strict checks
+    if (!session.stdin || session.stdin.destroyed) {
+      this.logger.warn(`Cannot send message: stdin not available for session ${session.sessionId}`);
+      return;
+    }
+
+    // Check process status
+    if (!session.cliProcess || session.cliProcess.killed) {
+      this.logger.warn(`Cannot send message: process not running for session ${session.sessionId}`);
+      return;
+    }
+
+    // Don't send messages while cancelling
+    if (session.status === 'cancelling') {
+      this.logger.warn(`Cannot send message: session ${session.sessionId} is being cancelled`);
+      return;
+    }
 
     let content: string | object[];
 
@@ -488,23 +519,65 @@ export class SessionService implements OnModuleDestroy {
     });
 
     this.logger.debug(`Sending message to CLI: ${jsonMessage.slice(0, 200)}...`);
-    session.stdin.write(jsonMessage + '\n');
-    session.lastActivity = new Date();
-    session.status = 'processing';
-    session.messageCount++;
+
+    try {
+      const canWrite = session.stdin.write(jsonMessage + '\n');
+
+      // Check backpressure
+      if (!canWrite) {
+        this.logger.warn(`Write buffer full for session ${session.sessionId}, waiting for drain`);
+        // Wait for drain event
+        session.stdin.once('drain', () => {
+          this.logger.debug(`Write buffer drained for session ${session.sessionId}`);
+        });
+      }
+
+      session.lastActivity = new Date();
+      session.status = 'processing';
+      session.messageCount++;
+    } catch (error) {
+      this.logger.error(`Failed to write to AgentEngine stdin for session ${session.sessionId}: ${error.message}`);
+      session.status = 'error';
+      throw error; // Let caller handle
+    }
   }
 
   /**
-   * Cancel/kill a session's CLI process
+   * Cancel/kill a session's AgentEngine process
+   * Sends SIGTERM, with 5-second SIGKILL timeout
    */
-  cancelSession(sessionId: string): boolean {
+  cancelSession(sessionId: string, onEvent?: (event: any) => void): boolean {
     const session = this.sessions.get(sessionId);
     if (!session) return false;
 
+    // Check if process is running
     if (session.cliProcess && !session.cliProcess.killed) {
       this.logger.log(`Cancelling session ${sessionId}`);
+
+      // Set cancelling state (not idle yet)
+      session.status = 'cancelling';
+
+      // Send cancelled event to frontend
+      if (onEvent) {
+        onEvent({
+          type: 'agent_status',
+          status: 'cancelled',
+          sessionId: session.sessionId,
+          message: 'Operation cancelled by user',
+        });
+      }
+
+      // Send SIGTERM signal
       session.cliProcess.kill('SIGTERM');
-      session.status = 'idle';
+
+      // Set 5-second timeout for SIGKILL if process doesn't exit
+      setTimeout(() => {
+        if (session.cliProcess && !session.cliProcess.killed) {
+          this.logger.warn(`Force killing session ${sessionId} after SIGTERM timeout`);
+          session.cliProcess.kill('SIGKILL');
+        }
+      }, 5000);
+
       return true;
     }
     return false;
@@ -595,7 +668,7 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Check if a session has an active CLI process
+   * Check if a session has an active AgentEngine process
    */
   hasActiveProcess(sessionId: string): boolean {
     const session = this.sessions.get(sessionId);
@@ -603,8 +676,8 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Restart a session by killing its CLI process
-   * Next message will spawn fresh CLI with updated skills
+   * Restart a session by killing its AgentEngine process
+   * Next message will spawn fresh engine with updated skills
    */
   restartSession(sessionId: string, tenantId?: string): boolean {
     const session = this.sessions.get(sessionId);
@@ -619,9 +692,9 @@ export class SessionService implements OnModuleDestroy {
       return false;
     }
 
-    // Kill CLI process if running
+    // Kill AgentEngine if running
     if (session.cliProcess && !session.cliProcess.killed) {
-      this.logger.log(`Killing CLI process for session restart: ${sessionId}`);
+      this.logger.log(`Killing AgentEngine for session restart: ${sessionId}`);
       session.cliProcess.kill('SIGTERM');
       session.cliProcess = null;
       session.stdin = null;

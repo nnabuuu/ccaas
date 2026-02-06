@@ -6,7 +6,7 @@
 
 - **Node.js** 18.x 或更高版本
 - **npm** 9.x 或更高版本
-- **Claude Code CLI**（如需使用 AI Agent 功能）
+- **CCAAS 平台** - 已部署的实例或本地运行（参见[安装与启动](installation.md)）
 
 ## 章节导航
 

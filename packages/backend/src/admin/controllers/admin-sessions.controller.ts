@@ -43,7 +43,7 @@ export class AdminSessionsController {
   /**
    * GET /api/v1/admin/sessions/active
    *
-   * Get currently active sessions (processing or with active CLI process)
+   * Get currently active sessions (processing or with active AgentEngine)
    */
   @Get('active')
   async getActiveSessions(): Promise<SessionListItem[]> {
@@ -87,7 +87,7 @@ export class AdminSessionsController {
   /**
    * POST /api/v1/admin/sessions/:sessionId/kill
    *
-   * Force terminate a session's CLI process
+   * Force terminate a session's AgentEngine process
    */
   @Post(':sessionId/kill')
   @HttpCode(HttpStatus.OK)

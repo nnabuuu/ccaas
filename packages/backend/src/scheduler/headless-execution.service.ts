@@ -1,7 +1,8 @@
 /**
  * Headless Execution Service
  *
- * Spawns Claude Code CLI processes without WebSocket dependency.
+ * Spawns AgentEngine processes without WebSocket dependency.
+ * Supports: Claude Code, OpenCode, and custom engines.
  * Used by SchedulerService for background/scheduled task execution.
  */
 

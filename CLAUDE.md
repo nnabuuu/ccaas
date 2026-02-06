@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this monorepo.
 
 ## Project Overview
 
-This is the **Claude Code as a Service (CCAAS)** monorepo containing all packages for running and interacting with a relay service for Claude Code CLI.
+This is the **Claude Code as a Service (CCAAS)** monorepo containing all packages for running and interacting with a relay service for AgentEngine instances (supports Claude Code, OpenCode, and custom engines).
 
 ## Directory Structure
 
@@ -24,7 +24,7 @@ ccaas/
 
 | Package | Tech Stack | Purpose |
 |---------|------------|---------|
-| `@ccaas/backend` | NestJS, TypeORM, Socket.io | API server, session management, scheduled tasks |
+| `@ccaas/backend` | NestJS, TypeORM, Socket.io | API server, AgentEngine lifecycle management, session management, scheduled tasks |
 | `@ccaas/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
 | `@ccaas/vue-sdk` | Vue 3 Composition API | Vue client integration |
 | `@ccaas/react-sdk` | React hooks, Socket.io | React client integration |
@@ -116,6 +116,7 @@ See: `packages/backend/CLAUDE.md`
 - NestJS modular architecture
 - TypeORM with SQLite (upgradeable to PostgreSQL)
 - API key authentication with scopes
+- AgentEngine lifecycle management (Claude Code, OpenCode, custom engines)
 - MCP server pool management
 
 ### @ccaas/admin-next

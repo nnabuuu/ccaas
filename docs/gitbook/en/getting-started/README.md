@@ -6,7 +6,7 @@ This section helps you set up the LoopAI development environment locally and exp
 
 - **Node.js** 18.x or later
 - **npm** 9.x or later
-- **Claude Code CLI** (required for AI Agent functionality)
+- **CCAAS Platform** - Either access to a deployed instance or run locally (see [Installation](installation.md))
 
 ## Section Overview
 
