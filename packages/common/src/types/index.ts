@@ -10,7 +10,7 @@
 // Session Types
 // ============================================================================
 
-export type SessionStatus = 'idle' | 'processing' | 'error' | 'completed';
+export type SessionStatus = 'idle' | 'processing' | 'error' | 'completed' | 'cancelling';
 
 export interface Session {
   id: string;

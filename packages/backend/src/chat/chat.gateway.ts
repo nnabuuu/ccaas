@@ -443,19 +443,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   ) {
     const clientId = client.data.clientId;
 
+    // Create event sender
+    const sendEvent = (event: any) => {
+      client.emit('message', event);
+    };
+
     if (data.sessionId) {
       const session = this.sessionService.getSession(data.sessionId);
       if (session && session.clientId === clientId) {
-        this.sessionService.cancelSession(data.sessionId);
-        this.logger.log(`Cancelled session ${data.sessionId}`);
+        const cancelled = this.sessionService.cancelSession(data.sessionId, sendEvent);
+
+        if (cancelled) {
+          this.logger.log(`Cancelled session ${data.sessionId}`);
+        } else {
+          this.logger.warn(`Failed to cancel session ${data.sessionId} - may already be stopped`);
+        }
+      } else {
+        this.logger.warn(`Cannot cancel session ${data.sessionId} - not found or wrong client`);
       }
     } else {
       // Cancel all sessions for this client
       const sessions = this.sessionService.getClientSessions(clientId);
+      let cancelledCount = 0;
+
       for (const session of sessions) {
-        this.sessionService.cancelSession(session.sessionId);
+        const cancelled = this.sessionService.cancelSession(session.sessionId, sendEvent);
+        if (cancelled) cancelledCount++;
       }
-      this.logger.log(`Cancelled all sessions for client ${clientId}`);
+
+      this.logger.log(`Cancelled ${cancelledCount}/${sessions.length} sessions for client ${clientId}`);
     }
   }
 

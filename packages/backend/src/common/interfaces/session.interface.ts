@@ -11,7 +11,7 @@ import type { Socket } from 'socket.io';
 /**
  * Status of a managed session
  */
-export type SessionStatus = 'idle' | 'processing' | 'error' | 'closed';
+export type SessionStatus = 'idle' | 'processing' | 'error' | 'closed' | 'cancelling';
 
 /**
  * A managed CLI session with persistent process
