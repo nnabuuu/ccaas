@@ -219,6 +219,41 @@ Generate template for solution approach based on quiz type.
 - Cancellation support via status check
 - Results stored as JSON array with per-quiz status
 
+## Database Migrations
+
+### Schema Verification First (Critical)
+
+**Always check the actual database schema before writing migration scripts.** Run schema inspection queries first rather than assuming column names from code references.
+
+**Why This Matters**: Code references, TypeScript interfaces, and documentation can drift from the actual database schema. Assumptions about column names often lead to migration failures and wasted effort.
+
+**Required Steps Before Any Migration**:
+
+1. **Inspect Current Schema**:
+   ```bash
+   sqlite3 data/quiz-analyzer.db ".schema TABLE_NAME"
+   # OR
+   sqlite3 data/quiz-analyzer.db "PRAGMA table_info(TABLE_NAME)"
+   ```
+
+2. **Verify Column Names**: Check that assumed columns actually exist with correct names and types
+
+3. **Check Constraints**: Review foreign keys, indexes, and constraints that may affect migration
+
+4. **Sample Data**: Query sample rows to understand data patterns
+   ```bash
+   sqlite3 data/quiz-analyzer.db "SELECT * FROM TABLE_NAME LIMIT 3"
+   ```
+
+**Migration Workflow**:
+1. ✅ Inspect actual schema first
+2. ✅ Write migration based on verified schema
+3. ✅ Test on database copy (see `backend/scripts/test-migration-*.sh`)
+4. ✅ Document changes and provide rollback plan
+5. ✅ Apply to production with backup
+
+See `backend/scripts/migrations/` for migration examples and `DIFFICULTY_REFACTOR_MIGRATION.md` for detailed migration documentation.
+
 ## Excel Import Details
 
 ### Two-Pass Algorithm (Critical)

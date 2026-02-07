@@ -6,6 +6,8 @@ This file provides guidance to Claude Code when working with this monorepo.
 
 This is the **Claude Code as a Service (CCAAS)** monorepo containing all packages for running and interacting with a relay service for AgentEngine instances (supports Claude Code, OpenCode, and custom engines).
 
+**Platform Context**: CCAAS is a **hosted platform** where users interact via the platform interface. Users do NOT install AgentEngine themselves - the platform manages all AgentEngine infrastructure. Always frame documentation and code from the platform user perspective, not from a self-hosted installation perspective.
+
 ## Directory Structure
 
 ```
@@ -182,6 +184,32 @@ See: `packages/common/README.md`
 测试是代码的契约，计划只是意图的表达。
 当计划与测试冲突时，应该质疑计划，而不是忽略测试。
 ```
+
+## Refactoring Guidelines
+
+### Terminology and Field Name Changes
+
+When refactoring terminology or field names across the codebase:
+
+1. **Search First**: Always use `Grep` to find ALL usages of the term/field before making any changes
+2. **Document Scope**: List all affected files and usage contexts
+3. **Verify Coverage**: After changes, grep again to ensure no instances were missed
+4. **Update Tests**: Check that tests reflect the new terminology
+5. **Update Documentation**: Ensure all docs use consistent terminology
+
+**Example Pattern**:
+```bash
+# 1. Find all usages
+grep -r "old_term" --include="*.ts" --include="*.tsx" --include="*.md"
+
+# 2. Make changes across all files
+# ... edit files ...
+
+# 3. Verify no old usages remain
+grep -r "old_term" --include="*.ts" --include="*.tsx" --include="*.md"
+```
+
+This ensures complete coverage and prevents partial refactoring that leaves the codebase in an inconsistent state.
 
 ## Response Language
 
