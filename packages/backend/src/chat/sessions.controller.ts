@@ -13,6 +13,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
 import { SessionService } from './session.service';
 import { ChatGateway } from './chat.gateway';
 
@@ -21,12 +22,31 @@ import { ChatGateway } from './chat.gateway';
  * Matches the payload sent by @ccaas/react-sdk useAgentChat hook
  */
 export class SessionCompletionDto {
+  @IsString()
   clientId: string;
+
+  @IsString()
   message: string;
+
+  @IsOptional()
+  @IsString()
   tenantId?: string;
+
+  @IsOptional()
+  @IsObject()
   mcpServers?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsString()
   skillPath?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   enabledSkillSlugs?: string[];
+
+  @IsOptional()
+  @IsArray()
   attachments?: Array<{ name: string; content: string; mimeType: string }>;
 }
 

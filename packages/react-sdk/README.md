@@ -378,6 +378,73 @@ import type {
 } from '@ccaas/react-sdk'
 ```
 
+## Testing
+
+The SDK includes both unit and integration tests to ensure reliability.
+
+### Running Tests
+
+```bash
+# Run all tests (unit + integration)
+npm test
+
+# Run only unit tests (fast, no backend required)
+npm run test:unit
+
+# Run only integration tests (requires backend running)
+npm run test:integration
+
+# Watch mode for development
+npm run test:watch
+```
+
+### Integration Tests
+
+Integration tests verify the SDK works correctly with a real CCAAS backend. They test:
+
+- WebSocket connection establishment
+- REST API endpoints (`/api/v1/sessions/:id/completion`)
+- Message flow (send message → receive events)
+- Multi-session concurrency
+- Real-time event streaming
+
+**Prerequisites:**
+
+Before running integration tests, start the CCAAS backend:
+
+```bash
+cd packages/backend
+npm run start:dev
+```
+
+The backend must be running on `http://localhost:3001` for integration tests to pass.
+
+**Integration Test Coverage:**
+
+| Test Suite | Coverage |
+|------------|----------|
+| `backend.test.ts` | Backend availability, endpoint existence |
+| `websocket.test.ts` | WebSocket connections, client IDs, concurrent connections |
+| `completion.test.ts` | REST endpoint validation, DTO validation, parameters |
+| `message-flow.test.ts` | Complete message lifecycle, event streaming, follow-ups |
+
+**CI/CD Setup:**
+
+For CI pipelines, ensure the CCAAS backend is started before running integration tests:
+
+```yaml
+- name: Start CCAAS Backend
+  run: |
+    cd packages/backend
+    npm run start:dev &
+    sleep 5
+
+- name: Run Integration Tests
+  run: |
+    cd packages/react-sdk
+    npm run test:integration
+```
+
 ## Socket Events
 
 The SDK listens for these standard events from the backend:
