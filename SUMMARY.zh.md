@@ -24,6 +24,7 @@
 
 ## 技术指南
 
+* [Chatbox 组件提取](docs/zh/guides/chatbox-extraction-complete.md)
 * [API Key 管理实现](docs/zh/guides/api-key-management-complete.md)
 * [API 密钥管理](docs/zh/guides/api-key-management.md)
 * [迁移指南](docs/zh/guides/migration.md)
