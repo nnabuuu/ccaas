@@ -4,6 +4,12 @@ Welcome to the Claude Code as a Service (CCAAS) documentation. This documentatio
 
 ## 📚 Documentation Structure
 
+### [Guides](guides/) - Solution Development Tutorials
+Step-by-step guides for creating CCAAS solutions:
+
+- **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create a solution in 10 minutes
+- **[Creating a Solution - Complete Guide](guides/CREATING_A_SOLUTION.md)** - Comprehensive solution development guide
+
 ### [GitBook](gitbook/) - Comprehensive Platform Documentation
 Main documentation for the CCAAS platform, available in English and Chinese.
 

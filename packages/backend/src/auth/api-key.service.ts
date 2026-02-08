@@ -18,6 +18,7 @@ import * as crypto from 'crypto';
 import { ApiKey } from './entities/api-key.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { TenantsService } from '../tenants/tenants.service';
+import { UserTenantService } from '../users/user-tenant.service';
 import type {
   ApiKeyScope,
   RateLimitEntry,
@@ -47,6 +48,7 @@ export class ApiKeyService implements OnModuleInit {
     @InjectRepository(ApiKey)
     private readonly apiKeyRepository: Repository<ApiKey>,
     private readonly tenantsService: TenantsService,
+    private readonly userTenantService: UserTenantService,
     private readonly configService: ConfigService,
   ) {
     this.enableRateLimiting = this.configService.get('auth.enableRateLimiting', true);
@@ -197,7 +199,7 @@ export class ApiKeyService implements OnModuleInit {
     const keyHash = this.hashKey(rawKey);
     const apiKey = await this.apiKeyRepository.findOne({
       where: { keyHash },
-      relations: ['tenant'],
+      relations: ['tenant', 'user'],
     });
 
     if (!apiKey) {
@@ -239,11 +241,27 @@ export class ApiKeyService implements OnModuleInit {
         this.checkRateLimit(apiKey);
       }
 
+      // Resolve user if API key has userId
+      let user = apiKey.user;
+      let userTenant = undefined;
+
+      if (apiKey.userId && user) {
+        userTenant = await this.userTenantService.findUserInTenant(apiKey.userId, tenant.id);
+
+        // Check if user is active in this tenant
+        if (!userTenant || !userTenant.isActive) {
+          throw new AuthenticationError('User is not active in this tenant');
+        }
+      }
+
       return {
         tenantId: tenant.id,
         tenant,
         apiKeyId: apiKey.id,
         apiKeyScopes: apiKey.scopes,
+        userId: apiKey.userId || undefined,
+        user: user || undefined,
+        userTenant: userTenant || undefined,
         requestId,
         timestamp,
         isAnonymous: false,

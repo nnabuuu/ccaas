@@ -11,12 +11,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
   Index,
 } from 'typeorm';
 import { SkillVersion } from './skill-version.entity';
+import { User } from '../../users/entities/user.entity';
 
 export type SkillType = 'skill' | 'sub-agent';
 export type SkillStatus = 'draft' | 'review' | 'published' | 'deprecated' | 'archived';
+export type SkillScope = 'tenant' | 'personal';
 
 @Entity('skills')
 @Index('idx_skills_tenant_slug', ['tenantId', 'slug'], { unique: true })
@@ -26,6 +30,16 @@ export class Skill {
 
   @Column()
   tenantId: string;
+
+  @Column({ nullable: true })
+  createdBy?: string | null;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'createdBy' })
+  creator?: User | null;
+
+  @Column({ type: 'varchar', default: 'tenant' })
+  scope: SkillScope;
 
   @Column()
   name: string;

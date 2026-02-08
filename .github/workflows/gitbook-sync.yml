@@ -1,0 +1,21 @@
+name: GitBook Sync
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '**.md'
+      - '.gitbook.yaml'
+      - 'SUMMARY.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: GitBook Action
+        uses: ZanderZhao/gitbook-action@v1.2.4
+        with:
+          token: ${{ secrets.GITBOOK_TOKEN }}
+          space_id: ${{ secrets.GITBOOK_SPACE_ID }}

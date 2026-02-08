@@ -27,9 +27,11 @@ import {
 import { TenantGuard } from '../tenants/tenant.guard';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
+import { SkillPermissionGuard } from './guards/skill-permission.guard';
+import { CurrentUser, type CurrentUserData } from '../auth/decorators';
 
 @Controller('api/v1/skills')
-@UseGuards(TenantGuard)
+@UseGuards(TenantGuard, SkillPermissionGuard)
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
@@ -40,8 +42,9 @@ export class SkillsController {
   async findAll(
     @CurrentTenant() tenantId: string,
     @Query() query: ListSkillsDto,
+    @CurrentUser() currentUser: CurrentUserData,
   ) {
-    return this.skillsService.findAll(tenantId, query);
+    return this.skillsService.findAll(tenantId, query, currentUser.userId);
   }
 
   /**
@@ -51,8 +54,9 @@ export class SkillsController {
   async create(
     @CurrentTenant() tenantId: string,
     @Body() dto: CreateSkillDto,
+    @CurrentUser() currentUser: CurrentUserData,
   ) {
-    return this.skillsService.create(tenantId, dto);
+    return this.skillsService.create(tenantId, dto, currentUser.userId);
   }
 
   /**

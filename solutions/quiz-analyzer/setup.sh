@@ -108,23 +108,63 @@ else
     exit 1
 fi
 
+# Create or verify tenant in CCAAS backend
+echo ""
+echo "Step 6: Setting up CCAAS tenant..."
+CCAAS_DB="$SCRIPT_DIR/../../packages/backend/.agent-workspace/data.db"
+
+if [ -f "$CCAAS_DB" ]; then
+    # Check if quiz-analyzer tenant exists
+    TENANT_EXISTS=$(sqlite3 "$CCAAS_DB" "SELECT COUNT(*) FROM tenants WHERE slug = 'quiz-analyzer';" 2>/dev/null || echo "0")
+
+    if [ "$TENANT_EXISTS" = "0" ]; then
+        echo "Creating quiz-analyzer tenant in CCAAS..."
+        sqlite3 "$CCAAS_DB" "
+        INSERT INTO tenants (id, name, slug, description, config, maxSessions, maxSkills, maxMcpServers, plan, apiKey, status, createdAt, updatedAt)
+        VALUES (
+            lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(2)) || '-' || hex(randomblob(6))),
+            'Quiz Analyzer',
+            'quiz-analyzer',
+            'AI题目分析系统 - 知识点标注与错题分析',
+            '{}',
+            100,
+            50,
+            10,
+            'free',
+            'sk_' || lower(hex(randomblob(24))),
+            'active',
+            datetime('now'),
+            datetime('now')
+        );
+        "
+        echo -e "${GREEN}✓ Tenant created (slug: quiz-analyzer)${NC}"
+    else
+        echo -e "${GREEN}✓ Tenant already exists (slug: quiz-analyzer)${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠ CCAAS database not found at: $CCAAS_DB${NC}"
+    echo "Please run CCAAS backend first to initialize the database"
+    echo "  cd packages/backend && npm run start:dev"
+    exit 1
+fi
+
 # Install backend dependencies
 echo ""
-echo "Step 6: Installing backend dependencies..."
+echo "Step 7: Installing backend dependencies..."
 cd "$SCRIPT_DIR/backend"
 npm install
 echo -e "${GREEN}✓ Backend dependencies installed${NC}"
 
 # Install frontend dependencies
 echo ""
-echo "Step 7: Installing frontend dependencies..."
+echo "Step 8: Installing frontend dependencies..."
 cd "$SCRIPT_DIR/frontend"
 npm install
 echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 
 # Check and clear port conflicts
 echo ""
-echo "Step 8: Checking port conflicts..."
+echo "Step 9: Checking port conflicts..."
 cd "$SCRIPT_DIR"
 
 # Check port 3005 (Backend)
@@ -148,7 +188,7 @@ mkdir -p logs
 
 # Start Backend
 echo ""
-echo "Step 9: Starting backend (port 3005)..."
+echo "Step 10: Starting backend (port 3005)..."
 cd backend
 npm run start:dev > ../logs/backend.log 2>&1 &
 BACKEND_PID=$!
@@ -175,7 +215,7 @@ done
 
 # Start Frontend
 echo ""
-echo "Step 10: Starting frontend (port 5282)..."
+echo "Step 11: Starting frontend (port 5282)..."
 cd frontend
 npm run dev > ../logs/frontend.log 2>&1 &
 FRONTEND_PID=$!

@@ -1,0 +1,193 @@
+/**
+ * Skill Permission Guard
+ *
+ * Enforces role-based access control for skill operations
+ */
+
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { SkillsService } from '../skills.service';
+import { UserTenantService } from '../../users/user-tenant.service';
+import { IS_PUBLIC_KEY } from '../../auth/decorators';
+import type { RequestContext } from '../../auth/types';
+
+@Injectable()
+export class SkillPermissionGuard implements CanActivate {
+  private readonly logger = new Logger(SkillPermissionGuard.name);
+
+  constructor(
+    private readonly skillsService: SkillsService,
+    private readonly userTenantService: UserTenantService,
+    private readonly reflector: Reflector,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if route is public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const method = request.method;
+    const skillId = request.params?.id;
+    const requestContext: RequestContext | undefined = request.context;
+
+    // READ operations (GET)
+    if (method === 'GET' && skillId) {
+      return this.checkReadPermission(skillId, requestContext);
+    }
+
+    // WRITE operations (POST, PUT, PATCH, DELETE)
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      return this.checkWritePermission(method, skillId, requestContext);
+    }
+
+    // Default: allow (for LIST operations without ID)
+    return true;
+  }
+
+  /**
+   * Check read permission for a specific skill
+   */
+  private async checkReadPermission(
+    skillId: string,
+    context: RequestContext | undefined,
+  ): Promise<boolean> {
+    if (!context?.tenantId) {
+      throw new ForbiddenException('Tenant context required');
+    }
+
+    const skill = await this.skillsService.findOne(context.tenantId, skillId);
+
+    if (!skill) {
+      throw new ForbiddenException('Skill not found');
+    }
+
+    // Tenant-scoped skills are readable by all (including anonymous)
+    if (skill.scope === 'tenant') {
+      return true;
+    }
+
+    // Personal skills require authentication
+    if (skill.scope === 'personal') {
+      if (!context || context.isAnonymous) {
+        throw new ForbiddenException('Authentication required to access personal skills');
+      }
+
+      // Admin can read all personal skills
+      if (context.userTenant?.role === 'admin') {
+        return true;
+      }
+
+      // Users can only read their own personal skills
+      if (skill.createdBy === context.userId) {
+        return true;
+      }
+
+      throw new ForbiddenException('You do not have permission to access this personal skill');
+    }
+
+    return true;
+  }
+
+  /**
+   * Check write permission for skill operations
+   */
+  private async checkWritePermission(
+    method: string,
+    skillId: string | undefined,
+    context: RequestContext | undefined,
+  ): Promise<boolean> {
+    // Anonymous users cannot write
+    if (!context || context.isAnonymous) {
+      throw new ForbiddenException('Authentication required for this operation');
+    }
+
+    if (!context.userTenant) {
+      throw new ForbiddenException('User tenant information required');
+    }
+
+    // CREATE operation (POST without ID)
+    if (method === 'POST' && !skillId) {
+      return this.checkCreatePermission(context);
+    }
+
+    // UPDATE/DELETE operations require checking existing skill
+    if (skillId) {
+      return this.checkModifyPermission(skillId, context);
+    }
+
+    return true;
+  }
+
+  /**
+   * Check permission to create new skills
+   */
+  private checkCreatePermission(context: RequestContext): boolean {
+    const { userTenant } = context;
+
+    if (!userTenant) {
+      throw new ForbiddenException('User tenant information required');
+    }
+
+    // Check canCreateSkills flag
+    if (!userTenant.canCreateSkills) {
+      throw new ForbiddenException('You do not have permission to create skills');
+    }
+
+    return true;
+  }
+
+  /**
+   * Check permission to modify existing skill
+   */
+  private async checkModifyPermission(
+    skillId: string,
+    context: RequestContext,
+  ): Promise<boolean> {
+    if (!context.tenantId) {
+      throw new ForbiddenException('Tenant context required');
+    }
+
+    const skill = await this.skillsService.findOne(context.tenantId, skillId);
+
+    if (!skill) {
+      throw new ForbiddenException('Skill not found');
+    }
+
+    const { userId, userTenant } = context;
+
+    if (!userTenant) {
+      throw new ForbiddenException('User tenant information required');
+    }
+
+    // Legacy skills without createdBy can be edited by anyone with write permissions
+    if (!skill.createdBy) {
+      return userTenant.role === 'admin' || userTenant.role === 'developer';
+    }
+
+    // Use UserTenantService to check if user can edit this resource
+    const canEdit = this.userTenantService.canEditResource(
+      userTenant,
+      skill.createdBy,
+      userId || '',
+    );
+
+    if (!canEdit) {
+      throw new ForbiddenException('You do not have permission to modify this skill');
+    }
+
+    return true;
+  }
+}

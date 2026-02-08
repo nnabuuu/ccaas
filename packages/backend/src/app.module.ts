@@ -7,6 +7,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import configuration from './config/configuration';
 import { ChatModule } from './chat/chat.module';
 import { SkillsModule } from './skills/skills.module';
@@ -42,6 +43,9 @@ import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
 import { ScheduledTaskExecution } from './scheduler/entities/scheduled-task-execution.entity';
 import { JobModule } from './jobs/job.module';
 import { JobEntity } from './jobs/entities/job.entity';
+import { UsersModule } from './users/users.module';
+import { User } from './users/entities/user.entity';
+import { UserTenant } from './users/entities/user-tenant.entity';
 
 @Module({
   imports: [
@@ -50,6 +54,9 @@ import { JobEntity } from './jobs/entities/job.entity';
       isGlobal: true,
       load: [configuration],
     }),
+
+    // Event Emitter (Week 5: WebSocket events)
+    EventEmitterModule.forRoot(),
 
     // Database (SQLite for simplicity, can switch to PostgreSQL)
     TypeOrmModule.forRoot({
@@ -63,6 +70,9 @@ import { JobEntity } from './jobs/entities/job.entity';
         ApiKey,
         McpServer,
         AgentFile,
+        // User entities
+        User,
+        UserTenant,
         // Message entities
         Message,
         ToolEvent,
@@ -103,6 +113,7 @@ import { JobEntity } from './jobs/entities/job.entity';
     TenantsModule,
     MessagesModule,
     FilesModule,
+    UsersModule,
 
     // Admin module
     AdminModule,

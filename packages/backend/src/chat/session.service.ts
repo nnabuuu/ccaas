@@ -38,6 +38,21 @@ export interface ResolvedAttachment {
   mimeType: string;
 }
 
+/**
+ * Session details for REST API responses
+ * Week 4: Added for session restart endpoint
+ */
+export interface SessionDetails {
+  sessionId: string;
+  userId?: string;
+  tenantId?: string;
+  status: string;
+  needsRestart: boolean;
+  syncedSkillCount: number;
+  lastActivity: Date;
+  createdAt: Date;
+}
+
 @Injectable()
 export class SessionService implements OnModuleDestroy {
   private readonly logger = new Logger(SessionService.name);
@@ -84,12 +99,17 @@ export class SessionService implements OnModuleDestroy {
     sessionId: string,
     clientId: string,
     socket: Socket,
+    userId?: string,
   ): ManagedSession {
     let session = this.sessions.get(sessionId);
 
     if (session) {
       session.socket = socket;
       session.lastActivity = new Date();
+      // Preserve userId if it was set before
+      if (!session.userId && userId) {
+        session.userId = userId;
+      }
       this.logger.log(`Reusing existing session ${sessionId}`);
       return session;
     }
@@ -133,6 +153,8 @@ export class SessionService implements OnModuleDestroy {
       messageCount: 0,
       buffer: '',
       workspaceDir,
+      userId, // Week 3: Track user
+      syncedSkillIds: new Set(), // Week 3: Track synced skills
     };
 
     this.sessions.set(sessionId, session);
@@ -679,34 +701,102 @@ export class SessionService implements OnModuleDestroy {
    * Restart a session by killing its AgentEngine process
    * Next message will spawn fresh engine with updated skills
    */
-  restartSession(sessionId: string, tenantId?: string): boolean {
+  /**
+   * Restart a session
+   *
+   * Week 4: Enhanced to throw errors and update skillSyncedAt
+   *
+   * @param sessionId - The session ID to restart
+   * @param tenantId - Optional tenant ID for verification
+   * @throws Error if session not found or tenant mismatch
+   */
+  async restartSession(sessionId: string, tenantId?: string): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) {
-      this.logger.warn(`Session ${sessionId} not found for restart`);
-      return false;
+      throw new Error(`Session not found: ${sessionId}`);
     }
 
     // Verify tenant ownership if provided
     if (tenantId && session.tenantId !== tenantId) {
-      this.logger.warn(`Tenant ${tenantId} cannot restart session owned by ${session.tenantId}`);
-      return false;
+      throw new Error(`Tenant ${tenantId} cannot restart session owned by ${session.tenantId}`);
     }
 
     // Kill AgentEngine if running
     if (session.cliProcess && !session.cliProcess.killed) {
       this.logger.log(`Killing AgentEngine for session restart: ${sessionId}`);
       session.cliProcess.kill('SIGTERM');
+
+      // Wait a bit for graceful shutdown
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Force kill if still alive
+      if (session.cliProcess && !session.cliProcess.killed) {
+        this.logger.warn(`Force killing AgentEngine for session: ${sessionId}`);
+        session.cliProcess.kill('SIGKILL');
+      }
+
       session.cliProcess = null;
       session.stdin = null;
     }
 
-    // Clear restart flag
+    // Clear restart flag and reset status
     session.needsRestart = false;
     session.status = 'idle';
     session.lastActivity = new Date();
 
+    // Week 4: Update skillSyncedAt to indicate restart
+    session.skillSyncedAt = new Date();
+
     this.logger.log(`Session ${sessionId} restarted successfully`);
-    return true;
+  }
+
+  /**
+   * Get detailed session information
+   *
+   * Week 4: New method for session details endpoint
+   *
+   * @param sessionId - The session ID
+   * @returns Session details or null if not found
+   */
+  getSessionDetails(sessionId: string): SessionDetails | null {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return null;
+    }
+
+    return {
+      sessionId: session.sessionId,
+      userId: session.userId,
+      tenantId: session.tenantId,
+      status: session.status,
+      needsRestart: session.needsRestart || false,
+      syncedSkillCount: session.syncedSkillIds?.size || 0,
+      lastActivity: session.lastActivity,
+      createdAt: session.createdAt,
+    };
+  }
+
+  /**
+   * Check if a session can be restarted
+   *
+   * Week 4: New method for restart validation
+   *
+   * @param sessionId - The session ID
+   * @returns true if session can be restarted
+   */
+  canRestartSession(sessionId: string): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return false;
+    }
+
+    // Cannot restart if currently processing
+    if (session.status === 'processing') {
+      return false;
+    }
+
+    // Can only restart if needsRestart flag is explicitly set
+    return session.needsRestart === true;
   }
 
   /**
@@ -723,27 +813,110 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Mark all sessions for a tenant as needing restart
-   * Called when skills are updated
+   * Mark sessions for a tenant as needing restart
+   *
+   * Week 3 Enhancement: Accepts optional skillId for precise restart
+   * - If skillId provided: Only marks sessions that have that skill synced
+   * - If skillId omitted: Marks all tenant sessions (backward compatibility)
+   *
+   * @param tenantId - The tenant ID
+   * @param skillId - Optional skill ID to filter sessions (Week 3)
+   * @returns Array of affected session IDs
    */
-  markSessionsForRestart(tenantId: string): string[] {
+  markSessionsForRestart(tenantId: string, skillId?: string): string[] {
     const affectedSessionIds: string[] = [];
 
-    for (const session of this.sessions.values()) {
-      if (session.tenantId === tenantId) {
+    // Week 3: If skillId provided, only mark sessions with that skill
+    if (skillId) {
+      const affectedSessions = this.getAffectedSessions(tenantId, skillId);
+      for (const session of affectedSessions) {
         session.needsRestart = true;
         affectedSessionIds.push(session.sessionId);
-        this.logger.debug(`Marked session ${session.sessionId} as needing restart`);
+        this.logger.debug(`Marked session ${session.sessionId} as needing restart (skill: ${skillId})`);
+      }
+    } else {
+      // Backward compatibility: Mark all tenant sessions
+      for (const session of this.sessions.values()) {
+        if (session.tenantId === tenantId) {
+          session.needsRestart = true;
+          affectedSessionIds.push(session.sessionId);
+          this.logger.debug(`Marked session ${session.sessionId} as needing restart`);
+        }
       }
     }
 
     if (affectedSessionIds.length > 0) {
       this.logger.log(
-        `Marked ${affectedSessionIds.length} sessions for tenant ${tenantId} as needing restart`,
+        `Marked ${affectedSessionIds.length} sessions for tenant ${tenantId} as needing restart${skillId ? ` (skill: ${skillId})` : ''}`,
       );
     }
 
     return affectedSessionIds;
+  }
+
+  /**
+   * Track which skills are synced to a session
+   *
+   * Week 3: Called after skill sync to track which skills this session uses.
+   * Enables precise session restart when specific skills are updated.
+   *
+   * @param sessionId - The session ID
+   * @param skillIds - Array of skill IDs that were synced
+   */
+  trackSyncedSkills(sessionId: string, skillIds: string[]): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      this.logger.warn(`Cannot track skills for non-existent session: ${sessionId}`);
+      return;
+    }
+
+    // Reset and populate with new skill IDs
+    session.syncedSkillIds = new Set(skillIds);
+
+    this.logger.debug(
+      `Tracked ${skillIds.length} synced skills for session ${sessionId}: ${skillIds.join(', ')}`,
+    );
+  }
+
+  /**
+   * Get sessions affected by a skill update
+   *
+   * Week 3: Returns only sessions that have the specified skill synced.
+   * Used for precise session restart marking.
+   *
+   * @param tenantId - The tenant ID
+   * @param skillId - The skill ID
+   * @returns Array of sessions that have this skill synced
+   */
+  getAffectedSessions(tenantId: string, skillId: string): ManagedSession[] {
+    const affected: ManagedSession[] = [];
+
+    for (const session of this.sessions.values()) {
+      // Must match tenant
+      if (session.tenantId !== tenantId) {
+        continue;
+      }
+
+      // Must have this skill synced
+      if (session.syncedSkillIds?.has(skillId)) {
+        affected.push(session);
+      }
+    }
+
+    this.logger.debug(
+      `Found ${affected.length} sessions affected by skill ${skillId} in tenant ${tenantId}`,
+    );
+
+    return affected;
+  }
+
+  /**
+   * Terminate a session (alias for closeSession)
+   *
+   * Week 3: Added for test compatibility
+   */
+  async terminateSession(sessionId: string): Promise<void> {
+    this.closeSession(sessionId);
   }
 
   /**

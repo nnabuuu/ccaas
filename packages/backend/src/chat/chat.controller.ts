@@ -208,25 +208,49 @@ export class ChatController {
   /**
    * Restart a session to pick up new skills
    * Kills the CLI process so next message spawns fresh
+   * Week 4: Enhanced with session details and proper error handling
    */
   @Post('sessions/:sessionId/restart')
-  restartSession(
+  async restartSession(
     @Param('sessionId') sessionId: string,
     @Body() body?: { tenantId?: string },
   ) {
-    const success = this.sessionService.restartSession(sessionId, body?.tenantId);
-
-    if (!success) {
-      const status = this.sessionService.getSessionStatus(sessionId);
-      if (!status) {
-        throw new NotFoundException(`Session not found: ${sessionId}`);
-      }
-      throw new ForbiddenException('Cannot restart session');
+    // Check if session exists
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
     }
+
+    // Check if session can be restarted
+    if (!this.sessionService.canRestartSession(sessionId)) {
+      throw new BadRequestException('Session cannot be restarted at this time');
+    }
+
+    // Restart session (async, may throw)
+    await this.sessionService.restartSession(sessionId, body?.tenantId);
+
+    // Get session details after restart
+    const sessionDetails = this.sessionService.getSessionDetails(sessionId);
 
     return {
       success: true,
-      message: 'Session restarted. Next message will use updated skills.',
+      message: 'Session restarted successfully',
+      session: sessionDetails,
     };
+  }
+
+  /**
+   * Get detailed session information
+   * Week 4: New endpoint for session status and metadata
+   */
+  @Get('sessions/:sessionId/details')
+  getSessionDetails(@Param('sessionId') sessionId: string) {
+    const details = this.sessionService.getSessionDetails(sessionId);
+
+    if (!details) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    return details;
   }
 }

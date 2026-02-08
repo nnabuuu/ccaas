@@ -18,7 +18,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import type { SkillType, SkillStatus } from '../entities/skill.entity';
+import type { SkillType, SkillStatus, SkillScope } from '../entities/skill.entity';
 
 /**
  * Trigger definition for skill routing
@@ -75,6 +75,10 @@ export class CreateSkillDto {
   @ValidateNested({ each: true })
   @Type(() => TriggerDto)
   triggers?: TriggerDto[];
+
+  @IsOptional()
+  @IsEnum(['tenant', 'personal'])
+  scope?: SkillScope;
 }
 
 /**
@@ -111,6 +115,10 @@ export class UpdateSkillDto {
   @IsOptional()
   @IsBoolean()
   createVersion?: boolean;
+
+  @IsOptional()
+  @IsEnum(['tenant', 'personal'])
+  scope?: SkillScope;
 }
 
 /**
@@ -149,6 +157,14 @@ export class ListSkillsDto {
   @IsOptional()
   @IsEnum(['asc', 'desc'])
   sortOrder?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
+
+  @IsOptional()
+  @IsEnum(['tenant', 'personal'])
+  scope?: SkillScope;
 }
 
 /**

@@ -34,9 +34,15 @@ export interface ManagedSession {
   currentAssistantMessageId?: string;
   tenantId?: string;
 
+  // User tracking (Week 1)
+  userId?: string;
+
   // Session restart tracking (for new skill visibility)
   needsRestart?: boolean;
   skillSyncedAt?: Date;
+
+  // Skill tracking (Week 3) - track which skills are synced to this session
+  syncedSkillIds?: Set<string>;
 
   // MCP servers configuration passed from solution backends
   mcpServers?: Record<string, {

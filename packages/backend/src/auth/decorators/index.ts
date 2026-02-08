@@ -166,3 +166,6 @@ export const RequestId = createParamDecorator(
     return request.context?.requestId;
   },
 );
+
+// Re-export CurrentUser from dedicated file
+export { CurrentUser, type CurrentUserData } from './current-user.decorator';

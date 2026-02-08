@@ -15,6 +15,7 @@ import {
   Index,
 } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
+import { User } from '../../users/entities/user.entity';
 import type { ApiKeyScope, ApiKeyStatus, ApiKeyMetadata } from '../types';
 
 @Entity('api_keys')
@@ -27,9 +28,16 @@ export class ApiKey {
   @Column()
   tenantId!: string;
 
+  @Column({ nullable: true })
+  userId?: string | null;
+
   @ManyToOne(() => Tenant, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tenantId' })
   tenant?: Tenant;
+
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user?: User | null;
 
   @Column()
   name!: string;

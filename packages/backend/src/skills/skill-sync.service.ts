@@ -12,7 +12,8 @@ import { SkillsService } from './skills.service';
 
 export interface SyncResult {
   skillCount: number;
-  skills: string[];
+  skills: string[]; // Skill slugs
+  skillIds: string[]; // Week 3: Skill IDs for precise session tracking
   durationMs: number;
   warnings: string[];
 }
@@ -40,6 +41,7 @@ export class SkillSyncService {
     const startTime = Date.now();
     const warnings: string[] = [];
     const syncedSkills: string[] = [];
+    const syncedSkillIds: string[] = []; // Week 3: Track skill IDs
 
     const { publishedOnly = true, skillSlugs, includeManifest = false } = options;
 
@@ -102,6 +104,7 @@ export class SkillSyncService {
         }
 
         syncedSkills.push(skill.slug);
+        syncedSkillIds.push(skill.id); // Week 3: Track skill ID
         this.logger.debug(`Synced skill: ${skill.name} (${skill.slug})`);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
@@ -119,6 +122,7 @@ export class SkillSyncService {
     return {
       skillCount: syncedSkills.length,
       skills: syncedSkills,
+      skillIds: syncedSkillIds, // Week 3: Return skill IDs
       durationMs,
       warnings,
     };

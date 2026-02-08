@@ -10,19 +10,24 @@ import { SkillsController } from './skills.controller';
 import { SkillsService } from './skills.service';
 import { SkillSyncService } from './skill-sync.service';
 import { SkillRouterService } from './skill-router.service';
+import { SkillPermissionGuard } from './guards/skill-permission.guard';
 import { Skill } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
 import { TenantsModule } from '../tenants/tenants.module';
 import { McpModule } from '../mcp/mcp.module';
+import { UsersModule } from '../users/users.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Skill, SkillVersion]),
     forwardRef(() => TenantsModule),
+    forwardRef(() => UsersModule),
+    forwardRef(() => ChatModule), // Week 5: SessionService for affected sessions
     McpModule,
   ],
   controllers: [SkillsController],
-  providers: [SkillsService, SkillSyncService, SkillRouterService],
+  providers: [SkillsService, SkillSyncService, SkillRouterService, SkillPermissionGuard],
   exports: [SkillsService, SkillSyncService, SkillRouterService],
 })
 export class SkillsModule {}

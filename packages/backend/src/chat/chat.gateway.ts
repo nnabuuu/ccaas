@@ -15,6 +15,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Logger, UseFilters, OnModuleInit } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
@@ -88,6 +89,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     private readonly conversationContextService: ConversationContextService,
     private readonly userContextService: UserContextService,
     private readonly filesService: FilesService,
+    private readonly eventEmitter: EventEmitter2, // Week 5: Event forwarding
   ) {}
 
   /**
@@ -143,6 +145,32 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
     };
     SkillChangeNotifier.addListener(this.skillChangeCallback);
     this.logger.log('Registered skill change listener');
+
+    // Week 5: Register skill_updated event listener for WebSocket forwarding
+    this.eventEmitter.on('skill.updated', (event: any) => {
+      this.handleSkillUpdatedEvent(event);
+    });
+    this.logger.log('Registered skill.updated event listener');
+  }
+
+  /**
+   * Handle skill.updated event and forward to tenant room
+   * Week 5: WebSocket event enhancement
+   */
+  private handleSkillUpdatedEvent(event: any) {
+    const { skill, affectedSessions, impact, tenantId } = event;
+
+    this.logger.log(
+      `Skill updated: ${skill.name} (${skill.id}) - ${affectedSessions.length} affected sessions (${impact} impact)`,
+    );
+
+    // Forward event to tenant room via Socket.io
+    this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
+      type: 'skill_updated',
+      skill,
+      affectedSessions,
+      impact,
+    });
   }
 
   /**
@@ -172,8 +200,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
   ): void {
     this.logger.log(`Skill change: ${action} ${skillSlug} for tenant ${tenantId}`);
 
-    // Mark all sessions for this tenant as needing restart
-    const affectedSessionIds = this.sessionService.markSessionsForRestart(tenantId);
+    // Week 3: Mark only sessions that use this skill (precise restart)
+    const affectedSessionIds = this.sessionService.markSessionsForRestart(tenantId, skillId);
 
     if (affectedSessionIds.length === 0) {
       this.logger.debug('No active sessions affected by skill change');
@@ -307,8 +335,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         this.logger.warn(`Failed to resolve tenant: ${error}`);
       }
 
-      // Get or create session
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, client);
+      // Extract userId from context if available (Week 3)
+      const userId = data.context?.userId as string | undefined;
+
+      // Get or create session (Week 3: Pass userId for tracking)
+      const session = this.sessionService.getOrCreateSession(sessionId, clientId, client, userId);
 
       // Store tenant context on session (use original for display, resolved for queries)
       session.tenantId = resolvedTenantId;
@@ -330,6 +361,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
           },
         );
         session.skillSyncedAt = new Date();
+
+        // Week 3: Track which skills are synced to this session for precise restart
+        if (syncResult.skillIds && syncResult.skillIds.length > 0) {
+          this.sessionService.trackSyncedSkills(sessionId, syncResult.skillIds);
+          this.logger.debug(`Tracked ${syncResult.skillIds.length} synced skills for session ${sessionId}`);
+        }
+
         this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
       } catch (error) {
         this.logger.warn(`Failed to sync skills: ${error}`);

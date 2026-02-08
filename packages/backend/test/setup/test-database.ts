@@ -27,6 +27,8 @@ import { Tenant } from '../../src/tenants/entities/tenant.entity';
 import { ApiKey } from '../../src/auth/entities/api-key.entity';
 import { McpServer } from '../../src/mcp/entities/mcp-server.entity';
 import { JobEntity } from '../../src/jobs/entities/job.entity';
+import { User } from '../../src/users/entities/user.entity';
+import { UserTenant } from '../../src/users/entities/user-tenant.entity';
 
 export const TEST_ENTITIES = [
   Message,
@@ -48,6 +50,8 @@ export const TEST_ENTITIES = [
   SessionAlert,
   AdminAuditLog,
   JobEntity,
+  User,
+  UserTenant,
 ];
 
 /**
