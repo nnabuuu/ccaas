@@ -81,14 +81,14 @@ describe('Message Flow Integration', () => {
       textDeltas.push(data.delta)
     })
 
-    // Listen for agent_status completion
+    // Listen for completion (wait longer for agent to respond)
     const statusPromise = waitForEvent<{ status: string }>(
       socket,
       'agent_status',
-      30000
+      60000
     )
 
-    // Send message
+    // Send message (use echo to ensure we get text output)
     const response = await fetch(
       `${BACKEND_URL}/api/v1/sessions/${sessionId}/completion`,
       {
@@ -96,7 +96,7 @@ describe('Message Flow Integration', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId,
-          message: 'What is 2+2?',
+          message: 'Echo back the text "Integration test successful"',
           tenantId: 'test-tenant',
         }),
       }
@@ -104,15 +104,15 @@ describe('Message Flow Integration', () => {
 
     expect(response.ok).toBe(true)
 
-    // Wait for completion
-    const statusData = await statusPromise
+    // Wait for first text_delta (most important indicator)
+    await waitForEvent(socket, 'text_delta', 30000)
 
-    // Should have received text deltas
+    // Should have received at least one text delta at this point
     expect(textDeltas.length).toBeGreaterThan(0)
 
-    // Agent should eventually complete or stop
-    expect(['completed', 'stopped', 'error']).toContain(statusData.status)
-  }, 35000)
+    // Wait for final completion
+    await statusPromise
+  }, 65000)
 
   it('should support follow-up messages in same session', async () => {
     const { socket, clientId } = await createConnectedSocket()

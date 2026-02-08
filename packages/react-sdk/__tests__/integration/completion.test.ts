@@ -77,7 +77,9 @@ describe('Session Completion Endpoint Integration', () => {
     expect(response.status).toBe(400)
 
     const data = await response.json()
-    expect(data.message).toContain('clientId')
+    // NestJS class-validator returns errors as array
+    expect(Array.isArray(data.message)).toBe(true)
+    expect(data.message.some((msg: string) => msg.includes('clientId'))).toBe(true)
   })
 
   it('should reject request without message', async () => {
@@ -100,7 +102,9 @@ describe('Session Completion Endpoint Integration', () => {
     expect(response.status).toBe(400)
 
     const data = await response.json()
-    expect(data.message).toContain('message')
+    // NestJS class-validator returns errors as array
+    expect(Array.isArray(data.message)).toBe(true)
+    expect(data.message.some((msg: string) => msg.includes('message'))).toBe(true)
   })
 
   it('should reject request with disconnected clientId', async () => {
