@@ -59,12 +59,14 @@ Quick reference guides for developers:
 1. [What is LoopAI?](gitbook/zh/README.md) (中文) / [What is LoopAI?](gitbook/en/README.md) (English)
 2. [Installation Guide](gitbook/zh/getting-started/installation.md)
 3. [5-Minute Quickstart](gitbook/zh/getting-started/quickstart.md)
+4. **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create your first solution in 10 minutes
 
 ### For Developers
-1. [Solution Development Guide](gitbook/zh/guide/solution-dev.md)
-2. [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
-3. [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
-4. [API Reference](gitbook/zh/api/README.md)
+1. **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide to building solutions (NEW)
+2. [Solution Development Guide](gitbook/zh/guide/solution-dev.md)
+3. [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
+4. [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
+5. [API Reference](gitbook/zh/api/README.md)
 
 ### For Contributors
 1. [Best Practices](SOLUTION_BEST_PRACTICES.md)
@@ -74,7 +76,9 @@ Quick reference guides for developers:
 ## 📖 Documentation by Role
 
 ### Solution Developers
-- [Solution Development Guide](gitbook/zh/guide/solution-dev.md) - Complete guide to building solutions
+- **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - 10-minute tutorial (NEW)
+- **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide with tenant setup, MCP, skills (NEW)
+- [Solution Development Guide](gitbook/zh/guide/solution-dev.md) - Additional development patterns
 - [MCP Server Development](gitbook/zh/guide/mcp-server.md) - Create custom MCP servers
 - [File Explorer Component](gitbook/zh/guide/file-explorer.md) - Use the file browser UI
 - [Best Practices](SOLUTION_BEST_PRACTICES.md)
@@ -123,6 +127,9 @@ Quick reference guides for developers:
 ```
 docs/
 ├── README.md (this file)          # Main documentation index
+├── guides/                        # Step-by-step tutorials (NEW)
+│   ├── SOLUTION_QUICK_START.md    # 10-minute solution tutorial
+│   └── CREATING_A_SOLUTION.md     # Complete solution guide
 ├── gitbook/                       # GitBook documentation
 │   ├── en/                        # English version
 │   └── zh/                        # Chinese version
