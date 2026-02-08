@@ -4,7 +4,7 @@
  * Uses @ccaas/react-sdk ChatPanel directly
  */
 
-import { ChatPanel, type Message } from '@ccaas/react-sdk'
+import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@ccaas/react-sdk'
 import type { ToolActivity, ActiveSubAgent } from '@ccaas/react-sdk'
 
 interface SimpleChatSectionProps {
@@ -13,8 +13,10 @@ interface SimpleChatSectionProps {
   isThinking: boolean
   thinkingContent: string
   onSendMessage: (content: string) => void
-  activeTools: ToolActivity[]
+  activeTools: Map<string, ToolActivity>
   activeSubAgents: ActiveSubAgent[]
+  todoItems: TodoItem[]
+  todoStats: TodoStats | null
 }
 
 export default function SimpleChatSection({
@@ -25,21 +27,20 @@ export default function SimpleChatSection({
   onSendMessage,
   activeTools,
   activeSubAgents,
+  todoItems,
+  todoStats,
 }: SimpleChatSectionProps) {
-  // Convert activeTools array to Map for ChatPanel
-  const activeToolsMap = new Map(activeTools.map(tool => [tool.toolId, tool]))
-
   return (
     <div className="h-full">
       <ChatPanel
         messages={messages}
         isProcessing={isProcessing}
         connected={true}
-        activeTools={activeToolsMap}
+        activeTools={activeTools}
         isThinking={isThinking}
         thinkingContent={thinkingContent}
-        todoItems={[]}
-        todoStats={{ total: 0, completed: 0, inProgress: 0, pending: 0 }}
+        todoItems={todoItems}
+        todoStats={todoStats}
         activeSubAgents={activeSubAgents}
         onSendMessage={onSendMessage}
         onCancel={() => {}}

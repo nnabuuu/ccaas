@@ -6,9 +6,9 @@
 
   "mcpServers": {
     "quiz-analyzer-tools": {
-      "type": "rest",
-      "baseUrl": "http://localhost:3005/api/v1/tools",
-      "description": "Quiz Analyzer MCP tools (merged into backend)"
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Quiz Analyzer MCP tools for knowledge point analysis and quiz processing"
     }
   },
 

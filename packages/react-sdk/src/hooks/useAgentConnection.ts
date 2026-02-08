@@ -84,6 +84,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     connected,
     clientId,
     sessionId: sessionIdRef.current,
+    serverUrl,
     error,
     connect,
     disconnect,

@@ -137,6 +137,7 @@ export interface UseAgentConnectionReturn {
   connected: boolean
   clientId: string | null
   sessionId: string
+  serverUrl: string
   error: string | null
   connect: () => void
   disconnect: () => void

@@ -113,7 +113,15 @@ function App() {
                 </div>
               )}
 
-              {!session.isProcessing && !history.current && (
+              {/* Show real-time analysis results from AI */}
+              {!session.isProcessing && !history.current && Object.keys(session.analysisResults).length > 0 && (
+                <CompleteAnalysisView
+                  analysis={session.analysisResults}
+                  quiz={null}
+                />
+              )}
+
+              {!session.isProcessing && !history.current && Object.keys(session.analysisResults).length === 0 && (
                 <div className="text-center py-12 text-slate-400">
                   <SparklesIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">等待输入题目</p>
@@ -153,8 +161,10 @@ function App() {
                     isThinking={session.isThinking}
                     thinkingContent={session.thinkingContent}
                     onSendMessage={session.sendMessage}
-                    activeTools={Array.from(session.activeTools.values())}
+                    activeTools={session.activeTools}
                     activeSubAgents={session.activeSubAgents}
+                    todoItems={session.todoItems}
+                    todoStats={session.todoStats}
                   />
                 </div>
               )}

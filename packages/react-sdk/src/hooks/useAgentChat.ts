@@ -354,7 +354,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         chatPayload.attachments = sendOptions.attachments
       }
 
-      const response = await fetch(`/api/v1/sessions/${connection.sessionId}/completion`, {
+      const response = await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(chatPayload),
