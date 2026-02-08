@@ -6,41 +6,95 @@
 
   "mcpServers": {
     "quiz-analyzer-tools": {
-      "command": "node",
-      "args": ["mcp-server/dist/index.js"],
-      "env": {
-        "MCP_PORT": "3006"
-      }
+      "type": "rest",
+      "baseUrl": "http://localhost:3005/api/v1/tools",
+      "description": "Quiz Analyzer MCP tools (merged into backend)"
     }
   },
 
-  "skill": {
-    "name": "Quiz Analyzer - Knowledge Point Matching",
-    "description": "智能标注题目知识点，支持多知识点综合题",
-    "instructions": "请严格遵循 SKILL_KNOWLEDGE_POINT_MATCHING.md 中的标准工作流，特别注意：1) 提取所有主题关键词 2) 展开所有 children_count > 0 的节点 3) 从候选池中多选相关知识点 4) 避免遗漏综合题的多个知识点",
-    "triggers": [
-      { "type": "keyword", "value": "分析这道题", "priority": 10 },
-      { "type": "keyword", "value": "标注知识点", "priority": 10 },
-      { "type": "keyword", "value": "这道题考察", "priority": 9 },
-      { "type": "keyword", "value": "知识点", "priority": 8 },
-      { "type": "keyword", "value": "解题思路", "priority": 9 },
-      { "type": "keyword", "value": "批量分析", "priority": 10 }
-    ],
-    "allowedTools": [
-      "write_output",
-      "get_knowledge_points_tree",
-      "verify_knowledge_point_tags",
-      "calculate_difficulty",
-      "generate_thinking_process_template",
-      "search_quizzes",
-      "search_knowledge_points",
-      "get_quiz_details",
-      "get_root_categories",
-      "get_children_nodes",
-      "get_node_path",
-      "search_in_scope"
-    ]
-  },
+  "skills": [
+    {
+      "name": "Quiz Analyzer - Knowledge Point Matching",
+      "slug": "knowledge-point-matching",
+      "description": "智能标注题目知识点，支持多知识点综合题",
+      "instructions": "请严格遵循 SKILL_KNOWLEDGE_POINT_MATCHING.md 中的标准工作流，特别注意：1) 提取所有主题关键词 2) 展开所有 children_count > 0 的节点 3) 从候选池中多选相关知识点 4) 避免遗漏综合题的多个知识点",
+      "triggers": [
+        { "type": "keyword", "value": "分析这道题", "priority": 10 },
+        { "type": "keyword", "value": "标注知识点", "priority": 10 },
+        { "type": "keyword", "value": "这道题考察", "priority": 9 },
+        { "type": "keyword", "value": "知识点", "priority": 8 },
+        { "type": "keyword", "value": "解题思路", "priority": 9 },
+        { "type": "keyword", "value": "批量分析", "priority": 10 }
+      ],
+      "allowedTools": [
+        "write_output",
+        "get_knowledge_points_tree",
+        "verify_knowledge_point_tags",
+        "generate_thinking_process_template",
+        "search_quizzes",
+        "search_knowledge_points",
+        "get_quiz_details",
+        "get_root_categories",
+        "get_children_nodes",
+        "get_node_path",
+        "search_in_scope"
+      ],
+      "skillFile": "SKILL_KNOWLEDGE_POINT_MATCHING.md"
+    },
+    {
+      "name": "Quiz Analyzer - Student Answer Analysis",
+      "slug": "analyze-student-answer",
+      "description": "分析学生答案，识别错误类型和错误步骤，支持错误模式推荐",
+      "instructions": "请严格遵循 skills/analyze-student-answer/SKILL.md 中的标准工作流进行学生答案分析。核心步骤：1) 获取题目信息和标准答案 2) 逐步对比学生答案与标准答案 3) 识别错误类型和错误步骤 4) 评估错误严重程度 5) 提供正确做法 6) 生成 StudentAnswer 格式的分析结果 7) 保存到数据库。注意：错误描述要具体、可操作，避免模糊表达；优先使用预定义的错误类型；严重程度判断要合理。",
+      "triggers": [
+        { "type": "keyword", "value": "分析学生答案", "priority": 10 },
+        { "type": "keyword", "value": "检查这道题", "priority": 9 },
+        { "type": "keyword", "value": "学生错在哪里", "priority": 10 },
+        { "type": "keyword", "value": "错误分析", "priority": 9 },
+        { "type": "keyword", "value": "学生做错了", "priority": 8 },
+        { "type": "keyword", "value": "分析错题", "priority": 9 }
+      ],
+      "allowedTools": [
+        "analyze_student_answer",
+        "get_quiz_details",
+        "search_knowledge_points",
+        "get_knowledge_points_tree",
+        "get_node_path",
+        "recommend_by_error_pattern",
+        "get_error_statistics"
+      ],
+      "skillFile": "skills/analyze-student-answer/SKILL.md",
+      "outputFormat": "StudentAnswer"
+    },
+    {
+      "name": "Quiz Analyzer - Complete Analysis",
+      "slug": "complete-analysis",
+      "description": "完整分析题目的所有 10 个维度，生成详细的分析报告",
+      "instructions": "请严格遵循 skills/complete-analysis/SKILL.md 中的标准工作流进行完整分析。关键步骤：1) 获取题目信息 2) 分析知识点（区分题干/解答来源）3) 生成所有 10 个分析维度 4) 使用 write_output 保存 5) 询问用户是否持久化。注意：相关题目推荐必须过滤掉当前题目本身。",
+      "triggers": [
+        { "type": "keyword", "value": "完整分析", "priority": 10 },
+        { "type": "keyword", "value": "生成分析报告", "priority": 10 },
+        { "type": "keyword", "value": "全面分析这道题", "priority": 10 },
+        { "type": "keyword", "value": "分析题目", "priority": 9 },
+        { "type": "keyword", "value": "详细分析", "priority": 9 }
+      ],
+      "allowedTools": [
+        "write_output",
+        "get_quiz_details",
+        "get_knowledge_points_tree",
+        "search_knowledge_points",
+        "get_children_nodes",
+        "get_node_path",
+        "search_in_scope",
+        "verify_knowledge_point_tags",
+        "generate_thinking_process_template",
+        "search_quizzes",
+        "save_complete_analysis"
+      ],
+      "skillFile": "skills/complete-analysis/SKILL.md",
+      "outputFormat": "QuizAnalysis"
+    }
+  ],
 
   "backend": { "port": 3005 },
   "frontend": { "port": 5282 },
@@ -53,8 +107,7 @@
     "correctAnswer",
     "commonMistakes",
     "knowledgeGapAnalysis",
-    "difficulty",
-    "relatedQuizzes",
-    "timeEstimate"
+    "difficultyAnalysis",
+    "relatedQuizzes"
   ]
 }

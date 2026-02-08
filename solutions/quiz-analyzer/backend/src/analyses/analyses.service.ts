@@ -34,8 +34,7 @@ export class AnalysesService {
       solution_steps: dto.solution_steps ? JSON.stringify(dto.solution_steps) : null,
       common_mistakes: dto.common_mistakes ? JSON.stringify(dto.common_mistakes) : null,
       knowledge_gap_analysis: dto.knowledge_gap_analysis,
-      difficulty_rationale: dto.difficulty_rationale,
-      time_estimate: dto.time_estimate,
+      difficulty_analysis: dto.difficulty_analysis ? JSON.stringify(dto.difficulty_analysis) : null,
       analyzer_version: dto.analyzer_version || '1.0',
       analysis_duration_ms: dto.analysis_duration_ms,
     });
@@ -71,8 +70,7 @@ export class AnalysesService {
       ...(dto.solution_steps && { solution_steps: JSON.stringify(dto.solution_steps) }),
       ...(dto.common_mistakes && { common_mistakes: JSON.stringify(dto.common_mistakes) }),
       ...(dto.knowledge_gap_analysis !== undefined && { knowledge_gap_analysis: dto.knowledge_gap_analysis }),
-      ...(dto.difficulty_rationale !== undefined && { difficulty_rationale: dto.difficulty_rationale }),
-      ...(dto.time_estimate !== undefined && { time_estimate: dto.time_estimate }),
+      ...(dto.difficulty_analysis && { difficulty_analysis: JSON.stringify(dto.difficulty_analysis) }),
       ...(dto.analyzer_version !== undefined && { analyzer_version: dto.analyzer_version }),
       ...(dto.analysis_duration_ms !== undefined && { analysis_duration_ms: dto.analysis_duration_ms }),
     });

@@ -20,6 +20,30 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+# Cleanup function (defined early for error handling)
+cleanup() {
+    echo ""
+    echo "🛑 Stopping services..."
+
+    # Stop background processes
+    kill $BACKEND_PID 2>/dev/null || true
+    kill $FRONTEND_PID 2>/dev/null || true
+
+    # Ensure ports are released
+    if lsof -Pi :3005 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "   Clearing port 3005 (Backend)..."
+        lsof -ti:3005 | xargs kill -9 2>/dev/null || true
+    fi
+
+    if lsof -Pi :5282 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo "   Clearing port 5282 (Frontend)..."
+        lsof -ti:5282 | xargs kill -9 2>/dev/null || true
+    fi
+
+    echo "✅ Services stopped"
+    exit 0
+}
+
 # Check if Excel files exist
 echo "Step 1: Checking Excel files..."
 if [ ! -f "resources/目录信息.xlsx" ] || [ ! -f "resources/知识点信息.xlsx" ] || [ ! -f "resources/题目信息.xlsx" ]; then
@@ -84,52 +108,124 @@ else
     exit 1
 fi
 
-# Install MCP server dependencies
+# Install backend dependencies
 echo ""
-echo "Step 6: Installing MCP server dependencies..."
-cd mcp-server
+echo "Step 6: Installing backend dependencies..."
+cd "$SCRIPT_DIR/backend"
 npm install
-echo -e "${GREEN}✓ MCP server dependencies installed${NC}"
+echo -e "${GREEN}✓ Backend dependencies installed${NC}"
 
-# Build MCP server
+# Install frontend dependencies
 echo ""
-echo "Step 7: Building MCP server..."
-npm run build
-echo -e "${GREEN}✓ MCP server built${NC}"
+echo "Step 7: Installing frontend dependencies..."
+cd "$SCRIPT_DIR/frontend"
+npm install
+echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 
-# Test MCP server (start in background, test health, then stop)
+# Check and clear port conflicts
 echo ""
-echo "Step 8: Testing MCP server..."
-npm start &
-MCP_PID=$!
-sleep 2
-if curl -s http://localhost:3006/health > /dev/null; then
-    echo -e "${GREEN}✓ MCP server health check passed${NC}"
-    curl -s http://localhost:3006/health | jq .
-else
-    echo -e "${RED}✗ MCP server health check failed${NC}"
+echo "Step 8: Checking port conflicts..."
+cd "$SCRIPT_DIR"
+
+# Check port 3005 (Backend)
+if lsof -Pi :3005 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ Port 3005 occupied, clearing...${NC}"
+    lsof -ti:3005 | xargs kill -9 2>/dev/null || true
+    sleep 1
 fi
-kill $MCP_PID 2>/dev/null || true
-sleep 1
+
+# Check port 5282 (Frontend)
+if lsof -Pi :5282 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ Port 5282 occupied, clearing...${NC}"
+    lsof -ti:5282 | xargs kill -9 2>/dev/null || true
+    sleep 1
+fi
+
+echo -e "${GREEN}✓ Ports cleared${NC}"
+
+# Create logs directory
+mkdir -p logs
+
+# Start Backend
+echo ""
+echo "Step 9: Starting backend (port 3005)..."
+cd backend
+npm run start:dev > ../logs/backend.log 2>&1 &
+BACKEND_PID=$!
+cd ..
+
+# Wait for Backend to be ready
+echo "⏳ Waiting for backend..."
+BACKEND_RETRY=0
+BACKEND_MAX_RETRY=10
+while [ $BACKEND_RETRY -lt $BACKEND_MAX_RETRY ]; do
+    if lsof -Pi :3005 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Backend started (port 3005)${NC}"
+        break
+    fi
+    BACKEND_RETRY=$((BACKEND_RETRY + 1))
+    if [ $BACKEND_RETRY -eq $BACKEND_MAX_RETRY ]; then
+        echo -e "${RED}✗ Backend failed to start${NC}"
+        echo "Check logs/backend.log for details"
+        cleanup
+        exit 1
+    fi
+    sleep 1
+done
+
+# Start Frontend
+echo ""
+echo "Step 10: Starting frontend (port 5282)..."
+cd frontend
+npm run dev > ../logs/frontend.log 2>&1 &
+FRONTEND_PID=$!
+cd ..
+
+# Wait for Frontend to be ready
+echo "⏳ Waiting for frontend..."
+FRONTEND_RETRY=0
+FRONTEND_MAX_RETRY=10
+while [ $FRONTEND_RETRY -lt $FRONTEND_MAX_RETRY ]; do
+    if lsof -Pi :5282 -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo -e "${GREEN}✓ Frontend started (port 5282)${NC}"
+        break
+    fi
+    FRONTEND_RETRY=$((FRONTEND_RETRY + 1))
+    if [ $FRONTEND_RETRY -eq $FRONTEND_MAX_RETRY ]; then
+        echo -e "${RED}✗ Frontend failed to start${NC}"
+        echo "Check logs/frontend.log for details"
+        cleanup
+        exit 1
+    fi
+    sleep 1
+done
 
 # Summary
 echo ""
 echo "=========================================="
-echo "Setup Complete!"
+echo "✅ All Services Running!"
 echo "=========================================="
 echo ""
-echo "Next steps:"
+echo "📍 Access URLs:"
+echo "   Frontend: http://localhost:5282"
+echo "   Backend:  http://localhost:3005 (includes MCP tools)"
 echo ""
-echo "1. Start MCP server:"
-echo "   cd mcp-server && npm start"
+echo "📊 Database Statistics:"
+sqlite3 data/quiz-analyzer.db "SELECT '   Quizzes: ' || COUNT(*) FROM quizzes;" 2>/dev/null || true
+sqlite3 data/quiz-analyzer.db "SELECT '   Knowledge Points: ' || COUNT(*) FROM knowledge_points;" 2>/dev/null || true
+sqlite3 data/quiz-analyzer.db "SELECT '   Student Answers: ' || COUNT(*) FROM student_answers;" 2>/dev/null || true
 echo ""
-echo "2. Test MCP tools:"
-echo "   curl http://localhost:3006/health"
+echo "⚠️  Ensure CCAAS backend is running on port 3001:"
+echo "   cd packages/backend && npm run start:dev"
 echo ""
-echo "3. Implement backend (Phase 3):"
-echo "   cd backend && npm install"
+echo "📝 Logs:"
+echo "   Backend:  tail -f logs/backend.log"
+echo "   Frontend: tail -f logs/frontend.log"
 echo ""
-echo "4. Implement frontend (Phase 4):"
-echo "   cd frontend && npm install"
-echo ""
-echo "See README.md for detailed documentation."
+echo "Press Ctrl+C to stop all services"
+
+# Set up trap for cleanup
+trap cleanup SIGINT SIGTERM
+
+# Wait for user interrupt
+wait

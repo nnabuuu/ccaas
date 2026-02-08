@@ -21,12 +21,7 @@ export class CreateAnalysisDto {
   knowledge_gap_analysis?: string;
 
   @IsOptional()
-  @IsString()
-  difficulty_rationale?: string;
-
-  @IsOptional()
-  @IsString()
-  time_estimate?: string;
+  difficulty_analysis?: any; // Will be JSON stringified
 
   @IsOptional()
   @IsString()

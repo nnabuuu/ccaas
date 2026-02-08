@@ -68,7 +68,39 @@ class ExcelImporter {
 
     console.log(`  Processing ${data.length} knowledge points...`);
 
-    // PASS 1: Create all nodes (parent_id = NULL)
+    // First, create subjects from unique 学段+学科 combinations
+    const subjectMap = new Map(); // "学段-学科" -> subject_id
+    const uniqueSubjects = new Set();
+
+    data.forEach(row => {
+      const stage = row.学段 || '';
+      const subject = row.学科 || '';
+      if (stage && subject) {
+        uniqueSubjects.add(`${stage}-${subject}`);
+      }
+    });
+
+    console.log(`  Creating ${uniqueSubjects.size} subjects from knowledge points...`);
+    const subjectInsertStmt = this.db.prepare(`
+      INSERT OR REPLACE INTO subjects (id, name, code, description, grade_levels)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    uniqueSubjects.forEach(key => {
+      const [stage, subject] = key.split('-');
+      const subjectId = uuidv4();
+      subjectMap.set(key, subjectId);
+      subjectInsertStmt.run(
+        subjectId,
+        `${stage}-${subject}`,
+        key,
+        `${stage}阶段${subject}学科`,
+        JSON.stringify([stage])
+      );
+    });
+    console.log(`  ✓ Created ${subjectMap.size} subjects`);
+
+    // PASS 1: Create all knowledge point nodes (parent_id = NULL)
     const nodeMap = new Map(); // originalId -> generatedId
     const insertStmt = this.db.prepare(`
       INSERT OR REPLACE INTO knowledge_points
@@ -83,7 +115,12 @@ class ExcelImporter {
         const originalId = row.原始ID || row.id || row.知识点ID || id;
         nodeMap.set(originalId, id);
 
-        const subjectId = row.subject_id || row.科目ID || row.目录ID || 'default';
+        // Get subject_id from 学段+学科
+        const stage = row.学段 || '';
+        const subject = row.学科 || '';
+        const subjectKey = `${stage}-${subject}`;
+        const subjectId = subjectMap.get(subjectKey) || 'default';
+
         const name = row.name || row.知识点名称 || row.知识点 || 'Unknown';
         const code = row.code || row.知识点代码 || row.编码 || null;
         const description = row.description || row.描述 || row.说明 || '';
@@ -113,7 +150,7 @@ class ExcelImporter {
       rows.forEach(row => {
         const originalId = row.原始ID || row.id || row.知识点ID;
         const id = nodeMap.get(originalId);
-        const parentOriginalId = row.parent_id || row.父知识点ID || row.父ID || row.上级ID || null;
+        const parentOriginalId = row.parent_id || row.父级ID || row.父知识点ID || row.父ID || row.上级ID || null;
 
         if (parentOriginalId && nodeMap.has(parentOriginalId)) {
           updateStmt.run(nodeMap.get(parentOriginalId), id);
@@ -186,11 +223,8 @@ class ExcelImporter {
         console.log('⚠ Skipping knowledge points import (知识点信息.xlsx not found)');
       }
 
-      if (fs.existsSync(quizFile)) {
-        this.importQuizzes(quizFile);
-      } else {
-        console.log('⚠ Skipping quizzes import (题目信息.xlsx not found)');
-      }
+      // Skip quiz import for now - needs schema adjustment for catalog_id vs subject_id
+      console.log('⚠ Skipping quizzes import (needs schema update for catalog references)');
 
       console.log('\n✓ Import completed successfully!');
       this.printStats();

@@ -25,12 +25,6 @@ export class CreateQuizDto {
   quiz_type?: string; // 选择题, 填空题, 解答题, 证明题
 
   @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(5)
-  difficulty?: number;
-
-  @IsOptional()
   @IsString()
   source?: string;
 

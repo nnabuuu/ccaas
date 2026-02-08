@@ -64,18 +64,6 @@ export class ToolsController {
     };
   }
 
-  @Post('tools/calculate_difficulty')
-  calculateDifficulty(
-    @Body()
-    body: {
-      knowledgePointCount: number;
-      stepCount: number;
-      quizType: string;
-    },
-  ) {
-    return this.toolsService.calculateDifficulty(body);
-  }
-
   @Post('tools/generate_thinking_process_template')
   generateThinkingProcessTemplate(
     @Body()
@@ -207,6 +195,106 @@ export class ToolsController {
         status: 'success',
         data: result,
       };
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  // ===== ERROR-BASED RECOMMENDATION SYSTEM =====
+
+  @Post('tools/analyze_student_answer')
+  analyzeStudentAnswer(
+    @Body()
+    body: {
+      quizId: string;
+      studentAnswer: string;
+      sessionId: string;
+      studentId?: string;
+    },
+  ) {
+    if (!body.quizId || !body.studentAnswer || !body.sessionId) {
+      throw new HttpException(
+        'quizId, studentAnswer, and sessionId are required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    try {
+      return this.toolsService.analyzeStudentAnswer(body);
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('tools/recommend_by_error_pattern')
+  recommendByErrorPattern(
+    @Body()
+    body: {
+      studentAnswerId: string;
+      limit?: number;
+      minSimilarity?: number;
+      scenario?: 'teacher' | 'student';
+    },
+  ) {
+    if (!body.studentAnswerId) {
+      throw new HttpException('studentAnswerId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      return this.toolsService.recommendByErrorPattern(body);
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('tools/get_error_statistics')
+  getErrorStatistics(
+    @Body()
+    body: {
+      quizId: string;
+      timeRange?: string;
+    },
+  ) {
+    if (!body.quizId) {
+      throw new HttpException('quizId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      return this.toolsService.getErrorStatistics(body);
+    } catch (error: any) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Post('tools/save_complete_analysis')
+  saveCompleteAnalysis(
+    @Body()
+    body: {
+      quizId: string;
+      analysis: {
+        quizAnalysis?: string;
+        knowledgePointTags?: any[];
+        thinkingProcess?: string;
+        solutionSteps?: any[];
+        commonMistakes?: any[];
+        knowledgeGapAnalysis?: string;
+        difficulty?: number;
+        difficultyRationale?: string;
+        timeEstimate?: string;
+        relatedQuizzes?: any[];
+      };
+    },
+  ) {
+    if (!body.quizId) {
+      throw new HttpException('quizId is required', HttpStatus.BAD_REQUEST);
+    }
+
+    if (!body.analysis) {
+      throw new HttpException('analysis data is required', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      return this.toolsService.saveCompleteAnalysis(body);
     } catch (error: any) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }

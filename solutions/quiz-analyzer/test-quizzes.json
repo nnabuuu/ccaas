@@ -1,0 +1,66 @@
+[
+  {
+    "学段": "初中",
+    "年级": "二年级",
+    "学科": "语文",
+    "基础题型": "单选题",
+    "业务题型": "单选题",
+    "题干": "下列填入文中横线①处的汉字，正确的一项是(??????)",
+    "选项": "[{\"ifCorrect\": \"0\", \"optionContent\": \"洌\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"列\"}, {\"ifCorrect\": \"1\", \"optionContent\": \"例\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"冽\"}]",
+    "答案": "[2]",
+    "知识点名称": "      字形辨析",
+    "知识点id": "1998702114322394012",
+    "目录id": "1999010056556797953",
+    "目录名称": "1　社戏"
+  },
+  {
+    "学段": "初中",
+    "年级": "一年级",
+    "学科": "道德法治",
+    "基础题型": "单选题",
+    "业务题型": "单选题",
+    "题干": "<p>进入初中阶段，家庭、学校、社会寄予我们更高的期望，也向我们提出了更高的要求。为此，我们应该(      )</p><p>①不甘人后、唯我独尊②善于合作、大度包容③看穿一切、自我放弃④敢于表达、超越自我</p>",
+    "选项": "[{\"ifCorrect\": \"0\", \"optionContent\": \"①②\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"①③\"}, {\"ifCorrect\": \"1\", \"optionContent\": \"②④\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"③④\"}]",
+    "答案": "[2]",
+    "知识点名称": "      青春",
+    "知识点id": "1998702114322389749",
+    "目录id": "1999010237683621889",
+    "目录名称": "第一课 开启初中生活"
+  },
+  {
+    "学段": "初中",
+    "年级": "二年级",
+    "学科": "数学",
+    "基础题型": "单选题",
+    "业务题型": "单选题",
+    "题干": "<p>（ ）国家提倡推行生活垃圾分类，下列垃圾分类标志分别是厨余垃圾、有害垃圾、可回收物和其他垃圾，其中既是轴对称图形又是中心对称图形的是 ______</p>",
+    "选项": "[{\"ifCorrect\": \"0\", \"optionContent\": \"<p><img src=\\\"https://cdn-saas-plat.17zuoye.cn/saas-plat/production/2025_11_21/pdf_PC2ukhSlRM80pr1Bh_0.webp?x-oss-process=image/crop,x_274,y_628,w_235,h_295/resize,p_50\\\"/></p>\"}, {\"ifCorrect\": \"1\", \"optionContent\": \"<p><img src=\\\"https://cdn-saas-plat.17zuoye.cn/saas-plat/production/2025_11_21/pdf_PC2ukhSlRM80pr1Bh_0.webp?x-oss-process=image/crop,x_794,y_633,w_275,h_290/resize,p_50\\\"/></p>\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"<p><img src=\\\"https://cdn-saas-plat.17zuoye.cn/saas-plat/production/2025_11_21/pdf_PC2ukhSlRM80pr1Bh_0.webp?x-oss-process=image/crop,x_1326,y_630,w_313,h_290/resize,p_50\\\"/></p>\"}, {\"ifCorrect\": \"0\", \"optionContent\": \"<p><img src=\\\"https://cdn-saas-plat.17zuoye.cn/saas-plat/production/2025_11_21/pdf_PC2ukhSlRM80pr1Bh_0.webp?x-oss-process=image/crop,x_1856,y_619,w_288,h_306/resize,p_50\\\"/></p>\"}]",
+    "答案": "[1]",
+    "知识点名称": "            中心对称",
+    "知识点id": "1998702114322400414"
+  },
+  {
+    "学段": "初中",
+    "年级": "二年级",
+    "学科": "英语",
+    "基础题型": "英语作文",
+    "业务题型": "书面表达",
+    "题干": "<p><strong>书面表达。</strong> </p><p>\\(\\quad\\quad\\)假如校英文报正在以\"Animals in Danger\"为主题进行征文，请你根据以下要点提示写一篇英语短文投稿，先介绍一种濒危动物，再谈谈它们濒危的原因及保护它们的措施。可适当发挥，80～100词。 </p><p>\\(\\quad\\quad\\)写作要点： </p><p>\\(\\quad\\quad\\)1. What kind of animal is in danger?</p><p>\\(\\quad\\quad\\)2. Why are they in danger? </p><p>\\(\\quad\\quad\\)3. How can we protect them?</p>",
+    "答案": "<p>Asian elephants are big and friendly animals. They are the largest land animals in Asia. They are huge, with long trunks and big ears. They usually live in forests in South and Southeast Asia.Now, Asian elephants are in danger. People cut down too many trees, so elephants are losing their homes. Also, some bad people kill them for their ivory.What can we do to help them? First, the government should make laws to stop people from killing elephants. Then, we can tell people not to buy things made of ivory. We can also join groups to plant trees and help save their homes.Let's do our part in protecting Asian elephants!</p>",
+    "知识点名称": "         环境保护",
+    "知识点id": "1998702114322395014"
+  },
+  {
+    "学段": "初中",
+    "年级": "二年级",
+    "学科": "物理",
+    "基础题型": "填空题",
+    "业务题型": "填空题",
+    "题干": "<p>物质从<nn> </nn>态变为<nn> </nn>态的过程叫作汽化。<nn> </nn>和<nn> </nn>是汽化的两种方式。</p>",
+    "答案": "<p>液；气；蒸发；沸腾</p>",
+    "知识点名称": "      汽化和液化",
+    "知识点id": "1998702114322400659",
+    "目录id": "1999010205232291842",
+    "目录名称": "第3节 汽化和液化"
+  }
+]

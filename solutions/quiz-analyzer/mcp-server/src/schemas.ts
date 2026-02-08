@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SYNC_FIELDS, type SyncField } from './types.js';
+import { SYNC_FIELDS, type SyncField, ErrorType } from './types.js';
 
 // Individual field schemas
 const KnowledgePointTagSchema = z.object({
@@ -49,6 +49,60 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   relatedQuizzes: z.array(RelatedQuizSchema),
   timeEstimate: z.string().min(1),
 };
+
+// ============ ERROR TRACKING SCHEMAS (Error-Based Recommendation System) ============
+
+const ErrorTypeEnum = z.nativeEnum(ErrorType);
+
+export const ErrorStepSchema = z.object({
+  stepNumber: z.number().int().min(1),
+  errorType: ErrorTypeEnum,
+  errorDescription: z.string().min(1),
+  affectedKnowledgePoints: z.array(z.string()),
+  severity: z.enum(['critical', 'major', 'minor']),
+  correctApproach: z.string().min(1),
+});
+
+export const StudentAnswerSchema = z.object({
+  id: z.string().uuid(),
+  quizId: z.string().uuid(),
+  studentId: z.string().optional(),
+  sessionId: z.string().uuid(),
+  answerContent: z.string().min(1),
+  stepsAttempted: z.array(z.string()).optional(),
+  submittedAt: z.string().datetime(),
+  isCorrect: z.boolean(),
+  errorSteps: z.array(ErrorStepSchema),
+});
+
+const ErrorTypeMatchSchema = z.object({
+  errorType: ErrorTypeEnum,
+  frequency: z.number().int().min(0),
+  exampleDescription: z.string(),
+});
+
+export const EnhancedRelatedQuizSchema = RelatedQuizSchema.extend({
+  matchedErrorTypes: z.array(ErrorTypeMatchSchema),
+  matchedErrorSteps: z.array(z.number().int().min(1)),
+  errorSimilarityScore: z.number().min(0).max(1),
+  knowledgePointSimilarityScore: z.number().min(0).max(1),
+  overallSimilarityScore: z.number().min(0).max(1),
+  recommendationReason: z.string().min(1),
+});
+
+export const ErrorPatternSchema = z.object({
+  id: z.string().uuid(),
+  quizId: z.string().uuid(),
+  errorType: ErrorTypeEnum,
+  stepNumber: z.number().int().min(1).nullable(),
+  totalOccurrences: z.number().int().min(1),
+  uniqueStudents: z.number().int().min(1),
+  descriptions: z.array(z.string()),
+  relatedKnowledgePoints: z.array(z.string()),
+  firstSeenAt: z.string().datetime(),
+  lastSeenAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
 
 // Validation function
 export function validateAndFixField<T extends SyncField>(

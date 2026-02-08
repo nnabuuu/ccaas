@@ -19,13 +19,6 @@ export class SearchQuizzesDto {
   quizType?: string;
 
   @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(1)
-  @Max(5)
-  difficulty?: number;
-
-  @IsOptional()
   @IsString()
   knowledgePointId?: string;
 

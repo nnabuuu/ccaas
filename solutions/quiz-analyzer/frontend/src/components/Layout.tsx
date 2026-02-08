@@ -1,29 +1,52 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Panel, Group, Separator } from 'react-resizable-panels'
 import {
   DocumentTextIcon,
   BoltIcon,
   AcademicCapIcon,
   ChartBarIcon,
-} from '@heroicons/react/24/outline';
+  ExclamationCircleIcon,
+  ArrowUpTrayIcon,
+} from '@heroicons/react/24/outline'
+import { useChatLayout } from '../hooks/useChatLayout'
+import { useQuizSession } from '../hooks/useQuizSession'
+import ChatSection from './ChatSection'
+import CollapsedChatTab from './CollapsedChatTab'
 
 export default function Layout() {
-  const location = useLocation();
+  const location = useLocation()
+
+  // Chat layout state
+  const {
+    mode,
+    setMode,
+    isCollapsed,
+    setCollapsed,
+    overlayWidth,
+    isResizing,
+    overlayResizeProps,
+  } = useChatLayout()
+
+  // Quiz session
+  const session = useQuizSession()
 
   const isActive = (path: string) => {
-    return location.pathname.startsWith(path);
-  };
+    return location.pathname.startsWith(path)
+  }
 
   const navItems = [
     { path: '/quizzes', label: '题目列表', Icon: DocumentTextIcon },
+    { path: '/import', label: '数据导入', Icon: ArrowUpTrayIcon },
     { path: '/batch', label: '批量分析', Icon: BoltIcon },
     { path: '/knowledge-points', label: '知识点', Icon: AcademicCapIcon },
     { path: '/analytics', label: '数据分析', Icon: ChartBarIcon },
-  ];
+    { path: '/error-patterns', label: '错误分析', Icon: ExclamationCircleIcon },
+  ]
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar */}
-      <nav className="w-64 bg-white border-r border-slate-200 flex flex-col">
+      {/* Sidebar Navigation */}
+      <nav className="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
         {/* Logo */}
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center gap-3 mb-2">
@@ -41,7 +64,7 @@ export default function Layout() {
         <div className="flex-1 p-4">
           <ul className="space-y-2">
             {navItems.map(({ path, label, Icon }) => {
-              const active = isActive(path);
+              const active = isActive(path)
               return (
                 <li key={path}>
                   <Link
@@ -60,7 +83,7 @@ export default function Layout() {
                     <span>{label}</span>
                   </Link>
                 </li>
-              );
+              )
             })}
           </ul>
         </div>
@@ -74,12 +97,101 @@ export default function Layout() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <Outlet />
-        </div>
-      </main>
+      {/* Main Content + Chatbox */}
+      {mode === 'default' && (
+        <>
+          <main className="flex-1 overflow-auto">
+            <div className="p-8">
+              <Outlet />
+            </div>
+          </main>
+
+          {!isCollapsed && (
+            <aside className="w-[400px] border-l border-slate-200 bg-white flex-shrink-0">
+              <ChatSection
+                mode={mode}
+                isCollapsed={isCollapsed}
+                onModeChange={setMode}
+                onToggleCollapse={() => setCollapsed(!isCollapsed)}
+                session={session}
+              />
+            </aside>
+          )}
+
+          {isCollapsed && (
+            <CollapsedChatTab onClick={() => setCollapsed(false)} />
+          )}
+        </>
+      )}
+
+      {mode === 'side-by-side' && (
+        <Group orientation="horizontal">
+          <Panel defaultSize={65} minSize={40}>
+            <main className="h-full overflow-auto">
+              <div className="p-8">
+                <Outlet />
+              </div>
+            </main>
+          </Panel>
+
+          <Separator className="w-1 bg-slate-200 hover:bg-primary-500 transition-colors" />
+
+          <Panel
+            defaultSize={35}
+            minSize={20}
+            maxSize={60}
+            collapsible
+          >
+            {!isCollapsed && (
+              <ChatSection
+                mode={mode}
+                isCollapsed={isCollapsed}
+                onModeChange={setMode}
+                onToggleCollapse={() => setCollapsed(!isCollapsed)}
+                session={session}
+              />
+            )}
+          </Panel>
+
+          {isCollapsed && (
+            <CollapsedChatTab onClick={() => setCollapsed(false)} />
+          )}
+        </Group>
+      )}
+
+      {mode === 'overlay' && (
+        <main className="flex-1 relative overflow-auto">
+          <div className="p-8">
+            <Outlet />
+          </div>
+
+          {!isCollapsed && (
+            <div
+              className="absolute right-0 top-0 bottom-0 shadow-2xl bg-white z-10"
+              style={{ width: `${overlayWidth}px` }}
+            >
+              <ChatSection
+                mode={mode}
+                isCollapsed={isCollapsed}
+                onModeChange={setMode}
+                onToggleCollapse={() => setCollapsed(!isCollapsed)}
+                session={session}
+              />
+              {/* Resize handle */}
+              <div
+                className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-500 transition-colors ${
+                  isResizing ? 'bg-primary-500' : 'bg-slate-300'
+                }`}
+                {...overlayResizeProps}
+              />
+            </div>
+          )}
+
+          {isCollapsed && (
+            <CollapsedChatTab onClick={() => setCollapsed(false)} />
+          )}
+        </main>
+      )}
     </div>
-  );
+  )
 }

@@ -1,6 +1,5 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, OneToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
 import { Subject } from './subject.entity';
-import { QuizKnowledgeLink } from './quiz-knowledge-link.entity';
 import { QuizAnalysis } from './quiz-analysis.entity';
 
 @Entity('quizzes')
@@ -29,9 +28,6 @@ export class Quiz {
   @Column('varchar', { nullable: true })
   quiz_type: string; // 选择题, 填空题, 解答题, 证明题
 
-  @Column('integer', { nullable: true })
-  difficulty: number; // 1-5
-
   @Column('text', { nullable: true })
   source: string;
 
@@ -54,9 +50,6 @@ export class Quiz {
   @ManyToOne(() => Subject, subject => subject.quizzes)
   @JoinColumn({ name: 'subject_id' })
   subject: Subject;
-
-  @OneToMany(() => QuizKnowledgeLink, link => link.quiz)
-  knowledge_links: QuizKnowledgeLink[];
 
   @OneToOne(() => QuizAnalysis, analysis => analysis.quiz)
   analysis: QuizAnalysis;

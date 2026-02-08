@@ -30,16 +30,23 @@ export const quizzesApi = {
   },
 
   search: async (params: SearchQuizzesParams) => {
-    const response = await client.post<{
+    const response = await client.get<{
       quizzes: Quiz[];
       pagination: PaginationInfo;
-    }>('/api/v1/quizzes/search', params);
+    }>('/api/v1/quizzes', { params });
     return response.data;
   },
 
   get: async (id: string) => {
-    const response = await client.get<Quiz>(`/api/v1/quizzes/${id}`);
-    return response.data;
+    const response = await client.get<{
+      quiz: Quiz;
+      knowledgePoints: any[];
+      analysis: QuizAnalysis | null;
+    }>(`/api/v1/quizzes/${id}`);
+    // Merge knowledge points into quiz object
+    const quiz = response.data.quiz;
+    quiz.knowledge_points = response.data.knowledgePoints;
+    return quiz;
   },
 
   create: async (quiz: Partial<Quiz>) => {
@@ -56,10 +63,13 @@ export const quizzesApi = {
 // Knowledge Points API
 export const knowledgePointsApi = {
   list: async (subjectId?: string) => {
-    const response = await client.get<KnowledgePoint[]>('/api/v1/knowledge-points', {
+    const response = await client.get<{
+      knowledgePoints: KnowledgePoint[];
+      count: number;
+    }>('/api/v1/knowledge-points', {
       params: { subjectId },
     });
-    return response.data;
+    return response.data.knowledgePoints;
   },
 
   getTree: async (subjectId?: string, gradeLevel?: string) => {

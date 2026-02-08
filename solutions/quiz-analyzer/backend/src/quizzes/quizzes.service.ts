@@ -1,30 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
-import { Quiz, QuizKnowledgeLink, QuizAnalysis } from '../database/entities';
+import { Quiz, QuizAnalysis } from '../database/entities';
 import { SearchQuizzesDto } from './dto/search-quizzes.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
+import { QuizAnalysisDto } from './dto/quiz-analysis.dto';
 
 @Injectable()
 export class QuizzesService {
   constructor(
     @InjectRepository(Quiz)
     private quizzesRepository: Repository<Quiz>,
-    @InjectRepository(QuizKnowledgeLink)
-    private linksRepository: Repository<QuizKnowledgeLink>,
     @InjectRepository(QuizAnalysis)
     private analysisRepository: Repository<QuizAnalysis>,
   ) {}
 
   async search(dto: SearchQuizzesDto) {
-    const { query, subjectId, gradeLevel, quizType, difficulty, knowledgePointId, limit = 10, offset = 0 } = dto;
+    const { query, subjectId, gradeLevel, quizType, limit = 10, offset = 0 } = dto;
 
     const queryBuilder = this.quizzesRepository
       .createQueryBuilder('quiz')
-      .leftJoinAndSelect('quiz.subject', 'subject')
-      .leftJoinAndSelect('quiz.knowledge_links', 'links')
-      .leftJoinAndSelect('links.knowledge_point', 'kp');
+      .leftJoinAndSelect('quiz.subject', 'subject');
 
     if (query) {
       queryBuilder.andWhere('quiz.content LIKE :query', { query: `%${query}%` });
@@ -42,14 +39,6 @@ export class QuizzesService {
       queryBuilder.andWhere('quiz.quiz_type = :quizType', { quizType });
     }
 
-    if (difficulty) {
-      queryBuilder.andWhere('quiz.difficulty = :difficulty', { difficulty });
-    }
-
-    if (knowledgePointId) {
-      queryBuilder.andWhere('links.knowledge_point_id = :kpId', { kpId: knowledgePointId });
-    }
-
     const [quizzes, total] = await queryBuilder
       .orderBy('quiz.created_at', 'DESC')
       .skip(offset)
@@ -59,7 +48,6 @@ export class QuizzesService {
     return {
       quizzes: quizzes.map(quiz => ({
         ...quiz,
-        knowledge_points: quiz.knowledge_links?.map(link => link.knowledge_point.name).join(', ') || '',
         subject_name: quiz.subject?.name || '',
       })),
       pagination: {
@@ -74,183 +62,158 @@ export class QuizzesService {
   async findOne(id: string) {
     const quiz = await this.quizzesRepository.findOne({
       where: { id },
-      relations: ['subject', 'knowledge_links', 'knowledge_links.knowledge_point', 'analysis'],
+      relations: ['subject', 'analysis'],
     });
 
     if (!quiz) {
       throw new NotFoundException(`Quiz with ID ${id} not found`);
     }
 
-    return {
-      quiz,
-      knowledgePoints: quiz.knowledge_links?.map(link => ({
-        id: link.knowledge_point.id,
-        name: link.knowledge_point.name,
-        code: link.knowledge_point.code,
-        level: link.knowledge_point.level,
-        confidence_score: link.confidence_score,
-        link_type: link.link_type,
-        source: link.source,
-        note: link.note,
-      })) || [],
-      analysis: quiz.analysis || null,
-    };
-  }
-
-  /**
-   * Save AI-generated knowledge point tags with source classification
-   */
-  async saveKnowledgePointTags(quizId: string, tags: Array<{
-    id: string;
-    confidence: number;
-    source: 'question' | 'solution' | 'both';
-    note?: string;
-  }>) {
-    // Remove existing AI-generated links
-    await this.linksRepository.delete({
-      quiz_id: quizId,
-      link_type: 'ai-generated',
-    });
-
-    // Create new links with source and note
-    const links = tags.map(tag => ({
-      id: uuidv4(),
-      quiz_id: quizId,
-      knowledge_point_id: tag.id,
-      confidence_score: tag.confidence,
-      link_type: 'ai-generated',
-      source: tag.source,
-      note: tag.note || null,
-      created_by: 'ai',
-    }));
-
-    return await this.linksRepository.save(links);
-  }
-
-  /**
-   * Get knowledge points grouped by source
-   */
-  async getKnowledgePointsBySource(quizId: string) {
-    const links = await this.linksRepository.find({
-      where: { quiz_id: quizId },
-      relations: ['knowledge_point'],
-    });
-
-    const grouped = {
-      question: links.filter(link => link.source === 'question'),
-      solution: links.filter(link => link.source === 'solution'),
-      both: links.filter(link => link.source === 'both'),
-    };
+    // Parse JSON fields in analysis
+    let analysis = null;
+    if (quiz.analysis) {
+      analysis = {
+        ...quiz.analysis,
+        // Parse JSON string fields to objects (entity uses snake_case)
+        knowledge_point_tags: quiz.analysis.knowledge_point_tags
+          ? JSON.parse(quiz.analysis.knowledge_point_tags)
+          : [],
+        solution_steps: quiz.analysis.solution_steps
+          ? JSON.parse(quiz.analysis.solution_steps)
+          : [],
+        common_mistakes: quiz.analysis.common_mistakes
+          ? JSON.parse(quiz.analysis.common_mistakes)
+          : [],
+        related_quizzes: quiz.analysis.related_quizzes
+          ? JSON.parse(quiz.analysis.related_quizzes)
+          : [],
+        difficulty_analysis: quiz.analysis.difficulty_analysis
+          ? JSON.parse(quiz.analysis.difficulty_analysis)
+          : null,
+      };
+    }
 
     return {
-      question: grouped.question.map(link => ({
-        ...link.knowledge_point,
-        confidence_score: link.confidence_score,
-        note: link.note,
-      })),
-      solution: grouped.solution.map(link => ({
-        ...link.knowledge_point,
-        confidence_score: link.confidence_score,
-        note: link.note,
-      })),
-      both: grouped.both.map(link => ({
-        ...link.knowledge_point,
-        confidence_score: link.confidence_score,
-        note: link.note,
-      })),
+      ...quiz,
+      subject_name: quiz.subject?.name || '',
+      analysis,
     };
   }
 
   async create(dto: CreateQuizDto) {
-    const quizId = uuidv4();
-
     const quiz = this.quizzesRepository.create({
-      id: quizId,
+      id: uuidv4(),
+      tenant_id: 'default', // Fixed tenant for quiz-analyzer
       content: dto.content,
       content_html: dto.content_html,
-      image_urls: dto.image_urls ? JSON.stringify(dto.image_urls) : null,
       subject_id: dto.subject_id,
       grade_level: dto.grade_level,
       quiz_type: dto.quiz_type,
-      difficulty: dto.difficulty,
       source: dto.source,
-      chapter_reference: dto.chapter_reference,
       correct_answer: dto.correct_answer,
       answer_options: dto.answer_options ? JSON.stringify(dto.answer_options) : null,
-      tenant_id: 'default',
     });
 
-    await this.quizzesRepository.save(quiz);
+    const saved = await this.quizzesRepository.save(quiz);
 
-    // Create knowledge point links
-    if (dto.knowledge_point_ids && dto.knowledge_point_ids.length > 0) {
-      const links = dto.knowledge_point_ids.map(kpId => ({
-        id: uuidv4(),
-        quiz_id: quizId,
-        knowledge_point_id: kpId,
-        confidence_score: 1.0,
-        link_type: 'manual',
-        created_by: 'system',
-      }));
-
-      await this.linksRepository.save(links);
-    }
-
-    return this.findOne(quizId);
+    return {
+      id: saved.id,
+      message: 'Quiz created successfully',
+    };
   }
 
   async update(id: string, dto: Partial<CreateQuizDto>) {
     const quiz = await this.quizzesRepository.findOne({ where: { id } });
+
     if (!quiz) {
       throw new NotFoundException(`Quiz with ID ${id} not found`);
     }
 
-    Object.assign(quiz, {
-      ...(dto.content && { content: dto.content }),
-      ...(dto.content_html !== undefined && { content_html: dto.content_html }),
-      ...(dto.image_urls && { image_urls: JSON.stringify(dto.image_urls) }),
-      ...(dto.subject_id && { subject_id: dto.subject_id }),
-      ...(dto.grade_level !== undefined && { grade_level: dto.grade_level }),
-      ...(dto.quiz_type !== undefined && { quiz_type: dto.quiz_type }),
-      ...(dto.difficulty !== undefined && { difficulty: dto.difficulty }),
-      ...(dto.source !== undefined && { source: dto.source }),
-      ...(dto.chapter_reference !== undefined && { chapter_reference: dto.chapter_reference }),
-      ...(dto.correct_answer !== undefined && { correct_answer: dto.correct_answer }),
-      ...(dto.answer_options && { answer_options: JSON.stringify(dto.answer_options) }),
-    });
+    // Update basic fields
+    if (dto.content !== undefined) quiz.content = dto.content;
+    if (dto.content_html !== undefined) quiz.content_html = dto.content_html;
+    if (dto.subject_id !== undefined) quiz.subject_id = dto.subject_id;
+    if (dto.grade_level !== undefined) quiz.grade_level = dto.grade_level;
+    if (dto.quiz_type !== undefined) quiz.quiz_type = dto.quiz_type;
+    if (dto.source !== undefined) quiz.source = dto.source;
+    if (dto.correct_answer !== undefined) quiz.correct_answer = dto.correct_answer;
+    if (dto.answer_options !== undefined) quiz.answer_options = JSON.stringify(dto.answer_options);
 
     await this.quizzesRepository.save(quiz);
 
-    // Update knowledge point links if provided
-    if (dto.knowledge_point_ids) {
-      // Remove existing links
-      await this.linksRepository.delete({ quiz_id: id });
-
-      // Add new links
-      if (dto.knowledge_point_ids.length > 0) {
-        const links = dto.knowledge_point_ids.map(kpId => ({
-          id: uuidv4(),
-          quiz_id: id,
-          knowledge_point_id: kpId,
-          confidence_score: 1.0,
-          link_type: 'manual',
-          created_by: 'system',
-        }));
-
-        await this.linksRepository.save(links);
-      }
-    }
-
-    return this.findOne(id);
+    return {
+      id: quiz.id,
+      message: 'Quiz updated successfully',
+    };
   }
 
   async remove(id: string) {
     const quiz = await this.quizzesRepository.findOne({ where: { id } });
+
     if (!quiz) {
       throw new NotFoundException(`Quiz with ID ${id} not found`);
     }
 
     await this.quizzesRepository.remove(quiz);
-    return { message: 'Quiz deleted successfully', id };
+
+    return {
+      id,
+      message: 'Quiz deleted successfully',
+    };
+  }
+
+  async saveAnalysis(quizId: string, data: QuizAnalysisDto) {
+    const quiz = await this.quizzesRepository.findOne({ where: { id: quizId } });
+
+    if (!quiz) {
+      throw new NotFoundException(`Quiz with ID ${quizId} not found`);
+    }
+
+    // Find existing analysis or create new one
+    let analysis = await this.analysisRepository.findOne({
+      where: { quiz_id: quizId },
+    });
+
+    if (!analysis) {
+      analysis = this.analysisRepository.create({
+        id: uuidv4(),
+        quiz_id: quizId,
+      });
+    }
+
+    // Update analysis fields (serialize objects to JSON strings)
+    // Note: DTO uses camelCase, entity uses snake_case
+    if (data.quizAnalysis !== undefined) {
+      analysis.quiz_analysis = data.quizAnalysis;
+    }
+    if (data.knowledgePointTags !== undefined) {
+      analysis.knowledge_point_tags = JSON.stringify(data.knowledgePointTags);
+    }
+    if (data.thinkingProcess !== undefined) {
+      analysis.thinking_process = data.thinkingProcess;
+    }
+    if (data.solutionSteps !== undefined) {
+      analysis.solution_steps = JSON.stringify(data.solutionSteps);
+    }
+    if (data.commonMistakes !== undefined) {
+      analysis.common_mistakes = JSON.stringify(data.commonMistakes);
+    }
+    if (data.knowledgeGapAnalysis !== undefined) {
+      analysis.knowledge_gap_analysis = data.knowledgeGapAnalysis;
+    }
+    if (data.difficultyAnalysis !== undefined) {
+      analysis.difficulty_analysis = JSON.stringify(data.difficultyAnalysis);
+    }
+    if (data.relatedQuizzes !== undefined) {
+      analysis.related_quizzes = JSON.stringify(data.relatedQuizzes);
+    }
+
+    await this.analysisRepository.save(analysis);
+
+    return {
+      id: analysis.id,
+      quiz_id: quizId,
+      message: 'Analysis saved successfully',
+    };
   }
 }

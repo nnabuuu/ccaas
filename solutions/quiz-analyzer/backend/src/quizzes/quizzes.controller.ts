@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query } from '@nestjs/
 import { QuizzesService } from './quizzes.service';
 import { SearchQuizzesDto } from './dto/search-quizzes.dto';
 import { CreateQuizDto } from './dto/create-quiz.dto';
+import { QuizAnalysisDto } from './dto/quiz-analysis.dto';
 
 @Controller('api/v1/quizzes')
 export class QuizzesController {
@@ -21,8 +22,7 @@ export class QuizzesController {
   async getAnalysis(@Param('id') id: string) {
     const result = await this.quizzesService.findOne(id);
     return {
-      quiz: result.quiz,
-      knowledge_points: result.knowledgePoints,
+      quiz: result,
       analysis: result.analysis,
     };
   }
@@ -42,23 +42,11 @@ export class QuizzesController {
     return this.quizzesService.remove(id);
   }
 
-  @Post(':id/knowledge-points')
-  async saveKnowledgePointTags(
+  @Post(':id/save-analysis')
+  async saveAnalysis(
     @Param('id') id: string,
-    @Body() body: {
-      tags: Array<{
-        id: string;
-        confidence: number;
-        source: 'question' | 'solution' | 'both';
-        note?: string;
-      }>;
-    },
+    @Body() analysisData: QuizAnalysisDto,
   ) {
-    return this.quizzesService.saveKnowledgePointTags(id, body.tags);
-  }
-
-  @Get(':id/knowledge-points/by-source')
-  async getKnowledgePointsBySource(@Param('id') id: string) {
-    return this.quizzesService.getKnowledgePointsBySource(id);
+    return this.quizzesService.saveAnalysis(id, analysisData);
   }
 }

@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
-import { KnowledgePointsModule } from './knowledge-points/knowledge-points.module';
 import { ToolsModule } from './tools/tools.module';
 
 @Module({
@@ -15,7 +14,6 @@ import { ToolsModule } from './tools/tools.module';
     DatabaseModule,
 
     // 业务模块
-    KnowledgePointsModule,
     ToolsModule,
   ],
 })
