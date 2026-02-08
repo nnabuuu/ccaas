@@ -24,6 +24,7 @@
 
 ## 技术指南
 
+* [Solution 快速开始](docs/zh/guides/solution-quick-start.md)
 * [Chatbox 组件提取](docs/zh/guides/chatbox-extraction-complete.md)
 * [API Key 管理实现](docs/zh/guides/api-key-management-complete.md)
 * [API 密钥管理](docs/zh/guides/api-key-management.md)
