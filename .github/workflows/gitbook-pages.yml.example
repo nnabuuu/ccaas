@@ -1,0 +1,41 @@
+# 这是一个示例工作流，用于将 GitBook 发布到 GitHub Pages
+# 如果你想使用这个方案，将此文件重命名为 gitbook-pages.yml
+
+name: GitBook to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - '**.md'
+      - '.gitbook.yaml'
+      - 'SUMMARY*.md'
+      - 'README*.md'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install GitBook CLI
+        run: |
+          npm install -g gitbook-cli
+          gitbook install
+
+      - name: Build GitBook
+        run: |
+          gitbook build . _book
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./_book
+          publish_branch: gh-pages
