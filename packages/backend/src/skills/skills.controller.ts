@@ -29,9 +29,10 @@ import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
 import { SkillPermissionGuard } from './guards/skill-permission.guard';
 import { CurrentUser, type CurrentUserData } from '../auth/decorators';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 
 @Controller('api/v1/skills')
-@UseGuards(TenantGuard, SkillPermissionGuard)
+@UseGuards(ApiKeyGuard, TenantGuard, SkillPermissionGuard)
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 

@@ -76,6 +76,48 @@ fi
 
 echo ""
 
+# Step 1.5: Create bootstrap API key for this script
+echo "Step 1.5: Setting up bootstrap API key..."
+echo "----------------------------------------"
+
+# Check if we already have an API key in environment
+if [ -n "$CCAAS_API_KEY" ]; then
+  echo -e "${YELLOW}Using provided API key from environment${NC}"
+  API_KEY="$CCAAS_API_KEY"
+else
+  # Create temporary bootstrap API key
+  echo "Creating temporary API key for skill injection..."
+
+  # Create API key with admin scope
+  CREATE_KEY_RESPONSE=$(curl -s -X POST "$CCAAS_URL/api/v1/admin/api-keys" \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"tenantId\": \"$TENANT_ID\",
+      \"name\": \"bootstrap-skills-injection\",
+      \"scopes\": [\"skills:write\", \"mcp:write\"],
+      \"expiresAt\": \"$(date -u -v+1H '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date -u -d '+1 hour' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo '')\",
+      \"rateLimitRpm\": 100
+    }")
+
+  RAW_KEY=$(echo "$CREATE_KEY_RESPONSE" | jq -r '.rawKey // empty')
+
+  if [ -z "$RAW_KEY" ]; then
+    echo -e "${RED}Failed to create API key${NC}"
+    echo "Response: $CREATE_KEY_RESPONSE"
+    echo ""
+    echo -e "${YELLOW}Tip: If AUTH_ALLOW_ANONYMOUS=false, you need to:${NC}"
+    echo "  1. Create an admin API key manually"
+    echo "  2. Set environment variable: export CCAAS_API_KEY=ccaas_xxx"
+    echo "  3. Re-run this script"
+    exit 1
+  fi
+
+  API_KEY="$RAW_KEY"
+  echo -e "${GREEN}Temporary API key created (expires in 1 hour)${NC}"
+fi
+
+echo ""
+
 # Step 2: Inject skills
 echo "Step 2: Injecting skills..."
 echo "----------------------------------------"
@@ -127,7 +169,8 @@ else
 
         # Check if skill already exists
         EXISTING_SKILL=$(curl -s "$CCAAS_URL/api/v1/skills/$skill_name" \
-          -H "X-Tenant-Id: $TENANT_ID" 2>/dev/null || echo '{}')
+          -H "X-Tenant-Id: $TENANT_ID" \
+          -H "X-Api-Key: $API_KEY" 2>/dev/null || echo '{}')
         EXISTING_SKILL_ID=$(echo "$EXISTING_SKILL" | jq -r '.id // empty')
 
         if [ -n "$EXISTING_SKILL_ID" ]; then
@@ -136,6 +179,7 @@ else
           UPDATE_RESPONSE=$(curl -s -X PUT "$CCAAS_URL/api/v1/skills/$EXISTING_SKILL_ID" \
             -H "Content-Type: application/json" \
             -H "X-Tenant-Id: $TENANT_ID" \
+            -H "X-Api-Key: $API_KEY" \
             -d "{
               \"name\": \"$skill_display_name\",
               \"description\": \"$skill_description\",
@@ -150,6 +194,7 @@ else
           CREATE_SKILL_RESPONSE=$(curl -s -X POST "$CCAAS_URL/api/v1/skills" \
             -H "Content-Type: application/json" \
             -H "X-Tenant-Id: $TENANT_ID" \
+            -H "X-Api-Key: $API_KEY" \
             -d "{
               \"name\": \"$skill_display_name\",
               \"slug\": \"$skill_name\",
@@ -172,7 +217,8 @@ else
         # Publish skill
         echo "  Publishing skill..."
         PUBLISH_RESPONSE=$(curl -s -X POST "$CCAAS_URL/api/v1/skills/$SKILL_ID/publish" \
-          -H "X-Tenant-Id: $TENANT_ID")
+          -H "X-Tenant-Id: $TENANT_ID" \
+          -H "X-Api-Key: $API_KEY")
 
         PUBLISH_STATUS=$(echo "$PUBLISH_RESPONSE" | jq -r '.status // empty')
         if [ "$PUBLISH_STATUS" = "published" ]; then
@@ -188,6 +234,110 @@ else
 fi
 
 echo ""
+
+# Step 3: Inject MCP Servers
+echo "Step 3: Injecting MCP servers..."
+echo "----------------------------------------"
+
+SOLUTION_JSON="$SOLUTION_DIR/solution.json"
+MCP_COUNT=0
+MCP_SUCCESS_COUNT=0
+
+if [ ! -f "$SOLUTION_JSON" ]; then
+  echo -e "${YELLOW}No solution.json found at $SOLUTION_DIR${NC}"
+else
+  MCP_COUNT=$(jq '.mcpServers | length' "$SOLUTION_JSON")
+
+  if [ "$MCP_COUNT" -eq 0 ]; then
+    echo -e "${YELLOW}No MCP servers defined in solution.json${NC}"
+  else
+    echo "Found $MCP_COUNT MCP server(s) in solution.json"
+
+    for row in $(jq -c '.mcpServers | to_entries[]' "$SOLUTION_JSON"); do
+      SERVER_NAME=$(echo "$row" | jq -r '.key')
+      SERVER_CONFIG=$(echo "$row" | jq '.value')
+
+      echo ""
+      echo "Processing MCP server: $SERVER_NAME"
+
+      # Resolve relative paths in args (MCP server paths relative to solution dir)
+      COMMAND=$(echo "$SERVER_CONFIG" | jq -r '.command')
+      ARGS=$(echo "$SERVER_CONFIG" | jq -c --arg solutionDir "$SOLUTION_DIR" '.args | map(if test("\\.js$|\\.ts$") then ($solutionDir + "/" + .) else . end)')
+      DESCRIPTION=$(echo "$SERVER_CONFIG" | jq -r '.description // ""')
+      ENV=$(echo "$SERVER_CONFIG" | jq -c '.env // {}')
+
+      echo "  Command: $COMMAND"
+      echo "  Args: $ARGS"
+
+      # Check if MCP server already exists
+      EXISTING_MCP=$(curl -s "$CCAAS_URL/api/v1/mcp-servers/$SERVER_NAME" \
+        -H "X-Tenant-Id: $TENANT_ID" \
+        -H "X-Api-Key: $API_KEY" 2>/dev/null || echo '{}')
+      EXISTING_MCP_ID=$(echo "$EXISTING_MCP" | jq -r '.id // empty')
+
+      if [ -n "$EXISTING_MCP_ID" ]; then
+        # Update existing MCP server
+        echo "  Updating existing MCP server..."
+        UPDATE_MCP_RESPONSE=$(curl -s -X PUT "$CCAAS_URL/api/v1/mcp-servers/$EXISTING_MCP_ID" \
+          -H "Content-Type: application/json" \
+          -H "X-Tenant-Id: $TENANT_ID" \
+          -H "X-Api-Key: $API_KEY" \
+          -d @- <<EOF
+{
+  "name": "$SERVER_NAME",
+  "description": "$DESCRIPTION",
+  "config": {
+    "command": "$COMMAND",
+    "args": $ARGS,
+    "env": $ENV
+  },
+  "status": "active"
+}
+EOF
+        )
+
+        MCP_ID="$EXISTING_MCP_ID"
+        echo -e "  ${GREEN}Updated MCP server: $MCP_ID${NC}"
+        MCP_SUCCESS_COUNT=$((MCP_SUCCESS_COUNT + 1))
+      else
+        # Create new MCP server
+        echo "  Creating new MCP server..."
+        CREATE_MCP_RESPONSE=$(curl -s -X POST "$CCAAS_URL/api/v1/mcp-servers" \
+          -H "Content-Type: application/json" \
+          -H "X-Tenant-Id: $TENANT_ID" \
+          -H "X-Api-Key: $API_KEY" \
+          -d @- <<EOF
+{
+  "name": "$SERVER_NAME",
+  "slug": "$SERVER_NAME",
+  "description": "$DESCRIPTION",
+  "type": "stdio",
+  "config": {
+    "command": "$COMMAND",
+    "args": $ARGS,
+    "env": $ENV
+  },
+  "status": "active"
+}
+EOF
+        )
+
+        MCP_ID=$(echo "$CREATE_MCP_RESPONSE" | jq -r '.id // empty')
+
+        if [ -z "$MCP_ID" ]; then
+          echo -e "  ${RED}Failed to create MCP server${NC}"
+          echo "  Response: $CREATE_MCP_RESPONSE"
+          continue
+        fi
+
+        echo -e "  ${GREEN}Created MCP server: $MCP_ID${NC}"
+        MCP_SUCCESS_COUNT=$((MCP_SUCCESS_COUNT + 1))
+      fi
+    done
+  fi
+fi
+
+echo ""
 echo "========================================"
 echo "  Injection Complete"
 echo "========================================"
@@ -196,7 +346,12 @@ echo "Summary:"
 echo "  Tenant ID: $TENANT_ID"
 echo "  Skills processed: $SKILL_COUNT"
 echo "  Skills successful: $SUCCESS_COUNT"
+echo "  MCP servers processed: $MCP_COUNT"
+echo "  MCP servers successful: $MCP_SUCCESS_COUNT"
 echo ""
 echo "Verify with:"
+echo "  # Skills"
 echo "  curl $CCAAS_URL/api/v1/skills -H 'X-Tenant-Id: $TENANT_ID'"
+echo "  # MCP Servers"
+echo "  curl $CCAAS_URL/api/v1/mcp-servers -H 'X-Tenant-Id: $TENANT_ID'"
 echo ""
