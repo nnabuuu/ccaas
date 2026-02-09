@@ -12,7 +12,7 @@ npm install @ccaas/common
 
 ```typescript
 // Import types
-import { Session, Skill, Message, TokenUsage } from '@ccaas/common'
+import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@ccaas/common'
 
 // Import Zod schemas
 import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
@@ -162,6 +162,67 @@ interface TokenUsage {
 interface TokenUsageSummary {
   daily: { date: string; usage: TokenUsage }[]
   estimatedCostUsd: number
+}
+```
+
+### Error Types
+
+For complete error handling documentation, see [Error Handling Guide](error-handling.md).
+
+```typescript
+// Standard error codes used across REST and WebSocket
+type ErrorCode =
+  | 'VALIDATION_ERROR'      // 400 - Bad Request
+  | 'SESSION_EXPIRED'       // 401 - Unauthorized
+  | 'PERMISSION_DENIED'     // 403 - Forbidden
+  | 'SKILL_NOT_FOUND'       // 404 - Not Found
+  | 'RATE_LIMITED'          // 429 - Too Many Requests
+  | 'INTERNAL_ERROR'        // 500 - Internal Server Error
+  | 'CLI_ERROR'             // 500 - CLI process error
+  | 'INVALID_OUTPUT'        // 500 - Invalid output format
+  | 'PARTIAL_FAILURE'       // 500 - Partial failure
+  | 'MCP_ERROR'             // 502 - Bad Gateway
+  | 'CONNECTION_LOST'       // 503 - Service Unavailable
+  | 'TIMEOUT'               // 504 - Gateway Timeout
+
+// HTTP error response structure
+interface HttpErrorResponse {
+  code: ErrorCode
+  message: string
+  statusCode: number
+  recoverable: boolean
+  retryable: boolean
+  timestamp: string
+  path?: string
+  requestId?: string
+  retryAfterMs?: number
+  failedFields?: string[]
+  partialOutput?: Record<string, unknown>
+}
+```
+
+**Usage Example:**
+
+```typescript
+import { HttpErrorResponse } from '@ccaas/common'
+
+async function handleApiError(response: Response) {
+  if (!response.ok) {
+    const error: HttpErrorResponse = await response.json()
+
+    console.error('API Error:', {
+      code: error.code,
+      message: error.message,
+      requestId: error.requestId,
+    })
+
+    // Check if retryable
+    if (error.retryable && error.code === 'RATE_LIMITED') {
+      const waitTime = error.retryAfterMs || 60000
+      await sleep(waitTime)
+      // Retry request...
+    }
+  }
 }
 ```
 

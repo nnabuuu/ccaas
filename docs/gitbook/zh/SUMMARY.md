@@ -33,6 +33,7 @@
 * [API 概述](api/README.md)
 * [REST API 端点](api/rest.md)
 * [WebSocket 事件](api/websocket.md)
+* [错误处理](api/error-handling.md)
 * [@ccaas/common 类型](api/shared-types.md)
 
 ## 参考资料 <a href="#reference" id="reference"></a>

@@ -47,4 +47,5 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 |------|------|
 | [REST API 端点](rest.md) | 所有 HTTP 端点的完整参考 |
 | [WebSocket 事件](websocket.md) | 所有 WebSocket 事件的格式定义 |
+| [错误处理](error-handling.md) | 标准化错误响应和重试策略 |
 | [@ccaas/common 类型](shared-types.md) | 共享 TypeScript 类型定义 |

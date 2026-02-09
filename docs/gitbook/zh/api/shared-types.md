@@ -12,7 +12,7 @@ npm install @ccaas/common
 
 ```typescript
 // 导入类型
-import { Session, Skill, Message, TokenUsage } from '@ccaas/common'
+import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@ccaas/common'
 
 // 导入 Zod Schema
 import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
@@ -162,6 +162,67 @@ interface TokenUsage {
 interface TokenUsageSummary {
   daily: { date: string; usage: TokenUsage }[]
   estimatedCostUsd: number
+}
+```
+
+### 错误类型
+
+完整的错误处理文档，请参见 [错误处理指南](error-handling.md)。
+
+```typescript
+// REST 和 WebSocket 共享的标准错误代码
+type ErrorCode =
+  | 'VALIDATION_ERROR'      // 400 - 请求无效
+  | 'SESSION_EXPIRED'       // 401 - 未授权
+  | 'PERMISSION_DENIED'     // 403 - 禁止访问
+  | 'SKILL_NOT_FOUND'       // 404 - 未找到
+  | 'RATE_LIMITED'          // 429 - 请求过多
+  | 'INTERNAL_ERROR'        // 500 - 内部服务器错误
+  | 'CLI_ERROR'             // 500 - CLI 进程错误
+  | 'INVALID_OUTPUT'        // 500 - 输出格式无效
+  | 'PARTIAL_FAILURE'       // 500 - 部分失败
+  | 'MCP_ERROR'             // 502 - 网关错误
+  | 'CONNECTION_LOST'       // 503 - 服务不可用
+  | 'TIMEOUT'               // 504 - 网关超时
+
+// HTTP 错误响应结构
+interface HttpErrorResponse {
+  code: ErrorCode
+  message: string
+  statusCode: number
+  recoverable: boolean
+  retryable: boolean
+  timestamp: string
+  path?: string
+  requestId?: string
+  retryAfterMs?: number
+  failedFields?: string[]
+  partialOutput?: Record<string, unknown>
+}
+```
+
+**使用示例:**
+
+```typescript
+import { HttpErrorResponse } from '@ccaas/common'
+
+async function handleApiError(response: Response) {
+  if (!response.ok) {
+    const error: HttpErrorResponse = await response.json()
+
+    console.error('API 错误:', {
+      code: error.code,
+      message: error.message,
+      requestId: error.requestId,
+    })
+
+    // 检查是否可重试
+    if (error.retryable && error.code === 'RATE_LIMITED') {
+      const waitTime = error.retryAfterMs || 60000
+      await sleep(waitTime)
+      // 重试请求...
+    }
+  }
 }
 ```
 

@@ -47,4 +47,5 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 |---------|---------|
 | [REST API Endpoints](rest.md) | Complete reference for all HTTP endpoints |
 | [WebSocket Events](websocket.md) | Format definitions for all WebSocket events |
+| [Error Handling](error-handling.md) | Standardized error responses and retry strategies |
 | [@ccaas/common Types](shared-types.md) | Shared TypeScript type definitions |

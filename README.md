@@ -98,6 +98,7 @@ npm run build:shared      # Build types/protocols
 - **AgentEngine Lifecycle Management**: Spawn and manage AgentEngine instances (Claude Code, OpenCode, custom)
 - **Skill Routing**: Trigger-based routing (keyword, pattern, intent)
 - **Multi-tenancy**: Tenant isolation with API key authentication
+- **Standardized Error Handling**: Unified HTTP error responses with retry guidance
 - **MCP Integration**: MCP server pool with REST adapter
 - **Message Persistence**: SQLite/PostgreSQL storage
 - **Real-time Streaming**: Socket.io event streaming

@@ -2,6 +2,36 @@
 
 The base path for all endpoints is `/api/v1`.
 
+## Error Responses
+
+All API errors return a standardized JSON response. For complete error handling documentation, see [Error Handling](error-handling.md).
+
+**Standard Error Format:**
+
+```json
+{
+  "code": "SKILL_NOT_FOUND",
+  "message": "Skill not found: skill-123",
+  "statusCode": 404,
+  "recoverable": false,
+  "retryable": false,
+  "timestamp": "2026-02-09T10:30:00.000Z",
+  "path": "/api/v1/skills/skill-123",
+  "requestId": "req_abc123"
+}
+```
+
+**Common Error Codes:**
+- `VALIDATION_ERROR` (400) - Invalid request data
+- `SESSION_EXPIRED` (401) - Authentication required
+- `PERMISSION_DENIED` (403) - Insufficient permissions
+- `SKILL_NOT_FOUND` (404) - Resource not found
+- `RATE_LIMITED` (429) - Rate limit exceeded
+- `INTERNAL_ERROR` (500) - Server error
+- `TIMEOUT` (504) - Request timeout
+
+See the [Error Handling Guide](error-handling.md) for detailed error codes, retry strategies, and client implementation examples.
+
 ## Health Check
 
 ### GET /chat/health

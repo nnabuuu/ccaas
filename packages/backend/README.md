@@ -9,6 +9,7 @@ A business platform that enables customers to build customized AI skills, integr
 - **REST API Adapter** - Connect legacy REST APIs as MCP tools
 - **MCP Server Pool** - Manage MCP server lifecycle and health
 - **Skill-aware Routing** - Route chat requests to appropriate skills
+- **Standardized Error Handling** - Unified HTTP error responses with retry guidance
 - **Backward Compatible** - Basic relay server still available
 
 ## Quick Start
@@ -304,6 +305,41 @@ Tables:
 - `mcp_servers` - MCP server configurations
 - `sessions` - Session tracking
 - `usage_events` - Analytics
+
+## Error Handling
+
+The backend provides standardized error responses across all API endpoints. All errors return a consistent JSON structure with error codes, retry hints, and recovery guidance.
+
+**Error Response Format:**
+
+```json
+{
+  "code": "SKILL_NOT_FOUND",
+  "message": "Skill not found: skill-123",
+  "statusCode": 404,
+  "recoverable": false,
+  "retryable": false,
+  "timestamp": "2026-02-09T10:30:00.000Z",
+  "path": "/api/v1/skills/skill-123",
+  "requestId": "req_abc123"
+}
+```
+
+**Common Error Codes:**
+- `VALIDATION_ERROR` (400) - Invalid request data
+- `SESSION_EXPIRED` (401) - Authentication required
+- `PERMISSION_DENIED` (403) - Insufficient permissions
+- `SKILL_NOT_FOUND` (404) - Resource not found
+- `RATE_LIMITED` (429) - Rate limit exceeded
+- `INTERNAL_ERROR` (500) - Server error
+- `CLI_ERROR` (500) - AgentEngine process error
+- `MCP_ERROR` (502) - MCP server error
+- `CONNECTION_LOST` (503) - Service unavailable
+- `TIMEOUT` (504) - Request timeout
+
+For detailed documentation on error handling, retry strategies, and client implementation examples, see:
+- [Backend Error Handling Guide](./docs/ERROR_HANDLING.md)
+- [GitBook Error Handling](../../docs/gitbook/en/api/error-handling.md)
 
 ## Development
 

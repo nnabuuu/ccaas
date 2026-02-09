@@ -2,6 +2,36 @@
 
 所有端点的基础路径为 `/api/v1`。
 
+## 错误响应
+
+所有 API 错误返回标准化的 JSON 响应。完整的错误处理文档请参见 [错误处理](error-handling.md)。
+
+**标准错误格式:**
+
+```json
+{
+  "code": "SKILL_NOT_FOUND",
+  "message": "Skill not found: skill-123",
+  "statusCode": 404,
+  "recoverable": false,
+  "retryable": false,
+  "timestamp": "2026-02-09T10:30:00.000Z",
+  "path": "/api/v1/skills/skill-123",
+  "requestId": "req_abc123"
+}
+```
+
+**常见错误代码:**
+- `VALIDATION_ERROR` (400) - 请求数据无效
+- `SESSION_EXPIRED` (401) - 需要认证
+- `PERMISSION_DENIED` (403) - 权限不足
+- `SKILL_NOT_FOUND` (404) - 资源未找到
+- `RATE_LIMITED` (429) - 超过速率限制
+- `INTERNAL_ERROR` (500) - 服务器错误
+- `TIMEOUT` (504) - 请求超时
+
+详细的错误代码、重试策略和客户端实现示例，请参见 [错误处理指南](error-handling.md)。
+
 ## 健康检查
 
 ### GET /chat/health
