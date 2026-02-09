@@ -339,6 +339,28 @@ import type {
 } from '@ccaas/vue-sdk'
 ```
 
+## Documentation
+
+### Comprehensive Guides (English)
+
+- **[API Reference](./docs/API.md)** - Complete API documentation for all composables and services
+- **[Advanced Patterns](./docs/ADVANCED_PATTERNS.md)** - Composable composition, provide/inject patterns, performance optimization
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues, debugging techniques, and FAQ
+- **[Architecture](./docs/ARCHITECTURE_EN.md)** - Service layer architecture and design patterns
+
+### 完整指南 (中文)
+
+- **[API 参考](./docs/API_ZH.md)** - 所有 composables 和服务的完整 API 文档
+- **[高级模式](./docs/ADVANCED_PATTERNS_ZH.md)** - Composable 组合、provide/inject 模式、性能优化
+- **[故障排除](./docs/TROUBLESHOOTING_ZH.md)** - 常见问题、调试技巧和常见问题解答
+- **[架构文档](./docs/ARCHITECTURE.md)** - 服务层架构和设计模式
+
+### SDK Comparison
+
+- **[SDK Comparison](../../docs/sdk/SDK_COMPARISON.md)** - Feature comparison between React and Vue SDKs
+- **[Choosing an SDK](../../docs/sdk/CHOOSING_SDK.md)** - Decision guide for selecting the right SDK
+- **[Migration Guide](../../docs/sdk/MIGRATION_GUIDE.md)** - Upgrading and migrating between SDKs
+
 ## License
 
 MIT

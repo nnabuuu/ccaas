@@ -49,6 +49,22 @@ function App() {
 }
 ```
 
+## Documentation
+
+### Comprehensive Guides
+
+- **[API Reference](./docs/API.md)** - Complete API documentation for all hooks and components
+- **[Advanced Patterns](./docs/ADVANCED_PATTERNS.md)** - Custom hooks, error handling, state management integration
+- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues, debugging techniques, and FAQ
+- **[Performance Optimization](./docs/PERFORMANCE.md)** - Performance best practices and optimization strategies
+- **[Chat Integration Guide](./docs/CHAT_INTEGRATION_GUIDE.md)** - Step-by-step integration guide
+
+### SDK Comparison
+
+- **[SDK Comparison](../../docs/sdk/SDK_COMPARISON.md)** - Feature comparison between React and Vue SDKs
+- **[Choosing an SDK](../../docs/sdk/CHOOSING_SDK.md)** - Decision guide for selecting the right SDK
+- **[Migration Guide](../../docs/sdk/MIGRATION_GUIDE.md)** - Upgrading and migrating between SDKs
+
 ## Core Hooks
 
 ### useAgentConnection

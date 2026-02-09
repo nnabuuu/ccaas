@@ -10,6 +10,25 @@ Step-by-step guides for creating CCAAS solutions:
 - **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create a solution in 10 minutes
 - **[Creating a Solution - Complete Guide](guides/CREATING_A_SOLUTION.md)** - Comprehensive solution development guide
 
+### [SDK Documentation](sdk/) - Client SDK Libraries
+Complete documentation for React and Vue SDK client libraries:
+
+- **[SDK Comparison](sdk/SDK_COMPARISON.md)** - Feature comparison between React and Vue SDKs
+- **[Choosing an SDK](sdk/CHOOSING_SDK.md)** - Decision guide for selecting the right SDK
+- **[Migration Guide](sdk/MIGRATION_GUIDE.md)** - Upgrading and migrating between SDKs
+
+**React SDK Documentation:**
+- **[API Reference](../packages/react-sdk/docs/API.md)** - Complete API for hooks and components
+- **[Advanced Patterns](../packages/react-sdk/docs/ADVANCED_PATTERNS.md)** - Custom hooks, error handling, state management
+- **[Troubleshooting](../packages/react-sdk/docs/TROUBLESHOOTING.md)** - Common issues and debugging
+- **[Performance](../packages/react-sdk/docs/PERFORMANCE.md)** - Optimization strategies
+
+**Vue SDK Documentation (Bilingual 双语):**
+- **[API Reference](../packages/vue-sdk/docs/API.md)** | **[API 参考](../packages/vue-sdk/docs/API_ZH.md)**
+- **[Advanced Patterns](../packages/vue-sdk/docs/ADVANCED_PATTERNS.md)** | **[高级模式](../packages/vue-sdk/docs/ADVANCED_PATTERNS_ZH.md)**
+- **[Troubleshooting](../packages/vue-sdk/docs/TROUBLESHOOTING.md)** | **[故障排除](../packages/vue-sdk/docs/TROUBLESHOOTING_ZH.md)**
+- **[Architecture](../packages/vue-sdk/docs/ARCHITECTURE_EN.md)** | **[架构文档](../packages/vue-sdk/docs/ARCHITECTURE.md)**
+
 ### [GitBook](gitbook/) - Comprehensive Platform Documentation
 Main documentation for the CCAAS platform, available in English and Chinese.
 
@@ -63,10 +82,14 @@ Quick reference guides for developers:
 
 ### For Developers
 1. **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide to building solutions (NEW)
-2. [Solution Development Guide](gitbook/zh/guide/solution-dev.md)
-3. [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
-4. [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
-5. [API Reference](gitbook/zh/api/README.md)
+2. **[SDK Documentation](sdk/)** - React & Vue client SDKs (NEW)
+   - [SDK Comparison](sdk/SDK_COMPARISON.md) - Choose the right SDK
+   - [React SDK API](../packages/react-sdk/docs/API.md) - Full React hooks & components reference
+   - [Vue SDK API](../packages/vue-sdk/docs/API.md) - Full Vue composables reference
+3. [Solution Development Guide](gitbook/zh/guide/solution-dev.md)
+4. [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
+5. [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
+6. [API Reference](gitbook/zh/api/README.md)
 
 ### For Contributors
 1. [Best Practices](SOLUTION_BEST_PRACTICES.md)
@@ -84,6 +107,9 @@ Quick reference guides for developers:
 - [Best Practices](SOLUTION_BEST_PRACTICES.md)
 
 ### Frontend Developers
+- **[SDK Documentation](sdk/)** - Client SDK libraries for React & Vue (NEW)
+  - [React SDK](../packages/react-sdk/README.md) - Hooks & pre-built components
+  - [Vue SDK](../packages/vue-sdk/README.md) - Composables & services
 - [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
 - [File Explorer Implementation](implementation/file-explorer/)
 - [WebSocket Events](gitbook/zh/api/websocket.md)
