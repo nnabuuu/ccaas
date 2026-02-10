@@ -56,13 +56,59 @@ echo ""
 echo "🔍 检查 CCAAS 服务..."
 if curl -s "http://localhost:3001/api/v1/health" > /dev/null 2>&1; then
     echo "✅ CCAAS 正在运行"
-    if [ -f "$SCRIPT_DIR/inject-skills.sh" ]; then
-        echo "📝 注入技能到 CCAAS..."
-        "$SCRIPT_DIR/inject-skills.sh"
+
+    # 检查是否已有 API Key
+    if [ -z "$CCAAS_API_KEY" ]; then
+        echo ""
+        echo "🔑 创建 Bootstrap API Key..."
+
+        # 检查 create-bootstrap-key.sh 是否存在
+        if [ -f "$SCRIPT_DIR/create-bootstrap-key.sh" ]; then
+            # 运行 bootstrap key 创建脚本（安静模式）
+            EXTRACTED_KEY=$("$SCRIPT_DIR/create-bootstrap-key.sh" --quiet 2>&1)
+
+            if [ -n "$EXTRACTED_KEY" ] && [[ "$EXTRACTED_KEY" == sk-* ]]; then
+                export CCAAS_API_KEY="$EXTRACTED_KEY"
+                echo "✅ Bootstrap API Key 已创建并导出"
+                echo "   Key Prefix: ${EXTRACTED_KEY:0:16}..."
+                echo ""
+                echo "   🔐 请保存此 API Key（仅显示一次）："
+                echo "   $EXTRACTED_KEY"
+            else
+                echo "⚠️  创建 Bootstrap API Key 失败"
+                echo "   错误信息: $EXTRACTED_KEY"
+                echo "   请手动运行: ./create-bootstrap-key.sh"
+                echo "   然后设置环境变量: export CCAAS_API_KEY=sk-xxx"
+            fi
+        else
+            echo "⚠️  create-bootstrap-key.sh 未找到"
+            echo "   请手动创建 API Key 并设置环境变量:"
+            echo "   export CCAAS_API_KEY=sk-xxx"
+        fi
+    else
+        echo "✅ 使用已有的 API Key: ${CCAAS_API_KEY:0:16}..."
+    fi
+
+    # 如果有 API Key，则注入技能
+    if [ -n "$CCAAS_API_KEY" ]; then
+        if [ -f "$SCRIPT_DIR/inject-skills.sh" ]; then
+            echo ""
+            echo "📝 注入技能和 MCP 服务器到 CCAAS..."
+            "$SCRIPT_DIR/inject-skills.sh"
+        fi
+    else
+        echo ""
+        echo "⚠️  跳过技能注入（缺少 API Key）"
+        echo "   完成后可手动运行:"
+        echo "   export CCAAS_API_KEY=sk-xxx"
+        echo "   ./inject-skills.sh"
     fi
 else
     echo "⚠️  CCAAS 未运行，跳过技能注入"
-    echo "   如需注入技能，请先启动 CCAAS 后运行: ./inject-skills.sh"
+    echo "   如需注入技能，请先启动 CCAAS 后运行:"
+    echo "   1. 创建 API Key: ./create-bootstrap-key.sh"
+    echo "   2. 导出 API Key: export CCAAS_API_KEY=sk-xxx"
+    echo "   3. 注入技能: ./inject-skills.sh"
 fi
 
 # 检查并清理端口冲突
