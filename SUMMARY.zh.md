@@ -24,11 +24,28 @@
 
 ## 技术指南
 
+### Solution 开发
+
 * [Solution 快速开始](docs/zh/guides/solution-quick-start.md)
 * [创建 Solution 完整指南](docs/zh/guides/creating-a-solution.md)
-* [Chatbox 组件提取](docs/zh/guides/chatbox-extraction-complete.md)
-* [API Key 管理实现](docs/zh/guides/api-key-management-complete.md)
+
+### 权限与认证
+
+* [权限控制完整指南](docs/zh/guides/authentication-authorization.md)
+  * API Key 类型（Tenant-Level vs User-Level）
+  * 9 个权限范围（Scopes）
+  * Bootstrap 工作流
+  * Solution 集成步骤
+  * 权限设计模式
 * [API 密钥管理](docs/zh/guides/api-key-management.md)
+* [API Key 管理实现](docs/zh/guides/api-key-management-complete.md)
+
+### 前端开发
+
+* [Chatbox 组件提取](docs/zh/guides/chatbox-extraction-complete.md)
+
+### 其他
+
 * [迁移指南](docs/zh/guides/migration.md)
 * [测试验证](docs/zh/guides/test-verification.md)
 

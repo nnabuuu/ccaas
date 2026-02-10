@@ -21,7 +21,28 @@
 
 ## Technical Guides
 
+### Solution Development
+
+* [Creating a Solution](docs/zh/guides/creating-a-solution.md)
+
+### Authentication & Authorization
+
+* [Complete Authentication Guide](packages/backend/docs/AUTHENTICATION_AND_AUTHORIZATION.md)
+  * API Key Types (Tenant-Level vs User-Level)
+  * 9 Permission Scopes
+  * Bootstrap Workflow
+  * Solution Integration Steps
+  * Permission Design Patterns
 * [API Key Management](API_KEY_MANAGEMENT_IMPLEMENTATION.md)
+
+### Backend Documentation
+
+* [Documentation Index](packages/backend/docs/README.md)
+* [Error Handling](packages/backend/docs/ERROR_HANDLING.md)
+* [Swagger/OpenAPI](packages/backend/docs/SWAGGER.md)
+
+### Other Guides
+
 * [Migration Guide](MIGRATION.md)
 * [Test Verification](TEST_VERIFICATION_RESULTS.md)
 * [Workspace File Access](WORKSPACE_FILE_ACCESS_TDD_SUMMARY.md)
