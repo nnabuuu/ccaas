@@ -109,32 +109,19 @@ export class SkillPermissionGuard implements CanActivate {
     skillId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
-    this.logger.log(`checkWritePermission: method=${method}, skillId=${skillId}, hasContext=${!!context}, isAnonymous=${context?.isAnonymous}, apiKeyScopes=${JSON.stringify(context?.apiKeyScopes)}`);
-
     // Anonymous users cannot write
     if (!context || context.isAnonymous) {
-      this.logger.warn(`Rejecting write operation: context=${!!context}, isAnonymous=${context?.isAnonymous}`);
       throw new ForbiddenException('Authentication required for this operation');
     }
 
-    // Allow API keys with skills:write scope (for bootstrap/automation)
-    if (context.apiKeyScopes?.includes('skills:write')) {
-      this.logger.log(`Allowing write operation via API key with skills:write scope`);
-
-      // For CREATE operations, still check basic permissions
-      if (method === 'POST' && !skillId) {
-        // API key with skills:write can create skills
-        return true;
-      }
-
-      // For UPDATE/DELETE, still check ownership if skillId provided
-      if (skillId) {
-        return this.checkModifyPermission(skillId, context);
-      }
-
+    // Tenant-level API keys with skills:write scope (for system/automation)
+    // These are API keys without userId, representing the tenant itself
+    if (context.apiKeyScopes?.includes('skills:write') && !context.userId) {
+      this.logger.log(`Allowing tenant-level write operation via API key with skills:write scope`);
       return true;
     }
 
+    // User-level operations require userTenant
     if (!context.userTenant) {
       throw new ForbiddenException('User tenant information required');
     }
