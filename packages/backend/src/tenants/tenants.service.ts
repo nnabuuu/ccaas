@@ -72,7 +72,6 @@ export class TenantsService implements OnModuleInit {
       maxSkills: dto.maxSkills || 50,
       plan: dto.plan || 'free',
       billingEmail: dto.billingEmail,
-      apiKey: this.generateApiKey(),
       status: 'active',
     });
 
@@ -108,14 +107,6 @@ export class TenantsService implements OnModuleInit {
     return tenant;
   }
 
-  /**
-   * Find a tenant by API key
-   */
-  async findByApiKey(apiKey: string): Promise<Tenant | null> {
-    return this.tenantRepository.findOne({
-      where: { apiKey, status: 'active' },
-    });
-  }
 
   /**
    * Update a tenant
@@ -140,21 +131,6 @@ export class TenantsService implements OnModuleInit {
     return saved;
   }
 
-  /**
-   * Regenerate API key for a tenant
-   */
-  async regenerateApiKey(idOrSlug: string): Promise<{ apiKey: string }> {
-    const tenant = await this.findOne(idOrSlug);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${idOrSlug}`);
-    }
-
-    tenant.apiKey = this.generateApiKey();
-    await this.tenantRepository.save(tenant);
-
-    this.logger.log(`Regenerated API key for tenant ${tenant.slug}`);
-    return { apiKey: tenant.apiKey };
-  }
 
   /**
    * Get the default tenant ID
@@ -172,9 +148,5 @@ export class TenantsService implements OnModuleInit {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-  }
-
-  private generateApiKey(): string {
-    return `sk_${crypto.randomBytes(24).toString('hex')}`;
   }
 }

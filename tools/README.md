@@ -45,13 +45,16 @@ main() {
     install_npm_dependencies "$SCRIPT_DIR/frontend"
     install_npm_dependencies "$SCRIPT_DIR/backend"
 
-    TENANT_ID=$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")
+    # Create or get tenant and API key (single call)
+    eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
 
-    if [ -z "$CCAAS_API_KEY" ]; then
-        CCAAS_API_KEY=$(create_bootstrap_key "$CCAAS_DB" "$SOLUTION_SLUG" --quiet)
-        export CCAAS_API_KEY
-        log_success "Bootstrap API Key created: ${CCAAS_API_KEY:0:16}..."
+    if [ -z "$API_KEY" ]; then
+        log_error "Failed to obtain API key"
+        exit 1
     fi
+
+    CCAAS_API_KEY="$API_KEY"
+    export CCAAS_API_KEY
 
     custom_init
 
@@ -225,18 +228,26 @@ wait_for_port 3002 30  # Wait up to 30 seconds
 
 #### `create_or_get_tenant(ccaas_url slug name description)`
 
-Creates a new tenant or retrieves existing one by slug.
+Creates a new tenant or retrieves existing one by slug. **Returns both tenant ID and API key** from the legacy tenant API key system.
 
-**Returns**: Tenant ID (stdout)
+**Returns**: Exports `TENANT_ID` and `API_KEY` (use eval pattern)
 
 **Example**:
 ```bash
-TENANT_ID=$(create_or_get_tenant \
+# Create or get tenant - returns both ID and API key
+eval "$(create_or_get_tenant \
     "http://localhost:3001" \
     "my-solution" \
     "My Solution" \
-    "Solution description")
+    "Solution description")"
+
+# Now both variables are available
 echo "Tenant ID: $TENANT_ID"
+echo "API Key: ${API_KEY:0:16}..."
+
+# Use them for skills/MCP server injection
+CCAAS_API_KEY="$API_KEY"
+inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
 ```
 
 #### `verify_tenant_exists(tenant_id)`
@@ -254,9 +265,44 @@ fi
 
 ### API Key Management
 
-#### `create_bootstrap_key(db_path tenant_slug [--quiet])`
+**IMPORTANT**: Solutions should use the **legacy tenant API key** system (automatically created with tenant) rather than direct database access. This is the recommended approach for demos.
 
-Creates a bootstrap API key directly in the database. This solves the chicken-and-egg problem of needing an API key to create API keys.
+#### CCAAS API Key Systems
+
+CCAAS provides **TWO API key systems**:
+
+**1. Legacy Tenant API Key (Recommended for Solutions)**
+- ✅ No admin scope required
+- ✅ Created automatically with tenant
+- ✅ Returned in API responses
+- ✅ Can be regenerated if needed
+- ✅ **Use `create_or_get_tenant()` to get this key**
+
+**2. Modern API Keys (For Production)**
+- Requires admin scope to create
+- Supports granular scopes and rate limiting
+- Stored as SHA-256 hash
+- Use `POST /api/v1/admin/api-keys` to create
+
+#### `create_or_get_tenant(ccaas_url slug name description)`
+
+Creates a new tenant or retrieves existing one by slug. **Now returns both TENANT_ID and API_KEY**.
+
+**Returns**: Exports `TENANT_ID` and `API_KEY` via eval pattern
+
+**Example**:
+```bash
+# Call and capture both values
+eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
+
+# Now both variables are available
+echo "Tenant ID: $TENANT_ID"
+echo "API Key: ${API_KEY:0:16}..."
+```
+
+#### `create_bootstrap_key(db_path tenant_slug [--quiet])` (DEPRECATED)
+
+**⚠️  DEPRECATED**: This function bypasses CCAAS API and requires direct database access. Use `create_or_get_tenant()` instead, which returns API key from API response. This function is kept for backward compatibility only.
 
 **Parameters**:
 - `db_path` - Path to SQLite database
@@ -267,11 +313,12 @@ Creates a bootstrap API key directly in the database. This solves the chicken-an
 
 **Example**:
 ```bash
-# Normal mode (verbose output)
-API_KEY=$(create_bootstrap_key "../../packages/backend/.agent-workspace/data.db" "my-solution")
-
-# Quiet mode (only key)
+# ❌ OLD WAY (deprecated, requires database access)
 API_KEY=$(create_bootstrap_key "../../packages/backend/.agent-workspace/data.db" "my-solution" --quiet)
+
+# ✅ NEW WAY (recommended, uses API)
+eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
+# Now both $TENANT_ID and $API_KEY are available
 ```
 
 #### `verify_api_key(api_key)`

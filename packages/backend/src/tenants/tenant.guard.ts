@@ -23,21 +23,8 @@ export class TenantGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    // Try API key authentication first (from Authorization header)
-    const authHeader = request.headers['authorization'];
-    if (authHeader?.startsWith('Bearer sk_')) {
-      const apiKey = authHeader.slice(7); // Remove 'Bearer '
-      const tenant = await this.tenantsService.findByApiKey(apiKey);
-
-      if (tenant) {
-        request.tenant = tenant;
-        request.tenantId = tenant.id;
-        return true;
-      }
-
-      this.logger.warn('Invalid API key provided');
-      throw new UnauthorizedException('Invalid API key');
-    }
+    // Modern API keys are handled by ApiKeyGuard
+    // TenantGuard only validates tenant context, not authentication
 
     // Try X-Tenant-Id header
     const tenantId =

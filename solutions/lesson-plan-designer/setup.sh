@@ -59,39 +59,51 @@ main() {
     # Step 3.5: Custom initialization (MCP build)
     custom_init
 
-    # Step 4: Create or get tenant
-    log_step "4" "Setting up tenant"
-    TENANT_ID=$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")
-    log_info "Tenant ID: $TENANT_ID"
+    # Step 4: Setup tenant and modern API key
+    log_step "4" "Setting up tenant and API key"
 
-    # Step 5: Create or get API key
-    log_step "5" "Setting up API key"
-    if [ -z "$CCAAS_API_KEY" ]; then
-        CCAAS_API_KEY=$(create_bootstrap_key "$CCAAS_DB" "$SOLUTION_SLUG" --quiet)
-        export CCAAS_API_KEY
-        log_success "Bootstrap API Key created: ${CCAAS_API_KEY:0:16}..."
-        echo ""
-        log_warn "🔐 Please save this API Key (shown only once):"
-        echo "   $CCAAS_API_KEY"
-        echo ""
-    else
-        log_success "Using existing API Key: ${CCAAS_API_KEY:0:16}..."
+    # Step 4a: Create tenant (no API key returned)
+    eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
+
+    if [ -z "$TENANT_ID" ]; then
+        log_error "Failed to create tenant"
+        exit 1
     fi
 
-    # Step 6: Inject skills and MCP servers
-    log_step "6" "Injecting skills and MCP servers"
+    log_info "Tenant ID: $TENANT_ID"
+
+    # Step 4b: Get bootstrap admin key
+    BOOTSTRAP_KEY=$(get_or_create_bootstrap_key "$CCAAS_URL")
+    if [ -z "$BOOTSTRAP_KEY" ]; then
+        log_error "Bootstrap key required. See instructions above."
+        exit 1
+    fi
+
+    # Step 4c: Create modern API key for this solution
+    eval "$(create_solution_api_key "$CCAAS_URL" "$TENANT_ID" "$BOOTSTRAP_KEY" "$SOLUTION_NAME")"
+
+    if [ -z "$API_KEY" ]; then
+        log_error "Failed to create API key"
+        exit 1
+    fi
+
+    CCAAS_API_KEY="$API_KEY"
+    export CCAAS_API_KEY
+
+    # Step 5: Inject skills and MCP servers
+    log_step "5" "Injecting skills and MCP servers"
     inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
     inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
 
     run_hook "postInstall"
 
-    # Step 7: Clear ports
-    log_step "7" "Preparing ports"
+    # Step 6: Clear ports
+    log_step "6" "Preparing ports"
     kill_port "$BACKEND_PORT"
     kill_port "$FRONTEND_PORT"
 
-    # Step 8: Start services
-    log_step "8" "Starting services"
+    # Step 7: Start services
+    log_step "7" "Starting services"
     BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "$BACKEND_PORT" "npm run dev")
     wait_for_port "$BACKEND_PORT" 30
 

@@ -58,9 +58,6 @@ export class Tenant {
   @Column({ nullable: true })
   billingEmail: string;
 
-  @Column({ nullable: true })
-  apiKey: string;
-
   @Column({ default: 'active' })
   status: TenantStatus;
 

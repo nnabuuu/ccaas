@@ -310,29 +310,21 @@ wait_for_port() {
 # ==============================================================================
 
 # Create or get tenant
-# Usage: TENANT_ID=$(create_or_get_tenant CCAAS_URL SLUG NAME DESCRIPTION)
+# Usage: eval "$(create_or_get_tenant CCAAS_URL SLUG NAME DESCRIPTION)"
+# Sets: TENANT_ID
+#
+# This function creates or retrieves a tenant. API keys are managed separately
+# through the modern API key system (use create_solution_api_key).
 create_or_get_tenant() {
     local ccaas_url="$1"
     local slug="$2"
     local name="$3"
     local description="$4"
 
-    log_info "Setting up tenant '$slug'..."
+    # Send log messages to stderr to avoid interfering with eval
+    log_info "Setting up tenant '$slug'..." >&2
 
-    # Try to get existing tenant first
-    local tenant_response
-    tenant_response=$(curl -s "$ccaas_url/api/v1/tenants/$slug" 2>/dev/null || echo '{}')
-    local tenant_id
-    tenant_id=$(echo "$tenant_response" | jq -r '.id // empty')
-
-    if [ -n "$tenant_id" ]; then
-        log_warn "Tenant already exists: $tenant_id"
-        echo "$tenant_id"
-        return 0
-    fi
-
-    # Create new tenant
-    log_info "Creating tenant '$slug'..."
+    # Try to create new tenant
     local create_response
     create_response=$(curl -s -X POST "$ccaas_url/api/v1/tenants" \
         -H "Content-Type: application/json" \
@@ -340,18 +332,34 @@ create_or_get_tenant() {
             \"slug\": \"$slug\",
             \"name\": \"$name\",
             \"description\": \"$description\"
-        }")
+        }" 2>/dev/null)
 
-    tenant_id=$(echo "$create_response" | jq -r '.id // empty')
+    local tenant_id=$(echo "$create_response" | jq -r '.id // empty')
 
-    if [ -z "$tenant_id" ]; then
-        log_error "Failed to create tenant"
-        echo "Response: $create_response" >&2
-        return 1
+    if [ -n "$tenant_id" ]; then
+        log_success "Tenant created: $tenant_id" >&2
+        echo "export TENANT_ID='$tenant_id'"
+        return 0
     fi
 
-    log_success "Tenant created: $tenant_id"
-    echo "$tenant_id"
+    # Tenant already exists, fetch it
+    if echo "$create_response" | grep -q "already exists"; then
+        log_info "Tenant exists, fetching..." >&2
+        local existing_tenant
+        existing_tenant=$(curl -s "$ccaas_url/api/v1/tenants/$slug" 2>/dev/null)
+
+        tenant_id=$(echo "$existing_tenant" | jq -r '.id // empty')
+
+        if [ -n "$tenant_id" ]; then
+            log_success "Tenant found: $tenant_id" >&2
+            echo "export TENANT_ID='$tenant_id'"
+            return 0
+        fi
+    fi
+
+    log_error "Failed to create or fetch tenant" >&2
+    echo "Response: $create_response" >&2
+    return 1
 }
 
 # Verify tenant exists
@@ -378,109 +386,116 @@ verify_tenant_exists() {
     fi
 }
 
+# Get or create bootstrap admin key for modern API key system
+# Usage: ADMIN_KEY=$(get_or_create_bootstrap_key CCAAS_URL)
+# Returns: sk-default-xxxx (bootstrap admin key with 'admin' scope)
+#
+# This function retrieves the bootstrap admin key that was auto-created
+# on backend startup. It's needed to create solution-specific API keys.
+get_or_create_bootstrap_key() {
+    local ccaas_url="$1"
+
+    log_info "Retrieving bootstrap admin key..." >&2
+
+    # Try to get default tenant's bootstrap key
+    # The backend auto-creates this on first startup (api-key.service.ts onModuleInit)
+    # It's logged to console but not retrievable via API
+
+    # For now, read from environment variable or prompt user
+    if [ -n "$CCAAS_BOOTSTRAP_KEY" ]; then
+        echo "$CCAAS_BOOTSTRAP_KEY"
+        return 0
+    fi
+
+    log_error "Bootstrap admin key not found" >&2
+    echo "" >&2
+    echo "The bootstrap admin key is auto-created on backend startup." >&2
+    echo "Please check backend logs for:" >&2
+    echo '  [ApiKeyService] Created default API key: sk-default-...' >&2
+    echo "" >&2
+    echo "Then set environment variable:" >&2
+    echo "  export CCAAS_BOOTSTRAP_KEY=sk-default-xxxxx" >&2
+    echo "" >&2
+    return 1
+}
+
+# Create solution-specific API key using modern system
+# Usage: eval "$(create_solution_api_key CCAAS_URL TENANT_ID BOOTSTRAP_KEY SOLUTION_NAME)"
+# Sets: API_KEY
+#
+# This creates a modern API key with proper scopes and rate limiting.
+create_solution_api_key() {
+    local ccaas_url="$1"
+    local tenant_id="$2"
+    local bootstrap_key="$3"
+    local solution_name="$4"
+
+    log_info "Creating modern API key for solution..." >&2
+
+    # Call admin API to create key
+    local create_response
+    create_response=$(curl -s -X POST "$ccaas_url/api/v1/admin/api-keys" \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $bootstrap_key" \
+        -d "{
+            \"tenantId\": \"$tenant_id\",
+            \"name\": \"$solution_name Setup Key\",
+            \"scopes\": [\"skills:write\", \"skills:read\", \"mcp:write\", \"mcp:read\", \"chat\", \"admin\"],
+            \"rateLimitRpm\": 1000,
+            \"rateLimitRpd\": 100000
+        }" 2>/dev/null)
+
+    local raw_key=$(echo "$create_response" | jq -r '.rawKey // empty')
+
+    if [ -n "$raw_key" ]; then
+        log_success "Modern API key created: ${raw_key:0:16}..." >&2
+        echo "export API_KEY='$raw_key'"
+        return 0
+    fi
+
+    log_error "Failed to create modern API key" >&2
+    echo "Response: $create_response" >&2
+    return 1
+}
+
 # ==============================================================================
-# API KEY MANAGEMENT (80% reusable)
+# API KEY MANAGEMENT
+# ==============================================================================
+#
+# CCAAS provides TWO API key systems:
+#
+# 1. Legacy Tenant API Key (recommended for solutions):
+#    - Created automatically when tenant is created
+#    - Returned in tenant API responses (GET /api/v1/tenants/:slug)
+#    - Can be regenerated (POST /api/v1/tenants/:id/regenerate-key)
+#    - No admin scope required
+#    - Use create_or_get_tenant() to get this key
+#
+# 2. Modern API Keys (for production, requires admin):
+#    - Supports scopes and rate limiting
+#    - Stored as SHA-256 hash
+#    - Requires admin scope to create
+#    - Use POST /api/v1/admin/api-keys
+#
+# For solution demos, use system 1 (legacy tenant API key).
 # ==============================================================================
 
-# Create bootstrap API key directly in database
-# Usage: API_KEY=$(create_bootstrap_key DB_PATH TENANT_SLUG [--quiet])
+# ⚠️  REMOVED: create_bootstrap_key() has been deprecated
+# Usage: N/A - Use get_or_create_bootstrap_key() and create_solution_api_key() instead
+#
+# Legacy tenant API keys are no longer supported. The modern API key system
+# requires a bootstrap admin key that is auto-created on backend startup.
+# See tools/README.md for the new workflow.
 create_bootstrap_key() {
-    local db_path="$1"
-    local tenant_slug="$2"
-    local quiet_mode=false
-
-    if [ "$3" = "--quiet" ]; then
-        quiet_mode=true
-    fi
-
-    if [ "$quiet_mode" = false ]; then
-        log_header "Bootstrap API Key Creator"
-        log_info "Database: $db_path"
-        log_info "Tenant: $tenant_slug"
-    fi
-
-    # Check if database exists
-    if [ ! -f "$db_path" ]; then
-        log_error "Database not found at $db_path"
-        echo "Please start CCAAS backend first to create the database." >&2
-        return 1
-    fi
-
-    # Get tenant ID
-    local tenant_id
-    tenant_id=$(sqlite3 "$db_path" "SELECT id FROM tenants WHERE slug='$tenant_slug' LIMIT 1;")
-
-    if [ -z "$tenant_id" ]; then
-        log_error "Tenant '$tenant_slug' not found in database"
-        echo "Please create the tenant first." >&2
-        return 1
-    fi
-
-    if [ "$quiet_mode" = false ]; then
-        log_success "Found tenant: $tenant_id"
-        log_info "Generating bootstrap API key..."
-    fi
-
-    # Generate API key
-    local raw_key="sk-bootstrap_$(openssl rand -hex 24)"
-    local key_prefix="${raw_key:0:16}"
-    local key_hash
-    key_hash=$(echo -n "$raw_key" | openssl dgst -sha256 -binary | xxd -p -c 256)
-
-    # Insert API key into database
-    sqlite3 "$db_path" <<EOF
-INSERT INTO api_keys (
-  id,
-  tenantId,
-  name,
-  keyHash,
-  keyPrefix,
-  scopes,
-  rateLimitRpm,
-  rateLimitRpd,
-  status,
-  expiresAt,
-  lastUsedAt,
-  usageCount,
-  metadata,
-  createdAt,
-  updatedAt
-) VALUES (
-  lower(hex(randomblob(16))),
-  '$tenant_id',
-  'bootstrap-tenant-key',
-  '$key_hash',
-  '$key_prefix',
-  '["skills:write","mcp:write","admin"]',
-  100,
-  10000,
-  'active',
-  NULL,
-  NULL,
-  0,
-  NULL,
-  datetime('now'),
-  datetime('now')
-);
-EOF
-
-    if [ "$quiet_mode" = true ]; then
-        # Quiet mode: only output the API key
-        echo "$raw_key"
-    else
-        # Normal mode: show full output
-        log_success "Bootstrap API key created successfully!"
-        echo ""
-        log_warn "⚠️  SAVE THIS KEY - IT WILL NOT BE SHOWN AGAIN"
-        echo ""
-        echo "API Key: $raw_key"
-        echo ""
-        echo "Key Prefix: $key_prefix"
-        echo "Scopes: skills:write, mcp:write, admin"
-        echo "Type: Tenant-level (no userId)"
-        echo ""
-        echo "$raw_key"
-    fi
+    log_error "REMOVED: create_bootstrap_key() has been removed" >&2
+    log_error "Legacy tenant API keys are no longer supported" >&2
+    echo "" >&2
+    echo "New workflow:" >&2
+    echo "1. Get bootstrap key: BOOTSTRAP_KEY=\$(get_or_create_bootstrap_key \$CCAAS_URL)" >&2
+    echo "2. Create solution key: eval \"\$(create_solution_api_key \$CCAAS_URL \$TENANT_ID \$BOOTSTRAP_KEY \$SOLUTION_NAME)\"" >&2
+    echo "" >&2
+    echo "See tools/README.md for details." >&2
+    return 1
 }
 
 # Verify API key is valid

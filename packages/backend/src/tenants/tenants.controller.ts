@@ -55,12 +55,4 @@ export class TenantsController {
   async update(@Param('id') id: string, @Body() dto: UpdateTenantDto) {
     return this.tenantsService.update(id, dto);
   }
-
-  /**
-   * Regenerate API key
-   */
-  @Post(':id/regenerate-key')
-  async regenerateKey(@Param('id') id: string) {
-    return this.tenantsService.regenerateApiKey(id);
-  }
 }
