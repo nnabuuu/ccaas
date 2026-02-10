@@ -253,7 +253,7 @@ else
   else
     echo "Found $MCP_COUNT MCP server(s) in solution.json"
 
-    for row in $(jq -c '.mcpServers | to_entries[]' "$SOLUTION_JSON"); do
+    while IFS= read -r row; do
       SERVER_NAME=$(echo "$row" | jq -r '.key')
       SERVER_CONFIG=$(echo "$row" | jq '.value')
 
@@ -333,7 +333,7 @@ EOF
         echo -e "  ${GREEN}Created MCP server: $MCP_ID${NC}"
         MCP_SUCCESS_COUNT=$((MCP_SUCCESS_COUNT + 1))
       fi
-    done
+    done < <(jq -c '.mcpServers | to_entries[]' "$SOLUTION_JSON")
   fi
 fi
 
