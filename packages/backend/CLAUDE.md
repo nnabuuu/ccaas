@@ -95,6 +95,58 @@ claude-code-as-a-service/
 
 ## Key Modules
 
+### Error Handling (protocol/, common/filters/)
+
+Standardized HTTP error handling system with protocol-aware exceptions.
+
+**Error Code System:**
+- 12 standard ErrorCode types (shared with WebSocket)
+- HTTP status mapping (400, 401, 403, 404, 429, 500, 502, 503, 504)
+- Retry hints and recovery flags
+
+**Exception Classes (protocol/http-exceptions.ts):**
+- `ValidationException` - 400 Bad Request
+- `SessionExpiredException` - 401 Unauthorized
+- `PermissionDeniedException` - 403 Forbidden
+- `SkillNotFoundException` - 404 Not Found
+- `RateLimitedException` - 429 Too Many Requests
+- `InternalException` - 500 Internal Server Error
+- `CliException` - 500 CLI process error
+- `McpException` - 502 Bad Gateway
+- `ConnectionLostException` - 503 Service Unavailable
+- `TimeoutException` - 504 Gateway Timeout
+
+**Global Filter (common/filters/http-exception.filter.ts):**
+- Catches all HTTP exceptions
+- Transforms to standardized JSON response
+- Includes retry hints, failed fields, partial output
+- Request ID tracking
+- Automatic logging with context
+
+**Response Format:**
+```json
+{
+  "code": "SKILL_NOT_FOUND",
+  "message": "Skill not found: skill-123",
+  "statusCode": 404,
+  "recoverable": false,
+  "retryable": false,
+  "timestamp": "2026-02-09T10:30:00.000Z",
+  "path": "/api/v1/skills/skill-123",
+  "requestId": "req_123"
+}
+```
+
+**Usage:**
+```typescript
+// In controllers/services
+throw new SkillNotFoundException(skillId);
+throw new ValidationException('Invalid input', ['email', 'name']);
+throw new RateLimitedException(60000); // Retry after 60s
+```
+
+See [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) for complete documentation.
+
 ### ChatModule (chat/)
 
 Core relay functionality. Manages WebSocket connections and AgentEngine process lifecycle.
@@ -209,6 +261,50 @@ Frontend-backend protocol definitions.
 - **Validation** - Ajv-based schema validation
 - **Transformation** - Field mapping for outputs
 
+## Documentation
+
+### Authentication and Authorization
+
+Complete guide for Solution developers on API Key management, permissions, and integration.
+
+📚 **[Authentication & Authorization Guide](./docs/AUTHENTICATION_AND_AUTHORIZATION.md)**
+
+**Topics Covered:**
+- **API Key System**: Tenant-Level vs User-Level Keys
+- **Scopes**: 9 permission scopes (chat, skills:*, mcp:*, admin, analytics:read)
+- **Guard Chain**: ApiKeyGuard → TenantGuard → SkillPermissionGuard
+- **Bootstrap Workflow**: Solving the Chicken-and-Egg problem
+- **Solution Integration**: Step-by-step guide for new solutions
+- **Permission Patterns**: Public, Personal, and Hybrid models
+- **Best Practices**: Security, key rotation, error handling
+
+**Quick Start:**
+```bash
+# 1. Create Bootstrap API Key
+cd solutions/your-solution
+./create-bootstrap-key.sh
+
+# 2. Register Skills and MCP Servers
+export CCAAS_API_KEY=sk-bootstrap_xxx
+./inject-skills.sh
+
+# 3. Frontend Integration (React/Vue)
+useAgentChat({ serverUrl, tenantId })  // That's it!
+```
+
+### Error Handling
+
+Standardized HTTP error handling with protocol-aware exceptions.
+
+📚 **[Error Handling Documentation](./docs/ERROR_HANDLING.md)**
+
+**Features:**
+- 12 standard ErrorCode types
+- HTTP status mapping (400, 401, 403, 404, 429, 500, 502, 503, 504)
+- Retry hints and recovery flags
+- Global exception filter
+- Request ID tracking
+
 ## Development Commands
 
 ```bash
@@ -249,6 +345,27 @@ Using TypeORM with SQLite (configurable to PostgreSQL):
 - **agent_files** - Written files tracking
 - **scheduled_tasks** - Scheduled task definitions (cron/interval/once)
 - **scheduled_task_executions** - Task execution history and results
+
+## API Documentation
+
+### Swagger/OpenAPI (中英文双语)
+
+CCAAS 提供完整的 Swagger/OpenAPI 文档，支持中英文双语：
+
+**访问地址：**
+- **中文版（默认）**: http://localhost:3001/api/docs
+- **英文版**: http://localhost:3001/api/docs/en
+- **OpenAPI JSON**: http://localhost:3001/api/docs-json
+- **OpenAPI YAML**: http://localhost:3001/api/docs-yaml
+
+**功能特性：**
+- ✅ 交互式 API 调试
+- ✅ 完整的类型定义和示例
+- ✅ API Key 认证支持
+- ✅ 按模块分组（sessions, messages, files, skills, etc.）
+- ✅ 可导出 OpenAPI 规范生成客户端 SDK
+
+详细使用说明请参考：[docs/SWAGGER.md](./docs/SWAGGER.md)
 
 ## API Endpoints
 
