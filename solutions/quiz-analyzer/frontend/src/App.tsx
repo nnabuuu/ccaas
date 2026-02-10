@@ -6,7 +6,7 @@
  * - Right Panel (60%): AnalysisDisplay + ChatSection
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { SparklesIcon } from '@heroicons/react/24/solid'
 import QuizInput from './components/QuizInput'
 import HistoryList from './components/HistoryList'
@@ -33,18 +33,25 @@ function App() {
     [session.sendMessage]
   )
 
-  // Create a mock Quiz object from AnalysisRecord for CompleteAnalysisView
-  const currentQuiz: Quiz | null = history.current
-    ? {
-        id: history.current.id,
-        tenant_id: 'quiz-analyzer',
-        content: history.current.quiz.content,
-        correct_answer: history.current.quiz.answer,
-        subject_id: '',
-        created_at: history.current.timestamp.toISOString(),
-        updated_at: history.current.timestamp.toISOString(),
-      }
-    : null
+  // ✅ Memoize currentQuiz object creation (rerender-memo)
+  const currentQuiz: Quiz | null = useMemo(() => {
+    if (!history.current) return null
+    return {
+      id: history.current.id,
+      tenant_id: 'quiz-analyzer',
+      content: history.current.quiz.content,
+      correct_answer: history.current.quiz.answer,
+      subject_id: '',
+      created_at: history.current.timestamp.toISOString(),
+      updated_at: history.current.timestamp.toISOString(),
+    }
+  }, [history.current])
+
+  // ✅ Memoize hasAnalysisResults check (js-cache-function-results)
+  const hasAnalysisResults = useMemo(
+    () => Object.keys(session.analysisResults).length > 0,
+    [session.analysisResults]
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -114,14 +121,14 @@ function App() {
               )}
 
               {/* Show real-time analysis results from AI */}
-              {!session.isProcessing && !history.current && Object.keys(session.analysisResults).length > 0 && (
+              {!session.isProcessing && !history.current && hasAnalysisResults && (
                 <CompleteAnalysisView
                   analysis={session.analysisResults}
                   quiz={null}
                 />
               )}
 
-              {!session.isProcessing && !history.current && Object.keys(session.analysisResults).length === 0 && (
+              {!session.isProcessing && !history.current && !hasAnalysisResults && (
                 <div className="text-center py-12 text-slate-400">
                   <SparklesIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">等待输入题目</p>

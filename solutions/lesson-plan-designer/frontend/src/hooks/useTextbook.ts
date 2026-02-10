@@ -7,7 +7,7 @@ import type {
   TextbookChapter,
 } from '../types'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3002'
+const API_BASE = '/api'  // Use relative path, proxied by Vite
 
 interface UseTextbookState {
   // Data
@@ -76,7 +76,7 @@ export function useTextbook(): UseTextbookState {
       setLoadingSubjects(true)
       setError(null)
       try {
-        const response = await fetch(`${API_BASE}/api/textbook/subjects`)
+        const response = await fetch(`${API_BASE}/textbook/subjects`)
         if (!response.ok) throw new Error('Failed to fetch subjects')
         const data = await response.json()
         setSubjects(data)
@@ -101,7 +101,7 @@ export function useTextbook(): UseTextbookState {
       setError(null)
       try {
         const response = await fetch(
-          `${API_BASE}/api/textbook/grades?subject=${encodeURIComponent(selectedSubject)}`
+          `${API_BASE}/textbook/grades?subject=${encodeURIComponent(selectedSubject)}`
         )
         if (!response.ok) throw new Error('Failed to fetch grades')
         const data = await response.json()
@@ -127,7 +127,7 @@ export function useTextbook(): UseTextbookState {
       setError(null)
       try {
         const response = await fetch(
-          `${API_BASE}/api/textbook/publishers?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}`
+          `${API_BASE}/textbook/publishers?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}`
         )
         if (!response.ok) throw new Error('Failed to fetch publishers')
         const data = await response.json()
@@ -157,7 +157,7 @@ export function useTextbook(): UseTextbookState {
       setError(null)
       try {
         const response = await fetch(
-          `${API_BASE}/api/textbook/volumes?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}&publisher=${encodeURIComponent(selectedPublisher)}`
+          `${API_BASE}/textbook/volumes?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}&publisher=${encodeURIComponent(selectedPublisher)}`
         )
         if (!response.ok) throw new Error('Failed to fetch volumes')
         const data = await response.json()
@@ -187,7 +187,7 @@ export function useTextbook(): UseTextbookState {
       setError(null)
       try {
         const response = await fetch(
-          `${API_BASE}/api/textbook/chapters?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}&publisher=${encodeURIComponent(selectedPublisher)}&volume=${encodeURIComponent(selectedVolume)}`
+          `${API_BASE}/textbook/chapters?subject=${encodeURIComponent(selectedSubject)}&gradeId=${selectedGradeId}&publisher=${encodeURIComponent(selectedPublisher)}&volume=${encodeURIComponent(selectedVolume)}`
         )
         if (!response.ok) throw new Error('Failed to fetch chapters')
         const data = await response.json()

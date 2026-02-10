@@ -12,6 +12,8 @@ export * from './events';
 
 // Error handling & recovery
 export * from './errors';
+export * from './http-error-mapping';
+export * from './http-exceptions';
 
 // Observability & metrics
 export * from './metrics';

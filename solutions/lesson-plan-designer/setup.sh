@@ -1,229 +1,128 @@
 #!/bin/bash
-
-# Lesson Plan Designer - 一键启动脚本
-# MCP 服务器配置通过 solution.json 自动注入，无需手动注册
+# Lesson Plan Designer - Setup Script
+# Uses: tools/solution-lib.sh
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-FRONTEND_DIR="$SCRIPT_DIR/frontend"
-BACKEND_DIR="$SCRIPT_DIR/backend"
-MCP_DIR="$SCRIPT_DIR/mcp-server"
+TOOLS_DIR="$SCRIPT_DIR/../../tools"
 
-echo "🚀 Lesson Plan Designer 启动脚本"
-echo "================================"
-
-# 检查 Node.js
-if ! command -v node &> /dev/null; then
-    echo "❌ 错误: 未找到 Node.js，请先安装"
+# Source shared library
+if [ ! -f "$TOOLS_DIR/solution-lib.sh" ]; then
+    echo "❌ Error: solution-lib.sh not found at $TOOLS_DIR"
+    echo "   Please run from solutions/ directory"
     exit 1
 fi
 
-echo "📦 Node.js 版本: $(node -v)"
+source "$TOOLS_DIR/solution-lib.sh"
 
-# 构建 MCP 服务器
-echo ""
-echo "📦 构建 MCP 服务器..."
-cd "$MCP_DIR"
-npm install
-npm run build
-echo "✅ MCP 服务器构建完成"
+# Load solution configuration
+load_solution_config "$SCRIPT_DIR"
 
-# 安装后端依赖
-echo ""
-echo "📦 安装后端依赖..."
-cd "$BACKEND_DIR"
-npm install
+# Custom initialization
+custom_init() {
+    # Build MCP server
+    log_step "3.5" "Building MCP server"
+    local mcp_dir="$SCRIPT_DIR/mcp-server"
 
-# 安装前端依赖
-echo ""
-echo "📦 安装前端依赖..."
-cd "$FRONTEND_DIR"
-npm install
+    if [ -d "$mcp_dir" ]; then
+        cd "$mcp_dir"
+        npm install > /dev/null 2>&1
+        npm run build > /dev/null 2>&1
+        log_success "MCP server built"
+    else
+        log_warn "MCP server directory not found, skipping build"
+    fi
 
-# 验证 solution.json
-echo ""
-echo "🔍 验证 solution.json..."
-if [ -f "$SCRIPT_DIR/solution.json" ]; then
-    echo "✅ solution.json 已配置"
-    echo "   MCP 服务器将在会话启动时自动注入"
-else
-    echo "⚠️  solution.json 未找到"
-fi
+    return 0
+}
 
-# 可选: 注入技能到 CCAAS (如果 CCAAS 正在运行)
-echo ""
-echo "🔍 检查 CCAAS 服务..."
-if curl -s "http://localhost:3001/api/v1/health" > /dev/null 2>&1; then
-    echo "✅ CCAAS 正在运行"
+# Main workflow
+main() {
+    log_header "$SOLUTION_NAME Setup"
 
-    # 检查是否已有 API Key
+    # Step 1: Check dependencies
+    log_step "1" "Checking dependencies"
+    check_dependencies
+    log_info "Node.js version: $(node -v)"
+
+    # Step 2: Check CCAAS backend
+    log_step "2" "Verifying CCAAS backend"
+    check_ccaas_backend
+
+    # Step 3: Install npm dependencies
+    log_step "3" "Installing dependencies"
+    run_hook "preInstall"
+    install_npm_dependencies "$SCRIPT_DIR/frontend"
+    install_npm_dependencies "$SCRIPT_DIR/backend"
+
+    # Step 3.5: Custom initialization (MCP build)
+    custom_init
+
+    # Step 4: Create or get tenant
+    log_step "4" "Setting up tenant"
+    TENANT_ID=$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")
+    log_info "Tenant ID: $TENANT_ID"
+
+    # Step 5: Create or get API key
+    log_step "5" "Setting up API key"
     if [ -z "$CCAAS_API_KEY" ]; then
+        CCAAS_API_KEY=$(create_bootstrap_key "$CCAAS_DB" "$SOLUTION_SLUG" --quiet)
+        export CCAAS_API_KEY
+        log_success "Bootstrap API Key created: ${CCAAS_API_KEY:0:16}..."
         echo ""
-        echo "🔑 创建 Bootstrap API Key..."
-
-        # 检查 create-bootstrap-key.sh 是否存在
-        if [ -f "$SCRIPT_DIR/create-bootstrap-key.sh" ]; then
-            # 运行 bootstrap key 创建脚本（安静模式）
-            EXTRACTED_KEY=$("$SCRIPT_DIR/create-bootstrap-key.sh" --quiet 2>&1)
-
-            if [ -n "$EXTRACTED_KEY" ] && [[ "$EXTRACTED_KEY" == sk-* ]]; then
-                export CCAAS_API_KEY="$EXTRACTED_KEY"
-                echo "✅ Bootstrap API Key 已创建并导出"
-                echo "   Key Prefix: ${EXTRACTED_KEY:0:16}..."
-                echo ""
-                echo "   🔐 请保存此 API Key（仅显示一次）："
-                echo "   $EXTRACTED_KEY"
-            else
-                echo "⚠️  创建 Bootstrap API Key 失败"
-                echo "   错误信息: $EXTRACTED_KEY"
-                echo "   请手动运行: ./create-bootstrap-key.sh"
-                echo "   然后设置环境变量: export CCAAS_API_KEY=sk-xxx"
-            fi
-        else
-            echo "⚠️  create-bootstrap-key.sh 未找到"
-            echo "   请手动创建 API Key 并设置环境变量:"
-            echo "   export CCAAS_API_KEY=sk-xxx"
-        fi
-    else
-        echo "✅ 使用已有的 API Key: ${CCAAS_API_KEY:0:16}..."
-    fi
-
-    # 如果有 API Key，则注入技能
-    if [ -n "$CCAAS_API_KEY" ]; then
-        if [ -f "$SCRIPT_DIR/inject-skills.sh" ]; then
-            echo ""
-            echo "📝 注入技能和 MCP 服务器到 CCAAS..."
-            "$SCRIPT_DIR/inject-skills.sh"
-        fi
-    else
+        log_warn "🔐 Please save this API Key (shown only once):"
+        echo "   $CCAAS_API_KEY"
         echo ""
-        echo "⚠️  跳过技能注入（缺少 API Key）"
-        echo "   完成后可手动运行:"
-        echo "   export CCAAS_API_KEY=sk-xxx"
-        echo "   ./inject-skills.sh"
+    else
+        log_success "Using existing API Key: ${CCAAS_API_KEY:0:16}..."
     fi
-else
-    echo "⚠️  CCAAS 未运行，跳过技能注入"
-    echo "   如需注入技能，请先启动 CCAAS 后运行:"
-    echo "   1. 创建 API Key: ./create-bootstrap-key.sh"
-    echo "   2. 导出 API Key: export CCAAS_API_KEY=sk-xxx"
-    echo "   3. 注入技能: ./inject-skills.sh"
-fi
 
-# 检查并清理端口冲突
-echo ""
-echo "🔍 检查端口占用..."
+    # Step 6: Inject skills and MCP servers
+    log_step "6" "Injecting skills and MCP servers"
+    inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+    inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
 
-# 检查端口 3002 (后端)
-if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    echo "⚠️  端口 3002 已被占用，正在清理旧进程..."
-    lsof -ti:3002 | xargs kill -9 2>/dev/null || true
-    sleep 1
-    echo "✅ 端口 3002 已释放"
-fi
+    run_hook "postInstall"
 
-# 检查端口 5280 (前端)
-if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    echo "⚠️  端口 5280 已被占用，正在清理旧进程..."
-    lsof -ti:5280 | xargs kill -9 2>/dev/null || true
-    sleep 1
-    echo "✅ 端口 5280 已释放"
-fi
+    # Step 7: Clear ports
+    log_step "7" "Preparing ports"
+    kill_port "$BACKEND_PORT"
+    kill_port "$FRONTEND_PORT"
 
-# 启动后端
-echo ""
-echo "🔧 启动后端服务 (端口 3002)..."
-cd "$BACKEND_DIR"
-npm run dev &
-BACKEND_PID=$!
+    # Step 8: Start services
+    log_step "8" "Starting services"
+    BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "$BACKEND_PORT" "npm run dev")
+    wait_for_port "$BACKEND_PORT" 30
 
-# 等待后端启动并验证
-echo "⏳ 等待后端启动..."
+    FRONTEND_PID=$(start_service "frontend" "$SCRIPT_DIR/frontend" "$FRONTEND_PORT" "npm run dev")
+    wait_for_port "$FRONTEND_PORT" 30
 
-# 重试检查端口绑定 (最多等待10秒)
-BACKEND_RETRY=0
-BACKEND_MAX_RETRY=10
-while [ $BACKEND_RETRY -lt $BACKEND_MAX_RETRY ]; do
-    if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "✅ 后端启动成功 (端口 3002)"
-        break
-    fi
-    BACKEND_RETRY=$((BACKEND_RETRY + 1))
-    if [ $BACKEND_RETRY -eq $BACKEND_MAX_RETRY ]; then
-        echo "❌ 错误: 后端未能成功启动在端口 3002"
-        echo "   请检查后端日志或手动运行: cd backend && npm run dev"
-        kill $BACKEND_PID 2>/dev/null || true
-        exit 1
-    fi
-    sleep 1
-done
+    # Step 9: Display summary
+    display_summary
 
-# 启动前端
-echo ""
-echo "🎨 启动前端服务 (端口 5280)..."
-cd "$FRONTEND_DIR"
-npm run dev &
-FRONTEND_PID=$!
+    echo ""
+    log_warn "⚠️  Ensure CCAAS backend is running on port 3001:"
+    echo "   cd packages/backend && npm run start:dev"
+    echo ""
+    echo "Press Ctrl+C to stop all services"
 
-# 等待前端启动并验证
-echo "⏳ 等待前端启动..."
+    # Wait for Ctrl+C
+    trap cleanup SIGINT SIGTERM
+    wait
+}
 
-# 重试检查端口绑定 (最多等待10秒)
-FRONTEND_RETRY=0
-FRONTEND_MAX_RETRY=10
-while [ $FRONTEND_RETRY -lt $FRONTEND_MAX_RETRY ]; do
-    if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "✅ 前端启动成功 (端口 5280)"
-        break
-    fi
-    FRONTEND_RETRY=$((FRONTEND_RETRY + 1))
-    if [ $FRONTEND_RETRY -eq $FRONTEND_MAX_RETRY ]; then
-        echo "❌ 错误: 前端未能成功启动在端口 5280"
-        echo "   请检查前端日志或手动运行: cd frontend && npm run dev"
-        cleanup
-        exit 1
-    fi
-    sleep 1
-done
-
-echo ""
-echo "✅ 所有服务启动完成!"
-echo ""
-echo "📍 访问地址:"
-echo "   前端: http://localhost:5280"
-echo "   后端: http://localhost:3002"
-echo ""
-echo "⚠️  请确保 CCAAS 后端已在端口 3001 运行:"
-echo "   cd packages/backend && npm run start:dev"
-echo ""
-echo "按 Ctrl+C 停止所有服务"
-
-# 捕获退出信号
+# Cleanup function
 cleanup() {
     echo ""
-    echo "🛑 停止服务..."
-
-    # 停止后台进程
-    kill $BACKEND_PID 2>/dev/null || true
-    kill $FRONTEND_PID 2>/dev/null || true
-
-    # 确保端口被释放
-    if lsof -Pi :3002 -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "   清理端口 3002..."
-        lsof -ti:3002 | xargs kill -9 2>/dev/null || true
-    fi
-
-    if lsof -Pi :5280 -sTCP:LISTEN -t >/dev/null 2>&1; then
-        echo "   清理端口 5280..."
-        lsof -ti:5280 | xargs kill -9 2>/dev/null || true
-    fi
-
-    echo "✅ 服务已停止"
+    log_info "Stopping services..."
+    stop_service "$BACKEND_PID"
+    stop_service "$FRONTEND_PID"
+    kill_port "$BACKEND_PORT"
+    kill_port "$FRONTEND_PORT"
+    log_success "Services stopped"
     exit 0
 }
 
-trap cleanup SIGINT SIGTERM
-
-# 等待子进程
-wait
+# Run main
+main "$@"

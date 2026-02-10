@@ -12,6 +12,15 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -21,6 +30,7 @@ import { createReadStream } from 'fs';
 import * as path from 'path';
 import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
+@ApiTags('files')
 @Controller('api/v1/files')
 export class FilesController {
   private readonly workspaceBaseDir: string;
@@ -38,6 +48,22 @@ export class FilesController {
    * GET /api/v1/files/:fileId
    */
   @Get(':fileId')
+  @ApiOperation({
+    summary: '获取文件元数据 / Get File Metadata',
+    description: '获取文件的元数据信息（不包含文件内容）/ Get file metadata without content',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '文件元数据 / File metadata',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '文件不存在 / File not found',
+  })
   async getFile(@Param('fileId', ParseUUIDPipe) fileId: string): Promise<{
     id: string;
     filename: string;
@@ -70,6 +96,22 @@ export class FilesController {
    * GET /api/v1/files/:fileId/download
    */
   @Get(':fileId/download')
+  @ApiOperation({
+    summary: '下载文件 / Download File',
+    description: '下载文件内容（流式传输）/ Download file content as stream',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '文件流 / File stream',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '文件不存在 / File not found',
+  })
   async downloadFile(
     @Param('fileId', ParseUUIDPipe) fileId: string,
     @Res({ passthrough: true }) res: Response,
@@ -220,6 +262,64 @@ export class FilesController {
    */
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({
+    summary: '上传文件 / Upload File',
+    description: `
+上传文件到会话工作区，Agent 可以读取和处理这些文件。
+
+**文件存储位置：**
+1. 会话工作区（Agent 可访问）: \`.agent-workspace/sessions/{sessionId}/{targetPath}/{filename}\`
+2. 持久化存储（版本控制）: \`.agent-workspace/files/{tenantId}/{messageId}/{filename}\`
+
+**支持的文件类型：**
+- 图片：png, jpg, jpeg, gif, webp（最大 10MB）
+- 文档：pdf, txt, md, json, csv（最大 50MB）
+- 代码：js, ts, py, java, go, etc.
+
+**English:**
+Upload files to session workspace for agent processing.
+    `,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['file', 'sessionId'],
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: '文件内容 / File content',
+        },
+        sessionId: {
+          type: 'string',
+          description: '会话 ID / Session ID',
+          example: 'session-123',
+        },
+        messageId: {
+          type: 'string',
+          description: '消息 ID（可选）/ Message ID (optional)',
+        },
+        tenantId: {
+          type: 'string',
+          description: '租户 ID（可选）/ Tenant ID (optional)',
+        },
+        targetPath: {
+          type: 'string',
+          description: '目标路径（可选，相对于工作区）/ Target path (optional, relative to workspace)',
+          example: 'images',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: '文件上传成功 / File uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: '请求参数错误 / Bad request',
+  })
   async uploadFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('sessionId') sessionId: string,

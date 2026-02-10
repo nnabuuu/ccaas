@@ -16,7 +16,10 @@ import { Reflector } from '@nestjs/core';
 import { ApiKeyService } from '../api-key.service';
 import { IS_PUBLIC_KEY, IS_OPTIONAL_AUTH_KEY } from '../decorators';
 import type { RequestContext } from '../types';
-import { AuthenticationError, RateLimitError } from '../types';
+import {
+  SessionExpiredException,
+  RateLimitedException,
+} from '../../protocol/http-exceptions';
 
 /**
  * Extended Express Request with auth context
@@ -72,18 +75,18 @@ export class ApiKeyGuard implements CanActivate {
       }
 
       // Handle specific error types
-      if (error instanceof AuthenticationError) {
+      if (error instanceof SessionExpiredException) {
         throw new UnauthorizedException({
-          code: error.code,
+          code: error.errorCode,
           message: error.message,
         });
       }
 
-      if (error instanceof RateLimitError) {
+      if (error instanceof RateLimitedException) {
         throw new UnauthorizedException({
-          code: 'RATE_LIMIT_EXCEEDED',
+          code: error.errorCode,
           message: error.message,
-          retryAfter: error.retryAfter,
+          retryAfter: error.retryAfterMs,
         });
       }
 

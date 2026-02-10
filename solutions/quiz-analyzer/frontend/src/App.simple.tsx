@@ -153,8 +153,10 @@ function App() {
                     isThinking={session.isThinking}
                     thinkingContent={session.thinkingContent}
                     onSendMessage={session.sendMessage}
-                    activeTools={Array.from(session.activeTools.values())}
+                    activeTools={session.activeTools}
                     activeSubAgents={session.activeSubAgents}
+                    todoItems={session.todoItems}
+                    todoStats={session.todoStats}
                   />
                 </div>
               )}

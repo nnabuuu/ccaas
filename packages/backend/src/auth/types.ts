@@ -68,37 +68,11 @@ export interface RateLimitConfig {
 // AUTH ERRORS
 // ============================================================================
 
-export class AuthenticationError extends Error {
-  constructor(
-    message: string = 'Authentication failed',
-    public readonly code: string = 'AUTH_FAILED',
-    public readonly statusCode: number = 401,
-  ) {
-    super(message);
-    this.name = 'AuthenticationError';
-  }
-}
-
-export class AuthorizationError extends Error {
-  constructor(
-    message: string = 'Permission denied',
-    public readonly code: string = 'PERMISSION_DENIED',
-    public readonly statusCode: number = 403,
-  ) {
-    super(message);
-    this.name = 'AuthorizationError';
-  }
-}
-
-export class RateLimitError extends Error {
-  constructor(
-    public readonly retryAfter: number,
-    message: string = `Rate limit exceeded. Retry after ${retryAfter}ms`,
-  ) {
-    super(message);
-    this.name = 'RateLimitError';
-  }
-}
+// Auth errors are now defined in protocol/http-exceptions.ts
+// Import them from there:
+// - SessionExpiredException (401)
+// - PermissionDeniedException (403)
+// - RateLimitedException (429)
 
 // ============================================================================
 // CONSTANTS

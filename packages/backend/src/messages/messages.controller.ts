@@ -6,6 +6,13 @@ import {
   ParseUUIDPipe,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { ToolEventsService } from './tool-events.service';
 import { ConversationContextService } from './conversation-context.service';
@@ -19,6 +26,7 @@ import { MessageQueryDto, MessageResponseDto, ToolEventResponseDto } from './dto
 import { Message } from './entities/message.entity';
 import { ToolEvent } from './entities/tool-event.entity';
 
+@ApiTags('messages')
 @Controller('api/v1')
 export class MessagesController {
   constructor(
@@ -38,6 +46,36 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/messages
    */
   @Get('sessions/:sessionId/messages')
+  @ApiOperation({
+    summary: '获取会话消息 / Get Session Messages',
+    description: '获取指定会话的所有消息（支持分页和工具事件过滤）/ Get all messages for a session with pagination',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: '返回条数限制 / Number of messages to return',
+    example: 50,
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: '跳过条数 / Number of messages to skip',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'includeToolEvents',
+    required: false,
+    description: '是否包含工具调用事件 / Whether to include tool events',
+    example: true,
+  })
+  @ApiResponse({
+    status: 200,
+    description: '消息列表 / Message list',
+  })
   async getSessionMessages(
     @Param('sessionId') sessionId: string,
     @Query('limit') limit?: string,
@@ -60,6 +98,18 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/files
    */
   @Get('sessions/:sessionId/files')
+  @ApiOperation({
+    summary: '获取会话文件 / Get Session Files',
+    description: '获取会话中所有文件资源（包含 Agent 生成和用户上传的文件）/ Get all file resources in the session',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '文件列表 / File list',
+  })
   async getSessionFiles(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -92,6 +142,22 @@ export class MessagesController {
    * GET /api/v1/messages/:messageId
    */
   @Get('messages/:messageId')
+  @ApiOperation({
+    summary: '获取单条消息 / Get Single Message',
+    description: '根据消息 ID 获取消息详情 / Get message details by ID',
+  })
+  @ApiParam({
+    name: 'messageId',
+    description: '消息 ID / Message ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '消息详情 / Message details',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '消息不存在 / Message not found',
+  })
   async getMessage(
     @Param('messageId', ParseUUIDPipe) messageId: string,
   ): Promise<MessageResponseDto> {
@@ -506,6 +572,37 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/full-trace
    */
   @Get('sessions/:sessionId/full-trace')
+  @ApiOperation({
+    summary: '获取完整会话跟踪 / Get Full Conversation Trace',
+    description: `
+获取会话的完整数据，用于重建对话或深度分析。
+
+**包含数据：**
+- 所有消息和工具事件
+- Token 使用统计和成本分析
+- 思考块（Thinking Blocks）
+- 进程生命周期事件
+- API 错误记录
+- 用户上下文事件
+
+**适用场景：**
+- 会话导出和备份
+- 数据分析和可视化
+- 问题诊断和调试
+- 成本核算
+
+**English:**
+Get complete session data for conversation reconstruction or deep analysis.
+    `,
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '完整会话跟踪数据 / Full trace data',
+  })
   async getFullTrace(
     @Param('sessionId') sessionId: string,
   ): Promise<{

@@ -1,0 +1,50 @@
+{
+  "name": "Lesson Plan Designer",
+  "slug": "lesson-plan-designer",
+  "version": "1.0.0",
+  "description": "AI备课助手 - 基于崔允漷教授的课程与教学论",
+
+  "mcpServers": {
+    "lesson-plan-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Lesson Plan Designer MCP tools including write_output"
+    }
+  },
+
+  "skill": {
+    "name": "Lesson Plan Designer",
+    "description": "AI备课助手 - 设计教案、生成讲稿、制作音频和PPT",
+    "triggers": [
+      { "type": "keyword", "value": "备课", "priority": 10 },
+      { "type": "keyword", "value": "教学目标", "priority": 8 },
+      { "type": "keyword", "value": "教学活动", "priority": 8 },
+      { "type": "keyword", "value": "评估", "priority": 7 },
+      { "type": "keyword", "value": "设计", "priority": 5 },
+      { "type": "keyword", "value": "生成音频", "priority": 9 },
+      { "type": "keyword", "value": "生成PPT", "priority": 9 },
+      { "type": "keyword", "value": "全套材料", "priority": 10 }
+    ],
+    "allowedTools": ["write_output", "Read", "Write", "Skill"],
+    "skillFile": "skills/lesson-plan-designer/SKILL.md",
+    "relatedSkills": ["notebooklm"]
+  },
+
+  "chainedSkills": {
+    "notebooklm": {
+      "description": "生成教案讲解音频、PDF文档等内容",
+      "triggerPhrase": "生成音频|生成PDF|生成文档",
+      "inputFrom": "教案内容",
+      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
+    }
+  },
+
+  "backend": {
+    "port": 3002,
+    "ccaasUrl": "http://localhost:3001"
+  },
+
+  "frontend": {
+    "port": 5280
+  }
+}

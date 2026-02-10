@@ -19,6 +19,14 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiSecurity,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 import { createReadStream } from 'fs';
 import * as fs from 'fs';
@@ -33,6 +41,7 @@ import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completio
 import { UpdateContextDto } from './dto/update-context.dto';
 import type { FrontendEvent } from '../common/interfaces';
 
+@ApiTags('sessions')
 @Controller('api/v1/sessions')
 export class SessionsController {
   private readonly logger = new Logger(SessionsController.name);
@@ -53,6 +62,45 @@ export class SessionsController {
    * The response streams via WebSocket events to the connected client.
    */
   @Post(':sessionId/completion')
+  @ApiOperation({
+    summary: '发送消息 / Send Message',
+    description: `
+发送用户消息到指定会话，Agent 将通过 WebSocket 推送响应事件。
+
+**WebSocket 事件流程：**
+1. \`agent_status\` - Agent 开始处理
+2. \`text_delta\` - 流式返回文本片段
+3. \`tool_activity\` - 工具调用活动
+4. \`agent_status\` - Agent 完成处理
+
+**首次消息 vs 后续消息：**
+- 首次消息会创建新的 AgentEngine 进程
+- 后续消息使用 \`--resume\` 复用已有进程
+
+**English:**
+Send user message to the specified session. Agent will push response events via WebSocket.
+    `,
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+    example: 'session-123',
+  })
+  @ApiBody({ type: CreateCompletionDto })
+  @ApiResponse({
+    status: 200,
+    description: '消息已提交，将通过 WebSocket 推送响应 / Message submitted, responses will be pushed via WebSocket',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        sessionId: { type: 'string', example: 'session-123' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '请求参数错误或客户端未连接 / Bad request or client not connected',
+  })
   async createCompletion(
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
@@ -60,7 +108,7 @@ export class SessionsController {
     const { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
 
     this.logger.log(`Creating completion for session ${sessionId}`);
-    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}`);
+    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}`);
 
     // Find WebSocket connection
     const socket = this.chatGateway.getClientSocket(clientId);
@@ -123,6 +171,7 @@ export class SessionsController {
       }
 
       // If solution provided a skill file path, copy it to session workspace
+      this.logger.debug(`Checking skillPath: ${skillPath}, exists: ${skillPath ? fs.existsSync(skillPath) : false}`);
       if (skillPath && fs.existsSync(skillPath)) {
         try {
           const skillName = path.basename(path.dirname(skillPath));
@@ -271,6 +320,19 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * DELETE /api/v1/sessions/:sessionId/completion
    */
   @Delete(':sessionId/completion')
+  @ApiOperation({
+    summary: '取消当前操作 / Cancel Operation',
+    description: '取消会话中正在进行的 Agent 操作 / Cancel the ongoing agent operation in the session',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiBody({ type: CancelCompletionDto })
+  @ApiResponse({
+    status: 200,
+    description: '操作已取消 / Operation cancelled',
+  })
   cancelCompletion(
     @Param('sessionId') sessionId: string,
     @Body() data: CancelCompletionDto,
@@ -296,6 +358,31 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * GET /api/v1/sessions/:sessionId
    */
   @Get(':sessionId')
+  @ApiOperation({
+    summary: '获取会话状态 / Get Session Status',
+    description: '获取会话的当前状态和统计信息 / Get current status and statistics of the session',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '会话状态 / Session status',
+    schema: {
+      properties: {
+        sessionId: { type: 'string' },
+        status: { type: 'string', enum: ['idle', 'processing', 'error', 'closed', 'cancelling'] },
+        messageCount: { type: 'number' },
+        createdAt: { type: 'string', format: 'date-time' },
+        lastActivity: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: '会话不存在 / Session not found',
+  })
   getSession(@Param('sessionId') sessionId: string) {
     const status = this.sessionService.getSessionStatus(sessionId);
     if (!status) {
@@ -312,6 +399,18 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * Used by frontend for polling fallback when WebSocket is unreliable.
    */
   @Get(':sessionId/sub-agents')
+  @ApiOperation({
+    summary: '获取活跃子代理 / Get Active Sub-agents',
+    description: '获取会话中正在运行的子代理列表 / Get list of currently running sub-agents in the session',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '活跃子代理列表 / List of active sub-agents',
+  })
   getActiveSubAgents(@Param('sessionId') sessionId: string) {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
@@ -333,6 +432,22 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * POST /api/v1/sessions/:sessionId/restart
    */
   @Post(':sessionId/restart')
+  @ApiOperation({
+    summary: '重启会话 / Restart Session',
+    description: '终止当前 Agent 进程并清理会话状态，下次消息将创建新进程 / Terminate current agent process and clean session state',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '会话已重启 / Session restarted',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '会话不存在 / Session not found',
+  })
   restartSession(
     @Param('sessionId') sessionId: string,
     @Body() body?: { tenantId?: string },
@@ -352,6 +467,19 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * so Claude Code can read current form values.
    */
   @Put(':sessionId/context')
+  @ApiOperation({
+    summary: '更新会话上下文 / Update Session Context',
+    description: '同步前端表单状态到会话工作区，让 Agent 能够读取当前表单值 / Sync frontend form state to session workspace for agent access',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiBody({ type: UpdateContextDto })
+  @ApiResponse({
+    status: 200,
+    description: '上下文已更新 / Context updated',
+  })
   async updateContext(
     @Param('sessionId') sessionId: string,
     @Body() data: UpdateContextDto,
@@ -365,6 +493,33 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * GET /api/v1/sessions/:sessionId/workspace
    */
   @Get(':sessionId/workspace')
+  @ApiOperation({
+    summary: '列出工作区文件 / List Workspace Files',
+    description: '获取会话工作区的文件树结构（实时文件系统快照）/ Get file tree structure of the session workspace',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '工作区文件树 / Workspace file tree',
+    schema: {
+      properties: {
+        tree: {
+          type: 'array',
+          items: {
+            properties: {
+              name: { type: 'string' },
+              type: { type: 'string', enum: ['file', 'directory'] },
+              size: { type: 'number' },
+              children: { type: 'array' },
+            },
+          },
+        },
+      },
+    },
+  })
   async listWorkspaceFiles(@Param('sessionId') sessionId: string) {
     this.logger.log(`[Workspace] List files for session ${sessionId}`);
     return this.sessionService.getWorkspaceTree(sessionId);
@@ -375,6 +530,27 @@ Read(".claude/skills/${skillName}/SKILL.md")
    * GET /api/v1/sessions/:sessionId/workspace/*
    */
   @Get(':sessionId/workspace/*')
+  @ApiOperation({
+    summary: '下载工作区文件 / Download Workspace File',
+    description: '从会话工作区下载指定文件 / Download a specific file from the session workspace',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiParam({
+    name: '*',
+    description: '文件路径（相对于工作区根目录）/ File path (relative to workspace root)',
+    example: 'output.txt',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '文件流 / File stream',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '文件不存在 / File not found',
+  })
   async downloadWorkspaceFile(
     @Param('sessionId') sessionId: string,
     @Param('*') filePath: string,

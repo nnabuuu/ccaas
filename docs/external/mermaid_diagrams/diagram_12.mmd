@@ -1,0 +1,10 @@
+flowchart LR
+    A[您的系统] -->|只读 MCP<br/>查询数据| B[即见平台<br/>Agent]
+    B -->|分析生成<br/>建议方案| C[前端 UI<br/>展示结果]
+    C -->|用户审核<br/>确认修改| D[用户操作]
+    D -->|业务 API<br/>写入数据| A
+
+    style A fill:#ffebee
+    style B fill:#e1f5ff
+    style C fill:#f3e5f5
+    style D fill:#e8f5e9

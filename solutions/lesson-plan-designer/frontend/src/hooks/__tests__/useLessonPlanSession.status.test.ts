@@ -63,7 +63,7 @@ describe('useLessonPlanSession - Status (Phase 4)', () => {
       clientId: 'test-client-id',
       connected: true,
       error: null,
-      serverUrl: '/',
+      serverUrl: '',
       connect: vi.fn(),
       disconnect: vi.fn(),
     }

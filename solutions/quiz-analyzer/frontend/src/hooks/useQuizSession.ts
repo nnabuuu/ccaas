@@ -116,7 +116,8 @@ export function useQuizSession(): UseQuizSessionReturn {
 
   // Listen for output_update events to capture analysis results
   useEffect(() => {
-    if (!connection.socket) return
+    const socket = connection.socket
+    if (!socket) return
 
     const handleOutputUpdate = (event: OutputUpdateEvent) => {
       const parsed = parseOutputUpdateEvent(event)
@@ -135,10 +136,10 @@ export function useQuizSession(): UseQuizSessionReturn {
       }))
     }
 
-    connection.socket.on('output_update', handleOutputUpdate)
+    socket.on('output_update', handleOutputUpdate)
 
     return () => {
-      connection.socket.off('output_update', handleOutputUpdate)
+      socket.off('output_update', handleOutputUpdate)
     }
   }, [connection.socket])
 
@@ -166,6 +167,7 @@ export function useQuizSession(): UseQuizSessionReturn {
   }, [chat.sendMessage])
 
   // Clear analysis results when starting a new session/message
+  // ✅ Use messages.length instead of messages array (rerender-dependencies)
   useEffect(() => {
     if (chat.isProcessing && chat.messages.length > 0) {
       const lastMessage = chat.messages[chat.messages.length - 1]
@@ -174,7 +176,10 @@ export function useQuizSession(): UseQuizSessionReturn {
         setAnalysisResults({})
       }
     }
-  }, [chat.isProcessing, chat.messages])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Note: chat.messages is intentionally omitted to avoid triggering on every message change
+    // We only want to trigger when processing state or message count changes
+  }, [chat.isProcessing, chat.messages.length])
 
   return {
     // Connection state

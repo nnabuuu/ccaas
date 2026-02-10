@@ -123,28 +123,7 @@ export interface HealthCheckResult {
 // ERROR TYPES
 // ============================================================================
 
-export class McpError extends Error {
-  constructor(
-    public code: string,
-    message: string,
-    public statusCode: number = 500,
-    public details?: Record<string, unknown>,
-  ) {
-    super(message);
-    this.name = 'McpError';
-  }
-}
-
-export class McpValidationError extends McpError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super('MCP_VALIDATION_ERROR', message, 400, details);
-    this.name = 'McpValidationError';
-  }
-}
-
-export class McpNotFoundError extends McpError {
-  constructor(resource: string, id: string) {
-    super('MCP_NOT_FOUND', `${resource} not found: ${id}`, 404);
-    this.name = 'McpNotFoundError';
-  }
-}
+// MCP errors are now defined in protocol/http-exceptions.ts
+// Import them from there:
+// - McpException (502) - for MCP server errors
+// - ValidationException (400) - for validation errors

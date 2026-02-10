@@ -1,0 +1,62 @@
+graph TB
+    subgraph legacy[您的 Legacy 系统]
+        DB[(数据库)]
+        KB[知识库<br/>RAG系统]
+        API[业务 API]
+    end
+
+    subgraph mcp[MCP 适配层]
+        MCP1[数据库 MCP<br/>只读查询]
+        MCP2[知识库 MCP<br/>检索]
+        MCP3[API MCP<br/>只读接口]
+    end
+
+    subgraph platform[即见平台 CCAAS]
+        Tenant[Tenant<br/>租户空间]
+        Solution[Solution<br/>解决方案]
+        Skills[Skills<br/>AI 技能]
+        Agent[Agent Engine<br/>执行引擎]
+        Session[Session<br/>会话空间]
+    end
+
+    subgraph frontend[Solution Team 前端]
+        UI[用户界面]
+        SDK[React/Vue SDK]
+        Confirm[确认提交组件]
+    end
+
+    subgraph integration[集成层 可选]
+        Transform[数据转换]
+        Validate[验证]
+        Audit[审计日志]
+    end
+
+    DB -.->|只读| MCP1
+    KB -.->|只读| MCP2
+    API -.->|只读| MCP3
+
+    MCP1 --> Agent
+    MCP2 --> Agent
+    MCP3 --> Agent
+
+    Tenant --> Solution
+    Solution --> Skills
+    Skills --> Agent
+    Agent --> Session
+
+    Agent -->|返回结果| SDK
+    SDK --> UI
+    UI -->|用户确认| Confirm
+
+    Confirm -.->|可选| Transform
+    Transform -.->|可选| Validate
+    Validate -.->|可选| Audit
+
+    Confirm -->|直接调用| API
+    Audit -.->|写入| API
+
+    style legacy fill:#ffebee
+    style mcp fill:#fff3e0
+    style platform fill:#e1f5ff
+    style frontend fill:#f3e5f5
+    style integration fill:#f1f8e9

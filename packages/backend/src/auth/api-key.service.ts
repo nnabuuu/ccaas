@@ -27,9 +27,11 @@ import type {
 import {
   API_KEY_PREFIX,
   DEFAULT_SCOPES,
-  RateLimitError,
-  AuthenticationError,
 } from './types';
+import {
+  SessionExpiredException,
+  RateLimitedException,
+} from '../protocol/http-exceptions';
 import type {
   CreateApiKeyDto,
   UpdateApiKeyDto,
@@ -193,7 +195,7 @@ export class ApiKeyService implements OnModuleInit {
    */
   async validateKey(rawKey: string): Promise<{ apiKey: ApiKey; tenant: Tenant }> {
     if (!rawKey || !rawKey.startsWith(API_KEY_PREFIX)) {
-      throw new AuthenticationError('Invalid API key format');
+      throw new SessionExpiredException('Invalid API key format');
     }
 
     const keyHash = this.hashKey(rawKey);
@@ -203,19 +205,19 @@ export class ApiKeyService implements OnModuleInit {
     });
 
     if (!apiKey) {
-      throw new AuthenticationError('Invalid API key');
+      throw new SessionExpiredException('Invalid API key');
     }
 
     if (apiKey.status !== 'active') {
-      throw new AuthenticationError(`API key is ${apiKey.status}`);
+      throw new SessionExpiredException(`API key is ${apiKey.status}`);
     }
 
     if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
-      throw new AuthenticationError('API key has expired');
+      throw new SessionExpiredException('API key has expired');
     }
 
     if (!apiKey.tenant || apiKey.tenant.status !== 'active') {
-      throw new AuthenticationError('Tenant is not active');
+      throw new SessionExpiredException('Tenant is not active');
     }
 
     // Update last used
@@ -250,7 +252,7 @@ export class ApiKeyService implements OnModuleInit {
 
         // Check if user is active in this tenant
         if (!userTenant || !userTenant.isActive) {
-          throw new AuthenticationError('User is not active in this tenant');
+          throw new SessionExpiredException('User is not active in this tenant');
         }
       }
 
@@ -270,14 +272,14 @@ export class ApiKeyService implements OnModuleInit {
 
     // Anonymous access
     if (!this.allowAnonymous) {
-      throw new AuthenticationError('API key required');
+      throw new SessionExpiredException('API key required');
     }
 
     const defaultTenantId = this.tenantsService.getDefaultTenantId();
     const tenant = await this.tenantsService.findOne(defaultTenantId);
 
     if (!tenant) {
-      throw new AuthenticationError('No default tenant available');
+      throw new SessionExpiredException('No default tenant available');
     }
 
     return {
@@ -313,7 +315,7 @@ export class ApiKeyService implements OnModuleInit {
 
     if (entry.count > apiKey.rateLimitRpm) {
       const retryAfter = entry.resetAt - now;
-      throw new RateLimitError(retryAfter);
+      throw new RateLimitedException(retryAfter);
     }
   }
 

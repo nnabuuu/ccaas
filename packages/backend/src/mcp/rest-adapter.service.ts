@@ -13,7 +13,11 @@ import type {
   McpTool,
   ToolExecutionResult,
 } from './types';
-import { McpValidationError, McpError } from './types';
+import {
+  ValidationException,
+  McpException,
+  RateLimitedException,
+} from '../protocol/http-exceptions';
 
 interface CachedToken {
   accessToken: string;
@@ -255,7 +259,7 @@ export class RestApiAdapter {
         if (value !== undefined) {
           path = path.replace(`{${name}}`, encodeURIComponent(String(value)));
         } else if (schema.required !== false) {
-          throw new McpValidationError(`Missing required path parameter: ${name}`);
+          throw new ValidationException(`Missing required path parameter: ${name}`);
         }
       }
     }
@@ -336,7 +340,7 @@ export class RestApiAdapter {
       if (input[name] !== undefined) {
         body[name] = input[name];
       } else if (schema.required) {
-        throw new McpValidationError(`Missing required body field: ${name}`);
+        throw new ValidationException(`Missing required body field: ${name}`);
       }
     }
 
@@ -349,7 +353,7 @@ export class RestApiAdapter {
 
   private async getOAuth2Token(): Promise<string> {
     if (!this.config.oauth2) {
-      throw new McpValidationError('OAuth2 configuration required');
+      throw new ValidationException('OAuth2 configuration required');
     }
 
     const cacheKey = `${this.config.oauth2.tokenUrl}:${this.config.oauth2.clientId}`;
@@ -373,7 +377,7 @@ export class RestApiAdapter {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new McpError('OAUTH_ERROR', `OAuth2 token request failed: ${error}`, 401);
+      throw new McpException(`OAuth2 token request failed: ${error}`);
     }
 
     const data = (await response.json()) as {
@@ -446,14 +450,15 @@ export class RestApiAdapter {
 
         if (!response.ok) {
           const errorMessage = this.getErrorMessage(response.status, data);
-          throw new McpError('API_ERROR', errorMessage, response.status);
+          throw new McpException(errorMessage);
         }
 
         return { data, statusCode: response.status };
       } catch (error) {
         lastError = error as Error;
 
-        if (error instanceof McpError && error.statusCode < 500) {
+        // Don't retry client errors (4xx)
+        if (error instanceof McpException || error instanceof ValidationException || error instanceof RateLimitedException) {
           throw error;
         }
 
@@ -556,12 +561,7 @@ export class RestApiAdapter {
     ) {
       const waitTime =
         windowDuration - (now - this.rateLimitState.windowStart);
-      throw new McpError(
-        'RATE_LIMIT',
-        `Rate limit exceeded. Retry after ${waitTime}ms`,
-        429,
-        { retryAfter: waitTime },
-      );
+      throw new RateLimitedException(waitTime);
     }
 
     this.rateLimitState.requestCount++;
@@ -573,30 +573,30 @@ export class RestApiAdapter {
 
   private validateConfig(): void {
     if (!this.config.baseUrl) {
-      throw new McpValidationError('baseUrl is required');
+      throw new ValidationException('baseUrl is required');
     }
 
     try {
       new URL(this.config.baseUrl);
     } catch {
-      throw new McpValidationError('Invalid baseUrl format');
+      throw new ValidationException('Invalid baseUrl format');
     }
 
     if (!this.config.endpoints || this.config.endpoints.length === 0) {
-      throw new McpValidationError('At least one endpoint is required');
+      throw new ValidationException('At least one endpoint is required');
     }
 
     for (const endpoint of this.config.endpoints) {
       if (!endpoint.name) {
-        throw new McpValidationError('Endpoint name is required');
+        throw new ValidationException('Endpoint name is required');
       }
       if (!endpoint.path) {
-        throw new McpValidationError(
+        throw new ValidationException(
           `Endpoint path is required for ${endpoint.name}`,
         );
       }
       if (!endpoint.method) {
-        throw new McpValidationError(
+        throw new ValidationException(
           `Endpoint method is required for ${endpoint.name}`,
         );
       }
@@ -612,7 +612,9 @@ export class RestApiAdapter {
   }
 
   private formatError(error: Error): string {
-    if (error instanceof McpError) return error.message;
+    if (error instanceof McpException || error instanceof ValidationException) {
+      return error.message;
+    }
     return error.message || 'Unknown error';
   }
 }

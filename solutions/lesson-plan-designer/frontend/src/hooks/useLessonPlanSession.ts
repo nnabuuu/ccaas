@@ -21,7 +21,7 @@ import type {
   CreateLessonPlanInput,
 } from '../types'
 
-const SOCKET_URL = '/' // Use relative URL, proxied by Vite
+const SOCKET_URL = '' // Empty string to avoid protocol-relative URL bug (// prefix)
 
 interface UseLessonPlanSessionOptions {
   planId?: string
@@ -138,8 +138,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     enabled: connection.connected,
   })
 
-  // Legacy state (kept for compatibility - these will be removed when fully migrating to SDK messages)
-  const [messages, setMessages] = useState<Message[]>([])
+  // Legacy state removed - now using SDK messages directly
+  // const [messages, setMessages] = useState<Message[]>([])
   const [currentStreamContent] = useState('') // eslint-disable-line @typescript-eslint/no-unused-vars
   const currentMessageRef = useRef<Message | null>(null)
 
@@ -221,19 +221,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // No manual event listeners to clean up - all handled by SDK
   }, [connection.socket, connection.connected, connection.error])
 
-  // Update message content when streaming
-  useEffect(() => {
-    if (currentStreamContent && currentMessageRef.current) {
-      setMessages(prev => {
-        const updated = [...prev]
-        const lastMsg = updated[updated.length - 1]
-        if (lastMsg && lastMsg.role === 'assistant') {
-          lastMsg.content = currentStreamContent
-        }
-        return updated
-      })
-    }
-  }, [currentStreamContent])
+  // Streaming handled by SDK - no manual updates needed
+  // useEffect removed - SDK's useAgentChat handles currentStreamContent automatically
 
   // Load lesson plan (wrapper around crud.loadPlan with sync state reset)
   const loadPlan = useCallback(async (id: string) => {
@@ -259,9 +248,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const createNewPlan = useCallback(async (input: CreateLessonPlanInput): Promise<LessonPlan> => {
     const plan = await crud.createPlan(input)
     resetSyncState()
-    setMessages([])
+    chat.clearMessages()  // ← Use SDK's clearMessages
     return plan
-  }, [crud, resetSyncState])
+  }, [crud, resetSyncState, chat])
 
   // Sync to form (uses crud.lessonPlan and crud.setLessonPlan)
   const syncToForm = useCallback(async (field: SyncField) => {
@@ -302,38 +291,15 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       doSyncToForm(field, crud.lessonPlan, crud.setLessonPlan)
     }
 
-    // Mark as synced in messages
-    setMessages(prev => {
-      return prev.map(msg => {
-        if (msg.outputUpdates) {
-          return {
-            ...msg,
-            outputUpdates: msg.outputUpdates.map(u =>
-              u.field === field ? { ...u, synced: true } : u
-            ),
-          }
-        }
-        return msg
-      })
-    })
+    // Note: Synced flag tracking removed - SDK messages are immutable
+    // UI can derive synced state from pendingUpdates or modifiedFields if needed
   }, [crud, pendingUpdates, doSyncToForm, sessionIdRef])
 
   // Discard update
   const discardUpdate = useCallback((field: SyncField) => {
     removePendingUpdate(field)
-
-    // Remove from messages
-    setMessages(prev => {
-      return prev.map(msg => {
-        if (msg.outputUpdates) {
-          return {
-            ...msg,
-            outputUpdates: msg.outputUpdates.filter(u => u.field !== field),
-          }
-        }
-        return msg
-      })
-    })
+    // Note: SDK messages are immutable - outputUpdates remain in messages
+    // UI can filter based on pendingUpdates to hide discarded items if needed
   }, [removePendingUpdate])
 
   // Undo sync (uses crud.lessonPlan and crud.setLessonPlan)
@@ -362,12 +328,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     loading: crud.loading,
     saving: crud.loading, // crud.loading handles both load and save
 
-    // Chat state
-    messages,
+    // Chat state (from SDK)
+    messages: chat.messages,  // ← Use SDK messages
     isProcessing: isMainProcessing,  // 向后兼容别名
     isMainProcessing,
     hasActiveSubAgents,
-    currentStreamContent,
+    currentStreamContent: chat.currentStreamContent,  // ← Use SDK stream content
 
     // Sync state
     pendingUpdates,

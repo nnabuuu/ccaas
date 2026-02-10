@@ -1,67 +1,68 @@
-import {
-  LightBulbIcon,
-  ListBulletIcon,
-  ExclamationTriangleIcon,
-  ChartBarIcon,
-  CalendarIcon,
-  TagIcon,
-  LinkIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
+// ✅ Direct imports instead of barrel file (bundle-barrel-imports)
+import LightBulbIcon from '@heroicons/react/24/outline/LightBulbIcon';
+import ListBulletIcon from '@heroicons/react/24/outline/ListBulletIcon';
+import ExclamationTriangleIcon from '@heroicons/react/24/outline/ExclamationTriangleIcon';
+import ChartBarIcon from '@heroicons/react/24/outline/ChartBarIcon';
+import CalendarIcon from '@heroicons/react/24/outline/CalendarIcon';
+import TagIcon from '@heroicons/react/24/outline/TagIcon';
+import LinkIcon from '@heroicons/react/24/outline/LinkIcon';
+import CheckCircleIcon from '@heroicons/react/24/outline/CheckCircleIcon';
 import { Link } from 'react-router-dom';
 import type { QuizAnalysis, Quiz } from '../types';
 
 interface CompleteAnalysisViewProps {
-  analysis: QuizAnalysis;
-  quiz: Quiz;
+  analysis: Partial<QuizAnalysis>;
+  quiz: Quiz | null;
+}
+
+// ✅ Extract renderMarkdown outside component (rerender-memo)
+function renderMarkdown(text?: string) {
+  if (!text) return null;
+  // Simple markdown rendering (in production, use a library like react-markdown)
+  return (
+    <div className="space-y-3">
+      {text.split('\n').map((line, i) => {
+        if (line.startsWith('###')) {
+          return (
+            <h4 key={i} className="text-base font-semibold text-slate-800 mt-4">
+              {line.replace(/^###\s*/, '')}
+            </h4>
+          );
+        }
+        if (line.startsWith('##')) {
+          return (
+            <h3 key={i} className="text-lg font-semibold text-slate-900 mt-4">
+              {line.replace(/^##\s*/, '')}
+            </h3>
+          );
+        }
+        if (line.startsWith('#')) {
+          return (
+            <h2 key={i} className="text-xl font-bold text-slate-900 mt-4">
+              {line.replace(/^#\s*/, '')}
+            </h2>
+          );
+        }
+        if (line.startsWith('- ')) {
+          return (
+            <li key={i} className="text-slate-700 ml-4 list-disc">
+              {line.replace(/^-\s*/, '')}
+            </li>
+          );
+        }
+        return line ? (
+          <p key={i} className="text-slate-700 leading-relaxed">
+            {line}
+          </p>
+        ) : (
+          <br key={i} />
+        );
+      })}
+    </div>
+  );
 }
 
 export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysisViewProps) {
-  const renderMarkdown = (text?: string) => {
-    if (!text) return null;
-    // Simple markdown rendering (in production, use a library like react-markdown)
-    return (
-      <div className="space-y-3">
-        {text.split('\n').map((line, i) => {
-          if (line.startsWith('###')) {
-            return (
-              <h4 key={i} className="text-base font-semibold text-slate-800 mt-4">
-                {line.replace(/^###\s*/, '')}
-              </h4>
-            );
-          }
-          if (line.startsWith('##')) {
-            return (
-              <h3 key={i} className="text-lg font-semibold text-slate-900 mt-4">
-                {line.replace(/^##\s*/, '')}
-              </h3>
-            );
-          }
-          if (line.startsWith('#')) {
-            return (
-              <h2 key={i} className="text-xl font-bold text-slate-900 mt-4">
-                {line.replace(/^#\s*/, '')}
-              </h2>
-            );
-          }
-          if (line.startsWith('- ')) {
-            return (
-              <li key={i} className="text-slate-700 ml-4 list-disc">
-                {line.replace(/^-\s*/, '')}
-              </li>
-            );
-          }
-          return line ? (
-            <p key={i} className="text-slate-700 leading-relaxed">
-              {line}
-            </p>
-          ) : (
-            <br key={i} />
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -276,6 +277,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {/* 10. Related Quizzes - 相关题目推荐 (Only show if there are actual different quizzes) */}
       {analysis.related_quizzes &&
        analysis.related_quizzes.length > 0 &&
+       quiz &&
        analysis.related_quizzes.filter(r => r.id !== quiz.id).length > 0 && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">

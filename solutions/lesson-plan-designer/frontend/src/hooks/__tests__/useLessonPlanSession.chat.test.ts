@@ -84,7 +84,7 @@ describe('useLessonPlanSession - Chat (Phase 3A)', () => {
       clientId: 'test-client-id',
       connected: true,
       error: null,
-      serverUrl: '/',
+      serverUrl: '',
       connect: vi.fn(),
       disconnect: vi.fn(),
     }

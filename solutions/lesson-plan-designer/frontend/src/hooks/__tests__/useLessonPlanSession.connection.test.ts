@@ -63,7 +63,7 @@ describe('useLessonPlanSession - Connection (Phase 2)', () => {
       clientId: 'test-client-id',
       connected: false,
       error: null,
-      serverUrl: '/',
+      serverUrl: '',
       connect: vi.fn(),
       disconnect: vi.fn(),
     }

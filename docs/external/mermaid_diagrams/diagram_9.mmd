@@ -1,0 +1,11 @@
+flowchart LR
+    A[用户发起请求] --> B[前端创建 Session]
+    B --> C[加载 Solution<br/>Skills + MCPs]
+    C --> D[Session 活跃<br/>用户交互]
+    D --> E{会话结束?}
+    E -->|继续| D
+    E -->|结束| F[Session 销毁<br/>清理资源]
+
+    style B fill:#e8f5e9
+    style D fill:#e3f2fd
+    style F fill:#ffebee
