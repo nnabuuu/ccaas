@@ -28,7 +28,16 @@ import { FilesService } from './files.service';
 import { SessionService } from '../chat/session.service';
 import { createReadStream } from 'fs';
 import * as path from 'path';
-import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
+import type {
+  FileTreeNode,
+  FilePreviewResponse,
+  FileUploadResult,
+  CreateFileVersionDto,
+  FileVersionResponse,
+  RollbackFileDto,
+  CompareVersionsResponse,
+  NewFilesCountResponse,
+} from './dto/file.dto';
 
 @ApiTags('files')
 @Controller('api/v1/files')
@@ -352,5 +361,305 @@ Upload files to session workspace for agent processing.
       targetPath,
       workspaceDir, // Pass workspace directory for agent access
     );
+  }
+
+  // ==========================================
+  // VERSION CONTROL ENDPOINTS
+  // ==========================================
+
+  /**
+   * Create a new version of a file
+   * POST /api/v1/files/:fileId/versions
+   */
+  @Post(':fileId/versions')
+  @ApiOperation({
+    summary: '创建文件版本 / Create File Version',
+    description: '为文件创建新版本快照 / Create a new version snapshot for the file',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiResponse({
+    status: 201,
+    description: '版本创建成功 / Version created successfully',
+  })
+  async createFileVersion(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Body() dto: CreateFileVersionDto,
+  ): Promise<FileVersionResponse> {
+    const version = await this.filesService.createVersion(fileId, dto);
+    return {
+      id: version.id,
+      fileId: version.fileId,
+      version: version.version,
+      contentHash: version.contentHash,
+      size: version.size,
+      mimeType: version.mimeType,
+      changelog: version.changelog,
+      uploadedBy: version.uploadedBy,
+      createdAt: version.createdAt,
+    };
+  }
+
+  /**
+   * List versions of a file
+   * GET /api/v1/files/:fileId/versions
+   */
+  @Get(':fileId/versions')
+  @ApiOperation({
+    summary: '获取文件版本列表 / List File Versions',
+    description: '获取文件的所有版本历史 / Get all version history for the file',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '版本列表 / Version list',
+  })
+  async listFileVersions(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+  ): Promise<FileVersionResponse[]> {
+    const versions = await this.filesService.listVersions(fileId);
+    return versions.map((v) => ({
+      id: v.id,
+      fileId: v.fileId,
+      version: v.version,
+      contentHash: v.contentHash,
+      size: v.size,
+      mimeType: v.mimeType,
+      changelog: v.changelog,
+      uploadedBy: v.uploadedBy,
+      createdAt: v.createdAt,
+    }));
+  }
+
+  /**
+   * Get a specific version
+   * GET /api/v1/files/:fileId/versions/:version
+   */
+  @Get(':fileId/versions/:version')
+  @ApiOperation({
+    summary: '获取指定版本 / Get Specific Version',
+    description: '获取文件的指定版本信息 / Get specific version info',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiParam({
+    name: 'version',
+    description: '版本号 / Version number',
+    example: '1.0.0',
+  })
+  async getFileVersion(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Param('version') version: string,
+  ): Promise<FileVersionResponse> {
+    const v = await this.filesService.getVersion(fileId, version);
+    return {
+      id: v.id,
+      fileId: v.fileId,
+      version: v.version,
+      contentHash: v.contentHash,
+      size: v.size,
+      mimeType: v.mimeType,
+      changelog: v.changelog,
+      uploadedBy: v.uploadedBy,
+      createdAt: v.createdAt,
+    };
+  }
+
+  /**
+   * Download a specific version
+   * GET /api/v1/files/:fileId/versions/:version/download
+   */
+  @Get(':fileId/versions/:version/download')
+  @ApiOperation({
+    summary: '下载指定版本 / Download Specific Version',
+    description: '下载文件的指定版本内容 / Download specific version content',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiParam({
+    name: 'version',
+    description: '版本号 / Version number',
+  })
+  async downloadFileVersion(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Param('version') version: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const { content, filename, mimeType } =
+      await this.filesService.getVersionContent(fileId, version);
+
+    res.set({
+      'Content-Type': mimeType || 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    });
+
+    return new StreamableFile(content);
+  }
+
+  /**
+   * Rollback to a specific version
+   * POST /api/v1/files/:fileId/rollback
+   */
+  @Post(':fileId/rollback')
+  @ApiOperation({
+    summary: '回滚文件版本 / Rollback File Version',
+    description: '将文件回滚到指定版本（会创建新版本记录）/ Rollback file to specific version (creates new version record)',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '回滚成功 / Rollback successful',
+  })
+  async rollbackFile(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Body() dto: RollbackFileDto,
+  ): Promise<{ success: boolean; currentVersion: string }> {
+    const file = await this.filesService.rollbackToVersion(
+      fileId,
+      dto.targetVersion,
+    );
+    return {
+      success: true,
+      currentVersion: file.currentVersion,
+    };
+  }
+
+  /**
+   * Compare two versions
+   * GET /api/v1/files/:fileId/versions/compare
+   */
+  @Get(':fileId/versions/compare')
+  @ApiOperation({
+    summary: '比较两个版本 / Compare Two Versions',
+    description: '比较文件的两个版本之间的差异 / Compare differences between two versions',
+  })
+  @ApiParam({
+    name: 'fileId',
+    description: '文件 ID / File ID',
+  })
+  @ApiQuery({
+    name: 'from',
+    description: '起始版本号 / From version',
+    example: '1.0.0',
+  })
+  @ApiQuery({
+    name: 'to',
+    description: '目标版本号 / To version',
+    example: '1.0.1',
+  })
+  async compareFileVersions(
+    @Param('fileId', ParseUUIDPipe) fileId: string,
+    @Query('from') fromVersion: string,
+    @Query('to') toVersion: string,
+  ): Promise<CompareVersionsResponse> {
+    const comparison = await this.filesService.compareVersions(
+      fileId,
+      fromVersion,
+      toVersion,
+    );
+    return {
+      from: {
+        id: comparison.from.id,
+        fileId: comparison.from.fileId,
+        version: comparison.from.version,
+        contentHash: comparison.from.contentHash,
+        size: comparison.from.size,
+        mimeType: comparison.from.mimeType,
+        changelog: comparison.from.changelog,
+        uploadedBy: comparison.from.uploadedBy,
+        createdAt: comparison.from.createdAt,
+      },
+      to: {
+        id: comparison.to.id,
+        fileId: comparison.to.fileId,
+        version: comparison.to.version,
+        contentHash: comparison.to.contentHash,
+        size: comparison.to.size,
+        mimeType: comparison.to.mimeType,
+        changelog: comparison.to.changelog,
+        uploadedBy: comparison.to.uploadedBy,
+        createdAt: comparison.to.createdAt,
+      },
+      sizeDiff: comparison.sizeDiff,
+      hashChanged: comparison.hashChanged,
+    };
+  }
+
+  /**
+   * Get count of new files for a session (for badge indicator)
+   * GET /api/v1/files/session/:sessionId/new-count
+   */
+  @Get('session/:sessionId/new-count')
+  @ApiOperation({
+    summary: '获取新文件数量 / Get New Files Count',
+    description: '获取会话中状态为 "new" 的文件数量（用于徽章指示器）/ Get count of files with "new" status for badge indicator',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '新文件数量 / New files count',
+  })
+  async getNewFilesCount(
+    @Param('sessionId') sessionId: string,
+  ): Promise<NewFilesCountResponse> {
+    const files = await this.filesService.findBySessionId(sessionId);
+    const newFiles = files.filter((f) => f.status === 'new');
+    return {
+      count: newFiles.length,
+      files: newFiles.map((f) => ({
+        id: f.id,
+        filename: f.filename,
+        createdAt: f.createdAt,
+      })),
+    };
+  }
+
+  /**
+   * Mark all files in session as synced (clear badge)
+   * POST /api/v1/files/session/:sessionId/mark-seen
+   */
+  @Post('session/:sessionId/mark-seen')
+  @ApiOperation({
+    summary: '标记所有文件为已查看 / Mark All Files as Seen',
+    description: '将会话中所有 "new" 状态的文件标记为 "synced"（清除徽章）/ Mark all "new" files as "synced" (clear badge)',
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '标记成功 / Marked successfully',
+  })
+  async markAllFilesSeen(
+    @Param('sessionId') sessionId: string,
+  ): Promise<{ success: boolean; markedCount: number }> {
+    const files = await this.filesService.findBySessionId(sessionId);
+    const newFiles = files.filter((f) => f.status === 'new');
+
+    // Mark each new file as synced
+    for (const file of newFiles) {
+      await this.filesService.markAsSynced(file.id);
+    }
+
+    return {
+      success: true,
+      markedCount: newFiles.length,
+    };
   }
 }

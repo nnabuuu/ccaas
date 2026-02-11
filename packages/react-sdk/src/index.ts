@@ -14,6 +14,9 @@ export { useOutputSync } from './hooks/useOutputSync'
 export { useSkills } from './hooks/useSkills'
 export { useChatLayout } from './hooks/useChatLayout'
 export { usePageContext } from './hooks/usePageContext'
+export { useFiles } from './hooks/useFiles'
+export { useFileVersions } from './hooks/useFileVersions'
+export { useFilePreview, clearPreviewCache } from './hooks/useFilePreview'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -28,10 +31,21 @@ export { ChatSection } from './components/ChatSection'
 export { SubAgentCard } from './components/SubAgentCard'
 export { OutputUpdateCard } from './components/OutputUpdateCard'
 export { QuickActions } from './components/QuickActions'
+export { FilePanel } from './components/FilePanel'
+export { FileList } from './components/FileList'
+export { FileListItem } from './components/FileListItem'
+export { FilePreview } from './components/FilePreview'
+export { FileTextPreview } from './components/FileTextPreview'
+export { FileImagePreview } from './components/FileImagePreview'
+export { FileUploadButton } from './components/FileUploadButton'
+export { FileVersionHistory } from './components/FileVersionHistory'
+export { FileVersionCompare } from './components/FileVersionCompare'
 
 // Utilities
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
 export { createApiClient, ApiError } from './utils/apiClient'
+export { getFileIcon, formatFileSize, formatFileDate } from './utils/fileIcons'
+export { computeLineDiff, formatSizeDiff, getDiffColor } from './utils/diffUtils'
 
 // Non-type exports from types (COLOR_MAP)
 export { COLOR_MAP } from './types'
@@ -52,6 +66,12 @@ export type {
   UseSkillsOptions,
   UseSkillsReturn,
   UseChatLayoutReturn,
+  UseFilesOptions,
+  UseFilesReturn,
+  UseFileVersionsOptions,
+  UseFileVersionsReturn,
+  UseFilePreviewOptions,
+  UseFilePreviewReturn,
 
   // Common data types
   Message,
@@ -65,6 +85,9 @@ export type {
   McpServerConfig,
   TodoStats,
   PageContext,
+  FileMetadata,
+  FileVersion,
+  FilePreviewData,
 
   // Color scheme and layout types
   ColorScheme,
@@ -90,6 +113,15 @@ export type { CollapsedChatTabProps } from './components/CollapsedChatTab'
 export type { SubAgentCardProps } from './components/SubAgentCard'
 export type { OutputUpdateCardProps } from './components/OutputUpdateCard'
 export type { QuickAction, QuickActionsProps } from './components/QuickActions'
+export type { FilePanelProps } from './components/FilePanel'
+export type { FileListProps } from './components/FileList'
+export type { FileListItemProps } from './components/FileListItem'
+export type { FilePreviewProps } from './components/FilePreview'
+export type { FileTextPreviewProps } from './components/FileTextPreview'
+export type { FileImagePreviewProps } from './components/FileImagePreview'
+export type { FileUploadButtonProps } from './components/FileUploadButton'
+export type { FileVersionHistoryProps } from './components/FileVersionHistory'
+export type { FileVersionCompareProps } from './components/FileVersionCompare'
 
 // Re-export commonly used @ccaas/common types for convenience
 export type {

@@ -14,8 +14,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FilesService } from './files.service';
 import { AgentFile } from './entities/agent-file.entity';
+import { FileVersion } from './entities/file-version.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -41,13 +43,25 @@ describe('FilesService', () => {
     status: 'new',
     downloadedAt: null,
     uploadedBy: 'agent',
+    currentVersion: '1.0.0',
+    lastVersionAt: null,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     message: {} as any,
+    versions: [],
     ...overrides,
   });
 
   beforeEach(async () => {
     const mockRepository = {
+      create: jest.fn(),
+      save: jest.fn(),
+      findOne: jest.fn(),
+      find: jest.fn(),
+      delete: jest.fn(),
+    };
+
+    const mockVersionRepository = {
       create: jest.fn(),
       save: jest.fn(),
       findOne: jest.fn(),
@@ -61,6 +75,14 @@ describe('FilesService', () => {
         {
           provide: getRepositoryToken(AgentFile),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(FileVersion),
+          useValue: mockVersionRepository,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();
@@ -886,6 +908,306 @@ describe('FilesService', () => {
       const file = createMockMulterFile({ mimetype: 'application/anything' });
 
       expect(() => service.validateUpload(file, undefined, [])).not.toThrow();
+    });
+  });
+
+  // ==========================================
+  // VERSION CONTROL TESTS
+  // ==========================================
+
+  describe('Version Control', () => {
+    let versionRepository: jest.Mocked<Repository<any>>;
+
+    beforeEach(async () => {
+      const mockVersionRepository = {
+        create: jest.fn(),
+        save: jest.fn(),
+        findOne: jest.fn(),
+        find: jest.fn(),
+        delete: jest.fn(),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          FilesService,
+          {
+            provide: getRepositoryToken(AgentFile),
+            useValue: repository,
+          },
+          {
+            provide: getRepositoryToken(FileVersion),
+            useValue: mockVersionRepository,
+          },
+          {
+            provide: EventEmitter2,
+            useValue: { emit: jest.fn() },
+          },
+        ],
+      }).compile();
+
+      service = module.get<FilesService>(FilesService);
+      versionRepository = mockVersionRepository as any;
+    });
+
+    describe('createVersion', () => {
+      const fileId = 'file-uuid-1';
+
+      beforeEach(() => {
+        mockFs.readFile.mockResolvedValue(Buffer.from('test content'));
+        mockFs.mkdir.mockResolvedValue(undefined);
+        mockFs.copyFile.mockResolvedValue(undefined);
+      });
+
+      it('should create a new version with auto-incremented patch version', async () => {
+        const file = mockFile({ id: fileId, currentVersion: '1.0.0' });
+        repository.findOne.mockResolvedValue(file);
+        mockFs.access.mockResolvedValue(undefined);
+
+        const mockVersion = {
+          id: 'version-uuid-1',
+          fileId,
+          version: '1.0.1',
+          contentHash: expect.any(String),
+          storedPath: expect.any(String),
+          size: 1024,
+          mimeType: 'text/markdown',
+          changelog: 'Test changelog',
+          uploadedBy: 'agent',
+          createdAt: new Date(),
+        };
+
+        versionRepository.findOne.mockResolvedValue(null); // No existing version
+        versionRepository.create.mockReturnValue(mockVersion);
+        versionRepository.save.mockResolvedValue(mockVersion);
+
+        const result = await service.createVersion(fileId, {
+          changelog: 'Test changelog',
+        });
+
+        expect(result.version).toBe('1.0.1');
+        expect(result.changelog).toBe('Test changelog');
+        expect(versionRepository.save).toHaveBeenCalled();
+        expect(repository.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            currentVersion: '1.0.1',
+            lastVersionAt: expect.any(Date),
+          })
+        );
+      });
+
+      it('should create version with custom version number', async () => {
+        const file = mockFile({ id: fileId });
+        repository.findOne.mockResolvedValue(file);
+        mockFs.access.mockResolvedValue(undefined);
+
+        const mockVersion = {
+          id: 'version-uuid-1',
+          fileId,
+          version: '2.0.0',
+          contentHash: expect.any(String),
+          storedPath: expect.any(String),
+          size: 1024,
+          mimeType: 'text/markdown',
+          changelog: null,
+          uploadedBy: 'agent',
+          createdAt: new Date(),
+        };
+
+        versionRepository.findOne.mockResolvedValue(null);
+        versionRepository.create.mockReturnValue(mockVersion);
+        versionRepository.save.mockResolvedValue(mockVersion);
+
+        const result = await service.createVersion(fileId, {
+          version: '2.0.0',
+        });
+
+        expect(result.version).toBe('2.0.0');
+      });
+
+      it('should throw NotFoundException if file does not exist', async () => {
+        repository.findOne.mockResolvedValue(null);
+
+        await expect(
+          service.createVersion(fileId, { changelog: 'Test' })
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('should throw BadRequestException if version already exists', async () => {
+        const file = mockFile({ id: fileId, currentVersion: '1.0.0' });
+        repository.findOne.mockResolvedValue(file);
+        mockFs.access.mockResolvedValue(undefined);
+
+        versionRepository.findOne.mockResolvedValue({ version: '1.0.1' }); // Version exists
+
+        await expect(
+          service.createVersion(fileId, {})
+        ).rejects.toThrow(BadRequestException);
+      });
+    });
+
+    describe('listVersions', () => {
+      it('should return versions in descending order', async () => {
+        const mockVersions = [
+          { id: 'v3', version: '1.0.2', createdAt: new Date('2024-03-01') },
+          { id: 'v2', version: '1.0.1', createdAt: new Date('2024-02-01') },
+          { id: 'v1', version: '1.0.0', createdAt: new Date('2024-01-01') },
+        ];
+
+        versionRepository.find.mockResolvedValue(mockVersions);
+
+        const result = await service.listVersions('file-uuid-1');
+
+        expect(result).toEqual(mockVersions);
+        expect(versionRepository.find).toHaveBeenCalledWith({
+          where: { fileId: 'file-uuid-1' },
+          order: { createdAt: 'DESC' },
+        });
+      });
+
+      it('should return empty array if no versions', async () => {
+        versionRepository.find.mockResolvedValue([]);
+
+        const result = await service.listVersions('file-uuid-1');
+
+        expect(result).toEqual([]);
+      });
+    });
+
+    describe('rollbackToVersion', () => {
+      const fileId = 'file-uuid-1';
+      const targetVersion = '1.0.0';
+
+      beforeEach(() => {
+        mockFs.readFile.mockResolvedValue(Buffer.from('old content'));
+        mockFs.writeFile.mockResolvedValue(undefined);
+        mockFs.mkdir.mockResolvedValue(undefined);
+        mockFs.copyFile.mockResolvedValue(undefined);
+      });
+
+      it('should rollback file to target version and create new version', async () => {
+        const file = mockFile({ id: fileId, currentVersion: '1.0.2' });
+        const version = {
+          id: 'version-uuid-1',
+          fileId,
+          version: targetVersion,
+          storedPath: '/storage/versions/1.0.0-file.md',
+          size: 500,
+          mimeType: 'text/markdown',
+        };
+
+        repository.findOne.mockResolvedValue(file);
+        // First call: get target version, second call: check if new version exists (should be null)
+        versionRepository.findOne
+          .mockResolvedValueOnce(version)
+          .mockResolvedValueOnce(null);
+        repository.save.mockResolvedValue({
+          ...file,
+          size: 500,
+          status: 'modified',
+        });
+
+        // Mock createVersion being called
+        mockFs.access.mockResolvedValue(undefined);
+        versionRepository.create.mockReturnValue({
+          id: 'new-version',
+          version: '1.0.3',
+        });
+        versionRepository.save.mockResolvedValue({
+          id: 'new-version',
+          version: '1.0.3',
+        });
+
+        const result = await service.rollbackToVersion(fileId, targetVersion);
+
+        expect(result.status).toBe('modified');
+        expect(result.size).toBe(500);
+        expect(mockFs.writeFile).toHaveBeenCalledWith(
+          file.storedPath,
+          Buffer.from('old content')
+        );
+      });
+
+      it('should throw NotFoundException if file does not exist', async () => {
+        repository.findOne.mockResolvedValue(null);
+
+        await expect(
+          service.rollbackToVersion(fileId, targetVersion)
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('should throw NotFoundException if version does not exist', async () => {
+        const file = mockFile({ id: fileId });
+        repository.findOne.mockResolvedValue(file);
+        versionRepository.findOne.mockResolvedValue(null);
+
+        await expect(
+          service.rollbackToVersion(fileId, targetVersion)
+        ).rejects.toThrow(NotFoundException);
+      });
+    });
+
+    describe('compareVersions', () => {
+      it('should return comparison with size diff and hash status', async () => {
+        const fromVersion = {
+          id: 'v1',
+          fileId: 'file-1',
+          version: '1.0.0',
+          contentHash: 'hash-abc',
+          size: 100,
+          mimeType: 'text/plain',
+          changelog: 'Initial',
+          uploadedBy: 'agent',
+          createdAt: new Date('2024-01-01'),
+        };
+
+        const toVersion = {
+          id: 'v2',
+          fileId: 'file-1',
+          version: '1.0.1',
+          contentHash: 'hash-xyz',
+          size: 150,
+          mimeType: 'text/plain',
+          changelog: 'Updated',
+          uploadedBy: 'user',
+          createdAt: new Date('2024-01-02'),
+        };
+
+        versionRepository.findOne
+          .mockResolvedValueOnce(fromVersion)
+          .mockResolvedValueOnce(toVersion);
+
+        const result = await service.compareVersions('file-1', '1.0.0', '1.0.1');
+
+        expect(result.from.version).toBe('1.0.0');
+        expect(result.to.version).toBe('1.0.1');
+        expect(result.sizeDiff).toBe(50);
+        expect(result.hashChanged).toBe(true);
+      });
+
+      it('should detect identical content (same hash)', async () => {
+        const fromVersion = {
+          id: 'v1',
+          version: '1.0.0',
+          contentHash: 'hash-same',
+          size: 100,
+        };
+
+        const toVersion = {
+          id: 'v2',
+          version: '1.0.1',
+          contentHash: 'hash-same',
+          size: 100,
+        };
+
+        versionRepository.findOne
+          .mockResolvedValueOnce(fromVersion)
+          .mockResolvedValueOnce(toVersion);
+
+        const result = await service.compareVersions('file-1', '1.0.0', '1.0.1');
+
+        expect(result.sizeDiff).toBe(0);
+        expect(result.hashChanged).toBe(false);
+      });
     });
   });
 });

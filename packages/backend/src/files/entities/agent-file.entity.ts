@@ -3,11 +3,14 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   Index,
 } from 'typeorm';
 import { Message } from '../../messages/entities/message.entity';
+import { FileVersion } from './file-version.entity';
 
 @Entity('agent_files')
 @Index('IDX_agent_files_session_id', ['sessionId'])
@@ -57,6 +60,18 @@ export class AgentFile {
   @Column({ type: 'varchar', default: 'agent' })
   uploadedBy!: 'agent' | 'user';
 
+  @Column({ type: 'varchar', default: '1.0.0' })
+  currentVersion!: string; // Current semantic version
+
+  @Column({ type: 'datetime', nullable: true })
+  lastVersionAt!: Date | null; // Last time a version was created
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @OneToMany(() => FileVersion, (version) => version.file, { cascade: true })
+  versions!: FileVersion[];
 }

@@ -7,9 +7,12 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AgentFile } from './entities/agent-file.entity';
+import { FileVersion } from './entities/file-version.entity';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { lookup as mimeLookup } from 'mime-types';
 import type { FileTreeNode, FilePreviewResponse, FileUploadResult } from './dto/file.dto';
 
@@ -29,6 +32,9 @@ export class FilesService {
   constructor(
     @InjectRepository(AgentFile)
     private readonly fileRepository: Repository<AgentFile>,
+    @InjectRepository(FileVersion)
+    private readonly versionRepository: Repository<FileVersion>,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     // Persistent storage location
     this.persistentStorageBase =
@@ -105,6 +111,16 @@ export class FilesService {
       `Created file record ${saved.id} for ${filename} (${stats.size} bytes)`,
     );
 
+    // Emit file created event for real-time updates
+    this.eventEmitter.emit('file.created', {
+      fileId: saved.id,
+      sessionId: saved.sessionId,
+      tenantId: saved.tenantId,
+      filename: saved.filename,
+      status: saved.status,
+      uploadedBy: saved.uploadedBy,
+    });
+
     return saved;
   }
 
@@ -172,6 +188,16 @@ export class FilesService {
     this.logger.log(
       `Created file record ${saved.id} for ${filename} (${stats.size} bytes)`,
     );
+
+    // Emit file created event for real-time updates
+    this.eventEmitter.emit('file.created', {
+      fileId: saved.id,
+      sessionId: saved.sessionId,
+      tenantId: saved.tenantId,
+      filename: saved.filename,
+      status: saved.status,
+      uploadedBy: saved.uploadedBy,
+    });
 
     return saved;
   }
@@ -581,6 +607,16 @@ export class FilesService {
       `Created user upload record ${saved.id} for ${filename} (${saved.size} bytes)`,
     );
 
+    // Emit file created event for real-time updates
+    this.eventEmitter.emit('file.created', {
+      fileId: saved.id,
+      sessionId: saved.sessionId,
+      tenantId: saved.tenantId,
+      filename: saved.filename,
+      status: saved.status,
+      uploadedBy: saved.uploadedBy,
+    });
+
     return {
       id: saved.id,
       filename: saved.filename,
@@ -619,5 +655,307 @@ export class FilesService {
         );
       }
     }
+  }
+
+  // ==========================================
+  // VERSION CONTROL METHODS
+  // ==========================================
+
+  /**
+   * Create a new version of a file
+   *
+   * This method creates a snapshot of the current file state.
+   * Used when:
+   * - File is modified by agent or user
+   * - User explicitly requests to create a version
+   * - Automatic versioning is enabled
+   */
+  async createVersion(
+    fileId: string,
+    dto?: {
+      version?: string;
+      bumpType?: 'major' | 'minor' | 'patch';
+      changelog?: string;
+    },
+  ): Promise<FileVersion> {
+    const file = await this.findByIdOrFail(fileId);
+
+    // Check if file content exists
+    const exists = await this.fileExists(fileId);
+    if (!exists) {
+      throw new NotFoundException('File content not available for versioning');
+    }
+
+    // Read file content and calculate hash
+    const content = await fs.readFile(file.storedPath);
+    const contentHash = crypto
+      .createHash('sha256')
+      .update(content)
+      .digest('hex');
+
+    // Determine version number
+    let version: string;
+    if (dto?.version) {
+      version = dto.version;
+    } else {
+      // Auto-increment version based on bumpType
+      const currentVersion = file.currentVersion || '1.0.0';
+      version = this.bumpVersion(currentVersion, dto?.bumpType || 'patch');
+    }
+
+    // Check if version already exists
+    const existingVersion = await this.versionRepository.findOne({
+      where: { fileId, version },
+    });
+    if (existingVersion) {
+      throw new BadRequestException(
+        `Version ${version} already exists for this file`,
+      );
+    }
+
+    // Create versioned file storage path
+    const versionDir = path.join(
+      this.persistentStorageBase,
+      'versions',
+      file.tenantId || 'default',
+      fileId,
+    );
+    const versionedPath = path.join(versionDir, `${version}-${file.filename}`);
+
+    // Ensure version directory exists
+    await fs.mkdir(versionDir, { recursive: true });
+
+    // Copy current file to versioned storage
+    try {
+      await fs.copyFile(file.storedPath, versionedPath);
+      this.logger.debug(`Created version ${version} at ${versionedPath}`);
+    } catch (error) {
+      this.logger.error(`Failed to create version: ${error.message}`);
+      throw new InternalServerErrorException('Failed to create version');
+    }
+
+    // Create version record
+    const fileVersion = this.versionRepository.create({
+      fileId,
+      version,
+      contentHash,
+      storedPath: versionedPath,
+      size: file.size,
+      mimeType: file.mimeType,
+      changelog: dto?.changelog || null,
+      uploadedBy: file.uploadedBy,
+    });
+
+    const saved = await this.versionRepository.save(fileVersion);
+
+    // Update file's current version
+    file.currentVersion = version;
+    file.lastVersionAt = new Date();
+    await this.fileRepository.save(file);
+
+    this.logger.log(`Created version ${version} for file ${file.filename}`);
+
+    // Emit version created event for real-time updates
+    this.eventEmitter.emit('file.version_created', {
+      fileId: file.id,
+      sessionId: file.sessionId,
+      tenantId: file.tenantId,
+      versionId: saved.id,
+      version: saved.version,
+      filename: file.filename,
+    });
+
+    return saved;
+  }
+
+  /**
+   * Bump semantic version
+   */
+  private bumpVersion(
+    current: string,
+    type: 'major' | 'minor' | 'patch',
+  ): string {
+    const parts = current.split('.').map(Number);
+    if (parts.length !== 3) {
+      this.logger.warn(
+        `Invalid version format ${current}, resetting to 1.0.0`,
+      );
+      return '1.0.0';
+    }
+
+    const [major, minor, patch] = parts;
+
+    switch (type) {
+      case 'major':
+        return `${major + 1}.0.0`;
+      case 'minor':
+        return `${major}.${minor + 1}.0`;
+      case 'patch':
+        return `${major}.${minor}.${patch + 1}`;
+      default:
+        return `${major}.${minor}.${patch + 1}`;
+    }
+  }
+
+  /**
+   * List versions of a file
+   */
+  async listVersions(fileId: string): Promise<FileVersion[]> {
+    return this.versionRepository.find({
+      where: { fileId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  /**
+   * Get a specific version
+   */
+  async getVersion(fileId: string, version: string): Promise<FileVersion> {
+    const fileVersion = await this.versionRepository.findOne({
+      where: { fileId, version },
+    });
+
+    if (!fileVersion) {
+      throw new NotFoundException(
+        `Version ${version} not found for file ${fileId}`,
+      );
+    }
+
+    return fileVersion;
+  }
+
+  /**
+   * Rollback file to a specific version
+   *
+   * This creates a new version with the content from the target version.
+   * The version history is preserved (no data loss).
+   */
+  async rollbackToVersion(
+    fileId: string,
+    targetVersion: string,
+  ): Promise<AgentFile> {
+    const file = await this.findByIdOrFail(fileId);
+    const version = await this.getVersion(fileId, targetVersion);
+
+    try {
+      // Read content from the target version
+      const versionContent = await fs.readFile(version.storedPath);
+
+      // Overwrite current file with version content
+      await fs.writeFile(file.storedPath, versionContent);
+
+      // Update file metadata
+      file.size = version.size;
+      file.status = 'modified';
+      const updated = await this.fileRepository.save(file);
+
+      // Create a new version to record the rollback
+      await this.createVersion(fileId, {
+        bumpType: 'minor',
+        changelog: `Rollback to version ${targetVersion}`,
+      });
+
+      this.logger.log(
+        `Rolled back file ${file.filename} to version ${targetVersion}`,
+      );
+
+      // Emit file modified event for real-time updates
+      this.eventEmitter.emit('file.modified', {
+        fileId: updated.id,
+        sessionId: updated.sessionId,
+        tenantId: updated.tenantId,
+        filename: updated.filename,
+        status: updated.status,
+        action: 'rollback',
+        targetVersion,
+      });
+
+      return updated;
+    } catch (error) {
+      this.logger.error(`Failed to rollback file: ${error.message}`);
+      throw new InternalServerErrorException('Failed to rollback file');
+    }
+  }
+
+  /**
+   * Compare two versions of a file
+   *
+   * Returns basic comparison metadata. For detailed diff,
+   * the frontend should download both versions and compute diff client-side.
+   */
+  async compareVersions(
+    fileId: string,
+    fromVersion: string,
+    toVersion: string,
+  ): Promise<{
+    from: FileVersion;
+    to: FileVersion;
+    sizeDiff: number;
+    hashChanged: boolean;
+  }> {
+    const from = await this.getVersion(fileId, fromVersion);
+    const to = await this.getVersion(fileId, toVersion);
+
+    return {
+      from,
+      to,
+      sizeDiff: to.size - from.size,
+      hashChanged: from.contentHash !== to.contentHash,
+    };
+  }
+
+  /**
+   * Get version file content for download
+   */
+  async getVersionContent(
+    fileId: string,
+    version: string,
+  ): Promise<{
+    content: Buffer;
+    filename: string;
+    mimeType: string | null;
+    size: number;
+  }> {
+    const fileVersion = await this.getVersion(fileId, version);
+    const file = await this.findByIdOrFail(fileId);
+
+    try {
+      const content = await fs.readFile(fileVersion.storedPath);
+      return {
+        content,
+        filename: `${file.filename}.v${version}`,
+        mimeType: fileVersion.mimeType,
+        size: fileVersion.size,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to read version content: ${error.message}`,
+      );
+      throw new NotFoundException('Version content not available');
+    }
+  }
+
+  /**
+   * Delete a specific version
+   * (Admin operation - use with caution)
+   */
+  async deleteVersion(fileId: string, version: string): Promise<void> {
+    const fileVersion = await this.getVersion(fileId, version);
+
+    // Delete versioned file
+    try {
+      await fs.unlink(fileVersion.storedPath);
+      this.logger.debug(`Deleted version file ${fileVersion.storedPath}`);
+    } catch (error) {
+      this.logger.warn(
+        `Failed to delete version file ${fileVersion.storedPath}: ${error.message}`,
+      );
+    }
+
+    // Delete database record
+    await this.versionRepository.delete(fileVersion.id);
+    this.logger.log(
+      `Deleted version ${version} of file ${fileId}`,
+    );
   }
 }
