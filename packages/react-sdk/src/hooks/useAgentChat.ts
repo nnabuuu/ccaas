@@ -40,6 +40,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     enabledSkillSlugs,
     onOutputUpdate,
     solutionConfigEndpoint,
+    context,
   } = options
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -354,6 +355,12 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         chatPayload.attachments = sendOptions.attachments
       }
 
+      // Include context from options or sendOptions (sendOptions takes precedence)
+      const messageContext = sendOptions?.context || context
+      if (messageContext) {
+        chatPayload.context = messageContext
+      }
+
       const response = await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -379,7 +386,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       setIsProcessing(false)
       throw err
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, waitForReconnection])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, waitForReconnection])
 
   const clearMessages = useCallback(() => {
     setMessages([])

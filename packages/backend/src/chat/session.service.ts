@@ -127,7 +127,8 @@ export class SessionService implements OnModuleDestroy {
     // Create .claude directory with pre-approved permissions
     // This allows Claude Code CLI to write files without interactive approval
     const claudeDir = path.join(workspaceDir, '.claude');
-    fs.mkdirSync(claudeDir, { recursive: true });
+    const mcpServersDir = path.join(claudeDir, 'mcp-servers');
+    fs.mkdirSync(mcpServersDir, { recursive: true });
     fs.writeFileSync(
       path.join(claudeDir, 'settings.local.json'),
       JSON.stringify({
@@ -215,6 +216,7 @@ export class SessionService implements OnModuleDestroy {
     initialMessage: string,
     onEvent: (event: FrontendEvent) => void,
     attachments?: ResolvedAttachment[],
+    appendSystemPrompt?: string,
   ): Promise<void> {
     if (session.cliProcess && session.stdin && !session.cliProcess.killed) {
       this.logger.log(`Reusing AgentEngine for session ${session.sessionId}`);
@@ -229,7 +231,9 @@ export class SessionService implements OnModuleDestroy {
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      const mcpConfig = JSON.stringify({ mcpServers: session.mcpServers });
+      // Resolve tenant-relative paths to session-relative symlink paths
+      const resolvedMcpServers = this.resolveSessionMcpPaths(session.mcpServers);
+      const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
       // Escape single quotes in JSON for shell
       const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
       shellCommand += ` --mcp-config '${escapedConfig}'`;
@@ -237,6 +241,13 @@ export class SessionService implements OnModuleDestroy {
       this.logger.debug(`MCP config: ${mcpConfig}`);
     } else {
       this.logger.warn(`Session ${session.sessionId} has NO MCP servers configured`);
+    }
+
+    // Add append-system-prompt if provided
+    if (appendSystemPrompt && appendSystemPrompt.trim()) {
+      const escapedPrompt = appendSystemPrompt.replace(/'/g, "'\\''");
+      shellCommand += ` --append-system-prompt '${escapedPrompt}'`;
+      this.logger.log(`Added skill system prompt (${appendSystemPrompt.length} chars)`);
     }
 
     this.logger.log(`Running command: ${shellCommand}`);
@@ -320,10 +331,18 @@ export class SessionService implements OnModuleDestroy {
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
-      const mcpConfig = JSON.stringify({ mcpServers: session.mcpServers });
+      // Resolve tenant-relative paths to session-relative symlink paths
+      const resolvedMcpServers = this.resolveSessionMcpPaths(session.mcpServers);
+      const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
       // Escape single quotes in JSON for shell
       const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
       shellCommand += ` --mcp-config '${escapedConfig}'`;
+    }
+
+    // Add append-system-prompt (preserved across resume)
+    if (session.appendSystemPrompt && session.appendSystemPrompt.trim()) {
+      const escapedPrompt = session.appendSystemPrompt.replace(/'/g, "'\\''");
+      shellCommand += ` --append-system-prompt '${escapedPrompt}'`;
     }
 
     this.logger.log(`Running follow-up command: ${shellCommand}`);
@@ -1081,6 +1100,115 @@ export class SessionService implements OnModuleDestroy {
     setTimeout(() => {
       this.stopBackgroundTaskMonitor(monitorKey, sessionId, tracker.subAgentId, 'timeout');
     }, 30 * 60 * 1000);
+  }
+
+  /**
+   * Create symlinks from session workspace to tenant MCP servers
+   * This enables CLI to access MCP servers via session-relative paths
+   *
+   * Public method called from ChatGateway after session.mcpServers is set
+   */
+  async createMcpSymlinks(session: ManagedSession): Promise<void> {
+    if (!session.tenantId || !session.mcpServers) {
+      return;
+    }
+
+    const sessionMcpDir = path.join(session.workspaceDir, '.claude', 'mcp-servers');
+    return this.createMcpSymlinksInternal(session.tenantId, sessionMcpDir, session.mcpServers);
+  }
+
+  /**
+   * Internal method to create MCP symlinks
+   */
+  private async createMcpSymlinksInternal(
+    tenantId: string,
+    sessionMcpDir: string,
+    mcpServers: Record<string, {
+      command: string;
+      args: string[];
+      description?: string;
+      env?: Record<string, string>;
+    }>,
+  ): Promise<void> {
+    const workspaceRoot = path.resolve(this.workspaceDir);
+
+    for (const [serverName, config] of Object.entries(mcpServers)) {
+      // Skip if args don't contain tenant-relative paths
+      if (!config.args || config.args.length === 0) continue;
+
+      const firstArg = config.args[0];
+      if (!firstArg.startsWith('tenants/')) continue;
+
+      // Extract server name from tenant path: tenants/{tenantId}/mcp-servers/{serverName}/...
+      const pathParts = firstArg.split('/');
+      if (pathParts.length < 4 || pathParts[2] !== 'mcp-servers') continue;
+
+      const mcpServerName = pathParts[3];
+
+      // Resolve tenant MCP server path
+      const tenantMcpPath = path.join(
+        workspaceRoot,
+        'tenants',
+        tenantId,
+        'mcp-servers',
+        mcpServerName,
+      );
+
+      // Create symlink in session workspace
+      const symlinkPath = path.join(sessionMcpDir, mcpServerName);
+
+      try {
+        if (fs.existsSync(symlinkPath)) {
+          fs.unlinkSync(symlinkPath);  // Remove if exists
+        }
+        fs.symlinkSync(tenantMcpPath, symlinkPath, 'dir');
+        this.logger.debug(`Created symlink: ${symlinkPath} -> ${tenantMcpPath}`);
+      } catch (err: any) {
+        this.logger.warn(`Failed to create MCP symlink for ${mcpServerName}: ${err.message}`);
+      }
+    }
+  }
+
+  /**
+   * Resolve MCP server paths from tenant-relative to session-relative symlink paths
+   * Transforms: tenants/{tenantId}/mcp-servers/{server}/dist/index.js
+   * To: .claude/mcp-servers/{server}/dist/index.js
+   */
+  private resolveSessionMcpPaths(
+    mcpServers: Record<string, {
+      command: string;
+      args: string[];
+      description?: string;
+      env?: Record<string, string>;
+    }>,
+  ): Record<string, {
+    command: string;
+    args: string[];
+    description?: string;
+    env?: Record<string, string>;
+  }> {
+    const resolved: Record<string, any> = {};
+
+    for (const [name, config] of Object.entries(mcpServers)) {
+      resolved[name] = {
+        ...config,
+        args: (config.args || []).map(arg => {
+          // If arg looks like tenant path, convert to session-relative symlink path
+          if (arg.startsWith('tenants/')) {
+            const pathParts = arg.split('/');
+            // Extract: tenants/{tenantId}/mcp-servers/{serverName}/{...rest}
+            if (pathParts.length >= 4 && pathParts[2] === 'mcp-servers') {
+              const serverName = pathParts[3];
+              const relPath = pathParts.slice(4).join('/');  // Path after server name
+              return `.claude/mcp-servers/${serverName}/${relPath}`;
+            }
+          }
+          return arg;
+        }),
+      };
+    }
+
+    return resolved;
   }
 
   /**

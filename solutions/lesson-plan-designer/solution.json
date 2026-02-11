@@ -26,6 +26,13 @@
       "description": "Lesson Plan Designer MCP tools including write_output",
       "type": "stdio",
       "env": {}
+    },
+    "read-context": {
+      "command": "node",
+      "args": ["../../packages/mcp/shared-context-server/dist/index.js"],
+      "description": "Shared context reading tool (read_context with diff mode support)",
+      "type": "stdio",
+      "env": {}
     }
   },
 

@@ -532,7 +532,7 @@ start_service() {
     log_info "Starting $name service on port $port..."
 
     cd "$dir"
-    eval "$command" &
+    eval "$command" > "/tmp/${name}.log" 2>&1 &
     local pid=$!
 
     log_success "$name service started (PID: $pid)"
@@ -791,7 +791,10 @@ inject_mcp_servers() {
         echo ""
         log_info "Processing MCP server: $server_name"
 
-        if inject_single_mcp_server "$server_name" "$server_config" "$solution_dir" "$ccaas_url" "$tenant_id" "$api_key"; then
+        # Workspace directory for tenant files
+        local workspace_dir="$solution_dir/../../packages/backend/.agent-workspace"
+
+        if inject_single_mcp_server "$server_name" "$server_config" "$solution_dir" "$ccaas_url" "$tenant_id" "$api_key" "$workspace_dir"; then
             mcp_success_count=$((mcp_success_count + 1))
         fi
     done < <(jq -c '.mcpServers | to_entries[]' "$solution_json")
@@ -800,8 +803,33 @@ inject_mcp_servers() {
     log_success "MCP servers: $mcp_success_count/$mcp_count successful"
 }
 
+# Copy MCP server files to tenant directory
+# Returns tenant-relative path for database storage
+# Usage: copy_mcp_to_tenant SERVER_NAME SOURCE_PATH TENANT_ID WORKSPACE_DIR
+copy_mcp_to_tenant() {
+    local server_name="$1"
+    local source_path="$2"      # Absolute path to MCP server entry point
+    local tenant_id="$3"
+    local workspace_dir="$4"    # .agent-workspace
+
+    # Extract directory containing the MCP server (go up from dist/index.js to root)
+    local mcp_dir=$(dirname $(dirname "$source_path"))
+
+    # Create tenant MCP directory
+    local tenant_mcp_dir="$workspace_dir/tenants/$tenant_id/mcp-servers/$server_name"
+    mkdir -p "$tenant_mcp_dir"
+
+    # Copy entire MCP server directory
+    cp -r "$mcp_dir/"* "$tenant_mcp_dir/" >&2
+
+    # Return tenant-relative path for database storage (stdout only)
+    # Extract the relative path after the MCP server root
+    local rel_path="${source_path#$mcp_dir/}"
+    echo "tenants/$tenant_id/mcp-servers/$server_name/$rel_path"
+}
+
 # Inject a single MCP server
-# Usage: inject_single_mcp_server SERVER_NAME SERVER_CONFIG SOLUTION_DIR CCAAS_URL TENANT_ID API_KEY
+# Usage: inject_single_mcp_server SERVER_NAME SERVER_CONFIG SOLUTION_DIR CCAAS_URL TENANT_ID API_KEY WORKSPACE_DIR
 inject_single_mcp_server() {
     local server_name="$1"
     local server_config="$2"
@@ -809,15 +837,47 @@ inject_single_mcp_server() {
     local ccaas_url="$4"
     local tenant_id="$5"
     local api_key="$6"
+    local workspace_dir="$7"    # Optional, defaults to ../../packages/backend/.agent-workspace
+
+    # Default workspace directory if not provided
+    if [ -z "$workspace_dir" ]; then
+        workspace_dir="$solution_dir/../../packages/backend/.agent-workspace"
+    fi
 
     # Resolve relative paths in args (MCP server paths relative to solution dir)
     local command=$(echo "$server_config" | jq -r '.command')
-    local args=$(echo "$server_config" | jq -c --arg solutionDir "$solution_dir" '.args | map(if test("\\.js$|\\.ts$") then ($solutionDir + "/" + .) else . end)')
+    local raw_args=$(echo "$server_config" | jq -c '.args')
     local description=$(echo "$server_config" | jq -r '.description // ""')
     local env=$(echo "$server_config" | jq -c '.env // {}')
 
+    # Process args: resolve relative paths and copy to tenant directory
+    local tenant_relative_args='[]'
+    local first_arg=$(echo "$raw_args" | jq -r '.[0] // ""')
+
+    if [[ "$first_arg" =~ \.(js|ts)$ ]]; then
+        # This is a file path - resolve and copy to tenant
+        local absolute_source="$solution_dir/$first_arg"
+
+        if [ ! -f "$absolute_source" ]; then
+            log_error "  MCP server file not found: $absolute_source"
+            return 1
+        fi
+
+        # Copy MCP server to tenant directory
+        log_info "    Copying MCP server files to tenant directory..."
+        local tenant_relative_path=$(copy_mcp_to_tenant "$server_name" "$absolute_source" "$tenant_id" "$workspace_dir")
+
+        # Build args array with tenant-relative path
+        tenant_relative_args=$(echo "$raw_args" | jq -c --arg newPath "$tenant_relative_path" '.[0] = $newPath')
+
+        log_info "  Copied to: $workspace_dir/$tenant_relative_path"
+    else
+        # Not a file path, keep args as-is
+        tenant_relative_args="$raw_args"
+    fi
+
     log_info "  Command: $command"
-    log_info "  Args: $args"
+    log_info "  Args: $tenant_relative_args"
 
     # Check if MCP server already exists
     local existing_mcp=$(curl -s "$ccaas_url/api/v1/mcp-servers/$server_name" \
@@ -837,7 +897,7 @@ inject_single_mcp_server() {
                 \"description\": \"$description\",
                 \"config\": {
                     \"command\": \"$command\",
-                    \"args\": $args,
+                    \"args\": $tenant_relative_args,
                     \"env\": $env
                 },
                 \"status\": \"active\"
@@ -860,7 +920,7 @@ inject_single_mcp_server() {
                 \"type\": \"stdio\",
                 \"config\": {
                     \"command\": \"$command\",
-                    \"args\": $args,
+                    \"args\": $tenant_relative_args,
                     \"env\": $env
                 },
                 \"status\": \"active\"

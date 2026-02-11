@@ -7,13 +7,13 @@ import {
   useAgentConnection,
   useAgentChat,
   useAgentStatus,
+  usePageContext,
   type Message,
 } from '@ccaas/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { useSubAgentPolling } from './useSubAgentPolling'
 import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
-import { useContextSync } from './useContextSync'
 import { api } from '../utils/api'
 import type {
   LessonPlan,
@@ -95,7 +95,6 @@ interface UseLessonPlanSessionReturn {
   canUndo: (field: SyncField) => boolean
   updateField: <K extends keyof LessonPlan>(field: K, value: LessonPlan[K]) => void
   loadPlan: (id: string) => Promise<void>
-  syncContext: (lessonPlan: LessonPlan | null) => void
 }
 
 export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}): UseLessonPlanSessionReturn {
@@ -132,16 +131,11 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     onError: (err) => setError(err),
   })
 
-  // Context sync to backend
-  const { syncContext } = useContextSync({
-    sessionId: connection.sessionId,
-    enabled: connection.connected,
-  })
+  // Page context (NEW: replaces useContextSync)
+  const { context, updateContext } = usePageContext()
 
   // Legacy state removed - now using SDK messages directly
-  // const [messages, setMessages] = useState<Message[]>([])
-  const [currentStreamContent] = useState('') // eslint-disable-line @typescript-eslint/no-unused-vars
-  const currentMessageRef = useRef<Message | null>(null)
+  // All message state is managed by SDK hooks
 
   // Sync state
   const {
@@ -162,6 +156,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     mcpServers: solutionConfig?.mcpServers,
     skillPath: solutionConfig?.skillPath,
     enabledSkillSlugs,
+    context,  // NEW: Pass context to send with every message
     onOutputUpdate: (update) => {
       // Bridge SDK output_update to useLessonPlanSync
       addPendingUpdate({
@@ -311,11 +306,33 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   // Update single field (delegates to crud.updateField)
   const updateField = crud.updateField
 
-
-  // Auto-sync context when lesson plan changes (debounced by useContextSync)
+  // Auto-update context when lesson plan changes (NEW: replaces useContextSync)
   useEffect(() => {
-    syncContext(crud.lessonPlan)
-  }, [crud.lessonPlan, syncContext])
+    if (crud.lessonPlan) {
+      updateContext('lesson-plan-editor', {
+        lessonPlanId: crud.lessonPlan.id,
+        currentForm: {
+          title: crud.lessonPlan.title,
+          subject: crud.lessonPlan.subject,
+          gradeLevel: crud.lessonPlan.gradeLevel,
+          publisher: crud.lessonPlan.publisher,
+          volume: crud.lessonPlan.volume,
+          chapterId: crud.lessonPlan.chapterId,
+          chapterTitle: crud.lessonPlan.chapterTitle,
+          durationMinutes: crud.lessonPlan.durationMinutes,
+          objectives: crud.lessonPlan.objectives,
+          content: crud.lessonPlan.content,
+          assessmentMethods: crud.lessonPlan.assessmentMethods,
+          curriculumRequirements: crud.lessonPlan.curriculumRequirements,
+          studentAnalysis: crud.lessonPlan.studentAnalysis,
+          materialsNeeded: crud.lessonPlan.materialsNeeded,
+          teachingMethods: crud.lessonPlan.teachingMethods,
+          attachments: crud.lessonPlan.attachments,
+          extraProperties: crud.lessonPlan.extraProperties,
+        },
+      })
+    }
+  }, [crud.lessonPlan, updateContext])
 
   return {
     // Connection state
@@ -363,7 +380,6 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     canUndo,
     updateField,
     loadPlan,
-    syncContext,
   }
 }
 

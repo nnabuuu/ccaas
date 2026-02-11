@@ -58,6 +58,47 @@ export class SessionsController {
   ) {}
 
   /**
+   * Generate skill system prompt for --append-system-prompt CLI parameter
+   *
+   * Creates a critical instruction block that forces Claude to read SKILL.md
+   * files before responding to skill-related requests.
+   */
+  private generateSkillSystemPrompt(
+    skills: Array<{ slug: string; name: string; description?: string }>,
+  ): string {
+    if (skills.length === 0) return '';
+
+    const skillList = skills
+      .map((s) => `  - **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.description}` : ''}`)
+      .join('\n');
+
+    return `
+CRITICAL SKILL USAGE INSTRUCTIONS:
+
+This session has ${skills.length} specialized skill(s) available:
+${skillList}
+
+MANDATORY WORKFLOW - 强制工作流:
+
+When a user message relates to ANY of the skills above:
+1. IMMEDIATELY use Read tool: Read(".claude/skills/{relevant-skill-slug}/SKILL.md")
+2. The SKILL.md contains MANDATORY instructions (e.g., "call read_context first")
+3. Follow those instructions EXACTLY before responding
+
+Why this matters:
+- SKILL.md contains domain expertise you don't have
+- SKILL.md provides tools to access existing data (read_context, read_form_state, etc.)
+- Following SKILL.md prevents asking users for data they already provided
+
+Example (lesson planning):
+❌ WRONG: Ask "What's your subject? Grade level?"
+✅ RIGHT: Read(".claude/skills/lesson-plan-designer/SKILL.md") → Follow instructions → Use read_context → Respond with data
+
+Remember: Skills are your PRIMARY tools. Always read SKILL.md before responding to skill-related requests.
+`.trim();
+  }
+
+  /**
    * Create CLAUDE.md with skill loading instructions
    *
    * This method creates a CLAUDE.md file in the workspace that instructs
@@ -77,16 +118,56 @@ ${skills.map(s => `- **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.descr
 
 These skills are available in the \`.claude/skills/\` directory.
 
-## Important Instructions
+## ⚠️ CRITICAL REQUIREMENT - 强制要求
 
-ALWAYS check available skills before responding to user requests. Use the skills that match the user's intent.
+**When you decide to use ANY skill (one or multiple), you MUST read its SKILL.md file BEFORE taking any action:**
 
-For example:
-- When user asks about lesson planning → use lesson-plan-designer skill
-- When user asks to generate teaching scripts → use teaching-script-generator skill
-- When user uploads quiz images → use quiz-analyzer skill
+\`\`\`
+Read(".claude/skills/{skill-slug}/SKILL.md")
+\`\`\`
 
-Skills are your primary tools for accomplishing user tasks in this session.
+### Why This is Mandatory
+
+Each SKILL.md contains:
+- **Mandatory workflow steps** (e.g., "call \`read_context\` first")
+- **Available tools and data sources** (form context, user data, etc.)
+- **Domain-specific instructions** (curriculum standards, formatting rules, etc.)
+- **Required output format**
+
+**These are NOT optional suggestions** - they are execution requirements.
+
+### Key Principle: Don't Ask for Data That's Available
+
+Skills often provide tools to access existing data (like \`read_context\`, \`read_form_state\`, etc.):
+
+❌ **Wrong**: Ask user "What's your subject? Grade level?"
+✅ **Right**: Read SKILL.md → see it requires \`read_context\` → call it → use the data
+
+### Multiple Skills
+
+If a task requires multiple skills working together:
+- Read each skill's SKILL.md before using it
+- Follow each skill's workflow requirements
+- Coordinate between skills as needed
+
+## Example
+
+**Scenario**: User asks for help with lesson planning
+
+**Correct workflow**:
+1. Recognize lesson-plan-designer skill is relevant
+2. \`Read(".claude/skills/lesson-plan-designer/SKILL.md")\`
+3. SKILL.md says: "⚠️ Before responding, call \`read_context\`"
+4. Call \`read_context\` → get { subject: "数学", gradeLevel: 7, ... }
+5. Use this data directly in response
+
+**Wrong workflow** ❌:
+1. Skip reading SKILL.md
+2. Ask "你的学科是什么？" → User already provided this in the form!
+
+---
+
+**Remember**: SKILL.md files are the source of truth for how to use each skill correctly.
 `;
 
     await fs.promises.writeFile(claudeMdPath, content, 'utf-8');
@@ -248,6 +329,7 @@ Send user message to the specified session. Agent will push response events via 
           );
 
           if (skillsToDocument.length > 0) {
+            // Create CLAUDE.md for workspace context
             await this.createClaudeMd(
               session.workspaceDir,
               skillsToDocument.map(s => ({
@@ -256,6 +338,20 @@ Send user message to the specified session. Agent will push response events via 
                 description: s.description,
               })),
             );
+
+            // Generate skill system prompt for CLI --append-system-prompt
+            const skillPrompt = this.generateSkillSystemPrompt(
+              skillsToDocument.map(s => ({
+                slug: s.slug,
+                name: s.name,
+                description: s.description || '',
+              })),
+            );
+
+            // Store in session for subsequent resume calls
+            session.appendSystemPrompt = skillPrompt;
+
+            this.logger.log(`Generated skill system prompt for ${skillsToDocument.length} skills`);
           }
         }
       } catch (error) {
@@ -400,11 +496,17 @@ Read(".claude/skills/${skillName}/SKILL.md")
 
       // Check if this is a follow-up message
       if (session.messageCount > 0) {
-        // Follow-up message - use --resume
+        // Follow-up message - use --resume (appendSystemPrompt preserved in session)
         await this.sessionService.sendFollowUp(session, message, handleEvent, resolvedAttachments);
       } else {
-        // First message - spawn new AgentEngine
-        await this.sessionService.ensureCLIProcess(session, message, handleEvent, resolvedAttachments);
+        // First message - spawn new AgentEngine with appendSystemPrompt
+        await this.sessionService.ensureCLIProcess(
+          session,
+          message,
+          handleEvent,
+          resolvedAttachments,
+          session.appendSystemPrompt,
+        );
       }
 
       return { success: true, sessionId };

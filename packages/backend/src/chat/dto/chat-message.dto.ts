@@ -95,6 +95,10 @@ export class SendMessageDto {
 
   @IsOptional()
   @IsObject()
+  context?: Record<string, unknown>; // NEW: Page context sent with message
+
+  @IsOptional()
+  @IsObject()
   mcpServers?: Record<string, McpServerConfig>;
 
   @IsOptional()

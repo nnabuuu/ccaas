@@ -26,6 +26,10 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TOOLS_DIR="$ROOT_DIR/tools"
 source "$TOOLS_DIR/solution-lib.sh"
 
+# Default bootstrap key for internal solutions
+# Can be overridden by setting CCAAS_BOOTSTRAP_KEY environment variable
+CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
+
 # Configuration
 BACKEND_PORT=3001
 DEMO_PORT=5179

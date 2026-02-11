@@ -51,6 +51,9 @@ export interface ManagedSession {
     description?: string;
     env?: Record<string, string>;
   }>;
+
+  // Skill-specific system prompt injected via --append-system-prompt
+  appendSystemPrompt?: string;
 }
 
 /**

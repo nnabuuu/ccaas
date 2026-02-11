@@ -110,6 +110,21 @@ export class CreateCompletionDto {
   @ValidateNested({ each: true })
   @Type(() => AttachmentDto)
   attachments?: AttachmentDto[];
+
+  @ApiProperty({
+    description: '页面上下文（自动随消息发送）/ Page context (sent automatically with message)',
+    required: false,
+    example: {
+      pageType: 'lesson-plan-editor',
+      pageData: {
+        lessonPlanId: 'uuid',
+        currentForm: { title: '数学课', subject: '数学', gradeLevel: 3 },
+      },
+    },
+  })
+  @IsOptional()
+  @IsObject()
+  context?: Record<string, unknown>;
 }
 
 /**

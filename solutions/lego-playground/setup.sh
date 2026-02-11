@@ -1,198 +1,214 @@
 #!/bin/bash
+# LEGO Playground - Setup Script
+# Uses: tools/solution-lib.sh
+
 set -e
 
-# ============================================================================
-# LEGO Playground - Setup & Launch Script
-# ============================================================================
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+TOOLS_DIR="$SCRIPT_DIR/../../tools"
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-log() { echo -e "${GREEN}[LEGO]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-error() { echo -e "${RED}[ERROR]${NC} $1"; }
-info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-
-# ============================================================================
-# Prerequisites Check
-# ============================================================================
-
-log "Checking prerequisites..."
-
-if ! command -v node &> /dev/null; then
-  error "Node.js is not installed. Please install Node.js 18+ first."
-  exit 1
+# Source shared library
+if [ ! -f "$TOOLS_DIR/solution-lib.sh" ]; then
+    echo "❌ Error: solution-lib.sh not found at $TOOLS_DIR"
+    echo "   Please run from solutions/ directory"
+    exit 1
 fi
 
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-  error "Node.js 18+ is required. Current version: $(node -v)"
-  exit 1
-fi
+source "$TOOLS_DIR/solution-lib.sh"
 
-log "Node.js $(node -v) ✓"
+# Load solution configuration
+load_solution_config "$SCRIPT_DIR"
 
-# ============================================================================
-# Parse Arguments
-# ============================================================================
+# Default bootstrap key for internal solutions
+# Can be overridden by setting CCAAS_BOOTSTRAP_KEY environment variable
+CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
 
+# Parse CLI arguments
 MCP_ONLY=false
 INJECT_ONLY=false
 SKIP_BUILD=false
 
 for arg in "$@"; do
-  case $arg in
-    --mcp-only) MCP_ONLY=true ;;
-    --inject-only) INJECT_ONLY=true ;;
-    --skip-build) SKIP_BUILD=true ;;
-    *) ;;
-  esac
+    case $arg in
+        --mcp-only) MCP_ONLY=true ;;
+        --inject-only) INJECT_ONLY=true ;;
+        --skip-build) SKIP_BUILD=true ;;
+        *) ;;
+    esac
 done
 
-# ============================================================================
-# Build MCP Server
-# ============================================================================
+# Custom initialization
+custom_init() {
+    # Build MCP server
+    log_step "3.5" "Building MCP server"
+    local mcp_dir="$SCRIPT_DIR/mcp-server"
 
-log "Building MCP Server..."
-cd "$SCRIPT_DIR/mcp-server"
+    if [ -d "$mcp_dir" ]; then
+        cd "$mcp_dir"
+        if [ ! -d "node_modules" ] || [ "$SKIP_BUILD" = false ]; then
+            npm install > /dev/null 2>&1
+        fi
+        if [ "$SKIP_BUILD" = false ]; then
+            npm run build > /dev/null 2>&1
+        fi
+        log_success "MCP server built"
+    else
+        log_warn "MCP server directory not found, skipping build"
+    fi
 
-if [ ! -d "node_modules" ] || [ "$SKIP_BUILD" = false ]; then
-  npm install --silent 2>/dev/null
-fi
+    return 0
+}
 
-if [ "$SKIP_BUILD" = false ]; then
-  npm run build
-fi
+# Main workflow
+main() {
+    log_header "$SOLUTION_NAME Setup"
 
-log "MCP Server built ✓"
+    # Handle special modes
+    if [ "$MCP_ONLY" = true ]; then
+        log_info "Starting MCP REST Server only..."
+        cd "$SCRIPT_DIR/mcp-server"
+        npm run start
+        exit 0
+    fi
 
-if [ "$MCP_ONLY" = true ]; then
-  log "Starting MCP REST Server only..."
-  npm run start
-  exit 0
-fi
+    if [ "$INJECT_ONLY" = true ]; then
+        log_info "Inject mode: Running skill and MCP server injection only"
 
-if [ "$INJECT_ONLY" = true ]; then
-  log "Inject mode: skill injection would happen here"
-  exit 0
-fi
+        # Need to setup tenant and API key first
+        log_step "1" "Setting up tenant and API key"
 
-# ============================================================================
-# Install Backend Dependencies
-# ============================================================================
+        eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
+        if [ -z "$TENANT_ID" ]; then
+            log_error "Failed to create tenant"
+            exit 1
+        fi
 
-log "Setting up Backend..."
-cd "$SCRIPT_DIR/backend"
+        BOOTSTRAP_KEY=$(get_or_create_bootstrap_key "$CCAAS_URL")
+        if [ -z "$BOOTSTRAP_KEY" ]; then
+            log_error "Bootstrap key required. See instructions above."
+            exit 1
+        fi
 
-if [ ! -d "node_modules" ]; then
-  npm install --silent 2>/dev/null
-fi
+        eval "$(create_solution_api_key "$CCAAS_URL" "$TENANT_ID" "$BOOTSTRAP_KEY" "$SOLUTION_NAME")"
+        if [ -z "$API_KEY" ]; then
+            log_error "Failed to create API key"
+            exit 1
+        fi
 
-log "Backend ready ✓"
+        CCAAS_API_KEY="$API_KEY"
 
-# ============================================================================
-# Install Frontend Dependencies
-# ============================================================================
+        log_step "2" "Injecting skills and MCP servers"
+        inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+        inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
 
-log "Setting up Frontend..."
-cd "$SCRIPT_DIR/frontend"
+        log_success "Injection complete"
+        exit 0
+    fi
 
-if [ ! -d "node_modules" ]; then
-  npm install --silent 2>/dev/null
-fi
+    # Step 1: Check dependencies
+    log_step "1" "Checking dependencies"
+    check_dependencies
+    log_info "Node.js version: $(node -v)"
 
-log "Frontend ready ✓"
+    # Step 2: Check CCAAS backend
+    log_step "2" "Verifying CCAAS backend"
+    check_ccaas_backend
 
-# ============================================================================
-# Verify solution.json
-# ============================================================================
+    # Step 3: Install npm dependencies
+    log_step "3" "Installing dependencies"
+    run_hook "preInstall"
+    install_npm_dependencies "$SCRIPT_DIR/frontend"
+    install_npm_dependencies "$SCRIPT_DIR/backend"
 
-cd "$SCRIPT_DIR"
-if [ ! -f "solution.json" ]; then
-  error "solution.json not found!"
-  exit 1
-fi
+    # Step 3.5: Custom initialization (MCP build)
+    custom_init
 
-log "solution.json verified ✓"
+    # Step 4: Setup tenant and modern API key
+    log_step "4" "Setting up tenant and API key"
 
-# ============================================================================
-# Register Tenant in CCAAS
-# ============================================================================
+    # Step 4a: Create tenant (no API key returned)
+    eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION")"
 
-CCAAS_URL="${CCAAS_URL:-http://localhost:3001}"
+    if [ -z "$TENANT_ID" ]; then
+        log_error "Failed to create tenant"
+        exit 1
+    fi
 
-log "Checking CCAAS connectivity at $CCAAS_URL..."
-if ! curl -s --max-time 3 "$CCAAS_URL" > /dev/null 2>&1; then
-  warn "CCAAS not reachable at $CCAAS_URL — skipping tenant registration"
-  warn "Make sure CCAAS is running before using the chat feature"
-else
-  # Check if tenant already exists
-  TENANT_EXISTS=$(curl -s "$CCAAS_URL/api/v1/tenants" 2>/dev/null | grep -c '"slug":"lego-playground"' || true)
-  if [ "$TENANT_EXISTS" = "0" ]; then
-    log "Registering lego-playground tenant in CCAAS..."
-    curl -s -X POST "$CCAAS_URL/api/v1/tenants" \
-      -H "Content-Type: application/json" \
-      -d '{"name":"LEGO Playground","slug":"lego-playground","description":"AI LEGO mosaic designer"}' \
-      > /dev/null 2>&1
-    log "Tenant registered ✓"
-  else
-    log "Tenant lego-playground already exists ✓"
-  fi
-fi
+    log_info "Tenant ID: $TENANT_ID"
 
-# ============================================================================
-# Start Services
-# ============================================================================
+    # Step 4b: Get bootstrap admin key
+    BOOTSTRAP_KEY=$(get_or_create_bootstrap_key "$CCAAS_URL")
+    if [ -z "$BOOTSTRAP_KEY" ]; then
+        log_error "Bootstrap key required. See instructions above."
+        exit 1
+    fi
+
+    # Step 4c: Create modern API key for this solution
+    eval "$(create_solution_api_key "$CCAAS_URL" "$TENANT_ID" "$BOOTSTRAP_KEY" "$SOLUTION_NAME")"
+
+    if [ -z "$API_KEY" ]; then
+        log_error "Failed to create API key"
+        exit 1
+    fi
+
+    CCAAS_API_KEY="$API_KEY"
+    export CCAAS_API_KEY
+
+    # Step 5: Inject skills and MCP servers
+    log_step "5" "Injecting skills and MCP servers"
+    inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+    inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+
+    run_hook "postInstall"
+
+    # Step 6: Clear ports
+    log_step "6" "Preparing ports"
+    kill_port "$MCP_PORT"
+    kill_port "$BACKEND_PORT"
+    kill_port "$FRONTEND_PORT"
+
+    # Step 7: Start services
+    log_step "7" "Starting services"
+
+    # Start MCP REST Server first
+    MCP_PID=$(start_service "mcp-server" "$SCRIPT_DIR/mcp-server" "$MCP_PORT" "npm run start")
+    wait_for_port "$MCP_PORT" 30
+
+    BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "$BACKEND_PORT" "npm run start:dev")
+    wait_for_port "$BACKEND_PORT" 30
+
+    FRONTEND_PID=$(start_service "frontend" "$SCRIPT_DIR/frontend" "$FRONTEND_PORT" "npm run dev")
+    wait_for_port "$FRONTEND_PORT" 30
+
+    # Step 8: Display summary
+    display_summary
+
+    echo ""
+    log_info "MCP Server: http://localhost:$MCP_PORT"
+    echo ""
+    log_warn "⚠️  Ensure CCAAS backend is running on port 3001:"
+    echo "   cd packages/backend && npm run start:dev"
+    echo ""
+    echo "Press Ctrl+C to stop all services"
+
+    # Wait for Ctrl+C
+    trap cleanup SIGINT SIGTERM
+    wait
+}
 
 # Cleanup function
 cleanup() {
-  log "Stopping services..."
-  kill $MCP_PID 2>/dev/null || true
-  kill $BACKEND_PID 2>/dev/null || true
-  kill $FRONTEND_PID 2>/dev/null || true
-  exit 0
+    echo ""
+    log_info "Stopping services..."
+    stop_service "$MCP_PID"
+    stop_service "$BACKEND_PID"
+    stop_service "$FRONTEND_PID"
+    kill_port "$MCP_PORT"
+    kill_port "$BACKEND_PORT"
+    kill_port "$FRONTEND_PORT"
+    log_success "Services stopped"
+    exit 0
 }
 
-trap cleanup SIGINT SIGTERM
-
-# Start MCP REST Server
-log "Starting MCP REST Server on port 3006..."
-cd "$SCRIPT_DIR/mcp-server"
-npm run start &
-MCP_PID=$!
-sleep 2
-
-# Start Backend
-log "Starting Backend on port 3005..."
-cd "$SCRIPT_DIR/backend"
-npm run start:dev &
-BACKEND_PID=$!
-sleep 2
-
-# Start Frontend
-log "Starting Frontend on port 5282..."
-cd "$SCRIPT_DIR/frontend"
-npm run dev &
-FRONTEND_PID=$!
-
-echo ""
-log "============================================"
-log "  LEGO Playground is running!"
-log "============================================"
-info "  Frontend:   http://localhost:5282"
-info "  Backend:    http://localhost:3005"
-info "  MCP Server: http://localhost:3006"
-info "  CCAAS:      http://localhost:3001 (must be running separately)"
-echo ""
-info "Press Ctrl+C to stop all services"
-echo ""
-
-# Wait for any process to exit
-wait
+# Run main
+main "$@"

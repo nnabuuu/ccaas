@@ -143,6 +143,15 @@ export interface UseAgentConnectionReturn {
   disconnect: () => void
 }
 
+export interface PageContext {
+  pageType: string
+  pageData: Record<string, unknown>
+  metadata?: {
+    timestamp?: number
+    userId?: string
+  }
+}
+
 export interface UseAgentChatOptions {
   connection: UseAgentConnectionReturn
   tenantId: string
@@ -152,6 +161,8 @@ export interface UseAgentChatOptions {
   onOutputUpdate?: (update: OutputUpdate) => void
   /** Solution config endpoint path, e.g., '/api/config'. If provided, fetched on mount. */
   solutionConfigEndpoint?: string
+  /** Page context to send with every message (from usePageContext hook) */
+  context?: PageContext | null
 }
 
 export interface SendMessageOptions {

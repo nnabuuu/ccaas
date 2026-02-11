@@ -19,6 +19,10 @@ source "$TOOLS_DIR/solution-lib.sh"
 # Load solution configuration
 load_solution_config "$SCRIPT_DIR"
 
+# Default bootstrap key for internal solutions
+# Can be overridden by setting CCAAS_BOOTSTRAP_KEY environment variable
+CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
+
 # Custom initialization - MCP REST Server build
 custom_init() {
     log_step "3.5" "Building MCP REST Server"
@@ -103,7 +107,7 @@ main() {
 
     # Step 7: Start services
     log_step "7" "Starting services"
-    BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "$BACKEND_PORT" "npm run dev")
+    BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "$BACKEND_PORT" "npm run start:dev")
     wait_for_port "$BACKEND_PORT" 30
 
     FRONTEND_PID=$(start_service "frontend" "$SCRIPT_DIR/frontend" "$FRONTEND_PORT" "npm run dev")

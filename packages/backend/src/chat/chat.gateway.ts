@@ -348,6 +348,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       if (data.mcpServers && Object.keys(data.mcpServers).length > 0) {
         session.mcpServers = data.mcpServers;
         this.logger.log(`Session ${sessionId} configured with MCP servers: ${Object.keys(data.mcpServers).join(', ')}`);
+
+        // Create symlinks to tenant MCP servers
+        try {
+          await this.sessionService.createMcpSymlinks(session);
+        } catch (error: any) {
+          this.logger.warn(`Failed to create MCP symlinks: ${error.message}`);
+          // Continue - non-fatal
+        }
       }
 
       // Sync tenant skills to session workspace
@@ -410,6 +418,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       this.logger.debug(
         `Created messages: user=${userMessage.id}, assistant=${assistantMessage.id}`,
       );
+
+      // Store page context if provided (NEW: Write to workspace for MCP tool to read)
+      if (data.context) {
+        try {
+          const contextDir = path.join(session.workspaceDir, '.context');
+          const contextPath = path.join(contextDir, 'page-context.json');
+
+          // Ensure directory exists
+          if (!fs.existsSync(contextDir)) {
+            fs.mkdirSync(contextDir, { recursive: true });
+          }
+
+          // Write context to file (with timestamp)
+          const contextData = {
+            ...data.context,
+            timestamp: new Date().toISOString(),
+          };
+          fs.writeFileSync(contextPath, JSON.stringify(contextData, null, 2));
+
+          this.logger.debug(`Wrote page context for session ${sessionId}: ${JSON.stringify(data.context).slice(0, 100)}...`);
+
+          // Also persist to database (optional, for analytics)
+          await this.userContextService.recordContext({
+            sessionId,
+            customContext: data.context,
+          });
+        } catch (err) {
+          this.logger.warn(`Failed to write page context: ${err}`);
+        }
+      }
 
       // Create or update ConversationContext (on first message)
       if (session.messageCount === 0 && !data.resumeSession) {

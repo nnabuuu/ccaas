@@ -13,6 +13,7 @@ export { useAgentStatus } from './hooks/useAgentStatus'
 export { useOutputSync } from './hooks/useOutputSync'
 export { useSkills } from './hooks/useSkills'
 export { useChatLayout } from './hooks/useChatLayout'
+export { usePageContext } from './hooks/usePageContext'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -63,6 +64,7 @@ export type {
   SolutionConfig,
   McpServerConfig,
   TodoStats,
+  PageContext,
 
   // Color scheme and layout types
   ColorScheme,
