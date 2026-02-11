@@ -87,7 +87,8 @@ Before starting workflows, verify the CLI is ready:
 - ✅ User wants slides **generated from existing sources/content** (research, documents, URLs)
 - ✅ Content-driven slides (NotebookLM analyzes sources and creates slides automatically)
 - ✅ Quick slide generation from research or documentation
-- ✅ Output as PDF is acceptable
+- ✅ Output as **PDF slides** is acceptable (using `slide-deck`)
+- ❌ NOT for study guides (study-guide produces Markdown, not PDF)
 - Example: "Create slides from these research papers", "Generate a slide deck summarizing this content"
 
 **Use lesson-plan-pptx (or example-skills:pptx) for slides when:**
@@ -98,9 +99,10 @@ Before starting workflows, verify the CLI is ready:
 - Example: "Create teaching PPT", "Design slides for this lesson", "Make a presentation about [topic]" (no sources)
 
 **Default behavior in lesson plan context:**
-- If user says "生成PPT" or "创建课件" → Use **lesson-plan-pptx** (teaching-focused, .pptx format)
-- If user says "用NotebookLM生成幻灯片" → Use **NotebookLM** (content-driven, .pdf format)
-- If user has added sources to NotebookLM and asks for slides → Use **NotebookLM**
+- If user says "生成PPT" or "创建课件" or "做PDF" → Use **lesson-plan-pptx** (teaching-focused, .pptx format)
+- If user says "用NotebookLM生成幻灯片" → Use **NotebookLM slide-deck** (content-driven, .pdf format)
+- If user says "生成学习指南" or "做学习资料" → Use **NotebookLM study-guide** (text-based, .md format)
+- If user has added sources to NotebookLM and asks for slides → Use **NotebookLM slide-deck**
 - If unclear, prefer **lesson-plan-pptx** for teaching context
 
 ## Response Language
@@ -237,6 +239,8 @@ notebooklm generate audio "Explain linear equations in English, covering concept
 | Download audio | `notebooklm download audio ./output.mp3` |
 | Download video | `notebooklm download video ./output.mp4` |
 | Download report | `notebooklm download report ./report.md` |
+| Download study guide | `notebooklm download study-guide ./guide.md` |
+| Download FAQ | `notebooklm download faq ./faq.md` |
 | Download mind map | `notebooklm download mind-map ./map.json` |
 | Download data table | `notebooklm download data-table ./data.csv` |
 | Download quiz | `notebooklm download quiz quiz.json` |
@@ -306,6 +310,8 @@ All generate commands support:
 | Slides | `generate slide-deck` | Yes (.pdf) |
 | Infographic | `generate infographic` | Yes (.png) |
 | Report | `generate report` | Yes (.md) |
+| Study Guide | `generate study-guide` | Yes (.md) |
+| FAQ | `generate faq` | Yes (.md) |
 | Mind Map | `generate mind-map` | Yes (.json) |
 | Data Table | `generate data-table` | Yes (.csv) |
 | Quiz | `generate quiz` | Yes (.json/.md/.html) |
@@ -513,6 +519,71 @@ All commands use consistent exit codes:
 - `artifact wait` returns 2 if timeout reached before completion
 - `generate` returns 1 if rate limited (check stderr for details)
 
+## ⚠️ CRITICAL: Understanding Output Formats
+
+### study-guide vs slide-deck: MUST Read Before Generating
+
+**IMPORTANT**: These two commands produce **completely different formats**:
+
+| Feature | study-guide | slide-deck |
+|---------|-------------|------------|
+| **Output Format** | Markdown text (.md) | PDF slides (.pdf) |
+| **Content Type** | Text-based study guide | Visual presentation slides |
+| **Generation Time** | 1-2 minutes | 5-15 minutes |
+| **Use Case** | Reading/studying | Presenting/teaching |
+| **Download Required** | Yes (`download study-guide`) | Yes (`download slide-deck`) |
+
+### Decision Guide: Which Command to Use?
+
+**Use `generate study-guide` when:**
+- ✅ User wants a **text-based study guide** (Markdown format)
+- ✅ User asks for "学习指南", "study guide", "学习资料"
+- ✅ User prefers reading material over slides
+- ✅ Faster generation is important (1-2 min vs 5-15 min)
+
+**Use `generate slide-deck` when:**
+- ✅ User wants **PDF slides** for presentation
+- ✅ User asks for "幻灯片", "slides", "PPT", "PDF"
+- ✅ User needs visual presentation format
+- ✅ In lesson-plan context and user requests slides
+
+**NEVER:**
+- ❌ Use `study-guide` when user asks for PDF format
+- ❌ Save study-guide output as `.pdf` (it's Markdown!)
+- ❌ Assume study-guide produces PDF (it produces Markdown)
+
+### Example: Correct Tool Selection
+
+```bash
+# User says: "制作PDF幻灯片"
+# ✅ CORRECT: Use slide-deck
+notebooklm generate slide-deck "讲解数学概念"
+notebooklm artifact wait <id>
+notebooklm download slide-deck ./幻灯片.pdf
+
+# User says: "生成学习指南"
+# ✅ CORRECT: Use study-guide
+notebooklm generate study-guide "数学概念学习指南"
+notebooklm artifact wait <id>
+notebooklm download study-guide ./学习指南.md
+
+# User says: "用notebooklm做教案的pdf"
+# ✅ CORRECT: Use slide-deck (user wants PDF)
+notebooklm generate slide-deck "教案内容幻灯片"
+notebooklm artifact wait <id>
+notebooklm download slide-deck ./教案.pdf
+
+# ❌ WRONG: Don't use study-guide for PDF requests
+# notebooklm generate study-guide "..."  # This returns Markdown, not PDF!
+```
+
+### File Format Verification
+
+Before saving downloaded files:
+- `slide-deck` → Verify file is PDF binary (starts with `%PDF`)
+- `study-guide` → File will be Markdown text (starts with `#`)
+- If study-guide output is saved as `.pdf`, it will be **corrupted and unreadable**
+
 ## Known Limitations
 
 **Rate limiting:** Audio, video, quiz, flashcards, infographic, and slides generation may fail due to Google's rate limits. This is an API limitation, not a bug.
@@ -521,7 +592,10 @@ All commands use consistent exit codes:
 - Notebooks (list, create, delete, rename)
 - Sources (add, list, delete)
 - Chat/queries
-- Mind-map, study-guide, FAQ, data-table generation
+- Mind-map (instant, .json)
+- Study Guide (1-2 min, .md)
+- FAQ (1-2 min, .md)
+- Data Table (5-15 min, .csv)
 
 **Unreliable operations:** These may fail with rate limiting:
 - Audio (podcast) generation
@@ -543,6 +617,8 @@ All commands use consistent exit codes:
 | Research (deep) | 15 - 30+ min | 1800s |
 | Notes | instant | n/a |
 | Mind-map | instant (sync) | n/a |
+| Study Guide | 1 - 2 min | 120s |
+| FAQ | 1 - 2 min | 120s |
 | Quiz, flashcards | 5 - 15 min | 900s |
 | Report, data-table | 5 - 15 min | 900s |
 | Audio generation | 10 - 20 min | 1200s |
@@ -571,41 +647,64 @@ notebooklm download --help     # Download content
 
 ## Lesson Plan Integration
 
-When using NotebookLM within the **Lesson Plan Designer** solution, generated artifacts (audio, video, slides, etc.) should be automatically attached to the current lesson plan.
+### ⚠️ CRITICAL: Always call attach_file after downloading artifacts
+
+When using NotebookLM within the **Lesson Plan Designer** solution, you **MUST** attach all downloaded artifacts to the lesson plan using `attach_file`. This is **MANDATORY**, not optional.
+
+**Workflow for any artifact download:**
+1. Download the artifact (audio/video/slides/etc.)
+2. **IMMEDIATELY call `attach_file` with the downloaded file path**
+3. Confirm to user that file is attached and ready to sync
 
 ### Context Detection
 
-Check if the `attach_file` MCP tool is available. If it is, you're in the lesson-plan-designer context.
+Check if the `attach_file` MCP tool is available in the tool list. If it is, you're in the lesson-plan-designer context and **MUST** use it.
 
-### After Downloading Artifacts
+### Mandatory Workflow Examples
 
-After successfully downloading any artifact, call `attach_file` to attach it to the lesson plan:
+#### Slides (PDF) - COMPLETE WORKFLOW
+
+```bash
+# Step 1-4: Standard NotebookLM workflow
+notebooklm create "教案幻灯片"
+notebooklm source add <source>
+notebooklm generate slide-deck "..."
+notebooklm artifact wait <artifact_id>
+notebooklm download slide-deck ./教学幻灯片.pdf
+
+# Step 5: MANDATORY - Call attach_file
+attach_file({
+  filePath: '教学幻灯片.pdf',
+  fileType: 'pdf',
+  description: 'NotebookLM 生成的教学幻灯片'
+})
+```
+
+**IMPORTANT:**
+- ✅ **ALWAYS** call `attach_file` after successful download
+- ✅ Use the EXACT file path from the download command
+- ❌ **NEVER** skip this step in lesson-plan-designer context
+- ❌ **NEVER** assume the user will manually attach the file
 
 #### Audio (Podcast)
 
-```typescript
-// Standard workflow
-notebooklm generate audio "Focus on key teaching points"
-notebooklm artifact wait <artifact_id>
+```bash
 notebooklm download audio ./教学讲解音频.mp3
 
-// Attach to lesson plan
+# MANDATORY:
 attach_file({
   filePath: '教学讲解音频.mp3',
   fileType: 'audio',
-  description: '教学讲解音频 - 基于教学讲稿生成的中文讲解'
+  description: '教学讲解音频 - 约8分钟中文讲解'
 })
 ```
 
 #### Video
 
-```typescript
-// Standard workflow
-notebooklm generate video "Create teaching video"
-notebooklm artifact wait <artifact_id>
+```bash
 notebooklm download video ./教学视频.mp4
 
-// Attach to lesson plan
+# MANDATORY:
 attach_file({
   filePath: '教学视频.mp4',
   fileType: 'video',
@@ -613,52 +712,39 @@ attach_file({
 })
 ```
 
-#### Slides (PDF)
+### Error Handling
 
-```typescript
-// Standard workflow
-notebooklm generate slide-deck "Create slides from lesson content"
-notebooklm artifact wait <artifact_id>
-notebooklm download slide-deck ./教学幻灯片.pdf
+**If attach_file fails:**
+1. Report the error to the user
+2. Provide the file path so they can manually attach it
+3. Do **NOT** silently ignore the failure
 
-// Attach to lesson plan
-attach_file({
-  filePath: '教学幻灯片.pdf',
-  fileType: 'pdf',
-  description: '教学幻灯片 - NotebookLM自动生成'
-})
-```
+### User Experience
+
+After calling `attach_file`:
+- A "添加附件" (Add Attachment) button appears in the chat
+- User clicks it to add the file to the lesson plan
+- File becomes downloadable in the lesson plan's attachments section
+
+### Technical Details
 
 **File path matching:**
 - Use the EXACT file path passed to the download command
 - If user specified custom path (e.g., `./my-slides.pdf`), use that
 - Common patterns:
-  - Audio: `./podcast.mp3`, `./教学讲解音频.mp3`, `./output.mp3`
+  - Audio: `./podcast.mp3`, `./教学讲解音频.mp3`
   - Video: `./video.mp4`, `./教学视频.mp4`
   - Slides: `./slides.pdf`, `./教学幻灯片.pdf`
 
-**Supported file types for attach_file:**
+**Supported file types:**
 - `audio` - Audio files (.mp3, .wav)
 - `video` - Video files (.mp4)
 - `pdf` - PDF documents (.pdf)
 - `image` - Images (.png, .jpg)
 - `document` - Other documents (.md, .txt)
 
-**When to attach:**
-- ✅ `attach_file` tool is available
-- ✅ Download succeeded
-- ✅ User is working on a lesson plan
-
-**When NOT to attach:**
-- ❌ `attach_file` tool not available (general NotebookLM usage)
-- ❌ Download failed
-- ❌ User explicitly says not to attach
-
-**User experience:**
-After attaching, a "添加附件" (Add Attachment) sync button appears in the chat. User clicks it to add the file to the lesson plan's "附件" section with a download button.
-
 **Description customization:**
-- **Audio**: Mention duration if known (e.g., "约8分钟"), language (e.g., "中文讲解")
+- **Audio**: Mention duration (e.g., "约8分钟"), language (e.g., "中文讲解")
 - **Video**: Mention duration, content focus (e.g., "重点讲解方程解法")
-- **Slides**: Mention format (e.g., "PDF格式幻灯片"), page count if known
-- Keep it concise (under 50 characters)
+- **Slides**: Mention format (e.g., "PDF格式"), page count if known
+- Keep concise (under 50 characters)
