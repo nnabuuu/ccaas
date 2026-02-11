@@ -34,6 +34,7 @@ import * as path from 'path';
 import { ChatGateway } from '../chat/chat.gateway';
 import { SessionService } from '../chat/session.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
+import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
@@ -50,10 +51,47 @@ export class SessionsController {
     private readonly chatGateway: ChatGateway,
     private readonly sessionService: SessionService,
     private readonly skillSyncService: SkillSyncService,
+    private readonly skillsService: SkillsService,
     private readonly tenantsService: TenantsService,
     private readonly messagesService: MessagesService,
     private readonly conversationContextService: ConversationContextService,
   ) {}
+
+  /**
+   * Create CLAUDE.md with skill loading instructions
+   *
+   * This method creates a CLAUDE.md file in the workspace that instructs
+   * Claude Code to load and use the synced skills.
+   */
+  private async createClaudeMd(
+    workspaceDir: string,
+    skills: Array<{ name: string; slug: string; description?: string }>,
+  ): Promise<void> {
+    const claudeMdPath = path.join(workspaceDir, 'CLAUDE.md');
+
+    const content = `# Session Skills Configuration
+
+This session has access to the following skills:
+
+${skills.map(s => `- **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.description}` : ''}`).join('\n')}
+
+These skills are available in the \`.claude/skills/\` directory.
+
+## Important Instructions
+
+ALWAYS check available skills before responding to user requests. Use the skills that match the user's intent.
+
+For example:
+- When user asks about lesson planning → use lesson-plan-designer skill
+- When user asks to generate teaching scripts → use teaching-script-generator skill
+- When user uploads quiz images → use quiz-analyzer skill
+
+Skills are your primary tools for accomplishing user tasks in this session.
+`;
+
+    await fs.promises.writeFile(claudeMdPath, content, 'utf-8');
+    this.logger.log(`Created CLAUDE.md with ${skills.length} skills`);
+  }
 
   /**
    * Create completion (send message)
@@ -105,7 +143,7 @@ Send user message to the specified session. Agent will push response events via 
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
   ) {
-    const { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
+    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
 
     // Debug logging for context field
     this.logger.debug(`=== CREATE COMPLETION DEBUG ===`);
@@ -118,7 +156,7 @@ Send user message to the specified session. Agent will push response events via 
     this.logger.debug(`==============================`);
 
     this.logger.log(`Creating completion for session ${sessionId}`);
-    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}`);
+    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}, enabledSkillSlugs=${enabledSkillSlugs ? enabledSkillSlugs.join(', ') : 'none'}`);
 
     // Find WebSocket connection
     const socket = this.chatGateway.getClientSocket(clientId);
@@ -138,6 +176,30 @@ Send user message to the specified session. Agent will push response events via 
     }
 
     try {
+      // Phase 2: Auto-load tenant skills if not provided
+      if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
+        this.logger.debug(`No enabledSkillSlugs provided, querying tenant skills for: ${tenantId}`);
+
+        // Resolve tenant slug/id to actual tenant UUID first
+        let queryTenantId = tenantId;
+        try {
+          const tenant = await this.tenantsService.findOne(tenantId);
+          if (tenant) {
+            queryTenantId = tenant.id;
+          }
+        } catch (error) {
+          this.logger.warn(`Failed to resolve tenant for skill query: ${error}`);
+        }
+
+        const allSkills = await this.skillsService.findPublished(queryTenantId);
+        const enabledTenantSkills = allSkills.filter(skill => skill.enabled);
+
+        enabledSkillSlugs = enabledTenantSkills.map(s => s.slug);
+
+        this.logger.log(
+          `Auto-loaded ${enabledSkillSlugs.length} enabled skills for tenant ${tenantId}: ${enabledSkillSlugs.join(', ')}`,
+        );
+      }
       // Resolve tenant slug/id to actual tenant UUID
       let resolvedTenantId = tenantId;
       try {
@@ -176,6 +238,26 @@ Send user message to the specified session. Agent will push response events via 
         );
         session.skillSyncedAt = new Date();
         this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
+
+        // Phase 1: Create CLAUDE.md after syncing skills
+        if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+          const allSkills = await this.skillsService.findPublished(resolvedTenantId);
+          const skillSlugs = enabledSkillSlugs; // Type narrowing
+          const skillsToDocument = allSkills.filter(skill =>
+            skillSlugs.includes(skill.slug)
+          );
+
+          if (skillsToDocument.length > 0) {
+            await this.createClaudeMd(
+              session.workspaceDir,
+              skillsToDocument.map(s => ({
+                name: s.name,
+                slug: s.slug,
+                description: s.description,
+              })),
+            );
+          }
+        }
       } catch (error) {
         this.logger.warn(`Failed to sync skills: ${error}`);
       }
