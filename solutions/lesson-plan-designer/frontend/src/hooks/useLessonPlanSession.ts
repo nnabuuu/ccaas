@@ -8,10 +8,11 @@ import {
   useAgentChat,
   useAgentStatus,
   usePageContext,
+  useFiles,
   type Message,
+  type UseAgentConnectionReturn,
 } from '@ccaas/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
-import { useSubAgentPolling } from './useSubAgentPolling'
 import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 import { api } from '../utils/api'
@@ -52,6 +53,7 @@ interface UseLessonPlanSessionOptions {
 interface UseLessonPlanSessionReturn {
   // Connection state
   connected: boolean
+  connection: UseAgentConnectionReturn
   sessionId: string
   error: string | null
 
@@ -83,6 +85,9 @@ interface UseLessonPlanSessionReturn {
   // Todo state
   todoItems: TodoItem[]
   todoStats: TodoStats | null
+
+  // Files state (NEW)
+  newFilesCount: number
 
   // Actions
   cancelProcessing: () => void
@@ -170,6 +175,13 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   // ===== SDK Status =====
   const status = useAgentStatus({ connection })
 
+  // ===== SDK Files =====
+  const files = useFiles({
+    connection,
+    sessionId: connection.sessionId,
+    enabled: connection.connected,
+  })
+
   // ===== Backward Compatibility Aliases =====
   // Alias SDK functions and status
   const sendMessage = chat.sendMessage
@@ -188,22 +200,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const hasActiveSubAgents = activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
 
-  // Subagent polling as fallback (SDK handles via WebSocket, polling provides verification)
-  // Note: SDK's useAgentStatus now manages activeSubAgents, polling kept for reliability
-  useSubAgentPolling({
-    sessionId: sessionIdRef.current,
-    enabled: isMainProcessing || hasActiveSubAgents,
-    onUpdate: (polledAgents) => {
-      // SDK handles subagent state via WebSocket
-      // Polling provides verification but doesn't override SDK state
-      if (polledAgents.length === 0 && activeSubAgents.length > 0) {
-        console.warn('⚠️ Polling shows no subagents but SDK shows active subagents - WebSocket may be stale')
-      }
-    },
-    onError: (err) => {
-      console.error('Sub-agent polling error:', err)
-    },
-  })
+  // SubAgent tracking is now fully handled by SDK's useAgentStatus via WebSocket
+  // Removed useSubAgentPolling - WebSocket provides real-time updates without polling overhead
 
   // Register event listeners on SDK-managed socket
   useEffect(() => {
@@ -337,6 +335,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   return {
     // Connection state
     connected,
+    connection,
     sessionId: connection.sessionId,
     error,
 
@@ -368,6 +367,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     // Todo state
     todoItems,
     todoStats,
+
+    // Files state (NEW)
+    newFilesCount: files.newFilesCount,
 
     // Actions
     cancelProcessing,

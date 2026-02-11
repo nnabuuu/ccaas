@@ -1,0 +1,241 @@
+import { useState } from 'react'
+import { useFiles, FileUploadButton, type UseAgentConnectionReturn, type FileMetadata } from '@ccaas/react-sdk'
+import { useFileAttachment } from '../hooks/useFileAttachment'
+import { Download, Paperclip, File, Music, FileText, FileCode, Presentation } from 'lucide-react'
+
+interface FilesViewProps {
+  connection: UseAgentConnectionReturn
+  sessionId: string
+  lessonPlanId: string
+}
+
+/**
+ * Get file type icon component
+ */
+function getFileIcon(mimeType: string | null): typeof File {
+  if (!mimeType) return File
+
+  if (mimeType.startsWith('audio/')) return Music
+  if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return Presentation
+  if (mimeType === 'application/pdf') return FileText
+  if (mimeType === 'text/plain' || mimeType === 'text/markdown') return FileCode
+
+  return File
+}
+
+/**
+ * Get file type color
+ */
+function getFileColor(mimeType: string | null): string {
+  if (!mimeType) return 'text-gray-600'
+
+  if (mimeType.startsWith('audio/')) return 'text-purple-600'
+  if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'text-orange-600'
+  if (mimeType === 'application/pdf') return 'text-red-600'
+  if (mimeType === 'text/plain' || mimeType === 'text/markdown') return 'text-blue-600'
+
+  return 'text-gray-600'
+}
+
+/**
+ * Format file size
+ */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/**
+ * FilesView Component
+ *
+ * File browser with "Attach to Lesson Plan" functionality
+ */
+export function FilesView({ connection, sessionId, lessonPlanId }: FilesViewProps) {
+  const [showUpload, setShowUpload] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<FileMetadata | null>(null)
+  const [attachingFileId, setAttachingFileId] = useState<string | null>(null)
+
+  const files = useFiles({
+    connection,
+    sessionId,
+    enabled: true,
+  })
+
+  const { attachFile } = useFileAttachment(lessonPlanId)
+
+  const handleUpload = async (file: File) => {
+    await files.uploadFile(file)
+    setShowUpload(false)
+  }
+
+  const handleAttachFile = async (file: FileMetadata) => {
+    setAttachingFileId(file.id)
+    try {
+      const result = await attachFile(file)
+      if (result.success) {
+        // Success feedback is handled by the parent component via toast
+        console.log(`File ${file.filename} attached successfully`)
+      }
+    } finally {
+      setAttachingFileId(null)
+    }
+  }
+
+  const handleFileClick = (file: FileMetadata) => {
+    setSelectedFile(file)
+    if (file.status === 'new') {
+      files.markAsSynced(file.id)
+    }
+  }
+
+  const handleDownload = (file: FileMetadata) => {
+    // Download file using the file metadata
+    const url = `/api/v1/files/${file.id}/download`
+    const link = document.createElement('a')
+    link.href = url
+    link.download = file.filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-white">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-gray-900">文件</h2>
+          {files.hasNewFiles && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded-full">
+              {files.newFilesCount} 新
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {files.hasNewFiles && (
+            <button
+              onClick={() => files.markAllSeen()}
+              className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              标记已读
+            </button>
+          )}
+          <button
+            onClick={() => setShowUpload(!showUpload)}
+            className="px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+          >
+            {showUpload ? '取消' : '上传'}
+          </button>
+        </div>
+      </div>
+
+      {/* Upload Area */}
+      {showUpload && (
+        <div className="p-4 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+          <FileUploadButton onUpload={handleUpload} />
+        </div>
+      )}
+
+      {/* File List */}
+      <div className="flex-1 overflow-y-auto">
+        {files.isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 border-3 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+              <p className="text-sm text-gray-500">加载中...</p>
+            </div>
+          </div>
+        ) : files.files.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-center px-4">
+              <svg
+                className="w-12 h-12 text-gray-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+              >
+                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <p className="text-sm text-gray-500">暂无文件</p>
+              <p className="text-xs text-gray-400">点击上传按钮添加课件、音频等资料</p>
+            </div>
+          </div>
+        ) : (
+          <div className="py-1">
+            {files.files.map((file) => {
+              const IconComponent = getFileIcon(file.mimeType)
+              const iconColor = getFileColor(file.mimeType)
+              const isAttaching = attachingFileId === file.id
+              const isSelected = selectedFile?.id === file.id
+
+              return (
+                <div
+                  key={file.id}
+                  onClick={() => handleFileClick(file)}
+                  className={`flex items-center gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-blue-50' : ''
+                  }`}
+                >
+                  {/* File Icon */}
+                  <div className="flex-shrink-0">
+                    <IconComponent className={`w-5 h-5 ${iconColor}`} />
+                  </div>
+
+                  {/* File Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {file.filename}
+                      </p>
+                      {file.status === 'new' && (
+                        <span className="flex-shrink-0 px-1.5 py-0.5 text-xs font-medium bg-red-100 text-red-600 rounded">
+                          新
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {formatBytes(file.size)}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Download Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDownload(file)
+                      }}
+                      className="p-1.5 text-gray-600 hover:text-blue-600 rounded transition-colors"
+                      title="下载"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
+
+                    {/* Attach Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleAttachFile(file)
+                      }}
+                      disabled={isAttaching}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="附加到教案"
+                    >
+                      <Paperclip className="w-3.5 h-3.5" />
+                      {isAttaching ? '附加中...' : '附加'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default FilesView

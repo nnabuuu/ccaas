@@ -1,25 +1,27 @@
+import { Music, Presentation, FileText, FileCode, File, Download, Trash2, Check, Clock } from 'lucide-react'
 import type { LessonPlanAttachment } from '../types'
 
 interface AttachmentCardProps {
   attachment: LessonPlanAttachment
+  status?: 'pending' | 'attached'
   onRemove?: (id: string) => void
 }
 
 /**
- * Get icon for file type
+ * Get Lucide icon component for file type
  */
-function getFileIcon(fileType: string): string {
+function getFileIcon(fileType: string) {
   switch (fileType) {
     case 'audio':
-      return '🎵'
+      return Music
     case 'ppt':
-      return '📊'
+      return Presentation
     case 'pdf':
-      return '📄'
+      return FileText
     case 'script':
-      return '📝'
+      return FileCode
     default:
-      return '📎'
+      return File
   }
 }
 
@@ -91,8 +93,8 @@ function getFileTypeLabel(fileType: string): string {
  *
  * Displays a file attachment with metadata and action buttons.
  */
-export function AttachmentCard({ attachment, onRemove }: AttachmentCardProps) {
-  const icon = getFileIcon(attachment.fileType)
+export function AttachmentCard({ attachment, status = 'attached', onRemove }: AttachmentCardProps) {
+  const IconComponent = getFileIcon(attachment.fileType)
   const colors = getFileTypeColor(attachment.fileType)
   const formattedSize = formatBytes(attachment.size)
   const formattedDate = formatDate(attachment.uploadedAt)
@@ -104,9 +106,7 @@ export function AttachmentCard({ attachment, onRemove }: AttachmentCardProps) {
     >
       {/* File icon */}
       <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg ${colors.bg}`}>
-        <span className="text-2xl" role="img" aria-label={fileTypeLabel}>
-          {icon}
-        </span>
+        <IconComponent className={`w-6 h-6 ${colors.text}`} />
       </div>
 
       {/* File info */}
@@ -115,10 +115,25 @@ export function AttachmentCard({ attachment, onRemove }: AttachmentCardProps) {
         <h4 className="font-medium text-gray-900 truncate">{attachment.fileName}</h4>
 
         {/* File metadata */}
-        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+        <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 flex-wrap">
           <span className={`px-2 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text}`}>
             {fileTypeLabel}
           </span>
+
+          {/* Status badge */}
+          {status === 'pending' && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              待附加
+            </span>
+          )}
+          {status === 'attached' && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 rounded flex items-center gap-1">
+              <Check className="w-3 h-3" />
+              已附加
+            </span>
+          )}
+
           <span>•</span>
           <span>{formattedSize}</span>
           <span>•</span>
@@ -139,17 +154,10 @@ export function AttachmentCard({ attachment, onRemove }: AttachmentCardProps) {
         <a
           href={attachment.downloadUrl}
           download={attachment.fileName}
-          className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-1.5 text-sm font-medium"
+          className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm font-medium"
           title="下载文件"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-            />
-          </svg>
+          <Download className="w-4 h-4" />
           下载
         </a>
 
@@ -160,14 +168,7 @@ export function AttachmentCard({ attachment, onRemove }: AttachmentCardProps) {
             className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
             title="删除附件"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
+            <Trash2 className="w-5 h-5" />
           </button>
         )}
       </div>

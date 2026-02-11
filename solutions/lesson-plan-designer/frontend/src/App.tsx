@@ -98,6 +98,8 @@ function App() {
   // Lesson plan session hook
   const {
     connected,
+    connection,
+    sessionId,
     error,
     lessonPlan,
     loading,
@@ -115,6 +117,7 @@ function App() {
     todoItems,
     todoStats,
     activeSubAgents,
+    newFilesCount,
     cancelProcessing,
     sendMessage,
     saveLessonPlan,
@@ -253,6 +256,9 @@ function App() {
     isMainProcessing,
     hasActiveSubAgents,
     connected,
+    connection,
+    sessionId,
+    lessonPlanId: lessonPlan?.id,
     activeTools,
     isThinking,
     thinkingContent,
@@ -261,11 +267,12 @@ function App() {
     activeSubAgents,
     pendingUpdates,
     modifiedFields,
+    newFilesCount,
     onSendMessage: sendMessage,
     onSync: syncToForm,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, pendingUpdates, modifiedFields, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, pendingUpdates, modifiedFields, newFilesCount, sendMessage, syncToForm, discardUpdate, cancelProcessing])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {
@@ -426,7 +433,7 @@ function App() {
             <main className="flex-1 bg-gray-50 overflow-hidden">
               {lessonPlanEl}
             </main>
-            <aside className="w-[400px] flex-shrink-0 flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
+            <aside className="w-[450px] flex-shrink-0 flex flex-col bg-gray-50 border-l border-gray-200 overflow-hidden">
               {chatSection}
             </aside>
           </>
@@ -480,7 +487,7 @@ function App() {
             {!isCollapsed ? (
               <div
                 className={`absolute top-0 right-0 bottom-0 flex flex-col bg-gray-50 border-l border-gray-200 shadow-xl z-10 ${isResizing ? 'select-none' : ''}`}
-                style={{ width: overlayWidth }}
+                style={{ width: overlayWidth, minWidth: '450px' }}
               >
                 {/* Resize handle on left edge */}
                 <div

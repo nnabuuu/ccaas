@@ -336,3 +336,17 @@ export interface Skill {
   createdAt: string
   updatedAt: string
 }
+
+// Tab types for ChatPanel
+export type TabType = 'messages' | 'files'
+
+export interface FileAttachmentState {
+  isAttaching: boolean
+  error: string | null
+}
+
+export interface FilesViewProps {
+  connection: any // UseAgentConnectionReturn
+  sessionId: string
+  lessonPlanId: string
+}

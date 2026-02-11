@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { AgentActivityLine, type ToolActivity } from '@ccaas/react-sdk'
-import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent } from '../types'
+import { AgentActivityLine, type ToolActivity, type UseAgentConnectionReturn } from '@ccaas/react-sdk'
+import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType } from '../types'
 import MessageBubble from './MessageBubble'
 import QuickPrompts from './QuickPrompts'
+import FilesView from './FilesView'
 
 interface ChatPanelProps {
   messages: Message[]
@@ -10,6 +11,7 @@ interface ChatPanelProps {
   isMainProcessing?: boolean
   hasActiveSubAgents?: boolean
   connected: boolean
+  connection?: UseAgentConnectionReturn
   activeTools?: Map<string, ToolActivity>
   isThinking?: boolean
   thinkingContent?: string
@@ -18,6 +20,9 @@ interface ChatPanelProps {
   activeSubAgents?: ActiveSubAgent[]
   pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
   modifiedFields?: Set<SyncField>
+  newFilesCount?: number
+  sessionId?: string
+  lessonPlanId?: string
   onSendMessage: (content: string) => void
   onSync: (field: SyncField) => void
   onDiscard: (field: SyncField) => void
@@ -29,6 +34,7 @@ export function ChatPanel({
   isProcessing,
   isMainProcessing,
   connected,
+  connection,
   activeTools = new Map(),
   isThinking = false,
   thinkingContent = '',
@@ -37,6 +43,9 @@ export function ChatPanel({
   activeSubAgents = [],
   pendingUpdates,
   modifiedFields,
+  newFilesCount = 0,
+  sessionId,
+  lessonPlanId,
   onSendMessage,
   onSync,
   onDiscard,
@@ -45,6 +54,7 @@ export function ChatPanel({
   // 向后兼容：如果没有提供 isMainProcessing，使用 isProcessing
   const mainProcessing = isMainProcessing ?? isProcessing
   const [inputValue, setInputValue] = useState('')
+  const [activeTab, setActiveTab] = useState<TabType>('messages')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -73,6 +83,12 @@ export function ChatPanel({
     onSendMessage(prompt)
   }
 
+  // Calculate unread message count (messages added in last 5 seconds)
+  const newMessagesCount = messages.filter(m => {
+    const messageAge = Date.now() - new Date(m.timestamp).getTime()
+    return messageAge < 5000 && m.role === 'assistant'
+  }).length
+
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header */}
@@ -80,8 +96,49 @@ export function ChatPanel({
         <h2 className="font-semibold text-gray-800">AI 备课助手</h2>
       </div>
 
+      {/* Tab Bar */}
+      <div className="flex border-b border-gray-200 bg-white flex-shrink-0">
+        <button
+          onClick={() => setActiveTab('messages')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+            activeTab === 'messages'
+              ? 'text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          消息
+          {newMessagesCount > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+              {newMessagesCount}
+            </span>
+          )}
+          {activeTab === 'messages' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('files')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+            activeTab === 'files'
+              ? 'text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          文件
+          {newFilesCount > 0 && (
+            <span className="ml-2 px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full">
+              {newFilesCount}
+            </span>
+          )}
+          {activeTab === 'files' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+          )}
+        </button>
+      </div>
+
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+      {activeTab === 'messages' && (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
             <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +160,19 @@ export function ChatPanel({
           ))
         )}
         <div ref={messagesEndRef} />
-      </div>
+        </div>
+      )}
+
+      {/* Files View */}
+      {activeTab === 'files' && connection && sessionId && lessonPlanId && (
+        <div className="flex-1 overflow-hidden">
+          <FilesView
+            connection={connection}
+            sessionId={sessionId}
+            lessonPlanId={lessonPlanId}
+          />
+        </div>
+      )}
 
       {/* Activity Status Line */}
       <AgentActivityLine
