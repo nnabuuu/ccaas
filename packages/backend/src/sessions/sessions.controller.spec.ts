@@ -4,6 +4,7 @@ import { SessionsController } from './sessions.controller';
 import { SessionService } from '../chat/session.service';
 import { ChatGateway } from '../chat/chat.gateway';
 import { SkillSyncService } from '../skills/skill-sync.service';
+import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
@@ -54,6 +55,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: SessionService, useValue: sessionService },
         { provide: ChatGateway, useValue: chatGateway },
         { provide: SkillSyncService, useValue: {} },
+        { provide: SkillsService, useValue: {} },
         { provide: TenantsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
