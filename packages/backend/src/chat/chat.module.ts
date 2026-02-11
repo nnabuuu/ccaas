@@ -7,7 +7,6 @@
 import { Module } from '@nestjs/common';
 import { ChatGateway } from './chat.gateway';
 import { ChatController } from './chat.controller';
-import { SessionsController } from './sessions.controller';
 import { SessionModule } from './session.module';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
@@ -16,7 +15,7 @@ import { FilesModule } from '../files/files.module';
 
 @Module({
   imports: [SessionModule, SkillsModule, TenantsModule, MessagesModule, FilesModule],
-  controllers: [ChatController, SessionsController],
+  controllers: [ChatController],
   providers: [ChatGateway],
   exports: [ChatGateway, SessionModule],
 })
