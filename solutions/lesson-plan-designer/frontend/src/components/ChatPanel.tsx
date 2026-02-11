@@ -16,6 +16,8 @@ interface ChatPanelProps {
   todoItems?: TodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: ActiveSubAgent[]
+  pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
+  modifiedFields?: Set<SyncField>
   onSendMessage: (content: string) => void
   onSync: (field: SyncField) => void
   onDiscard: (field: SyncField) => void
@@ -33,6 +35,8 @@ export function ChatPanel({
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
+  pendingUpdates,
+  modifiedFields,
   onSendMessage,
   onSync,
   onDiscard,
@@ -93,6 +97,8 @@ export function ChatPanel({
               message={message}
               onSync={onSync}
               onDiscard={onDiscard}
+              pendingUpdates={pendingUpdates}
+              modifiedFields={modifiedFields}
             />
           ))
         )}

@@ -106,6 +106,7 @@ function App() {
     isProcessing,
     isMainProcessing,
     hasActiveSubAgents,
+    pendingUpdates,
     modifiedFields,
     activeTools,
     isThinking,
@@ -258,11 +259,13 @@ function App() {
     todoItems,
     todoStats,
     activeSubAgents,
+    pendingUpdates,
+    modifiedFields,
     onSendMessage: sendMessage,
     onSync: syncToForm,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, activeTools, isThinking, thinkingContent, todoItems, todoStats, activeSubAgents, pendingUpdates, modifiedFields, sendMessage, syncToForm, discardUpdate, cancelProcessing])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {

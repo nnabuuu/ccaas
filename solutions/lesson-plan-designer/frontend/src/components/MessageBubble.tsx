@@ -6,6 +6,8 @@ interface MessageBubbleProps {
   message: Message
   onSync?: (field: SyncField) => void
   onDiscard?: (field: SyncField) => void
+  pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
+  modifiedFields?: Set<SyncField>
 }
 
 const TOOL_ICONS: Record<string, string> = {
@@ -143,7 +145,7 @@ function TokenUsageFooter({ usage }: { usage: MessageTokenUsage }) {
   )
 }
 
-export function MessageBubble({ message, onSync, onDiscard }: MessageBubbleProps) {
+export function MessageBubble({ message, onSync, onDiscard, pendingUpdates }: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   return (
@@ -196,17 +198,24 @@ export function MessageBubble({ message, onSync, onDiscard }: MessageBubbleProps
             {/* Output Updates (Sync Buttons) */}
             {!isUser && message.outputUpdates && message.outputUpdates.length > 0 && (
               <div className="mt-2 space-y-2">
-                {message.outputUpdates.map((update) => (
-                  <SyncButton
-                    key={update.field}
-                    field={update.field}
-                    preview={update.preview}
-                    synced={update.synced}
-                    syncedAt={update.syncedAt}
-                    onSync={() => onSync?.(update.field)}
-                    onDiscard={() => onDiscard?.(update.field)}
-                  />
-                ))}
+                {message.outputUpdates.map((update) => {
+                  // Derive synced state from pendingUpdates Map (fixes button state update)
+                  const localUpdate = pendingUpdates?.get(update.field as SyncField)
+                  const synced = localUpdate?.synced ?? update.synced
+                  const syncedAt = localUpdate?.syncedAt ?? update.syncedAt
+
+                  return (
+                    <SyncButton
+                      key={update.field}
+                      field={update.field}
+                      preview={update.preview}
+                      synced={synced}
+                      syncedAt={syncedAt}
+                      onSync={() => onSync?.(update.field as SyncField)}
+                      onDiscard={() => onDiscard?.(update.field as SyncField)}
+                    />
+                  )
+                })}
               </div>
             )}
 
