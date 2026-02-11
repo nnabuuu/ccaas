@@ -107,6 +107,16 @@ Send user message to the specified session. Agent will push response events via 
   ) {
     const { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
 
+    // Debug logging for context field
+    this.logger.debug(`=== CREATE COMPLETION DEBUG ===`);
+    this.logger.debug(`Received keys: ${Object.keys(data).join(', ')}`);
+    this.logger.debug(`Has context: ${!!data.context}`);
+    if (data.context) {
+      this.logger.debug(`Context keys: ${Object.keys(data.context).join(', ')}`);
+      this.logger.debug(`Context preview: ${JSON.stringify(data.context).slice(0, 200)}`);
+    }
+    this.logger.debug(`==============================`);
+
     this.logger.log(`Creating completion for session ${sessionId}`);
     this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}`);
 
@@ -228,6 +238,30 @@ Read(".claude/skills/${skillName}/SKILL.md")
       this.logger.debug(
         `Created messages: user=${userMessage.id}, assistant=${assistantMessage.id}`,
       );
+
+      // Store page context if provided (NEW: Write to workspace for MCP tool to read)
+      if (data.context) {
+        try {
+          const contextDir = path.join(session.workspaceDir, '.context');
+          const contextPath = path.join(contextDir, 'page-context.json');
+
+          // Ensure directory exists
+          if (!fs.existsSync(contextDir)) {
+            fs.mkdirSync(contextDir, { recursive: true });
+          }
+
+          // Write context to file (with timestamp)
+          const contextData = {
+            ...data.context,
+            timestamp: new Date().toISOString(),
+          };
+          fs.writeFileSync(contextPath, JSON.stringify(contextData, null, 2));
+
+          this.logger.debug(`Wrote page context for session ${sessionId}: ${JSON.stringify(data.context).slice(0, 100)}...`);
+        } catch (err) {
+          this.logger.warn(`Failed to write page context: ${err}`);
+        }
+      }
 
       // Create or update ConversationContext (on first message)
       if (session.messageCount === 0) {

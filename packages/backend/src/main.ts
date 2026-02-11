@@ -29,7 +29,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       transform: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // Allow extra properties for flexibility (e.g., context field)
       transformOptions: {
         enableImplicitConversion: true,
       },
