@@ -1,5 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { AgentActivityLine, type ToolActivity, type UseAgentConnectionReturn } from '@ccaas/react-sdk'
+import {
+  AgentActivityLine,
+  useTaskTracking,
+  TasksView,
+  type ToolActivity,
+  type UseAgentConnectionReturn,
+} from '@ccaas/react-sdk'
 import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType } from '../types'
 import MessageBubble from './MessageBubble'
 import QuickPrompts from './QuickPrompts'
@@ -55,8 +61,15 @@ export function ChatPanel({
   const mainProcessing = isMainProcessing ?? isProcessing
   const [inputValue, setInputValue] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('messages')
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Track tasks
+  const taskTracking = useTaskTracking({
+    activeSubAgents,
+    todoItems,
+  })
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -83,11 +96,21 @@ export function ChatPanel({
     onSendMessage(prompt)
   }
 
+  // TODO: Phase 4 - Handle task click from messages
+  // const handleTaskClick = (taskId: string) => {
+  //   setActiveTab('tasks')
+  //   setHighlightedTaskId(taskId)
+  //   setTimeout(() => setHighlightedTaskId(null), 3000)
+  // }
+
   // Calculate unread message count (messages added in last 5 seconds)
-  const newMessagesCount = messages.filter(m => {
-    const messageAge = Date.now() - new Date(m.timestamp).getTime()
-    return messageAge < 5000 && m.role === 'assistant'
-  }).length
+  // Only show badge when user is NOT on messages tab (UX best practice)
+  const newMessagesCount = activeTab !== 'messages'
+    ? messages.filter(m => {
+        const messageAge = Date.now() - new Date(m.timestamp).getTime()
+        return messageAge < 5000 && m.role === 'assistant'
+      }).length
+    : 0
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -125,12 +148,40 @@ export function ChatPanel({
           }`}
         >
           文件
-          {newFilesCount > 0 && (
+          {newFilesCount > 0 && activeTab !== 'files' && (
             <span className="ml-2 px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full">
               {newFilesCount}
             </span>
           )}
           {activeTab === 'files' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('tasks')}
+          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+            activeTab === 'tasks'
+              ? 'text-blue-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          任务
+          {taskTracking.badgeState.show && activeTab !== 'tasks' && (
+            <span
+              className={`ml-2 px-2 py-0.5 text-xs rounded-full text-white ${
+                taskTracking.badgeState.color === 'green'
+                  ? 'bg-green-500 animate-pulse'
+                  : taskTracking.badgeState.color === 'red'
+                    ? 'bg-red-500'
+                    : taskTracking.badgeState.color === 'amber'
+                      ? 'bg-amber-500'
+                      : 'bg-blue-500'
+              }`}
+            >
+              {taskTracking.badgeState.count || ''}
+            </span>
+          )}
+          {activeTab === 'tasks' && (
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
           )}
         </button>
@@ -170,6 +221,17 @@ export function ChatPanel({
             connection={connection}
             sessionId={sessionId}
             lessonPlanId={lessonPlanId}
+          />
+        </div>
+      )}
+
+      {/* Tasks View */}
+      {activeTab === 'tasks' && (
+        <div className="flex-1 overflow-hidden">
+          <TasksView
+            groups={taskTracking.groups}
+            todoStats={todoStats}
+            highlightedTaskId={highlightedTaskId}
           />
         </div>
       )}
