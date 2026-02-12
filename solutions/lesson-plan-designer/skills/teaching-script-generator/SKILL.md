@@ -690,39 +690,38 @@ await attach_file({
 - 讲稿必须是**简体中文**
 - NotebookLM 会继承讲稿语言生成中文音频
 
-### 2. 生成 PPT
+### 2. 生成演示文稿 (PPT/PDF)
 
-当用户请求"生成PPT"时：
+当用户请求"生成PPT"、"生成PDF"或"生成幻灯片"时：
 
 ```markdown
-使用 Skill 工具调用 PPTX：
+使用 Skill 工具调用 lesson-plan-pptx：
 
-Skill: "example-skills:pptx"
-Args: "创建一个中文教学PPT演示文稿。所有内容必须使用简体中文。"
+Skill: "lesson-plan-pptx"
+Args: ""  # 无需参数 - 自动从 .context 读取
 
-幻灯片结构（基于讲稿章节）：
+统一说明：
+- 无论用户说"PPT"还是"PDF"，统一使用NotebookLM生成PDF格式幻灯片
+- PDF格式通用，无需PowerPoint，AI设计质量高
+
+幻灯片结构（由NotebookLM自动生成）：
 - Slide 1: 封面（课程基本信息）
-- Slide 2: 教学目标
-- Slide 3: 教学重难点
-- Slide 4-N: 教学过程（每个环节一页）
-- Slide N+1: 评价与检测
+- Slide 2-3: 教学目标
+- Slide 4-N: 教学过程（基于教学环节）
+- Slide N+1: 评价方法
 - Slide N+2: 课程总结
 ```
 
-**重要：生成PPT后必须附加文件**
-
-```typescript
-// PPTX 技能生成PPT后，立即附加文件
-await attach_file({
-  filePath: '教学PPT.pptx',  // PPTX 技能保存的路径
-  fileType: 'ppt',
-  description: '教学PPT - 包含10页幻灯片，涵盖课程重点和互动环节'
-})
-```
+**重要说明：**
+- **输出格式**: PDF（不是 .pptx）- NotebookLM生成专业PDF幻灯片
+- **生成时间**: 5-15 分钟（后台执行，不阻塞对话）
+- **自动附加**: 完成后会自动调用 `attach_file`
+- **内容驱动**: NotebookLM AI自动分析教案生成最佳幻灯片
 
 **用户将看到：**
-- "添加附件" 同步按钮
-- 预览：📎 教学PPT.pptx (2.5MB)
+1. 立即提示: "正在使用NotebookLM生成PDF幻灯片,约 5-15 分钟"
+2. 生成完成后: "添加附件" 同步按钮
+3. 预览: 📎 教学幻灯片_课题名称.pdf (约2-4MB)
 
 ### 3. 全套材料
 
