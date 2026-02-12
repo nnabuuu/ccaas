@@ -30,6 +30,7 @@ import { ThinkingBlock } from './messages/entities/thinking-block.entity';
 import { TokenUsageEvent } from './messages/entities/token-usage-event.entity';
 import { UserContextEvent } from './messages/entities/user-context-event.entity';
 import { AgentFile } from './files/entities/agent-file.entity';
+import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
 import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
@@ -70,6 +71,7 @@ import { UserTenant } from './users/entities/user-tenant.entity';
         ApiKey,
         McpServer,
         AgentFile,
+        FileVersion,
         // User entities
         User,
         UserTenant,
