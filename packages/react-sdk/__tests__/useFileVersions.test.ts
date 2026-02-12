@@ -9,8 +9,8 @@
  */
 
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useFileVersions } from '../useFileVersions';
-import type { UseAgentConnectionReturn, FileMetadata } from '../../types';
+import { useFileVersions } from '../src/hooks/useFileVersions';
+import type { UseAgentConnectionReturn, FileMetadata } from '../src/types';
 
 // Mock fetch
 global.fetch = jest.fn();

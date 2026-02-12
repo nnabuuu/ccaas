@@ -131,6 +131,53 @@ export interface TodoStats {
 }
 
 // ============================================================================
+// Unified Task Types (for Task Tracking System)
+// ============================================================================
+
+export interface UnifiedTask {
+  id: string
+  type: 'subagent' | 'todo'
+  status: 'running' | 'completed' | 'failed' | 'pending' | 'in_progress'
+  title: string
+  description?: string
+  startedAt?: Date
+  completedAt?: Date
+  duration?: number
+  agentType?: string
+  progress?: number
+  activeForm?: string
+  nestingLevel?: number
+  raw: import('@ccaas/common').ActiveSubAgent | import('@ccaas/common').EventTodoItem
+}
+
+export interface TaskGroups {
+  active: UnifiedTask[]
+  recentCompleted: UnifiedTask[]
+  recentFailed: UnifiedTask[]
+}
+
+export interface TaskBadgeState {
+  show: boolean
+  color: 'green' | 'red' | 'amber' | 'blue'
+  count?: number
+  label: string
+}
+
+export interface UseTaskTrackingOptions {
+  activeSubAgents: import('@ccaas/common').ActiveSubAgent[]
+  todoItems: import('@ccaas/common').EventTodoItem[]
+  maxHistorySize?: number
+}
+
+export interface UseTaskTrackingReturn {
+  groups: TaskGroups
+  badgeState: TaskBadgeState
+  allTasks: UnifiedTask[]
+  findTask: (id: string) => UnifiedTask | undefined
+  clearHistory: () => void
+}
+
+// ============================================================================
 // Content Block Types (shared between solutions)
 // ============================================================================
 

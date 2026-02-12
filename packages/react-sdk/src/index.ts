@@ -17,6 +17,7 @@ export { usePageContext } from './hooks/usePageContext'
 export { useFiles } from './hooks/useFiles'
 export { useFileVersions } from './hooks/useFileVersions'
 export { useFilePreview, clearPreviewCache } from './hooks/useFilePreview'
+export { useTaskTracking } from './hooks/useTaskTracking'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -40,6 +41,10 @@ export { FileImagePreview } from './components/FileImagePreview'
 export { FileUploadButton } from './components/FileUploadButton'
 export { FileVersionHistory } from './components/FileVersionHistory'
 export { FileVersionCompare } from './components/FileVersionCompare'
+export { TasksView } from './components/TasksView'
+export { TasksHeader } from './components/TasksHeader'
+export { TasksList } from './components/TasksList'
+export { UnifiedTaskCard } from './components/UnifiedTaskCard'
 
 // Utilities
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
@@ -72,6 +77,8 @@ export type {
   UseFileVersionsReturn,
   UseFilePreviewOptions,
   UseFilePreviewReturn,
+  UseTaskTrackingOptions,
+  UseTaskTrackingReturn,
 
   // Common data types
   Message,
@@ -85,6 +92,9 @@ export type {
   McpServerConfig,
   TodoStats,
   PageContext,
+  UnifiedTask,
+  TaskGroups,
+  TaskBadgeState,
   FileMetadata,
   FileVersion,
   FilePreviewData,
@@ -122,6 +132,10 @@ export type { FileImagePreviewProps } from './components/FileImagePreview'
 export type { FileUploadButtonProps } from './components/FileUploadButton'
 export type { FileVersionHistoryProps } from './components/FileVersionHistory'
 export type { FileVersionCompareProps } from './components/FileVersionCompare'
+export type { TasksViewProps } from './components/TasksView'
+export type { TasksHeaderProps } from './components/TasksHeader'
+export type { TasksListProps } from './components/TasksList'
+export type { UnifiedTaskCardProps } from './components/UnifiedTaskCard'
 
 // Re-export commonly used @ccaas/common types for convenience
 export type {

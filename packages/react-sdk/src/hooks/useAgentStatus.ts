@@ -52,13 +52,13 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   }, [todoItems, activeTools, isThinking])
 
   // Reset state when agent completes
+  // Note: Don't clear todoItems and activeSubAgents immediately
+  // They will be managed by individual event handlers and useTaskTracking
   const handleComplete = useCallback(() => {
     setActiveTools(new Map())
     setIsThinking(false)
     setThinkingContent('')
-    setTodoItems([])
     setTodoStats({ completed: 0, inProgress: 0, pending: 0, total: 0 })
-    setActiveSubAgents([])
   }, [])
 
   useEffect(() => {
@@ -66,9 +66,50 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     if (!socket) return
 
     const onAgentStatus = (data: AgentStatusEvent) => {
-      setAgentStatus(data.status as AgentStatusValue)
-      if (data.status === 'complete' || data.status === 'error') {
+      const { status, context } = data
+      setAgentStatus(status as AgentStatusValue)
+
+      if (status === 'complete') {
+        // CRITICAL: Process backend snapshot before clearing
+        // This ensures useTaskTracking can capture completed tasks into history
+        const snapshot = context?.activeSubAgents
+        if (snapshot && snapshot.length > 0) {
+          // Update activeSubAgents with final snapshot from backend
+          setActiveSubAgents(prev => {
+            // Merge snapshot with current state, deduplicate by subAgentId
+            const merged = [...prev]
+            snapshot.forEach((sa: ActiveSubAgent) => {
+              const existing = merged.findIndex(a => a.subAgentId === sa.subAgentId)
+              if (existing >= 0) {
+                // Update existing with final status
+                merged[existing] = { ...sa, status: sa.status || 'completed' }
+              } else {
+                // Add new task from snapshot
+                merged.push({ ...sa, status: sa.status || 'completed' })
+              }
+            })
+            return merged
+          })
+
+          // Give React time to render and useTaskTracking to capture
+          // This prevents the race condition where tasks are cleared before history capture
+          setTimeout(() => {
+            handleComplete()
+            // Clear after useTaskTracking has captured to history
+            setActiveSubAgents([])
+            setTodoItems([])
+          }, 100)
+        } else {
+          // No active tasks, clear immediately
+          handleComplete()
+          setActiveSubAgents([])
+          setTodoItems([])
+        }
+      } else if (status === 'error') {
+        // On error, clear immediately
         handleComplete()
+        setActiveSubAgents([])
+        setTodoItems([])
       }
     }
 
