@@ -22,7 +22,10 @@ import type {
   CreateLessonPlanInput,
 } from '../types'
 
-const SOCKET_URL = '' // Empty string to avoid protocol-relative URL bug (// prefix)
+// IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
+// Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
+// See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
+const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
 
 interface UseLessonPlanSessionOptions {
   planId?: string
