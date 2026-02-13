@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { SessionsController } from './sessions.controller';
-import { SessionService } from '../chat/session.service';
-import { ChatGateway } from '../chat/chat.gateway';
+import { SessionService } from '../sessions/session.service';
+import { SessionsGateway } from '../sessions/sessions.gateway';
+import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { SkillManagementService } from './services/skill-management.service';
+import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
@@ -12,7 +15,7 @@ import { ConversationContextService } from '../messages/conversation-context.ser
 describe('SessionsController - Sub-Agents Endpoint', () => {
   let controller: SessionsController;
   let sessionService: any;
-  let chatGateway: any;
+  let sessionsGateway: any;
 
   const mockSession = {
     id: 'test-session',
@@ -45,7 +48,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
       getSessionStatus: jest.fn(),
     };
 
-    chatGateway = {
+    sessionsGateway = {
       getActiveSubAgents: jest.fn(),
     };
 
@@ -53,7 +56,10 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
       controllers: [SessionsController],
       providers: [
         { provide: SessionService, useValue: sessionService },
-        { provide: ChatGateway, useValue: chatGateway },
+        { provide: SessionsGateway, useValue: sessionsGateway },
+        { provide: CompletionOrchestrationService, useValue: {} },
+        { provide: SkillManagementService, useValue: {} },
+        { provide: AttachmentService, useValue: {} },
         { provide: SkillSyncService, useValue: {} },
         { provide: SkillsService, useValue: {} },
         { provide: TenantsService, useValue: {} },
@@ -68,12 +74,12 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
   describe('GET /sessions/:sessionId/sub-agents', () => {
     it('should return active sub-agents for valid session', () => {
       sessionService.getSession.mockReturnValue(mockSession);
-      chatGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
+      sessionsGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
 
       const result = controller.getActiveSubAgents('test-session');
 
       expect(sessionService.getSession).toHaveBeenCalledWith('test-session');
-      expect(chatGateway.getActiveSubAgents).toHaveBeenCalledWith('test-session');
+      expect(sessionsGateway.getActiveSubAgents).toHaveBeenCalledWith('test-session');
       expect(result.sessionId).toBe('test-session');
       expect(result.activeSubAgents).toEqual(mockSubAgents);
       expect(result.activeSubAgents).toHaveLength(2);
@@ -91,7 +97,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
 
     it('should return empty array when no active sub-agents', () => {
       sessionService.getSession.mockReturnValue(mockSession);
-      chatGateway.getActiveSubAgents.mockReturnValue([]);
+      sessionsGateway.getActiveSubAgents.mockReturnValue([]);
 
       const result = controller.getActiveSubAgents('test-session');
 
@@ -101,7 +107,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
 
     it('should include timestamp in ISO format', () => {
       sessionService.getSession.mockReturnValue(mockSession);
-      chatGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
+      sessionsGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
 
       const result = controller.getActiveSubAgents('test-session');
 
@@ -110,7 +116,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
 
     it('should return sub-agents with all required fields', () => {
       sessionService.getSession.mockReturnValue(mockSession);
-      chatGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
+      sessionsGateway.getActiveSubAgents.mockReturnValue(mockSubAgents);
 
       const result = controller.getActiveSubAgents('test-session');
 
