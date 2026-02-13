@@ -18,6 +18,8 @@ export function ChatPanel({
   activeTools = new Map(),
   isThinking = false,
   thinkingContent = '',
+  thinkingStartTime,
+  thinkingVerb,
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
@@ -100,6 +102,8 @@ export function ChatPanel({
         isProcessing={isProcessing}
         isThinking={isThinking}
         thinkingContent={thinkingContent}
+        thinkingStartTime={thinkingStartTime}
+        thinkingVerb={thinkingVerb}
         todoItems={todoItems}
         todoStats={todoStats}
         activeTools={activeTools}

@@ -32,9 +32,7 @@ vi.mock('../useLessonPlanSync', () => ({
   }),
 }))
 
-vi.mock('../useSubAgentPolling', () => ({
-  useSubAgentPolling: vi.fn(),
-}))
+// useSubAgentPolling removed - subAgent tracking now handled by SDK's useAgentStatus via WebSocket
 
 vi.mock('../../utils/api', () => ({
   api: {
@@ -83,6 +81,8 @@ describe('useLessonPlanSession - Status (Phase 4)', () => {
       activeTools: new Map(),
       isThinking: false,
       thinkingContent: '',
+      thinkingStartTime: null,
+      thinkingVerb: '思考',
       tokenUsage: null,
       todoItems: [],
       todoStats: { completed: 0, inProgress: 0, pending: 0, total: 0 },

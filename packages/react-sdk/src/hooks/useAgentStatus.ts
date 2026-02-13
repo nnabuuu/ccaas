@@ -17,6 +17,7 @@ import type {
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
 } from '@ccaas/common'
+import { getThinkingVerb } from '../utils/thinkingVerbs'
 
 /**
  * Tracks agent status, tool activity, thinking state, and token usage.
@@ -31,6 +32,8 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   const [activeTools, setActiveTools] = useState<Map<string, ToolActivity>>(new Map())
   const [isThinking, setIsThinking] = useState(false)
   const [thinkingContent, setThinkingContent] = useState('')
+  const [thinkingStartTime, setThinkingStartTime] = useState<number | null>(null)
+  const [thinkingVerb, setThinkingVerb] = useState<string>('思考')
   const [tokenUsage, setTokenUsage] = useState<UseAgentStatusReturn['tokenUsage']>(null)
   const [todoItems, setTodoItems] = useState<EventTodoItem[]>([])
   const [todoStats, setTodoStats] = useState<TodoStats>({ completed: 0, inProgress: 0, pending: 0, total: 0 })
@@ -140,10 +143,22 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       if (data.payload.phase === 'start') {
         setIsThinking(true)
         setThinkingContent('')
+
+        // 记录开始时间和随机选择初始动词
+        const startTime = Date.now()
+        setThinkingStartTime(startTime)
+        setThinkingVerb(getThinkingVerb(0))  // 初始阶段动词
+
       } else if (data.payload.phase === 'delta' && data.payload.content) {
         setThinkingContent(prev => prev + data.payload.content)
+
       } else if (data.payload.phase === 'end') {
         setIsThinking(false)
+        // 保留 startTime 和 verb，用于显示过渡动画（可选）
+        // 3 秒后清除
+        setTimeout(() => {
+          setThinkingStartTime(null)
+        }, 3000)
       }
     }
 
@@ -218,6 +233,8 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     activeTools,
     isThinking,
     thinkingContent,
+    thinkingStartTime,
+    thinkingVerb,
     tokenUsage,
     todoItems,
     todoStats,

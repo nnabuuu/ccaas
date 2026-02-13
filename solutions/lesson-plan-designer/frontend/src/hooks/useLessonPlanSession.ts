@@ -80,6 +80,8 @@ interface UseLessonPlanSessionReturn {
   activeTools: Map<string, ToolActivity>
   isThinking: boolean
   thinkingContent: string
+  thinkingStartTime: number | null
+  thinkingVerb: string
   tokenUsage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null
 
   // SubAgent tracking
@@ -362,6 +364,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     activeTools,
     isThinking,
     thinkingContent,
+    thinkingStartTime: status.thinkingStartTime,
+    thinkingVerb: status.thinkingVerb,
     tokenUsage,
 
     // SubAgent tracking

@@ -5,11 +5,14 @@ import {
   TasksView,
   type ToolActivity,
   type UseAgentConnectionReturn,
+  type FileMetadata,
 } from '@ccaas/react-sdk'
 import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType } from '../types'
 import MessageBubble from './MessageBubble'
 import QuickPrompts from './QuickPrompts'
 import FilesView from './FilesView'
+import { useFileAttachment } from '../hooks/useFileAttachment'
+import { MessageSquare, File, CheckSquare } from 'lucide-react'
 
 interface ChatPanelProps {
   messages: Message[]
@@ -21,6 +24,8 @@ interface ChatPanelProps {
   activeTools?: Map<string, ToolActivity>
   isThinking?: boolean
   thinkingContent?: string
+  thinkingStartTime?: number | null
+  thinkingVerb?: string
   todoItems?: TodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: ActiveSubAgent[]
@@ -44,6 +49,8 @@ export function ChatPanel({
   activeTools = new Map(),
   isThinking = false,
   thinkingContent = '',
+  thinkingStartTime,
+  thinkingVerb,
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
@@ -61,7 +68,7 @@ export function ChatPanel({
   const mainProcessing = isMainProcessing ?? isProcessing
   const [inputValue, setInputValue] = useState('')
   const [activeTab, setActiveTab] = useState<TabType>('messages')
-  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  const [highlightedTaskId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -70,6 +77,19 @@ export function ChatPanel({
     activeSubAgents,
     todoItems,
   })
+
+  // File attachment handler - only available when lessonPlanId exists
+  const { attachFile } = useFileAttachment(lessonPlanId || '')
+
+  const handleAttachFile = async (file: FileMetadata) => {
+    if (!lessonPlanId) {
+      console.warn('Cannot attach file: no lesson plan selected')
+      return { success: false }
+    }
+
+    const result = await attachFile(file)
+    return { success: result.success }
+  }
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -96,13 +116,6 @@ export function ChatPanel({
     onSendMessage(prompt)
   }
 
-  // TODO: Phase 4 - Handle task click from messages
-  // const handleTaskClick = (taskId: string) => {
-  //   setActiveTab('tasks')
-  //   setHighlightedTaskId(taskId)
-  //   setTimeout(() => setHighlightedTaskId(null), 3000)
-  // }
-
   // Calculate unread message count (messages added in last 5 seconds)
   // Only show badge when user is NOT on messages tab (UX best practice)
   const newMessagesCount = activeTab !== 'messages'
@@ -119,19 +132,21 @@ export function ChatPanel({
         <h2 className="font-semibold text-gray-800">AI 备课助手</h2>
       </div>
 
-      {/* Tab Bar */}
+      {/* Icon Tab Bar */}
       <div className="flex border-b border-gray-200 bg-white flex-shrink-0">
         <button
           onClick={() => setActiveTab('messages')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors relative ${
             activeTab === 'messages'
               ? 'text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
+          title="消息"
         >
-          消息
+          <MessageSquare className="w-5 h-5" />
+          <span>消息</span>
           {newMessagesCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
+            <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
               {newMessagesCount}
             </span>
           )}
@@ -141,15 +156,17 @@ export function ChatPanel({
         </button>
         <button
           onClick={() => setActiveTab('files')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors relative ${
             activeTab === 'files'
               ? 'text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
+          title="文件"
         >
-          文件
+          <File className="w-5 h-5" />
+          <span>文件</span>
           {newFilesCount > 0 && activeTab !== 'files' && (
-            <span className="ml-2 px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full">
+            <span className="px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full">
               {newFilesCount}
             </span>
           )}
@@ -159,16 +176,18 @@ export function ChatPanel({
         </button>
         <button
           onClick={() => setActiveTab('tasks')}
-          className={`flex-1 px-4 py-3 text-sm font-medium transition-colors relative ${
+          className={`flex-1 px-4 py-3 flex items-center justify-center gap-2 text-sm font-medium transition-colors relative ${
             activeTab === 'tasks'
               ? 'text-blue-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
+          title="任务"
         >
-          任务
+          <CheckSquare className="w-5 h-5" />
+          <span>任务</span>
           {taskTracking.badgeState.show && activeTab !== 'tasks' && (
             <span
-              className={`ml-2 px-2 py-0.5 text-xs rounded-full text-white ${
+              className={`px-2 py-0.5 text-xs rounded-full text-white ${
                 taskTracking.badgeState.color === 'green'
                   ? 'bg-green-500 animate-pulse'
                   : taskTracking.badgeState.color === 'red'
@@ -215,12 +234,14 @@ export function ChatPanel({
       )}
 
       {/* Files View */}
-      {activeTab === 'files' && connection && sessionId && lessonPlanId && (
+      {activeTab === 'files' && connection && sessionId && (
         <div className="flex-1 overflow-hidden">
           <FilesView
             connection={connection}
             sessionId={sessionId}
-            lessonPlanId={lessonPlanId}
+            onAttachFile={lessonPlanId ? handleAttachFile : undefined}
+            attachButtonLabel="附加"
+            attachButtonTitle="附加到教案"
           />
         </div>
       )}
@@ -241,6 +262,8 @@ export function ChatPanel({
         isProcessing={isProcessing}
         isThinking={isThinking}
         thinkingContent={thinkingContent}
+        thinkingStartTime={thinkingStartTime}
+        thinkingVerb={thinkingVerb}
         todoItems={todoItems}
         todoStats={todoStats}
         activeTools={activeTools}

@@ -330,6 +330,8 @@ export interface UseAgentStatusReturn {
   activeTools: Map<string, ToolActivity>
   isThinking: boolean
   thinkingContent: string
+  thinkingStartTime: number | null  // 思考开始时间戳
+  thinkingVerb: string               // 当前思考动词
   tokenUsage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null
   todoItems: import('@ccaas/common').EventTodoItem[]
   todoStats: TodoStats
@@ -430,6 +432,8 @@ export interface ChatPanelProps {
   activeTools?: Map<string, ToolActivity>
   isThinking?: boolean
   thinkingContent?: string
+  thinkingStartTime?: number | null  // 新增
+  thinkingVerb?: string              // 新增
   todoItems?: import('@ccaas/common').EventTodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: import('@ccaas/common').ActiveSubAgent[]

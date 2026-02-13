@@ -51,6 +51,9 @@ export { parseOutputUpdate } from './utils/parseOutputUpdate'
 export { createApiClient, ApiError } from './utils/apiClient'
 export { getFileIcon, formatFileSize, formatFileDate } from './utils/fileIcons'
 export { computeLineDiff, formatSizeDiff, getDiffColor } from './utils/diffUtils'
+export { formatDuration } from './utils/formatDuration'
+export { getToolActivityDescription, TOOL_ACTIVITY_MAP } from './utils/toolActivityMapping'
+export { getThinkingVerb, THINKING_VERBS } from './utils/thinkingVerbs'
 
 // Non-type exports from types (COLOR_MAP)
 export { COLOR_MAP } from './types'
