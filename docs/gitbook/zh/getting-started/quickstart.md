@@ -36,27 +36,37 @@ cd solutions/ccaas-demo
 
 ## REST API 快速体验
 
-### 获取 Agent 状态
+### 健康检查和服务器状态
 
 ```bash
-curl http://localhost:3001/api/v1/chat/agent/status
+# 健康检查（无需认证）
+curl http://localhost:3001/api/v1/chat/health
+
+# 服务器状态（无需认证）
+curl http://localhost:3001/api/v1/chat/status
 ```
 
-### 发送消息
+### 发送消息（推荐使用 SDK）
+
+> **💡 提示**: 直接调用 REST API 需要同时管理 WebSocket 连接。推荐使用 `@ccaas/react-sdk` 或 `@ccaas/vue-sdk` 进行集成。
+
+如果你确实需要直接调用 API：
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/chat/send \
+# 需要先建立 WebSocket 连接，否则收不到响应事件
+curl -X POST http://localhost:3001/api/v1/sessions/my-session/completion \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "test-client-001",
-    "message": "你好，请介绍一下你自己"
+    "message": "你好，请介绍一下你自己",
+    "tenantId": "default"
   }'
 ```
 
 ### 取消正在执行的任务
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/chat/cancel \
+curl -X DELETE http://localhost:3001/api/v1/sessions/my-session/completion \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "test-client-001"

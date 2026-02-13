@@ -36,27 +36,37 @@ Once the setup is complete, open `http://localhost:5179` to explore:
 
 ## REST API Quick Tour
 
-### Get Agent Status
+### Health Check and Server Status
 
 ```bash
-curl http://localhost:3001/api/v1/chat/agent/status
+# Health check (no authentication required)
+curl http://localhost:3001/api/v1/chat/health
+
+# Server status (no authentication required)
+curl http://localhost:3001/api/v1/chat/status
 ```
 
-### Send a Message
+### Send a Message (Recommended: Use SDK)
+
+> **💡 Tip**: Calling REST API directly requires managing WebSocket connections simultaneously. We recommend using `@ccaas/react-sdk` or `@ccaas/vue-sdk` for integration.
+
+If you really need to call the API directly:
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/chat/send \
+# You need to establish a WebSocket connection first, otherwise you won't receive response events
+curl -X POST http://localhost:3001/api/v1/sessions/my-session/completion \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "test-client-001",
-    "message": "Hello, please introduce yourself"
+    "message": "Hello, please introduce yourself",
+    "tenantId": "default"
   }'
 ```
 
 ### Cancel a Running Task
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/chat/cancel \
+curl -X DELETE http://localhost:3001/api/v1/sessions/my-session/completion \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "test-client-001"

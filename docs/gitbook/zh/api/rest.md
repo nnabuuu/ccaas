@@ -32,11 +32,40 @@
 
 详细的错误代码、重试策略和客户端实现示例，请参见 [错误处理指南](error-handling.md)。
 
-## 健康检查
+## API 控制器职责划分
+
+### ChatController - 监控与健康检查
+
+**路径**: `/api/v1/chat`
+**职责**: 仅用于服务健康检查和监控指标
+**特点**: 🔓 无需认证（Public）
+
+所有端点均不需要 API Key，主要用于：
+- 负载均衡器健康检查
+- 监控系统采集指标
+- DevOps 服务状态监控
+
+### SessionsController - 核心业务 API
+
+**路径**: `/api/v1/sessions`
+**职责**: AI 消息交互 + 会话生命周期管理
+**特点**: 🔐 需要 API Key 认证
+
+所有业务逻辑的标准入口，包括：
+- 发送消息给 AI
+- 取消正在执行的操作
+- 管理会话状态和上下文
+- 获取消息历史和文件
+
+---
+
+## 监控端点（ChatController）
 
 ### GET /chat/health
 
-检查服务是否正常运行。
+检查服务是否正常运行。用于负载均衡器健康检查。
+
+**认证**: 🔓 无需认证
 
 **响应**：
 
@@ -44,9 +73,11 @@
 { "status": "ok" }
 ```
 
-### GET /chat/agent/status
+### GET /chat/status
 
-获取 Agent 运行状态和会话统计。
+获取服务器运行状态和会话统计信息。用于监控系统采集指标。
+
+**认证**: 🔓 无需认证
 
 **响应**：
 
@@ -55,38 +86,19 @@
   "authenticated": true,
   "status": "ready",
   "sessions": {
-    "active": 3,
-    "idle": 1,
-    "total": 4
+    "totalSessions": 7,
+    "idleSessions": 3,
+    "processingSessions": 4,
+    "maxSessions": 100
   }
 }
 ```
 
-## 消息与会话
+---
 
-### POST /chat/send
+## 消息与会话（SessionsController）
 
-发送消息（通过 WebSocket 接收响应事件流）。
-
-**请求体**：
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `clientId` | string | 是 | 客户端标识 |
-| `message` | string | 是 | 用户消息 |
-| `sessionId` | string | 否 | 会话 ID |
-| `tenantId` | string | 否 | 租户 ID |
-| `resumeSession` | boolean | 否 | 是否恢复会话 |
-| `mcpServers` | object | 否 | MCP Server 配置 |
-
-**响应**：
-
-```json
-{
-  "success": true,
-  "sessionId": "session-uuid"
-}
-```
+> **💡 推荐使用**: 使用 `@ccaas/react-sdk` 或 `@ccaas/vue-sdk` 进行集成，无需直接调用 HTTP API。SDK 会自动管理 WebSocket 连接和状态。
 
 ### POST /sessions/:sessionId/completion
 
@@ -117,24 +129,23 @@
 
 取消正在执行的任务。
 
+**认证**: 🔐 需要 API Key
+
 **请求体**：
 
 ```json
 { "clientId": "client-uuid" }
 ```
 
-### POST /chat/cancel
+**响应**：
 
-取消正在执行的操作。
+```json
+{ "success": true }
+```
 
-**请求体**：
+---
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `clientId` | string | 是 | 客户端标识 |
-| `sessionId` | string | 否 | 会话 ID |
-
-## 会话管理
+## 会话管理（SessionsController）
 
 ### GET /sessions/:sessionId
 

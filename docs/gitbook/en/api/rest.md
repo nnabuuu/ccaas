@@ -32,11 +32,40 @@ All API errors return a standardized JSON response. For complete error handling 
 
 See the [Error Handling Guide](error-handling.md) for detailed error codes, retry strategies, and client implementation examples.
 
-## Health Check
+## API Controller Responsibilities
+
+### ChatController - Monitoring & Health Checks
+
+**Path**: `/api/v1/chat`
+**Responsibility**: Service health checks and monitoring metrics only
+**Features**: 🔓 No authentication required (Public)
+
+All endpoints do not require an API Key. Primary uses:
+- Load balancer health checks
+- Monitoring system metrics collection
+- DevOps service status monitoring
+
+### SessionsController - Core Business API
+
+**Path**: `/api/v1/sessions`
+**Responsibility**: AI message interaction + session lifecycle management
+**Features**: 🔐 Requires API Key authentication
+
+Standard entry point for all business logic, including:
+- Sending messages to AI
+- Canceling running operations
+- Managing session state and context
+- Retrieving message history and files
+
+---
+
+## Monitoring Endpoints (ChatController)
 
 ### GET /chat/health
 
-Check whether the service is running normally.
+Check whether the service is running normally. Used for load balancer health checks.
+
+**Authentication**: 🔓 No authentication required
 
 **Response**:
 
@@ -44,9 +73,11 @@ Check whether the service is running normally.
 { "status": "ok" }
 ```
 
-### GET /chat/agent/status
+### GET /chat/status
 
-Get the Agent runtime status and session statistics.
+Get server runtime status and session statistics. Used for monitoring system metrics collection.
+
+**Authentication**: 🔓 No authentication required
 
 **Response**:
 
@@ -55,38 +86,19 @@ Get the Agent runtime status and session statistics.
   "authenticated": true,
   "status": "ready",
   "sessions": {
-    "active": 3,
-    "idle": 1,
-    "total": 4
+    "totalSessions": 7,
+    "idleSessions": 3,
+    "processingSessions": 4,
+    "maxSessions": 100
   }
 }
 ```
 
-## Messages & Sessions
+---
 
-### POST /chat/send
+## Messages & Sessions (SessionsController)
 
-Send a message (responses are received as an event stream via WebSocket).
-
-**Request Body**:
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `clientId` | string | Yes | Client identifier |
-| `message` | string | Yes | User message |
-| `sessionId` | string | No | Session ID |
-| `tenantId` | string | No | Tenant ID |
-| `resumeSession` | boolean | No | Whether to resume a session |
-| `mcpServers` | object | No | MCP Server configuration |
-
-**Response**:
-
-```json
-{
-  "success": true,
-  "sessionId": "session-uuid"
-}
-```
+> **💡 Recommended**: Use `@ccaas/react-sdk` or `@ccaas/vue-sdk` for integration. No need to call HTTP APIs directly. The SDK automatically manages WebSocket connections and state.
 
 ### POST /sessions/:sessionId/completion
 
@@ -117,24 +129,23 @@ Send a message (full version with Skill routing support).
 
 Cancel a running task.
 
+**Authentication**: 🔐 Requires API Key
+
 **Request Body**:
 
 ```json
 { "clientId": "client-uuid" }
 ```
 
-### POST /chat/cancel
+**Response**:
 
-Cancel a running operation.
+```json
+{ "success": true }
+```
 
-**Request Body**:
+---
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `clientId` | string | Yes | Client identifier |
-| `sessionId` | string | No | Session ID |
-
-## Session Management
+## Session Management (SessionsController)
 
 ### GET /sessions/:sessionId
 
