@@ -35,7 +35,7 @@ describe('CCAAS Backend Integration', () => {
     await expect(waitForBackend(5000)).resolves.toBeUndefined()
   })
 
-  it('should have sessions completion endpoint', async () => {
+  it('should have sessions completion endpoint (standard API)', async () => {
     // Test that the endpoint exists (will return 400 without valid clientId, not 404)
     const response = await fetch(
       `${BACKEND_URL}/api/v1/sessions/test-session/completion`,
@@ -59,17 +59,13 @@ describe('CCAAS Backend Integration', () => {
     expect(data.message).toContain('not connected')
   })
 
-  it('should have chat send endpoint (legacy)', async () => {
-    const response = await fetch(`${BACKEND_URL}/api/v1/chat/send`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: 'fake-client-id',
-        message: 'test',
-      }),
-    })
+  it('should have status endpoint for server metrics', async () => {
+    const response = await fetch(`${BACKEND_URL}/api/v1/chat/status`)
+    expect(response.ok).toBe(true)
 
-    // Should NOT be 404
-    expect(response.status).not.toBe(404)
+    const data = await response.json()
+    expect(data).toHaveProperty('authenticated')
+    expect(data).toHaveProperty('status')
+    expect(data).toHaveProperty('sessions')
   })
 })
