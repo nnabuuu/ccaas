@@ -50,7 +50,7 @@ export class FileVersion {
   @CreateDateColumn()
   createdAt: Date;
 
-  @ManyToOne(() => AgentFile, { onDelete: 'CASCADE' })
+  @ManyToOne(() => AgentFile, (file) => file.versions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'fileId' })
   file: AgentFile;
 }

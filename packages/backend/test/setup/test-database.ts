@@ -19,6 +19,7 @@ import { ConversationContext } from '../../src/messages/entities/conversation-co
 import { LargeContent } from '../../src/storage/entities/large-content.entity';
 import { SystemPromptVersion } from '../../src/storage/entities/system-prompt-version.entity';
 import { AgentFile } from '../../src/files/entities/agent-file.entity';
+import { FileVersion } from '../../src/files/entities/file-version.entity';
 import { SessionAlert } from '../../src/admin/entities/session-alert.entity';
 import { AdminAuditLog } from '../../src/admin/entities/admin-audit-log.entity';
 import { Skill } from '../../src/skills/entities/skill.entity';
@@ -42,6 +43,7 @@ export const TEST_ENTITIES = [
   LargeContent,
   SystemPromptVersion,
   AgentFile,
+  FileVersion,
   Skill,
   SkillVersion,
   Tenant,
