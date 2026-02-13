@@ -45,6 +45,7 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
 
     const mockBackgroundTaskMonitorService = {
       stopAllMonitorsForSession: jest.fn(),
+      stopAllMonitors: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -79,6 +80,7 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   afterEach(() => {
+    service.shutdown(); // Clear cleanup interval timer
     jest.clearAllMocks();
   });
 
