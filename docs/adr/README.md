@@ -22,18 +22,40 @@ ADR (Architecture Decision Record) 记录了重要的架构决策及其背景。
 
 ### 活跃的决策 (Active)
 
-- [ADR-0001](0001-use-nestjs-for-backend.md) - 使用 NestJS 构建后端
-- [ADR-0002](0002-separate-core-and-solutions.md) - 核心与解决方案分离
-- [ADR-0003](0003-use-typeorm-sqlite.md) - 使用 TypeORM + SQLite
-- [ADR-0004](0004-api-key-authentication.md) - API Key 认证方案
+#### 架构原则
 
-### 已废弃的决策 (Deprecated)
+- [ADR-0001](0001-core-must-not-contain-domain-entities.md) - **核心后端不得包含领域实体** ⭐
+  - 确保核心后端仅处理基础设施（Session, Skill, Auth），所有领域逻辑在 Solution backends
+  - 防止架构违规（如 lesson-plans 模块事件）
+  - 2026-02-13
 
-- ~~[ADR-0005](0005-lesson-plans-in-core.md)~~ - ~~在核心后端存储 Lesson Plans~~ (Superseded by ADR-0002)
+- [ADR-0002](0002-rest-resource-naming-principles.md) - **REST 资源命名原则**
+  - URL 路径必须代表资源（名词），不是动作（动词）
+  - ChatModule → SessionsModule 重构案例
+  - 2026-02-13
 
-### 被取代的决策 (Superseded)
+#### 技术架构
 
-- ~~[ADR-0006](0006-use-express.md)~~ - ~~使用 Express 框架~~ (Superseded by ADR-0001)
+- [ADR-0003](0003-tenant-level-mcp-server-management.md) - **租户级 MCP 服务器管理**
+  - MCP 服务器集中管理在租户级别
+  - Session 通过 symlinks 访问
+  - 提供隔离、稳定性和版本控制
+  - 2026-02-11
+
+- [ADR-0004](0004-single-entry-point-for-messages.md) - **消息发送单一入口**
+  - 所有 session 操作通过 SessionsController
+  - 移除 ChatController 冗余端点
+  - 简化 API，减少 HTTP 请求
+  - 2026-02-13
+
+#### 开发流程
+
+- [ADR-0006](0006-ai-assisted-development-workflow.md) - **AI 辅助开发工作流** 🤖
+  - Claude Code Agent 作为代码审查员
+  - Git Hooks + GitHub Actions CI 自动化
+  - 架构测试防护
+  - 适合一人公司场景
+  - 2026-02-14
 
 ---
 
@@ -115,23 +137,26 @@ gh pr create
 
 ## 示例
 
-### ADR-0002: 核心与解决方案分离
+### ADR-0001: 核心后端不得包含领域实体
 
 **背景**:
-曾经在 core backend 包含了 lesson-plans 模块，导致代码重复和架构混乱。
+2026-02-13 发现 core backend 包含了完整的 lesson-plans 模块（1,370 行），与 solution backend 重复，违反架构分层原则。
 
 **决策**:
-严格区分 Core Backend（基础设施）和 Solution Backend（领域逻辑）。
+核心后端**禁止**包含领域实体（LessonPlan, Product, Order 等）。仅允许基础设施实体（Session, Skill, Auth, Message, File）。
 
 **考虑的方案**:
-- 方案 A: 所有代码放在 core（被拒绝）
-- 方案 B: 严格分离（选择）
-- 方案 C: 混合模式（被拒绝）
+- 方案 A: 允许领域实体在 core（被拒绝 - 导致耦合和重复）
+- 方案 B: 核心无实体（选择 - 清晰边界）
+- 方案 C: 共享实体库（被拒绝 - 创建耦合）
 
 **结果**:
-- ✅ 架构清晰
-- ✅ 代码重用性提高
-- ✅ 维护性增强
+- ✅ 架构清晰：核心 = 中继，Solution = 领域
+- ✅ 移除 1,427 行重复代码
+- ✅ 架构测试自动防护
+- ✅ 零破坏性变更（前端已使用 solution backend）
+
+详见: [ADR-0001 完整文档](0001-core-must-not-contain-domain-entities.md)
 
 ---
 
