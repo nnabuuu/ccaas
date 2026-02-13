@@ -132,8 +132,29 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
             agentType: payload.agentType,
             nestingLevel: payload.nestingLevel,
           })
+        } else if (payload.phase === 'end') {
+          // Record end time instead of immediately deleting
+          updated.set(payload.toolId, {
+            toolName: payload.toolName,
+            toolId: payload.toolId,
+            phase: payload.phase,
+            timestamp: new Date(),
+            description: payload.description,
+            toolInput: payload.toolInput,
+            agentType: payload.agentType,
+            nestingLevel: payload.nestingLevel,
+            endTime: Date.now(),  // Record when tool ended
+          })
         } else {
-          updated.delete(payload.toolId)
+          // For other phases (progress), update in place
+          const existing = updated.get(payload.toolId)
+          if (existing) {
+            updated.set(payload.toolId, {
+              ...existing,
+              phase: payload.phase,
+              description: payload.description,
+            })
+          }
         }
         return updated
       })
@@ -153,10 +174,9 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
         setThinkingContent(prev => prev + data.payload.content)
 
       } else if (data.payload.phase === 'end') {
-        setIsThinking(false)
-        // 保留 startTime 和 verb，用于显示过渡动画（可选）
-        // 3 秒后清除
+        // 保留 thinking 状态 3 秒，让用户看到最终的思考时长
         setTimeout(() => {
+          setIsThinking(false)
           setThinkingStartTime(null)
         }, 3000)
       }
@@ -256,6 +276,29 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     const timer = setInterval(checkThreshold, 5000)
     return () => clearInterval(timer)
   }, [isThinking, thinkingStartTime])
+
+  // Cleanup ended tools after 2 seconds
+  // This allows users to see tool activity descriptions before they disappear
+  useEffect(() => {
+    const cleanupTimer = setInterval(() => {
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        const now = Date.now()
+
+        for (const [toolId, tool] of updated.entries()) {
+          // Remove tools that ended more than 2 seconds ago
+          if (tool.phase === 'end' && tool.endTime && (now - tool.endTime > 2000)) {
+            updated.delete(toolId)
+          }
+        }
+
+        // Only update state if we actually removed something
+        return updated.size === prev.size ? prev : updated
+      })
+    }, 1000)  // Check every second
+
+    return () => clearInterval(cleanupTimer)
+  }, [])
 
   return {
     agentStatus,

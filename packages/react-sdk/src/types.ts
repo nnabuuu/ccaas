@@ -194,6 +194,7 @@ export interface ToolActivity {
   toolError?: string
   agentType?: string
   nestingLevel?: number
+  endTime?: number  // Tool end timestamp (only present when phase='end')
 }
 
 export interface TextBlock {

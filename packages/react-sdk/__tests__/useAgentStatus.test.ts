@@ -86,7 +86,10 @@ describe('useAgentStatus', () => {
       })
     })
 
-    expect(result.current.activeTools.size).toBe(0)
+    // Tool is kept in map with phase='end' and endTime recorded
+    expect(result.current.activeTools.size).toBe(1)
+    expect(result.current.activeTools.get('tool-1')?.phase).toBe('end')
+    expect(result.current.activeTools.get('tool-1')?.endTime).toBeDefined()
   })
 
   it('should track thinking state', () => {
@@ -99,6 +102,7 @@ describe('useAgentStatus', () => {
     })
 
     expect(result.current.isThinking).toBe(true)
+    expect(result.current.thinkingStartTime).toBeDefined()
 
     act(() => {
       handlers['agent_thinking']?.({ payload: { phase: 'delta', content: 'Hmm...' } })
@@ -116,7 +120,9 @@ describe('useAgentStatus', () => {
       handlers['agent_thinking']?.({ payload: { phase: 'end' } })
     })
 
-    expect(result.current.isThinking).toBe(false)
+    // Thinking state is kept for 3 seconds after end
+    expect(result.current.isThinking).toBe(true)
+    expect(result.current.thinkingContent).toBe('Hmm... Let me think.')
   })
 
   it('should update token usage', () => {

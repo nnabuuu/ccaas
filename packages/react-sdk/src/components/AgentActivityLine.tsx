@@ -117,10 +117,16 @@ export function AgentActivityLine({
       }
     }
 
-    // Priority 3.5: 工具活动（新增：显示所有工具，不只是 Task）
-    if (firstTool && firstTool.phase !== 'end') {
-      return {
-        primary: getToolActivityDescription(firstTool.toolName, firstTool.description),
+    // Priority 3.5: 工具活动（包括刚结束的，保持显示 2 秒）
+    if (firstTool) {
+      const shouldShow =
+        firstTool.phase !== 'end' ||  // 工具还在执行
+        (firstTool.endTime && (Date.now() - firstTool.endTime < 2000))  // 或刚结束 2 秒内
+
+      if (shouldShow) {
+        return {
+          primary: getToolActivityDescription(firstTool.toolName, firstTool.description),
+        }
       }
     }
 
@@ -134,9 +140,9 @@ export function AgentActivityLine({
       }
     }
 
-    // Priority 5: Main processing
+    // Priority 5: Main processing (最后的 fallback)
     if (isProcessing) {
-      return { primary: '处理中...' }
+      return { primary: '正在响应...' }  // 改为更友好的文案
     }
 
     return { primary: '' }
