@@ -273,7 +273,7 @@ describe('SessionManagerService', () => {
 
       const result = await service.getErrorRate24h();
 
-      expect(result).toBe(5); // (10 / 200) * 100 = 5%
+      expect(result).toBe(0.05); // (10 / 200) = 0.05 (5% as decimal)
     });
 
     it('should return 0 when no messages', async () => {
@@ -306,7 +306,7 @@ describe('SessionManagerService', () => {
       expect(result).toBe(0);
     });
 
-    it('should round error rate to 2 decimal places', async () => {
+    it('should round error rate to 4 decimal places', async () => {
       const mockErrorQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
@@ -318,8 +318,8 @@ describe('SessionManagerService', () => {
 
       const result = await service.getErrorRate24h();
 
-      // (1/3) * 100 = 33.333... should round to 33.33
-      expect(result).toBe(33.33);
+      // (1/3) = 0.333... should round to 0.3333 (33.33% as decimal)
+      expect(result).toBe(0.3333);
     });
   });
 

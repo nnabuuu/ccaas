@@ -48,7 +48,7 @@ describe('AdminDashboardController', () => {
         {
           provide: SessionManagerService,
           useValue: {
-            getErrorRate24h: jest.fn().mockResolvedValue(2.5),
+            getErrorRate24h: jest.fn().mockResolvedValue(0.025), // Decimal format (2.5% = 0.025)
             getRecentSessions: jest.fn().mockResolvedValue([]),
           },
         },

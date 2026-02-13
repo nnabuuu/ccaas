@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDuration } from '../formatDuration'
+import { formatDuration } from '../src/utils/formatDuration'
 
 describe('formatDuration', () => {
   it('should format 0 milliseconds as "0s"', () => {

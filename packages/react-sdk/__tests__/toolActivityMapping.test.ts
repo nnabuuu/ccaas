@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getToolActivityDescription, TOOL_ACTIVITY_MAP } from '../toolActivityMapping'
+import { getToolActivityDescription, TOOL_ACTIVITY_MAP } from '../src/utils/toolActivityMapping'
 
 describe('toolActivityMapping', () => {
   describe('TOOL_ACTIVITY_MAP constants', () => {

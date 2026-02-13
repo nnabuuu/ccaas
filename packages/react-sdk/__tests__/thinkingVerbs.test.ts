@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { getThinkingVerb, THINKING_VERBS } from '../thinkingVerbs'
+import { getThinkingVerb, THINKING_VERBS } from '../src/utils/thinkingVerbs'
 
 describe('thinkingVerbs', () => {
   describe('THINKING_VERBS constants', () => {
