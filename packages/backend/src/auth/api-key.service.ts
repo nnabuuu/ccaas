@@ -10,6 +10,8 @@ import {
   NotFoundException,
   UnauthorizedException,
   OnModuleInit,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -49,6 +51,7 @@ export class ApiKeyService implements OnModuleInit {
   constructor(
     @InjectRepository(ApiKey)
     private readonly apiKeyRepository: Repository<ApiKey>,
+    @Inject(forwardRef(() => TenantsService))
     private readonly tenantsService: TenantsService,
     private readonly userTenantService: UserTenantService,
     private readonly configService: ConfigService,
