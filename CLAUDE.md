@@ -265,6 +265,132 @@ export function useMyFeatureSession() {
 
 **参考**: `LESSON_PLANS_MODULE_REMOVAL_COMPLETE.md` - 完整的架构违规案例分析
 
+## Development Workflow (一人公司 + AI Review)
+
+本项目采用 **AI-assisted development workflow**，使用 Claude Code Agent 进行代码审查。
+
+### 核心流程
+
+```
+Linear Issue → 分支 → TDD 开发 → PR → Claude Code Review → CI → Merge → Linear Done
+```
+
+### 关键组件
+
+1. **Git Hooks**: 自动验证 commit message 格式
+2. **GitHub Actions CI**: 自动化测试和架构检查
+3. **PR Template**: 为 Claude Code 提供结构化 review checklist
+4. **架构测试**: 自动防止架构违规（如 lesson-plans 模块事件）
+5. **Linear**: 个人任务管理（手动更新）
+
+### 快速参考
+
+```bash
+# 创建分支
+git checkout -b feature/ccaas-123-feature-name
+
+# TDD 开发
+npm test                    # 先运行测试确保通过
+# 写测试 → 写代码 → 测试通过
+
+# 提交（自动验证 commit message）
+git commit -m "feat(backend): add feature"
+
+# 创建 PR
+gh pr create --fill
+
+# 请 Claude Code review
+"请根据 PR template 中的 checklist review 这个 PR"
+
+# CI 自动检查
+# ✅ Lint, Type Check, Tests, Architecture Tests, Build
+
+# Merge
+gh pr merge --squash
+```
+
+### 详细文档
+
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - 完整的贡献指南
+- **[docs/WORKFLOW.md](./docs/WORKFLOW.md)** - 详细的研发流程
+- **[docs/PROJECT_MANAGEMENT_GUIDE.md](./docs/PROJECT_MANAGEMENT_GUIDE.md)** - 项目管理和文档规范
+- **[docs/designs/](./docs/designs/)** - 设计文档模板
+- **[docs/adr/](./docs/adr/)** - 架构决策记录
+
+### 任务跟踪与文档规范 (重要！)
+
+**使用 Linear 跟踪任务，而不是生成完成总结文件**
+
+❌ **不要做**:
+- 不要为每个任务生成 `*_COMPLETE.md` 文件
+- 不要创建 `PHASE_X_COMPLETE.md` 跟踪进度
+- 简单任务不需要文档文件
+
+✅ **应该做**:
+- 在 Linear issue 中更新任务状态和进度
+- 仅为**架构决策**创建 ADR (`docs/adr/`)
+- 仅为**复杂技术机制**创建实现指南 (`docs/implementation/`)
+- 使用 commit message 记录代码变更
+
+**决策树**:
+```
+任务完成
+    ↓
+是架构决策吗？→ YES → 创建 ADR (docs/adr/)
+    ↓ NO
+是复杂技术机制需要解释吗？→ YES → 创建实现指南 (docs/implementation/)
+    ↓ NO
+是简单任务/Bug修复？→ YES → 更新 Linear + Commit → 完成 ✅
+```
+
+详细规范见 **[docs/PROJECT_MANAGEMENT_GUIDE.md](./docs/PROJECT_MANAGEMENT_GUIDE.md)**
+
+### Commit Message 规范
+
+遵循 Conventional Commits:
+
+```
+<type>(<scope>): <subject>
+
+type: feat, fix, refactor, docs, test, chore, perf
+scope: backend, frontend, react-sdk, vue-sdk, admin, docs, common
+subject: 简洁描述（≤80 字符，小写）
+
+示例:
+feat(backend): add JWT authentication
+fix(react-sdk): fix API response parsing
+docs(readme): update installation guide
+```
+
+Git Hooks 会自动验证格式。
+
+### 架构测试
+
+运行架构测试防止违规：
+
+```bash
+npm run test:architecture
+
+# 检查：
+# ✅ 核心后端不包含领域实体
+# ✅ 没有从 solutions 导入
+# ✅ 实体放在正确位置
+```
+
+### PR Review with Claude Code
+
+创建 PR 后，请 Claude Code 进行 review：
+
+```
+请根据 PR template 中的 checklist review 这个 PR，重点检查：
+1. 架构合规性（核心后端是否包含领域实体）
+2. 测试覆盖
+3. API 契约
+4. 安全性
+```
+
+Claude Code 会逐项检查并提供反馈。
+
 ## Refactoring Guidelines
 
 ### Terminology and Field Name Changes
