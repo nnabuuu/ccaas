@@ -10,6 +10,15 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { useSdkDistribution } from '@/components/shared/sdk-connections'
 import { formatNumber, formatTokens } from '@/lib/utils'
 import { useTenantContext } from '@/hooks/use-tenant-context'
+import {
+  TokenAnalyticsResponseSchema,
+  RecentSessionsResponseSchema,
+  DashboardSummarySchema,
+  type TokenDataPoint,
+  type RecentSession,
+  type DashboardSummary,
+} from '@/lib/api-schemas'
+import { parseApiResponseSafe } from '@/lib/api-parser'
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -18,17 +27,6 @@ const COLORS = [
   'hsl(var(--chart-4))',
   'hsl(var(--chart-5))',
 ]
-
-interface DashboardSummary {
-  activeSessions: number
-  totalSessions: number
-  totalMessages24h: number
-  totalTokens24h: { input: number; output: number; total: number }
-  errorRate24h: number
-  activeApiKeys: number
-  totalSkills: number
-  publishedSkills: number
-}
 
 export function DashboardPage() {
   const { selectedTenantId } = useTenantContext()
@@ -61,18 +59,38 @@ export function DashboardPage() {
     },
   })
 
-  const summary = summaryData?.data as DashboardSummary | undefined
-  const recentSessions = ((recentData?.data as { sessions?: unknown[] })?.sessions ?? recentData?.data ?? []) as Array<{
-    sessionId: string
-    status: string
-    messageCount: number
-    lastActivity: string
-  }>
-  const tokenChart = ((tokenData?.data as { data?: unknown[] })?.data ?? tokenData?.data ?? []) as Array<{
-    timestamp: string
-    inputTokens: number
-    outputTokens: number
-  }>
+  // Type-safe API response parsing with Zod schemas
+  const summary = parseApiResponseSafe(
+    DashboardSummarySchema,
+    summaryData?.data,
+    'DashboardSummary',
+    {
+      activeSessions: 0,
+      totalSessions: 0,
+      totalMessages24h: 0,
+      totalTokens24h: { input: 0, output: 0, total: 0 },
+      errorRate24h: 0,
+      activeApiKeys: 0,
+      totalSkills: 0,
+      publishedSkills: 0,
+    }
+  )
+
+  const recentSessions = parseApiResponseSafe(
+    RecentSessionsResponseSchema,
+    recentData?.data,
+    'RecentSessions',
+    [] as RecentSession[]
+  )
+
+  const tokenAnalytics = parseApiResponseSafe(
+    TokenAnalyticsResponseSchema,
+    tokenData?.data,
+    'TokenAnalytics',
+    { dataPoints: [] }
+  )
+
+  const tokenChart: TokenDataPoint[] = tokenAnalytics.dataPoints
 
   if (isLoading) {
     return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading dashboard...</div>

@@ -11,6 +11,13 @@ import {
 import { useTenantContext } from '@/hooks/use-tenant-context'
 import { formatTokens } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
+import {
+  TokenAnalyticsResponseSchema,
+  ApiKeysAnalyticsResponseSchema,
+  type ApiKeyAnalytics,
+  type TokenDataPoint,
+} from '@/lib/api-schemas'
+import { parseApiResponseSafe } from '@/lib/api-parser'
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -49,12 +56,15 @@ export function AnalyticsPage() {
     config: { query },
   })
 
-  const tokenChart = ((tokenData?.data as { data?: unknown[] })?.data ?? tokenData?.data ?? []) as Array<{
-    timestamp: string
-    inputTokens: number
-    outputTokens: number
-    totalTokens: number
-  }>
+  // Type-safe API response parsing with Zod schemas
+  const tokenAnalytics = parseApiResponseSafe(
+    TokenAnalyticsResponseSchema,
+    tokenData?.data,
+    'TokenAnalytics',
+    { dataPoints: [] }
+  )
+
+  const tokenChart: TokenDataPoint[] = tokenAnalytics.dataPoints
 
   const costs = costData?.data as {
     byTenant?: Array<{ tenantName: string; totalCost: number }>
@@ -62,11 +72,19 @@ export function AnalyticsPage() {
     totalEstimatedCost?: number
   } | undefined
 
-  const apiKeys = ((apiKeyData?.data as { data?: unknown[] })?.data ?? apiKeyData?.data ?? []) as Array<{
-    keyName: string
-    requestCount: number
-    totalTokens: number
-  }>
+  const rawApiKeys = parseApiResponseSafe(
+    ApiKeysAnalyticsResponseSchema,
+    apiKeyData?.data,
+    'ApiKeysAnalytics',
+    [] as ApiKeyAnalytics[]
+  )
+
+  // Transform backend data to match chart expectations
+  const apiKeys = rawApiKeys.map(key => ({
+    keyName: key.name || key.keyPrefix,
+    requestCount: key.requestCount,
+    totalTokens: 0, // Backend doesn't provide totalTokens, set to 0
+  }))
 
   const skillSummary = skillSummaryData?.data as {
     totalExecutions?: number
