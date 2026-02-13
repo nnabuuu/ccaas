@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useFiles, FileUploadButton, type UseAgentConnectionReturn, type FileMetadata } from '@ccaas/react-sdk'
-import { useFileAttachment } from '../hooks/useFileAttachment'
 import { Download, Paperclip, File, Music, FileText, FileCode, Presentation } from 'lucide-react'
 
 interface FilesViewProps {
   connection: UseAgentConnectionReturn
   sessionId: string
-  lessonPlanId: string
+
+  // Optional attachment functionality
+  onAttachFile?: (file: FileMetadata) => Promise<{ success: boolean }>
+  attachButtonLabel?: string
+  attachButtonTitle?: string
 }
 
 /**
@@ -49,9 +52,16 @@ function formatBytes(bytes: number): string {
 /**
  * FilesView Component
  *
- * File browser with "Attach to Lesson Plan" functionality
+ * Generic session file browser with optional attachment functionality.
+ * Can be used standalone (file browsing only) or with attachment handler.
  */
-export function FilesView({ connection, sessionId, lessonPlanId }: FilesViewProps) {
+export function FilesView({
+  connection,
+  sessionId,
+  onAttachFile,
+  attachButtonLabel,
+  attachButtonTitle,
+}: FilesViewProps) {
   const [showUpload, setShowUpload] = useState(false)
   const [selectedFile, setSelectedFile] = useState<FileMetadata | null>(null)
   const [attachingFileId, setAttachingFileId] = useState<string | null>(null)
@@ -62,17 +72,17 @@ export function FilesView({ connection, sessionId, lessonPlanId }: FilesViewProp
     enabled: true,
   })
 
-  const { attachFile } = useFileAttachment(lessonPlanId)
-
   const handleUpload = async (file: File) => {
     await files.uploadFile(file)
     setShowUpload(false)
   }
 
   const handleAttachFile = async (file: FileMetadata) => {
+    if (!onAttachFile) return  // Guard: no-op if not provided
+
     setAttachingFileId(file.id)
     try {
-      const result = await attachFile(file)
+      const result = await onAttachFile(file)
       if (result.success) {
         // Success feedback is handled by the parent component via toast
         console.log(`File ${file.filename} attached successfully`)
@@ -146,6 +156,30 @@ export function FilesView({ connection, sessionId, lessonPlanId }: FilesViewProp
               <p className="text-sm text-gray-500">加载中...</p>
             </div>
           </div>
+        ) : files.error ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="flex flex-col items-center gap-3 text-center px-4 max-w-md">
+              <svg
+                className="w-12 h-12 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+              >
+                <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-red-600">加载文件失败</p>
+                <p className="text-xs text-gray-500 mt-2">{files.error.message}</p>
+              </div>
+              <button
+                onClick={() => files.refetch()}
+                className="mt-2 px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              >
+                重试
+              </button>
+            </div>
+          </div>
         ) : files.files.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3 text-center px-4">
@@ -214,19 +248,21 @@ export function FilesView({ connection, sessionId, lessonPlanId }: FilesViewProp
                       <Download className="w-4 h-4" />
                     </button>
 
-                    {/* Attach Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleAttachFile(file)
-                      }}
-                      disabled={isAttaching}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="附加到教案"
-                    >
-                      <Paperclip className="w-3.5 h-3.5" />
-                      {isAttaching ? '附加中...' : '附加'}
-                    </button>
+                    {/* Attach Button - Only show if onAttachFile is provided */}
+                    {onAttachFile && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAttachFile(file)
+                        }}
+                        disabled={isAttaching}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={attachButtonTitle || "附加文件"}
+                      >
+                        <Paperclip className="w-3.5 h-3.5" />
+                        {isAttaching ? '附加中...' : (attachButtonLabel || '附加')}
+                      </button>
+                    )}
                   </div>
                 </div>
               )

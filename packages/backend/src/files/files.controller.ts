@@ -25,7 +25,7 @@ import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { FilesService } from './files.service';
-import { SessionService } from '../chat/session.service';
+import { SessionService } from '../sessions/session.service';
 import { createReadStream } from 'fs';
 import * as path from 'path';
 import type {

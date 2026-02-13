@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { EventMapperService } from '../chat/event-mapper.service';
+import { EventMapperService } from '../sessions/event-mapper.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import type { CLIEvent, FrontendEvent } from '../common/interfaces';
 import type { ScheduledTask } from './entities/scheduled-task.entity';

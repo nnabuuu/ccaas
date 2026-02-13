@@ -64,17 +64,34 @@ export function createWriteFileTrackerHook(deps: WriteFileTrackerDeps): ToolHook
         return;
       }
 
-      // Check if we have message context
-      if (!session.currentAssistantMessageId) {
-        logger.debug(
-          `No assistant message context for session ${context.sessionId}, skipping file tracking`,
+      // Try to get messageId from multiple sources
+      let messageId = session.currentAssistantMessageId;
+      let source = 'current';
+
+      // Fallback: If no current message, use spawning message (for background tasks)
+      if (!messageId && context.spawningMessageId) {
+        messageId = context.spawningMessageId;
+        source = 'spawning';
+
+        logger.log(
+          `[Background Task File] Using spawning message ID: ${messageId} (tool: ${context.toolUseId})`,
+        );
+      }
+
+      if (!messageId) {
+        logger.warn(
+          `No message context for file tracking (session: ${context.sessionId}, tool: ${context.toolUseId}, parent: ${context.parentToolUseId || 'none'})`,
         );
         return;
       }
 
+      logger.log(
+        `[WriteFileTracker] Tracking file: ${filePath} → message: ${messageId} (source: ${source})`,
+      );
+
       try {
         const agentFile = await filesService.createFromWriteTool({
-          messageId: session.currentAssistantMessageId,
+          messageId,  // Use spawning message for background tasks
           sessionId: context.sessionId,
           tenantId: session.tenantId,
           originalPath: filePath,
@@ -82,7 +99,7 @@ export function createWriteFileTrackerHook(deps: WriteFileTrackerDeps): ToolHook
         });
 
         logger.log(
-          `Tracked file ${agentFile.filename} (${agentFile.size} bytes) for message ${session.currentAssistantMessageId}`,
+          `Tracked file ${agentFile.filename} (${agentFile.size} bytes) for message ${messageId} (${source})`,
         );
 
         // Emit file_created event to the client for real-time updates
@@ -99,7 +116,7 @@ export function createWriteFileTrackerHook(deps: WriteFileTrackerDeps): ToolHook
               uploadedBy: agentFile.uploadedBy,
               createdAt: agentFile.createdAt,
               sessionId: context.sessionId,
-              messageId: session.currentAssistantMessageId,
+              messageId,  // Use the resolved messageId (current or spawning)
             },
           };
           session.socket.emit('file_created', fileCreatedEvent);

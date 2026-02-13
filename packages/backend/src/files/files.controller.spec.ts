@@ -13,7 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
-import { SessionService } from '../chat/session.service';
+import { SessionService } from '../sessions/session.service';
 import type { FileTreeNode, FilePreviewResponse } from './dto/file.dto';
 
 describe('FilesController', () => {

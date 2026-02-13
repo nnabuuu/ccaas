@@ -90,6 +90,57 @@ export const DATABASE_TOKEN = 'DATABASE_CONNECTION';
           db.exec('ALTER TABLE lesson_plans ADD COLUMN attachments TEXT DEFAULT NULL');
         }
 
+        // Create agent_files table
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS agent_files (
+            id TEXT PRIMARY KEY,
+            message_id TEXT NULL,
+            session_id TEXT NOT NULL,
+            tenant_id TEXT NULL,
+            original_path TEXT NOT NULL,
+            stored_path TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            mime_type TEXT NULL,
+            size INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'new',
+            downloaded_at TEXT NULL,
+            uploaded_by TEXT DEFAULT 'agent',
+            current_version TEXT DEFAULT '1.0.0',
+            last_version_at TEXT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          )
+        `);
+
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_agent_files_session_id
+          ON agent_files(session_id)
+        `);
+
+        // Create file_versions table (for future version control)
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS file_versions (
+            id TEXT PRIMARY KEY,
+            file_id TEXT NOT NULL,
+            version TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            stored_path TEXT NOT NULL,
+            size INTEGER NOT NULL,
+            mime_type TEXT NULL,
+            changelog TEXT NULL,
+            uploaded_by TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (file_id) REFERENCES agent_files(id) ON DELETE CASCADE
+          )
+        `);
+
+        db.exec(`
+          CREATE INDEX IF NOT EXISTS idx_file_versions_file_id
+          ON file_versions(file_id)
+        `);
+
+        logger.log('Files tables initialized');
+
         db.exec(`
           CREATE TABLE IF NOT EXISTS chat_messages (
             id TEXT PRIMARY KEY,

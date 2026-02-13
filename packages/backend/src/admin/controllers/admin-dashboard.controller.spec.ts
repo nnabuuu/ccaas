@@ -6,7 +6,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminDashboardController } from './admin-dashboard.controller';
-import { SessionService } from '../../chat/session.service';
+import { SessionService } from '../../sessions/session.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
 import { SkillsService } from '../../skills/skills.service';
@@ -140,7 +140,7 @@ describe('AdminDashboardController', () => {
           output: 5000,
           total: 15000,
         },
-        errorRate24h: 2.5,
+        errorRate24h: 0.025, // Decimal format (0-1), equivalent to 2.5%
         activeApiKeys: 0,
         totalSkills: 0,
         publishedSkills: 0,

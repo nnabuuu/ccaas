@@ -23,7 +23,7 @@ import {
   CreateVersionDto,
 } from './dto/skill.dto';
 import { SkillChangeNotifier } from '../common/skill-change-notifier';
-import { SessionService } from '../chat/session.service';
+import { SessionService } from '../sessions/session.service';
 
 export interface PaginatedResult<T> {
   items: T[];

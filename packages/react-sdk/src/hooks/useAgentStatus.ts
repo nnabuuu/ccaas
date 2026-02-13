@@ -17,7 +17,7 @@ import type {
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
 } from '@ccaas/common'
-import { getThinkingVerb } from '../utils/thinkingVerbs'
+import { getThinkingVerb, THINKING_VERBS } from '../utils/thinkingVerbs'
 
 /**
  * Tracks agent status, tool activity, thinking state, and token usage.
@@ -226,6 +226,36 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       socket.off('subagent_completed', onSubAgentCompleted)
     }
   }, [connection.socket, handleComplete])
+
+  // Update thinking verb when duration crosses phase thresholds (30s, 90s)
+  // This implements the "smart verb selection based on duration" feature
+  useEffect(() => {
+    if (!isThinking || !thinkingStartTime) return
+
+    const checkThreshold = () => {
+      const elapsed = Date.now() - thinkingStartTime
+      const seconds = elapsed / 1000
+
+      // Only update when crossing thresholds to avoid unnecessary state changes
+      if (seconds >= 90) {
+        setThinkingVerb(prev => {
+          // Don't change if already using a deep verb
+          if (THINKING_VERBS.deep.includes(prev)) return prev
+          return getThinkingVerb(elapsed)
+        })
+      } else if (seconds >= 30) {
+        setThinkingVerb(prev => {
+          // Don't change if already using moderate or deep verb
+          if (THINKING_VERBS.moderate.includes(prev) || THINKING_VERBS.deep.includes(prev)) return prev
+          return getThinkingVerb(elapsed)
+        })
+      }
+    }
+
+    // Check every 5 seconds
+    const timer = setInterval(checkThreshold, 5000)
+    return () => clearInterval(timer)
+  }, [isThinking, thinkingStartTime])
 
   return {
     agentStatus,

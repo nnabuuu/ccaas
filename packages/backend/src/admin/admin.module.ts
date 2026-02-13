@@ -28,8 +28,7 @@ import { AdminSdkController } from './controllers/admin-sdk.controller';
 import { AdminApiKeysController } from './controllers/admin-api-keys.controller';
 
 // Dependent modules
-import { ChatModule } from '../chat/chat.module';
-import { SessionModule } from '../chat/session.module';
+import { SessionsModule } from '../sessions/sessions.module';
 import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
@@ -64,8 +63,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       Skill,
       Tenant,
     ]),
-    ChatModule,
-    SessionModule,
+    SessionsModule,
     SkillsModule,
     AuthModule,
     MessagesModule,

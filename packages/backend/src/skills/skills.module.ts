@@ -16,14 +16,14 @@ import { SkillVersion } from './entities/skill-version.entity';
 import { TenantsModule } from '../tenants/tenants.module';
 import { McpModule } from '../mcp/mcp.module';
 import { UsersModule } from '../users/users.module';
-import { ChatModule } from '../chat/chat.module';
+import { SessionsModule } from '../sessions/sessions.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Skill, SkillVersion]),
     forwardRef(() => TenantsModule),
     forwardRef(() => UsersModule),
-    forwardRef(() => ChatModule), // Week 5: SessionService for affected sessions
+    forwardRef(() => SessionsModule), // Week 5: SessionService for affected sessions
     McpModule,
   ],
   controllers: [SkillsController],

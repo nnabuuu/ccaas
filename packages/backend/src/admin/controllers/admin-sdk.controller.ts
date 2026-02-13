@@ -6,12 +6,12 @@
 
 import { Controller, Get } from '@nestjs/common';
 import { Auth } from '../../auth/decorators';
-import { ChatGateway } from '../../chat/chat.gateway';
+import { SessionsGateway } from '../../sessions/sessions.gateway';
 
 @Controller('api/v1/admin/sdk-connections')
 @Auth('admin')
 export class AdminSdkController {
-  constructor(private readonly chatGateway: ChatGateway) {}
+  constructor(private readonly sessionsGateway: SessionsGateway) {}
 
   /**
    * GET /api/v1/admin/sdk-connections
@@ -20,7 +20,7 @@ export class AdminSdkController {
    */
   @Get()
   async getConnections() {
-    const connections = this.chatGateway.getSdkConnections();
+    const connections = this.sessionsGateway.getSdkConnections();
 
     return {
       total: connections.length,

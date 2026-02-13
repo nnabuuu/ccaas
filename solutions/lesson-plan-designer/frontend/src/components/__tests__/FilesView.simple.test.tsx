@@ -17,13 +17,8 @@ vi.mock('@ccaas/react-sdk', () => ({
   FileUploadButton: () => <div>Upload Button</div>,
 }))
 
-vi.mock('../../hooks/useFileAttachment', () => ({
-  useFileAttachment: () => ({
-    attachFile: vi.fn(),
-    isAttaching: false,
-    error: null,
-  }),
-}))
+// Note: useFileAttachment is no longer imported by FilesView
+// Attachment functionality is now passed via onAttachFile prop
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
@@ -44,12 +39,11 @@ describe('FilesView - Basic Tests', () => {
     clientId: 'test-client',
   } as UseAgentConnectionReturn
 
-  it('should render without crashing', () => {
+  it('should render without crashing (generic mode)', () => {
     render(
       <FilesView
         connection={mockConnection}
         sessionId="test-session"
-        lessonPlanId="test-plan"
       />
     )
 
@@ -61,7 +55,6 @@ describe('FilesView - Basic Tests', () => {
       <FilesView
         connection={mockConnection}
         sessionId="test-session"
-        lessonPlanId="test-plan"
       />
     )
 
@@ -73,10 +66,25 @@ describe('FilesView - Basic Tests', () => {
       <FilesView
         connection={mockConnection}
         sessionId="test-session"
-        lessonPlanId="test-plan"
       />
     )
 
     expect(screen.getByText('暂无文件')).toBeInTheDocument()
+  })
+
+  it('should render with attachment functionality when onAttachFile provided', () => {
+    const mockAttach = vi.fn().mockResolvedValue({ success: true })
+
+    render(
+      <FilesView
+        connection={mockConnection}
+        sessionId="test-session"
+        onAttachFile={mockAttach}
+        attachButtonLabel="附加"
+        attachButtonTitle="附加到教案"
+      />
+    )
+
+    expect(screen.getByText('文件')).toBeInTheDocument()
   })
 })

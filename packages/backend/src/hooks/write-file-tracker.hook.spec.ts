@@ -5,6 +5,7 @@
  * stores files via FilesService, and emits file_created WebSocket events.
  */
 
+import { Logger } from '@nestjs/common';
 import {
   createWriteFileTrackerHook,
   WriteFileTrackerDeps,
@@ -61,8 +62,12 @@ describe('WriteFileTrackerHook', () => {
     status: 'new',
     downloadedAt: null,
     uploadedBy: 'agent',
+    currentVersion: '1.0.0',
+    lastVersionAt: null,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     message: null,
+    versions: [],
     ...overrides,
   });
 
@@ -308,6 +313,100 @@ describe('WriteFileTrackerHook', () => {
         await hook.afterToolResult(result, createContext());
 
         expect(mockFilesService.createFromWriteTool).toHaveBeenCalled();
+      });
+    });
+
+    describe('background task file tracking', () => {
+      it('should use spawning message ID for background task files', async () => {
+        // Setup: No current message (task completed), but has spawning message
+        mockSession.currentAssistantMessageId = undefined;
+
+        const result = createWriteResult({
+          input: { file_path: 'background-task-file.pdf', content: 'PDF' },
+        });
+
+        const context = createContext({
+          parentToolUseId: 'tool-task-456',
+          spawningMessageId: 'msg-spawning-789',
+        });
+
+        await hook.afterToolResult(result, context);
+
+        // Should use spawning message ID, not current
+        expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-spawning-789',
+            sessionId: 'session-123',
+            originalPath: 'background-task-file.pdf',
+          }),
+        );
+      });
+
+      it('should use current message ID for regular files', async () => {
+        mockSession.currentAssistantMessageId = 'msg-current-123';
+
+        const result = createWriteResult({
+          input: { file_path: 'regular-file.md', content: 'Markdown' },
+        });
+
+        const context = createContext({
+          spawningMessageId: undefined, // No spawning message (regular file)
+        });
+
+        await hook.afterToolResult(result, context);
+
+        // Should use current message ID, not spawning
+        expect(mockFilesService.createFromWriteTool).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-current-123',
+          }),
+        );
+      });
+
+      it('should skip tracking if no message ID available', async () => {
+        // No current message, no spawning message
+        mockSession.currentAssistantMessageId = undefined;
+
+        const result = createWriteResult({
+          input: { file_path: 'orphan-file.txt', content: 'Text' },
+        });
+
+        const context = createContext({
+          spawningMessageId: undefined,
+        });
+
+        await hook.afterToolResult(result, context);
+
+        // Should NOT call filesService (no message ID to associate)
+        expect(mockFilesService.createFromWriteTool).not.toHaveBeenCalled();
+      });
+
+      it('should log background task file tracking', async () => {
+        const logSpy = jest.spyOn(Logger.prototype, 'log');
+
+        mockSession.currentAssistantMessageId = undefined;
+
+        const result = createWriteResult({
+          input: { file_path: 'background.pdf', content: 'PDF' },
+        });
+
+        const context = createContext({
+          parentToolUseId: 'tool-task-123',
+          spawningMessageId: 'msg-spawn-456',
+          toolUseId: 'tool-write-789',
+        });
+
+        await hook.afterToolResult(result, context);
+
+        // Should log background task file tracking
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[Background Task File]'),
+        );
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining('msg-spawn-456'),
+        );
+
+        logSpy.mockRestore();
       });
     });
   });

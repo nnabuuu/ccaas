@@ -47,9 +47,7 @@ vi.mock('../useLessonPlanSync', () => ({
   }),
 }))
 
-vi.mock('../useSubAgentPolling', () => ({
-  useSubAgentPolling: vi.fn(),
-}))
+// useSubAgentPolling removed - subAgent tracking now handled by SDK's useAgentStatus via WebSocket
 
 vi.mock('../../utils/api', () => ({
   api: {

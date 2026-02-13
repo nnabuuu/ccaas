@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { SdkConnections } from '@/components/shared/sdk-connections'
+import { TenantApiKeysTab } from '@/components/tenants/api-keys-tab'
 import { ArrowLeft, Zap } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
@@ -120,6 +121,7 @@ export function TenantDetailPage() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="quotas">Quotas</TabsTrigger>
+          <TabsTrigger value="api-keys">API Keys</TabsTrigger>
           <TabsTrigger value="sdk">SDK Connections</TabsTrigger>
         </TabsList>
 
@@ -314,6 +316,10 @@ export function TenantDetailPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="api-keys">
+          <TenantApiKeysTab tenantId={tenantId} />
         </TabsContent>
 
         <TabsContent value="sdk">

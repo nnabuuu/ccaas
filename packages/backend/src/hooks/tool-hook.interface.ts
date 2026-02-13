@@ -9,6 +9,12 @@ export interface ToolHookContext {
   clientId: string;
   toolUseId: string;
   timestamp: string;
+
+  // Parent Task tool ID (for nested tools in background tasks)
+  parentToolUseId?: string;
+
+  // Spawning message ID for background tasks
+  spawningMessageId?: string;
 }
 
 export interface ToolStartInfo {

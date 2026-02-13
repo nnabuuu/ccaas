@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { HeadlessExecutionService } from './headless-execution.service';
-import { EventMapperService } from '../chat/event-mapper.service';
+import { EventMapperService } from '../sessions/event-mapper.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import type { ScheduledTask } from './entities/scheduled-task.entity';
 import type { ScheduledTaskExecution } from './entities/scheduled-task-execution.entity';

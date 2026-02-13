@@ -161,6 +161,14 @@ export const api = {
       }
     }
   },
+
+  // Remove an attachment from lesson plan
+  async removeAttachment(planId: string, attachmentId: string): Promise<LessonPlan> {
+    const response = await fetch(`${API_BASE}/lesson-plans/${planId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    })
+    return handleResponse<LessonPlan>(response)
+  },
 }
 
 export { ApiError }

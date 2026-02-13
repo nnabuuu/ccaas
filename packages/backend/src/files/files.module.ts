@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import { AgentFile } from './entities/agent-file.entity';
 import { FileVersion } from './entities/file-version.entity';
 import { FilesService } from './files.service';
 import { FilesController } from './files.controller';
-import { SessionModule } from '../chat/session.module';
+import { SessionsModule } from '../sessions/sessions.module';
 
 @Module({
   imports: [
@@ -15,7 +15,7 @@ import { SessionModule } from '../chat/session.module';
         fileSize: 10 * 1024 * 1024, // 10MB limit
       },
     }),
-    SessionModule,
+    forwardRef(() => SessionsModule),
   ],
   controllers: [FilesController],
   providers: [FilesService],

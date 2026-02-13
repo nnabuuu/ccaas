@@ -67,13 +67,24 @@ export class ApiKeyService implements OnModuleInit {
 
     if (defaultTenant) {
       const keys = await this.findByTenantId(defaultTenant.id);
-      if (keys.length === 0) {
+
+      // Check if admin API key exists
+      const adminKey = keys.find(k => k.scopes.includes('admin'));
+
+      if (!adminKey) {
+        const adminConfig = this.configService.get('admin');
         const { rawKey } = await this.create(defaultTenant.id, {
-          name: 'Default Development Key',
-          scopes: ['skills:read', 'skills:write', 'skills:execute', 'skills:delete', 'chat', 'admin'],
+          name: adminConfig.apiKeyName,
+          scopes: ['admin'], // Full admin access
         });
-        this.logger.log(`Created default API key: ${rawKey.substring(0, 20)}...`);
-        this.logger.log(`Save this key - it won't be shown again!`);
+
+        this.logger.warn('='.repeat(80));
+        this.logger.warn('🔑 ADMIN API KEY CREATED - SAVE THIS KEY!');
+        this.logger.warn(`   Key: ${rawKey}`);
+        this.logger.warn(`   This key will NOT be shown again!`);
+        this.logger.warn('='.repeat(80));
+      } else {
+        this.logger.log(`Admin API key exists: ${adminKey.keyPrefix}...`);
       }
     }
   }

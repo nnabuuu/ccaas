@@ -232,8 +232,8 @@ export function AgentActivityLine({
           <div className="pl-8 pr-4">
             <div className="p-2.5 bg-purple-50 border border-purple-200 rounded-lg">
               <div className="text-xs text-purple-900 leading-relaxed whitespace-pre-wrap break-words">
-                {thinkingContent.slice(-150)}
                 {thinkingContent.length > 150 && '...'}
+                {thinkingContent.slice(-150)}
               </div>
             </div>
           </div>

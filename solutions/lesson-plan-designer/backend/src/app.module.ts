@@ -6,6 +6,8 @@ import { SessionsModule } from './sessions/sessions.module';
 import { SolutionConfigModule } from './config/config.module';
 import { CurriculumStandardsModule } from './curriculum-standards/curriculum-standards.module';
 import { TextbookModule } from './textbook/textbook.module';
+import { FilesModule } from './files/files.module';
+import { HooksModule } from './hooks/hooks.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { TextbookModule } from './textbook/textbook.module';
     // Skills are now managed by CCAAS backend, not solution backend
     CurriculumStandardsModule,
     TextbookModule,
+    FilesModule,
+    HooksModule,
   ],
 })
 export class AppModule {}

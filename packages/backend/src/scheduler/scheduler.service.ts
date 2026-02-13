@@ -48,17 +48,17 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
   async onModuleInit(): Promise<void> {
     this.logger.log('Initializing scheduler...');
 
-    // Lazily resolve Socket.io server from ChatGateway to avoid circular deps
+    // Lazily resolve Socket.io server from SessionsGateway to avoid circular deps
     try {
       // Dynamic import to avoid circular module dependency
-      const { ChatGateway } = await import('../chat/chat.gateway');
-      const gateway = this.moduleRef.get(ChatGateway, { strict: false });
+      const { SessionsGateway } = await import('../sessions/sessions.gateway');
+      const gateway = this.moduleRef.get(SessionsGateway, { strict: false });
       if (gateway?.server) {
         this.ioServer = gateway.server;
         this.logger.log('Socket.io server connected for scheduler notifications');
       }
     } catch {
-      this.logger.warn('ChatGateway not available - scheduler will run without real-time notifications');
+      this.logger.warn('SessionsGateway not available - scheduler will run without real-time notifications');
     }
 
     await this.restoreActiveSchedules();

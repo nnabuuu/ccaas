@@ -6,7 +6,7 @@
 
 import { Controller, Get, Query } from '@nestjs/common';
 import { Auth } from '../../auth/decorators';
-import { SessionService } from '../../chat/session.service';
+import { SessionService } from '../../sessions/session.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
 import { SkillsService } from '../../skills/skills.service';

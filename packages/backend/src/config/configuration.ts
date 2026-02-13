@@ -30,5 +30,10 @@ export default () => ({
     flags: ['--output-format', 'stream-json', '--input-format', 'stream-json', '--verbose'],
   },
 
+  admin: {
+    email: process.env.ADMIN_EMAIL || 'admin@example.com',
+    apiKeyName: process.env.ADMIN_API_KEY_NAME || 'Default Admin Key',
+  },
+
   debug: process.env.DEBUG === 'true',
 });

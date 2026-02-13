@@ -127,14 +127,14 @@ export class JobService implements OnModuleInit {
     // Lazy-load Socket.io server to avoid circular deps
     setTimeout(async () => {
       try {
-        const { ChatGateway } = await import('../chat/chat.gateway');
-        const gateway = this.moduleRef.get(ChatGateway, { strict: false });
+        const { SessionsGateway } = await import('../sessions/sessions.gateway');
+        const gateway = this.moduleRef.get(SessionsGateway, { strict: false });
         if (gateway?.server) {
           this.ioServer = gateway.server;
           this.logger.log('Socket.io server connected for job notifications');
         }
       } catch {
-        this.logger.warn('ChatGateway not available for job notifications');
+        this.logger.warn('SessionsGateway not available for job notifications');
       }
     }, 1000);
   }

@@ -2,7 +2,7 @@
  * Skill Change Notifier
  *
  * Simple callback-based notification for skill changes.
- * Used to notify ChatGateway when skills are updated so it can
+ * Used to notify SessionsGateway when skills are updated so it can
  * mark sessions for restart and emit WebSocket events.
  */
 

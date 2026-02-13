@@ -33,6 +33,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionService } from './session.service';
+import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { SkillManagementService } from './services/skill-management.service';
+import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
@@ -49,6 +52,9 @@ export class SessionsController {
   constructor(
     private readonly sessionsGateway: SessionsGateway,
     private readonly sessionService: SessionService,
+    private readonly completionOrchestrationService: CompletionOrchestrationService,
+    private readonly skillManagementService: SkillManagementService,
+    private readonly attachmentService: AttachmentService,
     private readonly skillSyncService: SkillSyncService,
     private readonly skillsService: SkillsService,
     private readonly tenantsService: TenantsService,
@@ -56,97 +62,6 @@ export class SessionsController {
     private readonly conversationContextService: ConversationContextService,
   ) {}
 
-  /**
-   * Generate skill system prompt for --append-system-prompt CLI parameter
-   *
-   * Creates a critical instruction block that forces Claude to read SKILL.md
-   * files before responding to skill-related requests.
-   */
-  private generateSkillSystemPrompt(
-    skills: Array<{ slug: string; name: string; description?: string }>,
-  ): string {
-    if (skills.length === 0) return '';
-
-    const skillList = skills
-      .map((s) => `  - **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.description}` : ''}`)
-      .join('\n');
-
-    return `
-SKILL USAGE PROTOCOL:
-
-Available skills (${skills.length}):
-${skillList}
-
-Required workflow when using any skill:
-1. Read(".claude/skills/{skill-slug}/SKILL.md") first
-2. Follow the workflow steps specified in SKILL.md (e.g., call read_context)
-3. Use provided tools to access existing data
-
-Skills contain domain expertise and data access tools (read_context, read_form_state, etc.) to prevent re-asking for information users already provided.
-
-Example:
-WRONG: Ask "What's your subject? Grade level?"
-CORRECT: Read(".claude/skills/lesson-plan-designer/SKILL.md") → use read_context → respond with data
-
-Always consult SKILL.md before responding to skill-related requests.
-`.trim();
-  }
-
-  /**
-   * Create CLAUDE.md with skill loading instructions
-   *
-   * This method creates a CLAUDE.md file in the workspace that instructs
-   * Claude Code to load and use the synced skills.
-   */
-  private async createClaudeMd(
-    workspaceDir: string,
-    skills: Array<{ name: string; slug: string; description?: string }>,
-  ): Promise<void> {
-    const claudeMdPath = path.join(workspaceDir, 'CLAUDE.md');
-
-    const content = `# Session Skills Configuration
-
-Available skills in \`.claude/skills/\`:
-
-${skills.map(s => `- **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.description}` : ''}`).join('\n')}
-
-## CRITICAL: Read SKILL.md Before Using Any Skill
-
-\`\`\`
-Read(".claude/skills/{skill-slug}/SKILL.md")
-\`\`\`
-
-Each SKILL.md contains:
-- Required workflow steps and execution order
-- Available tools and data sources (read_context, read_form_state, etc.)
-- Domain-specific requirements and output formats
-
-These are execution requirements, not optional suggestions. Skills provide context to prevent re-asking for data users already provided.
-
-## Example: Lesson Planning
-
-**Correct approach**:
-1. Read(".claude/skills/lesson-plan-designer/SKILL.md")
-2. SKILL.md instructs: call read_context first
-3. read_context returns { subject: "数学", gradeLevel: 7, ... }
-4. Use this data in response
-
-**Wrong approach**:
-Ask "你的学科是什么？" (user already provided this)
-
-## Multiple Skills
-
-When coordinating multiple skills:
-- Read each SKILL.md before use
-- Follow each skill's workflow requirements
-- Coordinate execution as specified
-
-SKILL.md files are the authoritative source for skill usage.
-`;
-
-    await fs.promises.writeFile(claudeMdPath, content, 'utf-8');
-    this.logger.log(`Created CLAUDE.md with ${skills.length} skills`);
-  }
 
   /**
    * Create completion (send message)
@@ -200,18 +115,8 @@ Send user message to the specified session. Agent will push response events via 
   ) {
     let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
 
-    // Debug logging for context field
-    this.logger.debug(`=== CREATE COMPLETION DEBUG ===`);
-    this.logger.debug(`Received keys: ${Object.keys(data).join(', ')}`);
-    this.logger.debug(`Has context: ${!!data.context}`);
-    if (data.context) {
-      this.logger.debug(`Context keys: ${Object.keys(data.context).join(', ')}`);
-      this.logger.debug(`Context preview: ${JSON.stringify(data.context).slice(0, 200)}`);
-    }
-    this.logger.debug(`==============================`);
-
     this.logger.log(`Creating completion for session ${sessionId}`);
-    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}, enabledSkillSlugs=${enabledSkillSlugs ? enabledSkillSlugs.join(', ') : 'none'}`);
+    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}`);
 
     // Find WebSocket connection
     const socket = this.sessionsGateway.getClientSocket(clientId);
@@ -221,267 +126,71 @@ Send user message to the specified session. Agent will push response events via 
 
     // Require tenantId for skill sync
     if (!tenantId) {
-      this.logger.error('tenantId is required for chat - skills cannot be loaded without a tenant');
+      this.logger.error('tenantId is required for chat');
       socket.emit('agent_status', {
         status: 'error',
         sessionId,
-        error: 'tenantId is required. Skills cannot be loaded without a tenant.',
+        error: 'tenantId is required.',
       });
       throw new BadRequestException('tenantId is required');
     }
 
     try {
-      // Phase 2: Auto-load tenant skills if not provided
+      // REST-specific preprocessing: Auto-load tenant skills if not provided
       if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
-        this.logger.debug(`No enabledSkillSlugs provided, querying tenant skills for: ${tenantId}`);
+        this.logger.debug(`Auto-loading tenant skills for: ${tenantId}`);
 
-        // Resolve tenant slug/id to actual tenant UUID first
-        let queryTenantId = tenantId;
-        try {
-          const tenant = await this.tenantsService.findOne(tenantId);
-          if (tenant) {
-            queryTenantId = tenant.id;
-          }
-        } catch (error) {
-          this.logger.warn(`Failed to resolve tenant for skill query: ${error}`);
-        }
+        // Resolve tenant first
+        const tenant = await this.tenantsService.findOne(tenantId);
+        const resolvedTenantId = tenant?.id || tenantId;
 
-        const allSkills = await this.skillsService.findPublished(queryTenantId);
+        const allSkills = await this.skillsService.findPublished(resolvedTenantId);
         const enabledTenantSkills = allSkills.filter(skill => skill.enabled);
 
         enabledSkillSlugs = enabledTenantSkills.map(s => s.slug);
 
         this.logger.log(
-          `Auto-loaded ${enabledSkillSlugs.length} enabled skills for tenant ${tenantId}: ${enabledSkillSlugs.join(', ')}`,
+          `Auto-loaded ${enabledSkillSlugs.length} enabled skills for tenant ${tenantId}`,
         );
       }
-      // Resolve tenant slug/id to actual tenant UUID
-      let resolvedTenantId = tenantId;
-      try {
+
+      // REST-specific preprocessing: Generate skill system prompt
+      let systemPrompt: string | undefined;
+      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
         const tenant = await this.tenantsService.findOne(tenantId);
-        if (tenant) {
-          resolvedTenantId = tenant.id;
-          this.logger.debug(`Resolved tenant ${tenantId} to UUID ${resolvedTenantId}`);
-        } else {
-          this.logger.warn(`Tenant not found: ${tenantId}, using as-is`);
-        }
-      } catch (error) {
-        this.logger.warn(`Failed to resolve tenant: ${error}`);
-      }
+        const resolvedTenantId = tenant?.id || tenantId;
 
-      // Get or create session
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, socket);
-
-      // Store tenant context
-      session.tenantId = resolvedTenantId;
-
-      // Store MCP servers configuration
-      if (mcpServers && Object.keys(mcpServers).length > 0) {
-        session.mcpServers = mcpServers;
-        this.logger.log(`Session ${sessionId} configured with MCP servers: ${Object.keys(mcpServers).join(', ')}`);
-      }
-
-      // Sync tenant skills to session workspace
-      try {
-        const syncResult = await this.skillSyncService.syncToSession(
-          session.workspaceDir,
+        systemPrompt = await this.skillManagementService.generateSystemPromptForSession(
           resolvedTenantId,
-          {
-            publishedOnly: true,
-            skillSlugs: enabledSkillSlugs,
-          },
+          enabledSkillSlugs,
         );
-        session.skillSyncedAt = new Date();
-        this.logger.log(`Synced ${syncResult.skillCount} skills for tenant ${tenantId} (${resolvedTenantId})`);
-
-        // Phase 1: Create CLAUDE.md after syncing skills
-        if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-          const allSkills = await this.skillsService.findPublished(resolvedTenantId);
-          const skillSlugs = enabledSkillSlugs; // Type narrowing
-          const skillsToDocument = allSkills.filter(skill =>
-            skillSlugs.includes(skill.slug)
-          );
-
-          if (skillsToDocument.length > 0) {
-            // Create CLAUDE.md for workspace context
-            await this.createClaudeMd(
-              session.workspaceDir,
-              skillsToDocument.map(s => ({
-                name: s.name,
-                slug: s.slug,
-                description: s.description,
-              })),
-            );
-
-            // Generate skill system prompt for CLI --append-system-prompt
-            const skillPrompt = this.generateSkillSystemPrompt(
-              skillsToDocument.map(s => ({
-                slug: s.slug,
-                name: s.name,
-                description: s.description || '',
-              })),
-            );
-
-            // Store in session for subsequent resume calls
-            session.appendSystemPrompt = skillPrompt;
-
-            this.logger.log(`Generated skill system prompt for ${skillsToDocument.length} skills`);
-          }
-        }
-      } catch (error) {
-        this.logger.warn(`Failed to sync skills: ${error}`);
       }
 
-      // If solution provided a skill file path, copy it to session workspace
-      this.logger.debug(`Checking skillPath: ${skillPath}, exists: ${skillPath ? fs.existsSync(skillPath) : false}`);
-      if (skillPath && fs.existsSync(skillPath)) {
-        try {
-          const skillName = path.basename(path.dirname(skillPath));
-          const targetDir = path.join(session.workspaceDir, '.claude', 'skills', skillName);
-          fs.mkdirSync(targetDir, { recursive: true });
-          fs.copyFileSync(skillPath, path.join(targetDir, 'SKILL.md'));
-          this.logger.log(`Copied skill ${skillName} to session workspace from ${skillPath}`);
-
-          // Create CLAUDE.md to instruct Claude to read the skill guide
-          const claudeMdPath = path.join(session.workspaceDir, 'CLAUDE.md');
-          const claudeMdContent = `# Session Workspace
-
-## 强制执行步骤
-
-**在回复用户的任何消息之前，你必须先阅读技能指南：**
-
-使用 Read 工具读取技能的完整指南：
-\`\`\`
-Read(".claude/skills/${skillName}/SKILL.md")
-\`\`\`
-
-严格按照技能指南中的流程和工具说明来处理用户请求。
-
-## 响应语言
-
-使用与用户相同的语言回复。
-`;
-          fs.writeFileSync(claudeMdPath, claudeMdContent, 'utf-8');
-          this.logger.log(`Created CLAUDE.md for session ${sessionId}`);
-        } catch (error) {
-          this.logger.warn(`Failed to copy skill file: ${error}`);
-        }
-      }
-
-      // Create message records for persistence
-      const userMessage = await this.messagesService.create({
-        sessionId,
-        tenantId: resolvedTenantId,
-        role: 'user',
-        content: message,
-      });
-
-      const assistantMessage = await this.messagesService.create({
-        sessionId,
-        tenantId: resolvedTenantId,
-        role: 'assistant',
-        content: '', // Will be accumulated as response streams in
-      });
-
-      // Store message IDs on session for file association
-      session.currentUserMessageId = userMessage.id;
-      session.currentAssistantMessageId = assistantMessage.id;
-
-      this.logger.debug(
-        `Created messages: user=${userMessage.id}, assistant=${assistantMessage.id}`,
+      // REST-specific preprocessing: Resolve attachment paths
+      const session = this.sessionService.getOrCreateSession(sessionId, clientId, socket);
+      const resolvedAttachments = this.attachmentService.resolveAttachments(
+        attachments,
+        session.workspaceDir,
       );
 
-      // Store page context if provided (NEW: Write to workspace for MCP tool to read)
-      if (data.context) {
-        try {
-          const contextDir = path.join(session.workspaceDir, '.context');
-          const contextPath = path.join(contextDir, 'page-context.json');
-
-          // Ensure directory exists
-          if (!fs.existsSync(contextDir)) {
-            fs.mkdirSync(contextDir, { recursive: true });
-          }
-
-          // Write context to file (with timestamp)
-          const contextData = {
-            ...data.context,
-            timestamp: new Date().toISOString(),
-          };
-          fs.writeFileSync(contextPath, JSON.stringify(contextData, null, 2));
-
-          this.logger.debug(`Wrote page context for session ${sessionId}: ${JSON.stringify(data.context).slice(0, 100)}...`);
-        } catch (err) {
-          this.logger.warn(`Failed to write page context: ${err}`);
-        }
-      }
-
-      // Create or update ConversationContext (on first message)
-      if (session.messageCount === 0) {
-        try {
-          await this.conversationContextService.createOrUpdate({
-            sessionId,
-            tenantId: resolvedTenantId,
-            workspaceDir: session.workspaceDir,
-            clientId,
-          });
-          this.logger.debug(`Created conversation context for session ${sessionId}`);
-        } catch (err) {
-          this.logger.warn(`Failed to create conversation context: ${err}`);
-        }
-      }
-
-      // Notify frontend that agent is starting
-      socket.emit('agent_status', {
-        status: 'running',
-        sessionId,
-      });
-
-      // Track accumulated text for message update
-      let accumulatedText = '';
-
-      // Event handler that also accumulates text
-      const handleEvent = (event: FrontendEvent) => {
-        // Accumulate text_delta events
-        if (event.type === 'text_delta' && (event as any).text) {
-          accumulatedText += (event as any).text;
-        }
-
-        // Emit to client
-        socket.emit(event.type, event);
-
-        // On completion, update the assistant message with accumulated content
-        if (event.type === 'agent_status' && (event as any).status === 'complete') {
-          this.messagesService
-            .updateContent(assistantMessage.id, accumulatedText)
-            .catch((err) => this.logger.error(`Failed to update message content: ${err}`));
-        }
-      };
-
-      // Resolve attachment paths to absolute paths
-      const resolvedAttachments = attachments?.map(a => ({
-        type: a.type,
-        absolutePath: path.join(session.workspaceDir, a.path),
-        mimeType: this.guessMimeType(a.path),
-      }));
-
       if (resolvedAttachments?.length) {
-        this.logger.log(`Resolved ${resolvedAttachments.length} attachments for session ${sessionId}`);
+        this.logger.log(`Resolved ${resolvedAttachments.length} attachments`);
       }
 
-      // Check if this is a follow-up message
-      if (session.messageCount > 0) {
-        // Follow-up message - use --resume (appendSystemPrompt preserved in session)
-        await this.sessionService.sendFollowUp(session, message, handleEvent, resolvedAttachments);
-      } else {
-        // First message - spawn new AgentEngine with appendSystemPrompt
-        await this.sessionService.ensureCLIProcess(
-          session,
-          message,
-          handleEvent,
-          resolvedAttachments,
-          session.appendSystemPrompt,
-        );
-      }
+      // Delegate to orchestration service
+      await this.completionOrchestrationService.orchestrateMessage({
+        session,
+        clientId,
+        tenantId,
+        message,
+        context: data.context,
+        mcpServers,
+        enabledSkillSlugs,
+        skillPath,
+        attachments: resolvedAttachments,
+        systemPrompt,
+        emitEvent: (event) => socket.emit(event.type, event),
+      });
 
       return { success: true, sessionId };
     } catch (error) {
@@ -495,17 +204,6 @@ Read(".claude/skills/${skillName}/SKILL.md")
     }
   }
 
-  private guessMimeType(filePath: string): string {
-    const ext = path.extname(filePath).toLowerCase();
-    const map: Record<string, string> = {
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-    };
-    return map[ext] || 'application/octet-stream';
-  }
 
   /**
    * Cancel completion

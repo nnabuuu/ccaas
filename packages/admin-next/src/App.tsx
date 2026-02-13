@@ -24,6 +24,7 @@ const SkillListPage = lazy(() => import('@/pages/skills/list').then((m) => ({ de
 const SkillEditorPage = lazy(() => import('@/pages/skills/editor').then((m) => ({ default: m.SkillEditorPage })))
 const TenantListPage = lazy(() => import('@/pages/tenants/list').then((m) => ({ default: m.TenantListPage })))
 const TenantDetailPage = lazy(() => import('@/pages/tenants/detail').then((m) => ({ default: m.TenantDetailPage })))
+const CreateTenantPage = lazy(() => import('@/pages/tenants/create').then((m) => ({ default: m.CreateTenantPage })))
 const AuditLogPage = lazy(() => import('@/pages/audit').then((m) => ({ default: m.AuditLogPage })))
 const AnalyticsPage = lazy(() => import('@/pages/analytics').then((m) => ({ default: m.AnalyticsPage })))
 const SchedulerListPage = lazy(() => import('@/pages/scheduler/list').then((m) => ({ default: m.SchedulerListPage })))
@@ -114,6 +115,7 @@ function App() {
               <Route path="/skills" element={<SkillListPage />} />
               <Route path="/skills/:idOrSlug" element={<SkillEditorPage />} />
               <Route path="/tenants" element={<TenantListPage />} />
+              <Route path="/tenants/create" element={<CreateTenantPage />} />
               <Route path="/tenants/:tenantId" element={<TenantDetailPage />} />
               <Route path="/audit" element={<AuditLogPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />

@@ -7,7 +7,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual } from 'typeorm';
-import { SessionService } from '../../chat/session.service';
+import { SessionService } from '../../sessions/session.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';
 import { ThinkingBlock } from '../../messages/entities/thinking-block.entity';
@@ -353,7 +353,8 @@ export class SessionManagerService {
     ]);
 
     if (totalMessages === 0) return 0;
-    return Math.round((errorCount / totalMessages) * 100 * 100) / 100;
+    // Return as decimal (0-1) for API consistency, frontend will convert to percentage
+    return Math.round((errorCount / totalMessages) * 10000) / 10000;
   }
 
   // ===========================================================================

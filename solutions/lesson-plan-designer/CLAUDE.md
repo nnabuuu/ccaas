@@ -87,6 +87,72 @@ TextbookChapter[] = [{ id: number, title: string, children?: TextbookChapter[] }
 添加集成测试验证前后端事件结构匹配
 ```
 
+## SubAgent 状态展示
+
+### 实现机制
+
+lesson-plan-designer 通过 WebSocket 实时监听 subAgent 生命周期事件：
+
+**数据流**:
+1. Backend `EventMapperService` 维护 `activeSubAgentsMap` 并发送 WebSocket 事件
+2. react-sdk `useAgentStatus` 监听 `subagent_started` / `subagent_completed`
+3. `useLessonPlanSession` 导出 `activeSubAgents` state
+4. `ChatPanel` → `AgentActivityLine` 展示活跃任务列表
+
+**UI 展示**:
+- 紧凑模式：显示 "后台运行中 (N)"
+- 展开模式：显示每个任务的 SubAgentCard (类型、描述、运行时长)
+- 自动清理：completed/failed 任务 3秒后移除
+
+### 架构改进 (2026-02-11)
+
+**移除冗余轮询**：删除 `useSubAgentPolling` hook，完全依赖 WebSocket 实时数据
+
+**理由**:
+- WebSocket 提供即时响应（vs 轮询的 2-10s 延迟）
+- 减少不必要的 HTTP 请求
+- 单一数据源，避免状态不同步
+- react-sdk 的 `useAgentStatus` 已稳定运行
+
+### 调试方法
+
+**REST API 查询**:
+```bash
+curl http://localhost:3002/api/v1/sessions/{sessionId}/sub-agents
+```
+
+**WebSocket 事件监听** (Browser Console):
+```javascript
+// 监听 subAgent 事件
+socket.on('subagent_started', (data) => console.log('Started:', data))
+socket.on('subagent_completed', (data) => console.log('Completed:', data))
+```
+
+**React DevTools**:
+- 查看 `useLessonPlanSession` hook 的 `activeSubAgents` state
+- 查看 `AgentActivityLine` 组件的 props
+
+**验证 WebSocket 数据流**:
+```bash
+# 1. 触发包含 Task tool 的消息
+# 2. 打开 Browser DevTools → Network → WS (WebSocket)
+# 3. 查看 subagent_started 和 subagent_completed 事件
+# 4. 确认 activeSubAgents 数量正确
+```
+
+### ActiveSubAgent 数据结构
+
+```typescript
+interface ActiveSubAgent {
+  subAgentId: string;        // toolUseId (唯一标识)
+  agentType: string;          // 'Explore' | 'Task' | 'general-purpose' | 自定义
+  description?: string;       // Task tool 的 description 参数
+  startedAt: string;          // ISO timestamp (SubAgentCard 用于计时)
+  status: 'running' | 'completed' | 'failed';
+  nestingLevel?: number;      // 嵌套层级 (0=主 agent, 1=subAgent, 2=...)
+}
+```
+
 ## 强制检查清单
 
 修改 backend 代码前：

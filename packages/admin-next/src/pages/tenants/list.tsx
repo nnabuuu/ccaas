@@ -5,6 +5,7 @@ import { DataTable } from '@/components/shared/data-table'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
 
 interface Tenant {
   id: string
@@ -64,7 +65,12 @@ export function TenantListPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
+        <Button onClick={() => navigate('/tenants/create')}>
+          <Plus className="mr-2 h-4 w-4" /> Create Tenant
+        </Button>
+      </div>
       <DataTable columns={columns} data={tenants} isLoading={isLoading} />
     </div>
   )

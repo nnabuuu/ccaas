@@ -17,12 +17,7 @@ vi.mock('@ccaas/react-sdk', async () => {
   }
 })
 
-vi.mock('../../hooks/useFileAttachment', () => ({
-  useFileAttachment: vi.fn(),
-}))
-
 import { useFiles } from '@ccaas/react-sdk'
-import { useFileAttachment } from '../../hooks/useFileAttachment'
 
 describe('FilesView', () => {
   const mockConnection = {
@@ -69,8 +64,10 @@ describe('FilesView', () => {
     markAllSeen: vi.fn(),
   }
 
+  const mockAttachFile = vi.fn().mockResolvedValue({ success: true })
+
   const mockUseFileAttachment = {
-    attachFile: vi.fn().mockResolvedValue({ success: true }),
+    attachFile: mockAttachFile,
     isAttaching: false,
     error: null,
   }
@@ -78,7 +75,6 @@ describe('FilesView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(useFiles).mockReturnValue(mockUseFiles as any)
-    vi.mocked(useFileAttachment).mockReturnValue(mockUseFileAttachment as any)
   })
 
   describe('rendering', () => {
@@ -87,7 +83,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -100,7 +96,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -112,7 +108,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -130,7 +126,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -142,7 +138,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -161,7 +157,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -180,7 +176,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -195,7 +191,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -208,7 +204,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -221,7 +217,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -237,7 +233,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -258,7 +254,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -282,7 +278,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -306,7 +302,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -319,7 +315,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -331,39 +327,49 @@ describe('FilesView', () => {
       })
     })
 
-    it('should show loading state during attach', () => {
-      vi.mocked(useFileAttachment).mockReturnValue({
-        ...mockUseFileAttachment,
-        isAttaching: true,
-      } as any)
+    it('should show loading state during attach', async () => {
+      const slowAttach = vi.fn(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        return { success: true }
+      })
 
       render(
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={slowAttach}
         />
       )
 
-      expect(screen.getByText('附加中...')).toBeInTheDocument()
+      const attachButton = screen.getAllByText('附加')[0]
+      fireEvent.click(attachButton)
+
+      await waitFor(() => {
+        expect(screen.getByText('附加中...')).toBeInTheDocument()
+      })
     })
 
-    it('should disable attach button during attach', () => {
-      vi.mocked(useFileAttachment).mockReturnValue({
-        ...mockUseFileAttachment,
-        isAttaching: true,
-      } as any)
+    it('should disable attach button during attach', async () => {
+      const slowAttach = vi.fn(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        return { success: true }
+      })
 
       render(
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={slowAttach}
         />
       )
 
-      const attachButton = screen.getByText('附加中...')
-      expect(attachButton).toBeDisabled()
+      const firstAttachButton = screen.getAllByText('附加')[0]
+      fireEvent.click(firstAttachButton)
+
+      await waitFor(() => {
+        const loadingButton = screen.getByText('附加中...')
+        expect(loadingButton).toBeDisabled()
+      })
     })
   })
 
@@ -373,7 +379,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -390,7 +396,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -417,7 +423,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -448,7 +454,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -464,7 +470,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -482,7 +488,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 
@@ -496,7 +502,7 @@ describe('FilesView', () => {
         <FilesView
           connection={mockConnection}
           sessionId="test-session"
-          lessonPlanId="test-plan"
+          onAttachFile={mockUseFileAttachment.attachFile}
         />
       )
 

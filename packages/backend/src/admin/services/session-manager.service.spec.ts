@@ -8,7 +8,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { SessionManagerService } from './session-manager.service';
-import { SessionService } from '../../chat/session.service';
+import { SessionService } from '../../sessions/session.service';
 import { AuditService } from './audit.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';

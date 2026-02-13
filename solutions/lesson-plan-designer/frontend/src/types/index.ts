@@ -338,15 +338,25 @@ export interface Skill {
 }
 
 // Tab types for ChatPanel
-export type TabType = 'messages' | 'files'
+export type TabType = 'messages' | 'files' | 'tasks'
 
 export interface FileAttachmentState {
   isAttaching: boolean
   error: string | null
 }
 
+/**
+ * FilesView component props
+ *
+ * Generic session file browser with optional attachment functionality.
+ * Can be used standalone (file browsing only) or with attachment handler.
+ */
 export interface FilesViewProps {
   connection: any // UseAgentConnectionReturn
   sessionId: string
-  lessonPlanId: string
+
+  // Optional: Provide to enable file attachment feature
+  onAttachFile?: (file: any) => Promise<{ success: boolean }>
+  attachButtonLabel?: string  // Default: "附加"
+  attachButtonTitle?: string  // Default: "附加文件"
 }

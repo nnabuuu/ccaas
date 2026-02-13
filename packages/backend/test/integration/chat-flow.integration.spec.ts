@@ -13,7 +13,7 @@ import { DataSource } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { EventMapperService } from '../../src/chat/event-mapper.service';
+import { EventMapperService } from '../../src/sessions/event-mapper.service';
 import { MessagesService } from '../../src/messages/messages.service';
 import { TokenUsageService } from '../../src/messages/token-usage.service';
 import { ThinkingBlocksService } from '../../src/messages/thinking-blocks.service';
@@ -27,7 +27,7 @@ import { FilesModule } from '../../src/files/files.module';
 import { SkillsModule } from '../../src/skills/skills.module';
 import { TenantsModule } from '../../src/tenants/tenants.module';
 import { McpModule } from '../../src/mcp/mcp.module';
-import { ChatModule } from '../../src/chat/chat.module';
+import { SessionsModule } from '../../src/sessions/sessions.module';
 
 import {
   createWriteFileTrackerHook,
@@ -105,7 +105,7 @@ describe('Chat Flow Integration Tests', () => {
         }),
         TypeOrmModule.forRoot(getTestDatabaseOptions()),
         TypeOrmModule.forFeature(TEST_ENTITIES),
-        ChatModule,
+        SessionsModule,
         MessagesModule,
         FilesModule,
         SkillsModule,

@@ -11,7 +11,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
-import { SessionService } from '../chat/session.service';
+import { SessionService } from '../sessions/session.service';
 
 describe('SkillsService - User Attribution', () => {
   let service: SkillsService;

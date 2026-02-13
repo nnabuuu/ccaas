@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { LessonPlan, SyncField, LessonPlanStatus, CurriculumStandard } from '../types'
 import EditorSection from './EditorSection'
 import AttachmentCard from './AttachmentCard'
+import api from '../utils/api'
 
 // Grade level labels
 const GRADE_LABELS: Record<number, string> = {
@@ -470,9 +471,17 @@ export function LessonPlanContent({
               <AttachmentCard
                 key={attachment.id}
                 attachment={attachment}
-                onRemove={(id) => {
-                  const updated = lessonPlan.attachments.filter((a) => a.id !== id)
-                  onChange('attachments', updated as never)
+                onRemove={async (id) => {
+                  try {
+                    // Call API to delete attachment from backend
+                    const updatedPlan = await api.removeAttachment(lessonPlan.id, id)
+                    // Update local state with response from backend
+                    onChange('attachments', updatedPlan.attachments as never)
+                  } catch (error) {
+                    console.error('Failed to remove attachment:', error)
+                    // TODO: Show error toast to user
+                    alert('删除附件失败，请重试')
+                  }
                 }}
               />
             ))}

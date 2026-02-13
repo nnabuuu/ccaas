@@ -50,6 +50,11 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
 
       // Flatten tree structure to get all files
       const flattenFiles = (nodes: any[]): FileMetadata[] => {
+        if (!Array.isArray(nodes)) {
+          console.warn('flattenFiles received non-array:', nodes)
+          return []
+        }
+
         const result: FileMetadata[] = []
         for (const node of nodes) {
           if (node.type === 'file' && node.fileId) {
@@ -67,14 +72,17 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
               updatedAt: new Date(node.updatedAt || node.createdAt),
             })
           }
-          if (node.children) {
+          if (node.children && Array.isArray(node.children)) {
             result.push(...flattenFiles(node.children))
           }
         }
         return result
       }
 
-      const fileList = flattenFiles(data)
+      // Backend returns { tree: FileTreeNode[] }, not direct array
+      // Ensure we have an array to flatten
+      const treeData = data?.tree || data || []
+      const fileList = flattenFiles(Array.isArray(treeData) ? treeData : [])
       setFiles(fileList)
 
       // Update new files count

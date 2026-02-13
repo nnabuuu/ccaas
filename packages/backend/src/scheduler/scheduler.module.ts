@@ -13,7 +13,7 @@ import { SchedulerService } from './scheduler.service';
 import { HeadlessExecutionService } from './headless-execution.service';
 import { ScheduledTask } from './entities/scheduled-task.entity';
 import { ScheduledTaskExecution } from './entities/scheduled-task-execution.entity';
-import { SessionModule } from '../chat/session.module';
+import { SessionsModule } from '../sessions/sessions.module';
 import { SkillsModule } from '../skills/skills.module';
 import { MessagesModule } from '../messages/messages.module';
 
@@ -21,7 +21,7 @@ import { MessagesModule } from '../messages/messages.module';
   imports: [
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([ScheduledTask, ScheduledTaskExecution]),
-    SessionModule,   // Provides EventMapperService
+    SessionsModule,   // Provides EventMapperService
     SkillsModule,    // Provides SkillSyncService
     MessagesModule,  // Provides MessagesService
   ],
