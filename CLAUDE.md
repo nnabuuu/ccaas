@@ -185,6 +185,86 @@ See: `packages/common/README.md`
 当计划与测试冲突时，应该质疑计划，而不是忽略测试。
 ```
 
+### 架构原则 (2026-02 教训)
+
+**背景**：核心后端曾包含完整的 lesson-plans 模块（1,370 行），与 solution 后端重复，违反架构分层原则。
+
+**根本原因**：
+- 原型阶段在 core 快速开发
+- 后期提取到 solution，忘记从 core 删除
+- 缺乏明确的架构边界规则
+- 没有自动化检测机制
+
+**架构分层原则** (强制执行):
+
+> **Core Backend (CCAAS)** = 中继服务 + 技能路由 + 认证
+>
+> **Solution Backends** = 领域数据 + 业务逻辑 + 集成
+>
+> **严禁混合两者**
+
+**Core Backend 允许的实体** (基础设施):
+- ✅ `Session` - 会话管理（中继）
+- ✅ `Skill` - 技能注册（路由）
+- ✅ `User`, `ApiKey` - 认证授权
+- ✅ `Message` - 消息历史（中继）
+- ✅ `File` - 通用文件元数据
+- ✅ `OutputUpdate` - 协议事件
+- ✅ `ScheduledTask` - 定时任务
+
+**Core Backend 禁止的实体** (领域逻辑):
+- ❌ `LessonPlan`, `Textbook`, `CurriculumStandard` (教育领域)
+- ❌ `Product`, `Order`, `Cart` (电商领域)
+- ❌ `Patient`, `Appointment` (医疗领域)
+- ❌ 任何特定行业/解决方案的业务实体
+
+**检查清单** (添加新实体前):
+```
+□ 这是基础设施实体吗？(Session, Skill, Auth) → 允许添加到 core
+□ 这是领域实体吗？(LessonPlan, Product, Order) → 必须放在 solution backend
+□ 运行架构测试：npm run test:architecture (待实现)
+□ 代码审查：新增 @Entity() 必须有正当理由
+```
+
+**Solution Backend 标准结构**:
+```
+solutions/my-solution/
+├── backend/                    # Solution 拥有独立后端
+│   ├── src/
+│   │   ├── domain/            # 领域实体在此
+│   │   ├── api/               # REST endpoints
+│   │   └── app.module.ts
+│   └── package.json
+└── frontend/
+    └── src/hooks/
+        └── useSolution.ts     # 调用 solution backend
+```
+
+**Frontend 集成模式**:
+```typescript
+export function useMyFeatureSession() {
+  // Core CCAAS: WebSocket for chat relay
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001'  // Core backend
+  })
+
+  // Solution backend: REST for domain data
+  const domainData = useMyFeatureAPI({
+    apiUrl: 'http://localhost:3002'     // Solution backend
+  })
+
+  return { connection, domainData }
+}
+```
+
+**防止架构违规** (待实现):
+1. 自动化架构测试 (检测 core 中的领域实体)
+2. Pre-commit hook (阻止在 core 添加 `@Entity()`)
+3. CI/CD 验证 (PR 必须通过架构测试)
+4. 文档化允许/禁止的实体类型
+
+**参考**: `LESSON_PLANS_MODULE_REMOVAL_COMPLETE.md` - 完整的架构违规案例分析
+
 ## Refactoring Guidelines
 
 ### Terminology and Field Name Changes
