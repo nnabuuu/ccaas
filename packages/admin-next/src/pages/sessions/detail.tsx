@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCustom, useCustomMutation } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { StatCard } from '@/components/shared/stat-card'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -21,6 +22,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatDuration } from '@/lib/format'
 
 interface SessionDetail {
   sessionId: string
@@ -34,12 +36,52 @@ interface SessionDetail {
   workspaceDir: string
 }
 
-interface TimelineEvent {
-  id: string
-  type: 'message' | 'tool_event' | 'thinking_block' | 'process_event' | 'api_error'
-  timestamp: string
-  data: any
+// Type-safe timeline events with discriminated union
+interface MessageEventData {
+  role: string
+  content: string
+  messageIndex?: number
 }
+
+interface ToolEventData {
+  toolName: string
+  phase: string
+  success?: boolean
+  durationMs?: number
+  input?: unknown
+  output?: unknown
+}
+
+interface ThinkingBlockData {
+  status: string
+  thinkingTokens?: number
+  durationMs?: number
+  content?: string
+}
+
+interface ProcessEventData {
+  eventType: string
+  pid?: number
+  exitCode?: number
+  signal?: string
+  errorMessage?: string
+}
+
+interface ApiErrorData {
+  errorType: string
+  statusCode?: number
+  errorMessage?: string
+  errorCode?: string
+  retryAttempt?: number
+  wasRetried?: boolean
+}
+
+type TimelineEvent =
+  | { id: string; type: 'message'; timestamp: string; data: MessageEventData }
+  | { id: string; type: 'tool_event'; timestamp: string; data: ToolEventData }
+  | { id: string; type: 'thinking_block'; timestamp: string; data: ThinkingBlockData }
+  | { id: string; type: 'process_event'; timestamp: string; data: ProcessEventData }
+  | { id: string; type: 'api_error'; timestamp: string; data: ApiErrorData }
 
 const EVENT_ICONS = {
   message: MessageSquare,
@@ -47,7 +89,7 @@ const EVENT_ICONS = {
   thinking_block: Brain,
   process_event: Activity,
   api_error: AlertTriangle,
-}
+} as const
 
 const EVENT_COLORS = {
   message: 'text-blue-500',
@@ -55,7 +97,7 @@ const EVENT_COLORS = {
   thinking_block: 'text-yellow-500',
   process_event: 'text-gray-500',
   api_error: 'text-red-500',
-}
+} as const
 
 function TimelineEventCard({ event }: { event: TimelineEvent }) {
   const Icon = EVENT_ICONS[event.type] || Activity
@@ -185,8 +227,6 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
             )}
           </div>
         )
-      default:
-        return <pre className="text-xs">{JSON.stringify(event.data, null, 2)}</pre>
     }
   }
 
@@ -243,7 +283,19 @@ export function SessionDetailPage() {
   const events = timeline?.events || []
   const totalEvents = timeline?.totalEvents || 0
 
+  // Copy session ID with error handling
+  const handleCopySessionId = useCallback(async () => {
+    if (!sessionId) return
+    try {
+      await navigator.clipboard.writeText(sessionId)
+      // TODO: Replace with toast notification
+    } catch (error) {
+      console.warn('Failed to copy session ID:', error)
+    }
+  }, [sessionId])
+
   const handleKillSession = async () => {
+    // TODO: Replace confirm() with shadcn AlertDialog
     if (!sessionId || !confirm('Are you sure you want to terminate this session?')) return
 
     killSession(
@@ -254,10 +306,12 @@ export function SessionDetailPage() {
       },
       {
         onSuccess: () => {
+          // TODO: Replace alert() with toast notification
           alert('Session terminated successfully')
           window.location.reload()
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
+          // TODO: Replace alert() with toast notification
           alert(`Failed to terminate session: ${error.message}`)
         },
       }
@@ -269,18 +323,11 @@ export function SessionDetailPage() {
     alert('Export logs functionality coming soon')
   }
 
-  const handleCopySessionId = () => {
-    if (sessionId) {
-      navigator.clipboard.writeText(sessionId)
-      alert('Session ID copied to clipboard')
-    }
-  }
-
   const handleLoadMore = () => {
     setTimelineOffset((prev) => prev + timelineLimit)
   }
 
-  const handleLoadEarlier = () => {
+  const handleJumpToStart = () => {
     setTimelineOffset(0)
   }
 
@@ -300,12 +347,6 @@ export function SessionDetailPage() {
       </div>
     )
   }
-
-  // Calculate duration
-  const durationMs =
-    new Date(session.lastActivity).getTime() - new Date(session.createdAt).getTime()
-  const durationMinutes = Math.floor(durationMs / 60000)
-  const durationSeconds = Math.floor((durationMs % 60000) / 1000)
 
   return (
     <div className="space-y-6">
@@ -329,7 +370,12 @@ export function SessionDetailPage() {
               <p className="text-sm text-muted-foreground">Session ID</p>
               <div className="flex items-center gap-2">
                 <p className="font-mono text-sm">{session.sessionId.slice(0, 16)}...</p>
-                <Button variant="ghost" size="sm" onClick={handleCopySessionId}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopySessionId}
+                  aria-label="Copy session ID"
+                >
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
@@ -366,58 +412,48 @@ export function SessionDetailPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Process</p>
-              <p className="text-sm">
-                {session.hasActiveProcess ? '✅ Active' : '❌ Inactive'}
-              </p>
+              {session.hasActiveProcess ? (
+                <span className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-3 w-3" /> Active
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <XCircle className="h-3 w-3" /> Inactive
+                </span>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Usage Metrics */}
+      {/* Usage Metrics - Using shared StatCard component */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Messages</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{session.messageCount}</div>
-            <p className="text-xs text-muted-foreground">Total message count</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Duration</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{`${durationMinutes}m ${durationSeconds}s`}</div>
-            <p className="text-xs text-muted-foreground">Total session duration</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Timeline Events</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalEvents}</div>
-            <p className="text-xs text-muted-foreground">Total events recorded</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Errors</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {events.filter((e) => e.type === 'api_error').length}
-            </div>
-            <p className="text-xs text-muted-foreground">API errors encountered</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Messages"
+          value={session.messageCount}
+          icon={MessageSquare}
+          description="Total message count"
+        />
+        <StatCard
+          title="Duration"
+          value={formatDuration(
+            new Date(session.lastActivity).getTime() - new Date(session.createdAt).getTime()
+          )}
+          icon={Clock}
+          description="Total session duration"
+        />
+        <StatCard
+          title="Timeline Events"
+          value={totalEvents}
+          icon={Activity}
+          description="Total events recorded"
+        />
+        <StatCard
+          title="Errors"
+          value={events.filter((e) => e.type === 'api_error').length}
+          icon={AlertTriangle}
+          description="API errors encountered"
+        />
       </div>
 
       {/* Actions */}
@@ -456,8 +492,8 @@ export function SessionDetailPage() {
           ) : (
             <>
               {timelineOffset > 0 && (
-                <Button variant="outline" onClick={handleLoadEarlier} className="w-full">
-                  Load Earlier Events
+                <Button variant="outline" onClick={handleJumpToStart} className="w-full">
+                  Jump to Start
                 </Button>
               )}
               <div className="space-y-2">
