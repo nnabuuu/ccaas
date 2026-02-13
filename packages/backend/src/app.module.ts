@@ -9,7 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import configuration from './config/configuration';
-import { ChatModule } from './chat/chat.module';
+import { SessionsModule } from './sessions/sessions.module';
 import { SkillsModule } from './skills/skills.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { MessagesModule } from './messages/messages.module';
@@ -18,6 +18,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProtocolModule } from './protocol/protocol.module';
 import { McpModule } from './mcp/mcp.module';
 import { AdminModule } from './admin/admin.module';
+import { HealthModule } from './health/health.module';
 import { Skill } from './skills/entities/skill.entity';
 import { SkillVersion } from './skills/entities/skill-version.entity';
 import { Tenant } from './tenants/entities/tenant.entity';
@@ -36,9 +37,6 @@ import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
 import { AdminAuditLog, SessionAlert, TenantQuota } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
-import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
-import { LessonPlanEntity } from './lesson-plans/entities/lesson-plan.entity';
-import { SessionsModule } from './sessions/sessions.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
 import { ScheduledTaskExecution } from './scheduler/entities/scheduled-task-execution.entity';
@@ -91,8 +89,6 @@ import { UserTenant } from './users/entities/user-tenant.entity';
         AdminAuditLog,
         SessionAlert,
         TenantQuota,
-        // Lesson Plan entities
-        LessonPlanEntity,
         // Scheduler entities
         ScheduledTask,
         ScheduledTaskExecution,
@@ -110,7 +106,8 @@ import { UserTenant } from './users/entities/user-tenant.entity';
     StorageModule,
 
     // Feature modules
-    ChatModule,
+    SessionsModule, // Unified session management (WebSocket + REST)
+    HealthModule,   // System health monitoring
     SkillsModule,
     TenantsModule,
     MessagesModule,
@@ -119,12 +116,6 @@ import { UserTenant } from './users/entities/user-tenant.entity';
 
     // Admin module
     AdminModule,
-
-    // Lesson Plan module
-    LessonPlansModule,
-
-    // Sessions REST API module
-    SessionsModule,
 
     // Scheduler module
     SchedulerModule,

@@ -31,15 +31,14 @@ import { Response } from 'express';
 import { createReadStream } from 'fs';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ChatGateway } from '../chat/chat.gateway';
-import { SessionService } from '../chat/session.service';
+import { SessionsGateway } from './sessions.gateway';
+import { SessionService } from './session.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completion.dto';
-import { UpdateContextDto } from './dto/update-context.dto';
 import type { FrontendEvent } from '../common/interfaces';
 
 @ApiTags('sessions')
@@ -48,7 +47,7 @@ export class SessionsController {
   private readonly logger = new Logger(SessionsController.name);
 
   constructor(
-    private readonly chatGateway: ChatGateway,
+    private readonly sessionsGateway: SessionsGateway,
     private readonly sessionService: SessionService,
     private readonly skillSyncService: SkillSyncService,
     private readonly skillsService: SkillsService,
@@ -215,7 +214,7 @@ Send user message to the specified session. Agent will push response events via 
     this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}, mcpServers=${mcpServers ? JSON.stringify(Object.keys(mcpServers)) : 'none'}, skillPath=${skillPath || 'none'}, enabledSkillSlugs=${enabledSkillSlugs ? enabledSkillSlugs.join(', ') : 'none'}`);
 
     // Find WebSocket connection
-    const socket = this.chatGateway.getClientSocket(clientId);
+    const socket = this.sessionsGateway.getClientSocket(clientId);
     if (!socket) {
       throw new BadRequestException('Client not connected via WebSocket');
     }
@@ -532,7 +531,7 @@ Read(".claude/skills/${skillName}/SKILL.md")
   ) {
     this.logger.log(`Cancelling completion for session ${sessionId}`);
 
-    const socket = this.chatGateway.getClientSocket(data.clientId);
+    const socket = this.sessionsGateway.getClientSocket(data.clientId);
     if (!socket) {
       throw new BadRequestException('Client not connected');
     }
@@ -610,8 +609,8 @@ Read(".claude/skills/${skillName}/SKILL.md")
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
 
-    // Get active sub-agents from ChatGateway → EventMapper
-    const activeSubAgents = this.chatGateway.getActiveSubAgents(sessionId);
+    // Get active sub-agents from SessionsGateway → EventMapper
+    const activeSubAgents = this.sessionsGateway.getActiveSubAgents(sessionId);
 
     return {
       sessionId,
@@ -652,34 +651,6 @@ Read(".claude/skills/${skillName}/SKILL.md")
     return { success: true };
   }
 
-  /**
-   * Update session context
-   * PUT /api/v1/sessions/:sessionId/context
-   *
-   * Syncs frontend form state to a file in the session workspace
-   * so Claude Code can read current form values.
-   */
-  @Put(':sessionId/context')
-  @ApiOperation({
-    summary: '更新会话上下文 / Update Session Context',
-    description: '同步前端表单状态到会话工作区，让 Agent 能够读取当前表单值 / Sync frontend form state to session workspace for agent access',
-  })
-  @ApiParam({
-    name: 'sessionId',
-    description: '会话 ID / Session ID',
-  })
-  @ApiBody({ type: UpdateContextDto })
-  @ApiResponse({
-    status: 200,
-    description: '上下文已更新 / Context updated',
-  })
-  async updateContext(
-    @Param('sessionId') sessionId: string,
-    @Body() data: UpdateContextDto,
-  ) {
-    await this.sessionService.updateContext(sessionId, data);
-    return { success: true };
-  }
 
   /**
    * List files in session workspace
