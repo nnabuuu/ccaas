@@ -73,28 +73,23 @@ export class SessionsController {
       .join('\n');
 
     return `
-CRITICAL SKILL USAGE INSTRUCTIONS:
+SKILL USAGE PROTOCOL:
 
-This session has ${skills.length} specialized skill(s) available:
+Available skills (${skills.length}):
 ${skillList}
 
-MANDATORY WORKFLOW - 强制工作流:
+Required workflow when using any skill:
+1. Read(".claude/skills/{skill-slug}/SKILL.md") first
+2. Follow the workflow steps specified in SKILL.md (e.g., call read_context)
+3. Use provided tools to access existing data
 
-When a user message relates to ANY of the skills above:
-1. IMMEDIATELY use Read tool: Read(".claude/skills/{relevant-skill-slug}/SKILL.md")
-2. The SKILL.md contains MANDATORY instructions (e.g., "call read_context first")
-3. Follow those instructions EXACTLY before responding
+Skills contain domain expertise and data access tools (read_context, read_form_state, etc.) to prevent re-asking for information users already provided.
 
-Why this matters:
-- SKILL.md contains domain expertise you don't have
-- SKILL.md provides tools to access existing data (read_context, read_form_state, etc.)
-- Following SKILL.md prevents asking users for data they already provided
+Example:
+WRONG: Ask "What's your subject? Grade level?"
+CORRECT: Read(".claude/skills/lesson-plan-designer/SKILL.md") → use read_context → respond with data
 
-Example (lesson planning):
-❌ WRONG: Ask "What's your subject? Grade level?"
-✅ RIGHT: Read(".claude/skills/lesson-plan-designer/SKILL.md") → Follow instructions → Use read_context → Respond with data
-
-Remember: Skills are your PRIMARY tools. Always read SKILL.md before responding to skill-related requests.
+Always consult SKILL.md before responding to skill-related requests.
 `.trim();
   }
 
@@ -112,62 +107,42 @@ Remember: Skills are your PRIMARY tools. Always read SKILL.md before responding 
 
     const content = `# Session Skills Configuration
 
-This session has access to the following skills:
+Available skills in \`.claude/skills/\`:
 
 ${skills.map(s => `- **${s.name}** (\`${s.slug}\`)${s.description ? `: ${s.description}` : ''}`).join('\n')}
 
-These skills are available in the \`.claude/skills/\` directory.
-
-## ⚠️ CRITICAL REQUIREMENT - 强制要求
-
-**When you decide to use ANY skill (one or multiple), you MUST read its SKILL.md file BEFORE taking any action:**
+## CRITICAL: Read SKILL.md Before Using Any Skill
 
 \`\`\`
 Read(".claude/skills/{skill-slug}/SKILL.md")
 \`\`\`
 
-### Why This is Mandatory
-
 Each SKILL.md contains:
-- **Mandatory workflow steps** (e.g., "call \`read_context\` first")
-- **Available tools and data sources** (form context, user data, etc.)
-- **Domain-specific instructions** (curriculum standards, formatting rules, etc.)
-- **Required output format**
+- Required workflow steps and execution order
+- Available tools and data sources (read_context, read_form_state, etc.)
+- Domain-specific requirements and output formats
 
-**These are NOT optional suggestions** - they are execution requirements.
+These are execution requirements, not optional suggestions. Skills provide context to prevent re-asking for data users already provided.
 
-### Key Principle: Don't Ask for Data That's Available
+## Example: Lesson Planning
 
-Skills often provide tools to access existing data (like \`read_context\`, \`read_form_state\`, etc.):
+**Correct approach**:
+1. Read(".claude/skills/lesson-plan-designer/SKILL.md")
+2. SKILL.md instructs: call read_context first
+3. read_context returns { subject: "数学", gradeLevel: 7, ... }
+4. Use this data in response
 
-❌ **Wrong**: Ask user "What's your subject? Grade level?"
-✅ **Right**: Read SKILL.md → see it requires \`read_context\` → call it → use the data
+**Wrong approach**:
+Ask "你的学科是什么？" (user already provided this)
 
-### Multiple Skills
+## Multiple Skills
 
-If a task requires multiple skills working together:
-- Read each skill's SKILL.md before using it
+When coordinating multiple skills:
+- Read each SKILL.md before use
 - Follow each skill's workflow requirements
-- Coordinate between skills as needed
+- Coordinate execution as specified
 
-## Example
-
-**Scenario**: User asks for help with lesson planning
-
-**Correct workflow**:
-1. Recognize lesson-plan-designer skill is relevant
-2. \`Read(".claude/skills/lesson-plan-designer/SKILL.md")\`
-3. SKILL.md says: "⚠️ Before responding, call \`read_context\`"
-4. Call \`read_context\` → get { subject: "数学", gradeLevel: 7, ... }
-5. Use this data directly in response
-
-**Wrong workflow** ❌:
-1. Skip reading SKILL.md
-2. Ask "你的学科是什么？" → User already provided this in the form!
-
----
-
-**Remember**: SKILL.md files are the source of truth for how to use each skill correctly.
+SKILL.md files are the authoritative source for skill usage.
 `;
 
     await fs.promises.writeFile(claudeMdPath, content, 'utf-8');
