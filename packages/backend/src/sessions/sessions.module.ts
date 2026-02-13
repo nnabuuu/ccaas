@@ -1,20 +1,52 @@
 /**
  * Sessions Module
  *
- * RESTful API module for session management.
- * Provides endpoints for creating completions, cancelling operations,
- * and managing session lifecycle.
+ * Unified session management module combining WebSocket and REST APIs.
+ * Consolidates session lifecycle, message handling, and real-time communication.
+ *
+ * Previously split into:
+ * - ChatModule (WebSocket gateway + SessionService)
+ * - SessionsModule (REST controller)
+ *
+ * Now unified under SessionsModule for clearer architecture.
  */
 
 import { Module } from '@nestjs/common';
+import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
-import { ChatModule } from '../chat/chat.module';
+import { SessionService } from './session.service';
+import { EventMapperService } from './event-mapper.service';
+import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { SkillManagementService } from './services/skill-management.service';
+import { AttachmentService } from './services/attachment.service';
+import { CliProcessService } from './services/cli-process.service';
+import { WorkspaceService } from './services/workspace.service';
+import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
+import { ToolCallTrackerService } from './services/tool-call-tracker.service';
+import { SubAgentTrackerService } from './services/subagent-tracker.service';
+import { ToolAnalysisService } from './services/tool-analysis.service';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
+import { FilesModule } from '../files/files.module';
 
 @Module({
-  imports: [ChatModule, SkillsModule, TenantsModule, MessagesModule],
+  imports: [SkillsModule, TenantsModule, MessagesModule, FilesModule],
   controllers: [SessionsController],
+  providers: [
+    SessionsGateway,
+    SessionService,
+    EventMapperService,
+    CompletionOrchestrationService,
+    SkillManagementService,
+    AttachmentService,
+    CliProcessService,
+    WorkspaceService,
+    BackgroundTaskMonitorService,
+    ToolCallTrackerService,
+    SubAgentTrackerService,
+    ToolAnalysisService,
+  ],
+  exports: [SessionsGateway, SessionService, EventMapperService],
 })
 export class SessionsModule {}
