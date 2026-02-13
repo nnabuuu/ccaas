@@ -12,8 +12,10 @@ import {
   IsInt,
   Min,
   IsEmail,
+  IsBoolean,
 } from 'class-validator';
-import type { TenantPlan, TenantStatus } from '../entities/tenant.entity';
+import type { TenantPlan, TenantStatus, Tenant } from '../entities/tenant.entity';
+import type { ApiKeyScope } from '../../auth/types';
 
 /**
  * Create tenant request
@@ -51,6 +53,10 @@ export class CreateTenantDto {
   @IsOptional()
   @IsEmail()
   billingEmail?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  autoCreateApiKey?: boolean;
 }
 
 /**
@@ -90,4 +96,27 @@ export class UpdateTenantDto {
   @IsOptional()
   @IsEnum(['active', 'suspended', 'pending', 'deleted'])
   status?: TenantStatus;
+}
+
+/**
+ * Create tenant response
+ *
+ * When autoCreateApiKey is true, includes API key data.
+ */
+export interface CreateTenantResponse {
+  id: string; // Convenience property - same as tenant.id
+  tenant: Tenant;
+  apiKey?: {
+    id: string;
+    name: string;
+    keyPrefix: string;
+    scopes: ApiKeyScope[];
+    rateLimitRpm: number;
+    rateLimitRpd: number;
+    status: string;
+    expiresAt: Date | null;
+    createdAt: Date;
+  };
+  rawKey?: string;
+  warning?: string;
 }

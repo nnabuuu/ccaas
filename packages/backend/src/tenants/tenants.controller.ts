@@ -1,7 +1,7 @@
 /**
  * Tenants Controller
  *
- * REST API for tenant management (admin only).
+ * REST API for tenant management. All endpoints require admin authentication.
  */
 
 import {
@@ -13,10 +13,12 @@ import {
   Param,
   NotFoundException,
 } from '@nestjs/common';
+import { Auth } from '../auth/decorators';
 import { TenantsService } from './tenants.service';
-import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
 
 @Controller('api/v1/tenants')
+@Auth('admin')
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 
@@ -30,9 +32,11 @@ export class TenantsController {
 
   /**
    * Create a new tenant
+   *
+   * Optionally auto-create an API key by setting autoCreateApiKey: true
    */
   @Post()
-  async create(@Body() dto: CreateTenantDto) {
+  async create(@Body() dto: CreateTenantDto): Promise<CreateTenantResponse> {
     return this.tenantsService.create(dto);
   }
 

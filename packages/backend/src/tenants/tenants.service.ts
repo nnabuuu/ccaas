@@ -10,13 +10,17 @@ import {
   ConflictException,
   Logger,
   OnModuleInit,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { Tenant } from './entities/tenant.entity';
-import { CreateTenantDto, UpdateTenantDto } from './dto/tenant.dto';
+import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
+import { ApiKeyService } from '../auth/api-key.service';
+import { DEFAULT_SCOPES } from '../auth/types';
 
 @Injectable()
 export class TenantsService implements OnModuleInit {
@@ -27,6 +31,8 @@ export class TenantsService implements OnModuleInit {
     @InjectRepository(Tenant)
     private readonly tenantRepository: Repository<Tenant>,
     private readonly configService: ConfigService,
+    @Inject(forwardRef(() => ApiKeyService))
+    private readonly apiKeyService: ApiKeyService,
   ) {
     this.defaultTenantId = this.configService.get('skills.defaultTenantId', 'default');
   }
@@ -40,7 +46,7 @@ export class TenantsService implements OnModuleInit {
     });
 
     if (!defaultTenant) {
-      await this.create({
+      const result = await this.create({
         name: 'Default Tenant',
         slug: this.defaultTenantId,
         description: 'Default tenant for development',
@@ -52,7 +58,7 @@ export class TenantsService implements OnModuleInit {
   /**
    * Create a new tenant
    */
-  async create(dto: CreateTenantDto): Promise<Tenant> {
+  async create(dto: CreateTenantDto): Promise<CreateTenantResponse> {
     const slug = dto.slug || this.generateSlug(dto.name);
 
     // Check for duplicate slug
@@ -77,7 +83,30 @@ export class TenantsService implements OnModuleInit {
 
     const saved = await this.tenantRepository.save(tenant);
     this.logger.log(`Created tenant ${saved.name} (${saved.slug})`);
-    return saved;
+
+    // Build response
+    const response: CreateTenantResponse = {
+      id: saved.id,
+      tenant: saved,
+    };
+
+    // Auto-create API key if requested
+    if (dto.autoCreateApiKey) {
+      const apiKeyData = await this.apiKeyService.create(saved.id, {
+        name: `Default API Key for ${saved.name}`,
+        scopes: DEFAULT_SCOPES,
+      });
+
+      response.apiKey = apiKeyData.apiKey;
+      response.rawKey = apiKeyData.rawKey;
+      response.warning = 'This is the only time the raw API key will be displayed. Please save it securely.';
+
+      this.logger.log(
+        `Auto-created API key for tenant ${saved.slug}: ${apiKeyData.rawKey.substring(0, 20)}...`
+      );
+    }
+
+    return response;
   }
 
   /**
