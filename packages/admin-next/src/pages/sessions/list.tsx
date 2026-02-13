@@ -1,16 +1,19 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useCustom } from '@refinedev/core'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
+import type { LucideIcon } from 'lucide-react'
 import { DataTable } from '@/components/shared/data-table'
+import { StatCard } from '@/components/shared/stat-card'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { useTenantContext } from '@/hooks/use-tenant-context'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { formatDuration } from '@/lib/format'
 
 interface SessionItem {
   sessionId: string
@@ -25,40 +28,6 @@ interface SessionItem {
 
 type TabValue = 'all' | 'active' | 'error' | 'long_running' | 'completed'
 
-const STATUS_COLORS: Record<string, string> = {
-  idle: 'secondary',
-  processing: 'default',
-  error: 'destructive',
-  closed: 'outline',
-  completed: 'success',
-}
-
-// KPI Card Component
-function KPICard({
-  title,
-  value,
-  icon: Icon,
-  description,
-}: {
-  title: string
-  value: string | number
-  icon: any
-  description?: string
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
-      </CardContent>
-    </Card>
-  )
-}
-
 export function SessionListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
@@ -68,7 +37,7 @@ export function SessionListPage() {
 
   const endpoint = '/admin/sessions'
 
-  const { data, isLoading, error } = useCustom({
+  const { data, isLoading, error, refetch } = useCustom({
     url: endpoint,
     method: 'get',
     config: {
@@ -158,92 +127,101 @@ export function SessionListPage() {
       durations.length > 0
         ? durations.reduce((a, b) => a + b, 0) / durations.length
         : 0
-    const avgDurationFormatted =
-      avgDuration > 0
-        ? `${Math.floor(avgDuration / 60000)}m ${Math.floor((avgDuration % 60000) / 1000)}s`
-        : 'N/A'
 
     return {
       activeSessions,
       completedLast24h,
       errorRate,
-      avgDuration: avgDurationFormatted,
+      avgDuration: formatDuration(avgDuration),
     }
   }, [allSessions])
 
-  const columns: ColumnDef<SessionItem>[] = [
-    {
-      accessorKey: 'sessionId',
-      header: 'Session ID',
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs">{row.original.sessionId.slice(0, 12)}...</span>
+  // Copy session ID with error handling
+  const handleCopySessionId = useCallback(async (sessionId: string) => {
+    try {
+      await navigator.clipboard.writeText(sessionId)
+      // TODO: Replace with toast notification
+    } catch (error) {
+      console.warn('Failed to copy session ID:', error)
+    }
+  }, [])
+
+  // Memoize columns to prevent re-creation on every render
+  const columns = useMemo<ColumnDef<SessionItem>[]>(
+    () => [
+      {
+        accessorKey: 'sessionId',
+        header: 'Session ID',
+        cell: ({ row }) => (
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs">{row.original.sessionId.slice(0, 12)}...</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCopySessionId(row.original.sessionId)
+              }}
+              aria-label="Copy session ID"
+            >
+              Copy
+            </Button>
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'tenantId',
+        header: 'Tenant',
+        cell: ({ row }) => (
+          <span className="text-xs">
+            {row.original.tenantId ? row.original.tenantId.slice(0, 12) + '...' : 'N/A'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+      {
+        accessorKey: 'messageCount',
+        header: 'Messages',
+        cell: ({ row }) => <span>{row.original.messageCount}</span>,
+      },
+      {
+        accessorKey: 'duration',
+        header: 'Duration',
+        cell: ({ row }) => {
+          const durationMs =
+            new Date(row.original.lastActivity).getTime() -
+            new Date(row.original.createdAt).getTime()
+          return <span className="text-xs">{formatDuration(durationMs)}</span>
+        },
+      },
+      {
+        accessorKey: 'lastActivity',
+        header: 'Last Activity',
+        cell: ({ row }) => (
+          <span className="text-xs">
+            {formatDistanceToNow(new Date(row.original.lastActivity), { addSuffix: true })}
+          </span>
+        ),
+      },
+      {
+        id: 'actions',
+        cell: ({ row }) => (
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              navigator.clipboard.writeText(row.original.sessionId)
-            }}
+            onClick={() => navigate(`/sessions/${row.original.sessionId}`)}
           >
-            Copy
+            View Details
           </Button>
-        </div>
-      ),
-    },
-    {
-      accessorKey: 'tenantId',
-      header: 'Tenant',
-      cell: ({ row }) => (
-        <span className="text-xs">
-          {row.original.tenantId ? row.original.tenantId.slice(0, 12) + '...' : 'N/A'}
-        </span>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      header: 'Status',
-      cell: ({ row }) => <StatusBadge status={row.original.status} />,
-    },
-    {
-      accessorKey: 'messageCount',
-      header: 'Messages',
-      cell: ({ row }) => <span>{row.original.messageCount}</span>,
-    },
-    {
-      accessorKey: 'duration',
-      header: 'Duration',
-      cell: ({ row }) => {
-        const durationMs =
-          new Date(row.original.lastActivity).getTime() -
-          new Date(row.original.createdAt).getTime()
-        const minutes = Math.floor(durationMs / 60000)
-        const seconds = Math.floor((durationMs % 60000) / 1000)
-        return <span className="text-xs">{`${minutes}m ${seconds}s`}</span>
+        ),
       },
-    },
-    {
-      accessorKey: 'lastActivity',
-      header: 'Last Activity',
-      cell: ({ row }) => (
-        <span className="text-xs">
-          {formatDistanceToNow(new Date(row.original.lastActivity), { addSuffix: true })}
-        </span>
-      ),
-    },
-    {
-      id: 'actions',
-      cell: ({ row }) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(`/sessions/${row.original.sessionId}`)}
-        >
-          View Details
-        </Button>
-      ),
-    },
-  ]
+    ],
+    [navigate, handleCopySessionId]
+  )
 
   return (
     <div className="space-y-6">
@@ -252,27 +230,27 @@ export function SessionListPage() {
         <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards - Using shared StatCard component */}
       <div className="grid gap-4 md:grid-cols-4">
-        <KPICard
+        <StatCard
           title="Active Sessions"
           value={kpis.activeSessions}
           icon={Activity}
           description="Currently running or processing"
         />
-        <KPICard
+        <StatCard
           title="Completed (24h)"
           value={kpis.completedLast24h}
           icon={CheckCircle}
           description="Successfully finished"
         />
-        <KPICard
+        <StatCard
           title="Error Rate"
           value={`${kpis.errorRate}%`}
           icon={AlertCircle}
           description="Sessions with errors"
         />
-        <KPICard
+        <StatCard
           title="Avg Duration"
           value={kpis.avgDuration}
           icon={Clock}
@@ -319,7 +297,7 @@ export function SessionListPage() {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => window.location.reload()}
+              onClick={() => refetch()}
             >
               Retry
             </Button>
@@ -327,7 +305,7 @@ export function SessionListPage() {
         </Card>
       )}
 
-      {/* Table */}
+      {/* Table - Fixed pagination to use server total */}
       {!error && (
         <DataTable
           columns={columns}
@@ -335,7 +313,7 @@ export function SessionListPage() {
           isLoading={isLoading}
           pageIndex={page}
           pageSize={20}
-          pageCount={Math.ceil(sessions.length / 20)}
+          pageCount={Math.ceil(total / 20)}
           onPaginationChange={setPage}
         />
       )}
