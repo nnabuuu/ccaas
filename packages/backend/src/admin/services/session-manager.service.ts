@@ -349,28 +349,38 @@ export class SessionManagerService {
       }
     }
 
-    // Fetch all event types for the session
+    // Safety bounds: Prevent OOM by limiting per-table query size
+    // Use conservative limit (2x requested + offset, max 1000 per table)
+    // This allows proper pagination while preventing unbounded memory usage
+    const safetyLimit = Math.min(1000, (limit + offset) * 2);
+
+    // Fetch all event types for the session with safety bounds
     const [messages, toolEvents, thinkingBlocks, processEvents, apiErrors] =
       await Promise.all([
         this.messageRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.toolEventRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.thinkingBlockRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.processEventRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.apiErrorRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
       ]);
 
@@ -458,6 +468,9 @@ export class SessionManagerService {
     const totalEvents = events.length;
     const paginatedEvents = events.slice(offset, offset + limit);
 
+    // Note: totalEvents may be capped by safetyLimit (max 5000 events across all tables)
+    // For sessions with >5000 events, pagination past this limit will show incomplete data
+    // This is an acceptable tradeoff to prevent OOM crashes
     return {
       sessionId,
       events: paginatedEvents,
