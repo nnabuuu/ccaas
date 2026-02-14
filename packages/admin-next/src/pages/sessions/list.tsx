@@ -88,7 +88,7 @@ export function SessionListPage() {
 
   // Backend returns PaginatedSessions: { data: SessionListItem[], total, page, pageSize }
   const result = data?.data as { data?: SessionItem[]; total?: number } | undefined
-  const allSessions = result?.data ?? []
+  const allSessions = useMemo(() => result?.data ?? [], [result?.data])
   const total = result?.total ?? allSessions.length
 
   // Bulk kill mutation

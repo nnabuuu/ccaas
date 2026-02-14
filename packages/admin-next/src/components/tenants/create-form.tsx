@@ -25,8 +25,23 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
+interface TenantData {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  status: string
+}
+
+interface ApiKeyData {
+  name: string
+  scopes: string[]
+  rateLimitRpm: number
+  rateLimitRpd: number
+}
+
 interface CreateTenantFormProps {
-  onSuccess: (data: { tenant: any; apiKey?: any; rawKey?: string }) => void
+  onSuccess: (data: { tenant: TenantData; apiKey?: ApiKeyData; rawKey?: string }) => void
 }
 
 export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
@@ -75,8 +90,11 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
         autoCreateApiKey,
       })
       onSuccess(response.data)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create tenant')
+    } catch (err) {
+      const errorMessage = err instanceof Error && 'response' in err
+        ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create tenant')
+        : 'Failed to create tenant'
+      setError(errorMessage)
     } finally {
       setIsSubmitting(false)
     }
