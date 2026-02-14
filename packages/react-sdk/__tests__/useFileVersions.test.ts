@@ -419,7 +419,7 @@ describe('useFileVersions', () => {
         });
 
       // Mock URL and document methods
-      global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
+      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
       global.URL.revokeObjectURL = vi.fn();
       const mockLink = {
         href: '',
