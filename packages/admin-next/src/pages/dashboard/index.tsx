@@ -19,7 +19,6 @@ import {
   type TokenDataPoint,
   type RecentSession,
   type DashboardSummary,
-  type ErrorRateTrend,
 } from '@/lib/api-schemas'
 import { parseApiResponseSafe } from '@/lib/api-parser'
 
