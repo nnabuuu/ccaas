@@ -1,30 +1,17 @@
+import { useMemo } from 'react'
 import type { Message, ContentBlock, ColorScheme, MessageBubbleProps } from '../types'
 import { COLOR_MAP } from '../types'
 import { InlineToolCard } from './InlineToolCard'
 import { formatDuration } from '../utils/formatDuration'
-
-/**
- * Calculate total execution time from content blocks
- * @param contentBlocks Message content blocks containing tool activities
- * @returns Total duration in milliseconds
- */
-function calculateExecutionTime(contentBlocks?: ContentBlock[]): number {
-  if (!contentBlocks) return 0
-
-  let totalDuration = 0
-  for (const block of contentBlocks) {
-    if (block.type === 'tool' && block.tool.duration) {
-      totalDuration += block.tool.duration
-    }
-  }
-
-  return totalDuration
-}
+import { calculateExecutionTime } from '../utils/calculateExecutionTime'
 
 export function MessageBubble({ message, colorScheme = 'blue', renderContent, children }: MessageBubbleProps) {
   const isUser = message.role === 'user'
   const colors = COLOR_MAP[colorScheme]
-  const executionTime = calculateExecutionTime(message.contentBlocks)
+  const executionTime = useMemo(
+    () => calculateExecutionTime(message.contentBlocks),
+    [message.contentBlocks]
+  )
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>

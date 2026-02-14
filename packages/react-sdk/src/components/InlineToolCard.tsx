@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import type { ToolActivity } from '../types'
+import { formatDurationCompact } from '../utils/formatDuration'
+import { stripMcpPrefix, simplifyToolInput, simplifyToolOutput } from '../utils/toolDisplay'
 
 const TOOL_ICONS: Record<string, string> = {
   Read: '📖',
@@ -18,7 +20,7 @@ function getToolSummary(tool: ToolActivity): string {
   if (tool.description) return tool.description
   const input = tool.toolInput as Record<string, unknown> | undefined
   if (!input) return ''
-  const name = tool.toolName.replace(/^mcp__[^_]+__/, '')
+  const name = stripMcpPrefix(tool.toolName)
   if (name === 'Read' || name === 'Write' || name === 'Edit') {
     const p = (input.file_path as string) || ''
     if (!p) return ''
@@ -35,76 +37,13 @@ function getToolSummary(tool: ToolActivity): string {
   return ''
 }
 
-/**
- * Simplify tool input display - show only key information
- */
-function simplifyToolInput(toolName: string, input: unknown): string {
-  if (!input || typeof input !== 'object') {
-    return JSON.stringify(input, null, 2)
-  }
-
-  const inputObj = input as Record<string, unknown>
-  const name = toolName.replace(/^mcp__[^_]+__/, '')
-
-  // Extract key fields for different tools
-  switch (name) {
-    case 'Read':
-    case 'Write':
-    case 'Edit':
-      return `文件路径: ${inputObj.file_path || inputObj.path || 'unknown'}`
-
-    case 'Bash':
-      return `命令: ${inputObj.command || 'unknown'}`
-
-    case 'Grep':
-    case 'Glob':
-      return `搜索模式: ${inputObj.pattern || 'unknown'}\n路径: ${inputObj.path || '.'}`
-
-    case 'Task':
-      return `描述: ${inputObj.description || inputObj.prompt || 'unknown'}`
-
-    default:
-      // Fallback: show full JSON
-      return JSON.stringify(input, null, 2)
-  }
-}
-
-/**
- * Simplify tool output display - limit length and truncate if necessary
- */
-function simplifyToolOutput(toolName: string, output: unknown): string {
-  if (!output) return '(无输出)'
-
-  if (typeof output === 'string') {
-    // Limit string output length
-    return output.length > 500
-      ? output.slice(0, 500) + '\n\n... (输出已截断，共 ' + output.length + ' 字符)'
-      : output
-  }
-
-  if (typeof output === 'object') {
-    const outputStr = JSON.stringify(output, null, 2)
-    return outputStr.length > 500
-      ? outputStr.slice(0, 500) + '\n\n... (输出已截断)'
-      : outputStr
-  }
-
-  return JSON.stringify(output, null, 2)
-}
-
 export function InlineToolCard({ tool }: { tool: ToolActivity }) {
   const [expanded, setExpanded] = useState(false)
   const rawName = tool.toolName
-  const displayName = rawName.replace(/^mcp__[^_]+__/, '')
+  const displayName = stripMcpPrefix(rawName)
   const icon = TOOL_ICONS[displayName] || TOOL_ICONS[rawName] || '🔧'
   const summary = getToolSummary(tool)
-
-  const durationText = tool.duration
-    ? tool.duration > 1000
-      ? `${(tool.duration / 1000).toFixed(1)}s`
-      : `${tool.duration}ms`
-    : null
-
+  const durationText = formatDurationCompact(tool.duration ?? 0)
   const hasDetails = tool.toolInput || tool.toolOutput || tool.toolError
 
   return (
@@ -154,7 +93,7 @@ export function InlineToolCard({ tool }: { tool: ToolActivity }) {
             <div>
               <div className="font-medium text-gray-500 mb-1">输出:</div>
               <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
-                {simplifyToolOutput(tool.toolName, tool.toolOutput)}
+                {simplifyToolOutput(tool.toolOutput)}
               </pre>
             </div>
           )}

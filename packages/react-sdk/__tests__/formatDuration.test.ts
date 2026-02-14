@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatDuration } from '../src/utils/formatDuration'
+import { formatDuration, formatDurationCompact } from '../src/utils/formatDuration'
 
 describe('formatDuration', () => {
   it('should format 0 milliseconds as "0s"', () => {
@@ -47,3 +47,44 @@ describe('formatDuration', () => {
     expect(formatDuration(60001)).toBe('1m')
   })
 })
+
+describe('formatDurationCompact', () => {
+  it('should return null for 0 milliseconds', () => {
+    expect(formatDurationCompact(0)).toBeNull()
+  })
+
+  it('should return null for negative values', () => {
+    expect(formatDurationCompact(-100)).toBeNull()
+    expect(formatDurationCompact(-1000)).toBeNull()
+  })
+
+  it('should return null for invalid values', () => {
+    expect(formatDurationCompact(NaN)).toBeNull()
+    expect(formatDurationCompact(Infinity)).toBeNull()
+  })
+
+  it('should format sub-second durations as milliseconds', () => {
+    expect(formatDurationCompact(1)).toBe('1ms')
+    expect(formatDurationCompact(50)).toBe('50ms')
+    expect(formatDurationCompact(500)).toBe('500ms')
+    expect(formatDurationCompact(999)).toBe('999ms')
+  })
+
+  it('should format >= 1000ms as decimal seconds', () => {
+    expect(formatDurationCompact(1000)).toBe('1.0s')
+    expect(formatDurationCompact(1500)).toBe('1.5s')
+    expect(formatDurationCompact(2300)).toBe('2.3s')
+    expect(formatDurationCompact(5000)).toBe('5.0s')
+  })
+
+  it('should handle large durations', () => {
+    expect(formatDurationCompact(60000)).toBe('60.0s')  // 1 minute
+    expect(formatDurationCompact(125000)).toBe('125.0s')  // 2m 5s
+  })
+
+  it('should format with one decimal place', () => {
+    expect(formatDurationCompact(1234)).toBe('1.2s')  // Rounds to 1 decimal
+    expect(formatDurationCompact(9999)).toBe('10.0s')  // Rounds up
+  })
+})
+
