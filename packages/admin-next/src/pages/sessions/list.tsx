@@ -24,7 +24,7 @@ import {
 import { useTenantContext } from '@/hooks/use-tenant-context'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, CheckCircle, AlertCircle, Clock, StopCircle } from 'lucide-react'
-import { formatDuration } from '@/lib/format'
+import { formatDuration, formatTokens, formatCost } from '@/lib/format'
 
 interface SessionItem {
   sessionId: string
@@ -40,20 +40,6 @@ interface SessionItem {
 }
 
 type TabValue = 'all' | 'active' | 'error' | 'long_running' | 'completed'
-
-// Format large numbers (1000 -> 1K, 1000000 -> 1M)
-function formatTokens(tokens: number): string {
-  if (tokens === 0) return '0'
-  if (tokens < 1000) return tokens.toString()
-  if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}K`
-  return `${(tokens / 1000000).toFixed(1)}M`
-}
-
-// Format cost as USD
-function formatCost(cost: number): string {
-  if (cost === 0) return '$0.00'
-  return `$${cost.toFixed(2)}`
-}
 
 // Duration filter presets (minutes)
 const DURATION_PRESETS: RangePreset[] = [

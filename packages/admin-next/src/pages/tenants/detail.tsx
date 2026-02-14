@@ -13,7 +13,7 @@ import { TenantApiKeysTab } from '@/components/tenants/api-keys-tab'
 import { ArrowLeft, Zap } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
-import { formatTokens } from '@/lib/utils'
+import { formatTokens } from '@/lib/format'
 
 interface TenantDetail {
   id: string

@@ -45,7 +45,19 @@ export function formatNumber(value: number): string {
  * @returns Formatted string (e.g., "1.2K", "3.5M")
  */
 export function formatTokens(tokens: number): string {
+  if (tokens === 0) return '0'
   if (tokens < 1000) return tokens.toString()
   if (tokens < 1_000_000) return `${(tokens / 1000).toFixed(1)}K`
   return `${(tokens / 1_000_000).toFixed(1)}M`
+}
+
+/**
+ * Format cost in USD
+ * @param dollars - Cost in dollars (not cents)
+ * @param precision - Number of decimal places (default: 2)
+ * @returns Formatted string (e.g., "$0.15", "$1.23")
+ */
+export function formatCost(dollars: number, precision: number = 2): string {
+  if (dollars === 0) return '$0.00'
+  return `$${dollars.toFixed(precision)}`
 }

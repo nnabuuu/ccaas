@@ -24,7 +24,7 @@ import {
   Database,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { formatDuration } from '@/lib/format'
+import { formatDuration, formatTokens, formatCost } from '@/lib/format'
 
 interface TokenBreakdown {
   inputTokens: number
@@ -35,20 +35,6 @@ interface TokenBreakdown {
   reasoningTokens: number
   totalTokens: number
   estimatedCost: number
-}
-
-// Format large numbers (1000 -> 1K, 1000000 -> 1M)
-function formatTokens(tokens: number): string {
-  if (tokens === 0) return '0'
-  if (tokens < 1000) return tokens.toString()
-  if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}K`
-  return `${(tokens / 1000000).toFixed(1)}M`
-}
-
-// Format cost as USD
-function formatCost(cost: number): string {
-  if (cost === 0) return '$0.00'
-  return `$${cost.toFixed(4)}`
 }
 
 interface SessionDetail {

@@ -9,7 +9,7 @@ import { StatCard } from '@/components/shared/stat-card'
 import { ChartCard } from '@/components/shared/chart-card'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { useSdkDistribution } from '@/components/shared/sdk-connections'
-import { formatNumber, formatTokens } from '@/lib/utils'
+import { formatNumber, formatTokens } from '@/lib/format'
 import { useTenantContext } from '@/hooks/use-tenant-context'
 import {
   TokenAnalyticsResponseSchema,

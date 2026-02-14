@@ -9,7 +9,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-import { formatTokens } from '@/lib/utils'
+import { formatTokens } from '@/lib/format'
 import { ArrowRight } from 'lucide-react'
 import {
   TokenAnalyticsResponseSchema,

@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-import { formatTokens } from '@/lib/utils'
+import { formatTokens } from '@/lib/format'
 import { Zap, TrendingUp, CheckCircle, Coins } from 'lucide-react'
 
 interface SkillUsage {
