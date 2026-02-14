@@ -1,10 +1,30 @@
 import type { Message, ContentBlock, ColorScheme, MessageBubbleProps } from '../types'
 import { COLOR_MAP } from '../types'
 import { InlineToolCard } from './InlineToolCard'
+import { formatDuration } from '../utils/formatDuration'
+
+/**
+ * Calculate total execution time from content blocks
+ * @param contentBlocks Message content blocks containing tool activities
+ * @returns Total duration in milliseconds
+ */
+function calculateExecutionTime(contentBlocks?: ContentBlock[]): number {
+  if (!contentBlocks) return 0
+
+  let totalDuration = 0
+  for (const block of contentBlocks) {
+    if (block.type === 'tool' && block.tool.duration) {
+      totalDuration += block.tool.duration
+    }
+  }
+
+  return totalDuration
+}
 
 export function MessageBubble({ message, colorScheme = 'blue', renderContent, children }: MessageBubbleProps) {
   const isUser = message.role === 'user'
   const colors = COLOR_MAP[colorScheme]
+  const executionTime = calculateExecutionTime(message.contentBlocks)
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -79,6 +99,12 @@ export function MessageBubble({ message, colorScheme = 'blue', renderContent, ch
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
+                {/* Execution time - only show for assistant messages with tool execution */}
+                {!isUser && executionTime > 0 && (
+                  <span className="ml-1">
+                    • 执行 {formatDuration(executionTime)}
+                  </span>
+                )}
               </div>
             )}
           </div>
