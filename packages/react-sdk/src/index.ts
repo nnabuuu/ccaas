@@ -10,6 +10,7 @@
 export { useAgentConnection } from './hooks/useAgentConnection'
 export { useAgentChat } from './hooks/useAgentChat'
 export { useAgentStatus } from './hooks/useAgentStatus'
+export { useQueueStatus } from './hooks/useQueueStatus'
 export { useOutputSync } from './hooks/useOutputSync'
 export { useSkills } from './hooks/useSkills'
 export { useChatLayout } from './hooks/useChatLayout'
@@ -45,6 +46,7 @@ export { TasksView } from './components/TasksView'
 export { TasksHeader } from './components/TasksHeader'
 export { TasksList } from './components/TasksList'
 export { UnifiedTaskCard } from './components/UnifiedTaskCard'
+export { QueueStatusIndicator } from './components/QueueStatusIndicator'
 
 // Utilities
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
@@ -140,6 +142,7 @@ export type { TasksViewProps } from './components/TasksView'
 export type { TasksHeaderProps } from './components/TasksHeader'
 export type { TasksListProps } from './components/TasksList'
 export type { UnifiedTaskCardProps } from './components/UnifiedTaskCard'
+export type { QueueStatusIndicatorProps } from './components/QueueStatusIndicator'
 
 // Template resolver types
 export type {
@@ -165,3 +168,17 @@ export type {
 } from '@ccaas/common'
 
 export type { EventTodoItem as TodoItem } from '@ccaas/common'
+
+// Queue status hook types
+export type {
+  QueueItemStatus,
+  QueueItem,
+  QueueDepth,
+  MessageProcessingStartedEvent,
+  MessageProcessingCompletedEvent,
+  MessageProcessingFailedEvent,
+  QueueStatusEvent,
+  ProcessingStatus,
+  UseQueueStatusOptions,
+  UseQueueStatusReturn,
+} from './hooks/useQueueStatus'
