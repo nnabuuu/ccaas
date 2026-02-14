@@ -8,15 +8,53 @@
 
 ### ✅ CRITICAL-1: Shell Command Injection Vulnerability
 
-**Status**: Documented, mitigation in place, fix planned for Phase 2
+**Status**: ✅ **FIXED**
 
-**Actions Taken**:
-- Created `SECURITY.md` documenting the vulnerability
-- Explained attack vector and recommended fixes
-- Noted that Phase 1 implementation mitigates risk by NOT sending `appendSystemPrompt` to backend
-- Scheduled proper fix for Phase 2 (use spawn with args array instead of shell string)
+**Problem**: `appendSystemPrompt` and `mcpServers` were concatenated into a shell command string. Single-quote escaping was insufficient to prevent injection via backticks, `$()`, etc.
 
-**Impact**: Risk temporarily mitigated. MUST fix before Phase 2 enables `appendSystemPrompt`.
+**Attack Vector**:
+```json
+{ "appendSystemPrompt": "test$(whoami > /tmp/pwned)" }
+```
+
+**Fix Applied**:
+Replaced shell string concatenation with direct argument array in `cli-process.service.ts`:
+
+**Before (VULNERABLE)**:
+```typescript
+let shellCommand = `${this.claudeCliPath} --output-format stream-json ...`;
+const escapedPrompt = appendSystemPrompt.replace(/'/g, "'\\''");  // Insufficient!
+shellCommand += ` --append-system-prompt '${escapedPrompt}'`;
+const cli = spawn('/bin/sh', ['-c', shellCommand], { ... });
+```
+
+**After (SECURE)**:
+```typescript
+const args = [
+  '--output-format', 'stream-json',
+  '--input-format', 'stream-json',
+  '--verbose',
+  '--permission-mode', 'bypassPermissions',
+];
+if (appendSystemPrompt?.trim()) {
+  args.push('--append-system-prompt', appendSystemPrompt);  // Safe!
+}
+const cli = spawn(this.claudeCliPath, args, { ... });  // No shell
+```
+
+**Why This Works**:
+- Arguments passed directly to executable (no shell interpretation)
+- Special characters treated as literal strings
+- Command injection impossible
+
+**Files Modified**:
+- `packages/backend/src/sessions/services/cli-process.service.ts` (lines 64-102, 164-186)
+- `SECURITY.md` (marked as resolved)
+
+**Verification**:
+- ✅ TypeScript compilation passed
+- ✅ No shell interpretation
+- 🔜 E2E testing in Phase 2
 
 ---
 
@@ -215,7 +253,7 @@ npm run test:unit -w @ccaas/react-sdk -- templateResolver
 
 | Issue | Severity | Status | Action |
 |-------|----------|--------|--------|
-| CRITICAL-1: Shell Injection | 🔴 CRITICAL | ✅ Mitigated | Documented in SECURITY.md, fix scheduled for Phase 2 |
+| CRITICAL-1: Shell Injection | 🔴 CRITICAL | ✅ **FIXED** | Replaced shell string with args array |
 | CRITICAL-2: Unsupported field sent | 🔴 CRITICAL | ✅ Fixed | Removed code that sends appendSystemPrompt |
 | HIGH-1: Duplicate types | 🟠 HIGH | ✅ Fixed | Re-export McpServerConfig from common |
 | HIGH-2: Unused field | 🟠 HIGH | ✅ Fixed | Removed defaultSessionTemplate |
