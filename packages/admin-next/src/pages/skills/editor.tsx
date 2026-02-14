@@ -177,7 +177,7 @@ export function SkillEditorPage() {
                   {skill.triggers.map((trigger, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm">
                       <Badge variant="outline">{trigger.type}</Badge>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{trigger.pattern}</code>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">{trigger.value}</code>
                     </div>
                   ))}
                 </div>

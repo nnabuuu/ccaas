@@ -27,6 +27,7 @@
 * [Chat Integration with React SDK](guide/chat-integration.md)
 * [File Explorer Component](guide/file-explorer.md)
 * [Admin API Key Management](guide/admin-api-keys.md)
+* [Session Templates Management](guide/admin-session-templates.md)
 
 ## API Reference <a href="#api" id="api"></a>
 

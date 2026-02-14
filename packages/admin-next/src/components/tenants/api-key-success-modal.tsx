@@ -146,7 +146,7 @@ export function ApiKeySuccessModal({
         </div>
 
         <DialogFooter>
-          <Button onClick={handleDone} disabled={rawKey && !confirmed}>
+          <Button onClick={handleDone} disabled={!!rawKey && !confirmed}>
             {rawKey ? 'Done - Go to Tenant' : 'View Tenant'}
           </Button>
         </DialogFooter>
