@@ -142,6 +142,9 @@ describe('AdminSessionsController', () => {
   });
 
   describe('POST /api/v1/admin/sessions/:sessionId/kill', () => {
+    // Note: Rate limiting (10 kills/minute) is applied via @Throttle decorator
+    // Tested in E2E tests, not unit tests (ThrottlerGuard is mocked here)
+
     it('should return success when kill succeeds', async () => {
       sessionManagerService.killSession = jest.fn().mockResolvedValue(true);
 
@@ -162,6 +165,9 @@ describe('AdminSessionsController', () => {
   });
 
   describe('POST /api/v1/admin/sessions/bulk-kill', () => {
+    // Note: Rate limiting (5 bulk operations/minute) is applied via @Throttle decorator
+    // Tested in E2E tests, not unit tests (ThrottlerGuard is mocked here)
+
     it('should return bulk kill results with success/failure counts', async () => {
       const mockResult = {
         totalRequested: 3,
@@ -190,21 +196,8 @@ describe('AdminSessionsController', () => {
       );
     });
 
-    it('should throw error when sessionIds array is empty', async () => {
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
-      const dto = { sessionIds: [] };
-
-      // Validation will be handled by class-validator before reaching controller
-      await expect(controller.bulkKillSessions(ctx, dto)).rejects.toThrow();
-    });
-
-    it('should throw error when sessionIds exceeds 100', async () => {
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
-      const dto = { sessionIds: Array.from({ length: 101 }, (_, i) => `s${i}`) };
-
-      // Validation will be handled by class-validator before reaching controller
-      await expect(controller.bulkKillSessions(ctx, dto)).rejects.toThrow();
-    });
+    // Note: Validation tests removed - class-validator handles these at framework level
+    // Empty array and >100 sessions validation happens via ValidationPipe before controller
 
     it('should use tenantId as adminId when apiKeyId is not available', async () => {
       const mockResult = {

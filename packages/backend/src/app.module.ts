@@ -8,6 +8,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import configuration from './config/configuration';
 import { SessionsModule } from './sessions/sessions.module';
 import { SkillsModule } from './skills/skills.module';
@@ -54,6 +56,14 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
       isGlobal: true,
       load: [configuration],
     }),
+
+    // Rate Limiting (Global defaults, overridden per endpoint)
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 10,  // 10 requests per minute (default)
+      },
+    ]),
 
     // Event Emitter (Week 5: WebSocket events)
     EventEmitterModule.forRoot(),
@@ -125,6 +135,12 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
 
     // Background jobs module
     JobModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

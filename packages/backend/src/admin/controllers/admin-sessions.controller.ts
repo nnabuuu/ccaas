@@ -16,6 +16,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { SessionManagerService } from '../services/session-manager.service';
@@ -121,6 +122,7 @@ export class AdminSessionsController {
    */
   @Post(':sessionId/kill')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 10 } }) // 10 kills per minute
   async killSession(
     @Param('sessionId') sessionId: string,
     @Ctx() ctx: RequestContext,
@@ -164,6 +166,7 @@ export class AdminSessionsController {
    */
   @Post('bulk-kill')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } }) // 5 bulk operations per minute
   async bulkKillSessions(
     @Ctx() ctx: RequestContext,
     @Body() dto: BulkKillDto,
