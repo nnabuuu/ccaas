@@ -21,6 +21,7 @@
     "create-dev-key": "ts-node -r tsconfig-paths/register scripts/create-dev-api-key.ts"
   },
   "dependencies": {
+    "@ccaas/common": "*",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.0",
     "@nestjs/core": "^10.3.0",
