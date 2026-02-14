@@ -247,11 +247,8 @@ export interface UndoEntry {
 // Solution Config Types
 // ============================================================================
 
-export interface McpServerConfig {
-  command: string
-  args: string[]
-  description?: string
-}
+// Re-export from @ccaas/common to avoid duplication
+export type { McpServerConfig } from '@ccaas/common'
 
 export interface SolutionConfig {
   mcpServers?: Record<string, McpServerConfig>
@@ -259,8 +256,8 @@ export interface SolutionConfig {
   skillSlug?: string | null
   /** Session templates defined in solution.json */
   sessionTemplates?: import('@ccaas/common').SessionTemplateMap
-  /** Default template to use if none specified */
-  defaultSessionTemplate?: string
+  // NOTE: defaultSessionTemplate will be added in Phase 2
+  // when we implement automatic fallback to default template
 }
 
 // ============================================================================

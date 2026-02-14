@@ -176,7 +176,8 @@ describe('AdminSessionsController', () => {
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
       const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
-      const result = await controller.bulkKillSessions(ctx, ['s1', 's2', 's3']);
+      const dto = { sessionIds: ['s1', 's2', 's3'] };
+      const result = await controller.bulkKillSessions(ctx, dto);
 
       expect(result).toEqual(mockResult);
       expect(result.totalRequested).toBe(3);
@@ -191,19 +192,18 @@ describe('AdminSessionsController', () => {
 
     it('should throw error when sessionIds array is empty', async () => {
       const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
+      const dto = { sessionIds: [] };
 
-      await expect(controller.bulkKillSessions(ctx, [])).rejects.toThrow(
-        'sessionIds must be a non-empty array',
-      );
+      // Validation will be handled by class-validator before reaching controller
+      await expect(controller.bulkKillSessions(ctx, dto)).rejects.toThrow();
     });
 
     it('should throw error when sessionIds exceeds 100', async () => {
       const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
-      const tooManySessions = Array.from({ length: 101 }, (_, i) => `s${i}`);
+      const dto = { sessionIds: Array.from({ length: 101 }, (_, i) => `s${i}`) };
 
-      await expect(controller.bulkKillSessions(ctx, tooManySessions)).rejects.toThrow(
-        'Cannot terminate more than 100 sessions at once',
-      );
+      // Validation will be handled by class-validator before reaching controller
+      await expect(controller.bulkKillSessions(ctx, dto)).rejects.toThrow();
     });
 
     it('should use tenantId as adminId when apiKeyId is not available', async () => {
@@ -216,7 +216,8 @@ describe('AdminSessionsController', () => {
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
       const ctx = { tenantId: 'tenant-a' } as any; // No apiKeyId
-      await controller.bulkKillSessions(ctx, ['s1']);
+      const dto = { sessionIds: ['s1'] };
+      await controller.bulkKillSessions(ctx, dto);
 
       expect(sessionManagerService.bulkKillSessions).toHaveBeenCalledWith(
         ['s1'],

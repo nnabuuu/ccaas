@@ -60,13 +60,13 @@ describe('resolveSessionTemplate', () => {
   })
 
   it('should list available templates in error message', () => {
-    try {
+    expect(() => {
       resolveSessionTemplate('non-existent', mockTemplates)
-    } catch (error) {
-      expect(error).toBeInstanceOf(Error)
-      expect((error as Error).message).toContain('teacher-analysis')
-      expect((error as Error).message).toContain('student-practice')
-    }
+    }).toThrow(/teacher-analysis/)
+
+    expect(() => {
+      resolveSessionTemplate('non-existent', mockTemplates)
+    }).toThrow(/student-practice/)
   })
 
   it('should throw error when templates map is empty', () => {

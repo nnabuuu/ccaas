@@ -12,6 +12,7 @@ import {
   Query,
   Body,
   NotFoundException,
+  BadRequestException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -25,6 +26,8 @@ import {
   SessionTimeline,
   TokenBreakdown,
 } from '../dto/admin.dto';
+import { BulkKillDto } from '../dto/bulk-kill.dto';
+import { TimelineQueryDto } from '../dto/timeline-query.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
 
 @Controller('api/v1/admin/sessions')
@@ -81,13 +84,12 @@ export class AdminSessionsController {
   async getSessionTimeline(
     @Param('sessionId') sessionId: string,
     @Ctx() ctx: RequestContext,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
+    @Query() query: TimelineQueryDto,
   ): Promise<SessionTimeline> {
     return this.sessionManagerService.getSessionTimeline(
       sessionId,
-      limit ? parseInt(limit, 10) : 100,
-      offset ? parseInt(offset, 10) : 0,
+      query.limit,
+      query.offset,
       ctx.tenantId,
     );
   }
@@ -164,7 +166,7 @@ export class AdminSessionsController {
   @HttpCode(HttpStatus.OK)
   async bulkKillSessions(
     @Ctx() ctx: RequestContext,
-    @Body('sessionIds') sessionIds: string[],
+    @Body() dto: BulkKillDto,
   ): Promise<{
     totalRequested: number;
     successCount: number;
@@ -175,18 +177,9 @@ export class AdminSessionsController {
       error?: string;
     }>;
   }> {
-    // Validate request
-    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-      throw new Error('sessionIds must be a non-empty array');
-    }
-
-    if (sessionIds.length > 100) {
-      throw new Error('Cannot terminate more than 100 sessions at once');
-    }
-
     const adminId = ctx.apiKeyId || ctx.tenantId;
     return this.sessionManagerService.bulkKillSessions(
-      sessionIds,
+      dto.sessionIds,
       adminId,
       ctx.tenantId,
     );

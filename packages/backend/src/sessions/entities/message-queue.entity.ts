@@ -51,7 +51,7 @@ export class MessageQueue {
   @Column()
   clientId: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   tenantId: string | null;
 
   @Column({ type: 'simple-json' })
@@ -108,13 +108,13 @@ export class MessageQueue {
   /**
    * ID of the user message created from this queue item
    */
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   userMessageId: string | null;
 
   /**
    * ID of the assistant message created from this queue item
    */
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   assistantMessageId: string | null;
 
   /**

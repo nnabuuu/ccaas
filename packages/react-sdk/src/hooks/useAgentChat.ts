@@ -18,7 +18,11 @@ import type {
 } from '@ccaas/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
-import { resolveSessionTemplate, mergeTemplateParams } from '../utils/templateResolver'
+import {
+  resolveSessionTemplate,
+  mergeTemplateParams,
+  type ResolvedTemplateParams,
+} from '../utils/templateResolver'
 
 const generateId = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -331,67 +335,63 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     contentBlocksRef.current = []
     setIsProcessing(true)
 
+    // ========================================================================
+    // Session Template Resolution (once, outside retry loop)
+    // ========================================================================
+    // If sessionTemplate is provided, resolve it and merge with explicit params
+    let resolvedParams: ResolvedTemplateParams = {}
+
+    if (sessionTemplate && solutionConfigRef.current?.sessionTemplates) {
+      try {
+        const template = resolveSessionTemplate(
+          sessionTemplate,
+          solutionConfigRef.current.sessionTemplates
+        )
+
+        resolvedParams = mergeTemplateParams(
+          template,
+          {
+            enabledSkillSlugs,
+            mcpServers,
+            appendSystemPrompt: undefined, // Not supported in hook options yet
+            skillPath,
+          },
+          {
+            mcpServers: solutionConfigRef.current?.mcpServers,
+            skillPath: solutionConfigRef.current?.skillPath,
+          }
+        )
+      } catch (error) {
+        // Template resolution error - throw immediately to fail fast
+        setIsProcessing(false)
+        throw new Error(
+          `Session template resolution failed: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    } else {
+      // No template - use explicit params or solution config defaults
+      // MCP servers from options or solution config
+      const servers = mcpServers || solutionConfigRef.current?.mcpServers
+      if (servers) {
+        resolvedParams.mcpServers = servers
+      }
+
+      // Skill path from options or solution config
+      const path = skillPath !== undefined ? skillPath : solutionConfigRef.current?.skillPath
+      if (path) {
+        resolvedParams.skillPath = path
+      }
+
+      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+        resolvedParams.enabledSkillSlugs = enabledSkillSlugs
+      }
+    }
+
     const attemptSend = async (retryCount = 0): Promise<void> => {
       const chatPayload: Record<string, unknown> = {
         clientId: connection.clientId,
         message: content,
         tenantId,
-      }
-
-      // ========================================================================
-      // Session Template Resolution
-      // ========================================================================
-      // If sessionTemplate is provided, resolve it and merge with explicit params
-      let resolvedParams: {
-        enabledSkillSlugs?: string[]
-        mcpServers?: Record<string, McpServerConfig>
-        appendSystemPrompt?: string
-        skillPath?: string
-      } = {}
-
-      if (sessionTemplate && solutionConfigRef.current?.sessionTemplates) {
-        try {
-          const template = resolveSessionTemplate(
-            sessionTemplate,
-            solutionConfigRef.current.sessionTemplates
-          )
-
-          resolvedParams = mergeTemplateParams(
-            template,
-            {
-              enabledSkillSlugs,
-              mcpServers,
-              appendSystemPrompt: undefined, // Not supported in hook options yet
-              skillPath,
-            },
-            {
-              mcpServers: solutionConfigRef.current?.mcpServers,
-              skillPath: solutionConfigRef.current?.skillPath,
-            }
-          )
-        } catch (error) {
-          // Template resolution error - throw immediately to fail fast
-          throw new Error(
-            `Session template resolution failed: ${error instanceof Error ? error.message : String(error)}`
-          )
-        }
-      } else {
-        // No template - use explicit params or solution config defaults
-        // MCP servers from options or solution config
-        const servers = mcpServers || solutionConfigRef.current?.mcpServers
-        if (servers) {
-          resolvedParams.mcpServers = servers
-        }
-
-        // Skill path from options or solution config
-        const path = skillPath !== undefined ? skillPath : solutionConfigRef.current?.skillPath
-        if (path) {
-          resolvedParams.skillPath = path
-        }
-
-        if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-          resolvedParams.enabledSkillSlugs = enabledSkillSlugs
-        }
       }
 
       // Apply resolved parameters to payload
@@ -407,9 +407,14 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         chatPayload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
       }
 
-      if (resolvedParams.appendSystemPrompt) {
-        chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
-      }
+      // NOTE: appendSystemPrompt is NOT sent to backend in Phase 1
+      // Backend does not yet support this field (will be added in Phase 2)
+      // Sending it now would silently drop the value and create false impression
+      // See: docs/implementation/SESSION_TEMPLATE_PHASE1_COMPLETE.md - Known Limitations
+      // TODO: Uncomment in Phase 2 after backend DTO is extended
+      // if (resolvedParams.appendSystemPrompt) {
+      //   chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
+      // }
 
       // Attachments and context
       if (sendOptions?.attachments && sendOptions.attachments.length > 0) {
