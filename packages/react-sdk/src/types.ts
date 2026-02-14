@@ -64,6 +64,7 @@ export interface UseFilesReturn {
 }
 
 export interface UseFileVersionsOptions {
+  connection: UseAgentConnectionReturn
   fileId: string
   enabled?: boolean
 }

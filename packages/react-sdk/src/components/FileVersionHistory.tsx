@@ -8,15 +8,17 @@
 import { useState } from 'react'
 import { useFileVersions } from '../hooks/useFileVersions'
 import { formatFileSize, formatFileDate } from '../utils/fileIcons'
-import type { FileMetadata, FileVersion } from '../types'
+import type { FileMetadata, FileVersion, UseAgentConnectionReturn } from '../types'
 
 export interface FileVersionHistoryProps {
+  connection: UseAgentConnectionReturn
   file: FileMetadata
   onCompare?: (fromVersion: string, toVersion: string) => void
   className?: string
 }
 
 export function FileVersionHistory({
+  connection,
   file,
   onCompare,
   className = '',
@@ -25,6 +27,7 @@ export function FileVersionHistory({
   const [isRollingBack, setIsRollingBack] = useState(false)
 
   const versions = useFileVersions({
+    connection,
     fileId: file.id,
     enabled: true,
   })

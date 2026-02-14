@@ -26,16 +26,14 @@ import type { UseFileVersionsOptions, UseFileVersionsReturn, FileVersion } from 
  * ```
  */
 export function useFileVersions(options: UseFileVersionsOptions): UseFileVersionsReturn {
-  const { fileId, enabled = true } = options
+  const { connection, fileId, enabled = true } = options
 
   const [versions, setVersions] = useState<FileVersion[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  // Determine server URL from window location
-  const serverUrl = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.host}`
-    : ''
+  // Use explicit serverUrl from connection
+  const serverUrl = connection.serverUrl || ''
 
   // Fetch versions from API
   const fetchVersions = useCallback(async () => {
@@ -63,6 +61,9 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
         uploadedBy: v.uploadedBy,
         createdAt: new Date(v.createdAt),
       }))
+
+      // Sort by createdAt descending (newest first)
+      versionList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 
       setVersions(versionList)
     } catch (err) {
