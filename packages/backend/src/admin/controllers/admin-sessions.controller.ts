@@ -60,8 +60,12 @@ export class AdminSessionsController {
   @Get(':sessionId')
   async getSessionDetail(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<SessionDetail> {
-    const session = await this.sessionManagerService.getSessionDetail(sessionId);
+    const session = await this.sessionManagerService.getSessionDetail(
+      sessionId,
+      ctx.tenantId,
+    );
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
@@ -78,11 +82,13 @@ export class AdminSessionsController {
     @Param('sessionId') sessionId: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<SessionTimeline> {
     return this.sessionManagerService.getSessionTimeline(
       sessionId,
       limit ? parseInt(limit, 10) : 100,
       offset ? parseInt(offset, 10) : 0,
+      ctx.tenantId,
     );
   }
 
@@ -94,8 +100,12 @@ export class AdminSessionsController {
   @Get(':sessionId/tokens')
   async getTokenBreakdown(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<TokenBreakdown> {
-    const breakdown = await this.sessionManagerService.getTokenBreakdown(sessionId);
+    const breakdown = await this.sessionManagerService.getTokenBreakdown(
+      sessionId,
+      ctx.tenantId,
+    );
     if (!breakdown) {
       throw new NotFoundException(`No token data found for session: ${sessionId}`);
     }
@@ -114,7 +124,11 @@ export class AdminSessionsController {
     @Ctx() ctx: RequestContext,
   ): Promise<{ success: boolean; message: string }> {
     const adminId = ctx.apiKeyId || ctx.tenantId;
-    const success = await this.sessionManagerService.killSession(sessionId, adminId);
+    const success = await this.sessionManagerService.killSession(
+      sessionId,
+      adminId,
+      ctx.tenantId,
+    );
 
     return {
       success,
@@ -171,6 +185,10 @@ export class AdminSessionsController {
     }
 
     const adminId = ctx.apiKeyId || ctx.tenantId;
-    return this.sessionManagerService.bulkKillSessions(sessionIds, adminId);
+    return this.sessionManagerService.bulkKillSessions(
+      sessionIds,
+      adminId,
+      ctx.tenantId,
+    );
   }
 }

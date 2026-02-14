@@ -54,6 +54,7 @@ export { computeLineDiff, formatSizeDiff, getDiffColor } from './utils/diffUtils
 export { formatDuration, formatDurationCompact } from './utils/formatDuration'
 export { getToolActivityDescription, TOOL_ACTIVITY_MAP } from './utils/toolActivityMapping'
 export { getThinkingVerb, THINKING_VERBS } from './utils/thinkingVerbs'
+export { resolveSessionTemplate, mergeTemplateParams } from './utils/templateResolver'
 
 // Non-type exports from types (COLOR_MAP)
 export { COLOR_MAP } from './types'
@@ -140,6 +141,13 @@ export type { TasksHeaderProps } from './components/TasksHeader'
 export type { TasksListProps } from './components/TasksList'
 export type { UnifiedTaskCardProps } from './components/UnifiedTaskCard'
 
+// Template resolver types
+export type {
+  ResolvedTemplateParams,
+  ExplicitParams,
+  SolutionDefaults,
+} from './utils/templateResolver'
+
 // Re-export commonly used @ccaas/common types for convenience
 export type {
   TextDeltaEvent,
@@ -152,6 +160,8 @@ export type {
   TodoUpdatePayload,
   Skill,
   ActiveSubAgent,
+  SessionTemplate,
+  SessionTemplateMap,
 } from '@ccaas/common'
 
 export type { EventTodoItem as TodoItem } from '@ccaas/common'

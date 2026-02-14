@@ -124,15 +124,20 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(detail);
 
-      const result = await controller.getSessionDetail('s1');
+      const ctx = { tenantId: 'tenant-a' } as any;
+      const result = await controller.getSessionDetail('s1', ctx);
 
       expect(result).toEqual(detail);
+      expect(sessionManagerService.getSessionDetail).toHaveBeenCalledWith('s1', 'tenant-a');
     });
 
     it('should throw NotFoundException when session not found', async () => {
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(null);
 
-      await expect(controller.getSessionDetail('nonexistent')).rejects.toThrow(NotFoundException);
+      const ctx = { tenantId: 'tenant-a' } as any;
+      await expect(controller.getSessionDetail('nonexistent', ctx)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -180,6 +185,7 @@ describe('AdminSessionsController', () => {
       expect(sessionManagerService.bulkKillSessions).toHaveBeenCalledWith(
         ['s1', 's2', 's3'],
         'admin-key',
+        'admin-tenant',
       );
     });
 

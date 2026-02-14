@@ -4,7 +4,7 @@
  * Admin operations for session management including force kill and restart.
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SessionService } from '../../sessions/session.service';
@@ -285,11 +285,23 @@ export class SessionManagerService {
 
   /**
    * Get session detail
+   * @param sessionId - Session ID to get details for
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async getSessionDetail(sessionId: string): Promise<SessionDetail | null> {
+  async getSessionDetail(
+    sessionId: string,
+    callerTenantId: string,
+  ): Promise<SessionDetail | null> {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
       return null;
+    }
+
+    // Tenant ownership check - prevent cross-tenant access
+    if (session.tenantId !== callerTenantId) {
+      throw new ForbiddenException(
+        `Cannot access sessions belonging to another tenant`,
+      );
     }
 
     // Get token stats for this session
@@ -316,12 +328,27 @@ export class SessionManagerService {
 
   /**
    * Get session timeline with all events
+   * @param sessionId - Session ID to get timeline for
+   * @param limit - Maximum number of events to return
+   * @param offset - Offset for pagination
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
   async getSessionTimeline(
     sessionId: string,
     limit: number = 100,
     offset: number = 0,
+    callerTenantId?: string,
   ): Promise<SessionTimeline> {
+    // Verify session exists and tenant ownership
+    if (callerTenantId) {
+      const session = this.sessionService.getSession(sessionId);
+      if (session && session.tenantId !== callerTenantId) {
+        throw new ForbiddenException(
+          `Cannot access sessions belonging to another tenant`,
+        );
+      }
+    }
+
     // Fetch all event types for the session
     const [messages, toolEvents, thinkingBlocks, processEvents, apiErrors] =
       await Promise.all([
@@ -440,11 +467,25 @@ export class SessionManagerService {
 
   /**
    * Force kill a session
+   * @param sessionId - Session ID to kill
+   * @param adminId - Admin performing the action
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async killSession(sessionId: string, adminId: string): Promise<boolean> {
+  async killSession(
+    sessionId: string,
+    adminId: string,
+    callerTenantId: string,
+  ): Promise<boolean> {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    // Tenant ownership check - prevent cross-tenant access
+    if (session.tenantId !== callerTenantId) {
+      throw new ForbiddenException(
+        `Cannot access sessions belonging to another tenant`,
+      );
     }
 
     const success = this.sessionService.cancelSession(sessionId);
@@ -476,10 +517,14 @@ export class SessionManagerService {
 
   /**
    * Bulk kill multiple sessions
+   * @param sessionIds - Array of session IDs to kill
+   * @param adminId - Admin performing the action
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
   async bulkKillSessions(
     sessionIds: string[],
     adminId: string,
+    callerTenantId: string,
   ): Promise<{
     totalRequested: number;
     successCount: number;
@@ -491,7 +536,9 @@ export class SessionManagerService {
     }>;
   }> {
     const results = await Promise.allSettled(
-      sessionIds.map((sessionId) => this.killSession(sessionId, adminId)),
+      sessionIds.map((sessionId) =>
+        this.killSession(sessionId, adminId, callerTenantId),
+      ),
     );
 
     const detailedResults = results.map((result, index) => ({
@@ -586,8 +633,23 @@ export class SessionManagerService {
 
   /**
    * Get token breakdown for a specific session
+   * @param sessionId - Session ID to get token breakdown for
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async getTokenBreakdown(sessionId: string): Promise<TokenBreakdown | null> {
+  async getTokenBreakdown(
+    sessionId: string,
+    callerTenantId?: string,
+  ): Promise<TokenBreakdown | null> {
+    // Verify session exists and tenant ownership
+    if (callerTenantId) {
+      const session = this.sessionService.getSession(sessionId);
+      if (session && session.tenantId !== callerTenantId) {
+        throw new ForbiddenException(
+          `Cannot access sessions belonging to another tenant`,
+        );
+      }
+    }
+
     const result = await this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select('SUM(usage.inputTokens)', 'inputTokens')

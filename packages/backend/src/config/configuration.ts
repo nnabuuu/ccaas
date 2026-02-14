@@ -35,5 +35,12 @@ export default () => ({
     apiKeyName: process.env.ADMIN_API_KEY_NAME || 'Default Admin Key',
   },
 
+  messageQueue: {
+    enabled: process.env.MESSAGE_QUEUE_ENABLED === 'true',
+    pollIntervalMs: parseInt(process.env.MESSAGE_QUEUE_POLL_INTERVAL_MS || '1000', 10),
+    concurrency: parseInt(process.env.MESSAGE_QUEUE_CONCURRENCY || '5', 10),
+    maxRetries: parseInt(process.env.MESSAGE_QUEUE_MAX_RETRIES || '2', 10),
+  },
+
   debug: process.env.DEBUG === 'true',
 });

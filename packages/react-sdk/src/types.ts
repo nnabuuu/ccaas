@@ -257,6 +257,10 @@ export interface SolutionConfig {
   mcpServers?: Record<string, McpServerConfig>
   skillPath?: string | null
   skillSlug?: string | null
+  /** Session templates defined in solution.json */
+  sessionTemplates?: import('@ccaas/common').SessionTemplateMap
+  /** Default template to use if none specified */
+  defaultSessionTemplate?: string
 }
 
 // ============================================================================
@@ -303,6 +307,8 @@ export interface UseAgentChatOptions {
   solutionConfigEndpoint?: string
   /** Page context to send with every message (from usePageContext hook) */
   context?: PageContext | null
+  /** Session template name to use (resolved from solution config) */
+  sessionTemplate?: string
 }
 
 export interface SendMessageOptions {

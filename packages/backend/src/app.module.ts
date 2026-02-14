@@ -45,6 +45,7 @@ import { JobEntity } from './jobs/entities/job.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
+import { MessageQueue } from './sessions/entities/message-queue.entity';
 
 @Module({
   imports: [
@@ -82,6 +83,8 @@ import { UserTenant } from './users/entities/user-tenant.entity';
         ThinkingBlock,
         TokenUsageEvent,
         UserContextEvent,
+        // Session entities
+        MessageQueue,
         // Storage entities
         LargeContent,
         SystemPromptVersion,
