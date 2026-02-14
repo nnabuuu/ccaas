@@ -58,6 +58,35 @@ export class SessionManagerService {
   ) {}
 
   /**
+   * Map session data to SessionListItem DTO.
+   * Centralizes the mapping logic to avoid duplication.
+   */
+  private toSessionListItem(
+    session: ManagedSession | Session,
+    tokenStats: { totalTokens: number; estimatedCost: number },
+    hasActiveProcess?: boolean,
+  ): SessionListItem {
+    // Determine if session has active process
+    const isActive =
+      hasActiveProcess !== undefined
+        ? hasActiveProcess
+        : 'cliProcess' in session && session.cliProcess !== null && !session.cliProcess.killed;
+
+    return {
+      sessionId: session.sessionId,
+      tenantId: session.tenantId || null,
+      clientId: session.clientId,
+      status: session.status,
+      messageCount: session.messageCount,
+      totalTokens: tokenStats.totalTokens,
+      estimatedCost: tokenStats.estimatedCost,
+      createdAt: session.createdAt,
+      lastActivity: session.lastActivity,
+      hasActiveProcess: isActive,
+    };
+  }
+
+  /**
    * Resolve pagination parameters from query.
    * Supports both page/pageSize (preferred) and offset/limit (legacy).
    * Returns normalized { page, pageSize, offset }.
@@ -166,19 +195,12 @@ export class SessionManagerService {
 
     const data: SessionListItem[] = sessions.map((session) => {
       const memorySession = memorySessionsMap.get(session.sessionId);
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: session.totalTokens,
-        estimatedCost: session.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess:
-          !!memorySession?.cliProcess && !memorySession.cliProcess.killed,
-      };
+      const hasActiveProcess = !!memorySession?.cliProcess && !memorySession.cliProcess.killed;
+      return this.toSessionListItem(
+        session,
+        { totalTokens: session.totalTokens, estimatedCost: session.estimatedCost },
+        hasActiveProcess,
+      );
     });
 
     return { data, total, page, pageSize };
@@ -231,18 +253,7 @@ export class SessionManagerService {
         totalTokens: 0,
         estimatedCost: 0,
       };
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: stats.totalTokens,
-        estimatedCost: stats.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
-      };
+      return this.toSessionListItem(session, stats);
     });
 
     return { data, total, page, pageSize };
@@ -268,18 +279,7 @@ export class SessionManagerService {
         totalTokens: 0,
         estimatedCost: 0,
       };
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: stats.totalTokens,
-        estimatedCost: stats.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess: true,
-      };
+      return this.toSessionListItem(session, stats, true); // hasActiveProcess = true
     });
   }
 
@@ -312,16 +312,7 @@ export class SessionManagerService {
     };
 
     return {
-      sessionId: session.sessionId,
-      tenantId: session.tenantId || null,
-      clientId: session.clientId,
-      status: session.status,
-      messageCount: session.messageCount,
-      totalTokens: stats.totalTokens,
-      estimatedCost: stats.estimatedCost,
-      createdAt: session.createdAt,
-      lastActivity: session.lastActivity,
-      hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
+      ...this.toSessionListItem(session, stats),
       workspaceDir: session.workspaceDir,
     };
   }
