@@ -247,8 +247,9 @@ export interface UndoEntry {
 // Solution Config Types
 // ============================================================================
 
-// Re-export from @ccaas/common to avoid duplication
-export type { McpServerConfig } from '@ccaas/common'
+// Import and re-export from @ccaas/common to avoid duplication
+import type { McpServerConfig as McpServerConfigCommon } from '@ccaas/common'
+export type McpServerConfig = McpServerConfigCommon
 
 export interface SolutionConfig {
   mcpServers?: Record<string, McpServerConfig>
