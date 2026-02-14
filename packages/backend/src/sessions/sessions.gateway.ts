@@ -15,6 +15,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Logger, UseFilters, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,6 +24,7 @@ import * as path from 'path';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { MessageQueueService } from './services/message-queue.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
@@ -78,9 +80,11 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
   private skillChangeCallback: SkillChangeCallback | null = null;
 
   constructor(
+    private readonly configService: ConfigService,
     private readonly sessionService: SessionService,
     private readonly eventMapperService: EventMapperService,
     private readonly completionOrchestrationService: CompletionOrchestrationService,
+    private readonly messageQueueService: MessageQueueService,
     private readonly skillSyncService: SkillSyncService,
     private readonly tenantsService: TenantsService,
     private readonly messagesService: MessagesService,
@@ -337,22 +341,58 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       // Get or create session (Week 3: Pass userId for tracking)
       const session = this.sessionService.getOrCreateSession(sessionId, clientId, client, userId);
 
-      // Delegate to orchestration service
-      await this.completionOrchestrationService.orchestrateMessage({
-        session,
-        clientId,
-        tenantId,
-        message: data.message,
-        context: data.context,
-        mcpServers: data.mcpServers,
-        enabledSkillSlugs: data.enabledSkillSlugs,
-        skillPath: data.skillPath,
-        resumeSession: data.resumeSession,
-        emitEvent: (event) => client.emit(event.type, event),
-      });
+      // Check message queue feature flag
+      const messageQueueEnabled = this.configService.get<boolean>('messageQueue.enabled', false);
 
-      // Notify frontend that agent is running
-      client.emit('agent_status', { status: 'running', sessionId });
+      if (messageQueueEnabled) {
+        // NEW: Queue-based processing
+        this.logger.log(`Enqueuing message for session ${sessionId} (queue mode)`);
+
+        const queueItem = await this.messageQueueService.enqueue(
+          sessionId,
+          clientId,
+          tenantId,
+          {
+            message: data.message,
+            context: data.context,
+            mcpServers: data.mcpServers,
+            enabledSkillSlugs: data.enabledSkillSlugs,
+            skillPath: data.skillPath,
+            resumeSession: data.resumeSession,
+          },
+        );
+
+        // Get queue depth for user feedback
+        const queueDepth = await this.messageQueueService.getSessionQueueDepth(sessionId);
+
+        client.emit('queue_status', {
+          queueItemId: queueItem.id,
+          position: queueDepth.total,
+          pending: queueDepth.pending,
+          processing: queueDepth.processing,
+        });
+
+        this.logger.log(`Message enqueued (queue depth: ${queueDepth.total})`);
+      } else {
+        // OLD: Direct orchestration
+        this.logger.log(`Processing message directly for session ${sessionId} (legacy mode)`);
+
+        await this.completionOrchestrationService.orchestrateMessage({
+          session,
+          clientId,
+          tenantId,
+          message: data.message,
+          context: data.context,
+          mcpServers: data.mcpServers,
+          enabledSkillSlugs: data.enabledSkillSlugs,
+          skillPath: data.skillPath,
+          resumeSession: data.resumeSession,
+          emitEvent: (event) => client.emit(event.type, event),
+        });
+
+        // Notify frontend that agent is running
+        client.emit('agent_status', { status: 'running', sessionId });
+      }
     } catch (error) {
       this.logger.error(`Error handling chat: ${error}`);
       client.emit('agent_status', {
@@ -367,7 +407,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
    * Handle cancel request from client
    */
   @SubscribeMessage('cancel')
-  handleCancel(
+  async handleCancel(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: CancelRequestDto,
   ) {
@@ -381,13 +421,27 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     if (data.sessionId) {
       const session = this.sessionService.getSession(data.sessionId);
       if (session && session.clientId === clientId) {
+        // Cancel CLI process
         const cancelled = this.sessionService.cancelSession(data.sessionId, sendEvent);
 
+        // Cancel pending queue messages
+        const messageQueueEnabled = this.configService.get<boolean>('messageQueue.enabled', false);
+        let cancelledQueueMessages = 0;
+
+        if (messageQueueEnabled) {
+          cancelledQueueMessages = await this.messageQueueService.cancelSessionMessages(data.sessionId);
+        }
+
         if (cancelled) {
-          this.logger.log(`Cancelled session ${data.sessionId}`);
+          this.logger.log(`Cancelled session ${data.sessionId} (queue messages: ${cancelledQueueMessages})`);
         } else {
           this.logger.warn(`Failed to cancel session ${data.sessionId} - may already be stopped`);
         }
+
+        client.emit('cancel_response', {
+          success: cancelled,
+          cancelledQueueMessages,
+        });
       } else {
         this.logger.warn(`Cannot cancel session ${data.sessionId} - not found or wrong client`);
       }

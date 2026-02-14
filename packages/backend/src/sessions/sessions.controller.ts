@@ -34,6 +34,7 @@ import * as path from 'path';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionService } from './session.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { MessageQueueService } from './services/message-queue.service';
 import { SkillManagementService } from './services/skill-management.service';
 import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
@@ -53,6 +54,7 @@ export class SessionsController {
     private readonly sessionsGateway: SessionsGateway,
     private readonly sessionService: SessionService,
     private readonly completionOrchestrationService: CompletionOrchestrationService,
+    private readonly messageQueueService: MessageQueueService,
     private readonly skillManagementService: SkillManagementService,
     private readonly attachmentService: AttachmentService,
     private readonly skillSyncService: SkillSyncService,
@@ -113,7 +115,7 @@ Send user message to the specified session. Agent will push response events via 
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
   ) {
-    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
+    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments, appendSystemPrompt } = data;
 
     this.logger.log(`Creating completion for session ${sessionId}`);
     this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}`);
@@ -164,6 +166,14 @@ Send user message to the specified session. Agent will push response events via 
           resolvedTenantId,
           enabledSkillSlugs,
         );
+      }
+
+      // Merge appendSystemPrompt from Session Template (if provided)
+      if (appendSystemPrompt && appendSystemPrompt.trim()) {
+        systemPrompt = systemPrompt
+          ? `${systemPrompt}\n\n${appendSystemPrompt}`
+          : appendSystemPrompt;
+        this.logger.log(`Appended system prompt from template (${appendSystemPrompt.length} chars)`);
       }
 
       // REST-specific preprocessing: Resolve attachment paths
@@ -433,5 +443,174 @@ Send user message to the specified session. Agent will push response events via 
     // Stream the file
     const fileStream = createReadStream(fileInfo.absolutePath);
     return new StreamableFile(fileStream);
+  }
+
+  /**
+   * Get queue status for a session
+   * GET /api/v1/sessions/:sessionId/queue
+   */
+  @Get(':sessionId/queue')
+  @ApiOperation({
+    summary: '获取会话队列状态 / Get Session Queue Status',
+    description: `
+获取指定会话的消息队列状态，包括待处理、处理中、已完成的消息。
+
+**使用场景：**
+- 页面刷新后恢复队列状态
+- 显示"您的消息排在第X位"
+- 查看消息处理历史
+
+**注意：** 只在 MESSAGE_QUEUE_ENABLED=true 时有数据。
+
+Get message queue status for a session, including pending, processing, and completed messages.
+
+**Use Cases:**
+- Restore queue state after page refresh
+- Show "Your message is #X in queue"
+- View message processing history
+
+**Note:** Only returns data when MESSAGE_QUEUE_ENABLED=true.
+    `,
+  })
+  @ApiParam({
+    name: 'sessionId',
+    description: '会话 ID / Session ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '队列状态 / Queue status',
+    schema: {
+      example: {
+        total: 3,
+        pending: 2,
+        processing: 1,
+        items: [
+          {
+            id: 'queue-1',
+            status: 'processing',
+            message: 'Design a lesson plan...',
+            priority: 0,
+            retryCount: 0,
+            createdAt: '2026-02-14T10:00:00Z',
+            startedAt: '2026-02-14T10:00:05Z',
+          },
+          {
+            id: 'queue-2',
+            status: 'pending',
+            message: 'Create a quiz...',
+            priority: 0,
+            retryCount: 0,
+            createdAt: '2026-02-14T10:00:10Z',
+          },
+        ],
+      },
+    },
+  })
+  async getSessionQueue(@Param('sessionId') sessionId: string) {
+    this.logger.log(`[Queue] Get queue status for session: ${sessionId}`);
+
+    const [depth, items] = await Promise.all([
+      this.messageQueueService.getSessionQueueDepth(sessionId),
+      this.messageQueueService.getSessionQueue(sessionId, false), // Only active items
+    ]);
+
+    return {
+      total: depth.total,
+      pending: depth.pending,
+      processing: depth.processing,
+      items: items.map((item) => ({
+        id: item.id,
+        status: item.status,
+        message: item.payload.message.substring(0, 200), // First 200 chars
+        priority: item.priority,
+        retryCount: item.retryCount,
+        maxRetries: item.maxRetries,
+        nextRetryAt: item.nextRetryAt,
+        createdAt: item.createdAt,
+        startedAt: item.startedAt,
+        error: item.error,
+      })),
+    };
+  }
+
+  /**
+   * Get single queue item details
+   * GET /api/v1/queue/:queueItemId
+   */
+  @Get('/queue/:queueItemId')
+  @ApiOperation({
+    summary: '获取队列消息详情 / Get Queue Item Details',
+    description: `
+获取单个队列消息的详细信息，包括状态、重试次数、错误信息等。
+
+**使用场景：**
+- 检查消息是否完成
+- 查看失败原因
+- 监控重试进度
+
+Get detailed information about a single queue item, including status, retry count, and error details.
+
+**Use Cases:**
+- Check if message is completed
+- View failure reason
+- Monitor retry progress
+    `,
+  })
+  @ApiParam({
+    name: 'queueItemId',
+    description: '队列项 ID / Queue item ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: '队列项详情 / Queue item details',
+    schema: {
+      example: {
+        id: 'queue-1',
+        sessionId: 'session-1',
+        status: 'completed',
+        message: 'Design a lesson plan for grade 5 math',
+        priority: 0,
+        retryCount: 0,
+        maxRetries: 2,
+        createdAt: '2026-02-14T10:00:00Z',
+        startedAt: '2026-02-14T10:00:05Z',
+        completedAt: '2026-02-14T10:02:30Z',
+        durationMs: 145000,
+        userMessageId: 'msg-user-1',
+        assistantMessageId: 'msg-assistant-1',
+        error: null,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: '队列项不存在 / Queue item not found',
+  })
+  async getQueueItem(@Param('queueItemId') queueItemId: string) {
+    this.logger.log(`[Queue] Get queue item: ${queueItemId}`);
+
+    const item = await this.messageQueueService.getQueueItem(queueItemId);
+
+    if (!item) {
+      throw new NotFoundException(`Queue item ${queueItemId} not found`);
+    }
+
+    return {
+      id: item.id,
+      sessionId: item.sessionId,
+      status: item.status,
+      message: item.payload.message,
+      priority: item.priority,
+      retryCount: item.retryCount,
+      maxRetries: item.maxRetries,
+      nextRetryAt: item.nextRetryAt,
+      createdAt: item.createdAt,
+      startedAt: item.startedAt,
+      completedAt: item.completedAt,
+      durationMs: item.durationMs,
+      userMessageId: item.userMessageId,
+      assistantMessageId: item.assistantMessageId,
+      error: item.error,
+    };
   }
 }

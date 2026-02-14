@@ -12,6 +12,7 @@
  */
 
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
 import { SessionService } from './session.service';
@@ -25,13 +26,22 @@ import { BackgroundTaskMonitorService } from './services/background-task-monitor
 import { ToolCallTrackerService } from './services/tool-call-tracker.service';
 import { SubAgentTrackerService } from './services/subagent-tracker.service';
 import { ToolAnalysisService } from './services/tool-analysis.service';
+import { MessageQueueService } from './services/message-queue.service';
+import { MessageWorkerService } from './services/message-worker.service';
+import { MessageQueue } from './entities/message-queue.entity';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
 
 @Module({
-  imports: [SkillsModule, TenantsModule, MessagesModule, FilesModule],
+  imports: [
+    TypeOrmModule.forFeature([MessageQueue]),
+    SkillsModule,
+    TenantsModule,
+    MessagesModule,
+    FilesModule,
+  ],
   controllers: [SessionsController],
   providers: [
     SessionsGateway,
@@ -46,7 +56,9 @@ import { FilesModule } from '../files/files.module';
     ToolCallTrackerService,
     SubAgentTrackerService,
     ToolAnalysisService,
+    MessageQueueService,
+    MessageWorkerService,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService],
 })
 export class SessionsModule {}

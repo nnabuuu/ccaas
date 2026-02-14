@@ -12,9 +12,11 @@ import {
   Query,
   Body,
   NotFoundException,
+  BadRequestException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { SessionManagerService } from '../services/session-manager.service';
@@ -25,6 +27,8 @@ import {
   SessionTimeline,
   TokenBreakdown,
 } from '../dto/admin.dto';
+import { BulkKillDto } from '../dto/bulk-kill.dto';
+import { TimelineQueryDto } from '../dto/timeline-query.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
 
 @Controller('api/v1/admin/sessions')
@@ -60,8 +64,12 @@ export class AdminSessionsController {
   @Get(':sessionId')
   async getSessionDetail(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<SessionDetail> {
-    const session = await this.sessionManagerService.getSessionDetail(sessionId);
+    const session = await this.sessionManagerService.getSessionDetail(
+      sessionId,
+      ctx.tenantId,
+    );
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
@@ -76,13 +84,14 @@ export class AdminSessionsController {
   @Get(':sessionId/timeline')
   async getSessionTimeline(
     @Param('sessionId') sessionId: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
+    @Ctx() ctx: RequestContext,
+    @Query() query: TimelineQueryDto,
   ): Promise<SessionTimeline> {
     return this.sessionManagerService.getSessionTimeline(
       sessionId,
-      limit ? parseInt(limit, 10) : 100,
-      offset ? parseInt(offset, 10) : 0,
+      query.limit,
+      query.offset,
+      ctx.tenantId,
     );
   }
 
@@ -94,8 +103,12 @@ export class AdminSessionsController {
   @Get(':sessionId/tokens')
   async getTokenBreakdown(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<TokenBreakdown> {
-    const breakdown = await this.sessionManagerService.getTokenBreakdown(sessionId);
+    const breakdown = await this.sessionManagerService.getTokenBreakdown(
+      sessionId,
+      ctx.tenantId,
+    );
     if (!breakdown) {
       throw new NotFoundException(`No token data found for session: ${sessionId}`);
     }
@@ -109,12 +122,17 @@ export class AdminSessionsController {
    */
   @Post(':sessionId/kill')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 10 } }) // 10 kills per minute
   async killSession(
     @Param('sessionId') sessionId: string,
     @Ctx() ctx: RequestContext,
   ): Promise<{ success: boolean; message: string }> {
     const adminId = ctx.apiKeyId || ctx.tenantId;
-    const success = await this.sessionManagerService.killSession(sessionId, adminId);
+    const success = await this.sessionManagerService.killSession(
+      sessionId,
+      adminId,
+      ctx.tenantId,
+    );
 
     return {
       success,
@@ -148,9 +166,10 @@ export class AdminSessionsController {
    */
   @Post('bulk-kill')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { ttl: 60000, limit: 5 } }) // 5 bulk operations per minute
   async bulkKillSessions(
     @Ctx() ctx: RequestContext,
-    @Body('sessionIds') sessionIds: string[],
+    @Body() dto: BulkKillDto,
   ): Promise<{
     totalRequested: number;
     successCount: number;
@@ -161,16 +180,11 @@ export class AdminSessionsController {
       error?: string;
     }>;
   }> {
-    // Validate request
-    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-      throw new Error('sessionIds must be a non-empty array');
-    }
-
-    if (sessionIds.length > 100) {
-      throw new Error('Cannot terminate more than 100 sessions at once');
-    }
-
     const adminId = ctx.apiKeyId || ctx.tenantId;
-    return this.sessionManagerService.bulkKillSessions(sessionIds, adminId);
+    return this.sessionManagerService.bulkKillSessions(
+      dto.sessionIds,
+      adminId,
+      ctx.tenantId,
+    );
   }
 }

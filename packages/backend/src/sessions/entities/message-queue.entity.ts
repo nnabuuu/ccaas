@@ -1,0 +1,131 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
+
+export type MessageQueueStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export interface MessageQueuePayload {
+  message: string;
+  context?: Record<string, unknown>;
+  mcpServers?: Record<string, any>;
+  enabledSkillSlugs?: string[];
+  attachmentPaths?: string[];
+  skillPath?: string;
+  resumeSession?: boolean;
+}
+
+/**
+ * Message Queue Entity
+ *
+ * Database-backed FIFO queue for chat messages per session.
+ * Prevents race conditions from concurrent messages by enforcing
+ * one-at-a-time processing per session using row-level locking.
+ *
+ * Key Features:
+ * - FIFO ordering per session (by createdAt)
+ * - Row-level pessimistic locking for dequeue
+ * - Retry logic with exponential backoff
+ * - Session-level concurrency control
+ *
+ * Status Flow:
+ * pending → processing → completed/failed
+ *         ↓ (if retry)
+ *      pending (with nextRetryAt)
+ */
+@Entity('message_queue')
+@Index('IDX_message_queue_session_status_created', ['sessionId', 'status', 'createdAt'])
+@Index('IDX_message_queue_status_retry', ['status', 'nextRetryAt'])
+@Index('IDX_message_queue_tenant_status', ['tenantId', 'status'])
+export class MessageQueue {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column()
+  sessionId: string;
+
+  @Column()
+  clientId: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  tenantId: string | null;
+
+  @Column({ type: 'simple-json' })
+  payload: MessageQueuePayload;
+
+  @Column({ type: 'varchar', length: 20, default: 'pending' })
+  status: MessageQueueStatus;
+
+  /**
+   * Priority (higher = process first)
+   * Default: 0 (normal priority)
+   * Can be used for urgent messages or cancellation requests
+   */
+  @Column({ type: 'integer', default: 0 })
+  priority: number;
+
+  /**
+   * Number of retry attempts made
+   */
+  @Column({ type: 'integer', default: 0 })
+  retryCount: number;
+
+  /**
+   * Maximum number of retries allowed
+   */
+  @Column({ type: 'integer', default: 2 })
+  maxRetries: number;
+
+  /**
+   * Scheduled time for next retry attempt
+   * Used for exponential backoff
+   */
+  @Column({ type: 'datetime', nullable: true })
+  nextRetryAt: Date | null;
+
+  /**
+   * When processing started
+   */
+  @Column({ type: 'datetime', nullable: true })
+  startedAt: Date | null;
+
+  /**
+   * When processing completed (success or permanent failure)
+   */
+  @Column({ type: 'datetime', nullable: true })
+  completedAt: Date | null;
+
+  /**
+   * Error message if processing failed
+   */
+  @Column({ type: 'text', nullable: true })
+  error: string | null;
+
+  /**
+   * ID of the user message created from this queue item
+   */
+  @Column({ type: 'varchar', nullable: true })
+  userMessageId: string | null;
+
+  /**
+   * ID of the assistant message created from this queue item
+   */
+  @Column({ type: 'varchar', nullable: true })
+  assistantMessageId: string | null;
+
+  /**
+   * Processing duration in milliseconds
+   */
+  @Column({ type: 'integer', nullable: true })
+  durationMs: number | null;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
+}

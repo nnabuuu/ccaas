@@ -101,6 +101,15 @@ export class CreateCompletionDto {
   enabledSkillSlugs?: string[];
 
   @ApiProperty({
+    description: '追加的系统提示词（由 Session Template 传递）/ Additional system prompt (passed from Session Template)',
+    required: false,
+    example: '你是一位专业的教育分析师，专注于为教师提供数据驱动的教学建议。',
+  })
+  @IsOptional()
+  @IsString()
+  appendSystemPrompt?: string;
+
+  @ApiProperty({
     description: '附件列表（图片、文档等）/ Attachments (images, documents, etc.)',
     required: false,
     type: [AttachmentDto],

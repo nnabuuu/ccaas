@@ -10,6 +10,7 @@
 export { useAgentConnection } from './hooks/useAgentConnection'
 export { useAgentChat } from './hooks/useAgentChat'
 export { useAgentStatus } from './hooks/useAgentStatus'
+export { useQueueStatus } from './hooks/useQueueStatus'
 export { useOutputSync } from './hooks/useOutputSync'
 export { useSkills } from './hooks/useSkills'
 export { useChatLayout } from './hooks/useChatLayout'
@@ -45,6 +46,7 @@ export { TasksView } from './components/TasksView'
 export { TasksHeader } from './components/TasksHeader'
 export { TasksList } from './components/TasksList'
 export { UnifiedTaskCard } from './components/UnifiedTaskCard'
+export { QueueStatusIndicator } from './components/QueueStatusIndicator'
 
 // Utilities
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
@@ -54,6 +56,7 @@ export { computeLineDiff, formatSizeDiff, getDiffColor } from './utils/diffUtils
 export { formatDuration, formatDurationCompact } from './utils/formatDuration'
 export { getToolActivityDescription, TOOL_ACTIVITY_MAP } from './utils/toolActivityMapping'
 export { getThinkingVerb, THINKING_VERBS } from './utils/thinkingVerbs'
+export { resolveSessionTemplate, mergeTemplateParams } from './utils/templateResolver'
 
 // Non-type exports from types (COLOR_MAP)
 export { COLOR_MAP } from './types'
@@ -139,6 +142,14 @@ export type { TasksViewProps } from './components/TasksView'
 export type { TasksHeaderProps } from './components/TasksHeader'
 export type { TasksListProps } from './components/TasksList'
 export type { UnifiedTaskCardProps } from './components/UnifiedTaskCard'
+export type { QueueStatusIndicatorProps } from './components/QueueStatusIndicator'
+
+// Template resolver types
+export type {
+  ResolvedTemplateParams,
+  ExplicitParams,
+  SolutionDefaults,
+} from './utils/templateResolver'
 
 // Re-export commonly used @ccaas/common types for convenience
 export type {
@@ -152,6 +163,22 @@ export type {
   TodoUpdatePayload,
   Skill,
   ActiveSubAgent,
+  SessionTemplate,
+  SessionTemplateMap,
 } from '@ccaas/common'
 
 export type { EventTodoItem as TodoItem } from '@ccaas/common'
+
+// Queue status hook types
+export type {
+  QueueItemStatus,
+  QueueItem,
+  QueueDepth,
+  MessageProcessingStartedEvent,
+  MessageProcessingCompletedEvent,
+  MessageProcessingFailedEvent,
+  QueueStatusEvent,
+  ProcessingStatus,
+  UseQueueStatusOptions,
+  UseQueueStatusReturn,
+} from './hooks/useQueueStatus'

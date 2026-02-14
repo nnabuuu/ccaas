@@ -8,6 +8,7 @@ import type {
   ToolActivity,
   OutputUpdate,
   SolutionConfig,
+  McpServerConfig,
 } from '../types'
 import type {
   TextDeltaEvent,
@@ -17,6 +18,11 @@ import type {
 } from '@ccaas/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
+import {
+  resolveSessionTemplate,
+  mergeTemplateParams,
+  type ResolvedTemplateParams,
+} from '../utils/templateResolver'
 
 const generateId = (): string => {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -41,6 +47,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     onOutputUpdate,
     solutionConfigEndpoint,
     context,
+    sessionTemplate,
   } = options
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -328,6 +335,58 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     contentBlocksRef.current = []
     setIsProcessing(true)
 
+    // ========================================================================
+    // Session Template Resolution (once, outside retry loop)
+    // ========================================================================
+    // If sessionTemplate is provided, resolve it and merge with explicit params
+    let resolvedParams: ResolvedTemplateParams = {}
+
+    if (sessionTemplate && solutionConfigRef.current?.sessionTemplates) {
+      try {
+        const template = resolveSessionTemplate(
+          sessionTemplate,
+          solutionConfigRef.current.sessionTemplates
+        )
+
+        resolvedParams = mergeTemplateParams(
+          template,
+          {
+            enabledSkillSlugs,
+            mcpServers,
+            appendSystemPrompt: undefined, // Not supported in hook options yet
+            skillPath,
+          },
+          {
+            mcpServers: solutionConfigRef.current?.mcpServers,
+            skillPath: solutionConfigRef.current?.skillPath,
+          }
+        )
+      } catch (error) {
+        // Template resolution error - throw immediately to fail fast
+        setIsProcessing(false)
+        throw new Error(
+          `Session template resolution failed: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    } else {
+      // No template - use explicit params or solution config defaults
+      // MCP servers from options or solution config
+      const servers = mcpServers || solutionConfigRef.current?.mcpServers
+      if (servers) {
+        resolvedParams.mcpServers = servers
+      }
+
+      // Skill path from options or solution config
+      const path = skillPath !== undefined ? skillPath : solutionConfigRef.current?.skillPath
+      if (path) {
+        resolvedParams.skillPath = path
+      }
+
+      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+        resolvedParams.enabledSkillSlugs = enabledSkillSlugs
+      }
+    }
+
     const attemptSend = async (retryCount = 0): Promise<void> => {
       const chatPayload: Record<string, unknown> = {
         clientId: connection.clientId,
@@ -335,22 +394,26 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         tenantId,
       }
 
-      // MCP servers from options or solution config
-      const servers = mcpServers || solutionConfigRef.current?.mcpServers
-      if (servers) {
-        chatPayload.mcpServers = servers
+      // Apply resolved parameters to payload
+      if (resolvedParams.mcpServers) {
+        chatPayload.mcpServers = resolvedParams.mcpServers
       }
 
-      // Skill path from options or solution config
-      const path = skillPath !== undefined ? skillPath : solutionConfigRef.current?.skillPath
-      if (path) {
-        chatPayload.skillPath = path
+      if (resolvedParams.skillPath) {
+        chatPayload.skillPath = resolvedParams.skillPath
       }
 
-      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-        chatPayload.enabledSkillSlugs = enabledSkillSlugs
+      if (resolvedParams.enabledSkillSlugs && resolvedParams.enabledSkillSlugs.length > 0) {
+        chatPayload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
       }
 
+      // Phase 2: appendSystemPrompt is now supported by backend
+      // Backend merges it with skill system prompt (skill prompt + appendSystemPrompt)
+      if (resolvedParams.appendSystemPrompt) {
+        chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
+      }
+
+      // Attachments and context
       if (sendOptions?.attachments && sendOptions.attachments.length > 0) {
         chatPayload.attachments = sendOptions.attachments
       }
@@ -386,7 +449,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       setIsProcessing(false)
       throw err
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, waitForReconnection])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, sessionTemplate, waitForReconnection])
 
   const clearMessages = useCallback(() => {
     setMessages([])

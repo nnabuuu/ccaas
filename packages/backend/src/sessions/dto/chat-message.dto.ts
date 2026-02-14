@@ -51,6 +51,10 @@ export class ChatMessageDto {
   @IsArray()
   @IsString({ each: true })
   enabledSkillSlugs?: string[];
+
+  @IsOptional()
+  @IsString()
+  appendSystemPrompt?: string;
 }
 
 /**
@@ -109,6 +113,10 @@ export class SendMessageDto {
   @IsArray()
   @IsString({ each: true })
   enabledSkillSlugs?: string[];
+
+  @IsOptional()
+  @IsString()
+  appendSystemPrompt?: string;
 }
 
 /**

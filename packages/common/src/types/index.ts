@@ -248,6 +248,66 @@ export interface PaginatedResult<T> {
 export * from './job';
 
 // ============================================================================
+// Session Template Types
+// ============================================================================
+
+/**
+ * MCP Server configuration for session templates
+ */
+export interface McpServerConfig {
+  command: string;
+  args: string[];
+  description?: string;
+  env?: Record<string, string>;
+}
+
+/**
+ * Session Template - named configuration preset for sessions
+ *
+ * Templates allow Solution backends to define reusable session configurations
+ * that include specific skills, prompts, and MCP servers for different use cases.
+ *
+ * @example
+ * ```json
+ * {
+ *   "teacher-analysis": {
+ *     "description": "教师视图 - 完整分析功能",
+ *     "appendSystemPrompt": "你是教育领域的专业分析师...",
+ *     "enabledSkillSlugs": ["knowledge-point-matching", "complete-analysis"],
+ *     "mcpServers": { "quiz-analyzer-tools": { ... } }
+ *   }
+ * }
+ * ```
+ */
+export interface SessionTemplate {
+  /** Human-readable description of this template */
+  description?: string;
+
+  /** Additional system prompt to append to skill prompts */
+  appendSystemPrompt?: string;
+
+  /** Skill slugs to enable for this session */
+  enabledSkillSlugs?: string[];
+
+  /** MCP servers to configure for this session */
+  mcpServers?: Record<string, McpServerConfig>;
+
+  /** Model to use (reserved for future use) */
+  model?: string;
+
+  /** Max tokens per request (reserved for future use) */
+  maxTokens?: number;
+
+  /** Skill path override */
+  skillPath?: string;
+}
+
+/**
+ * Map of template names to template configurations
+ */
+export type SessionTemplateMap = Record<string, SessionTemplate>;
+
+// ============================================================================
 // Lesson Plan Types
 // ============================================================================
 

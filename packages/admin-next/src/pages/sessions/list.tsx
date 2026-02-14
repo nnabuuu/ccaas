@@ -72,41 +72,31 @@ export function SessionListPage() {
 
   const endpoint = '/admin/sessions'
 
+  const PAGE_SIZE = 50
+
   const { data, isLoading, error, refetch } = useCustom({
     url: endpoint,
     method: 'get',
     config: {
       query: {
-        offset: page * 20,
-        limit: 20,
+        page: page + 1, // API uses 1-based pages, DataTable uses 0-based
+        pageSize: PAGE_SIZE,
         ...(selectedTenantId ? { tenantId: selectedTenantId } : {}),
       },
     },
   })
 
-  const result = data?.data as
-    | {
-        items?: SessionItem[]
-        sessions?: SessionItem[]
-        data?: SessionItem[]
-        total?: number
-        pagination?: { total: number }
-      }
-    | SessionItem[]
-    | undefined
-
-  const allSessions = Array.isArray(result)
-    ? result
-    : (result?.items ?? result?.sessions ?? result?.data ?? [])
-
-  const total = Array.isArray(result)
-    ? result.length
-    : (result?.total ?? result?.pagination?.total ?? allSessions.length)
+  // Backend returns PaginatedSessions: { data: SessionListItem[], total, page, pageSize }
+  const result = data?.data as { data?: SessionItem[]; total?: number } | undefined
+  const allSessions = result?.data ?? []
+  const total = result?.total ?? allSessions.length
 
   // Bulk kill mutation
   const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
   // Filter sessions based on tab, search, duration, and tokens
+  // NOTE: Client-side filtering only applies to the current page (50 sessions).
+  // For filtering across all sessions, backend filtering would be required.
   const sessions = useMemo(() => {
     let filtered = allSessions
 
@@ -200,7 +190,10 @@ export function SessionListPage() {
       await navigator.clipboard.writeText(sessionId)
       // TODO: Replace with toast notification
     } catch (error) {
-      console.warn('Failed to copy session ID:', error)
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.warn('Failed to copy session ID:', error)
+      }
     }
   }, [])
 
@@ -529,8 +522,8 @@ export function SessionListPage() {
           data={sessions}
           isLoading={isLoading}
           pageIndex={page}
-          pageSize={20}
-          pageCount={Math.ceil(total / 20)}
+          pageSize={PAGE_SIZE}
+          pageCount={Math.ceil(total / PAGE_SIZE)}
           onPaginationChange={setPage}
         />
       )}

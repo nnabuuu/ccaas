@@ -63,17 +63,20 @@ export class CliProcessService {
 
     this.logger.log(`Spawning new AgentEngine for session ${session.sessionId}`);
 
-    // Build base command
-    let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions`;
+    // Build arguments array (no shell interpretation, prevents injection)
+    const args: string[] = [
+      '--output-format', 'stream-json',
+      '--input-format', 'stream-json',
+      '--verbose',
+      '--permission-mode', 'bypassPermissions',
+    ];
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
       // Resolve tenant-relative paths to session-relative symlink paths
       const resolvedMcpServers = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
       const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
-      // Escape single quotes in JSON for shell
-      const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
-      shellCommand += ` --mcp-config '${escapedConfig}'`;
+      args.push('--mcp-config', mcpConfig);
       this.logger.log(`Session ${session.sessionId} using MCP servers: ${Object.keys(session.mcpServers).join(', ')}`);
       this.logger.debug(`MCP config: ${mcpConfig}`);
     } else {
@@ -82,15 +85,14 @@ export class CliProcessService {
 
     // Add append-system-prompt if provided
     if (appendSystemPrompt && appendSystemPrompt.trim()) {
-      const escapedPrompt = appendSystemPrompt.replace(/'/g, "'\\''");
-      shellCommand += ` --append-system-prompt '${escapedPrompt}'`;
+      args.push('--append-system-prompt', appendSystemPrompt);
       this.logger.log(`Added skill system prompt (${appendSystemPrompt.length} chars)`);
     }
 
-    this.logger.log(`Running command: ${shellCommand}`);
+    this.logger.log(`Running command: ${this.claudeCliPath} ${args.join(' ')}`);
     this.logger.log(`Working directory: ${session.workspaceDir}`);
 
-    const cli = spawn('/bin/sh', ['-c', shellCommand], {
+    const cli = spawn(this.claudeCliPath, args, {
       cwd: session.workspaceDir,
       env: {
         ...process.env,
@@ -163,28 +165,31 @@ export class CliProcessService {
 
     this.logger.log('AgentEngine not running, spawning new with --resume');
 
-    // Build base command with --resume
-    let shellCommand = `${this.claudeCliPath} --output-format stream-json --input-format stream-json --verbose --permission-mode bypassPermissions --resume '${session.sessionId}'`;
+    // Build arguments array with --resume (no shell interpretation, prevents injection)
+    const args: string[] = [
+      '--output-format', 'stream-json',
+      '--input-format', 'stream-json',
+      '--verbose',
+      '--permission-mode', 'bypassPermissions',
+      '--resume', session.sessionId,
+    ];
 
     // Add MCP servers if configured (passed from solution backends)
     if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
       // Resolve tenant-relative paths to session-relative symlink paths
       const resolvedMcpServers = this.workspaceService.resolveSessionMcpPaths(session.mcpServers);
       const mcpConfig = JSON.stringify({ mcpServers: resolvedMcpServers });
-      // Escape single quotes in JSON for shell
-      const escapedConfig = mcpConfig.replace(/'/g, "'\\''");
-      shellCommand += ` --mcp-config '${escapedConfig}'`;
+      args.push('--mcp-config', mcpConfig);
     }
 
     // Add append-system-prompt (preserved across resume)
     if (session.appendSystemPrompt && session.appendSystemPrompt.trim()) {
-      const escapedPrompt = session.appendSystemPrompt.replace(/'/g, "'\\''");
-      shellCommand += ` --append-system-prompt '${escapedPrompt}'`;
+      args.push('--append-system-prompt', session.appendSystemPrompt);
     }
 
-    this.logger.log(`Running follow-up command: ${shellCommand}`);
+    this.logger.log(`Running follow-up command: ${this.claudeCliPath} ${args.join(' ')}`);
 
-    const cli = spawn('/bin/sh', ['-c', shellCommand], {
+    const cli = spawn(this.claudeCliPath, args, {
       cwd: session.workspaceDir,
       env: {
         ...process.env,

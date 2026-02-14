@@ -247,16 +247,18 @@ export interface UndoEntry {
 // Solution Config Types
 // ============================================================================
 
-export interface McpServerConfig {
-  command: string
-  args: string[]
-  description?: string
-}
+// Import and re-export from @ccaas/common to avoid duplication
+import type { McpServerConfig as McpServerConfigCommon } from '@ccaas/common'
+export type McpServerConfig = McpServerConfigCommon
 
 export interface SolutionConfig {
   mcpServers?: Record<string, McpServerConfig>
   skillPath?: string | null
   skillSlug?: string | null
+  /** Session templates defined in solution.json */
+  sessionTemplates?: import('@ccaas/common').SessionTemplateMap
+  // NOTE: defaultSessionTemplate will be added in Phase 2
+  // when we implement automatic fallback to default template
 }
 
 // ============================================================================
@@ -303,6 +305,8 @@ export interface UseAgentChatOptions {
   solutionConfigEndpoint?: string
   /** Page context to send with every message (from usePageContext hook) */
   context?: PageContext | null
+  /** Session template name to use (resolved from solution config) */
+  sessionTemplate?: string
 }
 
 export interface SendMessageOptions {

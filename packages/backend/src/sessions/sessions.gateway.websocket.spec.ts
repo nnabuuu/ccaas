@@ -25,6 +25,8 @@ import { ProcessLifecycleService } from '../messages/process-lifecycle.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { UserContextService } from '../messages/user-context.service';
 import { FilesService } from '../files/files.service';
+import { ConfigService } from '@nestjs/config';
+import { MessageQueueService } from './services/message-queue.service';
 
 describe('SessionsGateway - WebSocket Events (Week 5)', () => {
   let gateway: SessionsGateway;
@@ -142,6 +144,20 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
         {
           provide: FilesService,
           useValue: mockFilesService,
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue(false), // MESSAGE_QUEUE_ENABLED=false by default
+          },
+        },
+        {
+          provide: MessageQueueService,
+          useValue: {
+            enqueue: jest.fn(),
+            getSessionQueueDepth: jest.fn(),
+            cancelSessionMessages: jest.fn(),
+          },
         },
         {
           provide: EventEmitter2,

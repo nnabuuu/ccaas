@@ -8,6 +8,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import configuration from './config/configuration';
 import { SessionsModule } from './sessions/sessions.module';
 import { SkillsModule } from './skills/skills.module';
@@ -45,6 +47,7 @@ import { JobEntity } from './jobs/entities/job.entity';
 import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
+import { MessageQueue } from './sessions/entities/message-queue.entity';
 
 @Module({
   imports: [
@@ -53,6 +56,14 @@ import { UserTenant } from './users/entities/user-tenant.entity';
       isGlobal: true,
       load: [configuration],
     }),
+
+    // Rate Limiting (Global defaults, overridden per endpoint)
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // 1 minute
+        limit: 10,  // 10 requests per minute (default)
+      },
+    ]),
 
     // Event Emitter (Week 5: WebSocket events)
     EventEmitterModule.forRoot(),
@@ -82,6 +93,8 @@ import { UserTenant } from './users/entities/user-tenant.entity';
         ThinkingBlock,
         TokenUsageEvent,
         UserContextEvent,
+        // Session entities
+        MessageQueue,
         // Storage entities
         LargeContent,
         SystemPromptVersion,
@@ -122,6 +135,12 @@ import { UserTenant } from './users/entities/user-tenant.entity';
 
     // Background jobs module
     JobModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

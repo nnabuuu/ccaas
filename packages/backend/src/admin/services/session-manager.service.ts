@@ -4,9 +4,9 @@
  * Admin operations for session management including force kill and restart.
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { SessionService } from '../../sessions/session.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';
@@ -28,10 +28,10 @@ import {
 import type { ManagedSession } from '../../common/interfaces';
 
 export interface PaginatedSessions {
-  items: SessionListItem[];
+  data: SessionListItem[];
   total: number;
-  limit: number;
-  offset: number;
+  page: number;
+  pageSize: number;
 }
 
 @Injectable()
@@ -58,21 +58,91 @@ export class SessionManagerService {
   ) {}
 
   /**
+   * Map session data to SessionListItem DTO.
+   * Centralizes the mapping logic to avoid duplication.
+   */
+  private toSessionListItem(
+    session: ManagedSession | Session,
+    tokenStats: { totalTokens: number; estimatedCost: number },
+    hasActiveProcess?: boolean,
+  ): SessionListItem {
+    // Determine if session has active process
+    const isActive =
+      hasActiveProcess !== undefined
+        ? hasActiveProcess
+        : 'cliProcess' in session && session.cliProcess !== null && !session.cliProcess.killed;
+
+    return {
+      sessionId: session.sessionId,
+      tenantId: session.tenantId || null,
+      clientId: session.clientId,
+      status: session.status,
+      messageCount: session.messageCount,
+      totalTokens: tokenStats.totalTokens,
+      estimatedCost: tokenStats.estimatedCost,
+      createdAt: session.createdAt,
+      lastActivity: session.lastActivity,
+      hasActiveProcess: isActive,
+    };
+  }
+
+  /**
+   * Resolve pagination parameters from query.
+   * Supports both page/pageSize (preferred) and offset/limit (legacy).
+   * Returns normalized { page, pageSize, offset }.
+   */
+  private resolvePagination(query: SessionQueryDto): {
+    page: number;
+    pageSize: number;
+    offset: number;
+  } {
+    const MAX_PAGE_SIZE = 250;
+    const DEFAULT_PAGE_SIZE = 50;
+
+    // Determine if caller used page/pageSize (new) or offset/limit (legacy)
+    const hasPageParams =
+      query.page !== undefined || query.pageSize !== undefined;
+
+    let page: number;
+    let pageSize: number;
+    let offset: number;
+
+    if (hasPageParams) {
+      // New page/pageSize style (takes precedence)
+      page = Math.max(1, query.page ?? 1);
+      pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, query.pageSize ?? DEFAULT_PAGE_SIZE));
+      offset = (page - 1) * pageSize;
+    } else if (query.offset !== undefined || query.limit !== undefined) {
+      // Legacy offset/limit style
+      offset = Math.max(0, query.offset ?? 0);
+      pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, query.limit ?? DEFAULT_PAGE_SIZE));
+      // Derive page from offset for the response
+      page = Math.floor(offset / pageSize) + 1;
+    } else {
+      // No pagination params: defaults
+      page = 1;
+      pageSize = DEFAULT_PAGE_SIZE;
+      offset = 0;
+    }
+
+    return { page, pageSize, offset };
+  }
+
+  /**
    * Get all sessions with filtering (database-backed with in-memory fallback)
    */
   async getSessions(query: SessionQueryDto): Promise<PaginatedSessions> {
-    const offset = query.offset || 0;
-    const limit = query.limit || 20;
+    const { page, pageSize, offset } = this.resolvePagination(query);
 
     // Try database first
     try {
-      return await this.getSessionsFromDatabase(query, offset, limit);
+      return await this.getSessionsFromDatabase(query, offset, pageSize, page);
     } catch (error) {
       this.logger.warn(
         `Database query failed, falling back to in-memory sessions: ${error.message}`,
       );
       // Fallback to in-memory sessions for backward compatibility
-      return await this.getSessionsFromMemory(query, offset, limit);
+      return await this.getSessionsFromMemory(query, offset, pageSize, page);
     }
   }
 
@@ -82,7 +152,8 @@ export class SessionManagerService {
   private async getSessionsFromDatabase(
     query: SessionQueryDto,
     offset: number,
-    limit: number,
+    pageSize: number,
+    page: number,
   ): Promise<PaginatedSessions> {
     // Build query with filters
     const qb = this.sessionRepository.createQueryBuilder('session');
@@ -114,7 +185,7 @@ export class SessionManagerService {
     const sessions = await qb
       .orderBy('session.lastActivity', 'DESC')
       .skip(offset)
-      .take(limit)
+      .take(pageSize)
       .getMany();
 
     // Enrich with in-memory process status
@@ -122,24 +193,17 @@ export class SessionManagerService {
       this.getAllManagedSessions().map((s) => [s.sessionId, s]),
     );
 
-    const items: SessionListItem[] = sessions.map((session) => {
+    const data: SessionListItem[] = sessions.map((session) => {
       const memorySession = memorySessionsMap.get(session.sessionId);
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: session.totalTokens,
-        estimatedCost: session.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess:
-          memorySession?.cliProcess !== null && !memorySession?.cliProcess?.killed,
-      };
+      const hasActiveProcess = !!memorySession?.cliProcess && !memorySession.cliProcess.killed;
+      return this.toSessionListItem(
+        session,
+        { totalTokens: session.totalTokens, estimatedCost: session.estimatedCost },
+        hasActiveProcess,
+      );
     });
 
-    return { items, total, limit, offset };
+    return { data, total, page, pageSize };
   }
 
   /**
@@ -148,7 +212,8 @@ export class SessionManagerService {
   private async getSessionsFromMemory(
     query: SessionQueryDto,
     offset: number,
-    limit: number,
+    pageSize: number,
+    page: number,
   ): Promise<PaginatedSessions> {
     const allSessions = this.getAllManagedSessions();
 
@@ -177,32 +242,21 @@ export class SessionManagerService {
     filtered.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
 
     const total = filtered.length;
-    const paginated = filtered.slice(offset, offset + limit);
+    const paginated = filtered.slice(offset, offset + pageSize);
 
     // Batch query token stats for all sessions
     const sessionIds = paginated.map((s) => s.sessionId);
     const tokenStats = await this.getTokenStatsBatch(sessionIds);
 
-    const items: SessionListItem[] = paginated.map((session) => {
+    const data: SessionListItem[] = paginated.map((session) => {
       const stats = tokenStats.get(session.sessionId) || {
         totalTokens: 0,
         estimatedCost: 0,
       };
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: stats.totalTokens,
-        estimatedCost: stats.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
-      };
+      return this.toSessionListItem(session, stats);
     });
 
-    return { items, total, limit, offset };
+    return { data, total, page, pageSize };
   }
 
   /**
@@ -225,28 +279,29 @@ export class SessionManagerService {
         totalTokens: 0,
         estimatedCost: 0,
       };
-      return {
-        sessionId: session.sessionId,
-        tenantId: session.tenantId || null,
-        clientId: session.clientId,
-        status: session.status,
-        messageCount: session.messageCount,
-        totalTokens: stats.totalTokens,
-        estimatedCost: stats.estimatedCost,
-        createdAt: session.createdAt,
-        lastActivity: session.lastActivity,
-        hasActiveProcess: true,
-      };
+      return this.toSessionListItem(session, stats, true); // hasActiveProcess = true
     });
   }
 
   /**
    * Get session detail
+   * @param sessionId - Session ID to get details for
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async getSessionDetail(sessionId: string): Promise<SessionDetail | null> {
+  async getSessionDetail(
+    sessionId: string,
+    callerTenantId: string,
+  ): Promise<SessionDetail | null> {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
       return null;
+    }
+
+    // Tenant ownership check - prevent cross-tenant access
+    if (session.tenantId !== callerTenantId) {
+      throw new ForbiddenException(
+        `Cannot access sessions belonging to another tenant`,
+      );
     }
 
     // Get token stats for this session
@@ -257,50 +312,66 @@ export class SessionManagerService {
     };
 
     return {
-      sessionId: session.sessionId,
-      tenantId: session.tenantId || null,
-      clientId: session.clientId,
-      status: session.status,
-      messageCount: session.messageCount,
-      totalTokens: stats.totalTokens,
-      estimatedCost: stats.estimatedCost,
-      createdAt: session.createdAt,
-      lastActivity: session.lastActivity,
-      hasActiveProcess: session.cliProcess !== null && !session.cliProcess.killed,
+      ...this.toSessionListItem(session, stats),
       workspaceDir: session.workspaceDir,
     };
   }
 
   /**
    * Get session timeline with all events
+   * @param sessionId - Session ID to get timeline for
+   * @param limit - Maximum number of events to return
+   * @param offset - Offset for pagination
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
   async getSessionTimeline(
     sessionId: string,
     limit: number = 100,
     offset: number = 0,
+    callerTenantId?: string,
   ): Promise<SessionTimeline> {
-    // Fetch all event types for the session
+    // Verify session exists and tenant ownership
+    if (callerTenantId) {
+      const session = this.sessionService.getSession(sessionId);
+      if (session && session.tenantId !== callerTenantId) {
+        throw new ForbiddenException(
+          `Cannot access sessions belonging to another tenant`,
+        );
+      }
+    }
+
+    // Safety bounds: Prevent OOM by limiting per-table query size
+    // Use conservative limit (2x requested + offset, max 1000 per table)
+    // This allows proper pagination while preventing unbounded memory usage
+    const safetyLimit = Math.min(1000, (limit + offset) * 2);
+
+    // Fetch all event types for the session with safety bounds
     const [messages, toolEvents, thinkingBlocks, processEvents, apiErrors] =
       await Promise.all([
         this.messageRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.toolEventRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.thinkingBlockRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.processEventRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
         this.apiErrorRepository.find({
           where: { sessionId },
           order: { createdAt: 'ASC' },
+          take: safetyLimit,
         }),
       ]);
 
@@ -388,6 +459,9 @@ export class SessionManagerService {
     const totalEvents = events.length;
     const paginatedEvents = events.slice(offset, offset + limit);
 
+    // Note: totalEvents may be capped by safetyLimit (max 5000 events across all tables)
+    // For sessions with >5000 events, pagination past this limit will show incomplete data
+    // This is an acceptable tradeoff to prevent OOM crashes
     return {
       sessionId,
       events: paginatedEvents,
@@ -397,11 +471,25 @@ export class SessionManagerService {
 
   /**
    * Force kill a session
+   * @param sessionId - Session ID to kill
+   * @param adminId - Admin performing the action
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async killSession(sessionId: string, adminId: string): Promise<boolean> {
+  async killSession(
+    sessionId: string,
+    adminId: string,
+    callerTenantId: string,
+  ): Promise<boolean> {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    // Tenant ownership check - prevent cross-tenant access
+    if (session.tenantId !== callerTenantId) {
+      throw new ForbiddenException(
+        `Cannot access sessions belonging to another tenant`,
+      );
     }
 
     const success = this.sessionService.cancelSession(sessionId);
@@ -433,10 +521,14 @@ export class SessionManagerService {
 
   /**
    * Bulk kill multiple sessions
+   * @param sessionIds - Array of session IDs to kill
+   * @param adminId - Admin performing the action
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
   async bulkKillSessions(
     sessionIds: string[],
     adminId: string,
+    callerTenantId: string,
   ): Promise<{
     totalRequested: number;
     successCount: number;
@@ -448,7 +540,9 @@ export class SessionManagerService {
     }>;
   }> {
     const results = await Promise.allSettled(
-      sessionIds.map((sessionId) => this.killSession(sessionId, adminId)),
+      sessionIds.map((sessionId) =>
+        this.killSession(sessionId, adminId, callerTenantId),
+      ),
     );
 
     const detailedResults = results.map((result, index) => ({
@@ -466,7 +560,7 @@ export class SessionManagerService {
     // Log bulk operation
     await this.auditService.logSuccess(
       adminId,
-      'session.bulk_kill' as any,
+      'session.bulk_kill',
       'session',
       'bulk',
       {
@@ -543,8 +637,23 @@ export class SessionManagerService {
 
   /**
    * Get token breakdown for a specific session
+   * @param sessionId - Session ID to get token breakdown for
+   * @param callerTenantId - Tenant ID of the caller (for authorization)
    */
-  async getTokenBreakdown(sessionId: string): Promise<TokenBreakdown | null> {
+  async getTokenBreakdown(
+    sessionId: string,
+    callerTenantId?: string,
+  ): Promise<TokenBreakdown | null> {
+    // Verify session exists and tenant ownership
+    if (callerTenantId) {
+      const session = this.sessionService.getSession(sessionId);
+      if (session && session.tenantId !== callerTenantId) {
+        throw new ForbiddenException(
+          `Cannot access sessions belonging to another tenant`,
+        );
+      }
+    }
+
     const result = await this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select('SUM(usage.inputTokens)', 'inputTokens')
