@@ -9,7 +9,7 @@
   "scripts": {
     "prepare": "husky install",
     "dev": "npm run dev --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build:common && npm run build --workspaces --if-present --workspace=packages/backend --workspace=packages/admin-next --workspace=packages/vue-sdk --workspace=packages/react-sdk",
     "test": "npm run test --workspaces --if-present",
     "test:architecture": "npm run test:architecture -w @ccaas/backend",
     "typecheck": "npm run typecheck --workspaces --if-present",
