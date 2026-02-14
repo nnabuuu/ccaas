@@ -3,10 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Plus, Edit, Trash2, Eye } from 'lucide-react'
+import { Plus, Edit, Trash2 } from 'lucide-react'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-import { useState } from 'react'
 import { apiClient } from '@/lib/api-client'
 import type { SessionTemplate } from '@ccaas/common'
 
@@ -18,7 +16,6 @@ interface TemplateItem {
 export function SessionTemplatesListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
-  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useList<TemplateItem>({
     resource: 'session-templates',
