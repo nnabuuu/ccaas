@@ -19,6 +19,7 @@ export type AdminAction =
   | 'skill.archive'
   | 'skill.rollback'
   | 'session.kill'
+  | 'session.bulk_kill'
   | 'session.restart'
   | 'apikey.create'
   | 'apikey.revoke'

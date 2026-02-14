@@ -560,7 +560,7 @@ export class SessionManagerService {
     // Log bulk operation
     await this.auditService.logSuccess(
       adminId,
-      'session.bulk_kill' as any,
+      'session.bulk_kill',
       'session',
       'bulk',
       {
