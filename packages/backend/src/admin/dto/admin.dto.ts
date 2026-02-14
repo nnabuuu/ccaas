@@ -198,6 +198,22 @@ export interface ApiKeyUsageStats {
   errorCount: number;
 }
 
+export interface ErrorRateDataPoint {
+  timestamp: Date;
+  errorCount: number;
+  totalMessages: number;
+  errorRate: number; // 0-1 (e.g., 0.025 = 2.5%)
+}
+
+export interface ErrorRateTrend {
+  dataPoints: ErrorRateDataPoint[];
+  summary: {
+    avgErrorRate: number;
+    maxErrorRate: number;
+    trend: 'improving' | 'stable' | 'worsening';
+  };
+}
+
 // =============================================================================
 // Audit DTOs
 // =============================================================================

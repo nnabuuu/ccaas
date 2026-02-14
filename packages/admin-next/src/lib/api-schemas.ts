@@ -67,3 +67,23 @@ export const DashboardSummarySchema = z.object({
 })
 
 export type DashboardSummary = z.infer<typeof DashboardSummarySchema>
+
+// Error Rate Trend
+export const ErrorRateDataPointSchema = z.object({
+  timestamp: z.string().datetime(),
+  errorCount: z.number().int().nonnegative(),
+  totalMessages: z.number().int().nonnegative(),
+  errorRate: z.number().min(0).max(1), // 0-1 (e.g., 0.025 = 2.5%)
+})
+
+export const ErrorRateTrendSchema = z.object({
+  dataPoints: z.array(ErrorRateDataPointSchema),
+  summary: z.object({
+    avgErrorRate: z.number().min(0).max(1),
+    maxErrorRate: z.number().min(0).max(1),
+    trend: z.enum(['improving', 'stable', 'worsening']),
+  }),
+})
+
+export type ErrorRateDataPoint = z.infer<typeof ErrorRateDataPointSchema>
+export type ErrorRateTrend = z.infer<typeof ErrorRateTrendSchema>

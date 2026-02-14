@@ -63,6 +63,8 @@ export function SessionListPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set())
   const [showBulkKillDialog, setShowBulkKillDialog] = useState(false)
+  const [durationRange, setDurationRange] = useState<[number, number]>([0, 180]) // 0-180 minutes
+  const [tokenRange, setTokenRange] = useState<[number, number]>([0, 10000000]) // 0-10M tokens
 
   const endpoint = '/admin/sessions'
 
@@ -100,7 +102,7 @@ export function SessionListPage() {
   // Bulk kill mutation
   const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
-  // Filter sessions based on tab and search
+  // Filter sessions based on tab, search, duration, and tokens
   const sessions = useMemo(() => {
     let filtered = allSessions
 
@@ -131,8 +133,28 @@ export function SessionListPage() {
       )
     }
 
+    // Duration filtering (in minutes)
+    const [minDuration, maxDuration] = durationRange
+    if (minDuration > 0 || maxDuration < 180) {
+      filtered = filtered.filter((s) => {
+        const durationMs =
+          new Date(s.lastActivity).getTime() - new Date(s.createdAt).getTime()
+        const durationMinutes = durationMs / (1000 * 60)
+        return durationMinutes >= minDuration && durationMinutes <= maxDuration
+      })
+    }
+
+    // Token filtering
+    const [minTokens, maxTokens] = tokenRange
+    if (minTokens > 0 || maxTokens < 10000000) {
+      filtered = filtered.filter((s) => {
+        const tokens = s.totalTokens || 0
+        return tokens >= minTokens && tokens <= maxTokens
+      })
+    }
+
     return filtered
-  }, [allSessions, tab, searchQuery])
+  }, [allSessions, tab, searchQuery, durationRange, tokenRange])
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -244,7 +266,7 @@ export function SessionListPage() {
               sessions.length > 0 &&
               sessions.every((s) => selectedSessions.has(s.sessionId))
             }
-            onCheckedChange={(checked) =>
+            onCheckedChange={(checked: boolean | 'indeterminate') =>
               handleSelectAll(checked === true)
             }
             aria-label="Select all"
@@ -253,11 +275,11 @@ export function SessionListPage() {
         cell: ({ row }) => (
           <Checkbox
             checked={selectedSessions.has(row.original.sessionId)}
-            onCheckedChange={(checked) =>
+            onCheckedChange={(checked: boolean | 'indeterminate') =>
               handleSelectSession(row.original.sessionId, checked === true)
             }
             aria-label="Select row"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
           />
         ),
         enableSorting: false,
@@ -420,13 +442,164 @@ export function SessionListPage() {
           </TabsList>
         </Tabs>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4">
           <Input
             placeholder="Search by Session ID, Client ID, or Tenant..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
           />
+
+          {/* Advanced Filters */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Duration Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Duration</label>
+                    <span className="text-xs text-muted-foreground">
+                      {durationRange[0]} - {durationRange[1]} min
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={
+                        durationRange[0] === 0 && durationRange[1] === 5
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setDurationRange([0, 5])}
+                    >
+                      &lt; 5min
+                    </Button>
+                    <Button
+                      variant={
+                        durationRange[0] === 5 && durationRange[1] === 30
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setDurationRange([5, 30])}
+                    >
+                      5-30min
+                    </Button>
+                    <Button
+                      variant={
+                        durationRange[0] === 30 && durationRange[1] === 60
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setDurationRange([30, 60])}
+                    >
+                      30min-1h
+                    </Button>
+                    <Button
+                      variant={
+                        durationRange[0] === 60 && durationRange[1] === 180
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setDurationRange([60, 180])}
+                    >
+                      &gt; 1h
+                    </Button>
+                    <Button
+                      variant={
+                        durationRange[0] === 0 && durationRange[1] === 180
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setDurationRange([0, 180])}
+                    >
+                      All
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Token Filter */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Tokens</label>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTokens(tokenRange[0])} - {formatTokens(tokenRange[1])}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      variant={
+                        tokenRange[0] === 0 && tokenRange[1] === 10000
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setTokenRange([0, 10000])}
+                    >
+                      &lt; 10K
+                    </Button>
+                    <Button
+                      variant={
+                        tokenRange[0] === 10000 && tokenRange[1] === 100000
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setTokenRange([10000, 100000])}
+                    >
+                      10K-100K
+                    </Button>
+                    <Button
+                      variant={
+                        tokenRange[0] === 100000 && tokenRange[1] === 1000000
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setTokenRange([100000, 1000000])}
+                    >
+                      100K-1M
+                    </Button>
+                    <Button
+                      variant={
+                        tokenRange[0] === 1000000 && tokenRange[1] === 10000000
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setTokenRange([1000000, 10000000])}
+                    >
+                      &gt; 1M
+                    </Button>
+                    <Button
+                      variant={
+                        tokenRange[0] === 0 && tokenRange[1] === 10000000
+                          ? 'default'
+                          : 'outline'
+                      }
+                      size="sm"
+                      onClick={() => setTokenRange([0, 10000000])}
+                    >
+                      All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Summary */}
+              {(sessions.length < allSessions.length || searchQuery) && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {sessions.length} of {allSessions.length} sessions
+                    {searchQuery && ` matching "${searchQuery}"`}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 

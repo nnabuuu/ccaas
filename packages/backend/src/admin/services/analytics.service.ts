@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { TokenUsageEvent } from '../../messages/entities/token-usage-event.entity';
 import { Message } from '../../messages/entities/message.entity';
+import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { ApiKey } from '../../auth/entities/api-key.entity';
 import { Skill } from '../../skills/entities/skill.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
@@ -19,6 +20,8 @@ import {
   CostAnalytics,
   CostBreakdown,
   ApiKeyUsageStats,
+  ErrorRateTrend,
+  ErrorRateDataPoint,
 } from '../dto/admin.dto';
 
 // Claude pricing (per 1M tokens)
@@ -40,6 +43,8 @@ export class AnalyticsService {
     private readonly tokenUsageRepository: Repository<TokenUsageEvent>,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
+    @InjectRepository(ApiErrorEvent)
+    private readonly apiErrorRepository: Repository<ApiErrorEvent>,
     @InjectRepository(ApiKey)
     private readonly apiKeyRepository: Repository<ApiKey>,
     @InjectRepository(Skill)
@@ -270,6 +275,104 @@ export class AnalyticsService {
     const output = parseInt(result?.output) || 0;
 
     return { input, output, total: input + output };
+  }
+
+  /**
+   * Get error rate trend over time
+   */
+  async getErrorRateTrend(query: AnalyticsQueryDto): Promise<ErrorRateTrend> {
+    const { startDate, endDate, days = 7, granularity = 'daily', tenantId } = query;
+
+    // Calculate date range
+    const end = endDate ? new Date(endDate) : new Date();
+    const start = startDate
+      ? new Date(startDate)
+      : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Query errors grouped by date
+    const errorQb = this.apiErrorRepository
+      .createQueryBuilder('error')
+      .select('DATE(error.createdAt)', 'date')
+      .addSelect('COUNT(*)', 'errorCount')
+      .where('error.createdAt BETWEEN :start AND :end', { start, end });
+
+    if (tenantId) {
+      errorQb.andWhere('error.tenantId = :tenantId', { tenantId });
+    }
+
+    const errorsByDate = await errorQb
+      .groupBy('DATE(error.createdAt)')
+      .getRawMany();
+
+    // Query total messages grouped by date
+    const messageQb = this.messageRepository
+      .createQueryBuilder('message')
+      .select('DATE(message.createdAt)', 'date')
+      .addSelect('COUNT(*)', 'totalMessages')
+      .where('message.createdAt BETWEEN :start AND :end', { start, end });
+
+    if (tenantId) {
+      messageQb.andWhere('message.tenantId = :tenantId', { tenantId });
+    }
+
+    const messagesByDate = await messageQb
+      .groupBy('DATE(message.createdAt)')
+      .getRawMany();
+
+    // Merge and calculate error rate
+    const errorMap = new Map(errorsByDate.map((e) => [e.date, parseInt(e.errorCount)]));
+
+    const dataPoints: ErrorRateDataPoint[] = messagesByDate.map((m) => {
+      const errorCount = errorMap.get(m.date) || 0;
+      const totalMessages = parseInt(m.totalMessages);
+      const errorRate = totalMessages > 0 ? errorCount / totalMessages : 0;
+
+      return {
+        timestamp: new Date(m.date),
+        errorCount,
+        totalMessages,
+        errorRate,
+      };
+    });
+
+    // Sort by timestamp
+    dataPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    // Calculate summary
+    const avgErrorRate =
+      dataPoints.length > 0
+        ? dataPoints.reduce((sum, p) => sum + p.errorRate, 0) / dataPoints.length
+        : 0;
+    const maxErrorRate = Math.max(...dataPoints.map((p) => p.errorRate), 0);
+
+    // Determine trend (compare first half vs second half)
+    let trend: 'improving' | 'stable' | 'worsening' = 'stable';
+    if (dataPoints.length >= 4) {
+      const midpoint = Math.floor(dataPoints.length / 2);
+      const firstHalf = dataPoints.slice(0, midpoint);
+      const secondHalf = dataPoints.slice(midpoint);
+
+      const firstAvg =
+        firstHalf.reduce((sum, p) => sum + p.errorRate, 0) / firstHalf.length;
+      const secondAvg =
+        secondHalf.reduce((sum, p) => sum + p.errorRate, 0) / secondHalf.length;
+
+      const change = secondAvg - firstAvg;
+      if (change < -0.01) {
+        trend = 'improving';
+      } else if (change > 0.01) {
+        trend = 'worsening';
+      }
+    }
+
+    return {
+      dataPoints,
+      summary: {
+        avgErrorRate,
+        maxErrorRate,
+        trend,
+      },
+    };
   }
 
   // ===========================================================================

@@ -16,6 +16,7 @@ import {
   TokenUsageAnalytics,
   CostAnalytics,
   ApiKeyUsageStats,
+  ErrorRateTrend,
 } from '../dto/admin.dto';
 
 @Controller('api/v1/admin/analytics')
@@ -151,5 +152,18 @@ export class AdminAnalyticsController {
         totalEvents: tokenEvents.length,
       },
     };
+  }
+
+  /**
+   * GET /api/v1/admin/analytics/error-rate-trend
+   *
+   * Get error rate trend over time
+   * Returns time series data showing error rates by date/hour/week
+   */
+  @Get('error-rate-trend')
+  async getErrorRateTrend(
+    @Query() query: AnalyticsQueryDto,
+  ): Promise<ErrorRateTrend> {
+    return this.analyticsService.getErrorRateTrend(query);
   }
 }
