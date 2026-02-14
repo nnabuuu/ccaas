@@ -237,8 +237,8 @@ export function SessionListPage() {
         values: { sessionIds },
       },
       {
-        onSuccess: (data: { data: { successCount: number; totalRequested: number; failedCount: number } }) => {
-          const result = data.data
+        onSuccess: (data: any) => {
+          const result = data.data as { successCount: number; totalRequested: number; failedCount: number }
           alert(
             `Terminated ${result.successCount}/${result.totalRequested} sessions successfully.` +
               (result.failedCount > 0
@@ -249,8 +249,8 @@ export function SessionListPage() {
           setShowBulkKillDialog(false)
           refetch()
         },
-        onError: (error: Error) => {
-          alert(`Failed to terminate sessions: ${error.message}`)
+        onError: (error: any) => {
+          alert(`Failed to terminate sessions: ${error.message || String(error)}`)
           setShowBulkKillDialog(false)
         },
       }

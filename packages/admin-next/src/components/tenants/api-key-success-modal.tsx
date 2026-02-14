@@ -32,7 +32,7 @@ interface ApiKeyData {
 
 interface ApiKeySuccessModalProps {
   open: boolean
-  tenant: TenantData
+  tenant?: TenantData
   apiKey?: ApiKeyData
   rawKey?: string
   onClose: () => void
@@ -60,8 +60,12 @@ export function ApiKeySuccessModal({
 
   const handleDone = () => {
     onClose()
-    navigate(`/tenants/${tenant.id}`)
+    if (tenant?.id) {
+      navigate(`/tenants/${tenant.id}`)
+    }
   }
+
+  if (!tenant) return null
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && confirmed && onClose()}>

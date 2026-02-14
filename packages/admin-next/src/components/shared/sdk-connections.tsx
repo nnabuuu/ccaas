@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useCustom } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Cable, Wifi } from 'lucide-react'
+import { Cable, Wifi, WifiOff } from 'lucide-react'
 import { useAdminSocket } from '@/hooks/use-admin-socket'
 import { formatDistanceToNow } from 'date-fns'
 
