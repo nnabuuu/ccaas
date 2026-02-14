@@ -218,7 +218,11 @@ describe('AdminSessionsController', () => {
       const ctx = { tenantId: 'tenant-a' } as any; // No apiKeyId
       await controller.bulkKillSessions(ctx, ['s1']);
 
-      expect(sessionManagerService.bulkKillSessions).toHaveBeenCalledWith(['s1'], 'tenant-a');
+      expect(sessionManagerService.bulkKillSessions).toHaveBeenCalledWith(
+        ['s1'],
+        'tenant-a',
+        'tenant-a',
+      );
     });
   });
 });

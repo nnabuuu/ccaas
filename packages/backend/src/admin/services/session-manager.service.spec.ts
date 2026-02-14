@@ -907,7 +907,16 @@ describe('SessionManagerService', () => {
     it('should throw NotFoundException for non-existent session', async () => {
       sessionService.getSession = jest.fn().mockReturnValue(null);
 
-      await expect(service.killSession('nonexistent', 'admin-1')).rejects.toThrow();
+      await expect(service.killSession('nonexistent', 'admin-1', 'tenant-a')).rejects.toThrow();
+    });
+
+    it('should throw ForbiddenException for cross-tenant access', async () => {
+      const mockSession = createMockManagedSession('s1', 'tenant-a', 'processing');
+      sessionService.getSession = jest.fn().mockReturnValue(mockSession);
+
+      await expect(service.killSession('s1', 'admin-1', 'tenant-b')).rejects.toThrow(
+        'Cannot access sessions belonging to another tenant',
+      );
     });
 
     it('should call cancelSession and log audit on success', async () => {
@@ -915,7 +924,7 @@ describe('SessionManagerService', () => {
       sessionService.getSession = jest.fn().mockReturnValue(mockSession);
       sessionService.cancelSession = jest.fn().mockReturnValue(true);
 
-      const result = await service.killSession('s1', 'admin-1');
+      const result = await service.killSession('s1', 'admin-1', 'tenant-a');
 
       expect(result).toBe(true);
       expect(auditService.logSuccess).toHaveBeenCalledWith(
@@ -933,7 +942,7 @@ describe('SessionManagerService', () => {
       sessionService.getSession = jest.fn().mockReturnValue(mockSession);
       sessionService.cancelSession = jest.fn().mockReturnValue(false);
 
-      const result = await service.killSession('s1', 'admin-1');
+      const result = await service.killSession('s1', 'admin-1', 'tenant-a');
 
       expect(result).toBe(false);
       expect(auditService.logFailure).toHaveBeenCalled();

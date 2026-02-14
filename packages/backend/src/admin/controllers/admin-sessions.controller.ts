@@ -80,9 +80,9 @@ export class AdminSessionsController {
   @Get(':sessionId/timeline')
   async getSessionTimeline(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
-    @Ctx() ctx: RequestContext,
   ): Promise<SessionTimeline> {
     return this.sessionManagerService.getSessionTimeline(
       sessionId,
