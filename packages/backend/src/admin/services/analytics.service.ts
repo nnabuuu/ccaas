@@ -54,18 +54,39 @@ export class AnalyticsService {
   ) {}
 
   /**
-   * Get token usage analytics
+   * Resolve date range from query parameters
    */
-  async getTokenUsage(query: AnalyticsQueryDto): Promise<TokenUsageAnalytics> {
-    const { startDate, endDate, days = 7, granularity = 'daily', tenantId } = query;
-
-    // Calculate date range
+  private resolveDateRange(query: {
+    startDate?: string;
+    endDate?: string;
+    days?: number;
+  }): { start: Date; end: Date } {
+    const { startDate, endDate, days = 7 } = query;
     const end = endDate ? new Date(endDate) : new Date();
     const start = startDate
       ? new Date(startDate)
       : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    return { start, end };
+  }
 
-    const qb = this.tokenUsageRepository
+  /**
+   * Apply tenant filter to query builder if tenantId is provided
+   */
+  private applyTenantFilter(qb: any, alias: string, tenantId?: string): any {
+    if (tenantId) {
+      qb.andWhere(`${alias}.tenantId = :tenantId`, { tenantId });
+    }
+    return qb;
+  }
+
+  /**
+   * Get token usage analytics
+   */
+  async getTokenUsage(query: AnalyticsQueryDto): Promise<TokenUsageAnalytics> {
+    const { granularity = 'daily', tenantId } = query;
+    const { start, end } = this.resolveDateRange(query);
+
+    let qb = this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select([
         'usage.inputTokens',
@@ -76,9 +97,7 @@ export class AnalyticsService {
       ])
       .where('usage.createdAt BETWEEN :start AND :end', { start, end });
 
-    if (tenantId) {
-      qb.andWhere('usage.tenantId = :tenantId', { tenantId });
-    }
+    qb = this.applyTenantFilter(qb, 'usage', tenantId);
 
     const usageEvents = await qb.getMany();
 
@@ -112,15 +131,11 @@ export class AnalyticsService {
    * Get cost breakdown by tenant, model, and skill
    */
   async getCostBreakdown(query: AnalyticsQueryDto): Promise<CostAnalytics> {
-    const { startDate, endDate, days = 30, tenantId } = query;
-
-    const end = endDate ? new Date(endDate) : new Date();
-    const start = startDate
-      ? new Date(startDate)
-      : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    const { tenantId } = query;
+    const { start, end } = this.resolveDateRange(query);
 
     // Get usage grouped by tenant
-    const usageByTenantQb = this.tokenUsageRepository
+    let usageByTenantQb = this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select('usage.tenantId', 'tenantId')
       .addSelect('SUM(usage.inputTokens)', 'inputTokens')
@@ -128,9 +143,7 @@ export class AnalyticsService {
       .addSelect('SUM(usage.cachedInputTokens)', 'cachedTokens')
       .where('usage.createdAt BETWEEN :start AND :end', { start, end });
 
-    if (tenantId) {
-      usageByTenantQb.andWhere('usage.tenantId = :tenantId', { tenantId });
-    }
+    usageByTenantQb = this.applyTenantFilter(usageByTenantQb, 'usage', tenantId);
 
     const usageByTenant = await usageByTenantQb
       .groupBy('usage.tenantId')
@@ -164,7 +177,7 @@ export class AnalyticsService {
     });
 
     // Get usage by model (from message metadata)
-    const usageByModelQb = this.messageRepository
+    let usageByModelQb = this.messageRepository
       .createQueryBuilder('message')
       .select("json_extract(message.metadata, '$.model')", 'model')
       .addSelect("SUM(json_extract(message.metadata, '$.inputTokens'))", 'inputTokens')
@@ -172,9 +185,7 @@ export class AnalyticsService {
       .where('message.createdAt BETWEEN :start AND :end', { start, end })
       .andWhere("json_extract(message.metadata, '$.model') IS NOT NULL");
 
-    if (tenantId) {
-      usageByModelQb.andWhere('message.tenantId = :tenantId', { tenantId });
-    }
+    usageByModelQb = this.applyTenantFilter(usageByModelQb, 'message', tenantId);
 
     const usageByModel = await usageByModelQb
       .groupBy("json_extract(message.metadata, '$.model')")
@@ -242,13 +253,11 @@ export class AnalyticsService {
   async getMessagesCount24h(tenantId?: string): Promise<number> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const qb = this.messageRepository
+    let qb = this.messageRepository
       .createQueryBuilder('message')
       .where('message.createdAt >= :oneDayAgo', { oneDayAgo });
 
-    if (tenantId) {
-      qb.andWhere('message.tenantId = :tenantId', { tenantId });
-    }
+    qb = this.applyTenantFilter(qb, 'message', tenantId);
 
     return qb.getCount();
   }
@@ -259,15 +268,13 @@ export class AnalyticsService {
   async getTotalTokens24h(tenantId?: string): Promise<{ input: number; output: number; total: number }> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    const qb = this.tokenUsageRepository
+    let qb = this.tokenUsageRepository
       .createQueryBuilder('usage')
       .select('SUM(usage.inputTokens)', 'input')
       .addSelect('SUM(usage.outputTokens)', 'output')
       .where('usage.createdAt >= :oneDayAgo', { oneDayAgo });
 
-    if (tenantId) {
-      qb.andWhere('usage.tenantId = :tenantId', { tenantId });
-    }
+    qb = this.applyTenantFilter(qb, 'usage', tenantId);
 
     const result = await qb.getRawOne();
 
@@ -284,13 +291,8 @@ export class AnalyticsService {
    * Granularity parameter is accepted for future compatibility but ignored.
    */
   async getErrorRateTrend(query: AnalyticsQueryDto): Promise<ErrorRateTrend> {
-    const { startDate, endDate, days = 7, tenantId } = query;
-
-    // Calculate date range
-    const end = endDate ? new Date(endDate) : new Date();
-    const start = startDate
-      ? new Date(startDate)
-      : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    const { tenantId } = query;
+    const { start, end } = this.resolveDateRange(query);
 
     // Pre-generate date buckets for full range (daily granularity)
     // This ensures we don't drop dates with errors but no messages
@@ -305,30 +307,26 @@ export class AnalyticsService {
     }
 
     // Query errors grouped by date
-    const errorQb = this.apiErrorRepository
+    let errorQb = this.apiErrorRepository
       .createQueryBuilder('error')
       .select('DATE(error.createdAt)', 'date')
       .addSelect('COUNT(*)', 'errorCount')
       .where('error.createdAt BETWEEN :start AND :end', { start, end });
 
-    if (tenantId) {
-      errorQb.andWhere('error.tenantId = :tenantId', { tenantId });
-    }
+    errorQb = this.applyTenantFilter(errorQb, 'error', tenantId);
 
     const errorsByDate = await errorQb
       .groupBy('DATE(error.createdAt)')
       .getRawMany();
 
     // Query total messages grouped by date
-    const messageQb = this.messageRepository
+    let messageQb = this.messageRepository
       .createQueryBuilder('message')
       .select('DATE(message.createdAt)', 'date')
       .addSelect('COUNT(*)', 'totalMessages')
       .where('message.createdAt BETWEEN :start AND :end', { start, end });
 
-    if (tenantId) {
-      messageQb.andWhere('message.tenantId = :tenantId', { tenantId });
-    }
+    messageQb = this.applyTenantFilter(messageQb, 'message', tenantId);
 
     const messagesByDate = await messageQb
       .groupBy('DATE(message.createdAt)')

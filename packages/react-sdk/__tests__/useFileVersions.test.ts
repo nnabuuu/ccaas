@@ -9,11 +9,12 @@
  */
 
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useFileVersions } from '../src/hooks/useFileVersions';
 import type { UseAgentConnectionReturn, FileMetadata } from '../src/types';
 
 // Mock fetch
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe('useFileVersions', () => {
   let mockConnection: UseAgentConnectionReturn;
@@ -37,8 +38,8 @@ describe('useFileVersions', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockClear();
+    vi.clearAllMocks();
+    (global.fetch as any).mockClear();
 
     mockConnection = {
       socket: {} as any,
@@ -47,8 +48,8 @@ describe('useFileVersions', () => {
       connectionState: 'connected',
       isConnected: true,
       error: null,
-      connect: jest.fn(),
-      disconnect: jest.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
     };
   });
 
@@ -73,7 +74,7 @@ describe('useFileVersions', () => {
         },
       ];
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockVersions,
       });
@@ -128,7 +129,7 @@ describe('useFileVersions', () => {
         },
       ];
 
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
+      (global.fetch as any).mockResolvedValueOnce({
         ok: true,
         json: async () => mockVersions,
       });
@@ -163,7 +164,7 @@ describe('useFileVersions', () => {
         createdAt: new Date(),
       };
 
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [], // Initial empty versions
@@ -203,7 +204,7 @@ describe('useFileVersions', () => {
     });
 
     it('should handle create version error', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
@@ -241,7 +242,7 @@ describe('useFileVersions', () => {
         { id: 'v0', version: '1.0.0', createdAt: new Date('2024-01-01') },
       ];
 
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => mockVersions,
@@ -281,7 +282,7 @@ describe('useFileVersions', () => {
     });
 
     it('should handle rollback error', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
@@ -320,7 +321,7 @@ describe('useFileVersions', () => {
         hashChanged: true,
       };
 
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
@@ -367,7 +368,7 @@ describe('useFileVersions', () => {
         hashChanged: false,
       };
 
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
@@ -404,7 +405,7 @@ describe('useFileVersions', () => {
 
   describe('Downloading Versions', () => {
     it('should download specific version', async () => {
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => [],
@@ -419,13 +420,13 @@ describe('useFileVersions', () => {
 
       // Mock URL and document methods
       global.URL.createObjectURL = jest.fn(() => 'blob:mock-url');
-      global.URL.revokeObjectURL = jest.fn();
+      global.URL.revokeObjectURL = vi.fn();
       const mockLink = {
         href: '',
         download: '',
-        click: jest.fn(),
+        click: vi.fn(),
       };
-      jest.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
 
       const { result } = renderHook(() =>
         useFileVersions({
@@ -461,7 +462,7 @@ describe('useFileVersions', () => {
         { id: 'v0', version: '1.0.0', createdAt: new Date() },
       ];
 
-      (global.fetch as jest.Mock)
+      (global.fetch as any)
         .mockResolvedValueOnce({
           ok: true,
           json: async () => initialVersions,

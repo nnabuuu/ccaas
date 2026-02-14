@@ -22,6 +22,7 @@ function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {})
     connected: true,
     clientId: 'test-client-id',
     sessionId: 'test-session-id',
+    serverUrl: '', // Empty string creates relative URLs for testing
     error: null,
     connect: vi.fn(),
     disconnect: vi.fn(),
