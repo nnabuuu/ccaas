@@ -6,7 +6,7 @@
 
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, MoreThanOrEqual } from 'typeorm';
+import { Repository } from 'typeorm';
 import { SessionService } from '../../sessions/session.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';
@@ -28,10 +28,10 @@ import {
 import type { ManagedSession } from '../../common/interfaces';
 
 export interface PaginatedSessions {
-  items: SessionListItem[];
+  data: SessionListItem[];
   total: number;
-  limit: number;
-  offset: number;
+  page: number;
+  pageSize: number;
 }
 
 @Injectable()
@@ -58,21 +58,62 @@ export class SessionManagerService {
   ) {}
 
   /**
+   * Resolve pagination parameters from query.
+   * Supports both page/pageSize (preferred) and offset/limit (legacy).
+   * Returns normalized { page, pageSize, offset }.
+   */
+  private resolvePagination(query: SessionQueryDto): {
+    page: number;
+    pageSize: number;
+    offset: number;
+  } {
+    const MAX_PAGE_SIZE = 250;
+    const DEFAULT_PAGE_SIZE = 50;
+
+    // Determine if caller used page/pageSize (new) or offset/limit (legacy)
+    const hasPageParams =
+      query.page !== undefined || query.pageSize !== undefined;
+
+    let page: number;
+    let pageSize: number;
+    let offset: number;
+
+    if (hasPageParams) {
+      // New page/pageSize style (takes precedence)
+      page = Math.max(1, query.page ?? 1);
+      pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, query.pageSize ?? DEFAULT_PAGE_SIZE));
+      offset = (page - 1) * pageSize;
+    } else if (query.offset !== undefined || query.limit !== undefined) {
+      // Legacy offset/limit style
+      offset = Math.max(0, query.offset ?? 0);
+      pageSize = Math.max(1, Math.min(MAX_PAGE_SIZE, query.limit ?? DEFAULT_PAGE_SIZE));
+      // Derive page from offset for the response
+      page = Math.floor(offset / pageSize) + 1;
+    } else {
+      // No pagination params: defaults
+      page = 1;
+      pageSize = DEFAULT_PAGE_SIZE;
+      offset = 0;
+    }
+
+    return { page, pageSize, offset };
+  }
+
+  /**
    * Get all sessions with filtering (database-backed with in-memory fallback)
    */
   async getSessions(query: SessionQueryDto): Promise<PaginatedSessions> {
-    const offset = query.offset || 0;
-    const limit = query.limit || 20;
+    const { page, pageSize, offset } = this.resolvePagination(query);
 
     // Try database first
     try {
-      return await this.getSessionsFromDatabase(query, offset, limit);
+      return await this.getSessionsFromDatabase(query, offset, pageSize, page);
     } catch (error) {
       this.logger.warn(
         `Database query failed, falling back to in-memory sessions: ${error.message}`,
       );
       // Fallback to in-memory sessions for backward compatibility
-      return await this.getSessionsFromMemory(query, offset, limit);
+      return await this.getSessionsFromMemory(query, offset, pageSize, page);
     }
   }
 
@@ -82,7 +123,8 @@ export class SessionManagerService {
   private async getSessionsFromDatabase(
     query: SessionQueryDto,
     offset: number,
-    limit: number,
+    pageSize: number,
+    page: number,
   ): Promise<PaginatedSessions> {
     // Build query with filters
     const qb = this.sessionRepository.createQueryBuilder('session');
@@ -114,7 +156,7 @@ export class SessionManagerService {
     const sessions = await qb
       .orderBy('session.lastActivity', 'DESC')
       .skip(offset)
-      .take(limit)
+      .take(pageSize)
       .getMany();
 
     // Enrich with in-memory process status
@@ -122,7 +164,7 @@ export class SessionManagerService {
       this.getAllManagedSessions().map((s) => [s.sessionId, s]),
     );
 
-    const items: SessionListItem[] = sessions.map((session) => {
+    const data: SessionListItem[] = sessions.map((session) => {
       const memorySession = memorySessionsMap.get(session.sessionId);
       return {
         sessionId: session.sessionId,
@@ -135,11 +177,11 @@ export class SessionManagerService {
         createdAt: session.createdAt,
         lastActivity: session.lastActivity,
         hasActiveProcess:
-          memorySession?.cliProcess !== null && !memorySession?.cliProcess?.killed,
+          !!memorySession?.cliProcess && !memorySession.cliProcess.killed,
       };
     });
 
-    return { items, total, limit, offset };
+    return { data, total, page, pageSize };
   }
 
   /**
@@ -148,7 +190,8 @@ export class SessionManagerService {
   private async getSessionsFromMemory(
     query: SessionQueryDto,
     offset: number,
-    limit: number,
+    pageSize: number,
+    page: number,
   ): Promise<PaginatedSessions> {
     const allSessions = this.getAllManagedSessions();
 
@@ -177,13 +220,13 @@ export class SessionManagerService {
     filtered.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
 
     const total = filtered.length;
-    const paginated = filtered.slice(offset, offset + limit);
+    const paginated = filtered.slice(offset, offset + pageSize);
 
     // Batch query token stats for all sessions
     const sessionIds = paginated.map((s) => s.sessionId);
     const tokenStats = await this.getTokenStatsBatch(sessionIds);
 
-    const items: SessionListItem[] = paginated.map((session) => {
+    const data: SessionListItem[] = paginated.map((session) => {
       const stats = tokenStats.get(session.sessionId) || {
         totalTokens: 0,
         estimatedCost: 0,
@@ -202,7 +245,7 @@ export class SessionManagerService {
       };
     });
 
-    return { items, total, limit, offset };
+    return { data, total, page, pageSize };
   }
 
   /**

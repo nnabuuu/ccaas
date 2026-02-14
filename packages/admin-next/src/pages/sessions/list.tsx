@@ -72,13 +72,15 @@ export function SessionListPage() {
 
   const endpoint = '/admin/sessions'
 
+  const PAGE_SIZE = 50
+
   const { data, isLoading, error, refetch } = useCustom({
     url: endpoint,
     method: 'get',
     config: {
       query: {
-        offset: page * 20,
-        limit: 20,
+        page: page + 1, // API uses 1-based pages, DataTable uses 0-based
+        pageSize: PAGE_SIZE,
         ...(selectedTenantId ? { tenantId: selectedTenantId } : {}),
       },
     },
@@ -97,7 +99,7 @@ export function SessionListPage() {
 
   const allSessions = Array.isArray(result)
     ? result
-    : (result?.items ?? result?.sessions ?? result?.data ?? [])
+    : (result?.data ?? result?.items ?? result?.sessions ?? [])
 
   const total = Array.isArray(result)
     ? result.length
@@ -529,8 +531,8 @@ export function SessionListPage() {
           data={sessions}
           isLoading={isLoading}
           pageIndex={page}
-          pageSize={20}
-          pageCount={Math.ceil(total / 20)}
+          pageSize={PAGE_SIZE}
+          pageCount={Math.ceil(total / PAGE_SIZE)}
           onPaginationChange={setPage}
         />
       )}

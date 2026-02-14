@@ -57,16 +57,41 @@ export class SessionQueryDto {
   @IsDateString()
   endDate?: string;
 
+  /**
+   * Page number (1-based). Default: 1.
+   * Takes precedence over offset when both are provided.
+   */
   @IsOptional()
   @IsNumber()
   @Min(1)
-  @Max(100)
-  limit?: number = 20;
+  page?: number;
 
+  /**
+   * Number of items per page. Default: 50, Max: 250.
+   * Takes precedence over limit when both are provided.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(250)
+  pageSize?: number;
+
+  /**
+   * @deprecated Use page instead. Kept for backward compatibility.
+   */
   @IsOptional()
   @IsNumber()
   @Min(0)
-  offset?: number = 0;
+  offset?: number;
+
+  /**
+   * @deprecated Use pageSize instead. Kept for backward compatibility.
+   */
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(250)
+  limit?: number;
 }
 
 export interface SessionListItem {
