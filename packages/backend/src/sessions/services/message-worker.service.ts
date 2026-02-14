@@ -131,6 +131,19 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         throw new Error(`Session ${queueItem.sessionId} not found`);
       }
 
+      // Get current queue depth for position
+      const queueDepth = await this.queueService.getSessionQueueDepth(queueItem.sessionId);
+
+      // Emit processing started event
+      if (session.socket) {
+        session.socket.emit('message_processing_started', {
+          queueItemId: queueItem.id,
+          sessionId: queueItem.sessionId,
+          position: queueDepth.total,
+          message: queueItem.payload.message.substring(0, 100), // First 100 chars
+        });
+      }
+
       // Build orchestration input
       const input = {
         session,
@@ -160,12 +173,41 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         result.assistantMessageId,
       );
 
+      // Emit processing completed event
+      if (session.socket) {
+        const queueItemUpdated = await this.queueService.getQueueItem(queueItem.id);
+        session.socket.emit('message_processing_completed', {
+          queueItemId: queueItem.id,
+          sessionId: queueItem.sessionId,
+          userMessageId: result.userMessageId,
+          assistantMessageId: result.assistantMessageId,
+          durationMs: queueItemUpdated?.durationMs || 0,
+        });
+      }
+
       this.logger.log(`Message ${queueItem.id} completed successfully`);
     } catch (error: any) {
       this.logger.error(`Message ${queueItem.id} failed: ${error.message}`, error.stack);
 
       // Mark as failed (will retry if allowed)
       await this.queueService.markFailed(queueItem.id, error.message);
+
+      // Get updated queue item to check retry info
+      const queueItemUpdated = await this.queueService.getQueueItem(queueItem.id);
+
+      // Emit processing failed event
+      const session = this.sessionService.getSession(queueItem.sessionId);
+      if (session?.socket && queueItemUpdated) {
+        session.socket.emit('message_processing_failed', {
+          queueItemId: queueItem.id,
+          sessionId: queueItem.sessionId,
+          error: error.message,
+          retryCount: queueItemUpdated.retryCount,
+          maxRetries: queueItemUpdated.maxRetries,
+          nextRetryAt: queueItemUpdated.nextRetryAt,
+          status: queueItemUpdated.status, // 'pending' (will retry) or 'failed' (permanent)
+        });
+      }
     } finally {
       this.activeWorkers--;
       this.logger.debug(`Worker finished (active workers: ${this.activeWorkers}/${this.concurrency})`);

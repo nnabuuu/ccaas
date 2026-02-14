@@ -227,6 +227,16 @@ export class MessageQueueService {
   }
 
   /**
+   * Get a single queue item by ID
+   *
+   * @param queueItemId - Queue item ID
+   * @returns Queue item or null if not found
+   */
+  async getQueueItem(queueItemId: string): Promise<MessageQueue | null> {
+    return this.queueRepository.findOneBy({ id: queueItemId });
+  }
+
+  /**
    * Get queue depth for a session
    *
    * @param sessionId - Session identifier
@@ -251,6 +261,33 @@ export class MessageQueueService {
       pending,
       processing,
     };
+  }
+
+  /**
+   * Get all queue items for a session
+   *
+   * @param sessionId - Session identifier
+   * @param includeCompleted - Include completed/failed items (default: false)
+   * @returns Array of queue items
+   */
+  async getSessionQueue(
+    sessionId: string,
+    includeCompleted: boolean = false,
+  ): Promise<MessageQueue[]> {
+    const queryBuilder = this.queueRepository
+      .createQueryBuilder('queue')
+      .where('queue.sessionId = :sessionId', { sessionId });
+
+    if (!includeCompleted) {
+      queryBuilder.andWhere('queue.status IN (:...statuses)', {
+        statuses: ['pending', 'processing'],
+      });
+    }
+
+    return queryBuilder
+      .orderBy('queue.priority', 'DESC')
+      .addOrderBy('queue.createdAt', 'ASC')
+      .getMany();
   }
 
   /**
