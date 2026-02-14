@@ -115,7 +115,8 @@ Send user message to the specified session. Agent will push response events via 
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
   ) {
-    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments, appendSystemPrompt } = data;
+    const { clientId, message, tenantId, mcpServers, skillPath, attachments, appendSystemPrompt } = data;
+    let { enabledSkillSlugs } = data;
 
     this.logger.log(`Creating completion for session ${sessionId}`);
     this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}`);

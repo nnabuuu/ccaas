@@ -47,7 +47,7 @@ export function createMockCliProcess(): MockCliProcess {
   const pid = processCounter++;
   let killed = false;
 
-  const eventHandlers: Map<string, Function[]> = new Map();
+  const eventHandlers: Map<string, ((...args: any[]) => void)[]> = new Map();
 
   const mockProcess: MockCliProcess = {
     stdout,
@@ -64,7 +64,7 @@ export function createMockCliProcess(): MockCliProcess {
         handlers.forEach(h => h(signal === 'SIGKILL' ? 137 : 143, signal));
       }, 10);
     }),
-    on: jest.fn((event: string, handler: Function) => {
+    on: jest.fn((event: string, handler: (...args: any[]) => void) => {
       if (!eventHandlers.has(event)) {
         eventHandlers.set(event, []);
       }
