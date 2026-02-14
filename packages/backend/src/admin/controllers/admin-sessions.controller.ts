@@ -10,6 +10,7 @@ import {
   Post,
   Param,
   Query,
+  Body,
   NotFoundException,
   HttpCode,
   HttpStatus,
@@ -22,6 +23,7 @@ import {
   SessionListItem,
   SessionDetail,
   SessionTimeline,
+  TokenBreakdown,
 } from '../dto/admin.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
 
@@ -85,6 +87,22 @@ export class AdminSessionsController {
   }
 
   /**
+   * GET /api/v1/admin/sessions/:sessionId/tokens
+   *
+   * Get token usage breakdown for a session
+   */
+  @Get(':sessionId/tokens')
+  async getTokenBreakdown(
+    @Param('sessionId') sessionId: string,
+  ): Promise<TokenBreakdown> {
+    const breakdown = await this.sessionManagerService.getTokenBreakdown(sessionId);
+    if (!breakdown) {
+      throw new NotFoundException(`No token data found for session: ${sessionId}`);
+    }
+    return breakdown;
+  }
+
+  /**
    * POST /api/v1/admin/sessions/:sessionId/kill
    *
    * Force terminate a session's AgentEngine process
@@ -121,5 +139,38 @@ export class AdminSessionsController {
       message:
         'Restart requires WebSocket context. Use the chat interface to send a new message to resume the session.',
     };
+  }
+
+  /**
+   * POST /api/v1/admin/sessions/bulk-kill
+   *
+   * Bulk terminate multiple sessions
+   */
+  @Post('bulk-kill')
+  @HttpCode(HttpStatus.OK)
+  async bulkKillSessions(
+    @Ctx() ctx: RequestContext,
+    @Body('sessionIds') sessionIds: string[],
+  ): Promise<{
+    totalRequested: number;
+    successCount: number;
+    failedCount: number;
+    results: Array<{
+      sessionId: string;
+      status: 'success' | 'failed';
+      error?: string;
+    }>;
+  }> {
+    // Validate request
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      throw new Error('sessionIds must be a non-empty array');
+    }
+
+    if (sessionIds.length > 100) {
+      throw new Error('Cannot terminate more than 100 sessions at once');
+    }
+
+    const adminId = ctx.apiKeyId || ctx.tenantId;
+    return this.sessionManagerService.bulkKillSessions(sessionIds, adminId);
   }
 }

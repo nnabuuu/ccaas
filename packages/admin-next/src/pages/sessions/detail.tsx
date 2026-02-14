@@ -20,9 +20,36 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Coins,
+  Database,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '@/lib/format'
+
+interface TokenBreakdown {
+  inputTokens: number
+  outputTokens: number
+  cachedInputTokens: number
+  cacheReadTokens: number
+  cacheCreationTokens: number
+  reasoningTokens: number
+  totalTokens: number
+  estimatedCost: number
+}
+
+// Format large numbers (1000 -> 1K, 1000000 -> 1M)
+function formatTokens(tokens: number): string {
+  if (tokens === 0) return '0'
+  if (tokens < 1000) return tokens.toString()
+  if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}K`
+  return `${(tokens / 1000000).toFixed(1)}M`
+}
+
+// Format cost as USD
+function formatCost(cost: number): string {
+  if (cost === 0) return '$0.00'
+  return `$${cost.toFixed(4)}`
+}
 
 interface SessionDetail {
   sessionId: string
@@ -275,11 +302,18 @@ export function SessionDetailPage() {
     },
   })
 
+  // Fetch token breakdown
+  const { data: tokenData, isLoading: tokenLoading } = useCustom<TokenBreakdown>({
+    url: `/admin/sessions/${sessionId}/tokens`,
+    method: 'get',
+  })
+
   // Kill session mutation
   const { mutate: killSession, isLoading: isKilling } = useCustomMutation()
 
   const session = sessionData?.data
   const timeline = timelineData?.data
+  const tokenBreakdown = tokenData?.data
   const events = timeline?.events || []
   const totalEvents = timeline?.totalEvents || 0
 
@@ -455,6 +489,87 @@ export function SessionDetailPage() {
           description="API errors encountered"
         />
       </div>
+
+      {/* Token Usage Breakdown */}
+      {tokenBreakdown && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Token Usage & Cost
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Total Tokens</p>
+                <p className="text-2xl font-bold">{formatTokens(tokenBreakdown.totalTokens)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.totalTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Estimated Cost</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {formatCost(tokenBreakdown.estimatedCost)}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Input Tokens</p>
+                <p className="text-xl font-semibold">{formatTokens(tokenBreakdown.inputTokens)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.inputTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Output Tokens</p>
+                <p className="text-xl font-semibold">
+                  {formatTokens(tokenBreakdown.outputTokens)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.outputTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Cached Input</p>
+                <p className="text-xl font-semibold">
+                  {formatTokens(tokenBreakdown.cachedInputTokens)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.cachedInputTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Cache Read</p>
+                <p className="text-xl font-semibold">
+                  {formatTokens(tokenBreakdown.cacheReadTokens)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.cacheReadTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Cache Creation</p>
+                <p className="text-xl font-semibold">
+                  {formatTokens(tokenBreakdown.cacheCreationTokens)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.cacheCreationTokens.toLocaleString()}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">Reasoning Tokens</p>
+                <p className="text-xl font-semibold">
+                  {formatTokens(tokenBreakdown.reasoningTokens)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {tokenBreakdown.reasoningTokens.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Actions */}
       <Card>

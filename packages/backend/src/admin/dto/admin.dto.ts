@@ -75,6 +75,8 @@ export interface SessionListItem {
   clientId: string;
   status: string;
   messageCount: number;
+  totalTokens: number;
+  estimatedCost: number;
   createdAt: Date;
   lastActivity: Date;
   hasActiveProcess: boolean;
@@ -82,6 +84,17 @@ export interface SessionListItem {
 
 export interface SessionDetail extends SessionListItem {
   workspaceDir: string;
+}
+
+export interface TokenBreakdown {
+  inputTokens: number;
+  outputTokens: number;
+  cachedInputTokens: number;
+  cacheReadTokens: number;
+  cacheCreationTokens: number;
+  reasoningTokens: number;
+  totalTokens: number;
+  estimatedCost: number;
 }
 
 export interface SessionTimelineEvent {

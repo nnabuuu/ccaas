@@ -11,6 +11,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminAuditLog } from './entities/admin-audit-log.entity';
 import { SessionAlert } from './entities/session-alert.entity';
 import { TenantQuota } from './entities/tenant-quota.entity';
+import { Session } from './entities/session.entity';
 
 // Services
 import { AuditService } from './services/audit.service';
@@ -52,6 +53,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       AdminAuditLog,
       SessionAlert,
       TenantQuota,
+      Session,
       // External entities for queries
       Message,
       ToolEvent,

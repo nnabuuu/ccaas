@@ -6,3 +6,6 @@ export type { AlertType, AlertThreshold } from './session-alert.entity';
 
 export { TenantQuota } from './tenant-quota.entity';
 export type { QuotaPeriod } from './tenant-quota.entity';
+
+export { Session } from './session.entity';
+export type { SessionStatus } from './session.entity';

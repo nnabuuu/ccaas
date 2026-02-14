@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useCustom } from '@refinedev/core'
+import { useCustom, useCustomMutation } from '@refinedev/core'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
 import type { LucideIcon } from 'lucide-react'
@@ -10,9 +10,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useTenantContext } from '@/hooks/use-tenant-context'
 import { formatDistanceToNow } from 'date-fns'
-import { Activity, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { Activity, CheckCircle, AlertCircle, Clock, StopCircle } from 'lucide-react'
 import { formatDuration } from '@/lib/format'
 
 interface SessionItem {
@@ -21,6 +32,8 @@ interface SessionItem {
   clientId: string
   status: string
   messageCount: number
+  totalTokens: number
+  estimatedCost: number
   createdAt: string
   lastActivity: string
   hasActiveProcess: boolean
@@ -28,12 +41,28 @@ interface SessionItem {
 
 type TabValue = 'all' | 'active' | 'error' | 'long_running' | 'completed'
 
+// Format large numbers (1000 -> 1K, 1000000 -> 1M)
+function formatTokens(tokens: number): string {
+  if (tokens === 0) return '0'
+  if (tokens < 1000) return tokens.toString()
+  if (tokens < 1000000) return `${(tokens / 1000).toFixed(1)}K`
+  return `${(tokens / 1000000).toFixed(1)}M`
+}
+
+// Format cost as USD
+function formatCost(cost: number): string {
+  if (cost === 0) return '$0.00'
+  return `$${cost.toFixed(2)}`
+}
+
 export function SessionListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
   const [page, setPage] = useState(0)
   const [tab, setTab] = useState<TabValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set())
+  const [showBulkKillDialog, setShowBulkKillDialog] = useState(false)
 
   const endpoint = '/admin/sessions'
 
@@ -67,6 +96,9 @@ export function SessionListPage() {
   const total = Array.isArray(result)
     ? result.length
     : (result?.total ?? result?.pagination?.total ?? allSessions.length)
+
+  // Bulk kill mutation
+  const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
   // Filter sessions based on tab and search
   const sessions = useMemo(() => {
@@ -146,9 +178,91 @@ export function SessionListPage() {
     }
   }, [])
 
+  // Bulk selection handlers
+  const handleSelectSession = useCallback((sessionId: string, checked: boolean) => {
+    setSelectedSessions((prev) => {
+      const next = new Set(prev)
+      if (checked) {
+        next.add(sessionId)
+      } else {
+        next.delete(sessionId)
+      }
+      return next
+    })
+  }, [])
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedSessions(new Set(sessions.map((s) => s.sessionId)))
+    } else {
+      setSelectedSessions(new Set())
+    }
+  }, [sessions])
+
+  const handleBulkTerminate = useCallback(() => {
+    if (selectedSessions.size === 0) return
+    setShowBulkKillDialog(true)
+  }, [selectedSessions.size])
+
+  const confirmBulkTerminate = useCallback(() => {
+    const sessionIds = Array.from(selectedSessions)
+    bulkKillSessions(
+      {
+        url: '/admin/sessions/bulk-kill',
+        method: 'post',
+        values: { sessionIds },
+      },
+      {
+        onSuccess: (data: any) => {
+          const result = data.data
+          alert(
+            `Terminated ${result.successCount}/${result.totalRequested} sessions successfully.` +
+              (result.failedCount > 0
+                ? `\n${result.failedCount} sessions failed to terminate.`
+                : '')
+          )
+          setSelectedSessions(new Set())
+          setShowBulkKillDialog(false)
+          refetch()
+        },
+        onError: (error: any) => {
+          alert(`Failed to terminate sessions: ${error.message}`)
+          setShowBulkKillDialog(false)
+        },
+      }
+    )
+  }, [selectedSessions, bulkKillSessions, refetch])
+
   // Memoize columns to prevent re-creation on every render
   const columns = useMemo<ColumnDef<SessionItem>[]>(
     () => [
+      {
+        id: 'select',
+        header: ({ table }) => (
+          <Checkbox
+            checked={
+              sessions.length > 0 &&
+              sessions.every((s) => selectedSessions.has(s.sessionId))
+            }
+            onCheckedChange={(checked) =>
+              handleSelectAll(checked === true)
+            }
+            aria-label="Select all"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={selectedSessions.has(row.original.sessionId)}
+            onCheckedChange={(checked) =>
+              handleSelectSession(row.original.sessionId, checked === true)
+            }
+            aria-label="Select row"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
       {
         accessorKey: 'sessionId',
         header: 'Session ID',
@@ -189,6 +303,24 @@ export function SessionListPage() {
         cell: ({ row }) => <span>{row.original.messageCount}</span>,
       },
       {
+        accessorKey: 'totalTokens',
+        header: 'Total Tokens',
+        cell: ({ row }) => (
+          <span className="text-xs font-mono">
+            {formatTokens(row.original.totalTokens || 0)}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'estimatedCost',
+        header: 'Cost',
+        cell: ({ row }) => (
+          <span className="text-xs font-mono">
+            {formatCost(row.original.estimatedCost || 0)}
+          </span>
+        ),
+      },
+      {
         accessorKey: 'duration',
         header: 'Duration',
         cell: ({ row }) => {
@@ -220,7 +352,7 @@ export function SessionListPage() {
         ),
       },
     ],
-    [navigate, handleCopySessionId]
+    [navigate, handleCopySessionId, sessions, selectedSessions, handleSelectAll, handleSelectSession]
   )
 
   return (
@@ -228,6 +360,18 @@ export function SessionListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
+        {selectedSessions.size > 0 && (
+          <Button
+            variant="destructive"
+            onClick={handleBulkTerminate}
+            disabled={isKilling}
+          >
+            <StopCircle className="h-4 w-4 mr-2" />
+            {isKilling
+              ? 'Terminating...'
+              : `Terminate Selected (${selectedSessions.size})`}
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards - Using shared StatCard component */}
@@ -342,6 +486,30 @@ export function SessionListPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Bulk Terminate Confirmation Dialog */}
+      <AlertDialog open={showBulkKillDialog} onOpenChange={setShowBulkKillDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Terminate {selectedSessions.size} Sessions?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will forcefully terminate {selectedSessions.size} selected session
+              {selectedSessions.size > 1 ? 's' : ''}. Any running AgentEngine processes will be
+              killed. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isKilling}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBulkTerminate}
+              disabled={isKilling}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isKilling ? 'Terminating...' : 'Terminate'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
