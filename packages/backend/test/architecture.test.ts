@@ -21,7 +21,9 @@ describe('Architecture Rules', () => {
      */
     it('should not contain domain-specific entities', () => {
       const metadata = getMetadataArgsStorage();
-      const entityNames = metadata.tables.map(table => table.target['name'] || table.name);
+      const entityNames = metadata.tables.map(table =>
+        (typeof table.target === 'function' ? table.target.name : table.target) || table.name
+      );
 
       // Forbidden domain entities (examples from past violations)
       const forbiddenEntities = [
@@ -66,7 +68,9 @@ describe('Architecture Rules', () => {
      */
     it('should only contain allowed infrastructure entities', () => {
       const metadata = getMetadataArgsStorage();
-      const entityNames = metadata.tables.map(table => table.target['name'] || table.name);
+      const entityNames = metadata.tables.map(table =>
+        (typeof table.target === 'function' ? table.target.name : table.target) || table.name
+      );
 
       // Allowed infrastructure entities
       const allowedEntities = [
@@ -104,8 +108,8 @@ describe('Architecture Rules', () => {
         'JobEntity',
       ];
 
-      const unknownEntities = entityNames.filter(name =>
-        !allowedEntities.includes(name)
+      const unknownEntities = entityNames.filter((name): name is string =>
+        name !== undefined && !allowedEntities.includes(name)
       );
 
       if (unknownEntities.length > 0) {
