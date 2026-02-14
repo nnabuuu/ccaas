@@ -407,14 +407,11 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         chatPayload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
       }
 
-      // NOTE: appendSystemPrompt is NOT sent to backend in Phase 1
-      // Backend does not yet support this field (will be added in Phase 2)
-      // Sending it now would silently drop the value and create false impression
-      // See: docs/implementation/SESSION_TEMPLATE_PHASE1_COMPLETE.md - Known Limitations
-      // TODO: Uncomment in Phase 2 after backend DTO is extended
-      // if (resolvedParams.appendSystemPrompt) {
-      //   chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
-      // }
+      // Phase 2: appendSystemPrompt is now supported by backend
+      // Backend merges it with skill system prompt (skill prompt + appendSystemPrompt)
+      if (resolvedParams.appendSystemPrompt) {
+        chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
+      }
 
       // Attachments and context
       if (sendOptions?.attachments && sendOptions.attachments.length > 0) {

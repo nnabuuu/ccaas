@@ -16,9 +16,14 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for all origins (dev environment)
+  // Get configuration for CORS
+  const configService = app.get(ConfigService);
+  const isProduction = configService.get<string>('NODE_ENV') === 'production';
+  const allowedOrigins = configService.get<string>('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5174,http://localhost:5175');
+
+  // Enable CORS - Restrict origins in production
   app.enableCors({
-    origin: true, // Allow all origins
+    origin: isProduction ? allowedOrigins.split(',') : true, // Production: whitelist, Dev: all origins
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Tenant-Id'],
@@ -137,8 +142,7 @@ async function bootstrap() {
     customCss: '.swagger-ui .topbar { display: none }',
   });
 
-  // Get configuration
-  const configService = app.get(ConfigService);
+  // Get port configuration
   const port = configService.get<number>('port', 3001);
 
   await app.listen(port);

@@ -115,7 +115,7 @@ Send user message to the specified session. Agent will push response events via 
     @Param('sessionId') sessionId: string,
     @Body() data: CreateCompletionDto,
   ) {
-    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments } = data;
+    let { clientId, message, tenantId, mcpServers, skillPath, enabledSkillSlugs, attachments, appendSystemPrompt } = data;
 
     this.logger.log(`Creating completion for session ${sessionId}`);
     this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}`);
@@ -166,6 +166,14 @@ Send user message to the specified session. Agent will push response events via 
           resolvedTenantId,
           enabledSkillSlugs,
         );
+      }
+
+      // Merge appendSystemPrompt from Session Template (if provided)
+      if (appendSystemPrompt && appendSystemPrompt.trim()) {
+        systemPrompt = systemPrompt
+          ? `${systemPrompt}\n\n${appendSystemPrompt}`
+          : appendSystemPrompt;
+        this.logger.log(`Appended system prompt from template (${appendSystemPrompt.length} chars)`);
       }
 
       // REST-specific preprocessing: Resolve attachment paths

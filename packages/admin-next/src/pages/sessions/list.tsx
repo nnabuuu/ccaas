@@ -86,29 +86,17 @@ export function SessionListPage() {
     },
   })
 
-  const result = data?.data as
-    | {
-        items?: SessionItem[]
-        sessions?: SessionItem[]
-        data?: SessionItem[]
-        total?: number
-        pagination?: { total: number }
-      }
-    | SessionItem[]
-    | undefined
-
-  const allSessions = Array.isArray(result)
-    ? result
-    : (result?.data ?? result?.items ?? result?.sessions ?? [])
-
-  const total = Array.isArray(result)
-    ? result.length
-    : (result?.total ?? result?.pagination?.total ?? allSessions.length)
+  // Backend returns PaginatedSessions: { data: SessionListItem[], total, page, pageSize }
+  const result = data?.data as { data?: SessionItem[]; total?: number } | undefined
+  const allSessions = result?.data ?? []
+  const total = result?.total ?? allSessions.length
 
   // Bulk kill mutation
   const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
   // Filter sessions based on tab, search, duration, and tokens
+  // NOTE: Client-side filtering only applies to the current page (50 sessions).
+  // For filtering across all sessions, backend filtering would be required.
   const sessions = useMemo(() => {
     let filtered = allSessions
 
@@ -202,7 +190,10 @@ export function SessionListPage() {
       await navigator.clipboard.writeText(sessionId)
       // TODO: Replace with toast notification
     } catch (error) {
-      console.warn('Failed to copy session ID:', error)
+      // Only log in development
+      if (import.meta.env.DEV) {
+        console.warn('Failed to copy session ID:', error)
+      }
     }
   }, [])
 
