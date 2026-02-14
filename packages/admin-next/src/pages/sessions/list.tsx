@@ -2,10 +2,10 @@ import { useState, useMemo, useCallback } from 'react'
 import { useCustom, useCustomMutation } from '@refinedev/core'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
-import type { LucideIcon } from 'lucide-react'
 import { DataTable } from '@/components/shared/data-table'
 import { StatCard } from '@/components/shared/stat-card'
 import { StatusBadge } from '@/components/shared/status-badge'
+import { RangePresetButtons, type RangePreset } from '@/components/shared/range-preset-buttons'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -54,6 +54,24 @@ function formatCost(cost: number): string {
   if (cost === 0) return '$0.00'
   return `$${cost.toFixed(2)}`
 }
+
+// Duration filter presets (minutes)
+const DURATION_PRESETS: RangePreset[] = [
+  { label: '< 5min', range: [0, 5] },
+  { label: '5-30min', range: [5, 30] },
+  { label: '30min-1h', range: [30, 60] },
+  { label: '> 1h', range: [60, 180] },
+  { label: 'All', range: [0, 180] },
+]
+
+// Token filter presets
+const TOKEN_PRESETS: RangePreset[] = [
+  { label: '< 10K', range: [0, 10000] },
+  { label: '10K-100K', range: [10000, 100000] },
+  { label: '100K-1M', range: [100000, 1000000] },
+  { label: '> 1M', range: [1000000, 10000000] },
+  { label: 'All', range: [0, 10000000] },
+]
 
 export function SessionListPage() {
   const navigate = useNavigate()
@@ -462,63 +480,11 @@ export function SessionListPage() {
                       {durationRange[0]} - {durationRange[1]} min
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={
-                        durationRange[0] === 0 && durationRange[1] === 5
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setDurationRange([0, 5])}
-                    >
-                      &lt; 5min
-                    </Button>
-                    <Button
-                      variant={
-                        durationRange[0] === 5 && durationRange[1] === 30
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setDurationRange([5, 30])}
-                    >
-                      5-30min
-                    </Button>
-                    <Button
-                      variant={
-                        durationRange[0] === 30 && durationRange[1] === 60
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setDurationRange([30, 60])}
-                    >
-                      30min-1h
-                    </Button>
-                    <Button
-                      variant={
-                        durationRange[0] === 60 && durationRange[1] === 180
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setDurationRange([60, 180])}
-                    >
-                      &gt; 1h
-                    </Button>
-                    <Button
-                      variant={
-                        durationRange[0] === 0 && durationRange[1] === 180
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setDurationRange([0, 180])}
-                    >
-                      All
-                    </Button>
-                  </div>
+                  <RangePresetButtons
+                    presets={DURATION_PRESETS}
+                    current={durationRange}
+                    onChange={setDurationRange}
+                  />
                 </div>
 
                 {/* Token Filter */}
@@ -529,63 +495,11 @@ export function SessionListPage() {
                       {formatTokens(tokenRange[0])} - {formatTokens(tokenRange[1])}
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant={
-                        tokenRange[0] === 0 && tokenRange[1] === 10000
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setTokenRange([0, 10000])}
-                    >
-                      &lt; 10K
-                    </Button>
-                    <Button
-                      variant={
-                        tokenRange[0] === 10000 && tokenRange[1] === 100000
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setTokenRange([10000, 100000])}
-                    >
-                      10K-100K
-                    </Button>
-                    <Button
-                      variant={
-                        tokenRange[0] === 100000 && tokenRange[1] === 1000000
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setTokenRange([100000, 1000000])}
-                    >
-                      100K-1M
-                    </Button>
-                    <Button
-                      variant={
-                        tokenRange[0] === 1000000 && tokenRange[1] === 10000000
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setTokenRange([1000000, 10000000])}
-                    >
-                      &gt; 1M
-                    </Button>
-                    <Button
-                      variant={
-                        tokenRange[0] === 0 && tokenRange[1] === 10000000
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size="sm"
-                      onClick={() => setTokenRange([0, 10000000])}
-                    >
-                      All
-                    </Button>
-                  </div>
+                  <RangePresetButtons
+                    presets={TOKEN_PRESETS}
+                    current={tokenRange}
+                    onChange={setTokenRange}
+                  />
                 </div>
               </div>
 

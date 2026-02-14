@@ -10,6 +10,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { AnalyticsService } from './analytics.service';
 import { TokenUsageEvent } from '../../messages/entities/token-usage-event.entity';
 import { Message } from '../../messages/entities/message.entity';
+import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { ApiKey } from '../../auth/entities/api-key.entity';
 import { Skill } from '../../skills/entities/skill.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
@@ -410,6 +411,230 @@ describe('AnalyticsService', () => {
       expect(result[0].apiKeyId).toBe('key-1');
       expect(result[0].keyPrefix).toBe('sk_1234');
       expect(result[0].requestCount).toBe(100);
+    });
+  });
+
+  describe('getErrorRateTrend', () => {
+    it('should return zero error rates when no errors or messages exist', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      const mockMessageQb = createMockQueryBuilder();
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({ days: 7 });
+
+      expect(result.dataPoints).toHaveLength(8); // 7 days + today
+      expect(result.dataPoints.every(p => p.errorCount === 0)).toBe(true);
+      expect(result.dataPoints.every(p => p.totalMessages === 0)).toBe(true);
+      expect(result.dataPoints.every(p => p.errorRate === 0)).toBe(true);
+      expect(result.summary.avgErrorRate).toBe(0);
+      expect(result.summary.maxErrorRate).toBe(0);
+      expect(result.summary.trend).toBe('stable');
+    });
+
+    it('should include dates with errors but no messages', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-13', errorCount: '5' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-14', totalMessages: '100' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-13',
+        endDate: '2024-02-14',
+      });
+
+      // Should have data points for both dates
+      expect(result.dataPoints.length).toBeGreaterThanOrEqual(2);
+
+      // Find the error-only date
+      const errorOnlyDate = result.dataPoints.find(
+        p => p.timestamp.toISOString().startsWith('2024-02-13')
+      );
+      expect(errorOnlyDate).toBeDefined();
+      expect(errorOnlyDate!.errorCount).toBe(5);
+      expect(errorOnlyDate!.totalMessages).toBe(0);
+      expect(errorOnlyDate!.errorRate).toBe(0); // No messages = 0 error rate
+    });
+
+    it('should correctly calculate error rates with mixed data', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', errorCount: '10' },
+        { date: '2024-02-11', errorCount: '5' },
+        { date: '2024-02-13', errorCount: '2' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', totalMessages: '100' },
+        { date: '2024-02-11', totalMessages: '200' },
+        { date: '2024-02-12', totalMessages: '150' },
+        { date: '2024-02-13', totalMessages: '100' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-10',
+        endDate: '2024-02-13',
+      });
+
+      // Verify error rates
+      const feb10 = result.dataPoints.find(p => p.timestamp.toISOString().startsWith('2024-02-10'));
+      expect(feb10!.errorRate).toBeCloseTo(0.1); // 10/100
+
+      const feb11 = result.dataPoints.find(p => p.timestamp.toISOString().startsWith('2024-02-11'));
+      expect(feb11!.errorRate).toBeCloseTo(0.025); // 5/200
+
+      const feb12 = result.dataPoints.find(p => p.timestamp.toISOString().startsWith('2024-02-12'));
+      expect(feb12!.errorRate).toBe(0); // 0/150
+
+      expect(result.summary.maxErrorRate).toBeCloseTo(0.1);
+    });
+
+    it('should detect improving trend', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', errorCount: '20' },
+        { date: '2024-02-11', errorCount: '18' },
+        { date: '2024-02-12', errorCount: '5' },
+        { date: '2024-02-13', errorCount: '2' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', totalMessages: '100' },
+        { date: '2024-02-11', totalMessages: '100' },
+        { date: '2024-02-12', totalMessages: '100' },
+        { date: '2024-02-13', totalMessages: '100' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-10',
+        endDate: '2024-02-13',
+      });
+
+      expect(result.summary.trend).toBe('improving');
+    });
+
+    it('should detect worsening trend', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', errorCount: '2' },
+        { date: '2024-02-11', errorCount: '5' },
+        { date: '2024-02-12', errorCount: '15' },
+        { date: '2024-02-13', errorCount: '20' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', totalMessages: '100' },
+        { date: '2024-02-11', totalMessages: '100' },
+        { date: '2024-02-12', totalMessages: '100' },
+        { date: '2024-02-13', totalMessages: '100' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-10',
+        endDate: '2024-02-13',
+      });
+
+      expect(result.summary.trend).toBe('worsening');
+    });
+
+    it('should return stable trend for small datasets', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', errorCount: '10' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', totalMessages: '100' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-10',
+        endDate: '2024-02-10',
+      });
+
+      // Should have < 4 data points, trend detection requires >= 4
+      expect(result.dataPoints.length).toBeLessThan(4);
+      expect(result.summary.trend).toBe('stable');
+    });
+
+    it('should handle NaN from parseInt gracefully', async () => {
+      const mockErrorQb = createMockQueryBuilder();
+      mockErrorQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', errorCount: 'invalid' },
+      ]);
+
+      const mockMessageQb = createMockQueryBuilder();
+      mockMessageQb.getRawMany.mockResolvedValue([
+        { date: '2024-02-10', totalMessages: 'also-invalid' },
+      ]);
+
+      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
+      });
+      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
+        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
+      });
+
+      const result = await service.getErrorRateTrend({
+        startDate: '2024-02-10',
+        endDate: '2024-02-10',
+      });
+
+      // Should default to 0 for NaN values
+      const dataPoint = result.dataPoints.find(
+        p => p.timestamp.toISOString().startsWith('2024-02-10')
+      );
+      expect(dataPoint!.errorCount).toBe(0);
+      expect(dataPoint!.totalMessages).toBe(0);
     });
   });
 });

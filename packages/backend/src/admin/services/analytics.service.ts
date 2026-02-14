@@ -279,15 +279,30 @@ export class AnalyticsService {
 
   /**
    * Get error rate trend over time
+   *
+   * Note: Currently only supports daily granularity.
+   * Granularity parameter is accepted for future compatibility but ignored.
    */
   async getErrorRateTrend(query: AnalyticsQueryDto): Promise<ErrorRateTrend> {
-    const { startDate, endDate, days = 7, granularity = 'daily', tenantId } = query;
+    const { startDate, endDate, days = 7, tenantId } = query;
 
     // Calculate date range
     const end = endDate ? new Date(endDate) : new Date();
     const start = startDate
       ? new Date(startDate)
       : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Pre-generate date buckets for full range (daily granularity)
+    // This ensures we don't drop dates with errors but no messages
+    const dateBuckets = new Map<string, { errorCount: number; totalMessages: number }>();
+    const cursor = new Date(start);
+    cursor.setHours(0, 0, 0, 0); // Start at midnight
+
+    while (cursor <= end) {
+      const dateKey = cursor.toISOString().split('T')[0];
+      dateBuckets.set(dateKey, { errorCount: 0, totalMessages: 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
 
     // Query errors grouped by date
     const errorQb = this.apiErrorRepository
@@ -319,24 +334,31 @@ export class AnalyticsService {
       .groupBy('DATE(message.createdAt)')
       .getRawMany();
 
-    // Merge and calculate error rate
-    const errorMap = new Map(errorsByDate.map((e) => [e.date, parseInt(e.errorCount)]));
+    // Merge errors into buckets
+    for (const error of errorsByDate) {
+      const bucket = dateBuckets.get(error.date);
+      if (bucket) {
+        bucket.errorCount = parseInt(error.errorCount, 10) || 0;
+      }
+    }
 
-    const dataPoints: ErrorRateDataPoint[] = messagesByDate.map((m) => {
-      const errorCount = errorMap.get(m.date) || 0;
-      const totalMessages = parseInt(m.totalMessages);
-      const errorRate = totalMessages > 0 ? errorCount / totalMessages : 0;
+    // Merge messages into buckets
+    for (const message of messagesByDate) {
+      const bucket = dateBuckets.get(message.date);
+      if (bucket) {
+        bucket.totalMessages = parseInt(message.totalMessages, 10) || 0;
+      }
+    }
 
-      return {
-        timestamp: new Date(m.date),
+    // Build data points from all buckets
+    const dataPoints: ErrorRateDataPoint[] = Array.from(dateBuckets.entries())
+      .map(([dateKey, { errorCount, totalMessages }]) => ({
+        timestamp: new Date(dateKey + 'T00:00:00.000Z'),
         errorCount,
         totalMessages,
-        errorRate,
-      };
-    });
-
-    // Sort by timestamp
-    dataPoints.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+        errorRate: totalMessages > 0 ? errorCount / totalMessages : 0,
+      }))
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
     // Calculate summary
     const avgErrorRate =

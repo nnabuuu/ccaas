@@ -68,48 +68,59 @@ export function DashboardPage() {
     config: {
       query: {
         days: 7,
-        granularity: 'daily',
         ...(selectedTenantId ? { tenantId: selectedTenantId } : {}),
       },
     },
   })
 
-  // Type-safe API response parsing with Zod schemas
-  const summary = parseApiResponseSafe(
-    DashboardSummarySchema,
-    summaryData?.data,
-    'DashboardSummary',
-    {
-      activeSessions: 0,
-      totalSessions: 0,
-      totalMessages24h: 0,
-      totalTokens24h: { input: 0, output: 0, total: 0 },
-      errorRate24h: 0,
-      activeApiKeys: 0,
-      totalSkills: 0,
-      publishedSkills: 0,
-    }
+  // Type-safe API response parsing with Zod schemas (memoized to prevent re-computation)
+  const summary = useMemo(
+    () => parseApiResponseSafe(
+      DashboardSummarySchema,
+      summaryData?.data,
+      'DashboardSummary',
+      {
+        activeSessions: 0,
+        totalSessions: 0,
+        totalMessages24h: 0,
+        totalTokens24h: { input: 0, output: 0, total: 0 },
+        errorRate24h: 0,
+        activeApiKeys: 0,
+        totalSkills: 0,
+        publishedSkills: 0,
+      }
+    ),
+    [summaryData?.data]
   )
 
-  const recentSessions = parseApiResponseSafe(
-    RecentSessionsResponseSchema,
-    recentData?.data,
-    'RecentSessions',
-    [] as RecentSession[]
+  const recentSessions = useMemo(
+    () => parseApiResponseSafe(
+      RecentSessionsResponseSchema,
+      recentData?.data,
+      'RecentSessions',
+      [] as RecentSession[]
+    ),
+    [recentData?.data]
   )
 
-  const tokenAnalytics = parseApiResponseSafe(
-    TokenAnalyticsResponseSchema,
-    tokenData?.data,
-    'TokenAnalytics',
-    { dataPoints: [] }
+  const tokenAnalytics = useMemo(
+    () => parseApiResponseSafe(
+      TokenAnalyticsResponseSchema,
+      tokenData?.data,
+      'TokenAnalytics',
+      { dataPoints: [] }
+    ),
+    [tokenData?.data]
   )
 
-  const errorRateTrend = parseApiResponseSafe(
-    ErrorRateTrendSchema,
-    errorRateData?.data,
-    'ErrorRateTrend',
-    { dataPoints: [], summary: { avgErrorRate: 0, maxErrorRate: 0, trend: 'stable' as const } }
+  const errorRateTrend = useMemo(
+    () => parseApiResponseSafe(
+      ErrorRateTrendSchema,
+      errorRateData?.data,
+      'ErrorRateTrend',
+      { dataPoints: [], summary: { avgErrorRate: 0, maxErrorRate: 0, trend: 'stable' as const } }
+    ),
+    [errorRateData?.data]
   )
 
   const tokenChart: TokenDataPoint[] = tokenAnalytics.dataPoints
