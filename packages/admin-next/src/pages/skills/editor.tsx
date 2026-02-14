@@ -16,10 +16,6 @@ interface SkillDetail extends Skill {
   enabled: boolean
 }
 
-type SkillVersionWithMeta = SkillVersion & {
-  publishedBy?: string
-}
-
 interface DiffLine {
   type: 'added' | 'removed' | 'context'
   content: string

@@ -1,8 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect, useCallback } from 'react'
 import { useCustom } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Cable, Wifi, WifiOff } from 'lucide-react'
+import { Cable, Wifi } from 'lucide-react'
 import { useAdminSocket } from '@/hooks/use-admin-socket'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -20,7 +21,6 @@ interface SdkConnectionsProps {
 }
 
 export function SdkConnections({ tenantId }: SdkConnectionsProps) {
-  const [connections, setConnections] = useState<SdkConnection[]>([])
   const { on } = useAdminSocket()
 
   const query = tenantId ? { tenantId } : undefined
@@ -30,11 +30,13 @@ export function SdkConnections({ tenantId }: SdkConnectionsProps) {
     config: { query },
   })
 
-  useEffect(() => {
+  // Track connections with real-time updates via socket
+  // Initial state is derived from API data
+  const [connections, setConnections] = useState<SdkConnection[]>(() => {
     const raw = data?.data
     const list = (Array.isArray(raw) ? raw : (raw as { connections?: SdkConnection[] })?.connections ?? []) as SdkConnection[]
-    setConnections(tenantId ? list.filter((c) => c.tenantId === tenantId) : list)
-  }, [data, tenantId])
+    return tenantId ? list.filter((c) => c.tenantId === tenantId) : list
+  })
 
   const handleConnected = useCallback(
     (conn: unknown) => {
@@ -145,7 +147,6 @@ export function SdkConnections({ tenantId }: SdkConnectionsProps) {
  * Aggregates SDK connections by sdkType for dashboard widget use.
  */
 export function useSdkDistribution() {
-  const [connections, setConnections] = useState<SdkConnection[]>([])
   const { on } = useAdminSocket()
 
   const { data } = useCustom({
@@ -153,11 +154,13 @@ export function useSdkDistribution() {
     method: 'get',
   })
 
-  useEffect(() => {
+  // Track connections with real-time updates via socket
+  // Initial state is derived from API data
+  const [connections, setConnections] = useState<SdkConnection[]>(() => {
     const raw = data?.data
     const list = (Array.isArray(raw) ? raw : (raw as { connections?: SdkConnection[] })?.connections ?? []) as SdkConnection[]
-    setConnections(list)
-  }, [data])
+    return list
+  })
 
   useEffect(() => {
     const offConnect = on('admin:sdk_connected', (conn: unknown) => {

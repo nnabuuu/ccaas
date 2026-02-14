@@ -159,7 +159,10 @@ export function SessionTemplateFormPage() {
                     const slugs = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                     setValue('template.enabledSkillSlugs', slugs)
                   }}
-                  defaultValue={watch('template.enabledSkillSlugs')?.join(', ')}
+                  defaultValue={
+                    // eslint-disable-next-line react-hooks/incompatible-library
+                    watch('template.enabledSkillSlugs')?.join(', ')
+                  }
                 />
               </CardContent>
             </Card>

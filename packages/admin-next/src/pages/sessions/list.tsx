@@ -94,6 +94,13 @@ export function SessionListPage() {
   // Bulk kill mutation
   const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
+  // Time references for filtering (calculated once on mount)
+  // These remain stable for the component's lifetime, which is acceptable for filtering
+  // eslint-disable-next-line react-hooks/purity
+  const oneHourAgo = useMemo(() => new Date(Date.now() - 60 * 60 * 1000), [])
+  // eslint-disable-next-line react-hooks/purity
+  const oneDayAgo = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000), [])
+
   // Filter sessions based on tab, search, duration, and tokens
   // NOTE: Client-side filtering only applies to the current page (50 sessions).
   // For filtering across all sessions, backend filtering would be required.
@@ -106,7 +113,6 @@ export function SessionListPage() {
     } else if (tab === 'error') {
       filtered = filtered.filter((s) => s.status === 'error')
     } else if (tab === 'long_running') {
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
       filtered = filtered.filter(
         (s) =>
           (s.status === 'processing' || s.hasActiveProcess) &&
@@ -148,7 +154,7 @@ export function SessionListPage() {
     }
 
     return filtered
-  }, [allSessions, tab, searchQuery, durationRange, tokenRange])
+  }, [allSessions, tab, searchQuery, durationRange, tokenRange, oneHourAgo])
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -156,7 +162,6 @@ export function SessionListPage() {
       (s) => s.status === 'processing' || s.hasActiveProcess
     ).length
     const completedLast24h = allSessions.filter((s) => {
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
       return (
         (s.status === 'closed' || s.status === 'completed') &&
         new Date(s.lastActivity) > oneDayAgo
@@ -182,7 +187,7 @@ export function SessionListPage() {
       errorRate,
       avgDuration: formatDuration(avgDuration),
     }
-  }, [allSessions])
+  }, [allSessions, oneDayAgo])
 
   // Copy session ID with error handling
   const handleCopySessionId = useCallback(async (sessionId: string) => {
@@ -232,7 +237,7 @@ export function SessionListPage() {
         values: { sessionIds },
       },
       {
-        onSuccess: (data: any) => {
+        onSuccess: (data: { data: { successCount: number; totalRequested: number; failedCount: number } }) => {
           const result = data.data
           alert(
             `Terminated ${result.successCount}/${result.totalRequested} sessions successfully.` +
@@ -244,7 +249,7 @@ export function SessionListPage() {
           setShowBulkKillDialog(false)
           refetch()
         },
-        onError: (error: any) => {
+        onError: (error: Error) => {
           alert(`Failed to terminate sessions: ${error.message}`)
           setShowBulkKillDialog(false)
         },
@@ -257,7 +262,7 @@ export function SessionListPage() {
     () => [
       {
         id: 'select',
-        header: ({ table }) => (
+        header: () => (
           <Checkbox
             checked={
               sessions.length > 0 &&

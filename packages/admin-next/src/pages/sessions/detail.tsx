@@ -21,7 +21,6 @@ import {
   XCircle,
   Clock,
   Coins,
-  Database,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
@@ -289,7 +288,7 @@ export function SessionDetailPage() {
   })
 
   // Fetch token breakdown
-  const { data: tokenData, isLoading: tokenLoading } = useCustom<TokenBreakdown>({
+  const { data: tokenData } = useCustom<TokenBreakdown>({
     url: `/admin/sessions/${sessionId}/tokens`,
     method: 'get',
   })
