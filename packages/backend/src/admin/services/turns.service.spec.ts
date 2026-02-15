@@ -17,6 +17,7 @@ describe('TurnsService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     createQueryBuilder: jest.fn(),
+    manager: null as any,
   };
 
   const mockTokenUsageRepository = {
@@ -85,6 +86,165 @@ describe('TurnsService', () => {
     });
   });
 
+  describe('createNextTurn', () => {
+    it('should create a turn with atomically assigned turn number', async () => {
+      const params = {
+        sessionId: 'session-123',
+        userMessageId: 'user-msg-456',
+      };
+
+      const queryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ maxTurnNumber: 2 }),
+      };
+
+      const createdTurn = {
+        id: 'turn-789',
+        sessionId: params.sessionId,
+        turnNumber: 3,
+        userMessageId: params.userMessageId,
+        assistantMessageId: null,
+        totalTokens: 0,
+        durationMs: 0,
+        createdAt: new Date(),
+        completedAt: null,
+      };
+
+      const mockManager = {
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        create: jest.fn().mockReturnValue(createdTurn),
+        save: jest.fn().mockResolvedValue(createdTurn),
+      };
+
+      mockTurnRepository.manager = {
+        transaction: jest.fn().mockImplementation((cb) => cb(mockManager)),
+      } as any;
+
+      const result = await service.createNextTurn(params);
+
+      expect(result.turnNumber).toBe(3);
+      expect(result.sessionId).toBe(params.sessionId);
+      expect(result.userMessageId).toBe(params.userMessageId);
+    });
+
+    it('should start at turn 0 for new sessions', async () => {
+      const params = {
+        sessionId: 'session-new',
+        userMessageId: 'user-msg-1',
+      };
+
+      const queryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue(null),
+      };
+
+      const createdTurn = {
+        id: 'turn-1',
+        sessionId: params.sessionId,
+        turnNumber: 0,
+        userMessageId: params.userMessageId,
+        assistantMessageId: null,
+        totalTokens: 0,
+        durationMs: 0,
+        createdAt: new Date(),
+        completedAt: null,
+      };
+
+      const mockManager = {
+        createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+        create: jest.fn().mockReturnValue(createdTurn),
+        save: jest.fn().mockResolvedValue(createdTurn),
+      };
+
+      mockTurnRepository.manager = {
+        transaction: jest.fn().mockImplementation((cb) => cb(mockManager)),
+      } as any;
+
+      const result = await service.createNextTurn(params);
+
+      expect(result.turnNumber).toBe(0);
+    });
+  });
+
+  describe('completeTurnWithRetry', () => {
+    it('should return immediately if tokens found on first attempt', async () => {
+      const params = {
+        turnId: 'turn-789',
+        assistantMessageId: 'assistant-msg-999',
+      };
+
+      const existingTurn = {
+        id: params.turnId,
+        sessionId: 'session-123',
+        turnNumber: 0,
+        userMessageId: 'user-msg-456',
+        assistantMessageId: null,
+        totalTokens: 0,
+        durationMs: 0,
+        createdAt: new Date(Date.now() - 5000),
+        completedAt: null,
+      };
+
+      const tokenEvents = [
+        {
+          id: 'event-1',
+          messageId: params.assistantMessageId,
+          inputTokens: 100,
+          outputTokens: 50,
+          reasoningTokens: 10,
+          cachedInputTokens: 0,
+          cacheCreationTokens: 0,
+        },
+      ];
+
+      mockTurnRepository.findOne.mockResolvedValue(existingTurn as any);
+      mockTokenUsageRepository.find.mockResolvedValue(tokenEvents as any);
+      mockTurnRepository.save.mockImplementation((turn) =>
+        Promise.resolve(turn as any),
+      );
+
+      const result = await service.completeTurnWithRetry(params);
+
+      expect(result.totalTokens).toBe(160);
+      // Should only call once since tokens were found
+      expect(mockTurnRepository.findOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('should retry up to maxRetries if no tokens found', async () => {
+      const params = {
+        turnId: 'turn-789',
+        assistantMessageId: 'assistant-msg-999',
+        maxRetries: 2,
+      };
+
+      const existingTurn = {
+        id: params.turnId,
+        sessionId: 'session-123',
+        turnNumber: 0,
+        userMessageId: 'user-msg-456',
+        assistantMessageId: null,
+        totalTokens: 0,
+        durationMs: 0,
+        createdAt: new Date(Date.now() - 100),
+        completedAt: null,
+      };
+
+      mockTurnRepository.findOne.mockResolvedValue(existingTurn as any);
+      mockTokenUsageRepository.find.mockResolvedValue([]);
+      mockTurnRepository.save.mockImplementation((turn) =>
+        Promise.resolve(turn as any),
+      );
+
+      const result = await service.completeTurnWithRetry(params);
+
+      expect(result.totalTokens).toBe(0);
+      // Should retry 3 times (initial + 2 retries)
+      expect(mockTurnRepository.findOne).toHaveBeenCalledTimes(3);
+    });
+  });
+
   describe('completeTurn', () => {
     it('should complete a turn with assistant message, tokens, and duration', async () => {
       const params = {
@@ -125,7 +285,9 @@ describe('TurnsService', () => {
         },
       ];
 
-      const expectedTotalTokens = 100 + 50 + 10 + 20 + 5 + 30 + 20; // 235
+      // inputTokens already includes cachedInputTokens (they are a subset)
+      // cacheCreationTokens are a one-time cost, not counted in total context
+      const expectedTotalTokens = 100 + 50 + 10 + 30 + 20; // 210
 
       mockTurnRepository.findOne.mockResolvedValue(existingTurn as any);
       mockTokenUsageRepository.find.mockResolvedValue(tokenEvents as any);

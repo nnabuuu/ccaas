@@ -18,7 +18,6 @@ import { Turn } from './entities/turn.entity';
 import { AuditService } from './services/audit.service';
 import { AnalyticsService } from './services/analytics.service';
 import { SessionManagerService } from './services/session-manager.service';
-import { TurnsService } from './services/turns.service';
 
 // Controllers
 import { AdminDashboardController } from './controllers/admin-dashboard.controller';
@@ -37,6 +36,7 @@ import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { TurnsModule } from './turns.module';
 
 // Entities from other modules (for analytics queries)
 import { Message } from '../messages/entities/message.entity';
@@ -57,7 +57,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       SessionAlert,
       TenantQuota,
       Session,
-      Turn,
+      // Turn removed - now in TurnsModule
       // External entities for queries
       Message,
       ToolEvent,
@@ -69,6 +69,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       Skill,
       Tenant,
     ]),
+    TurnsModule,
     SessionsModule,
     SkillsModule,
     AuthModule,
@@ -90,13 +91,12 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AuditService,
     AnalyticsService,
     SessionManagerService,
-    TurnsService,
   ],
   exports: [
     AuditService,
     AnalyticsService,
     SessionManagerService,
-    TurnsService,
+    TurnsModule,
   ],
 })
 export class AdminModule {}

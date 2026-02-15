@@ -37,16 +37,16 @@ import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
-import { AdminModule } from '../admin/admin.module';
+import { TurnsModule } from '../admin/turns.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MessageQueue, Session, Turn]),
+    TypeOrmModule.forFeature([MessageQueue, Session]),
+    TurnsModule,
     SkillsModule,
     TenantsModule,
     MessagesModule,
     FilesModule,
-    AdminModule,
   ],
   controllers: [SessionsController, ConversationsController],
   providers: [

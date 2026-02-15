@@ -238,20 +238,18 @@ export class CompletionOrchestrationService {
       `Created messages: user=${userMessage.id}, assistant=${assistantMessage.id}`,
     );
 
-    // Step 6a: Create Turn record for analytics
+    // Step 6a: Create Turn record for analytics (atomic turn number assignment)
     try {
-      const turnNumber = await this.turnsService.getNextTurnNumber(sessionId);
-      const turn = await this.turnsService.createTurn({
+      const turn = await this.turnsService.createNextTurn({
         sessionId,
         userMessageId: userMessage.id,
-        turnNumber,
       });
 
       // Store turn ID on session for later completion
       session.currentTurnId = turn.id;
 
       this.logger.debug(
-        `Created turn ${turnNumber} for session ${sessionId}: ${turn.id}`,
+        `Created turn ${turn.turnNumber} for session ${sessionId}: ${turn.id}`,
       );
     } catch (err) {
       this.logger.warn(`Failed to create turn: ${err}`);
@@ -329,12 +327,13 @@ export class CompletionOrchestrationService {
           .updateContent(assistantMessage.id, accumulatedText)
           .catch((err) => this.logger.error(`Failed to update message content: ${err}`));
 
-        // Complete Turn record with token usage and duration
+        // Complete Turn record with token usage and duration (with retry for timing)
         if (session.currentTurnId) {
           this.turnsService
-            .completeTurn({
+            .completeTurnWithRetry({
               turnId: session.currentTurnId,
               assistantMessageId: assistantMessage.id,
+              maxRetries: 2,
             })
             .then((turn) => {
               this.logger.debug(
@@ -344,7 +343,7 @@ export class CompletionOrchestrationService {
             .catch((err) => this.logger.error(`Failed to complete turn: ${err}`));
 
           // Clean up turn context
-          delete session.currentTurnId;
+          session.currentTurnId = undefined;
         }
       }
     };
