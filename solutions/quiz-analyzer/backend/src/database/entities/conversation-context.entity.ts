@@ -1,10 +1,11 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, Index } from 'typeorm';
 
 @Entity('conversation_contexts')
 export class ConversationContext {
   @PrimaryColumn('varchar')
   id: string; // ctx_{uuid}
 
+  @Index()
   @Column('varchar', { unique: true })
   session_id: string;
 

@@ -61,10 +61,19 @@ export class AnalysesService {
     durationMs?: number,
   ): Promise<void> {
     try {
-      const contentSummary = [
+      // Build content summary from analysis results
+      // Note: Content is validated by CreateMessageDto (max 100k chars)
+      // Frontend uses React which auto-escapes JSX expressions for XSS protection
+      let contentSummary = [
         analysis.thinking_process ? '## Thinking Process\n' + analysis.thinking_process : '',
         analysis.knowledge_gap_analysis ? '## Knowledge Gap Analysis\n' + analysis.knowledge_gap_analysis : '',
       ].filter(Boolean).join('\n\n');
+
+      // Enforce max length (100k chars) - same as DTO validation
+      const MAX_CONTENT_LENGTH = 100000;
+      if (contentSummary.length > MAX_CONTENT_LENGTH) {
+        contentSummary = contentSummary.substring(0, MAX_CONTENT_LENGTH) + '\n\n[Content truncated]';
+      }
 
       const message = await this.messagesService.createMessage({
         sessionId,
