@@ -23,13 +23,7 @@ import {
   mergeTemplateParams,
   type ResolvedTemplateParams,
 } from '../utils/templateResolver'
-
-const generateId = (): string => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID()
-  }
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-}
+import { generateId } from '../utils/generateId'
 
 /**
  * Core chat hook: manages messages, text streaming, sendMessage via REST,
@@ -53,6 +47,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const [messages, setMessages] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStreamContent, setCurrentStreamContent] = useState('')
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
 
   // Refs for mutable state in socket handlers (avoids stale closures)
   const streamContentRef = useRef('')
@@ -283,6 +278,35 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     }
   }, [connection.socket])
 
+  // Auto-load message history on connection
+  useEffect(() => {
+    if (!connection.connected || !connection.sessionId) return
+
+    const loadMessageHistory = async () => {
+      try {
+        setIsLoadingHistory(true)
+        const response = await fetch(
+          `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/messages?limit=100`,
+          { method: 'GET' },
+        )
+        if (!response.ok) {
+          setMessages([])
+          return
+        }
+        const data = await response.json()
+        const history = data.messages || []
+        setMessages(history)
+      } catch {
+        // Graceful fallback to empty history
+        setMessages([])
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    loadMessageHistory()
+  }, [connection.connected, connection.sessionId, connection.serverUrl])
+
   // Wait for reconnection (used by sendMessage retry)
   const waitForReconnection = useCallback((): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -480,12 +504,21 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     socket.emit('cancel', { sessionId: connection.sessionId })
   }, [connection.socket, connection.sessionId, isProcessing])
 
+  const clearConversation = useCallback(() => {
+    // Clear local message state
+    clearMessages()
+    // Start new conversation (clears storage, generates new sessionId, reconnects)
+    connection.startNewConversation()
+  }, [clearMessages, connection.startNewConversation])
+
   return {
     messages,
     isProcessing,
+    isLoadingHistory,
     currentStreamContent,
     sendMessage,
     clearMessages,
+    clearConversation,
     cancelProcessing,
   }
 }

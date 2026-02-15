@@ -19,9 +19,11 @@ function createMockConnection(): UseAgentConnectionReturn {
     connected: true,
     clientId: 'test',
     sessionId: 'test',
+    serverUrl: '/',
     error: null,
     connect: vi.fn(),
     disconnect: vi.fn(),
+    startNewConversation: vi.fn(),
   }
 }
 

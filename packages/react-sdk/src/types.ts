@@ -330,10 +330,14 @@ export interface SolutionConfig {
 export interface UseAgentConnectionOptions {
   /** Server URL. Defaults to '/' (relative, proxied by Vite) */
   serverUrl?: string
-  /** Session ID prefix, e.g., 'lpd', 'pe' */
+  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when tenantId is not provided. */
   sessionPrefix?: string
   /** Whether to auto-connect on mount. Defaults to true */
   autoConnect?: boolean
+  /** Tenant ID for tenant-scoped localStorage persistence. When provided, sessionId uses conv_ prefix and is persisted. */
+  tenantId?: string
+  /** Force a new conversation, clearing any saved sessionId from localStorage */
+  forceNewConversation?: boolean
 }
 
 export interface UseAgentConnectionReturn {
@@ -345,6 +349,8 @@ export interface UseAgentConnectionReturn {
   error: string | null
   connect: () => void
   disconnect: () => void
+  /** Clear current session storage and start a new conversation with a fresh sessionId */
+  startNewConversation: () => void
 }
 
 export interface PageContext {
@@ -379,9 +385,12 @@ export interface SendMessageOptions {
 export interface UseAgentChatReturn {
   messages: Message[]
   isProcessing: boolean
+  isLoadingHistory: boolean
   currentStreamContent: string
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>
   clearMessages: () => void
+  /** Clear messages and start a new conversation (new sessionId, new storage) */
+  clearConversation: () => void
   cancelProcessing: () => void
 }
 

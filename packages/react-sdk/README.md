@@ -31,20 +31,27 @@ import {
 function App() {
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    sessionPrefix: 'demo'
+    tenantId: 'my-app'  // Enables conversation persistence
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, tenantId: 'my-app' })
   const status = useAgentStatus({ connection })
 
+  if (chat.isLoadingHistory) {
+    return <div>Loading conversation...</div>
+  }
+
   return (
-    <ChatPanel
-      messages={chat.messages}
-      isProcessing={status.isProcessing}
-      connected={connection.connected}
-      activeTools={status.activeTools}
-      onSendMessage={chat.sendMessage}
-    />
+    <>
+      <button onClick={() => chat.clearConversation()}>New Conversation</button>
+      <ChatPanel
+        messages={chat.messages}
+        isProcessing={status.isProcessing}
+        connected={connection.connected}
+        activeTools={status.activeTools}
+        onSendMessage={chat.sendMessage}
+      />
+    </>
   )
 }
 ```
@@ -69,38 +76,52 @@ function App() {
 
 ### useAgentConnection
 
-Manages WebSocket connection to CCAAS backend.
+Manages WebSocket connection to CCAAS backend with optional conversation persistence.
 
 ```tsx
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  sessionPrefix: 'my-solution',
+  tenantId: 'my-solution',       // Enables conversation persistence via localStorage
   autoConnect: true,
-  reconnectionAttempts: 5
+  // sessionPrefix: 'legacy',    // Legacy option (no persistence), use tenantId instead
+  // forceNewConversation: true,  // Always start fresh, ignore saved conversationId
 })
 
 // Returns:
 // - connected: boolean
-// - sessionId: string
+// - sessionId: string             // conv_${uuid} when tenantId provided
 // - socket: Socket | null
 // - connect: () => void
 // - disconnect: () => void
+// - startNewConversation: () => void  // Clear storage, new ID, reconnect
 ```
+
+**Conversation persistence**: When `tenantId` is provided, the `sessionId` is persisted in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same `sessionId` is recovered, enabling message history loading.
 
 ### useAgentChat
 
-Handles chat messages and user input.
+Handles chat messages, user input, and conversation lifecycle.
 
 ```tsx
 const chat = useAgentChat({
   connection,
-  tenantId: 'default'
+  tenantId: 'my-solution'
 })
 
 // Returns:
 // - messages: Message[]
+// - isProcessing: boolean
+// - isLoadingHistory: boolean        // True while loading saved messages
+// - currentStreamContent: string
 // - sendMessage: (content: string) => void
+// - clearMessages: () => void        // Clear UI only, keep same conversation
+// - clearConversation: () => void    // Clear UI + new conversationId + reconnect
+// - cancelProcessing: () => void
 ```
+
+**Message history**: On connection, `useAgentChat` automatically fetches message history from `GET /api/v1/sessions/{sessionId}/messages?limit=100`. Use `isLoadingHistory` to show a loading indicator.
+
+**New conversation**: Call `clearConversation()` to start a fresh conversation. This clears messages, removes the saved conversationId from localStorage, generates a new `conv_${uuid}`, and reconnects.
 
 ### useAgentStatus
 
@@ -287,13 +308,15 @@ import {
   useChatLayout
 } from '@ccaas/react-sdk'
 
+const TENANT_ID = 'my-solution'
+
 export function useMySession() {
   const connection = useAgentConnection({
     serverUrl: process.env.REACT_APP_BACKEND_URL,
-    sessionPrefix: 'my-solution'
+    tenantId: TENANT_ID,
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, tenantId: TENANT_ID })
   const status = useAgentStatus({ connection })
   const layout = useChatLayout()
 
@@ -485,6 +508,7 @@ See complete examples in:
 ## Documentation
 
 - [Chat Integration Guide](./docs/CHAT_INTEGRATION_GUIDE.md) - Complete integration tutorial
+- [Conversation Persistence](../../docs/CONVERSATION_PERSISTENCE.md) - Conversation recovery architecture and integration guide
 - [Solution Template](../../docs/SOLUTION_TEMPLATE.md) - Template for new solutions
 - [Backend Events](../backend/CLAUDE.md#socket-events) - Backend event reference
 

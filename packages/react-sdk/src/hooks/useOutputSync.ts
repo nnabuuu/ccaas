@@ -91,26 +91,14 @@ export function useOutputSync<T extends Record<string, unknown>>(
   }, [normalizeField, undoTimeout])
 
   // Handle incoming output update
+  // Both 'manual' and 'auto' modes queue updates for later sync
   const handleOutputUpdate = useCallback((update: OutputUpdate) => {
-    if (mode === 'manual') {
-      // Queue for manual sync
-      setPendingUpdates(prev => {
-        const next = new Map(prev)
-        next.set(update.field, update)
-        return next
-      })
-    }
-    // 'auto' mode: caller should provide currentData + setData externally.
-    // This hook stores the update; the solution code calls syncToForm or handles it directly.
-    // For auto mode, we also queue it so the solution can access it via handleOutputUpdate callback.
-    if (mode === 'auto') {
-      setPendingUpdates(prev => {
-        const next = new Map(prev)
-        next.set(update.field, update)
-        return next
-      })
-    }
-  }, [mode])
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.set(update.field, update)
+      return next
+    })
+  }, [])
 
   // Sync a single field to form data
   const syncToForm = useCallback((
