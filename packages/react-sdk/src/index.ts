@@ -19,6 +19,7 @@ export { useFiles } from './hooks/useFiles'
 export { useFileVersions } from './hooks/useFileVersions'
 export { useFilePreview, clearPreviewCache } from './hooks/useFilePreview'
 export { useTaskTracking } from './hooks/useTaskTracking'
+export { useMessageSplitter } from './hooks/useMessageSplitter'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -33,6 +34,8 @@ export { ChatSection } from './components/ChatSection'
 export { SubAgentCard } from './components/SubAgentCard'
 export { OutputUpdateCard } from './components/OutputUpdateCard'
 export { QuickActions } from './components/QuickActions'
+export { TokenBadge } from './components/TokenBadge'
+export { SyncCardPanel } from './components/SyncCardPanel'
 export { FilePanel } from './components/FilePanel'
 export { FileList } from './components/FileList'
 export { FileListItem } from './components/FileListItem'
@@ -85,6 +88,8 @@ export type {
   UseFilePreviewReturn,
   UseTaskTrackingOptions,
   UseTaskTrackingReturn,
+  UseMessageSplitterOptions,
+  UseMessageSplitterReturn,
 
   // Common data types
   Message,
@@ -104,6 +109,12 @@ export type {
   FileMetadata,
   FileVersion,
   FilePreviewData,
+  TokenUsage,
+
+  // Message splitting types
+  SegmentType,
+  DisplaySegment,
+  SplitMessage,
 
   // Color scheme and layout types
   ColorScheme,
@@ -129,6 +140,8 @@ export type { CollapsedChatTabProps } from './components/CollapsedChatTab'
 export type { SubAgentCardProps } from './components/SubAgentCard'
 export type { OutputUpdateCardProps } from './components/OutputUpdateCard'
 export type { QuickAction, QuickActionsProps } from './components/QuickActions'
+export type { TokenBadgeProps } from './components/TokenBadge'
+export type { SyncCardPanelProps } from './components/SyncCardPanel'
 export type { FilePanelProps } from './components/FilePanel'
 export type { FileListProps } from './components/FileList'
 export type { FileListItemProps } from './components/FileListItem'

@@ -5,6 +5,11 @@
  * (e.g., LessonPlan, Explanation) remain in each solution.
  */
 
+import type { TokenUsage } from '@ccaas/common'
+
+// Re-export TokenUsage for consumers
+export type { TokenUsage }
+
 // ==========================================
 // FILE MANAGEMENT TYPES
 // ==========================================
@@ -178,6 +183,20 @@ export interface UseTaskTrackingReturn {
   clearHistory: () => void
 }
 
+export interface UseMessageSplitterOptions {
+  /** Messages to split */
+  messages: Message[]
+  /** Enable message splitting. Defaults to true */
+  enabled?: boolean
+}
+
+export interface UseMessageSplitterReturn {
+  /** Split messages for rendering */
+  splitMessages: SplitMessage[]
+  /** Aggregated output updates from all assistant messages (deduplicated, latest per field) */
+  outputUpdates: OutputUpdate[]
+}
+
 // ============================================================================
 // Content Block Types (shared between solutions)
 // ============================================================================
@@ -220,9 +239,51 @@ export interface Message {
   content: string
   contentBlocks?: ContentBlock[]
   outputUpdates?: OutputUpdate[]
+  tokenUsage?: TokenUsage
   timestamp?: Date
   createdAt?: string
   isStreaming?: boolean
+}
+
+// ============================================================================
+// Message Splitting Types (for improved UX)
+// ============================================================================
+
+/**
+ * Type of display segment after splitting a message
+ */
+export type SegmentType = 'text' | 'tool' | 'tool-group'
+
+/**
+ * A single display segment in a split message
+ */
+export interface DisplaySegment {
+  /** Unique ID: ${messageId}-seg-${index} */
+  id: string
+  /** Segment type */
+  type: SegmentType
+  /** Content blocks for this segment */
+  blocks: ContentBlock[]
+  /** Whether this segment is currently streaming */
+  isStreaming: boolean
+}
+
+/**
+ * A message split into multiple display segments
+ */
+export interface SplitMessage {
+  /** Original message ID */
+  messageId: string
+  /** Message role */
+  role: 'user' | 'assistant' | 'system'
+  /** Display segments */
+  segments: DisplaySegment[]
+  /** Token usage (from original message) */
+  tokenUsage?: TokenUsage
+  /** Timestamp (from original message) */
+  timestamp?: Date
+  /** Original unsplit message */
+  original: Message
 }
 
 // ============================================================================
@@ -443,6 +504,7 @@ export interface ChatPanelProps {
   todoItems?: import('@ccaas/common').EventTodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: import('@ccaas/common').ActiveSubAgent[]
+  tokenUsage?: TokenUsage | null     // Session-level token usage
   onSendMessage: (content: string) => void
   onCancel?: () => void
   renderMessage?: (message: Message) => React.ReactNode

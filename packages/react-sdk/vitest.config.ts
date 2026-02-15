@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['__tests__/**/*.test.ts'],
+    include: ['__tests__/**/*.test.{ts,tsx}'],
     // Increase pool timeout and add memory settings for CI
     poolOptions: {
       threads: {
