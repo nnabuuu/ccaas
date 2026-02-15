@@ -2,7 +2,7 @@
 
 ## 概述
 
-LoopAI 提供 Vue SDK（`@ccaas/vue-sdk`）和通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
+LoopAI 提供 Vue SDK（`@ccaas/vue-sdk`）和 React SDK（`@ccaas/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
 
 ## Vue SDK 集成
 
@@ -110,9 +110,107 @@ const {
 })
 ```
 
-## React 集成
+## React SDK 集成 (@ccaas/react-sdk)
 
-React 应用通过 Socket.io 直接集成。以下是核心 Hook 模式。
+### 安装
+
+```bash
+npm install @ccaas/react-sdk
+```
+
+### 核心 Hooks
+
+React SDK 提供五个核心 Hooks，用于 Solution 开发：
+
+#### 1. useAgentConnection
+
+管理与 CCAAS 后端的 WebSocket 连接：
+
+```typescript
+import { useAgentConnection } from '@ccaas/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // CCAAS 后端
+  tenantId: 'lesson-plan-designer',
+  autoConnect: true,
+})
+
+// connection.socket - Socket.io 客户端实例
+// connection.sendMessage(message, sessionId) - 发送聊天消息
+// connection.cancelCompletion(sessionId) - 取消正在进行的请求
+```
+
+#### 2. useAgentChat
+
+管理聊天消息与流式传输：
+
+```typescript
+import { useAgentChat } from '@ccaas/react-sdk'
+
+const chat = useAgentChat({
+  sessionId,
+  onComplete: (message) => console.log('完成:', message),
+})
+
+// chat.messages - 聊天消息数组
+// chat.isStreaming - AI 是否正在响应
+// chat.streamingContent - 当前流式文本内容
+```
+
+#### 3. useAgentStatus
+
+追踪 Agent 处理状态：
+
+```typescript
+import { useAgentStatus } from '@ccaas/react-sdk'
+
+const status = useAgentStatus()
+
+// status.isProcessing - Agent 是否正在工作
+// status.currentTool - 当前执行的工具名称
+// status.phase - 处理阶段（如 'tool_use'、'thinking'）
+```
+
+#### 4. usePageContext
+
+上下文感知的 Skill 触发：
+
+```typescript
+import { usePageContext } from '@ccaas/react-sdk'
+
+const { setContext } = usePageContext()
+
+// 设置上下文以影响 Skill 触发
+setContext({
+  page: 'lesson-plan-editor',
+  lessonPlanId: '123',
+  editMode: true
+})
+```
+
+#### 5. useFiles
+
+文件上传与管理：
+
+```typescript
+import { useFiles } from '@ccaas/react-sdk'
+
+const { files, uploadFile, removeFile } = useFiles({ sessionId })
+
+const handleUpload = async (file: File) => {
+  await uploadFile(file)
+}
+```
+
+### 完整集成示例
+
+参见教程第 6.5 章，了解如何将所有 Hooks 组合使用的完整示例。
+
+## 自定义 React 集成（高级）
+
+> 大多数场景下，建议优先使用上文介绍的 `@ccaas/react-sdk` Hooks。
+
+React 应用也可以通过 Socket.io 直接集成。以下是底层 Hook 模式。
 
 ### useSocket Hook
 

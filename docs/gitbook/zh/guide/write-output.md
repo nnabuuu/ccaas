@@ -32,27 +32,95 @@ AI Agent 调用 write\_output 工具后，CCAAS 后端会将数据封装为 `out
 ### MCP Server 实现
 
 ```typescript
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
 
-  // 验证字段名
-  const VALID_FIELDS = [
-    'title', 'objectives', 'activities',
-    'assessment', 'materials'
-  ]
+const VALID_FIELDS = [
+  'title', 'objectives', 'activities',
+  'assessment', 'materials'
+] as const
 
-  if (!VALID_FIELDS.includes(field)) {
-    return res.status(400).json({
-      error: `Invalid field: ${field}`,
-      validFields: VALID_FIELDS
-    })
+const server = new Server(
+  { name: 'my-solution-tools', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+)
+
+// 定义 write_output 工具
+const writeOutputTool: Tool = {
+  name: 'write_output',
+  description: `将结构化数据写入前端表单。
+有效字段: ${VALID_FIELDS.join(', ')}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        enum: [...VALID_FIELDS],
+        description: '要更新的表单字段',
+      },
+      value: {
+        description: '字段的值',
+      },
+      preview: {
+        type: 'string',
+        description: '同步按钮上显示的可读摘要',
+      },
+    },
+    required: ['field', 'value'],
+  },
+}
+
+// 注册工具
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: [writeOutputTool] }
+})
+
+// 处理工具调用
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview?: string
+    }
+
+    // 验证字段名
+    if (!VALID_FIELDS.includes(field as any)) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          data: { error: `Invalid field: ${field}` },
+          status: 'error',
+        })}],
+        isError: true,
+      }
+    }
+
+    // 返回成功 -- CCAAS 会将其封装为 output_update 事件
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        data: { field, value, preview },
+        status: 'success',
+      })}],
+    }
   }
 
-  res.json({
-    data: { field, value, operation },
-    status: 'success'
-  })
+  return {
+    content: [{ type: 'text', text: JSON.stringify({
+      data: { error: `Unknown tool: ${name}` },
+      status: 'error',
+    })}],
+    isError: true,
+  }
 })
+
+// 启动服务器
+const transport = new StdioServerTransport()
+await server.connect(transport)
 ```
 
 ### 使用 Zod 进行输出验证
@@ -62,7 +130,8 @@ app.post('/tools/write_output', (req, res) => {
 ```typescript
 import { z } from 'zod'
 
-const OutputSchema = z.object({
+// 定义每个字段的 Schema
+const fieldSchemas: Record<string, z.ZodType> = {
   title: z.string().min(1),
   objectives: z.array(z.object({
     description: z.string(),
@@ -77,27 +146,52 @@ const OutputSchema = z.object({
     type: z.string(),
     description: z.string()
   }))
-})
+}
 
-app.post('/tools/write_output', (req, res) => {
-  const { field, value } = req.body
+function validateField(field: string, value: unknown) {
+  const schema = fieldSchemas[field]
+  if (!schema) return { success: true, data: value, errors: [] }
 
-  // 使用 Schema 验证单个字段
-  const fieldSchema = OutputSchema.shape[field]
-  if (fieldSchema) {
-    const result = fieldSchema.safeParse(value)
-    if (!result.success) {
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: result.error.issues
-      })
+  const result = schema.safeParse(value)
+  if (result.success) {
+    return { success: true, data: result.data, errors: [] }
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
+  }
+}
+
+// 在 CallToolRequestSchema 处理器中使用:
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview?: string
+    }
+
+    // 根据字段 Schema 验证值
+    const validation = validateField(field, value)
+    if (!validation.success) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          data: { error: `Validation failed: ${validation.errors.join('; ')}` },
+          status: 'error',
+        })}],
+        isError: true,
+      }
+    }
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        data: { field, value: validation.data, preview },
+        status: 'success',
+      })}],
     }
   }
 
-  res.json({
-    data: { field, value: fieldSchema ? fieldSchema.parse(value) : value },
-    status: 'success'
-  })
+  // ... 处理其他工具
 })
 ```
 

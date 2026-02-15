@@ -2,7 +2,7 @@
 
 ## Overview
 
-LoopAI provides the Vue SDK (`@ccaas/vue-sdk`) and a general Socket.io integration pattern, supporting both Vue and React frontend frameworks.
+CCAAS provides official SDKs for both Vue (`@ccaas/vue-sdk`) and React (`@ccaas/react-sdk`), as well as a general Socket.io integration pattern for custom implementations.
 
 ## Vue SDK Integration
 
@@ -110,9 +110,203 @@ const {
 })
 ```
 
-## React Integration
+## React SDK Integration (@ccaas/react-sdk)
 
-React applications integrate directly via Socket.io. Below are the core hook patterns.
+### Installation
+
+```bash
+npm install @ccaas/react-sdk
+```
+
+### Core Hooks
+
+The React SDK provides five essential hooks for Solution development:
+
+| Hook | Responsibility |
+|------|---------------|
+| `useAgentConnection` | Socket.io connection, session ID persistence, reconnection |
+| `useAgentChat` | Message history, text streaming, send via REST, conversation lifecycle |
+| `useAgentStatus` | Tool activity, thinking state, SubAgent tracking, todo items |
+| `usePageContext` | Sends current page/form state as context with every message |
+| `useFiles` | Session file listing, upload, download, new-file tracking |
+
+#### 1. useAgentConnection
+
+Manages WebSocket connection to CCAAS backend:
+
+```typescript
+import { useAgentConnection } from '@ccaas/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // CCAAS backend (absolute URL required)
+  tenantId: 'lesson-plan-designer',
+  autoConnect: true,
+})
+
+// connection.connected  - Whether the socket is connected
+// connection.sessionId  - Current session ID (persisted in localStorage)
+// connection.socket     - Socket.io client instance
+// connection.sendMessage(message, sessionId) - Send chat message
+// connection.cancelCompletion(sessionId) - Cancel ongoing request
+```
+
+When `tenantId` is provided, the session ID is persisted in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same session is recovered automatically.
+
+#### 2. useAgentChat
+
+Manages chat messages and streaming:
+
+```typescript
+import { useAgentChat } from '@ccaas/react-sdk'
+
+const chat = useAgentChat({
+  connection,
+  tenantId,
+  mcpServers: solutionConfig?.mcpServers,
+  skillPath: solutionConfig?.skillPath,
+  context,  // from usePageContext - attached to every message
+  onOutputUpdate: (update) => {
+    // Handle AI-generated field updates (field, value, preview)
+    console.log('Output update:', update.field, update.value)
+  },
+})
+
+// chat.messages            - Array of chat messages
+// chat.isProcessing        - Whether AI is currently responding
+// chat.currentStreamContent - Current streaming text
+// chat.isLoadingHistory    - Whether message history is being fetched
+// chat.sendMessage(content) - Send a message
+// chat.cancelProcessing()   - Cancel current processing
+// chat.clearConversation()  - Clear messages and start a new session
+```
+
+#### 3. useAgentStatus
+
+Tracks Agent processing state, SubAgents, and tool activity:
+
+```typescript
+import { useAgentStatus } from '@ccaas/react-sdk'
+
+const status = useAgentStatus({ connection })
+
+// status.activeTools      - Map of currently executing tools
+// status.isThinking       - Whether Agent is in thinking state
+// status.thinkingContent  - Current thinking text
+// status.activeSubAgents  - Array of running SubAgents
+// status.tokenUsage       - { inputTokens, outputTokens, cacheReadTokens }
+// status.todoItems        - Array of todo items from the Agent
+// status.todoStats        - Aggregated todo progress statistics
+```
+
+SubAgent tracking is handled entirely via WebSocket events (`subagent_started`, `subagent_completed`) -- no polling required.
+
+#### 4. usePageContext
+
+Context-aware Skill triggering -- sends current page state with every chat message:
+
+```typescript
+import { usePageContext } from '@ccaas/react-sdk'
+
+const { context, updateContext } = usePageContext()
+
+// Update context whenever the form changes
+useEffect(() => {
+  if (lessonPlan) {
+    updateContext('lesson-plan-editor', {
+      lessonPlanId: lessonPlan.id,
+      currentForm: {
+        title: lessonPlan.title,
+        subject: lessonPlan.subject,
+        objectives: lessonPlan.objectives,
+      },
+    })
+  }
+}, [lessonPlan, updateContext])
+```
+
+Pass `context` to `useAgentChat` so it is automatically attached to every message sent to the backend.
+
+#### 5. useFiles
+
+File upload and management for the current session:
+
+```typescript
+import { useFiles } from '@ccaas/react-sdk'
+
+const files = useFiles({
+  connection,
+  sessionId: connection.sessionId,
+  enabled: connection.connected,
+})
+
+// files.files          - Array of FileMetadata
+// files.newFilesCount  - Number of unread files (for badge display)
+// files.hasNewFiles    - Boolean shortcut
+// files.uploadFile     - Upload a file to the session
+// files.markAsSynced   - Mark a file as seen
+// files.markAllSeen    - Mark all files as seen
+```
+
+### Pre-built Components
+
+The React SDK also provides ready-to-use UI components:
+
+| Component | Purpose |
+|-----------|---------|
+| `ChatPanel` | Complete chat interface with tabs (messages, files, tasks) |
+| `AgentActivityLine` | Compact status bar showing active tools, thinking, SubAgents |
+| `OutputUpdateCard` | Renders a pending AI update with sync/discard actions |
+| `SubAgentCard` | Shows SubAgent type, description, and live duration timer |
+| `MessageBubble` | Single message display with markdown rendering |
+| `FilePanel` | File browser with icons, sizes, and download buttons |
+| `TasksView` | SubAgent and todo task list with grouping |
+| `TokenBadge` | Displays token usage statistics |
+
+### Complete Integration Example
+
+A typical Solution composes the five hooks inside a single session hook, then passes the state to components:
+
+```typescript
+import {
+  useAgentConnection,
+  useAgentChat,
+  useAgentStatus,
+  usePageContext,
+  useFiles,
+} from '@ccaas/react-sdk'
+
+export function useMySession(options = {}) {
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
+    tenantId: 'my-solution',
+    autoConnect: true,
+  })
+
+  const { context, updateContext } = usePageContext()
+
+  const chat = useAgentChat({
+    connection,
+    tenantId: 'my-solution',
+    context,
+    onOutputUpdate: (update) => {
+      // Queue update for user review (human-in-the-loop)
+    },
+  })
+
+  const status = useAgentStatus({ connection })
+  const files = useFiles({ connection, sessionId: connection.sessionId, enabled: connection.connected })
+
+  return { connection, chat, status, files, context, updateContext }
+}
+```
+
+See tutorial [Chapter 6.5](../tutorial/06-implementation/05-frontend.md) for a complete working example with the Lesson Plan Designer.
+
+## Custom React Integration (Advanced)
+
+> For most use cases, prefer using `@ccaas/react-sdk` hooks documented above.
+
+The following patterns show how to integrate directly via Socket.io without the SDK, for cases where you need full control over the connection and event handling.
 
 ### useSocket Hook
 
