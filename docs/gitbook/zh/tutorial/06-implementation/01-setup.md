@@ -1,6 +1,6 @@
 # 6.1 项目初始化
 
-在本节中，你将创建 Task Manager Solution 的目录结构、配置文件和启动脚本。完成后，你将拥有一个可以通过单个命令启动的项目骨架。
+在本节中，你将创建 Lesson Plan Designer Solution 的目录结构、配置文件和启动脚本。完成后，你将拥有一个可以通过单个命令启动的项目骨架。
 
 ## 目标
 
@@ -13,17 +13,17 @@
 
 ## 步骤 1：创建目录结构
 
-导航到 CCAAS monorepo 的 `solutions/` 目录，创建 Task Manager 文件夹：
+导航到 CCAAS monorepo 的 `solutions/` 目录，创建 Lesson Plan Designer 文件夹：
 
 ```bash
 cd solutions
-mkdir -p task-manager-tutorial/{backend/src,frontend/src,mcp-server/src,skills}
+mkdir -p lesson-plan-designer/{backend/src,frontend/src,mcp-server/src,skills}
 ```
 
 目录结构应该如下：
 
 ```
-task-manager-tutorial/
+lesson-plan-designer/
 ├── backend/
 │   └── src/
 ├── frontend/
@@ -35,37 +35,37 @@ task-manager-tutorial/
 
 ## 步骤 2：创建 solution.json
 
-`solution.json` 是 Solution 的中央配置文件。它告诉平台你的 MCP 服务器、Skills、端口和同步字段的信息。
+`solution.json` 是 Solution 的中央配置文件。它告诉平台你的 MCP 服务器、Skills、端口和数据库设置的信息。
 
-创建 `task-manager-tutorial/solution.json`：
+创建 `lesson-plan-designer/solution.json`：
 
 ```json
 {
   "$schema": "https://ccaas.dev/schemas/solution.v1.json",
 
-  "name": "Task Manager Tutorial",
-  "slug": "task-manager-tutorial",
+  "name": "Lesson Plan Designer",
+  "slug": "lesson-plan-designer",
   "version": "1.0.0",
-  "description": "Tutorial reference solution - AI-powered task management with projects, priorities, and bulk import",
+  "description": "AI-powered lesson plan design assistant",
 
   "backend": {
-    "port": 3003,
+    "port": 3002,
     "ccaasUrl": "http://localhost:3001",
     "database": {
       "type": "sqlite",
-      "path": "data/task-manager.db"
+      "path": "data/lesson-plans.db"
     }
   },
 
   "frontend": {
-    "port": 5281
+    "port": 5280
   },
 
   "mcpServers": {
-    "task-manager-tools": {
+    "lesson-plan-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
-      "description": "Task Manager MCP tools including write_output",
+      "description": "Lesson Plan Designer MCP tools including write_output",
       "type": "stdio",
       "env": {}
     }
@@ -73,41 +73,19 @@ task-manager-tutorial/
 
   "skills": [
     {
-      "name": "Task Creator",
-      "slug": "task-creator",
-      "description": "Create and manage tasks with AI assistance",
-      "skillFile": "skills/task-creator/SKILL.md",
+      "name": "Lesson Plan Designer",
+      "slug": "lesson-plan-designer",
+      "description": "Design lesson plans with AI assistance",
+      "skillFile": "skills/lesson-plan-designer/SKILL.md",
       "scope": "tenant",
       "triggers": [
-        { "type": "keyword", "value": "create task", "priority": 10 },
-        { "type": "keyword", "value": "add task", "priority": 10 },
-        { "type": "keyword", "value": "new task", "priority": 9 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write"]
-    },
-    {
-      "name": "Bulk Import",
-      "slug": "bulk-import",
-      "description": "Import multiple tasks from text, CSV, or structured input",
-      "skillFile": "skills/bulk-import/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "bulk import", "priority": 10 },
-        { "type": "keyword", "value": "import tasks", "priority": 10 },
-        { "type": "keyword", "value": "batch create", "priority": 9 }
+        { "type": "keyword", "value": "lesson plan", "priority": 10 },
+        { "type": "keyword", "value": "teaching objectives", "priority": 8 },
+        { "type": "keyword", "value": "teaching activities", "priority": 8 },
+        { "type": "keyword", "value": "assessment", "priority": 7 }
       ],
       "allowedTools": ["write_output", "Read", "Write"]
     }
-  ],
-
-  "syncFields": [
-    "taskTitle",
-    "taskDescription",
-    "priority",
-    "status",
-    "projectId",
-    "dueDate",
-    "tags"
   ]
 }
 ```
@@ -117,15 +95,14 @@ task-manager-tutorial/
 | 字段 | 用途 |
 |------|------|
 | `slug` | 唯一标识符，用于租户创建和 URL 路由 |
-| `backend.port` | Solution 后端端口（3003，与 CCAAS 的 3001 分开） |
+| `backend.port` | Solution 后端端口（3002，与 CCAAS 的 3001 分开） |
 | `backend.ccaasUrl` | 此 Solution 连接的 CCAAS 后端 URL |
 | `frontend.port` | Vite 开发服务器端口 |
 | `mcpServers` | AI Agent 可以调用的 MCP 工具服务 |
 | `skills` | AI Skill 定义及触发器配置 |
-| `syncFields` | 可以通过 `output_update` 接收 AI 数据的表单字段 |
 
 {% hint style="info" %}
-**为什么要分开端口？** Solution 后端（3003）处理业务数据（任务、项目）。CCAAS 后端（3001）处理 AI 会话和消息中继。它们是职责分离的独立服务。
+**为什么要分开端口？** Solution 后端（3002）处理业务数据（教案、教材、课程标准）。CCAAS 后端（3001）处理 AI 会话和消息中继。它们是职责分离的独立服务。
 {% endhint %}
 
 ## 步骤 3：初始化后端
@@ -138,9 +115,9 @@ task-manager-tutorial/
 
 ```json
 {
-  "name": "task-manager-tutorial-backend",
+  "name": "lesson-plan-designer-backend",
   "version": "1.0.0",
-  "description": "Task Manager Tutorial Backend - NestJS + SQLite",
+  "description": "Lesson Plan Designer Backend - NestJS + SQLite",
   "private": true,
   "scripts": {
     "build": "nest build",
@@ -247,11 +224,13 @@ task-manager-tutorial/
 创建 `backend/.env.example`：
 
 ```
-# Task Manager Tutorial Backend
-PORT=3003
+# Lesson Plan Designer Backend
+PORT=3002
 HOST=0.0.0.0
-CORS_ORIGIN=http://localhost:5281
-DATABASE_PATH=data/task-manager.db
+CORS_ORIGIN=http://localhost:5280
+DB_PATH=./data/lesson-plans.db
+CCAAS_URL=http://localhost:3001
+NODE_ENV=development
 ```
 
 复制为 `.env`：
@@ -276,7 +255,7 @@ async function bootstrap() {
 
   // 为前端启用 CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5281',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5280',
     credentials: true,
   });
 
@@ -289,14 +268,14 @@ async function bootstrap() {
   // API 前缀
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 3003;
+  const port = process.env.PORT || 3002;
   const host = process.env.HOST || '0.0.0.0';
 
   await app.listen(port, host);
 
   logger.log('');
-  logger.log('Task Manager Tutorial Backend (NestJS)');
-  logger.log('=======================================');
+  logger.log('Lesson Plan Designer Backend (NestJS)');
+  logger.log('=====================================');
   logger.log(`HTTP:   http://${host}:${port}`);
   logger.log('');
 }
@@ -306,9 +285,9 @@ bootstrap();
 
 **说明：**
 
-- `enableCors`：允许前端（端口 5281）调用后端 API
+- `enableCors`：允许前端（端口 5280）调用后端 API
 - `ValidationPipe` 配合 `whitelist: true`：剥离 DTO 中未定义的属性，防止意外数据到达服务层
-- `setGlobalPrefix('api')`：所有路由都带 `/api` 前缀（如 `/api/tasks`）
+- `setGlobalPrefix('api')`：所有路由都带 `/api` 前缀（如 `/api/lesson-plans`）
 
 ### 3.6 创建 AppModule
 
@@ -318,8 +297,9 @@ bootstrap();
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
-import { TasksModule } from './tasks/tasks.module';
-import { ProjectsModule } from './projects/projects.module';
+import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
+import { TextbookModule } from './textbook/textbook.module';
+import { CurriculumStandardsModule } from './curriculum-standards/curriculum-standards.module';
 
 @Module({
   imports: [
@@ -328,14 +308,15 @@ import { ProjectsModule } from './projects/projects.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
-    TasksModule,
-    ProjectsModule,
+    LessonPlansModule,
+    TextbookModule,
+    CurriculumStandardsModule,
   ],
 })
 export class AppModule {}
 ```
 
-这是将所有内容连接在一起的根模块。注意三个功能模块：`DatabaseModule` 用于数据访问，`TasksModule` 用于任务 CRUD，`ProjectsModule` 用于项目 CRUD。
+这是将所有内容连接在一起的根模块。注意四个功能模块：`DatabaseModule` 用于数据访问，`LessonPlansModule` 用于教案 CRUD，`TextbookModule` 用于教材章节查询，`CurriculumStandardsModule` 用于课程标准查询。
 
 ## 步骤 4：初始化前端
 
@@ -345,7 +326,7 @@ export class AppModule {}
 
 ```json
 {
-  "name": "task-manager-tutorial-frontend",
+  "name": "lesson-plan-designer-frontend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -392,11 +373,11 @@ export class AppModule {}
 
 `setup.sh` 脚本自动化整个启动过程。它使用共享的 `solution-lib.sh` 库来处理租户创建、API Key 管理和 Skill 注入。
 
-创建 `task-manager-tutorial/setup.sh`：
+创建 `lesson-plan-designer/setup.sh`：
 
 ```bash
 #!/bin/bash
-# Task Manager Tutorial - Setup Script
+# Lesson Plan Designer - Setup Script
 # Uses: tools/solution-lib.sh
 
 set -e
@@ -492,7 +473,7 @@ main "$@"
 设置为可执行：
 
 ```bash
-chmod +x task-manager-tutorial/setup.sh
+chmod +x lesson-plan-designer/setup.sh
 ```
 
 **脚本做了什么：**
@@ -503,11 +484,11 @@ chmod +x task-manager-tutorial/setup.sh
 4. 为前端和后端安装 npm 依赖
 5. 在 CCAAS 平台中创建租户和 API Key
 6. 向 CCAAS 后端注册 Skills 和 MCP Servers
-7. 启动后端（端口 3003）和前端（端口 5281）
+7. 启动后端（端口 3002）和前端（端口 5280）
 
 ## 步骤 6：添加 .gitignore
 
-创建 `task-manager-tutorial/.gitignore`：
+创建 `lesson-plan-designer/.gitignore`：
 
 ```
 node_modules/
@@ -524,7 +505,7 @@ data/
 完成本节后，你的项目应该如下：
 
 ```
-task-manager-tutorial/
+lesson-plan-designer/
 ├── .gitignore
 ├── solution.json
 ├── setup.sh                    (可执行)
@@ -554,7 +535,7 @@ task-manager-tutorial/
 
 ```bash
 # 安装后端依赖
-cd task-manager-tutorial/backend
+cd lesson-plan-designer/backend
 npm install
 
 # 启动后端
@@ -564,19 +545,19 @@ npm run start:dev
 你应该看到如下输出：
 
 ```
-[Nest] LOG [Bootstrap] Task Manager Tutorial Backend (NestJS)
-[Nest] LOG [Bootstrap] =======================================
-[Nest] LOG [Bootstrap] HTTP:   http://0.0.0.0:3003
+[Nest] LOG [Bootstrap] Lesson Plan Designer Backend (NestJS)
+[Nest] LOG [Bootstrap] =====================================
+[Nest] LOG [Bootstrap] HTTP:   http://0.0.0.0:3002
 ```
 
 {% hint style="warning" %}
-在我们在下一节中创建 `DatabaseModule`、`TasksModule` 和 `ProjectsModule` 之前，后端会启动失败。这是预期的 -- `AppModule` 导入了它们但它们还不存在。如果你想立即验证设置是否正常，可以暂时在 `app.module.ts` 中注释掉这些导入。
+在我们在下一节中创建 `DatabaseModule`、`LessonPlansModule`、`TextbookModule` 和 `CurriculumStandardsModule` 之前，后端会启动失败。这是预期的 -- `AppModule` 导入了它们但它们还不存在。如果你想立即验证设置是否正常，可以暂时在 `app.module.ts` 中注释掉这些导入。
 {% endhint %}
 
 ## 常见陷阱
 
 {% hint style="danger" %}
-**陷阱：端口号搞混。** Solution 后端运行在端口 3003，不是 3001。端口 3001 是 CCAAS 后端的。搞混它们会导致连接失败。
+**陷阱：端口号搞混。** Solution 后端运行在端口 3002，不是 3001。端口 3001 是 CCAAS 后端的。搞混它们会导致连接失败。
 {% endhint %}
 
 {% hint style="danger" %}
@@ -584,9 +565,9 @@ npm run start:dev
 {% endhint %}
 
 {% hint style="danger" %}
-**陷阱：忘记 `setGlobalPrefix('api')`。** 没有这个，你的路由会在 `/tasks` 而不是 `/api/tasks`。前端和 MCP Server 都期望 `/api` 前缀。
+**陷阱：忘记 `setGlobalPrefix('api')`。** 没有这个，你的路由会在 `/lesson-plans` 而不是 `/api/lesson-plans`。前端和 MCP Server 都期望 `/api` 前缀。
 {% endhint %}
 
 ## 下一步
 
-骨架已经准备好了。现在让我们实现后端的数据库、任务 CRUD 和项目 CRUD。继续前往 [6.2 后端实现](02-backend.md)。
+骨架已经准备好了。现在让我们实现后端的数据库、教案 CRUD 和教材查询。继续前往 [6.2 后端实现](02-backend.md)。

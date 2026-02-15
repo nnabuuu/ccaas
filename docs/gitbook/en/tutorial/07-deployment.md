@@ -17,7 +17,7 @@ npm run build               # All packages build cleanly
 Your Solution should have the standard structure:
 
 ```
-solutions/task-manager/
+solutions/lesson-plan-designer/
 ├── solution.json
 ├── setup.sh
 ├── inject-skills.sh
@@ -87,7 +87,7 @@ Your Solution backend (port 3002) needs its own environment configuration:
 # Solution backend
 SOLUTION_PORT=3002
 CCAAS_BACKEND_URL=http://localhost:3001
-DATABASE_PATH=/data/task-manager/tasks.db
+DATABASE_PATH=/data/lesson-plan-designer/lesson-plans.db
 ```
 
 {% hint style="warning" %}
@@ -109,8 +109,8 @@ CCAAS uses SQLite by default, which is suitable for single-node deployments. Typ
 │   └── sessions/               # Per-session directories
 └── skill-packages/             # Skill definitions
 
-/data/task-manager/
-└── tasks.db                    # Solution domain database
+/data/lesson-plan-designer/
+└── lesson-plans.db             # Solution domain database
 ```
 
 ### Backup Strategy
@@ -125,7 +125,7 @@ mkdir -p "$BACKUP_DIR"
 
 # Use SQLite online backup (safe for concurrent access)
 sqlite3 /data/ccaas/ccaas.db ".backup '$BACKUP_DIR/ccaas.db'"
-sqlite3 /data/task-manager/tasks.db ".backup '$BACKUP_DIR/tasks.db'"
+sqlite3 /data/lesson-plan-designer/lesson-plans.db ".backup '$BACKUP_DIR/lesson-plans.db'"
 
 echo "Backup completed: $BACKUP_DIR"
 ```
@@ -153,7 +153,7 @@ TypeORM will handle schema synchronization. For production schema changes, use e
 
 ```bash
 # Generate a migration from entity changes
-npx typeorm migration:generate -n AddTaskPriority
+npx typeorm migration:generate -n AddLessonPlanStatus
 
 # Run pending migrations
 npx typeorm migration:run
@@ -214,28 +214,28 @@ services:
       - AUTH_ENABLE_RATE_LIMITING=true
     restart: unless-stopped
 
-  task-manager-backend:
+  lesson-plan-backend:
     build:
-      context: ./solutions/task-manager/backend
+      context: ./solutions/lesson-plan-designer/backend
     ports:
       - "3002:3002"
     volumes:
-      - solution-data:/data/task-manager
+      - solution-data:/data/lesson-plan-designer
     environment:
       - CCAAS_BACKEND_URL=http://ccaas-backend:3001
-      - DATABASE_PATH=/data/task-manager/tasks.db
+      - DATABASE_PATH=/data/lesson-plan-designer/lesson-plans.db
     depends_on:
       - ccaas-backend
     restart: unless-stopped
 
-  task-manager-frontend:
+  lesson-plan-frontend:
     build:
-      context: ./solutions/task-manager/frontend
+      context: ./solutions/lesson-plan-designer/frontend
     ports:
       - "80:80"
     depends_on:
       - ccaas-backend
-      - task-manager-backend
+      - lesson-plan-backend
 
 volumes:
   ccaas-data:
@@ -453,8 +453,8 @@ AUTH_ENABLE_RATE_LIMITING=true
 # Create a scoped key for your Solution frontend
 POST /api/v1/admin/api-keys
 {
-  "tenantId": "task-manager",
-  "name": "Task Manager Frontend",
+  "tenantId": "lesson-plan-designer",
+  "name": "Lesson Plan Designer Frontend",
   "scopes": ["chat", "skills:read", "skills:execute"]
 }
 ```

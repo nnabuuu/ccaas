@@ -30,99 +30,121 @@ Testing a LoopAI Solution requires verifying three layers: the Solution backend 
 
 Unit tests verify that individual service methods work correctly in isolation. The backend uses Jest with `ts-jest`.
 
-### Testing the TasksService
+### Testing the LessonPlansService
 
 Create a test file next to the service:
 
 ```typescript
-// backend/src/tasks/tasks.service.spec.ts
+// backend/src/lesson-plans/lesson-plans.service.spec.ts
 
-import { TasksService } from './tasks.service'
-import { DatabaseService } from '../database/database.service'
+import { LessonPlansService } from './lesson-plans.service'
+import Database from 'better-sqlite3'
 import { NotFoundException } from '@nestjs/common'
 
-describe('TasksService', () => {
-  let service: TasksService
-  let dbService: DatabaseService
+describe('LessonPlansService', () => {
+  let service: LessonPlansService
+  let db: Database.Database
 
   beforeEach(() => {
-    // Create a real in-memory database for testing
-    dbService = new DatabaseService()
-    // Override the database path to use in-memory
-    process.env.DATABASE_PATH = ':memory:'
-    dbService.onModuleInit()
-    service = new TasksService(dbService)
+    // Create an in-memory database for testing
+    db = new Database(':memory:')
+    db.pragma('journal_mode = WAL')
+    db.pragma('foreign_keys = ON')
+
+    // Initialize schema
+    db.exec(`
+      CREATE TABLE lesson_plans (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        subject TEXT DEFAULT '',
+        grade_level INTEGER DEFAULT 1,
+        duration_minutes INTEGER DEFAULT 45,
+        lesson_plan_code TEXT DEFAULT NULL,
+        status TEXT DEFAULT 'DRAFT',
+        publisher TEXT DEFAULT NULL,
+        volume TEXT DEFAULT NULL,
+        chapter_id INTEGER DEFAULT NULL,
+        chapter_title TEXT DEFAULT NULL,
+        curriculum_requirements TEXT DEFAULT NULL,
+        objectives TEXT DEFAULT NULL,
+        student_analysis TEXT DEFAULT NULL,
+        materials_needed TEXT DEFAULT NULL,
+        content TEXT DEFAULT NULL,
+        assessment_methods TEXT DEFAULT NULL,
+        teaching_methods TEXT DEFAULT NULL,
+        extra_properties TEXT DEFAULT NULL,
+        attachments TEXT DEFAULT NULL,
+        create_by TEXT DEFAULT NULL,
+        create_time TEXT NOT NULL,
+        update_by TEXT DEFAULT NULL,
+        update_time TEXT NOT NULL,
+        remark TEXT DEFAULT NULL,
+        deleted INTEGER DEFAULT 0
+      )
+    `)
+
+    // Inject the in-memory database directly
+    service = new LessonPlansService(db)
   })
 
   afterEach(() => {
-    dbService.onModuleDestroy()
+    db.close()
   })
 
   describe('create', () => {
-    it('should create a task with default values', () => {
-      const task = service.create({ title: 'Test task' })
+    it('should create a lesson plan with default values', () => {
+      const plan = service.create({ title: 'Fractions Introduction' })
 
-      expect(task.title).toBe('Test task')
-      expect(task.status).toBe('todo')
-      expect(task.priority).toBe('medium')
-      expect(task.tags).toEqual([])
-      expect(task.id).toBeDefined()
+      expect(plan.title).toBe('Fractions Introduction')
+      expect(plan.status).toBe('DRAFT')
+      expect(plan.subject).toBe('')
+      expect(plan.gradeLevel).toBe(1)
+      expect(plan.durationMinutes).toBe(45)
+      expect(plan.id).toBeDefined()
     })
 
-    it('should create a task with all fields', () => {
-      const task = service.create({
-        title: 'Full task',
-        description: 'A detailed description',
-        status: 'in_progress',
-        priority: 'high',
-        dueDate: '2026-03-01',
-        tags: ['backend', 'api'],
+    it('should create a lesson plan with all fields', () => {
+      const plan = service.create({
+        title: 'Linear Equations',
+        subject: 'math',
+        gradeLevel: 8,
+        durationMinutes: 40,
+        publisher: 'PEP',
+        volume: 'Volume 1',
+        chapterId: 3,
+        chapterTitle: 'Chapter 3: Linear Equations',
       })
 
-      expect(task.title).toBe('Full task')
-      expect(task.description).toBe('A detailed description')
-      expect(task.status).toBe('in_progress')
-      expect(task.priority).toBe('high')
-      expect(task.tags).toEqual(['backend', 'api'])
+      expect(plan.title).toBe('Linear Equations')
+      expect(plan.subject).toBe('math')
+      expect(plan.gradeLevel).toBe(8)
+      expect(plan.durationMinutes).toBe(40)
+      expect(plan.publisher).toBe('PEP')
     })
   })
 
   describe('findAll', () => {
     beforeEach(() => {
-      service.create({ title: 'Task A', priority: 'high' })
-      service.create({ title: 'Task B', priority: 'low' })
-      service.create({
-        title: 'Task C', priority: 'high', status: 'done',
-      })
+      service.create({ title: 'Plan A', subject: 'math' })
+      service.create({ title: 'Plan B', subject: 'english' })
+      service.create({ title: 'Plan C', subject: 'math' })
     })
 
-    it('should return all tasks', () => {
-      const tasks = service.findAll()
-      expect(tasks).toHaveLength(3)
-    })
-
-    it('should filter by priority', () => {
-      const tasks = service.findAll({ priority: 'high' })
-      expect(tasks).toHaveLength(2)
-      expect(tasks.every(t => t.priority === 'high')).toBe(true)
-    })
-
-    it('should filter by status', () => {
-      const tasks = service.findAll({ status: 'done' })
-      expect(tasks).toHaveLength(1)
-      expect(tasks[0].title).toBe('Task C')
+    it('should return all lesson plans', () => {
+      const plans = service.findAll()
+      expect(plans).toHaveLength(3)
     })
   })
 
-  describe('findOne', () => {
-    it('should return a task by id', () => {
+  describe('findByIdOrFail', () => {
+    it('should return a lesson plan by id', () => {
       const created = service.create({ title: 'Find me' })
-      const found = service.findOne(created.id)
+      const found = service.findByIdOrFail(created.id)
       expect(found.title).toBe('Find me')
     })
 
     it('should throw NotFoundException for missing id', () => {
-      expect(() => service.findOne('nonexistent')).toThrow(
+      expect(() => service.findByIdOrFail('nonexistent')).toThrow(
         NotFoundException,
       )
     })
@@ -130,30 +152,64 @@ describe('TasksService', () => {
 
   describe('update', () => {
     it('should update specific fields', () => {
-      const task = service.create({ title: 'Original' })
-      const updated = service.update(task.id, {
-        title: 'Updated',
-        priority: 'urgent',
+      const plan = service.create({ title: 'Original' })
+      const updated = service.update(plan.id, {
+        title: 'Updated Title',
+        objectives: 'Students will understand fractions',
       })
 
-      expect(updated.title).toBe('Updated')
-      expect(updated.priority).toBe('urgent')
-      expect(updated.status).toBe('todo') // unchanged
+      expect(updated.title).toBe('Updated Title')
+      expect(updated.objectives).toBe(
+        'Students will understand fractions',
+      )
+      expect(updated.status).toBe('DRAFT') // unchanged
     })
   })
 
-  describe('remove', () => {
-    it('should delete a task', () => {
-      const task = service.create({ title: 'Delete me' })
-      const result = service.remove(task.id)
+  describe('delete', () => {
+    it('should delete a lesson plan', () => {
+      const plan = service.create({ title: 'Delete me' })
+      const result = service.delete(plan.id)
 
-      expect(result.deleted).toBe(true)
-      expect(() => service.findOne(task.id)).toThrow(NotFoundException)
+      expect(result).toBe(true)
+      expect(service.findById(plan.id)).toBeNull()
     })
 
-    it('should throw NotFoundException for missing id', () => {
-      expect(() => service.remove('nonexistent')).toThrow(
-        NotFoundException,
+    it('should return false for missing id', () => {
+      const result = service.delete('nonexistent')
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('patchField', () => {
+    it('should update a single field', () => {
+      const plan = service.create({ title: 'Patch test' })
+      const updated = service.patchField(
+        plan.id,
+        'objectives',
+        'New learning objectives',
+      )
+
+      expect(updated.objectives).toBe('New learning objectives')
+      expect(updated.title).toBe('Patch test') // unchanged
+    })
+
+    it('should handle JSON fields correctly', () => {
+      const plan = service.create({ title: 'JSON test' })
+      const standards = [
+        { id: 1, standardCode: 'MA-3-1', title: 'Number sense',
+          stage: 'Primary', standardType: 'Core',
+          contentDomain: 'Numbers' },
+      ]
+      const updated = service.patchField(
+        plan.id,
+        'curriculumRequirements',
+        standards,
+      )
+
+      expect(updated.curriculumRequirements).toHaveLength(1)
+      expect(updated.curriculumRequirements[0].standardCode).toBe(
+        'MA-3-1',
       )
     })
   })
@@ -162,7 +218,7 @@ describe('TasksService', () => {
 
 ### Key Testing Patterns
 
-**In-memory database.** By setting `DATABASE_PATH` to `:memory:`, each test suite gets a clean SQLite database. This is fast and avoids file cleanup.
+**In-memory database.** By creating a `Database(':memory:')` instance, each test suite gets a clean SQLite database. This is fast and avoids file cleanup.
 
 **Real database, no mocks.** For data access services, testing with a real database (even in-memory) catches SQL errors and schema issues that mocks would miss.
 
@@ -171,30 +227,31 @@ describe('TasksService', () => {
 ### Running Unit Tests
 
 ```bash
-cd solutions/task-manager-tutorial/backend
+cd solutions/lesson-plan-designer/backend
 npm test
 ```
 
 Expected output:
 
 ```
-PASS  src/tasks/tasks.service.spec.ts
-  TasksService
+PASS  src/lesson-plans/lesson-plans.service.spec.ts
+  LessonPlansService
     create
-      ✓ should create a task with default values
-      ✓ should create a task with all fields
+      ✓ should create a lesson plan with default values
+      ✓ should create a lesson plan with all fields
     findAll
-      ✓ should return all tasks
-      ✓ should filter by priority
-      ✓ should filter by status
-    findOne
-      ✓ should return a task by id
+      ✓ should return all lesson plans
+    findByIdOrFail
+      ✓ should return a lesson plan by id
       ✓ should throw NotFoundException for missing id
     update
       ✓ should update specific fields
-    remove
-      ✓ should delete a task
-      ✓ should throw NotFoundException for missing id
+    delete
+      ✓ should delete a lesson plan
+      ✓ should return false for missing id
+    patchField
+      ✓ should update a single field
+      ✓ should handle JSON fields correctly
 ```
 
 ## Integration Tests: API Endpoints
@@ -206,25 +263,25 @@ Integration tests verify that HTTP requests produce the correct responses. They 
 Install `supertest` for HTTP testing:
 
 ```bash
-cd solutions/task-manager-tutorial/backend
+cd solutions/lesson-plan-designer/backend
 npm install --save-dev supertest @types/supertest
 ```
 
 Create the integration test:
 
 ```typescript
-// backend/src/tasks/tasks.controller.spec.ts
+// backend/src/lesson-plans/lesson-plans.controller.spec.ts
 
 import { Test, TestingModule } from '@nestjs/testing'
 import { INestApplication, ValidationPipe } from '@nestjs/common'
 import * as request from 'supertest'
 import { AppModule } from '../app.module'
 
-describe('Tasks API (integration)', () => {
+describe('Lesson Plans API (integration)', () => {
   let app: INestApplication
 
   beforeAll(async () => {
-    process.env.DATABASE_PATH = ':memory:'
+    process.env.DB_PATH = ':memory:'
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -243,107 +300,136 @@ describe('Tasks API (integration)', () => {
     await app.close()
   })
 
-  describe('POST /api/tasks', () => {
-    it('should create a task', async () => {
+  describe('POST /api/lesson-plans', () => {
+    it('should create a lesson plan', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/tasks')
-        .send({ title: 'Integration test task' })
+        .post('/api/lesson-plans')
+        .send({ title: 'Fractions Intro' })
         .expect(201)
 
-      expect(response.body.title).toBe('Integration test task')
+      expect(response.body.title).toBe('Fractions Intro')
       expect(response.body.id).toBeDefined()
-      expect(response.body.status).toBe('todo')
+      expect(response.body.status).toBe('DRAFT')
     })
 
-    it('should create a task with all fields', async () => {
+    it('should create a lesson plan with all fields', async () => {
       const response = await request(app.getHttpServer())
-        .post('/api/tasks')
+        .post('/api/lesson-plans')
         .send({
-          title: 'Full task',
-          description: 'Detailed description',
-          priority: 'high',
-          status: 'in_progress',
-          tags: ['api', 'test'],
+          title: 'Quadratic Equations',
+          subject: 'math',
+          gradeLevel: 9,
+          durationMinutes: 40,
+          publisher: 'PEP',
+          volume: 'Volume 2',
         })
         .expect(201)
 
-      expect(response.body.priority).toBe('high')
-      expect(response.body.tags).toEqual(['api', 'test'])
+      expect(response.body.subject).toBe('math')
+      expect(response.body.gradeLevel).toBe(9)
+    })
+
+    it('should return 400 when title is missing', async () => {
+      await request(app.getHttpServer())
+        .post('/api/lesson-plans')
+        .send({ subject: 'math' })
+        .expect(400)
     })
   })
 
-  describe('GET /api/tasks', () => {
-    it('should return all tasks', async () => {
+  describe('GET /api/lesson-plans', () => {
+    it('should return all lesson plans', async () => {
       const response = await request(app.getHttpServer())
-        .get('/api/tasks')
+        .get('/api/lesson-plans')
         .expect(200)
 
       expect(Array.isArray(response.body)).toBe(true)
       expect(response.body.length).toBeGreaterThan(0)
     })
-
-    it('should filter by status', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/api/tasks?status=in_progress')
-        .expect(200)
-
-      expect(
-        response.body.every(
-          (t: { status: string }) => t.status === 'in_progress',
-        ),
-      ).toBe(true)
-    })
   })
 
-  describe('GET /api/tasks/:id', () => {
-    it('should return a specific task', async () => {
-      // Create a task first
+  describe('GET /api/lesson-plans/:id', () => {
+    it('should return a specific lesson plan', async () => {
       const created = await request(app.getHttpServer())
-        .post('/api/tasks')
-        .send({ title: 'Find this task' })
+        .post('/api/lesson-plans')
+        .send({ title: 'Find this plan' })
 
       const response = await request(app.getHttpServer())
-        .get(`/api/tasks/${created.body.id}`)
+        .get(`/api/lesson-plans/${created.body.id}`)
         .expect(200)
 
-      expect(response.body.title).toBe('Find this task')
+      expect(response.body.title).toBe('Find this plan')
     })
 
-    it('should return 404 for missing task', async () => {
+    it('should return 404 for missing lesson plan', async () => {
       await request(app.getHttpServer())
-        .get('/api/tasks/nonexistent-id')
+        .get('/api/lesson-plans/nonexistent-id')
         .expect(404)
     })
   })
 
-  describe('PUT /api/tasks/:id', () => {
-    it('should update a task', async () => {
+  describe('PUT /api/lesson-plans/:id', () => {
+    it('should update a lesson plan', async () => {
       const created = await request(app.getHttpServer())
-        .post('/api/tasks')
+        .post('/api/lesson-plans')
         .send({ title: 'Before update' })
 
       const response = await request(app.getHttpServer())
-        .put(`/api/tasks/${created.body.id}`)
-        .send({ title: 'After update', priority: 'urgent' })
+        .put(`/api/lesson-plans/${created.body.id}`)
+        .send({
+          title: 'After update',
+          objectives: 'Students will learn fractions',
+        })
         .expect(200)
 
       expect(response.body.title).toBe('After update')
-      expect(response.body.priority).toBe('urgent')
+      expect(response.body.objectives).toBe(
+        'Students will learn fractions',
+      )
     })
   })
 
-  describe('DELETE /api/tasks/:id', () => {
-    it('should delete a task', async () => {
+  describe('PATCH /api/lesson-plans/:id/field', () => {
+    it('should patch a single field', async () => {
       const created = await request(app.getHttpServer())
-        .post('/api/tasks')
+        .post('/api/lesson-plans')
+        .send({ title: 'Patch test' })
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/lesson-plans/${created.body.id}/field`)
+        .send({
+          field: 'content',
+          value: 'Step 1: Introduction...',
+        })
+        .expect(200)
+
+      expect(response.body.content).toBe('Step 1: Introduction...')
+    })
+
+    it('should reject invalid fields', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/lesson-plans')
+        .send({ title: 'Invalid field test' })
+
+      await request(app.getHttpServer())
+        .patch(`/api/lesson-plans/${created.body.id}/field`)
+        .send({ field: 'invalid_field', value: 'test' })
+        .expect(400)
+    })
+  })
+
+  describe('DELETE /api/lesson-plans/:id', () => {
+    it('should delete a lesson plan', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/api/lesson-plans')
         .send({ title: 'Delete me' })
 
       await request(app.getHttpServer())
-        .delete(`/api/tasks/${created.body.id}`)
-        .expect(200)
+        .delete(`/api/lesson-plans/${created.body.id}`)
+        .expect(204)
 
       await request(app.getHttpServer())
-        .get(`/api/tasks/${created.body.id}`)
+        .get(`/api/lesson-plans/${created.body.id}`)
         .expect(404)
     })
   })
@@ -363,81 +449,95 @@ Integration tests catch issues that unit tests miss:
 
 The frontend uses Vitest and React Testing Library. These tests verify that components render correctly and hooks behave as expected.
 
-### Testing the TaskList Component
+### Testing the LessonPlanContent Component
 
 ```typescript
-// frontend/src/components/TaskList.test.tsx
+// frontend/src/components/LessonPlanContent.test.tsx
 
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { TaskList } from './TaskList'
-import type { Task, Project } from '../hooks/useTaskManagerSession'
+import { LessonPlanContent } from './LessonPlanContent'
+import type { LessonPlan, SyncField } from '../types'
 
-const mockTasks: Task[] = [
-  {
-    id: '1', title: 'Review API docs', description: 'Check endpoints',
-    status: 'todo', priority: 'high', projectId: 'p1',
-    dueDate: null, tags: [], createdAt: '', updatedAt: '',
-  },
-  {
-    id: '2', title: 'Fix login bug', description: null,
-    status: 'in_progress', priority: 'urgent', projectId: null,
-    dueDate: null, tags: ['bug'], createdAt: '', updatedAt: '',
-  },
-]
+const mockLessonPlan: LessonPlan = {
+  id: 'lp-1',
+  title: 'Fractions Introduction',
+  subject: 'math',
+  gradeLevel: 3,
+  durationMinutes: 45,
+  lessonPlanCode: null,
+  status: 'DRAFT',
+  publisher: 'PEP',
+  volume: 'Volume 1',
+  chapterId: 5,
+  chapterTitle: 'Chapter 5: Fractions',
+  curriculumRequirements: [],
+  objectives: 'Students will understand basic fractions',
+  studentAnalysis: null,
+  materialsNeeded: 'Fraction cards, whiteboard',
+  content: 'Step 1: Introduction to halves...',
+  assessmentMethods: null,
+  teachingMethods: 'Inquiry-based learning',
+  extraProperties: {},
+  attachments: [],
+  createBy: null,
+  createTime: '2026-01-01T00:00:00Z',
+  updateBy: null,
+  updateTime: '2026-01-01T00:00:00Z',
+  remark: null,
+  deleted: 0,
+}
 
-const mockProjects: Project[] = [
-  {
-    id: 'p1', name: 'Backend', description: null,
-    color: '#3b82f6', createdAt: '', updatedAt: '',
-  },
-]
+describe('LessonPlanContent', () => {
+  const defaultProps = {
+    lessonPlan: mockLessonPlan,
+    modifiedFields: new Set<SyncField>(),
+    editingSections: new Set<string>(),
+    savingSections: new Set<string>(),
+    canUndo: () => false,
+    onUndo: vi.fn(),
+    onChange: vi.fn(),
+    onStartEdit: vi.fn(),
+    onSaveEdit: vi.fn(),
+    onCancelEdit: vi.fn(),
+  }
 
-describe('TaskList', () => {
-  it('should render tasks', () => {
+  it('should render the lesson plan title', () => {
+    render(<LessonPlanContent {...defaultProps} />)
+    const titleInput = screen.getByDisplayValue(
+      'Fractions Introduction',
+    )
+    expect(titleInput).toBeDefined()
+  })
+
+  it('should render content sections', () => {
+    render(<LessonPlanContent {...defaultProps} />)
+
+    expect(screen.getByText('Learning Objectives')).toBeDefined()
+    expect(screen.getByText('Teaching Methods')).toBeDefined()
+    expect(screen.getByText('Learning Process')).toBeDefined()
+  })
+
+  it('should show AI-modified indicator for synced fields', () => {
     render(
-      <TaskList
-        tasks={mockTasks}
-        projects={mockProjects}
-        onRefresh={vi.fn()}
+      <LessonPlanContent
+        {...defaultProps}
+        modifiedFields={new Set<SyncField>(['objectives'])}
       />,
     )
 
-    expect(screen.getByText('Review API docs')).toBeDefined()
-    expect(screen.getByText('Fix login bug')).toBeDefined()
+    const objectivesTextarea = screen.getByDisplayValue(
+      'Students will understand basic fractions',
+    )
+    expect(
+      objectivesTextarea.classList.contains('ai-modified'),
+    ).toBe(true)
   })
 
-  it('should show empty state when no tasks', () => {
-    render(
-      <TaskList tasks={[]} projects={[]} onRefresh={vi.fn()} />,
-    )
-
-    expect(screen.getByText('No tasks yet')).toBeDefined()
-  })
-
-  it('should display priority badges', () => {
-    render(
-      <TaskList
-        tasks={mockTasks}
-        projects={mockProjects}
-        onRefresh={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByText('high')).toBeDefined()
-    expect(screen.getByText('urgent')).toBeDefined()
-  })
-
-  it('should resolve project names', () => {
-    render(
-      <TaskList
-        tasks={mockTasks}
-        projects={mockProjects}
-        onRefresh={vi.fn()}
-      />,
-    )
-
-    expect(screen.getByText('Backend')).toBeDefined()
+  it('should display publisher and volume when set', () => {
+    render(<LessonPlanContent {...defaultProps} />)
+    expect(screen.getByDisplayValue('PEP')).toBeDefined()
+    expect(screen.getByDisplayValue('Volume 1')).toBeDefined()
   })
 })
 ```
@@ -452,67 +552,66 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { ChatPanel } from './ChatPanel'
 
 describe('ChatPanel', () => {
+  const defaultProps = {
+    messages: [],
+    isProcessing: false,
+    connected: true,
+    onSendMessage: vi.fn(),
+    onSync: vi.fn(),
+    onDiscard: vi.fn(),
+  }
+
   it('should show empty state when no messages', () => {
-    render(
-      <ChatPanel
-        messages={[]}
-        isConnected={true}
-        onSendMessage={vi.fn()}
-      />,
-    )
+    render(<ChatPanel {...defaultProps} />)
 
     expect(
-      screen.getByText('Start a conversation to manage tasks'),
+      screen.getByText('Start a lesson planning conversation'),
     ).toBeDefined()
   })
 
   it('should show connection status', () => {
     const { rerender } = render(
-      <ChatPanel
-        messages={[]}
-        isConnected={true}
-        onSendMessage={vi.fn()}
-      />,
+      <ChatPanel {...defaultProps} connected={true} />,
     )
-    expect(screen.getByText('Connected')).toBeDefined()
 
+    // Re-render as disconnected
     rerender(
-      <ChatPanel
-        messages={[]}
-        isConnected={false}
-        onSendMessage={vi.fn()}
-      />,
+      <ChatPanel {...defaultProps} connected={false} />,
     )
-    expect(screen.getByText('Disconnected')).toBeDefined()
+
+    const input = screen.getByPlaceholderText(
+      'Connecting to server...',
+    )
+    expect(input).toHaveProperty('disabled', true)
   })
 
   it('should call onSendMessage when form is submitted', () => {
     const onSend = vi.fn()
     render(
-      <ChatPanel
-        messages={[]}
-        isConnected={true}
-        onSendMessage={onSend}
-      />,
+      <ChatPanel {...defaultProps} onSendMessage={onSend} />,
     )
 
-    const input = screen.getByPlaceholderText('Type a message...')
-    fireEvent.change(input, { target: { value: 'Hello AI' } })
+    const input = screen.getByPlaceholderText(
+      'Describe your lesson planning needs...',
+    )
+    fireEvent.change(input, {
+      target: { value: 'Design a math lesson on fractions' },
+    })
     fireEvent.submit(input.closest('form')!)
 
-    expect(onSend).toHaveBeenCalledWith('Hello AI')
+    expect(onSend).toHaveBeenCalledWith(
+      'Design a math lesson on fractions',
+    )
   })
 
   it('should disable input when disconnected', () => {
     render(
-      <ChatPanel
-        messages={[]}
-        isConnected={false}
-        onSendMessage={vi.fn()}
-      />,
+      <ChatPanel {...defaultProps} connected={false} />,
     )
 
-    const input = screen.getByPlaceholderText('Type a message...')
+    const input = screen.getByPlaceholderText(
+      'Connecting to server...',
+    )
     expect(input).toHaveProperty('disabled', true)
   })
 })
@@ -521,28 +620,28 @@ describe('ChatPanel', () => {
 ### Running Frontend Tests
 
 ```bash
-cd solutions/task-manager-tutorial/frontend
-npm test
+cd solutions/lesson-plan-designer/frontend
+npm run test:run
 ```
 
 ## E2E Test: The Full User Flow
 
-An end-to-end test verifies the complete user journey: open the app, type a message, see the AI response, and verify the task appears in the list. For a real E2E test you would use Playwright or Cypress, but here is a conceptual outline:
+An end-to-end test verifies the complete user journey: open the app, type a message, see the AI response, and verify the lesson plan is updated. For a real E2E test you would use Playwright or Cypress, but here is a conceptual outline:
 
 ```
-E2E Test: "Create a task via chat"
+E2E Test: "Create a lesson plan via chat"
 
-1. Start backend (port 3003) and CCAAS (port 3001)
-2. Start frontend (port 5281)
-3. Open http://localhost:5281
-4. Verify the Task Manager page loads
-5. Verify "No tasks yet" is shown
-6. Type "Create a task: Review Q3 metrics, high priority"
+1. Start Solution backend (port 3002) and CCAAS (port 3001)
+2. Start frontend (port 5173)
+3. Open http://localhost:5173
+4. Click "New Lesson Plan" and fill in: title, subject, grade
+5. Verify the empty lesson plan form loads
+6. Type "Design learning objectives for teaching fractions to grade 3"
 7. Wait for AI response
-8. Verify output_update events populate the form
-9. Click "Save"
-10. Verify the task appears in the task list
-11. Verify the task has title "Review Q3 metrics" and priority "high"
+8. Verify output_update events populate the objectives field
+9. Click "Sync" on the objectives update
+10. Verify the objectives section shows AI-generated content
+11. Verify the field is highlighted as AI-modified
 ```
 
 For the tutorial, manual verification of this flow is sufficient. In a production Solution, automate this with Playwright.
@@ -554,22 +653,22 @@ Recommended test file placement:
 ```
 backend/
 └── src/
-    └── tasks/
-        ├── tasks.service.ts
-        ├── tasks.service.spec.ts       # Unit tests
-        ├── tasks.controller.ts
-        └── tasks.controller.spec.ts    # Integration tests
+    └── lesson-plans/
+        ├── lesson-plans.service.ts
+        ├── lesson-plans.service.spec.ts       # Unit tests
+        ├── lesson-plans.controller.ts
+        └── lesson-plans.controller.spec.ts    # Integration tests
 
 frontend/
 └── src/
     ├── components/
-    │   ├── TaskList.tsx
-    │   ├── TaskList.test.tsx           # Component tests
+    │   ├── LessonPlanContent.tsx
+    │   ├── LessonPlanContent.test.tsx          # Component tests
     │   ├── ChatPanel.tsx
-    │   └── ChatPanel.test.tsx          # Component tests
+    │   └── ChatPanel.test.tsx                  # Component tests
     └── hooks/
-        ├── useTaskManagerSession.ts
-        └── useTaskManagerSession.test.ts  # Hook tests
+        ├── useLessonPlanSession.ts
+        └── useLessonPlanSession.test.ts        # Hook tests
 ```
 
 Tests live next to the code they test. This makes it easy to find the test for any file and keeps the relationship visible.
@@ -585,7 +684,7 @@ Tests live next to the code they test. This makes it easy to find the test for a
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 3: Testing implementation details instead of behavior.** Do not test that a specific SQL query was called. Test that creating a task returns the expected shape. Test that filtering by priority returns the correct subset. This makes tests resilient to refactoring.
+**Pitfall 3: Testing implementation details instead of behavior.** Do not test that a specific SQL query was called. Test that creating a lesson plan returns the expected shape. Test that patching a field updates only that field. This makes tests resilient to refactoring.
 {% endhint %}
 
 ## Checkpoint
@@ -601,11 +700,11 @@ Run the full test suite:
 
 ```bash
 # Backend tests
-cd solutions/task-manager-tutorial/backend
+cd solutions/lesson-plan-designer/backend
 npm test
 
 # Frontend tests
-cd solutions/task-manager-tutorial/frontend
+cd solutions/lesson-plan-designer/frontend
 npm run test:run
 ```
 

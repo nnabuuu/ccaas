@@ -4,63 +4,63 @@ In this chapter, you will learn what a Solution is, how it fits into the LoopAI 
 
 ## What Problem Does a Solution Solve?
 
-Imagine you are building a task management application. Without LoopAI, you would build a standard web app: a React frontend, a Node.js backend, a database. Users fill out forms, click buttons, and the app saves data. This works, but there is no AI assistance.
+Imagine you are building a lesson plan designer for teachers. Without LoopAI, you would build a standard web app: a React frontend, a Node.js backend, a database. Teachers fill out forms -- selecting textbooks, entering objectives, writing teaching activities -- and the app saves data. This works, but there is no AI assistance.
 
 Now imagine you want to add AI capabilities:
 
-- A user pastes meeting notes, and the AI creates tasks from them automatically
-- A user describes a project, and the AI suggests a breakdown of milestones and tasks
-- A user types a vague description, and the AI refines it into a clear, actionable task
+- A teacher selects a textbook chapter and grade level, and the AI generates a complete lesson plan aligned to curriculum standards
+- A teacher describes a teaching goal, and the AI suggests objectives, activities, and assessment methods
+- A teacher pastes rough notes, and the AI refines them into structured teaching content with proper pedagogical flow
 
-Building this from scratch requires integrating an LLM API, managing prompts, handling streaming responses, syncing AI output to your forms, and adding version control so users can undo AI changes. That is a significant amount of infrastructure work that has nothing to do with your business logic.
+Building this from scratch requires integrating an LLM API, managing prompts, handling streaming responses, syncing AI output to your forms, and adding version control so teachers can undo AI changes. That is a significant amount of infrastructure work that has nothing to do with your business logic.
 
-**A Solution is the answer to this problem.** It is a structured application framework that lets you focus on your domain (tasks, projects, users) while the LoopAI platform handles the AI infrastructure (session management, event streaming, tool invocation, audit trails).
+**A Solution is the answer to this problem.** It is a structured application framework that lets you focus on your domain (lesson plans, textbooks, curriculum standards) while the LoopAI platform handles the AI infrastructure (session management, event streaming, tool invocation, audit trails).
 
 ## Platform vs. Solution Responsibilities
 
 The LoopAI platform and your Solution have clearly separated responsibilities:
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                    LoopAI Platform (CCAAS)                      │
-│                                                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │   Session     │  │    Skill     │  │   Message            │ │
-│  │  Management   │  │   Routing    │  │  Persistence         │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │  AI Agent     │  │   WebSocket  │  │   Authentication     │ │
-│  │  Lifecycle    │  │   Relay      │  │   & Tenants          │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-└────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------+
+|                    LoopAI Platform (CCAAS)                       |
+|                                                                 |
+|  +---------------+  +---------------+  +---------------------+ |
+|  |   Session      |  |    Skill      |  |   Message           | |
+|  |  Management    |  |   Routing     |  |  Persistence        | |
+|  +---------------+  +---------------+  +---------------------+ |
+|  +---------------+  +---------------+  +---------------------+ |
+|  |  AI Agent      |  |   WebSocket   |  |   Authentication    | |
+|  |  Lifecycle     |  |   Events      |  |   & Tenants         | |
+|  +---------------+  +---------------+  +---------------------+ |
++-----------------------------------------------------------------+
 
-┌────────────────────────────────────────────────────────────────┐
-│                     Your Solution                              │
-│                                                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │   Domain      │  │   Business   │  │    Frontend          │ │
-│  │   Model       │  │   Logic      │  │    UI                │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │   MCP Tools   │  │    Skills    │  │   Data               │ │
-│  │  (write_output)│  │  (SKILL.md) │  │   Storage            │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-└────────────────────────────────────────────────────────────────┘
++-----------------------------------------------------------------+
+|                     Your Solution                               |
+|                                                                 |
+|  +---------------+  +---------------+  +---------------------+ |
+|  |   Domain       |  |   Business    |  |    Frontend         | |
+|  |   Model        |  |   Logic       |  |    UI               | |
+|  +---------------+  +---------------+  +---------------------+ |
+|  +---------------+  +---------------+  +---------------------+ |
+|  |   MCP Tools    |  |    Skills     |  |   Data              | |
+|  | (write_output) |  |  (SKILL.md)   |  |   Storage           | |
+|  +---------------+  +---------------+  +---------------------+ |
++-----------------------------------------------------------------+
 ```
 
 | Responsibility | Who Owns It | Example |
 |----------------|-------------|---------|
 | Creating and destroying AI Agent sessions | Platform | CCAAS manages agent processes |
 | Routing messages to the right Skill | Platform | Keyword/pattern matching |
-| Streaming events to the frontend | Platform | WebSocket relay |
+| Streaming events to the frontend | Platform | WebSocket events (text\_delta, output\_update) |
 | Persisting conversation history | Platform | Message storage |
 | Defining what the AI knows and does | Solution | SKILL.md files |
 | Providing tools the AI can call | Solution | MCP Server with write\_output |
-| Storing business data (tasks, projects) | Solution | Solution backend + database |
+| Storing business data (lesson plans, textbooks) | Solution | Solution backend + database |
 | Rendering the user interface | Solution | React/Vue frontend |
 
 {% hint style="info" %}
-**Key Insight**: Your Solution never talks to the AI Agent directly. All communication goes through the CCAAS platform, which acts as a relay. This separation is what makes the platform AI-engine agnostic -- you can swap the underlying AI model without changing your Solution code.
+**Key Insight**: Your frontend connects **directly** to CCAAS for all AI interactions (chat, streaming, output\_update events). The Solution backend is only responsible for domain data -- storing lesson plans, serving textbook catalogs, managing curriculum standards. This clean separation means your Solution backend has zero AI logic.
 {% endhint %}
 
 ## The Four Building Blocks
@@ -69,11 +69,11 @@ Every LoopAI Solution is composed of four building blocks. Understanding them is
 
 ### 1. Domain Model
 
-The domain model defines your business entities and their relationships. For our Task Manager:
+The domain model defines your business entities and their relationships. For our Lesson Plan Designer:
 
-- **Task**: title, description, status, priority, assignee
-- **Project**: name, description, tasks
-- **User**: name, email, role
+- **LessonPlan**: title, subject, gradeLevel, objectives, content, teachingMethods, assessmentMethods
+- **Textbook**: subject, grade, publisher, volume, chapters (hierarchical)
+- **CurriculumStandard**: standardCode, title, stage, contentDomain
 
 The domain model drives everything else: the database schema, the API endpoints, the form fields, and the AI output format.
 
@@ -82,37 +82,51 @@ The domain model drives everything else: the database schema, the API endpoints,
 A user journey describes a sequence of steps that a user takes to accomplish a goal, and where the AI can assist. For example:
 
 ```
-User Journey: "Create tasks from meeting notes"
+User Journey: "Design a lesson plan from a textbook chapter"
 
-1. User pastes meeting notes into the chat
-2. AI analyzes the notes and identifies action items
-3. AI creates tasks using write_output (one per action item)
-4. Tasks appear in the form for user review
-5. User edits titles, adjusts priorities, assigns team members
-6. User clicks "Save All" to persist the tasks
+1. Teacher selects subject, grade, publisher, volume, and chapter
+2. Teacher creates a new lesson plan linked to the selected chapter
+3. Teacher types "Help me design this lesson plan" in the chat
+4. AI reads the textbook context and curriculum standards
+5. AI generates objectives, activities, and assessments using write_output
+6. Content appears in the form for teacher review
+7. Teacher edits objectives, adjusts activities, refines assessments
+8. Teacher clicks "Save" to persist the lesson plan
 ```
 
 Identifying user journeys helps you decide which Skills and MCP tools to build.
 
 ### 3. Data Flow
 
-Data flow describes how information moves between the frontend, backend, and AI Agent. In LoopAI, data flows through WebSocket events:
+Data flow describes how information moves between the frontend, the platform, and the Solution backend. In LoopAI, the frontend has **two connections**:
 
 ```
-User types message
-    │
-    ▼
-Frontend ──chat event──► Solution Backend ──REST API──► CCAAS
-                                                          │
-                                                    AI Agent Process
-                                                          │
-CCAAS ──output_update──► Solution Backend ──event──► Frontend
-                                                          │
-                                                    Form updates
-                                                    with AI data
+                  +-------------------+
+                  |     Frontend      |
+                  +-------------------+
+                   /                \
+     WebSocket (AI chat)      REST API (domain data)
+                 /                    \
+    +------------+              +------------------+
+    |   CCAAS    |              | Solution Backend |
+    | (port 3001)|              |   (port 3002)    |
+    +------------+              +------------------+
+         |                            |
+    AI Agent Process             Database (SQLite)
+         |                     (lesson plans, textbooks)
+    write_output
+         |
+    output_update event
+         |
+    Frontend form updates
 ```
 
-Understanding this data flow is critical. The AI Agent does not write to your database directly. Instead, it calls `write_output` (an MCP tool), which triggers an `output_update` event that reaches your frontend. Your frontend then renders the data for user review. Only when the user clicks "Save" does the data get persisted to your backend.
+Understanding this data flow is critical:
+
+- **Frontend to CCAAS** (WebSocket): Chat messages, streaming responses, output\_update events. The frontend connects directly using `useAgentConnection({ serverUrl: 'http://localhost:3001' })`.
+- **Frontend to Solution Backend** (REST API): CRUD operations for lesson plans, textbook catalog queries, curriculum standards lookup. These are standard HTTP calls proxied by Vite in development.
+
+The AI Agent does not write to your database directly. Instead, it calls `write_output` (an MCP tool), which triggers an `output_update` event that reaches your frontend via CCAAS. Your frontend then renders the data for teacher review. Only when the teacher clicks "Save" does the data get persisted to your Solution backend.
 
 ### 4. Form Protocol (output\_update)
 
@@ -120,49 +134,58 @@ The form protocol defines how AI-generated data maps to your frontend form field
 
 ```typescript
 // The AI calls write_output with:
-{ field: "title", value: "Review Q3 metrics", operation: "set" }
+{ field: "objectives", value: "1. Students will understand...", operation: "set" }
 
-// This triggers an output_update event that your frontend handles:
-socket.on('output_update', (event) => {
-  const { field, value } = event.payload.data
-  // field = "title", value = "Review Q3 metrics"
-  // Update the form field
-})
+// CCAAS delivers this as an output_update event via WebSocket:
+onOutputUpdate: (update) => {
+  // update.field = "objectives"
+  // update.value = "1. Students will understand..."
+  addPendingUpdate({
+    field: update.field,
+    value: update.value,
+    preview: update.preview,
+  })
+}
 ```
 
 Designing the form protocol means deciding:
-- Which fields can the AI write to?
-- What data type does each field expect?
+- Which fields can the AI write to? (In our case: objectives, content, teachingMethods, assessmentMethods, materialsNeeded, studentAnalysis, and more)
+- What data type does each field expect? (Strings for text, arrays for curriculum standards)
 - How does the frontend handle `set`, `append`, and `merge` operations?
 
-## Our Task Manager: The Big Picture
+## Our Lesson Plan Designer: The Big Picture
 
-Now that you understand the four building blocks, here is how they come together for our Task Manager Solution:
+Now that you understand the four building blocks, here is how they come together for our Lesson Plan Designer Solution:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                 Task Manager Solution                │
-│                                                     │
-│  Domain Model:                                      │
-│    Task (title, description, status, priority)      │
-│    Project (name, description)                      │
-│                                                     │
-│  User Journeys:                                     │
-│    - Create a single task with AI assistance         │
-│    - Bulk-create tasks from meeting notes            │
-│    - Get AI suggestions for task breakdown           │
-│                                                     │
-│  Data Flow:                                         │
-│    Chat → CCAAS → AI Agent → write_output           │
-│    → output_update → Frontend Form → User Review    │
-│    → Save → Solution Backend → Database             │
-│                                                     │
-│  Form Protocol:                                     │
-│    SyncFields: title, description, status,          │
-│    priority, assignee, dueDate                      │
-│    Operations: set (single fields),                 │
-│    append (task list)                               │
-└─────────────────────────────────────────────────────┘
++------------------------------------------------------+
+|            Lesson Plan Designer Solution              |
+|                                                      |
+|  Domain Model:                                       |
+|    LessonPlan (title, subject, gradeLevel,           |
+|      objectives, content, teachingMethods,           |
+|      assessmentMethods, curriculumRequirements)      |
+|    Textbook (subject, grade, publisher, chapters)    |
+|    CurriculumStandard (code, title, domain)          |
+|                                                      |
+|  User Journeys:                                      |
+|    - Design lesson plan from textbook chapter        |
+|    - Generate teaching script from lesson plan       |
+|    - Create assessment aligned to curriculum         |
+|                                                      |
+|  Data Flow:                                          |
+|    Chat -> CCAAS -> AI Agent -> write_output          |
+|    -> output_update -> Frontend Form -> Review        |
+|    -> Save -> Solution Backend -> Database            |
+|                                                      |
+|  Form Protocol:                                      |
+|    SyncFields: objectives, content,                  |
+|    teachingMethods, assessmentMethods,               |
+|    materialsNeeded, studentAnalysis,                 |
+|    curriculumRequirements, extraProperties           |
+|    Operations: set (text fields),                    |
+|    set (structured data like curriculum arrays)      |
++------------------------------------------------------+
 ```
 
 ## Solution Directory Structure
@@ -170,38 +193,42 @@ Now that you understand the four building blocks, here is how they come together
 Every Solution follows a standard directory layout:
 
 ```
-task-manager-tutorial/
-├── solution.json           # Solution configuration
-├── setup.sh                # One-click startup script
-├── inject-skills.sh        # Skill registration script
-│
-├── frontend/               # React application
-│   ├── package.json
-│   ├── src/
-│   │   ├── components/     # UI components
-│   │   ├── hooks/          # Custom React hooks
-│   │   └── types/          # TypeScript type definitions
-│   └── ...
-│
-├── backend/                # Business backend (NestJS)
-│   ├── package.json
-│   ├── src/
-│   │   ├── tasks/          # Task entity, controller, service
-│   │   ├── projects/       # Project entity, controller, service
-│   │   └── ...
-│   └── ...
-│
-├── mcp-server/             # MCP tool service
-│   ├── package.json
-│   ├── src/
-│   │   └── index.ts        # write_output + custom tools
-│   └── ...
-│
-└── skills/                 # AI Skill definitions
-    ├── task-creator/
-    │   └── SKILL.md        # Task creation skill
-    └── bulk-importer/
-        └── SKILL.md        # Bulk import from notes
+lesson-plan-designer/
+|-- solution.json           # Solution configuration
+|-- setup.sh                # One-click startup script
+|-- inject-skills.sh        # Skill registration script
+|
+|-- frontend/               # React application
+|   |-- package.json
+|   |-- src/
+|   |   |-- components/     # UI components (ChatPanel, FormSection, etc.)
+|   |   |-- hooks/          # Custom React hooks (useLessonPlanSession, useTextbook)
+|   |   |-- types/          # TypeScript type definitions (LessonPlan, SyncField)
+|   |   +-- utils/          # Utilities (API client, output update parser)
+|   +-- ...
+|
+|-- backend/                # Business backend (NestJS)
+|   |-- package.json
+|   |-- src/
+|   |   |-- lesson-plans/   # LessonPlan entity, controller, service
+|   |   |-- textbook/       # Textbook catalog API
+|   |   |-- curriculum-standards/  # Curriculum standards data
+|   |   +-- files/          # File attachment management
+|   +-- ...
+|
+|-- mcp-server/             # MCP tool service
+|   |-- package.json
+|   |-- src/
+|   |   +-- index.ts        # write_output + custom tools
+|   +-- ...
+|
++-- skills/                 # AI Skill definitions
+    |-- lesson-plan-designer/
+    |   +-- SKILL.md         # Main lesson plan design skill
+    |-- teaching-script-generator/
+    |   +-- SKILL.md         # Teaching script generation
+    +-- notebooklm/
+        +-- SKILL.md         # Audio/document generation
 ```
 
 Let us walk through each component:
@@ -212,42 +239,43 @@ The central configuration file that tells the platform about your Solution:
 
 ```json
 {
-  "name": "Task Manager",
-  "slug": "task-manager",
+  "name": "Lesson Plan Designer",
+  "slug": "lesson-plan-designer",
   "version": "1.0.0",
-  "description": "AI-assisted task management application",
+  "description": "AI-assisted lesson plan design tool",
+  "backend": {
+    "port": 3002,
+    "ccaasUrl": "http://localhost:3001"
+  },
   "mcpServers": {
-    "task-tools": {
+    "lesson-plan-tools": {
       "command": "node",
-      "args": ["mcp-server/dist/index.js"]
+      "args": ["mcp-server/dist/index.js"],
+      "type": "stdio"
     }
   },
   "skills": [
     {
-      "name": "Task Creator",
-      "slug": "task-creator",
-      "type": "prompt",
+      "name": "Lesson Plan Designer",
+      "slug": "lesson-plan-designer",
+      "skillFile": "skills/lesson-plan-designer/SKILL.md",
       "triggers": [
-        { "type": "keyword", "value": "task", "priority": 1 }
+        { "type": "keyword", "value": "lesson", "priority": 10 },
+        { "type": "keyword", "value": "objectives", "priority": 8 }
       ],
-      "allowedTools": ["write_output"],
-      "skillFile": "skills/task-creator/SKILL.md"
+      "allowedTools": ["write_output"]
     }
-  ],
-  "ports": {
-    "backend": 3010,
-    "frontend": 5280
-  }
+  ]
 }
 ```
 
 ### Frontend
 
-A React application that renders forms and handles `output_update` events from the AI. It connects to the Solution backend via Socket.io.
+A React application that renders forms and handles `output_update` events from the AI. It connects **directly to CCAAS** via Socket.io for chat and AI streaming, and to the Solution backend via REST API for domain data (textbooks, lesson plans).
 
 ### Backend
 
-A NestJS application that stores business data (tasks, projects) and relays WebSocket events between the frontend and CCAAS.
+A NestJS application that stores business data (lesson plans, textbook catalogs, curriculum standards) and serves REST APIs. It has **no AI logic** -- all AI interaction flows through CCAAS.
 
 ### MCP Server
 
@@ -255,50 +283,52 @@ A lightweight service that implements the tools available to the AI Agent. The m
 
 ### Skills
 
-Markdown files that define the AI Agent's behavior: its role, knowledge, workflow, and output format. Each Skill targets a specific user journey.
+Markdown files that define the AI Agent's behavior: its role, knowledge, workflow, and output format. Each Skill targets a specific user journey. The Lesson Plan Designer has multiple skills including the main designer, a teaching script generator, and an audio/document generator.
 
 ## How a Request Flows Through the System
 
 To make this concrete, let us trace a single request through the entire system:
 
-**Scenario**: A user types "Create a task: Review Q3 metrics by Friday" in the chat.
+**Scenario**: A teacher has selected "Grade 3 Math, Chapter 2: Multi-digit Multiplication" and types "Help me design this lesson plan" in the chat.
 
 ```
-Step 1: User sends message via chat input
-        Frontend → Socket.io → Solution Backend
+Step 1: Teacher sends message via chat input
+        Frontend -> WebSocket -> CCAAS (port 3001)
 
-Step 2: Solution Backend forwards to CCAAS
-        POST /api/v1/sessions/{id}/completion
-        Body: { message: "Create a task: Review Q3 metrics by Friday" }
+Step 2: CCAAS receives the message with page context
+        The message includes the current lesson plan form state
+        (subject, grade, chapter, existing content)
 
 Step 3: CCAAS matches the Skill
-        "task" keyword matches → Task Creator Skill selected
+        "lesson" keyword matches -> Lesson Plan Designer Skill selected
 
 Step 4: CCAAS launches AI Agent with Skill instructions
-        AI reads SKILL.md and understands its role
+        AI reads SKILL.md and understands its role as a lesson designer
 
-Step 5: AI Agent calls write_output
-        { field: "title", value: "Review Q3 metrics" }
-        { field: "dueDate", value: "2026-02-21" }
-        { field: "status", value: "TODO" }
+Step 5: AI Agent calls write_output multiple times
+        { field: "objectives", value: "1. Understand multi-digit..." }
+        { field: "content", value: "Introduction (5 min): Review..." }
+        { field: "teachingMethods", value: "Guided practice..." }
+        { field: "assessmentMethods", value: "Exit ticket..." }
 
-Step 6: CCAAS wraps each call as an output_update event
-        Pushes via WebSocket → Solution Backend → Frontend
+Step 6: CCAAS delivers each call as an output_update event
+        Pushes via WebSocket directly to Frontend
 
 Step 7: Frontend receives output_update events
-        Form fields update in real time as the user watches
+        Sync buttons appear next to each form field
 
-Step 8: User reviews the form
-        Edits the title, changes priority, clicks "Save"
+Step 8: Teacher reviews the generated content
+        Clicks "Sync" on objectives, edits teaching methods, discards assessment
 
-Step 9: Frontend sends save request to Solution Backend
-        POST /api/tasks → Saves to database
+Step 9: Teacher clicks "Save"
+        Frontend sends PUT request to Solution Backend (port 3002)
+        POST /api/lesson-plans/{id} -> Saves to database
 
-Step 10: Task is persisted with full audit trail
+Step 10: Lesson plan is persisted with full audit trail
 ```
 
 {% hint style="success" %}
-**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the user reviews it, and only then does it get saved. This is the Human-in-the-Loop pattern at the core of every LoopAI Solution.
+**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the teacher reviews it, and only then does it get saved. This is the Human-in-the-Loop pattern at the core of every LoopAI Solution.
 {% endhint %}
 
 ## Comparing with a Traditional Web App
@@ -309,9 +339,9 @@ If you have built traditional web applications, this comparison will help you un
 |--------|--------------------|--------------------|
 | User input | Forms + buttons | Forms + buttons + **chat** |
 | Data entry | Manual only | Manual + **AI-assisted** |
-| Backend | REST API + database | REST API + database + **CCAAS relay** |
+| Backend | REST API + database | REST API + database + **CCAAS for AI** |
 | AI integration | Custom LLM API calls | **Managed by platform** |
-| Output handling | Direct DB write | **output\_update → review → save** |
+| Output handling | Direct DB write | **output\_update -> review -> save** |
 | Version control | Manual (if any) | **Automatic** audit trail |
 | Prompt management | Ad-hoc strings | **Structured Skills** (SKILL.md) |
 
@@ -328,13 +358,13 @@ Before moving on, answer these questions to check your understanding:
 2. **Does the AI Agent write directly to the Solution database?**
    <details>
    <summary>Answer</summary>
-   No. The AI Agent calls write_output, which triggers an output_update event. The data flows to the frontend, where the user reviews it. Only when the user clicks "Save" does the data get persisted.
+   No. The AI Agent calls write_output, which triggers an output_update event. The data flows to the frontend, where the teacher reviews it. Only when the teacher clicks "Save" does the data get persisted.
    </details>
 
-3. **What role does CCAAS play between the frontend and the AI Agent?**
+3. **How does the frontend connect to CCAAS and the Solution backend?**
    <details>
    <summary>Answer</summary>
-   CCAAS acts as a relay. It manages sessions, routes messages to the correct Skill, launches the AI Agent process, and streams events (text_delta, output_update) back to the frontend via WebSocket.
+   The frontend has two separate connections. It connects directly to CCAAS (port 3001) via WebSocket for all AI interactions -- chat messages, streaming, and output_update events. It connects to the Solution backend (port 3002) via REST API for domain data -- lesson plan CRUD, textbook catalog queries, and curriculum standards.
    </details>
 
 4. **Why is the design phase (Chapters 1-3) important before coding?**
@@ -346,15 +376,15 @@ Before moving on, answer these questions to check your understanding:
 ## Common Pitfalls
 
 {% hint style="danger" %}
-**Pitfall 1: Putting business logic in CCAAS.** CCAAS is a relay and routing layer. Your business entities (Task, Project) and business rules belong in your Solution backend, not in CCAAS.
+**Pitfall 1: Putting business logic in CCAAS.** CCAAS manages AI sessions and event delivery. Your business entities (LessonPlan, Textbook) and business rules belong in your Solution backend, not in CCAAS.
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 2: Skipping the output\_update protocol.** Some developers try to have the AI write to the database directly via custom MCP tools. This bypasses the Human-in-the-Loop review step and removes the user's ability to edit before saving.
+**Pitfall 2: Skipping the output\_update protocol.** Some developers try to have the AI write to the database directly via custom MCP tools. This bypasses the Human-in-the-Loop review step and removes the teacher's ability to edit before saving.
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 3: Building a Solution without defining user journeys first.** Without clear journeys, you do not know which Skills to write, what tools to build, or how the AI should behave. This leads to a chatbot that can talk but cannot actually help.
+**Pitfall 3: Building a Solution without defining user journeys first.** Without clear journeys, you do not know which Skills to write, what tools to build, or how the AI should behave. This leads to a chatbot that can talk but cannot actually help design lesson plans.
 {% endhint %}
 
 ## Checkpoint
@@ -363,8 +393,8 @@ Before proceeding to Chapter 2, make sure you can answer:
 
 - [ ] I understand what a Solution is and how it differs from a traditional web app
 - [ ] I can name the four building blocks: Domain Model, User Journeys, Data Flow, Form Protocol
-- [ ] I understand that CCAAS is a relay, not a business logic layer
-- [ ] I understand the Human-in-the-Loop pattern: AI proposes, user reviews, then saves
+- [ ] I understand that the frontend connects directly to CCAAS for AI, and to the Solution backend for domain data
+- [ ] I understand the Human-in-the-Loop pattern: AI proposes, teacher reviews, then saves
 - [ ] I know the standard directory structure of a Solution
 
 ## Next Step

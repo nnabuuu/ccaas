@@ -1,20 +1,20 @@
 # Solution 构建教程
 
-欢迎来到 LoopAI Solution 构建教程。这是一个完整的实战教程，将引导你从零开始构建一个 **Task Manager（任务管理器）Solution** -- 从理解架构设计到部署上线。
+欢迎来到 LoopAI Solution 构建教程。这是一个完整的实战教程，将引导你从零开始构建一个 **Lesson Plan Designer（备课方案设计器）Solution** -- 从理解架构设计到部署上线。
 
 ## 你将构建什么
 
-完成本教程后，你将拥有一个功能完整的任务管理应用：
+完成本教程后，你将拥有一个功能完整的备课方案设计器：
 
-- 用户通过 Web 表单创建和管理任务
-- AI Agent 协助任务创建、批量导入和智能建议
+- 教师通过 Web 表单选择教材和章节
+- AI Agent 协助生成教学目标、教学活动和评估方案
 - AI 通过 `output_update` 协议将结构化数据直接写入表单
-- 用户在保存前审核、编辑和批准 AI 生成的内容
-- 所有变更都有版本控制和完整的审计追踪
+- 教师在保存前审核、编辑和批准 AI 生成的教案内容
+- 教案可以持久化保存，支持跨会话恢复
 
 ```
 ┌──────────────────────────────────────────────┐
-│            Task Manager Solution             │
+│        Lesson Plan Designer Solution         │
 │                                              │
 │  ┌─────────┐    ┌──────────┐    ┌─────────┐ │
 │  │  前端    │◄──►│ Solution │◄──►│  CCAAS  │ │
@@ -53,7 +53,7 @@
 | 章节 | 学习内容 | 关键产出 |
 |------|---------|---------|
 | [1. 理解 Solution 架构](01-architecture.md) | Solution 如何融入 LoopAI 平台 | 架构心智模型 |
-| [2. 设计领域模型](02-domain-model.md) | 如何建模业务实体 | Task、Project 的 TypeScript 接口 |
+| [2. 设计领域模型](02-domain-model.md) | 如何建模业务实体 | LessonPlan、TextbookChapter 的 TypeScript 接口 |
 | [3. 用户旅程映射](03-user-journeys.md) | 如何识别 AI 协作点 | 包含 AI 触点的用户流程图 |
 
 ### 第二阶段：协议（第 4-5 章）
@@ -62,7 +62,7 @@
 
 | 章节 | 学习内容 | 关键产出 |
 |------|---------|---------|
-| [4. 数据流与状态管理](04-data-flow.md) | 消息如何通过 WebSocket 事件流动 | Task Manager 数据流图 |
+| [4. 数据流与状态管理](04-data-flow.md) | 消息如何通过 WebSocket 事件流动 | Lesson Plan Designer 数据流图 |
 | [5. 表单与 output\_update 协议](05-form-protocol.md) | AI 如何将结构化数据写入表单 | SyncField 定义和 write\_output 规范 |
 
 ### 第三阶段：实现（第 6 章）
@@ -72,9 +72,9 @@
 | 章节 | 构建内容 | 检查点 |
 |------|---------|-------|
 | [6.1 项目初始化](06-implementation/01-setup.md) | 目录结构、solution.json | `setup.sh` 成功运行 |
-| [6.2 后端实现](06-implementation/02-backend.md) | 任务和项目的 REST API | `curl POST /api/tasks` 返回 201 |
+| [6.2 后端实现](06-implementation/02-backend.md) | 教案和教材的 REST API | `curl POST /api/lesson-plans` 返回 201 |
 | [6.3 MCP Server](06-implementation/03-mcp-server.md) | write\_output 工具和自定义工具 | MCP Server 启动并响应 |
-| [6.4 Skills](06-implementation/04-skills.md) | 任务创建和批量导入技能 | Skill 触发器正确匹配 |
+| [6.4 Skills](06-implementation/04-skills.md) | 备课方案设计技能 | Skill 触发器正确匹配 |
 | [6.5 前端实现](06-implementation/05-frontend.md) | React UI 与表单同步 | 表单从 AI 输出更新 |
 | [6.6 测试](06-implementation/06-testing.md) | 单元测试和集成测试 | 所有测试通过 |
 
@@ -97,13 +97,13 @@
 
 ### 参考实现
 
-完整的参考实现位于：
+本教程的规范参考实现是 **Lesson Plan Designer（备课方案设计器）**本身：
 
 ```
-solutions/task-manager-tutorial/
+solutions/lesson-plan-designer/
 ```
 
-你可以用它来对比你的实现或在遇到困难时参考。但请先尝试自己构建。
+这是一个生产级 Solution，展示了本教程中教授的所有模式。你可以用它来对比你的实现或在遇到困难时参考。但请先尝试自己构建。
 
 {% hint style="warning" %}
 **不要跳过设计章节**（第 1-3 章）。它们看起来可能比较抽象，但你在这些章节中学到的模式会直接影响第 6 章中的每个实现决策。跳过设计的开发者往往需要重写代码。

@@ -1,6 +1,6 @@
 # 6.1 Project Setup
 
-In this section, you will create the directory structure, configuration files, and startup script for the Task Manager Solution. By the end, you will have a project skeleton that can be started with a single command.
+In this section, you will create the directory structure, configuration files, and startup script for the Lesson Plan Designer Solution. By the end, you will have a project skeleton that can be started with a single command.
 
 ## Objective
 
@@ -13,17 +13,17 @@ Create a working project skeleton with:
 
 ## Step 1: Create the Directory Structure
 
-Navigate to the `solutions/` directory in the CCAAS monorepo and create the Task Manager folder:
+Navigate to the `solutions/` directory in the CCAAS monorepo and create the Lesson Plan Designer folder:
 
 ```bash
 cd solutions
-mkdir -p task-manager-tutorial/{backend/src,frontend/src,mcp-server/src,skills}
+mkdir -p lesson-plan-designer/{backend/src,frontend/src,mcp-server/src,skills}
 ```
 
 Your directory should look like this:
 
 ```
-task-manager-tutorial/
+lesson-plan-designer/
 ├── backend/
 │   └── src/
 ├── frontend/
@@ -35,37 +35,37 @@ task-manager-tutorial/
 
 ## Step 2: Create solution.json
 
-The `solution.json` file is the central configuration for your Solution. It tells the platform about your MCP servers, Skills, ports, and sync fields.
+The `solution.json` file is the central configuration for your Solution. It tells the platform about your MCP servers, Skills, ports, and database settings.
 
-Create `task-manager-tutorial/solution.json`:
+Create `lesson-plan-designer/solution.json`:
 
 ```json
 {
   "$schema": "https://ccaas.dev/schemas/solution.v1.json",
 
-  "name": "Task Manager Tutorial",
-  "slug": "task-manager-tutorial",
+  "name": "Lesson Plan Designer",
+  "slug": "lesson-plan-designer",
   "version": "1.0.0",
-  "description": "Tutorial reference solution - AI-powered task management with projects, priorities, and bulk import",
+  "description": "AI-powered lesson plan design assistant",
 
   "backend": {
-    "port": 3003,
+    "port": 3002,
     "ccaasUrl": "http://localhost:3001",
     "database": {
       "type": "sqlite",
-      "path": "data/task-manager.db"
+      "path": "data/lesson-plans.db"
     }
   },
 
   "frontend": {
-    "port": 5281
+    "port": 5280
   },
 
   "mcpServers": {
-    "task-manager-tools": {
+    "lesson-plan-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
-      "description": "Task Manager MCP tools including write_output",
+      "description": "Lesson Plan Designer MCP tools including write_output",
       "type": "stdio",
       "env": {}
     }
@@ -73,41 +73,19 @@ Create `task-manager-tutorial/solution.json`:
 
   "skills": [
     {
-      "name": "Task Creator",
-      "slug": "task-creator",
-      "description": "Create and manage tasks with AI assistance",
-      "skillFile": "skills/task-creator/SKILL.md",
+      "name": "Lesson Plan Designer",
+      "slug": "lesson-plan-designer",
+      "description": "Design lesson plans with AI assistance",
+      "skillFile": "skills/lesson-plan-designer/SKILL.md",
       "scope": "tenant",
       "triggers": [
-        { "type": "keyword", "value": "create task", "priority": 10 },
-        { "type": "keyword", "value": "add task", "priority": 10 },
-        { "type": "keyword", "value": "new task", "priority": 9 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write"]
-    },
-    {
-      "name": "Bulk Import",
-      "slug": "bulk-import",
-      "description": "Import multiple tasks from text, CSV, or structured input",
-      "skillFile": "skills/bulk-import/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "bulk import", "priority": 10 },
-        { "type": "keyword", "value": "import tasks", "priority": 10 },
-        { "type": "keyword", "value": "batch create", "priority": 9 }
+        { "type": "keyword", "value": "lesson plan", "priority": 10 },
+        { "type": "keyword", "value": "teaching objectives", "priority": 8 },
+        { "type": "keyword", "value": "teaching activities", "priority": 8 },
+        { "type": "keyword", "value": "assessment", "priority": 7 }
       ],
       "allowedTools": ["write_output", "Read", "Write"]
     }
-  ],
-
-  "syncFields": [
-    "taskTitle",
-    "taskDescription",
-    "priority",
-    "status",
-    "projectId",
-    "dueDate",
-    "tags"
   ]
 }
 ```
@@ -117,15 +95,14 @@ Create `task-manager-tutorial/solution.json`:
 | Field | Purpose |
 |-------|---------|
 | `slug` | Unique identifier used for tenant creation and URL routing |
-| `backend.port` | Port for the Solution backend (3003, separate from CCAAS on 3001) |
+| `backend.port` | Port for the Solution backend (3002, separate from CCAAS on 3001) |
 | `backend.ccaasUrl` | URL of the CCAAS backend this Solution connects to |
 | `frontend.port` | Port for the Vite dev server |
 | `mcpServers` | MCP tool services the AI Agent can call |
 | `skills` | AI Skill definitions with trigger configuration |
-| `syncFields` | Form fields that can receive AI-generated data via `output_update` |
 
 {% hint style="info" %}
-**Why separate ports?** The Solution backend (3003) handles business data (tasks, projects). The CCAAS backend (3001) handles AI sessions and message relay. They are separate services with separate responsibilities.
+**Why separate ports?** The Solution backend (3002) handles business data (lesson plans, textbooks, curriculum standards). The CCAAS backend (3001) handles AI sessions and message relay. They are separate services with separate responsibilities.
 {% endhint %}
 
 ## Step 3: Initialize the Backend
@@ -138,9 +115,9 @@ Create `backend/package.json`:
 
 ```json
 {
-  "name": "task-manager-tutorial-backend",
+  "name": "lesson-plan-designer-backend",
   "version": "1.0.0",
-  "description": "Task Manager Tutorial Backend - NestJS + SQLite",
+  "description": "Lesson Plan Designer Backend - NestJS + SQLite",
   "private": true,
   "scripts": {
     "build": "nest build",
@@ -247,11 +224,13 @@ Create `backend/nest-cli.json`:
 Create `backend/.env.example`:
 
 ```
-# Task Manager Tutorial Backend
-PORT=3003
+# Lesson Plan Designer Backend
+PORT=3002
 HOST=0.0.0.0
-CORS_ORIGIN=http://localhost:5281
-DATABASE_PATH=data/task-manager.db
+CORS_ORIGIN=http://localhost:5280
+DB_PATH=./data/lesson-plans.db
+CCAAS_URL=http://localhost:3001
+NODE_ENV=development
 ```
 
 Copy it to `.env`:
@@ -276,7 +255,7 @@ async function bootstrap() {
 
   // Enable CORS for frontend
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5281',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5280',
     credentials: true,
   });
 
@@ -289,14 +268,14 @@ async function bootstrap() {
   // API prefix
   app.setGlobalPrefix('api');
 
-  const port = process.env.PORT || 3003;
+  const port = process.env.PORT || 3002;
   const host = process.env.HOST || '0.0.0.0';
 
   await app.listen(port, host);
 
   logger.log('');
-  logger.log('Task Manager Tutorial Backend (NestJS)');
-  logger.log('=======================================');
+  logger.log('Lesson Plan Designer Backend (NestJS)');
+  logger.log('=====================================');
   logger.log(`HTTP:   http://${host}:${port}`);
   logger.log('');
 }
@@ -306,9 +285,9 @@ bootstrap();
 
 **Explanation:**
 
-- `enableCors`: Allows the frontend (port 5281) to call the backend API
+- `enableCors`: Allows the frontend (port 5280) to call the backend API
 - `ValidationPipe` with `whitelist: true`: Strips any properties not defined in the DTO, preventing unexpected data from reaching your service
-- `setGlobalPrefix('api')`: All routes are prefixed with `/api` (e.g., `/api/tasks`)
+- `setGlobalPrefix('api')`: All routes are prefixed with `/api` (e.g., `/api/lesson-plans`)
 
 ### 3.6 Create the AppModule
 
@@ -318,8 +297,9 @@ Create `backend/src/app.module.ts`:
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
-import { TasksModule } from './tasks/tasks.module';
-import { ProjectsModule } from './projects/projects.module';
+import { LessonPlansModule } from './lesson-plans/lesson-plans.module';
+import { TextbookModule } from './textbook/textbook.module';
+import { CurriculumStandardsModule } from './curriculum-standards/curriculum-standards.module';
 
 @Module({
   imports: [
@@ -328,14 +308,15 @@ import { ProjectsModule } from './projects/projects.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
-    TasksModule,
-    ProjectsModule,
+    LessonPlansModule,
+    TextbookModule,
+    CurriculumStandardsModule,
   ],
 })
 export class AppModule {}
 ```
 
-This is the root module that ties everything together. Notice the three feature modules: `DatabaseModule` for data access, `TasksModule` for task CRUD, and `ProjectsModule` for project CRUD.
+This is the root module that ties everything together. Notice the four feature modules: `DatabaseModule` for data access, `LessonPlansModule` for lesson plan CRUD, `TextbookModule` for textbook chapter lookups, and `CurriculumStandardsModule` for curriculum standard queries.
 
 ## Step 4: Initialize the Frontend
 
@@ -345,7 +326,7 @@ Create `frontend/package.json`:
 
 ```json
 {
-  "name": "task-manager-tutorial-frontend",
+  "name": "lesson-plan-designer-frontend",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -392,11 +373,11 @@ Create `frontend/package.json`:
 
 The `setup.sh` script automates the entire startup process. It uses the shared `solution-lib.sh` library that handles tenant creation, API key management, and Skill injection.
 
-Create `task-manager-tutorial/setup.sh`:
+Create `lesson-plan-designer/setup.sh`:
 
 ```bash
 #!/bin/bash
-# Task Manager Tutorial - Setup Script
+# Lesson Plan Designer - Setup Script
 # Uses: tools/solution-lib.sh
 
 set -e
@@ -492,7 +473,7 @@ main "$@"
 Make it executable:
 
 ```bash
-chmod +x task-manager-tutorial/setup.sh
+chmod +x lesson-plan-designer/setup.sh
 ```
 
 **What the script does:**
@@ -503,11 +484,11 @@ chmod +x task-manager-tutorial/setup.sh
 4. Installs npm dependencies for frontend and backend
 5. Creates a tenant and API key in the CCAAS platform
 6. Registers Skills and MCP Servers with the CCAAS backend
-7. Starts the backend (port 3003) and frontend (port 5281)
+7. Starts the backend (port 3002) and frontend (port 5280)
 
 ## Step 6: Add .gitignore
 
-Create `task-manager-tutorial/.gitignore`:
+Create `lesson-plan-designer/.gitignore`:
 
 ```
 node_modules/
@@ -524,7 +505,7 @@ data/
 After completing this section, your project should look like this:
 
 ```
-task-manager-tutorial/
+lesson-plan-designer/
 ├── .gitignore
 ├── solution.json
 ├── setup.sh                    (executable)
@@ -554,7 +535,7 @@ Verify your setup by installing dependencies and starting the backend:
 
 ```bash
 # Install backend dependencies
-cd task-manager-tutorial/backend
+cd lesson-plan-designer/backend
 npm install
 
 # Start the backend
@@ -564,19 +545,19 @@ npm run start:dev
 You should see output like:
 
 ```
-[Nest] LOG [Bootstrap] Task Manager Tutorial Backend (NestJS)
-[Nest] LOG [Bootstrap] =======================================
-[Nest] LOG [Bootstrap] HTTP:   http://0.0.0.0:3003
+[Nest] LOG [Bootstrap] Lesson Plan Designer Backend (NestJS)
+[Nest] LOG [Bootstrap] =====================================
+[Nest] LOG [Bootstrap] HTTP:   http://0.0.0.0:3002
 ```
 
 {% hint style="warning" %}
-The backend will fail to start until we create the `DatabaseModule`, `TasksModule`, and `ProjectsModule` in the next section. That is expected -- the `AppModule` imports them but they do not exist yet. If you want to verify the setup works right now, temporarily comment out those imports in `app.module.ts`.
+The backend will fail to start until we create the `DatabaseModule`, `LessonPlansModule`, `TextbookModule`, and `CurriculumStandardsModule` in the next section. That is expected -- the `AppModule` imports them but they do not exist yet. If you want to verify the setup works right now, temporarily comment out those imports in `app.module.ts`.
 {% endhint %}
 
 ## Common Pitfalls
 
 {% hint style="danger" %}
-**Pitfall: Wrong port numbers.** The Solution backend runs on port 3003, not 3001. Port 3001 is reserved for the CCAAS backend. Mixing them up causes connection failures.
+**Pitfall: Wrong port numbers.** The Solution backend runs on port 3002, not 3001. Port 3001 is reserved for the CCAAS backend. Mixing them up causes connection failures.
 {% endhint %}
 
 {% hint style="danger" %}
@@ -584,9 +565,9 @@ The backend will fail to start until we create the `DatabaseModule`, `TasksModul
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall: Forgetting `setGlobalPrefix('api')`.** Without this, your routes will be at `/tasks` instead of `/api/tasks`. The frontend and MCP Server both expect the `/api` prefix.
+**Pitfall: Forgetting `setGlobalPrefix('api')`.** Without this, your routes will be at `/lesson-plans` instead of `/api/lesson-plans`. The frontend and MCP Server both expect the `/api` prefix.
 {% endhint %}
 
 ## Next Step
 
-The skeleton is ready. Now let us implement the backend with the database, Task CRUD, and Project CRUD. Proceed to [6.2 Backend Implementation](02-backend.md).
+The skeleton is ready. Now let us implement the backend with the database, Lesson Plan CRUD, and Textbook lookups. Proceed to [6.2 Backend Implementation](02-backend.md).

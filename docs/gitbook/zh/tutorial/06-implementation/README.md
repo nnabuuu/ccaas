@@ -1,10 +1,10 @@
 # 6. 实现演练
 
-在第 1-5 章中，你设计了 Task Manager Solution：领域模型、用户旅程、数据流和表单协议。现在是构建它的时候了。
+在第 1-5 章中，你设计了 Lesson Plan Designer Solution：领域模型、用户旅程、数据流和表单协议。现在是构建它的时候了。
 
 ## 你将构建什么
 
-本章将引导你逐步实现完整的 Task Manager Solution。每个小节都会产出一个可运行、可测试的检查点，让你在继续前进之前始终确信代码是正确的。
+本章将引导你逐步实现完整的 Lesson Plan Designer Solution。每个小节都会产出一个可运行、可测试的检查点，让你在继续前进之前始终确信代码是正确的。
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -33,9 +33,9 @@
 | 小节 | 构建内容 | 检查点 |
 |------|---------|-------|
 | [6.1 项目初始化](01-setup.md) | 目录结构、solution.json、setup.sh | `setup.sh` 运行成功，所有服务启动 |
-| [6.2 后端实现](02-backend.md) | NestJS REST API（任务和项目） | `curl POST /api/tasks` 返回 201 |
+| [6.2 后端实现](02-backend.md) | NestJS REST API（教案和教材） | `curl POST /api/lesson-plans` 返回 201 |
 | [6.3 MCP Server](03-mcp-server.md) | write\_output 工具和自定义工具 | MCP Server 启动并响应工具调用 |
-| [6.4 Skills](04-skills.md) | Task Creator 和 Bulk Import SKILL.md 文件 | Skills 在正确的关键词上触发 |
+| [6.4 Skills](04-skills.md) | Lesson Plan Designer SKILL.md 文件 | Skills 在正确的关键词上触发 |
 | [6.5 前端实现](05-frontend.md) | 包含聊天面板和表单同步的 React UI | 表单从 AI output\_update 事件更新 |
 | [6.6 测试](06-testing.md) | 单元测试和集成测试 | 所有测试通过 |
 | [6.7 会话持久化](07-conversation-persistence.md) | 跨页面刷新的持久化对话 | 消息在页面刷新后保留 |
@@ -53,6 +53,6 @@
 
 1. **增量构建。**每个小节都建立在前一个的基础上。
 2. **运行检查点**，在进入下一小节前完成每个小节末尾的验证。
-3. **对比参考实现**，如果遇到困难可以查看 `solutions/task-manager-tutorial/`。
+3. **对比参考实现**，如果遇到困难可以查看 `solutions/lesson-plan-designer/`。
 
 让我们从 [6.1 项目初始化](01-setup.md) 开始。

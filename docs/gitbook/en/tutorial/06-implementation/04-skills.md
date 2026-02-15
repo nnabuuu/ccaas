@@ -2,13 +2,14 @@
 
 ## What You Will Build
 
-In this section, you will write the Skill definitions for the Task Manager Solution. Skills are Markdown files that act as the AI Agent's instruction manual -- they define what the Agent knows, what tools it can use, and how it should respond to user requests.
+In this section, you will write the Skill definitions for the Lesson Plan Designer. Skills are Markdown files that act as the AI Agent's instruction manual -- they define what the Agent knows, what tools it can use, and how it should respond to user requests.
 
 By the end of this section, you will have:
 
-- A **Task Creator** Skill for creating and editing individual tasks
-- A **Bulk Import** Skill for importing multiple tasks at once
-- Both Skills registered in `solution.json` with trigger configuration
+- A **Lesson Plan Designer** Skill for polishing lesson plans and generating materials
+- A **Teaching Script Generator** Skill for converting lesson plans into teacher scripts
+- A **NotebookLM** Skill for generating audio and PDF slide decks
+- All Skills registered in `solution.json` with trigger and chained-skill configuration
 - An understanding of how Skills, MCP tools, and sync fields connect
 
 ## What Is a Skill?
@@ -16,25 +17,26 @@ By the end of this section, you will have:
 A Skill is a Markdown file (`SKILL.md`) that serves as the AI Agent's system prompt for a specific task. When a user sends a message, CCAAS matches it against Skill triggers and injects the matching Skill's content into the Agent's context.
 
 ```
-User message: "Create a task to fix the login bug"
+User message: "帮我优化教学目标"
                 │
                 ▼
 CCAAS Skill Router:
-  - Matches trigger: "create task" → task-creator Skill
+  - Matches trigger: "教学目标" → lesson-plan-designer Skill
                 │
                 ▼
 AI Agent receives:
   - System prompt: SKILL.md content
-  - Available tools: write_output (from MCP Server)
-  - User message: "Create a task to fix the login bug"
+  - Available tools: write_output, read_context, attach_file
+  - User message: "帮我优化教学目标"
                 │
                 ▼
-AI Agent calls write_output with field="taskTitle", value="Fix login bug"
+AI Agent calls read_context() to get current form state,
+then calls write_output(field="objectives", value="...")
 ```
 
 ## Skill File Structure
 
-A Skill file has four main sections:
+A Lesson Plan Designer Skill file has these main sections:
 
 ```markdown
 # Skill Name
@@ -42,254 +44,331 @@ A Skill file has four main sections:
 ## Role Definition
 Who the AI Agent is and what it does.
 
-## Knowledge Scope
-Domain knowledge and constraints.
+## Theoretical Framework
+Domain knowledge and pedagogical theory the Agent applies.
 
 ## Workflow
 Step-by-step process the Agent follows.
 
 ## Output Format
-How to use write_output and what fields are available.
+How to use write_output / attach_file and what fields are available.
+
+## Constraints
+Explicit boundaries and mandatory steps (e.g., read_context first).
 ```
 
-## Step 1: Write the Task Creator Skill
+The key difference from a generic Skill is the **mandatory context-reading step** -- lesson plan Skills must call `read_context` before responding, so the Agent knows what the user has already filled in the form.
 
-Create `skills/task-creator/SKILL.md`:
+## Step 1: Write the Lesson Plan Designer Skill
+
+Create `skills/lesson-plan-designer/SKILL.md`:
+
+This is the primary Skill. It handles lesson plan polishing, objective optimization, assessment design, and multi-format output generation (scripts, audio, PPT). It is grounded in Professor Cui Yunhuo's curriculum design theory.
 
 ```markdown
-# Task Creator
+# Lesson Plan Polish Expert
 
-## Role Definition
+> **Mandatory: Before replying to any user message, you must first call
+> the `read_context` tool to understand the current lesson plan state.
+> Do not ask the user for information already present in the form.**
 
-You are a task management assistant that helps users create and manage tasks
-through natural language conversation. You understand project context, can
-extract task details from informal descriptions, and produce well-structured
-task entries.
+## When to Use
 
-## Knowledge Scope
+When you need to:
+- Optimize an existing lesson plan
+- Check alignment with curriculum standards
+- Improve learning objective statements
+- Design more effective assessment tasks
 
-### Task Fields
-- **taskTitle**: A concise, actionable title (verb + object pattern preferred)
-- **taskDescription**: Detailed description of what needs to be done
-- **priority**: low, medium, high, or urgent
-- **status**: todo, in_progress, done, or cancelled
-- **dueDate**: ISO date format (YYYY-MM-DD)
-- **tags**: Array of categorization labels
+## Theoretical Framework
 
-### Priority Guidelines
-- **urgent**: Blocking other work or has an immediate deadline
-- **high**: Important and should be done soon
-- **medium**: Normal priority, standard timeline
-- **low**: Nice to have, can be deferred
+This Skill is based on Professor Cui Yunhuo's curriculum and instruction
+design theory from East China Normal University. Core principles:
 
-### Good Task Titles
-- Use imperative form: "Fix login bug" not "Login bug"
-- Be specific: "Add email validation to signup form" not "Fix form"
-- Keep under 80 characters
+### 1. Backward Design (Three Stages)
+- Stage 1: Identify desired results (big ideas, core competencies)
+- Stage 2: Determine acceptable evidence (performance tasks)
+- Stage 3: Plan learning experiences and instruction
 
-## Workflow
+### 2. Learning Objective Notation (ABCD Method)
+- A - Audience: The student
+- B - Behavior: Observable action verb (analyze, compare, create...)
+- C - Condition: Under what circumstances
+- D - Degree: To what standard
 
-1. **Parse the request**: Extract task details from the user's message
-   - Identify the task title (what needs to be done)
-   - Look for priority indicators ("urgent", "ASAP", "when you get a chance")
-   - Look for due dates ("by Friday", "next week", "March 15")
-   - Identify tags or categories ("frontend", "backend", "bug")
+### 3. Performance Assessment (GRASPS Framework)
+- Goal, Role, Audience, Situation, Product, Standards
 
-2. **Fill in gaps**: For any missing fields, use reasonable defaults
-   - Default priority: medium
-   - Default status: todo
-   - Default tags: infer from context if possible
+## Context Reading (Mandatory)
 
-3. **Sync to form**: Use write_output to send each field to the frontend
-   - Call write_output once per field
-   - Start with the title, then description, then other fields
+Call `read_context()` before every response. The returned structure:
 
-4. **Confirm with user**: After syncing, briefly describe what you created
-   and ask if the user wants to make any changes before saving.
+{
+  "pageType": "lesson-plan-editor",
+  "pageData": {
+    "currentForm": {
+      "title": "...",
+      "subject": "...",
+      "gradeLevel": 3,
+      "objectives": "...",
+      "content": "...",
+      "assessmentMethods": "...",
+      ...
+    }
+  }
+}
+
+Use `mode: "diff"` on subsequent calls to save tokens.
 
 ## Output Format
 
-Use the write_output tool to update task fields one at a time.
-Each call should include the field name and its value.
+Use write_output to update lesson plan fields:
+- field: "objectives" → string (ABCD-format learning objectives)
+- field: "content" → string (teaching process / learning activities)
+- field: "assessmentMethods" → string (assessment design)
+- field: "extraProperties" → object (additional key-value data)
 
-Available fields and their types:
-- field: "taskTitle" → string (task title, 1-200 characters)
-- field: "taskDescription" → string (detailed description)
-- field: "priority" → "low" | "medium" | "high" | "urgent"
-- field: "status" → "todo" | "in_progress" | "done" | "cancelled"
-- field: "dueDate" → ISO date string (e.g., "2026-03-15")
-- field: "tags" → array of strings (e.g., ["frontend", "bug"])
+## Multi-Format Output
 
-### Example
-
-User says: "Create a high priority task to fix the login page redirect,
-due by next Friday, tag it as frontend and bug"
-
-You should make these write_output calls:
-1. write_output(field="taskTitle", value="Fix login page redirect")
-2. write_output(field="taskDescription", value="The login page is not
-   redirecting users correctly after successful authentication. Investigate
-   the redirect logic and fix the routing issue.")
-3. write_output(field="priority", value="high")
-4. write_output(field="status", value="todo")
-5. write_output(field="dueDate", value="2026-02-21")
-6. write_output(field="tags", value=["frontend", "bug"])
-
-## Constraints
-
-- Always use write_output to sync data. Never just describe the task in text.
-- Do not make up project IDs. If the user mentions a project, ask them to
-  select it from the list.
-- If the user's request is ambiguous, ask for clarification before creating
-  the task.
-- Keep descriptions professional and clear. Expand on the user's input but
-  do not invent details that were not mentioned or implied.
+| Command | Action |
+|---------|--------|
+| "优化教案" | Optimize with Cui Yunhuo's theory |
+| "生成讲稿" | Generate teaching script |
+| "生成音频" | Generate script + audio via NotebookLM |
+| "生成PPT" | Generate PDF slides via NotebookLM |
+| "全套材料" | Full pipeline: script + audio + slides |
 ```
 
 ### Key Design Decisions in This Skill
 
-**1. Explicit field list in the Output Format section.** This ensures the AI Agent knows exactly which field names to use when calling `write_output`. These must match the `SYNC_FIELDS` in the MCP Server.
+**1. Mandatory `read_context` before every response.** The Agent must know what the user has already entered in the form. This prevents the Agent from asking redundant questions and enables targeted suggestions.
 
-**2. Step-by-step workflow.** The Agent follows a predictable pattern: parse, fill defaults, sync, confirm. This makes the behavior consistent and debuggable.
+**2. Pedagogical theory as domain knowledge.** Rather than a generic assistant, this Skill encodes a specific theoretical framework (backward design, ABCD objectives). This makes the Agent a domain expert rather than a general chatbot.
 
-**3. Constraints section.** Explicit boundaries prevent the Agent from doing unwanted things like making up data or skipping the form sync.
+**3. Multi-format output orchestration.** The primary Skill can trigger other Skills (teaching script, NotebookLM) through the `Skill` tool, acting as an orchestrator for the "full materials" workflow.
 
-**4. Example interaction.** Concrete examples help the AI Agent understand the expected behavior pattern better than abstract descriptions.
+**4. `read_context` diff mode.** After the first full context read, subsequent calls use `mode: "diff"` to return only changed fields, reducing token usage by 90-95%.
 
-## Step 2: Write the Bulk Import Skill
+## Step 2: Write the Teaching Script Generator Skill
 
-Create `skills/bulk-import/SKILL.md`:
+Create `skills/teaching-script-generator/SKILL.md`:
+
+This Skill converts a structured lesson plan into a conversational teaching script -- the kind of spoken guide a teacher would follow during class.
 
 ```markdown
-# Bulk Import
+# Teaching Script Generator
 
-## Role Definition
+> **Mandatory: Before replying, read `.context/lesson-plan.json`
+> to understand the current lesson plan. Do not ask the user for
+> information already in the form.**
 
-You are a task import assistant that helps users create multiple tasks at once
-from text input. You can parse plain text lists, numbered lists, CSV data,
-and informal descriptions into structured task entries.
+## When to Use
 
-## Supported Input Formats
+When you need to:
+- Convert a lesson plan into a teacher's spoken script
+- Generate classroom dialogue suggestions
+- Create a complete teaching guide with transitions
 
-### Plain Text List
+## Script vs. Lesson Plan
+
+| Feature | Lesson Plan | Teaching Script |
+|---------|-------------|-----------------|
+| Style | Formal, procedural | Conversational, spoken |
+| Audience | Reviewers, peers | The teacher personally |
+| Content | Objectives, activities | Teacher dialogue, transitions |
+
+## Mandatory Pre-Step
+
+Read the lesson plan context:
+
+Read(".context/lesson-plan.json")
+
+Required fields: title, subject, gradeLevel, objectives, content
+Optional but recommended: studentAnalysis, assessmentMethods
+
+## Script Structure (9 sections)
+
+1. Basic Information (subject, grade, duration)
+2. Opening Remarks (suggested greeting and context)
+3. Objective Explanation (oral version of objectives)
+4. Key Points Analysis (what is hard, why, how to address)
+5. Teaching Process (per-phase teacher dialogue scripts)
+6. Assessment Guidance (observation points, key questions)
+7. Classroom Management (time control, contingency plans)
+8. Course Summary (closing remarks)
+9. Reflection Prompts (post-class self-evaluation)
+
+## Dual Output
+
+After generating, sync both text and file:
+
+1. write_output({ field: "extraProperties",
+   value: { "讲稿": scriptContent },
+   preview: "Teaching script (2500 words)" })
+
+2. Write the file: Write({ file_path: "教学讲稿.md", content: ... })
+
+3. attach_file({ filePath: "教学讲稿.md",
+   fileType: "script",
+   description: "Teaching script - 9-section guide" })
 ```
-- Review API docs
-- Fix login bug
-- Update deployment script
+
+### Key Design Decisions
+
+**1. Dual output pattern (text + file).** The script is synced to `extraProperties` for inline viewing in the form *and* saved as a downloadable `.md` file via `attach_file`. Users get both in-app viewing and offline access.
+
+**2. Nine-section template.** The fixed structure ensures consistency across all generated scripts. Each section maps to a specific teaching need (opening, transitions, questioning strategies, contingency plans).
+
+**3. Context file vs. `read_context` tool.** This Skill reads `.context/lesson-plan.json` directly using the `Read` tool, while the primary Skill uses the `read_context` MCP tool. Both approaches work -- the context file is written by the platform whenever the form state changes.
+
+## Step 3: Write the NotebookLM Skill
+
+Create `skills/notebooklm/SKILL.md`:
+
+This Skill integrates with Google NotebookLM to generate audio podcasts and PDF slide decks from lesson plan content. It is typically called as a chained Skill from the primary Lesson Plan Designer Skill.
+
+```markdown
+# NotebookLM Automation
+
+Automate Google NotebookLM: create notebooks, add sources,
+generate artifacts (podcasts, slides), and download results.
+
+## When This Skill Activates
+
+- Explicit: User says "/notebooklm" or "use notebooklm"
+- Intent: "Create a podcast about [topic]",
+  "Generate slides from my research"
+
+## Core Workflow
+
+1. notebooklm create "Title"        → Create notebook
+2. notebooklm source add <file>     → Add lesson plan as source
+3. notebooklm source wait <id>      → Wait for processing
+4. notebooklm generate audio "..."  → Generate podcast
+5. notebooklm artifact wait <id>    → Wait for generation
+6. notebooklm download audio ./out  → Download result
+
+## Lesson Plan Integration
+
+CRITICAL: After downloading any artifact, ALWAYS call attach_file:
+
+attach_file({
+  filePath: "教学讲解音频.mp3",
+  fileType: "audio",
+  description: "Teaching audio - 8 min Chinese narration"
+})
+
+## Language Matching
+
+Match the user's language in all NotebookLM instructions:
+- Chinese user → "用中文讲解关键概念"
+- English user → "Explain key concepts in English"
 ```
 
-### Numbered List
-```
-1. Review API docs (high priority)
-2. Fix login bug (urgent)
-3. Update deployment script
-```
+### Key Design Decisions
 
-### CSV Format
-```
-title,priority,tags
-Review API docs,high,backend
-Fix login bug,urgent,frontend;bug
-Update deployment script,medium,devops
-```
+**1. Subagent pattern for long operations.** Audio generation takes 5-15 minutes. The Skill spawns a background subagent using the `Task` tool to wait and download, keeping the main conversation unblocked.
 
-### Informal Description
-"I need to review the API docs, fix that login bug which is urgent,
-and update the deployment script when I get a chance"
+**2. Mandatory `attach_file` after download.** Every downloaded artifact must be attached to the lesson plan via `attach_file`. This ensures files appear in the lesson plan's attachment section.
+
+**3. Language-aware instructions.** NotebookLM generates content in the language of its instructions. The Skill detects the user's language and passes matching instructions to ensure correct output language.
+
+## Step 4: Write the Lesson Plan PPTX Skill
+
+Create `skills/lesson-plan-pptx/SKILL.md`:
+
+This Skill generates PDF slide decks from lesson plans using NotebookLM's slide-deck feature. Despite the "PPTX" name, it produces PDF format for universal compatibility.
+
+```markdown
+# Lesson Plan PPTX - Slide Generator
+
+Unified slide generation: whether the user says "generate PPT",
+"create slides", or "make PDF", this Skill uses NotebookLM
+to produce PDF-format teaching slides.
+
+## Triggers (from SKILL.md frontmatter)
+
+triggers:
+  - type: keyword
+    value: "生成PPT"
+    priority: 100
+  - type: keyword
+    value: "生成幻灯片"
+    priority: 95
+  - type: keyword
+    value: "创建课件"
+    priority: 90
+  - type: intent
+    value: "将教案转化为幻灯片或演示文稿"
+    priority: 80
 
 ## Workflow
 
-1. **Identify the format**: Determine which input format the user provided
-2. **Parse all tasks**: Extract title, priority, tags, and due dates for
-   each task
-3. **Fill defaults**: Apply default values for missing fields
-   - Default priority: medium
-   - Default status: todo
-4. **Sync to frontend**: Use write_output with field="tasks" and value as
-   an array of task objects
-5. **Report summary**: Tell the user how many tasks were parsed and list
-   them briefly
+1. Read lesson plan from `.context/lesson-plan.json`
+2. Validate required fields (title, objectives, content)
+3. Format as Markdown and save temp file
+4. Create NotebookLM notebook, add source
+5. Generate slide-deck with localized instructions
+6. Spawn subagent to wait, download, and attach_file
 
-## Output Format
+## Output
 
-For bulk import, use write_output with the special "tasks" field that
-accepts an array:
-
-```json
-write_output(
-  field="tasks",
-  value=[
-    {
-      "taskTitle": "Review API docs",
-      "priority": "high",
-      "status": "todo",
-      "tags": ["backend"]
-    },
-    {
-      "taskTitle": "Fix login bug",
-      "priority": "urgent",
-      "status": "todo",
-      "tags": ["frontend", "bug"]
-    }
-  ]
-)
+- Format: PDF (not .pptx)
+- Pages: 10-15 (auto-determined by NotebookLM)
+- Generation time: 5-15 minutes (background)
+- Auto-attached via attach_file after completion
 ```
 
-Each task object can include any of the sync fields:
-- taskTitle (required)
-- taskDescription
-- priority
-- status
-- dueDate
-- tags
+## Step 5: Register Skills in solution.json
 
-## Constraints
-
-- Every task must have at least a title
-- If parsing fails for some entries, import the valid ones and report
-  which entries could not be parsed
-- Maximum 50 tasks per import
-- Do not silently skip tasks. Always report the total parsed and any
-  issues found
-```
-
-## Step 3: Register Skills in solution.json
-
-Add both Skills to `solution.json`:
+Add all Skills to `solution.json`. Here is the actual configuration from the Lesson Plan Designer:
 
 ```json
 {
   "skills": [
     {
-      "name": "Task Creator",
-      "slug": "task-creator",
-      "description": "Create and manage tasks with AI assistance",
-      "skillFile": "skills/task-creator/SKILL.md",
+      "name": "Lesson Plan Designer",
+      "slug": "lesson-plan-designer",
+      "description": "AI lesson planning assistant",
+      "skillFile": "skills/lesson-plan-designer/SKILL.md",
       "scope": "tenant",
       "triggers": [
-        { "type": "keyword", "value": "create task", "priority": 10 },
-        { "type": "keyword", "value": "add task", "priority": 10 },
-        { "type": "keyword", "value": "new task", "priority": 9 },
-        { "type": "keyword", "value": "task priority", "priority": 8 },
-        { "type": "keyword", "value": "assign task", "priority": 8 }
+        { "type": "keyword", "value": "备课", "priority": 10 },
+        { "type": "keyword", "value": "教学目标", "priority": 8 },
+        { "type": "keyword", "value": "教学活动", "priority": 8 },
+        { "type": "keyword", "value": "评估", "priority": 7 },
+        { "type": "keyword", "value": "设计", "priority": 5 },
+        { "type": "keyword", "value": "生成音频", "priority": 9 },
+        { "type": "keyword", "value": "生成PPT", "priority": 9 },
+        { "type": "keyword", "value": "全套材料", "priority": 10 }
       ],
-      "allowedTools": ["write_output", "Read", "Write"]
+      "allowedTools": ["write_output", "Read", "Write", "Skill"],
+      "relatedSkills": ["notebooklm"]
     },
     {
-      "name": "Bulk Import",
-      "slug": "bulk-import",
-      "description": "Import multiple tasks from text, CSV, or structured input",
-      "skillFile": "skills/bulk-import/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "bulk import", "priority": 10 },
-        { "type": "keyword", "value": "import tasks", "priority": 10 },
-        { "type": "keyword", "value": "batch create", "priority": 9 },
-        { "type": "keyword", "value": "multiple tasks", "priority": 8 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write"]
+      "name": "NotebookLM",
+      "slug": "notebooklm",
+      "description": "Generate audio, PDF slides, and other content",
+      "skillFile": "skills/notebooklm/SKILL.md",
+      "scope": "tenant"
+    },
+    {
+      "name": "Teaching Script Generator",
+      "slug": "teaching-script-generator",
+      "description": "Generate teaching scripts from lesson plans",
+      "skillFile": "skills/teaching-script-generator/SKILL.md",
+      "scope": "tenant"
     }
-  ]
+  ],
+
+  "chainedSkills": {
+    "notebooklm": {
+      "description": "Generate audio, PDF slides, and other content",
+      "triggerPhrase": "生成音频|生成PDF|生成文档",
+      "inputFrom": "lesson plan content",
+      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
+    }
+  }
 }
 ```
 
@@ -297,41 +376,72 @@ Add both Skills to `solution.json`:
 
 | Field | Description |
 |-------|-------------|
-| `type` | `keyword` matches exact words in the message |
-| `value` | The keyword or pattern to match |
+| `type` | `keyword` matches exact words; `intent` uses semantic matching |
+| `value` | The keyword or intent description to match |
 | `priority` | Higher number = higher priority when multiple Skills match |
 
 **How triggers work:**
 
-1. User sends: "Create a task to fix the login page"
+1. User sends: "帮我优化教学目标" (Help me optimize learning objectives)
 2. CCAAS scans the message against all Skill triggers
-3. "create task" matches the Task Creator Skill (priority 10)
-4. CCAAS injects the Task Creator Skill into the AI Agent context
+3. "教学目标" matches the Lesson Plan Designer Skill (priority 8)
+4. CCAAS injects the Lesson Plan Designer SKILL.md into the AI Agent context
 
 **When multiple Skills match:**
 
-If the user says "create multiple tasks", both "create task" (Task Creator) and "multiple tasks" (Bulk Import) match. CCAAS selects the trigger with the highest priority. Since both are priority 10 and 8 respectively, the Task Creator would be selected. To ensure correct routing, consider adjusting trigger priorities or using more specific patterns.
+If the user says "生成PPT", both the Lesson Plan Designer (priority 9 for "生成PPT") and the Lesson Plan PPTX Skill (priority 100 for "生成PPT") match. CCAAS selects the trigger with the highest priority, so the PPTX Skill handles it. This shows how specialized Skills can override general ones through priority.
+
+### Trigger Types
+
+The Lesson Plan Designer uses two trigger types:
+
+| Type | How It Works | Example |
+|------|-------------|---------|
+| `keyword` | Exact substring match in user message | `"生成PPT"` matches "请帮我生成PPT" |
+| `intent` | Semantic similarity matching | `"将教案转化为幻灯片"` matches "我想把教案做成课件" |
+
+Keyword triggers are fast and deterministic. Intent triggers are more flexible but require semantic matching, which adds latency.
 
 ### allowedTools
 
-The `allowedTools` array restricts which MCP tools the Skill can use. This follows the principle of least privilege:
+The `allowedTools` array restricts which tools the Skill can use. This follows the principle of least privilege:
 
-- `write_output` -- Required for syncing data to the frontend
-- `Read` -- Allows reading files (built-in Claude Code tool)
-- `Write` -- Allows writing files (built-in Claude Code tool)
+- `write_output` -- Required for syncing data to the frontend form
+- `read_context` -- Read the current form state (from shared-context MCP server)
+- `attach_file` -- Attach generated files to the lesson plan
+- `Read` -- Read files from the filesystem (built-in Agent tool)
+- `Write` -- Write files to the filesystem (built-in Agent tool)
+- `Skill` -- Invoke other Skills (for chained workflows like "全套材料")
 
 Tools not listed here cannot be invoked when this Skill is active, even if the MCP Server provides them.
 
-## How Skills, MCP Server, and Frontend Connect
+### Chained Skills
 
-Here is the complete picture of how the three components work together:
+The `chainedSkills` section in `solution.json` declares Skills that can be called from other Skills:
+
+```json
+"chainedSkills": {
+  "notebooklm": {
+    "triggerPhrase": "生成音频|生成PDF|生成文档",
+    "inputFrom": "lesson plan content",
+    "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
+  }
+}
+```
+
+This enables the orchestration pattern where the primary Lesson Plan Designer Skill calls the NotebookLM Skill to generate audio or slides as part of the "全套材料" (full materials) workflow.
+
+## How Skills, MCP Tools, and Frontend Connect
+
+Here is the complete picture using the Lesson Plan Designer's actual field names:
 
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    SKILL.md                         │
 │                                                     │
-│  "Use write_output with field='taskTitle'"          │
-│  "Valid values for priority: low, medium, high"     │
+│  "Use write_output with field='objectives'"         │
+│  "Use attach_file for generated audio/PDF"          │
+│  "Call read_context before every response"          │
 │                                                     │
 │  Tells the AI Agent WHAT to do                      │
 └──────────────────────┬──────────────────────────────┘
@@ -341,11 +451,17 @@ Here is the complete picture of how the three components work together:
 ┌─────────────────────────────────────────────────────┐
 │                  MCP Server                         │
 │                                                     │
-│  SYNC_FIELDS = ['taskTitle', 'priority', ...]       │
-│  Validates: is 'taskTitle' a valid field? ✓         │
-│  Validates: is 'critical' a valid priority? ✗       │
+│  SYNC_FIELDS = [                                    │
+│    'title', 'subject', 'gradeLevel',                │
+│    'objectives', 'content',                         │
+│    'assessmentMethods', 'extraProperties',          │
+│    'attachments', ...                               │
+│  ]                                                  │
 │                                                     │
-│  Tells CCAAS WHETHER the data is valid              │
+│  Tools: write_output, attach_file,                  │
+│         read_context, get_curriculum_standards      │
+│                                                     │
+│  Validates and routes the data                      │
 └──────────────────────┬──────────────────────────────┘
                        │ CCAAS wraps into
                        │ output_update event
@@ -354,17 +470,66 @@ Here is the complete picture of how the three components work together:
 │                   Frontend                          │
 │                                                     │
 │  switch (field) {                                   │
-│    case 'taskTitle': setTitle(value); break;         │
-│    case 'priority': setPriority(value); break;       │
+│    case 'objectives': setObjectives(value); break;  │
+│    case 'content': setContent(value); break;        │
+│    case 'attachments': addAttachment(value); break; │
 │  }                                                  │
 │                                                     │
-│  Tells the UI HOW to display the data               │
+│  Renders the data in the lesson plan form           │
 └─────────────────────────────────────────────────────┘
 ```
 
 {% hint style="danger" %}
-**The field names must be identical across all three.** If the Skill says `"title"`, the MCP Server validates `"taskTitle"`, and the frontend handles `"task_title"`, nothing will work. Use the `SYNC_FIELDS` constant as the single source of truth.
+**The field names must be identical across all three.** If the Skill says `"title"`, the MCP Server must validate `"title"`, and the frontend must handle `"title"`. Use the `SYNC_FIELDS` array in `mcp-server/src/types.ts` as the single source of truth.
 {% endhint %}
+
+### The Complete SYNC_FIELDS List
+
+These are the actual sync fields defined in `mcp-server/src/types.ts`:
+
+```typescript
+export const SYNC_FIELDS = [
+  'title',              // Lesson title
+  'subject',            // Subject (math, chinese, etc.)
+  'gradeLevel',         // Grade level (1-12)
+  'durationMinutes',    // Class duration in minutes
+  'lessonPlanCode',     // Lesson plan identifier
+  'objectives',         // Learning objectives (ABCD format)
+  'content',            // Teaching process / learning activities
+  'teachingMethods',    // Teaching methodology
+  'materialsNeeded',    // Required materials
+  'assessmentMethods',  // Assessment design
+  'curriculumRequirements', // Curriculum standard references
+  'studentAnalysis',    // Student background analysis
+  'extraProperties',    // Extensible key-value store (e.g., scripts)
+  'status',             // Lesson plan status
+  'attachments',        // File attachments (audio, PDF, etc.)
+] as const;
+```
+
+## The Attachment Workflow
+
+A distinctive pattern in the Lesson Plan Designer is the **dual output** for generated content:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  AI generates teaching script                       │
+│                                                     │
+│  Output 1: write_output → extraProperties           │
+│    - Text synced to form for inline viewing         │
+│    - User sees "Sync to Form" button                │
+│                                                     │
+│  Output 2: Write file + attach_file → attachments   │
+│    - File saved and attached for download            │
+│    - User sees "Add Attachment" button              │
+└─────────────────────────────────────────────────────┘
+```
+
+The user sees two sync buttons in the chat:
+1. **Sync to Form** -- writes the script text into `extraProperties` for inline viewing
+2. **Add Attachment** -- adds the `.md` file to the lesson plan's attachments list
+
+This dual-output pattern applies to all generated materials: teaching scripts, audio files, and PDF slides.
 
 ## Injecting Skills into CCAAS
 
@@ -376,36 +541,37 @@ Skills defined in `solution.json` are automatically injected when you run the se
 
 CCAAS_URL="http://localhost:3001"
 
-# Inject Task Creator Skill
+# Inject Lesson Plan Designer Skill
 curl -X POST "$CCAAS_URL/api/v1/skills" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Task Creator",
-    "slug": "task-creator",
-    "description": "Create and manage tasks with AI assistance",
+    "name": "Lesson Plan Designer",
+    "slug": "lesson-plan-designer",
+    "description": "AI lesson planning assistant",
     "type": "prompt",
-    "content": "'"$(cat skills/task-creator/SKILL.md)"'",
+    "content": "'"$(cat skills/lesson-plan-designer/SKILL.md)"'",
     "triggers": [
-      {"type": "keyword", "value": "create task", "priority": 10},
-      {"type": "keyword", "value": "add task", "priority": 10}
+      {"type": "keyword", "value": "备课", "priority": 10},
+      {"type": "keyword", "value": "教学目标", "priority": 8},
+      {"type": "keyword", "value": "全套材料", "priority": 10}
     ],
-    "allowedTools": ["write_output", "Read", "Write"]
+    "allowedTools": ["write_output", "Read", "Write", "Skill"]
   }'
 
-# Inject Bulk Import Skill
+# Inject Teaching Script Generator Skill
 curl -X POST "$CCAAS_URL/api/v1/skills" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Bulk Import",
-    "slug": "bulk-import",
-    "description": "Import multiple tasks from text or CSV",
+    "name": "Teaching Script Generator",
+    "slug": "teaching-script-generator",
+    "description": "Generate teaching scripts from lesson plans",
     "type": "prompt",
-    "content": "'"$(cat skills/bulk-import/SKILL.md)"'",
+    "content": "'"$(cat skills/teaching-script-generator/SKILL.md)"'",
     "triggers": [
-      {"type": "keyword", "value": "bulk import", "priority": 10},
-      {"type": "keyword", "value": "import tasks", "priority": 10}
+      {"type": "keyword", "value": "生成讲稿", "priority": 100},
+      {"type": "keyword", "value": "生成教学脚本", "priority": 100}
     ],
-    "allowedTools": ["write_output", "Read", "Write"]
+    "allowedTools": ["write_output", "Read", "Write", "attach_file"]
   }'
 
 echo "Skills injected successfully"
@@ -418,11 +584,12 @@ echo "Skills injected successfully"
 The best way to test a Skill is to use the chat interface:
 
 1. Start the CCAAS backend: `npm run dev:backend`
-2. Start the Solution backend: `cd solutions/task-manager-tutorial/backend && npm run start:dev`
-3. Open the frontend or use the admin console
-4. Send a message that matches a trigger: "Create a task to review the API documentation"
+2. Start the Solution backend: `cd solutions/lesson-plan-designer/backend && npm run start:dev`
+3. Open the frontend and create a lesson plan with basic fields filled in
+4. Send a message that matches a trigger: "帮我优化教学目标"
 5. Verify that:
    - The correct Skill was activated (check the agent logs)
+   - `read_context` was called first (the Agent did not ask for already-filled fields)
    - `write_output` was called with the correct field names
    - The frontend form updated with the generated values
 
@@ -431,34 +598,40 @@ The best way to test a Skill is to use the chat interface:
 | Symptom | Likely Cause |
 |---------|-------------|
 | Wrong Skill activated | Trigger priorities conflict; adjust priority numbers |
-| AI Agent does not call write_output | Output Format section is unclear; add more examples |
+| Agent asks for info already in form | `read_context` not called; check the mandatory step in SKILL.md |
 | write_output returns an error | Field name mismatch between Skill and MCP Server |
 | Form does not update | Frontend is not handling the field name from output_update |
+| Attachment button not appearing | `attach_file` not called after file generation |
+| Audio/PPT never completes | Subagent pattern not working; check Task tool invocation |
 
 ## Checkpoint
 
 Before moving to the next section, verify:
 
-- [ ] `skills/task-creator/SKILL.md` exists with Role, Workflow, and Output Format sections
-- [ ] `skills/bulk-import/SKILL.md` exists with support for multiple input formats
-- [ ] Both Skills are registered in `solution.json` with appropriate triggers
-- [ ] The field names in the Skill's Output Format match the `SYNC_FIELDS` in the MCP Server
-- [ ] `allowedTools` includes `write_output` for both Skills
+- [ ] `skills/lesson-plan-designer/SKILL.md` exists with mandatory `read_context`, theoretical framework, and output format sections
+- [ ] `skills/teaching-script-generator/SKILL.md` exists with dual-output pattern (text + file)
+- [ ] `skills/notebooklm/SKILL.md` exists with language matching and `attach_file` integration
+- [ ] All Skills are registered in `solution.json` with appropriate triggers
+- [ ] The field names in the Skill's output format match the `SYNC_FIELDS` in the MCP Server
+- [ ] `allowedTools` includes `write_output` for content Skills and `attach_file` for file-generating Skills
+- [ ] The `chainedSkills` section in `solution.json` declares the NotebookLM orchestration
 
-## Exercise: Add a Status Update Skill
+## Exercise: Add a Curriculum Standards Lookup Skill
 
-Create a third Skill that handles task status updates. When the user says "mark task as done" or "move task to in progress", this Skill should:
+Create a new Skill that helps teachers find relevant curriculum standards. When the user says "查找课程标准" or "curriculum standards", this Skill should:
 
-1. Ask which task to update (if not clear from context)
-2. Call `write_output` with `field: "status"` and the new status value
-3. Confirm the change with the user
+1. Call `read_context` to get the current subject and grade level
+2. Call `get_curriculum_standards` MCP tool with the subject and relevant keywords
+3. Present matching standards to the user
+4. Optionally call `write_output` with `field: "curriculumRequirements"` to sync selected standards to the form
 
 <details>
 <summary>Hints</summary>
 
-- Use triggers like `"mark as"`, `"change status"`, `"move to"`
-- The Skill should understand informal status descriptions: "done" = "done", "working on it" = "in_progress", "not started" = "todo"
-- Consider edge cases: what if the user says "complete the login task" -- does "complete" mean status or does it mean "finish building"?
+- Use triggers like `"课程标准"`, `"curriculum"`, `"标准对齐"`
+- The `get_curriculum_standards` tool takes `subject` and `keyword` parameters
+- Parse the user's objectives to extract keywords for the search
+- Allow the user to select which standards to apply before syncing
 
 </details>
 
@@ -466,13 +639,15 @@ Create a third Skill that handles task status updates. When the user says "mark 
 
 In this section you learned:
 
-- **Skill structure**: Role, Knowledge, Workflow, and Output Format sections
-- **Writing effective Skills**: Be explicit about field names, provide examples, set constraints
-- **Trigger configuration**: Keywords with priorities determine which Skill handles a message
-- **The three-way contract**: Skills tell the AI what to do, the MCP Server validates the data, and the frontend renders it -- all must use the same field names
-- **Skill injection**: How Skills get registered with CCAAS via `solution.json` or the REST API
+- **Skill structure**: Role definition, theoretical framework, workflow, output format, and constraints
+- **Context-aware Skills**: Using `read_context` to avoid redundant questions and provide targeted suggestions
+- **Dual output pattern**: Syncing text to `extraProperties` for inline viewing and files via `attach_file` for downloads
+- **Trigger types**: `keyword` for exact matching and `intent` for semantic matching, with priority-based routing
+- **Chained Skills**: How Skills call other Skills (e.g., Lesson Plan Designer orchestrating NotebookLM for "全套材料")
+- **The three-way contract**: Skills tell the AI what to do, the MCP Server validates with `SYNC_FIELDS`, and the frontend renders -- all must use the same field names
+- **Subagent pattern**: Long-running operations (audio, PDF generation) use background subagents to keep the conversation unblocked
 
-With the MCP Server and Skills in place, the AI Agent can now generate structured task data and sync it to the frontend. In the next section, we will build the **Frontend** that receives these updates and renders them in a form.
+With the MCP Server and Skills in place, the AI Agent can now generate structured lesson plan data, teaching scripts, audio, and slides -- and sync everything to the frontend. In the next section, we will build the **Frontend** that receives these updates and renders them.
 
 ---
 

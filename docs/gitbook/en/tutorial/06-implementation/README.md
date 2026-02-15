@@ -1,10 +1,10 @@
 # 6. Implementation Walkthrough
 
-In Chapters 1-5, you designed the Task Manager Solution: the domain model, user journeys, data flow, and form protocol. Now it is time to build it.
+In Chapters 1-5, you designed the Lesson Plan Designer Solution: the domain model, user journeys, data flow, and form protocol. Now it is time to build it.
 
 ## What You Will Build
 
-This chapter walks you through implementing the complete Task Manager Solution step by step. Each sub-chapter produces a working, testable checkpoint so you always have confidence that your code is correct before moving forward.
+This chapter walks you through implementing the complete Lesson Plan Designer Solution step by step. Each sub-chapter produces a working, testable checkpoint so you always have confidence that your code is correct before moving forward.
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -33,9 +33,9 @@ This chapter walks you through implementing the complete Task Manager Solution s
 | Sub-Chapter | What You Build | Checkpoint |
 |-------------|---------------|------------|
 | [6.1 Project Setup](01-setup.md) | Directory structure, solution.json, setup.sh | `setup.sh` runs and all services start |
-| [6.2 Backend Implementation](02-backend.md) | NestJS REST API with tasks and projects | `curl POST /api/tasks` returns 201 |
+| [6.2 Backend Implementation](02-backend.md) | NestJS REST API with lesson plans and textbooks | `curl POST /api/lesson-plans` returns 201 |
 | [6.3 MCP Server](03-mcp-server.md) | write\_output tool and custom tools | MCP Server starts and responds to tool calls |
-| [6.4 Skills](04-skills.md) | Task Creator and Bulk Import SKILL.md files | Skills trigger on correct keywords |
+| [6.4 Skills](04-skills.md) | Lesson Plan Designer SKILL.md file | Skills trigger on correct keywords |
 | [6.5 Frontend](05-frontend.md) | React UI with chat panel and form sync | Form updates from AI output\_update events |
 | [6.6 Testing](06-testing.md) | Unit and integration tests | All tests pass |
 | [6.7 Conversation Persistence](07-conversation-persistence.md) | Persistent conversations across page refreshes | Messages survive page refresh |
@@ -53,6 +53,6 @@ Before starting, ensure you have:
 
 1. **Build incrementally.** Each sub-chapter builds on the previous one.
 2. **Run the checkpoint** at the end of each sub-chapter before moving on.
-3. **Compare with the reference** at `solutions/task-manager-tutorial/` if you get stuck.
+3. **Compare with the reference** at `solutions/lesson-plan-designer/` if you get stuck.
 
 Let us begin with [6.1 Project Setup](01-setup.md).
