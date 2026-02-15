@@ -29,7 +29,10 @@ export type AdminAction =
   | 'tenant.update'
   | 'alert.create'
   | 'alert.update'
-  | 'alert.delete';
+  | 'alert.delete'
+  | 'sessionTemplate.create'
+  | 'sessionTemplate.update'
+  | 'sessionTemplate.delete';
 
 export type TargetType =
   | 'skill'

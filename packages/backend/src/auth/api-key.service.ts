@@ -258,7 +258,7 @@ export class ApiKeyService implements OnModuleInit {
       }
 
       // Resolve user if API key has userId
-      let user = apiKey.user;
+      const user = apiKey.user;
       let userTenant = undefined;
 
       if (apiKey.userId && user) {

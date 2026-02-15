@@ -128,9 +128,9 @@ describe('useTodoProgress', () => {
     })
 
     it('should return null when no in_progress todo', () => {
-      const todos = [
-        { content: 'Task 1', status: 'completed' as const },
-        { content: 'Task 2', status: 'pending' as const },
+      const todos: Array<{ content: string; status: 'pending' | 'in_progress' | 'completed' }> = [
+        { content: 'Task 1', status: 'completed' },
+        { content: 'Task 2', status: 'pending' },
       ]
 
       const currentTodo = todos.find(t => t.status === 'in_progress') || null

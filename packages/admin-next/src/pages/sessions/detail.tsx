@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useCustom, useCustomMutation } from '@refinedev/core'
+import { useCustom, useCustomMutation, HttpError } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/shared/stat-card'
@@ -21,7 +21,6 @@ import {
   XCircle,
   Clock,
   Coins,
-  Database,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
@@ -153,7 +152,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
                 </span>
               )}
             </div>
-            {event.data.input && (
+            {(event.data.input && (
               <details className="text-xs">
                 <summary className="cursor-pointer text-muted-foreground">
                   Input
@@ -162,8 +161,8 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
                   {JSON.stringify(event.data.input, null, 2)}
                 </pre>
               </details>
-            )}
-            {event.data.output && (
+            )) as React.ReactNode}
+            {(event.data.output && (
               <details className="text-xs">
                 <summary className="cursor-pointer text-muted-foreground">
                   Output
@@ -172,7 +171,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
                   {JSON.stringify(event.data.output, null, 2)}
                 </pre>
               </details>
-            )}
+            )) as React.ReactNode}
           </div>
         )
       case 'thinking_block':
@@ -289,7 +288,7 @@ export function SessionDetailPage() {
   })
 
   // Fetch token breakdown
-  const { data: tokenData, isLoading: tokenLoading } = useCustom<TokenBreakdown>({
+  const { data: tokenData } = useCustom<TokenBreakdown>({
     url: `/admin/sessions/${sessionId}/tokens`,
     method: 'get',
   })
@@ -330,7 +329,7 @@ export function SessionDetailPage() {
           alert('Session terminated successfully')
           window.location.reload()
         },
-        onError: (error: Error) => {
+        onError: (error: HttpError) => {
           // TODO: Replace alert() with toast notification
           alert(`Failed to terminate session: ${error.message}`)
         },

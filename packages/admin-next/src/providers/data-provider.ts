@@ -2,7 +2,24 @@ import type { DataProvider } from '@refinedev/core'
 import { apiClient } from '@/lib/api-client'
 
 export const dataProvider: DataProvider = {
-  getList: async ({ resource, pagination, filters, sorters }) => {
+  getList: async ({ resource, pagination, filters, sorters, meta }) => {
+    // Special handling for session-templates
+    if (resource === 'session-templates') {
+      const tenantId = (meta?.tenantId as string) || 'current'
+      const { data } = await apiClient.get(`/admin/tenants/${tenantId}/session-templates`)
+
+      // Transform { templates: {}, defaultTemplate: '' } to array
+      const items = Object.entries(data.templates || {}).map(([name, template]) => ({
+        name,
+        template,
+      }))
+
+      return {
+        data: items,
+        total: items.length,
+      }
+    }
+
     const params: Record<string, unknown> = {}
 
     if (pagination) {
@@ -38,25 +55,49 @@ export const dataProvider: DataProvider = {
     }
   },
 
-  getOne: async ({ resource, id }) => {
+  getOne: async ({ resource, id, meta }) => {
+    if (resource === 'session-templates') {
+      const tenantId = (meta?.tenantId as string) || 'current'
+      const { data } = await apiClient.get(`/admin/tenants/${tenantId}/session-templates/${id}`)
+      return { data }
+    }
+
     const url = getResourceUrl(resource)
     const { data } = await apiClient.get(`${url}/${id}`)
     return { data }
   },
 
-  create: async ({ resource, variables }) => {
+  create: async ({ resource, variables, meta }) => {
+    if (resource === 'session-templates') {
+      const tenantId = (meta?.tenantId as string) || 'current'
+      const { data } = await apiClient.post(`/admin/tenants/${tenantId}/session-templates`, variables)
+      return { data }
+    }
+
     const url = getResourceUrl(resource)
     const { data } = await apiClient.post(url, variables)
     return { data }
   },
 
-  update: async ({ resource, id, variables }) => {
+  update: async ({ resource, id, variables, meta }) => {
+    if (resource === 'session-templates') {
+      const tenantId = (meta?.tenantId as string) || 'current'
+      const { data } = await apiClient.put(`/admin/tenants/${tenantId}/session-templates/${id}`, variables)
+      return { data }
+    }
+
     const url = getResourceUrl(resource)
     const { data } = await apiClient.put(`${url}/${id}`, variables)
     return { data }
   },
 
-  deleteOne: async ({ resource, id }) => {
+  deleteOne: async ({ resource, id, meta }) => {
+    if (resource === 'session-templates') {
+      const tenantId = (meta?.tenantId as string) || 'current'
+      await apiClient.delete(`/admin/tenants/${tenantId}/session-templates/${id}`)
+      return { data: {} }
+    }
+
     const url = getResourceUrl(resource)
     const { data } = await apiClient.delete(`${url}/${id}`)
     return { data }

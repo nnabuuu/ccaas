@@ -91,7 +91,7 @@ describe('FormStateSynchronizer', () => {
       synchronizer.onFormUpdated(handler)
 
       const before = Date.now()
-      synchronizer.updateField('test-form', 'title', 'New Title', 'user')
+      synchronizer.updateField('test-form', 'title', 'New Title', 'manual')
       const after = Date.now()
 
       const event = handler.mock.calls[0][0]

@@ -62,9 +62,10 @@ export class AnalyticsService {
     days?: number;
   }): { start: Date; end: Date } {
     const { startDate, endDate, days = 7 } = query;
-    const end = endDate ? new Date(endDate) : new Date();
+    // Parse dates as UTC to avoid timezone issues
+    const end = endDate ? new Date(endDate + 'T00:00:00.000Z') : new Date();
     const start = startDate
-      ? new Date(startDate)
+      ? new Date(startDate + 'T00:00:00.000Z')
       : new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
     return { start, end };
   }
@@ -298,12 +299,12 @@ export class AnalyticsService {
     // This ensures we don't drop dates with errors but no messages
     const dateBuckets = new Map<string, { errorCount: number; totalMessages: number }>();
     const cursor = new Date(start);
-    cursor.setHours(0, 0, 0, 0); // Start at midnight
+    cursor.setUTCHours(0, 0, 0, 0); // Start at midnight UTC
 
     while (cursor <= end) {
       const dateKey = cursor.toISOString().split('T')[0];
       dateBuckets.set(dateKey, { errorCount: 0, totalMessages: 0 });
-      cursor.setDate(cursor.getDate() + 1);
+      cursor.setUTCDate(cursor.getUTCDate() + 1); // Increment day in UTC
     }
 
     // Query errors grouped by date

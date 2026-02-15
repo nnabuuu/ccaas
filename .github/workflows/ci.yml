@@ -34,6 +34,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Build shared packages (required for typecheck)
+        run: npm run build:common
       - name: Run typecheck
         run: npm run typecheck
 
@@ -49,6 +51,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Build shared packages (required for tests)
+        run: npm run build:common
       - name: Run tests
         run: npm test
       - name: Upload coverage (optional)
@@ -67,6 +71,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Build shared packages (required for architecture tests)
+        run: npm run build:common
       - name: Run architecture tests
         run: npm run test:architecture
 

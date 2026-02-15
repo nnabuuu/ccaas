@@ -34,8 +34,11 @@ async function handleRevoke(keyId: string) {
     await apiClient.post(`/admin/api-keys/${keyId}/revoke`)
     toast.success('API key revoked successfully')
     window.dispatchEvent(new CustomEvent('api-key-updated'))
-  } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to revoke API key')
+  } catch (err) {
+    const message = err instanceof Error && 'response' in err
+      ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to revoke API key')
+      : 'Failed to revoke API key'
+    toast.error(message)
   }
 }
 
@@ -48,8 +51,11 @@ async function handleDelete(keyId: string) {
     await apiClient.delete(`/admin/api-keys/${keyId}`)
     toast.success('API key deleted successfully')
     window.dispatchEvent(new CustomEvent('api-key-updated'))
-  } catch (err: any) {
-    toast.error(err.response?.data?.message || 'Failed to delete API key')
+  } catch (err) {
+    const message = err instanceof Error && 'response' in err
+      ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to delete API key')
+      : 'Failed to delete API key'
+    toast.error(message)
   }
 }
 

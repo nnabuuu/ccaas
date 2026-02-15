@@ -51,8 +51,11 @@ export function CreateApiKeyModal({ open, onClose, onSuccess }: CreateApiKeyModa
         scopes: ['chat', 'skills:read'],
       })
       setRawKey(response.data.rawKey)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create API key')
+    } catch (err) {
+      const message = err instanceof Error && 'response' in err
+        ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create API key')
+        : 'Failed to create API key'
+      setError(message)
     } finally {
       setIsSubmitting(false)
     }

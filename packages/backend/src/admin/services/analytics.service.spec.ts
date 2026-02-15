@@ -19,6 +19,7 @@ describe('AnalyticsService', () => {
   let service: AnalyticsService;
   let tokenUsageRepository: jest.Mocked<Repository<TokenUsageEvent>>;
   let messageRepository: jest.Mocked<Repository<Message>>;
+  let apiErrorRepository: jest.Mocked<Repository<ApiErrorEvent>>;
   let apiKeyRepository: jest.Mocked<Repository<ApiKey>>;
   let skillRepository: jest.Mocked<Repository<Skill>>;
   let tenantRepository: jest.Mocked<Repository<Tenant>>;
@@ -57,6 +58,12 @@ describe('AnalyticsService', () => {
           },
         },
         {
+          provide: getRepositoryToken(ApiErrorEvent),
+          useValue: {
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
           provide: getRepositoryToken(ApiKey),
           useValue: {
             createQueryBuilder: jest.fn(),
@@ -80,6 +87,7 @@ describe('AnalyticsService', () => {
     service = module.get<AnalyticsService>(AnalyticsService);
     tokenUsageRepository = module.get(getRepositoryToken(TokenUsageEvent));
     messageRepository = module.get(getRepositoryToken(Message));
+    apiErrorRepository = module.get(getRepositoryToken(ApiErrorEvent));
     apiKeyRepository = module.get(getRepositoryToken(ApiKey));
     skillRepository = module.get(getRepositoryToken(Skill));
     tenantRepository = module.get(getRepositoryToken(Tenant));
@@ -419,12 +427,8 @@ describe('AnalyticsService', () => {
       const mockErrorQb = createMockQueryBuilder();
       const mockMessageQb = createMockQueryBuilder();
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({ days: 7 });
 
@@ -448,12 +452,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-14', totalMessages: '100' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-13',
@@ -489,12 +489,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-13', totalMessages: '100' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-10',
@@ -531,12 +527,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-13', totalMessages: '100' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-10',
@@ -563,12 +555,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-13', totalMessages: '100' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-10',
@@ -589,12 +577,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-10', totalMessages: '100' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-10',
@@ -617,12 +601,8 @@ describe('AnalyticsService', () => {
         { date: '2024-02-10', totalMessages: 'also-invalid' },
       ]);
 
-      jest.spyOn(service as any, 'apiErrorRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockErrorQb),
-      });
-      jest.spyOn(service as any, 'messageRepository', 'get').mockReturnValue({
-        createQueryBuilder: jest.fn().mockReturnValue(mockMessageQb),
-      });
+      apiErrorRepository.createQueryBuilder = jest.fn().mockReturnValue(mockErrorQb);
+      messageRepository.createQueryBuilder = jest.fn().mockReturnValue(mockMessageQb);
 
       const result = await service.getErrorRateTrend({
         startDate: '2024-02-10',

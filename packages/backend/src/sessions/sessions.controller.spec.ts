@@ -4,6 +4,7 @@ import { SessionsController } from './sessions.controller';
 import { SessionService } from '../sessions/session.service';
 import { SessionsGateway } from '../sessions/sessions.gateway';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { MessageQueueService } from './services/message-queue.service';
 import { SkillManagementService } from './services/skill-management.service';
 import { AttachmentService } from './services/attachment.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
@@ -58,6 +59,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: SessionService, useValue: sessionService },
         { provide: SessionsGateway, useValue: sessionsGateway },
         { provide: CompletionOrchestrationService, useValue: {} },
+        { provide: MessageQueueService, useValue: {} },
         { provide: SkillManagementService, useValue: {} },
         { provide: AttachmentService, useValue: {} },
         { provide: SkillSyncService, useValue: {} },

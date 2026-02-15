@@ -8,9 +8,10 @@
 import { useState, useEffect } from 'react'
 import { useFileVersions } from '../hooks/useFileVersions'
 import { computeLineDiff, formatSizeDiff, getDiffColor } from '../utils/diffUtils'
-import type { FileMetadata } from '../types'
+import type { FileMetadata, UseAgentConnectionReturn } from '../types'
 
 export interface FileVersionCompareProps {
+  connection: UseAgentConnectionReturn
   file: FileMetadata
   fromVersion: string
   toVersion: string
@@ -19,6 +20,7 @@ export interface FileVersionCompareProps {
 }
 
 export function FileVersionCompare({
+  connection,
   file,
   fromVersion,
   toVersion,
@@ -37,6 +39,7 @@ export function FileVersionCompare({
   const [error, setError] = useState<Error | null>(null)
 
   const versions = useFileVersions({
+    connection,
     fileId: file.id,
     enabled: true,
   })

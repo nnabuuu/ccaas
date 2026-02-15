@@ -31,6 +31,8 @@ const SchedulerListPage = lazy(() => import('@/pages/scheduler/list').then((m) =
 const SchedulerDetailPage = lazy(() => import('@/pages/scheduler/detail').then((m) => ({ default: m.SchedulerDetailPage })))
 const SkillAnalyticsPage = lazy(() => import('@/pages/analytics/skills').then((m) => ({ default: m.SkillAnalyticsPage })))
 const ApiKeysListPage = lazy(() => import('@/pages/api-keys/list').then((m) => ({ default: m.ApiKeysListPage })))
+const SessionTemplatesListPage = lazy(() => import('@/pages/session-templates/list').then((m) => ({ default: m.SessionTemplatesListPage })))
+const SessionTemplateFormPage = lazy(() => import('@/pages/session-templates/form').then((m) => ({ default: m.SessionTemplateFormPage })))
 
 function PageLoader() {
   return (
@@ -93,6 +95,13 @@ function App() {
             list: '/api-keys',
             meta: { label: 'API Keys' },
           },
+          {
+            name: 'session-templates',
+            list: '/session-templates',
+            create: '/session-templates/create',
+            edit: '/session-templates/:name/edit',
+            meta: { label: 'Session Templates' },
+          },
         ]}
         options={{
           syncWithLocation: true,
@@ -123,6 +132,9 @@ function App() {
               <Route path="/scheduler" element={<SchedulerListPage />} />
               <Route path="/scheduler/:id" element={<SchedulerDetailPage />} />
               <Route path="/api-keys" element={<ApiKeysListPage />} />
+              <Route path="/session-templates" element={<SessionTemplatesListPage />} />
+              <Route path="/session-templates/create" element={<SessionTemplateFormPage />} />
+              <Route path="/session-templates/:name/edit" element={<SessionTemplateFormPage />} />
             </Route>
             <Route
               element={

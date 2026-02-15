@@ -27,6 +27,7 @@
 * [React SDK 聊天集成](guide/chat-integration.md)
 * [File Explorer 组件](guide/file-explorer.md)
 * [管理员 API Key 管理](guide/admin-api-keys.md)
+* [会话模板管理](guide/admin-session-templates.md)
 
 ## API 参考 <a href="#api" id="api"></a>
 

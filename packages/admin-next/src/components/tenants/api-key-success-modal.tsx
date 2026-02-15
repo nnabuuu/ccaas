@@ -11,15 +11,29 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Copy, Check, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 
+interface TenantData {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  status: string
+}
+
+interface ApiKeyData {
+  name: string
+  scopes: string[]
+  rateLimitRpm: number
+  rateLimitRpd: number
+}
+
 interface ApiKeySuccessModalProps {
   open: boolean
-  tenant: any
-  apiKey?: any
+  tenant?: TenantData
+  apiKey?: ApiKeyData
   rawKey?: string
   onClose: () => void
 }
@@ -46,8 +60,12 @@ export function ApiKeySuccessModal({
 
   const handleDone = () => {
     onClose()
-    navigate(`/tenants/${tenant.id}`)
+    if (tenant?.id) {
+      navigate(`/tenants/${tenant.id}`)
+    }
   }
+
+  if (!tenant) return null
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && confirmed && onClose()}>
@@ -146,7 +164,7 @@ export function ApiKeySuccessModal({
         </div>
 
         <DialogFooter>
-          <Button onClick={handleDone} disabled={rawKey && !confirmed}>
+          <Button onClick={handleDone} disabled={!!rawKey && !confirmed}>
             {rawKey ? 'Done - Go to Tenant' : 'View Tenant'}
           </Button>
         </DialogFooter>

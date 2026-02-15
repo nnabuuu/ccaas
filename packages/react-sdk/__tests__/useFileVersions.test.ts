@@ -29,16 +29,13 @@ describe('useFileVersions', () => {
     lastVersionAt: new Date('2024-01-15'),
     createdAt: new Date('2024-01-01'),
     uploadedBy: 'user',
-    sessionId: 'session-123',
-    tenantId: 'tenant-123',
-    messageId: 'msg-123',
     originalPath: '/test.md',
-    storedPath: '/storage/test.md',
-    downloadedAt: null,
+    updatedAt: new Date('2024-01-15'),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.restoreAllMocks(); // Restore all spies/mocks to avoid interference between tests
     (global.fetch as any).mockClear();
 
     mockConnection = {
@@ -93,8 +90,7 @@ describe('useFileVersions', () => {
 
       expect(result.current.versions).toEqual(mockVersions);
       expect(global.fetch).toHaveBeenCalledWith(
-        `http://localhost:3001/api/v1/files/${fileId}/versions`,
-        expect.any(Object)
+        `http://localhost:3001/api/v1/files/${fileId}/versions`
       );
     });
 
@@ -198,7 +194,7 @@ describe('useFileVersions', () => {
         `http://localhost:3001/api/v1/files/${fileId}/versions`,
         expect.objectContaining({
           method: 'POST',
-          body: JSON.stringify({ changelog: 'Added feature' }),
+          body: JSON.stringify({ bumpType: 'patch', changelog: 'Added feature' }),
         })
       );
     });
@@ -315,8 +311,28 @@ describe('useFileVersions', () => {
   describe('Comparing Versions', () => {
     it('should compare two versions', async () => {
       const comparison = {
-        from: { version: '1.0.0', size: 512, contentHash: 'abc123' },
-        to: { version: '1.0.1', size: 1024, contentHash: 'def456' },
+        from: {
+          id: 'v1',
+          fileId,
+          version: '1.0.0',
+          size: 512,
+          contentHash: 'abc123',
+          mimeType: 'text/markdown',
+          changelog: 'Initial version',
+          uploadedBy: 'user',
+          createdAt: '2024-01-01T00:00:00Z',
+        },
+        to: {
+          id: 'v2',
+          fileId,
+          version: '1.0.1',
+          size: 1024,
+          contentHash: 'def456',
+          mimeType: 'text/markdown',
+          changelog: 'Updated version',
+          uploadedBy: 'user',
+          createdAt: '2024-01-02T00:00:00Z',
+        },
         sizeDiff: 512,
         hashChanged: true,
       };
@@ -351,12 +367,22 @@ describe('useFileVersions', () => {
         );
       });
 
-      expect(comparisonResult).toEqual(comparison);
+      expect(comparisonResult).toEqual({
+        from: {
+          ...comparison.from,
+          createdAt: new Date(comparison.from.createdAt),
+        },
+        to: {
+          ...comparison.to,
+          createdAt: new Date(comparison.to.createdAt),
+        },
+        sizeDiff: comparison.sizeDiff,
+        hashChanged: comparison.hashChanged,
+      });
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining(
           `/api/v1/files/${fileId}/versions/compare?from=1.0.0&to=1.0.1`
-        ),
-        expect.any(Object)
+        )
       );
     });
 
@@ -418,16 +444,6 @@ describe('useFileVersions', () => {
           },
         });
 
-      // Mock URL and document methods
-      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
-      global.URL.revokeObjectURL = vi.fn();
-      const mockLink = {
-        href: '',
-        download: '',
-        click: vi.fn(),
-      };
-      vi.spyOn(document, 'createElement').mockReturnValue(mockLink as any);
-
       const { result } = renderHook(() =>
         useFileVersions({
           connection: mockConnection,
@@ -435,6 +451,20 @@ describe('useFileVersions', () => {
           enabled: true,
         })
       );
+
+      // Mock URL and document methods (after renderHook to avoid interfering with React)
+      global.URL.createObjectURL = vi.fn(() => 'blob:mock-url');
+      global.URL.revokeObjectURL = vi.fn();
+      const mockLink = {
+        href: '',
+        download: '',
+        click: vi.fn(),
+      } as unknown as HTMLAnchorElement;
+
+      // Mock DOM methods to be no-ops
+      vi.spyOn(document.body, 'appendChild').mockImplementation(() => mockLink);
+      vi.spyOn(document.body, 'removeChild').mockImplementation(() => mockLink);
+      vi.spyOn(document, 'createElement').mockReturnValue(mockLink);
 
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false);
@@ -446,8 +476,7 @@ describe('useFileVersions', () => {
 
       expect(mockLink.click).toHaveBeenCalled();
       expect(global.fetch).toHaveBeenCalledWith(
-        `http://localhost:3001/api/v1/files/${fileId}/versions/1.0.0/download`,
-        expect.any(Object)
+        `http://localhost:3001/api/v1/files/${fileId}/versions/1.0.0/download`
       );
     });
   });

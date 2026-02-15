@@ -11,6 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { SessionTemplateMap } from '@ccaas/common';
 
 export type TenantPlan = 'free' | 'starter' | 'professional' | 'enterprise';
 export type TenantStatus = 'active' | 'suspended' | 'pending' | 'deleted';
@@ -41,6 +42,8 @@ export class Tenant {
       enableCustomMcp?: boolean;
       enableAnalytics?: boolean;
     };
+    sessionTemplates?: SessionTemplateMap;
+    defaultSessionTemplate?: string;
   };
 
   @Column({ default: 100 })

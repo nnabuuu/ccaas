@@ -3,11 +3,32 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CreateTenantForm } from '@/components/tenants/create-form'
 import { ApiKeySuccessModal } from '@/components/tenants/api-key-success-modal'
 
+interface TenantData {
+  id: string
+  name: string
+  slug: string
+  plan: string
+  status: string
+}
+
+interface ApiKeyData {
+  name: string
+  scopes: string[]
+  rateLimitRpm: number
+  rateLimitRpd: number
+}
+
+interface CreatedData {
+  tenant: TenantData
+  apiKey?: ApiKeyData
+  rawKey?: string
+}
+
 export function CreateTenantPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [createdData, setCreatedData] = useState<any>(null)
+  const [createdData, setCreatedData] = useState<CreatedData | null>(null)
 
-  const handleSuccess = (data: any) => {
+  const handleSuccess = (data: CreatedData) => {
     setCreatedData(data)
     setShowSuccessModal(true)
   }

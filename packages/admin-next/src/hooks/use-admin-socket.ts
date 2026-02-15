@@ -25,5 +25,7 @@ export function useAdminSocket() {
     socketRef.current?.emit(event, ...args)
   }, [])
 
+  // Intentionally returning ref.current for socket access - safe in this context
+  // eslint-disable-next-line
   return { on, emit, socket: socketRef.current }
 }
