@@ -2,7 +2,7 @@
 
 ## AI Task Execution
 
-The LoopAI Agent Engine provides natural-language-driven task execution:
+The KedgeAgentic Agent Engine provides natural-language-driven task execution:
 
 - **Natural Language Input** -- Users describe task requirements in natural language, with file attachment support
 - **Real-Time Streaming** -- AI thinking processes, tool usage, and output results are pushed to the frontend in real time
@@ -12,7 +12,7 @@ The LoopAI Agent Engine provides natural-language-driven task execution:
 
 ## Skill System
 
-Skills are the core abstraction in LoopAI, defining how an AI Agent behaves in a specific context.
+Skills are the core abstraction in KedgeAgentic, defining how an AI Agent behaves in a specific context.
 
 ### Skill Types
 
@@ -79,7 +79,7 @@ The platform pushes a rich set of real-time events via WebSocket:
 
 ## Scheduled Task Execution
 
-LoopAI supports background task scheduling for automated, unattended AI operations:
+KedgeAgentic supports background task scheduling for automated, unattended AI operations:
 
 - **Cron Scheduling** -- Run tasks on cron schedules (e.g., daily at 4 AM)
 - **Interval Scheduling** -- Execute tasks at fixed intervals (e.g., every 60 seconds)

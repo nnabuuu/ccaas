@@ -45,7 +45,7 @@
 开始之前，确保你已经：
 
 - 完成第 1-5 章（至少阅读了第 1 章了解架构背景）
-- LoopAI 平台在本地运行（`npm run dev:backend` 在端口 3001）
+- 即见Agentic 平台在本地运行（`npm run dev:backend` 在端口 3001）
 - 安装了 Node.js 18+ 和 npm
 - 有支持 TypeScript 的代码编辑器
 

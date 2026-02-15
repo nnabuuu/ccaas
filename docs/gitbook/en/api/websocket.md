@@ -1,6 +1,6 @@
 # WebSocket Events
 
-LoopAI uses Socket.io for WebSocket communication, providing a rich real-time event stream.
+KedgeAgentic uses Socket.io for WebSocket communication, providing a rich real-time event stream.
 
 ## Connection
 

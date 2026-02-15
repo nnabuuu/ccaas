@@ -2,7 +2,7 @@
 
 ## 概述
 
-LoopAI 提供 Vue SDK（`@ccaas/vue-sdk`）和 React SDK（`@ccaas/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
+即见Agentic 提供 Vue SDK（`@ccaas/vue-sdk`）和 React SDK（`@ccaas/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
 
 ## Vue SDK 集成
 

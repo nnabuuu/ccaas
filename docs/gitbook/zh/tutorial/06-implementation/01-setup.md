@@ -482,7 +482,7 @@ chmod +x lesson-plan-designer/setup.sh
 2. 从 `solution.json` 读取端口、slug 和服务配置
 3. 验证 CCAAS 后端在端口 3001 上运行
 4. 为前端和后端安装 npm 依赖
-5. 在 CCAAS 平台中创建租户和 API Key
+5. 在即见Agentic 平台中创建租户和 API Key
 6. 向 CCAAS 后端注册 Skills 和 MCP Servers
 7. 启动后端（端口 3002）和前端（端口 5280）
 

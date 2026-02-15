@@ -2,7 +2,7 @@
 
 ## 背景
 
-LoopAI 平台使用 REST 适配器与 MCP Server 通信。如果你的 MCP Server 使用 stdio 模式（基于 `@modelcontextprotocol/sdk`），需要迁移为 REST API 模式。
+即见Agentic 平台使用 REST 适配器与 MCP Server 通信。如果你的 MCP Server 使用 stdio 模式（基于 `@modelcontextprotocol/sdk`），需要迁移为 REST API 模式。
 
 ## 迁移步骤
 

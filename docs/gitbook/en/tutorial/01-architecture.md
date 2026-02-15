@@ -1,10 +1,10 @@
 # 1. Understanding Solution Architecture
 
-In this chapter, you will learn what a Solution is, how it fits into the LoopAI platform, and what building blocks make up every Solution. By the end, you will have a clear mental model of the architecture and a concrete understanding of what we are going to build.
+In this chapter, you will learn what a Solution is, how it fits into the KedgeAgentic platform, and what building blocks make up every Solution. By the end, you will have a clear mental model of the architecture and a concrete understanding of what we are going to build.
 
 ## What Problem Does a Solution Solve?
 
-Imagine you are building a lesson plan designer for teachers. Without LoopAI, you would build a standard web app: a React frontend, a Node.js backend, a database. Teachers fill out forms -- selecting textbooks, entering objectives, writing teaching activities -- and the app saves data. This works, but there is no AI assistance.
+Imagine you are building a lesson plan designer for teachers. Without KedgeAgentic, you would build a standard web app: a React frontend, a Node.js backend, a database. Teachers fill out forms -- selecting textbooks, entering objectives, writing teaching activities -- and the app saves data. This works, but there is no AI assistance.
 
 Now imagine you want to add AI capabilities:
 
@@ -14,15 +14,15 @@ Now imagine you want to add AI capabilities:
 
 Building this from scratch requires integrating an LLM API, managing prompts, handling streaming responses, syncing AI output to your forms, and adding version control so teachers can undo AI changes. That is a significant amount of infrastructure work that has nothing to do with your business logic.
 
-**A Solution is the answer to this problem.** It is a structured application framework that lets you focus on your domain (lesson plans, textbooks, curriculum standards) while the LoopAI platform handles the AI infrastructure (session management, event streaming, tool invocation, audit trails).
+**A Solution is the answer to this problem.** It is a structured application framework that lets you focus on your domain (lesson plans, textbooks, curriculum standards) while the KedgeAgentic platform handles the AI infrastructure (session management, event streaming, tool invocation, audit trails).
 
 ## Platform vs. Solution Responsibilities
 
-The LoopAI platform and your Solution have clearly separated responsibilities:
+The KedgeAgentic platform and your Solution have clearly separated responsibilities:
 
 ```
 +-----------------------------------------------------------------+
-|                    LoopAI Platform (CCAAS)                       |
+|                    KedgeAgentic Platform (CCAAS)                       |
 |                                                                 |
 |  +---------------+  +---------------+  +---------------------+ |
 |  |   Session      |  |    Skill      |  |   Message           | |
@@ -65,7 +65,7 @@ The LoopAI platform and your Solution have clearly separated responsibilities:
 
 ## The Four Building Blocks
 
-Every LoopAI Solution is composed of four building blocks. Understanding them is the key to designing any Solution:
+Every KedgeAgentic Solution is composed of four building blocks. Understanding them is the key to designing any Solution:
 
 ### 1. Domain Model
 
@@ -98,7 +98,7 @@ Identifying user journeys helps you decide which Skills and MCP tools to build.
 
 ### 3. Data Flow
 
-Data flow describes how information moves between the frontend, the platform, and the Solution backend. In LoopAI, the frontend has **two connections**:
+Data flow describes how information moves between the frontend, the platform, and the Solution backend. In KedgeAgentic, the frontend has **two connections**:
 
 ```
                   +-------------------+
@@ -328,14 +328,14 @@ Step 10: Lesson plan is persisted with full audit trail
 ```
 
 {% hint style="success" %}
-**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the teacher reviews it, and only then does it get saved. This is the Human-in-the-Loop pattern at the core of every LoopAI Solution.
+**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the teacher reviews it, and only then does it get saved. This is the Human-in-the-Loop pattern at the core of every KedgeAgentic Solution.
 {% endhint %}
 
 ## Comparing with a Traditional Web App
 
-If you have built traditional web applications, this comparison will help you understand what LoopAI adds:
+If you have built traditional web applications, this comparison will help you understand what KedgeAgentic adds:
 
-| Aspect | Traditional Web App | LoopAI Solution |
+| Aspect | Traditional Web App | KedgeAgentic Solution |
 |--------|--------------------|--------------------|
 | User input | Forms + buttons | Forms + buttons + **chat** |
 | Data entry | Manual only | Manual + **AI-assisted** |

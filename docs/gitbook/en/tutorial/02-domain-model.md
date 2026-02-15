@@ -2,7 +2,7 @@
 
 ## What You Will Learn
 
-In this chapter, you will learn how to design the domain model for a LoopAI Solution. Before writing any code, you need to clearly define **what data** your application manages, **how entities relate** to each other, and **which fields** can be synced between the AI Agent and the frontend form.
+In this chapter, you will learn how to design the domain model for a KedgeAgentic Solution. Before writing any code, you need to clearly define **what data** your application manages, **how entities relate** to each other, and **which fields** can be synced between the AI Agent and the frontend form.
 
 By the end of this chapter, you will be able to:
 
@@ -20,7 +20,7 @@ A common mistake when building Solutions is jumping straight into implementation
 - **Missing fields** that surface only during integration
 - **Incorrect data types** that cause runtime errors
 
-Spending time on domain modeling saves hours of debugging later. In the LoopAI ecosystem, your domain model is the contract between three systems:
+Spending time on domain modeling saves hours of debugging later. In the KedgeAgentic ecosystem, your domain model is the contract between three systems:
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
@@ -296,7 +296,7 @@ This separation tells you immediately which fields are sync fields and which are
 
 ## Database Schema
 
-For the Lesson Plan Designer, we use SQLite with better-sqlite3 (the same approach LoopAI recommends for development).
+For the Lesson Plan Designer, we use SQLite with better-sqlite3 (the same approach KedgeAgentic recommends for development).
 
 ### SQL Schema
 
@@ -380,7 +380,7 @@ The backend parses these with `JSON.parse()` when reading and serializes with `J
 
 ## Mapping Fields to write_output
 
-The most critical part of domain modeling for a LoopAI Solution is deciding which fields the AI Agent can update. These are your **sync fields**.
+The most critical part of domain modeling for a KedgeAgentic Solution is deciding which fields the AI Agent can update. These are your **sync fields**.
 
 ### Defining Sync Fields
 
@@ -523,7 +523,7 @@ socket.on('output_update', (event) => {
 
 ## CCAAS Entities vs. Solution Entities
 
-A key architectural principle in LoopAI is the separation between **platform entities** and **domain entities**.
+A key architectural principle in KedgeAgentic is the separation between **platform entities** and **domain entities**.
 
 ### Platform Entities (managed by CCAAS)
 

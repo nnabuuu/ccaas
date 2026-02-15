@@ -533,7 +533,7 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 
 ## 生产检查点
 
-至此，你已经涵盖了在 LoopAI 平台上构建 Solution 的完整生命周期：
+至此，你已经涵盖了在即见Agentic 平台上构建 Solution 的完整生命周期：
 
 1. **架构** -- 理解 CCAAS 核心、Solution 后端和前端如何交互
 2. **领域模型** -- 设计驻留在 Solution 后端的实体
@@ -550,4 +550,4 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 - **自定义 MCP Server**：构建高级工具集成
 - **管理后台**：监控会话、管理 Skills 和配置 API Key
 
-恭喜你完成了本教程。现在你已具备在 LoopAI 平台上构建、测试和部署生产级 Solution 的知识。
+恭喜你完成了本教程。现在你已具备在即见Agentic 平台上构建、测试和部署生产级 Solution 的知识。

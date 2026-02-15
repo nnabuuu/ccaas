@@ -2,7 +2,7 @@
 
 ## 概述
 
-`write_output` 是 LoopAI 中最核心的 MCP 工具，用于将 AI Agent 生成的结构化数据实时同步到前端表单。掌握其正确用法对于构建高质量的 Solution 至关重要。
+`write_output` 是即见Agentic 中最核心的 MCP 工具，用于将 AI Agent 生成的结构化数据实时同步到前端表单。掌握其正确用法对于构建高质量的 Solution 至关重要。
 
 ## 基本机制
 

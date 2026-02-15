@@ -1,6 +1,6 @@
 # WebSocket 事件
 
-LoopAI 使用 Socket.io 进行 WebSocket 通信，提供丰富的实时事件流。
+即见Agentic 使用 Socket.io 进行 WebSocket 通信，提供丰富的实时事件流。
 
 ## 连接
 

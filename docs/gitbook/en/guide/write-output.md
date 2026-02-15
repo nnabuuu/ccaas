@@ -2,7 +2,7 @@
 
 ## Overview
 
-`write_output` is the most essential MCP tool in LoopAI, used to synchronize AI Agent-generated structured data to frontend forms in real time. Mastering its proper usage is critical to building high-quality Solutions.
+`write_output` is the most essential MCP tool in KedgeAgentic, used to synchronize AI Agent-generated structured data to frontend forms in real time. Mastering its proper usage is critical to building high-quality Solutions.
 
 ## Core Mechanism
 

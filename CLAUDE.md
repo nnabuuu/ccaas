@@ -1,12 +1,12 @@
-# CLAUDE.md - Claude Code as a Service Monorepo
+# CLAUDE.md - KedgeAgentic (即见Agentic) Monorepo
 
 This file provides guidance to Claude Code when working with this monorepo.
 
 ## Project Overview
 
-This is the **Claude Code as a Service (CCAAS)** monorepo containing all packages for running and interacting with a relay service for AgentEngine instances (supports Claude Code, OpenCode, and custom engines).
+This is the **KedgeAgentic (即见Agentic)** monorepo containing all packages for running and interacting with a relay service for AgentEngine instances (supports Claude Code, OpenCode, and custom engines).
 
-**Platform Context**: CCAAS is a **hosted platform** where users interact via the platform interface. Users do NOT install AgentEngine themselves - the platform manages all AgentEngine infrastructure. Always frame documentation and code from the platform user perspective, not from a self-hosted installation perspective.
+**Platform Context**: KedgeAgentic is a **hosted platform** where users interact via the platform interface. Users do NOT install AgentEngine themselves - the platform manages all AgentEngine infrastructure. Always frame documentation and code from the platform user perspective, not from a self-hosted installation perspective.
 
 ## Directory Structure
 

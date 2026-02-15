@@ -1,6 +1,6 @@
 # Solution Builder Tutorial
 
-Welcome to the LoopAI Solution Builder Tutorial. This is a hands-on, end-to-end guide that walks you through building a complete **Lesson Plan Designer** Solution on the LoopAI platform -- from understanding the architecture to deploying to production.
+Welcome to the KedgeAgentic Solution Builder Tutorial. This is a hands-on, end-to-end guide that walks you through building a complete **Lesson Plan Designer** Solution on the KedgeAgentic platform -- from understanding the architecture to deploying to production.
 
 ## What You Will Build
 
@@ -36,10 +36,10 @@ Before starting this tutorial, you should have:
 - **Node.js 18+** and **npm** installed
 - Basic knowledge of **TypeScript** and **React**
 - Familiarity with REST APIs and WebSocket concepts
-- A working LoopAI installation (see [Installation](../getting-started/installation.md))
+- A working KedgeAgentic installation (see [Installation](../getting-started/installation.md))
 
 {% hint style="info" %}
-**No LoopAI experience required.** This tutorial assumes you have never used the platform before. Every concept is introduced with clear explanations before diving into code.
+**No KedgeAgentic experience required.** This tutorial assumes you have never used the platform before. Every concept is introduced with clear explanations before diving into code.
 {% endhint %}
 
 ## Tutorial Structure
@@ -48,11 +48,11 @@ The tutorial is organized into 7 chapters that follow a natural progression from
 
 ### Phase 1: Design (Chapters 1-3)
 
-Before writing any code, we design the solution. This phase teaches you the thinking process behind every LoopAI Solution.
+Before writing any code, we design the solution. This phase teaches you the thinking process behind every KedgeAgentic Solution.
 
 | Chapter | What You Learn | Key Deliverable |
 |---------|---------------|-----------------|
-| [1. Understanding Solution Architecture](01-architecture.md) | How Solutions fit into the LoopAI platform | Mental model of the architecture |
+| [1. Understanding Solution Architecture](01-architecture.md) | How Solutions fit into the KedgeAgentic platform | Mental model of the architecture |
 | [2. Designing the Domain Model](02-domain-model.md) | How to model your business entities | TypeScript interfaces for LessonPlan, TextbookChapter |
 | [3. Mapping User Journeys](03-user-journeys.md) | How to identify AI collaboration points | User flow diagrams with AI touchpoints |
 
@@ -115,7 +115,7 @@ Here are the core concepts you will learn throughout this tutorial:
 
 | Concept | Description | Where Introduced |
 |---------|-------------|-----------------|
-| **Solution** | A vertical application built on LoopAI | Chapter 1 |
+| **Solution** | A vertical application built on KedgeAgentic | Chapter 1 |
 | **Domain Model** | TypeScript interfaces representing your business entities | Chapter 2 |
 | **User Journey** | A sequence of interactions that achieves a user goal | Chapter 3 |
 | **Relay Architecture** | CCAAS acts as a relay between frontend and AI Agent | Chapter 4 |

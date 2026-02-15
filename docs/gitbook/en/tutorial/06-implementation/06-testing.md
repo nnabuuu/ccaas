@@ -1,6 +1,6 @@
 # 6.6 Testing
 
-Testing a LoopAI Solution requires verifying three layers: the Solution backend services, the REST API endpoints, and the end-to-end user flow from chat to saved data. In this section you will write tests for each layer using the tools already in your project.
+Testing a KedgeAgentic Solution requires verifying three layers: the Solution backend services, the REST API endpoints, and the end-to-end user flow from chat to saved data. In this section you will write tests for each layer using the tools already in your project.
 
 ## Testing Strategy
 

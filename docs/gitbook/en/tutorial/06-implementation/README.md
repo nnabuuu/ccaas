@@ -45,7 +45,7 @@ This chapter walks you through implementing the complete Lesson Plan Designer So
 Before starting, ensure you have:
 
 - Completed Chapters 1-5 (or at minimum read Chapter 1 for architecture context)
-- LoopAI platform running locally (`npm run dev:backend` on port 3001)
+- KedgeAgentic platform running locally (`npm run dev:backend` on port 3001)
 - Node.js 18+ and npm installed
 - A code editor with TypeScript support
 

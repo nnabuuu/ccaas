@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Solution is a vertical application built on the LoopAI platform. Each Solution consists of a frontend, backend (optional), MCP Server, and Skills, working together to deliver an end-to-end user experience.
+A Solution is a vertical application built on the KedgeAgentic platform. Each Solution consists of a frontend, backend (optional), MCP Server, and Skills, working together to deliver an end-to-end user experience.
 
 ## Architecture
 

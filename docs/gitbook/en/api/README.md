@@ -1,10 +1,10 @@
 # API Overview
 
-LoopAI provides both REST API and WebSocket interfaces, along with complete type definitions through the `@ccaas/common` package.
+KedgeAgentic provides both REST API and WebSocket interfaces, along with complete type definitions through the `@ccaas/common` package.
 
 ## Interface Model
 
-LoopAI uses a hybrid REST/WebSocket model:
+KedgeAgentic uses a hybrid REST/WebSocket model:
 
 ```
 Client ──REST──→ Send messages / Manage resources

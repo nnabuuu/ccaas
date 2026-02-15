@@ -2,7 +2,7 @@
 
 ## 概述
 
-Solution 是基于 LoopAI 平台构建的垂直场景应用。每个 Solution 由前端、后端（可选）、MCP Server 和 Skill 组成，共同提供端到端的用户体验。
+Solution 是基于即见Agentic 平台构建的垂直场景应用。每个 Solution 由前端、后端（可选）、MCP Server 和 Skill 组成，共同提供端到端的用户体验。
 
 ## 架构
 

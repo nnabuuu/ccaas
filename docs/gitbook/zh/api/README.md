@@ -1,10 +1,10 @@
 # API 概述
 
-LoopAI 提供 REST API 和 WebSocket 两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
+即见Agentic 提供 REST API 和 WebSocket 两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
 
 ## 接口模式
 
-LoopAI 使用混合 REST/WebSocket 模式：
+即见Agentic 使用混合 REST/WebSocket 模式：
 
 ```
 客户端 ──REST──→ 发送消息/管理资源

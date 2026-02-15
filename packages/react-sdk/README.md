@@ -1,6 +1,6 @@
 # @ccaas/react-sdk
 
-React SDK for building Claude Code as a Service solutions with chat UI, real-time updates, and agent status tracking.
+React SDK for building KedgeAgentic solutions with chat UI, real-time updates, and agent status tracking.
 
 ## Features
 
@@ -76,7 +76,7 @@ function App() {
 
 ### useAgentConnection
 
-Manages WebSocket connection to CCAAS backend with optional conversation persistence.
+Manages WebSocket connection to KedgeAgentic backend with optional conversation persistence.
 
 ```tsx
 const connection = useAgentConnection({
@@ -439,7 +439,7 @@ npm run test:watch
 
 ### Integration Tests
 
-Integration tests verify the SDK works correctly with a real CCAAS backend. They test:
+Integration tests verify the SDK works correctly with a real KedgeAgentic backend. They test:
 
 - WebSocket connection establishment
 - REST API endpoints (`/api/v1/sessions/:id/completion`)
@@ -449,7 +449,7 @@ Integration tests verify the SDK works correctly with a real CCAAS backend. They
 
 **Prerequisites:**
 
-Before running integration tests, start the CCAAS backend:
+Before running integration tests, start the KedgeAgentic backend:
 
 ```bash
 cd packages/backend
@@ -469,10 +469,10 @@ The backend must be running on `http://localhost:3001` for integration tests to 
 
 **CI/CD Setup:**
 
-For CI pipelines, ensure the CCAAS backend is started before running integration tests:
+For CI pipelines, ensure the KedgeAgentic backend is started before running integration tests:
 
 ```yaml
-- name: Start CCAAS Backend
+- name: Start KedgeAgentic Backend
   run: |
     cd packages/backend
     npm run start:dev &
@@ -509,6 +509,7 @@ See complete examples in:
 
 - [Chat Integration Guide](./docs/CHAT_INTEGRATION_GUIDE.md) - Complete integration tutorial
 - [Conversation Persistence](../../docs/CONVERSATION_PERSISTENCE.md) - Conversation recovery architecture and integration guide
+  - [Understanding the Messaging Model](../../docs/CONVERSATION_PERSISTENCE_IMPLEMENTATION_STATUS.md#understanding-the-messaging-model) - Conceptual overview of Session, Message, Turn entities with diagrams
 - [Solution Template](../../docs/SOLUTION_TEMPLATE.md) - Template for new solutions
 - [Backend Events](../backend/CLAUDE.md#socket-events) - Backend event reference
 

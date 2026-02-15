@@ -1,6 +1,8 @@
-# Claude Code as a Service (CCAAS)
+# KedgeAgentic
 
-A production-ready relay service for AgentEngine instances (Claude Code, OpenCode, custom engines), built with NestJS. This monorepo contains all packages needed to run and interact with the service.
+**Chinese Name (中文名称):** 即见Agentic
+
+A production-ready relay service for AgentEngine instances (Claude Code, OpenCode, custom engines), built with NestJS. This monorepo contains all packages needed to run and interact with the KedgeAgentic platform.
 
 ## Packages
 
@@ -144,7 +146,7 @@ npm run build:shared      # Build types/protocols
 
 ## API Authentication
 
-CCAAS uses a **modern API key system** with SHA-256 hashing, granular scopes, rate limiting, and audit logging.
+KedgeAgentic uses a **modern API key system** with SHA-256 hashing, granular scopes, rate limiting, and audit logging.
 
 ### Two-Tier Key System
 

@@ -1,6 +1,6 @@
 # 5-Minute Quick Start
 
-This guide walks you through the core features of LoopAI in just a few minutes.
+This guide walks you through the core features of KedgeAgentic in just a few minutes.
 
 ## Start the Service
 

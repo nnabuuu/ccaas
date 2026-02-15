@@ -1,10 +1,10 @@
-# What is LoopAI
+# What is KedgeAgentic
 
-LoopAI is a **Human-in-the-Loop AI collaboration platform** designed to bridge the gap between modern AI capabilities and enterprise legacy systems.
+KedgeAgentic is a **Human-in-the-Loop AI collaboration platform** designed to bridge the gap between modern AI capabilities and enterprise legacy systems.
 
 Day-to-day enterprise operations rely heavily on legacy systems (SAP, Oracle, Salesforce, custom applications) that typically lack modern APIs and have limited automation capabilities. Current AI approaches either pursue full automation (high risk) or still require entirely manual operations (low efficiency).
 
-LoopAI offers a third path: **AI Agents and human operators working together**, with built-in version control and audit trails to ensure every step is traceable and reversible.
+KedgeAgentic offers a third path: **AI Agents and human operators working together**, with built-in version control and audit trails to ensure every step is traceable and reversible.
 
 ## Core Philosophy
 
@@ -13,7 +13,7 @@ LoopAI offers a third path: **AI Agents and human operators working together**, 
 - **Legacy System Integration**: Connects to existing systems via browser automation, APIs, and Webhooks
 - **Enterprise-Grade Governance**: Multi-tenant isolation, audit logging, and version control
 
-## Who Uses LoopAI
+## Who Uses KedgeAgentic
 
 | Role | Typical Use Cases | Technical Level |
 |------|-------------------|-----------------|
@@ -25,6 +25,6 @@ LoopAI offers a third path: **AI Agents and human operators working together**, 
 
 ## Quick Navigation
 
-- **Decision Maker?** Read the [Platform Overview](platform/) to understand LoopAI's value and capabilities
+- **Decision Maker?** Read the [Platform Overview](platform/) to understand KedgeAgentic's value and capabilities
 - **Developer?** Jump to [Getting Started](getting-started/) to get up and running in 5 minutes
 - **Need integrations?** Check out the [Developer Guide](guide/) and [API Reference](api/)

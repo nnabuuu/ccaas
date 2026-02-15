@@ -1,6 +1,6 @@
 # 目录
 
-* [LoopAI 是什么](README.md)
+* [即见Agentic 是什么](README.md)
 
 ## 平台介绍 <a href="#platform" id="platform"></a>
 

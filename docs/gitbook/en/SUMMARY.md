@@ -1,6 +1,6 @@
 # Table of contents
 
-* [What is LoopAI](README.md)
+* [What is KedgeAgentic](README.md)
 
 ## Platform Introduction <a href="#platform" id="platform"></a>
 

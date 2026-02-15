@@ -1,6 +1,6 @@
 # @ccaas/vue-sdk
 
-Vue composables and utilities for integrating with Claude-Code-as-a-Service backend.
+Vue composables and utilities for integrating with KedgeAgentic backend.
 
 ## Installation
 

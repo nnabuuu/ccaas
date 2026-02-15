@@ -1,6 +1,6 @@
 # Solution Showcase
 
-Solutions are vertical applications built on the LoopAI platform. Each Solution includes a dedicated frontend interface, business backend, MCP tools, and AI Skills, demonstrating the platform's capabilities across different domains.
+Solutions are vertical applications built on the KedgeAgentic platform. Each Solution includes a dedicated frontend interface, business backend, MCP tools, and AI Skills, demonstrating the platform's capabilities across different domains.
 
 ## Lesson Plan Designer
 
@@ -70,7 +70,7 @@ A demo application showcasing core platform capabilities including Skill managem
 
 ## Build Your Own Solution
 
-The LoopAI platform provides a complete Solution development framework, enabling developers to quickly build applications for specific use cases.
+The KedgeAgentic platform provides a complete Solution development framework, enabling developers to quickly build applications for specific use cases.
 
 For details, see the [Solution Development Guide](../guide/solution-dev.md).
 

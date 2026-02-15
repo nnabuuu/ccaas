@@ -1,6 +1,6 @@
 # Getting Started
 
-This section helps you set up the LoopAI development environment locally and explore the core features of the platform.
+This section helps you set up the KedgeAgentic development environment locally and explore the core features of the platform.
 
 ## Prerequisites
 

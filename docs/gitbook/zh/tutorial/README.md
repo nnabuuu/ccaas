@@ -1,6 +1,6 @@
 # Solution 构建教程
 
-欢迎来到 LoopAI Solution 构建教程。这是一个完整的实战教程，将引导你从零开始构建一个 **Lesson Plan Designer（备课方案设计器）Solution** -- 从理解架构设计到部署上线。
+欢迎来到即见Agentic Solution 构建教程。这是一个完整的实战教程，将引导你从零开始构建一个 **Lesson Plan Designer（备课方案设计器）Solution** -- 从理解架构设计到部署上线。
 
 ## 你将构建什么
 
@@ -36,10 +36,10 @@
 - 已安装 **Node.js 18+** 和 **npm**
 - 具备 **TypeScript** 和 **React** 基础知识
 - 了解 REST API 和 WebSocket 概念
-- 已完成 LoopAI 安装（参见[安装与启动](../getting-started/installation.md)）
+- 已完成即见Agentic 安装（参见[安装与启动](../getting-started/installation.md)）
 
 {% hint style="info" %}
-**无需 LoopAI 使用经验。**本教程假设你从未使用过该平台。每个概念都会在深入代码之前给出清晰的解释。
+**无需即见Agentic 使用经验。**本教程假设你从未使用过该平台。每个概念都会在深入代码之前给出清晰的解释。
 {% endhint %}
 
 ## 教程结构
@@ -48,11 +48,11 @@
 
 ### 第一阶段：设计（第 1-3 章）
 
-在编写任何代码之前，我们先进行方案设计。这个阶段教你理解每个 LoopAI Solution 背后的设计思路。
+在编写任何代码之前，我们先进行方案设计。这个阶段教你理解每个即见Agentic Solution 背后的设计思路。
 
 | 章节 | 学习内容 | 关键产出 |
 |------|---------|---------|
-| [1. 理解 Solution 架构](01-architecture.md) | Solution 如何融入 LoopAI 平台 | 架构心智模型 |
+| [1. 理解 Solution 架构](01-architecture.md) | Solution 如何融入即见Agentic 平台 | 架构心智模型 |
 | [2. 设计领域模型](02-domain-model.md) | 如何建模业务实体 | LessonPlan、TextbookChapter 的 TypeScript 接口 |
 | [3. 用户旅程映射](03-user-journeys.md) | 如何识别 AI 协作点 | 包含 AI 触点的用户流程图 |
 
@@ -115,7 +115,7 @@ solutions/lesson-plan-designer/
 
 | 概念 | 说明 | 引入章节 |
 |------|------|---------|
-| **Solution** | 构建在 LoopAI 上的垂直应用 | 第 1 章 |
+| **Solution** | 构建在即见Agentic 上的垂直应用 | 第 1 章 |
 | **领域模型** | 代表业务实体的 TypeScript 接口 | 第 2 章 |
 | **用户旅程** | 实现用户目标的一系列交互 | 第 3 章 |
 | **中继架构** | CCAAS 作为前端和 AI Agent 之间的中继 | 第 4 章 |

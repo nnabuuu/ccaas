@@ -2,7 +2,7 @@
 
 ## 什么是 Skill
 
-Skill 是 LoopAI 中定义 AI Agent 行为的核心抽象。每个 Skill 指定了 AI Agent 的角色、知识范围、可用工具和输出格式。
+Skill 是即见Agentic 中定义 AI Agent 行为的核心抽象。每个 Skill 指定了 AI Agent 的角色、知识范围、可用工具和输出格式。
 
 ## Skill 文件格式
 

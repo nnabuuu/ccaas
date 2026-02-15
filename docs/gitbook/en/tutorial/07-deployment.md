@@ -533,7 +533,7 @@ Use this checklist before every production deployment:
 
 ## Production Checkpoint
 
-At this point, you have covered the full lifecycle of building a Solution on the LoopAI platform:
+At this point, you have covered the full lifecycle of building a Solution on the KedgeAgentic platform:
 
 1. **Architecture** -- Understanding how CCAAS core, Solution backends, and frontends interact
 2. **Domain Model** -- Designing entities that live in your Solution backend
@@ -550,4 +550,4 @@ At this point, you have covered the full lifecycle of building a Solution on the
 - **Custom MCP Servers**: Build advanced tool integrations
 - **Admin Dashboard**: Monitor sessions, manage Skills, and configure API keys
 
-Congratulations on completing the tutorial. You now have the knowledge to build, test, and deploy production Solutions on the LoopAI platform.
+Congratulations on completing the tutorial. You now have the knowledge to build, test, and deploy production Solutions on the KedgeAgentic platform.
