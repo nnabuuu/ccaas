@@ -47,7 +47,15 @@ export function SubAgentCard({ subAgent }: SubAgentCardProps) {
   const progress = Math.min((elapsed / estimatedDuration) * 100, 95) // Cap at 95% until actual completion
 
   // Status-based styling
-  const statusConfig = {
+  const statusConfig: Record<'running' | 'completed' | 'failed', {
+    borderColor: string
+    bgGradient: string
+    iconBg: string
+    iconColor: string
+    textColor: string
+    mutedColor: string
+    icon: JSX.Element
+  }> = {
     running: {
       borderColor: 'border-blue-500/30',
       bgGradient: 'from-blue-500/10 to-transparent',
