@@ -7,6 +7,187 @@
 
 The conversation persistence feature has been successfully implemented with comprehensive test coverage and documentation. This document tracks what was delivered and what remains for future iterations.
 
+---
+
+## Understanding the Messaging Model
+
+This section explains the conceptual relationships between core entities before diving into implementation details.
+
+### Core Concepts
+
+**Conversation** = A persistent dialogue between user and assistant
+- **User-facing term**: "Conversation"
+- **Technical term**: "Session" (database entity)
+- **Identifier format**: `conv_${uuid}` (e.g., `conv_a1b2c3d4-e5f6-...`)
+- **Persistence**: Survives page refreshes via localStorage + database
+
+**Message** = A single utterance from user or assistant
+- **Types**: `role: "user"` or `role: "assistant"`
+- **Ordering**: Sequential via `messageIndex` (0-based)
+- **Storage**: Database with full content + metadata (tokens, model, timestamp)
+- **Streaming**: Assistant messages accumulated during generation
+
+**Turn** = One complete exchange (user input → assistant response)
+- **Definition**: Turn N = Message(user, 2N) + Message(assistant, 2N+1)
+- **Analytics**: Tracks tokens, duration, cost per exchange
+- **Numbering**: `turnNumber` is 0-based (first turn = 0)
+
+**ConversationContext** = Reproducibility metadata
+- **Purpose**: Capture causality context at session start
+- **Contains**: System prompt hash, skill configs, MCP tools list, model version
+- **Use case**: Recreate exact same conversation conditions later
+
+### Entity Relationships
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Session (Conversation)                                      │
+│ ─────────────────────────────────────────────────────────── │
+│ • id: UUID                                                  │
+│ • sessionId: "conv_a1b2c3d4..."                            │
+│ • tenantId: "my-app"                                       │
+│ • title: "Python debugging session"                        │
+│ • isPinned: false                                          │
+│ • messageCount: 10                                         │
+│ • totalTokens: 5000                                        │
+│ • createdAt, lastActivity, closedAt                        │
+└─────────────────────────────────────────────────────────────┘
+       │
+       ├──── (1:N) Messages
+       │     ┌─────────────────────────────────────────────┐
+       │     │ Message                                     │
+       │     │ ──────────────────────────────────────────  │
+       │     │ • id: UUID                                  │
+       │     │ • sessionId: FK → Session                   │
+       │     │ • messageIndex: 0, 1, 2, ...                │
+       │     │ • role: "user" | "assistant"                │
+       │     │ • content: "Help me debug this code..."     │
+       │     │ • metadata: { tokens, model, ... }          │
+       │     └─────────────────────────────────────────────┘
+       │
+       ├──── (1:N) Turns
+       │     ┌─────────────────────────────────────────────┐
+       │     │ Turn                                        │
+       │     │ ──────────────────────────────────────────  │
+       │     │ • id: UUID                                  │
+       │     │ • sessionId: FK → Session                   │
+       │     │ • turnNumber: 0, 1, 2, ...                  │
+       │     │ • userMessageId: FK → Message(user)         │
+       │     │ • assistantMessageId: FK → Message(asst)    │
+       │     │ • totalTokens: 500                          │
+       │     │ • durationMs: 2000                          │
+       │     └─────────────────────────────────────────────┘
+       │
+       └──── (1:1) ConversationContext
+             ┌─────────────────────────────────────────────┐
+             │ ConversationContext                         │
+             │ ──────────────────────────────────────────  │
+             │ • sessionId: FK → Session (unique)          │
+             │ • systemPromptHash: "sha256:abc123..."      │
+             │ • skillConfigHashes: ["hash1", "hash2"]     │
+             │ • mcpToolsList: ["fetch", "grep", ...]      │
+             │ • model: "claude-opus-4.5"                  │
+             └─────────────────────────────────────────────┘
+```
+
+### Data Flow: Complete Message Exchange
+
+Step-by-step flow when user sends a message:
+
+1. **User Input** → Frontend sends message via WebSocket
+2. **Session Lookup** → Backend finds or creates Session entity
+3. **Create User Message**
+   - `Message { sessionId, role: "user", content, messageIndex: N }`
+4. **Create Turn**
+   - `Turn { sessionId, turnNumber: M, userMessageId, createdAt }`
+5. **Execute AgentEngine** → Spawn CLI process
+6. **Stream Response** → Parse CLI stdout events
+7. **Create Assistant Message**
+   - `Message { sessionId, role: "assistant", content: "", messageIndex: N+1 }`
+8. **Accumulate Content** → Update assistant message as tokens arrive
+9. **Track Token Usage** → Create TokenUsageEvent records
+10. **Complete Turn**
+    - `Turn { assistantMessageId, totalTokens, durationMs, completedAt }`
+11. **Update Session** → Increment messageCount, update lastActivity
+12. **Emit Completion** → WebSocket event to frontend
+
+### Terminology Mapping
+
+| User-Facing Term | Technical Term | Database Entity | Example |
+|------------------|----------------|-----------------|---------|
+| Conversation | Session | `sessions` table | "My Python debugging chat" |
+| Chat message | Message | `messages` table | "Help me fix this error" |
+| Exchange | Turn | `turns` table | Q&A pair #3 |
+| Conversation ID | Session ID | `sessionId` field | `conv_a1b2c3d4-...` |
+| Message history | Messages | `messages` filtered by sessionId | All 10 messages in conversation |
+| Analytics | Turns | `turns` aggregated | Per-turn token costs |
+
+### Lifecycle States
+
+**Session Status**:
+- `idle` - No active processing
+- `processing` - AgentEngine running
+- `error` - Processing failed
+- `cancelling` - User cancelled
+- `closed` - Soft deleted (preserves data)
+
+**Message Completion**:
+- User messages: Immediately complete on creation
+- Assistant messages: Complete when `agent_status: complete` event received
+
+**Turn Completion**:
+- Created: When user message arrives
+- Completed: When assistant response finishes (includes token totals)
+
+### Multi-Tenancy
+
+All entities are tenant-scoped:
+- `tenantId` field on Session, Message, ConversationContext
+- localStorage key: `ccaas_session_{tenantId}` (prevents cross-tenant leaks)
+- API queries: Automatically filtered by authenticated tenant
+
+### Storage Strategy
+
+**Browser (localStorage)**:
+- Stores: `conversationId` only (~50 bytes)
+- Purpose: Recover conversation after page refresh
+- Scope: Per tenant (prevents conflicts)
+
+**Database (SQLite)**:
+- Stores: All messages, turns, metadata
+- Retention: Until user deletes (soft delete preserves data)
+- Query: Indexed by sessionId, tenantId, messageIndex
+
+**Session Recovery**:
+1. Page loads → Check localStorage for `ccaas_session_{tenantId}`
+2. If found → Fetch messages via `GET /api/v1/sessions/{sessionId}/messages`
+3. Render message history
+4. Continue conversation (reconnect to existing session)
+
+### Example: 3-Turn Conversation
+
+**Turn 0**:
+- User Message (index 0): "What is React?"
+- Assistant Message (index 1): "React is a JavaScript library..."
+- Turn 0: userMessageId=msg_0, assistantMessageId=msg_1, tokens=150, duration=1500ms
+
+**Turn 1**:
+- User Message (index 2): "Show me an example"
+- Assistant Message (index 3): "Here's a simple component..."
+- Turn 1: userMessageId=msg_2, assistantMessageId=msg_3, tokens=300, duration=2000ms
+
+**Turn 2**:
+- User Message (index 4): "Can you explain hooks?"
+- Assistant Message (index 5): "React hooks let you..."
+- Turn 2: userMessageId=msg_4, assistantMessageId=msg_5, tokens=250, duration=1800ms
+
+**Session Summary**:
+- messageCount: 6
+- totalTokens: 700
+- Turns: 3
+
+---
+
 ## Completed Features (26/30 planned)
 
 ### ✅ Phase 1: Backend Foundation (100%)

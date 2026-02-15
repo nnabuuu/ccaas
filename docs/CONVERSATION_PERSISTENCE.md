@@ -2,6 +2,8 @@
 
 This document explains how CCAAS implements conversation persistence, enabling users to continue conversations across page refreshes.
 
+> **📚 New to the messaging model?** Read [Understanding the Messaging Model](./CONVERSATION_PERSISTENCE_IMPLEMENTATION_STATUS.md#understanding-the-messaging-model) for a comprehensive explanation of Session, Message, Turn, and ConversationContext entities with visual diagrams and data flow.
+
 ## Overview
 
 CCAAS uses a frontend-driven persistence model where the `conversationId` is stored in tenant-scoped `localStorage` and message history is automatically loaded from the backend on reconnection.

@@ -1,7 +1,8 @@
 # ADR-0009: Conversation Persistence Architecture
 
-**Status**: Accepted
-**Date**: 2026-02-15
+**Status**: Implemented
+**Decision Date**: 2026-02-15
+**Implementation Date**: 2026-02-15
 **Decision By**: @niex
 **Related Issue**: Conversation Persistence Phase 1
 
@@ -153,6 +154,12 @@ if (chat.isLoadingHistory) {
 
 ## References
 
+### Documentation
+- **[CONVERSATION_PERSISTENCE_IMPLEMENTATION_STATUS.md](../CONVERSATION_PERSISTENCE_IMPLEMENTATION_STATUS.md)** - Complete implementation status, test coverage, and conceptual model
+- **[CONVERSATION_PERSISTENCE.md](../CONVERSATION_PERSISTENCE.md)** - Integration guide and architecture overview
+- **[中文版 ADR-0009](./zh/0009-conversation-persistence-architecture.md)** - Chinese version of this ADR
+
+### Implementation
 - `packages/react-sdk/src/hooks/useAgentConnection.ts` - Tenant-scoped localStorage persistence
 - `packages/react-sdk/src/hooks/useAgentChat.ts` - Message history auto-loading, clearConversation
 - `solutions/ccaas-demo/src/hooks/useDemoSession.ts` - Reference integration (ccaas-demo)
