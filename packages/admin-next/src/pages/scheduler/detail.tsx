@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCustom } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/shared/status-badge'
+import { ExecutionDetailModal } from '@/components/scheduler/execution-detail-modal'
 import { ArrowLeft, Pencil, Play } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
@@ -25,12 +27,20 @@ interface Execution {
   status: string
   startedAt: string
   completedAt?: string
-  result?: Record<string, unknown>
+  errorMessage?: string
+  resultData?: Record<string, unknown>
+  tokenUsage?: {
+    inputTokens: number
+    outputTokens: number
+    totalTokens: number
+  }
+  attempts?: number
 }
 
 export function SchedulerDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [selectedExecution, setSelectedExecution] = useState<Execution | null>(null)
 
   const { data: taskData, isLoading } = useCustom<TaskDetail>({
     url: `/scheduler/tasks/${id}`,
@@ -119,9 +129,13 @@ export function SchedulerDetailPage() {
         </CardHeader>
         <CardContent>
           {executions.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {executions.map((exec) => (
-                <div key={exec.id} className="flex items-center justify-between text-sm border-b pb-3 last:border-0">
+                <button
+                  key={exec.id}
+                  onClick={() => setSelectedExecution(exec)}
+                  className="w-full flex items-center justify-between text-sm border rounded-md p-3 hover:bg-accent transition-colors cursor-pointer"
+                >
                   <div className="flex items-center gap-3">
                     <StatusBadge status={exec.status} />
                     <span className="font-mono text-xs text-muted-foreground">{exec.id.slice(0, 8)}</span>
@@ -129,7 +143,7 @@ export function SchedulerDetailPage() {
                   <span className="text-muted-foreground">
                     {formatDistanceToNow(new Date(exec.startedAt), { addSuffix: true })}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
@@ -137,6 +151,12 @@ export function SchedulerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Execution Detail Modal */}
+      <ExecutionDetailModal
+        execution={selectedExecution}
+        onClose={() => setSelectedExecution(null)}
+      />
     </div>
   )
 }

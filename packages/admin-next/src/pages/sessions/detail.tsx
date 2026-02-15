@@ -2,9 +2,11 @@ import { useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCustom, useCustomMutation, HttpError } from '@refinedev/core'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { StatCard } from '@/components/shared/stat-card'
 import { StatusBadge } from '@/components/shared/status-badge'
+import { WorkspaceExplorer } from '@/components/workspace/workspace-explorer'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
   ArrowLeft,
@@ -258,6 +260,7 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<'timeline' | 'files'>('timeline')
   const [timelineOffset, setTimelineOffset] = useState(0)
   const timelineLimit = 50
 
@@ -579,37 +582,56 @@ export function SessionDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Timeline */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Timeline</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {timelineLoading && events.length === 0 ? (
-            <p className="text-center text-muted-foreground">Loading events...</p>
-          ) : events.length === 0 ? (
-            <p className="text-center text-muted-foreground">No events recorded</p>
-          ) : (
-            <>
-              {timelineOffset > 0 && (
-                <Button variant="outline" onClick={handleJumpToStart} className="w-full">
-                  Jump to Start
-                </Button>
+      {/* Timeline & Files Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'timeline' | 'files')}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="files">Workspace Files</TabsTrigger>
+        </TabsList>
+
+        {/* Timeline Tab */}
+        <TabsContent value="timeline">
+          <Card>
+            <CardHeader>
+              <CardTitle>Timeline</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {timelineLoading && events.length === 0 ? (
+                <p className="text-center text-muted-foreground">Loading events...</p>
+              ) : events.length === 0 ? (
+                <p className="text-center text-muted-foreground">No events recorded</p>
+              ) : (
+                <>
+                  {timelineOffset > 0 && (
+                    <Button variant="outline" onClick={handleJumpToStart} className="w-full">
+                      Jump to Start
+                    </Button>
+                  )}
+                  <div className="space-y-2">
+                    {events.map((event) => (
+                      <TimelineEventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                  {timelineOffset + events.length < totalEvents && (
+                    <Button variant="outline" onClick={handleLoadMore} className="w-full">
+                      Load More Events ({totalEvents - timelineOffset - events.length} remaining)
+                    </Button>
+                  )}
+                </>
               )}
-              <div className="space-y-2">
-                {events.map((event) => (
-                  <TimelineEventCard key={event.id} event={event} />
-                ))}
-              </div>
-              {timelineOffset + events.length < totalEvents && (
-                <Button variant="outline" onClick={handleLoadMore} className="w-full">
-                  Load More Events ({totalEvents - timelineOffset - events.length} remaining)
-                </Button>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Files Tab */}
+        <TabsContent value="files">
+          <Card>
+            <CardContent className="p-0 h-[600px]">
+              {sessionId && <WorkspaceExplorer sessionId={sessionId} />}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

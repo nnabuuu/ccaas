@@ -2,10 +2,11 @@ import { useState, useMemo, useCallback } from 'react'
 import { useCustom, useCustomMutation } from '@refinedev/core'
 import { useNavigate } from 'react-router-dom'
 import { type ColumnDef } from '@tanstack/react-table'
+import { DateRange } from 'react-day-picker'
 import { DataTable } from '@/components/shared/data-table'
 import { StatCard } from '@/components/shared/stat-card'
 import { StatusBadge } from '@/components/shared/status-badge'
-import { RangePresetButtons, type RangePreset } from '@/components/shared/range-preset-buttons'
+import { DateRangePicker } from '@/components/shared/date-range-picker'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -41,34 +42,15 @@ interface SessionItem {
 
 type TabValue = 'all' | 'active' | 'error' | 'long_running' | 'completed'
 
-// Duration filter presets (minutes)
-const DURATION_PRESETS: RangePreset[] = [
-  { label: '< 5min', range: [0, 5] },
-  { label: '5-30min', range: [5, 30] },
-  { label: '30min-1h', range: [30, 60] },
-  { label: '> 1h', range: [60, 180] },
-  { label: 'All', range: [0, 180] },
-]
-
-// Token filter presets
-const TOKEN_PRESETS: RangePreset[] = [
-  { label: '< 10K', range: [0, 10000] },
-  { label: '10K-100K', range: [10000, 100000] },
-  { label: '100K-1M', range: [100000, 1000000] },
-  { label: '> 1M', range: [1000000, 10000000] },
-  { label: 'All', range: [0, 10000000] },
-]
-
 export function SessionListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
   const [page, setPage] = useState(0)
   const [tab, setTab] = useState<TabValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set())
   const [showBulkKillDialog, setShowBulkKillDialog] = useState(false)
-  const [durationRange, setDurationRange] = useState<[number, number]>([0, 180]) // 0-180 minutes
-  const [tokenRange, setTokenRange] = useState<[number, number]>([0, 10000000]) // 0-10M tokens
 
   const endpoint = '/admin/sessions'
 
@@ -82,6 +64,8 @@ export function SessionListPage() {
         page: page + 1, // API uses 1-based pages, DataTable uses 0-based
         pageSize: PAGE_SIZE,
         ...(selectedTenantId ? { tenantId: selectedTenantId } : {}),
+        ...(dateRange?.from ? { startDate: dateRange.from.toISOString() } : {}),
+        ...(dateRange?.to ? { endDate: dateRange.to.toISOString() } : {}),
       },
     },
   })
@@ -101,13 +85,12 @@ export function SessionListPage() {
   // eslint-disable-next-line react-hooks/purity
   const oneDayAgo = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000), [])
 
-  // Filter sessions based on tab, search, duration, and tokens
-  // NOTE: Client-side filtering only applies to the current page (50 sessions).
-  // For filtering across all sessions, backend filtering would be required.
+  // Filter sessions based on tab and search
+  // NOTE: Date range filtering is handled server-side
   const sessions = useMemo(() => {
     let filtered = allSessions
 
-    // Tab filtering
+    // Tab filtering (client-side)
     if (tab === 'active') {
       filtered = filtered.filter((s) => s.status === 'processing' || s.hasActiveProcess)
     } else if (tab === 'error') {
@@ -122,7 +105,7 @@ export function SessionListPage() {
       filtered = filtered.filter((s) => s.status === 'closed' || s.status === 'completed')
     }
 
-    // Search filtering
+    // Search filtering (client-side)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -133,28 +116,8 @@ export function SessionListPage() {
       )
     }
 
-    // Duration filtering (in minutes)
-    const [minDuration, maxDuration] = durationRange
-    if (minDuration > 0 || maxDuration < 180) {
-      filtered = filtered.filter((s) => {
-        const durationMs =
-          new Date(s.lastActivity).getTime() - new Date(s.createdAt).getTime()
-        const durationMinutes = durationMs / (1000 * 60)
-        return durationMinutes >= minDuration && durationMinutes <= maxDuration
-      })
-    }
-
-    // Token filtering
-    const [minTokens, maxTokens] = tokenRange
-    if (minTokens > 0 || maxTokens < 10000000) {
-      filtered = filtered.filter((s) => {
-        const tokens = s.totalTokens || 0
-        return tokens >= minTokens && tokens <= maxTokens
-      })
-    }
-
     return filtered
-  }, [allSessions, tab, searchQuery, durationRange, tokenRange, oneHourAgo])
+  }, [allSessions, tab, searchQuery, oneHourAgo])
 
   // Calculate KPIs
   const kpis = useMemo(() => {
@@ -456,47 +419,32 @@ export function SessionListPage() {
           {/* Advanced Filters */}
           <Card>
             <CardContent className="pt-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                {/* Duration Filter */}
+              <div className="space-y-4">
+                {/* Date Range Filter */}
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Duration</label>
-                    <span className="text-xs text-muted-foreground">
-                      {durationRange[0]} - {durationRange[1]} min
-                    </span>
-                  </div>
-                  <RangePresetButtons
-                    presets={DURATION_PRESETS}
-                    current={durationRange}
-                    onChange={setDurationRange}
+                  <label className="text-sm font-medium">Date Range</label>
+                  <DateRangePicker
+                    value={dateRange}
+                    onChange={(range) => {
+                      setDateRange(range)
+                      setPage(0) // Reset to first page when filter changes
+                    }}
+                    className="max-w-md"
                   />
                 </div>
 
-                {/* Token Filter */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Tokens</label>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTokens(tokenRange[0])} - {formatTokens(tokenRange[1])}
-                    </span>
+                {/* Filter Summary */}
+                {(sessions.length < allSessions.length || searchQuery || dateRange) && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Showing {sessions.length} of {allSessions.length} sessions
+                      {searchQuery && ` matching "${searchQuery}"`}
+                      {dateRange?.from && ` from ${dateRange.from.toLocaleDateString()}`}
+                      {dateRange?.to && ` to ${dateRange.to.toLocaleDateString()}`}
+                    </p>
                   </div>
-                  <RangePresetButtons
-                    presets={TOKEN_PRESETS}
-                    current={tokenRange}
-                    onChange={setTokenRange}
-                  />
-                </div>
+                )}
               </div>
-
-              {/* Filter Summary */}
-              {(sessions.length < allSessions.length || searchQuery) && (
-                <div className="mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Showing {sessions.length} of {allSessions.length} sessions
-                    {searchQuery && ` matching "${searchQuery}"`}
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
@@ -543,13 +491,14 @@ export function SessionListPage() {
                 ? 'No sessions match your filters'
                 : 'No sessions found'}
             </p>
-            {(searchQuery || tab !== 'all') && (
+            {(searchQuery || tab !== 'all' || dateRange) && (
               <Button
                 variant="outline"
                 className="mt-4"
                 onClick={() => {
                   setSearchQuery('')
                   setTab('all')
+                  setDateRange(undefined)
                 }}
               >
                 Clear Filters
