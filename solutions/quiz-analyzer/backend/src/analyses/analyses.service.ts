@@ -90,7 +90,8 @@ export class AnalysesService {
       }
     } catch (error) {
       // Message persistence is non-critical - log and continue
-      this.logger.warn(`Failed to persist message for analysis ${analysis.id}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Failed to persist message for analysis ${analysis.id}: ${errorMessage}`);
     }
   }
 

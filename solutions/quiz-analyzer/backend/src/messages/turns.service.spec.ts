@@ -3,12 +3,27 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TurnsService } from './turns.service';
 import { Turn } from '../database/entities';
 
+const mockQueryBuilder = {
+  select: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  getRawOne: jest.fn(),
+};
+
 const mockRepository = {
   create: jest.fn(),
   save: jest.fn(),
   find: jest.fn(),
   findOne: jest.fn(),
   count: jest.fn(),
+  createQueryBuilder: jest.fn(() => mockQueryBuilder),
+  manager: {
+    transaction: jest.fn((callback) => {
+      const mockManager = {
+        getRepository: jest.fn(() => mockRepository),
+      };
+      return callback(mockManager);
+    }),
+  },
 };
 
 describe('TurnsService', () => {
@@ -31,7 +46,7 @@ describe('TurnsService', () => {
 
   describe('createTurn', () => {
     it('should create a turn with auto-incremented number', async () => {
-      mockRepository.count.mockResolvedValue(2);
+      mockQueryBuilder.getRawOne.mockResolvedValue({ maxNumber: 1 });
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve({ ...data, created_at: '2026-02-15T00:00:00Z' }));
 
@@ -40,7 +55,7 @@ describe('TurnsService', () => {
         userMessageId: 'msg_user_3',
       });
 
-      expect(mockRepository.count).toHaveBeenCalledWith({ where: { session_id: 'conv_123' } });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('turn.session_id = :sessionId', { sessionId: 'conv_123' });
       expect(mockRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         session_id: 'conv_123',
         turn_number: 2,

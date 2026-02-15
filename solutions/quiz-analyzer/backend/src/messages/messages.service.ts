@@ -3,18 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { Message } from '../database/entities';
-
-export interface CreateMessageDto {
-  sessionId: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  parentMessageId?: string;
-  branchId?: string;
-  isContinuation?: boolean;
-  metadata?: Record<string, unknown>;
-  toolCalls?: unknown[];
-  thinkingBlocks?: unknown[];
-}
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @Injectable()
 export class MessagesService {
@@ -24,23 +13,35 @@ export class MessagesService {
   ) {}
 
   async createMessage(dto: CreateMessageDto): Promise<Message> {
-    const nextIndex = await this.getMessageCount(dto.sessionId);
+    // Use transaction to prevent race condition in auto-incrementing message_index
+    return this.messageRepository.manager.transaction(async (manager) => {
+      const messageRepo = manager.getRepository(Message);
 
-    const message = this.messageRepository.create({
-      id: `msg_${uuidv4()}`,
-      session_id: dto.sessionId,
-      role: dto.role,
-      content: dto.content,
-      message_index: nextIndex,
-      parent_message_id: dto.parentMessageId || null,
-      branch_id: dto.branchId || null,
-      is_continuation: dto.isContinuation ? 1 : 0,
-      metadata: dto.metadata ? JSON.stringify(dto.metadata) : null,
-      tool_calls: dto.toolCalls ? JSON.stringify(dto.toolCalls) : null,
-      thinking_blocks: dto.thinkingBlocks ? JSON.stringify(dto.thinkingBlocks) : null,
+      // Use MAX + 1 instead of COUNT to get next index atomically
+      const result = await messageRepo
+        .createQueryBuilder('message')
+        .select('MAX(message.message_index)', 'maxIndex')
+        .where('message.session_id = :sessionId', { sessionId: dto.sessionId })
+        .getRawOne();
+
+      const nextIndex = result?.maxIndex != null ? result.maxIndex + 1 : 0;
+
+      const message = messageRepo.create({
+        id: `msg_${uuidv4()}`,
+        session_id: dto.sessionId,
+        role: dto.role,
+        content: dto.content,
+        message_index: nextIndex,
+        parent_message_id: dto.parentMessageId || null,
+        branch_id: dto.branchId || null,
+        is_continuation: dto.isContinuation ? 1 : 0,
+        metadata: dto.metadata ? JSON.stringify(dto.metadata) : null,
+        tool_calls: dto.toolCalls ? JSON.stringify(dto.toolCalls) : null,
+        thinking_blocks: dto.thinkingBlocks ? JSON.stringify(dto.thinkingBlocks) : null,
+      });
+
+      return messageRepo.save(message);
     });
-
-    return this.messageRepository.save(message);
   }
 
   async getMessagesBySession(

@@ -3,11 +3,26 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { MessagesService } from './messages.service';
 import { Message } from '../database/entities';
 
+const mockQueryBuilder = {
+  select: jest.fn().mockReturnThis(),
+  where: jest.fn().mockReturnThis(),
+  getRawOne: jest.fn(),
+};
+
 const mockRepository = {
   create: jest.fn(),
   save: jest.fn(),
   findAndCount: jest.fn(),
   count: jest.fn(),
+  createQueryBuilder: jest.fn(() => mockQueryBuilder),
+  manager: {
+    transaction: jest.fn((callback) => {
+      const mockManager = {
+        getRepository: jest.fn(() => mockRepository),
+      };
+      return callback(mockManager);
+    }),
+  },
 };
 
 describe('MessagesService', () => {
@@ -30,7 +45,7 @@ describe('MessagesService', () => {
 
   describe('createMessage', () => {
     it('should create a message with auto-incremented index', async () => {
-      mockRepository.count.mockResolvedValue(3);
+      mockQueryBuilder.getRawOne.mockResolvedValue({ maxIndex: 2 });
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve({ ...data, created_at: '2026-02-15T00:00:00Z' }));
 
@@ -40,7 +55,7 @@ describe('MessagesService', () => {
         content: 'Hello world',
       });
 
-      expect(mockRepository.count).toHaveBeenCalledWith({ where: { session_id: 'conv_123' } });
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('message.session_id = :sessionId', { sessionId: 'conv_123' });
       expect(mockRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         session_id: 'conv_123',
         role: 'user',
@@ -51,7 +66,7 @@ describe('MessagesService', () => {
     });
 
     it('should serialize metadata and toolCalls as JSON', async () => {
-      mockRepository.count.mockResolvedValue(0);
+      mockQueryBuilder.getRawOne.mockResolvedValue({ maxIndex: null });
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
 
@@ -72,7 +87,7 @@ describe('MessagesService', () => {
     });
 
     it('should set null for optional fields when not provided', async () => {
-      mockRepository.count.mockResolvedValue(0);
+      mockQueryBuilder.getRawOne.mockResolvedValue({ maxIndex: null });
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
 

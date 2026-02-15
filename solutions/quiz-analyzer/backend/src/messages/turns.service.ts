@@ -23,19 +23,31 @@ export class TurnsService {
   ) {}
 
   async createTurn(dto: CreateTurnDto): Promise<Turn> {
-    const nextNumber = await this.getTurnCount(dto.sessionId);
+    // Use transaction to prevent race condition in auto-incrementing turn_number
+    return this.turnRepository.manager.transaction(async (manager) => {
+      const turnRepo = manager.getRepository(Turn);
 
-    const turn = this.turnRepository.create({
-      id: `turn_${uuidv4()}`,
-      session_id: dto.sessionId,
-      turn_number: nextNumber,
-      user_message_id: dto.userMessageId,
-      assistant_message_id: null,
-      total_tokens: 0,
-      duration_ms: 0,
+      // Use MAX + 1 instead of COUNT to get next number atomically
+      const result = await turnRepo
+        .createQueryBuilder('turn')
+        .select('MAX(turn.turn_number)', 'maxNumber')
+        .where('turn.session_id = :sessionId', { sessionId: dto.sessionId })
+        .getRawOne();
+
+      const nextNumber = result?.maxNumber != null ? result.maxNumber + 1 : 0;
+
+      const turn = turnRepo.create({
+        id: `turn_${uuidv4()}`,
+        session_id: dto.sessionId,
+        turn_number: nextNumber,
+        user_message_id: dto.userMessageId,
+        assistant_message_id: null,
+        total_tokens: 0,
+        duration_ms: 0,
+      });
+
+      return turnRepo.save(turn);
     });
-
-    return this.turnRepository.save(turn);
   }
 
   async completeTurn(turnId: string, dto: CompleteTurnDto): Promise<Turn | null> {
@@ -63,12 +75,6 @@ export class TurnsService {
     return this.turnRepository.findOne({
       where: { session_id: sessionId },
       order: { turn_number: 'DESC' },
-    });
-  }
-
-  private async getTurnCount(sessionId: string): Promise<number> {
-    return this.turnRepository.count({
-      where: { session_id: sessionId },
     });
   }
 }

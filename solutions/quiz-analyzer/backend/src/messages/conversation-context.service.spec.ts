@@ -54,11 +54,11 @@ describe('ConversationContextService', () => {
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
 
-      await service.createContext({ sessionId: 'conv_123' });
+      await service.createContext({ sessionId: 'conv_123', tenantId: 'quiz-analyzer' });
 
       expect(mockRepository.create).toHaveBeenCalledWith(expect.objectContaining({
         session_id: 'conv_123',
-        tenant_id: null,
+        tenant_id: 'quiz-analyzer',
         system_prompt_hash: null,
         skill_config_hashes: null,
         mcp_tools_list: null,

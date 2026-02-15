@@ -4,7 +4,7 @@
  * Uses @ccaas/react-sdk hooks for core chat functionality
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
@@ -43,7 +43,6 @@ export interface UseQuizSessionReturn {
   isProcessing: boolean
   isLoadingHistory: boolean
   sendMessage: (content: string) => void
-  clearMessages: () => void
   clearConversation: () => void
   cancelProcessing: () => void
 
@@ -146,17 +145,21 @@ export function useQuizSession(): UseQuizSessionReturn {
   }, [connection.socket])
 
   // Listen for custom events from pages
+  // Use ref to avoid re-subscribing if sendMessage changes on every render
+  const sendMessageRef = useRef(chat.sendMessage)
+  sendMessageRef.current = chat.sendMessage
+
   useEffect(() => {
     const handleParseRequest = (e: Event) => {
       const customEvent = e as CustomEvent
       const { content } = customEvent.detail
-      chat.sendMessage(`请帮我解析这道题目：\n\n${content}`)
+      sendMessageRef.current(`请帮我解析这道题目：\n\n${content}`)
     }
 
     const handleAnalysisRequest = (e: Event) => {
       const customEvent = e as CustomEvent
       const { quizId } = customEvent.detail
-      chat.sendMessage(`请帮我分析题目ID: ${quizId}`)
+      sendMessageRef.current(`请帮我分析题目ID: ${quizId}`)
     }
 
     window.addEventListener('quiz:request-parse', handleParseRequest)
@@ -166,10 +169,11 @@ export function useQuizSession(): UseQuizSessionReturn {
       window.removeEventListener('quiz:request-parse', handleParseRequest)
       window.removeEventListener('quiz:request-analysis', handleAnalysisRequest)
     }
-  }, [chat.sendMessage])
+  }, [])
 
-  // Clear analysis results when starting a new session/message
-  // ✅ Use messages.length instead of messages array (rerender-dependencies)
+  // Clear analysis results when a new user message starts processing
+  // Depend on isProcessing and messages.length to detect new messages without
+  // re-running on every message content change
   useEffect(() => {
     if (chat.isProcessing && chat.messages.length > 0) {
       const lastMessage = chat.messages[chat.messages.length - 1]
@@ -178,9 +182,6 @@ export function useQuizSession(): UseQuizSessionReturn {
         setAnalysisResults({})
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // Note: chat.messages is intentionally omitted to avoid triggering on every message change
-    // We only want to trigger when processing state or message count changes
   }, [chat.isProcessing, chat.messages.length])
 
   return {
@@ -196,7 +197,6 @@ export function useQuizSession(): UseQuizSessionReturn {
     isProcessing: chat.isProcessing,
     isLoadingHistory: chat.isLoadingHistory,
     sendMessage: chat.sendMessage,
-    clearMessages: chat.clearMessages,
     // clearConversation creates a new session (new sessionId) and clears all messages
     clearConversation: chat.clearConversation,
     cancelProcessing: chat.cancelProcessing,

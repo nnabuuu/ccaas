@@ -3,18 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationContext } from '../database/entities';
-
-export interface CreateConversationContextDto {
-  sessionId: string;
-  tenantId?: string;
-  systemPromptHash?: string;
-  skillConfigHashes?: Array<{ slug: string; hash: string }>;
-  mcpToolsList?: string[];
-  model?: string;
-  workspaceDir?: string;
-  clientId?: string;
-  metadata?: Record<string, unknown>;
-}
+import { CreateConversationContextDto } from './dto/create-context.dto';
 
 @Injectable()
 export class ConversationContextService {
