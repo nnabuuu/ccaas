@@ -10,14 +10,14 @@ import {
   type FileMetadata,
   type TokenUsage,
 } from '@ccaas/react-sdk'
-import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType, MessageTokenUsage } from '../types'
+import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType, MessageTokenUsage, PendingUpdateWithMeta } from '../types'
 import MessageBubble from './MessageBubble'
 import { SegmentBubble } from './SegmentBubble'
-import SyncButton from './SyncButton'
 import QuickPrompts from './QuickPrompts'
 import FilesView from './FilesView'
 import { useFileAttachment } from '../hooks/useFileAttachment'
-import { MessageSquare, File, CheckSquare } from 'lucide-react'
+import { GlobalSyncSection } from './sync/GlobalSyncSection'
+import { MessageSquare, File, CheckSquare, RotateCcw } from 'lucide-react'
 
 // Helper functions for custom token usage rendering
 function formatTokens(n: number): string {
@@ -50,6 +50,7 @@ interface ChatPanelProps {
   messages: Message[]
   isProcessing: boolean
   isMainProcessing?: boolean
+  isLoadingHistory?: boolean
   hasActiveSubAgents?: boolean
   connected: boolean
   connection?: UseAgentConnectionReturn
@@ -63,20 +64,24 @@ interface ChatPanelProps {
   activeSubAgents?: ActiveSubAgent[]
   tokenUsage?: TokenUsage | null
   pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
+  pendingUpdatesWithMeta?: Map<SyncField, PendingUpdateWithMeta>
   modifiedFields?: Set<SyncField>
   newFilesCount?: number
   sessionId?: string
   lessonPlanId?: string
   onSendMessage: (content: string) => void
   onSync: (field: SyncField) => void
+  onSyncAll?: () => Promise<void>
   onDiscard: (field: SyncField) => void
   onCancel?: () => void
+  onClearConversation?: () => void
 }
 
 export function ChatPanel({
   messages,
   isProcessing,
   isMainProcessing,
+  isLoadingHistory = false,
   connected,
   connection,
   activeTools = new Map(),
@@ -89,14 +94,17 @@ export function ChatPanel({
   activeSubAgents = [],
   tokenUsage = null,
   pendingUpdates,
+  pendingUpdatesWithMeta,
   modifiedFields,
   newFilesCount = 0,
   sessionId,
   lessonPlanId,
   onSendMessage,
   onSync,
+  onSyncAll,
   onDiscard,
   onCancel,
+  onClearConversation,
 }: ChatPanelProps) {
   // 向后兼容：如果没有提供 isMainProcessing，使用 isProcessing
   const mainProcessing = isMainProcessing ?? isProcessing
@@ -168,11 +176,23 @@ export function ChatPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <h2 className="font-semibold text-gray-800">AI 备课助手</h2>
-        {tokenUsage && (
-          <span className="text-xs text-gray-500">
-            Tokens: {tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.outputTokens.toLocaleString()} out
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {tokenUsage && (
+            <span className="text-xs text-gray-500">
+              Tokens: {tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.outputTokens.toLocaleString()} out
+            </span>
+          )}
+          {onClearConversation && (
+            <button
+              onClick={onClearConversation}
+              disabled={mainProcessing}
+              className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="新对话"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Icon Tab Bar */}
@@ -252,7 +272,15 @@ export function ChatPanel({
       {/* Messages Area */}
       {activeTab === 'messages' && (
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative">
-        {messages.length === 0 ? (
+        {isLoadingHistory ? (
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
+            <svg className="w-8 h-8 mb-3 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <p className="text-sm">Loading conversation history...</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
             <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -271,20 +299,7 @@ export function ChatPanel({
                 outputUpdates={splitMsg.original.outputUpdates}
                 onSync={(field) => onSync(field as SyncField)}
                 onDiscard={(field) => onDiscard(field as SyncField)}
-                renderSyncButton={(update, handleSync, handleDiscard) => {
-                  const pending = pendingUpdates?.get(update.field as SyncField)
-                  return (
-                    <SyncButton
-                      key={update.field}
-                      field={update.field as SyncField}
-                      preview={update.preview}
-                      synced={pending?.synced ?? update.synced}
-                      syncedAt={pending?.syncedAt ?? update.syncedAt}
-                      onSync={handleSync}
-                      onDiscard={handleDiscard}
-                    />
-                  )
-                }}
+                renderSyncButton={undefined}
                 renderTokenUsage={(usage) => <CustomTokenUsageFooter usage={usage as MessageTokenUsage} />}
                 renderSegment={(segment, isLast) => (
                   <SegmentBubble
@@ -347,6 +362,16 @@ export function ChatPanel({
         activeSubAgents={activeSubAgents}
         onCancel={onCancel}
       />
+
+      {/* Global Sync Section */}
+      {pendingUpdatesWithMeta && onSyncAll && (
+        <GlobalSyncSection
+          pendingUpdates={pendingUpdatesWithMeta}
+          onSyncAll={onSyncAll}
+          onSyncField={onSync}
+          onDiscardField={onDiscard}
+        />
+      )}
 
       {/* Quick Prompts */}
       <div className="px-4 py-2 bg-white border-t border-gray-100">

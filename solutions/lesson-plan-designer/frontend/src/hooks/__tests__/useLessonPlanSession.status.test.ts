@@ -64,15 +64,18 @@ describe('useLessonPlanSession - Status (Phase 4)', () => {
       serverUrl: '',
       connect: vi.fn(),
       disconnect: vi.fn(),
+      startNewConversation: vi.fn(),
     }
 
     mockChatReturn = {
       messages: [],
       isProcessing: false,
+      isLoadingHistory: false,
       currentStreamContent: '',
       sendMessage: vi.fn(),
       cancelProcessing: vi.fn(),
       clearMessages: vi.fn(),
+      clearConversation: vi.fn(),
     }
 
     mockStatusReturn = {

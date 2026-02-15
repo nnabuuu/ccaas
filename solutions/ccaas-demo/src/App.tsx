@@ -37,6 +37,7 @@ export default function App() {
     isProcessing,
     sendMessage,
     cancelProcessing,
+    isLoadingHistory,
     activeTools,
     isThinking,
     thinkingContent,
@@ -45,7 +46,7 @@ export default function App() {
     activeSubAgents,
     layout,
     toggleSkill,
-    restartSession,
+    newConversation,
     downloadFile,
     refreshSkills,
     createSkill,
@@ -199,6 +200,15 @@ export default function App() {
             {loading ? '加载中...' : '🔄 刷新 Skills'}
           </button>
 
+          {/* New Conversation Button */}
+          <button
+            onClick={newConversation}
+            className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Start a new conversation"
+          >
+            + New Conversation
+          </button>
+
           {/* Session ID */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Session:</span>
@@ -249,7 +259,7 @@ export default function App() {
           needsRestart={false}
           collapsed={sidebarCollapsed}
           onToggle={toggleSkill}
-          onRestart={restartSession}
+          onRestart={newConversation}
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onAddSkill={handleAddSkill}
           onEditSkill={handleEditSkill}
@@ -349,6 +359,14 @@ export default function App() {
                 colorScheme="blue"
               />
             </div>
+
+            {/* Loading history indicator */}
+            {isLoadingHistory && (
+              <div className="px-4 py-3 bg-blue-50 border-b border-blue-100 flex items-center gap-2 text-sm text-blue-700">
+                <span className="animate-spin">&#8635;</span>
+                Loading conversation history...
+              </div>
+            )}
 
             <ChatPanel
               messages={messages}
