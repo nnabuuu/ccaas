@@ -41,8 +41,10 @@ export interface UseQuizSessionReturn {
   // Chat state from SDK
   messages: UseAgentChatReturn['messages']
   isProcessing: boolean
+  isLoadingHistory: boolean
   sendMessage: (content: string) => void
   clearMessages: () => void
+  clearConversation: () => void
   cancelProcessing: () => void
 
   // Status from SDK
@@ -188,10 +190,15 @@ export function useQuizSession(): UseQuizSessionReturn {
     error: connection.error,
 
     // Chat state from SDK
+    // isLoadingHistory is managed by useAgentChat - it auto-loads message history
+    // from the server when the session connects. While loading, this flag is true.
     messages: chat.messages,
     isProcessing: chat.isProcessing,
+    isLoadingHistory: chat.isLoadingHistory,
     sendMessage: chat.sendMessage,
     clearMessages: chat.clearMessages,
+    // clearConversation creates a new session (new sessionId) and clears all messages
+    clearConversation: chat.clearConversation,
     cancelProcessing: chat.cancelProcessing,
 
     // Status from SDK

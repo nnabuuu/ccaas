@@ -2,24 +2,21 @@
  * Quiz Analyzer - Simplified Single-Page App
  *
  * Layout:
- * - Left Panel (40%): QuizInput + HistoryList
+ * - Left Panel (40%): QuizInput
  * - Right Panel (60%): AnalysisDisplay + ChatSection
+ *
+ * Message history is automatically loaded from server via useAgentChat.
  */
 
 import { useState, useCallback, useMemo } from 'react'
-import { SparklesIcon } from '@heroicons/react/24/solid'
+import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
 import QuizInput from './components/QuizInput'
-import HistoryList from './components/HistoryList'
-import ExportButton from './components/ExportButton'
 import CompleteAnalysisView from './components/CompleteAnalysisView'
 import SimpleChatSection from './components/SimpleChatSection'
 import { useQuizSession } from './hooks/useQuizSession'
-import { useLocalHistory } from './hooks/useLocalHistory'
-import type { Quiz } from './types'
 
 function App() {
   const session = useQuizSession()
-  const history = useLocalHistory()
   const [isChatExpanded, setIsChatExpanded] = useState(false)
 
   // Handle analyze button click
@@ -28,26 +25,11 @@ function App() {
       session.sendMessage(
         `请分析这道题目：\n\n${content}${answer ? `\n\n参考答案：\n${answer}` : ''}`
       )
-      // TODO: Listen for MCP tool completion to save analysis to history
     },
     [session.sendMessage]
   )
 
-  // ✅ Memoize currentQuiz object creation (rerender-memo)
-  const currentQuiz: Quiz | null = useMemo(() => {
-    if (!history.current) return null
-    return {
-      id: history.current.id,
-      tenant_id: 'quiz-analyzer',
-      content: history.current.quiz.content,
-      correct_answer: history.current.quiz.answer,
-      subject_id: '',
-      created_at: history.current.timestamp.toISOString(),
-      updated_at: history.current.timestamp.toISOString(),
-    }
-  }, [history.current])
-
-  // ✅ Memoize hasAnalysisResults check (js-cache-function-results)
+  // Memoize hasAnalysisResults check
   const hasAnalysisResults = useMemo(
     () => Object.keys(session.analysisResults).length > 0,
     [session.analysisResults]
@@ -67,14 +49,14 @@ function App() {
               </div>
             </div>
 
-            {/* Export Button */}
-            {history.current && (
-              <ExportButton
-                onExportJSON={history.exportJSON}
-                onExportMarkdown={history.exportMarkdown}
-                onCopyToClipboard={history.copyToClipboard}
-              />
-            )}
+            {/* New Conversation Button */}
+            <button
+              onClick={() => session.clearConversation()}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              <ArrowPathIcon className="w-4 h-4" />
+              新对话
+            </button>
           </div>
         </div>
       </header>
@@ -93,15 +75,6 @@ function App() {
               />
             </div>
 
-            {/* History List */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <HistoryList
-                history={history.history}
-                current={history.current}
-                onSelect={history.setCurrent}
-                onDelete={history.deleteRecord}
-              />
-            </div>
           </div>
 
           {/* Right Panel (60%) */}
@@ -110,7 +83,16 @@ function App() {
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">分析结果</h2>
 
-              {session.isProcessing && !history.current && (
+              {/* Loading history from server */}
+              {session.isLoadingHistory && (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-400 border-t-transparent" />
+                  <p className="mt-4 text-slate-600">加载对话历史...</p>
+                </div>
+              )}
+
+              {/* AI processing in progress */}
+              {!session.isLoadingHistory && session.isProcessing && (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
                   <p className="mt-4 text-slate-600">AI 分析中...</p>
@@ -121,26 +103,20 @@ function App() {
               )}
 
               {/* Show real-time analysis results from AI */}
-              {!session.isProcessing && !history.current && hasAnalysisResults && (
+              {!session.isLoadingHistory && !session.isProcessing && hasAnalysisResults && (
                 <CompleteAnalysisView
                   analysis={session.analysisResults}
                   quiz={null}
                 />
               )}
 
-              {!session.isProcessing && !history.current && !hasAnalysisResults && (
+              {/* Empty state */}
+              {!session.isLoadingHistory && !session.isProcessing && !hasAnalysisResults && (
                 <div className="text-center py-12 text-slate-400">
                   <SparklesIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg">等待输入题目</p>
                   <p className="text-sm mt-2">在左侧输入题目内容并点击"分析题目"</p>
                 </div>
-              )}
-
-              {history.current && currentQuiz && (
-                <CompleteAnalysisView
-                  analysis={history.current.analysis}
-                  quiz={currentQuiz}
-                />
               )}
             </div>
 
@@ -198,8 +174,8 @@ function App() {
               )}
             </div>
             <div>
-              {history.history.length > 0 && (
-                <span>{history.history.length} 条分析历史</span>
+              {session.messages.length > 0 && (
+                <span>{session.messages.length} 条消息</span>
               )}
             </div>
           </div>

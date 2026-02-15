@@ -1,4 +1,13 @@
-// Re-export common types from @ccaas/common if needed
+// Re-export conversation persistence types from @ccaas/common
+export type {
+  Message,
+  MessageMetadata,
+  Turn,
+  ConversationContext,
+  Session,
+  TokenUsage,
+} from '@ccaas/common'
+
 export interface Subject {
   id: string;
   name: string;

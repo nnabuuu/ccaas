@@ -10,7 +10,18 @@
 
 import { ClockIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
-import type { AnalysisRecord } from '../hooks/useLocalHistory'
+import type { QuizAnalysis } from '../types'
+
+/** @deprecated Local history replaced by server-persisted messages */
+export interface AnalysisRecord {
+  id: string
+  quiz: {
+    content: string
+    answer?: string
+  }
+  analysis: QuizAnalysis
+  timestamp: Date
+}
 
 interface HistoryListProps {
   history: AnalysisRecord[]

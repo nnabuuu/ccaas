@@ -1,20 +1,26 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 import { QuizAnalysis, Quiz } from '../database/entities';
 import { CreateAnalysisDto } from './dto/create-analysis.dto';
+import { MessagesService } from '../messages/messages.service';
+import { TurnsService } from '../messages/turns.service';
 
 @Injectable()
 export class AnalysesService {
+  private readonly logger = new Logger(AnalysesService.name);
+
   constructor(
     @InjectRepository(QuizAnalysis)
     private analysisRepository: Repository<QuizAnalysis>,
     @InjectRepository(Quiz)
     private quizRepository: Repository<Quiz>,
+    private readonly messagesService: MessagesService,
+    private readonly turnsService: TurnsService,
   ) {}
 
-  async create(dto: CreateAnalysisDto) {
+  async create(dto: CreateAnalysisDto & { sessionId?: string }) {
     // Check if quiz exists
     const quiz = await this.quizRepository.findOne({ where: { id: dto.quiz_id } });
     if (!quiz) {
@@ -39,7 +45,53 @@ export class AnalysesService {
       analysis_duration_ms: dto.analysis_duration_ms,
     });
 
-    return this.analysisRepository.save(analysis);
+    const savedAnalysis = await this.analysisRepository.save(analysis);
+
+    // Create message record if sessionId is provided
+    if (dto.sessionId) {
+      await this.persistAnalysisMessage(dto.sessionId, savedAnalysis, dto.analysis_duration_ms);
+    }
+
+    return savedAnalysis;
+  }
+
+  private async persistAnalysisMessage(
+    sessionId: string,
+    analysis: QuizAnalysis,
+    durationMs?: number,
+  ): Promise<void> {
+    try {
+      const contentSummary = [
+        analysis.thinking_process ? '## Thinking Process\n' + analysis.thinking_process : '',
+        analysis.knowledge_gap_analysis ? '## Knowledge Gap Analysis\n' + analysis.knowledge_gap_analysis : '',
+      ].filter(Boolean).join('\n\n');
+
+      const message = await this.messagesService.createMessage({
+        sessionId,
+        role: 'assistant',
+        content: contentSummary || `Analysis completed for quiz ${analysis.quiz_id}`,
+        metadata: {
+          analysisId: analysis.id,
+          quizId: analysis.quiz_id,
+          analyzerVersion: analysis.analyzer_version,
+        },
+      });
+
+      // Complete the latest open turn
+      const latestTurn = await this.turnsService.getLatestTurn(sessionId);
+      if (latestTurn && !latestTurn.completed_at) {
+        const turnCreatedAt = new Date(latestTurn.created_at).getTime();
+        const calculatedDuration = durationMs ?? (Date.now() - turnCreatedAt);
+
+        await this.turnsService.completeTurn(latestTurn.id, {
+          assistantMessageId: message.id,
+          durationMs: calculatedDuration,
+        });
+      }
+    } catch (error) {
+      // Message persistence is non-critical - log and continue
+      this.logger.warn(`Failed to persist message for analysis ${analysis.id}: ${error.message}`);
+    }
   }
 
   async findByQuizId(quizId: string) {
