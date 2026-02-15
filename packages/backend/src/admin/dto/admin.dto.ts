@@ -105,6 +105,8 @@ export interface SessionListItem {
   createdAt: Date;
   lastActivity: Date;
   hasActiveProcess: boolean;
+  title: string | null;
+  isPinned: boolean;
 }
 
 export interface SessionDetail extends SessionListItem {

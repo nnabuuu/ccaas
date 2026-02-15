@@ -9,3 +9,5 @@ export type { QuotaPeriod } from './tenant-quota.entity';
 
 export { Session } from './session.entity';
 export type { SessionStatus } from './session.entity';
+
+export { Turn } from './turn.entity';

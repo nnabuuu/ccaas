@@ -30,6 +30,8 @@ describe('AdminSessionsController', () => {
     createdAt: new Date(),
     lastActivity: new Date(),
     hasActiveProcess: false,
+    title: null,
+    isPinned: false,
     ...overrides,
   });
 

@@ -30,6 +30,8 @@ import { McpServer } from '../../src/mcp/entities/mcp-server.entity';
 import { JobEntity } from '../../src/jobs/entities/job.entity';
 import { User } from '../../src/users/entities/user.entity';
 import { UserTenant } from '../../src/users/entities/user-tenant.entity';
+import { Session } from '../../src/admin/entities/session.entity';
+import { Turn } from '../../src/admin/entities/turn.entity';
 
 export const TEST_ENTITIES = [
   Message,
@@ -54,6 +56,8 @@ export const TEST_ENTITIES = [
   JobEntity,
   User,
   UserTenant,
+  Session,
+  Turn,
 ];
 
 /**
