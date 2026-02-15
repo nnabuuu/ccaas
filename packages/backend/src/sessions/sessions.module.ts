@@ -15,6 +15,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
+import { ConversationsController } from './conversations.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -28,21 +29,26 @@ import { SubAgentTrackerService } from './services/subagent-tracker.service';
 import { ToolAnalysisService } from './services/tool-analysis.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { MessageWorkerService } from './services/message-worker.service';
+import { ConversationMetadataService } from './services/conversation-metadata.service';
 import { MessageQueue } from './entities/message-queue.entity';
+import { Session } from '../admin/entities/session.entity';
+import { Turn } from '../admin/entities/turn.entity';
 import { SkillsModule } from '../skills/skills.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([MessageQueue]),
+    TypeOrmModule.forFeature([MessageQueue, Session, Turn]),
     SkillsModule,
     TenantsModule,
     MessagesModule,
     FilesModule,
+    AdminModule,
   ],
-  controllers: [SessionsController],
+  controllers: [SessionsController, ConversationsController],
   providers: [
     SessionsGateway,
     SessionService,
@@ -58,7 +64,8 @@ import { FilesModule } from '../files/files.module';
     ToolAnalysisService,
     MessageQueueService,
     MessageWorkerService,
+    ConversationMetadataService,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService],
 })
 export class SessionsModule {}

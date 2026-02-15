@@ -21,6 +21,8 @@ import { MessagesService } from '../../messages/messages.service';
 import { ConversationContextService } from '../../messages/conversation-context.service';
 import { UserContextService } from '../../messages/user-context.service';
 import { SkillsService } from '../../skills/skills.service';
+import { ConversationMetadataService } from './conversation-metadata.service';
+import { TurnsService } from '../../admin/services/turns.service';
 import type { FrontendEvent, ManagedSession } from '../../common/interfaces';
 
 /**
@@ -102,6 +104,8 @@ export class CompletionOrchestrationService {
     private readonly conversationContextService: ConversationContextService,
     private readonly userContextService: UserContextService,
     private readonly skillsService: SkillsService,
+    private readonly conversationMetadataService: ConversationMetadataService,
+    private readonly turnsService: TurnsService,
   ) {}
 
   /**
@@ -234,6 +238,33 @@ export class CompletionOrchestrationService {
       `Created messages: user=${userMessage.id}, assistant=${assistantMessage.id}`,
     );
 
+    // Step 6a: Create Turn record for analytics
+    try {
+      const turnNumber = await this.turnsService.getNextTurnNumber(sessionId);
+      const turn = await this.turnsService.createTurn({
+        sessionId,
+        userMessageId: userMessage.id,
+        turnNumber,
+      });
+
+      // Store turn ID on session for later completion
+      session.currentTurnId = turn.id;
+
+      this.logger.debug(
+        `Created turn ${turnNumber} for session ${sessionId}: ${turn.id}`,
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to create turn: ${err}`);
+      // Continue without turn tracking - non-fatal
+    }
+
+    // Step 6b: Auto-generate conversation title from first user message
+    if (session.messageCount === 0 && !resumeSession) {
+      this.conversationMetadataService.autoGenerateTitle(sessionId, message).catch((err) => {
+        this.logger.warn(`Failed to auto-generate title: ${err}`);
+      });
+    }
+
     // Step 7: Store page context if provided (Write to workspace for MCP tool to read)
     if (context) {
       try {
@@ -297,6 +328,24 @@ export class CompletionOrchestrationService {
         this.messagesService
           .updateContent(assistantMessage.id, accumulatedText)
           .catch((err) => this.logger.error(`Failed to update message content: ${err}`));
+
+        // Complete Turn record with token usage and duration
+        if (session.currentTurnId) {
+          this.turnsService
+            .completeTurn({
+              turnId: session.currentTurnId,
+              assistantMessageId: assistantMessage.id,
+            })
+            .then((turn) => {
+              this.logger.debug(
+                `Completed turn ${turn.turnNumber}: ${turn.totalTokens} tokens, ${turn.durationMs}ms`,
+              );
+            })
+            .catch((err) => this.logger.error(`Failed to complete turn: ${err}`));
+
+          // Clean up turn context
+          delete session.currentTurnId;
+        }
       }
     };
 

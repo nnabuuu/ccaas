@@ -12,11 +12,13 @@ import { AdminAuditLog } from './entities/admin-audit-log.entity';
 import { SessionAlert } from './entities/session-alert.entity';
 import { TenantQuota } from './entities/tenant-quota.entity';
 import { Session } from './entities/session.entity';
+import { Turn } from './entities/turn.entity';
 
 // Services
 import { AuditService } from './services/audit.service';
 import { AnalyticsService } from './services/analytics.service';
 import { SessionManagerService } from './services/session-manager.service';
+import { TurnsService } from './services/turns.service';
 
 // Controllers
 import { AdminDashboardController } from './controllers/admin-dashboard.controller';
@@ -55,6 +57,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
       SessionAlert,
       TenantQuota,
       Session,
+      Turn,
       // External entities for queries
       Message,
       ToolEvent,
@@ -87,11 +90,13 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AuditService,
     AnalyticsService,
     SessionManagerService,
+    TurnsService,
   ],
   exports: [
     AuditService,
     AnalyticsService,
     SessionManagerService,
+    TurnsService,
   ],
 })
 export class AdminModule {}
