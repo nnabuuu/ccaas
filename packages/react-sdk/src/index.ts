@@ -25,6 +25,8 @@ export { useMessageSplitter } from './hooks/useMessageSplitter'
 export { ChatPanel } from './components/ChatPanel'
 export { MessageBubble } from './components/MessageBubble'
 export { InlineToolCard } from './components/InlineToolCard'
+export { AssistantMessageGroup } from './components/AssistantMessageGroup'
+export { DefaultSyncButton } from './components/DefaultSyncButton'
 export { AgentActivityLine } from './components/AgentActivityLine'
 export { ThinkingIndicator } from './components/ThinkingIndicator'
 export { ToolActivityIndicator } from './components/ToolActivityIndicator'
@@ -132,6 +134,8 @@ export type {
 } from './types'
 
 // Component-specific prop types
+export type { AssistantMessageGroupProps } from './components/AssistantMessageGroup'
+export type { DefaultSyncButtonProps } from './components/DefaultSyncButton'
 export type { AgentActivityLineProps } from './components/AgentActivityLine'
 export type { ThinkingIndicatorProps } from './components/ThinkingIndicator'
 export type { ToolActivityIndicatorProps } from './components/ToolActivityIndicator'

@@ -4,19 +4,47 @@ import {
   useTaskTracking,
   TasksView,
   useMessageSplitter,
-  SyncCardPanel,
+  AssistantMessageGroup,
   type ToolActivity,
   type UseAgentConnectionReturn,
   type FileMetadata,
   type TokenUsage,
 } from '@ccaas/react-sdk'
-import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType } from '../types'
+import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType, MessageTokenUsage } from '../types'
 import MessageBubble from './MessageBubble'
-import { AssistantMessageGroup } from './AssistantMessageGroup'
+import { SegmentBubble } from './SegmentBubble'
+import SyncButton from './SyncButton'
 import QuickPrompts from './QuickPrompts'
 import FilesView from './FilesView'
 import { useFileAttachment } from '../hooks/useFileAttachment'
 import { MessageSquare, File, CheckSquare } from 'lucide-react'
+
+// Helper functions for custom token usage rendering
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`
+  return String(n)
+}
+
+function formatModelName(model: string): string {
+  return model.replace('claude-', '').replace(/-\d+$/, '')
+}
+
+function CustomTokenUsageFooter({ usage }: { usage: MessageTokenUsage }) {
+  const cacheTokens = usage.cacheReadTokens ?? usage.cachedInputTokens ?? 0
+  return (
+    <div className="mt-1.5 pt-1.5 border-t border-gray-200/60 flex items-center gap-3 text-[11px] text-gray-400">
+      {usage.model && <span>{formatModelName(usage.model)}</span>}
+      <span>{'\u2193'}{formatTokens(usage.inputTokens)} {'\u2191'}{formatTokens(usage.outputTokens)}</span>
+      {cacheTokens > 0 && (
+        <span>{'\u26A1'}{formatTokens(cacheTokens)} cached</span>
+      )}
+      {usage.estimatedCostUsd !== undefined && (
+        <span>${usage.estimatedCostUsd.toFixed(4)}</span>
+      )}
+    </div>
+  )
+}
 
 interface ChatPanelProps {
   messages: Message[]
@@ -79,7 +107,7 @@ export function ChatPanel({
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // Split messages for improved UX
-  const { splitMessages, outputUpdates } = useMessageSplitter({ messages })
+  const { splitMessages } = useMessageSplitter({ messages })
 
   // Track tasks
   const taskTracking = useTaskTracking({
@@ -235,11 +263,41 @@ export function ChatPanel({
         ) : (
           splitMessages.map((splitMsg) => (
             splitMsg.role === 'assistant' ? (
-              <AssistantMessageGroup key={splitMsg.messageId} splitMessage={splitMsg} />
+              <AssistantMessageGroup
+                key={splitMsg.messageId}
+                splitMessage={splitMsg}
+                tokenUsage={splitMsg.tokenUsage as MessageTokenUsage}
+                timestamp={splitMsg.timestamp}
+                outputUpdates={splitMsg.original.outputUpdates}
+                onSync={(field) => onSync(field as SyncField)}
+                onDiscard={(field) => onDiscard(field as SyncField)}
+                renderSyncButton={(update, handleSync, handleDiscard) => {
+                  const pending = pendingUpdates?.get(update.field as SyncField)
+                  return (
+                    <SyncButton
+                      key={update.field}
+                      field={update.field as SyncField}
+                      preview={update.preview}
+                      synced={pending?.synced ?? update.synced}
+                      syncedAt={pending?.syncedAt ?? update.syncedAt}
+                      onSync={handleSync}
+                      onDiscard={handleDiscard}
+                    />
+                  )
+                }}
+                renderTokenUsage={(usage) => <CustomTokenUsageFooter usage={usage as MessageTokenUsage} />}
+                renderSegment={(segment, isLast) => (
+                  <SegmentBubble
+                    key={segment.id}
+                    segment={segment}
+                    isLast={isLast}
+                  />
+                )}
+              />
             ) : (
               <MessageBubble
                 key={splitMsg.messageId}
-                message={splitMsg.original}
+                message={splitMsg.original as any}
                 onSync={onSync}
                 onDiscard={onDiscard}
                 pendingUpdates={pendingUpdates}
@@ -249,50 +307,6 @@ export function ChatPanel({
           ))
         )}
         <div ref={messagesEndRef} />
-
-        {/* Sticky SyncCardPanel */}
-        <SyncCardPanel
-          outputUpdates={outputUpdates.filter(u => !u.synced)}
-          onSync={(field) => onSync(field as SyncField)}
-          onDiscard={(field) => onDiscard(field as SyncField)}
-          renderSyncCard={(update, handleSync, handleDiscard) => {
-            // Use solution-specific SyncButton appearance
-            const pending = pendingUpdates?.get(update.field as SyncField)
-            return (
-              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-700 truncate">
-                    {update.field}
-                  </div>
-                  <div className="text-xs text-gray-500 truncate">
-                    {update.preview}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {!pending?.synced ? (
-                    <>
-                      <button
-                        onClick={handleSync}
-                        className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-                      >
-                        同步
-                      </button>
-                      <button
-                        onClick={handleDiscard}
-                        className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                        title="忽略"
-                      >
-                        ×
-                      </button>
-                    </>
-                  ) : (
-                    <span className="text-xs text-green-600">✓ 已同步</span>
-                  )}
-                </div>
-              </div>
-            )
-          }}
-        />
         </div>
       )}
 
