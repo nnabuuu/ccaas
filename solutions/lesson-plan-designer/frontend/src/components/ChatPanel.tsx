@@ -129,6 +129,7 @@ export function ChatPanel({
   // Only show badge when user is NOT on messages tab (UX best practice)
   const newMessagesCount = activeTab !== 'messages'
     ? messages.filter(m => {
+        if (!m.timestamp) return false
         const messageAge = Date.now() - new Date(m.timestamp).getTime()
         return messageAge < 5000 && m.role === 'assistant'
       }).length
