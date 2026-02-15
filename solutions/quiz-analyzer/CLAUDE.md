@@ -483,6 +483,64 @@ When moving to PostgreSQL:
 - Rate limit API endpoints
 - Add authentication when needed
 
+## Conversation Persistence
+
+**Status**: ✅ IMPLEMENTED (Feb 2026)
+
+Quiz-analyzer now supports server-side conversation persistence, replacing the previous localStorage-based approach.
+
+### Architecture
+
+**Database Tables**:
+- `messages` - Stores user/assistant messages with metadata
+- `conversation_contexts` - Captures reproducibility metadata (model, tools, prompts)
+- `turns` - Tracks per-exchange analytics (tokens, duration)
+
+**Backend Services**:
+- `MessagesService` - Message creation and retrieval with auto-incrementing messageIndex
+- `ConversationContextService` - Context metadata management
+- `TurnsService` - Turn analytics tracking with auto-incrementing turnNumber
+
+**REST API Endpoints**:
+- `GET/POST /api/v1/sessions/:sessionId/messages` - Message history (paginated)
+- `GET/POST /api/v1/sessions/:sessionId/context` - Conversation context
+- `GET /api/v1/sessions/:sessionId/turns` - Turn analytics
+
+### Frontend Integration
+
+**useQuizSession Hook**:
+- `isLoadingHistory` - True while fetching message history from server
+- `clearConversation()` - Creates new session (new sessionId)
+- `messages` - Array includes loaded history from server
+
+**User Experience**:
+- On page refresh, loading indicator shows ("加载对话历史...")
+- Message history auto-loads from server
+- "New Conversation" button starts fresh session
+- All messages persist across page refreshes
+
+### Message Creation Flow
+
+When quiz analysis completes:
+1. `AnalysesService.create()` saves analysis to database
+2. If `sessionId` is provided, creates assistant message with analysis content
+3. Finds latest open turn and completes it with token counts and duration
+4. Failures are logged but don't break analysis flow (graceful degradation)
+
+### Migration
+
+Database migration: `scripts/migrations/003-conversation-persistence.sql`
+- Creates 3 tables with proper indexes
+- Run automatically on backend startup (TypeORM sync)
+
+### Testing
+
+**Test Coverage**: 34 tests passing
+- 6 entity tests (Message, ConversationContext, Turn)
+- 16 service tests (MessagesService, ConversationContextService, TurnsService)
+- 7 controller tests (REST API endpoints)
+- 5 integration tests (AnalysesService hooks)
+
 ## Response Language
 
 Respond in the same language as the user's message (Chinese or English).
