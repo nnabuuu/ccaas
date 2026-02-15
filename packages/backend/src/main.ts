@@ -12,6 +12,14 @@ import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
+  // Prevent nested Claude Code session errors by removing CLAUDECODE env var
+  // This allows CCAAS to spawn AgentEngine instances even when running inside
+  // a Claude Code session (e.g., during development)
+  if (process.env.CLAUDECODE) {
+    delete process.env.CLAUDECODE;
+    console.log('[Bootstrap] Removed CLAUDECODE environment variable to prevent nested session errors');
+  }
+
   const logger = new Logger('Bootstrap');
 
   const app = await NestFactory.create(AppModule);

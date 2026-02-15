@@ -269,6 +269,7 @@ function App() {
     todoItems,
     todoStats,
     activeSubAgents,
+    tokenUsage,
     pendingUpdates,
     modifiedFields,
     newFilesCount,
@@ -276,7 +277,7 @@ function App() {
     onSync: syncToForm,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, pendingUpdates, modifiedFields, newFilesCount, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, tokenUsage, pendingUpdates, modifiedFields, newFilesCount, sendMessage, syncToForm, discardUpdate, cancelProcessing])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {

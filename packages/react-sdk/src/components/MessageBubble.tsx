@@ -79,7 +79,7 @@ export function MessageBubble({ message, colorScheme = 'blue', renderContent, ch
             {/* Extra children (sync buttons, token usage, etc.) */}
             {children}
 
-            {/* Timestamp */}
+            {/* Timestamp and metadata */}
             {message.timestamp && (
               <div className={`mt-1 text-xs text-gray-400 ${isUser ? 'text-right' : ''}`}>
                 {message.timestamp.toLocaleTimeString('zh-CN', {
@@ -90,6 +90,12 @@ export function MessageBubble({ message, colorScheme = 'blue', renderContent, ch
                 {!isUser && executionTime > 0 && (
                   <span className="ml-1">
                     • 执行 {formatDuration(executionTime)}
+                  </span>
+                )}
+                {/* Token usage - only show for assistant messages */}
+                {!isUser && message.tokenUsage && (
+                  <span className="ml-1">
+                    • ↓ {message.tokenUsage.outputTokens.toLocaleString()} tokens
                   </span>
                 )}
               </div>

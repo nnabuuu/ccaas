@@ -97,25 +97,28 @@ export interface TextBlock { type: 'text'; text: string }
 export interface ToolBlock { type: 'tool'; tool: ToolActivity }
 export type ContentBlock = TextBlock | ToolBlock
 
-// Per-message token usage with cost
+// Per-message token usage (compatible with SDK's TokenUsage)
 export interface MessageTokenUsage {
   inputTokens: number
   outputTokens: number
-  cachedInputTokens: number
-  estimatedCostUsd: number
-  model: string
-  requestCount: number
+  cacheReadTokens?: number  // SDK uses cacheReadTokens instead of cachedInputTokens
+  // Extended fields (optional, may not be populated by SDK)
+  cachedInputTokens?: number  // Deprecated: use cacheReadTokens
+  estimatedCostUsd?: number
+  model?: string
+  requestCount?: number
 }
 
 // Message types
 export interface Message {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'assistant' | 'system'  // Added 'system' to match react-sdk
   content: string
   contentBlocks?: ContentBlock[]
-  timestamp: Date
+  timestamp?: Date  // Made optional to match react-sdk
   outputUpdates?: OutputUpdate[]
   tokenUsage?: MessageTokenUsage
+  isStreaming?: boolean  // Added to match react-sdk
 }
 
 export interface OutputUpdate {

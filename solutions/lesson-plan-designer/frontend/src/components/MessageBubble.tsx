@@ -133,14 +133,17 @@ function formatModelName(model: string): string {
 }
 
 function TokenUsageFooter({ usage }: { usage: MessageTokenUsage }) {
+  const cacheTokens = usage.cacheReadTokens ?? usage.cachedInputTokens ?? 0
   return (
     <div className="mt-1.5 pt-1.5 border-t border-gray-200/60 flex items-center gap-3 text-[11px] text-gray-400">
-      <span>{formatModelName(usage.model)}</span>
+      {usage.model && <span>{formatModelName(usage.model)}</span>}
       <span>{'\u2193'}{formatTokens(usage.inputTokens)} {'\u2191'}{formatTokens(usage.outputTokens)}</span>
-      {usage.cachedInputTokens > 0 && (
-        <span>{'\u26A1'}{formatTokens(usage.cachedInputTokens)} cached</span>
+      {cacheTokens > 0 && (
+        <span>{'\u26A1'}{formatTokens(cacheTokens)} cached</span>
       )}
-      <span>${usage.estimatedCostUsd.toFixed(4)}</span>
+      {usage.estimatedCostUsd !== undefined && (
+        <span>${usage.estimatedCostUsd.toFixed(4)}</span>
+      )}
     </div>
   )
 }
@@ -225,12 +228,14 @@ export function MessageBubble({ message, onSync, onDiscard, pendingUpdates }: Me
             )}
 
             {/* Timestamp */}
-            <div className={`mt-1 text-xs text-gray-400 ${isUser ? 'text-right' : ''}`}>
-              {message.timestamp.toLocaleTimeString('zh-CN', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </div>
+            {message.timestamp && (
+              <div className={`mt-1 text-xs text-gray-400 ${isUser ? 'text-right' : ''}`}>
+                {message.timestamp.toLocaleTimeString('zh-CN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>

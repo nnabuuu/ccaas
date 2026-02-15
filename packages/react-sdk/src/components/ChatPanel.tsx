@@ -23,6 +23,7 @@ export function ChatPanel({
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
+  tokenUsage = null,
   onSendMessage,
   onCancel,
   renderMessage,
@@ -59,7 +60,12 @@ export function ChatPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <h2 className="font-semibold text-gray-800">{title}</h2>
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {tokenUsage && (
+            <span className="text-xs text-gray-500">
+              Tokens: {tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.outputTokens.toLocaleString()} out
+            </span>
+          )}
           {isProcessing && (
             <span className={`flex items-center gap-1 ${colors.text}`}>
               <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">

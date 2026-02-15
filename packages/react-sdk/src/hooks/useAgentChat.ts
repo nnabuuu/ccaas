@@ -58,6 +58,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const streamContentRef = useRef('')
   const contentBlocksRef = useRef<ContentBlock[]>([])
   const currentMessageRef = useRef<Message | null>(null)
+  const latestTokenUsageRef = useRef<import('@ccaas/common').TokenUsage | null>(null)
 
   // Solution config (loaded from endpoint if provided)
   const solutionConfigRef = useRef<SolutionConfig | null>(null)
@@ -190,6 +191,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
             if (lastMsg && lastMsg.role === 'assistant') {
               lastMsg.content = finalContent
               lastMsg.isStreaming = false
+              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
             }
             return updated
           })
@@ -200,12 +202,14 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
             const lastMsg = updated[updated.length - 1]
             if (lastMsg?.isStreaming) {
               lastMsg.isStreaming = false
+              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
             }
             return updated
           })
         }
 
-        // Reset stream state
+        // Reset stream state and token usage
+        latestTokenUsageRef.current = null
         setCurrentStreamContent('')
         streamContentRef.current = ''
         currentMessageRef.current = null
@@ -253,11 +257,21 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       })
     }
 
+    // Token usage tracking
+    const onTokenUsage = (data: { payload: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } }) => {
+      latestTokenUsageRef.current = {
+        inputTokens: data.payload.inputTokens,
+        outputTokens: data.payload.outputTokens,
+        cacheReadTokens: data.payload.cacheReadTokens,
+      }
+    }
+
     socket.on('text_delta', onTextDelta)
     socket.on('output_update', onOutputUpdate)
     socket.on('tool_event', onToolEvent)
     socket.on('agent_status', onAgentStatus)
     socket.on('tool_activity', onToolActivity)
+    socket.on('token_usage', onTokenUsage)
 
     return () => {
       socket.off('text_delta', onTextDelta)
@@ -265,6 +279,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       socket.off('tool_event', onToolEvent)
       socket.off('agent_status', onAgentStatus)
       socket.off('tool_activity', onToolActivity)
+      socket.off('token_usage', onTokenUsage)
     }
   }, [connection.socket])
 

@@ -3,12 +3,16 @@ import {
   AgentActivityLine,
   useTaskTracking,
   TasksView,
+  useMessageSplitter,
+  SyncCardPanel,
   type ToolActivity,
   type UseAgentConnectionReturn,
   type FileMetadata,
+  type TokenUsage,
 } from '@ccaas/react-sdk'
 import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType } from '../types'
 import MessageBubble from './MessageBubble'
+import { AssistantMessageGroup } from './AssistantMessageGroup'
 import QuickPrompts from './QuickPrompts'
 import FilesView from './FilesView'
 import { useFileAttachment } from '../hooks/useFileAttachment'
@@ -29,6 +33,7 @@ interface ChatPanelProps {
   todoItems?: TodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: ActiveSubAgent[]
+  tokenUsage?: TokenUsage | null
   pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
   modifiedFields?: Set<SyncField>
   newFilesCount?: number
@@ -54,6 +59,7 @@ export function ChatPanel({
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
+  tokenUsage = null,
   pendingUpdates,
   modifiedFields,
   newFilesCount = 0,
@@ -71,6 +77,9 @@ export function ChatPanel({
   const [highlightedTaskId] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // Split messages for improved UX
+  const { splitMessages, outputUpdates } = useMessageSplitter({ messages })
 
   // Track tasks
   const taskTracking = useTaskTracking({
@@ -130,6 +139,11 @@ export function ChatPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
         <h2 className="font-semibold text-gray-800">AI 备课助手</h2>
+        {tokenUsage && (
+          <span className="text-xs text-gray-500">
+            Tokens: {tokenUsage.inputTokens.toLocaleString()} in / {tokenUsage.outputTokens.toLocaleString()} out
+          </span>
+        )}
       </div>
 
       {/* Icon Tab Bar */}
@@ -208,7 +222,7 @@ export function ChatPanel({
 
       {/* Messages Area */}
       {activeTab === 'messages' && (
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
             <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,18 +232,66 @@ export function ChatPanel({
             <p className="mt-1 text-sm">向AI助手描述您的备课需求</p>
           </div>
         ) : (
-          messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              onSync={onSync}
-              onDiscard={onDiscard}
-              pendingUpdates={pendingUpdates}
-              modifiedFields={modifiedFields}
-            />
+          splitMessages.map((splitMsg) => (
+            splitMsg.role === 'assistant' ? (
+              <AssistantMessageGroup key={splitMsg.messageId} splitMessage={splitMsg} />
+            ) : (
+              <MessageBubble
+                key={splitMsg.messageId}
+                message={splitMsg.original}
+                onSync={onSync}
+                onDiscard={onDiscard}
+                pendingUpdates={pendingUpdates}
+                modifiedFields={modifiedFields}
+              />
+            )
           ))
         )}
         <div ref={messagesEndRef} />
+
+        {/* Sticky SyncCardPanel */}
+        <SyncCardPanel
+          outputUpdates={outputUpdates.filter(u => !u.synced)}
+          onSync={(field) => onSync(field as SyncField)}
+          onDiscard={(field) => onDiscard(field as SyncField)}
+          renderSyncCard={(update, handleSync, handleDiscard) => {
+            // Use solution-specific SyncButton appearance
+            const pending = pendingUpdates?.get(update.field as SyncField)
+            return (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-700 truncate">
+                    {update.field}
+                  </div>
+                  <div className="text-xs text-gray-500 truncate">
+                    {update.preview}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!pending?.synced ? (
+                    <>
+                      <button
+                        onClick={handleSync}
+                        className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+                      >
+                        同步
+                      </button>
+                      <button
+                        onClick={handleDiscard}
+                        className="px-2 py-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                        title="忽略"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : (
+                    <span className="text-xs text-green-600">✓ 已同步</span>
+                  )}
+                </div>
+              </div>
+            )
+          }}
+        />
         </div>
       )}
 

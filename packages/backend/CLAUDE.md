@@ -305,15 +305,40 @@ Standardized HTTP error handling with protocol-aware exceptions.
 - Global exception filter
 - Request ID tracking
 
+## Important Notes
+
+### Nested Session Prevention
+
+CCAAS spawns Claude Code CLI as subprocesses to handle AgentEngine requests. To prevent nested session errors, **the backend automatically removes the `CLAUDECODE` environment variable on startup** (see `src/main.ts`):
+
+```typescript
+// src/main.ts - bootstrap()
+if (process.env.CLAUDECODE) {
+  delete process.env.CLAUDECODE;
+  console.log('[Bootstrap] Removed CLAUDECODE environment variable to prevent nested session errors');
+}
+```
+
+**Why?** Claude Code CLI detects nested sessions (when launched inside another Claude Code session) and exits with:
+```
+Error: Claude Code cannot be launched inside another Claude Code session.
+Nested sessions share runtime resources and will crash all active sessions.
+```
+
+By removing `CLAUDECODE` at the application level, the backend can spawn AgentEngine instances even when you're developing inside a Claude Code session. This approach is:
+- ✅ **Reliable** - Works at code level, not dependent on shell
+- ✅ **Cross-platform** - Works on Windows, macOS, Linux
+- ✅ **Automatic** - No manual intervention needed
+
 ## Development Commands
 
 ```bash
 # Development
-npm run start:dev      # Start with hot reload
+npm run start:dev      # Start with hot reload (auto unsets CLAUDECODE)
 
 # Production
 npm run build          # Compile TypeScript
-npm run start:prod     # Run compiled version
+npm run start:prod     # Run compiled version (auto unsets CLAUDECODE)
 
 # Type check
 npm run typecheck      # Type check without emitting
