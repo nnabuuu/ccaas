@@ -31,6 +31,7 @@
   * [6.4 Skills](tutorial/06-implementation/04-skills.md)
   * [6.5 前端实现](tutorial/06-implementation/05-frontend.md)
   * [6.6 测试](tutorial/06-implementation/06-testing.md)
+  * [6.7 会话持久化](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. 部署上线](tutorial/07-deployment.md)
 
 ## 开发指南 <a href="#guide" id="guide"></a>

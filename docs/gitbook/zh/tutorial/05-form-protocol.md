@@ -1,884 +1,625 @@
 # 5. 表单与 output\_update 协议
 
-`output_update` 协议是将 AI Agent 输出转化为前端可在表单、表格和其他 UI 元素中渲染的结构化数据的机制。本章深入讲解 `write_output` 在 MCP Server 端的工作原理、`output_update` 事件的结构，以及如何在 Solution 前端构建健壮的表单同步。
+`output_update` 协议是连接 AI Agent 输出与前端表单状态的桥梁。当 Agent 调用 `write_output` MCP 工具时，CCAAS 后端会发出 `output_update` WebSocket 事件，前端解析后以 SyncCard 形式呈现给用户审批。本章讲解 `write_output` 的工作原理、事件结构（包括嵌套的 `payload.data` 格式），以及生产环境中使用的 SyncCard 审批模式。
 
 ## 学习目标
 
 完成本章后，你将能够：
 
-- 在 Solution 的 MCP Server 中实现 `write_output` 工具
-- 正确解析 `output_update` 事件（包括嵌套结构）
-- 处理三种操作类型：`set`、`append` 和 `merge`
-- 实现 SyncCard 审批模式以支持人机协同审核
-- 使用 Vue SDK 的 `useFormBridge` 和 React SDK 的 `SyncCardPanel` 组件
+- 使用 `@modelcontextprotocol/sdk` 实现 `write_output` MCP 工具
+- 正确解析 `output_update` 事件（包括嵌套的 `payload.data` 结构）
+- 使用 react-sdk 的 `useAgentChat` `onOutputUpdate` 回调
+- 实现 SyncCard 审批模式，支持字段级同步、丢弃和撤销
+- 使用 react-sdk 的 `OutputUpdateCard` 组件
 
 ## write\_output 管道
-
-`write_output` 工具是 AI 推理与前端表单状态之间的桥梁。以下是数据在管道中的流转方式：
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ AI Agent                                                            │
 │                                                                     │
-│ "我需要将任务标题设置为 'Fix login bug'"                              │
-│                     │                                               │
-│                     ▼                                               │
-│ 调用 write_output({ field: 'title', value: 'Fix login bug' })      │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ 调用 write_output({ field: 'objectives', value: '...', preview })   │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
-│ MCP Server                                                          │
+│ MCP Server (@modelcontextprotocol/sdk)                              │
 │                                                                     │
-│ 1. 接收工具调用                                                      │
-│ 2. 验证字段名是否在允许列表中                                         │
-│ 3. 使用 Zod 验证值的类型                                             │
-│ 4. 返回 { data: { field, value, operation }, status: 'success' }    │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ 1. 验证字段名是否在 SYNC_FIELDS 枚举中                               │
+│ 2. 使用 Zod Schema 验证值（可自动修正）                                │
+│ 3. 返回 JSON: { data: { field, value, preview }, status }           │
+│    包装在 MCP content blocks 中: [{ type: 'text', text: JSON }]      │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
-│ CCAAS 后端                                                          │
+│ CCAAS 后端 (EventMapperService)                                     │
 │                                                                     │
-│ 1. 从 Agent 进程接收工具结果                                         │
-│ 2. 包装为 output_update 事件                                        │
-│ 3. 通过 WebSocket 推送到 Solution 后端                               │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ 1. 从 Agent stdout 解析工具结果                                       │
+│ 2. 检测 { data: { field, value }, status } 结构                      │
+│ 3. 发出 output_update WebSocket 事件，数据放在 payload.data 中         │
+└─────────────────────┬───────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────────────┐
+│ react-sdk (useAgentChat)                                            │
+│                                                                     │
+│ 1. 在 socket 上监听 output_update                                    │
+│ 2. parseOutputUpdate() 标准化多种格式                                 │
+│ 3. 调用 onOutputUpdate({ field, value, preview }) 回调               │
+│ 4. 附加到当前 assistant 消息的 outputUpdates[] 中                     │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
 │ Solution 前端                                                       │
 │                                                                     │
-│ 1. 接收 output_update 事件                                          │
-│ 2. 解析 event.payload.data                                          │
-│ 3. 更新表单状态或缓存为待审批的 SyncCard                              │
+│ 1. onOutputUpdate 回调将更新添加到 pendingUpdates Map                 │
+│ 2. SyncCard UI 显示"同步到表单" / "忽略"按钮                          │
+│ 3. 用户审批后 → 值写入表单状态                                        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## 在 MCP Server 中实现 write\_output
 
-### 基本实现
+MCP Server 使用 `@modelcontextprotocol/sdk`（不是 Express）。以下是基于 lesson-plan-designer MCP Server 的简化示例。
 
-`write_output` 工具定义在 Solution 的 MCP Server 中。以下是 Task Manager 的最小实现：
+### 工具定义
 
 ```typescript
 // mcp-server/src/index.ts
-import express from 'express'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
+
+const SYNC_FIELDS = ['title', 'description', 'priority', 'status', 'tags'] as const
+type SyncField = typeof SYNC_FIELDS[number]
+
+const server = new Server(
+  { name: 'my-solution', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+)
+
+const writeOutputTool: Tool = {
+  name: 'write_output',
+  description: `将结构化数据写入前端表单。
+前端会显示"同步到表单"按钮，让用户决定是否应用更改。
+
+可用字段: ${SYNC_FIELDS.join(', ')}
+
+示例:
+{
+  "field": "title",
+  "value": "修复登录问题",
+  "preview": "更新了任务标题"
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        enum: [...SYNC_FIELDS],
+        description: '要更新的表单字段',
+      },
+      value: {
+        description: '字段的值',
+      },
+      preview: {
+        type: 'string',
+        description: '显示在同步按钮上的人类可读摘要',
+      },
+    },
+    required: ['field', 'value', 'preview'],
+  },
+}
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [writeOutputTool],
+}))
+```
+
+### 工具处理器
+
+处理器验证输入并返回特定 JSON 结构的结果。CCAAS 后端 EventMapper 在工具结果中检测 `{ data: { field, value }, status }` 结构来发出 `output_update` 事件。
+
+```typescript
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview: string
+    }
+
+    // 验证字段名
+    if (!SYNC_FIELDS.includes(field as SyncField)) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: { error: `无效字段: ${field}` },
+            status: 'error',
+          }),
+        }],
+        isError: true,
+      }
+    }
+
+    // 返回结构化结果
+    // EventMapper 检测这个 { data: { field, value }, status } 结构
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: { field, value, preview },
+          status: 'success',
+        }),
+      }],
+    }
+  }
+
+  return {
+    content: [{ type: 'text', text: `未知工具: ${name}` }],
+    isError: true,
+  }
+})
+
+// 启动服务器
+const transport = new StdioServerTransport()
+await server.connect(transport)
+```
+
+**要点：**
+- 工具结果必须是 content block 中的 JSON 字符串 `[{ type: 'text', text: '...' }]`
+- JSON 必须具有 `{ data: { field, value, preview? }, status: 'success' }` 的形状
+- CCAAS 后端的 EventMapper 检测到此结构后会发出 `output_update`
+
+### 添加 Zod 验证
+
+生产环境中，应在返回前用 Zod Schema 验证值。lesson-plan-designer MCP Server 使用 `validateAndFixField` 函数，可自动修正常见问题（如将字符串 `"3"` 转为数字 `3`）。
+
+```typescript
+// mcp-server/src/schemas.ts
 import { z } from 'zod'
 
-const app = express()
-app.use(express.json())
-
-// 定义有效字段及其 Schema
-const TaskFieldSchemas = {
+const fieldSchemas: Record<string, z.ZodSchema> = {
   title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(2000),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   status: z.enum(['todo', 'in_progress', 'done']),
-  assignee: z.string().optional(),
-  dueDate: z.string().datetime().optional(),
   tags: z.array(z.string()),
 }
 
-type TaskField = keyof typeof TaskFieldSchemas
-
-// 工具定义端点（CCAAS 调用以发现工具）
-app.get('/tools', (req, res) => {
-  res.json([
-    {
-      name: 'write_output',
-      description: '将结构化数据写入前端表单。每个字段调用一次。',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          field: {
-            type: 'string',
-            enum: Object.keys(TaskFieldSchemas),
-            description: '要更新的表单字段',
-          },
-          value: {
-            description: '要设置的字段值',
-          },
-          operation: {
-            type: 'string',
-            enum: ['set', 'append', 'merge'],
-            default: 'set',
-            description: '如何应用更新',
-          },
-        },
-        required: ['field', 'value'],
-      },
-    },
-  ])
-})
-
-// 工具执行端点
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
-
-  // 验证字段名
-  if (!(field in TaskFieldSchemas)) {
-    return res.status(400).json({
-      error: `无效字段: "${field}"`,
-      validFields: Object.keys(TaskFieldSchemas),
-    })
-  }
-
-  // 使用 Schema 验证值
-  const schema = TaskFieldSchemas[field as TaskField]
+export function validateField(field: string, value: unknown) {
+  const schema = fieldSchemas[field]
+  if (!schema) return { success: false, errors: ['未知字段'] }
   const result = schema.safeParse(value)
-  if (!result.success) {
-    return res.status(400).json({
-      error: '验证失败',
-      field,
-      details: result.error.issues,
-    })
-  }
-
-  // 返回结构化响应
-  // CCAAS 会将此包装为 output_update 事件
-  res.json({
-    data: {
-      field,
-      value: result.data,
-      operation,
-    },
-    status: 'success',
-  })
-})
-
-app.listen(3004, () => {
-  console.log('Task Manager MCP Server 运行在 :3004')
-})
-```
-
-### 在 Skill 中定义 write\_output
-
-Skill 指令告诉 AI Agent 如何使用 `write_output`。要明确指定字段名和期望的格式：
-
-```markdown
-# 输出格式
-
-使用 write_output 工具输出任务数据。每个字段调用一次。
-
-可用字段：
-- field: "title" -> 任务标题 (string, 必填)
-- field: "description" -> 任务描述 (string, 可选)
-- field: "priority" -> 优先级: "low" | "medium" | "high" | "urgent"
-- field: "status" -> 任务状态: "todo" | "in_progress" | "done"
-- field: "assignee" -> 负责人姓名 (string)
-- field: "dueDate" -> 截止日期，ISO 8601 格式
-- field: "tags" -> 标签数组 (string[])
-
-示例调用序列：
-1. write_output({ field: "title", value: "Fix login bug" })
-2. write_output({ field: "priority", value: "high" })
-3. write_output({ field: "status", value: "todo" })
-4. write_output({ field: "tags", value: ["bug", "auth"] })
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, errors: result.error.issues.map(i => i.message) }
+}
 ```
 
 ## output\_update 事件结构
 
-当 CCAAS 后端接收到 `write_output` 的结果时，它会将其包装为 `output_update` WebSocket 事件。理解此结构至关重要。
-
-### 事件 Schema
+当 CCAAS 后端接收到 `write_output` 工具结果时，EventMapper 将其包装为 `output_update` WebSocket 事件。`@ccaas/common` 包定义了 Schema：
 
 ```typescript
-interface OutputUpdateEvent {
-  type: 'output_update'
-  sessionId: string
-  timestamp?: string
+// 来自 @ccaas/common - OutputUpdatePayloadSchema (Zod)
+{
+  field?: string,          // 字段名（通用格式时使用）
+  value?: unknown,         // 字段值（通用格式时使用）
+  operation?: 'set' | 'append' | 'merge',
+  progressive?: boolean,
+  complete?: boolean,
+  data?: unknown,          // 来自 write_output 的嵌套数据（主要格式）
+  status?: string,
+  progress?: number,
+}
+```
+
+前端收到的完整事件结构：
+
+```typescript
+{
+  type: 'output_update',
+  sessionId: 'session-abc',
+  timestamp: '2026-02-15T10:30:00Z',
   payload: {
-    data: {                        // <-- 嵌套在 payload.data 中
-      field: string                // 字段名 (例如 'title')
-      value: unknown               // 字段值
-      operation?: 'set' | 'append' | 'merge'
-      preview?: string             // 人类可读的预览
-    }
-    progressive?: boolean          // 是否是流式序列的一部分？
-    complete?: boolean             // 是否是最终更新？
-    status?: string                // 'success' | 'error'
-    progress?: number              // 0-100 进度指示器
+    data: {                    // <-- 嵌套在 payload.data 中
+      field: 'objectives',     // 字段名
+      value: '...',            // 字段值
+      preview: '2个学习目标',   // 人类可读摘要
+    },
+    status: 'success',
   }
 }
 ```
 
 {% hint style="danger" %}
-**最常见的错误**：访问 `event.payload.field` 而不是 `event.payload.data.field`。数据比你预期的多嵌套了一层。始终通过 `event.payload.data` 访问字段数据。
+**最常见的错误**：访问 `event.payload.field` 而不是 `event.payload.data.field`。`write_output` 返回的数据比你预期的多嵌套了一层。始终通过 `event.payload.data` 访问字段数据。
+
+这是 lesson-plan-designer 中的一个真实生产 Bug：前端定义了本地的 `OutputUpdateEvent` 类型，期望 flat 结构，但后端 EventMapper 实际发送嵌套的 `payload.data` 结构。修复方法是使用 `@ccaas/common` 的类型定义并创建专门的解析器。
 {% endhint %}
 
-### 正确 vs 错误的解析方式
+### 多种事件格式
+
+后端可能以多种格式发送 `output_update` 事件，取决于数据的来源方式。react-sdk 的 `parseOutputUpdate` 函数处理所有三种格式：
 
 ```typescript
-socket.on('output_update', (event) => {
-  // 错误 - 将会是 undefined
-  const field = event.payload.field       // undefined!
-  const value = event.payload.value       // undefined!
-  const field2 = event.field              // undefined!
+// 来自 packages/react-sdk/src/utils/parseOutputUpdate.ts
 
-  // 正确
-  const { field, value, operation } = event.payload.data
+// 格式 1: payload.data.field（主要格式 - 来自 write_output MCP 工具）
+event.payload.data = { field: 'title', value: '...', preview: '...' }
+
+// 格式 2: payload.data 为 content blocks 数组
+event.payload.data = [{ type: 'text', text: '{"data":{"field":"title","value":"..."}}' }]
+
+// 格式 3: payload.field（通用/遗留格式）
+event.payload = { field: 'title', value: '...' }
+```
+
+如果使用 react-sdk 的 `onOutputUpdate` 回调，你不需要手动处理这些格式。SDK 会将它们标准化为一致的 `OutputUpdate` 结构：
+
+```typescript
+interface OutputUpdate {
+  field: string
+  value: unknown
+  preview: string
+  synced?: boolean
+  syncedAt?: Date
+  timestamp?: number
+}
+```
+
+## 在前端接收 output\_update
+
+### 使用 react-sdk（推荐）
+
+`useAgentChat` Hook 提供 `onOutputUpdate` 回调，在每次收到有效的 `output_update` 事件时触发。SDK 自动处理解析、格式标准化和消息附加。
+
+```typescript
+// 来自 solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // Core CCAAS 后端
+  tenantId: 'my-solution',
+  autoConnect: true,
+})
+
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  mcpServers: solutionConfig?.mcpServers,
+  skillPath: solutionConfig?.skillPath,
+  onOutputUpdate: (update) => {
+    // update = { field, value, preview, timestamp }
+    // 桥接到同步状态管理
+    addPendingUpdate({
+      field: update.field,
+      value: update.value,
+      preview: update.preview,
+    })
+  },
 })
 ```
 
-### 使用 Zod Schema 进行验证
+SDK 还处理了一条辅助检测路径：当 `tool_event` 触发且工具名匹配 `*write_output` 时，SDK 从工具输入中提取 `{ field, value }` 并调用相同的 `onOutputUpdate` 回调。这确保即使 `output_update` 事件丢失，输出更新也能被捕获。
 
-`@ccaas/common` 包提供了用于运行时验证的 Zod Schema：
+### 手动解析（不使用 SDK）
+
+如果不使用 react-sdk，可以手动解析事件。使用 `@ccaas/common` 的类型确保类型安全：
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/common'
+import type { OutputUpdateEvent } from '@ccaas/common'
 
-socket.on('output_update', (raw) => {
-  const result = OutputUpdateEventSchema.safeParse(raw)
-  if (!result.success) {
-    console.error('无效的 output_update 事件:', result.error)
+socket.on('output_update', (event: OutputUpdateEvent) => {
+  // 先尝试 payload.data（主要格式）
+  const data = event.payload.data as { field?: string; value?: unknown; preview?: string }
+  if (data?.field) {
+    handleUpdate(data.field, data.value, data.preview)
     return
   }
 
-  const event = result.data
-  const { field, value, operation } = event.payload
-  // field, value, operation 现在是类型安全的
+  // 回退到 payload.field（通用格式）
+  if (event.payload.field) {
+    handleUpdate(event.payload.field, event.payload.value, '')
+  }
 })
 ```
 
-## 操作类型
+## SyncCard 审批模式
 
-`write_output` 工具支持三种操作类型，对应不同的更新语义。
+在生产环境的 Solution 中，AI 生成的字段更新不应直接应用到表单。而是缓存为"待处理"状态，以 SyncCard 的形式呈现给用户审核。
 
-### set -- 替换值
+### 架构概览
 
-默认且最常用的操作。完全替换字段值：
-
-```typescript
-// MCP 工具调用
-write_output({ field: 'title', value: 'Fix login bug', operation: 'set' })
-
-// 前端处理
-case 'set':
-  formState[field] = value
-  break
+```
+onOutputUpdate({ field, value, preview })
+        │
+        ▼
+  addPendingUpdate()  ──→  pendingUpdates Map<SyncField, OutputUpdate>
+        │
+        ▼
+  SyncCard UI  ──→  "同步到表单" | "忽略"
+        │                    │
+        ▼                    ▼
+  syncToForm(field)    discardUpdate(field)
+        │                    │
+        ▼                    ▼
+  更新表单状态          从 pendingUpdates 中删除
+  添加到 undoStack
+  标记为已同步
 ```
 
-使用 `set` 的场景：标量字段（字符串、数字、枚举）、替换整个数组、替换整个对象。
+### useLessonPlanSync Hook（真实实现）
 
-### append -- 追加到已有值
+lesson-plan-designer 用一个专门的 Hook 实现了这个模式。关键设计决策：
 
-追加到数组或拼接到字符串：
-
-```typescript
-// MCP 工具调用 - 追加到数组
-write_output({
-  field: 'tags',
-  value: 'urgent',
-  operation: 'append'
-})
-
-// 前端处理
-case 'append':
-  if (Array.isArray(formState[field])) {
-    formState[field] = [...formState[field], value]
-  } else if (typeof formState[field] === 'string') {
-    formState[field] = formState[field] + String(value)
-  }
-  break
-```
-
-使用 `append` 的场景：逐一添加列表项、增量构建文本、渐进式内容生成。
-
-### merge -- 合并到对象
-
-将对象浅合并到已有的对象字段：
+1. **基于 Map 的存储** (`Map<SyncField, OutputUpdate>`) -- 同一字段的更新自动去重
+2. **值标准化** -- 每种字段类型有特定的转换规则（如 `gradeLevel` 总是数字）
+3. **定时撤销** -- 同步后保存前值 30 秒以支持撤销
 
 ```typescript
-// MCP 工具调用 - 合并到对象
-write_output({
-  field: 'metadata',
-  value: { estimatedHours: 4, complexity: 'medium' },
-  operation: 'merge'
-})
+// 简化自 solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSync.ts
 
-// 前端处理
-case 'merge':
-  formState[field] = {
-    ...(formState[field] || {}),
-    ...value
-  }
-  break
-```
+export function useLessonPlanSync() {
+  const [pendingUpdates, setPendingUpdates] = useState<Map<SyncField, OutputUpdate>>(new Map())
+  const [modifiedFields, setModifiedFields] = useState<Set<SyncField>>(new Set())
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
 
-使用 `merge` 的场景：更新对象字段的特定属性而不替换整个对象、增量对象构建。
+  // 从 AI 添加待处理更新
+  const addPendingUpdate = useCallback((update: OutputUpdate) => {
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.set(update.field, update)  // 按字段名去重
+      return next
+    })
+  }, [])
 
-## 前端表单同步模式
-
-处理 `output_update` 事件有两种主要方式：**直接应用**和 **SyncCard 审批**。
-
-### 模式 A：直接应用
-
-最简单的方式 -- 更新到达时直接应用到表单：
-
-```typescript
-// React：直接应用模式
-function useDirectFormSync(socket: Socket) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-
-  useEffect(() => {
-    const handler = (event: OutputUpdateEvent) => {
-      const { field, value, operation = 'set' } = event.payload.data
-
-      setFormData(prev => applyOperation(prev, field, value, operation))
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  return { formData, setFormData }
-}
-
-// 共享的操作逻辑
-function applyOperation(
-  state: Record<string, unknown>,
-  field: string,
-  value: unknown,
-  operation: string
-): Record<string, unknown> {
-  switch (operation) {
-    case 'set':
-      return { ...state, [field]: value }
-    case 'append': {
-      const existing = state[field]
-      if (Array.isArray(existing)) {
-        return { ...state, [field]: [...existing, value] }
-      }
-      return { ...state, [field]: (existing || '') + String(value) }
-    }
-    case 'merge':
-      return {
-        ...state,
-        [field]: { ...(state[field] as object || {}), ...(value as object) },
-      }
-    default:
-      return { ...state, [field]: value }
-  }
-}
-```
-
-**适用场景**：原型开发、简单表单、AI 输出总是可信赖的情况。
-
-### 模式 B：SyncCard 审批（人机协同）
-
-生产环境 Solution 的推荐方式。更新被缓存为"待处理"状态，并以 SyncCard 的形式呈现给用户审批：
-
-```typescript
-// React：SyncCard 审批模式
-function useSyncCardManager(socket: Socket) {
-  const [pendingUpdates, setPendingUpdates] = useState<OutputUpdate[]>([])
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-
-  // 缓存传入的更新为待审批的 SyncCard
-  useEffect(() => {
-    const handler = (event: OutputUpdateEvent) => {
-      const { field, value } = event.payload.data
-      const preview = typeof value === 'string'
-        ? value.substring(0, 80)
-        : JSON.stringify(value).substring(0, 80)
-
-      setPendingUpdates(prev => {
-        // 替换同一字段的现有更新（保留最新的）
-        const filtered = prev.filter(u => u.field !== field)
-        return [...filtered, {
-          field,
-          value,
-          preview,
-          synced: false,
-          timestamp: Date.now(),
-        }]
-      })
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  // 用户批准：应用到表单
-  const syncField = (field: string) => {
-    const update = pendingUpdates.find(u => u.field === field)
+  // 同步：将 AI 的值应用到表单，保存前值用于撤销
+  const syncToForm = useCallback((field, lessonPlan, setLessonPlan) => {
+    const update = pendingUpdates.get(field)
     if (!update) return
 
-    setFormData(prev => ({ ...prev, [field]: update.value }))
-    setPendingUpdates(prev =>
-      prev.map(u => u.field === field
-        ? { ...u, synced: true, syncedAt: new Date() }
-        : u
-      )
-    )
-  }
+    const normalizedValue = normalizeFieldValue(field, update.value)
+    const previousValue = lessonPlan[field]
 
-  // 用户拒绝：丢弃建议
-  const discardField = (field: string) => {
-    setPendingUpdates(prev => prev.filter(u => u.field !== field))
-  }
+    setLessonPlan({ ...lessonPlan, [field]: normalizedValue })
+    setModifiedFields(prev => new Set(prev).add(field))
+    setUndoStack(prev => [...prev.filter(e => e.field !== field), {
+      field, previousValue, timestamp: Date.now()
+    }])
 
-  return {
-    pendingUpdates,
-    formData,
-    setFormData,
-    syncField,
-    discardField,
-  }
+    // 标记为已同步（保留在 Map 中以支持重新同步）
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.set(field, { ...update, synced: true, syncedAt: new Date() })
+      return next
+    })
+
+    // 30 秒后自动过期撤销
+    setTimeout(() => {
+      setUndoStack(prev => prev.filter(e => e.field !== field))
+    }, 30000)
+  }, [pendingUpdates])
+
+  // 忽略：移除建议
+  const removePendingUpdate = useCallback((field: SyncField) => {
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.delete(field)
+      return next
+    })
+  }, [])
+
+  return { pendingUpdates, modifiedFields, addPendingUpdate, syncToForm, removePendingUpdate, ... }
 }
 ```
 
-**适用场景**：生产环境 Solution、包含重要数据的表单、需要人工审核的场景。
+### 值标准化
 
-### 使用 React SDK 的 SyncCardPanel
+一个微妙但重要的细节：AI 可能以意外的格式返回值（如数字字段返回字符串 `"3"`）。同步 Hook 按字段类型标准化值：
 
-`@ccaas/react-sdk` 提供了开箱即用的 SyncCard 模式组件：
+```typescript
+// 来自 solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSync.ts
+
+function normalizeFieldValue(field: SyncField, value: unknown): unknown {
+  value = parseJsonIfString(value)  // 将 "[1,2,3]" 字符串解析为数组
+
+  if (field === 'gradeLevel' || field === 'durationMinutes') {
+    return Number(value) || (field === 'gradeLevel' ? 1 : 45)
+  }
+
+  if (field === 'curriculumRequirements') {
+    return Array.isArray(value) ? value : []
+  }
+
+  if (field === 'extraProperties') {
+    return (typeof value === 'object' && !Array.isArray(value)) ? value : {}
+  }
+
+  // 其他所有字段：字符串
+  return value == null ? null : String(value)
+}
+```
+
+### 全部同步
+
+lesson-plan-designer 支持一次性同步所有待处理更新。它遍历 `pendingUpdates` Map 并对每个字段调用 `syncToForm`：
+
+```typescript
+// 来自 solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const syncAll = useCallback(async () => {
+  if (!crud.lessonPlan) return
+
+  const allFields = Array.from(pendingUpdates.keys())
+  for (const field of allFields) {
+    await syncToForm(field)
+  }
+}, [crud.lessonPlan, pendingUpdates, syncToForm])
+```
+
+## UI 组件
+
+### OutputUpdateCard (react-sdk)
+
+`@ccaas/react-sdk` 提供了通用的 `OutputUpdateCard` 组件，渲染待处理更新的同步/忽略操作，以及已同步状态的重新同步选项。
 
 ```tsx
-import { SyncCardPanel } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@ccaas/react-sdk'
 
-function TaskForm() {
-  const {
-    pendingUpdates,
-    formData,
-    syncField,
-    discardField,
-  } = useSyncCardManager(socket)
+<OutputUpdateCard
+  field="objectives"
+  fieldLabel="学习目标"
+  preview="关于分数的2个学习目标"
+  synced={false}
+  onSync={() => syncToForm('objectives')}
+  onDiscard={() => discardUpdate('objectives')}
+/>
+```
 
+Props：
+
+| Prop | 类型 | 说明 |
+|------|------|------|
+| `field` | `string` | 内部字段名 |
+| `fieldLabel` | `string` | 显示在卡片中的人类可读标签 |
+| `preview` | `string` | AI 建议值的预览文本 |
+| `synced` | `boolean` | 字段是否已同步 |
+| `syncedAt` | `Date` | 上次同步的时间戳 |
+| `icon` | `'sync' \| 'attach' \| ReactNode` | 显示的图标 |
+| `syncLabel` | `string` | 同步按钮的自定义标签 |
+| `onSync` | `() => void` | 用户点击同步时调用 |
+| `onDiscard` | `() => void` | 用户点击忽略时调用 |
+
+### 字段标签映射
+
+Solution 定义从内部字段名到用户友好标签的映射：
+
+```typescript
+// 来自 solutions/lesson-plan-designer/frontend/src/components/SyncButton.tsx
+
+const FIELD_LABELS: Record<SyncField, string> = {
+  title: '标题',
+  subject: '学科',
+  gradeLevel: '年级',
+  durationMinutes: '课时',
+  objectives: '学习目标',
+  content: '学习过程',
+  teachingMethods: '教学方法',
+  materialsNeeded: '课前准备',
+  assessmentMethods: '作业检测',
+  // ... 等等
+}
+
+// Solution 对 OutputUpdateCard 的封装
+export function SyncButton({ field, preview, synced, syncedAt, onSync, onDiscard }) {
   return (
-    <div>
-      {/* 表单字段 */}
-      <input
-        value={formData.title as string || ''}
-        onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-      />
-
-      {/* 底部 SyncCard 面板 */}
-      <SyncCardPanel
-        outputUpdates={pendingUpdates}
-        onSync={syncField}
-        onDiscard={discardField}
-        renderSyncCard={(update, onSync, onDiscard) => (
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <div className="flex-1">
-              <div className="text-sm font-medium">{update.field}</div>
-              <div className="text-xs text-gray-500">{update.preview}</div>
-            </div>
-            <button onClick={onSync}>同步</button>
-            <button onClick={onDiscard}>丢弃</button>
-          </div>
-        )}
-      />
-    </div>
+    <OutputUpdateCard
+      field={field}
+      fieldLabel={FIELD_LABELS[field]}
+      preview={preview}
+      synced={synced}
+      syncedAt={syncedAt}
+      onSync={onSync}
+      onDiscard={onDiscard}
+    />
   )
 }
 ```
 
-### 使用 Vue SDK 的 FormBridge
+### GlobalSyncSection
 
-`@ccaas/vue-sdk` 提供了 `useFormBridge` composable，用于自动注册和同步表单：
+lesson-plan-designer 还提供了一个可折叠的全局同步区域，显示所有待处理更新并提供"全部同步"按钮：
 
-```vue
-<script setup lang="ts">
-import { reactive } from 'vue'
-import { useFormBridge } from '@ccaas/vue-sdk'
+```tsx
+// 来自 solutions/lesson-plan-designer/frontend/src/components/sync/GlobalSyncSection.tsx
 
-const form = reactive({
-  title: '',
-  description: '',
-  priority: 'medium',
-  tags: [],
-})
-
-const { isActive } = useFormBridge({
-  formId: 'task-form',
-  readonly: false,
-  getFormState: () => ({ ...form }),
-  applyFormData: async (data) => {
-    Object.assign(form, data)
-    return {
-      success: true,
-      appliedFields: Object.keys(data),
-    }
-  },
-  submit: async () => {
-    await saveTask(form)
-    return { success: true }
-  },
-})
-</script>
-
-<template>
-  <form>
-    <div v-if="isActive" class="text-sm text-green-600">
-      已连接到 AI Agent
-    </div>
-
-    <input v-model="form.title" placeholder="任务标题" />
-    <textarea v-model="form.description" placeholder="描述" />
-    <select v-model="form.priority">
-      <option value="low">低</option>
-      <option value="medium">中</option>
-      <option value="high">高</option>
-      <option value="urgent">紧急</option>
-    </select>
-  </form>
-</template>
-```
-
-Vue SDK 的 `FormStateSynchronizer` 自动处理 `output_update` 事件与响应式表单状态之间的连接：
-
-```
-output_update 事件
-       │
-       ▼
-AgentListener (监听 output_update)
-       │
-       ▼
-FormStateSynchronizer.updateField(formId, field, value, 'agent')
-       │
-       ▼
-Vue 响应式表单状态 (自动更新模板)
-```
-
-## 高级模式
-
-### 渐进式输出
-
-对于长时间运行的任务，可以发送渐进式更新来显示进度：
-
-```typescript
-// MCP Server：渐进式输出
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
-
-  res.json({
-    data: { field, value, operation },
-    progressive: true,    // 表示还有更多更新
-    complete: false,       // 不是最终更新
-    status: 'success',
-    progress: 50,          // 50% 完成
-  })
-})
-```
-
-前端可以使用 `progressive` 和 `progress` 来显示加载状态：
-
-```typescript
-socket.on('output_update', (event) => {
-  const { progressive, complete, progress } = event.payload
-
-  if (progressive && !complete) {
-    showProgressBar(progress)
-  }
-
-  if (complete) {
-    hideProgressBar()
-  }
-
-  // 始终处理数据
-  const { field, value } = event.payload.data
-  updateField(field, value)
-})
-```
-
-### 字段级撤销
-
-追踪之前的值以支持同步后的撤销：
-
-```typescript
-interface UndoEntry {
-  field: string
-  previousValue: unknown
-  timestamp: number
-}
-
-function useSyncWithUndo(socket: Socket) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-  const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
-
-  const syncField = (field: string, newValue: unknown) => {
-    // 保存当前值用于撤销
-    setUndoStack(prev => [...prev, {
-      field,
-      previousValue: formData[field],
-      timestamp: Date.now(),
-    }])
-
-    // 应用新值
-    setFormData(prev => ({ ...prev, [field]: newValue }))
-  }
-
-  const undoField = (field: string) => {
-    const entry = [...undoStack].reverse().find(e => e.field === field)
-    if (entry) {
-      setFormData(prev => ({ ...prev, [field]: entry.previousValue }))
-      setUndoStack(prev => prev.filter(e => e !== entry))
-    }
-  }
-
-  return { formData, syncField, undoField, undoStack }
-}
-```
-
-### 批量更新
-
-当 AI Agent 依次更新多个字段时，你可能希望对它们进行批处理以获得更流畅的用户体验：
-
-```typescript
-function useBatchedFormSync(socket: Socket, batchWindowMs = 200) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-  const batchRef = useRef<Record<string, unknown>>({})
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    socket.on('output_update', (event) => {
-      const { field, value } = event.payload.data
-
-      // 累积更新
-      batchRef.current[field] = value
-
-      // 重置防抖计时器
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-
-      // 窗口关闭后应用批量更新
-      timerRef.current = setTimeout(() => {
-        const batch = { ...batchRef.current }
-        batchRef.current = {}
-        setFormData(prev => ({ ...prev, ...batch }))
-      }, batchWindowMs)
-    })
-
-    return () => {
-      socket.off('output_update')
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [socket, batchWindowMs])
-
-  return formData
-}
-```
-
-### 字段标签映射
-
-将内部字段名映射为用户友好的标签，用于 SyncCard UI：
-
-```typescript
-const FIELD_LABELS: Record<string, string> = {
-  title: '任务标题',
-  description: '描述',
-  priority: '优先级',
-  status: '状态',
-  assignee: '负责人',
-  dueDate: '截止日期',
-  tags: '标签',
-}
-
-// 在 SyncCard 渲染中
-<OutputUpdateCard
-  field={update.field}
-  fieldLabel={FIELD_LABELS[update.field] || update.field}
-  preview={update.preview}
-  onSync={() => syncField(update.field)}
-  onDiscard={() => discardField(update.field)}
+<GlobalSyncSection
+  pendingUpdates={pendingUpdatesWithMeta}
+  onSyncAll={syncAll}
+  onSyncField={syncToForm}
+  onDiscardField={discardUpdate}
 />
 ```
 
-## 完整示例：Task Manager 表单同步
+该组件：
+- 在标题栏显示未同步和已同步的更新计数
+- 展开后显示单个同步项，支持逐字段同步/忽略
+- 提供"全部同步"按钮一次性应用所有更新
+- 所有更新同步后自动折叠
 
-以下是一个完整的、可运行的示例，将本章所有概念整合在一起：
+## 在 Skill 中定义 write\_output
 
-```typescript
-// hooks/useTaskFormSync.ts
-import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Socket } from 'socket.io-client'
+Skill 指令告诉 AI Agent 哪些字段可用，每个字段的格式要求。要明确指定字段名、类型和 `preview` 参数：
 
-interface TaskFormData {
-  title: string
-  description: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'todo' | 'in_progress' | 'done'
-  assignee: string
-  tags: string[]
-}
+```markdown
+# 输出格式
 
-interface PendingUpdate {
-  field: keyof TaskFormData
-  value: unknown
-  preview: string
-  synced: boolean
-  syncedAt?: Date
-  timestamp: number
-}
+使用 write_output 工具将结构化数据发送到前端表单。
+用户会看到每个你更新的字段对应的"同步到表单"按钮。
 
-const INITIAL_FORM: TaskFormData = {
-  title: '',
-  description: '',
-  priority: 'medium',
-  status: 'todo',
-  assignee: '',
-  tags: [],
-}
+每个字段调用一次 write_output。始终包含人类可读的 preview。
 
-export function useTaskFormSync(socket: Socket | null) {
-  const [formData, setFormData] = useState<TaskFormData>(INITIAL_FORM)
-  const [pendingUpdates, setPendingUpdates] = useState<PendingUpdate[]>([])
+可用字段：
+- field: "title"       -> string, 任务标题
+- field: "description" -> string, 任务描述（最多 2000 字符）
+- field: "priority"    -> "low" | "medium" | "high" | "urgent"
+- field: "status"      -> "todo" | "in_progress" | "done"
+- field: "tags"        -> string[], 标签列表
 
-  // 监听 output_update 事件
-  useEffect(() => {
-    if (!socket) return
-
-    const handler = (event: any) => {
-      // 正确：访问嵌套的 payload.data
-      const data = event.payload?.data
-      if (!data?.field) return
-
-      const { field, value } = data
-      const preview = typeof value === 'string'
-        ? value.substring(0, 100)
-        : Array.isArray(value)
-        ? `[${value.length} 项]`
-        : JSON.stringify(value).substring(0, 100)
-
-      setPendingUpdates(prev => {
-        const filtered = prev.filter(u => u.field !== field)
-        return [...filtered, {
-          field: field as keyof TaskFormData,
-          value,
-          preview,
-          synced: false,
-          timestamp: Date.now(),
-        }]
-      })
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  // 同步单个字段
-  const syncField = useCallback((field: string) => {
-    const update = pendingUpdates.find(u => u.field === field)
-    if (!update) return
-
-    setFormData(prev => ({
-      ...prev,
-      [field]: update.value,
-    }))
-
-    setPendingUpdates(prev =>
-      prev.map(u =>
-        u.field === field
-          ? { ...u, synced: true, syncedAt: new Date() }
-          : u
-      )
-    )
-  }, [pendingUpdates])
-
-  // 同步所有待处理字段
-  const syncAll = useCallback(() => {
-    const updates: Partial<TaskFormData> = {}
-    for (const u of pendingUpdates.filter(u => !u.synced)) {
-      updates[u.field] = u.value as any
-    }
-
-    setFormData(prev => ({ ...prev, ...updates }))
-    setPendingUpdates(prev =>
-      prev.map(u => ({ ...u, synced: true, syncedAt: new Date() }))
-    )
-  }, [pendingUpdates])
-
-  // 丢弃某个字段
-  const discardField = useCallback((field: string) => {
-    setPendingUpdates(prev => prev.filter(u => u.field !== field))
-  }, [])
-
-  // 重置表单
-  const resetForm = useCallback(() => {
-    setFormData(INITIAL_FORM)
-    setPendingUpdates([])
-  }, [])
-
-  return {
-    formData,
-    setFormData,
-    pendingUpdates,
-    syncField,
-    syncAll,
-    discardField,
-    resetForm,
-  }
-}
+示例：
+1. write_output({ field: "title", value: "修复登录问题", preview: "更新标题" })
+2. write_output({ field: "priority", value: "high", preview: "设为高优先级" })
+3. write_output({ field: "tags", value: ["bug", "auth"], preview: "2个标签" })
 ```
 
 ## 故障排除
 
 ### output\_update 事件未到达
 
-1. 验证 MCP Server 已在 CCAAS 注册（检查 `solution.json`）
-2. 验证 Skill 的 `allowedTools` 包含 `write_output`
-3. 检查 Solution 后端是否从 CCAAS 中继了 `output_update` 事件
-4. 使用浏览器 DevTools 检查 WebSocket 帧
-
-### 字段更新了错误的值
-
-1. 在 MCP Server 的 `write_output` 处理器中添加 Zod 验证
-2. 确保 Skill 指令中的字段名与 MCP Server 的有效字段匹配
-3. 打印原始 `output_update` 事件以验证嵌套结构
+1. 验证 MCP Server 已在 solution config 中注册（`useAgentChat` 的 `mcpServers`）
+2. 验证 MCP 工具返回了 `{ data: { field, value }, status }` 结构的 JSON
+3. 检查 CCAAS 后端日志中的 EventMapper 解析错误
+4. 使用浏览器 DevTools 的 Network 标签检查 WebSocket 帧中的 `output_update`
 
 ### SyncCard 不显示
 
-1. 确认前端在正确的 socket 上监听了 `output_update`
-2. 验证正在解析 `event.payload.data` 路径（而非 `event.payload`）
-3. 检查待处理更新是否被过滤掉（检查 `synced` 标志）
+1. 确认 `onOutputUpdate` 回调已传递给 `useAgentChat`
+2. 验证回调正确地添加到了 `pendingUpdates` 状态
+3. 检查渲染 SyncCard 的组件是否读取了相同的状态
+4. 打印原始事件验证 `payload.data.field` 路径存在
 
 ### AI 输出与表单之间的类型不匹配
 
-1. 在 MCP Server 中为每个字段定义严格的 Zod Schema
-2. 在 Skill 指令中指定确切的类型（例如 "string[]" 而非仅仅 "array"）
-3. 在 MCP Server 和前端使用相同的 TypeScript 接口
+1. 在 MCP Server 的 `write_output` 处理器中添加 Zod 验证
+2. 在同步 Hook 中添加标准化（参见上文的 `normalizeFieldValue`）
+3. 在 Skill 指令中指定确切类型（如 `string[]` 而非仅仅 "array"）
 
-## 练习
+### 同步后的值未持久化
 
-### 练习 5.1：实现 write\_output
-
-为 Task Manager MCP Server 创建一个 `write_output` 处理器，包含以下字段：
-
-- `title`（string，1-200 字符）
-- `description`（string，最多 2000 字符）
-- `priority`（枚举：low/medium/high/urgent）
-- `subtasks`（数组：{ title: string, done: boolean }）
-
-为每个字段添加 Zod 验证。
-
-### 练习 5.2：处理 output\_update
-
-编写一个 React Hook：
-1. 监听 `output_update` 事件
-2. 正确解析嵌套的 `payload.data` 结构
-3. 处理所有三种操作类型（`set`、`append`、`merge`）
-4. 提供 `pendingUpdates` 数组用于 SyncCard 渲染
-
-### 练习 5.3：设计 SyncCard 流程
-
-为 Task Manager 设计完整的 SyncCard 流程，当 AI 生成包含 5 个字段（title、description、priority、assignee、tags）的任务时：
-
-1. SyncCard 应该以什么顺序出现？
-2. 用户应该逐个审批每个字段，还是一次性全部审批？
-3. 如果用户手动编辑了一个字段，然后 AI 又发送了该字段的更新，会怎样？
-4. 你将如何处理"全部同步"操作？
-
-画一个状态图，展示 SyncCard 的所有可能状态。
+1. 验证 `syncToForm` 更新的是表单状态对象（而非过期副本）
+2. 检查表单状态是否连接到了保存/持久化逻辑
+3. 确保 `normalizeFieldValue` 返回了表单 Schema 对应的正确类型
 
 ## 要点总结
 
-1. **`write_output` 是标准 MCP 工具** -- 在 MCP Server 中实现它并添加字段验证
-2. **`output_update` 使用嵌套结构** -- 始终访问 `event.payload.data.field`，而非 `event.field`
-3. **三种操作类型** -- `set`（替换）、`append`（追加）、`merge`（浅合并）
-4. **SyncCard 模式** 支持人机协同审核 -- 缓存更新并让用户审批
-5. **Vue SDK 提供 `useFormBridge`**，React SDK 提供 `SyncCardPanel` 和 `OutputUpdateCard`，用于内置表单同步
-6. **双端验证** -- MCP Server 中用 Zod Schema，前端用类型安全的处理器
+1. **`write_output` 使用 `@modelcontextprotocol/sdk`** -- 不是 Express。工具结果必须在 MCP content blocks 中返回 `{ data: { field, value, preview }, status }` 的 JSON。
+
+2. **`output_update` 有嵌套结构** -- 始终访问 `event.payload.data.field`，而非 `event.payload.field`。这是一个真实的生产 Bug。
+
+3. **使用 react-sdk 的 `onOutputUpdate` 回调** -- 它自动处理格式标准化、回退路径和消息附加。
+
+4. **SyncCard 模式是生产环境方案** -- 在 Map 中缓存更新，提供同步/忽略 UI，支持带超时的撤销。
+
+5. **标准化字段值** -- AI 可能对数字字段返回字符串，或对数组字段返回 JSON 字符串。写入表单状态前始终标准化。
+
+6. **react-sdk 的 `OutputUpdateCard`** -- 提供开箱即用的组件，Solution 用字段标签映射对其进行封装。
 
 ## 下一步
 
-在[第 6 章](06-implementation/README.md)中，我们将把所有内容整合在一起，从项目初始化到构建一个完整工作的 Task Manager Solution -- 包括后端、MCP Server、Skills 和前端。
+在[第 6 章](06-implementation/README.md)中，我们将把所有内容整合在一起，从项目初始化到构建一个完整工作的 Solution -- 包括后端、MCP Server、Skills 和前端。

@@ -1,173 +1,386 @@
 # 4. Data Flow and State Management
 
-In the previous chapters, we designed the domain model and mapped user journeys for our Task Manager Solution. Now we need to understand **how data actually moves** through the LoopAI platform -- from a user typing a message to structured data appearing in the frontend form.
+In the previous chapters, we designed the domain model and mapped user journeys for our Lesson Plan Designer Solution. Now we need to understand **how data actually moves** through the CCAAS platform -- from a user typing a message to structured data appearing in the frontend form.
 
-This chapter covers the complete data flow architecture, the WebSocket event system, and state management patterns you will use in your Solution.
+This chapter covers the complete data flow architecture, the WebSocket event system, and the React SDK hooks you will use in your Solution.
 
 ## Learning Objectives
 
 By the end of this chapter, you will be able to:
 
-- Trace a message through the entire LoopAI relay architecture
+- Trace a message through the CCAAS direct connection architecture
+- Use the React SDK hooks (`useAgentConnection`, `useAgentChat`, `useAgentStatus`, `usePageContext`, `useFiles`)
 - Identify all WebSocket event types and their purposes
-- Understand the role of the CCAAS backend as a relay layer
 - Design state management patterns for your Solution frontend
 
-## The Relay Architecture
+## The Direct Connection Architecture
 
-LoopAI uses a **relay architecture** where the CCAAS backend sits between your Solution and the AI Agent. This is the central design pattern that makes the entire platform work.
+CCAAS uses a **direct connection architecture** where your Solution frontend connects directly to the CCAAS backend via WebSocket. The CCAAS backend manages AI Agent processes and streams events back to the frontend in real time.
 
 ```
-┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Solution   │     │  CCAAS Backend   │     │   AI Agent   │
-│   Frontend   │◄───►│  (Relay Layer)   │◄───►│   Process    │
-└──────────────┘     └──────────────────┘     └──────────────┘
-   Socket.io              NestJS               Claude Code /
-   WebSocket           Session Mgmt            OpenCode / etc.
-                       Skill Router
-                       Event Stream
+┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
+│   Solution   │  WS     │  CCAAS Backend   │  stdin/  │   AI Agent   │
+│   Frontend   │◄───────►│  (NestJS)        │  stdout  │   Process    │
+└──────────────┘         └──────────────────┘◄────────►└──────────────┘
+  React + SDK              Session Mgmt                  Claude Code /
+  @ccaas/react-sdk         Skill Router                  OpenCode / etc.
+                           Event Streaming
+                           Authentication
+
+┌──────────────┐         ┌──────────────────┐
+│   Solution   │  REST   │  Solution        │
+│   Frontend   │◄───────►│  Backend         │
+└──────────────┘         └──────────────────┘
+                           Domain CRUD
+                           Business Logic
 ```
 
-The key insight: **your Solution frontend never communicates directly with the AI Agent**. All communication is mediated by the CCAAS backend, which provides:
+Key architectural facts:
 
-- **Session management** -- Creating, tracking, and resuming agent sessions
-- **Skill routing** -- Matching user messages to the right Skill
-- **Event streaming** -- Translating agent process output into structured WebSocket events
-- **Authentication** -- API key validation and tenant isolation
+- **The Solution frontend connects directly to CCAAS** -- there is no relay through a Solution backend for AI interactions
+- **Messages are sent via REST** (`POST /api/v1/sessions/:sessionId/completion`) and **responses stream back via WebSocket** events
+- **Domain data** (e.g., lesson plans, tasks) uses a separate REST channel to the Solution backend
 
 ## Complete Data Flow: Message Lifecycle
 
-Let us trace a complete interaction from start to finish. When a user types "Create a new task called Fix login bug with high priority" in the Task Manager frontend, here is what happens:
+Let us trace a complete interaction from start to finish. When a user types "Generate learning objectives for this lesson plan" in the Lesson Plan Designer frontend:
 
-### Step 1: Frontend sends a chat message
+### Step 1: Frontend establishes a WebSocket connection
+
+The `useAgentConnection` hook connects to the CCAAS backend and manages session identity:
 
 ```typescript
-// Solution frontend (React or Vue)
-socket.emit('chat', {
-  message: 'Create a new task called Fix login bug with high priority',
-  sessionId: 'session-abc-123'  // Optional: omit for new session
+// From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // CCAAS backend directly
+  tenantId: 'lesson-plan-designer',
+  autoConnect: true,
 })
 ```
 
-### Step 2: Solution backend relays to CCAAS
+On connect, the hook:
 
-The Solution backend receives the Socket.io event and forwards it to the CCAAS backend via REST API:
+1. Creates a Socket.io connection with WebSocket transport
+2. Emits `session:join` with the sessionId
+3. Receives a `client_id` event with a unique client identifier
+4. Persists the sessionId in localStorage under `ccaas_session_${tenantId}`
+
+### Step 2: Frontend sends a message via REST
+
+The `useAgentChat` hook sends messages through a REST endpoint, not through WebSocket:
 
 ```typescript
-// Solution backend relay
-socket.on('chat', async (data) => {
-  const { message, sessionId } = data
+// From: packages/react-sdk/src/hooks/useAgentChat.ts
 
-  await axios.post(`${CCAAS_URL}/api/v1/sessions/${sessionId}/completion`, {
-    clientId: socket.id,
-    message,
-    tenantId: TENANT_ID,
-    mcpServers: getMcpConfig(),
-    enabledSkillSlugs: ['task-manager']
-  })
+const chatPayload = {
+  clientId: connection.clientId,
+  message: content,
+  tenantId: 'lesson-plan-designer',
+  mcpServers: solutionConfig?.mcpServers,
+  skillPath: solutionConfig?.skillPath,
+  enabledSkillSlugs: ['lesson-plan-designer'],
+  context: context,  // Page context from usePageContext
+}
+
+await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(chatPayload),
 })
 ```
 
-### Step 3: CCAAS processes the request
+The REST call tells the backend which WebSocket client should receive the streaming response.
 
-The CCAAS backend performs several operations:
+### Step 3: CCAAS backend processes the request
 
-1. **Authentication** -- Validates the API key and tenant
-2. **Skill resolution** -- Matches the message against registered Skill triggers
-3. **Session management** -- Creates a new session or resumes an existing one
-4. **Agent launch** -- Starts the AI Agent process with the matched Skill's instructions
+The backend (`SessionsController.createCompletion`) performs these operations:
 
-### Step 4: AI Agent executes
+1. **WebSocket lookup** -- Finds the Socket.io connection by `clientId`
+2. **Skill resolution** -- Generates a system prompt from enabled skills
+3. **Session management** -- Gets or creates an AgentEngine session
+4. **Agent launch** -- Spawns the AI Agent process (or resumes an existing one with `--resume`)
 
-The AI Agent reads the Skill instructions, understands the user request, and takes action:
+### Step 4: Events stream back via WebSocket
 
-```
-AI Agent Process:
-  1. Parse user intent: "create task"
-  2. Extract fields: title="Fix login bug", priority="high"
-  3. Call write_output tool: { field: "title", value: "Fix login bug" }
-  4. Call write_output tool: { field: "priority", value: "high" }
-  5. Call write_output tool: { field: "status", value: "todo" }
-```
-
-### Step 5: Events stream back to the frontend
-
-As the AI Agent works, the CCAAS backend emits a stream of WebSocket events. The Solution backend relays these to the frontend:
+As the AI Agent works, the CCAAS backend parses its stdout and emits structured WebSocket events to the connected client:
 
 ```
 Timeline:
-─────────────────────────────────────────────────────────────
-t=0ms    agent_status    { status: 'thinking' }
-t=200ms  agent_thinking  { phase: 'start', content: '...' }
-t=500ms  text_delta      { text: 'I will create a task...' }
-t=800ms  tool_activity   { toolName: 'write_output', phase: 'start' }
-t=850ms  output_update   { payload: { data: { field: 'title', value: 'Fix login bug' } } }
-t=900ms  tool_activity   { toolName: 'write_output', phase: 'end' }
-t=1000ms tool_activity   { toolName: 'write_output', phase: 'start' }
-t=1050ms output_update   { payload: { data: { field: 'priority', value: 'high' } } }
-t=1100ms tool_activity   { toolName: 'write_output', phase: 'end' }
-t=1200ms agent_status    { status: 'complete' }
-─────────────────────────────────────────────────────────────
+─────────────────────────────────────────────────────────────────────
+t=0ms    agent_status      { status: 'thinking' }
+t=200ms  agent_thinking    { payload: { phase: 'start' } }
+t=500ms  agent_thinking    { payload: { phase: 'delta', content: '...' } }
+t=800ms  text_delta        { text: 'I will generate learning objectives...' }
+t=1200ms tool_activity     { payload: { toolName: 'write_output', phase: 'start' } }
+t=1300ms output_update     { payload: { data: { field: 'objectives', value: [...] } } }
+t=1400ms tool_activity     { payload: { toolName: 'write_output', phase: 'end' } }
+t=1600ms token_usage       { payload: { inputTokens: 1200, outputTokens: 450 } }
+t=1800ms agent_status      { status: 'complete' }
+─────────────────────────────────────────────────────────────────────
 ```
 
-### Step 6: Frontend updates the UI
+### Step 5: SDK hooks process events into React state
 
-The frontend listens for these events and updates the form state accordingly:
+The SDK hooks automatically listen for these events and update React state. You do not write socket event listeners manually.
+
+## React SDK Hooks
+
+The `@ccaas/react-sdk` package provides five core hooks that together manage the complete data flow. Here is how they compose in a real Solution:
 
 ```typescript
-socket.on('output_update', (event) => {
-  const { field, value } = event.payload.data
-  setFormData(prev => ({ ...prev, [field]: value }))
+// From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+import {
+  useAgentConnection,
+  useAgentChat,
+  useAgentStatus,
+  usePageContext,
+  useFiles,
+} from '@ccaas/react-sdk'
+
+export function useLessonPlanSession(options) {
+  // 1. Connection management
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
+    tenantId: 'lesson-plan-designer',
+    autoConnect: true,
+  })
+
+  // 2. Page context (sends current form state with every message)
+  const { context, updateContext } = usePageContext()
+
+  // 3. Chat messaging
+  const chat = useAgentChat({
+    connection,
+    tenantId: 'lesson-plan-designer',
+    mcpServers: solutionConfig?.mcpServers,
+    skillPath: solutionConfig?.skillPath,
+    enabledSkillSlugs,
+    context,
+    onOutputUpdate: (update) => {
+      // Bridge output_update to domain-specific sync logic
+      addPendingUpdate({
+        field: update.field as SyncField,
+        value: update.value,
+        preview: update.preview,
+      })
+    },
+  })
+
+  // 4. Agent status tracking
+  const status = useAgentStatus({ connection })
+
+  // 5. File management
+  const files = useFiles({
+    connection,
+    sessionId: connection.sessionId,
+    enabled: connection.connected,
+  })
+}
+```
+
+### Hook 1: useAgentConnection
+
+Manages the Socket.io connection lifecycle and session identity.
+
+**Options:**
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `serverUrl` | `string` | `'/'` | CCAAS backend URL |
+| `tenantId` | `string` | -- | Tenant ID for localStorage persistence |
+| `autoConnect` | `boolean` | `true` | Connect on mount |
+| `forceNewConversation` | `boolean` | `false` | Clear saved session and start fresh |
+
+**Returns:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `socket` | `Socket \| null` | Raw Socket.io instance |
+| `connected` | `boolean` | Connection status |
+| `clientId` | `string \| null` | Server-assigned client ID |
+| `sessionId` | `string` | Current session/conversation ID |
+| `error` | `string \| null` | Connection error message |
+| `connect()` | function | Manual connect |
+| `disconnect()` | function | Manual disconnect |
+| `startNewConversation()` | function | Clear session, generate new ID, reconnect |
+
+**Session persistence:** When `tenantId` is provided, the sessionId is stored in localStorage under `ccaas_session_${tenantId}`. On page refresh, the hook recovers the saved sessionId, allowing message history to be loaded automatically.
+
+### Hook 2: useAgentChat
+
+Manages message state, REST-based sending, and WebSocket event processing.
+
+**Options:**
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `connection` | `UseAgentConnectionReturn` | From `useAgentConnection` |
+| `tenantId` | `string` | Tenant identifier |
+| `mcpServers` | `Record<string, McpServerConfig>` | MCP server configuration |
+| `skillPath` | `string \| null` | Custom skill instructions path |
+| `enabledSkillSlugs` | `string[]` | Which skills to enable |
+| `context` | `PageContext \| null` | Page context from `usePageContext` |
+| `onOutputUpdate` | `(update: OutputUpdate) => void` | Callback for structured field updates |
+
+**Returns:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `messages` | `Message[]` | All messages (user + assistant), with contentBlocks and outputUpdates |
+| `isProcessing` | `boolean` | Whether the agent is currently processing |
+| `isLoadingHistory` | `boolean` | Whether message history is being loaded |
+| `currentStreamContent` | `string` | Live-updating text during streaming |
+| `sendMessage(content, options?)` | function | Send a message (REST + WebSocket response) |
+| `clearMessages()` | function | Clear local messages |
+| `clearConversation()` | function | Clear messages AND start a new conversation |
+| `cancelProcessing()` | function | Cancel current agent processing |
+
+**What it handles internally:**
+
+- Listens for `text_delta` events and accumulates streaming text into content blocks
+- Listens for `output_update` events and calls the `onOutputUpdate` callback
+- Listens for `tool_activity` events and creates inline tool cards in messages
+- Listens for `agent_status` events to finalize messages on completion
+- Auto-loads message history on connection via `GET /api/v1/sessions/:sessionId/messages`
+- Retries on WebSocket disconnection (up to 2 attempts)
+
+### Hook 3: useAgentStatus
+
+Tracks agent status, tool activity, thinking state, and token usage.
+
+**Options:**
+
+| Option | Type | Purpose |
+|--------|------|---------|
+| `connection` | `UseAgentConnectionReturn` | From `useAgentConnection` |
+
+**Returns:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `agentStatus` | `AgentStatusValue` | Current status (idle, thinking, running, etc.) |
+| `isProcessing` | `boolean` | True when agent is actively working |
+| `activeTools` | `Map<string, ToolActivity>` | Currently executing tools |
+| `isThinking` | `boolean` | Whether the agent is in extended thinking mode |
+| `thinkingContent` | `string` | Accumulated thinking text |
+| `thinkingStartTime` | `number \| null` | When thinking started (for duration display) |
+| `thinkingVerb` | `string` | Dynamic verb that changes with thinking duration |
+| `tokenUsage` | `TokenUsage \| null` | Token consumption stats |
+| `todoItems` | `TodoItem[]` | Agent's internal task list |
+| `todoStats` | `TodoStats` | Aggregated todo statistics |
+| `activeSubAgents` | `ActiveSubAgent[]` | Running sub-agent tasks |
+| `currentActivity` | `string` | Prioritized activity description string |
+
+**Events it handles:**
+
+- `agent_status` -- updates agent status, clears state on completion
+- `tool_activity` -- tracks tool start/progress/end with auto-cleanup after 2s
+- `agent_thinking` -- manages extended thinking state with phase-based verbs
+- `token_usage` -- accumulates token consumption
+- `todo_update` -- tracks agent's internal task list
+- `subagent_started` / `subagent_completed` -- tracks sub-agent lifecycle
+
+### Hook 4: usePageContext
+
+Manages page context that gets sent with every chat message, allowing the AI Agent to read the current state of the form before responding.
+
+```typescript
+// From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const { context, updateContext } = usePageContext()
+
+// Update context whenever the lesson plan form changes
+useEffect(() => {
+  if (lessonPlan) {
+    updateContext('lesson-plan-editor', {
+      lessonPlanId: lessonPlan.id,
+      currentForm: {
+        title: lessonPlan.title,
+        subject: lessonPlan.subject,
+        gradeLevel: lessonPlan.gradeLevel,
+        objectives: lessonPlan.objectives,
+        content: lessonPlan.content,
+        // ... other fields
+      },
+    })
+  }
+}, [lessonPlan, updateContext])
+
+// Pass context to chat hook -- it will be included in every message
+const chat = useAgentChat({ connection, context, /* ... */ })
+```
+
+**Returns:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `context` | `PageContext \| null` | Current page context |
+| `updateContext(pageType, pageData)` | function | Update the context |
+| `clearContext()` | function | Clear the context |
+
+This is how the AI Agent knows what is already in the form when the user asks for changes.
+
+### Hook 5: useFiles
+
+Manages files created by the AI Agent during a session, with real-time updates and badge state.
+
+```typescript
+// From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const files = useFiles({
+  connection,
+  sessionId: connection.sessionId,
+  enabled: connection.connected,
 })
 
-socket.on('agent_status', (data) => {
-  setAgentStatus(data.status)
-})
+// files.newFilesCount -- number of files not yet seen
+// files.files -- all files in the session
+// files.uploadFile(file, path) -- upload a file
+// files.downloadFile(fileId) -- download a file
 ```
+
+**Returns:**
+
+| Property | Type | Purpose |
+|----------|------|---------|
+| `files` | `FileMetadata[]` | All session files |
+| `newFilesCount` | `number` | Unseen file count (for badges) |
+| `hasNewFiles` | `boolean` | Whether there are new files |
+| `uploadFile(file, path?)` | function | Upload a file to the session |
+| `downloadFile(fileId)` | function | Download a file |
+| `deleteFile(fileId)` | function | Delete a file |
+| `markAsSynced(fileId)` | function | Mark file as seen |
+| `markAllSeen()` | function | Clear all file badges |
+
+**Events it handles:**
+
+- `file.created` -- refetch file list when agent creates a file
+- `file.modified` -- refetch file list when agent modifies a file
 
 ## WebSocket Event Types
 
-The CCAAS backend emits several categories of events. Understanding each category is essential for building a responsive frontend.
+The CCAAS backend emits several categories of events. Understanding each category is essential for building a responsive frontend. Note that the SDK hooks handle all of these for you -- this reference is for understanding what happens under the hood.
 
 ### Control Events
-
-These events manage the connection and session lifecycle:
 
 | Event | Direction | Purpose |
 |-------|-----------|---------|
 | `client_id` | Server -> Client | Assigns a unique client ID on connection |
-| `session_restored` | Server -> Client | Confirms session reconnection |
-| `session_not_found` | Server -> Client | Session reconnection failed |
-| `error` | Server -> Client | Error with recovery information |
-
-```typescript
-// Connection lifecycle
-socket.on('client_id', (data) => {
-  console.log('Connected as:', data.clientId)
-})
-
-socket.on('error', (data) => {
-  if (data.recoverable) {
-    // Auto-retry logic
-  } else {
-    // Show error to user
-  }
-})
-```
+| `session:join` | Client -> Server | Join a session room (sent automatically by SDK) |
 
 ### Agent Lifecycle Events
-
-These events track the AI Agent's execution state:
 
 | Event | Purpose | Key Fields |
 |-------|---------|------------|
 | `agent_status` | Agent state changes | `status`, `context`, `error` |
-| `agent_thinking` | Extended thinking content | `phase`, `content`, `thinkingId` |
+| `agent_thinking` | Extended thinking content | `payload.phase`, `payload.content` |
 
 The `agent_status` event carries a `status` field with these possible values:
 
 ```typescript
-type AgentStatus =
+type AgentStatusValue =
   | 'idle'        // Agent is ready
   | 'thinking'    // Processing the request
   | 'exploring'   // Searching/reading files
@@ -180,407 +393,188 @@ type AgentStatus =
 
 ### Content Events
 
-These events deliver the AI Agent's output:
-
 | Event | Purpose | Key Fields |
 |-------|---------|------------|
 | `text_delta` | Streaming text output | `text` |
-| `output_update` | Structured form data | `payload.data.field`, `payload.data.value` |
-| `todo_update` | Task progress list | `todos`, `summary` |
+| `output_update` | Structured form data | `payload.data.field`, `payload.data.value`, `payload.data.preview` |
+| `todo_update` | Agent task progress list | `payload.todos`, `payload.completed`, `payload.total` |
 
-### Observability Events
-
-These events provide transparency into what the agent is doing:
+### Tool & SubAgent Events
 
 | Event | Purpose | Key Fields |
 |-------|---------|------------|
-| `tool_activity` | Tool invocation tracking | `toolName`, `phase`, `description` |
-| `token_usage` | Token consumption stats | `inputTokens`, `outputTokens`, `estimatedCostUsd` |
-| `exploration_activity` | File/code search activity | `action`, `target`, `phase` |
+| `tool_activity` | Tool invocation tracking | `payload.toolName`, `payload.phase`, `payload.description` |
+| `tool_event` | Raw tool input/output | `toolName`, `input`, `output` |
+| `subagent_started` | SubAgent spawn | `payload.subAgentId`, `payload.agentType`, `payload.description` |
+| `subagent_completed` | SubAgent finish | `payload.subAgentId`, `payload.status` |
 
-## State Management Patterns
+### Observability Events
 
-A well-designed Solution frontend manages several categories of state. Here are the patterns used in LoopAI Solutions.
+| Event | Purpose | Key Fields |
+|-------|---------|------------|
+| `token_usage` | Token consumption stats | `payload.inputTokens`, `payload.outputTokens`, `payload.cachedInputTokens` |
+| `file.created` | Agent created a file | `sessionId` |
+| `file.modified` | Agent modified a file | `sessionId` |
 
-### Pattern 1: Agent Connection State
+## Data Flow Diagram: Lesson Plan Designer
 
-Track the WebSocket connection and agent status:
-
-```typescript
-// React pattern
-interface AgentConnectionState {
-  connected: boolean
-  clientId: string | null
-  sessionId: string | null
-  agentStatus: AgentStatus
-  error: ErrorEvent | null
-}
-
-function useAgentConnection(serverUrl: string) {
-  const [state, setState] = useState<AgentConnectionState>({
-    connected: false,
-    clientId: null,
-    sessionId: null,
-    agentStatus: 'idle',
-    error: null,
-  })
-
-  useEffect(() => {
-    const socket = io(serverUrl)
-
-    socket.on('connect', () => {
-      setState(prev => ({ ...prev, connected: true }))
-    })
-
-    socket.on('client_id', (data) => {
-      setState(prev => ({ ...prev, clientId: data.clientId }))
-    })
-
-    socket.on('agent_status', (data) => {
-      setState(prev => ({
-        ...prev,
-        agentStatus: data.status,
-        sessionId: data.sessionId,
-      }))
-    })
-
-    socket.on('error', (data) => {
-      setState(prev => ({ ...prev, error: data }))
-    })
-
-    return () => { socket.disconnect() }
-  }, [serverUrl])
-
-  return state
-}
-```
-
-```typescript
-// Vue pattern (using @ccaas/vue-sdk)
-import { useAgentState } from '@ccaas/vue-sdk'
-
-const { isProcessing, currentToolName, agentStatus } = useAgentState()
-```
-
-### Pattern 2: Chat Message State
-
-Accumulate streaming text into complete messages:
-
-```typescript
-interface ChatMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-  isStreaming: boolean
-  timestamp: number
-}
-
-function useChatMessages(socket: Socket) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-
-  useEffect(() => {
-    socket.on('text_delta', (data) => {
-      setMessages(prev => {
-        const last = prev[prev.length - 1]
-        if (last?.isStreaming && last.role === 'assistant') {
-          // Append to existing streaming message
-          return [
-            ...prev.slice(0, -1),
-            { ...last, content: last.content + data.text }
-          ]
-        }
-        // Start new assistant message
-        return [...prev, {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: data.text,
-          isStreaming: true,
-          timestamp: Date.now(),
-        }]
-      })
-    })
-
-    socket.on('agent_status', (data) => {
-      if (data.status === 'complete' || data.status === 'error') {
-        // Mark streaming complete
-        setMessages(prev => {
-          const last = prev[prev.length - 1]
-          if (last?.isStreaming) {
-            return [...prev.slice(0, -1), { ...last, isStreaming: false }]
-          }
-          return prev
-        })
-      }
-    })
-
-    return () => {
-      socket.off('text_delta')
-      socket.off('agent_status')
-    }
-  }, [socket])
-
-  return messages
-}
-```
-
-### Pattern 3: Form Data State (via output\_update)
-
-This is the most important pattern for Solutions. The `output_update` event carries structured data from the AI Agent to populate frontend forms. We will cover this in detail in Chapter 5.
-
-The basic pattern:
-
-```typescript
-function useFormData(socket: Socket) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-
-  useEffect(() => {
-    socket.on('output_update', (event) => {
-      // IMPORTANT: data is nested inside payload.data
-      const { field, value, operation } = event.payload.data
-
-      setFormData(prev => {
-        switch (operation) {
-          case 'set':
-            return { ...prev, [field]: value }
-          case 'append':
-            const existing = prev[field]
-            if (Array.isArray(existing)) {
-              return { ...prev, [field]: [...existing, value] }
-            }
-            return { ...prev, [field]: (existing || '') + String(value) }
-          case 'merge':
-            return { ...prev, [field]: { ...(prev[field] as object), ...(value as object) } }
-          default:
-            return { ...prev, [field]: value }
-        }
-      })
-    })
-
-    return () => { socket.off('output_update') }
-  }, [socket])
-
-  return formData
-}
-```
-
-### Pattern 4: Tool Activity Tracking
-
-Show users what the AI Agent is doing:
-
-```typescript
-interface ToolActivity {
-  toolName: string
-  toolId: string
-  phase: 'start' | 'progress' | 'end'
-  description?: string
-  startedAt: number
-  duration?: number
-}
-
-function useToolActivity(socket: Socket) {
-  const [activeTools, setActiveTools] = useState<Map<string, ToolActivity>>(new Map())
-
-  useEffect(() => {
-    socket.on('tool_activity', (data) => {
-      const activity = data.payload || data
-
-      setActiveTools(prev => {
-        const next = new Map(prev)
-        if (activity.phase === 'start') {
-          next.set(activity.toolId, {
-            ...activity,
-            startedAt: Date.now(),
-          })
-        } else if (activity.phase === 'end') {
-          next.delete(activity.toolId)
-        }
-        return next
-      })
-    })
-
-    return () => { socket.off('tool_activity') }
-  }, [socket])
-
-  return activeTools
-}
-```
-
-## Data Flow Diagram: Task Manager
-
-Here is the complete data flow for our Task Manager Solution:
+Here is the complete data flow for the Lesson Plan Designer Solution:
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                        Task Manager Frontend                        │
-│                                                                     │
-│  ┌──────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────┐ │
-│  │ Chat     │  │ Task Form    │  │ Task List  │  │ Agent Status │ │
-│  │ Panel    │  │ (output_     │  │ (REST API) │  │ Indicator    │ │
-│  │          │  │  update)     │  │            │  │              │ │
-│  └────┬─────┘  └──────▲───────┘  └──────▲─────┘  └──────▲───────┘ │
-│       │               │                │               │         │
-│       │  text_delta    │  output_update  │  REST         │ agent_  │
-│       │               │                │  response     │ status  │
-└───────┼───────────────┼────────────────┼───────────────┼─────────┘
-        │               │                │               │
-   ┌────▼───────────────┴────────────────┴───────────────┴─────────┐
-   │                    Solution Backend                            │
-   │                                                                │
-   │  ┌────────────────────┐    ┌─────────────────────┐            │
-   │  │ Socket.io Relay    │    │ REST API             │            │
-   │  │ (chat, events)     │    │ (CRUD for tasks)     │            │
-   │  └────────┬───────────┘    └──────────────────────┘            │
-   └───────────┼────────────────────────────────────────────────────┘
-               │
-   ┌───────────▼────────────────────────────────────────────────────┐
-   │                     CCAAS Backend                              │
-   │                                                                │
-   │  ┌──────────┐  ┌───────────┐  ┌───────────┐  ┌────────────┐  │
-   │  │ Auth &   │  │ Skill     │  │ Session   │  │ Event      │  │
-   │  │ Tenant   │  │ Router    │  │ Manager   │  │ Streamer   │  │
-   │  └──────────┘  └─────┬─────┘  └─────┬─────┘  └──────▲─────┘  │
-   └───────────────────────┼──────────────┼───────────────┼────────┘
-                           │              │               │
-   ┌───────────────────────▼──────────────▼───────────────┼────────┐
-   │                    AI Agent Process                   │        │
-   │                                                      │        │
-   │  1. Read Skill instructions                          │        │
-   │  2. Understand user intent                           │        │
-   │  3. Call MCP tools (write_output, etc.)  ────────────┘        │
-   │  4. Stream text response                                      │
-   └───────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    Lesson Plan Designer Frontend                        │
+│                                                                         │
+│  ┌──────────────┐  ┌───────────────┐  ┌─────────┐  ┌───────────────┐  │
+│  │ ChatPanel    │  │ Form Editor   │  │ Files   │  │ AgentActivity │  │
+│  │ (useAgent    │  │ (output_      │  │ Panel   │  │ Line          │  │
+│  │  Chat)       │  │  update +     │  │ (use    │  │ (useAgent     │  │
+│  │              │  │  SyncCards)   │  │  Files) │  │  Status)      │  │
+│  └──────┬───────┘  └──────▲────────┘  └────▲────┘  └──────▲────────┘  │
+│         │                 │                │               │           │
+│    sendMessage     onOutputUpdate   file.created    agent_status      │
+│    (REST POST)     (WebSocket)      (WebSocket)     (WebSocket)      │
+└─────────┼─────────────────┼────────────────┼───────────────┼──────────┘
+          │                 │                │               │
+     ┌────▼─────────────────┴────────────────┴───────────────┴──────────┐
+     │                       CCAAS Backend (:3001)                       │
+     │                                                                   │
+     │  POST /sessions/:id/completion        WebSocket event streaming   │
+     │  GET  /sessions/:id/messages          via Socket.io               │
+     │  GET  /files/session/:id/tree                                     │
+     └──────────────────────────┬────────────────────────────────────────┘
+                                │ stdin / stdout
+     ┌──────────────────────────▼────────────────────────────────────────┐
+     │                       AI Agent Process                            │
+     │                                                                   │
+     │  1. Read Skill instructions                                       │
+     │  2. Read page context (current form state)                        │
+     │  3. Generate text response (→ text_delta)                         │
+     │  4. Call MCP tools: write_output (→ output_update)                │
+     │  5. Create files (→ file.created)                                 │
+     └──────────────────────────────────────────────────────────────────┘
+
+     ┌──────────────────────────────────────────────────────────────────┐
+     │                   Solution Backend (:3002)                       │
+     │                                                                  │
+     │  GET  /api/lesson-plans          Domain CRUD only                │
+     │  POST /api/lesson-plans          No AI relay responsibility      │
+     │  PUT  /api/lesson-plans/:id                                      │
+     └──────────────────────────────────────────────────────────────────┘
 ```
 
 ## Dual Data Channels
 
-Notice that a Solution typically uses **two separate data channels**:
+A Solution uses **two separate data channels**:
 
-### Channel 1: WebSocket (Real-time, via CCAAS)
+### Channel 1: CCAAS (AI interactions)
 
-Used for AI interactions:
+- **Outbound**: REST `POST /api/v1/sessions/:sessionId/completion`
+- **Inbound**: WebSocket events (`text_delta`, `output_update`, `agent_status`, `tool_activity`, etc.)
+- **Purpose**: Real-time AI Agent interaction
 
-- **Inbound**: `chat` events from user
-- **Outbound**: `text_delta`, `output_update`, `agent_status`, `tool_activity`
-- **Purpose**: Real-time streaming of AI Agent output
+### Channel 2: Solution Backend (Domain CRUD)
 
-### Channel 2: REST API (Request-response, direct)
-
-Used for CRUD operations on domain data:
-
-- **Inbound**: HTTP requests from frontend
-- **Outbound**: JSON responses with domain data
-- **Purpose**: Traditional data operations (list tasks, update task, delete task)
+- **Both directions**: REST API to the Solution backend
+- **Purpose**: Traditional data operations (list lesson plans, save lesson plan, etc.)
 
 ```typescript
-// Channel 1: AI interaction via WebSocket
-socket.emit('chat', { message: 'Create a high priority task for fixing login' })
-socket.on('output_update', (event) => {
-  // AI fills in the form
-})
+// Channel 1: AI interaction via CCAAS
+// Handled by useAgentChat -- you just call sendMessage
+chat.sendMessage('Generate learning objectives for grade 5 math')
+// Results arrive via onOutputUpdate callback
 
-// Channel 2: CRUD via REST API
-const tasks = await fetch('/api/tasks').then(r => r.json())
-await fetch('/api/tasks', {
+// Channel 2: Domain CRUD via Solution backend
+const plans = await fetch('http://localhost:3002/api/lesson-plans').then(r => r.json())
+await fetch('http://localhost:3002/api/lesson-plans', {
   method: 'POST',
-  body: JSON.stringify(taskData)
+  body: JSON.stringify(lessonPlanData)
 })
 ```
 
-This separation is important: the AI Agent generates structured data through Channel 1, but the actual persistence of that data happens through Channel 2 when the user confirms and saves.
+This separation is important: the AI Agent generates structured data through Channel 1 (as `output_update` events), but the actual persistence happens through Channel 2 when the user confirms and saves.
 
-## Session Management
+## Session and Conversation Persistence
 
-Sessions are the unit of AI interaction in LoopAI. Understanding session lifecycle is important for state management.
+Sessions are the unit of AI interaction in CCAAS. The React SDK provides automatic session persistence.
 
-### Session States
+### How Session Persistence Works
 
-```
-            ┌──────────────┐
-            │   Created    │
-            └──────┬───────┘
-                   │ user sends chat
-            ┌──────▼───────┐
-            │  Processing  │ ◄──── user sends follow-up
-            └──────┬───────┘
-                   │ agent completes
-            ┌──────▼───────┐
-            │     Idle     │ ◄──── ready for next message
-            └──────┬───────┘
-                   │ user disconnects
-            ┌──────▼───────┐
-            │  Suspended   │
-            └──────┬───────┘
-                   │ reconnect_session
-            ┌──────▼───────┐
-            │   Restored   │ ──── back to Idle
-            └──────────────┘
-```
+When `tenantId` is provided to `useAgentConnection`:
 
-### Session Reconnection
-
-Users may close the browser and return later. LoopAI supports session reconnection:
+1. The sessionId is persisted in localStorage under `ccaas_session_${tenantId}`
+2. On page refresh, the saved sessionId is recovered
+3. `useAgentChat` auto-loads message history via `GET /api/v1/sessions/:sessionId/messages`
+4. The conversation continues where it left off
 
 ```typescript
-// On app load, try to restore previous session
-const savedSessionId = localStorage.getItem('sessionId')
-if (savedSessionId) {
-  socket.emit('reconnect_session', { sessionId: savedSessionId })
+// This is all handled automatically by the SDK:
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  tenantId: 'lesson-plan-designer',  // <-- enables persistence
+})
 
-  socket.on('session_restored', () => {
-    console.log('Session restored successfully')
-  })
+// On page refresh: sessionId is recovered from localStorage
+// On connect: message history is loaded from backend
 
-  socket.on('session_not_found', () => {
-    localStorage.removeItem('sessionId')
-    console.log('Previous session expired, starting fresh')
-  })
-}
+// To start fresh:
+connection.startNewConversation()  // clears storage, generates new ID
 ```
+
+### Starting a New Conversation
+
+```typescript
+// From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const createNewPlan = useCallback(async (input) => {
+  const plan = await crud.createPlan(input)
+  resetSyncState()
+  chat.clearConversation()  // Clear messages + new sessionId
+  return plan
+}, [crud, resetSyncState, chat])
+```
+
+`clearConversation()` performs three actions:
+1. Clears all local messages
+2. Removes the old sessionId from localStorage
+3. Generates a new sessionId and reconnects
 
 ## Exercises
 
-### Exercise 4.1: Trace a Message
+### Exercise 4.1: Trace the Data Flow
 
-Given this user message: "List all tasks with high priority"
+Given this user message: "Add assessment methods for this lesson plan"
 
-Draw the complete data flow, identifying:
-1. Which WebSocket events will be emitted?
-2. Will `output_update` events be generated? Why or why not?
-3. Which data channel (WebSocket or REST) should be used to fetch the task list?
+Identify:
+1. Which REST endpoint receives the message?
+2. What WebSocket events will stream back?
+3. How does the AI Agent know the current form state?
+4. Where does the `output_update` end up in the React component tree?
 
-### Exercise 4.2: Design State Shape
+### Exercise 4.2: Hook Composition
 
-For the Task Manager Solution, design the complete frontend state shape. Consider:
-- Agent connection state
-- Chat message history
-- Current task form data (from `output_update`)
-- Task list (from REST API)
-- Active tool indicators
-
-```typescript
-// Fill in the state interface
-interface TaskManagerState {
-  // Your design here
-}
-```
+Using the five SDK hooks, design the session hook for a hypothetical "Quiz Builder" Solution. Determine:
+- What `tenantId` would you use?
+- What fields would `usePageContext` send?
+- How would you handle `onOutputUpdate` for quiz questions vs. quiz metadata?
 
 ### Exercise 4.3: Event Timeline
 
-Given this scenario: the user asks the AI to "Create a task with title 'Deploy v2' and assign it to Alice"
+Given this scenario: the user asks the AI to "Create a lesson plan for grade 3 math, chapter 2, with objectives and teaching methods"
 
 Write out the expected timeline of WebSocket events, including:
 - Event type
-- Approximate timing
 - Key payload data
+- Which SDK hook processes each event
 
 ## Key Takeaways
 
-1. **LoopAI is a relay architecture** -- the CCAAS backend mediates all communication between your Solution and the AI Agent
-2. **WebSocket events are categorized** into control, lifecycle, content, and observability events
-3. **`output_update` is the bridge** between AI Agent output and frontend forms -- it carries structured data in a nested `payload.data` structure
-4. **Solutions use dual data channels** -- WebSocket for AI interactions, REST for CRUD operations
-5. **Sessions are the unit of interaction** -- they can be created, suspended, and restored
+1. **CCAAS uses direct connection** -- the Solution frontend connects directly to the CCAAS backend via Socket.io, not through a Solution backend relay
+2. **Messages go via REST, responses stream via WebSocket** -- `POST /sessions/:id/completion` sends the message, WebSocket events deliver the response
+3. **Five SDK hooks cover the complete data flow** -- `useAgentConnection` (connection), `useAgentChat` (messaging), `useAgentStatus` (status), `usePageContext` (form state), `useFiles` (file management)
+4. **`usePageContext` is key for AI awareness** -- it sends the current form state with every message so the AI Agent knows what is already filled in
+5. **Solutions use dual data channels** -- CCAAS for AI interactions, Solution backend for domain CRUD
+6. **Session persistence is automatic** -- providing `tenantId` enables localStorage-based session recovery with message history loading
 
 ## What's Next
 
-In [Chapter 5](05-form-protocol.md), we will dive deep into the `output_update` protocol and form synchronization patterns. You will learn how to use `write_output` in your MCP Server, handle `output_update` events in the frontend, and implement advanced patterns like the SyncCard approval flow.
+In [Chapter 5](05-form-protocol.md), we will dive deep into the `output_update` protocol and form synchronization patterns. You will learn how to use `write_output` in your MCP Server, handle `output_update` events via the `onOutputUpdate` callback, and implement the SyncCard approval flow that lets users review AI suggestions before applying them.

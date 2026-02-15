@@ -12,7 +12,7 @@ This chapter walks you through implementing the complete Task Manager Solution s
 │                                                          │
 │  6.1 Setup ──► 6.2 Backend ──► 6.3 MCP ──► 6.4 Skills   │
 │                                                          │
-│  6.5 Frontend ──► 6.6 Testing                            │
+│  6.5 Frontend ──► 6.6 Testing ──► 6.7 Persistence         │
 │                                                          │
 │  Each step produces a working, testable checkpoint.      │
 └──────────────────────────────────────────────────────────┘
@@ -38,6 +38,7 @@ This chapter walks you through implementing the complete Task Manager Solution s
 | [6.4 Skills](04-skills.md) | Task Creator and Bulk Import SKILL.md files | Skills trigger on correct keywords |
 | [6.5 Frontend](05-frontend.md) | React UI with chat panel and form sync | Form updates from AI output\_update events |
 | [6.6 Testing](06-testing.md) | Unit and integration tests | All tests pass |
+| [6.7 Conversation Persistence](07-conversation-persistence.md) | Persistent conversations across page refreshes | Messages survive page refresh |
 
 ## Prerequisites
 

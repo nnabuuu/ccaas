@@ -31,6 +31,7 @@
   * [6.4 Skills](tutorial/06-implementation/04-skills.md)
   * [6.5 Frontend](tutorial/06-implementation/05-frontend.md)
   * [6.6 Testing](tutorial/06-implementation/06-testing.md)
+  * [6.7 Conversation Persistence](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. Deployment](tutorial/07-deployment.md)
 
 ## Developer Guide <a href="#guide" id="guide"></a>

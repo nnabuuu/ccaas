@@ -1,884 +1,625 @@
 # 5. Forms and the output\_update Protocol
 
-The `output_update` protocol is the mechanism that transforms AI Agent output into structured data your frontend can render in forms, tables, and other UI elements. This chapter provides a deep dive into how `write_output` works on the MCP Server side, how `output_update` events are structured, and how to build robust form synchronization in your Solution frontend.
+The `output_update` protocol bridges AI Agent output and frontend form state. When the Agent calls the `write_output` MCP tool, the CCAAS backend emits an `output_update` WebSocket event that the frontend can parse and present as a SyncCard for human approval. This chapter explains how `write_output` works, the event structure (including its nested `payload.data` format), and the SyncCard approval pattern used in production.
 
 ## Learning Objectives
 
 By the end of this chapter, you will be able to:
 
-- Implement the `write_output` MCP tool in your Solution's MCP Server
-- Parse `output_update` events correctly (including the nested structure)
-- Handle all three operation types: `set`, `append`, and `merge`
-- Implement the SyncCard approval pattern for human-in-the-loop review
-- Use the Vue SDK's `useFormBridge` and React SDK's `SyncCardPanel` components
+- Implement the `write_output` MCP tool using `@modelcontextprotocol/sdk`
+- Parse `output_update` events correctly (including the nested `payload.data` structure)
+- Use the react-sdk's `useAgentChat` `onOutputUpdate` callback
+- Implement the SyncCard approval pattern with field-level sync, discard, and undo
+- Use the react-sdk's `OutputUpdateCard` component
 
 ## The write\_output Pipeline
-
-The `write_output` tool is the bridge between AI reasoning and frontend form state. Here is how data flows through the pipeline:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │ AI Agent                                                            │
 │                                                                     │
-│ "I need to set the task title to 'Fix login bug'"                  │
-│                     │                                               │
-│                     ▼                                               │
-│ Calls write_output({ field: 'title', value: 'Fix login bug' })    │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ Calls write_output({ field: 'objectives', value: '...', preview })  │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
-│ MCP Server                                                          │
+│ MCP Server (@modelcontextprotocol/sdk)                              │
 │                                                                     │
-│ 1. Receives tool call                                               │
-│ 2. Validates field name against allowed list                        │
-│ 3. Validates value against Zod schema                               │
-│ 4. Returns { data: { field, value, operation }, status: 'success' } │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ 1. Validates field name against SYNC_FIELDS enum                    │
+│ 2. Validates value with Zod schema (auto-fix if possible)           │
+│ 3. Returns JSON: { data: { field, value, preview }, status }        │
+│    wrapped in MCP content blocks: [{ type: 'text', text: JSON }]    │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
-│ CCAAS Backend                                                       │
+│ CCAAS Backend (EventMapperService)                                  │
 │                                                                     │
-│ 1. Receives tool result from Agent process                          │
-│ 2. Wraps it as an output_update event                               │
-│ 3. Pushes via WebSocket to the Solution backend                     │
-└─────────────────────┼───────────────────────────────────────────────┘
+│ 1. Parses tool result from Agent stdout                             │
+│ 2. Detects { data: { field, value }, status } structure             │
+│ 3. Emits output_update WebSocket event with payload.data            │
+└─────────────────────┬───────────────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────────────────┐
+│ react-sdk (useAgentChat)                                            │
+│                                                                     │
+│ 1. Listens for output_update on socket                              │
+│ 2. parseOutputUpdate() normalizes multiple formats                  │
+│ 3. Calls onOutputUpdate({ field, value, preview }) callback         │
+│ 4. Attaches to current assistant message's outputUpdates[]           │
+└─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
 │ Solution Frontend                                                   │
 │                                                                     │
-│ 1. Receives output_update event                                     │
-│ 2. Parses event.payload.data                                        │
-│ 3. Updates form state or buffers as pending SyncCard                │
+│ 1. onOutputUpdate callback adds to pendingUpdates Map               │
+│ 2. SyncCard UI shows "Sync to Form" / "Discard" buttons            │
+│ 3. User approves → value written to form state                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Implementing write\_output in Your MCP Server
 
-### Basic Implementation
+The MCP server uses `@modelcontextprotocol/sdk` (not Express). Here is a simplified example based on the lesson-plan-designer MCP server.
 
-The `write_output` tool is defined in your Solution's MCP Server. Here is a minimal implementation for the Task Manager:
+### Tool Definition
 
 ```typescript
 // mcp-server/src/index.ts
-import express from 'express'
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
+
+const SYNC_FIELDS = ['title', 'description', 'priority', 'status', 'tags'] as const
+type SyncField = typeof SYNC_FIELDS[number]
+
+const server = new Server(
+  { name: 'my-solution', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+)
+
+const writeOutputTool: Tool = {
+  name: 'write_output',
+  description: `Write structured data to the frontend form.
+The frontend will display a "Sync to Form" button allowing the user to apply changes.
+
+Valid fields: ${SYNC_FIELDS.join(', ')}
+
+Example:
+{
+  "field": "title",
+  "value": "Fix login bug",
+  "preview": "Updated task title"
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        enum: [...SYNC_FIELDS],
+        description: 'The form field to update',
+      },
+      value: {
+        description: 'The value for the field',
+      },
+      preview: {
+        type: 'string',
+        description: 'Human-readable summary shown on the sync button',
+      },
+    },
+    required: ['field', 'value', 'preview'],
+  },
+}
+
+server.setRequestHandler(ListToolsRequestSchema, async () => ({
+  tools: [writeOutputTool],
+}))
+```
+
+### Tool Handler
+
+The handler validates the input and returns the result in a specific JSON structure. The CCAAS backend EventMapper looks for `{ data: { field, value }, status }` in the tool result content to emit `output_update` events.
+
+```typescript
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview: string
+    }
+
+    // Validate field name
+    if (!SYNC_FIELDS.includes(field as SyncField)) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: { error: `Invalid field: ${field}` },
+            status: 'error',
+          }),
+        }],
+        isError: true,
+      }
+    }
+
+    // Return structured result
+    // EventMapper detects this { data: { field, value }, status } structure
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: { field, value, preview },
+          status: 'success',
+        }),
+      }],
+    }
+  }
+
+  return {
+    content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+    isError: true,
+  }
+})
+
+// Start server
+const transport = new StdioServerTransport()
+await server.connect(transport)
+```
+
+**Key points:**
+- The tool result must be a JSON string inside a content block `[{ type: 'text', text: '...' }]`
+- The JSON must have the shape `{ data: { field, value, preview? }, status: 'success' }`
+- The EventMapper in the CCAAS backend detects this structure and emits `output_update`
+
+### Adding Zod Validation
+
+For production use, validate the value against a schema before returning. The lesson-plan-designer MCP server uses a `validateAndFixField` function that can auto-correct common issues (e.g., coercing a string `"3"` to number `3` for a numeric field).
+
+```typescript
+// mcp-server/src/schemas.ts
 import { z } from 'zod'
 
-const app = express()
-app.use(express.json())
-
-// Define valid fields and their schemas
-const TaskFieldSchemas = {
+const fieldSchemas: Record<string, z.ZodSchema> = {
   title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(2000),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   status: z.enum(['todo', 'in_progress', 'done']),
-  assignee: z.string().optional(),
-  dueDate: z.string().datetime().optional(),
   tags: z.array(z.string()),
 }
 
-type TaskField = keyof typeof TaskFieldSchemas
-
-// Tool definition endpoint (called by CCAAS to discover tools)
-app.get('/tools', (req, res) => {
-  res.json([
-    {
-      name: 'write_output',
-      description: 'Write structured data to the frontend form. Call once per field.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          field: {
-            type: 'string',
-            enum: Object.keys(TaskFieldSchemas),
-            description: 'The form field to update',
-          },
-          value: {
-            description: 'The value to set for the field',
-          },
-          operation: {
-            type: 'string',
-            enum: ['set', 'append', 'merge'],
-            default: 'set',
-            description: 'How to apply the update',
-          },
-        },
-        required: ['field', 'value'],
-      },
-    },
-  ])
-})
-
-// Tool execution endpoint
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
-
-  // Validate field name
-  if (!(field in TaskFieldSchemas)) {
-    return res.status(400).json({
-      error: `Invalid field: "${field}"`,
-      validFields: Object.keys(TaskFieldSchemas),
-    })
-  }
-
-  // Validate value against schema
-  const schema = TaskFieldSchemas[field as TaskField]
+export function validateField(field: string, value: unknown) {
+  const schema = fieldSchemas[field]
+  if (!schema) return { success: false, errors: ['Unknown field'] }
   const result = schema.safeParse(value)
-  if (!result.success) {
-    return res.status(400).json({
-      error: 'Validation failed',
-      field,
-      details: result.error.issues,
-    })
-  }
-
-  // Return structured response
-  // CCAAS wraps this as an output_update event
-  res.json({
-    data: {
-      field,
-      value: result.data,
-      operation,
-    },
-    status: 'success',
-  })
-})
-
-app.listen(3004, () => {
-  console.log('Task Manager MCP Server running on :3004')
-})
-```
-
-### Defining write\_output in Your Skill
-
-The Skill instructions tell the AI Agent how to use `write_output`. Be explicit about field names and expected formats:
-
-```markdown
-# Output Format
-
-Use the write_output tool to output task data. Call once per field.
-
-Available fields:
-- field: "title" -> Task title (string, required)
-- field: "description" -> Task description (string, optional)
-- field: "priority" -> Priority level: "low" | "medium" | "high" | "urgent"
-- field: "status" -> Task status: "todo" | "in_progress" | "done"
-- field: "assignee" -> Assigned person's name (string)
-- field: "dueDate" -> Due date in ISO 8601 format
-- field: "tags" -> Tags array (string[])
-
-Example call sequence:
-1. write_output({ field: "title", value: "Fix login bug" })
-2. write_output({ field: "priority", value: "high" })
-3. write_output({ field: "status", value: "todo" })
-4. write_output({ field: "tags", value: ["bug", "auth"] })
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, errors: result.error.issues.map(i => i.message) }
+}
 ```
 
 ## The output\_update Event Structure
 
-When the CCAAS backend receives a `write_output` result, it wraps it in an `output_update` WebSocket event. Understanding this structure is critical.
-
-### Event Schema
+When the CCAAS backend receives a `write_output` tool result, EventMapper wraps it as an `output_update` WebSocket event. The `@ccaas/common` package defines the schema:
 
 ```typescript
-interface OutputUpdateEvent {
-  type: 'output_update'
-  sessionId: string
-  timestamp?: string
+// From @ccaas/common - OutputUpdatePayloadSchema (Zod)
+{
+  field?: string,          // Field name (when using generic format)
+  value?: unknown,         // Field value (when using generic format)
+  operation?: 'set' | 'append' | 'merge',
+  progressive?: boolean,
+  complete?: boolean,
+  data?: unknown,          // Nested data from write_output (primary format)
+  status?: string,
+  progress?: number,
+}
+```
+
+The full event shape received by the frontend:
+
+```typescript
+{
+  type: 'output_update',
+  sessionId: 'session-abc',
+  timestamp: '2026-02-15T10:30:00Z',
   payload: {
-    data: {                        // <-- Nested inside payload.data
-      field: string                // Field name (e.g., 'title')
-      value: unknown               // Field value
-      operation?: 'set' | 'append' | 'merge'
-      preview?: string             // Human-readable preview
-    }
-    progressive?: boolean          // Is this part of a streaming sequence?
-    complete?: boolean             // Is this the final update?
-    status?: string                // 'success' | 'error'
-    progress?: number              // 0-100 progress indicator
+    data: {                    // <-- Nested inside payload.data
+      field: 'objectives',     // Field name
+      value: '...',            // Field value
+      preview: '2 objectives', // Human-readable summary
+    },
+    status: 'success',
   }
 }
 ```
 
 {% hint style="danger" %}
-**The most common mistake**: Accessing `event.payload.field` instead of `event.payload.data.field`. The data is nested one level deeper than you might expect. Always access field data through `event.payload.data`.
+**The most common mistake**: Accessing `event.payload.field` instead of `event.payload.data.field`. The data returned by `write_output` is nested one level deeper than you might expect. Always access field data through `event.payload.data`.
+
+This was a real production bug in the lesson-plan-designer: the frontend defined a local `OutputUpdateEvent` type expecting a flat structure, but the backend EventMapper sends a nested `payload.data` structure. The fix was to use the `@ccaas/common` type and create a proper parser.
 {% endhint %}
 
-### Correct vs Incorrect Parsing
+### Multiple Event Formats
+
+The backend can send `output_update` events in multiple formats depending on how the data arrives. The react-sdk's `parseOutputUpdate` function handles all three:
 
 ```typescript
-socket.on('output_update', (event) => {
-  // WRONG - will be undefined
-  const field = event.payload.field       // undefined!
-  const value = event.payload.value       // undefined!
-  const field2 = event.field              // undefined!
+// From packages/react-sdk/src/utils/parseOutputUpdate.ts
 
-  // CORRECT
-  const { field, value, operation } = event.payload.data
+// Format 1: payload.data.field (primary - from write_output MCP tool)
+event.payload.data = { field: 'title', value: '...', preview: '...' }
+
+// Format 2: payload.data as content blocks array
+event.payload.data = [{ type: 'text', text: '{"data":{"field":"title","value":"..."}}' }]
+
+// Format 3: payload.field (generic/legacy format)
+event.payload = { field: 'title', value: '...' }
+```
+
+You do not need to handle these formats manually if you use the react-sdk's `onOutputUpdate` callback. The SDK normalizes them into a consistent `OutputUpdate` structure:
+
+```typescript
+interface OutputUpdate {
+  field: string
+  value: unknown
+  preview: string
+  synced?: boolean
+  syncedAt?: Date
+  timestamp?: number
+}
+```
+
+## Receiving output\_update in the Frontend
+
+### Using the react-sdk (Recommended)
+
+The `useAgentChat` hook provides an `onOutputUpdate` callback that fires whenever a valid `output_update` event is received. The SDK handles parsing, format normalization, and message attachment automatically.
+
+```typescript
+// From solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // Core CCAAS backend
+  tenantId: 'my-solution',
+  autoConnect: true,
+})
+
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  mcpServers: solutionConfig?.mcpServers,
+  skillPath: solutionConfig?.skillPath,
+  onOutputUpdate: (update) => {
+    // update = { field, value, preview, timestamp }
+    // Bridge to your sync state management
+    addPendingUpdate({
+      field: update.field,
+      value: update.value,
+      preview: update.preview,
+    })
+  },
 })
 ```
 
-### Using the Zod Schema for Validation
+The SDK also handles a secondary detection path: when a `tool_event` fires for a tool named `*write_output`, the SDK extracts `{ field, value }` from the tool input and calls the same `onOutputUpdate` callback. This ensures output updates are captured even if the `output_update` event is missed.
 
-The `@ccaas/common` package provides Zod schemas for runtime validation:
+### Manual Parsing (Without SDK)
+
+If you are not using the react-sdk, you can parse the event manually. Use the `@ccaas/common` types for type safety:
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/common'
+import type { OutputUpdateEvent } from '@ccaas/common'
 
-socket.on('output_update', (raw) => {
-  const result = OutputUpdateEventSchema.safeParse(raw)
-  if (!result.success) {
-    console.error('Invalid output_update event:', result.error)
+socket.on('output_update', (event: OutputUpdateEvent) => {
+  // Try payload.data first (primary format)
+  const data = event.payload.data as { field?: string; value?: unknown; preview?: string }
+  if (data?.field) {
+    handleUpdate(data.field, data.value, data.preview)
     return
   }
 
-  const event = result.data
-  const { field, value, operation } = event.payload
-  // field, value, operation are now type-safe
+  // Fallback to payload.field (generic format)
+  if (event.payload.field) {
+    handleUpdate(event.payload.field, event.payload.value, '')
+  }
 })
 ```
 
-## Operation Types
+## The SyncCard Approval Pattern
 
-The `write_output` tool supports three operation types for different update semantics.
+In production Solutions, AI-generated field updates should not be applied directly to the form. Instead, they are buffered as "pending" and presented to the user as SyncCards for review.
 
-### set -- Replace the Value
+### Architecture Overview
 
-The default and most common operation. Replaces the field value entirely:
-
-```typescript
-// MCP tool call
-write_output({ field: 'title', value: 'Fix login bug', operation: 'set' })
-
-// Frontend handler
-case 'set':
-  formState[field] = value
-  break
+```
+onOutputUpdate({ field, value, preview })
+        │
+        ▼
+  addPendingUpdate()  ──→  pendingUpdates Map<SyncField, OutputUpdate>
+        │
+        ▼
+  SyncCard UI  ──→  "Sync to Form" | "Discard"
+        │                    │
+        ▼                    ▼
+  syncToForm(field)    discardUpdate(field)
+        │                    │
+        ▼                    ▼
+  Update form state    Remove from pendingUpdates
+  Add to undoStack
+  Mark as synced
 ```
 
-Use `set` for: scalar fields (strings, numbers, enums), replacing entire arrays, replacing entire objects.
+### The useLessonPlanSync Hook (Real Implementation)
 
-### append -- Add to Existing Value
+The lesson-plan-designer implements this pattern with a dedicated hook. The key design decisions:
 
-Appends to an array or concatenates to a string:
-
-```typescript
-// MCP tool call - append to array
-write_output({
-  field: 'tags',
-  value: 'urgent',
-  operation: 'append'
-})
-
-// Frontend handler
-case 'append':
-  if (Array.isArray(formState[field])) {
-    formState[field] = [...formState[field], value]
-  } else if (typeof formState[field] === 'string') {
-    formState[field] = formState[field] + String(value)
-  }
-  break
-```
-
-Use `append` for: adding items to a list one at a time, building up text incrementally, progressive content generation.
-
-### merge -- Merge into Object
-
-Shallow-merges an object into an existing object field:
+1. **Map-based storage** (`Map<SyncField, OutputUpdate>`) -- same-field updates are deduplicated automatically
+2. **Value normalization** -- each field type has specific coercion rules (e.g., `gradeLevel` is always a number)
+3. **Timed undo** -- the previous value is stored for 30 seconds after sync
 
 ```typescript
-// MCP tool call - merge into object
-write_output({
-  field: 'metadata',
-  value: { estimatedHours: 4, complexity: 'medium' },
-  operation: 'merge'
-})
+// Simplified from solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSync.ts
 
-// Frontend handler
-case 'merge':
-  formState[field] = {
-    ...(formState[field] || {}),
-    ...value
-  }
-  break
-```
+export function useLessonPlanSync() {
+  const [pendingUpdates, setPendingUpdates] = useState<Map<SyncField, OutputUpdate>>(new Map())
+  const [modifiedFields, setModifiedFields] = useState<Set<SyncField>>(new Set())
+  const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
 
-Use `merge` for: updating specific properties of an object field without replacing the whole object, incremental object building.
+  // Add a pending update from AI
+  const addPendingUpdate = useCallback((update: OutputUpdate) => {
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.set(update.field, update)  // Deduplicates by field name
+      return next
+    })
+  }, [])
 
-## Frontend Form Synchronization Patterns
-
-There are two main approaches to handling `output_update` events in the frontend: **direct apply** and **SyncCard approval**.
-
-### Pattern A: Direct Apply
-
-The simplest approach -- apply updates directly to the form as they arrive:
-
-```typescript
-// React: Direct apply pattern
-function useDirectFormSync(socket: Socket) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-
-  useEffect(() => {
-    const handler = (event: OutputUpdateEvent) => {
-      const { field, value, operation = 'set' } = event.payload.data
-
-      setFormData(prev => applyOperation(prev, field, value, operation))
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  return { formData, setFormData }
-}
-
-// Shared operation logic
-function applyOperation(
-  state: Record<string, unknown>,
-  field: string,
-  value: unknown,
-  operation: string
-): Record<string, unknown> {
-  switch (operation) {
-    case 'set':
-      return { ...state, [field]: value }
-    case 'append': {
-      const existing = state[field]
-      if (Array.isArray(existing)) {
-        return { ...state, [field]: [...existing, value] }
-      }
-      return { ...state, [field]: (existing || '') + String(value) }
-    }
-    case 'merge':
-      return {
-        ...state,
-        [field]: { ...(state[field] as object || {}), ...(value as object) },
-      }
-    default:
-      return { ...state, [field]: value }
-  }
-}
-```
-
-**When to use**: Prototyping, simple forms, situations where AI output is always trusted.
-
-### Pattern B: SyncCard Approval (Human-in-the-Loop)
-
-The recommended approach for production Solutions. Updates are buffered as "pending" and presented to the user as SyncCards for approval:
-
-```typescript
-// React: SyncCard approval pattern
-function useSyncCardManager(socket: Socket) {
-  const [pendingUpdates, setPendingUpdates] = useState<OutputUpdate[]>([])
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-
-  // Buffer incoming updates as pending SyncCards
-  useEffect(() => {
-    const handler = (event: OutputUpdateEvent) => {
-      const { field, value } = event.payload.data
-      const preview = typeof value === 'string'
-        ? value.substring(0, 80)
-        : JSON.stringify(value).substring(0, 80)
-
-      setPendingUpdates(prev => {
-        // Replace existing update for same field (keep latest)
-        const filtered = prev.filter(u => u.field !== field)
-        return [...filtered, {
-          field,
-          value,
-          preview,
-          synced: false,
-          timestamp: Date.now(),
-        }]
-      })
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  // User approves: apply to form
-  const syncField = (field: string) => {
-    const update = pendingUpdates.find(u => u.field === field)
+  // Sync: apply AI value to form, save previous for undo
+  const syncToForm = useCallback((field, lessonPlan, setLessonPlan) => {
+    const update = pendingUpdates.get(field)
     if (!update) return
 
-    setFormData(prev => ({ ...prev, [field]: update.value }))
-    setPendingUpdates(prev =>
-      prev.map(u => u.field === field
-        ? { ...u, synced: true, syncedAt: new Date() }
-        : u
-      )
-    )
-  }
+    const normalizedValue = normalizeFieldValue(field, update.value)
+    const previousValue = lessonPlan[field]
 
-  // User rejects: discard the suggestion
-  const discardField = (field: string) => {
-    setPendingUpdates(prev => prev.filter(u => u.field !== field))
-  }
+    setLessonPlan({ ...lessonPlan, [field]: normalizedValue })
+    setModifiedFields(prev => new Set(prev).add(field))
+    setUndoStack(prev => [...prev.filter(e => e.field !== field), {
+      field, previousValue, timestamp: Date.now()
+    }])
 
-  return {
-    pendingUpdates,
-    formData,
-    setFormData,
-    syncField,
-    discardField,
-  }
+    // Mark as synced (keep in map for re-sync)
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.set(field, { ...update, synced: true, syncedAt: new Date() })
+      return next
+    })
+
+    // Auto-expire undo after 30 seconds
+    setTimeout(() => {
+      setUndoStack(prev => prev.filter(e => e.field !== field))
+    }, 30000)
+  }, [pendingUpdates])
+
+  // Discard: remove suggestion
+  const removePendingUpdate = useCallback((field: SyncField) => {
+    setPendingUpdates(prev => {
+      const next = new Map(prev)
+      next.delete(field)
+      return next
+    })
+  }, [])
+
+  return { pendingUpdates, modifiedFields, addPendingUpdate, syncToForm, removePendingUpdate, ... }
 }
 ```
 
-**When to use**: Production Solutions, forms with important data, situations requiring human review.
+### Value Normalization
 
-### Using the React SDK SyncCardPanel
+A subtle but important detail: the AI may return values in unexpected formats (e.g., a string `"3"` for a numeric field). The sync hook normalizes values per field type:
 
-The `@ccaas/react-sdk` provides ready-to-use components for the SyncCard pattern:
+```typescript
+// From solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSync.ts
+
+function normalizeFieldValue(field: SyncField, value: unknown): unknown {
+  value = parseJsonIfString(value)  // Parse "[1,2,3]" strings to arrays
+
+  if (field === 'gradeLevel' || field === 'durationMinutes') {
+    return Number(value) || (field === 'gradeLevel' ? 1 : 45)
+  }
+
+  if (field === 'curriculumRequirements') {
+    return Array.isArray(value) ? value : []
+  }
+
+  if (field === 'extraProperties') {
+    return (typeof value === 'object' && !Array.isArray(value)) ? value : {}
+  }
+
+  // All other fields: string
+  return value == null ? null : String(value)
+}
+```
+
+### Sync All
+
+The lesson-plan-designer supports syncing all pending updates at once. This iterates through the `pendingUpdates` map and calls `syncToForm` for each field:
+
+```typescript
+// From solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
+
+const syncAll = useCallback(async () => {
+  if (!crud.lessonPlan) return
+
+  const allFields = Array.from(pendingUpdates.keys())
+  for (const field of allFields) {
+    await syncToForm(field)
+  }
+}, [crud.lessonPlan, pendingUpdates, syncToForm])
+```
+
+## UI Components
+
+### OutputUpdateCard (react-sdk)
+
+The `@ccaas/react-sdk` provides a generic `OutputUpdateCard` component that renders pending updates with Sync/Discard actions and synced state with a Re-sync option.
 
 ```tsx
-import { SyncCardPanel } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@ccaas/react-sdk'
 
-function TaskForm() {
-  const {
-    pendingUpdates,
-    formData,
-    syncField,
-    discardField,
-  } = useSyncCardManager(socket)
+<OutputUpdateCard
+  field="objectives"
+  fieldLabel="Learning Objectives"
+  preview="2 learning objectives about fractions"
+  synced={false}
+  onSync={() => syncToForm('objectives')}
+  onDiscard={() => discardUpdate('objectives')}
+/>
+```
 
+Props:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `field` | `string` | Internal field name |
+| `fieldLabel` | `string` | Human-readable label shown in the card |
+| `preview` | `string` | Preview text of the AI-suggested value |
+| `synced` | `boolean` | Whether the field has been synced |
+| `syncedAt` | `Date` | Timestamp of last sync |
+| `icon` | `'sync' \| 'attach' \| ReactNode` | Icon to display |
+| `syncLabel` | `string` | Custom label for the sync button |
+| `onSync` | `() => void` | Called when user clicks Sync |
+| `onDiscard` | `() => void` | Called when user clicks Discard |
+
+### Field Label Mapping
+
+Solutions define a mapping from internal field names to user-friendly labels:
+
+```typescript
+// From solutions/lesson-plan-designer/frontend/src/components/SyncButton.tsx
+
+const FIELD_LABELS: Record<SyncField, string> = {
+  title: 'Title',
+  subject: 'Subject',
+  gradeLevel: 'Grade',
+  durationMinutes: 'Duration',
+  objectives: 'Learning Objectives',
+  content: 'Lesson Content',
+  teachingMethods: 'Teaching Methods',
+  materialsNeeded: 'Materials',
+  assessmentMethods: 'Assessment',
+  // ... etc
+}
+
+// Solution wrapper around OutputUpdateCard
+export function SyncButton({ field, preview, synced, syncedAt, onSync, onDiscard }) {
   return (
-    <div>
-      {/* Form fields */}
-      <input
-        value={formData.title as string || ''}
-        onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-      />
-
-      {/* SyncCard panel at bottom */}
-      <SyncCardPanel
-        outputUpdates={pendingUpdates}
-        onSync={syncField}
-        onDiscard={discardField}
-        renderSyncCard={(update, onSync, onDiscard) => (
-          <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-            <div className="flex-1">
-              <div className="text-sm font-medium">{update.field}</div>
-              <div className="text-xs text-gray-500">{update.preview}</div>
-            </div>
-            <button onClick={onSync}>Sync</button>
-            <button onClick={onDiscard}>Discard</button>
-          </div>
-        )}
-      />
-    </div>
+    <OutputUpdateCard
+      field={field}
+      fieldLabel={FIELD_LABELS[field]}
+      preview={preview}
+      synced={synced}
+      syncedAt={syncedAt}
+      onSync={onSync}
+      onDiscard={onDiscard}
+    />
   )
 }
 ```
 
-### Using the Vue SDK FormBridge
+### GlobalSyncSection
 
-The `@ccaas/vue-sdk` provides the `useFormBridge` composable for automatic form registration and synchronization:
+The lesson-plan-designer also provides a collapsible global sync area that shows all pending updates with a "Sync All" button:
 
-```vue
-<script setup lang="ts">
-import { reactive } from 'vue'
-import { useFormBridge } from '@ccaas/vue-sdk'
+```tsx
+// From solutions/lesson-plan-designer/frontend/src/components/sync/GlobalSyncSection.tsx
 
-const form = reactive({
-  title: '',
-  description: '',
-  priority: 'medium',
-  tags: [],
-})
-
-const { isActive } = useFormBridge({
-  formId: 'task-form',
-  readonly: false,
-  getFormState: () => ({ ...form }),
-  applyFormData: async (data) => {
-    Object.assign(form, data)
-    return {
-      success: true,
-      appliedFields: Object.keys(data),
-    }
-  },
-  submit: async () => {
-    await saveTask(form)
-    return { success: true }
-  },
-})
-</script>
-
-<template>
-  <form>
-    <div v-if="isActive" class="text-sm text-green-600">
-      Connected to AI Agent
-    </div>
-
-    <input v-model="form.title" placeholder="Task title" />
-    <textarea v-model="form.description" placeholder="Description" />
-    <select v-model="form.priority">
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-      <option value="urgent">Urgent</option>
-    </select>
-  </form>
-</template>
-```
-
-The Vue SDK's `FormStateSynchronizer` handles the connection between `output_update` events and your reactive form state automatically:
-
-```
-output_update event
-       │
-       ▼
-AgentListener (listens for output_update)
-       │
-       ▼
-FormStateSynchronizer.updateField(formId, field, value, 'agent')
-       │
-       ▼
-Vue reactive form state (auto-updates the template)
-```
-
-## Advanced Patterns
-
-### Progressive Output
-
-For long-running tasks, you can send progressive updates to show progress:
-
-```typescript
-// MCP Server: Progressive output
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
-
-  res.json({
-    data: { field, value, operation },
-    progressive: true,    // Indicates more updates coming
-    complete: false,       // Not the final update
-    status: 'success',
-    progress: 50,          // 50% done
-  })
-})
-```
-
-The frontend can use `progressive` and `progress` to show loading states:
-
-```typescript
-socket.on('output_update', (event) => {
-  const { progressive, complete, progress } = event.payload
-
-  if (progressive && !complete) {
-    showProgressBar(progress)
-  }
-
-  if (complete) {
-    hideProgressBar()
-  }
-
-  // Always process the data
-  const { field, value } = event.payload.data
-  updateField(field, value)
-})
-```
-
-### Field-Level Undo
-
-Track previous values to support undo after sync:
-
-```typescript
-interface UndoEntry {
-  field: string
-  previousValue: unknown
-  timestamp: number
-}
-
-function useSyncWithUndo(socket: Socket) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-  const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
-
-  const syncField = (field: string, newValue: unknown) => {
-    // Save current value for undo
-    setUndoStack(prev => [...prev, {
-      field,
-      previousValue: formData[field],
-      timestamp: Date.now(),
-    }])
-
-    // Apply new value
-    setFormData(prev => ({ ...prev, [field]: newValue }))
-  }
-
-  const undoField = (field: string) => {
-    const entry = [...undoStack].reverse().find(e => e.field === field)
-    if (entry) {
-      setFormData(prev => ({ ...prev, [field]: entry.previousValue }))
-      setUndoStack(prev => prev.filter(e => e !== entry))
-    }
-  }
-
-  return { formData, syncField, undoField, undoStack }
-}
-```
-
-### Batch Updates
-
-When the AI Agent updates multiple fields in sequence, you may want to batch them for a smoother UX:
-
-```typescript
-function useBatchedFormSync(socket: Socket, batchWindowMs = 200) {
-  const [formData, setFormData] = useState<Record<string, unknown>>({})
-  const batchRef = useRef<Record<string, unknown>>({})
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
-
-  useEffect(() => {
-    socket.on('output_update', (event) => {
-      const { field, value } = event.payload.data
-
-      // Accumulate updates
-      batchRef.current[field] = value
-
-      // Reset debounce timer
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-
-      // Apply batch after window closes
-      timerRef.current = setTimeout(() => {
-        const batch = { ...batchRef.current }
-        batchRef.current = {}
-        setFormData(prev => ({ ...prev, ...batch }))
-      }, batchWindowMs)
-    })
-
-    return () => {
-      socket.off('output_update')
-      if (timerRef.current) clearTimeout(timerRef.current)
-    }
-  }, [socket, batchWindowMs])
-
-  return formData
-}
-```
-
-### Field Label Mapping
-
-Map internal field names to user-friendly labels for the SyncCard UI:
-
-```typescript
-const FIELD_LABELS: Record<string, string> = {
-  title: 'Task Title',
-  description: 'Description',
-  priority: 'Priority',
-  status: 'Status',
-  assignee: 'Assigned To',
-  dueDate: 'Due Date',
-  tags: 'Tags',
-}
-
-// In SyncCard rendering
-<OutputUpdateCard
-  field={update.field}
-  fieldLabel={FIELD_LABELS[update.field] || update.field}
-  preview={update.preview}
-  onSync={() => syncField(update.field)}
-  onDiscard={() => discardField(update.field)}
+<GlobalSyncSection
+  pendingUpdates={pendingUpdatesWithMeta}
+  onSyncAll={syncAll}
+  onSyncField={syncToForm}
+  onDiscardField={discardUpdate}
 />
 ```
 
-## Complete Example: Task Manager Form Sync
+This component:
+- Shows a count of unsynced and synced updates in the header
+- Expands to show individual sync items with per-field Sync/Discard
+- Provides a "Sync All" button to apply everything at once
+- Auto-collapses when all updates are synced
 
-Here is a complete, runnable example that ties together all the concepts in this chapter:
+## Defining write\_output in Your Skill
 
-```typescript
-// hooks/useTaskFormSync.ts
-import { useState, useEffect, useRef, useCallback } from 'react'
-import type { Socket } from 'socket.io-client'
+The Skill instructions tell the AI Agent which fields are available and what format each expects. Be explicit about field names, types, and the `preview` parameter:
 
-interface TaskFormData {
-  title: string
-  description: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'todo' | 'in_progress' | 'done'
-  assignee: string
-  tags: string[]
-}
+```markdown
+# Output Format
 
-interface PendingUpdate {
-  field: keyof TaskFormData
-  value: unknown
-  preview: string
-  synced: boolean
-  syncedAt?: Date
-  timestamp: number
-}
+Use the write_output tool to send structured data to the frontend form.
+The user will see a "Sync to Form" button for each field you update.
 
-const INITIAL_FORM: TaskFormData = {
-  title: '',
-  description: '',
-  priority: 'medium',
-  status: 'todo',
-  assignee: '',
-  tags: [],
-}
+Call write_output once per field. Always include a human-readable preview.
 
-export function useTaskFormSync(socket: Socket | null) {
-  const [formData, setFormData] = useState<TaskFormData>(INITIAL_FORM)
-  const [pendingUpdates, setPendingUpdates] = useState<PendingUpdate[]>([])
+Available fields:
+- field: "title"       -> string, task title
+- field: "description" -> string, task description (max 2000 chars)
+- field: "priority"    -> "low" | "medium" | "high" | "urgent"
+- field: "status"      -> "todo" | "in_progress" | "done"
+- field: "tags"        -> string[], list of tags
 
-  // Listen for output_update events
-  useEffect(() => {
-    if (!socket) return
-
-    const handler = (event: any) => {
-      // CORRECT: access nested payload.data
-      const data = event.payload?.data
-      if (!data?.field) return
-
-      const { field, value } = data
-      const preview = typeof value === 'string'
-        ? value.substring(0, 100)
-        : Array.isArray(value)
-        ? `[${value.length} items]`
-        : JSON.stringify(value).substring(0, 100)
-
-      setPendingUpdates(prev => {
-        const filtered = prev.filter(u => u.field !== field)
-        return [...filtered, {
-          field: field as keyof TaskFormData,
-          value,
-          preview,
-          synced: false,
-          timestamp: Date.now(),
-        }]
-      })
-    }
-
-    socket.on('output_update', handler)
-    return () => { socket.off('output_update', handler) }
-  }, [socket])
-
-  // Sync a single field
-  const syncField = useCallback((field: string) => {
-    const update = pendingUpdates.find(u => u.field === field)
-    if (!update) return
-
-    setFormData(prev => ({
-      ...prev,
-      [field]: update.value,
-    }))
-
-    setPendingUpdates(prev =>
-      prev.map(u =>
-        u.field === field
-          ? { ...u, synced: true, syncedAt: new Date() }
-          : u
-      )
-    )
-  }, [pendingUpdates])
-
-  // Sync all pending fields
-  const syncAll = useCallback(() => {
-    const updates: Partial<TaskFormData> = {}
-    for (const u of pendingUpdates.filter(u => !u.synced)) {
-      updates[u.field] = u.value as any
-    }
-
-    setFormData(prev => ({ ...prev, ...updates }))
-    setPendingUpdates(prev =>
-      prev.map(u => ({ ...u, synced: true, syncedAt: new Date() }))
-    )
-  }, [pendingUpdates])
-
-  // Discard a field
-  const discardField = useCallback((field: string) => {
-    setPendingUpdates(prev => prev.filter(u => u.field !== field))
-  }, [])
-
-  // Reset form
-  const resetForm = useCallback(() => {
-    setFormData(INITIAL_FORM)
-    setPendingUpdates([])
-  }, [])
-
-  return {
-    formData,
-    setFormData,
-    pendingUpdates,
-    syncField,
-    syncAll,
-    discardField,
-    resetForm,
-  }
-}
+Example:
+1. write_output({ field: "title", value: "Fix login bug", preview: "Updated title" })
+2. write_output({ field: "priority", value: "high", preview: "Set to high priority" })
+3. write_output({ field: "tags", value: ["bug", "auth"], preview: "2 tags" })
 ```
 
 ## Troubleshooting
 
 ### output\_update events not arriving
 
-1. Verify the MCP Server is registered with CCAAS (check `solution.json`)
-2. Verify the Skill's `allowedTools` includes `write_output`
-3. Check that the Solution backend relays `output_update` events from CCAAS
-4. Use browser DevTools to inspect WebSocket frames
-
-### Fields updating with wrong values
-
-1. Add Zod validation in your MCP Server's `write_output` handler
-2. Ensure the field names in the Skill instructions match the MCP Server's valid fields
-3. Log the raw `output_update` event to verify the nested structure
+1. Verify the MCP server is registered in your solution config (`mcpServers` in `useAgentChat`)
+2. Verify the MCP tool returns JSON with the `{ data: { field, value }, status }` structure
+3. Check the CCAAS backend logs for EventMapper parsing errors
+4. Use browser DevTools Network tab to inspect WebSocket frames for `output_update`
 
 ### SyncCards not appearing
 
-1. Confirm the frontend is listening for `output_update` on the correct socket
-2. Verify the `event.payload.data` path is being parsed (not `event.payload`)
-3. Check that pending updates are not being filtered out (check `synced` flag)
+1. Confirm the `onOutputUpdate` callback is provided to `useAgentChat`
+2. Verify the callback correctly adds to `pendingUpdates` state
+3. Check that the component rendering SyncCards reads from the same state
+4. Log the raw event to verify the `payload.data.field` path exists
 
 ### Type mismatches between AI output and form
 
-1. Define strict Zod schemas in your MCP Server for each field
-2. Specify exact types in the Skill instructions (e.g., "string[]" not just "array")
-3. Use the same TypeScript interfaces in both MCP Server and frontend
+1. Add Zod validation in your MCP server's `write_output` handler
+2. Add normalization in your sync hook (see `normalizeFieldValue` above)
+3. Specify exact types in the Skill instructions (e.g., `string[]` not just "array")
 
-## Exercises
+### Synced values not persisting
 
-### Exercise 5.1: Implement write\_output
-
-Create a `write_output` handler for the Task Manager MCP Server with the following fields:
-
-- `title` (string, 1-200 chars)
-- `description` (string, max 2000 chars)
-- `priority` (enum: low/medium/high/urgent)
-- `subtasks` (array of { title: string, done: boolean })
-
-Include Zod validation for each field.
-
-### Exercise 5.2: Handle output\_update
-
-Write a React hook that:
-1. Listens for `output_update` events
-2. Correctly parses the nested `payload.data` structure
-3. Handles all three operation types (`set`, `append`, `merge`)
-4. Provides a `pendingUpdates` array for SyncCard rendering
-
-### Exercise 5.3: Design a SyncCard Flow
-
-For the Task Manager, design the complete SyncCard flow for when the AI generates a task with 5 fields (title, description, priority, assignee, tags):
-
-1. What order should the SyncCards appear?
-2. Should the user approve each field individually, or all at once?
-3. What happens if the user edits a field manually and then the AI sends an update for the same field?
-4. How would you handle the "Sync All" action?
-
-Draw a state diagram showing all possible states of a SyncCard.
+1. Verify `syncToForm` updates the form state object (not a stale copy)
+2. Check that the form state is connected to your save/persistence logic
+3. Ensure `normalizeFieldValue` returns the correct type for your form's schema
 
 ## Key Takeaways
 
-1. **`write_output` is a standard MCP tool** -- implement it in your MCP Server with field validation
-2. **`output_update` uses nested structure** -- always access `event.payload.data.field`, never `event.field`
-3. **Three operation types** -- `set` (replace), `append` (add), `merge` (shallow merge)
-4. **SyncCard pattern** enables human-in-the-loop review -- buffer updates and let users approve
-5. **The Vue SDK provides `useFormBridge`** and the React SDK provides `SyncCardPanel` and `OutputUpdateCard` for built-in form sync
-6. **Validate both sides** -- Zod schemas in MCP Server, type-safe handlers in frontend
+1. **`write_output` uses `@modelcontextprotocol/sdk`** -- not Express. The tool result must return JSON with `{ data: { field, value, preview }, status }` inside MCP content blocks.
+
+2. **`output_update` has nested structure** -- always access `event.payload.data.field`, never `event.payload.field`. This was a real production bug.
+
+3. **Use the react-sdk `onOutputUpdate` callback** -- it handles format normalization, fallback paths, and message attachment automatically.
+
+4. **SyncCard pattern is the production approach** -- buffer updates in a Map, present Sync/Discard UI, support undo with a timeout.
+
+5. **Normalize field values** -- the AI may return strings for numeric fields or JSON strings for array fields. Always normalize before writing to form state.
+
+6. **`OutputUpdateCard` from react-sdk** -- provides a ready-to-use component. Solutions wrap it with field label mappings.
 
 ## What's Next
 
-In [Chapter 6](06-implementation/README.md), we will put everything together and build the complete Task Manager Solution step by step -- from project setup to a working application with backend, MCP Server, Skills, and frontend.
+In [Chapter 6](06-implementation/README.md), we will put everything together and build a complete Solution step by step -- from project setup to a working application with backend, MCP Server, Skills, and frontend.

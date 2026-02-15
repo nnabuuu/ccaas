@@ -613,4 +613,4 @@ Both commands should exit with zero failures.
 
 ## Next Step
 
-With tests passing across the stack, you are ready to deploy. Proceed to [Chapter 7: Deployment](../07-deployment.md).
+With tests passing across the stack, you can now add conversation persistence. Proceed to [6.7 Conversation Persistence](07-conversation-persistence.md).
