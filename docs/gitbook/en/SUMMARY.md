@@ -37,6 +37,7 @@
 ## Developer Guide <a href="#guide" id="guide"></a>
 
 * [Guide Overview](guide/README.md)
+* [Core Concepts](guide/concepts.md)
 * [Solution Development Guide](guide/solution-dev.md)
 * [Skill Writing Guide](guide/skill-writing.md)
 * [MCP Server Development](guide/mcp-server.md)

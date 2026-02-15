@@ -37,6 +37,7 @@
 ## 开发指南 <a href="#guide" id="guide"></a>
 
 * [开发指南概述](guide/README.md)
+* [核心概念](guide/concepts.md)
 * [Solution 开发完整指南](guide/solution-dev.md)
 * [Skill 编写指南](guide/skill-writing.md)
 * [MCP Server 开发](guide/mcp-server.md)
