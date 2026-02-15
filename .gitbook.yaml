@@ -1,8 +1,5 @@
-root: ./
+root: ./docs/gitbook/zh/
 
 structure:
-  readme: README.zh.md
-  summary: SUMMARY.zh.md
-
-redirects:
-  previous/page: new-folder/page.md
+  readme: README.md
+  summary: SUMMARY.md
