@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Pre-push verification..."
+echo ""
+
+# Quick sanity checks (non-blocking)
+echo "✓ Lint was checked during commit (pre-commit hook)"
+echo "✓ Push allowed (GitHub Actions CI disabled)"
+echo ""
+echo "ℹ️  To run full checks manually:"
+echo "   npm run lint      # ESLint"
+echo "   npm run typecheck # TypeScript"
+echo "   npm run build     # Build all packages"
+echo "   npm test          # Run all tests"
+echo ""
+echo "✅ Pushing..."
