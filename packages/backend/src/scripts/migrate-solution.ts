@@ -1,0 +1,382 @@
+#!/usr/bin/env node
+/**
+ * Solution Migration CLI Tool
+ *
+ * Migrates v1 solution.json files to v2 format and adds YAML frontmatter
+ * to SKILL.md files.
+ *
+ * Usage:
+ *   npm run solution:migrate -- quiz-analyzer
+ *   npm run solution:migrate -- quiz-analyzer --dry-run
+ *   npm run solution:migrate -- --all
+ *   npm run solution:migrate -- --all --dry-run
+ */
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { SolutionConfigAdapter } from '../solutions/solution-config-adapter';
+import { detectSchemaVersion } from '../solutions/dto/solution-config.dto';
+import type { SolutionConfigV2, SkillDefinition } from '../solutions/dto/solution-config.dto';
+import type { AdaptResult } from '../solutions/solution-config-adapter';
+import { resolveSolutionsDir } from '../common/find-monorepo-root';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface MigrateOptions {
+  dryRun: boolean;
+}
+
+interface MigrateResult {
+  slug: string;
+  success: boolean;
+  migrated: boolean;
+  warnings: string[];
+  errors: string[];
+  skillsUpdated: string[];
+  skillsSkipped: string[];
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const SOLUTIONS_DIR = resolveSolutionsDir(__dirname);
+const BACKUP_SUFFIX = '.v1.backup';
+
+// ============================================================================
+// CLI Argument Parsing
+// ============================================================================
+
+function parseArgs(): { slugs: string[]; options: MigrateOptions } {
+  const args = process.argv.slice(2);
+  const options: MigrateOptions = { dryRun: false };
+  const slugs: string[] = [];
+  let migrateAll = false;
+
+  for (const arg of args) {
+    if (arg === '--dry-run') {
+      options.dryRun = true;
+    } else if (arg === '--all') {
+      migrateAll = true;
+    } else if (!arg.startsWith('--')) {
+      slugs.push(arg);
+    }
+  }
+
+  if (!migrateAll && slugs.length === 0) {
+    console.error('\nUsage: npm run solution:migrate -- <solution-slug> [--dry-run]');
+    console.error('       npm run solution:migrate -- --all [--dry-run]\n');
+    console.error('Examples:');
+    console.error('  npm run solution:migrate -- quiz-analyzer');
+    console.error('  npm run solution:migrate -- quiz-analyzer --dry-run');
+    console.error('  npm run solution:migrate -- --all\n');
+    process.exit(1);
+  }
+
+  if (migrateAll) {
+    return { slugs: [], options }; // Empty slugs = discover all
+  }
+
+  return { slugs, options };
+}
+
+// ============================================================================
+// Solution Discovery
+// ============================================================================
+
+async function discoverSolutions(): Promise<string[]> {
+  const entries = await fs.readdir(SOLUTIONS_DIR, { withFileTypes: true });
+  const slugs: string[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const solutionJsonPath = path.join(SOLUTIONS_DIR, entry.name, 'solution.json');
+    try {
+      await fs.access(solutionJsonPath);
+      slugs.push(entry.name);
+    } catch {
+      // No solution.json, skip
+    }
+  }
+
+  return slugs.sort();
+}
+
+// ============================================================================
+// Frontmatter Generation
+// ============================================================================
+
+function generateFrontmatter(skill: SkillDefinition): string {
+  const lines: string[] = ['---'];
+
+  lines.push(`name: ${skill.name}`);
+  lines.push(`slug: ${skill.slug}`);
+
+  if (skill.description) {
+    lines.push(`description: ${yamlString(skill.description)}`);
+  }
+
+  lines.push(`scope: ${skill.scope}`);
+
+  if (skill.triggers && skill.triggers.length > 0) {
+    lines.push('triggers:');
+    for (const trigger of skill.triggers) {
+      lines.push(`  - type: ${trigger.type}`);
+      lines.push(`    value: ${yamlString(trigger.value)}`);
+      if (trigger.priority !== undefined) {
+        lines.push(`    priority: ${trigger.priority}`);
+      }
+    }
+  }
+
+  if (skill.allowedTools && skill.allowedTools.length > 0) {
+    lines.push('allowedTools:');
+    for (const tool of skill.allowedTools) {
+      lines.push(`  - ${tool}`);
+    }
+  }
+
+  lines.push('---');
+
+  return lines.join('\n');
+}
+
+/** Wrap YAML string values that need quoting */
+function yamlString(value: string): string {
+  // Quote if value contains special YAML characters
+  if (/[:#\[\]{}|>&*!?,]/.test(value) || value.includes('\n')) {
+    return `"${value.replace(/"/g, '\\"')}"`;
+  }
+  return value;
+}
+
+function hasFrontmatter(content: string): boolean {
+  return content.trimStart().startsWith('---');
+}
+
+// ============================================================================
+// Migration Logic
+// ============================================================================
+
+async function migrateSolution(
+  slug: string,
+  options: MigrateOptions,
+): Promise<MigrateResult> {
+  const result: MigrateResult = {
+    slug,
+    success: false,
+    migrated: false,
+    warnings: [],
+    errors: [],
+    skillsUpdated: [],
+    skillsSkipped: [],
+  };
+
+  const solutionDir = path.join(SOLUTIONS_DIR, slug);
+  const solutionJsonPath = path.join(solutionDir, 'solution.json');
+
+  // --- Check solution exists ---
+  try {
+    await fs.access(solutionJsonPath);
+  } catch {
+    result.errors.push(`solution.json not found at ${solutionJsonPath}`);
+    return result;
+  }
+
+  // --- Read and parse solution.json ---
+  let rawContent: string;
+  let rawConfig: unknown;
+  try {
+    rawContent = await fs.readFile(solutionJsonPath, 'utf-8');
+    rawConfig = JSON.parse(rawContent);
+  } catch (err) {
+    result.errors.push(`Failed to parse solution.json: ${err}`);
+    return result;
+  }
+
+  // --- Check if already v2 ---
+  const version = detectSchemaVersion(rawConfig);
+  if (version === '2.0') {
+    console.log(`  Already v2, skipping solution.json migration`);
+    result.migrated = false;
+    // Still check SKILL.md frontmatter
+    await migrateSkillFiles(solutionDir, rawConfig as SolutionConfigV2, options, result);
+    result.success = true;
+    return result;
+  }
+
+  // --- Migrate v1 to v2 ---
+  const adapter = new SolutionConfigAdapter();
+  const adaptOutcome = adapter.adapt(rawConfig);
+
+  if (!adaptOutcome.success) {
+    result.errors.push(...adaptOutcome.errors);
+    return result;
+  }
+
+  const adaptResult = adaptOutcome as AdaptResult;
+  result.warnings.push(...adaptResult.warnings);
+  result.migrated = true;
+
+  const v2Config = adaptResult.data;
+
+  if (options.dryRun) {
+    console.log(`  [DRY RUN] Would migrate solution.json v1 -> v2`);
+    console.log(`  Tenant: ${v2Config.ccaas.tenant.name} (${v2Config.ccaas.tenant.slug})`);
+    console.log(`  Skills: ${v2Config.ccaas.discovery.skills.length}`);
+    console.log(`  MCP Servers: ${Object.keys(v2Config.ccaas.discovery.mcpServers).length}`);
+    if (adaptResult.warnings.length > 0) {
+      console.log(`  Warnings: ${adaptResult.warnings.join('; ')}`);
+    }
+  } else {
+    // --- Backup original ---
+    const backupPath = solutionJsonPath + BACKUP_SUFFIX;
+    await fs.writeFile(backupPath, rawContent, 'utf-8');
+    console.log(`  Backed up to ${path.basename(backupPath)}`);
+
+    // --- Write v2 config ---
+    try {
+      const v2Json = JSON.stringify(v2Config, null, 2) + '\n';
+      await fs.writeFile(solutionJsonPath, v2Json, 'utf-8');
+      console.log(`  Wrote v2 solution.json`);
+    } catch (writeErr) {
+      // Rollback
+      console.error(`  Failed to write v2 config, rolling back...`);
+      await fs.writeFile(solutionJsonPath, rawContent, 'utf-8');
+      result.errors.push(`Failed to write v2 config: ${writeErr}`);
+      return result;
+    }
+  }
+
+  // --- Migrate SKILL.md files ---
+  await migrateSkillFiles(solutionDir, v2Config, options, result);
+
+  result.success = true;
+  return result;
+}
+
+async function migrateSkillFiles(
+  solutionDir: string,
+  v2Config: SolutionConfigV2,
+  options: MigrateOptions,
+  result: MigrateResult,
+): Promise<void> {
+  const skills = v2Config.ccaas.discovery.skills;
+
+  for (const skill of skills) {
+    if (!skill.skillFile) {
+      result.skillsSkipped.push(`${skill.slug} (no skillFile)`);
+      continue;
+    }
+
+    const skillFilePath = path.join(solutionDir, skill.skillFile);
+
+    try {
+      await fs.access(skillFilePath);
+    } catch {
+      result.skillsSkipped.push(`${skill.slug} (file not found: ${skill.skillFile})`);
+      result.warnings.push(`SKILL.md not found: ${skill.skillFile}`);
+      continue;
+    }
+
+    const content = await fs.readFile(skillFilePath, 'utf-8');
+
+    if (hasFrontmatter(content)) {
+      result.skillsSkipped.push(`${skill.slug} (already has frontmatter)`);
+      console.log(`  SKILL.md ${skill.skillFile}: already has frontmatter, skipping`);
+      continue;
+    }
+
+    const frontmatter = generateFrontmatter(skill);
+    const newContent = frontmatter + '\n\n' + content;
+
+    if (options.dryRun) {
+      console.log(`  [DRY RUN] Would add frontmatter to ${skill.skillFile}:`);
+      console.log(`  ${frontmatter.split('\n').join('\n  ')}`);
+    } else {
+      await fs.writeFile(skillFilePath, newContent, 'utf-8');
+      console.log(`  Added frontmatter to ${skill.skillFile}`);
+    }
+
+    result.skillsUpdated.push(skill.slug);
+  }
+}
+
+// ============================================================================
+// Main
+// ============================================================================
+
+async function main(): Promise<void> {
+  const { slugs, options } = parseArgs();
+
+  // Discover solutions if --all
+  const targetSlugs = slugs.length > 0
+    ? slugs
+    : await discoverSolutions();
+
+  if (targetSlugs.length === 0) {
+    console.error('\nNo solutions found.\n');
+    process.exit(1);
+  }
+
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`Solution Migration Tool${options.dryRun ? ' [DRY RUN]' : ''}`);
+  console.log(`${'='.repeat(60)}`);
+  console.log(`Solutions to migrate: ${targetSlugs.join(', ')}\n`);
+
+  const results: MigrateResult[] = [];
+
+  for (const slug of targetSlugs) {
+    console.log(`--- ${slug} ---`);
+    const result = await migrateSolution(slug, options);
+    results.push(result);
+    console.log('');
+  }
+
+  // --- Summary ---
+  console.log(`${'='.repeat(60)}`);
+  console.log('Migration Summary');
+  console.log(`${'='.repeat(60)}\n`);
+
+  let successCount = 0;
+  let failCount = 0;
+  let skipCount = 0;
+
+  for (const r of results) {
+    const statusLabel = r.success
+      ? (r.migrated ? 'MIGRATED' : 'SKIPPED (already v2)')
+      : 'FAILED';
+
+    if (r.success && r.migrated) successCount++;
+    else if (r.success && !r.migrated) skipCount++;
+    else failCount++;
+
+    console.log(`  ${r.slug}: ${statusLabel}`);
+
+    if (r.skillsUpdated.length > 0) {
+      console.log(`    Skills with frontmatter: ${r.skillsUpdated.join(', ')}`);
+    }
+    if (r.skillsSkipped.length > 0) {
+      console.log(`    Skills skipped: ${r.skillsSkipped.join(', ')}`);
+    }
+    if (r.warnings.length > 0) {
+      console.log(`    Warnings: ${r.warnings.join('; ')}`);
+    }
+    if (r.errors.length > 0) {
+      console.log(`    Errors: ${r.errors.join('; ')}`);
+    }
+  }
+
+  console.log(`\n  Migrated: ${successCount}  |  Skipped: ${skipCount}  |  Failed: ${failCount}\n`);
+
+  if (failCount > 0) {
+    process.exit(1);
+  }
+}
+
+main().catch((err) => {
+  console.error('\nUnexpected error:', err);
+  process.exit(1);
+});

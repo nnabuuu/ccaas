@@ -48,6 +48,7 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
+import { SolutionsModule } from './solutions/solutions.module';
 
 @Module({
   imports: [
@@ -137,6 +138,9 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
 
     // Background jobs module
     JobModule,
+
+    // Solution auto-discovery
+    SolutionsModule,
   ],
   providers: [
     {

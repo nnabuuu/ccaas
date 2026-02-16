@@ -9,7 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -19,7 +19,8 @@
     "test:architecture": "jest --config ./test/jest-architecture.json",
     "typecheck": "tsc --noEmit",
     "create-dev-key": "ts-node -r tsconfig-paths/register scripts/create-dev-api-key.ts",
-    "skill:import": "ts-node -r tsconfig-paths/register src/scripts/import-solution-skills.ts"
+    "skill:import": "ts-node -r tsconfig-paths/register src/scripts/import-solution-skills.ts",
+    "solution:migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate-solution.ts"
   },
   "dependencies": {
     "@ccaas/common": "*",
@@ -37,6 +38,7 @@
     "better-sqlite3": "^9.4.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
+    "gray-matter": "^4.0.3",
     "liteque": "^0.8.0",
     "pptxgenjs": "^4.0.1",
     "reflect-metadata": "^0.2.0",

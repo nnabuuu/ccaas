@@ -2,201 +2,123 @@
 /**
  * Import Solution Skills Script
  *
- * Registers skills from solution.json to CCAAS backend database.
+ * Registers skills, MCP servers, and tenant from solution.json to CCAAS backend database.
+ * Supports both v1 (flat) and v2 (structured) solution.json formats.
+ * Supports SKILL.md frontmatter parsing for skill metadata.
  *
  * Usage:
  *   npm run skill:import -- quiz-analyzer
  *   npm run skill:import -- lesson-plan-designer
+ *   npm run skill:import -- quiz-analyzer --verbose
  */
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
-import { SkillsService } from '../skills/skills.service';
-import { TenantsService } from '../tenants/tenants.service';
-import * as path from 'path';
-import * as fs from 'fs';
+import { SolutionLoaderService, type LoadResult } from '../solutions/solution-loader.service';
 
-interface SolutionConfig {
-  name: string;
-  slug: string;
-  description?: string;
-  skills: SkillConfig[];
+// ---------------------------------------------------------------------------
+// CLI Argument Parsing
+// ---------------------------------------------------------------------------
+
+const args = process.argv.slice(2);
+const verbose = args.includes('--verbose') || args.includes('-v');
+const solutionName = args.find((a) => !a.startsWith('-'));
+
+if (!solutionName) {
+  console.error('\n  Usage: npm run skill:import -- <solution-name> [--verbose]');
+  console.error('  Example: npm run skill:import -- quiz-analyzer');
+  console.error('  Example: npm run skill:import -- lesson-plan-designer --verbose\n');
+  process.exit(1);
 }
 
-interface SkillConfig {
-  name: string;
-  slug: string;
-  description: string;
-  skillFile?: string;
-  instructions?: string;
-  allowedTools?: string[];
-  triggers?: TriggerConfig[];
-  scope?: 'tenant' | 'personal';
-  outputFormat?: string;
-}
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
 
-interface TriggerConfig {
-  type: 'keyword' | 'intent' | 'pattern' | 'context';
-  value: string;
-  priority?: number;
-  description?: string;
-}
+async function importSolution(slug: string) {
+  console.log(`\n  Importing solution: ${slug}\n`);
 
-async function importSkills(solutionName: string) {
-  console.log(`\n🚀 Importing skills for solution: ${solutionName}\n`);
-
-  // Create application context
   const app = await NestFactory.createApplicationContext(AppModule, {
-    logger: ['error', 'warn'], // Reduce log noise
+    logger: verbose ? ['log', 'error', 'warn', 'debug'] : ['error', 'warn'],
   });
 
-  const skillsService = app.get(SkillsService);
-  const tenantsService = app.get(TenantsService);
-
   try {
-    // Load solution.json
-    const solutionPath = path.join(
-      process.cwd(),
-      '../../solutions',
-      solutionName,
-      'solution.json',
-    );
+    const loader = app.get(SolutionLoaderService);
+    const result = await loader.loadOne(slug);
 
-    if (!fs.existsSync(solutionPath)) {
-      console.error(`❌ Solution not found: ${solutionPath}`);
-      process.exit(1);
-    }
-
-    const solutionConfig: SolutionConfig = JSON.parse(
-      fs.readFileSync(solutionPath, 'utf-8'),
-    );
-
-    console.log(`📦 Solution: ${solutionConfig.name}`);
-    console.log(`📋 Skills to import: ${solutionConfig.skills.length}\n`);
-
-    // Get or create tenant
-    let tenant = await tenantsService.findOne(solutionName);
-    if (!tenant) {
-      const createResult = await tenantsService.create({
-        slug: solutionName,
-        name: solutionConfig.name,
-        description: solutionConfig.description,
-      });
-      tenant = createResult.tenant;
-      console.log(`✅ Created tenant: ${tenant.slug} (${tenant.id})\n`);
-    } else {
-      console.log(`✅ Tenant exists: ${tenant.slug} (${tenant.id})\n`);
-    }
-
-    // Register each skill
-    let createdCount = 0;
-    let updatedCount = 0;
-
-    for (const skillConfig of solutionConfig.skills) {
-      console.log(`📝 Processing: ${skillConfig.slug}`);
-
-      // Read skill file content
-      let content = '';
-      if (skillConfig.skillFile) {
-        const skillFilePath = path.join(
-          process.cwd(),
-          '../../solutions',
-          solutionName,
-          skillConfig.skillFile,
-        );
-
-        if (fs.existsSync(skillFilePath)) {
-          content = fs.readFileSync(skillFilePath, 'utf-8');
-          console.log(`   📄 Loaded content from: ${skillConfig.skillFile}`);
-        } else {
-          console.warn(`   ⚠️  Skill file not found: ${skillFilePath}`);
-          content = `# ${skillConfig.name}\n\n${skillConfig.description}`;
-        }
-      } else {
-        // Use description as fallback content
-        content = `# ${skillConfig.name}\n\n${skillConfig.description}`;
-      }
-
-      // Append additional instructions if present
-      if (skillConfig.instructions) {
-        content += `\n\n## Additional Instructions\n\n${skillConfig.instructions}`;
-      }
-
-      // Check if skill already exists
-      const existing = await skillsService.findOne(tenant.id, skillConfig.slug);
-
-      if (existing) {
-        console.log(`   🔄 Skill exists - updating...`);
-        await skillsService.update(tenant.id, existing.id, {
-          name: skillConfig.name,
-          description: skillConfig.description,
-          content,
-          allowedTools: skillConfig.allowedTools || [],
-          triggers: skillConfig.triggers || [],
-          scope: skillConfig.scope || 'tenant',
-        });
-        updatedCount++;
-        console.log(`   ✅ Updated: ${skillConfig.slug}`);
-      } else {
-        console.log(`   ➕ Creating new skill...`);
-        const created = await skillsService.create(tenant.id, {
-          slug: skillConfig.slug,
-          name: skillConfig.name,
-          description: skillConfig.description,
-          content,
-          allowedTools: skillConfig.allowedTools || [],
-          triggers: skillConfig.triggers || [],
-          scope: skillConfig.scope || 'tenant',
-          type: 'skill',
-        });
-        createdCount++;
-        console.log(`   ✅ Created: ${skillConfig.slug} (${created.id})`);
-
-        // Publish immediately
-        // Note: In script context, WebSocket events may fail, but that's expected
-        try {
-          await skillsService.publish(tenant.id, created.id);
-          console.log(`   📢 Published: ${skillConfig.slug}`);
-        } catch (error: any) {
-          // Skill was created successfully, WebSocket notification failed (expected in script context)
-          console.log(`   📢 Published: ${skillConfig.slug} (WebSocket notification skipped)`);
-        }
-      }
-
-      console.log('');
-    }
-
-    // Summary
-    console.log('━'.repeat(60));
-    console.log(`\n✨ Import complete!\n`);
-    console.log(`📊 Summary:`);
-    console.log(`   • Created: ${createdCount} skill(s)`);
-    console.log(`   • Updated: ${updatedCount} skill(s)`);
-    console.log(`   • Total: ${solutionConfig.skills.length} skill(s)`);
-    console.log(`   • Tenant: ${tenant.slug} (${tenant.id})`);
-    console.log('');
-
-    // Verification instructions
-    console.log('🔍 Verification:');
-    console.log(`   curl "http://localhost:3001/api/v1/skills?tenantId=${solutionName}"`);
-    console.log('');
+    printResult(result);
   } catch (error) {
-    console.error('\n❌ Import failed:', error);
+    console.error('\n  Import failed:', (error as Error).message);
     process.exit(1);
   } finally {
     await app.close();
   }
 }
 
-// Main execution
-const solutionName = process.argv[2];
-if (!solutionName) {
-  console.error('\n❌ Usage: npm run skill:import -- <solution-name>');
-  console.error('   Example: npm run skill:import -- quiz-analyzer\n');
-  process.exit(1);
+// ---------------------------------------------------------------------------
+// Output
+// ---------------------------------------------------------------------------
+
+function printResult(result: LoadResult) {
+  const created = result.skills.filter((s) => s.action === 'created');
+  const updated = result.skills.filter((s) => s.action === 'updated');
+  const skipped = result.skills.filter((s) => s.action === 'skipped');
+
+  const mcpCreated = result.mcpServers.filter((m) => m.action === 'created');
+  const mcpUpdated = result.mcpServers.filter((m) => m.action === 'updated');
+  const mcpSkipped = result.mcpServers.filter((m) => m.action === 'skipped');
+
+  // Tenant
+  console.log(`  Tenant: ${result.slug} (${result.tenantId})`);
+
+  // Skills detail (verbose)
+  if (verbose) {
+    console.log(`\n  Skills:`);
+    for (const s of result.skills) {
+      const icon = s.action === 'created' ? '+' : s.action === 'updated' ? '~' : '!';
+      const suffix = s.error ? ` (${s.error})` : s.skillId ? ` (${s.skillId})` : '';
+      console.log(`    [${icon}] ${s.slug}${suffix}`);
+    }
+
+    if (result.mcpServers.length > 0) {
+      console.log(`\n  MCP Servers:`);
+      for (const m of result.mcpServers) {
+        const icon = m.action === 'created' ? '+' : m.action === 'updated' ? '~' : '!';
+        const suffix = m.error ? ` (${m.error})` : m.serverId ? ` (${m.serverId})` : '';
+        console.log(`    [${icon}] ${m.slug}${suffix}`);
+      }
+    }
+
+    if (result.warnings.length > 0) {
+      console.log(`\n  Warnings:`);
+      for (const w of result.warnings) {
+        console.log(`    - ${w}`);
+      }
+    }
+  }
+
+  // Summary
+  console.log('\n' + '-'.repeat(60));
+  console.log(`\n  Import complete!\n`);
+  console.log(`  Summary:`);
+  console.log(`    Skills:  ${created.length} created, ${updated.length} updated${skipped.length ? `, ${skipped.length} skipped` : ''}`);
+  if (result.mcpServers.length > 0) {
+    console.log(`    MCP:     ${mcpCreated.length} created, ${mcpUpdated.length} updated${mcpSkipped.length ? `, ${mcpSkipped.length} skipped` : ''}`);
+  }
+  console.log(`    Tenant:  ${result.slug} (${result.tenantId})`);
+  console.log('');
+
+  // Verification
+  console.log('  Verification:');
+  console.log(`    curl "http://localhost:3001/api/v1/skills?tenantId=${result.slug}"`);
+  console.log('');
 }
 
-importSkills(solutionName).catch((err) => {
-  console.error('\n❌ Unexpected error:', err);
+// ---------------------------------------------------------------------------
+// Execute
+// ---------------------------------------------------------------------------
+
+importSolution(solutionName).catch((err) => {
+  console.error('\n  Unexpected error:', err);
   process.exit(1);
 });

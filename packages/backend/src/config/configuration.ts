@@ -20,6 +20,10 @@ export default () => ({
     synchronize: process.env.NODE_ENV !== 'production',
   },
 
+  solutions: {
+    dir: process.env.SOLUTIONS_DIR || undefined, // Auto-detected from monorepo root if unset
+  },
+
   skills: {
     registryDir: process.env.SKILL_REGISTRY_DIR || '.skill-packages',
     defaultTenantId: process.env.DEFAULT_TENANT_ID || 'default',
