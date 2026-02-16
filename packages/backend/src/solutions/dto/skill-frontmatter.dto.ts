@@ -51,7 +51,7 @@ export const SkillTriggerSchema = z.object({
 // Scope Schema
 // ============================================================================
 
-export const SkillScopeSchema = z.enum(['tenant', 'global']);
+export const SkillScopeSchema = z.enum(['tenant', 'personal']);
 
 // ============================================================================
 // Skill Frontmatter Schema

@@ -8,6 +8,11 @@
  *   4. Register skills with upsert logic (via SkillsService)
  *   5. Register MCP servers with upsert logic (via McpPoolService)
  *
+ * Supports v1, v2, and v3 solution.json formats:
+ * - v3: Folder-based skills with wildcard support (e.g., "skills/*")
+ * - v2: Detailed skill definitions (backward compatible)
+ * - v1: Flat structure (migrated to v3 via adapter)
+ *
  * Provides:
  *   - loadAll()  - Auto-discover and register all enabled solutions
  *   - loadOne()  - Register a single solution by slug
@@ -17,12 +22,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import fg from 'fast-glob';
 import { SolutionScannerService, type SolutionMetadata } from './solution-scanner.service';
 import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
-import type { SolutionConfigV2, SkillDefinition, McpServerDefinition } from './dto/solution-config.dto';
+import type {
+  SolutionConfigV3,
+  SkillReferenceV3,
+  McpServerDefinition,
+} from './dto/solution-config.dto';
 
 // ============================================================================
 // Types
@@ -177,6 +187,7 @@ export class SolutionLoaderService {
 
   /**
    * Register a single solution: ensure tenant, register skills, register MCP servers.
+   * Supports both v3 (folder-based) and v2 (detailed) skill formats.
    */
   private async loadSolution(solution: SolutionMetadata): Promise<LoadResult> {
     const config = solution.config;
@@ -185,8 +196,8 @@ export class SolutionLoaderService {
     // Step 1: Ensure tenant exists
     const tenantId = await this.ensureTenant(config, warnings);
 
-    // Step 2: Register skills
-    const skillResults = await this.registerSkills(
+    // Step 2: Register skills (v3 uses folder-based, all configs are v3 now)
+    const skillResults = await this.loadSkillsV3(
       tenantId,
       config,
       solution.solutionPath,
@@ -227,10 +238,10 @@ export class SolutionLoaderService {
    * Returns the tenant ID.
    */
   private async ensureTenant(
-    config: SolutionConfigV2,
+    config: SolutionConfigV3,
     warnings: string[],
   ): Promise<string> {
-    const { name, slug, description } = config.ccaas.tenant;
+    const { name, slug, description } = config.tenant;
 
     const existing = await this.tenants.findOne(slug);
     if (existing) {
@@ -250,41 +261,74 @@ export class SolutionLoaderService {
   }
 
   // --------------------------------------------------------------------------
-  // Skill Registration
+  // Skill Registration (V3 - Folder-based with wildcard support)
   // --------------------------------------------------------------------------
 
   /**
-   * Register all skills defined in the solution config.
-   * Uses upsert logic: create if new, update if exists.
+   * Load skills from folder paths (v3 format).
+   * Supports wildcard patterns like "skills/*" or "custom-skills/analyzer".
    */
-  private async registerSkills(
+  private async loadSkillsV3(
     tenantId: string,
-    config: SolutionConfigV2,
+    config: SolutionConfigV3,
     solutionPath: string,
     warnings: string[],
   ): Promise<SkillLoadResult[]> {
-    const skillDefs = config.ccaas.discovery.skills;
+    const skillRefs = config.skills || ['skills/*']; // Default to wildcard
     const results: SkillLoadResult[] = [];
 
-    for (const skillDef of skillDefs) {
-      try {
-        const result = await this.registerOneSkill(
-          tenantId,
-          skillDef,
-          config,
-          solutionPath,
-          warnings,
-        );
-        results.push(result);
-      } catch (err) {
-        const error = (err as Error).message;
-        this.logger.warn(`Failed to register skill "${skillDef.slug}": ${error}`);
-        results.push({
-          slug: skillDef.slug,
-          name: skillDef.name,
-          action: 'skipped',
-          error,
-        });
+    for (const ref of skillRefs) {
+      const pattern = typeof ref === 'string' ? ref : ref.folder;
+
+      if (pattern.includes('*')) {
+        // Wildcard pattern - scan for SKILL.md files
+        const skillDirs = await this.globSkillDirectories(solutionPath, pattern);
+
+        if (skillDirs.length === 0) {
+          warnings.push(`No skills found matching pattern "${pattern}"`);
+          continue;
+        }
+
+        for (const dir of skillDirs) {
+          try {
+            const result = await this.registerSkillFromFolder(
+              tenantId,
+              solutionPath,
+              dir,
+              warnings,
+            );
+            results.push(result);
+          } catch (err) {
+            const error = (err as Error).message;
+            this.logger.warn(`Failed to register skill from "${dir}": ${error}`);
+            results.push({
+              slug: path.basename(dir),
+              name: path.basename(dir),
+              action: 'skipped',
+              error,
+            });
+          }
+        }
+      } else {
+        // Specific path - register single skill
+        try {
+          const result = await this.registerSkillFromFolder(
+            tenantId,
+            solutionPath,
+            pattern,
+            warnings,
+          );
+          results.push(result);
+        } catch (err) {
+          const error = (err as Error).message;
+          this.logger.warn(`Failed to register skill from "${pattern}": ${error}`);
+          results.push({
+            slug: path.basename(pattern),
+            name: path.basename(pattern),
+            action: 'skipped',
+            error,
+          });
+        }
       }
     }
 
@@ -292,44 +336,90 @@ export class SolutionLoaderService {
   }
 
   /**
-   * Register a single skill with upsert logic.
+   * Scan directories matching a wildcard pattern for SKILL.md files.
+   * Returns relative paths (e.g., ["skills/analyzer", "skills/generator"]).
    */
-  private async registerOneSkill(
+  private async globSkillDirectories(
+    basePath: string,
+    pattern: string,
+  ): Promise<string[]> {
+    // Convert pattern to glob format: "skills/*" -> "skills/*/SKILL.md"
+    const globPattern = path.join(basePath, pattern, 'SKILL.md');
+
+    try {
+      const matches = await fg(globPattern, {
+        absolute: false,
+        cwd: basePath,
+        onlyFiles: true,
+      });
+
+      // Extract directory paths relative to basePath
+      // Note: fast-glob returns absolute paths when pattern is absolute,
+      // even with absolute: false. Don't join with basePath again!
+      return matches.map((match) => {
+        const relativePath = path.relative(basePath, match);
+        return path.dirname(relativePath);
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Glob failed for pattern "${pattern}": ${(err as Error).message}`,
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Register a single skill from a folder containing SKILL.md.
+   * Uses SKILL.md frontmatter as the primary metadata source.
+   */
+  private async registerSkillFromFolder(
     tenantId: string,
-    skillDef: SkillDefinition,
-    config: SolutionConfigV2,
     solutionPath: string,
+    skillFolder: string,
     warnings: string[],
   ): Promise<SkillLoadResult> {
-    // Load skill content from SKILL.md if available
-    const content = await this.loadSkillContent(
-      skillDef,
-      config,
-      solutionPath,
-      warnings,
-    );
+    const skillFilePath = path.resolve(solutionPath, skillFolder, 'SKILL.md');
 
-    const existing = await this.skills.findOne(tenantId, skillDef.slug);
+    // Check if SKILL.md exists
+    try {
+      await fs.access(skillFilePath);
+    } catch {
+      throw new Error(`SKILL.md not found in ${skillFolder}`);
+    }
+
+    // Parse SKILL.md frontmatter (no fallback to solution.json in v3)
+    const metadata = await this.parser.parseSkillFile(skillFilePath);
+
+    if (metadata.source === 'defaults') {
+      warnings.push(
+        `Skill in "${skillFolder}" has no frontmatter, using defaults`,
+      );
+    }
+
+    const { frontmatter, content } = metadata;
+
+    // Check if skill already exists
+    const existing = await this.skills.findOne(tenantId, frontmatter.slug);
 
     if (existing) {
       // Update existing skill
       await this.skills.update(tenantId, existing.id, {
-        name: skillDef.name,
-        description: skillDef.description,
+        name: frontmatter.name,
+        description: frontmatter.description,
         content,
-        allowedTools: skillDef.allowedTools ?? [],
-        triggers: (skillDef.triggers ?? []).map((t) => ({
+        allowedTools: frontmatter.allowedTools ?? [],
+        triggers: (frontmatter.triggers ?? []).map((t) => ({
           type: t.type,
           value: t.value,
           priority: t.priority,
           description: t.description,
         })),
-        scope: skillDef.scope ?? 'tenant',
+        scope: frontmatter.scope ?? 'tenant',
       });
 
       return {
-        slug: skillDef.slug,
-        name: skillDef.name,
+        slug: frontmatter.slug,
+        name: frontmatter.name,
         action: 'updated',
         skillId: existing.id,
       };
@@ -337,82 +427,36 @@ export class SolutionLoaderService {
 
     // Create new skill
     const created = await this.skills.create(tenantId, {
-      slug: skillDef.slug,
-      name: skillDef.name,
-      description: skillDef.description,
+      slug: frontmatter.slug,
+      name: frontmatter.name,
+      description: frontmatter.description,
       content,
       type: 'skill',
-      allowedTools: skillDef.allowedTools ?? [],
-      triggers: (skillDef.triggers ?? []).map((t) => ({
+      allowedTools: frontmatter.allowedTools ?? [],
+      triggers: (frontmatter.triggers ?? []).map((t) => ({
         type: t.type,
         value: t.value,
         priority: t.priority,
         description: t.description,
       })),
-      scope: skillDef.scope ?? 'tenant',
+      scope: frontmatter.scope ?? 'tenant',
     });
 
-    // Publish immediately (auto-discovered skills should be available)
+    // Publish immediately
     try {
       await this.skills.publish(tenantId, created.id);
     } catch {
-      // Publish failure is non-fatal (e.g., WebSocket not available in script context)
-      warnings.push(`Skill "${skillDef.slug}" created but publish notification failed`);
+      warnings.push(`Skill "${frontmatter.slug}" created but publish notification failed`);
     }
 
     return {
-      slug: skillDef.slug,
-      name: skillDef.name,
+      slug: frontmatter.slug,
+      name: frontmatter.name,
       action: 'created',
       skillId: created.id,
     };
   }
 
-  /**
-   * Load skill content from SKILL.md file, with fallback to generated content.
-   */
-  private async loadSkillContent(
-    skillDef: SkillDefinition,
-    config: SolutionConfigV2,
-    solutionPath: string,
-    warnings: string[],
-  ): Promise<string> {
-    if (skillDef.skillFile) {
-      const skillFilePath = path.resolve(solutionPath, skillDef.skillFile);
-
-      try {
-        const metadata = await this.parser.parseSkillFile(
-          skillFilePath,
-          config,
-          skillDef.slug,
-        );
-        let content = metadata.content;
-
-        // Append instructions if present in skill definition
-        if (skillDef.instructions) {
-          content += `\n\n## Additional Instructions\n\n${skillDef.instructions}`;
-        }
-
-        if (metadata.warnings.length > 0) {
-          warnings.push(...metadata.warnings);
-        }
-
-        return content || this.generateFallbackContent(skillDef);
-      } catch (err) {
-        warnings.push(
-          `Failed to read skill file "${skillDef.skillFile}": ${(err as Error).message}`,
-        );
-      }
-    }
-
-    return this.generateFallbackContent(skillDef);
-  }
-
-  private generateFallbackContent(skillDef: SkillDefinition): string {
-    return `# ${skillDef.name}\n\n${skillDef.description || ''}${
-      skillDef.instructions ? `\n\n## Instructions\n\n${skillDef.instructions}` : ''
-    }`;
-  }
 
   // --------------------------------------------------------------------------
   // MCP Server Registration
@@ -420,14 +464,14 @@ export class SolutionLoaderService {
 
   /**
    * Register all MCP servers defined in the solution config.
-   * Uses upsert logic: create if new, skip if exists.
+   * Uses upsert logic: create if new, update if exists.
    */
   private async registerMcpServers(
     tenantId: string,
-    config: SolutionConfigV2,
+    config: SolutionConfigV3,
     warnings: string[],
   ): Promise<McpServerLoadResult[]> {
-    const serverDefs = config.ccaas.discovery.mcpServers;
+    const serverDefs = config.mcpServers || {};
     const results: McpServerLoadResult[] = [];
 
     for (const [slug, serverDef] of Object.entries(serverDefs)) {
