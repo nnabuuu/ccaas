@@ -345,6 +345,17 @@ gh pr merge --squash
 
 详细规范见 **[docs/PROJECT_MANAGEMENT_GUIDE.md](./docs/PROJECT_MANAGEMENT_GUIDE.md)**
 
+### Linear Workflow Automation
+
+All tasks are automatically tracked in Linear using the `linear-task-workflow` skill:
+
+- **New tasks**: Linear issue auto-created when you describe a task
+- **Progress updates**: Milestones recorded in Linear comments
+- **Final summary**: Complete deliverables summary in Linear
+- **No `*_COMPLETE.md` files**: All tracking in Linear, not code repo
+
+For details, see: [`.claude/skills/linear-task-workflow/SKILL.md`](.claude/skills/linear-task-workflow/SKILL.md)
+
 ### Commit Message 规范
 
 遵循 Conventional Commits:
