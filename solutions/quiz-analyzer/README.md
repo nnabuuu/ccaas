@@ -64,6 +64,81 @@ Open your browser to:
 ./stop.sh
 ```
 
+## ⚙️ Skill Registration (Required)
+
+**Important**: Before using quiz-analyzer with the CCAAS platform, you must register the solution's skills to the CCAAS backend database.
+
+### Why Skill Registration is Required
+
+Quiz-analyzer defines its AI skills in `solution.json`, but these must be registered to the CCAAS backend before they can be used. Without registration:
+- ❌ AI will use global/default skills instead of quiz-analyzer-specific tools
+- ❌ `parse_quiz_content`, `write_output`, etc. won't be available to the AI
+- ❌ Frontend won't receive `output_update` events from AI analysis
+
+### One-Time Setup
+
+After installing dependencies (via `./setup.sh` or `npm install`), register the skills:
+
+```bash
+cd ../../packages/backend
+npm run skill:import -- quiz-analyzer
+```
+
+**Expected Output:**
+```
+🚀 Importing skills for solution: quiz-analyzer
+
+📦 Solution: Quiz Analyzer
+📋 Skills to import: 4
+
+✅ Tenant exists: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
+
+📝 Processing: three-column-analysis
+   ✅ Created: three-column-analysis
+   📢 Published: three-column-analysis
+
+... (3 more skills)
+
+✨ Import complete!
+
+📊 Summary:
+   • Created: 4 skill(s)
+   • Total: 4 skill(s)
+   • Tenant: quiz-analyzer (227f2b75...)
+```
+
+### Verification
+
+Check that skills are registered:
+
+```bash
+# Via API
+curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer" | python3 -m json.tool
+
+# Via database
+sqlite3 ../../packages/backend/.agent-workspace/data.db \
+  "SELECT slug, status, enabled FROM skills WHERE tenantId='227f2b75-d73a-d450-27ee-d523e270161f';"
+
+# Expected output:
+# analyze-student-answer|published|1
+# complete-analysis|published|1
+# knowledge-point-matching|published|1
+# three-column-analysis|published|1
+```
+
+### Troubleshooting
+
+**If AI uses wrong tools** (e.g., `list_issues` instead of `parse_quiz_content`):
+1. ✅ Verify skills are registered (see verification above)
+2. ✅ Check frontend sends `tenantId: 'quiz-analyzer'` in API requests
+3. ✅ Restart CCAAS backend to reload skill cache
+4. ✅ Clear browser console and retry analysis
+
+**If skill import fails**:
+- Ensure CCAAS backend is installed: `cd ../../packages/backend && npm install`
+- Ensure solution.json exists: `ls solution.json`
+- Check for syntax errors in solution.json: `cat solution.json | python3 -m json.tool`
+
 ## 📖 Usage
 
 ### Web Interface

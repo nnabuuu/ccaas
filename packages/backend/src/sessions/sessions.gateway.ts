@@ -180,12 +180,15 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     );
 
     // Forward event to tenant room via Socket.io
-    this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
-      type: 'skill_updated',
-      skill,
-      affectedSessions,
-      impact,
-    });
+    // Skip if server is not initialized (e.g., in script/CLI context)
+    if (this.server) {
+      this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
+        type: 'skill_updated',
+        skill,
+        affectedSessions,
+        impact,
+      });
+    }
   }
 
   /**

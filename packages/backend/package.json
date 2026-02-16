@@ -18,7 +18,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:architecture": "jest --config ./test/jest-architecture.json",
     "typecheck": "tsc --noEmit",
-    "create-dev-key": "ts-node -r tsconfig-paths/register scripts/create-dev-api-key.ts"
+    "create-dev-key": "ts-node -r tsconfig-paths/register scripts/create-dev-api-key.ts",
+    "skill:import": "ts-node -r tsconfig-paths/register src/scripts/import-solution-skills.ts"
   },
   "dependencies": {
     "@ccaas/common": "*",
