@@ -37,7 +37,7 @@ import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
 import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
-import { AdminAuditLog, SessionAlert, TenantQuota, Turn } from './admin/entities';
+import { AdminAuditLog, SessionAlert, TenantQuota, Turn, Session } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
@@ -95,6 +95,7 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
         UserContextEvent,
         // Session entities
         MessageQueue,
+        Session,
         // Storage entities
         LargeContent,
         SystemPromptVersion,

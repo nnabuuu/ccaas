@@ -15,6 +15,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Socket } from 'socket.io';
@@ -22,6 +24,7 @@ import { EventMapperService } from './event-mapper.service';
 import { CliProcessService, ResolvedAttachment } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
+import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
   ManagedSession,
   SessionStats,
@@ -65,6 +68,8 @@ export class SessionService implements OnModuleDestroy {
     private readonly cliProcessService: CliProcessService,
     private readonly workspaceService: WorkspaceService,
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
+    @InjectRepository(SessionEntity)
+    private readonly sessionRepository: Repository<SessionEntity>,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
     this.sessionTtlMs = this.configService.get('workspace.sessionTtlMs', 1800000);
@@ -170,6 +175,15 @@ export class SessionService implements OnModuleDestroy {
     this.logger.log(`Created new session ${sessionId} for client ${clientId}`);
     this.logger.log(`Active sessions: ${this.sessions.size}/${this.maxSessions}`);
 
+    // Phase 2: Dual-write to database (fire-and-forget, graceful failure)
+    this.persistSessionToDatabase(session).catch((error) => {
+      this.logger.error(
+        `Failed to persist session ${sessionId} to database: ${error.message}`,
+        error.stack,
+      );
+      // Session continues to work in-memory even if database write fails
+    });
+
     return session;
   }
 
@@ -274,6 +288,17 @@ export class SessionService implements OnModuleDestroy {
     this.clientSessions.get(session.clientId)?.delete(sessionId);
 
     this.eventMapperService.clearSessionState(sessionId);
+
+    // Phase 2: Update database to mark session as closed (fire-and-forget)
+    this.updateSessionInDatabase(sessionId, {
+      status: 'closed',
+      closedAt: new Date(),
+    }).catch((error) => {
+      this.logger.error(
+        `[Phase 2] Failed to mark session ${sessionId} as closed in database: ${error.message}`,
+      );
+      // Non-critical error, session cleanup continues
+    });
   }
 
   /**
@@ -687,6 +712,89 @@ export class SessionService implements OnModuleDestroy {
   async getWorkspaceTree(sessionId: string): Promise<WorkspaceTreeResponse> {
     const session = this.getSession(sessionId) ?? null;
     return this.workspaceService.getWorkspaceTree(session, sessionId);
+  }
+
+  /**
+   * Phase 2: Persist session to database (create)
+   * @private
+   */
+  private async persistSessionToDatabase(session: ManagedSession): Promise<void> {
+    try {
+      await this.sessionRepository.save({
+        sessionId: session.sessionId,
+        tenantId: session.tenantId || null,
+        clientId: session.clientId,
+        status: session.status,
+        messageCount: session.messageCount,
+        totalTokens: 0, // Will be updated via updateSessionStatsInDatabase
+        estimatedCost: 0.0,
+        createdAt: session.createdAt,
+        lastActivity: session.lastActivity,
+        closedAt: null,
+        workspaceDir: session.workspaceDir,
+      });
+      this.logger.debug(`[Phase 2] Persisted session ${session.sessionId} to database`);
+    } catch (error) {
+      // If unique constraint violation, session may already exist (race condition)
+      if (error.code === 'SQLITE_CONSTRAINT' || error.message?.includes('UNIQUE')) {
+        this.logger.warn(
+          `[Phase 2] Session ${session.sessionId} already exists in database, skipping`,
+        );
+        return;
+      }
+      throw error; // Re-throw other errors for caller to handle
+    }
+  }
+
+  /**
+   * Phase 2: Update session in database (activity, status, stats)
+   * @private
+   */
+  private async updateSessionInDatabase(
+    sessionId: string,
+    updates: Partial<SessionEntity>,
+  ): Promise<void> {
+    try {
+      const result = await this.sessionRepository.update(
+        { sessionId },
+        {
+          ...updates,
+          lastActivity: new Date(), // Always update lastActivity
+        },
+      );
+
+      if (result.affected === 0) {
+        this.logger.warn(
+          `[Phase 2] Session ${sessionId} not found in database for update`,
+        );
+      } else {
+        this.logger.debug(
+          `[Phase 2] Updated session ${sessionId} in database: ${JSON.stringify(updates)}`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `[Phase 2] Failed to update session ${sessionId} in database: ${error.message}`,
+        error.stack,
+      );
+      // Don't throw - graceful failure, session continues in memory
+    }
+  }
+
+  /**
+   * Phase 2: Update session statistics (messageCount, totalTokens, estimatedCost)
+   * Called periodically or on specific events
+   * @private
+   */
+  private async updateSessionStatsInDatabase(
+    sessionId: string,
+    stats: {
+      messageCount?: number;
+      totalTokens?: number;
+      estimatedCost?: number;
+    },
+  ): Promise<void> {
+    await this.updateSessionInDatabase(sessionId, stats);
   }
 
   /**
