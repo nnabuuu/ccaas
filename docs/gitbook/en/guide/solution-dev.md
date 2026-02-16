@@ -58,43 +58,91 @@ my-solution/
         └── SKILL.md        # Skill Markdown file
 ```
 
-## solution.json Configuration
+## solution.json Configuration (v3.0)
+
+**Recommended:** Use the simplified v3.0 schema with convention over configuration.
+
+**Minimal Configuration (Most Common):**
 
 ```json
 {
-  "name": "My Solution",
-  "slug": "my-solution",
-  "version": "1.0.0",
-  "description": "Solution description",
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "My Solution",
+    "slug": "my-solution",
+    "description": "Solution description"
+  },
   "mcpServers": {
     "my-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "description": "Tool service description"
     }
-  },
-  "skills": [
-    {
-      "name": "Main Skill",
-      "slug": "main-skill",
-      "description": "Main skill description",
-      "type": "prompt",
-      "triggers": [
-        {
-          "type": "keyword",
-          "value": "design",
-          "priority": 1
-        }
-      ],
-      "allowedTools": ["write_output", "custom_tool"],
-      "skillFile": "skills/main-skill/SKILL.md"
-    }
-  ],
-  "ports": {
-    "backend": 3002,
-    "frontend": 5280
   }
 }
+```
+
+**That's it!** Skills are auto-discovered from `skills/*/SKILL.md`. All skill metadata lives in SKILL.md frontmatter.
+
+**With Solution-Specific Config:**
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "My Solution",
+    "slug": "my-solution",
+    "description": "Solution description"
+  },
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"]
+    }
+  },
+  "backend": {
+    "port": 3002,
+    "database": {
+      "type": "sqlite",
+      "path": "data/my-solution.db"
+    }
+  },
+  "frontend": {
+    "port": 5280
+  }
+}
+```
+
+**Key Changes from v2.0:**
+- ✅ Flat structure (no `ccaas`/`internal` nesting)
+- ✅ Skills auto-discovered (default: `["skills/*"]`)
+- ✅ Skill metadata in SKILL.md frontmatter only
+- ✅ 70-80% configuration reduction
+
+**See:** [solution.json Reference](../reference/solution-json.md) for complete schema documentation.
+
+### SKILL.md Frontmatter
+
+v3.0 requires complete frontmatter in all SKILL.md files:
+
+```markdown
+---
+name: Main Skill
+slug: main-skill
+description: Main skill description
+scope: tenant
+triggers:
+  - type: keyword
+    value: "design"
+    priority: 10
+allowedTools:
+  - write_output
+  - custom_tool
+---
+
+# Main Skill
+
+Instructions for the AI agent...
 ```
 
 ### Trigger Types

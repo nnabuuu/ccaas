@@ -56,43 +56,91 @@ my-solution/
         └── SKILL.md        # Skill Markdown 文件
 ```
 
-## solution.json 配置
+## solution.json 配置 (v3.0)
+
+**推荐:** 使用简化的 v3.0 schema，遵循约定优于配置原则。
+
+**最简配置（最常用）:**
 
 ```json
 {
-  "name": "My Solution",
-  "slug": "my-solution",
-  "version": "1.0.0",
-  "description": "解决方案描述",
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "我的解决方案",
+    "slug": "my-solution",
+    "description": "解决方案描述"
+  },
   "mcpServers": {
     "my-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "description": "工具服务描述"
     }
-  },
-  "skills": [
-    {
-      "name": "Main Skill",
-      "slug": "main-skill",
-      "description": "主技能描述",
-      "type": "prompt",
-      "triggers": [
-        {
-          "type": "keyword",
-          "value": "设计",
-          "priority": 1
-        }
-      ],
-      "allowedTools": ["write_output", "custom_tool"],
-      "skillFile": "skills/main-skill/SKILL.md"
-    }
-  ],
-  "ports": {
-    "backend": 3002,
-    "frontend": 5280
   }
 }
+```
+
+**就是这样！** 技能会自动从 `skills/*/SKILL.md` 发现。所有技能元数据都在 SKILL.md frontmatter 中。
+
+**包含解决方案特定配置:**
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "我的解决方案",
+    "slug": "my-solution",
+    "description": "解决方案描述"
+  },
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"]
+    }
+  },
+  "backend": {
+    "port": 3002,
+    "database": {
+      "type": "sqlite",
+      "path": "data/my-solution.db"
+    }
+  },
+  "frontend": {
+    "port": 5280
+  }
+}
+```
+
+**相比 v2.0 的主要变化:**
+- ✅ 扁平结构（无 `ccaas`/`internal` 嵌套）
+- ✅ 技能自动发现（默认: `["skills/*"]`）
+- ✅ 技能元数据仅在 SKILL.md frontmatter 中
+- ✅ 配置减少 70-80%
+
+**参考:** [solution.json 配置参考](../reference/solution-json.md) 查看完整 schema 文档。
+
+### SKILL.md Frontmatter
+
+v3.0 要求所有 SKILL.md 文件都有完整的 frontmatter:
+
+```markdown
+---
+name: 主技能
+slug: main-skill
+description: 主技能描述
+scope: tenant
+triggers:
+  - type: keyword
+    value: "设计"
+    priority: 10
+allowedTools:
+  - write_output
+  - custom_tool
+---
+
+# 主技能
+
+给 AI agent 的指令...
 ```
 
 ### 触发器类型
