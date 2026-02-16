@@ -140,7 +140,9 @@ For package-specific conventions and guidelines, refer to the documentation with
 
 **Core workflow**:
 ```
-Linear Issue → Branch → TDD → PR → Claude Review → CI → Merge → Done
+Linear Issue → Branch → TDD → PR → Code Review → CI → Merge → Done
+                                    ↓
+                            code-reviewer + code-simplifier
 ```
 
 **Quick commands**:
@@ -157,9 +159,14 @@ git commit -m "feat(scope): description"
 # Create PR
 gh pr create --fill
 
-# Request review
-"请根据 PR template review 这个 PR"
+# Code review (use BOTH agents)
+"请用 code-reviewer 和 code-simplifier 两个 agent review 这个 PR"
 ```
+
+**Code Review Process**:
+1. **code-reviewer**: Checks quality, security, performance, test coverage
+2. **code-simplifier**: Identifies over-engineering and suggests simplifications
+3. Both reviews must pass before merge
 
 **Detailed workflow**: See [docs/WORKFLOW.md](./docs/WORKFLOW.md) and [CONTRIBUTING.md](./CONTRIBUTING.md)
 

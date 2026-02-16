@@ -181,23 +181,44 @@ export function useMyFeatureSession() {
 
 ## Code Review Best Practices
 
+### Two-Agent Review Process
+
+**Always use BOTH agents** for comprehensive review:
+
+1. **code-reviewer**: Quality, security, performance, test coverage
+2. **code-simplifier**: Over-engineering detection, simplification suggestions
+
 ### When Requesting Review
 
 ```
-"请根据 PR template 中的 checklist review 这个 PR，重点检查：
+"请用 code-reviewer 和 code-simplifier 两个 agent review 这个 PR
+
+code-reviewer 重点检查：
 1. 架构合规性（核心后端是否包含领域实体）
 2. 测试覆盖
 3. API 契约
-4. 安全性"
+4. 安全性
+
+code-simplifier 重点检查：
+1. 是否存在 over-engineering
+2. 是否有不必要的抽象
+3. 是否添加了未被要求的功能"
 ```
 
 ### Review Focus Areas
 
+**code-reviewer**:
 1. **Architecture compliance** (core vs solution separation)
 2. **Test coverage** (unit, integration, E2E)
 3. **API contracts** (breaking changes?)
 4. **Security** (vulnerabilities, input validation)
 5. **Performance** (N+1 queries, indexes, caching)
+
+**code-simplifier**:
+1. **Unnecessary abstractions** (3 similar lines better than premature abstraction)
+2. **Unrequested features** (scope creep)
+3. **Over-engineering** (helper functions for one-time operations)
+4. **Complexity** (simpler implementation available?)
 
 ---
 
