@@ -1,87 +1,48 @@
-# File Explorer 组件
+# File Explorer
 
-File Explorer 是一个用于浏览和下载会话工作区文件的 React 组件。它以树形结构显示文件，支持搜索、排序、展开/折叠和下载功能。
+## 使用时机
 
-## 功能特性
+核心问题：**你的 solution 会生成用户需要查看或下载的文件吗？**
 
-### 核心功能
-- 📁 **树形视图**：以层级结构显示文件和文件夹
-- 🔍 **实时搜索**：按文件名过滤（递归搜索）
-- 🔄 **排序功能**：按名称、大小或类型排序
-- ➕ **展开/折叠**：显示/隐藏文件夹内容
-- ⬇️ **文件下载**：点击文件即可下载
-- 🎨 **MIME 类型图标**：根据文件类型显示不同图标
-- ⏳ **加载状态**：骨架屏和加载动画
-- ❌ **错误处理**：清晰的错误提示和重试选项
+**需要展示文件面板的场景：**
+- Agent 生成了用户需要下载的产出物（报告、代码文件、数据文件）
+- Solution 涉及文件创建或转换，用户需要查看结果
+- 工作流中用户需要从 agent 的文件输出中做选择
 
-### 设计系统
-- **深色主题**：Slate 系列背景色（#0F172A - #334155）
-- **强调色**：绿色 (#22C55E) 用于活动状态
-- **字体**：JetBrains Mono（等宽，用于文件名）
-- **过渡动画**：200-300ms 平滑过渡
-- **SVG 图标**：Heroicons 风格的内联 SVG
+**不需要文件面板的场景：**
+- Agent 输出全部通过 `write_output` 同步进表单字段
+- Agent 只产生 chat 文本回复
+- 文件是实现细节（中间文件），用户不需要感知
 
-### 无障碍支持
-- ✅ 键盘导航（Tab、Enter）
-- ✅ 焦点状态可见（绿色边框）
-- ✅ ARIA 标签支持
-- ✅ 屏幕阅读器兼容
-- ✅ WCAG AA 对比度标准（4.5:1）
-- ✅ 触摸目标最小 44x44px
+如果你的测验分析器生成教师需要下载的 PDF 报告，添加 `FilePanel`。如果你的教案设计器直接填充教师可编辑的表单字段，跳过即可。
 
-## 组件架构
+## 使用 React SDK 的 FilePanel
 
-### 组件结构
-```
-src/components/FileExplorer/
-├── FileExplorer.tsx              # 主容器（状态管理）
-├── FileTree.tsx                  # 树形渲染器
-├── FileTreeNode.tsx              # 单个节点组件（递归）
-├── FileExplorerHeader.tsx        # 工具栏（搜索、排序）
-└── FileIcon.tsx                  # MIME 类型图标
-```
+展示工作区文件的推荐方式是 `@ccaas/react-sdk` 中的 `FilePanel` 组件。它开箱即用地处理文件列表、选择、预览和上传。
 
-### Hooks
-```
-src/hooks/
-├── useWorkspaceFiles.ts          # 从后端 API 获取文件树
-└── useFileDownload.ts            # 处理文件下载
-```
-
-### 工具函数
-```
-src/utils/
-└── fileUtils.ts                  # formatFileSize、filterTree、sortTree 等
-```
-
-## 使用方法
-
-### 基本集成
+### 基本用法
 
 ```tsx
-import { FileExplorer } from './components/FileExplorer/FileExplorer'
+import { FilePanel } from '@ccaas/react-sdk'
 
-function App() {
-  const [fileExplorerOpen, setFileExplorerOpen] = useState(false)
+function MySolution() {
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
+    sessionPrefix: 'my-solution'
+  })
 
   return (
-    <>
-      <button onClick={() => setFileExplorerOpen(true)}>
-        打开工作区文件
-      </button>
+    <div className="flex h-screen">
+      {/* 聊天区域 */}
+      <ChatPanel ... />
 
-      {fileExplorerOpen && (
-        <div className="modal-overlay">
-          <FileExplorer
-            sessionId={session.sessionId}
-            onFileSelect={(file) => {
-              console.log('已选择文件:', file)
-              setFileExplorerOpen(false)
-            }}
-          />
-        </div>
-      )}
-    </>
+      {/* 文件面板 */}
+      <FilePanel
+        connection={connection}
+        sessionId={connection.sessionId}
+        className="w-80 border-l"
+      />
+    </div>
   )
 }
 ```
@@ -89,14 +50,72 @@ function App() {
 ### Props 说明
 
 ```typescript
-interface FileExplorerProps {
-  sessionId: string                      // 必需：会话 ID
-  className?: string                     // 可选：额外的 CSS 类
-  onFileSelect?: (file: FileTreeNode) => void  // 可选：文件下载后的回调
+interface FilePanelProps {
+  connection: UseAgentConnectionReturn  // 必需：来自 useAgentConnection
+  sessionId: string                      // 必需：当前会话 ID
+  className?: string                     // 可选：额外 CSS 类名
+  renderUploadButton?: (props: {
+    onUpload: (file: File) => Promise<void>
+  }) => React.ReactNode                  // 可选：自定义上传按钮
 }
 ```
 
-## 后端 API 集成
+`FilePanel` 内部使用 `useFiles` hook，自动处理加载状态、错误显示、新文件角标和文件预览。
+
+### 自定义上传按钮
+
+```tsx
+<FilePanel
+  connection={connection}
+  sessionId={connection.sessionId}
+  renderUploadButton={({ onUpload }) => (
+    <button
+      className="btn-primary"
+      onClick={() => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0]
+          if (file) onUpload(file)
+        }
+        input.click()
+      }}
+    >
+      上传文件
+    </button>
+  )}
+/>
+```
+
+### 直接使用 Hook
+
+如果你需要比 `FilePanel` 提供的更多控制权，直接使用 `useFiles`：
+
+```tsx
+import { useFiles } from '@ccaas/react-sdk'
+
+function MyFileList({ connection, sessionId }) {
+  const files = useFiles({ connection, sessionId, enabled: true })
+
+  if (files.isLoading) return <div>加载中...</div>
+  if (files.error) return <div>错误：{files.error.message}</div>
+
+  return (
+    <ul>
+      {files.files.map(file => (
+        <li key={file.id}>
+          <span>{file.name}</span>
+          {file.status === 'new' && <span className="badge">新</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+## 后端 API 参考
+
+文件面板会自动从这些端点读取数据——你不需要直接调用它们。
 
 ### 获取文件树
 
@@ -137,91 +156,15 @@ interface FileExplorerProps {
 - `Content-Disposition`: `attachment; filename="test.txt"`
 - `Content-Length`: 文件大小（字节）
 
-## MIME 类型图标
-
-| MIME 类型 | 图标 | 颜色 |
-|----------|------|------|
-| `image/*` | 照片图标 | slate-400 |
-| `audio/*` | 音频图标 | slate-400 |
-| `video/*` | 视频图标 | slate-400 |
-| `*javascript*`, `*typescript*` | 代码图标 | slate-400 |
-| `text/markdown`, `text/plain` | 文本图标 | slate-400 |
-| `application/zip`, `application/x-tar` | 归档图标 | slate-400 |
-| `application/pdf` | PDF 图标 | slate-400 |
-| `application/json` | JSON 图标 | slate-400 |
-| 文件夹 | 文件夹图标 | blue-400 |
-
-## 工具函数
-
-### formatFileSize
-将字节转换为人类可读格式：
-
-```typescript
-formatFileSize(2048)      // "2.0 KB"
-formatFileSize(1048576)   // "1.0 MB"
-```
-
-### filterTree
-递归过滤文件树：
-
-```typescript
-const filtered = filterTree(tree, "test")
-// 返回匹配 "test" 的节点及其父节点
-```
-
-### sortTree
-递归排序文件树：
-
-```typescript
-const sorted = sortTree(tree, 'size', 'desc')
-// 文件夹优先，然后按大小降序排列文件
-```
-
-## 性能优化
-
-当前实现可高效处理最多 100 个文件：
-- 搜索在 <100ms 内完成
-- 60fps 流畅动画
-- 树加载时间 <2 秒
-
-### 未来增强（可选）
-对于大型工作区（>100 文件）：
-1. **虚拟化**：使用 `@tanstack/react-virtual`
-2. **防抖搜索**：减少输入时的重渲染
-3. **懒加载**：展开时加载文件夹内容
-
-## 测试
-
-所有测试通过：
-
-```bash
-npm test -- fileUtils.test.ts
-✓ 17 个测试通过
-```
-
-### 测试覆盖
-- formatFileSize: 4 个测试
-- filterTree: 5 个测试
-- sortTree: 5 个测试
-- matchesSearch: 2 个测试
-- flattenTree: 1 个测试
-
 ## 故障排除
 
 ### 文件无法加载
-1. 检查会话 ID 是否有效
-2. 验证后端 API 是否运行（`http://localhost:3001`）
-3. 检查浏览器控制台的 fetch 错误
+
+1. 确认 `sessionId` 有效且会话处于活跃状态
+2. 确认后端正在运行（`http://localhost:3001`）
+3. 检查浏览器 Network 标签中 `/workspace` 端点的 fetch 错误
 4. 如果需要认证，验证 API 密钥
 
-### 下载失败
-1. 检查文件路径是否正确
-2. 验证后端可以访问工作区目录
-3. 检查网络标签中的 Content-Disposition 头
-4. 确保浏览器允许从 localhost 下载
+### 文件显示为"新"但一直保持高亮
 
-## 相关文档
-
-- [完整实现文档](../../implementation/file-explorer/)
-- [后端 Session Workspace API](../../design/session-workspace-file-api.md)
-- [前端集成指南](frontend.md)
+在用户确认文件后调用 `files.markAsSynced(file.id)`。`FilePanel` 在文件被选中时会自动执行此操作。

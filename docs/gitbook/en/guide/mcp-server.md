@@ -4,6 +4,23 @@
 
 An MCP (Model Context Protocol) Server provides external tools to the AI Agent. During task execution, the AI Agent can invoke tools exposed by the MCP Server to perform specific operations such as searching data, calling external APIs, or generating files.
 
+## When to Use This
+
+The core question: **does your agent need data access or operational capabilities it doesn't have on its own?**
+
+**You need an MCP Server when:**
+- The agent needs to query your private data (textbook content, student records, product catalog)
+- Your solution uses `write_output` — this tool must be exposed through an MCP Server
+- The agent needs to call external APIs (search services, databases, third-party platforms)
+- You need business-layer validation of agent outputs (Zod schema enforcement)
+
+**You don't need an MCP Server when:**
+- The agent only does reasoning and generation — no external data access required
+- You're using only Claude's built-in tools (file system, web search, etc.)
+- It's a fully conversational solution with no structured output
+
+If you're building a lesson plan designer that searches curriculum standards and populates a form, you need an MCP Server. If you're building a Q&A bot that answers questions from its training knowledge, you don't.
+
 ## Two Implementation Approaches
 
 | Approach | Description | Use Case |

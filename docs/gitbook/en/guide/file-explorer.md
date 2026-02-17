@@ -1,87 +1,48 @@
-# File Explorer Component
+# File Explorer
 
-File Explorer is a React component for browsing and downloading session workspace files. It displays files in a tree structure with search, sort, expand/collapse, and download capabilities.
+## When to Use This
 
-## Features
+The core question: **does your solution produce files that users need to see or download?**
 
-### Core Functionality
-- 📁 **Tree View**: Hierarchical display of files and folders
-- 🔍 **Real-time Search**: Filter by filename (recursive)
-- 🔄 **Sort**: Order by name, size, or type
-- ➕ **Expand/Collapse**: Show/hide folder contents
-- ⬇️ **File Download**: Click files to download
-- 🎨 **MIME Type Icons**: Visual file type indicators
-- ⏳ **Loading States**: Skeleton screens and spinners
-- ❌ **Error Handling**: Clear error messages with retry options
+**Show a file panel when:**
+- The agent generates artifacts users need to download (reports, code files, data files)
+- The solution involves file creation or conversion and users need to view the result
+- Users need to select from the agent's file outputs as part of the workflow
 
-### Design System
-- **Dark Theme**: Slate color palette (#0F172A - #334155)
-- **Accent Color**: Green (#22C55E) for active states
-- **Typography**: JetBrains Mono (monospace for file names)
-- **Transitions**: 200-300ms smooth animations
-- **SVG Icons**: Heroicons-style inline SVGs
+**Skip the file panel when:**
+- Agent output is entirely synchronized into form fields via `write_output`
+- The agent only produces chat text responses
+- Files are implementation details (intermediate files) that users don't need to see
 
-### Accessibility
-- ✅ Keyboard navigation (Tab, Enter)
-- ✅ Visible focus states (green ring)
-- ✅ ARIA labels support
-- ✅ Screen reader compatible
-- ✅ WCAG AA contrast (4.5:1)
-- ✅ Touch targets 44x44px minimum
+If your quiz analyzer generates a PDF report the teacher downloads, add `FilePanel`. If your lesson plan designer populates form fields the teacher edits directly, skip it.
 
-## Component Architecture
+## Using FilePanel from the React SDK
 
-### Component Structure
-```
-src/components/FileExplorer/
-├── FileExplorer.tsx              # Main container (state management)
-├── FileTree.tsx                  # Tree renderer
-├── FileTreeNode.tsx              # Individual node (recursive)
-├── FileExplorerHeader.tsx        # Toolbar (search, sort)
-└── FileIcon.tsx                  # MIME type icons
-```
+The recommended way to display workspace files is the `FilePanel` component from `@ccaas/react-sdk`. It handles file listing, selection, preview, and upload out of the box.
 
-### Hooks
-```
-src/hooks/
-├── useWorkspaceFiles.ts          # Fetch file tree from backend
-└── useFileDownload.ts            # Handle file downloads
-```
-
-### Utilities
-```
-src/utils/
-└── fileUtils.ts                  # formatFileSize, filterTree, sortTree, etc.
-```
-
-## Usage
-
-### Basic Integration
+### Basic Usage
 
 ```tsx
-import { FileExplorer } from './components/FileExplorer/FileExplorer'
+import { FilePanel } from '@ccaas/react-sdk'
 
-function App() {
-  const [fileExplorerOpen, setFileExplorerOpen] = useState(false)
+function MySolution() {
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
+    sessionPrefix: 'my-solution'
+  })
 
   return (
-    <>
-      <button onClick={() => setFileExplorerOpen(true)}>
-        Open Workspace Files
-      </button>
+    <div className="flex h-screen">
+      {/* Chat area */}
+      <ChatPanel ... />
 
-      {fileExplorerOpen && (
-        <div className="modal-overlay">
-          <FileExplorer
-            sessionId={session.sessionId}
-            onFileSelect={(file) => {
-              console.log('File selected:', file)
-              setFileExplorerOpen(false)
-            }}
-          />
-        </div>
-      )}
-    </>
+      {/* File panel */}
+      <FilePanel
+        connection={connection}
+        sessionId={connection.sessionId}
+        className="w-80 border-l"
+      />
+    </div>
   )
 }
 ```
@@ -89,14 +50,72 @@ function App() {
 ### Props
 
 ```typescript
-interface FileExplorerProps {
-  sessionId: string                      // Required: Session ID
-  className?: string                     // Optional: Additional CSS classes
-  onFileSelect?: (file: FileTreeNode) => void  // Optional: Callback after download
+interface FilePanelProps {
+  connection: UseAgentConnectionReturn  // Required: from useAgentConnection
+  sessionId: string                      // Required: active session ID
+  className?: string                     // Optional: additional CSS classes
+  renderUploadButton?: (props: {
+    onUpload: (file: File) => Promise<void>
+  }) => React.ReactNode                  // Optional: custom upload button
 }
 ```
 
-## Backend API Integration
+`FilePanel` uses the `useFiles` hook internally. It handles loading states, error display, new-file badges, and file preview automatically.
+
+### Custom Upload Button
+
+```tsx
+<FilePanel
+  connection={connection}
+  sessionId={connection.sessionId}
+  renderUploadButton={({ onUpload }) => (
+    <button
+      className="btn-primary"
+      onClick={() => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0]
+          if (file) onUpload(file)
+        }
+        input.click()
+      }}
+    >
+      Upload File
+    </button>
+  )}
+/>
+```
+
+### Using the Hook Directly
+
+If you need more control than `FilePanel` provides, use `useFiles` directly:
+
+```tsx
+import { useFiles } from '@ccaas/react-sdk'
+
+function MyFileList({ connection, sessionId }) {
+  const files = useFiles({ connection, sessionId, enabled: true })
+
+  if (files.isLoading) return <div>Loading...</div>
+  if (files.error) return <div>Error: {files.error.message}</div>
+
+  return (
+    <ul>
+      {files.files.map(file => (
+        <li key={file.id}>
+          <span>{file.name}</span>
+          {file.status === 'new' && <span className="badge">New</span>}
+        </li>
+      ))}
+    </ul>
+  )
+}
+```
+
+## Backend API Reference
+
+The file panel reads from these endpoints automatically — you don't need to call them directly.
 
 ### Fetch File Tree
 
@@ -132,96 +151,20 @@ interface FileExplorerProps {
 
 **Example:** `GET /api/v1/sessions/abc123/workspace/scripts/test.txt`
 
-**Headers:**
+**Response headers:**
 - `Content-Type`: Detected MIME type
 - `Content-Disposition`: `attachment; filename="test.txt"`
 - `Content-Length`: File size in bytes
 
-## MIME Type Icons
-
-| MIME Type | Icon | Color |
-|-----------|------|-------|
-| `image/*` | Photo | slate-400 |
-| `audio/*` | Audio | slate-400 |
-| `video/*` | Video | slate-400 |
-| `*javascript*`, `*typescript*` | Code | slate-400 |
-| `text/markdown`, `text/plain` | Text | slate-400 |
-| `application/zip`, `application/x-tar` | Archive | slate-400 |
-| `application/pdf` | PDF | slate-400 |
-| `application/json` | JSON | slate-400 |
-| Folder | Folder | blue-400 |
-
-## Utility Functions
-
-### formatFileSize
-Convert bytes to human-readable format:
-
-```typescript
-formatFileSize(2048)      // "2.0 KB"
-formatFileSize(1048576)   // "1.0 MB"
-```
-
-### filterTree
-Recursively filter file tree:
-
-```typescript
-const filtered = filterTree(tree, "test")
-// Returns nodes matching "test" and their parents
-```
-
-### sortTree
-Recursively sort file tree:
-
-```typescript
-const sorted = sortTree(tree, 'size', 'desc')
-// Folders first, then files sorted by size descending
-```
-
-## Performance
-
-Current implementation handles up to 100 files efficiently:
-- Search completes in <100ms
-- 60fps smooth animations
-- Tree loads in <2 seconds
-
-### Future Enhancements (Optional)
-For large workspaces (>100 files):
-1. **Virtualization**: Use `@tanstack/react-virtual`
-2. **Debounced Search**: Reduce re-renders during typing
-3. **Lazy Loading**: Load folder contents on expand
-
-## Testing
-
-All tests passing:
-
-```bash
-npm test -- fileUtils.test.ts
-✓ 17 tests passing
-```
-
-### Test Coverage
-- formatFileSize: 4 tests
-- filterTree: 5 tests
-- sortTree: 5 tests
-- matchesSearch: 2 tests
-- flattenTree: 1 test
-
 ## Troubleshooting
 
 ### Files Not Loading
-1. Check session ID is valid
-2. Verify backend API is running (`http://localhost:3001`)
-3. Check browser console for fetch errors
-4. Verify API key if authentication is required
 
-### Download Fails
-1. Check file path is correct
-2. Verify backend can access workspace directory
-3. Check Content-Disposition header in network tab
-4. Ensure browser allows downloads from localhost
+1. Verify the `sessionId` is valid and the session is active
+2. Confirm the backend is running (`http://localhost:3001`)
+3. Check the browser Network tab for fetch errors on the `/workspace` endpoint
+4. Verify your API key if authentication is required
 
-## Related Documentation
+### File Shows as "New" but Stays Highlighted
 
-- [Full Implementation Docs](../../implementation/file-explorer/)
-- [Backend Session Workspace API](../../design/session-workspace-file-api.md)
-- [Frontend Integration Guide](frontend.md)
+Call `files.markAsSynced(file.id)` after the user acknowledges the file. `FilePanel` does this automatically when a file is selected.

@@ -4,6 +4,18 @@
 
 A Skill is the core abstraction in LoopAI that defines AI Agent behavior. Each Skill specifies the AI Agent's role, knowledge scope, available tools, and output format.
 
+## When to Use This
+
+A Skill defines what an agent does and how it behaves. Every CCAAS solution needs at least one Skill.
+
+The question isn't whether to write a Skill — it's **which Skill type to use**:
+
+- `type: prompt` covers 90% of cases. Give the agent a role, knowledge, and tool permissions; let it decide the steps.
+- `type: workflow` when you need forced sequential execution — Step 1 must complete before Step 2 starts, with possible user confirmation or conditional branching between steps.
+- `type: sub-agent` when a subtask needs a different model for cost or speed reasons, and the main agent dispatches to it via the Task tool.
+
+If you're not sure which to use, start with `prompt`. Reach for `workflow` only when "the agent should decide the order" isn't good enough.
+
 ## Skill File Format
 
 Skills are written as Markdown files (`SKILL.md`) containing YAML frontmatter and body content:
@@ -44,9 +56,9 @@ Use the write_output tool to output structured lesson plan data...
 
 ## Skill Types
 
-### Prompt Type (Most Common)
+### `type: prompt` — Default (90% of cases)
 
-Directly defines the AI Agent's system prompt:
+Defines the agent's system prompt. The agent decides how to use its tools and in what order.
 
 ```yaml
 ---
@@ -54,11 +66,11 @@ type: prompt
 ---
 ```
 
-Use case: Most Skills. Instructions are clear, and tool permissions are explicit.
+**Choose this when:** You want a result-oriented agent. You care about what gets done, not the exact sequence of steps. Most lesson plan designers, quiz analyzers, and content generators fall here.
 
-### Workflow Type
+### `type: workflow` — Forced Sequential Execution
 
-Defines a multi-step workflow:
+Defines a multi-step workflow where steps execute in a fixed order.
 
 ```yaml
 ---
@@ -66,11 +78,16 @@ type: workflow
 ---
 ```
 
-Use case: Complex processes that require strict step-by-step execution.
+**Choose this when:**
+- Step 1 must complete before Step 2 can start (e.g., gather requirements → get user confirmation → generate content)
+- There are conditional branches based on intermediate results
+- A failed step needs to roll back previous work
 
-### Sub-agent Type
+Don't reach for `workflow` just because your agent has multiple steps — a `prompt` agent handles multi-step tasks fine on its own.
 
-A sub-agent that can be configured with independent model parameters:
+### `type: sub-agent` — Specialized Subtask with Dedicated Model
+
+A sub-agent invoked by a parent agent via the Task tool, with its own model configuration.
 
 ```yaml
 ---
@@ -79,7 +96,7 @@ model: claude-3-5-sonnet
 ---
 ```
 
-Use case: Specialized subtasks that require a dedicated model.
+**Choose this when:** A specific subtask (e.g., rapid classification, image analysis) needs a different model for speed or cost. The main agent dispatches to the sub-agent and waits for the result.
 
 ## Writing Guidelines
 

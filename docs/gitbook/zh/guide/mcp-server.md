@@ -4,6 +4,23 @@
 
 MCP（Model Context Protocol）Server 是为 AI Agent 提供外部工具的服务。AI Agent 在执行任务时，可以调用 MCP Server 提供的工具来完成特定操作，如搜索数据、调用外部 API、生成文件等。
 
+## 使用时机
+
+核心问题：**你是否需要给 agent 提供它自身没有的数据访问或操作能力？**
+
+**需要 MCP Server 的场景：**
+- Agent 需要查询你的私有数据（教材内容、学生记录、产品目录）
+- Solution 使用 `write_output`——这个工具必须通过 MCP Server 暴露
+- Agent 需要调用外部 API（搜索服务、数据库、第三方平台）
+- 需要对 agent 输出做业务层校验（Zod schema 验证）
+
+**不需要 MCP Server 的场景：**
+- Agent 只做推理和生成，不需要访问外部数据
+- 只用 Claude 内置工具（文件系统、Web 搜索等）
+- 完全对话式 solution，没有结构化输出
+
+如果你在构建一个搜索课程标准并填写表单的教案设计器，你需要 MCP Server。如果你在构建一个只从训练知识回答问题的 Q&A 机器人，则不需要。
+
 ## 两种实现方式
 
 | 方式 | 说明 | 适用场景 |
