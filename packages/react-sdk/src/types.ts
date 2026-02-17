@@ -375,6 +375,13 @@ export interface UseAgentChatOptions {
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */
   sessionTemplate?: string
+  /**
+   * Transport mode for receiving events.
+   * - 'socket': Use Socket.IO (default, backward compatible)
+   * - 'sse': Use HTTP Streaming (SSE). No WebSocket required.
+   *   POST /api/v1/sessions/:id/messages returns text/event-stream.
+   */
+  transport?: 'socket' | 'sse'
 }
 
 export interface SendMessageOptions {

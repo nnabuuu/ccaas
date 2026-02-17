@@ -105,7 +105,7 @@ export class SessionService implements OnModuleDestroy {
   getOrCreateSession(
     sessionId: string,
     clientId: string,
-    socket: Socket,
+    socket: Socket | null,
     userId?: string,
   ): ManagedSession {
     let session = this.sessions.get(sessionId);

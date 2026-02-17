@@ -30,6 +30,7 @@ import { ToolAnalysisService } from './services/tool-analysis.service';
 import { MessageQueueService } from './services/message-queue.service';
 import { MessageWorkerService } from './services/message-worker.service';
 import { ConversationMetadataService } from './services/conversation-metadata.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 import { MessageQueue } from './entities/message-queue.entity';
 import { Session } from '../admin/entities/session.entity';
 import { Turn } from '../admin/entities/turn.entity';
@@ -65,7 +66,8 @@ import { TurnsModule } from '../admin/turns.module';
     MessageQueueService,
     MessageWorkerService,
     ConversationMetadataService,
+    StreamRegistryService,
   ],
-  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService],
+  exports: [SessionsGateway, SessionService, EventMapperService, MessageQueueService, ConversationMetadataService, StreamRegistryService],
 })
 export class SessionsModule {}

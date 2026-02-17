@@ -9,6 +9,7 @@
 // Hooks
 export { useAgentConnection } from './hooks/useAgentConnection'
 export { useAgentChat } from './hooks/useAgentChat'
+export { useSseStream } from './hooks/useSseStream'
 export { useAgentStatus } from './hooks/useAgentStatus'
 export { useQueueStatus } from './hooks/useQueueStatus'
 export { useOutputSync } from './hooks/useOutputSync'

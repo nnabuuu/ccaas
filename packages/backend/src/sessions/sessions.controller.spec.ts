@@ -12,6 +12,7 @@ import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 
 describe('SessionsController - Sub-Agents Endpoint', () => {
   let controller: SessionsController;
@@ -67,6 +68,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: TenantsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
+        { provide: StreamRegistryService, useValue: { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]) } },
       ],
     }).compile();
 
