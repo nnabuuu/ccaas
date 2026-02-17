@@ -157,6 +157,34 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 - `features/*/skill` - 嵌套路径
 - 在每个匹配的目录中查找 `SKILL.md` 文件
 
+### discovery
+
+**类型:** `Object`
+**默认值:** `{ "enabled": true }`
+**必需:** 否
+
+控制此解决方案是否在后端启动时自动注册。
+
+```json
+{
+  "discovery": {
+    "enabled": false
+  }
+}
+```
+
+**字段:**
+- `enabled` (boolean, 默认: `true`) - 为 `true` 时，CCAAS 后端启动时自动注册所有 skills 和 MCP servers。设为 `false` 可禁用此解决方案的自动注册。
+
+**`enabled: false` 的使用场景:**
+- 尚未准备好部署的开发中解决方案
+- 仅需手动注册的解决方案
+- 临时禁用某个解决方案而不删除它
+
+> **说明:** 省略 `discovery` 或设置 `enabled: true` 时，后端每次启动都会自动注册该解决方案的所有 skills 和 MCP servers。不再需要手动运行 `npm run skill:import`。
+
+---
+
 ### mcpServers
 
 **类型:** `Record<string, McpServerConfig>`

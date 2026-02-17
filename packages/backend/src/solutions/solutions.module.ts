@@ -7,7 +7,8 @@
  *   SolutionLoaderService   - Orchestrates tenant/skill/MCP registration
  *   SolutionConfigAdapter   - Migrates v1 configs to v2
  *
- * Auto-discovery is triggered from main.ts after app.listen().
+ * Auto-discovery runs at startup via OnApplicationBootstrap.
+ * Solutions with discovery.enabled = false are skipped.
  *
  * External dependencies (TenantsService, SkillsService, McpPoolService)
  * are resolved via their respective modules:
@@ -16,7 +17,7 @@
  *   - SkillsModule - imported explicitly
  */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module, OnApplicationBootstrap } from '@nestjs/common';
 import { SolutionScannerService } from './solution-scanner.service';
 import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { SolutionLoaderService } from './solution-loader.service';
@@ -42,4 +43,26 @@ import { SkillsModule } from '../skills/skills.module';
     SolutionConfigAdapter,
   ],
 })
-export class SolutionsModule {}
+export class SolutionsModule implements OnApplicationBootstrap {
+  private readonly logger = new Logger(SolutionsModule.name);
+
+  constructor(private readonly solutionLoaderService: SolutionLoaderService) {}
+
+  async onApplicationBootstrap(): Promise<void> {
+    if (process.env.AUTO_DISCOVERY === 'false') {
+      this.logger.log('Auto-discovery disabled (AUTO_DISCOVERY=false)');
+      return;
+    }
+
+    try {
+      const result = await this.solutionLoaderService.loadAll();
+      this.logger.log(
+        `Auto-discovery: ${result.loaded.length} solutions loaded, ` +
+        `${result.totalSkills} skills, ${result.totalMcpServers} MCP servers` +
+        (result.failed.length > 0 ? `, ${result.failed.length} failed` : ''),
+      );
+    } catch (error) {
+      this.logger.warn(`Auto-discovery failed: ${(error as Error).message}`);
+    }
+  }
+}

@@ -109,8 +109,8 @@ export class SolutionScannerService {
         const metadata = await this.loadSolutionMetadata(entry, solutionPath, configPath);
         if (!metadata) continue;
 
-        // v3 simplified: All discovered solutions are enabled
-        // (v3 removed discovery.enabled flag - discovery is opt-in by presence of solution.json)
+        // Scanner returns all solutions with valid configs.
+        // Filtering by discovery.enabled is done in SolutionLoaderService.loadAll().
         results.push(metadata);
       } catch (err) {
         this.logger.warn(

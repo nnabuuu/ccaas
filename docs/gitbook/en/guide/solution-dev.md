@@ -242,8 +242,8 @@ npm install --prefix mcp-server
 # Build MCP Server
 npm run build --prefix mcp-server
 
-# Inject Skills
-./inject-skills.sh
+# Note: Skills are auto-registered by the CCAAS backend at startup.
+# No manual skill injection needed.
 
 # Start services
 npm run dev --prefix backend &
@@ -252,37 +252,35 @@ npm run dev --prefix frontend &
 echo "Solution startup complete!"
 ```
 
-## Skill Injection
+## Automatic Skill Registration
 
-`inject-skills.sh` is responsible for registering Skills with CCAAS:
+Skills and MCP servers defined in `solution.json` are **automatically registered** when the CCAAS backend starts. No manual registration step is required.
 
-```bash
-#!/bin/bash
-CCAAS_URL="http://localhost:3001"
+**How it works:**
+1. On startup, the CCAAS backend scans the `solutions/` directory
+2. For each solution with `discovery.enabled: true` (the default), it reads `solution.json`
+3. Skills are loaded from each folder matching the `skills` pattern (default: `skills/*/SKILL.md`)
+4. MCP servers from `mcpServers` are registered automatically
+5. Existing registrations are updated (upsert logic)
 
-# Read Skill configuration from solution.json
-# Call the CCAAS API to register Skills
-curl -X POST "$CCAAS_URL/api/v1/skills" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Skill",
-    "slug": "my-skill",
-    "description": "Skill description",
-    "type": "prompt",
-    "content": "'"$(cat skills/my-skill/SKILL.md)"'",
-    "triggers": [{"type": "keyword", "value": "keyword"}],
-    "allowedTools": ["write_output"]
-  }'
-
-# Register MCP Server
-curl -X POST "$CCAAS_URL/api/v1/mcp-servers" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-tools",
-    "url": "http://localhost:3004",
-    "description": "Tool service"
-  }'
+**Startup log output:**
 ```
+[SolutionLoader] Starting auto-discovery of solutions...
+[SolutionLoader] Loaded "My Solution": 2 skills created, 1 MCP servers created
+[SolutionLoader] Auto-discovery complete: 1 solution(s) loaded, 0 failed, 2 skill(s), 1 MCP server(s)
+```
+
+**To disable auto-registration for a solution**, set `discovery.enabled: false` in `solution.json`:
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": { ... },
+  "discovery": { "enabled": false }
+}
+```
+
+> **Note:** The `inject-skills.sh` script and `npm run skill:import` command are no longer needed. Skills are registered automatically every time the backend starts.
 
 ## Best Practices
 

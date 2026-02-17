@@ -294,6 +294,15 @@ export const SolutionConfigV3Schema = z.object({
   tenant: TenantConfigSchema,
 
   /**
+   * Discovery control - opt-out of automatic registration at startup.
+   * Default: { enabled: true } - solution is auto-registered when backend starts.
+   * Set enabled: false to disable automatic registration for this solution.
+   */
+  discovery: z.object({
+    enabled: z.boolean().default(true),
+  }).default({}),
+
+  /**
    * Skill folder paths (supports wildcards)
    * Default: ['skills/*'] - auto-discovers all skills in skills/ directory
    * Examples:

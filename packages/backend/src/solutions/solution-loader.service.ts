@@ -112,7 +112,15 @@ export class SolutionLoaderService {
   async loadAll(solutionsDir?: string): Promise<LoadAllResult> {
     this.logger.log('Starting auto-discovery of solutions...');
 
-    const solutions = await this.scanner.scanSolutions(solutionsDir);
+    const allSolutions = await this.scanner.scanSolutions(solutionsDir);
+    // Filter out solutions with discovery.enabled = false before processing
+    const solutions = allSolutions.filter((s) => s.config.discovery.enabled !== false);
+
+    if (allSolutions.length !== solutions.length) {
+      const skipped = allSolutions.length - solutions.length;
+      this.logger.log(`Skipping ${skipped} solution(s) with discovery.enabled = false`);
+    }
+
     const result: LoadAllResult = {
       loaded: [],
       failed: [],
@@ -158,6 +166,8 @@ export class SolutionLoaderService {
 
   /**
    * Load a single solution by slug from the solutions directory.
+   * Note: intentionally bypasses discovery.enabled — loadOne() is a manual override
+   * for cases like re-importing a specific solution regardless of its discovery setting.
    */
   async loadOne(slug: string, solutionsDir?: string): Promise<LoadResult> {
     this.logger.log(`Loading solution: ${slug}`);

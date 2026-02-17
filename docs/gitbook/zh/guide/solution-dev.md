@@ -229,8 +229,7 @@ npm install --prefix mcp-server
 # 构建 MCP Server
 npm run build --prefix mcp-server
 
-# 注入 Skill
-./inject-skills.sh
+# 说明：Skill 由 CCAAS 后端在启动时自动注册，无需手动注入。
 
 # 启动服务
 npm run dev --prefix frontend &
@@ -244,37 +243,35 @@ fi
 echo "Solution 启动完成！"
 ```
 
-## Skill 注入
+## Skill 自动注册
 
-`inject-skills.sh` 负责将 Skill 注册到 CCAAS：
+`solution.json` 中定义的 Skills 和 MCP servers 会在 **CCAAS 后端启动时自动注册**，无需手动操作。
 
-```bash
-#!/bin/bash
-CCAAS_URL="http://localhost:3001"
+**工作原理：**
+1. 后端启动时扫描 `solutions/` 目录
+2. 对每个 `discovery.enabled: true`（默认）的解决方案，读取 `solution.json`
+3. 从匹配 `skills` 模式的每个文件夹加载 skill（默认：`skills/*/SKILL.md`）
+4. 自动注册 `mcpServers` 中定义的 MCP servers
+5. 已有注册会被更新（upsert 逻辑）
 
-# 读取 solution.json 中的 Skill 配置
-# 调用 CCAAS API 注册 Skill
-curl -X POST "$CCAAS_URL/api/v1/skills" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Skill",
-    "slug": "my-skill",
-    "description": "技能描述",
-    "type": "prompt",
-    "content": "'"$(cat skills/my-skill/SKILL.md)"'",
-    "triggers": [{"type": "keyword", "value": "关键词"}],
-    "allowedTools": ["write_output"]
-  }'
-
-# 注册 MCP Server
-curl -X POST "$CCAAS_URL/api/v1/mcp-servers" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-tools",
-    "url": "http://localhost:3004",
-    "description": "工具服务"
-  }'
+**启动日志示例：**
 ```
+[SolutionLoader] Starting auto-discovery of solutions...
+[SolutionLoader] Loaded "My Solution": 2 skills created, 1 MCP servers created
+[SolutionLoader] Auto-discovery complete: 1 solution(s) loaded, 0 failed, 2 skill(s), 1 MCP server(s)
+```
+
+**禁用自动注册**（如解决方案尚未准备好），在 `solution.json` 中设置 `discovery.enabled: false`：
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": { ... },
+  "discovery": { "enabled": false }
+}
+```
+
+> **说明：** `inject-skills.sh` 脚本和 `npm run skill:import` 命令不再需要。每次后端启动时会自动注册 Skills。
 
 ## 最佳实践
 

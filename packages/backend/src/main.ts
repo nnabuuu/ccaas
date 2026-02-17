@@ -10,7 +10,6 @@ import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './common/filters/http-exception.filter';
-import { SolutionLoaderService } from './solutions/solution-loader.service';
 
 async function bootstrap() {
   // Prevent nested Claude Code session errors by removing CLAUDECODE env var
@@ -161,20 +160,8 @@ async function bootstrap() {
   logger.log(`Swagger 文档（中文）: http://localhost:${port}/api/docs`);
   logger.log(`Swagger Docs (EN): http://localhost:${port}/api/docs/en`);
 
-  // Auto-discover and register solutions after server is ready
-  if (process.env.AUTO_DISCOVERY !== 'false') {
-    try {
-      const loader = app.get(SolutionLoaderService);
-      const result = await loader.loadAll();
-      logger.log(
-        `Auto-discovery: ${result.loaded.length} solutions loaded, ` +
-        `${result.totalSkills} skills, ${result.totalMcpServers} MCP servers` +
-        (result.failed.length > 0 ? `, ${result.failed.length} failed` : ''),
-      );
-    } catch (error) {
-      logger.warn(`Auto-discovery failed: ${(error as Error).message}`);
-    }
-  }
+  // Note: Solution auto-discovery is triggered via SolutionsModule.onApplicationBootstrap()
+  // See packages/backend/src/solutions/solutions.module.ts
 }
 
 bootstrap();

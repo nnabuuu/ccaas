@@ -157,6 +157,34 @@ Defines which skills to load. Supports glob patterns for auto-discovery.
 - `features/*/skill` - Nested paths
 - Looks for `SKILL.md` file in each matched directory
 
+### discovery
+
+**Type:** `Object`
+**Default:** `{ "enabled": true }`
+**Required:** No
+
+Controls whether this solution is automatically registered at backend startup.
+
+```json
+{
+  "discovery": {
+    "enabled": false
+  }
+}
+```
+
+**Fields:**
+- `enabled` (boolean, default: `true`) - When `true`, skills and MCP servers are auto-registered when the CCAAS backend starts. Set to `false` to disable automatic registration for this solution.
+
+**Use cases for `enabled: false`:**
+- Work-in-progress solutions not ready for deployment
+- Solutions that should only be registered manually
+- Temporarily disabling a solution without removing it
+
+> **Note:** When `discovery.enabled` is omitted or `true`, the backend automatically registers all skills and MCP servers from this solution on every startup. There is no longer a need to run `npm run skill:import` manually.
+
+---
+
 ### mcpServers
 
 **Type:** `Record<string, McpServerConfig>`
