@@ -24,6 +24,63 @@ Session Templates are reusable configurations stored per-tenant that define:
 - Maximum **50 templates per tenant**
 - Template names are **immutable** after creation
 
+## When to Use This
+
+### Scenario: A Math Tutoring Platform
+
+Imagine you're building a math tutoring app. Both teachers and students chat with the same AI agent — but they need **completely different capabilities**.
+
+**The teacher** should be able to:
+- Use a `curriculum-analyzer` skill that matches questions against the textbook syllabus
+- Use a `student-progress` MCP tool that queries the school's gradebook database
+- See a detailed analytical tone: _"This question tests §3.2 linear equations, difficulty level 3"_
+
+**The student** should only be able to:
+- Use a `practice-hint` skill that gives step-by-step hints without revealing the full answer
+- Not access the gradebook MCP at all (those are private records)
+- See an encouraging, Socratic tone: _"Good try! What happens if you move the x to the other side?"_
+
+Without session templates, your only options are:
+
+```typescript
+// ❌ Without templates — hardcoded, fragile, requires redeployment to change
+const chat = useAgentChat({
+  enabledSkillSlugs: user.role === 'teacher'
+    ? ['curriculum-analyzer', 'practice-hint']
+    : ['practice-hint'],
+  mcpServers: user.role === 'teacher'
+    ? { 'student-progress': { command: 'node', args: ['gradebook.js'] } }
+    : {},
+  appendSystemPrompt: user.role === 'teacher'
+    ? 'You are an analytical teaching assistant. Reference the curriculum syllabus...'
+    : 'You are a patient tutor. Guide students with hints, never give direct answers...',
+})
+```
+
+Every time a teacher asks to tweak their prompt, you ship a new frontend build.
+
+**With session templates**, you configure once in the Admin UI and reference by name:
+
+```typescript
+// ✅ With templates — clean, runtime-configurable, no redeploy needed
+const chat = useAgentChat({
+  sessionTemplate: user.role === 'teacher' ? 'teacher-mode' : 'student-mode',
+})
+```
+
+The two templates are defined in the Admin Dashboard:
+
+| | `teacher-mode` | `student-mode` |
+|---|---|---|
+| Skills | `curriculum-analyzer`, `practice-hint` | `practice-hint` only |
+| MCP Servers | `student-progress` (gradebook) | _(none)_ |
+| System Prompt | Analytical, curriculum-aware tone | Encouraging, Socratic tone |
+| Model | `claude-opus-4-6` (more capable) | `claude-haiku-4-5` (faster, cheaper) |
+
+Now when the head teacher says _"add a reminder to always cite the page number"_, you edit the `teacher-mode` template in the Admin UI and it takes effect immediately — **no code change, no deployment**.
+
+---
+
 ## Quick Start
 
 ### 1. Access Admin Dashboard

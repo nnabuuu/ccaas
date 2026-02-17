@@ -24,6 +24,63 @@
 - 每个租户最多 **50 个模板**
 - 模板名称创建后**不可更改**
 
+## 什么时候需要用这个
+
+### 场景：数学辅导平台
+
+假设你在构建一个数学辅导应用，老师和学生都在和同一个 AI 代理对话——但他们需要**完全不同的能力**。
+
+**老师**应该能够：
+- 使用 `curriculum-analyzer` 技能，将题目与教材大纲对应
+- 使用 `student-progress` MCP 工具，查询学校的成绩数据库
+- 看到详尽的分析语气：_"这道题考查 §3.2 一元一次方程，难度等级 3"_
+
+**学生**只应该能够：
+- 使用 `practice-hint` 技能，提供分步引导而不直接给出答案
+- 完全无法访问成绩数据库 MCP（那是隐私数据）
+- 看到鼓励性的苏格拉底式语气：_"思路不错！如果把 x 移到另一边会怎样？"_
+
+如果没有会话模板，你只能这样做：
+
+```typescript
+// ❌ 没有模板 — 硬编码、脆弱，每次改提示词都要重新部署
+const chat = useAgentChat({
+  enabledSkillSlugs: user.role === 'teacher'
+    ? ['curriculum-analyzer', 'practice-hint']
+    : ['practice-hint'],
+  mcpServers: user.role === 'teacher'
+    ? { 'student-progress': { command: 'node', args: ['gradebook.js'] } }
+    : {},
+  appendSystemPrompt: user.role === 'teacher'
+    ? '你是一位分析型教学助手，请结合教材大纲回答...'
+    : '你是一位耐心的辅导老师，用引导提示而不要直接给出答案...',
+})
+```
+
+每次老师要求微调提示词，就得发布一次新的前端构建。
+
+**使用会话模板**后，在管理界面配置一次，前端只需按名称引用：
+
+```typescript
+// ✅ 有模板 — 简洁、运行时可配置、无需重新部署
+const chat = useAgentChat({
+  sessionTemplate: user.role === 'teacher' ? 'teacher-mode' : 'student-mode',
+})
+```
+
+两个模板在管理后台中定义：
+
+| | `teacher-mode`（教师模式） | `student-mode`（学生模式） |
+|---|---|---|
+| 技能 | `curriculum-analyzer`、`practice-hint` | 仅 `practice-hint` |
+| MCP 服务器 | `student-progress`（成绩数据库） | _（无）_ |
+| 系统提示词 | 分析型、关联大纲的语气 | 鼓励型、苏格拉底式语气 |
+| 模型 | `claude-opus-4-6`（更强） | `claude-haiku-4-5`（更快更便宜） |
+
+现在当教研组长说 _"每次回答都要标注对应教材页码"_，你只需在管理后台编辑 `teacher-mode` 模板，立即生效——**无需改代码，无需部署**。
+
+---
+
 ## 快速开始
 
 ### 1. 访问管理后台
