@@ -39,9 +39,12 @@ export class SessionTemplateBodyDto {
   @IsString({ each: true })
   enabledSkillSlugs?: string[];
 
+  // Note: @IsObject() validates that mcpServers is an object, but class-validator
+  // cannot validate Record values automatically. McpServerConfigDto serves as
+  // documentation and TypeScript type-checking for consumers.
   @IsOptional()
   @IsObject()
-  mcpServers?: Record<string, McpServerConfigDto>;
+  mcpServers?: Record<string, unknown>;
 
   @IsOptional()
   @IsString()

@@ -76,6 +76,16 @@ export class AdminSessionTemplatesController {
     return ctx?.apiKeyId || 'system';
   }
 
+  private async tryLogAudit(
+    params: Parameters<AuditService['log']>[0],
+  ): Promise<void> {
+    try {
+      await this.auditService.log(params);
+    } catch (err) {
+      this.logger.error(`Failed to log audit event: ${params.action}`, err);
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Endpoints
   // ---------------------------------------------------------------------------
@@ -150,21 +160,14 @@ export class AdminSessionTemplatesController {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
-    try {
-      await this.auditService.log({
-        adminId: this.getAdminId(ctx),
-        action: 'sessionTemplate.create',
-        targetType: 'tenant',
-        targetId: tenant.id,
-        tenantId: tenant.id,
-        metadata: {
-          templateName: dto.name,
-          template: dto.template,
-        },
-      });
-    } catch (err) {
-      this.logger.error('Failed to log sessionTemplate.create audit event', err);
-    }
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
+      action: 'sessionTemplate.create',
+      targetType: 'tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: { templateName: dto.name, template: dto.template },
+    });
 
     return { name: dto.name, template: dto.template };
   }
@@ -193,22 +196,14 @@ export class AdminSessionTemplatesController {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
-    try {
-      await this.auditService.log({
-        adminId: this.getAdminId(ctx),
-        action: 'sessionTemplate.update',
-        targetType: 'tenant',
-        targetId: tenant.id,
-        tenantId: tenant.id,
-        metadata: {
-          templateName: name,
-          previousValue: previousTemplate,
-          newValue: dto.template,
-        },
-      });
-    } catch (err) {
-      this.logger.error('Failed to log sessionTemplate.update audit event', err);
-    }
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
+      action: 'sessionTemplate.update',
+      targetType: 'tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: { templateName: name, previousValue: previousTemplate, newValue: dto.template },
+    });
 
     return { name, template: dto.template };
   }
@@ -241,21 +236,14 @@ export class AdminSessionTemplatesController {
 
     await this.tenantsService.update(tenantId, { config: updatedConfig });
 
-    try {
-      await this.auditService.log({
-        adminId: this.getAdminId(ctx),
-        action: 'sessionTemplate.delete',
-        targetType: 'tenant',
-        targetId: tenant.id,
-        tenantId: tenant.id,
-        metadata: {
-          templateName: name,
-          deletedTemplate,
-        },
-      });
-    } catch (err) {
-      this.logger.error('Failed to log sessionTemplate.delete audit event', err);
-    }
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
+      action: 'sessionTemplate.delete',
+      targetType: 'tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: { templateName: name, deletedTemplate },
+    });
 
     return { message: `Session template "${name}" deleted` };
   }

@@ -151,6 +151,15 @@ export function SessionTemplateFormPage() {
                 placeholder="Teacher view - full analysis features"
               />
             </div>
+
+            <div>
+              <Label htmlFor="model">Model Override (optional)</Label>
+              <Input
+                id="model"
+                {...register('template.model')}
+                placeholder="claude-opus-4-6 (leave blank to use tenant default)"
+              />
+            </div>
           </CardContent>
         </Card>
 
