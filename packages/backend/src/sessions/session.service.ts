@@ -24,6 +24,7 @@ import { EventMapperService } from './event-mapper.service';
 import { CliProcessService, ResolvedAttachment } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
   ManagedSession,
@@ -68,6 +69,7 @@ export class SessionService implements OnModuleDestroy {
     private readonly cliProcessService: CliProcessService,
     private readonly workspaceService: WorkspaceService,
     private readonly backgroundTaskMonitorService: BackgroundTaskMonitorService,
+    private readonly streamRegistry: StreamRegistryService,
     @InjectRepository(SessionEntity)
     private readonly sessionRepository: Repository<SessionEntity>,
   ) {
@@ -279,6 +281,9 @@ export class SessionService implements OnModuleDestroy {
 
     // Stop all background task monitors for this session
     this.backgroundTaskMonitorService.stopAllMonitorsForSession(sessionId);
+
+    // Clean up push SSE channel (separate from per-turn channel)
+    this.streamRegistry.cleanupSession(`${sessionId}:push`);
 
     if (session.cliProcess && !session.cliProcess.killed) {
       session.cliProcess.kill('SIGTERM');

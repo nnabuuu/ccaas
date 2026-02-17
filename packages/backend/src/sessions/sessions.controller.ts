@@ -13,7 +13,6 @@ import {
   Delete,
   Param,
   Body,
-  BadRequestException,
   GoneException,
   NotFoundException,
   Logger,
@@ -122,41 +121,45 @@ Content-Type: application/json
 
 
   /**
-   * Cancel completion
+   * Cancel completion via Socket.IO (DEPRECATED)
    * DELETE /api/v1/sessions/:sessionId/completion
+   *
+   * @deprecated Socket.IO transport is deprecated. Use POST /api/v1/sessions/:sessionId/cancel instead.
+   * This endpoint requires a Socket.IO clientId and will never work for SSE-only sessions.
    */
   @Delete(':sessionId/completion')
   @ApiOperation({
-    summary: '取消当前操作 / Cancel Operation',
-    description: '取消会话中正在进行的 Agent 操作 / Cancel the ongoing agent operation in the session',
+    summary: '[DEPRECATED] 取消操作 (Socket.IO) / Cancel Operation (Socket.IO) - DEPRECATED',
+    description: `
+**⚠️ 已弃用 / DEPRECATED**
+
+此端点依赖 Socket.IO clientId，对 SSE 会话无效，返回 410 Gone。请迁移到 SSE 取消端点：
+
+\`\`\`
+POST /api/v1/sessions/:sessionId/cancel
+\`\`\`
+
+**This endpoint requires a Socket.IO clientId and returns 410 Gone for SSE sessions. Migrate to:**
+
+\`POST /api/v1/sessions/:sessionId/cancel\` — works for both Socket.IO and SSE transport.
+    `,
   })
-  @ApiParam({
-    name: 'sessionId',
-    description: '会话 ID / Session ID',
-  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
   @ApiBody({ type: CancelCompletionDto })
   @ApiResponse({
-    status: 200,
-    description: '操作已取消 / Operation cancelled',
+    status: 410,
+    description: '[DEPRECATED] Socket.IO cancel transport has been removed. Use POST /cancel instead.',
   })
   cancelCompletion(
     @Param('sessionId') sessionId: string,
-    @Body() data: CancelCompletionDto,
+    @Body() _data: CancelCompletionDto,
   ) {
-    this.logger.log(`Cancelling completion for session ${sessionId}`);
-
-    const socket = this.sessionsGateway.getClientSocket(data.clientId);
-    if (!socket) {
-      throw new BadRequestException('Client not connected');
-    }
-
-    const session = this.sessionService.getSession(sessionId);
-    if (session) {
-      this.sessionService.cancelSession(sessionId);
-      socket.emit('agent_status', { type: 'agent_status', status: 'cancelled', sessionId, timestamp: new Date().toISOString() });
-    }
-
-    return { success: true };
+    this.logger.warn(`[DEPRECATED] Socket.IO cancel endpoint called for session ${sessionId}. Returning 410 Gone.`);
+    throw new GoneException(
+      'Socket.IO cancel transport is deprecated. ' +
+      'Migrate to SSE: POST /api/v1/sessions/:sessionId/cancel. ' +
+      'Works for both Socket.IO and SSE transport.',
+    );
   }
 
   // ============================================================================
@@ -275,6 +278,13 @@ Response is \`text/event-stream\`, closed when Turn completes.
       // Emit function routes events to SSE stream
       const emitEvent = (event: FrontendEvent) => {
         this.streamRegistry.emit(sessionId, event);
+        // Fan subagent_started to the push channel during a turn so long-lived
+        // subscribers (GET /events) see task launches immediately.
+        // Note: subagent_completed is NOT fanned here — BackgroundTaskMonitorService
+        // emits it directly to :push after polling, preventing duplicate delivery.
+        if (event.type === 'subagent_started') {
+          this.streamRegistry.emit(`${sessionId}:push`, event);
+        }
       };
 
       await this.completionOrchestrationService.orchestrateMessage({
@@ -305,6 +315,49 @@ Response is \`text/event-stream\`, closed when Turn completes.
       });
       this.streamRegistry.closeSession(sessionId);
     }
+  }
+
+  /**
+   * Subscribe to push events (long-lived SSE)
+   * GET /api/v1/sessions/:sessionId/events
+   *
+   * A persistent SSE stream that stays open across turns.
+   * Delivers subagent_started / subagent_completed events from background
+   * task monitors that fire after the per-turn POST /messages stream closes.
+   *
+   * The stream uses the key `${sessionId}:push` in StreamRegistryService —
+   * separate from the per-turn `sessionId` key, so closeSession() on turn-end
+   * does NOT close this connection.
+   */
+  @Get(':sessionId/events')
+  @Header('Content-Type', 'text/event-stream')
+  @Header('Cache-Control', 'no-cache')
+  @Header('Connection', 'keep-alive')
+  @ApiOperation({
+    summary: '订阅推送事件 (SSE) / Subscribe to Push Events (SSE)',
+    description: `
+长连接 SSE 流，跨 Turn 保持打开。用于接收后台任务完成事件（如 subagent_completed）。
+
+Long-lived SSE stream that stays open across turns.
+Delivers background task lifecycle events (subagent_started, subagent_completed).
+Does NOT close when a turn ends — use this instead of per-turn POST /messages stream for monitoring.
+    `,
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiResponse({ status: 200, description: '持续 SSE 事件流 / Persistent SSE event stream' })
+  async subscribeEvents(
+    @Param('sessionId') sessionId: string,
+    @Res() res: Response,
+  ) {
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+    const subscriberId = uuidv4();
+    this.logger.log(`Push SSE subscribe: session=${sessionId} subscriber=${subscriberId}`);
+    // Uses push channel key — NOT closed by turn-end (closeSession uses 'sessionId', not ':push')
+    this.streamRegistry.subscribe(`${sessionId}:push`, subscriberId, res as any);
+    // Client disconnect is handled automatically by StreamRegistryService res.on('close') handler
   }
 
   /**

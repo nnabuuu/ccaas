@@ -54,7 +54,8 @@
 
 * [API 概述](api/README.md)
 * [REST API 端点](api/rest.md)
-* [WebSocket 事件](api/websocket.md)
+* [SSE Transport（推荐）](api/sse.md)
+* [WebSocket 事件（已弃用）](api/websocket.md)
 * [错误处理](api/error-handling.md)
 * [@ccaas/common 类型](api/shared-types.md)
 
