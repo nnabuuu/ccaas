@@ -68,9 +68,6 @@ export interface MessageProcessingInput {
   /** System prompt for CLI --append-system-prompt (REST only) */
   systemPrompt?: string;
 
-  /** Whether to resume existing session (WebSocket only) */
-  resumeSession?: boolean;
-
   /** Transport-agnostic event emitter */
   emitEvent: (event: FrontendEvent) => void;
 }
@@ -136,7 +133,6 @@ export class CompletionOrchestrationService {
       skillPath,
       attachments,
       systemPrompt,
-      resumeSession,
       emitEvent,
     } = input;
 
@@ -257,7 +253,7 @@ export class CompletionOrchestrationService {
     }
 
     // Step 6b: Auto-generate conversation title from first user message
-    if (session.messageCount === 0 && !resumeSession) {
+    if (session.messageCount === 0) {
       this.conversationMetadataService.autoGenerateTitle(sessionId, message).catch((err) => {
         this.logger.warn(`Failed to auto-generate title: ${err}`);
       });
@@ -294,7 +290,7 @@ export class CompletionOrchestrationService {
     }
 
     // Step 8: Create or update ConversationContext (on first message)
-    if (session.messageCount === 0 && !resumeSession) {
+    if (session.messageCount === 0) {
       try {
         await this.conversationContextService.createOrUpdate({
           sessionId,
@@ -314,8 +310,8 @@ export class CompletionOrchestrationService {
 
     const handleEvent = (event: FrontendEvent) => {
       // Accumulate text_delta events
-      if (event.type === 'text_delta' && (event as any).text) {
-        accumulatedText += (event as any).text;
+      if (event.type === 'text_delta' && (event as any).delta) {
+        accumulatedText += (event as any).delta;
       }
 
       // Emit to client (transport-agnostic)
@@ -349,7 +345,7 @@ export class CompletionOrchestrationService {
     };
 
     // Step 10: Execute CLI process (new or resume)
-    if (session.messageCount > 0 || resumeSession) {
+    if (session.messageCount > 0) {
       // Follow-up message - use --resume
       await this.sessionService.sendFollowUp(session, message, handleEvent, attachments);
     } else {

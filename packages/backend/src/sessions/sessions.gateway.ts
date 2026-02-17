@@ -363,7 +363,6 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
             mcpServers: data.mcpServers,
             enabledSkillSlugs: data.enabledSkillSlugs,
             skillPath: data.skillPath,
-            resumeSession: data.resumeSession,
           },
         );
 
@@ -391,7 +390,6 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
           mcpServers: data.mcpServers,
           enabledSkillSlugs: data.enabledSkillSlugs,
           skillPath: data.skillPath,
-          resumeSession: data.resumeSession,
           emitEvent: (event) => client.emit(event.type, event),
         });
 

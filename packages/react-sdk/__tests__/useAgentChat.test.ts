@@ -183,11 +183,11 @@ describe('useAgentChat', () => {
 
     // Simulate text_delta
     act(() => {
-      handlers['text_delta']?.({ text: 'Hello ' })
+      handlers['text_delta']?.({ delta: 'Hello ' })
     })
 
     act(() => {
-      handlers['text_delta']?.({ text: 'world' })
+      handlers['text_delta']?.({ delta: 'world' })
     })
 
     expect(result.current.currentStreamContent).toBe('Hello world')

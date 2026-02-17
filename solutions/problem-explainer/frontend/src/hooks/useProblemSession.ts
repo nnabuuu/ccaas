@@ -107,13 +107,13 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
 
     // Handle text streaming (using TextDeltaEvent from @ccaas/common)
     socket.on('text_delta', (data: TextDeltaEvent) => {
-      console.log('[Socket] text_delta received, length:', data.text?.length, 'preview:', data.text?.substring(0, 50));
+      console.log('[Socket] text_delta received, length:', data.delta?.length, 'preview:', data.delta?.substring(0, 50));
       const blocks = contentBlocksRef.current;
       const last = blocks[blocks.length - 1];
       if (last && last.type === 'text') {
-        last.text += data.text;
+        last.text += data.delta;
       } else {
-        blocks.push({ type: 'text', text: data.text });
+        blocks.push({ type: 'text', text: data.delta });
       }
 
       // Derive content string for backward compatibility

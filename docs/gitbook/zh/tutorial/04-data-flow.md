@@ -111,7 +111,7 @@ REST 调用告诉后端哪个 WebSocket 客户端应该接收流式响应。
 t=0ms    agent_status      { status: 'thinking' }
 t=200ms  agent_thinking    { payload: { phase: 'start' } }
 t=500ms  agent_thinking    { payload: { phase: 'delta', content: '...' } }
-t=800ms  text_delta        { text: '我将为你生成学习目标...' }
+t=800ms  text_delta        { delta: '我将为你生成学习目标...' }
 t=1200ms tool_activity     { payload: { toolName: 'write_output', phase: 'start' } }
 t=1300ms output_update     { payload: { data: { field: 'objectives', value: [...] } } }
 t=1400ms tool_activity     { payload: { toolName: 'write_output', phase: 'end' } }
@@ -395,7 +395,7 @@ type AgentStatusValue =
 
 | 事件 | 用途 | 关键字段 |
 |------|------|----------|
-| `text_delta` | 流式文本输出 | `text` |
+| `text_delta` | 流式文本输出 | `delta` |
 | `output_update` | 结构化表单数据 | `payload.data.field`, `payload.data.value`, `payload.data.preview` |
 | `todo_update` | Agent 任务进度列表 | `payload.todos`, `payload.completed`, `payload.total` |
 

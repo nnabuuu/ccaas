@@ -24,7 +24,7 @@
  *
  * // Subscribe to events
  * on('text_delta', (data) => {
- *   console.log('Received:', data.text)
+ *   console.log('Received:', data.delta)
  * })
  * </script>
  * ```

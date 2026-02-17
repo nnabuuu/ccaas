@@ -197,7 +197,7 @@ export interface EnhancedAgentStatusEvent extends BaseEvent {
 
 export interface TextDeltaEvent extends BaseEvent {
   type: 'text_delta';
-  text: string;
+  delta: string;
 }
 
 export interface OutputUpdateEvent extends BaseEvent {

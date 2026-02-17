@@ -154,7 +154,6 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         mcpServers: queueItem.payload.mcpServers,
         enabledSkillSlugs: queueItem.payload.enabledSkillSlugs,
         skillPath: queueItem.payload.skillPath,
-        resumeSession: queueItem.payload.resumeSession,
         emitEvent: (event: any) => {
           // Emit to session socket if connected
           if (session.socket) {

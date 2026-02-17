@@ -89,7 +89,7 @@ socket.on('agent_status', (data) => {
 
 // 监听文本流
 socket.on('text_delta', (data) => {
-  process.stdout.write(data.text)
+  process.stdout.write(data.delta)
 })
 
 // 监听结构化输出

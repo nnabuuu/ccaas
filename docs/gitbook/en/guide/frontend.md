@@ -342,7 +342,7 @@ useEffect(() => {
 
   // Text streaming
   socket.on('text_delta', (data) => {
-    setMessages(prev => appendText(prev, data.text))
+    setMessages(prev => appendText(prev, data.delta))
   })
 
   // Structured output

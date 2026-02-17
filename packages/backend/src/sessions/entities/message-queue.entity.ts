@@ -16,7 +16,6 @@ export interface MessageQueuePayload {
   enabledSkillSlugs?: string[];
   attachmentPaths?: string[];
   skillPath?: string;
-  resumeSession?: boolean;
 }
 
 /**

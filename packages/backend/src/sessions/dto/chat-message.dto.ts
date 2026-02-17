@@ -4,7 +4,7 @@
  * Data transfer objects for chat-related operations.
  */
 
-import { IsString, IsOptional, IsObject, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
 
 /**
  * MCP Server configuration passed from solution backends
@@ -30,10 +30,6 @@ export class ChatMessageDto {
   @IsOptional()
   @IsObject()
   context?: Record<string, unknown>;
-
-  @IsOptional()
-  @IsBoolean()
-  resumeSession?: boolean;
 
   @IsOptional()
   @IsString()
@@ -92,10 +88,6 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   tenantId?: string;
-
-  @IsOptional()
-  @IsBoolean()
-  resumeSession?: boolean;
 
   @IsOptional()
   @IsObject()

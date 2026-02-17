@@ -95,7 +95,7 @@ export interface AgentStatusEvent extends BaseSocketEvent {
  */
 export interface TextDeltaEvent extends BaseSocketEvent {
   type: 'text_delta'
-  text: string
+  delta: string
   isStreaming?: boolean
 }
 
@@ -222,7 +222,6 @@ export interface SkillChatRequest {
   message: string
   context?: PageContext
   sessionId?: string
-  resumeSession?: boolean
 }
 
 /**

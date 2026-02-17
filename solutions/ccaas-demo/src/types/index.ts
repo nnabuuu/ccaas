@@ -153,7 +153,7 @@ export interface TodoStats {
 // ChatLayout removed - now using ChatLayoutMode from @ccaas/react-sdk
 
 export type ProtocolEvent =
-  | { type: 'text_delta'; text: string }
+  | { type: 'text_delta'; delta: string }
   | { type: 'tool_activity'; tool: string; status: 'start' | 'end' }
   | { type: 'file_created'; file: FileInfo }
   | { type: 'skill_updated'; skillId: string; requiresRestart: boolean }

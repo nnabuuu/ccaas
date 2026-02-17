@@ -414,8 +414,8 @@ export class HeadlessExecutionService {
       result.events.push(event);
 
       // Accumulate text
-      if (event.type === 'text_delta' && (event as any).text) {
-        result.resultText += (event as any).text;
+      if (event.type === 'text_delta' && (event as any).delta) {
+        result.resultText += (event as any).delta;
       }
 
       // Accumulate token usage

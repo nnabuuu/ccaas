@@ -246,7 +246,7 @@ useEffect(() => {
 
   // 文本流
   socket.on('text_delta', (data) => {
-    setMessages(prev => appendText(prev, data.text))
+    setMessages(prev => appendText(prev, data.delta))
   })
 
   // 结构化输出

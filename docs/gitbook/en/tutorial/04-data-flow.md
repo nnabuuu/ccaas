@@ -111,7 +111,7 @@ Timeline:
 t=0ms    agent_status      { status: 'thinking' }
 t=200ms  agent_thinking    { payload: { phase: 'start' } }
 t=500ms  agent_thinking    { payload: { phase: 'delta', content: '...' } }
-t=800ms  text_delta        { text: 'I will generate learning objectives...' }
+t=800ms  text_delta        { delta: 'I will generate learning objectives...' }
 t=1200ms tool_activity     { payload: { toolName: 'write_output', phase: 'start' } }
 t=1300ms output_update     { payload: { data: { field: 'objectives', value: [...] } } }
 t=1400ms tool_activity     { payload: { toolName: 'write_output', phase: 'end' } }
@@ -395,7 +395,7 @@ type AgentStatusValue =
 
 | Event | Purpose | Key Fields |
 |-------|---------|------------|
-| `text_delta` | Streaming text output | `text` |
+| `text_delta` | Streaming text output | `delta` |
 | `output_update` | Structured form data | `payload.data.field`, `payload.data.value`, `payload.data.preview` |
 | `todo_update` | Agent task progress list | `payload.todos`, `payload.completed`, `payload.total` |
 

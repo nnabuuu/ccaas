@@ -15,6 +15,7 @@ import type {
   AgentStatusEvent,
   OutputUpdateEvent,
   ToolActivityPayload,
+  FrontendEvent,
 } from '@ccaas/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
@@ -24,6 +25,7 @@ import {
   type ResolvedTemplateParams,
 } from '../utils/templateResolver'
 import { generateId } from '../utils/generateId'
+import { useSseStream } from './useSseStream'
 
 /**
  * Core chat hook: manages messages, text streaming, sendMessage via REST,
@@ -42,6 +44,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     solutionConfigEndpoint,
     context,
     sessionTemplate,
+    transport = 'socket',
   } = options
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -62,6 +65,135 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const onOutputUpdateRef = useRef(onOutputUpdate)
   onOutputUpdateRef.current = onOutputUpdate
 
+  // SSE stream support
+  const { startStream, abortStream } = useSseStream()
+
+  /**
+   * Shared event dispatcher - handles events from both Socket.IO and SSE transports.
+   * Extracted to avoid duplication between socket handler and SSE handler.
+   */
+  const dispatchEvent = useCallback((eventType: string, data: FrontendEvent) => {
+    if (eventType === 'text_delta') {
+      const ev = data as TextDeltaEvent
+      const blocks = contentBlocksRef.current
+      const last = blocks[blocks.length - 1]
+      if (last && last.type === 'text') {
+        last.text += ev.delta
+      } else {
+        blocks.push({ type: 'text', text: ev.delta })
+      }
+      const content = blocks
+        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
+        .map(b => b.text)
+        .join('')
+      streamContentRef.current = content
+      setCurrentStreamContent(content)
+      setMessages(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.content = content
+          lastMsg.contentBlocks = [...blocks]
+        }
+        return updated
+      })
+    } else if (eventType === 'output_update') {
+      const parsed = parseOutputUpdate(data as OutputUpdateEvent)
+      if (!parsed) return
+      onOutputUpdateRef.current?.(parsed)
+      if (currentMessageRef.current) {
+        setMessages(prev => {
+          const updated = [...prev]
+          const lastMsg = updated[updated.length - 1]
+          if (lastMsg && lastMsg.role === 'assistant') {
+            const existing = lastMsg.outputUpdates || []
+            const idx = existing.findIndex(u => u.field === parsed.field)
+            if (idx >= 0) {
+              lastMsg.outputUpdates = existing.map((u, i) => i === idx ? { ...parsed } : u)
+            } else {
+              lastMsg.outputUpdates = [...existing, { ...parsed }]
+            }
+          }
+          return updated
+        })
+      }
+    } else if (eventType === 'agent_status') {
+      const ev = data as AgentStatusEvent
+      if (ev.status === 'complete' || ev.status === 'error' || ev.status === 'cancelled') {
+        setIsProcessing(false)
+        const finalContent = streamContentRef.current
+        if (currentMessageRef.current && finalContent) {
+          setMessages(prev => {
+            const updated = [...prev]
+            const lastMsg = updated[updated.length - 1]
+            if (lastMsg && lastMsg.role === 'assistant') {
+              lastMsg.content = finalContent
+              lastMsg.isStreaming = false
+              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
+            }
+            return updated
+          })
+        } else {
+          setMessages(prev => {
+            const updated = [...prev]
+            const lastMsg = updated[updated.length - 1]
+            if (lastMsg?.isStreaming) {
+              lastMsg.isStreaming = false
+              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
+            }
+            return updated
+          })
+        }
+        latestTokenUsageRef.current = null
+        setCurrentStreamContent('')
+        streamContentRef.current = ''
+        currentMessageRef.current = null
+      }
+    } else if (eventType === 'tool_activity') {
+      const payload = (data as any).payload as ToolActivityPayload
+      const toolActivity: ToolActivity = {
+        toolName: payload.toolName,
+        toolId: payload.toolId,
+        phase: payload.phase,
+        timestamp: new Date(),
+        duration: payload.duration,
+        success: payload.success,
+        description: payload.description,
+        toolInput: payload.toolInput,
+        toolOutput: payload.toolOutput,
+        agentType: payload.agentType,
+        nestingLevel: payload.nestingLevel,
+      }
+      const blocks = contentBlocksRef.current
+      if (payload.phase === 'start') {
+        blocks.push({ type: 'tool', tool: toolActivity })
+      } else if (payload.phase === 'end') {
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const block = blocks[i]
+          if (block && block.type === 'tool' && block.tool.toolId === toolActivity.toolId) {
+            blocks[i] = { type: 'tool', tool: toolActivity }
+            break
+          }
+        }
+      }
+      setMessages(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.contentBlocks = [...blocks]
+        }
+        return updated
+      })
+    } else if (eventType === 'token_usage') {
+      const payload = (data as any).payload
+      latestTokenUsageRef.current = {
+        inputTokens: payload.inputTokens,
+        outputTokens: payload.outputTokens,
+        cacheReadTokens: payload.cacheReadTokens,
+      }
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Load solution config on mount
   useEffect(() => {
     if (!solutionConfigEndpoint) return
@@ -79,65 +211,20 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     loadConfig()
   }, [solutionConfigEndpoint])
 
-  // Register socket event handlers
+  // Register socket event handlers (Socket.IO transport only)
   useEffect(() => {
+    if (transport === 'sse') return // SSE mode: skip socket handlers
+
     const socket = connection.socket
     if (!socket) return
 
-    // Text streaming
-    const onTextDelta = (data: TextDeltaEvent) => {
-      const blocks = contentBlocksRef.current
-      const last = blocks[blocks.length - 1]
-      if (last && last.type === 'text') {
-        last.text += data.text
-      } else {
-        blocks.push({ type: 'text', text: data.text })
-      }
-
-      const content = blocks
-        .filter((b): b is { type: 'text'; text: string } => b.type === 'text')
-        .map(b => b.text)
-        .join('')
-
-      streamContentRef.current = content
-      setCurrentStreamContent(content)
-
-      setMessages(prev => {
-        const updated = [...prev]
-        const lastMsg = updated[updated.length - 1]
-        if (lastMsg && lastMsg.role === 'assistant') {
-          lastMsg.content = content
-          lastMsg.contentBlocks = [...blocks]
-        }
-        return updated
-      })
-    }
-
-    // Output updates
-    const onOutputUpdate = (event: OutputUpdateEvent) => {
-      const parsed = parseOutputUpdate(event)
-      if (!parsed) return
-
-      onOutputUpdateRef.current?.(parsed)
-
-      // Attach to current assistant message
-      if (currentMessageRef.current) {
-        setMessages(prev => {
-          const updated = [...prev]
-          const lastMsg = updated[updated.length - 1]
-          if (lastMsg && lastMsg.role === 'assistant') {
-            const existing = lastMsg.outputUpdates || []
-            const idx = existing.findIndex(u => u.field === parsed.field)
-            if (idx >= 0) {
-              lastMsg.outputUpdates = existing.map((u, i) => i === idx ? { ...parsed } : u)
-            } else {
-              lastMsg.outputUpdates = [...existing, { ...parsed }]
-            }
-          }
-          return updated
-        })
-      }
-    }
+    // Delegate to shared event dispatcher
+    const onTextDelta = (data: TextDeltaEvent) => dispatchEvent('text_delta', data as FrontendEvent)
+    const onOutputUpdate = (event: OutputUpdateEvent) => dispatchEvent('output_update', event as FrontendEvent)
+    const onAgentStatus = (data: AgentStatusEvent) => dispatchEvent('agent_status', data as FrontendEvent)
+    const onToolActivity = (data: { payload: ToolActivityPayload }) => dispatchEvent('tool_activity', data as unknown as FrontendEvent)
+    const onTokenUsage = (data: { payload: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } }) =>
+      dispatchEvent('token_usage', data as unknown as FrontendEvent)
 
     // Also handle tool_event for write_output (problem-explainer pattern)
     const onToolEvent = (data: { toolName: string; input?: Record<string, unknown>; output?: unknown }) => {
@@ -172,95 +259,6 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       }
     }
 
-    // Agent status (for finalizing messages)
-    const onAgentStatus = (data: AgentStatusEvent) => {
-      if (data.status === 'complete' || data.status === 'error' || data.status === 'cancelled') {
-        setIsProcessing(false)
-
-        // Finalize current message
-        const finalContent = streamContentRef.current
-        if (currentMessageRef.current && finalContent) {
-          setMessages(prev => {
-            const updated = [...prev]
-            const lastMsg = updated[updated.length - 1]
-            if (lastMsg && lastMsg.role === 'assistant') {
-              lastMsg.content = finalContent
-              lastMsg.isStreaming = false
-              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
-            }
-            return updated
-          })
-        } else {
-          // Mark streaming as false even without content
-          setMessages(prev => {
-            const updated = [...prev]
-            const lastMsg = updated[updated.length - 1]
-            if (lastMsg?.isStreaming) {
-              lastMsg.isStreaming = false
-              lastMsg.tokenUsage = latestTokenUsageRef.current || undefined
-            }
-            return updated
-          })
-        }
-
-        // Reset stream state and token usage
-        latestTokenUsageRef.current = null
-        setCurrentStreamContent('')
-        streamContentRef.current = ''
-        currentMessageRef.current = null
-      }
-    }
-
-    // Tool activity (inline tool cards)
-    const onToolActivity = (data: { payload: ToolActivityPayload }) => {
-      const payload = data.payload
-
-      const toolActivity: ToolActivity = {
-        toolName: payload.toolName,
-        toolId: payload.toolId,
-        phase: payload.phase,
-        timestamp: new Date(),
-        duration: payload.duration,
-        success: payload.success,
-        description: payload.description,
-        toolInput: payload.toolInput,
-        toolOutput: payload.toolOutput,
-        agentType: payload.agentType,
-        nestingLevel: payload.nestingLevel,
-      }
-
-      const blocks = contentBlocksRef.current
-      if (payload.phase === 'start') {
-        blocks.push({ type: 'tool', tool: toolActivity })
-      } else if (payload.phase === 'end') {
-        for (let i = blocks.length - 1; i >= 0; i--) {
-          const block = blocks[i]
-          if (block && block.type === 'tool' && block.tool.toolId === toolActivity.toolId) {
-            blocks[i] = { type: 'tool', tool: toolActivity }
-            break
-          }
-        }
-      }
-
-      setMessages(prev => {
-        const updated = [...prev]
-        const lastMsg = updated[updated.length - 1]
-        if (lastMsg && lastMsg.role === 'assistant') {
-          lastMsg.contentBlocks = [...blocks]
-        }
-        return updated
-      })
-    }
-
-    // Token usage tracking
-    const onTokenUsage = (data: { payload: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } }) => {
-      latestTokenUsageRef.current = {
-        inputTokens: data.payload.inputTokens,
-        outputTokens: data.payload.outputTokens,
-        cacheReadTokens: data.payload.cacheReadTokens,
-      }
-    }
-
     socket.on('text_delta', onTextDelta)
     socket.on('output_update', onOutputUpdate)
     socket.on('tool_event', onToolEvent)
@@ -276,7 +274,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       socket.off('tool_activity', onToolActivity)
       socket.off('token_usage', onTokenUsage)
     }
-  }, [connection.socket])
+  }, [connection.socket, transport, dispatchEvent])
 
   // Auto-load message history on connection
   useEffect(() => {
@@ -340,9 +338,14 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     })
   }, [connection.socket, connection.clientId])
 
-  // Send message via REST API
+  // Send message via REST API (Socket.IO) or SSE streaming
   const sendMessage = useCallback(async (content: string, sendOptions?: SendMessageOptions) => {
-    if (!connection.connected || !connection.clientId || isProcessing) return
+    // SSE mode: only requires sessionId and serverUrl (no socket/clientId needed)
+    if (transport === 'sse') {
+      if (!connection.sessionId || isProcessing) return
+    } else {
+      if (!connection.connected || !connection.clientId || isProcessing) return
+    }
 
     // Add user message
     const userMessage: Message = {
@@ -426,69 +429,78 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       }
     }
 
-    const attemptSend = async (retryCount = 0): Promise<void> => {
-      const chatPayload: Record<string, unknown> = {
-        clientId: connection.clientId,
+    // Build shared payload (without clientId for SSE)
+    const buildPayload = (): Record<string, unknown> => {
+      const payload: Record<string, unknown> = {
         message: content,
         tenantId,
       }
 
-      // Apply resolved parameters to payload
-      if (resolvedParams.mcpServers) {
-        chatPayload.mcpServers = resolvedParams.mcpServers
-      }
+      if (resolvedParams.mcpServers) payload.mcpServers = resolvedParams.mcpServers
+      if (resolvedParams.skillPath) payload.skillPath = resolvedParams.skillPath
+      if (resolvedParams.enabledSkillSlugs?.length) payload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
+      if (resolvedParams.appendSystemPrompt) payload.appendSystemPrompt = resolvedParams.appendSystemPrompt
+      if (sendOptions?.attachments?.length) payload.attachments = sendOptions.attachments
 
-      if (resolvedParams.skillPath) {
-        chatPayload.skillPath = resolvedParams.skillPath
-      }
-
-      if (resolvedParams.enabledSkillSlugs && resolvedParams.enabledSkillSlugs.length > 0) {
-        chatPayload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
-      }
-
-      // Phase 2: appendSystemPrompt is now supported by backend
-      // Backend merges it with skill system prompt (skill prompt + appendSystemPrompt)
-      if (resolvedParams.appendSystemPrompt) {
-        chatPayload.appendSystemPrompt = resolvedParams.appendSystemPrompt
-      }
-
-      // Attachments and context
-      if (sendOptions?.attachments && sendOptions.attachments.length > 0) {
-        chatPayload.attachments = sendOptions.attachments
-      }
-
-      // Include context from options or sendOptions (sendOptions takes precedence)
       const messageContext = sendOptions?.context || context
-      if (messageContext) {
-        chatPayload.context = messageContext
-      }
+      if (messageContext) payload.context = messageContext
 
-      const response = await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(chatPayload),
-      })
+      return payload
+    }
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as Record<string, string>
-
-        // Retry on WebSocket disconnection
-        if (response.status === 400 && errorData.message?.includes('not connected') && retryCount < 2) {
-          await waitForReconnection()
-          return attemptSend(retryCount + 1)
+    if (transport === 'sse') {
+      // SSE transport: stream events from response body
+      await startStream(
+        {
+          serverUrl: connection.serverUrl,
+          sessionId: connection.sessionId!,
+          onEvent: (event) => dispatchEvent(event.type, event),
+          onError: (err) => {
+            setIsProcessing(false)
+            throw err
+          },
+          onDone: () => {
+            // SSE stream closed - ensure processing state is reset
+            setIsProcessing(false)
+          },
+        },
+        buildPayload(),
+      )
+    } else {
+      // Socket.IO transport: POST to /completion, events arrive via socket
+      const attemptSend = async (retryCount = 0): Promise<void> => {
+        const chatPayload: Record<string, unknown> = {
+          ...buildPayload(),
+          clientId: connection.clientId, // Required for socket.io transport
         }
 
-        throw new ApiError(response.status, errorData.message || response.statusText)
+        const response = await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chatPayload),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({})) as Record<string, string>
+
+          // Retry on WebSocket disconnection
+          if (response.status === 400 && errorData.message?.includes('not connected') && retryCount < 2) {
+            await waitForReconnection()
+            return attemptSend(retryCount + 1)
+          }
+
+          throw new ApiError(response.status, errorData.message || response.statusText)
+        }
+      }
+
+      try {
+        await attemptSend()
+      } catch (err) {
+        setIsProcessing(false)
+        throw err
       }
     }
-
-    try {
-      await attemptSend()
-    } catch (err) {
-      setIsProcessing(false)
-      throw err
-    }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, sessionTemplate, waitForReconnection])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
 
   const clearMessages = useCallback(() => {
     setMessages([])
@@ -499,10 +511,26 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   }, [])
 
   const cancelProcessing = useCallback(() => {
-    const socket = connection.socket
-    if (!socket || !isProcessing) return
-    socket.emit('cancel', { sessionId: connection.sessionId })
-  }, [connection.socket, connection.sessionId, isProcessing])
+    if (!isProcessing) return
+
+    if (transport === 'sse') {
+      // SSE mode: abort the stream and call REST cancel endpoint
+      abortStream()
+      if (connection.sessionId) {
+        fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }).catch(() => {
+          // Ignore cancel errors
+        })
+      }
+      setIsProcessing(false)
+    } else {
+      const socket = connection.socket
+      if (!socket) return
+      socket.emit('cancel', { sessionId: connection.sessionId })
+    }
+  }, [connection.socket, connection.sessionId, connection.serverUrl, isProcessing, transport, abortStream])
 
   const clearConversation = useCallback(() => {
     // Clear local message state

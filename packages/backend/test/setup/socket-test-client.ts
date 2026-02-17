@@ -128,7 +128,6 @@ export class SocketTestClient {
     message: string;
     sessionId?: string;
     tenantId?: string;
-    resumeSession?: boolean;
   }): void {
     this.emit('chat', options);
   }

@@ -110,7 +110,7 @@ export function useMosaicSync(sessionId: string | null) {
     socket.on('text_delta', (data: unknown) => {
       try {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-        const text = (parsed as any)?.text;
+        const text = (parsed as any)?.delta;
         if (typeof text === 'string') {
           accumulatedText += text;
 

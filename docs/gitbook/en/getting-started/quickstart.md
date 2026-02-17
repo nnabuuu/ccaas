@@ -89,7 +89,7 @@ socket.on('agent_status', (data) => {
 
 // Listen for text stream
 socket.on('text_delta', (data) => {
-  process.stdout.write(data.text)
+  process.stdout.write(data.delta)
 })
 
 // Listen for structured output

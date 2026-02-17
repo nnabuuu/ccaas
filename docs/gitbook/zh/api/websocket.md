@@ -80,7 +80,7 @@ socket.on('text_delta', (data) => {
   // data: {
   //   type: 'text_delta',
   //   sessionId: 'uuid',
-  //   text: '部分文本...'
+  //   delta: '部分文本...'
   // }
 })
 ```

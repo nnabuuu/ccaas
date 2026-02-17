@@ -292,7 +292,7 @@ const {
 
 // Subscribe to events
 on('text_delta', (data) => {
-  messages.value.push(data.text)
+  messages.value.push(data.delta)
 })
 
 on('complete', () => {

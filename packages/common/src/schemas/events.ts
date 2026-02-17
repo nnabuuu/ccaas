@@ -26,7 +26,7 @@ export const BaseEventSchema = z.object({
 
 export const TextDeltaEventSchema = BaseEventSchema.extend({
   type: z.literal('text_delta'),
-  text: z.string(),
+  delta: z.string(),
 });
 
 // ============================================================================
