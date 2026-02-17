@@ -2,7 +2,7 @@
 
 ## What is a Skill
 
-A Skill is the core abstraction in LoopAI that defines AI Agent behavior. Each Skill specifies the AI Agent's role, knowledge scope, available tools, and output format.
+A Skill is the core abstraction in KedgeAgentic that defines AI Agent behavior. Each Skill specifies the AI Agent's role, knowledge scope, available tools, and output format.
 
 ## When to Use This
 

@@ -24,7 +24,7 @@
  *
  * // Subscribe to events
  * on('text_delta', (data) => {
- *   console.log('Received:', data.text)
+ *   console.log('Received:', data.delta)
  * })
  * </script>
  * ```
@@ -114,11 +114,25 @@ export interface UseAgentChatReturn {
 }
 
 /**
- * Agent chat composable
+ * @deprecated Socket.IO transport is deprecated.
+ * Use `useSseChat` composable instead.
+ * The backend endpoint POST /api/v1/sessions/:id/completion now returns 410 Gone.
  *
- * Provides reactive Socket.io connection management.
+ * Agent chat composable (Socket.IO transport - deprecated)
+ *
+ * @example
+ * ```vue
+ * // Migrate to:
+ * import { useSseChat } from '@ccaas/vue-sdk'
+ * ```
  */
 export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatReturn {
+  console.warn(
+    '[ccaas] useAgentChat (Vue SDK) is deprecated. ' +
+    'Use useSseChat composable instead. ' +
+    'Socket.IO transport will be removed in a future version. ' +
+    'The backend POST /api/v1/sessions/:id/completion endpoint returns 410 Gone.',
+  )
   // Use provided connection or default singleton
   const connection = options?.connection ?? defaultConnection
 

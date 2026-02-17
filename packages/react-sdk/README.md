@@ -1,6 +1,6 @@
 # @ccaas/react-sdk
 
-React SDK for building Claude Code as a Service solutions with chat UI, real-time updates, and agent status tracking.
+React SDK for building KedgeAgentic solutions with chat UI, real-time updates, and agent status tracking.
 
 ## Features
 
@@ -31,23 +31,58 @@ import {
 function App() {
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
-    sessionPrefix: 'demo'
+    tenantId: 'my-app'  // Enables conversation persistence
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, tenantId: 'my-app' })
   const status = useAgentStatus({ connection })
 
+  if (chat.isLoadingHistory) {
+    return <div>Loading conversation...</div>
+  }
+
   return (
-    <ChatPanel
-      messages={chat.messages}
-      isProcessing={status.isProcessing}
-      connected={connection.connected}
-      activeTools={status.activeTools}
-      onSendMessage={chat.sendMessage}
-    />
+    <>
+      <button onClick={() => chat.clearConversation()}>New Conversation</button>
+      <ChatPanel
+        messages={chat.messages}
+        isProcessing={status.isProcessing}
+        connected={connection.connected}
+        activeTools={status.activeTools}
+        onSendMessage={chat.sendMessage}
+      />
+    </>
   )
 }
 ```
+
+## Terminology Guide
+
+This table clarifies terms used across documentation, code, and user interfaces:
+
+| User-Facing Term | Technical Term | Type/Interface | Format/Example | Notes |
+|------------------|----------------|----------------|----------------|-------|
+| **Conversation** | Session | `Session` | - | Same entity, different perspectives |
+| **Conversation ID** | sessionId | `string` | `conv_a1b2c3d4-...` | Format: `conv_{uuid}` when using tenantId |
+| **Chat message** | Message | `Message` | - | Single utterance from user or assistant |
+| **Exchange** | Turn | `Turn` | - | One Q&A pair (user message + assistant response) |
+| **Message history** | messages | `Message[]` | - | All messages in a conversation |
+| **Session ID** | sessionId | `string` | `conv_{uuid}` or `{prefix}_{id}` | Unique conversation identifier |
+| **Client ID** | clientId | `string` | Auto-assigned | WebSocket client identifier |
+
+### Common Confusion Points
+
+**Q: What's the difference between "conversation" and "session"?**
+A: They're the same thing. "Conversation" is user-facing term, "Session" is the technical database entity.
+
+**Q: Is conversationId the same as sessionId?**
+A: Yes. localStorage uses `ccaas_session_{tenantId}` as the key, but the value stored is the sessionId (format: `conv_{uuid}`).
+
+**Q: What's a Turn?**
+A: A Turn represents one complete exchange: user message → assistant response. Used for analytics and per-turn cost tracking.
+
+**Q: Why messageIndex instead of createdAt for sorting?**
+A: `messageIndex` is a 0-based sequential number that guarantees message order, even if createdAt timestamps are identical.
 
 ## Documentation
 
@@ -69,38 +104,52 @@ function App() {
 
 ### useAgentConnection
 
-Manages WebSocket connection to CCAAS backend.
+Manages WebSocket connection to KedgeAgentic backend with optional conversation persistence.
 
 ```tsx
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',
-  sessionPrefix: 'my-solution',
+  tenantId: 'my-solution',       // Enables conversation persistence via localStorage
   autoConnect: true,
-  reconnectionAttempts: 5
+  // sessionPrefix: 'legacy',    // Legacy option (no persistence), use tenantId instead
+  // forceNewConversation: true,  // Always start fresh, ignore saved conversationId
 })
 
 // Returns:
 // - connected: boolean
-// - sessionId: string
+// - sessionId: string             // conv_${uuid} when tenantId provided
 // - socket: Socket | null
 // - connect: () => void
 // - disconnect: () => void
+// - startNewConversation: () => void  // Clear storage, new ID, reconnect
 ```
+
+**Conversation persistence**: When `tenantId` is provided, the `sessionId` is persisted in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same `sessionId` is recovered, enabling message history loading.
 
 ### useAgentChat
 
-Handles chat messages and user input.
+Handles chat messages, user input, and conversation lifecycle.
 
 ```tsx
 const chat = useAgentChat({
   connection,
-  tenantId: 'default'
+  tenantId: 'my-solution'
 })
 
 // Returns:
 // - messages: Message[]
+// - isProcessing: boolean
+// - isLoadingHistory: boolean        // True while loading saved messages
+// - currentStreamContent: string
 // - sendMessage: (content: string) => void
+// - clearMessages: () => void        // Clear UI only, keep same conversation
+// - clearConversation: () => void    // Clear UI + new conversationId + reconnect
+// - cancelProcessing: () => void
 ```
+
+**Message history**: On connection, `useAgentChat` automatically fetches message history from `GET /api/v1/sessions/{sessionId}/messages?limit=100`. Use `isLoadingHistory` to show a loading indicator.
+
+**New conversation**: Call `clearConversation()` to start a fresh conversation. This clears messages, removes the saved conversationId from localStorage, generates a new `conv_${uuid}`, and reconnects.
 
 ### useAgentStatus
 
@@ -287,13 +336,15 @@ import {
   useChatLayout
 } from '@ccaas/react-sdk'
 
+const TENANT_ID = 'my-solution'
+
 export function useMySession() {
   const connection = useAgentConnection({
     serverUrl: process.env.REACT_APP_BACKEND_URL,
-    sessionPrefix: 'my-solution'
+    tenantId: TENANT_ID,
   })
 
-  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const chat = useAgentChat({ connection, tenantId: TENANT_ID })
   const status = useAgentStatus({ connection })
   const layout = useChatLayout()
 
@@ -416,7 +467,7 @@ npm run test:watch
 
 ### Integration Tests
 
-Integration tests verify the SDK works correctly with a real CCAAS backend. They test:
+Integration tests verify the SDK works correctly with a real KedgeAgentic backend. They test:
 
 - WebSocket connection establishment
 - REST API endpoints (`/api/v1/sessions/:id/completion`)
@@ -426,7 +477,7 @@ Integration tests verify the SDK works correctly with a real CCAAS backend. They
 
 **Prerequisites:**
 
-Before running integration tests, start the CCAAS backend:
+Before running integration tests, start the KedgeAgentic backend:
 
 ```bash
 cd packages/backend
@@ -446,10 +497,10 @@ The backend must be running on `http://localhost:3001` for integration tests to 
 
 **CI/CD Setup:**
 
-For CI pipelines, ensure the CCAAS backend is started before running integration tests:
+For CI pipelines, ensure the KedgeAgentic backend is started before running integration tests:
 
 ```yaml
-- name: Start CCAAS Backend
+- name: Start KedgeAgentic Backend
   run: |
     cd packages/backend
     npm run start:dev &
@@ -485,6 +536,8 @@ See complete examples in:
 ## Documentation
 
 - [Chat Integration Guide](./docs/CHAT_INTEGRATION_GUIDE.md) - Complete integration tutorial
+- [Conversation Persistence](../../docs/CONVERSATION_PERSISTENCE.md) - Conversation recovery architecture and integration guide
+  - [Understanding the Messaging Model](../../docs/CONVERSATION_PERSISTENCE_IMPLEMENTATION_STATUS.md#understanding-the-messaging-model) - Conceptual overview of Session, Message, Turn entities with diagrams
 - [Solution Template](../../docs/SOLUTION_TEMPLATE.md) - Template for new solutions
 - [Backend Events](../backend/CLAUDE.md#socket-events) - Backend event reference
 

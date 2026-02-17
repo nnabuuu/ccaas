@@ -2,7 +2,7 @@
 
 ## Overview
 
-`write_output` is the most essential MCP tool in LoopAI, used to synchronize AI Agent-generated structured data to frontend forms in real time. Mastering its proper usage is critical to building high-quality Solutions.
+`write_output` is the most essential MCP tool in KedgeAgentic, used to synchronize AI Agent-generated structured data to frontend forms in real time. Mastering its proper usage is critical to building high-quality Solutions.
 
 ## When to Use This
 
@@ -48,27 +48,95 @@ Use the write_output tool to output data, updating one field per call:
 ### MCP Server Implementation
 
 ```typescript
-app.post('/tools/write_output', (req, res) => {
-  const { field, value, operation = 'set' } = req.body
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
 
-  // Validate field name
-  const VALID_FIELDS = [
-    'title', 'objectives', 'activities',
-    'assessment', 'materials'
-  ]
+const VALID_FIELDS = [
+  'title', 'objectives', 'activities',
+  'assessment', 'materials'
+] as const
 
-  if (!VALID_FIELDS.includes(field)) {
-    return res.status(400).json({
-      error: `Invalid field: ${field}`,
-      validFields: VALID_FIELDS
-    })
+const server = new Server(
+  { name: 'my-solution-tools', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+)
+
+// Define the write_output tool
+const writeOutputTool: Tool = {
+  name: 'write_output',
+  description: `Write structured data to the frontend form.
+Valid fields: ${VALID_FIELDS.join(', ')}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        enum: [...VALID_FIELDS],
+        description: 'The form field to update',
+      },
+      value: {
+        description: 'The value for the field',
+      },
+      preview: {
+        type: 'string',
+        description: 'Human-readable summary shown on the sync button',
+      },
+    },
+    required: ['field', 'value'],
+  },
+}
+
+// Register tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: [writeOutputTool] }
+})
+
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview?: string
+    }
+
+    // Validate field name
+    if (!VALID_FIELDS.includes(field as any)) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          data: { error: `Invalid field: ${field}` },
+          status: 'error',
+        })}],
+        isError: true,
+      }
+    }
+
+    // Return success -- CCAAS wraps this into an output_update event
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        data: { field, value, preview },
+        status: 'success',
+      })}],
+    }
   }
 
-  res.json({
-    data: { field, value, operation },
-    status: 'success'
-  })
+  return {
+    content: [{ type: 'text', text: JSON.stringify({
+      data: { error: `Unknown tool: ${name}` },
+      status: 'error',
+    })}],
+    isError: true,
+  }
 })
+
+// Start the server
+const transport = new StdioServerTransport()
+await server.connect(transport)
 ```
 
 ### Output Validation with Zod
@@ -78,7 +146,8 @@ It is recommended to use Zod schemas to validate write\_output data and ensure c
 ```typescript
 import { z } from 'zod'
 
-const OutputSchema = z.object({
+// Define per-field schemas
+const fieldSchemas: Record<string, z.ZodType> = {
   title: z.string().min(1),
   objectives: z.array(z.object({
     description: z.string(),
@@ -93,27 +162,52 @@ const OutputSchema = z.object({
     type: z.string(),
     description: z.string()
   }))
-})
+}
 
-app.post('/tools/write_output', (req, res) => {
-  const { field, value } = req.body
+function validateField(field: string, value: unknown) {
+  const schema = fieldSchemas[field]
+  if (!schema) return { success: true, data: value, errors: [] }
 
-  // Validate individual field using the schema
-  const fieldSchema = OutputSchema.shape[field]
-  if (fieldSchema) {
-    const result = fieldSchema.safeParse(value)
-    if (!result.success) {
-      return res.status(400).json({
-        error: 'Validation failed',
-        details: result.error.issues
-      })
+  const result = schema.safeParse(value)
+  if (result.success) {
+    return { success: true, data: result.data, errors: [] }
+  }
+  return {
+    success: false,
+    errors: result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`),
+  }
+}
+
+// Use inside the CallToolRequestSchema handler:
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string; value: unknown; preview?: string
+    }
+
+    // Validate the value against its field schema
+    const validation = validateField(field, value)
+    if (!validation.success) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          data: { error: `Validation failed: ${validation.errors.join('; ')}` },
+          status: 'error',
+        })}],
+        isError: true,
+      }
+    }
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify({
+        data: { field, value: validation.data, preview },
+        status: 'success',
+      })}],
     }
   }
 
-  res.json({
-    data: { field, value: fieldSchema ? fieldSchema.parse(value) : value },
-    status: 'success'
-  })
+  // ... handle other tools
 })
 ```
 

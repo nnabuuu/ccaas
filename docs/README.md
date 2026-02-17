@@ -1,11 +1,11 @@
-# CCAAS Documentation
+# KedgeAgentic Documentation
 
-Welcome to the Claude Code as a Service (CCAAS) documentation. This documentation is organized into several sections to help you find what you need quickly.
+Welcome to the KedgeAgentic (即见Agentic) documentation. This documentation is organized into several sections to help you find what you need quickly.
 
 ## 📚 Documentation Structure
 
 ### [Guides](guides/) - Solution Development Tutorials
-Step-by-step guides for creating CCAAS solutions:
+Step-by-step guides for creating KedgeAgentic solutions:
 
 - **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create a solution in 10 minutes
 - **[Creating a Solution - Complete Guide](guides/CREATING_A_SOLUTION.md)** - Comprehensive solution development guide
@@ -30,7 +30,7 @@ Complete documentation for React and Vue SDK client libraries:
 - **[Architecture](../packages/vue-sdk/docs/ARCHITECTURE_EN.md)** | **[架构文档](../packages/vue-sdk/docs/ARCHITECTURE.md)**
 
 ### [GitBook](gitbook/) - Comprehensive Platform Documentation
-Main documentation for the CCAAS platform, available in English and Chinese.
+Main documentation for the KedgeAgentic platform, available in English and Chinese.
 
 - **[English](gitbook/en/)** - Full English documentation
 - **[中文](gitbook/zh/)** - 完整中文文档

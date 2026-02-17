@@ -43,8 +43,6 @@ SOLUTION_NAME=""
 SOLUTION_SLUG=""
 SOLUTION_VERSION=""
 SOLUTION_DESCRIPTION=""
-BACKEND_PORT=""
-FRONTEND_PORT=""
 SOLUTION_DIR=""
 
 # ==============================================================================
@@ -195,14 +193,6 @@ load_solution_config() {
     SOLUTION_SLUG=$(jq -r '.slug // ""' "$config_file")
     SOLUTION_VERSION=$(jq -r '.version // "1.0.0"' "$config_file")
     SOLUTION_DESCRIPTION=$(jq -r '.description // ""' "$config_file")
-    BACKEND_PORT=$(jq -r '.backend.port // ""' "$config_file")
-    FRONTEND_PORT=$(jq -r '.frontend.port // ""' "$config_file")
-
-    # Override CCAAS_URL if specified in config
-    local config_ccaas_url=$(jq -r '.backend.ccaasUrl // ""' "$config_file")
-    if [ -n "$config_ccaas_url" ]; then
-        CCAAS_URL="$config_ccaas_url"
-    fi
 
     # Validate required fields
     if [ -z "$SOLUTION_NAME" ]; then
@@ -219,12 +209,6 @@ load_solution_config() {
     log_info "  Name: $SOLUTION_NAME"
     log_info "  Slug: $SOLUTION_SLUG"
     log_info "  Version: $SOLUTION_VERSION"
-    if [ -n "$BACKEND_PORT" ]; then
-        log_info "  Backend port: $BACKEND_PORT"
-    fi
-    if [ -n "$FRONTEND_PORT" ]; then
-        log_info "  Frontend port: $FRONTEND_PORT"
-    fi
 }
 
 # Validate solution configuration
@@ -968,14 +952,6 @@ display_summary() {
     echo "Solution: $SOLUTION_NAME"
     echo "Version: $SOLUTION_VERSION"
     echo ""
-
-    if [ -n "$FRONTEND_PORT" ]; then
-        echo "📍 Frontend: http://localhost:$FRONTEND_PORT"
-    fi
-
-    if [ -n "$BACKEND_PORT" ]; then
-        echo "📍 Backend: http://localhost:$BACKEND_PORT"
-    fi
 
     echo "📍 CCAAS: $CCAAS_URL"
     echo ""

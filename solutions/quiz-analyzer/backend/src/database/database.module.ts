@@ -5,6 +5,9 @@ import {
   Subject,
   Quiz,
   QuizAnalysis,
+  Message,
+  ConversationContext,
+  Turn,
 } from './entities';
 
 @Module({
@@ -16,6 +19,9 @@ import {
         Subject,
         Quiz,
         QuizAnalysis,
+        Message,
+        ConversationContext,
+        Turn,
       ],
       synchronize: false, // Use existing database schema
       logging: process.env.NODE_ENV === 'development',

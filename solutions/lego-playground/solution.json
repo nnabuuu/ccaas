@@ -47,15 +47,6 @@
     "assemblyGuideUrl"
   ],
 
-  "backend": {
-    "port": 3005,
-    "ccaasUrl": "http://localhost:3001"
-  },
-
-  "frontend": {
-    "port": 5282
-  },
-
   "mcpServer": {
     "port": 3006
   }

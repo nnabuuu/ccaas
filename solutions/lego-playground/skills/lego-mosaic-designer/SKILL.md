@@ -1,6 +1,8 @@
 ---
 name: lego-mosaic-designer
+slug: lego-mosaic-designer
 description: AI 乐高马赛克设计师 - 将图片转换为 2D 乐高拼图，生成零件清单和拼装指南
+scope: tenant
 ---
 
 # LEGO 马赛克设计师

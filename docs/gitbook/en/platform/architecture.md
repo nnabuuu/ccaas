@@ -2,7 +2,7 @@
 
 ## Architecture Overview
 
-LoopAI uses a layered architecture where each layer has clear responsibilities and can scale independently.
+KedgeAgentic uses a layered architecture where each layer has clear responsibilities and can scale independently.
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -119,7 +119,7 @@ Frontend App ── Render Results ── User Review/Edit
 
 ## Deployment Architecture
 
-LoopAI supports flexible deployment options:
+KedgeAgentic supports flexible deployment options:
 
 | Deployment Mode | Use Case | Description |
 |-----------------|----------|-------------|

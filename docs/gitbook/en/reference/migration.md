@@ -2,7 +2,7 @@
 
 ## Background
 
-The LoopAI platform uses a REST adapter to communicate with MCP Servers. If your MCP Server uses stdio mode (based on `@modelcontextprotocol/sdk`), you will need to migrate it to REST API mode.
+The KedgeAgentic platform uses a REST adapter to communicate with MCP Servers. If your MCP Server uses stdio mode (based on `@modelcontextprotocol/sdk`), you will need to migrate it to REST API mode.
 
 ## Migration Steps
 

@@ -94,6 +94,8 @@ describe('SessionManagerService', () => {
     lastActivity: new Date(),
     closedAt: null,
     workspaceDir: `/tmp/${sessionId}`,
+    title: null,
+    isPinned: false,
     updatedAt: new Date(),
     ...overrides,
   });
@@ -946,6 +948,66 @@ describe('SessionManagerService', () => {
 
       expect(result).toBe(false);
       expect(auditService.logFailure).toHaveBeenCalled();
+    });
+  });
+
+  // ===========================================================================
+  // Conversation Metadata (title, isPinned)
+  // ===========================================================================
+
+  describe('conversation metadata fields', () => {
+    it('should include title and isPinned in session list items from database', async () => {
+      const sessionEntity = createMockSessionEntity('s1', 'tenant-a', 'idle', {
+        title: 'My Conversation',
+        isPinned: true,
+      });
+      const mockQb = createMockQueryBuilder({
+        getCount: jest.fn().mockResolvedValue(1),
+        getMany: jest.fn().mockResolvedValue([sessionEntity]),
+      });
+      sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
+      sessionService.getAllSessions = jest.fn().mockReturnValue([]);
+
+      const result = await service.getSessions({ page: 1, pageSize: 50 });
+
+      expect(result.data).toHaveLength(1);
+      const item = result.data[0];
+      expect(item.title).toBe('My Conversation');
+      expect(item.isPinned).toBe(true);
+    });
+
+    it('should default title to null and isPinned to false', async () => {
+      const sessionEntity = createMockSessionEntity('s1', 'tenant-a');
+      const mockQb = createMockQueryBuilder({
+        getCount: jest.fn().mockResolvedValue(1),
+        getMany: jest.fn().mockResolvedValue([sessionEntity]),
+      });
+      sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
+      sessionService.getAllSessions = jest.fn().mockReturnValue([]);
+
+      const result = await service.getSessions({ page: 1, pageSize: 50 });
+
+      expect(result.data[0].title).toBeNull();
+      expect(result.data[0].isPinned).toBe(false);
+    });
+
+    it('should not overwrite title and isPinned when syncing in-memory session to database', async () => {
+      const managedSession = createMockManagedSession('s1', 'tenant-a', 'idle');
+
+      tokenUsageRepository.createQueryBuilder = jest.fn().mockReturnValue(
+        createMockQueryBuilder({
+          getRawMany: jest.fn().mockResolvedValue([]),
+        }),
+      );
+      sessionRepository.save = jest.fn().mockResolvedValue({});
+
+      await service.syncSessionToDatabase(managedSession);
+
+      // title and isPinned should NOT be included in sync
+      // because they are user-managed metadata, not in-memory state
+      const saveArg = sessionRepository.save.mock.calls[0][0];
+      expect(saveArg).not.toHaveProperty('title');
+      expect(saveArg).not.toHaveProperty('isPinned');
     });
   });
 

@@ -40,6 +40,10 @@ export type { UseTokenUsageReturn, SessionTokens } from './useTokenUsage'
 export { useAgentChat } from './useAgentChat'
 export type { UseAgentChatOptions, UseAgentChatReturn } from './useAgentChat'
 
+// HTTP Streaming (SSE) - No WebSocket required
+export { useSseChat } from './useSseChat'
+export type { UseSseChatOptions, UseSseChatReturn, SseChatMessage } from './useSseChat'
+
 export { useEntityBridge } from './useEntityBridge'
 export type { UseEntityBridgeReturn } from './useEntityBridge'
 

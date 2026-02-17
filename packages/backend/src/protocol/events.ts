@@ -182,13 +182,8 @@ export interface EnhancedAgentStatusEvent extends BaseEvent {
     goalNarrative?: GoalNarrative;
   };
 
-  // Error details (when status='error')
-  error?: {
-    code: string;
-    message: string;
-    recoverable: boolean;
-    suggestion?: string;
-  };
+  // Error message (when status='error')
+  error?: string;
 }
 
 // ============================================================================
@@ -197,7 +192,7 @@ export interface EnhancedAgentStatusEvent extends BaseEvent {
 
 export interface TextDeltaEvent extends BaseEvent {
   type: 'text_delta';
-  text: string;
+  delta: string;
 }
 
 export interface OutputUpdateEvent extends BaseEvent {

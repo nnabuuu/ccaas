@@ -4,7 +4,7 @@
  * Uses @ccaas/react-sdk hooks for core chat functionality
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
@@ -17,32 +17,19 @@ import type { QuizAnalysis } from '../types'
 const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
 const TENANT_ID = 'quiz-analyzer'
 
-// Type for output_update event (matches backend OutputUpdateEvent)
-interface OutputUpdateEvent {
-  payload?: {
-    data?: {
-      field: string
-      value: unknown
-      preview: string
-    }
-  }
-  // Also support flat structure in case backend changes
-  field?: string
-  value?: unknown
-  preview?: string
-}
-
 export interface UseQuizSessionReturn {
   // Connection state
   connected: boolean
   sessionId: string
   error: string | null
+  reconnect: () => void
 
   // Chat state from SDK
   messages: UseAgentChatReturn['messages']
   isProcessing: boolean
+  isLoadingHistory: boolean
   sendMessage: (content: string) => void
-  clearMessages: () => void
+  clearConversation: () => void
   cancelProcessing: () => void
 
   // Status from SDK
@@ -62,99 +49,55 @@ export interface UseQuizSessionReturn {
   analysisResults: Partial<QuizAnalysis>
 }
 
-/**
- * Parse output_update event to extract field/value/preview
- * Handles both nested and flat structures
- */
-function parseOutputUpdateEvent(event: OutputUpdateEvent): {
-  field: string
-  value: unknown
-  preview: string
-} | null {
-  // Try nested structure first (current backend format)
-  const nested = event.payload?.data
-  if (nested?.field) {
-    return {
-      field: nested.field,
-      value: nested.value,
-      preview: nested.preview || `Updated ${nested.field}`,
-    }
-  }
-
-  // Try flat structure (fallback)
-  if (event.field) {
-    return {
-      field: event.field,
-      value: event.value,
-      preview: event.preview || `Updated ${event.field}`,
-    }
-  }
-
-  return null
-}
-
 export function useQuizSession(): UseQuizSessionReturn {
+  // Quiz-specific state: accumulated analysis results from output_update events
+  const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
+
+  // Handle output_update via SDK callback (SSE-compatible)
+  const handleOutputUpdate = useCallback((update: { field: string; value: unknown; preview: string }) => {
+    console.log('📦 Quiz analysis update received:', update.field, update.preview)
+    setAnalysisResults(prev => ({
+      ...prev,
+      [update.field]: update.value,
+    }))
+  }, [])
+
   // Core SDK hooks
   const connection: UseAgentConnectionReturn = useAgentConnection({
     serverUrl: BACKEND_URL,
     sessionPrefix: 'quiz',
+    transport: 'sse',
   })
 
   const chat: UseAgentChatReturn = useAgentChat({
     connection,
     tenantId: TENANT_ID,
+    transport: 'sse',
+    onOutputUpdate: handleOutputUpdate,
   })
 
   const status: UseAgentStatusReturn = useAgentStatus({ connection })
-
-  // Quiz-specific state: accumulated analysis results from output_update events
-  const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
 
   // Computed state
   const hasActiveSubAgents = status.activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
 
-  // Listen for output_update events to capture analysis results
-  useEffect(() => {
-    const socket = connection.socket
-    if (!socket) return
-
-    const handleOutputUpdate = (event: OutputUpdateEvent) => {
-      const parsed = parseOutputUpdateEvent(event)
-
-      if (!parsed) {
-        console.warn('⚠️ Output update missing field, skipping. Raw event:', event)
-        return
-      }
-
-      console.log('📦 Quiz analysis update received:', parsed.field, parsed.preview)
-
-      // Update analysis results with the new field
-      setAnalysisResults(prev => ({
-        ...prev,
-        [parsed.field]: parsed.value,
-      }))
-    }
-
-    socket.on('output_update', handleOutputUpdate)
-
-    return () => {
-      socket.off('output_update', handleOutputUpdate)
-    }
-  }, [connection.socket])
-
   // Listen for custom events from pages
+  // Use ref to avoid re-subscribing if sendMessage changes on every render
+  const sendMessageRef = useRef(chat.sendMessage)
+  sendMessageRef.current = chat.sendMessage
+
   useEffect(() => {
     const handleParseRequest = (e: Event) => {
       const customEvent = e as CustomEvent
       const { content } = customEvent.detail
-      chat.sendMessage(`请帮我解析这道题目：\n\n${content}`)
+      sendMessageRef.current(`请帮我解析这道题目：\n\n${content}`)
     }
 
     const handleAnalysisRequest = (e: Event) => {
       const customEvent = e as CustomEvent
       const { quizId } = customEvent.detail
-      chat.sendMessage(`请帮我分析题目ID: ${quizId}`)
+      sendMessageRef.current(`请帮我分析题目ID: ${quizId}`)
     }
 
     window.addEventListener('quiz:request-parse', handleParseRequest)
@@ -164,10 +107,11 @@ export function useQuizSession(): UseQuizSessionReturn {
       window.removeEventListener('quiz:request-parse', handleParseRequest)
       window.removeEventListener('quiz:request-analysis', handleAnalysisRequest)
     }
-  }, [chat.sendMessage])
+  }, [])
 
-  // Clear analysis results when starting a new session/message
-  // ✅ Use messages.length instead of messages array (rerender-dependencies)
+  // Clear analysis results when a new user message starts processing
+  // Depend on isProcessing and messages.length to detect new messages without
+  // re-running on every message content change
   useEffect(() => {
     if (chat.isProcessing && chat.messages.length > 0) {
       const lastMessage = chat.messages[chat.messages.length - 1]
@@ -176,9 +120,6 @@ export function useQuizSession(): UseQuizSessionReturn {
         setAnalysisResults({})
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    // Note: chat.messages is intentionally omitted to avoid triggering on every message change
-    // We only want to trigger when processing state or message count changes
   }, [chat.isProcessing, chat.messages.length])
 
   return {
@@ -186,12 +127,17 @@ export function useQuizSession(): UseQuizSessionReturn {
     connected: connection.connected,
     sessionId: connection.sessionId,
     error: connection.error,
+    reconnect: connection.connect, // Alias for clarity
 
     // Chat state from SDK
+    // isLoadingHistory is managed by useAgentChat - it auto-loads message history
+    // from the server when the session connects. While loading, this flag is true.
     messages: chat.messages,
     isProcessing: chat.isProcessing,
+    isLoadingHistory: chat.isLoadingHistory,
     sendMessage: chat.sendMessage,
-    clearMessages: chat.clearMessages,
+    // clearConversation creates a new session (new sessionId) and clears all messages
+    clearConversation: chat.clearConversation,
     cancelProcessing: chat.cancelProcessing,
 
     // Status from SDK

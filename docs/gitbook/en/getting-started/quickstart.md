@@ -1,6 +1,6 @@
 # 5-Minute Quick Start
 
-This guide walks you through the core features of LoopAI in just a few minutes.
+This guide walks you through the core features of KedgeAgentic in just a few minutes.
 
 ## Start the Service
 
@@ -89,7 +89,7 @@ socket.on('agent_status', (data) => {
 
 // Listen for text stream
 socket.on('text_delta', (data) => {
-  process.stdout.write(data.text)
+  process.stdout.write(data.delta)
 })
 
 // Listen for structured output

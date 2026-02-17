@@ -25,14 +25,277 @@ If you're building a lesson plan designer that searches curriculum standards and
 
 | Approach | Description | Use Case |
 |----------|-------------|----------|
-| **REST API** | HTTP endpoints called via the LoopAI REST adapter | Recommended -- easy to debug and deploy |
-| **stdio** | Communication via standard input/output | Uses `@modelcontextprotocol/sdk` |
+| **stdio (MCP SDK)** | Communication via standard input/output using `@modelcontextprotocol/sdk` | Recommended -- native MCP protocol, managed by CCAAS |
+| **REST API** | HTTP endpoints called via the CCAAS REST adapter | Alternative -- for wrapping existing external HTTP services |
 
 {% hint style="info" %}
-The LoopAI platform recommends the REST API approach for easier independent deployment, health checks, and logging.
+The CCAAS platform recommends the **stdio approach** using `@modelcontextprotocol/sdk`. CCAAS manages the MCP Server process lifecycle directly -- no separate deployment or health checks needed.
 {% endhint %}
 
-## REST API Approach (Recommended)
+## stdio Approach with MCP SDK (Recommended)
+
+### Project Structure
+
+```
+mcp-server/
+├── package.json
+├── tsconfig.json
+├── src/
+│   ├── index.ts       # Server entry point and tool definitions
+│   ├── types.ts       # Sync field types
+│   └── schemas.ts     # Zod validation schemas
+└── dist/              # Compiled output
+```
+
+### Dependencies
+
+```json
+{
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  }
+}
+```
+
+### Basic Template
+
+```typescript
+#!/usr/bin/env node
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
+import { z } from 'zod'
+
+// Create the MCP server
+const server = new Server(
+  {
+    name: 'my-tools',
+    version: '1.0.0',
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+)
+
+// Define the write_output tool
+const writeOutputTool: Tool = {
+  name: 'write_output',
+  description: 'Output structured data to the frontend form',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      field: {
+        type: 'string',
+        description: 'Name of the field to update',
+      },
+      value: {
+        description: 'Field value',
+      },
+      preview: {
+        type: 'string',
+        description: 'Human-readable summary shown on the sync button',
+      },
+    },
+    required: ['field', 'value'],
+  },
+}
+
+// Define a custom domain tool
+const searchDataTool: Tool = {
+  name: 'search_data',
+  description: 'Search domain data by keyword',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search keyword',
+      },
+    },
+    required: ['query'],
+  },
+}
+
+// Register tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return { tools: [writeOutputTool, searchDataTool] }
+})
+
+// Handle tool calls
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params
+
+  if (name === 'write_output') {
+    const { field, value, preview } = args as {
+      field: string
+      value: unknown
+      preview?: string
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: { field, value, preview },
+          status: 'success',
+        }),
+      }],
+    }
+  }
+
+  if (name === 'search_data') {
+    const { query } = args as { query: string }
+    const results = performSearch(query) // Your business logic
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: results,
+          status: 'success',
+        }),
+      }],
+    }
+  }
+
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        data: { error: `Unknown tool: ${name}` },
+        status: 'error',
+      }),
+    }],
+    isError: true,
+  }
+})
+
+// Start the server
+async function main() {
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+  // Use stderr for logging -- stdout is reserved for MCP protocol
+  console.error('MCP Server started')
+}
+
+main().catch((error) => {
+  console.error('Failed to start MCP server:', error)
+  process.exit(1)
+})
+```
+
+### Real Example: Lesson Plan Designer MCP Server
+
+The lesson-plan-designer solution provides a production MCP Server with multiple tools. Here is a simplified view of its structure:
+
+```typescript
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  type Tool,
+} from '@modelcontextprotocol/sdk/types.js'
+
+const server = new Server(
+  { name: 'lesson-plan-designer', version: '1.0.0' },
+  { capabilities: { tools: {} } }
+)
+
+// Domain tools for searching textbooks and curriculum standards
+const searchTextbookTool: Tool = {
+  name: 'search_textbook',
+  description: 'Search textbook chapters and content by subject, grade, or keyword',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      subject: { type: 'string', description: 'Subject to filter by' },
+      gradeLevel: { type: 'string', description: 'Grade level to filter by' },
+      keyword: { type: 'string', description: 'Keyword to search' },
+    },
+  },
+}
+
+const getTextbookChaptersTool: Tool = {
+  name: 'get_textbook_chapters',
+  description: 'Get the chapter tree for a specific textbook edition from real data',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      subject: { type: 'string', description: 'Subject name' },
+      grade: { type: 'number', description: 'Grade number (1-9)' },
+      volume: { type: 'string', description: 'Volume name' },
+    },
+    required: ['subject', 'grade', 'volume'],
+  },
+}
+
+// Register all tools including write_output and domain tools
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      writeOutputTool,
+      searchTextbookTool,
+      getTextbookChaptersTool,
+      // ... more domain tools
+    ],
+  }
+})
+```
+
+Key patterns from this real implementation:
+
+- **write_output** for syncing AI-generated data to the frontend form
+- **Domain-specific tools** (search_textbook, get_textbook_chapters) for data retrieval
+- **Zod validation** on write_output fields to catch AI formatting errors early
+- **stderr for logging** since stdout is reserved for MCP protocol
+
+### Registering in solution.json
+
+Register the stdio MCP Server in `solution.json` so CCAAS launches and manages it:
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "MCP tools including write_output",
+      "type": "stdio",
+      "env": {}
+    }
+  }
+}
+```
+
+Key fields:
+
+| Field | Description |
+|-------|-------------|
+| `command` | The command to run (`node`) |
+| `args` | Arguments to the command (path to compiled JS) |
+| `type` | Communication protocol (`stdio` for standard I/O) |
+| `env` | Environment variables passed to the process |
+
+{% hint style="warning" %}
+The `args` path points to `dist/index.js`, not `src/index.ts`. You must build the MCP Server before running it: `npm run build`.
+{% endhint %}
+
+## REST API Approach (Alternative for External Services)
+
+Use the REST API approach when you need to wrap an existing external HTTP service as an MCP tool. This is useful for integrating third-party APIs that are already deployed as HTTP endpoints.
 
 ### Project Structure
 
@@ -91,7 +354,7 @@ app.listen(PORT, () => {
 
 ### REST Adapter Endpoint Definition
 
-When registering an MCP Server with CCAAS, you need to define the endpoint format:
+When registering a REST-based MCP Server with CCAAS, you need to define the endpoint format:
 
 ```typescript
 interface McpEndpoint {
@@ -146,47 +409,6 @@ interface McpEndpoint {
 }
 ```
 
-## stdio Approach
-
-If you need to use `@modelcontextprotocol/sdk`:
-
-```typescript
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { z } from 'zod'
-
-const server = new McpServer({
-  name: 'my-tools',
-  version: '1.0.0'
-})
-
-// Register tools
-server.tool(
-  'write_output',
-  'Output structured data to frontend',
-  {
-    field: z.string().describe('Field name to update'),
-    value: z.string().describe('Field value')
-  },
-  async ({ field, value }) => {
-    return {
-      content: [{
-        type: 'text',
-        text: JSON.stringify({ field, value, status: 'success' })
-      }]
-    }
-  }
-)
-
-// Start server
-const transport = new StdioServerTransport()
-await server.connect(transport)
-```
-
-{% hint style="warning" %}
-stdio-based MCP Servers must be migrated to the REST API approach before they can be used on the LoopAI platform. See the [MCP REST Migration Guide](../reference/migration.md).
-{% endhint %}
-
 ## write\_output Tool
 
 `write_output` is the most important MCP tool, used to synchronize AI-generated structured data to frontend forms.
@@ -235,10 +457,23 @@ Supported authentication types:
 
 ## Debugging Tips
 
-1. **Health check** -- First verify that the MCP Server's `/health` endpoint responds correctly
-2. **Standalone testing** -- Use curl to call tool endpoints directly and verify the response format
+1. **stderr logging** -- Use `console.error()` for logging in stdio servers since stdout is reserved for MCP protocol
+2. **MCP Inspector** -- Use `echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node dist/index.js` to test tool listing
 3. **Check logs** -- MCP Server logs are your primary resource for troubleshooting
-4. **Verify registration** -- Confirm that the MCP Server is correctly registered via the CCAAS API
+4. **Verify registration** -- Confirm that the MCP Server is correctly registered in `solution.json`
+5. **Build first** -- Always run `npm run build` after code changes since `solution.json` points to `dist/`
+
+### Testing stdio Servers
+
+```bash
+# List available tools
+echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node dist/index.js
+
+# Call write_output
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"write_output","arguments":{"field":"title","value":"Test Title","preview":"Set title"}}}' | node dist/index.js
+```
+
+### Testing REST Servers
 
 ```bash
 # Health check

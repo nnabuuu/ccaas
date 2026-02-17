@@ -1,5 +1,47 @@
 # 最佳实践汇总
 
+## Transport 配置
+
+### 使用 SSE（默认，推荐）
+
+自 v1.1.0 起，**SSE 是默认 transport**，无需额外配置：
+
+```typescript
+// ✅ SSE 是默认值 - 这是推荐模式
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001', // 始终使用绝对 URL 指向后端
+  tenantId: 'my-solution',
+})
+const chat = useAgentChat({ connection, tenantId: 'my-solution' })
+```
+
+Chat 消息通过 `POST /api/v1/sessions/:id/messages` 以 `text/event-stream` 流式传输。
+
+### Socket.IO Transport 已弃用
+
+```typescript
+// ❌ 已弃用 - 后端返回 410 Gone
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  transport: 'socket', // 会打印 deprecation warning
+})
+```
+
+后端端点 `POST /api/v1/sessions/:id/completion` 返回 **410 Gone**。
+
+> **已知限制：** 后台任务（`subagent_completed`）事件目前仍仅通过 Socket.IO 推送。在 SSE 模式下，后台任务完成通知不会收到。将在后续版本中解决。
+
+### 始终使用绝对 serverUrl
+
+```typescript
+// ❌ 错误 - 请求会发往前端端口！
+const connection = useAgentConnection({ serverUrl: '' })
+
+// ✅ 正确 - 绝对 URL 指向后端
+const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
+```
+
 ## 类型与契约管理
 
 ### 使用共享类型

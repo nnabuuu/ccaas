@@ -87,6 +87,18 @@ export class Session {
   closedAt!: Date | null;
 
   /**
+   * Conversation title (user-assigned or auto-generated)
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  title!: string | null;
+
+  /**
+   * Whether this conversation is pinned by the user
+   */
+  @Column({ type: 'boolean', default: false })
+  isPinned!: boolean;
+
+  /**
    * Workspace directory path
    */
   @Column({ type: 'varchar', length: 500, nullable: true })

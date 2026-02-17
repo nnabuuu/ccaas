@@ -129,7 +129,8 @@ export function useDemoSession() {
   // Core SDK hooks
   const connection = useAgentConnection({
     serverUrl: BACKEND_URL,
-    sessionPrefix: 'demo',
+    tenantId: TENANT_ID,
+    transport: 'sse', // SSE is the default; explicit for clarity
   })
 
   const chat = useAgentChat({
@@ -362,10 +363,10 @@ export function useDemoSession() {
     return convertSkill(response)
   }, [])
 
-  // Restart session (clear messages)
-  const restartSession = useCallback(() => {
-    chat.clearMessages()
+  // Start a new conversation (clears messages, generates new sessionId, reconnects)
+  const newConversation = useCallback(() => {
     setFilesInMessages(new Map())
+    chat.clearConversation()
   }, [chat])
 
   return {
@@ -378,8 +379,10 @@ export function useDemoSession() {
     // Chat state from SDK
     messages: chat.messages,
     isProcessing: chat.isProcessing,
+    isLoadingHistory: chat.isLoadingHistory,
     sendMessage: chat.sendMessage,
     clearMessages: chat.clearMessages,
+    clearConversation: chat.clearConversation,
     cancelProcessing: chat.cancelProcessing,
 
     // Status from SDK
@@ -406,6 +409,6 @@ export function useDemoSession() {
     // Demo-specific features
     filesInMessages,
     downloadFile,
-    restartSession,
+    newConversation,
   }
 }

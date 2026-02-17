@@ -1,6 +1,6 @@
 # Developer Guide Overview
 
-This chapter is intended for developers and provides a complete technical guide for building applications on the LoopAI platform.
+This chapter is intended for developers and provides a complete technical guide for building applications on the KedgeAgentic platform.
 
 ## Chapter Navigation
 
@@ -14,7 +14,7 @@ This chapter is intended for developers and provides a complete technical guide 
 
 ## Development Workflow Overview
 
-A typical workflow for building a LoopAI Solution:
+A typical workflow for building a KedgeAgentic Solution:
 
 ```
 1. Plan the Solution structure

@@ -10,6 +10,7 @@ Complete documentation for Claude Code as a Service backend system.
 
 | Document | Description | Audience |
 |----------|-------------|----------|
+| **[Skill Registration](./SKILL_REGISTRATION.md)** | Register solution skills to CCAAS backend database | Solution Developers |
 | **[Authentication & Authorization](./AUTHENTICATION_AND_AUTHORIZATION.md)** | Complete guide on API Keys, permissions, and integration | Solution Developers, Platform Admins |
 | **[Error Handling](./ERROR_HANDLING.md)** | Standardized error handling and exception system | All Developers |
 | **[Swagger/OpenAPI](./SWAGGER.md)** | Interactive API documentation (中英文) | All Developers |
@@ -35,20 +36,26 @@ Complete documentation for Claude Code as a Service backend system.
 
 ### For New Solution Developers
 
-1. **Create Tenant and Bootstrap Key**
+1. **Register Skills** (Required First Step)
+   ```bash
+   cd packages/backend
+   npm run skill:import -- your-solution
+   ```
+
+2. **Create Tenant and Bootstrap Key**
    ```bash
    cd solutions/your-solution
    ./create-bootstrap-key.sh
    # Save the output: sk-bootstrap_xxx
    ```
 
-2. **Register Skills and MCP Servers**
+3. **Register MCP Servers** (if needed)
    ```bash
    export CCAAS_API_KEY=sk-bootstrap_xxx
-   ./inject-skills.sh
+   ./inject-mcp-servers.sh
    ```
 
-3. **Frontend Integration**
+4. **Frontend Integration**
    ```typescript
    // React
    const { connection, chat } = useAgentChat({

@@ -109,6 +109,7 @@ function App() {
     isMainProcessing,
     hasActiveSubAgents,
     pendingUpdates,
+    pendingUpdatesWithMeta,
     modifiedFields,
     activeTools,
     isThinking,
@@ -120,11 +121,14 @@ function App() {
     todoStats,
     activeSubAgents,
     newFilesCount,
+    isLoadingHistory,
     cancelProcessing,
+    clearConversation,
     sendMessage,
     saveLessonPlan,
     createNewPlan,
     syncToForm,
+    syncAll,
     discardUpdate,
     undoSync,
     canUndo,
@@ -271,13 +275,17 @@ function App() {
     activeSubAgents,
     tokenUsage,
     pendingUpdates,
+    pendingUpdatesWithMeta,
     modifiedFields,
     newFilesCount,
+    isLoadingHistory,
     onSendMessage: sendMessage,
     onSync: syncToForm,
+    onSyncAll: syncAll,
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
-  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, tokenUsage, pendingUpdates, modifiedFields, newFilesCount, sendMessage, syncToForm, discardUpdate, cancelProcessing])
+    onClearConversation: clearConversation,
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, tokenUsage, pendingUpdates, pendingUpdatesWithMeta, modifiedFields, newFilesCount, isLoadingHistory, sendMessage, syncToForm, syncAll, discardUpdate, cancelProcessing, clearConversation])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {

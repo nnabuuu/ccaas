@@ -65,15 +65,6 @@
     }
   },
 
-  "backend": {
-    "port": 3010,
-    "ccaasUrl": "http://localhost:3001"
-  },
-
-  "frontend": {
-    "port": 5282
-  },
-
   "syncFields": {
     "lessonPlan": [
       "title", "subject", "gradeLevel", "duration",

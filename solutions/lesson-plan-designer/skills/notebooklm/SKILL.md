@@ -1,6 +1,8 @@
 ---
-name: notebooklm
-description: Automate Google NotebookLM - create notebooks, add sources, generate podcasts/videos/quizzes, download artifacts. Activates on explicit /notebooklm or intent like "create a podcast about X"
+name: NotebookLM
+slug: notebooklm
+description: 生成教案讲解音频、PDF文档等内容
+scope: tenant
 ---
 <!-- notebooklm-py v0.2.1 -->
 

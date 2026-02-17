@@ -1,6 +1,6 @@
 # Error Handling
 
-LoopAI uses a standardized HTTP error handling system that provides consistent, actionable error responses across all API endpoints.
+KedgeAgentic uses a standardized HTTP error handling system that provides consistent, actionable error responses across all API endpoints.
 
 ## Overview
 
@@ -51,7 +51,7 @@ All API errors return the following JSON structure:
 
 ## Error Codes Reference
 
-LoopAI uses 12 standard error codes that are consistent across both REST API and WebSocket events:
+KedgeAgentic uses 12 standard error codes that are consistent across both REST API and WebSocket events:
 
 | Code | HTTP Status | Description | Recoverable | Retryable |
 |------|-------------|-------------|-------------|-----------|
@@ -333,7 +333,7 @@ interface ErrorResponse {
   partialOutput?: Record<string, unknown>;
 }
 
-class LoopAIClient {
+class KedgeAgenticClient {
   private baseURL: string;
   private apiKey: string;
   private maxRetries: number = 3;
@@ -410,7 +410,7 @@ class LoopAIClient {
 }
 
 // Usage
-const client = new LoopAIClient('https://api.example.com', 'your-api-key');
+const client = new KedgeAgenticClient('https://api.example.com', 'your-api-key');
 
 try {
   const skill = await client.request('/api/v1/skills/123', {
@@ -448,7 +448,7 @@ export function useAPI(
     setError(null);
 
     try {
-      const client = new LoopAIClient(baseURL, apiKey);
+      const client = new KedgeAgenticClient(baseURL, apiKey);
       const result = await client.request<T>(endpoint, requestOptions);
       return result;
     } catch (err) {

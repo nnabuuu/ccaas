@@ -1,6 +1,8 @@
 ---
 name: problem-explainer
+slug: problem-explainer
 description: AI讲题专家 - 分析题目、生成讲稿、制作音频和PPT的完整工作流
+scope: tenant
 ---
 
 # 讲题专家 (Problem Explainer)

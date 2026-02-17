@@ -1,9 +1,9 @@
 # 安装与启动
 
-本指南演示如何在本地运行 CCAAS 平台，用于 **Solution 开发**。
+本指南演示如何在本地运行即见Agentic 平台，用于 **Solution 开发**。
 
 {% hint style="info" %}
-**面向 Solution 开发者**：本安装流程会在你的本机运行完整的 CCAAS 平台。平台内置了 AI 能力支持，你无需单独安装或配置任何 AI 引擎。
+**面向 Solution 开发者**：本安装流程会在你的本机运行完整的即见Agentic 平台。平台内置了 AI 能力支持，你无需单独安装或配置任何 AI 引擎。
 {% endhint %}
 
 {% hint style="warning" %}

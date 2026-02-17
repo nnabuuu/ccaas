@@ -110,7 +110,7 @@ export function useMosaicSync(sessionId: string | null) {
     socket.on('text_delta', (data: unknown) => {
       try {
         const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-        const text = (parsed as any)?.text;
+        const text = (parsed as any)?.delta;
         if (typeof text === 'string') {
           accumulatedText += text;
 
@@ -133,9 +133,8 @@ export function useMosaicSync(sessionId: string | null) {
     });
 
     // Handle agent status changes
-    socket.on('agent_status', (data: unknown) => {
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      const status = (parsed as any)?.status;
+    socket.on('agent_status', (data: any) => {
+      const status = data?.status;
       console.log('[MosaicSync] Agent status:', status);
 
       if (status === 'complete' || status === 'error') {

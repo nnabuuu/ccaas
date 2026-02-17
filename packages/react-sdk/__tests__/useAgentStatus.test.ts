@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAgentStatus } from '../src/hooks/useAgentStatus'
 import type { UseAgentConnectionReturn } from '../src/types'
@@ -19,9 +19,25 @@ function createMockConnection(): UseAgentConnectionReturn {
     connected: true,
     clientId: 'test',
     sessionId: 'test',
+    serverUrl: 'http://localhost:3001',
     error: null,
     connect: vi.fn(),
     disconnect: vi.fn(),
+    startNewConversation: vi.fn(),
+  }
+}
+
+function createSSEConnection(): UseAgentConnectionReturn {
+  return {
+    socket: null as any,
+    connected: true,
+    clientId: 'sse:test-session',
+    sessionId: 'test-session',
+    serverUrl: 'http://localhost:3001',
+    error: null,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    startNewConversation: vi.fn(),
   }
 }
 
@@ -197,5 +213,182 @@ describe('useAgentStatus', () => {
       })
       expect(result.current.isProcessing).toBe(false)
     }
+  })
+
+  describe('subagent tracking (socket mode)', () => {
+    it('should add agent on subagent_started', () => {
+      const { result } = renderHook(() =>
+        useAgentStatus({ connection: createMockConnection() }),
+      )
+
+      act(() => {
+        handlers['subagent_started']?.({
+          type: 'subagent_started',
+          sessionId: 'test',
+          timestamp: new Date().toISOString(),
+          payload: {
+            subAgentId: 'toolu_01ABC',
+            agentType: 'Task',
+            description: 'Running background task',
+            startedAt: new Date().toISOString(),
+            status: 'running',
+            nestingLevel: 1,
+          },
+        })
+      })
+
+      expect(result.current.activeSubAgents).toHaveLength(1)
+      expect(result.current.activeSubAgents[0].subAgentId).toBe('toolu_01ABC')
+    })
+
+    it('should not duplicate agents on repeated subagent_started', () => {
+      const { result } = renderHook(() =>
+        useAgentStatus({ connection: createMockConnection() }),
+      )
+      const payload = {
+        subAgentId: 'toolu_01ABC',
+        agentType: 'Task',
+        description: 'Running background task',
+        startedAt: new Date().toISOString(),
+        status: 'running',
+        nestingLevel: 1,
+      }
+
+      act(() => {
+        handlers['subagent_started']?.({ type: 'subagent_started', sessionId: 'test', timestamp: new Date().toISOString(), payload })
+        handlers['subagent_started']?.({ type: 'subagent_started', sessionId: 'test', timestamp: new Date().toISOString(), payload })
+      })
+
+      expect(result.current.activeSubAgents).toHaveLength(1)
+    })
+
+    it('should update status on subagent_completed', () => {
+      vi.useFakeTimers()
+      const { result } = renderHook(() =>
+        useAgentStatus({ connection: createMockConnection() }),
+      )
+
+      act(() => {
+        handlers['subagent_started']?.({
+          type: 'subagent_started',
+          sessionId: 'test',
+          timestamp: new Date().toISOString(),
+          payload: {
+            subAgentId: 'toolu_01ABC',
+            agentType: 'Task',
+            description: 'task',
+            startedAt: new Date().toISOString(),
+            status: 'running',
+            nestingLevel: 1,
+          },
+        })
+      })
+
+      act(() => {
+        handlers['subagent_completed']?.({
+          type: 'subagent_completed',
+          sessionId: 'test',
+          timestamp: new Date().toISOString(),
+          payload: { subAgentId: 'toolu_01ABC', status: 'completed', durationMs: 5000 },
+        })
+      })
+
+      expect(result.current.activeSubAgents[0].status).toBe('completed')
+
+      // After 3 seconds, agent should be removed
+      act(() => {
+        vi.advanceTimersByTime(3001)
+      })
+
+      expect(result.current.activeSubAgents).toHaveLength(0)
+      vi.useRealTimers()
+    })
+
+    it('should cancel pending removal timeouts on unmount', () => {
+      vi.useFakeTimers()
+      const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+
+      const { result, unmount } = renderHook(() =>
+        useAgentStatus({ connection: createMockConnection() }),
+      )
+
+      act(() => {
+        handlers['subagent_started']?.({
+          type: 'subagent_started',
+          sessionId: 'test',
+          timestamp: new Date().toISOString(),
+          payload: {
+            subAgentId: 'toolu_01ABC',
+            agentType: 'Task',
+            description: 'task',
+            startedAt: new Date().toISOString(),
+            status: 'running',
+            nestingLevel: 1,
+          },
+        })
+        handlers['subagent_completed']?.({
+          type: 'subagent_completed',
+          sessionId: 'test',
+          timestamp: new Date().toISOString(),
+          payload: { subAgentId: 'toolu_01ABC', status: 'completed', durationMs: 5000 },
+        })
+      })
+
+      // Unmount before the 3s timeout fires
+      unmount()
+
+      // clearTimeout should have been called for the pending removal
+      expect(clearTimeoutSpy).toHaveBeenCalled()
+
+      vi.useRealTimers()
+      clearTimeoutSpy.mockRestore()
+    })
+  })
+
+  describe('SSE mode (socket is null)', () => {
+    let fetchSpy: ReturnType<typeof vi.spyOn>
+
+    beforeEach(() => {
+      // Mock fetch to return a hanging SSE stream
+      fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+        new Promise(() => {}) // Never resolves — simulates open SSE connection
+      )
+    })
+
+    afterEach(() => {
+      fetchSpy.mockRestore()
+    })
+
+    it('should call fetch with /events endpoint when socket is null', () => {
+      renderHook(() =>
+        useAgentStatus({ connection: createSSEConnection() }),
+      )
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'http://localhost:3001/api/v1/sessions/test-session/events',
+        expect.objectContaining({ headers: { Accept: 'text/event-stream' } }),
+      )
+    })
+
+    it('should NOT call fetch when socket is present', () => {
+      renderHook(() =>
+        useAgentStatus({ connection: createMockConnection() }),
+      )
+
+      expect(fetchSpy).not.toHaveBeenCalled()
+    })
+
+    it('should abort fetch on unmount', () => {
+      const abortSpy = vi.spyOn(AbortController.prototype, 'abort')
+
+      const { unmount } = renderHook(() =>
+        useAgentStatus({ connection: createSSEConnection() }),
+      )
+
+      unmount()
+
+      expect(abortSpy).toHaveBeenCalled()
+      abortSpy.mockRestore()
+    })
   })
 })

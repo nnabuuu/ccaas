@@ -402,8 +402,8 @@ socket.on('agent_status', ({ status, sessionId, skill }) => {
 });
 
 // Streaming text
-socket.on('text_delta', ({ text }) => {
-  process.stdout.write(text);
+socket.on('text_delta', ({ delta }) => {
+  process.stdout.write(delta);
 });
 
 // Tool activity

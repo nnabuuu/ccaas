@@ -27,6 +27,7 @@ import { UserContextService } from '../messages/user-context.service';
 import { FilesService } from '../files/files.service';
 import { ConfigService } from '@nestjs/config';
 import { MessageQueueService } from './services/message-queue.service';
+import { ConversationMetadataService } from './services/conversation-metadata.service';
 
 describe('SessionsGateway - WebSocket Events (Week 5)', () => {
   let gateway: SessionsGateway;
@@ -162,6 +163,13 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
         {
           provide: EventEmitter2,
           useValue: realEventEmitter,
+        },
+        {
+          provide: ConversationMetadataService,
+          useValue: {
+            getConversationMetadata: jest.fn().mockResolvedValue({ title: null, isPinned: false }),
+            autoGenerateTitle: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

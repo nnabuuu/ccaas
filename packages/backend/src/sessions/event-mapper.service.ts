@@ -241,7 +241,7 @@ export class EventMapperService {
                 type: 'text_delta',
                 sessionId,
                 clientId,
-                text: block.text,
+                delta: block.text,
                 timestamp,
               });
             } else if (block.type === 'tool_use') {
@@ -680,7 +680,7 @@ export class EventMapperService {
             type: 'text_delta',
             sessionId,
             clientId,
-            text: cliEvent.delta.text,
+            delta: cliEvent.delta.text,
             timestamp,
           });
         }

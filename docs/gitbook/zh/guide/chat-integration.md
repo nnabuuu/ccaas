@@ -13,6 +13,26 @@
 
 ---
 
+## 传输层：SSE（默认）
+
+SDK 自 v1.1.0 起使用 **SSE（Server-Sent Events）作为默认传输层**。SSE 通过单个 HTTP 连接流式传输 agent 回复——无需 WebSocket。
+
+> **⚠️ Socket.IO 传输层已废弃。** 后端端点 `POST /api/v1/sessions/:id/completion` 返回 **410 Gone**。请使用默认的 SSE 代替。
+>
+> **已知限制：** 后台任务（`subagent_completed`）事件目前仅通过 Socket.IO 到达。在 SSE 模式下，后台任务完成通知不会收到。此问题将在未来版本中修复。
+
+SSE 是默认值——无需额外配置：
+
+```tsx
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  sessionPrefix: 'demo'
+  // transport: 'sse' 是默认值
+})
+```
+
+---
+
 ## 用 `renderMessage` 自定义渲染
 
 自定义消息展示最简单的方式是 `renderMessage` prop。它让你拦截单条消息并按需渲染，同时 `ChatPanel` 仍然处理布局、输入框和状态。

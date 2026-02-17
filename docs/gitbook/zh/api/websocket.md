@@ -1,6 +1,22 @@
 # WebSocket 事件
 
-LoopAI 使用 Socket.io 进行 WebSocket 通信，提供丰富的实时事件流。
+{% hint style="danger" %}
+**⚠️ 已弃用（Deprecated）**
+
+Socket.IO / WebSocket transport 已弃用。**请使用 SSE transport 替代。**
+
+- 旧端点 `POST /api/v1/sessions/:id/completion` 现返回 **410 Gone**
+- 旧端点 `DELETE /api/v1/sessions/:id/completion` 现返回 **410 Gone**
+- 新端点：`POST /api/v1/sessions/:id/messages`（SSE 流）、`GET /api/v1/sessions/:id/events`（推送频道）
+
+👉 请参阅 [SSE Transport 参考](sse.md) 和 [React SDK 聊天集成](../guide/chat-integration.md)
+{% endhint %}
+
+本页保留供历史参考，记录 Socket.io 时代的事件协议。**新的 Solution 不应使用 Socket.IO。**
+
+---
+
+即见Agentic 使用 Socket.io 进行 WebSocket 通信，提供丰富的实时事件流。
 
 ## 连接
 
@@ -80,7 +96,7 @@ socket.on('text_delta', (data) => {
   // data: {
   //   type: 'text_delta',
   //   sessionId: 'uuid',
-  //   text: '部分文本...'
+  //   delta: '部分文本...'
   // }
 })
 ```
@@ -93,20 +109,19 @@ Agent 状态变化。
 socket.on('agent_status', (data) => {
   // data: {
   //   type: 'agent_status',
-  //   sessionId: 'uuid',
-  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error',
+  //   sessionId?: 'uuid',          // idle 时可省略
+  //   timestamp: 'ISO 8601',       // 所有状态均有
+  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error' | 'cancelled',
   //   context?: {
-  //     currentAction: string,
-  //     target: string,
-  //     steps: { current: number, total: number },
-  //     goalNarrative: string
+  //     currentAction?: string,
+  //     currentTarget?: string,
+  //     stepsCompleted?: number,
+  //     stepsTotal?: number,
+  //     percentComplete?: number,
+  //     activeSubAgents?: ActiveSubAgent[],
+  //     goalNarrative?: object
   //   },
-  //   error?: {
-  //     code: string,
-  //     message: string,
-  //     recoverable: boolean,
-  //     suggestion: string
-  //   }
+  //   error?: string               // error 状态时的错误消息
   // }
 })
 ```

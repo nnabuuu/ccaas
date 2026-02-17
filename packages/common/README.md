@@ -113,7 +113,7 @@ import {
 
 // Type-safe event handling
 socket.on('text_delta', (event: TextDeltaEvent) => {
-  console.log(event.content);
+  console.log(event.delta);
 });
 ```
 

@@ -9,6 +9,7 @@
 // Hooks
 export { useAgentConnection } from './hooks/useAgentConnection'
 export { useAgentChat } from './hooks/useAgentChat'
+export { useSseStream } from './hooks/useSseStream'
 export { useAgentStatus } from './hooks/useAgentStatus'
 export { useQueueStatus } from './hooks/useQueueStatus'
 export { useOutputSync } from './hooks/useOutputSync'
@@ -20,6 +21,7 @@ export { useFileVersions } from './hooks/useFileVersions'
 export { useFilePreview, clearPreviewCache } from './hooks/useFilePreview'
 export { useTaskTracking } from './hooks/useTaskTracking'
 export { useMessageSplitter } from './hooks/useMessageSplitter'
+export { useTurns } from './hooks/useTurns'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -160,6 +162,9 @@ export type { TasksHeaderProps } from './components/TasksHeader'
 export type { TasksListProps } from './components/TasksList'
 export type { UnifiedTaskCardProps } from './components/UnifiedTaskCard'
 export type { QueueStatusIndicatorProps } from './components/QueueStatusIndicator'
+
+// Turns hook types
+export type { Turn, UseTurnsOptions, UseTurnsReturn } from './hooks/useTurns'
 
 // Template resolver types
 export type {

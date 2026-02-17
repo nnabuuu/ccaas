@@ -1,4 +1,3 @@
-// Re-export common types from @ccaas/common if needed
 export interface Subject {
   id: string;
   name: string;
@@ -110,15 +109,36 @@ export interface DifficultyAnalysis {
 /**
  * Complete Quiz Analysis with all 10 dimensions
  */
+// Parsed Quiz structure (from parse_quiz_content tool)
+export interface ParsedQuiz {
+  stem: string
+  options: string[]
+  correctAnswer?: string
+  quizType: 'choice' | 'fill' | 'subjective'
+}
+
 export interface QuizAnalysis {
   id: string;
   quiz_id: string;
+
+  // 0. Parsed Quiz - 解析后的题目结构 (NEW)
+  parsedQuiz?: ParsedQuiz;
+
+  // 0.5. Catalog - 所属目录 (NEW)
+  catalog?: {
+    subjectId: string;
+    path: string[];
+  };
+
+  // 0.6. Difficulty - 难度等级 (NEW, simple number)
+  difficulty?: number;
 
   // 1. Overall Analysis - 整体分析
   quiz_analysis?: string;
 
   // 2. Knowledge Point Tags - 知识点标签
   knowledge_point_tags?: KnowledgePointTag[];
+  knowledgePointTags?: KnowledgePointTag[]; // Alias for compatibility
 
   // 3. Thinking Process - 解题思路
   thinking_process?: string;

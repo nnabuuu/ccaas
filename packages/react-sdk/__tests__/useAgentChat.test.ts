@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAgentChat } from '../src/hooks/useAgentChat'
 import type { UseAgentConnectionReturn } from '../src/types'
 
@@ -26,20 +26,39 @@ function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {})
     error: null,
     connect: vi.fn(),
     disconnect: vi.fn(),
+    startNewConversation: vi.fn(),
     ...overrides,
   }
+}
+
+/** Helper to find the POST completion call from fetch mock calls */
+function findPostCall(fetchMock: ReturnType<typeof vi.fn>): unknown[] | undefined {
+  return fetchMock.mock.calls.find(
+    (call: unknown[]) => {
+      const opts = call[1] as Record<string, unknown> | undefined
+      return opts?.method === 'POST'
+    },
+  )
 }
 
 describe('useAgentChat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     Object.keys(handlers).forEach(key => delete handlers[key])
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
+    global.fetch = vi.fn((url: string, options?: RequestInit) => {
+      // History endpoint (GET) - return empty messages
+      if (typeof url === 'string' && url.includes('/messages') && (!options || options.method === 'GET')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] }),
+        })
+      }
+      // Completion endpoint (POST) and others
+      return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({}),
-      }),
-    ) as any
+      })
+    }) as any
   })
 
   afterEach(() => {
@@ -87,9 +106,10 @@ describe('useAgentChat', () => {
       }),
     )
 
-    // Check the payload
-    const callArgs = (global.fetch as any).mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+    // Check the payload (find POST call, not the GET history call)
+    const callArgs = findPostCall(global.fetch as ReturnType<typeof vi.fn>)
+    expect(callArgs).toBeDefined()
+    const body = JSON.parse((callArgs![1] as Record<string, string>).body)
     expect(body.clientId).toBe('test-client-id')
     expect(body.message).toBe('Hello')
     expect(body.tenantId).toBe('test-tenant')
@@ -100,6 +120,11 @@ describe('useAgentChat', () => {
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
+
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -122,7 +147,8 @@ describe('useAgentChat', () => {
       await result.current.sendMessage('Hello')
     })
 
-    expect(global.fetch).not.toHaveBeenCalled()
+    // No POST completion call should have been made
+    expect(findPostCall(global.fetch as ReturnType<typeof vi.fn>)).toBeUndefined()
   })
 
   it('should not send when no clientId', async () => {
@@ -135,7 +161,8 @@ describe('useAgentChat', () => {
       await result.current.sendMessage('Hello')
     })
 
-    expect(global.fetch).not.toHaveBeenCalled()
+    // No POST completion call should have been made (GET history may have fired)
+    expect(findPostCall(global.fetch as ReturnType<typeof vi.fn>)).toBeUndefined()
   })
 
   it('should accumulate text_delta into stream content', async () => {
@@ -144,6 +171,11 @@ describe('useAgentChat', () => {
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
+
     // First send a message to create assistant placeholder
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -151,11 +183,11 @@ describe('useAgentChat', () => {
 
     // Simulate text_delta
     act(() => {
-      handlers['text_delta']?.({ text: 'Hello ' })
+      handlers['text_delta']?.({ delta: 'Hello ' })
     })
 
     act(() => {
-      handlers['text_delta']?.({ text: 'world' })
+      handlers['text_delta']?.({ delta: 'world' })
     })
 
     expect(result.current.currentStreamContent).toBe('Hello world')
@@ -199,6 +231,11 @@ describe('useAgentChat', () => {
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
+
     await act(async () => {
       await result.current.sendMessage('Hello')
     })
@@ -217,6 +254,11 @@ describe('useAgentChat', () => {
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
+
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -237,14 +279,20 @@ describe('useAgentChat', () => {
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
+
     await act(async () => {
       await result.current.sendMessage('Check this', {
         attachments: [{ type: 'image', path: '/tmp/img.png' }],
       })
     })
 
-    const callArgs = (global.fetch as any).mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+    const callArgs = findPostCall(global.fetch as ReturnType<typeof vi.fn>)
+    expect(callArgs).toBeDefined()
+    const body = JSON.parse((callArgs![1] as Record<string, string>).body)
     expect(body.attachments).toEqual([{ type: 'image', path: '/tmp/img.png' }])
   })
 
@@ -258,12 +306,18 @@ describe('useAgentChat', () => {
       }),
     )
 
+    // Wait for history loading to complete
+    await waitFor(() => {
+      expect(result.current.isLoadingHistory).toBe(false)
+    })
+
     await act(async () => {
       await result.current.sendMessage('Hello')
     })
 
-    const callArgs = (global.fetch as any).mock.calls[0]
-    const body = JSON.parse(callArgs[1].body)
+    const callArgs = findPostCall(global.fetch as ReturnType<typeof vi.fn>)
+    expect(callArgs).toBeDefined()
+    const body = JSON.parse((callArgs![1] as Record<string, string>).body)
     expect(body.enabledSkillSlugs).toEqual(['skill-a', 'skill-b'])
   })
 })

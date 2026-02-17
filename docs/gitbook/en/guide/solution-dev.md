@@ -2,24 +2,27 @@
 
 ## Overview
 
-A Solution is a vertical application built on the LoopAI platform. Each Solution consists of a frontend, backend (optional), MCP Server, and Skills, working together to deliver an end-to-end user experience.
+A Solution is a vertical application built on the KedgeAgentic platform. Each Solution consists of a frontend, backend (optional), MCP Server, and Skills, working together to deliver an end-to-end user experience.
 
 ## Architecture
 
 ```
 User ──→ Solution Frontend
+            │                │
+            │ WebSocket      │ REST
+            │ (AI Chat)      │ (Domain Data)
+            ▼                ▼
+      CCAAS Backend    Solution Backend
+            │                │
+            ▼                ▼
+      AI Agent         Business Data Store
             │
             ▼
-      Solution Backend ──→ CCAAS Backend ──→ AI Agent
-            │                                  │
-            │                                  ▼
-            │                            MCP Server
-            │                          (Tool Invocations)
-            ▼
-      Business Data Store
+      MCP Server
+      (Tool Invocations)
 ```
 
-**Key Principle**: The Solution backend should leverage the CCAAS backend's capabilities (session management, Skill routing, message persistence) rather than re-implementing them.
+**Key Principle**: The Solution frontend connects **directly** to the CCAAS backend via WebSocket for AI interactions. The Solution backend is only responsible for domain-specific CRUD operations (e.g., saving lesson plans). There is no relay layer between the frontend and CCAAS.
 
 ## Directory Structure
 
@@ -37,11 +40,11 @@ my-solution/
 │   │   └── types/          # TypeScript types
 │   └── ...
 │
-├── backend/                # Business backend (optional)
+├── backend/                # Domain backend (optional)
 │   ├── package.json
 │   ├── src/
-│   │   ├── sessions/       # Session management (proxying CCAAS)
-│   │   └── ...             # Business logic
+│   │   ├── domain/         # Domain entities and logic
+│   │   └── api/            # REST endpoints for domain CRUD
 │   └── ...
 │
 ├── mcp-server/             # MCP tool service
@@ -55,43 +58,91 @@ my-solution/
         └── SKILL.md        # Skill Markdown file
 ```
 
-## solution.json Configuration
+## solution.json Configuration (v3.0)
+
+**Recommended:** Use the simplified v3.0 schema with convention over configuration.
+
+**Minimal Configuration (Most Common):**
 
 ```json
 {
-  "name": "My Solution",
-  "slug": "my-solution",
-  "version": "1.0.0",
-  "description": "Solution description",
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "My Solution",
+    "slug": "my-solution",
+    "description": "Solution description"
+  },
   "mcpServers": {
     "my-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "description": "Tool service description"
     }
-  },
-  "skills": [
-    {
-      "name": "Main Skill",
-      "slug": "main-skill",
-      "description": "Main skill description",
-      "type": "prompt",
-      "triggers": [
-        {
-          "type": "keyword",
-          "value": "design",
-          "priority": 1
-        }
-      ],
-      "allowedTools": ["write_output", "custom_tool"],
-      "skillFile": "skills/main-skill/SKILL.md"
-    }
-  ],
-  "ports": {
-    "backend": 3002,
-    "frontend": 5280
   }
 }
+```
+
+**That's it!** Skills are auto-discovered from `skills/*/SKILL.md`. All skill metadata lives in SKILL.md frontmatter.
+
+**With Solution-Specific Config:**
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "My Solution",
+    "slug": "my-solution",
+    "description": "Solution description"
+  },
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"]
+    }
+  },
+  "backend": {
+    "port": 3002,
+    "database": {
+      "type": "sqlite",
+      "path": "data/my-solution.db"
+    }
+  },
+  "frontend": {
+    "port": 5280
+  }
+}
+```
+
+**Key Changes from v2.0:**
+- ✅ Flat structure (no `ccaas`/`internal` nesting)
+- ✅ Skills auto-discovered (default: `["skills/*"]`)
+- ✅ Skill metadata in SKILL.md frontmatter only
+- ✅ 70-80% configuration reduction
+
+**See:** [solution.json Reference](../reference/solution-json.md) for complete schema documentation.
+
+### SKILL.md Frontmatter
+
+v3.0 requires complete frontmatter in all SKILL.md files:
+
+```markdown
+---
+name: Main Skill
+slug: main-skill
+description: Main skill description
+scope: tenant
+triggers:
+  - type: keyword
+    value: "design"
+    priority: 10
+allowedTools:
+  - write_output
+  - custom_tool
+---
+
+# Main Skill
+
+Instructions for the AI agent...
 ```
 
 ### Trigger Types
@@ -103,37 +154,55 @@ my-solution/
 | `intent` | Semantic intent recognition | `"create_lesson_plan"` |
 | `context` | Context condition match | `"page:lesson-plan-editor"` |
 
-## Socket.io Relay Layer
+## Direct Connection with React SDK
 
-The Solution backend needs to implement a Socket.io relay layer that forwards frontend events to the CCAAS backend:
+The Solution frontend connects directly to the CCAAS backend using the `@ccaas/react-sdk`. No relay layer is needed:
 
 ```typescript
-// Frontend → Solution Backend
-socket.on('chat', async (data) => {
-  const { message, sessionId } = data
+import {
+  useAgentConnection,
+  useAgentChat,
+  useAgentStatus,
+  usePageContext,
+  useFiles,
+} from '@ccaas/react-sdk'
 
-  // Forward to CCAAS
-  await axios.post(`${CCAAS_URL}/api/v1/sessions/${sessionId}/completion`, {
-    clientId: socket.id,
-    message,
-    tenantId: TENANT_ID,
-    mcpServers: getMcpConfig(),
-    enabledSkillSlugs: getEnabledSkills()
+export function useMySession() {
+  // 1. Connect directly to CCAAS backend
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',  // CCAAS backend directly
+    tenantId: 'my-solution',
+    autoConnect: true,
   })
-})
 
-// CCAAS → Solution Backend → Frontend
-ccaasSocket.on('text_delta', (data) => {
-  clientSocket.emit('text_delta', data)
-})
+  // 2. Page context (sends current form state with every message)
+  const { context, updateContext } = usePageContext()
 
-ccaasSocket.on('output_update', (data) => {
-  clientSocket.emit('output_update', data)
-})
+  // 3. Chat messaging (REST send + WebSocket receive)
+  const chat = useAgentChat({
+    connection,
+    tenantId: 'my-solution',
+    mcpServers: solutionConfig?.mcpServers,
+    skillPath: solutionConfig?.skillPath,
+    enabledSkillSlugs: ['my-skill'],
+    context,
+    onOutputUpdate: (update) => {
+      // Handle structured field updates from the AI Agent
+      const { field, value, preview } = update
+      // Apply to your form state...
+    },
+  })
 
-ccaasSocket.on('agent_status', (data) => {
-  clientSocket.emit('agent_status', data)
-})
+  // 4. Agent status tracking
+  const status = useAgentStatus({ connection })
+
+  // 5. File management
+  const files = useFiles({
+    connection,
+    sessionId: connection.sessionId,
+    enabled: connection.connected,
+  })
+}
 ```
 
 ## Data Flow in Detail
@@ -141,16 +210,15 @@ ccaasSocket.on('agent_status', (data) => {
 A complete user interaction follows this sequence:
 
 1. User enters a message in the frontend
-2. Frontend sends a `chat` event via Socket.io to the Solution backend
-3. Solution backend calls the CCAAS REST API (`/sessions/:id/completion`)
-4. CCAAS resolves the tenant, synchronizes Skills, and creates a session
-5. CCAAS launches the AI Agent process
-6. AI Agent reads Skill instructions and context
-7. AI Agent invokes MCP tools (e.g., write\_output)
-8. CCAAS pushes events via WebSocket
-9. Solution backend relays events to the frontend
-10. Frontend renders results in real time
-11. User reviews and edits
+2. Frontend sends a REST request to CCAAS (`POST /api/v1/sessions/:id/completion`)
+3. CCAAS resolves the tenant, synchronizes Skills, and creates a session
+4. CCAAS launches the AI Agent process
+5. AI Agent reads Skill instructions and page context
+6. AI Agent invokes MCP tools (e.g., write\_output)
+7. CCAAS streams events back to the frontend via WebSocket (`text_delta`, `output_update`, `agent_status`, etc.)
+8. SDK hooks process events into React state automatically
+9. Frontend renders results in real time
+10. User reviews and edits
 
 ## One-Click Startup Script
 
@@ -174,8 +242,8 @@ npm install --prefix mcp-server
 # Build MCP Server
 npm run build --prefix mcp-server
 
-# Inject Skills
-./inject-skills.sh
+# Note: Skills are auto-registered by the CCAAS backend at startup.
+# No manual skill injection needed.
 
 # Start services
 npm run dev --prefix backend &
@@ -184,45 +252,44 @@ npm run dev --prefix frontend &
 echo "Solution startup complete!"
 ```
 
-## Skill Injection
+## Automatic Skill Registration
 
-`inject-skills.sh` is responsible for registering Skills with CCAAS:
+Skills and MCP servers defined in `solution.json` are **automatically registered** when the CCAAS backend starts. No manual registration step is required.
 
-```bash
-#!/bin/bash
-CCAAS_URL="http://localhost:3001"
+**How it works:**
+1. On startup, the CCAAS backend scans the `solutions/` directory
+2. For each solution with `discovery.enabled: true` (the default), it reads `solution.json`
+3. Skills are loaded from each folder matching the `skills` pattern (default: `skills/*/SKILL.md`)
+4. MCP servers from `mcpServers` are registered automatically
+5. Existing registrations are updated (upsert logic)
 
-# Read Skill configuration from solution.json
-# Call the CCAAS API to register Skills
-curl -X POST "$CCAAS_URL/api/v1/skills" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Skill",
-    "slug": "my-skill",
-    "description": "Skill description",
-    "type": "prompt",
-    "content": "'"$(cat skills/my-skill/SKILL.md)"'",
-    "triggers": [{"type": "keyword", "value": "keyword"}],
-    "allowedTools": ["write_output"]
-  }'
-
-# Register MCP Server
-curl -X POST "$CCAAS_URL/api/v1/mcp-servers" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "my-tools",
-    "url": "http://localhost:3004",
-    "description": "Tool service"
-  }'
+**Startup log output:**
 ```
+[SolutionLoader] Starting auto-discovery of solutions...
+[SolutionLoader] Loaded "My Solution": 2 skills created, 1 MCP servers created
+[SolutionLoader] Auto-discovery complete: 1 solution(s) loaded, 0 failed, 2 skill(s), 1 MCP server(s)
+```
+
+**To disable auto-registration for a solution**, set `discovery.enabled: false` in `solution.json`:
+
+```json
+{
+  "schemaVersion": "3.0",
+  "tenant": { ... },
+  "discovery": { "enabled": false }
+}
+```
+
+> **Note:** The `inject-skills.sh` script and `npm run skill:import` command are no longer needed. Skills are registered automatically every time the backend starts.
 
 ## Best Practices
 
-### 1. Leverage CCAAS Capabilities
+### 1. Use Direct Connection Architecture
 
+- Connect the frontend **directly** to CCAAS via `@ccaas/react-sdk` -- do not relay through the Solution backend
+- Use the Solution backend only for domain-specific CRUD (e.g., saving lesson plans, listing textbooks)
 - Use CCAAS session management instead of implementing your own
 - Manage Skills through the CCAAS API instead of directly accessing the database
-- Proxy common API calls (e.g., Skill CRUD operations)
 
 ### 2. Test Before You Code
 
@@ -236,29 +303,32 @@ After modifying code:
 □ Test failure = stop and analyze, don't push forward
 ```
 
-### 3. Handle output\_update Correctly
+### 3. Handle output\_update via SDK Callback
 
 ```typescript
-// output_update uses a nested structure
-socket.on('output_update', (event) => {
-  // Correct: access event.payload.data
-  const { field, value } = event.payload.data
-
-  // Wrong: access event.field directly
-  // const { field, value } = event  // ← This is incorrect!
+// The SDK parses output_update events for you.
+// Use the onOutputUpdate callback in useAgentChat:
+const chat = useAgentChat({
+  connection,
+  // ...
+  onOutputUpdate: (update) => {
+    // update is already parsed: { field, value, preview }
+    const { field, value, preview } = update
+    // Apply to your form state...
+  },
 })
 ```
 
 ### 4. Comprehensive Error Handling
 
 ```typescript
-socket.on('error', (error) => {
-  console.error('Session error:', error)
-  // Decide whether to retry based on error type
-  if (error.recoverable) {
-    // Auto-retry
-  } else {
-    // Notify user
+// The SDK exposes connection errors via the connection object:
+const connection = useAgentConnection({ serverUrl, tenantId })
+
+useEffect(() => {
+  if (connection.error) {
+    console.error('Connection error:', connection.error)
+    // Notify user or attempt reconnect
   }
-})
+}, [connection.error])
 ```

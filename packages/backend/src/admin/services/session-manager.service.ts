@@ -72,6 +72,10 @@ export class SessionManagerService {
         ? hasActiveProcess
         : 'cliProcess' in session && session.cliProcess !== null && !session.cliProcess.killed;
 
+    // Extract title and isPinned from Session entity (not available on ManagedSession)
+    const title = 'title' in session ? (session as Session).title : null;
+    const isPinned = 'isPinned' in session ? (session as Session).isPinned : false;
+
     return {
       sessionId: session.sessionId,
       tenantId: session.tenantId || null,
@@ -83,6 +87,8 @@ export class SessionManagerService {
       createdAt: session.createdAt,
       lastActivity: session.lastActivity,
       hasActiveProcess: isActive,
+      title,
+      isPinned,
     };
   }
 

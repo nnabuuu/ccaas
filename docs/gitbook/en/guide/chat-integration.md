@@ -13,6 +13,26 @@
 
 ---
 
+## Transport: SSE (Default)
+
+The SDK uses **SSE (Server-Sent Events) as the default transport** since v1.1.0. SSE streams agent responses over a single HTTP connection — no WebSocket required.
+
+> **⚠️ Socket.IO transport is deprecated.** The backend endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**. Use SSE (the default) instead.
+>
+> **Known limitation:** Background task (`subagent_completed`) events currently only arrive via Socket.IO. In SSE mode, background task completion notifications are not received. This will be addressed in a future release.
+
+SSE is the default — no extra configuration needed:
+
+```tsx
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  sessionPrefix: 'demo'
+  // transport: 'sse' is the default
+})
+```
+
+---
+
 ## Custom Rendering with `renderMessage`
 
 The easiest way to customize message display is the `renderMessage` prop. It lets you intercept individual messages and render them however you want, while `ChatPanel` still handles layout, input, and status.

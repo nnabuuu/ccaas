@@ -35,6 +35,7 @@ import { ProcessLifecycleService } from '../messages/process-lifecycle.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { UserContextService } from '../messages/user-context.service';
 import { FilesService } from '../files/files.service';
+import { ConversationMetadataService } from './services/conversation-metadata.service';
 import { WsExceptionFilter } from '../common/filters/ws-exception.filter';
 import { ChatMessageDto, CancelRequestDto, ReconnectRequestDto } from './dto/chat-message.dto';
 import {
@@ -96,6 +97,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     private readonly userContextService: UserContextService,
     private readonly filesService: FilesService,
     private readonly eventEmitter: EventEmitter2, // Week 5: Event forwarding
+    private readonly conversationMetadataService: ConversationMetadataService,
   ) {}
 
   /**
@@ -178,12 +180,15 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     );
 
     // Forward event to tenant room via Socket.io
-    this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
-      type: 'skill_updated',
-      skill,
-      affectedSessions,
-      impact,
-    });
+    // Skip if server is not initialized (e.g., in script/CLI context)
+    if (this.server) {
+      this.server.to(`tenant:${tenantId}`).emit('skill_updated', {
+        type: 'skill_updated',
+        skill,
+        affectedSessions,
+        impact,
+      });
+    }
   }
 
   /**
@@ -282,7 +287,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     client.emit('client_id', { clientId });
 
     // Send initial idle status
-    client.emit('agent_status', { status: 'idle' });
+    client.emit('agent_status', { type: 'agent_status', status: 'idle', timestamp: new Date().toISOString() });
   }
 
   /**
@@ -327,8 +332,10 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     if (!tenantId) {
       this.logger.error('tenantId is required for chat - skills cannot be loaded without a tenant');
       client.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: 'tenantId is required. Skills cannot be loaded without a tenant.',
       });
       return;
@@ -358,7 +365,6 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
             mcpServers: data.mcpServers,
             enabledSkillSlugs: data.enabledSkillSlugs,
             skillPath: data.skillPath,
-            resumeSession: data.resumeSession,
           },
         );
 
@@ -386,18 +392,19 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
           mcpServers: data.mcpServers,
           enabledSkillSlugs: data.enabledSkillSlugs,
           skillPath: data.skillPath,
-          resumeSession: data.resumeSession,
           emitEvent: (event) => client.emit(event.type, event),
         });
 
         // Notify frontend that agent is running
-        client.emit('agent_status', { status: 'running', sessionId });
+        client.emit('agent_status', { type: 'agent_status', status: 'running', sessionId, timestamp: new Date().toISOString() });
       }
     } catch (error) {
       this.logger.error(`Error handling chat: ${error}`);
       client.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
@@ -460,10 +467,10 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   /**
-   * Handle session reconnection
+   * Handle session reconnection (enriched with conversation metadata)
    */
   @SubscribeMessage('reconnect_session')
-  handleReconnect(
+  async handleReconnect(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: ReconnectRequestDto,
   ) {
@@ -471,11 +478,21 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     const session = this.sessionService.reconnectSession(data.sessionId, clientId, client);
 
     if (session) {
+      // Enrich with DB conversation metadata (title, isPinned)
+      const metadata = await this.conversationMetadataService.getConversationMetadata(
+        data.sessionId,
+        session.tenantId,
+      );
+
       client.emit('session_restored', {
         sessionId: data.sessionId,
         status: session.status,
         messageCount: session.messageCount,
         createdAt: session.createdAt.toISOString(),
+        lastActivity: session.lastActivity.toISOString(),
+        title: metadata.title,
+        isPinned: metadata.isPinned,
+        canResume: true,
       });
       this.logger.log(`Session ${data.sessionId} restored for client ${clientId}`);
     } else {

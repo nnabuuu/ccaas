@@ -122,4 +122,141 @@ describe('useAgentConnection', () => {
       sessionId: result.current.sessionId,
     })
   })
+
+  describe('localStorage persistence (Task #5)', () => {
+    beforeEach(() => {
+      // Clear localStorage before each test
+      localStorage.clear()
+    })
+
+    it('should generate conv_ format sessionId when tenantId is provided', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant' })
+      )
+
+      expect(result.current.sessionId).toMatch(/^conv_/)
+    })
+
+    it('should persist sessionId to tenant-scoped localStorage', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant' })
+      )
+
+      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      expect(stored).toBe(result.current.sessionId)
+    })
+
+    it('should recover sessionId from localStorage on mount', () => {
+      // Pre-populate localStorage
+      localStorage.setItem('ccaas_session_test_tenant', 'conv_existing_123')
+
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant' })
+      )
+
+      expect(result.current.sessionId).toBe('conv_existing_123')
+    })
+
+    it('should clear localStorage when forceNewConversation is true', () => {
+      // Pre-populate localStorage
+      localStorage.setItem('ccaas_session_test_tenant', 'conv_existing_123')
+
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant', forceNewConversation: true })
+      )
+
+      expect(result.current.sessionId).not.toBe('conv_existing_123')
+      expect(result.current.sessionId).toMatch(/^conv_/)
+      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      expect(stored).toBe(result.current.sessionId)
+    })
+
+    it('should use legacy prefix format when no tenantId provided', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ sessionPrefix: 'demo' })
+      )
+
+      expect(result.current.sessionId).toMatch(/^demo_/)
+      expect(localStorage.getItem('ccaas_session_demo')).toBeNull()
+    })
+
+    it('should isolate sessions by tenantId', () => {
+      const { result: result1 } = renderHook(() =>
+        useAgentConnection({ tenantId: 'tenant_a' })
+      )
+      const { result: result2 } = renderHook(() =>
+        useAgentConnection({ tenantId: 'tenant_b' })
+      )
+
+      const storedA = localStorage.getItem('ccaas_session_tenant_a')
+      const storedB = localStorage.getItem('ccaas_session_tenant_b')
+
+      expect(storedA).toBe(result1.current.sessionId)
+      expect(storedB).toBe(result2.current.sessionId)
+      expect(storedA).not.toBe(storedB)
+    })
+  })
+
+  describe('startNewConversation (Task #7)', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it('should clear localStorage and generate new sessionId', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant' })
+      )
+
+      const oldSessionId = result.current.sessionId
+
+      act(() => {
+        result.current.startNewConversation()
+      })
+
+      expect(result.current.sessionId).not.toBe(oldSessionId)
+      expect(result.current.sessionId).toMatch(/^conv_/)
+      const stored = localStorage.getItem('ccaas_session_test_tenant')
+      expect(stored).toBe(result.current.sessionId)
+    })
+
+    it('should reconnect with new sessionId', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ tenantId: 'test_tenant' })
+      )
+
+      mockSocket.emit.mockClear()
+
+      act(() => {
+        result.current.startNewConversation()
+      })
+
+      // Trigger connect event to simulate reconnection
+      const connectCall = mockSocket.on.mock.calls.find((call: unknown[]) => call[0] === 'connect')
+      act(() => {
+        connectCall![1]()
+      })
+
+      // Should join session with new sessionId
+      expect(mockSocket.emit).toHaveBeenCalledWith('session:join', {
+        sessionId: result.current.sessionId,
+      })
+    })
+
+    it('should work without tenantId (legacy mode)', () => {
+      const { result } = renderHook(() =>
+        useAgentConnection({ sessionPrefix: 'demo' })
+      )
+
+      const oldSessionId = result.current.sessionId
+
+      act(() => {
+        result.current.startNewConversation()
+      })
+
+      expect(result.current.sessionId).not.toBe(oldSessionId)
+      expect(result.current.sessionId).toMatch(/^demo_/)
+      // No localStorage in legacy mode
+      expect(localStorage.getItem('ccaas_session_demo')).toBeNull()
+    })
+  })
 })

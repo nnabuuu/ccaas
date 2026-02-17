@@ -225,6 +225,26 @@ Skill CRUD, versioning, and routing.
 - `sub-agent` - Specialized sub-agents
 - `tool-config` - Tool configuration
 
+**Skill Registration:**
+
+Solutions define skills in `solution.json`, but these must be registered to the backend database:
+
+```bash
+cd packages/backend
+npm run skill:import -- <solution-name>
+
+# Example:
+npm run skill:import -- quiz-analyzer
+npm run skill:import -- lesson-plan-designer
+```
+
+**Why Registration is Required:**
+- Skills in `solution.json` are configuration files, not runtime registrations
+- CCAAS backend needs skills in database to auto-load them for sessions
+- Without registration, AI uses global/default skills instead of solution-specific tools
+
+See [docs/SKILL_REGISTRATION.md](./docs/SKILL_REGISTRATION.md) for complete guide.
+
 ### SchedulerModule (scheduler/)
 
 Scheduled background task execution with cron, interval, and one-time scheduling. Runs AgentEngine in headless mode without WebSocket dependency.
@@ -342,6 +362,10 @@ npm run start:prod     # Run compiled version (auto unsets CLAUDECODE)
 
 # Type check
 npm run typecheck      # Type check without emitting
+
+# Skill Registration
+npm run skill:import -- <solution-name>  # Register solution skills to database
+# Example: npm run skill:import -- quiz-analyzer
 ```
 
 ## Environment Variables

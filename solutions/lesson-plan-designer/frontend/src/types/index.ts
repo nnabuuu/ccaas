@@ -129,6 +129,17 @@ export interface OutputUpdate {
   syncedAt?: Date
 }
 
+// Extended OutputUpdate with metadata for Global Sync Section
+export interface PendingUpdateWithMeta {
+  field: SyncField
+  value: unknown
+  preview: string
+  synced?: boolean
+  syncedAt?: Date
+  roundId: string           // 来自哪个 message round (messageId)
+  timestamp: number          // 用于排序
+}
+
 // Sync state types
 export interface SyncState {
   pendingUpdates: Map<SyncField, OutputUpdate>

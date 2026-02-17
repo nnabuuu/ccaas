@@ -1,10 +1,10 @@
 # Platform Overview
 
-LoopAI is an enterprise-grade Human-in-the-Loop AI collaboration platform that provides a unified, real-time collaborative workspace for AI Agents and human operators.
+KedgeAgentic is an enterprise-grade Human-in-the-Loop AI collaboration platform that provides a unified, real-time collaborative workspace for AI Agents and human operators.
 
-## What LoopAI Is
+## What KedgeAgentic Is
 
-LoopAI is **not** an AI model or a model wrapper. It is a **collaboration and integration platform** that provides:
+KedgeAgentic is **not** an AI model or a model wrapper. It is a **collaboration and integration platform** that provides:
 
 - **Version Control** -- Every change (whether by AI or human) automatically creates a version with a complete audit trail
 - **Human-AI Collaboration** -- AI output is synced to the web workspace in real time, where humans can review, edit, and refine it
@@ -13,7 +13,7 @@ LoopAI is **not** an AI model or a model wrapper. It is a **collaboration and in
 
 ## Platform Components
 
-LoopAI consists of the following core components:
+KedgeAgentic consists of the following core components:
 
 | Component | Responsibility |
 |-----------|----------------|

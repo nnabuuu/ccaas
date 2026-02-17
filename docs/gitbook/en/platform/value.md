@@ -8,15 +8,15 @@ Enterprises face a dilemma when adopting AI:
 |----------|---------|
 | **Full Automation** | High risk, lack of control, no audit trail, costly errors |
 | **Fully Manual** | Low efficiency, high cost, does not scale |
-| **LoopAI Approach** | AI executes + human oversight, balancing efficiency and safety |
+| **KedgeAgentic Approach** | AI executes + human oversight, balancing efficiency and safety |
 
-LoopAI adopts a **Co-Pilot model**: AI Agents handle repetitive tasks while human operators review, correct, and make decisions. Every action is traceable, and every change is versioned.
+KedgeAgentic adopts a **Co-Pilot model**: AI Agents handle repetitive tasks while human operators review, correct, and make decisions. Every action is traceable, and every change is versioned.
 
 ## Core Value Propositions
 
 ### 1. Collaboration, Not Replacement
 
-LoopAI does not aim to fully replace humans. Instead, it makes AI an effective assistant:
+KedgeAgentic does not aim to fully replace humans. Instead, it makes AI an effective assistant:
 
 - AI produces initial drafts; humans review and refine
 - After human edits, AI understands the changes and continues (Continue workflow)
@@ -24,7 +24,7 @@ LoopAI does not aim to fully replace humans. Instead, it makes AI an effective a
 
 ### 2. AI Engine Agnostic
 
-LoopAI is not tied to any specific AI vendor. It supports multiple AI backends through a standardized adapter interface:
+KedgeAgentic is not tied to any specific AI vendor. It supports multiple AI backends through a standardized adapter interface:
 
 - Commercial Agent runtimes (e.g., Claude Code, Cursor, Windsurf)
 - Open-source Agents (e.g., OpenCode, Aider, Continue)
@@ -33,7 +33,7 @@ LoopAI is not tied to any specific AI vendor. It supports multiple AI backends t
 
 ### 3. Seamless Legacy System Integration
 
-Over 70% of enterprise applications have been running for more than 10 years and lack modern APIs. LoopAI provides multiple integration methods:
+Over 70% of enterprise applications have been running for more than 10 years and lack modern APIs. KedgeAgentic provides multiple integration methods:
 
 - **Browser Automation** -- Interact with web interfaces via Playwright
 - **REST API Integration** -- Standardized API connectors

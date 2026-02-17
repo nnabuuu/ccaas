@@ -175,7 +175,7 @@ Linear-Issue: CCaas-123"
 
 ---
 
-## 阶段 4: Claude Code Review
+## 阶段 4: Code Review (code-reviewer + code-simplifier)
 
 ### 创建 PR
 
@@ -186,19 +186,25 @@ gh pr create --fill
 
 GitHub 会自动填充 PR template，包含 **Code Review Checklist**。
 
-### 请 Claude Code Review
+### 请 Claude Code Review (使用两个 agents)
 
 在 Claude Code 中执行：
 
 ```
-请根据 PR template 中的 checklist review 这个 PR:
+请用 code-reviewer 和 code-simplifier 两个 agent review 这个 PR:
 https://github.com/your-org/ccaas/pull/123
 
-重点检查：
+code-reviewer 重点检查：
 1. 架构合规性
 2. 测试覆盖
 3. API 契约
 4. 安全性
+
+code-simplifier 重点检查：
+1. 是否存在 over-engineering
+2. 是否有不必要的抽象
+3. 是否有更简单的实现方式
+4. 是否添加了未被要求的功能
 ```
 
 ### Review Checklist

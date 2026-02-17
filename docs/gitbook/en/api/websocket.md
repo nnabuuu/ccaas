@@ -1,6 +1,6 @@
 # WebSocket Events
 
-LoopAI uses Socket.io for WebSocket communication, providing a rich real-time event stream.
+KedgeAgentic uses Socket.io for WebSocket communication, providing a rich real-time event stream.
 
 ## Connection
 
@@ -80,7 +80,7 @@ socket.on('text_delta', (data) => {
   // data: {
   //   type: 'text_delta',
   //   sessionId: 'uuid',
-  //   text: 'Partial text...'
+  //   delta: 'Partial text...'
   // }
 })
 ```
@@ -93,20 +93,19 @@ Agent status change.
 socket.on('agent_status', (data) => {
   // data: {
   //   type: 'agent_status',
-  //   sessionId: 'uuid',
-  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error',
+  //   sessionId?: 'uuid',          // omitted when status is 'idle'
+  //   timestamp: 'ISO 8601',       // always present
+  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error' | 'cancelled',
   //   context?: {
-  //     currentAction: string,
-  //     target: string,
-  //     steps: { current: number, total: number },
-  //     goalNarrative: string
+  //     currentAction?: string,
+  //     currentTarget?: string,
+  //     stepsCompleted?: number,
+  //     stepsTotal?: number,
+  //     percentComplete?: number,
+  //     activeSubAgents?: ActiveSubAgent[],
+  //     goalNarrative?: object
   //   },
-  //   error?: {
-  //     code: string,
-  //     message: string,
-  //     recoverable: boolean,
-  //     suggestion: string
-  //   }
+  //   error?: string               // error message when status is 'error'
   // }
 })
 ```

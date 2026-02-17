@@ -99,7 +99,7 @@ describe('HeadlessExecutionService', () => {
         if (cliEvent.type === 'assistant') {
           return [{
             type: 'text_delta',
-            text: 'Hello from Claude',
+            delta: 'Hello from Claude',
             sessionId: mockExecution.sessionId,
           }];
         }

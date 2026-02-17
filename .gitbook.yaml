@@ -1,8 +1,15 @@
-root: ./
+# GitBook multilingual configuration
+# Defines Chinese as default with English variant
+
+root: ./docs/gitbook/zh/
 
 structure:
-  readme: README.zh.md
-  summary: SUMMARY.zh.md
+  readme: README.md
+  summary: SUMMARY.md
 
-redirects:
-  previous/page: new-folder/page.md
+variants:
+  - name: English
+    path: ../en/
+    structure:
+      readme: README.md
+      summary: SUMMARY.md

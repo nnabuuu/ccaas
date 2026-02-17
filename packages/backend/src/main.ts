@@ -159,6 +159,9 @@ async function bootstrap() {
   logger.log(`WebSocket server ready on: ws://localhost:${port}`);
   logger.log(`Swagger 文档（中文）: http://localhost:${port}/api/docs`);
   logger.log(`Swagger Docs (EN): http://localhost:${port}/api/docs/en`);
+
+  // Note: Solution auto-discovery is triggered via SolutionsModule.onApplicationBootstrap()
+  // See packages/backend/src/solutions/solutions.module.ts
 }
 
 bootstrap();

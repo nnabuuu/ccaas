@@ -1,6 +1,6 @@
 # @ccaas/vue-sdk
 
-Vue composables and utilities for integrating with Claude-Code-as-a-Service backend.
+Vue composables and utilities for integrating with KedgeAgentic backend.
 
 ## Installation
 
@@ -139,6 +139,34 @@ const {
   </div>
 </template>
 ```
+
+## Terminology Guide
+
+This table clarifies terms used across documentation, code, and user interfaces:
+
+| User-Facing Term | Technical Term | Type/Interface | Format/Example | Notes |
+|------------------|----------------|----------------|----------------|-------|
+| **Conversation** | Session | `Session` | - | Same entity, different perspectives |
+| **Conversation ID** | sessionId | `string` | `conv_a1b2c3d4-...` | Format: `conv_{uuid}` when using tenantId |
+| **Chat message** | Message | `Message` | - | Single utterance from user or assistant |
+| **Exchange** | Turn | `Turn` | - | One Q&A pair (user message + assistant response) |
+| **Message history** | messages | `Message[]` | - | All messages in a conversation |
+| **Session ID** | sessionId | `string` | `conv_{uuid}` or `{prefix}_{id}` | Unique conversation identifier |
+| **Client ID** | clientId | `string` | Auto-assigned | WebSocket client identifier |
+
+### Common Confusion Points
+
+**Q: What's the difference between "conversation" and "session"?**
+A: They're the same thing. "Conversation" is user-facing term, "Session" is the technical database entity.
+
+**Q: Is conversationId the same as sessionId?**
+A: Yes. localStorage uses `ccaas_session_{tenantId}` as the key, but the value stored is the sessionId (format: `conv_{uuid}`).
+
+**Q: What's a Turn?**
+A: A Turn represents one complete exchange: user message → assistant response. Used for analytics and per-turn cost tracking.
+
+**Q: Why messageIndex instead of createdAt for sorting?**
+A: `messageIndex` is a 0-based sequential number that guarantees message order, even if createdAt timestamps are identical.
 
 ## Composables
 

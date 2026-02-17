@@ -30,7 +30,7 @@ export interface AgentStatusEvent extends FrontendEvent {
  */
 export interface TextDeltaEvent extends FrontendEvent {
   type: 'text_delta';
-  text: string;
+  delta: string;
 }
 
 /**

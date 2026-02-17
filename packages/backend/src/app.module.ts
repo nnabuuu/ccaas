@@ -37,7 +37,7 @@ import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
 import { McpServer } from './mcp/entities/mcp-server.entity';
 import { LargeContent, SystemPromptVersion } from './storage/entities';
-import { AdminAuditLog, SessionAlert, TenantQuota } from './admin/entities';
+import { AdminAuditLog, SessionAlert, TenantQuota, Turn, Session } from './admin/entities';
 import { StorageModule } from './storage/storage.module';
 import { SchedulerModule } from './scheduler/scheduler.module';
 import { ScheduledTask } from './scheduler/entities/scheduled-task.entity';
@@ -48,6 +48,7 @@ import { UsersModule } from './users/users.module';
 import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
+import { SolutionsModule } from './solutions/solutions.module';
 
 @Module({
   imports: [
@@ -95,6 +96,7 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
         UserContextEvent,
         // Session entities
         MessageQueue,
+        Session,
         // Storage entities
         LargeContent,
         SystemPromptVersion,
@@ -102,6 +104,7 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
         AdminAuditLog,
         SessionAlert,
         TenantQuota,
+        Turn,
         // Scheduler entities
         ScheduledTask,
         ScheduledTaskExecution,
@@ -135,6 +138,9 @@ import { MessageQueue } from './sessions/entities/message-queue.entity';
 
     // Background jobs module
     JobModule,
+
+    // Solution auto-discovery
+    SolutionsModule,
   ],
   providers: [
     {

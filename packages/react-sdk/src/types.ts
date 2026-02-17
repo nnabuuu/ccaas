@@ -330,10 +330,20 @@ export interface SolutionConfig {
 export interface UseAgentConnectionOptions {
   /** Server URL. Defaults to '/' (relative, proxied by Vite) */
   serverUrl?: string
-  /** Session ID prefix, e.g., 'lpd', 'pe' */
+  /** Session ID prefix, e.g., 'lpd', 'pe'. Used when tenantId is not provided. */
   sessionPrefix?: string
   /** Whether to auto-connect on mount. Defaults to true */
   autoConnect?: boolean
+  /** Tenant ID for tenant-scoped localStorage persistence. When provided, sessionId uses conv_ prefix and is persisted. */
+  tenantId?: string
+  /** Force a new conversation, clearing any saved sessionId from localStorage */
+  forceNewConversation?: boolean
+  /**
+   * Transport to use for chat messages. Defaults to 'sse'.
+   * - 'sse' (default): HTTP streaming via POST /messages. No WebSocket required.
+   * - 'socket' (deprecated): Socket.IO transport. The backend /completion endpoint returns 410 Gone.
+   */
+  transport?: 'sse' | 'socket'
 }
 
 export interface UseAgentConnectionReturn {
@@ -345,6 +355,8 @@ export interface UseAgentConnectionReturn {
   error: string | null
   connect: () => void
   disconnect: () => void
+  /** Clear current session storage and start a new conversation with a fresh sessionId */
+  startNewConversation: () => void
 }
 
 export interface PageContext {
@@ -369,6 +381,13 @@ export interface UseAgentChatOptions {
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */
   sessionTemplate?: string
+  /**
+   * Transport mode for receiving events.
+   * - 'socket': Use Socket.IO (default, backward compatible)
+   * - 'sse': Use HTTP Streaming (SSE). No WebSocket required.
+   *   POST /api/v1/sessions/:id/messages returns text/event-stream.
+   */
+  transport?: 'socket' | 'sse'
 }
 
 export interface SendMessageOptions {
@@ -379,9 +398,12 @@ export interface SendMessageOptions {
 export interface UseAgentChatReturn {
   messages: Message[]
   isProcessing: boolean
+  isLoadingHistory: boolean
   currentStreamContent: string
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>
   clearMessages: () => void
+  /** Clear messages and start a new conversation (new sessionId, new storage) */
+  clearConversation: () => void
   cancelProcessing: () => void
 }
 

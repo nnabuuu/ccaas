@@ -64,6 +64,7 @@ describe('useLessonPlanSession - Connection (Phase 2)', () => {
       serverUrl: '',
       connect: vi.fn(),
       disconnect: vi.fn(),
+      startNewConversation: vi.fn(),
     }
   })
 

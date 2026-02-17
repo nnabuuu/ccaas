@@ -20,6 +20,7 @@ import type {
   LessonPlan,
   SyncField,
   CreateLessonPlanInput,
+  PendingUpdateWithMeta,
 } from '../types'
 
 // IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
@@ -69,12 +70,14 @@ interface UseLessonPlanSessionReturn {
   messages: Message[]
   isProcessing: boolean  // 向后兼容别名
   isMainProcessing: boolean
+  isLoadingHistory: boolean
   hasActiveSubAgents: boolean
   currentStreamContent: string
 
   // Sync state (from useLessonPlanSync)
-  pendingUpdates: Map<SyncField, { field: SyncField; value: unknown; preview: string }>
+  pendingUpdates: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
   modifiedFields: Set<SyncField>
+  pendingUpdatesWithMeta: Map<SyncField, import('../types').PendingUpdateWithMeta>
 
   // Tool activity state
   activeTools: Map<string, ToolActivity>
@@ -96,10 +99,12 @@ interface UseLessonPlanSessionReturn {
 
   // Actions
   cancelProcessing: () => void
+  clearConversation: () => void
   sendMessage: (content: string) => void
   saveLessonPlan: () => Promise<void>
   createNewPlan: (input: CreateLessonPlanInput) => Promise<LessonPlan>
   syncToForm: (field: SyncField) => void
+  syncAll: () => Promise<void>
   discardUpdate: (field: SyncField) => void
   undoSync: (field: SyncField) => void
   canUndo: (field: SyncField) => boolean
@@ -113,8 +118,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   // ===== SDK Connection =====
   const connection = useAgentConnection({
     serverUrl: SOCKET_URL,
-    sessionPrefix: 'lpd',
+    tenantId,
     autoConnect,
+    transport: 'sse', // SSE is the default; explicit for clarity
   })
 
   // Backward compatibility: existing code expects refs
@@ -159,6 +165,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     resetSyncState,
   } = useLessonPlanSync()
 
+  // Extended pending updates with metadata (for Global Sync Section)
+  const [pendingUpdatesWithMeta, setPendingUpdatesWithMeta] = useState<Map<SyncField, PendingUpdateWithMeta>>(new Map())
+
   // ===== SDK Chat =====
   const chat = useAgentChat({
     connection,
@@ -173,6 +182,20 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
         field: update.field as SyncField,
         value: update.value,
         preview: update.preview,
+      })
+
+      // Also add to pendingUpdatesWithMeta (for Global Sync Section)
+      const timestamp = Date.now()
+      setPendingUpdatesWithMeta(prev => {
+        const next = new Map(prev)
+        next.set(update.field as SyncField, {
+          field: update.field as SyncField,
+          value: update.value,
+          preview: update.preview,
+          roundId: `round-${timestamp}`, // 使用时间戳生成唯一 ID
+          timestamp,
+        })
+        return next
       })
     },
   })
@@ -226,6 +249,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const loadPlan = useCallback(async (id: string) => {
     await crud.loadPlan(id)
     resetSyncState()
+    setPendingUpdatesWithMeta(new Map())
   }, [crud, resetSyncState])
 
   // Load initial plan if planId is provided
@@ -242,11 +266,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     await crud.savePlan()
   }, [crud])
 
-  // Create new plan (wrapper around crud.createPlan with sync state reset)
+  // Create new plan (wrapper around crud.createPlan with sync state reset + new conversation)
   const createNewPlan = useCallback(async (input: CreateLessonPlanInput): Promise<LessonPlan> => {
     const plan = await crud.createPlan(input)
     resetSyncState()
-    chat.clearMessages()  // ← Use SDK's clearMessages
+    setPendingUpdatesWithMeta(new Map())
+    chat.clearConversation()  // ← New conversation: clear messages + new sessionId
     return plan
   }, [crud, resetSyncState, chat])
 
@@ -289,13 +314,38 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
       doSyncToForm(field, crud.lessonPlan, crud.setLessonPlan)
     }
 
+    // Update pendingUpdatesWithMeta to mark as synced
+    setPendingUpdatesWithMeta(prev => {
+      const next = new Map(prev)
+      const existing = next.get(field)
+      if (existing) {
+        next.set(field, { ...existing, synced: true, syncedAt: new Date() })
+      }
+      return next
+    })
+
     // Note: Synced flag tracking removed - SDK messages are immutable
     // UI can derive synced state from pendingUpdates or modifiedFields if needed
   }, [crud, pendingUpdates, doSyncToForm, sessionIdRef])
 
+  // Sync all pending updates
+  const syncAll = useCallback(async () => {
+    if (!crud.lessonPlan) return
+
+    const allFields = Array.from(pendingUpdates.keys())
+    for (const field of allFields) {
+      await syncToForm(field)
+    }
+  }, [crud.lessonPlan, pendingUpdates, syncToForm])
+
   // Discard update
   const discardUpdate = useCallback((field: SyncField) => {
     removePendingUpdate(field)
+    setPendingUpdatesWithMeta(prev => {
+      const next = new Map(prev)
+      next.delete(field)
+      return next
+    })
     // Note: SDK messages are immutable - outputUpdates remain in messages
     // UI can filter based on pendingUpdates to hide discarded items if needed
   }, [removePendingUpdate])
@@ -353,12 +403,14 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     messages: chat.messages,  // ← Use SDK messages
     isProcessing: isMainProcessing,  // 向后兼容别名
     isMainProcessing,
+    isLoadingHistory: chat.isLoadingHistory,
     hasActiveSubAgents,
     currentStreamContent: chat.currentStreamContent,  // ← Use SDK stream content
 
     // Sync state
     pendingUpdates,
     modifiedFields,
+    pendingUpdatesWithMeta,
 
     // Tool activity state
     activeTools,
@@ -380,10 +432,12 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
     // Actions
     cancelProcessing,
+    clearConversation: chat.clearConversation,
     sendMessage,
     saveLessonPlan,
     createNewPlan,
     syncToForm,
+    syncAll,
     discardUpdate,
     undoSync,
     canUndo,

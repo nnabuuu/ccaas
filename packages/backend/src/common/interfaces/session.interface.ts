@@ -34,6 +34,9 @@ export interface ManagedSession {
   currentAssistantMessageId?: string;
   tenantId?: string;
 
+  // Turn tracking (for per-turn analytics)
+  currentTurnId?: string;
+
   // User tracking (Week 1)
   userId?: string;
 

@@ -1,3 +1,37 @@
+---
+name: Quiz Analyzer - Student Answer Analysis
+slug: analyze-student-answer
+description: 分析学生答案，识别错误类型和错误步骤，支持错误模式推荐
+scope: tenant
+triggers:
+  - type: keyword
+    value: 分析学生答案
+    priority: 10
+  - type: keyword
+    value: 检查这道题
+    priority: 9
+  - type: keyword
+    value: 学生错在哪里
+    priority: 10
+  - type: keyword
+    value: 错误分析
+    priority: 9
+  - type: keyword
+    value: 学生做错了
+    priority: 8
+  - type: keyword
+    value: 分析错题
+    priority: 9
+allowedTools:
+  - analyze_student_answer
+  - get_quiz_details
+  - search_knowledge_points
+  - get_knowledge_points_tree
+  - get_node_path
+  - recommend_by_error_pattern
+  - get_error_statistics
+---
+
 # Skill: 学生答案错误分析
 
 ## 目标
