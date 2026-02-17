@@ -93,20 +93,19 @@ Agent 状态变化。
 socket.on('agent_status', (data) => {
   // data: {
   //   type: 'agent_status',
-  //   sessionId: 'uuid',
-  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error',
+  //   sessionId?: 'uuid',          // idle 时可省略
+  //   timestamp: 'ISO 8601',       // 所有状态均有
+  //   status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error' | 'cancelled',
   //   context?: {
-  //     currentAction: string,
-  //     target: string,
-  //     steps: { current: number, total: number },
-  //     goalNarrative: string
+  //     currentAction?: string,
+  //     currentTarget?: string,
+  //     stepsCompleted?: number,
+  //     stepsTotal?: number,
+  //     percentComplete?: number,
+  //     activeSubAgents?: ActiveSubAgent[],
+  //     goalNarrative?: object
   //   },
-  //   error?: {
-  //     code: string,
-  //     message: string,
-  //     recoverable: boolean,
-  //     suggestion: string
-  //   }
+  //   error?: string               // error 状态时的错误消息
   // }
 })
 ```
