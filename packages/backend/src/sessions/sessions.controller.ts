@@ -18,6 +18,7 @@ import {
   Logger,
   Res,
   StreamableFile,
+  Header,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -43,7 +44,10 @@ import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completion.dto';
+import { SendMessageDto } from './dto/send-message.dto';
+import { StreamRegistryService } from './services/stream-registry.service';
 import type { FrontendEvent } from '../common/interfaces';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('sessions')
 @Controller('api/v1/sessions')
@@ -62,6 +66,7 @@ export class SessionsController {
     private readonly tenantsService: TenantsService,
     private readonly messagesService: MessagesService,
     private readonly conversationContextService: ConversationContextService,
+    private readonly streamRegistry: StreamRegistryService,
   ) {}
 
 
@@ -131,8 +136,10 @@ Send user message to the specified session. Agent will push response events via 
     if (!tenantId) {
       this.logger.error('tenantId is required for chat');
       socket.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: 'tenantId is required.',
       });
       throw new BadRequestException('tenantId is required');
@@ -207,8 +214,10 @@ Send user message to the specified session. Agent will push response events via 
     } catch (error) {
       this.logger.error(`Error creating completion: ${error}`);
       socket.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
@@ -248,10 +257,194 @@ Send user message to the specified session. Agent will push response events via 
     const session = this.sessionService.getSession(sessionId);
     if (session) {
       this.sessionService.cancelSession(sessionId);
-      socket.emit('agent_status', { status: 'cancelled', sessionId });
+      socket.emit('agent_status', { type: 'agent_status', status: 'cancelled', sessionId, timestamp: new Date().toISOString() });
     }
 
     return { success: true };
+  }
+
+  // ============================================================================
+  // HTTP Streaming (SSE) - New Transport
+  // ============================================================================
+
+  /**
+   * Send message with SSE streaming response
+   * POST /api/v1/sessions/:sessionId/messages
+   *
+   * New HTTP streaming transport. No WebSocket required.
+   * Response streams as text/event-stream until the turn completes.
+   *
+   * If the client disconnects and reconnects, pass ?afterSeq=N to replay
+   * buffered events since sequence N.
+   */
+  @Post(':sessionId/messages')
+  @Header('Content-Type', 'text/event-stream')
+  @Header('Cache-Control', 'no-cache')
+  @Header('Connection', 'keep-alive')
+  @ApiOperation({
+    summary: '发送消息（SSE 流式响应）/ Send Message (SSE Streaming)',
+    description: `
+新的 HTTP 流式传输端点，无需 WebSocket 连接。
+响应为 \`text/event-stream\`，Turn 结束时关闭连接。
+
+**事件格式：**
+每个 SSE 事件包含一个 JSON 对象，字段如下：
+- \`seq\`: 递增序号（断线重连使用）
+- \`sessionId\`: 会话 ID
+- \`timestamp\`: ISO 时间戳
+- \`event\`: 前端事件对象（与 WebSocket 事件格式一致）
+
+**断线重连：**
+在请求体中传 \`afterSeq\` 参数，服务端将重放该序号之后的所有缓存事件。
+
+New HTTP streaming endpoint. No WebSocket required.
+Response is \`text/event-stream\`, closed when Turn completes.
+    `,
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiBody({ type: SendMessageDto })
+  @ApiResponse({ status: 200, description: 'SSE 事件流 / SSE event stream' })
+  async sendMessage(
+    @Param('sessionId') sessionId: string,
+    @Body() data: SendMessageDto,
+    @Res() res: Response,
+  ) {
+    const subscriberId = uuidv4();
+    this.logger.log(`SSE sendMessage: session=${sessionId} subscriber=${subscriberId}`);
+
+    // Register this response as an SSE subscriber
+    this.streamRegistry.subscribe(sessionId, subscriberId, res as any);
+
+    // If client reconnecting, replay buffered events
+    if (data.afterSeq !== undefined) {
+      const missed = this.streamRegistry.getEventsSince(sessionId, data.afterSeq);
+      this.logger.log(`Replaying ${missed.length} buffered events after seq=${data.afterSeq}`);
+      for (const envelope of missed) {
+        (res as any).write(`id: ${envelope.seq}\ndata: ${JSON.stringify(envelope)}\n\n`);
+      }
+    }
+
+    let { enabledSkillSlugs } = data;
+
+    if (!data.tenantId) {
+      this.streamRegistry.emit(sessionId, {
+        type: 'error' as any,
+        sessionId,
+        timestamp: new Date().toISOString(),
+        code: 'MISSING_TENANT_ID',
+        message: 'tenantId is required',
+        recoverable: false,
+      });
+      this.streamRegistry.closeSession(sessionId);
+      return;
+    }
+
+    try {
+      // Auto-load tenant skills if not provided
+      if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
+        const tenant = await this.tenantsService.findOne(data.tenantId);
+        const resolvedTenantId = tenant?.id || data.tenantId;
+        const allSkills = await this.skillsService.findPublished(resolvedTenantId);
+        enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
+      }
+
+      // Generate skill system prompt
+      let systemPrompt: string | undefined;
+      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+        const tenant = await this.tenantsService.findOne(data.tenantId);
+        const resolvedTenantId = tenant?.id || data.tenantId;
+        systemPrompt = await this.skillManagementService.generateSystemPromptForSession(
+          resolvedTenantId,
+          enabledSkillSlugs,
+        );
+      }
+
+      if (data.appendSystemPrompt?.trim()) {
+        systemPrompt = systemPrompt
+          ? `${systemPrompt}\n\n${data.appendSystemPrompt}`
+          : data.appendSystemPrompt;
+      }
+
+      // Use a synthetic clientId for SSE sessions (no WebSocket)
+      const clientId = `sse:${sessionId}`;
+
+      // Get or create session (no socket needed - SSE replaces it)
+      const session = this.sessionService.getOrCreateSession(sessionId, clientId, null);
+
+      const resolvedAttachments = this.attachmentService.resolveAttachments(
+        data.attachments,
+        session.workspaceDir,
+      );
+
+      // Emit function routes events to SSE stream
+      const emitEvent = (event: FrontendEvent) => {
+        this.streamRegistry.emit(sessionId, event);
+      };
+
+      await this.completionOrchestrationService.orchestrateMessage({
+        session,
+        clientId,
+        tenantId: data.tenantId,
+        message: data.message,
+        context: data.context,
+        mcpServers: data.mcpServers,
+        enabledSkillSlugs,
+        skillPath: data.skillPath,
+        attachments: resolvedAttachments,
+        systemPrompt,
+        emitEvent,
+      });
+
+      // Turn complete - send done event and close SSE connection
+      this.streamRegistry.closeSession(sessionId);
+    } catch (error) {
+      this.logger.error(`SSE sendMessage error: ${error}`);
+      this.streamRegistry.emit(sessionId, {
+        type: 'error' as any,
+        sessionId,
+        timestamp: new Date().toISOString(),
+        code: 'INTERNAL_ERROR',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        recoverable: false,
+      });
+      this.streamRegistry.closeSession(sessionId);
+    }
+  }
+
+  /**
+   * Cancel current turn
+   * POST /api/v1/sessions/:sessionId/cancel
+   *
+   * REST endpoint to cancel the current turn.
+   * Works for both WebSocket and SSE transport.
+   */
+  @Post(':sessionId/cancel')
+  @ApiOperation({
+    summary: '取消当前 Turn / Cancel Current Turn',
+    description: '取消正在进行的 Turn（兼容 WebSocket 和 SSE 传输）/ Cancel the ongoing turn (works for both WebSocket and SSE transport)',
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiResponse({ status: 200, description: '已发送取消信号 / Cancel signal sent' })
+  cancelTurn(@Param('sessionId') sessionId: string) {
+    this.logger.log(`Cancelling turn for session ${sessionId}`);
+
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    this.sessionService.cancelSession(sessionId);
+
+    // Notify SSE subscribers about cancellation
+    this.streamRegistry.emit(sessionId, {
+      type: 'agent_status',
+      status: 'cancelled',
+      sessionId,
+      timestamp: new Date().toISOString(),
+    });
+    this.streamRegistry.closeSession(sessionId);
+
+    return { success: true, sessionId };
   }
 
   /**

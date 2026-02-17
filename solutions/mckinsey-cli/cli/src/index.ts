@@ -154,7 +154,7 @@ socket.on('client_id', (data: { clientId: string }) => {
 })
 
 socket.on('agent_status', async (event: any) => {
-  const status = event?.status || event?.payload?.status
+  const status = event?.status
   if (status === 'running') {
     isProcessing = true
     process.stdout.write('\n' + chalk.blue('◆ '))

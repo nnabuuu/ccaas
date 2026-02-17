@@ -287,7 +287,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     client.emit('client_id', { clientId });
 
     // Send initial idle status
-    client.emit('agent_status', { status: 'idle' });
+    client.emit('agent_status', { type: 'agent_status', status: 'idle', timestamp: new Date().toISOString() });
   }
 
   /**
@@ -332,8 +332,10 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     if (!tenantId) {
       this.logger.error('tenantId is required for chat - skills cannot be loaded without a tenant');
       client.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: 'tenantId is required. Skills cannot be loaded without a tenant.',
       });
       return;
@@ -394,13 +396,15 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
         });
 
         // Notify frontend that agent is running
-        client.emit('agent_status', { status: 'running', sessionId });
+        client.emit('agent_status', { type: 'agent_status', status: 'running', sessionId, timestamp: new Date().toISOString() });
       }
     } catch (error) {
       this.logger.error(`Error handling chat: ${error}`);
       client.emit('agent_status', {
+        type: 'agent_status',
         status: 'error',
         sessionId,
+        timestamp: new Date().toISOString(),
         error: error instanceof Error ? error.message : 'Unknown error',
       });
     }

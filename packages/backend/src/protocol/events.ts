@@ -182,13 +182,8 @@ export interface EnhancedAgentStatusEvent extends BaseEvent {
     goalNarrative?: GoalNarrative;
   };
 
-  // Error details (when status='error')
-  error?: {
-    code: string;
-    message: string;
-    recoverable: boolean;
-    suggestion?: string;
-  };
+  // Error message (when status='error')
+  error?: string;
 }
 
 // ============================================================================

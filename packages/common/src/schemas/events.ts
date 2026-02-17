@@ -98,18 +98,14 @@ export const AgentStatusContextSchema = z.object({
   goalNarrative: GoalNarrativeSchema.optional(),
 });
 
-export const AgentStatusErrorSchema = z.object({
-  code: z.string(),
-  message: z.string(),
-  recoverable: z.boolean(),
-  suggestion: z.string().optional(),
-});
+export const AgentStatusErrorSchema = z.string();
 
 export const AgentStatusEventSchema = BaseEventSchema.extend({
   type: z.literal('agent_status'),
+  sessionId: z.string().optional(),  // idle events may omit sessionId
   status: z.enum(['idle', 'thinking', 'exploring', 'executing', 'running', 'complete', 'error', 'cancelled']),
   context: AgentStatusContextSchema.optional(),
-  error: AgentStatusErrorSchema.optional(),
+  error: z.string().optional(),
 });
 
 // ============================================================================
