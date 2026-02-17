@@ -1,15 +1,16 @@
+import { useOne, useCreate, useUpdate } from '@refinedev/core'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { apiClient } from '@/lib/api-client'
 import { useTenantContext } from '@/hooks/use-tenant-context'
 
 const templateSchema = z.object({
@@ -29,13 +30,18 @@ export function SessionTemplateFormPage() {
   const navigate = useNavigate()
   const { name } = useParams()
   const { selectedTenantId } = useTenantContext()
+  const tenantId = selectedTenantId || 'default'
   const isEdit = !!name
+
+  // Controlled state for non-standard inputs
+  const [skillsValue, setSkillsValue] = useState('')
+  const [mcpValue, setMcpValue] = useState('{}')
+  const [mcpError, setMcpError] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = useForm<TemplateFormData>({
     resolver: zodResolver(templateSchema),
@@ -50,43 +56,65 @@ export function SessionTemplateFormPage() {
     },
   })
 
-  // Load existing template for edit mode
+  // Load existing template in edit mode
+  const { data: templateData } = useOne<{ name: string; template: TemplateFormData['template'] }>({
+    resource: 'session-templates',
+    id: name!,
+    queryOptions: { enabled: isEdit },
+    meta: { tenantId },
+  })
+
   useEffect(() => {
-    if (isEdit && name) {
-      const loadTemplate = async () => {
-        try {
-          const { data } = await apiClient.get(
-            `/admin/tenants/${selectedTenantId || 'default'}/session-templates/${name}`
-          )
-          setValue('name', data.name)
-          setValue('template', data.template)
-        } catch (error) {
-          console.error('Failed to load template:', error)
-          alert('Failed to load template')
-        }
-      }
-      loadTemplate()
+    if (templateData?.data) {
+      const { name: loadedName, template } = templateData.data
+      setValue('name', loadedName)
+      setValue('template', template)
+      setSkillsValue((template.enabledSkillSlugs || []).join(', '))
+      setMcpValue(JSON.stringify(template.mcpServers || {}, null, 2))
     }
-  }, [isEdit, name, selectedTenantId, setValue])
+  }, [templateData, setValue])
+
+  const { mutateAsync: createTemplate } = useCreate()
+  const { mutateAsync: updateTemplate } = useUpdate()
 
   const onSubmit = async (data: TemplateFormData) => {
     try {
-      const tenantId = selectedTenantId || 'default'
       if (isEdit) {
-        await apiClient.put(
-          `/admin/tenants/${tenantId}/session-templates/${name}`,
-          { template: data.template }
-        )
+        await updateTemplate({
+          resource: 'session-templates',
+          id: name!,
+          values: { template: data.template },
+          meta: { tenantId },
+        })
       } else {
-        await apiClient.post(
-          `/admin/tenants/${tenantId}/session-templates`,
-          data
-        )
+        await createTemplate({
+          resource: 'session-templates',
+          values: data,
+          meta: { tenantId },
+        })
       }
+      toast.success(isEdit ? 'Template updated' : 'Template created')
       navigate('/session-templates')
-    } catch (error) {
-      console.error('Failed to save template:', error)
-      alert('Failed to save template')
+    } catch {
+      toast.error('Failed to save template')
+    }
+  }
+
+  const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSkillsValue(e.target.value)
+    const slugs = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+    setValue('template.enabledSkillSlugs', slugs)
+  }
+
+  const handleMcpChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const raw = e.target.value
+    setMcpValue(raw)
+    try {
+      const parsed = JSON.parse(raw)
+      setValue('template.mcpServers', parsed)
+      setMcpError(null)
+    } catch {
+      setMcpError('Invalid JSON')
     }
   }
 
@@ -155,14 +183,8 @@ export function SessionTemplateFormPage() {
                 <Input
                   id="skills"
                   placeholder="knowledge-matching, complete-analysis"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const slugs = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                    setValue('template.enabledSkillSlugs', slugs)
-                  }}
-                  defaultValue={
-                    // eslint-disable-next-line react-hooks/incompatible-library
-                    watch('template.enabledSkillSlugs')?.join(', ')
-                  }
+                  value={skillsValue}
+                  onChange={handleSkillsChange}
                 />
               </CardContent>
             </Card>
@@ -177,16 +199,12 @@ export function SessionTemplateFormPage() {
                   placeholder={`{\n  "server-name": {\n    "command": "node",\n    "args": ["server.js"]\n  }\n}`}
                   rows={10}
                   className="font-mono text-sm"
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value)
-                      setValue('template.mcpServers', parsed)
-                    } catch {
-                      // Invalid JSON, ignore
-                    }
-                  }}
-                  defaultValue={JSON.stringify(watch('template.mcpServers') || {}, null, 2)}
+                  value={mcpValue}
+                  onChange={handleMcpChange}
                 />
+                {mcpError && (
+                  <p className="text-sm text-red-500 mt-1">{mcpError}</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

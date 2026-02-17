@@ -1,13 +1,65 @@
-import { IsString, IsOptional, IsObject, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsObject,
+  IsArray,
+  Matches,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import type { SessionTemplate } from '@ccaas/common';
+
+export class McpServerConfigDto {
+  @IsString()
+  command!: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  args!: string[];
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class SessionTemplateBodyDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10000)
+  appendSystemPrompt?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  enabledSkillSlugs?: string[];
+
+  @IsOptional()
+  @IsObject()
+  mcpServers?: Record<string, McpServerConfigDto>;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  model?: string;
+
+  @IsOptional()
+  @IsString()
+  skillPath?: string;
+}
 
 export class CreateSessionTemplateDto {
   @ApiProperty({
-    description: 'Template name (lowercase alphanumeric with hyphens/underscores)',
+    description: 'Template name (lowercase alphanumeric with hyphens/underscores, max 64 chars)',
     example: 'teacher-analysis',
   })
   @IsString()
+  @MaxLength(64)
   @Matches(/^[a-z0-9][a-z0-9_-]*$/, {
     message: 'Template name must match pattern: [a-z0-9][a-z0-9_-]*',
   })
@@ -21,14 +73,16 @@ export class CreateSessionTemplateDto {
       enabledSkillSlugs: ['knowledge-matching', 'analysis'],
     },
   })
-  @IsObject()
-  template!: SessionTemplate;
+  @ValidateNested()
+  @Type(() => SessionTemplateBodyDto)
+  template!: SessionTemplateBodyDto;
 }
 
 export class UpdateSessionTemplateDto {
   @ApiProperty({ description: 'Updated template configuration' })
-  @IsObject()
-  template!: SessionTemplate;
+  @ValidateNested()
+  @Type(() => SessionTemplateBodyDto)
+  template!: SessionTemplateBodyDto;
 }
 
 export class PreviewTemplateDto {
