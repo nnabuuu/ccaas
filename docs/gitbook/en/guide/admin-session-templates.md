@@ -26,58 +26,74 @@ Session Templates are reusable configurations stored per-tenant that define:
 
 ## When to Use This
 
-### Scenario: A Math Tutoring Platform
+### The Core Problem: Same Agent, Different Users
 
-Imagine you're building a math tutoring app. Both teachers and students chat with the same AI agent — but they need **completely different capabilities**.
+Most real applications have multiple user roles — and different roles should get different AI capabilities. A manager should see more data than an intern. A teacher should have tools a student shouldn't touch. An admin should be able to do things a regular user cannot.
 
-**The teacher** should be able to:
-- Use a `curriculum-analyzer` skill that matches questions against the textbook syllabus
-- Use a `student-progress` MCP tool that queries the school's gradebook database
-- See a detailed analytical tone: _"This question tests §3.2 linear equations, difficulty level 3"_
-
-**The student** should only be able to:
-- Use a `practice-hint` skill that gives step-by-step hints without revealing the full answer
-- Not access the gradebook MCP at all (those are private records)
-- See an encouraging, Socratic tone: _"Good try! What happens if you move the x to the other side?"_
-
-Without session templates, your only options are:
+The naive solution is to pass configuration directly from the frontend:
 
 ```typescript
-// ❌ Without templates — hardcoded, fragile, requires redeployment to change
+// ❌ Naive approach — frontend decides what the agent can do
 const chat = useAgentChat({
-  enabledSkillSlugs: user.role === 'teacher'
-    ? ['curriculum-analyzer', 'practice-hint']
-    : ['practice-hint'],
-  mcpServers: user.role === 'teacher'
-    ? { 'student-progress': { command: 'node', args: ['gradebook.js'] } }
-    : {},
-  appendSystemPrompt: user.role === 'teacher'
-    ? 'You are an analytical teaching assistant. Reference the curriculum syllabus...'
-    : 'You are a patient tutor. Guide students with hints, never give direct answers...',
+  enabledSkillSlugs: user.role === 'teacher' ? ['analyze', 'grade'] : ['hint'],
+  appendSystemPrompt: user.role === 'teacher' ? 'You are...' : 'You are...',
 })
 ```
 
-Every time a teacher asks to tweak their prompt, you ship a new frontend build.
+This breaks down in three ways:
 
-**With session templates**, you configure once in the Admin UI and reference by name:
+1. **Security gap** — The frontend controls what skills and tools the agent has access to. A determined user could pass any skill slug they want. There's no server-side enforcement.
+2. **Operational fragility** — Every time you need to change a prompt or add a skill to one role, you have to modify code and redeploy. The AI team can't iterate independently.
+3. **Scattered configuration** — Agent behavior is scattered across frontend components instead of managed in one place.
+
+### The Solution: Server-Side Role Configurations
+
+Session Templates move this configuration to the **server side**, managed by admins. The frontend only names which template to use:
 
 ```typescript
-// ✅ With templates — clean, runtime-configurable, no redeploy needed
+// ✅ With templates — frontend declares intent, server enforces capability
 const chat = useAgentChat({
   sessionTemplate: user.role === 'teacher' ? 'teacher-mode' : 'student-mode',
 })
 ```
 
-The two templates are defined in the Admin Dashboard:
+The key insight is the **separation of concerns**:
+
+| Responsibility | Who Controls It |
+|---|---|
+| _What_ the agent can do (skills, MCPs, prompt) | **Admin** — via Session Templates |
+| _When_ the agent is invoked and by whom | **Frontend** — via template name |
+
+This means your AI team can update prompts, add skills, or swap models at runtime through the Admin UI — without touching the codebase.
+
+### Example: Math Tutoring Platform
+
+A concrete illustration. Teachers and students both chat with the same AI agent, but need completely different capabilities:
+
+**Teacher** needs full analytical power:
+- `curriculum-analyzer` skill — maps questions to the textbook syllabus
+- `student-progress` MCP — queries the school's gradebook (private data)
+- Tone: detailed, analytical (_"This tests §3.2 linear equations, difficulty 3"_)
+- Model: `claude-opus-4-6` for depth
+
+**Student** needs guided practice only:
+- `practice-hint` skill — gives step-by-step hints, never reveals the full answer
+- No MCP access — gradebook data is off-limits
+- Tone: encouraging, Socratic (_"Good try! What if you moved x to the other side?"_)
+- Model: `claude-haiku-4-5` for speed and cost
+
+Two templates capture this completely:
 
 | | `teacher-mode` | `student-mode` |
 |---|---|---|
 | Skills | `curriculum-analyzer`, `practice-hint` | `practice-hint` only |
 | MCP Servers | `student-progress` (gradebook) | _(none)_ |
-| System Prompt | Analytical, curriculum-aware tone | Encouraging, Socratic tone |
-| Model | `claude-opus-4-6` (more capable) | `claude-haiku-4-5` (faster, cheaper) |
+| System Prompt | Analytical, curriculum-aware | Encouraging, Socratic |
+| Model | `claude-opus-4-6` | `claude-haiku-4-5` |
 
-Now when the head teacher says _"add a reminder to always cite the page number"_, you edit the `teacher-mode` template in the Admin UI and it takes effect immediately — **no code change, no deployment**.
+When the head teacher says _"always cite the textbook page number"_, an admin edits the `teacher-mode` template in the Admin UI. It takes effect immediately — **no code change, no deployment**. Students are unaffected.
+
+This pattern applies to any domain where roles matter: support agents vs. customers, analysts vs. viewers, admins vs. end-users.
 
 ---
 
