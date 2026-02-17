@@ -153,8 +153,6 @@ export class SolutionConfigAdapter {
 
     // Migrate internal config (flatten to top-level)
     if (v2.internal) {
-      if (v2.internal.backend) v3.backend = v2.internal.backend;
-      if (v2.internal.frontend) v3.frontend = v2.internal.frontend;
       if (v2.internal.syncFields) v3.syncFields = v2.internal.syncFields;
       if (v2.internal.setup) v3.setup = v2.internal.setup;
     }
@@ -518,37 +516,6 @@ export class SolutionConfigAdapter {
     warnings: string[],
   ): Record<string, unknown> {
     const internal: Record<string, unknown> = {};
-
-    // Backend
-    if (obj.backend && typeof obj.backend === 'object') {
-      const b = obj.backend as Record<string, unknown>;
-      const backend: Record<string, unknown> = {};
-
-      if (typeof b.port === 'number') backend.port = b.port;
-      if (typeof b.ccaasUrl === 'string') backend.ccaasUrl = b.ccaasUrl;
-      if (b.database && typeof b.database === 'object') backend.database = b.database;
-
-      if (backend.port) {
-        internal.backend = backend;
-      } else {
-        warnings.push('Backend config missing port, skipping');
-      }
-    }
-
-    // Frontend
-    if (obj.frontend && typeof obj.frontend === 'object') {
-      const f = obj.frontend as Record<string, unknown>;
-      const frontend: Record<string, unknown> = {};
-
-      if (typeof f.port === 'number') frontend.port = f.port;
-      if (typeof f.apiBaseUrl === 'string') frontend.apiBaseUrl = f.apiBaseUrl;
-
-      if (frontend.port) {
-        internal.frontend = frontend;
-      } else {
-        warnings.push('Frontend config missing port, skipping');
-      }
-    }
 
     // SyncFields
     if (obj.syncFields) {

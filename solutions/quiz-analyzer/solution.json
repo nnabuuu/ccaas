@@ -18,17 +18,6 @@
       }
     }
   },
-  "backend": {
-    "port": 3005,
-    "ccaasUrl": "http://localhost:3001",
-    "database": {
-      "type": "sqlite",
-      "path": "data/quiz-analyzer.db"
-    }
-  },
-  "frontend": {
-    "port": 5282
-  },
   "syncFields": [
     "parsedQuiz",
     "catalog",

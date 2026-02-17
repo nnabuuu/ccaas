@@ -15,7 +15,7 @@ Complete reference for the solution.json configuration file in KedgeAgentic plat
 }
 ```
 
-**Migration:** v1/v2 configs are automatically migrated to v3 at runtime. See [Migration Guide](./solution-migration.md) for manual upgrade.
+**Migration:** v1/v2 configs are automatically migrated to v3 at runtime. See [Migration Guide](./migration.md) for manual upgrade.
 
 ---
 
@@ -25,8 +25,6 @@ The `solution.json` file defines your solution's configuration, including:
 - **Tenant Information** - Name, slug, description
 - **Skills** - AI capabilities (via folder paths or wildcards)
 - **MCP Servers** - Tool services for AI agents
-- **Backend Config** - Solution-specific backend settings (optional)
-- **Frontend Config** - Solution-specific frontend settings (optional)
 
 **Philosophy:** v3.0 follows **convention over configuration** - minimal config with sensible defaults.
 
@@ -194,53 +192,7 @@ Defines MCP tool servers available to skills.
 
 ## Solution-Specific Configuration
 
-These fields are for your solution's internal use. **CCAAS ignores them** - they're passed through for your solution backend/frontend.
-
-### backend
-
-**Type:** `Object`
-**Required:** No
-
-Your solution backend's configuration.
-
-```json
-{
-  "backend": {
-    "port": 3005,
-    "database": {
-      "type": "sqlite",
-      "path": "data/my-solution.db"
-    },
-    "customField": "any value you need"
-  }
-}
-```
-
-**Common Fields:**
-- `port` (number) - Backend server port
-- `database` (object) - Database config
-- Any custom fields your solution needs
-
-### frontend
-
-**Type:** `Object`
-**Required:** No
-
-Your solution frontend's configuration.
-
-```json
-{
-  "frontend": {
-    "port": 5282,
-    "theme": "dark",
-    "features": ["sync", "export"]
-  }
-}
-```
-
-**Common Fields:**
-- `port` (number) - Frontend dev server port
-- Any custom fields your frontend needs
+These fields are for your solution's internal use. **CCAAS ignores them**.
 
 ### syncFields
 
@@ -411,11 +363,11 @@ Choose the configuration level that fits your needs:
   "tenant": { ... },
   "mcpServers": { ... },
   "backend": {
-    "port": 3005,
+    "port": 3002,
     "database": { ... }
   },
   "frontend": {
-    "port": 5282
+    "port": 5280
   }
 }
 ```
@@ -528,7 +480,7 @@ If you have an existing v1.0 or v2.0 solution.json:
 
 **Automatic:** CCAAS automatically migrates at runtime (no action needed)
 
-**Manual:** Follow [Migration Guide](./solution-migration.md) for clean upgrade
+**Manual:** Follow [Migration Guide](./migration.md) for clean upgrade
 
 **Benefits of migrating:**
 - 📉 78.7% configuration reduction
@@ -541,7 +493,7 @@ If you have an existing v1.0 or v2.0 solution.json:
 ## Related Documentation
 
 - [Solution Development Guide](../guide/solution-dev.md) - Creating solutions
-- [Migration Guide](./solution-migration.md) - Upgrading from v2.0
+- [Migration Guide](./migration.md) - Upgrading from v2.0
 - [Skill Writing Guide](../guide/skill-writing.md) - SKILL.md frontmatter
 - [MCP Server Guide](../guide/mcp-server.md) - Tool implementation
 

@@ -8,19 +8,6 @@
   "author": "CCAAS Team",
   "tags": ["education", "tutoring", "problem-solving", "content-generation"],
 
-  "backend": {
-    "port": 3003,
-    "ccaasUrl": "http://localhost:3001",
-    "database": {
-      "type": "sqlite",
-      "path": "data/problem-explainer.db"
-    }
-  },
-
-  "frontend": {
-    "port": 5281
-  },
-
   "mcpServers": {
     "problem-explainer-tools": {
       "command": "node",

@@ -63,15 +63,6 @@ export const McpServerDefinitionSchema = z.object({
 });
 
 /**
- * Database configuration for solution backends
- */
-export const DatabaseConfigSchema = z.object({
-  type: z.enum(['sqlite', 'postgres']).default('sqlite'),
-  path: z.string().optional(),
-  url: z.string().optional(),
-});
-
-/**
  * Setup/lifecycle scripts configuration
  */
 export const SetupConfigSchema = z.object({
@@ -121,29 +112,10 @@ export const CcaasConfigSchema = z.object({
 });
 
 /**
- * Backend configuration (internal to solution)
- */
-export const BackendConfigSchema = z.object({
-  port: z.number().int().min(1).max(65535),
-  ccaasUrl: z.string().url().default('http://localhost:3001'),
-  database: DatabaseConfigSchema.optional(),
-});
-
-/**
- * Frontend configuration (internal to solution)
- */
-export const FrontendConfigSchema = z.object({
-  port: z.number().int().min(1).max(65535),
-  apiBaseUrl: z.string().optional(),
-});
-
-/**
  * Internal section - solution-private configuration
  * Not used by CCAAS backend, only by the solution itself
  */
 export const InternalConfigSchema = z.object({
-  backend: BackendConfigSchema.optional(),
-  frontend: FrontendConfigSchema.optional(),
   syncFields: z.union([
     z.array(z.string()),
     z.record(z.array(z.string())),
@@ -196,17 +168,6 @@ export const SolutionConfigV1Schema = z.object({
   description: z.string().optional(),
   author: z.string().optional(),
   tags: z.array(z.string()).optional(),
-
-  backend: z.object({
-    port: z.number(),
-    ccaasUrl: z.string().optional(),
-    database: DatabaseConfigSchema.optional(),
-  }).optional(),
-
-  frontend: z.object({
-    port: z.number(),
-    apiBaseUrl: z.string().optional(),
-  }).optional(),
 
   mcpServers: z.record(McpServerDefinitionSchema).optional(),
 
@@ -346,12 +307,6 @@ export const SolutionConfigV3Schema = z.object({
   mcpServers: z.record(McpServerDefinitionSchema).default({}),
 
   // ============ Solution Internal Configuration ============
-  /** Backend configuration (not used by CCAAS Core) */
-  backend: BackendConfigSchema.optional(),
-
-  /** Frontend configuration (not used by CCAAS Core) */
-  frontend: FrontendConfigSchema.optional(),
-
   /** Synchronized fields for real-time updates (not used by CCAAS Core) */
   syncFields: z.union([
     z.array(z.string()),
@@ -398,15 +353,6 @@ export type McpServerDefinition = z.infer<typeof McpServerDefinitionSchema>;
 
 /** Skill trigger */
 export type SkillTriggerConfig = z.infer<typeof SkillTriggerSchema>;
-
-/** Backend configuration */
-export type BackendConfig = z.infer<typeof BackendConfigSchema>;
-
-/** Frontend configuration */
-export type FrontendConfig = z.infer<typeof FrontendConfigSchema>;
-
-/** Database configuration */
-export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
 
 /** Setup configuration */
 export type SetupConfig = z.infer<typeof SetupConfigSchema>;

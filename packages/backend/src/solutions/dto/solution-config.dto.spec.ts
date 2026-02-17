@@ -8,9 +8,6 @@ import {
   SkillDefinitionSchema,
   McpServerDefinitionSchema,
   SkillTriggerSchema,
-  BackendConfigSchema,
-  FrontendConfigSchema,
-  DatabaseConfigSchema,
   InternalConfigSchema,
   CcaasConfigSchema,
   SetupConfigSchema,
@@ -57,17 +54,6 @@ const validV2Config = {
     },
   },
   internal: {
-    backend: {
-      port: 3005,
-      ccaasUrl: 'http://localhost:3001',
-      database: {
-        type: 'sqlite' as const,
-        path: 'data/quiz-analyzer.db',
-      },
-    },
-    frontend: {
-      port: 5282,
-    },
     syncFields: [
       'parsedQuiz',
       'catalog',
@@ -88,17 +74,6 @@ const validV1Config = {
   slug: 'lesson-plan-designer',
   version: '1.0.0',
   description: 'AI备课助手',
-  backend: {
-    port: 3002,
-    ccaasUrl: 'http://localhost:3001',
-    database: {
-      type: 'sqlite' as const,
-      path: 'data/lesson-plans.db',
-    },
-  },
-  frontend: {
-    port: 5280,
-  },
   mcpServers: {
     'lesson-plan-tools': {
       command: 'node',
@@ -466,107 +441,6 @@ describe('McpServerDefinitionSchema', () => {
 });
 
 // ============================================================================
-// BackendConfig Schema Tests
-// ============================================================================
-
-describe('BackendConfigSchema', () => {
-  it('should validate backend config with database', () => {
-    const result = BackendConfigSchema.safeParse({
-      port: 3005,
-      ccaasUrl: 'http://localhost:3001',
-      database: {
-        type: 'sqlite',
-        path: 'data/app.db',
-      },
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should default ccaasUrl', () => {
-    const result = BackendConfigSchema.safeParse({
-      port: 3005,
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.ccaasUrl).toBe('http://localhost:3001');
-    }
-  });
-
-  it('should reject invalid port', () => {
-    const result = BackendConfigSchema.safeParse({
-      port: 0,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject port above 65535', () => {
-    const result = BackendConfigSchema.safeParse({
-      port: 70000,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject invalid ccaasUrl', () => {
-    const result = BackendConfigSchema.safeParse({
-      port: 3005,
-      ccaasUrl: 'not-a-url',
-    });
-    expect(result.success).toBe(false);
-  });
-});
-
-// ============================================================================
-// FrontendConfig Schema Tests
-// ============================================================================
-
-describe('FrontendConfigSchema', () => {
-  it('should validate frontend config', () => {
-    const result = FrontendConfigSchema.safeParse({
-      port: 5282,
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should accept apiBaseUrl', () => {
-    const result = FrontendConfigSchema.safeParse({
-      port: 5282,
-      apiBaseUrl: 'http://localhost:3005',
-    });
-    expect(result.success).toBe(true);
-  });
-});
-
-// ============================================================================
-// DatabaseConfig Schema Tests
-// ============================================================================
-
-describe('DatabaseConfigSchema', () => {
-  it('should validate sqlite config', () => {
-    const result = DatabaseConfigSchema.safeParse({
-      type: 'sqlite',
-      path: 'data/app.db',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should validate postgres config', () => {
-    const result = DatabaseConfigSchema.safeParse({
-      type: 'postgres',
-      url: 'postgresql://localhost:5432/mydb',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should default type to sqlite', () => {
-    const result = DatabaseConfigSchema.safeParse({});
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.type).toBe('sqlite');
-    }
-  });
-});
-
-// ============================================================================
 // SetupConfig Schema Tests
 // ============================================================================
 
@@ -599,8 +473,6 @@ describe('SetupConfigSchema', () => {
 describe('InternalConfigSchema', () => {
   it('should validate complete internal config', () => {
     const result = InternalConfigSchema.safeParse({
-      backend: { port: 3005 },
-      frontend: { port: 5282 },
       syncFields: ['field1', 'field2'],
     });
     expect(result.success).toBe(true);
@@ -781,7 +653,6 @@ describe('SolutionConfigV2Schema', () => {
       expect(result.data.ccaas.tenant.slug).toBe('quiz-analyzer');
       expect(result.data.ccaas.discovery.skills).toHaveLength(1);
       expect(result.data.ccaas.discovery.skills[0].slug).toBe('three-column-analysis');
-      expect(result.data.internal?.backend?.port).toBe(3005);
       expect(result.data.internal?.syncFields).toEqual(['parsedQuiz', 'catalog', 'difficulty']);
     }
   });
@@ -947,12 +818,6 @@ describe('Real-world v1 solution configs', () => {
       slug: 'quiz-analyzer',
       version: '1.0.0',
       description: 'Educational quiz analysis system',
-      backend: {
-        port: 3005,
-        ccaasUrl: 'http://localhost:3001',
-        database: { type: 'sqlite', path: 'data/quiz-analyzer.db' },
-      },
-      frontend: { port: 5282 },
       mcpServers: {
         'quiz-analyzer-tools': {
           command: 'node',
@@ -996,12 +861,6 @@ describe('Real-world v1 solution configs', () => {
       slug: 'lesson-plan-designer',
       version: '1.0.0',
       description: 'AI备课助手',
-      backend: {
-        port: 3002,
-        ccaasUrl: 'http://localhost:3001',
-        database: { type: 'sqlite', path: 'data/lesson-plans.db' },
-      },
-      frontend: { port: 5280 },
       mcpServers: {
         'lesson-plan-tools': {
           command: 'node',
@@ -1062,8 +921,6 @@ describe('Real-world v1 solution configs', () => {
         skillFile: 'skills/edu-agent/SKILL.md',
         relatedSkills: ['notebooklm'],
       },
-      backend: { port: 3010, ccaasUrl: 'http://localhost:3001' },
-      frontend: { port: 5282 },
       syncFields: {
         lessonPlan: ['title', 'subject', 'gradeLevel'],
         problemExplain: ['problemAnalysis', 'keyKnowledge'],
@@ -1097,8 +954,6 @@ describe('Real-world v1 solution configs', () => {
         skillFile: 'skills/lego-mosaic-designer/SKILL.md',
       },
       syncFields: ['mosaicConfig', 'placements', 'billOfMaterials'],
-      backend: { port: 3005, ccaasUrl: 'http://localhost:3001' },
-      frontend: { port: 5282 },
     };
 
     const result = SolutionConfigV1Schema.safeParse(legoPlayground);

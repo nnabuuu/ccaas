@@ -15,7 +15,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 }
 ```
 
-**迁移:** v1/v2 配置会在运行时自动迁移到 v3。手动升级请参考[迁移指南](./solution-migration.md)。
+**迁移:** v1/v2 配置会在运行时自动迁移到 v3。手动升级请参考[迁移指南](./migration.md)。
 
 ---
 
@@ -25,8 +25,6 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 - **租户信息** - 名称、slug、描述
 - **技能** - AI 能力（通过文件夹路径或通配符）
 - **MCP 服务器** - AI Agent 的工具服务
-- **后端配置** - 解决方案特定的后端设置（可选）
-- **前端配置** - 解决方案特定的前端设置（可选）
 
 **设计理念:** v3.0 遵循**约定优于配置**原则 - 最小化配置，合理的默认值。
 
@@ -194,53 +192,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 
 ## 解决方案特定配置
 
-这些字段供你的解决方案内部使用。**CCAAS 忽略它们** - 它们被传递给你的解决方案后端/前端使用。
-
-### backend
-
-**类型:** `Object`
-**必需:** 否
-
-你的解决方案后端的配置。
-
-```json
-{
-  "backend": {
-    "port": 3005,
-    "database": {
-      "type": "sqlite",
-      "path": "data/my-solution.db"
-    },
-    "customField": "你需要的任何值"
-  }
-}
-```
-
-**常见字段:**
-- `port` (number) - 后端服务器端口
-- `database` (object) - 数据库配置
-- 你的解决方案需要的任何自定义字段
-
-### frontend
-
-**类型:** `Object`
-**必需:** 否
-
-你的解决方案前端的配置。
-
-```json
-{
-  "frontend": {
-    "port": 5282,
-    "theme": "dark",
-    "features": ["sync", "export"]
-  }
-}
-```
-
-**常见字段:**
-- `port` (number) - 前端开发服务器端口
-- 你的前端需要的任何自定义字段
+这些字段供你的解决方案内部使用。**CCAAS 忽略它们**。
 
 ### syncFields
 
@@ -411,11 +363,11 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
   "tenant": { ... },
   "mcpServers": { ... },
   "backend": {
-    "port": 3005,
+    "port": 3002,
     "database": { ... }
   },
   "frontend": {
-    "port": 5282
+    "port": 5280
   }
 }
 ```
@@ -528,7 +480,7 @@ CCAAS 在加载时验证 solution.json 并提供有用的错误消息:
 
 **自动:** CCAAS 在运行时自动迁移（无需操作）
 
-**手动:** 遵循[迁移指南](./solution-migration.md)进行清洁升级
+**手动:** 遵循[迁移指南](./migration.md)进行清洁升级
 
 **迁移的好处:**
 - 📉 配置减少 78.7%
@@ -541,7 +493,7 @@ CCAAS 在加载时验证 solution.json 并提供有用的错误消息:
 ## 相关文档
 
 - [解决方案开发指南](../guide/solution-dev.md) - 创建解决方案
-- [迁移指南](./solution-migration.md) - 从 v2.0 升级
+- [迁移指南](./migration.md) - 从 v2.0 升级
 - [技能编写指南](../guide/skill-writing.md) - SKILL.md frontmatter
 - [MCP 服务器指南](../guide/mcp-server.md) - 工具实现
 

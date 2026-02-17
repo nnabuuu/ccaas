@@ -24,19 +24,6 @@
     }
   },
 
-  "backend": {
-    "port": 3002,
-    "ccaasUrl": "http://localhost:3001",
-    "database": {
-      "type": "sqlite",
-      "path": "data/lesson-plans.db"
-    }
-  },
-
-  "frontend": {
-    "port": 5280
-  },
-
   "setup": {
     "customScripts": {
       "preInstall": ".solution-hooks/pre-install.sh",
