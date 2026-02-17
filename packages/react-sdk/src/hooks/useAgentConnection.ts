@@ -78,10 +78,10 @@ const resolveSessionId = (
 }
 
 /**
- * Manages Socket.io connection to the CCAAS backend.
+ * Manages connection to the CCAAS backend.
  *
- * Extracted from useLessonPlanSession and useProblemSession.
- * Handles connect/disconnect, client_id assignment, and session joining.
+ * Default transport is 'sse' (HTTP streaming, no WebSocket required).
+ * Socket.IO transport is available via `transport: 'socket'` but is deprecated.
  *
  * When `tenantId` is provided, the sessionId is persisted in localStorage
  * under a tenant-scoped key (`ccaas_session_${tenantId}`) and uses the
@@ -94,9 +94,11 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     autoConnect = true,
     tenantId,
     forceNewConversation = false,
+    transport = 'sse',
   } = options
 
-  const [connected, setConnected] = useState(false)
+  // In SSE mode, connection is always "ready" (HTTP is stateless)
+  const [socketConnected, setSocketConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const socketRef = useRef<Socket | null>(null)
   const initialSessionId = useRef<string>(
@@ -107,8 +109,19 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
   const clientIdRef = useRef<string | null>(null)
   const [clientId, setClientId] = useState<string | null>(null)
 
+  // SSE mode: always connected (HTTP stateless), no socket needed
+  const connected = transport === 'sse' ? true : socketConnected
+
   const connect = useCallback(() => {
+    if (transport === 'sse') return // SSE mode: no socket to connect
+
     if (socketRef.current?.connected) return
+
+    console.warn(
+      '[ccaas] Socket.IO transport is deprecated. ' +
+      'Use transport: "sse" (default) instead. ' +
+      'The backend /completion endpoint returns 410 Gone.',
+    )
 
     const socket = io(serverUrl, {
       transports: ['websocket', 'polling'],
@@ -117,7 +130,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     socketRef.current = socket
 
     socket.on('connect', () => {
-      setConnected(true)
+      setSocketConnected(true)
       setError(null)
       // Join session room
       socket.emit('session:join', { sessionId: sessionIdRef.current })
@@ -129,26 +142,28 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     })
 
     socket.on('disconnect', () => {
-      setConnected(false)
+      setSocketConnected(false)
     })
 
     socket.on('connect_error', (err) => {
       setError(`Connection error: ${err.message}`)
-      setConnected(false)
+      setSocketConnected(false)
     })
-  }, [serverUrl])
+  }, [serverUrl, transport])
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect()
       socketRef.current = null
-      setConnected(false)
+      setSocketConnected(false)
       clientIdRef.current = null
       setClientId(null)
     }
   }, [])
 
   useEffect(() => {
+    if (transport === 'sse') return // SSE mode: no socket lifecycle
+
     if (autoConnect) {
       connect()
     }
@@ -159,7 +174,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
         socketRef.current = null
       }
     }
-  }, [autoConnect, connect])
+  }, [autoConnect, connect, transport])
 
   const startNewConversation = useCallback(() => {
     // Clear old session from localStorage
@@ -177,10 +192,12 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
       safeSetItem(getStorageKey(tenantId), newId)
     }
 
-    // Disconnect and reconnect
-    disconnect()
-    connect()
-  }, [tenantId, sessionPrefix, disconnect, connect])
+    if (transport !== 'sse') {
+      // Socket mode: disconnect and reconnect
+      disconnect()
+      connect()
+    }
+  }, [tenantId, sessionPrefix, disconnect, connect, transport])
 
   return {
     socket: socketRef.current,

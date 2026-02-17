@@ -1,5 +1,21 @@
 # WebSocket 事件
 
+{% hint style="danger" %}
+**⚠️ 已弃用（Deprecated）**
+
+Socket.IO / WebSocket transport 已弃用。**请使用 SSE transport 替代。**
+
+- 旧端点 `POST /api/v1/sessions/:id/completion` 现返回 **410 Gone**
+- 旧端点 `DELETE /api/v1/sessions/:id/completion` 现返回 **410 Gone**
+- 新端点：`POST /api/v1/sessions/:id/messages`（SSE 流）、`GET /api/v1/sessions/:id/events`（推送频道）
+
+👉 请参阅 [SSE Transport 参考](sse.md) 和 [React SDK 聊天集成](../guide/chat-integration.md)
+{% endhint %}
+
+本页保留供历史参考，记录 Socket.io 时代的事件协议。**新的 Solution 不应使用 Socket.IO。**
+
+---
+
 即见Agentic 使用 Socket.io 进行 WebSocket 通信，提供丰富的实时事件流。
 
 ## 连接

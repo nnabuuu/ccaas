@@ -338,6 +338,12 @@ export interface UseAgentConnectionOptions {
   tenantId?: string
   /** Force a new conversation, clearing any saved sessionId from localStorage */
   forceNewConversation?: boolean
+  /**
+   * Transport to use for chat messages. Defaults to 'sse'.
+   * - 'sse' (default): HTTP streaming via POST /messages. No WebSocket required.
+   * - 'socket' (deprecated): Socket.IO transport. The backend /completion endpoint returns 410 Gone.
+   */
+  transport?: 'sse' | 'socket'
 }
 
 export interface UseAgentConnectionReturn {

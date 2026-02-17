@@ -77,7 +77,13 @@ function App() {
   } = useExplanationSync()
 
   // SDK hooks for agent connection
-  const connection = useAgentConnection({ sessionPrefix: 'pe' })
+  // IMPORTANT: Must use absolute URL to backend (not empty string or relative path)
+  // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
+    sessionPrefix: 'pe',
+    transport: 'sse',
+  })
   const status = useAgentStatus({ connection })
   const chat = useAgentChat({
     connection,

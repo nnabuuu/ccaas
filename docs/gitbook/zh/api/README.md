@@ -1,19 +1,20 @@
 # API 概述
 
-即见Agentic 提供 REST API 和 WebSocket 两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
+即见Agentic 提供 REST API 和 SSE（Server-Sent Events）两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
 
 ## 接口模式
 
-即见Agentic 使用混合 REST/WebSocket 模式：
+即见Agentic 使用 SSE 作为默认传输协议：
 
 ```
-客户端 ──REST──→ 发送消息/管理资源
-       ←─WS───  接收实时事件流
+客户端 ──POST /messages──→ 发送消息
+       ←──SSE 事件流──────  接收实时事件（文本、状态、工具活动等）
+
+客户端 ──GET /events────→ 订阅推送频道
+       ←──SSE 推送───────  接收后台任务完成通知（跨轮次）
 ```
 
-1. 客户端通过 REST API 发送消息或管理资源
-2. 服务端通过 WebSocket 推送实时事件（文本流、状态变化、工具活动等）
-3. REST API 返回操作结果后，后续事件通过 WebSocket 持续推送
+**推荐做法**：使用 `@ccaas/react-sdk`，SDK 封装了所有 SSE 连接管理和事件解析。
 
 ## 认证
 
@@ -25,6 +26,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" ...
 
 # 方式 2：自定义 Header
 curl -H "X-API-Key: YOUR_API_KEY" ...
+
+# 方式 3：请求体字段（仅 POST /messages）
+{"message": "...", "tenantId": "...", "apiKey": "sk-..."}
 ```
 
 ### API Key Scope
@@ -46,6 +50,7 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 | 章节 | 内容 |
 |------|------|
 | [REST API 端点](rest.md) | 所有 HTTP 端点的完整参考 |
-| [WebSocket 事件](websocket.md) | 所有 WebSocket 事件的格式定义 |
+| [SSE Transport（推荐）](sse.md) | SSE 事件流协议，端点和事件格式定义 |
+| [WebSocket 事件（已弃用）](websocket.md) | 旧版 Socket.IO 协议，仅供历史参考 |
 | [错误处理](error-handling.md) | 标准化错误响应和重试策略 |
 | [@ccaas/common 类型](shared-types.md) | 共享 TypeScript 类型定义 |

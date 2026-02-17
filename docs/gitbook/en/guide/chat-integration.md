@@ -6,11 +6,19 @@ Learn how to integrate CCAAS chat functionality into your React solution using t
 
 The React SDK provides pre-built components and hooks for building chat interfaces with:
 
-- Real-time message streaming
+- Real-time message streaming via SSE (Server-Sent Events)
 - Agent status tracking (tools, thinking, todos, subagents)
 - Form synchronization with AI suggestions
 - Multiple layout modes
 - Skill management
+
+## Transport: SSE (Default)
+
+The SDK uses **SSE (Server-Sent Events) as the default transport** since v1.1.0. SSE streams agent responses over a single HTTP connection — no WebSocket required.
+
+> **⚠️ Socket.IO transport is deprecated.** The backend endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**. Use SSE (the default) instead.
+>
+> **Known limitation:** Background task (`subagent_completed`) events currently only arrive via Socket.IO. In SSE mode, background task completion notifications are not received. This will be addressed in a future release.
 
 ## Quick Start
 
@@ -23,9 +31,11 @@ import {
 } from '@ccaas/react-sdk'
 
 function App() {
+  // SSE is the default transport - no extra configuration needed
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
     sessionPrefix: 'demo'
+    // transport: 'sse' is the default
   })
 
   const chat = useAgentChat({ connection, tenantId: 'default' })
@@ -50,8 +60,8 @@ function App() {
 
 The SDK uses composable hooks for different concerns:
 
-- **useAgentConnection** - WebSocket connection management
-- **useAgentChat** - Message handling
+- **useAgentConnection** - Connection management (SSE-ready; no WebSocket needed by default)
+- **useAgentChat** - Message handling with SSE streaming
 - **useAgentStatus** - Agent execution tracking
 - **useChatLayout** - UI layout state
 - **useSkills** - Solution skills management

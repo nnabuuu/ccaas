@@ -34,6 +34,37 @@ cd solutions/ccaas-demo
 2. **Skill 切换** —— 启用/禁用不同的 Skill，观察 AI 行为变化
 3. **文件生成** —— 让 AI 生成文件并下载
 
+## React SDK 快速集成（推荐）
+
+推荐使用 `@ccaas/react-sdk` 与后端交互，无需手动处理 SSE 流或状态管理：
+
+```tsx
+import { useAgentConnection, useAgentChat, useAgentStatus, ChatPanel } from '@ccaas/react-sdk'
+
+function App() {
+  const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',  // 必须是绝对 URL
+    sessionPrefix: 'my-app'
+  })
+
+  const chat = useAgentChat({ connection, tenantId: 'default' })
+  const status = useAgentStatus({ connection })
+
+  return (
+    <ChatPanel
+      messages={chat.messages}
+      isProcessing={status.isProcessing}
+      connected={connection.connected}
+      activeTools={status.activeTools}
+      activeSubAgents={status.activeSubAgents}
+      onSendMessage={chat.sendMessage}
+    />
+  )
+}
+```
+
+SDK 默认使用 SSE transport，自动处理流式解析、重连和状态管理。
+
 ## REST API 快速体验
 
 ### 健康检查和服务器状态
@@ -46,66 +77,55 @@ curl http://localhost:3001/api/v1/chat/health
 curl http://localhost:3001/api/v1/chat/status
 ```
 
-### 发送消息（推荐使用 SDK）
-
-> **💡 提示**: 直接调用 REST API 需要同时管理 WebSocket 连接。推荐使用 `@ccaas/react-sdk` 或 `@ccaas/vue-sdk` 进行集成。
-
-如果你确实需要直接调用 API：
+### 发送消息（SSE 流式响应）
 
 ```bash
-# 需要先建立 WebSocket 连接，否则收不到响应事件
-curl -X POST http://localhost:3001/api/v1/sessions/my-session/completion \
+# 发送消息，接收 SSE 事件流
+curl -N -X POST http://localhost:3001/api/v1/sessions/my-session/messages \
   -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
   -d '{
-    "clientId": "test-client-001",
     "message": "你好，请介绍一下你自己",
     "tenantId": "default"
   }'
 ```
 
+响应为 SSE 事件流（`text/event-stream`），每个事件格式如下：
+
+```
+data: {"type":"agent_status","status":"running","sessionId":"my-session"}
+
+data: {"type":"text_delta","delta":"你好！我是","sessionId":"my-session"}
+
+data: {"type":"text_delta","delta":"即见Agentic AI 助手。","sessionId":"my-session"}
+
+data: {"type":"agent_status","status":"complete","sessionId":"my-session"}
+```
+
 ### 取消正在执行的任务
 
 ```bash
-curl -X DELETE http://localhost:3001/api/v1/sessions/my-session/completion \
+curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
   -H "Content-Type: application/json" \
   -d '{
-    "clientId": "test-client-001"
+    "tenantId": "default"
   }'
 ```
 
-## WebSocket 连接体验
+### 订阅后台任务事件（推送频道）
 
-使用任意 WebSocket 客户端连接 `ws://localhost:3001`：
-
-```javascript
-import { io } from 'socket.io-client'
-
-const socket = io('http://localhost:3001')
-
-// 监听 Agent 状态
-socket.on('agent_status', (data) => {
-  console.log('Agent 状态:', data.status)
-})
-
-// 监听文本流
-socket.on('text_delta', (data) => {
-  process.stdout.write(data.delta)
-})
-
-// 监听结构化输出
-socket.on('output_update', (data) => {
-  console.log('输出更新:', data)
-})
-
-// 发送消息
-socket.emit('chat', {
-  message: '请帮我生成一份报告',
-  sessionId: 'my-session'
-})
+```bash
+# 长连接，接收后台子 Agent 的完成通知
+curl -N http://localhost:3001/api/v1/sessions/my-session/events \
+  -H "Accept: text/event-stream"
 ```
+
+该端点保持连接，当后台 Task 工具完成时推送 `subagent_completed` 事件。
+
+> 详细 API 文档：[SSE Transport 参考](../api/sse.md)
 
 ## 下一步
 
-- 了解 [Solution 开发完整指南](../guide/solution-dev.md) 构建自己的应用
-- 查看 [API 参考](../api/) 了解所有可用接口
+- 了解 [React SDK 聊天集成](../guide/chat-integration.md) 快速构建 Solution
+- 查看 [SSE API 参考](../api/sse.md) 了解所有事件和端点
 - 阅读 [最佳实践](../reference/best-practices.md) 避免常见陷阱

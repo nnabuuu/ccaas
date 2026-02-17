@@ -16,6 +16,7 @@ import { EventMapperService } from './event-mapper.service';
 import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 import type { ManagedSession } from '../common/interfaces/session.interface';
 
 describe('SessionService - Skill Tracking (Week 3)', () => {
@@ -70,6 +71,10 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
         {
           provide: BackgroundTaskMonitorService,
           useValue: mockBackgroundTaskMonitorService,
+        },
+        {
+          provide: StreamRegistryService,
+          useValue: { cleanupSession: jest.fn() },
         },
       ],
     }).compile();

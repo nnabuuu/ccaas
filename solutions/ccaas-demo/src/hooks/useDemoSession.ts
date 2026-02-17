@@ -130,6 +130,7 @@ export function useDemoSession() {
   const connection = useAgentConnection({
     serverUrl: BACKEND_URL,
     tenantId: TENANT_ID,
+    transport: 'sse', // SSE is the default; explicit for clarity
   })
 
   const chat = useAgentChat({

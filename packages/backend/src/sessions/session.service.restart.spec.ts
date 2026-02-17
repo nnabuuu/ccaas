@@ -17,6 +17,7 @@ import { EventMapperService } from './event-mapper.service';
 import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 import type { ManagedSession } from '../common/interfaces/session.interface';
 
 describe('SessionService - Session Restart (Week 4)', () => {
@@ -66,6 +67,10 @@ describe('SessionService - Session Restart (Week 4)', () => {
         {
           provide: BackgroundTaskMonitorService,
           useValue: {},
+        },
+        {
+          provide: StreamRegistryService,
+          useValue: { cleanupSession: jest.fn() },
         },
       ],
     }).compile();

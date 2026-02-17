@@ -6,11 +6,19 @@
 
 React SDK 提供预构建的组件和 Hooks，用于构建聊天界面，包含以下功能:
 
-- 实时消息流
+- 通过 SSE（Server-Sent Events）实时消息流
 - Agent 状态跟踪（工具、思考、待办事项、子 Agent）
 - AI 建议与表单同步
 - 多种布局模式
 - 技能管理
+
+## Transport：SSE（默认）
+
+自 v1.1.0 起，SDK 默认使用 **SSE（Server-Sent Events）作为 transport**。SSE 通过单个 HTTP 连接流式传输 Agent 响应，无需 WebSocket。
+
+> **⚠️ Socket.IO transport 已弃用。** 后端端点 `POST /api/v1/sessions/:id/completion` 返回 **410 Gone**。请使用 SSE（默认）替代。
+>
+> **后台任务事件（`subagent_completed`）现已支持 SSE 模式。** `useAgentStatus` 在 SSE 模式下自动订阅 `GET /events` 推送频道，无需额外配置。
 
 ## 快速开始
 
@@ -23,9 +31,11 @@ import {
 } from '@ccaas/react-sdk'
 
 function App() {
+  // SSE 是默认 transport，无需额外配置
   const connection = useAgentConnection({
     serverUrl: 'http://localhost:3001',
     sessionPrefix: 'demo'
+    // transport: 'sse' 为默认值
   })
 
   const chat = useAgentChat({ connection, tenantId: 'default' })
@@ -50,8 +60,8 @@ function App() {
 
 SDK 使用可组合的 Hooks 处理不同关注点:
 
-- **useAgentConnection** - WebSocket 连接管理
-- **useAgentChat** - 消息处理
+- **useAgentConnection** - 连接管理（默认 SSE，无需 WebSocket）
+- **useAgentChat** - 消息处理，使用 SSE 流式传输
 - **useAgentStatus** - Agent 执行跟踪
 - **useChatLayout** - UI 布局状态
 - **useSkills** - Solution 技能管理

@@ -14,6 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { promises as fsPromises } from 'node:fs';
 import { EventMapperService } from '../event-mapper.service';
+import { StreamRegistryService } from './stream-registry.service';
 import type { ManagedSession, FrontendEvent } from '../../common/interfaces';
 
 /**
@@ -32,7 +33,10 @@ export class BackgroundTaskMonitorService {
   // 后台任务监控映射 (sessionId:subAgentId -> intervalId)
   private backgroundTaskMonitors = new Map<string, NodeJS.Timeout>();
 
-  constructor(private readonly eventMapperService: EventMapperService) {}
+  constructor(
+    private readonly eventMapperService: EventMapperService,
+    private readonly streamRegistry: StreamRegistryService,
+  ) {}
 
   /**
    * Start monitoring a background task's output file
@@ -203,27 +207,31 @@ export class BackgroundTaskMonitorService {
     );
 
     if (tracker) {
-      // Send subagent_completed event
       const session = getSession(sessionId);
+      const durationMs = Date.now() - tracker.startedAt.getTime();
+      const event: FrontendEvent = {
+        type: 'subagent_completed',
+        sessionId,
+        clientId: session?.clientId ?? '',
+        timestamp: new Date().toISOString(),
+        payload: {
+          subAgentId,
+          status: finalStatus,
+          durationMs,
+          error,
+        },
+      };
+
+      // Socket.IO transport (if connected)
       if (session?.socket) {
-        const durationMs = Date.now() - tracker.startedAt.getTime();
-        const event: FrontendEvent = {
-          type: 'subagent_completed',
-          sessionId,
-          clientId: session.clientId,
-          timestamp: new Date().toISOString(),
-          payload: {
-            subAgentId,
-            status: finalStatus,
-            durationMs,
-            error,
-          },
-        };
         session.socket.emit('subagent_completed', event);
-        this.logger.log(
-          `[BackgroundTask] Sent subagent_completed event: ${subAgentId}, status=${finalStatus}`,
-        );
       }
+
+      // SSE push channel — works even when no turn stream is active
+      this.streamRegistry.emit(`${sessionId}:push`, event);
+      this.logger.log(
+        `[BackgroundTask] Sent subagent_completed event: ${subAgentId}, status=${finalStatus}`,
+      );
     }
   }
 }

@@ -18,6 +18,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
   let controller: SessionsController;
   let sessionService: any;
   let sessionsGateway: any;
+  let streamRegistry: any;
 
   const mockSession = {
     id: 'test-session',
@@ -68,11 +69,59 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: TenantsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
-        { provide: StreamRegistryService, useValue: { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]) } },
+        { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]) }) },
       ],
     }).compile();
 
     controller = module.get<SessionsController>(SessionsController);
+  });
+
+  describe('GET /sessions/:sessionId/events', () => {
+    let mockRes: any;
+
+    beforeEach(() => {
+      mockRes = {
+        setHeader: jest.fn(),
+        flushHeaders: jest.fn(),
+        on: jest.fn(),
+        write: jest.fn(),
+        end: jest.fn(),
+      };
+    });
+
+    it('should throw NotFoundException for non-existent session', async () => {
+      sessionService.getSession.mockReturnValue(null);
+
+      await expect(controller.subscribeEvents('fake-session', mockRes)).rejects.toThrow(NotFoundException);
+      await expect(controller.subscribeEvents('fake-session', mockRes)).rejects.toThrow(
+        'Session not found: fake-session',
+      );
+    });
+
+    it('should subscribe to push channel key for valid session', async () => {
+      sessionService.getSession.mockReturnValue(mockSession);
+
+      await controller.subscribeEvents('test-session', mockRes);
+
+      expect(streamRegistry.subscribe).toHaveBeenCalledWith(
+        'test-session:push',
+        expect.any(String),
+        mockRes,
+      );
+    });
+
+    it('should NOT subscribe to the per-turn channel key', async () => {
+      sessionService.getSession.mockReturnValue(mockSession);
+
+      await controller.subscribeEvents('test-session', mockRes);
+
+      // Must use :push key, not plain sessionId (which is the per-turn stream)
+      expect(streamRegistry.subscribe).not.toHaveBeenCalledWith(
+        'test-session',
+        expect.anything(),
+        expect.anything(),
+      );
+    });
   });
 
   describe('GET /sessions/:sessionId/sub-agents', () => {

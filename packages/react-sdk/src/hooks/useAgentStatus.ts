@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type {
   UseAgentStatusOptions,
   UseAgentStatusReturn,
@@ -54,6 +54,17 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     return ''
   }, [todoItems, activeTools, isThinking])
 
+  // Track pending setTimeout IDs so we can cancel them on unmount
+  const pendingTimeoutsRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set())
+
+  // Cleanup all pending timeouts on unmount
+  useEffect(() => {
+    return () => {
+      pendingTimeoutsRef.current.forEach(clearTimeout)
+      pendingTimeoutsRef.current.clear()
+    }
+  }, [])
+
   // Reset state when agent completes
   // Note: Don't clear todoItems and activeSubAgents immediately
   // They will be managed by individual event handlers and useTaskTracking
@@ -62,6 +73,36 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     setIsThinking(false)
     setThinkingContent('')
     setTodoStats({ completed: 0, inProgress: 0, pending: 0, total: 0 })
+  }, [])
+
+  // Shared subagent event handlers — used by both socket and SSE effects
+  const onSubAgentStarted = useCallback((data: SubAgentStartedEvent) => {
+    const agent = data.payload
+    setActiveSubAgents(prev => {
+      const exists = prev.some(a => a.subAgentId === agent.subAgentId)
+      if (exists) return prev
+      return [...prev, agent]
+    })
+  }, [])
+
+  const onSubAgentCompleted = useCallback((data: SubAgentCompletedEvent) => {
+    const { subAgentId, status } = data.payload
+    setActiveSubAgents(prev =>
+      prev.map(agent =>
+        agent.subAgentId === subAgentId
+          ? { ...agent, status: status as 'completed' | 'failed' }
+          : agent
+      )
+    )
+    // Remove completed/failed agents after 3 seconds.
+    // Track the timeout so it can be cancelled if the component unmounts first.
+    const timeoutId = setTimeout(() => {
+      setActiveSubAgents(prev =>
+        prev.filter(agent => agent.subAgentId !== subAgentId)
+      )
+      pendingTimeoutsRef.current.delete(timeoutId)
+    }, 3000)
+    pendingTimeoutsRef.current.add(timeoutId)
   }, [])
 
   useEffect(() => {
@@ -200,34 +241,6 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       })
     }
 
-    const onSubAgentStarted = (data: SubAgentStartedEvent) => {
-      const agent = data.payload
-      setActiveSubAgents(prev => {
-        // Check if already exists
-        const exists = prev.some(a => a.subAgentId === agent.subAgentId)
-        if (exists) return prev
-        return [...prev, agent]
-      })
-    }
-
-    const onSubAgentCompleted = (data: SubAgentCompletedEvent) => {
-      const { subAgentId, status } = data.payload
-      setActiveSubAgents(prev =>
-        prev.map(agent =>
-          agent.subAgentId === subAgentId
-            ? { ...agent, status: status as 'completed' | 'failed' }
-            : agent
-        )
-      )
-
-      // Remove completed/failed agents after 3 seconds
-      setTimeout(() => {
-        setActiveSubAgents(prev =>
-          prev.filter(agent => agent.subAgentId !== subAgentId)
-        )
-      }, 3000)
-    }
-
     socket.on('agent_status', onAgentStatus)
     socket.on('tool_activity', onToolActivity)
     socket.on('agent_thinking', onAgentThinking)
@@ -245,7 +258,63 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       socket.off('subagent_started', onSubAgentStarted)
       socket.off('subagent_completed', onSubAgentCompleted)
     }
-  }, [connection.socket, handleComplete])
+  }, [connection.socket, handleComplete, onSubAgentStarted, onSubAgentCompleted])
+
+  // SSE mode — subscribe to GET /events push channel for subagent lifecycle events.
+  // In SSE mode, connection.socket is null (Socket.IO is not initialized).
+  // The push channel stays open across turns, so background task completions
+  // that fire after the per-turn stream closes are still delivered here.
+  useEffect(() => {
+    if (connection.socket) return  // Socket mode: handled by the effect above
+    if (!connection.serverUrl || !connection.sessionId) return
+
+    const controller = new AbortController()
+    let retryCount = 0
+    const MAX_RETRIES = 10
+
+    const connect = async () => {
+      let buffer = ''  // Reset buffer on each connection attempt to avoid stale partial frames
+      try {
+        const response = await fetch(
+          `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/events`,
+          { signal: controller.signal, headers: { Accept: 'text/event-stream' } }
+        )
+        if (!response.ok || !response.body) return
+
+        retryCount = 0  // Reset retry count on successful connection
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const parts = buffer.split('\n\n')
+          buffer = parts.pop() ?? ''
+          for (const chunk of parts) {
+            const dataLine = chunk.split('\n').find(l => l.startsWith('data:'))
+            if (!dataLine) continue
+            try {
+              const envelope = JSON.parse(dataLine.slice(5).trim())
+              const event = envelope.event ?? envelope
+              if (event.type === 'subagent_started') onSubAgentStarted(event)
+              if (event.type === 'subagent_completed') onSubAgentCompleted(event)
+            } catch { /* ignore parse errors */ }
+          }
+        }
+      } catch (err: unknown) {
+        if ((err as Error)?.name !== 'AbortError' && retryCount < MAX_RETRIES) {
+          retryCount++
+          // Exponential backoff: 3s, 6s, 12s … capped at 30s
+          const delay = Math.min(3000 * Math.pow(2, retryCount - 1), 30000)
+          setTimeout(connect, delay)
+        }
+      }
+    }
+
+    connect()
+    return () => controller.abort()
+  }, [connection.socket, connection.serverUrl, connection.sessionId, onSubAgentStarted, onSubAgentCompleted])
 
   // Update thinking verb when duration crosses phase thresholds (30s, 90s)
   // This implements the "smart verb selection based on duration" feature
