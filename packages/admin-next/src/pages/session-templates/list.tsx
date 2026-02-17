@@ -1,12 +1,23 @@
-import { useList } from '@refinedev/core'
+import { useList, useDelete } from '@refinedev/core'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import { type ColumnDef } from '@tanstack/react-table'
+import { toast } from 'sonner'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-import { apiClient } from '@/lib/api-client'
 import type { SessionTemplate } from '@ccaas/common'
 
 interface TemplateItem {
@@ -17,26 +28,40 @@ interface TemplateItem {
 export function SessionTemplatesListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
+  const tenantId = selectedTenantId || 'default'
+
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
 
   const { data, isLoading, refetch } = useList<TemplateItem>({
     resource: 'session-templates',
-    meta: { tenantId: selectedTenantId || 'default' },
+    meta: { tenantId },
   })
+
+  const { mutate: deleteTemplate, isLoading: isDeleting } = useDelete()
 
   const templates = data?.data ?? []
 
-  const handleDelete = async (name: string) => {
-    if (confirm(`Delete template "${name}"?`)) {
-      try {
-        await apiClient.delete(
-          `/admin/tenants/${selectedTenantId || 'default'}/session-templates/${name}`
-        )
-        refetch()
-      } catch (error) {
-        console.error('Failed to delete template:', error)
-        alert('Failed to delete template')
-      }
-    }
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return
+
+    deleteTemplate(
+      {
+        resource: 'session-templates',
+        id: deleteTarget,
+        meta: { tenantId },
+      },
+      {
+        onSuccess: () => {
+          toast.success(`Template "${deleteTarget}" deleted`)
+          setDeleteTarget(null)
+          refetch()
+        },
+        onError: () => {
+          toast.error(`Failed to delete template "${deleteTarget}"`)
+          setDeleteTarget(null)
+        },
+      },
+    )
   }
 
   const columns: ColumnDef<TemplateItem>[] = [
@@ -92,7 +117,7 @@ export function SessionTemplatesListPage() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => handleDelete(row.original.name)}
+            onClick={() => setDeleteTarget(row.original.name)}
           >
             <Trash2 className="h-4 w-4 mr-1" /> Delete
           </Button>
@@ -114,11 +139,32 @@ export function SessionTemplatesListPage() {
         columns={columns}
         data={templates}
         isLoading={isLoading}
-        pageCount={0}
+        pageCount={1}
         pageIndex={0}
-        pageSize={templates.length}
+        pageSize={templates.length || 10}
         onPaginationChange={() => {}}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete template &quot;{deleteTarget}&quot;? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

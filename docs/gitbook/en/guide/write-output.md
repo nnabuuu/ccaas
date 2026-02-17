@@ -4,6 +4,22 @@
 
 `write_output` is the most essential MCP tool in KedgeAgentic, used to synchronize AI Agent-generated structured data to frontend forms in real time. Mastering its proper usage is critical to building high-quality Solutions.
 
+## When to Use This
+
+The core question: **does your agent's output need to be reviewed or applied by the user field-by-field?**
+
+**Use `write_output` (structured output) when:**
+- Output drives frontend form fields that can be independently accepted or discarded (e.g., `title`, `objectives`, `activities`)
+- Users need to review and selectively apply individual fields
+- Different fields appear in different parts of the UI
+
+**Return plain text instead when:**
+- Simple Q&A — the user just needs to read the response
+- Analysis reports displayed entirely in chat — no form fields to populate
+- No structured fields to fill in
+
+If your agent generates a lesson plan that populates a form the teacher can edit, use `write_output`. If your agent just explains a concept, return text in the chat.
+
 ## Core Mechanism
 
 ```

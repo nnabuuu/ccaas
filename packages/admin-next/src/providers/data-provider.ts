@@ -5,7 +5,7 @@ export const dataProvider: DataProvider = {
   getList: async ({ resource, pagination, filters, sorters, meta }) => {
     // Special handling for session-templates
     if (resource === 'session-templates') {
-      const tenantId = (meta?.tenantId as string) || 'current'
+      const tenantId = (meta?.tenantId as string) || 'default'
       const { data } = await apiClient.get(`/admin/tenants/${tenantId}/session-templates`)
 
       // Transform { templates: {}, defaultTemplate: '' } to array
@@ -57,7 +57,7 @@ export const dataProvider: DataProvider = {
 
   getOne: async ({ resource, id, meta }) => {
     if (resource === 'session-templates') {
-      const tenantId = (meta?.tenantId as string) || 'current'
+      const tenantId = (meta?.tenantId as string) || 'default'
       const { data } = await apiClient.get(`/admin/tenants/${tenantId}/session-templates/${id}`)
       return { data }
     }
@@ -69,7 +69,7 @@ export const dataProvider: DataProvider = {
 
   create: async ({ resource, variables, meta }) => {
     if (resource === 'session-templates') {
-      const tenantId = (meta?.tenantId as string) || 'current'
+      const tenantId = (meta?.tenantId as string) || 'default'
       const { data } = await apiClient.post(`/admin/tenants/${tenantId}/session-templates`, variables)
       return { data }
     }
@@ -81,7 +81,7 @@ export const dataProvider: DataProvider = {
 
   update: async ({ resource, id, variables, meta }) => {
     if (resource === 'session-templates') {
-      const tenantId = (meta?.tenantId as string) || 'current'
+      const tenantId = (meta?.tenantId as string) || 'default'
       const { data } = await apiClient.put(`/admin/tenants/${tenantId}/session-templates/${id}`, variables)
       return { data }
     }
@@ -93,7 +93,7 @@ export const dataProvider: DataProvider = {
 
   deleteOne: async ({ resource, id, meta }) => {
     if (resource === 'session-templates') {
-      const tenantId = (meta?.tenantId as string) || 'current'
+      const tenantId = (meta?.tenantId as string) || 'default'
       await apiClient.delete(`/admin/tenants/${tenantId}/session-templates/${id}`)
       return { data: {} }
     }

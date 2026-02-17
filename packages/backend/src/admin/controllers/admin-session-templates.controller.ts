@@ -15,26 +15,80 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 import { AuditService } from '../services/audit.service';
 import {
   CreateSessionTemplateDto,
   UpdateSessionTemplateDto,
   PreviewTemplateDto,
+  SessionTemplateBodyDto,
 } from '../dto/session-template.dto';
+
+const MAX_TEMPLATES_PER_TENANT = 50;
 
 @Controller('api/v1/admin/tenants/:tenantId/session-templates')
 @ApiTags('Admin - Session Templates')
 @Auth('admin')
 export class AdminSessionTemplatesController {
+  private readonly logger = new Logger(AdminSessionTemplatesController.name);
+
   constructor(
     private readonly tenantsService: TenantsService,
     private readonly auditService: AuditService,
   ) {}
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  private async findTenantOrThrow(tenantId: string): Promise<Tenant> {
+    const tenant = await this.tenantsService.findOne(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+    }
+    return tenant;
+  }
+
+  private getTemplates(tenant: Tenant): Record<string, SessionTemplateBodyDto> {
+    return { ...(tenant.config.sessionTemplates || {}) };
+  }
+
+  private getTemplateOrThrow(
+    templates: Record<string, SessionTemplateBodyDto>,
+    name: string,
+  ): SessionTemplateBodyDto {
+    if (!templates[name]) {
+      const available = Object.keys(templates);
+      throw new NotFoundException(
+        `Session template "${name}" not found. Available: ${available.join(', ') || 'none'}`,
+      );
+    }
+    return templates[name];
+  }
+
+  private getAdminId(ctx: RequestContext): string {
+    return ctx?.apiKeyId || 'system';
+  }
+
+  private async tryLogAudit(
+    params: Parameters<AuditService['log']>[0],
+  ): Promise<void> {
+    try {
+      await this.auditService.log(params);
+    } catch (err) {
+      this.logger.error(`Failed to log audit event: ${params.action}`, err);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Endpoints
+  // ---------------------------------------------------------------------------
 
   /**
    * GET /api/v1/admin/tenants/:tenantId/session-templates
@@ -45,10 +99,7 @@ export class AdminSessionTemplatesController {
   @ApiOperation({ summary: 'List all session templates for a tenant' })
   @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
   async listTemplates(@Param('tenantId') tenantId: string) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
 
     return {
       templates: tenant.config.sessionTemplates || {},
@@ -69,20 +120,11 @@ export class AdminSessionTemplatesController {
     @Param('tenantId') tenantId: string,
     @Param('name') name: string,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const templates = this.getTemplates(tenant);
+    const template = this.getTemplateOrThrow(templates, name);
 
-    const templates = tenant.config.sessionTemplates || {};
-    if (!templates[name]) {
-      const available = Object.keys(templates);
-      throw new NotFoundException(
-        `Session template "${name}" not found. Available: ${available.join(', ') || 'none'}`,
-      );
-    }
-
-    return { name, template: templates[name] };
+    return { name, template };
   }
 
   /**
@@ -98,15 +140,18 @@ export class AdminSessionTemplatesController {
     @Body() dto: CreateSessionTemplateDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const templates = this.getTemplates(tenant);
 
-    const templates = tenant.config.sessionTemplates || {};
     if (templates[dto.name]) {
       throw new ConflictException(
         `Session template "${dto.name}" already exists`,
+      );
+    }
+
+    if (Object.keys(templates).length >= MAX_TEMPLATES_PER_TENANT) {
+      throw new BadRequestException(
+        `Tenant has reached the maximum of ${MAX_TEMPLATES_PER_TENANT} session templates`,
       );
     }
 
@@ -115,17 +160,13 @@ export class AdminSessionTemplatesController {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
-    // Audit log
-    await this.auditService.log({
-      adminId: ctx?.apiKeyId || 'system',
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.create',
       targetType: 'tenant',
       targetId: tenant.id,
       tenantId: tenant.id,
-      metadata: {
-        templateName: dto.name,
-        template: dto.template,
-      },
+      metadata: { templateName: dto.name, template: dto.template },
     });
 
     return { name: dto.name, template: dto.template };
@@ -146,34 +187,22 @@ export class AdminSessionTemplatesController {
     @Body() dto: UpdateSessionTemplateDto,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const templates = this.getTemplates(tenant);
+    const previousTemplate = this.getTemplateOrThrow(templates, name);
 
-    const templates = tenant.config.sessionTemplates || {};
-    if (!templates[name]) {
-      throw new NotFoundException(`Session template "${name}" not found`);
-    }
-
-    const previousTemplate = templates[name];
     templates[name] = dto.template;
     await this.tenantsService.update(tenantId, {
       config: { ...tenant.config, sessionTemplates: templates },
     });
 
-    // Audit log with before/after
-    await this.auditService.log({
-      adminId: ctx?.apiKeyId || 'system',
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.update',
       targetType: 'tenant',
       targetId: tenant.id,
       tenantId: tenant.id,
-      metadata: {
-        templateName: name,
-        previousValue: previousTemplate,
-        newValue: dto.template,
-      },
+      metadata: { templateName: name, previousValue: previousTemplate, newValue: dto.template },
     });
 
     return { name, template: dto.template };
@@ -193,33 +222,27 @@ export class AdminSessionTemplatesController {
     @Param('name') name: string,
     @Ctx() ctx: RequestContext,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const templates = this.getTemplates(tenant);
+    const deletedTemplate = this.getTemplateOrThrow(templates, name);
 
-    const templates = tenant.config.sessionTemplates || {};
-    if (!templates[name]) {
-      throw new NotFoundException(`Session template "${name}" not found`);
-    }
-
-    const deletedTemplate = templates[name];
     delete templates[name];
-    await this.tenantsService.update(tenantId, {
-      config: { ...tenant.config, sessionTemplates: templates },
-    });
 
-    // Audit log (record before deletion)
-    await this.auditService.log({
-      adminId: ctx?.apiKeyId || 'system',
+    const updatedConfig = { ...tenant.config, sessionTemplates: templates };
+    // Clear the default template reference if it pointed to the deleted template
+    if (updatedConfig.defaultSessionTemplate === name) {
+      delete updatedConfig.defaultSessionTemplate;
+    }
+
+    await this.tenantsService.update(tenantId, { config: updatedConfig });
+
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
       action: 'sessionTemplate.delete',
       targetType: 'tenant',
       targetId: tenant.id,
       tenantId: tenant.id,
-      metadata: {
-        templateName: name,
-        deletedTemplate,
-      },
+      metadata: { templateName: name, deletedTemplate },
     });
 
     return { message: `Session template "${name}" deleted` };
@@ -241,18 +264,11 @@ export class AdminSessionTemplatesController {
     @Param('name') name: string,
     @Body() dto: PreviewTemplateDto,
   ) {
-    const tenant = await this.tenantsService.findOne(tenantId);
-    if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${tenantId}`);
-    }
-
-    const templates = tenant.config.sessionTemplates || {};
-    if (!templates[name]) {
-      throw new NotFoundException(`Session template "${name}" not found`);
-    }
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const templates = this.getTemplates(tenant);
+    const template = this.getTemplateOrThrow(templates, name);
 
     // Simulate parameter merging logic (same as react-sdk)
-    const template = templates[name];
     const resolved = {
       enabledSkillSlugs:
         dto.explicitParams?.enabledSkillSlugs || template.enabledSkillSlugs,
