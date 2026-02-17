@@ -44,8 +44,16 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     solutionConfigEndpoint,
     context,
     sessionTemplate,
-    transport = 'socket',
+    transport = 'sse',
   } = options
+
+  if (transport === 'socket') {
+    console.warn(
+      '[ccaas] transport: "socket" is deprecated. ' +
+      'The /api/v1/sessions/:id/completion endpoint returns 410 Gone. ' +
+      'Use transport: "sse" (now the default).',
+    )
+  }
 
   const [messages, setMessages] = useState<Message[]>([])
   const [isProcessing, setIsProcessing] = useState(false)

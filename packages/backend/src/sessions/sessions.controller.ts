@@ -14,6 +14,7 @@ import {
   Param,
   Body,
   BadRequestException,
+  GoneException,
   NotFoundException,
   Logger,
   Res,
@@ -71,29 +72,30 @@ export class SessionsController {
 
 
   /**
-   * Create completion (send message)
+   * Create completion via Socket.IO (DEPRECATED)
    * POST /api/v1/sessions/:sessionId/completion
    *
-   * The response streams via WebSocket events to the connected client.
+   * @deprecated Socket.IO chat transport is deprecated. Use POST /api/v1/sessions/:sessionId/messages instead.
+   * This endpoint now returns 410 Gone to enforce migration to SSE transport.
    */
   @Post(':sessionId/completion')
   @ApiOperation({
-    summary: '发送消息 / Send Message',
+    summary: '[DEPRECATED] 发送消息 (Socket.IO) / Send Message (Socket.IO) - DEPRECATED',
     description: `
-发送用户消息到指定会话，Agent 将通过 WebSocket 推送响应事件。
+**⚠️ 已弃用 / DEPRECATED**
 
-**WebSocket 事件流程：**
-1. \`agent_status\` - Agent 开始处理
-2. \`text_delta\` - 流式返回文本片段
-3. \`tool_activity\` - 工具调用活动
-4. \`agent_status\` - Agent 完成处理
+此端点已弃用，返回 410 Gone。请迁移到 SSE 传输：
 
-**首次消息 vs 后续消息：**
-- 首次消息会创建新的 AgentEngine 进程
-- 后续消息使用 \`--resume\` 复用已有进程
+\`\`\`
+POST /api/v1/sessions/:sessionId/messages
+Content-Type: application/json
+\`\`\`
 
-**English:**
-Send user message to the specified session. Agent will push response events via WebSocket.
+响应为 \`text/event-stream\`，无需 WebSocket 连接。
+
+**This endpoint is deprecated and returns 410 Gone. Migrate to SSE transport:**
+
+\`POST /api/v1/sessions/:sessionId/messages\` with SSE streaming response.
     `,
   })
   @ApiParam({
@@ -103,125 +105,19 @@ Send user message to the specified session. Agent will push response events via 
   })
   @ApiBody({ type: CreateCompletionDto })
   @ApiResponse({
-    status: 200,
-    description: '消息已提交，将通过 WebSocket 推送响应 / Message submitted, responses will be pushed via WebSocket',
-    schema: {
-      properties: {
-        success: { type: 'boolean', example: true },
-        sessionId: { type: 'string', example: 'session-123' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 400,
-    description: '请求参数错误或客户端未连接 / Bad request or client not connected',
+    status: 410,
+    description: '[DEPRECATED] Socket.IO chat transport has been removed. Use SSE endpoint instead.',
   })
   async createCompletion(
     @Param('sessionId') sessionId: string,
-    @Body() data: CreateCompletionDto,
+    @Body() _data: CreateCompletionDto,
   ) {
-    const { clientId, message, tenantId, mcpServers, skillPath, attachments, appendSystemPrompt } = data;
-    let { enabledSkillSlugs } = data;
-
-    this.logger.log(`Creating completion for session ${sessionId}`);
-    this.logger.debug(`Request data: clientId=${clientId}, tenantId=${tenantId}`);
-
-    // Find WebSocket connection
-    const socket = this.sessionsGateway.getClientSocket(clientId);
-    if (!socket) {
-      throw new BadRequestException('Client not connected via WebSocket');
-    }
-
-    // Require tenantId for skill sync
-    if (!tenantId) {
-      this.logger.error('tenantId is required for chat');
-      socket.emit('agent_status', {
-        type: 'agent_status',
-        status: 'error',
-        sessionId,
-        timestamp: new Date().toISOString(),
-        error: 'tenantId is required.',
-      });
-      throw new BadRequestException('tenantId is required');
-    }
-
-    try {
-      // REST-specific preprocessing: Auto-load tenant skills if not provided
-      if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
-        this.logger.debug(`Auto-loading tenant skills for: ${tenantId}`);
-
-        // Resolve tenant first
-        const tenant = await this.tenantsService.findOne(tenantId);
-        const resolvedTenantId = tenant?.id || tenantId;
-
-        const allSkills = await this.skillsService.findPublished(resolvedTenantId);
-        const enabledTenantSkills = allSkills.filter(skill => skill.enabled);
-
-        enabledSkillSlugs = enabledTenantSkills.map(s => s.slug);
-
-        this.logger.log(
-          `Auto-loaded ${enabledSkillSlugs.length} enabled skills for tenant ${tenantId}`,
-        );
-      }
-
-      // REST-specific preprocessing: Generate skill system prompt
-      let systemPrompt: string | undefined;
-      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-        const tenant = await this.tenantsService.findOne(tenantId);
-        const resolvedTenantId = tenant?.id || tenantId;
-
-        systemPrompt = await this.skillManagementService.generateSystemPromptForSession(
-          resolvedTenantId,
-          enabledSkillSlugs,
-        );
-      }
-
-      // Merge appendSystemPrompt from Session Template (if provided)
-      if (appendSystemPrompt && appendSystemPrompt.trim()) {
-        systemPrompt = systemPrompt
-          ? `${systemPrompt}\n\n${appendSystemPrompt}`
-          : appendSystemPrompt;
-        this.logger.log(`Appended system prompt from template (${appendSystemPrompt.length} chars)`);
-      }
-
-      // REST-specific preprocessing: Resolve attachment paths
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, socket);
-      const resolvedAttachments = this.attachmentService.resolveAttachments(
-        attachments,
-        session.workspaceDir,
-      );
-
-      if (resolvedAttachments?.length) {
-        this.logger.log(`Resolved ${resolvedAttachments.length} attachments`);
-      }
-
-      // Delegate to orchestration service
-      await this.completionOrchestrationService.orchestrateMessage({
-        session,
-        clientId,
-        tenantId,
-        message,
-        context: data.context,
-        mcpServers,
-        enabledSkillSlugs,
-        skillPath,
-        attachments: resolvedAttachments,
-        systemPrompt,
-        emitEvent: (event) => socket.emit(event.type, event),
-      });
-
-      return { success: true, sessionId };
-    } catch (error) {
-      this.logger.error(`Error creating completion: ${error}`);
-      socket.emit('agent_status', {
-        type: 'agent_status',
-        status: 'error',
-        sessionId,
-        timestamp: new Date().toISOString(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
+    this.logger.warn(`[DEPRECATED] Socket.IO completion endpoint called for session ${sessionId}. Returning 410 Gone.`);
+    throw new GoneException(
+      'Socket.IO chat transport is deprecated. ' +
+      'Migrate to SSE: POST /api/v1/sessions/:sessionId/messages with Content-Type: application/json. ' +
+      'Response will be text/event-stream.',
+    );
   }
 
 

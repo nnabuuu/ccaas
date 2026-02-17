@@ -120,6 +120,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     serverUrl: SOCKET_URL,
     tenantId,
     autoConnect,
+    transport: 'sse', // SSE is the default; explicit for clarity
   })
 
   // Backward compatibility: existing code expects refs

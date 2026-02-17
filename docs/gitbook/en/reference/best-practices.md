@@ -1,5 +1,47 @@
 # Best Practices
 
+## Transport Configuration
+
+### Use SSE (Default, Recommended)
+
+Since v1.1.0, **SSE is the default transport**. No extra configuration needed:
+
+```typescript
+// ✅ SSE is the default - this is the recommended pattern
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001', // Always use absolute URL to backend
+  tenantId: 'my-solution',
+})
+const chat = useAgentChat({ connection, tenantId: 'my-solution' })
+```
+
+Chat messages stream via `POST /api/v1/sessions/:id/messages` returning `text/event-stream`.
+
+### Socket.IO Transport is Deprecated
+
+```typescript
+// ❌ DEPRECATED - The backend returns 410 Gone
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  transport: 'socket', // Will print deprecation warning
+})
+```
+
+The backend endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**.
+
+> **Known limitation:** Background task (`subagent_completed`) events currently only arrive via Socket.IO. In SSE mode, background task completion notifications are not received. This will be resolved in a future release.
+
+### Always Use Absolute serverUrl
+
+```typescript
+// ❌ WRONG - Sends requests to frontend port!
+const connection = useAgentConnection({ serverUrl: '' })
+
+// ✅ CORRECT - Absolute URL to backend
+const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
+```
+
 ## Types and Contract Management
 
 ### Use Shared Types

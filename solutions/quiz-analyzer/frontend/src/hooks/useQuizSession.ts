@@ -4,7 +4,7 @@
  * Uses @ccaas/react-sdk hooks for core chat functionality
  */
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
@@ -16,21 +16,6 @@ import type { QuizAnalysis } from '../types'
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
 const TENANT_ID = 'quiz-analyzer'
-
-// Type for output_update event (matches backend OutputUpdateEvent)
-interface OutputUpdateEvent {
-  payload?: {
-    data?: {
-      field: string
-      value: unknown
-      preview: string
-    }
-  }
-  // Also support flat structure in case backend changes
-  field?: string
-  value?: unknown
-  preview?: string
-}
 
 export interface UseQuizSessionReturn {
   // Connection state
@@ -64,86 +49,38 @@ export interface UseQuizSessionReturn {
   analysisResults: Partial<QuizAnalysis>
 }
 
-/**
- * Parse output_update event to extract field/value/preview
- * Handles both nested and flat structures
- */
-function parseOutputUpdateEvent(event: OutputUpdateEvent): {
-  field: string
-  value: unknown
-  preview: string
-} | null {
-  // Try nested structure first (current backend format)
-  const nested = event.payload?.data
-  if (nested?.field) {
-    return {
-      field: nested.field,
-      value: nested.value,
-      preview: nested.preview || `Updated ${nested.field}`,
-    }
-  }
-
-  // Try flat structure (fallback)
-  if (event.field) {
-    return {
-      field: event.field,
-      value: event.value,
-      preview: event.preview || `Updated ${event.field}`,
-    }
-  }
-
-  return null
-}
-
 export function useQuizSession(): UseQuizSessionReturn {
+  // Quiz-specific state: accumulated analysis results from output_update events
+  const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
+
+  // Handle output_update via SDK callback (SSE-compatible)
+  const handleOutputUpdate = useCallback((update: { field: string; value: unknown; preview: string }) => {
+    console.log('📦 Quiz analysis update received:', update.field, update.preview)
+    setAnalysisResults(prev => ({
+      ...prev,
+      [update.field]: update.value,
+    }))
+  }, [])
+
   // Core SDK hooks
   const connection: UseAgentConnectionReturn = useAgentConnection({
     serverUrl: BACKEND_URL,
     sessionPrefix: 'quiz',
+    transport: 'sse',
   })
 
   const chat: UseAgentChatReturn = useAgentChat({
     connection,
     tenantId: TENANT_ID,
+    transport: 'sse',
+    onOutputUpdate: handleOutputUpdate,
   })
 
   const status: UseAgentStatusReturn = useAgentStatus({ connection })
 
-  // Quiz-specific state: accumulated analysis results from output_update events
-  const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
-
   // Computed state
   const hasActiveSubAgents = status.activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
-
-  // Listen for output_update events to capture analysis results
-  useEffect(() => {
-    const socket = connection.socket
-    if (!socket) return
-
-    const handleOutputUpdate = (event: OutputUpdateEvent) => {
-      const parsed = parseOutputUpdateEvent(event)
-
-      if (!parsed) {
-        console.warn('⚠️ Output update missing field, skipping. Raw event:', event)
-        return
-      }
-
-      console.log('📦 Quiz analysis update received:', parsed.field, parsed.preview)
-
-      // Update analysis results with the new field
-      setAnalysisResults(prev => ({
-        ...prev,
-        [parsed.field]: parsed.value,
-      }))
-    }
-
-    socket.on('output_update', handleOutputUpdate)
-
-    return () => {
-      socket.off('output_update', handleOutputUpdate)
-    }
-  }, [connection.socket])
 
   // Listen for custom events from pages
   // Use ref to avoid re-subscribing if sendMessage changes on every render
