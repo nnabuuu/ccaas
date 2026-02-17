@@ -1,188 +1,290 @@
 /**
- * Quiz Analyzer - Simplified Single-Page App
+ * Quiz Analyzer - Three-Column Layout
  *
  * Layout:
- * - Left Panel (40%): QuizInput
- * - Right Panel (60%): AnalysisDisplay + ChatSection
- *
- * Message history is automatically loaded from server via useAgentChat.
+ * - Left (30%): Quiz Input Form
+ * - Middle (35%): Standardized Quiz Display
+ * - Right (35%): AI Chat + Quick Actions
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
-import QuizInput from './components/QuizInput'
-import CompleteAnalysisView from './components/CompleteAnalysisView'
-import SimpleChatSection from './components/SimpleChatSection'
+import { useChatLayout, ChatSection, CollapsedChatTab } from '@ccaas/react-sdk'
+import ErrorBoundary from './components/ErrorBoundary'
+import ConnectionStatus from './components/ConnectionStatus'
+import QuizInputForm, { type QuizInputData } from './components/QuizInputForm'
+import StandardizedQuizDisplay, {
+  type StandardizedQuizData,
+  type ParsedQuiz,
+  type QuizMetadata,
+} from './components/StandardizedQuizDisplay'
+import ChatWithQuickActions from './components/ChatWithQuickActions'
 import { useQuizSession } from './hooks/useQuizSession'
 
-function App() {
+function AppNew() {
   const session = useQuizSession()
-  const [isChatExpanded, setIsChatExpanded] = useState(false)
 
-  // Handle analyze button click
-  const handleAnalyze = useCallback(
-    (content: string, answer?: string) => {
-      session.sendMessage(
-        `请分析这道题目：\n\n${content}${answer ? `\n\n参考答案：\n${answer}` : ''}`
-      )
+  // Chat layout hook
+  const layout = useChatLayout()
+
+  // Quiz input state
+  const [quizInput, setQuizInput] = useState<QuizInputData | null>(null)
+
+  // Standardized quiz display state
+  const [standardizedQuiz, setStandardizedQuiz] = useState<StandardizedQuizData>({
+    parsed: null,
+    metadata: null,
+  })
+
+  // Analysis in progress
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+
+  // Build analysis prompt
+  const buildAnalysisPrompt = useCallback((input: QuizInputData): string => {
+    let prompt = `请帮我分析这道题目：
+
+【题目内容】
+${input.content}
+
+【参考答案】
+${input.correctAnswer}
+`
+
+    if (input.studentAnswer) {
+      prompt += `
+【学生答案】
+${input.studentAnswer}
+`
+    }
+
+    prompt += `
+请按以下步骤进行分析：
+1. 使用 parse_quiz_content 工具解析题目内容（题干、选项、题型）
+2. 使用 search_knowledge_points_json 工具标注相关知识点
+3. 使用 search_catalog 工具查找所属目录
+${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5. 生成标准解题思路' : '4. 生成标准解题思路'}
+
+请使用 write_output 工具将每个步骤的结果写入对应字段。
+`
+
+    return prompt
+  }, [])
+
+  // Handle quiz input submit
+  const handleQuizSubmit = useCallback(
+    (data: QuizInputData) => {
+      setQuizInput(data)
+      setIsAnalyzing(true)
+
+      // Reset standardized quiz display
+      setStandardizedQuiz({
+        parsed: null,
+        metadata: null,
+      })
+
+      // Send analysis request to AI
+      const prompt = buildAnalysisPrompt(data)
+      session.sendMessage(prompt)
     },
-    [session.sendMessage]
+    [buildAnalysisPrompt, session.sendMessage]
   )
 
-  // Memoize hasAnalysisResults check
-  const hasAnalysisResults = useMemo(
-    () => Object.keys(session.analysisResults).length > 0,
-    [session.analysisResults]
+  // Handle "Start Analysis" quick action
+  const handleStartAnalysis = useCallback(() => {
+    if (quizInput) {
+      handleQuizSubmit(quizInput)
+    }
+  }, [quizInput, handleQuizSubmit])
+
+  // Can analyze if quiz input is valid
+  const canAnalyze = useMemo(() => {
+    return !!quizInput && !!quizInput.content && !!quizInput.correctAnswer
+  }, [quizInput])
+
+  // Listen to output_update events to update standardized quiz display
+  useEffect(() => {
+    // Parse analysis results from session.analysisResults
+    const results = session.analysisResults
+
+    // Update parsed quiz
+    if (results.parsedQuiz) {
+      const parsed = results.parsedQuiz as ParsedQuiz
+      setStandardizedQuiz((prev) => ({
+        ...prev,
+        parsed,
+      }))
+    }
+
+    // Update metadata
+    const hasMetadata =
+      results.knowledge_point_tags || results.knowledgePointTags || results.catalog || results.difficulty
+
+    if (hasMetadata) {
+      const metadata: QuizMetadata = {
+        knowledgePoints: (results.knowledge_point_tags || results.knowledgePointTags) as any[] || [],
+        catalog: (results.catalog as any) || { subjectId: '', path: [] },
+        difficulty: (results.difficulty as number) || 0,
+      }
+
+      setStandardizedQuiz((prev) => ({
+        ...prev,
+        metadata,
+      }))
+    }
+
+    // Stop analyzing when AI is done
+    if (!session.isProcessing && isAnalyzing) {
+      setIsAnalyzing(false)
+    }
+  }, [session.analysisResults, session.isProcessing, isAnalyzing])
+
+  // Clear conversation
+  const handleClearConversation = useCallback(() => {
+    session.clearConversation()
+    setQuizInput(null)
+    setStandardizedQuiz({
+      parsed: null,
+      metadata: null,
+    })
+    setIsAnalyzing(false)
+  }, [session.clearConversation])
+
+  // Shared chat content element (define once, use conditionally)
+  const chatContent = (
+    <ChatSection
+      mode={layout.mode}
+      isCollapsed={layout.isCollapsed}
+      onModeChange={layout.setMode}
+      onToggleCollapse={() => layout.setCollapsed(!layout.isCollapsed)}
+    >
+      <ChatWithQuickActions
+        onStartAnalysis={handleStartAnalysis}
+        canAnalyze={canAnalyze}
+        messages={session.messages}
+        isProcessing={session.isProcessing}
+        isThinking={session.isThinking}
+        thinkingContent={session.thinkingContent}
+        onSendMessage={session.sendMessage}
+        activeTools={session.activeTools}
+        activeSubAgents={session.activeSubAgents}
+        todoItems={session.todoItems}
+        todoStats={session.todoStats}
+      />
+    </ChatSection>
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-slate-200">
-        <div className="max-w-[1800px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <SparklesIcon className="w-8 h-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">题目处理器</h1>
-                <p className="text-sm text-slate-500">AI 驱动的题目分析工具</p>
+    <ErrorBoundary>
+      <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-slate-200">
+          <div className="max-w-[1920px] mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <SparklesIcon className="w-8 h-8 text-blue-600" />
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">题目分析器</h1>
+                  <p className="text-sm text-slate-500">AI 驱动的智能题目分析工具</p>
+                </div>
               </div>
-            </div>
 
-            {/* New Conversation Button */}
-            <button
-              onClick={() => session.clearConversation()}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              <ArrowPathIcon className="w-4 h-4" />
-              新对话
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[calc(100vh-140px)]">
-          {/* Left Panel (40%) */}
-          <div className="lg:col-span-2 space-y-6 overflow-y-auto">
-            {/* Quiz Input */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">输入题目</h2>
-              <QuizInput
-                onAnalyze={handleAnalyze}
-                disabled={session.isProcessing}
-              />
-            </div>
-
-          </div>
-
-          {/* Right Panel (60%) */}
-          <div className="lg:col-span-3 space-y-6 overflow-y-auto">
-            {/* Analysis Display */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">分析结果</h2>
-
-              {/* Loading history from server */}
-              {session.isLoadingHistory && (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-400 border-t-transparent" />
-                  <p className="mt-4 text-slate-600">加载对话历史...</p>
-                </div>
-              )}
-
-              {/* AI processing in progress */}
-              {!session.isLoadingHistory && session.isProcessing && (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent" />
-                  <p className="mt-4 text-slate-600">AI 分析中...</p>
-                  {session.isThinking && session.thinkingContent && (
-                    <p className="mt-2 text-sm text-slate-500">{session.thinkingContent}</p>
-                  )}
-                </div>
-              )}
-
-              {/* Show real-time analysis results from AI */}
-              {!session.isLoadingHistory && !session.isProcessing && hasAnalysisResults && (
-                <CompleteAnalysisView
-                  analysis={session.analysisResults}
-                  quiz={null}
-                />
-              )}
-
-              {/* Empty state */}
-              {!session.isLoadingHistory && !session.isProcessing && !hasAnalysisResults && (
-                <div className="text-center py-12 text-slate-400">
-                  <SparklesIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">等待输入题目</p>
-                  <p className="text-sm mt-2">在左侧输入题目内容并点击"分析题目"</p>
-                </div>
-              )}
-            </div>
-
-            {/* Chat Section - Collapsible */}
-            <div
-              className={`bg-white rounded-xl shadow-sm border border-slate-200 transition-all duration-300 ${
-                isChatExpanded ? 'h-[500px]' : 'h-[60px]'
-              }`}
-            >
-              <div
-                className="flex items-center justify-between p-4 cursor-pointer border-b border-slate-200"
-                onClick={() => setIsChatExpanded(!isChatExpanded)}
+              {/* New Conversation Button */}
+              <button
+                onClick={handleClearConversation}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
               >
-                <h2 className="text-lg font-semibold text-slate-900">AI 对话</h2>
-                <button className="text-slate-500 hover:text-slate-700">
-                  {isChatExpanded ? '收起' : '展开'}
-                </button>
-              </div>
-
-              {isChatExpanded && (
-                <div className="h-[calc(100%-60px)]">
-                  <SimpleChatSection
-                    messages={session.messages}
-                    isProcessing={session.isProcessing}
-                    isThinking={session.isThinking}
-                    thinkingContent={session.thinkingContent}
-                    onSendMessage={session.sendMessage}
-                    activeTools={session.activeTools}
-                    activeSubAgents={session.activeSubAgents}
-                    todoItems={session.todoItems}
-                    todoStats={session.todoStats}
-                  />
-                </div>
-              )}
+                <ArrowPathIcon className="w-4 h-4" />
+                新对话
+              </button>
             </div>
           </div>
+        </header>
+
+      {/* Main Content - Three Column Layout */}
+      <main id="main-container" className="flex-1 relative overflow-hidden max-w-[1920px] mx-auto">
+        <div id="grid-container" className="grid grid-cols-12 gap-4 h-full p-4">
+          {/* Left Column - Input Form (30%) */}
+          <div id="left-column" className="col-span-12 lg:col-span-3 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 p-6 overflow-y-auto">
+            <QuizInputForm
+              onSubmit={handleQuizSubmit}
+              disabled={session.isProcessing}
+            />
+          </div>
+
+          {/* Middle Column - Standardized Display (35%) */}
+          <div id="middle-column" className="col-span-12 lg:col-span-4 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 p-6 overflow-y-auto">
+            <StandardizedQuizDisplay
+              data={standardizedQuiz}
+              isLoading={isAnalyzing && !standardizedQuiz.parsed}
+            />
+          </div>
+
+          {/* Right Column - AI Chat (35%) */}
+          <div id="right-column" className="col-span-12 lg:col-span-5 flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+            {/* Default/side-by-side mode: use shared chatContent */}
+            {(layout.mode === 'default' || layout.mode === 'side-by-side') &&
+             !layout.isCollapsed && chatContent}
+
+            {/* Overlay mode: show placeholder */}
+            {layout.mode === 'overlay' && (
+              <div className="text-gray-400 text-center py-8">
+                聊天面板已浮动到右侧
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Overlay: main 的直接子元素 */}
+        {layout.mode === 'overlay' && !layout.isCollapsed && (
+          <div
+            id="overlay-panel"
+            className={`absolute top-0 right-0 bottom-0 flex flex-col overflow-hidden bg-white border-l border-gray-200 shadow-xl z-10 ${
+              layout.isResizing ? 'select-none' : ''
+            }`}
+            style={{
+              width: layout.overlayWidth,
+              minWidth: '320px',
+            }}
+          >
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors z-20"
+              {...layout.overlayResizeProps}
+            />
+            {chatContent}
+          </div>
+        )}
+
+        {/* Collapsed tab */}
+        {layout.isCollapsed && (
+          <CollapsedChatTab onClick={() => layout.setCollapsed(false)} />
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-6">
-        <div className="max-w-[1800px] mx-auto px-6 py-3">
-          <div className="flex items-center justify-between text-xs text-slate-500">
-            <div>
-              {session.connected ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  已连接 · 会话 ID: {session.sessionId.substring(0, 8)}
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red-500 rounded-full" />
-                  未连接
-                </span>
-              )}
-            </div>
-            <div>
-              {session.messages.length > 0 && (
-                <span>{session.messages.length} 条消息</span>
-              )}
+        {/* Footer */}
+        <footer className="bg-white border-t border-slate-200">
+          <div className="max-w-[1920px] mx-auto px-6 py-3">
+            <div className="flex items-center justify-between text-xs">
+              <ConnectionStatus
+                connected={session.connected}
+                error={session.error}
+                onReconnect={session.reconnect}
+              />
+              <div className="text-slate-500">
+                {session.messages.length > 0 && (
+                  <span>{session.messages.length} 条消息</span>
+                )}
+                {session.sessionId && (
+                  <span className="ml-3">
+                    会话 ID: {session.sessionId.substring(0, 8)}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </ErrorBoundary>
   )
 }
 
-export default App
+export default AppNew

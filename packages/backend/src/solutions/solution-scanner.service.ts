@@ -4,14 +4,14 @@
  * Scans the `solutions/` directory for valid solution configurations,
  * loads and validates solution.json files, and filters by auto-discovery settings.
  *
- * Handles both v1 (flat) and v2 (structured) solution.json formats
- * via the SolutionConfigAdapter.
+ * Handles v1 (flat), v2 (structured), and v3 (simplified) solution.json formats
+ * via the SolutionConfigAdapter. Always returns v3 format.
  */
 
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { type SolutionConfigV2 } from './dto/solution-config.dto';
+import { type SolutionConfigV3 } from './dto/solution-config.dto';
 import {
   SolutionConfigAdapter,
   type AdaptResult,
@@ -34,9 +34,9 @@ export interface SolutionMetadata {
   solutionPath: string;
   /** Absolute path to solution.json */
   configPath: string;
-  /** Parsed and validated v2 config */
-  config: SolutionConfigV2;
-  /** Whether config was migrated from v1 */
+  /** Parsed and validated v3 config */
+  config: SolutionConfigV3;
+  /** Whether config was migrated from older version */
   migrated: boolean;
   /** Warnings from parsing/migration */
   warnings: string[];
@@ -109,12 +109,8 @@ export class SolutionScannerService {
         const metadata = await this.loadSolutionMetadata(entry, solutionPath, configPath);
         if (!metadata) continue;
 
-        // Filter by discovery.enabled
-        if (!metadata.config.ccaas.discovery.enabled) {
-          this.logger.log(`Solution "${metadata.name}" has discovery disabled, skipping`);
-          continue;
-        }
-
+        // v3 simplified: All discovered solutions are enabled
+        // (v3 removed discovery.enabled flag - discovery is opt-in by presence of solution.json)
         results.push(metadata);
       } catch (err) {
         this.logger.warn(
@@ -131,15 +127,15 @@ export class SolutionScannerService {
   }
 
   /**
-   * Load and validate a single solution.json file, returning a v2 config.
+   * Load and validate a single solution.json file, returning a v3 config.
    *
-   * Handles both v1 and v2 formats via the adapter.
+   * Handles v1, v2, and v3 formats via the adapter (always returns v3).
    *
    * @param configPath - Absolute path to solution.json.
-   * @returns Validated v2 config.
+   * @returns Validated v3 config.
    * @throws Error if file cannot be read, parsed, or validated.
    */
-  async loadSolutionConfig(configPath: string): Promise<SolutionConfigV2> {
+  async loadSolutionConfig(configPath: string): Promise<SolutionConfigV3> {
     const raw = await this.readJsonFile(configPath);
     const outcome = this.adapter.adapt(raw);
 
@@ -184,8 +180,8 @@ export class SolutionScannerService {
     const config = result.data;
 
     return {
-      slug: config.ccaas.tenant.slug,
-      name: config.ccaas.tenant.name,
+      slug: config.tenant.slug,
+      name: config.tenant.name,
       solutionPath,
       configPath,
       config,

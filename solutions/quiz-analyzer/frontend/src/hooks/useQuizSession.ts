@@ -37,6 +37,7 @@ export interface UseQuizSessionReturn {
   connected: boolean
   sessionId: string
   error: string | null
+  reconnect: () => void
 
   // Chat state from SDK
   messages: UseAgentChatReturn['messages']
@@ -189,6 +190,7 @@ export function useQuizSession(): UseQuizSessionReturn {
     connected: connection.connected,
     sessionId: connection.sessionId,
     error: connection.error,
+    reconnect: connection.connect, // Alias for clarity
 
     // Chat state from SDK
     // isLoadingHistory is managed by useAgentChat - it auto-loads message history

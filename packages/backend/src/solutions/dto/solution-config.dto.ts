@@ -230,13 +230,13 @@ export const SolutionConfigV1Schema = z.object({
 // Version Detection & Unified Parsing
 // ============================================================================
 
-export type SchemaVersion = '1.0' | '2.0';
+export type SchemaVersion = '1.0' | '2.0' | '3.0';
 
 /**
  * Detect schema version from raw config object.
  *
  * Detection logic:
- * 1. Explicit schemaVersion field ('2.0') -> v2
+ * 1. Explicit schemaVersion field ('3.0', '2.0') -> use that version
  * 2. Presence of 'ccaas' top-level key -> v2
  * 3. Everything else -> v1 (legacy)
  */
@@ -246,6 +246,10 @@ export function detectSchemaVersion(config: unknown): SchemaVersion {
   }
 
   const obj = config as Record<string, unknown>;
+
+  if (obj.schemaVersion === '3.0') {
+    return '3.0';
+  }
 
   if (obj.schemaVersion === '2.0') {
     return '2.0';
@@ -264,6 +268,7 @@ export function detectSchemaVersion(config: unknown): SchemaVersion {
 export type SolutionConfigValidationResult =
   | { success: true; version: '1.0'; data: SolutionConfigV1 }
   | { success: true; version: '2.0'; data: SolutionConfigV2 }
+  | { success: true; version: '3.0'; data: SolutionConfigV3 }
   | { success: false; version: SchemaVersion; errors: z.ZodError };
 
 /**
@@ -272,6 +277,14 @@ export type SolutionConfigValidationResult =
  */
 export function validateSolutionConfig(config: unknown): SolutionConfigValidationResult {
   const version = detectSchemaVersion(config);
+
+  if (version === '3.0') {
+    const result = SolutionConfigV3Schema.safeParse(config);
+    if (result.success) {
+      return { success: true, version: '3.0', data: result.data };
+    }
+    return { success: false, version: '3.0', errors: result.error };
+  }
 
   if (version === '2.0') {
     const result = SolutionConfigV2Schema.safeParse(config);
@@ -289,14 +302,81 @@ export function validateSolutionConfig(config: unknown): SolutionConfigValidatio
 }
 
 // ============================================================================
+// V3 Schema: Flattened with skills as folder paths
+// ============================================================================
+
+/**
+ * Skill reference in v3 - can be a string path or object with folder
+ * Supports wildcard patterns: "skills/*", "custom-skills/analyzer"
+ */
+export const SkillReferenceV3Schema = z.union([
+  z.string().min(1),  // "skills/*" or "skills/specific-skill"
+  z.object({ folder: z.string().min(1) }),  // { folder: "skills/specific-skill" }
+]);
+
+/**
+ * Complete solution.json v3 schema - simplified and flattened
+ *
+ * Key changes from v2:
+ * - Flattened structure (no ccaas/internal nesting)
+ * - Skills as folder paths with wildcard support
+ * - Default skills: ['skills/*'] (convention over configuration)
+ * - Removed discovery.mode (unused feature)
+ * - Top-level fields for better readability
+ */
+export const SolutionConfigV3Schema = z.object({
+  $schema: z.string().optional(),
+  schemaVersion: z.literal('3.0'),
+
+  // ============ CCAAS Core Configuration ============
+  /** Tenant identification - required by CCAAS Core */
+  tenant: TenantConfigSchema,
+
+  /**
+   * Skill folder paths (supports wildcards)
+   * Default: ['skills/*'] - auto-discovers all skills in skills/ directory
+   * Examples:
+   *   - ['skills/*'] - all skills in skills/
+   *   - ['skills/analyzer', 'skills/generator'] - specific skills
+   *   - ['skills/*', 'custom-skills/special'] - multiple patterns
+   */
+  skills: z.array(SkillReferenceV3Schema).default(['skills/*']),
+
+  /** MCP server configuration */
+  mcpServers: z.record(McpServerDefinitionSchema).default({}),
+
+  // ============ Solution Internal Configuration ============
+  /** Backend configuration (not used by CCAAS Core) */
+  backend: BackendConfigSchema.optional(),
+
+  /** Frontend configuration (not used by CCAAS Core) */
+  frontend: FrontendConfigSchema.optional(),
+
+  /** Synchronized fields for real-time updates (not used by CCAAS Core) */
+  syncFields: z.union([
+    z.array(z.string()),
+    z.record(z.array(z.string())),
+  ]).optional(),
+
+  /** Setup/lifecycle scripts (not used by CCAAS Core) */
+  setup: SetupConfigSchema.optional(),
+});
+
+// ============================================================================
 // Inferred TypeScript Types
 // ============================================================================
+
+/** v3 top-level config type */
+export type SolutionConfigV3 = z.infer<typeof SolutionConfigV3Schema>;
 
 /** v2 top-level config type */
 export type SolutionConfigV2 = z.infer<typeof SolutionConfigV2Schema>;
 
 /** v1 top-level config type */
 export type SolutionConfigV1 = z.infer<typeof SolutionConfigV1Schema>;
+
+/** Skill reference (v3) */
+export type SkillReferenceV3 = z.infer<typeof SkillReferenceV3Schema>;
 
 /** Tenant configuration */
 export type TenantConfig = z.infer<typeof TenantConfigSchema>;

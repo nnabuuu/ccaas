@@ -1,3 +1,35 @@
+---
+name: Quiz Analyzer - Knowledge Point Matching
+slug: knowledge-point-matching
+description: 智能标注题目知识点，支持多知识点综合题
+scope: tenant
+triggers:
+  - type: keyword
+    value: 标注知识点
+    priority: 10
+  - type: keyword
+    value: 这道题考察
+    priority: 9
+  - type: keyword
+    value: 知识点
+    priority: 8
+  - type: keyword
+    value: 批量分析
+    priority: 10
+allowedTools:
+  - write_output
+  - get_knowledge_points_tree
+  - verify_knowledge_point_tags
+  - generate_thinking_process_template
+  - search_quizzes
+  - search_knowledge_points
+  - get_quiz_details
+  - get_root_categories
+  - get_children_nodes
+  - get_node_path
+  - search_in_scope
+---
+
 # Skill: 题目知识点匹配
 
 ## 目标

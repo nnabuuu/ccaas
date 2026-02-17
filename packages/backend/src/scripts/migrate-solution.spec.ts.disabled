@@ -8,7 +8,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { SolutionConfigAdapter } from '../solutions/solution-config-adapter';
-import { SolutionConfigV2Schema, detectSchemaVersion } from '../solutions/dto/solution-config.dto';
+import { SolutionConfigV3Schema, detectSchemaVersion } from '../solutions/dto/solution-config.dto';
 import type { SkillDefinition } from '../solutions/dto/solution-config.dto';
 
 // ============================================================================
@@ -285,13 +285,13 @@ describe('migrate-solution', () => {
         const outcome = adapter.adapt(raw);
         expect(outcome.success).toBe(true);
         if (outcome.success) {
-          const validation = SolutionConfigV2Schema.safeParse(outcome.data);
+          const validation = SolutionConfigV3Schema.safeParse(outcome.data);
           expect(validation.success).toBe(true);
-          expect(outcome.data.ccaas.discovery.skills.length).toBeGreaterThan(0);
+          expect(outcome.data.skills.length).toBeGreaterThan(0);
         }
       } else {
         // Already v2, just validate it passes
-        const validation = SolutionConfigV2Schema.safeParse(raw);
+        const validation = SolutionConfigV3Schema.safeParse(raw);
         expect(validation.success).toBe(true);
       }
     });
@@ -304,12 +304,12 @@ describe('migrate-solution', () => {
         const outcome = adapter.adapt(raw);
         expect(outcome.success).toBe(true);
         if (outcome.success) {
-          const validation = SolutionConfigV2Schema.safeParse(outcome.data);
+          const validation = SolutionConfigV3Schema.safeParse(outcome.data);
           expect(validation.success).toBe(true);
-          expect(outcome.data.ccaas.tenant.slug).toBe('lesson-plan-designer');
+          expect(outcome.data.tenant.slug).toBe('lesson-plan-designer');
         }
       } else {
-        const validation = SolutionConfigV2Schema.safeParse(raw);
+        const validation = SolutionConfigV3Schema.safeParse(raw);
         expect(validation.success).toBe(true);
       }
     });
@@ -322,12 +322,12 @@ describe('migrate-solution', () => {
         const outcome = adapter.adapt(raw);
         expect(outcome.success).toBe(true);
         if (outcome.success) {
-          const validation = SolutionConfigV2Schema.safeParse(outcome.data);
+          const validation = SolutionConfigV3Schema.safeParse(outcome.data);
           expect(validation.success).toBe(true);
-          expect(outcome.data.ccaas.discovery.skills.length).toBeGreaterThanOrEqual(1);
+          expect(outcome.data.skills.length).toBeGreaterThanOrEqual(1);
         }
       } else {
-        const validation = SolutionConfigV2Schema.safeParse(raw);
+        const validation = SolutionConfigV3Schema.safeParse(raw);
         expect(validation.success).toBe(true);
       }
     });
@@ -340,11 +340,11 @@ describe('migrate-solution', () => {
         const outcome = adapter.adapt(raw);
         expect(outcome.success).toBe(true);
         if (outcome.success) {
-          const validation = SolutionConfigV2Schema.safeParse(outcome.data);
+          const validation = SolutionConfigV3Schema.safeParse(outcome.data);
           expect(validation.success).toBe(true);
         }
       } else {
-        const validation = SolutionConfigV2Schema.safeParse(raw);
+        const validation = SolutionConfigV3Schema.safeParse(raw);
         expect(validation.success).toBe(true);
       }
     });
@@ -357,12 +357,12 @@ describe('migrate-solution', () => {
         const outcome = adapter.adapt(raw);
         expect(outcome.success).toBe(true);
         if (outcome.success) {
-          const validation = SolutionConfigV2Schema.safeParse(outcome.data);
+          const validation = SolutionConfigV3Schema.safeParse(outcome.data);
           expect(validation.success).toBe(true);
-          expect(outcome.data.ccaas.tenant.slug).toBe('problem-explainer');
+          expect(outcome.data.tenant.slug).toBe('problem-explainer');
         }
       } else {
-        const validation = SolutionConfigV2Schema.safeParse(raw);
+        const validation = SolutionConfigV3Schema.safeParse(raw);
         expect(validation.success).toBe(true);
       }
     });
@@ -383,7 +383,7 @@ describe('migrate-solution', () => {
       expect(outcome.success).toBe(true);
       if (!outcome.success) return;
 
-      for (const skill of outcome.data.ccaas.discovery.skills) {
+      for (const skill of outcome.data.skills) {
         const fm = generateFrontmatter(skill);
         expect(fm.startsWith('---')).toBe(true);
         expect(fm.endsWith('---')).toBe(true);
@@ -399,7 +399,7 @@ describe('migrate-solution', () => {
       expect(outcome.success).toBe(true);
       if (!outcome.success) return;
 
-      const skills = outcome.data.ccaas.discovery.skills;
+      const skills = outcome.data.skills;
       expect(skills.length).toBeGreaterThan(0);
 
       const fm = generateFrontmatter(skills[0]);
@@ -432,7 +432,7 @@ describe('migrate-solution', () => {
 
       if (!outcome.success) return;
 
-      for (const skill of outcome.data.ccaas.discovery.skills) {
+      for (const skill of outcome.data.skills) {
         if (!skill.skillFile) continue;
 
         const skillFilePath = path.join(SOLUTIONS_DIR, 'quiz-analyzer', skill.skillFile);
@@ -463,7 +463,7 @@ describe('migrate-solution', () => {
     it('v2 config should be skipped by adapter', () => {
       const adapter = new SolutionConfigAdapter();
       const v2Config = {
-        schemaVersion: '2.0',
+        schemaVersion: '3.0',
         ccaas: {
           tenant: { name: 'Test', slug: 'test' },
           discovery: {

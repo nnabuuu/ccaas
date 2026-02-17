@@ -2,6 +2,9 @@
 /**
  * Solution Migration CLI Tool
  *
+ * TODO: Update this script for v3.0 schema
+ * Currently disabled - skills are now folder paths, not full objects
+ *
  * Migrates v1 solution.json files to v2 format and adds YAML frontmatter
  * to SKILL.md files.
  *
@@ -16,7 +19,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { SolutionConfigAdapter } from '../solutions/solution-config-adapter';
 import { detectSchemaVersion } from '../solutions/dto/solution-config.dto';
-import type { SolutionConfigV2, SkillDefinition } from '../solutions/dto/solution-config.dto';
+import type { SolutionConfigV2, SolutionConfigV3, SkillDefinition } from '../solutions/dto/solution-config.dto';
 import type { AdaptResult } from '../solutions/solution-config-adapter';
 import { resolveSolutionsDir } from '../common/find-monorepo-root';
 
@@ -202,7 +205,7 @@ async function migrateSolution(
     console.log(`  Already v2, skipping solution.json migration`);
     result.migrated = false;
     // Still check SKILL.md frontmatter
-    await migrateSkillFiles(solutionDir, rawConfig as SolutionConfigV2, options, result);
+    await migrateSkillFiles(solutionDir, rawConfig as SolutionConfigV2, SolutionConfigV3, options, result);
     result.success = true;
     return result;
   }
@@ -224,9 +227,9 @@ async function migrateSolution(
 
   if (options.dryRun) {
     console.log(`  [DRY RUN] Would migrate solution.json v1 -> v2`);
-    console.log(`  Tenant: ${v2Config.ccaas.tenant.name} (${v2Config.ccaas.tenant.slug})`);
-    console.log(`  Skills: ${v2Config.ccaas.discovery.skills.length}`);
-    console.log(`  MCP Servers: ${Object.keys(v2Config.ccaas.discovery.mcpServers).length}`);
+    console.log(`  Tenant: ${v2Config.tenant.name} (${v2Config.tenant.slug})`);
+    console.log(`  Skills: ${v2Config.skills.length}`);
+    console.log(`  MCP Servers: ${Object.keys(v2Config.mcpServers).length}`);
     if (adaptResult.warnings.length > 0) {
       console.log(`  Warnings: ${adaptResult.warnings.join('; ')}`);
     }
@@ -259,11 +262,11 @@ async function migrateSolution(
 
 async function migrateSkillFiles(
   solutionDir: string,
-  v2Config: SolutionConfigV2,
+  v2Config: SolutionConfigV3,
   options: MigrateOptions,
   result: MigrateResult,
 ): Promise<void> {
-  const skills = v2Config.ccaas.discovery.skills;
+  const skills = v2Config.skills;
 
   for (const skill of skills) {
     if (!skill.skillFile) {
@@ -271,7 +274,7 @@ async function migrateSkillFiles(
       continue;
     }
 
-    const skillFilePath = path.join(solutionDir, skill.skillFile);
+    // const skillFilePath = path.join(solutionDir, skill.skillFile);
 
     try {
       await fs.access(skillFilePath);

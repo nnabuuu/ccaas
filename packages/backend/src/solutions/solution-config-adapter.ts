@@ -1,20 +1,22 @@
 /**
- * Solution Config Adapter - V1 to V2 Migration
+ * Solution Config Adapter - Multi-Version Migration
  *
- * Migrates legacy v1 solution.json configurations to the v2 structured format.
- * Handles all known v1 variations (skills array, single skill object, missing fields)
- * and produces valid v2 configs that pass schema validation.
+ * Migrates solution.json configurations across versions (v1 → v2 → v3).
+ * Handles all known v1 variations and v2 structured format.
+ * Always returns normalized v3 format (simplified, flattened).
  *
  * Usage:
  *   const adapter = new SolutionConfigAdapter();
- *   const v2Config = adapter.adapt(rawJsonConfig);
+ *   const v3Config = adapter.adapt(rawJsonConfig);
  */
 
 import { Logger } from '@nestjs/common';
 import {
   detectSchemaVersion,
+  SolutionConfigV3Schema,
   SolutionConfigV2Schema,
   SolutionConfigV1Schema,
+  type SolutionConfigV3,
   type SolutionConfigV2,
   type SolutionConfigV1,
   type SkillDefinition,
@@ -27,7 +29,7 @@ import {
 
 export interface AdaptResult {
   success: true;
-  data: SolutionConfigV2;
+  data: SolutionConfigV3;
   migrated: boolean;
   warnings: string[];
 }
@@ -47,10 +49,11 @@ export class SolutionConfigAdapter {
   private readonly logger = new Logger(SolutionConfigAdapter.name);
 
   /**
-   * Main entry point. Accepts a raw parsed JSON object and returns a v2 config.
+   * Main entry point. Accepts a raw parsed JSON object and returns a v3 config.
    *
-   * - If already v2, validates and returns as-is.
-   * - If v1, migrates to v2 and validates the result.
+   * - If already v3, validates and returns as-is.
+   * - If v2, migrates to v3 and validates the result.
+   * - If v1, migrates to v2, then v3, and validates the result.
    * - If invalid, returns structured errors.
    */
   adapt(raw: unknown): AdaptOutcome {
@@ -63,19 +66,23 @@ export class SolutionConfigAdapter {
 
     const version = detectSchemaVersion(raw);
 
-    if (version === '2.0') {
-      return this.validateV2(raw);
+    if (version === '3.0') {
+      return this.validateV3(raw);
     }
 
-    return this.migrateV1ToV2(raw);
+    if (version === '2.0') {
+      return this.migrateV2ToV3(raw);
+    }
+
+    return this.migrateV1ToV3(raw);
   }
 
   // --------------------------------------------------------------------------
-  // V2 pass-through validation
+  // V3 pass-through validation
   // --------------------------------------------------------------------------
 
-  private validateV2(raw: unknown): AdaptOutcome {
-    const result = SolutionConfigV2Schema.safeParse(raw);
+  private validateV3(raw: unknown): AdaptOutcome {
+    const result = SolutionConfigV3Schema.safeParse(raw);
     if (result.success) {
       return {
         success: true,
@@ -94,18 +101,133 @@ export class SolutionConfigAdapter {
   }
 
   // --------------------------------------------------------------------------
-  // V1 -> V2 Migration
+  // V2 -> V3 Migration
   // --------------------------------------------------------------------------
 
   /**
-   * Migrate a v1 config to v2.
+   * Migrate a v2 config to v3.
+   *
+   * Key changes:
+   * - Flatten ccaas/internal structure to top-level
+   * - Convert skills from detailed objects to folder paths
+   * - Remove discovery.mode (unused)
+   * - Set default skills: ['skills/*'] if no skills defined
+   */
+  private migrateV2ToV3(raw: unknown): AdaptOutcome {
+    const warnings: string[] = [];
+    const v2Result = SolutionConfigV2Schema.safeParse(raw);
+
+    if (!v2Result.success) {
+      return {
+        success: false,
+        errors: v2Result.error.issues.map(
+          (i) => `Invalid v2 config: ${i.path.join('.')}: ${i.message}`,
+        ),
+      };
+    }
+
+    const v2 = v2Result.data;
+
+    // Extract skill folder paths from v2 skill definitions
+    const skills = v2.ccaas.discovery.skills
+      .map((s) => {
+        if (s.skillFile) {
+          // Extract folder from skillFile path (e.g., "skills/analyzer/SKILL.md" -> "skills/analyzer")
+          return s.skillFile.replace(/\/SKILL\.md$/i, '');
+        }
+        // Fallback: construct path from slug
+        warnings.push(
+          `Skill "${s.slug}" has no skillFile, using default path "skills/${s.slug}"`,
+        );
+        return `skills/${s.slug}`;
+      })
+      .filter((path, index, arr) => arr.indexOf(path) === index); // Remove duplicates
+
+    // Build v3 config
+    const v3: SolutionConfigV3 = {
+      schemaVersion: '3.0',
+      tenant: v2.ccaas.tenant,
+      skills: skills.length > 0 ? skills : ['skills/*'], // Default to wildcard if no skills
+      mcpServers: v2.ccaas.discovery.mcpServers,
+    };
+
+    // Migrate internal config (flatten to top-level)
+    if (v2.internal) {
+      if (v2.internal.backend) v3.backend = v2.internal.backend;
+      if (v2.internal.frontend) v3.frontend = v2.internal.frontend;
+      if (v2.internal.syncFields) v3.syncFields = v2.internal.syncFields;
+      if (v2.internal.setup) v3.setup = v2.internal.setup;
+    }
+
+    // Validate the migrated config
+    const validation = SolutionConfigV3Schema.safeParse(v3);
+    if (!validation.success) {
+      return {
+        success: false,
+        errors: validation.error.issues.map(
+          (i) => `Migration produced invalid v3: ${i.path.join('.')}: ${i.message}`,
+        ),
+      };
+    }
+
+    if (warnings.length > 0) {
+      this.logger.log(
+        `Migrated "${v2.ccaas.tenant.name}" from v2 to v3 with ${warnings.length} warning(s): ${warnings.join('; ')}`,
+      );
+    }
+
+    return {
+      success: true,
+      data: validation.data,
+      migrated: true,
+      warnings,
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // V1 -> V3 Migration (via V2)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Migrate v1 to v3 by first migrating to v2, then to v3.
+   */
+  private migrateV1ToV3(raw: unknown): AdaptOutcome {
+    // First migrate v1 -> v2
+    const v2Outcome = this.migrateV1ToV2Internal(raw);
+    if (!v2Outcome.success) {
+      return v2Outcome as AdaptError;
+    }
+
+    // Then migrate v2 -> v3
+    const v3Outcome = this.migrateV2ToV3(v2Outcome.data);
+    if (!v3Outcome.success) {
+      return v3Outcome;
+    }
+
+    // Combine warnings from both migrations
+    return {
+      success: true,
+      data: v3Outcome.data,
+      migrated: true,
+      warnings: [...v2Outcome.warnings, ...v3Outcome.warnings],
+    };
+  }
+
+  // --------------------------------------------------------------------------
+  // V1 -> V2 Migration (Internal)
+  // --------------------------------------------------------------------------
+
+  /**
+   * Internal method: Migrate a v1 config to v2.
+   *
+   * Returns v2 config (not v3) for use in v1->v3 migration chain.
    *
    * Strategy:
    *  1. Loosely parse v1 (collecting warnings for deviations)
    *  2. Map v1 fields to v2 structure
    *  3. Validate the resulting v2 object
    */
-  migrateV1ToV2(raw: unknown): AdaptOutcome {
+  private migrateV1ToV2Internal(raw: unknown): { success: true; data: SolutionConfigV2; warnings: string[] } | { success: false; errors: string[] } {
     const warnings: string[] = [];
     const obj = raw as Record<string, unknown>;
 
@@ -160,14 +282,13 @@ export class SolutionConfigAdapter {
 
     if (warnings.length > 0) {
       this.logger.warn(
-        `Migrated "${name}" with ${warnings.length} warning(s): ${warnings.join('; ')}`,
+        `Migrated "${name}" from v1 to v2 with ${warnings.length} warning(s): ${warnings.join('; ')}`,
       );
     }
 
     return {
       success: true,
       data: validation.data,
-      migrated: true,
       warnings,
     };
   }

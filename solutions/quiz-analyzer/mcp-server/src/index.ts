@@ -32,13 +32,17 @@ import { validateAndFixField } from './common/schemas.js';
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { jsonDataLoader } from './json-data-loader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize database
+// Initialize database (kept for backwards compatibility with some tools)
 const dbPath = path.resolve(__dirname, '../../data/quiz-analyzer.db');
 const db = new Database(dbPath);
+
+// Load JSON data on startup
+jsonDataLoader.load();
 
 // Create the MCP server
 const server = new Server(
@@ -394,6 +398,80 @@ Example usage:
   },
 };
 
+// NEW TOOLS for JSON data source
+
+const parseQuizContentTool: Tool = {
+  name: 'parse_quiz_content',
+  description: `Parse raw quiz content into structured data.
+
+Extracts quiz stem, options, correct answer, and quiz type from raw text.
+
+Example usage:
+{
+  "content": "已知函数 f(x) = x² - 2x + 1，求 f(x) 的最小值。\\nA. -1\\nB. 0\\nC. 1\\nD. 2"
+}
+
+Returns:
+{
+  "stem": "已知函数 f(x) = x² - 2x + 1，求 f(x) 的最小值。",
+  "options": ["A. -1", "B. 0", "C. 1", "D. 2"],
+  "quizType": "choice"
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      content: { type: 'string', description: 'Raw quiz content' },
+    },
+    required: ['content'],
+  },
+};
+
+const searchKnowledgePointsJSONTool: Tool = {
+  name: 'search_knowledge_points_json',
+  description: `Search knowledge points from JSON data source (faster than database).
+
+Returns matching knowledge points with hierarchy information.
+
+Example usage:
+{
+  "keyword": "函数",
+  "subjectId": "math-001",
+  "gradeLevel": "初中",
+  "limit": 10
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      keyword: { type: 'string', description: 'Search keyword' },
+      subjectId: { type: 'string', description: 'Subject ID (optional)' },
+      gradeLevel: { type: 'string', description: 'Grade level (optional)' },
+      limit: { type: 'number', description: 'Maximum results (default: 20)' },
+    },
+    required: ['keyword'],
+  },
+};
+
+const searchCatalogTool: Tool = {
+  name: 'search_catalog',
+  description: `Search subjects/catalogs from JSON data source.
+
+Returns matching subjects and their metadata.
+
+Example usage:
+{
+  "keyword": "八年级",
+  "limit": 10
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      keyword: { type: 'string', description: 'Search keyword' },
+      limit: { type: 'number', description: 'Maximum results (default: 20)' },
+    },
+    required: ['keyword'],
+  },
+};
+
 // Handle list_tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -410,6 +488,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       getNodePathTool,
       searchInScopeTool,
       saveCompleteAnalysisTool,
+      // New JSON-based tools
+      parseQuizContentTool,
+      searchKnowledgePointsJSONTool,
+      searchCatalogTool,
     ],
   };
 });
@@ -487,33 +569,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { subjectId, gradeLevel } = args as { subjectId?: string; gradeLevel?: string };
 
     try {
-      // Get root nodes
-      const rootNodes = db.prepare(`
-        SELECT id, name, level, subject_id, grade_level, parent_id
-        FROM knowledge_points
-        WHERE parent_id IS NULL
-        ${subjectId ? 'AND subject_id = ?' : ''}
-        ${gradeLevel ? 'AND grade_level = ?' : ''}
-        ORDER BY id
-      `).all(...[subjectId, gradeLevel].filter(Boolean));
+      // Get root nodes from JSON data
+      const rootNodes = jsonDataLoader.getRootKnowledgePoints({
+        subjectId,
+        gradeLevel,
+      });
 
-      // Recursively get children
-      const getChildren = (parentId: number): any[] => {
-        return db.prepare(`
-          SELECT id, name, level, subject_id, grade_level, parent_id
-          FROM knowledge_points
-          WHERE parent_id = ?
-          ORDER BY id
-        `).all(parentId).map((node: any) => ({
-          ...node,
-          children: getChildren(node.id),
-        }));
+      // Recursively build tree with children
+      const buildTree = (kp: any): any => {
+        const children = jsonDataLoader.getChildrenKnowledgePoints(kp.id);
+        return {
+          id: kp.id,
+          name: kp.name,
+          level: kp.level,
+          subject_id: kp.subjectId,
+          grade_level: kp.gradeLevel,
+          parent_id: kp.parentId,
+          children: children.map(child => buildTree(child)),
+        };
       };
 
-      const tree = rootNodes.map((node: any) => ({
-        ...node,
-        children: getChildren(node.id),
-      }));
+      const tree = rootNodes.map(node => buildTree(node));
 
       return {
         content: [
@@ -547,7 +623,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // Handle verify_knowledge_point_tags tool
   if (name === 'verify_knowledge_point_tags') {
-    const { proposedTags } = args as { proposedTags: Array<{ id: number; name: string; confidence: number }> };
+    const { proposedTags } = args as { proposedTags: Array<{ id: string | number; name: string; confidence: number }> };
 
     try {
       const valid: any[] = [];
@@ -555,22 +631,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const suggestions: any[] = [];
 
       for (const tag of proposedTags) {
-        const node = db.prepare('SELECT * FROM knowledge_points WHERE id = ?').get(tag.id);
+        // Convert ID to string (JSON data uses string IDs)
+        const tagId = String(tag.id);
+        const node = jsonDataLoader.getKnowledgePointById(tagId);
 
         if (node) {
           valid.push({ ...tag, exists: true });
         } else {
           invalid.push({ ...tag, exists: false });
 
-          // Try to find similar nodes by name
-          const similar = db.prepare(`
-            SELECT id, name FROM knowledge_points
-            WHERE name LIKE ?
-            LIMIT 3
-          `).all(`%${tag.name}%`);
+          // Try to find similar nodes by name (fuzzy search)
+          const similar = jsonDataLoader.searchKnowledgePoints(tag.name, { limit: 3 });
 
           if (similar.length > 0) {
-            suggestions.push({ original: tag, suggestions: similar });
+            suggestions.push({
+              original: tag,
+              suggestions: similar.map(kp => ({ id: kp.id, name: kp.name })),
+            });
           }
         }
       }
@@ -851,6 +928,168 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: 'text',
             text: JSON.stringify({
               data: { error: `Failed to save analysis: ${errorMessage}` },
+              status: 'error',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle parse_quiz_content tool
+  if (name === 'parse_quiz_content') {
+    const { content } = args as { content: string };
+
+    try {
+      // Simple parser for quiz content
+      const lines = content.trim().split('\n').filter(line => line.trim());
+
+      // Detect quiz type
+      const hasOptions = lines.some(line => /^[A-D][.、:：)]/.test(line.trim()));
+      const quizType = hasOptions ? 'choice' : 'fill';
+
+      // Extract stem (all lines before options)
+      let stemLines: string[] = [];
+      let optionLines: string[] = [];
+      let inOptions = false;
+
+      for (const line of lines) {
+        if (/^[A-D][.、:：)]/.test(line.trim())) {
+          inOptions = true;
+          optionLines.push(line.trim());
+        } else if (inOptions) {
+          optionLines.push(line.trim());
+        } else {
+          stemLines.push(line.trim());
+        }
+      }
+
+      const stem = stemLines.join('\n');
+      const options = optionLines;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              stem,
+              options,
+              quizType,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: { error: `Failed to parse quiz content: ${errorMessage}` },
+              status: 'error',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle search_knowledge_points_json tool
+  if (name === 'search_knowledge_points_json') {
+    const { keyword, subjectId, gradeLevel, limit = 20 } = args as {
+      keyword: string;
+      subjectId?: string;
+      gradeLevel?: string;
+      limit?: number;
+    };
+
+    try {
+      const results = jsonDataLoader.searchKnowledgePoints(keyword, {
+        subjectId,
+        gradeLevel,
+        limit,
+      });
+
+      // Format results for output
+      const formattedResults = results.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        subjectId: kp.subjectId,
+        gradeLevel: kp.gradeLevel,
+        parentId: kp.parentId,
+        difficultyContribution: kp.difficultyContribution,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              count: formattedResults.length,
+              results: formattedResults,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: { error: `Failed to search knowledge points: ${errorMessage}` },
+              status: 'error',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle search_catalog tool
+  if (name === 'search_catalog') {
+    const { keyword, limit = 20 } = args as {
+      keyword: string;
+      limit?: number;
+    };
+
+    try {
+      const results = jsonDataLoader.searchSubjects(keyword, { limit });
+
+      // Format results for output
+      const formattedResults = results.map(subject => ({
+        id: subject.id,
+        name: subject.name,
+        code: subject.code,
+        gradeLevels: subject.gradeLevels,
+        hasFormula: subject.hasFormula,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              count: formattedResults.length,
+              results: formattedResults,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: { error: `Failed to search catalog: ${errorMessage}` },
               status: 'error',
             }),
           },
