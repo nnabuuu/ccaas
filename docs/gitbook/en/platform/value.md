@@ -14,11 +14,13 @@ KedgeAgentic is built on one idea: your business logic shouldn't live inside eve
 
 Two primitives make this possible:
 
-**Skills** — Describe your business logic once. Workflows, rules, domain knowledge. The AI applies them in every session, without being re-taught.
+| Layer | What It Does | Who Defines It |
+|-------|-------------|----------------|
+| **Skills** | Business logic — workflows, rules, domain knowledge | Solution developer |
+| **MCP** | Tools & data — systems, APIs, information sources | Solution developer |
+| **Platform** | Execution — Agent lifecycle, sessions, orchestration | KedgeAgentic |
 
-**MCP** — Connect your tools and data once. The AI works with real information from your systems — not descriptions of it.
-
-The platform handles the rest: Agent lifecycle, session continuity, context management, tool orchestration. You describe the business. It runs.
+Once defined, Skills and MCP tools are available in every Agent session. The AI knows your business from the first message.
 
 ## What this looks like in practice
 
