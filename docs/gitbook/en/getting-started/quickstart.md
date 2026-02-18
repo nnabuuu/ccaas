@@ -73,36 +73,43 @@ curl -X DELETE http://localhost:3001/api/v1/sessions/my-session/completion \
   }'
 ```
 
-## WebSocket Connection
+## SSE Streaming
 
-Connect to `ws://localhost:3001` using any WebSocket client:
+Send a message and receive a real-time event stream via SSE (default transport since v1.1.0):
 
 ```javascript
-import { io } from 'socket.io-client'
+const response = await fetch(
+  'http://localhost:3001/api/v1/sessions/my-session/messages',
+  {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      clientId: 'test-client-001',
+      message: 'Please generate a report for me',
+      tenantId: 'default',
+    }),
+  }
+)
 
-const socket = io('http://localhost:3001')
+const reader = response.body.getReader()
+const decoder = new TextDecoder()
 
-// Listen for Agent status
-socket.on('agent_status', (data) => {
-  console.log('Agent status:', data.status)
-})
+while (true) {
+  const { done, value } = await reader.read()
+  if (done) break
 
-// Listen for text stream
-socket.on('text_delta', (data) => {
-  process.stdout.write(data.delta)
-})
-
-// Listen for structured output
-socket.on('output_update', (data) => {
-  console.log('Output update:', data)
-})
-
-// Send a message
-socket.emit('chat', {
-  message: 'Please generate a report for me',
-  sessionId: 'my-session'
-})
+  const lines = decoder.decode(value).split('\n')
+  for (const line of lines) {
+    if (!line.startsWith('data: ')) continue
+    const event = JSON.parse(line.slice(6))
+    if (event.type === 'text_delta') process.stdout.write(event.delta)
+    if (event.type === 'agent_status') console.log('Status:', event.status)
+    if (event.type === 'output_update') console.log('Output:', event.payload)
+  }
+}
 ```
+
+> **Note**: Socket.IO transport is deprecated. Use `@ccaas/react-sdk` or `@ccaas/vue-sdk` for a higher-level integration that handles SSE automatically.
 
 ## Next Steps
 

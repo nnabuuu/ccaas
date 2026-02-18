@@ -111,7 +111,7 @@ These are mandatory rules derived from real-world lessons learned.
 Before modifying any part of the system, trace the complete data flow:
 
 ```
-UI Component -> Hook -> Socket.io -> Solution Backend -> CCAAS API -> Agent -> MCP -> Response
+UI Component -> Hook -> SSE/REST -> Solution Backend -> CCAAS API -> Agent -> MCP -> Response
 ```
 
 Ensure the data format is correct at every step.

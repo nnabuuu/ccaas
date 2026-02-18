@@ -1,19 +1,21 @@
 # API Overview
 
-KedgeAgentic provides both REST API and WebSocket interfaces, along with complete type definitions through the `@ccaas/common` package.
+KedgeAgentic provides a REST API with SSE streaming, along with complete type definitions through the `@ccaas/common` package.
 
 ## Interface Model
 
-KedgeAgentic uses a hybrid REST/WebSocket model:
+KedgeAgentic uses a REST + SSE model (SSE is the default transport since v1.1.0):
 
 ```
 Client ──REST──→ Send messages / Manage resources
-       ←─WS───  Receive real-time event streams
+       ←─SSE───  Receive real-time event streams
 ```
 
 1. Clients send messages or manage resources via the REST API
-2. The server pushes real-time events via WebSocket (text streaming, status changes, tool activity, etc.)
-3. After the REST API returns the operation result, subsequent events continue to be pushed via WebSocket
+2. The server streams real-time events via SSE (text streaming, status changes, tool activity, etc.)
+3. Chat messages stream directly as `text/event-stream` from `POST /api/v1/sessions/:id/messages`
+
+> **Note**: Socket.IO (WebSocket) transport is deprecated as of v1.1.0. The endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**.
 
 ## Authentication
 
