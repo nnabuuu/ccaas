@@ -451,7 +451,7 @@ User journeys also inform your UI layout. For the Lesson Plan Designer, we need:
 └──────┴─────────────────────────────┴──────────────────────────────┘
 ```
 
-The key insight: the **AI Side Panel is always available alongside the editor**. This is the human-in-the-loop pattern. The teacher can:
+The key insight: the **AI Side Panel is always available alongside the editor**. This is the propose-review-apply pattern. The teacher can:
 
 1. Ask the AI to generate content for any section
 2. See sections update in real time with visual highlights

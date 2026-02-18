@@ -328,7 +328,7 @@ lesson-plan-designer/
 ```
 
 {% hint style="success" %}
-**注意**：AI 永远不会直接写入数据库。它通过 `write_output` 提议数据，教师审核后才保存。这就是每个即见Agentic Solution 核心的 Human-in-the-Loop 模式。
+**注意**：AI 永远不会直接写入数据库。它通过 `write_output` 提议数据，教师审核后才保存。这就是每个即见Agentic Solution 核心的"提议-审核-应用"模式。
 {% endhint %}
 
 ## 与传统 Web 应用的对比
@@ -380,7 +380,7 @@ lesson-plan-designer/
 {% endhint %}
 
 {% hint style="danger" %}
-**陷阱 2：跳过 output\_update 协议。** 一些开发者试图让 AI 通过自定义 MCP 工具直接写入数据库。这绕过了 Human-in-the-Loop 审核步骤，移除了教师在保存前编辑的能力。
+**陷阱 2：跳过 output\_update 协议。** 一些开发者试图让 AI 通过自定义 MCP 工具直接写入数据库。这绕过了"提议-审核-应用"步骤，移除了教师在保存前编辑的能力。
 {% endhint %}
 
 {% hint style="danger" %}
@@ -394,7 +394,7 @@ lesson-plan-designer/
 - [ ] 我理解什么是 Solution 以及它与传统 Web 应用的区别
 - [ ] 我能说出四大构建块：领域模型、用户旅程、数据流、表单协议
 - [ ] 我理解前端直接连接 CCAAS 处理 AI 交互，连接 Solution 后端处理领域数据
-- [ ] 我理解 Human-in-the-Loop 模式：AI 提议、教师审核、然后保存
+- [ ] 我理解"提议-审核-应用"模式：AI 提议、教师审核、然后保存
 - [ ] 我知道 Solution 的标准目录结构
 
 ## 下一步

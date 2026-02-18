@@ -417,7 +417,7 @@ export function useLessonPlanSync() {
 
 The key design decisions:
 
-- **Human-in-the-loop by default.** Updates are queued as pending, not auto-applied. The user reviews and clicks "Sync to Form."
+- **Propose-review-apply by default.** Updates are queued as pending, not auto-applied. The user reviews and clicks "Sync to Form."
 - **30-second undo window.** After syncing, the user can undo within 30 seconds.
 - **Field normalization.** Values from the AI are normalized to match expected types (e.g., `gradeLevel` to `Number`, `curriculumRequirements` to `Array`).
 - **Modified field tracking.** Fields synced from AI output get a visual indicator (e.g., a blue left border) so the user can see which parts the AI changed.

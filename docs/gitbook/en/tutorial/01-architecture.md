@@ -328,7 +328,7 @@ Step 10: Lesson plan is persisted with full audit trail
 ```
 
 {% hint style="success" %}
-**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the teacher reviews it, and only then does it get saved. This is the Human-in-the-Loop pattern at the core of every KedgeAgentic Solution.
+**Notice**: The AI never writes directly to the database. It proposes data via `write_output`, the teacher reviews it, and only then does it get saved. This is the propose-review-apply pattern at the core of every KedgeAgentic Solution.
 {% endhint %}
 
 ## Comparing with a Traditional Web App
@@ -380,7 +380,7 @@ Before moving on, answer these questions to check your understanding:
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 2: Skipping the output\_update protocol.** Some developers try to have the AI write to the database directly via custom MCP tools. This bypasses the Human-in-the-Loop review step and removes the teacher's ability to edit before saving.
+**Pitfall 2: Skipping the output\_update protocol.** Some developers try to have the AI write to the database directly via custom MCP tools. This bypasses the propose-review-apply step and removes the teacher's ability to edit before saving.
 {% endhint %}
 
 {% hint style="danger" %}
@@ -394,7 +394,7 @@ Before proceeding to Chapter 2, make sure you can answer:
 - [ ] I understand what a Solution is and how it differs from a traditional web app
 - [ ] I can name the four building blocks: Domain Model, User Journeys, Data Flow, Form Protocol
 - [ ] I understand that the frontend connects directly to CCAAS for AI, and to the Solution backend for domain data
-- [ ] I understand the Human-in-the-Loop pattern: AI proposes, teacher reviews, then saves
+- [ ] I understand the propose-review-apply pattern: AI proposes, teacher reviews, then saves
 - [ ] I know the standard directory structure of a Solution
 
 ## Next Step
