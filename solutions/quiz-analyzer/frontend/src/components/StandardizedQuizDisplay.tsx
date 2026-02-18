@@ -37,11 +37,13 @@ export interface StandardizedQuizData {
 interface StandardizedQuizDisplayProps {
   data: StandardizedQuizData
   isLoading?: boolean
+  hideCorrectAnswer?: boolean
 }
 
 export default function StandardizedQuizDisplay({
   data,
   isLoading = false,
+  hideCorrectAnswer = false,
 }: StandardizedQuizDisplayProps) {
   const [showMetadata, setShowMetadata] = useState(true)
 
@@ -103,13 +105,15 @@ export default function StandardizedQuizDisplay({
             </div>
           )}
 
-          {/* Correct Answer */}
-          <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-2">正确答案</h3>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-              <p className="text-green-900 font-medium">{data.parsed.correctAnswer}</p>
+          {/* Correct Answer (hidden in student mode) */}
+          {!hideCorrectAnswer && (
+            <div>
+              <h3 className="text-sm font-medium text-slate-700 mb-2">正确答案</h3>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-green-900 font-medium">{data.parsed.correctAnswer}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Quiz Type */}
           <div>

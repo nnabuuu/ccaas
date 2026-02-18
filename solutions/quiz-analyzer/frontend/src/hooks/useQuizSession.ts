@@ -15,6 +15,7 @@ import type { QuizAnalysis } from '../types'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
+const SOLUTION_BACKEND_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3005'
 const TENANT_ID = 'quiz-analyzer'
 
 export interface UseQuizSessionReturn {
@@ -49,7 +50,13 @@ export interface UseQuizSessionReturn {
   analysisResults: Partial<QuizAnalysis>
 }
 
-export function useQuizSession(): UseQuizSessionReturn {
+interface UseQuizSessionOptions {
+  viewMode?: 'teacher' | 'student'
+}
+
+export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionReturn {
+  const viewMode = options?.viewMode ?? 'teacher'
+
   // Quiz-specific state: accumulated analysis results from output_update events
   const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
 
@@ -73,6 +80,8 @@ export function useQuizSession(): UseQuizSessionReturn {
     connection,
     tenantId: TENANT_ID,
     transport: 'sse',
+    sessionTemplate: viewMode,
+    solutionConfigEndpoint: `${SOLUTION_BACKEND_URL}/config`,
     onOutputUpdate: handleOutputUpdate,
   })
 
@@ -81,6 +90,16 @@ export function useQuizSession(): UseQuizSessionReturn {
   // Computed state
   const hasActiveSubAgents = status.activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
+
+  // In student mode, hide solution steps from analysisResults
+  const visibleResults: Partial<QuizAnalysis> = viewMode === 'student'
+    ? (() => {
+        const r = { ...analysisResults } as Record<string, unknown>
+        delete r['solutionSteps']     // camelCase sync field name
+        delete r['solution_steps']    // snake_case type field name
+        return r as Partial<QuizAnalysis>
+      })()
+    : analysisResults
 
   // Listen for custom events from pages
   // Use ref to avoid re-subscribing if sendMessage changes on every render
@@ -154,6 +173,6 @@ export function useQuizSession(): UseQuizSessionReturn {
     hasActiveSubAgents,
 
     // Quiz-specific state
-    analysisResults,
+    analysisResults: visibleResults,
   }
 }

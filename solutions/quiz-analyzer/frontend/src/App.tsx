@@ -5,6 +5,8 @@
  * - Left (30%): Quiz Input Form
  * - Middle (35%): Standardized Quiz Display
  * - Right (35%): AI Chat + Quick Actions
+ *
+ * Supports teacher view (full analysis) and student view (guided tutoring)
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
@@ -19,10 +21,12 @@ import StandardizedQuizDisplay, {
   type QuizMetadata,
 } from './components/StandardizedQuizDisplay'
 import ChatWithQuickActions from './components/ChatWithQuickActions'
+import ViewModeToggle from './components/ViewModeToggle'
 import { useQuizSession } from './hooks/useQuizSession'
 
 function AppNew() {
-  const session = useQuizSession()
+  const [viewMode, setViewMode] = useState<'teacher' | 'student'>('teacher')
+  const session = useQuizSession({ viewMode })
 
   // Chat layout hook
   const layout = useChatLayout()
@@ -39,9 +43,31 @@ function AppNew() {
   // Analysis in progress
   const [isAnalyzing, setIsAnalyzing] = useState(false)
 
-  // Build analysis prompt
-  const buildAnalysisPrompt = useCallback((input: QuizInputData): string => {
-    let prompt = `请帮我分析这道题目：
+  // Build analysis prompt based on view mode
+  const buildAnalysisPrompt = useCallback(
+    (input: QuizInputData): string => {
+      if (viewMode === 'student') {
+        return `请帮我检查这道题的解答：
+
+【题目内容】
+${input.content}
+
+【我的解答】
+${input.studentAnswer || '（未提供解答）'}
+
+请按以下步骤进行辅导：
+1. 使用 parse_quiz_content 工具解析题目内容（题干、选项、题型）
+2. 使用 search_knowledge_points_json 工具标注相关知识点
+3. 判断我的答案是否正确
+4. 如果有错误，请指出具体错在哪里，并用引导的方式帮我思考
+
+注意：请不要直接告诉我完整答案或完整解题步骤，用苏格拉底式引导帮助我自己发现问题。
+请使用 write_output 工具将解析结果写入 parsedQuiz 和 knowledgePointTags 字段。
+`
+      }
+
+      // Teacher mode (default)
+      let prompt = `请帮我分析这道题目：
 
 【题目内容】
 ${input.content}
@@ -50,14 +76,14 @@ ${input.content}
 ${input.correctAnswer}
 `
 
-    if (input.studentAnswer) {
-      prompt += `
+      if (input.studentAnswer) {
+        prompt += `
 【学生答案】
 ${input.studentAnswer}
 `
-    }
+      }
 
-    prompt += `
+      prompt += `
 请按以下步骤进行分析：
 1. 使用 parse_quiz_content 工具解析题目内容（题干、选项、题型）
 2. 使用 search_knowledge_points_json 工具标注相关知识点
@@ -67,8 +93,10 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 请使用 write_output 工具将每个步骤的结果写入对应字段。
 `
 
-    return prompt
-  }, [])
+      return prompt
+    },
+    [viewMode]
+  )
 
   // Handle quiz input submit
   const handleQuizSubmit = useCallback(
@@ -89,17 +117,31 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
     [buildAnalysisPrompt, session.sendMessage]
   )
 
-  // Handle "Start Analysis" quick action
+  // Handle primary quick action button
   const handleStartAnalysis = useCallback(() => {
     if (quizInput) {
       handleQuizSubmit(quizInput)
     }
   }, [quizInput, handleQuizSubmit])
 
-  // Can analyze if quiz input is valid
+  // Switch view mode and reset conversation
+  const handleViewModeChange = useCallback(
+    (mode: 'teacher' | 'student') => {
+      setViewMode(mode)
+      session.clearConversation()
+      setQuizInput(null)
+      setStandardizedQuiz({ parsed: null, metadata: null })
+      setIsAnalyzing(false)
+    },
+    [session.clearConversation]
+  )
+
+  // Can analyze depends on view mode
   const canAnalyze = useMemo(() => {
-    return !!quizInput && !!quizInput.content && !!quizInput.correctAnswer
-  }, [quizInput])
+    if (!quizInput || !quizInput.content) return false
+    if (viewMode === 'student') return !!quizInput.studentAnswer
+    return !!quizInput.correctAnswer
+  }, [quizInput, viewMode])
 
   // Listen to output_update events to update standardized quiz display
   useEffect(() => {
@@ -160,6 +202,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
       <ChatWithQuickActions
         onStartAnalysis={handleStartAnalysis}
         canAnalyze={canAnalyze}
+        viewMode={viewMode}
         messages={session.messages}
         isProcessing={session.isProcessing}
         isThinking={session.isThinking}
@@ -188,14 +231,18 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
                 </div>
               </div>
 
-              {/* New Conversation Button */}
-              <button
-                onClick={handleClearConversation}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                <ArrowPathIcon className="w-4 h-4" />
-                新对话
-              </button>
+              {/* View Mode Toggle + New Conversation Button */}
+              <div className="flex items-center gap-3">
+                <ViewModeToggle value={viewMode} onChange={handleViewModeChange} />
+
+                <button
+                  onClick={handleClearConversation}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <ArrowPathIcon className="w-4 h-4" />
+                  新对话
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -208,6 +255,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
             <QuizInputForm
               onSubmit={handleQuizSubmit}
               disabled={session.isProcessing}
+              viewMode={viewMode}
             />
           </div>
 
@@ -216,6 +264,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
             <StandardizedQuizDisplay
               data={standardizedQuiz}
               isLoading={isAnalyzing && !standardizedQuiz.parsed}
+              hideCorrectAnswer={viewMode === 'student'}
             />
           </div>
 

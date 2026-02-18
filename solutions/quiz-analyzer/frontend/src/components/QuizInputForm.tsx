@@ -3,8 +3,8 @@
  *
  * Features:
  * - Quiz content input (required)
- * - Correct answer input (required)
- * - Student answer input (optional)
+ * - Teacher mode: correct answer input (required)
+ * - Student mode: student answer input (required, "我的解答")
  * - Form validation
  */
 
@@ -13,16 +13,21 @@ import { DocumentTextIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24
 
 export interface QuizInputData {
   content: string
-  correctAnswer: string
+  correctAnswer?: string
   studentAnswer?: string
 }
 
 interface QuizInputFormProps {
   onSubmit: (data: QuizInputData) => void
   disabled?: boolean
+  viewMode?: 'teacher' | 'student'
 }
 
-export default function QuizInputForm({ onSubmit, disabled = false }: QuizInputFormProps) {
+export default function QuizInputForm({
+  onSubmit,
+  disabled = false,
+  viewMode = 'teacher',
+}: QuizInputFormProps) {
   const [content, setContent] = useState('')
   const [correctAnswer, setCorrectAnswer] = useState('')
   const [studentAnswer, setStudentAnswer] = useState('')
@@ -36,13 +41,17 @@ export default function QuizInputForm({ onSubmit, disabled = false }: QuizInputF
       newErrors.content = '请输入题目内容'
     }
 
-    if (!correctAnswer.trim()) {
+    if (viewMode === 'teacher' && !correctAnswer.trim()) {
       newErrors.correctAnswer = '请输入参考答案'
+    }
+
+    if (viewMode === 'student' && !studentAnswer.trim()) {
+      newErrors.studentAnswer = '请输入你的解答'
     }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
-  }, [content, correctAnswer])
+  }, [content, correctAnswer, studentAnswer, viewMode])
 
   // Handle submit
   const handleSubmit = useCallback(() => {
@@ -52,10 +61,10 @@ export default function QuizInputForm({ onSubmit, disabled = false }: QuizInputF
 
     onSubmit({
       content: content.trim(),
-      correctAnswer: correctAnswer.trim(),
-      studentAnswer: studentAnswer.trim() || undefined,
+      correctAnswer: viewMode === 'teacher' ? correctAnswer.trim() : undefined,
+      studentAnswer: viewMode === 'student' ? studentAnswer.trim() : undefined,
     })
-  }, [content, correctAnswer, studentAnswer, validate, onSubmit])
+  }, [content, correctAnswer, studentAnswer, viewMode, validate, onSubmit])
 
   // Handle Enter key in textarea (Ctrl+Enter to submit)
   const handleKeyDown = useCallback(
@@ -68,11 +77,17 @@ export default function QuizInputForm({ onSubmit, disabled = false }: QuizInputF
     [handleSubmit]
   )
 
+  const isSubmitDisabled =
+    disabled ||
+    !content.trim() ||
+    (viewMode === 'teacher' && !correctAnswer.trim()) ||
+    (viewMode === 'student' && !studentAnswer.trim())
+
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
         <DocumentTextIcon className="w-5 h-5" />
-        输入题目
+        {viewMode === 'student' ? '提交解答' : '输入题目'}
       </h2>
 
       {/* Quiz Content */}
@@ -93,57 +108,71 @@ export default function QuizInputForm({ onSubmit, disabled = false }: QuizInputF
         {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
       </div>
 
-      {/* Correct Answer */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-          <CheckCircleIcon className="w-4 h-4" />
-          参考答案 <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={correctAnswer}
-          onChange={(e) => setCorrectAnswer(e.target.value)}
-          placeholder="例如：B 或 2x+3 或 详细文字答案"
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.correctAnswer ? 'border-red-300' : 'border-slate-300'
-          }`}
-          disabled={disabled}
-        />
-        {errors.correctAnswer && (
-          <p className="mt-1 text-sm text-red-600">{errors.correctAnswer}</p>
-        )}
-      </div>
+      {/* Teacher mode: Correct Answer (required) */}
+      {viewMode === 'teacher' && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <CheckCircleIcon className="w-4 h-4" />
+            参考答案 <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={correctAnswer}
+            onChange={(e) => setCorrectAnswer(e.target.value)}
+            placeholder="例如：B 或 2x+3 或 详细文字答案"
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.correctAnswer ? 'border-red-300' : 'border-slate-300'
+            }`}
+            disabled={disabled}
+          />
+          {errors.correctAnswer && (
+            <p className="mt-1 text-sm text-red-600">{errors.correctAnswer}</p>
+          )}
+        </div>
+      )}
 
-      {/* Student Answer (Optional) */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-          <UserIcon className="w-4 h-4" />
-          学生答案 <span className="text-slate-400 text-xs">(可选)</span>
-        </label>
-        <input
-          type="text"
-          value={studentAnswer}
-          onChange={(e) => setStudentAnswer(e.target.value)}
-          placeholder="留空则只分析题目本身"
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={disabled}
-        />
-        <p className="mt-1 text-xs text-slate-500">
-          提供学生答案后，AI 将分析错误原因和知识盲点
-        </p>
-      </div>
+      {/* Student mode: Student Answer (required) */}
+      {viewMode === 'student' && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+            <UserIcon className="w-4 h-4" />
+            我的解答 <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={studentAnswer}
+            onChange={(e) => setStudentAnswer(e.target.value)}
+            placeholder="请输入你的解答过程或答案..."
+            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[100px] resize-y text-sm ${
+              errors.studentAnswer ? 'border-red-300' : 'border-slate-300'
+            }`}
+            disabled={disabled}
+          />
+          {errors.studentAnswer && (
+            <p className="mt-1 text-sm text-red-600">{errors.studentAnswer}</p>
+          )}
+          <p className="mt-1 text-xs text-slate-500">
+            AI 会检查你的解答，指出错误并给出引导提示
+          </p>
+        </div>
+      )}
 
       {/* Submit Button */}
       <button
         onClick={handleSubmit}
-        disabled={disabled || !content.trim() || !correctAnswer.trim()}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+        disabled={isSubmitDisabled}
+        className={`w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
+          viewMode === 'student'
+            ? 'bg-green-600 hover:bg-green-700 disabled:bg-slate-300'
+            : 'bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300'
+        }`}
       >
         {disabled ? (
           <>
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            分析中...
+            {viewMode === 'student' ? '检查中...' : '分析中...'}
           </>
+        ) : viewMode === 'student' ? (
+          '提交解答'
         ) : (
           '开始分析'
         )}
