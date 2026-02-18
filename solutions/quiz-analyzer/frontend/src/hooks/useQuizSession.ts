@@ -4,7 +4,7 @@
  * Uses @ccaas/react-sdk hooks for core chat functionality
  */
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
@@ -62,7 +62,6 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
 
   // Handle output_update via SDK callback (SSE-compatible)
   const handleOutputUpdate = useCallback((update: { field: string; value: unknown; preview: string }) => {
-    console.log('📦 Quiz analysis update received:', update.field, update.preview)
     setAnalysisResults(prev => ({
       ...prev,
       [update.field]: update.value,
@@ -91,15 +90,13 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
   const hasActiveSubAgents = status.activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
 
-  // In student mode, hide solution steps from analysisResults
-  const visibleResults: Partial<QuizAnalysis> = viewMode === 'student'
-    ? (() => {
-        const r = { ...analysisResults } as Record<string, unknown>
-        delete r['solutionSteps']     // camelCase sync field name
-        delete r['solution_steps']    // snake_case type field name
-        return r as Partial<QuizAnalysis>
-      })()
-    : analysisResults
+  // In student mode, hide solution steps from analysisResults (UI only — not a security boundary)
+  const visibleResults = useMemo(() => {
+    if (viewMode !== 'student') return analysisResults
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { solutionSteps: _cs, solution_steps: _ss, ...rest } = analysisResults as Partial<QuizAnalysis> & { solutionSteps?: unknown }
+    return rest as Partial<QuizAnalysis>
+  }, [analysisResults, viewMode])
 
   // Listen for custom events from pages
   // Use ref to avoid re-subscribing if sendMessage changes on every render

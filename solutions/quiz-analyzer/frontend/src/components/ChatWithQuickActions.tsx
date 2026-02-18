@@ -24,6 +24,7 @@ interface ChatWithQuickActionsProps {
   isThinking: boolean
   thinkingContent: string
   onSendMessage: (content: string) => void
+  onCancel: () => void
   activeTools: Map<string, ToolActivity>
   activeSubAgents: ActiveSubAgent[]
   todoItems: TodoItem[]
@@ -39,6 +40,7 @@ export default function ChatWithQuickActions({
   isThinking,
   thinkingContent,
   onSendMessage,
+  onCancel,
   activeTools,
   activeSubAgents,
   todoItems,
@@ -135,7 +137,7 @@ export default function ChatWithQuickActions({
           todoStats={todoStats}
           activeSubAgents={activeSubAgents}
           onSendMessage={onSendMessage}
-          onCancel={() => {}}
+          onCancel={onCancel}
           title={isStudent ? '辅导对话' : 'AI 对话'}
           placeholder={isStudent ? '问我任何关于这道题的问题...' : '问我任何关于题目的问题...'}
         />

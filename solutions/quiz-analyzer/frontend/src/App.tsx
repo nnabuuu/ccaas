@@ -124,16 +124,21 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
     }
   }, [quizInput, handleQuizSubmit])
 
-  // Switch view mode and reset conversation
+  // Shared reset — clears conversation, form, and display state
+  const resetSession = useCallback(() => {
+    session.clearConversation()
+    setQuizInput(null)
+    setStandardizedQuiz({ parsed: null, metadata: null })
+    setIsAnalyzing(false)
+  }, [session.clearConversation])
+
+  // Switch view mode: change template and reset (new sessionId picks up new template)
   const handleViewModeChange = useCallback(
     (mode: 'teacher' | 'student') => {
       setViewMode(mode)
-      session.clearConversation()
-      setQuizInput(null)
-      setStandardizedQuiz({ parsed: null, metadata: null })
-      setIsAnalyzing(false)
+      resetSession()
     },
-    [session.clearConversation]
+    [resetSession]
   )
 
   // Can analyze depends on view mode
@@ -180,16 +185,8 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
     }
   }, [session.analysisResults, session.isProcessing, isAnalyzing])
 
-  // Clear conversation
-  const handleClearConversation = useCallback(() => {
-    session.clearConversation()
-    setQuizInput(null)
-    setStandardizedQuiz({
-      parsed: null,
-      metadata: null,
-    })
-    setIsAnalyzing(false)
-  }, [session.clearConversation])
+  // Clear conversation button handler
+  const handleClearConversation = resetSession
 
   // Shared chat content element (define once, use conditionally)
   const chatContent = (
@@ -208,6 +205,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
         isThinking={session.isThinking}
         thinkingContent={session.thinkingContent}
         onSendMessage={session.sendMessage}
+        onCancel={session.cancelProcessing}
         activeTools={session.activeTools}
         activeSubAgents={session.activeSubAgents}
         todoItems={session.todoItems}
@@ -253,6 +251,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
           {/* Left Column - Input Form (30%) */}
           <div id="left-column" className="col-span-12 lg:col-span-3 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 p-6 overflow-y-auto">
             <QuizInputForm
+              key={viewMode}
               onSubmit={handleQuizSubmit}
               disabled={session.isProcessing}
               viewMode={viewMode}
