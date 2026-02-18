@@ -282,32 +282,8 @@ import { validate, safeValidate } from '@ccaas/common'
 // safeValidate: 返回 { success, data?, error? }
 ```
 
-## 教案特定类型
+## Solution 领域类型
 
-`@ccaas/common` 还包含教案相关的领域类型：
+`@ccaas/common` 只包含平台基础设施类型。领域类型（如教案、题目等）属于各 Solution 的内部实现，定义在 Solution 自身的代码库中，不通过 `@ccaas/common` 共享。
 
-```typescript
-type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
-type MaterialType = 'handout' | 'digital' | 'manipulative' | 'video' | 'other'
-type ActivityType = 'introduction' | 'direct-instruction' | 'guided-practice' |
-                    'independent-practice' | 'group' | 'assessment' | 'closure'
-
-interface LearningObjective {
-  description: string
-  bloomLevel: BloomLevel
-  assessmentCriteria: string
-}
-
-interface Activity {
-  title: string
-  description: string
-  duration: number
-  type: ActivityType
-  instructions: string[]
-  materials: string[]
-  teacherNotes: string
-}
-
-// 工具函数
-import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/common'
-```
+> **架构原则**：Core（`@ccaas/common`）= 基础设施类型；Solution = 领域逻辑与类型。两者不应混用。

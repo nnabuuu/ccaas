@@ -728,8 +728,3 @@ export interface SessionTemplate {
  */
 export type SessionTemplateMap = Record<string, SessionTemplate>;
 
-// ============================================================================
-// Lesson Plan Types
-// ============================================================================
-
-export * from './lesson-plan';

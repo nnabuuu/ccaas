@@ -282,32 +282,8 @@ import { validate, safeValidate } from '@ccaas/common'
 // safeValidate: Returns { success, data?, error? }
 ```
 
-## Lesson Plan Domain Types
+## Solution Domain Types
 
-`@ccaas/common` also includes domain-specific types for lesson plans:
+`@ccaas/common` only contains platform infrastructure types. Domain types (such as lesson plans, quiz data, etc.) belong to each Solution's internal implementation and are defined within the Solution's own codebase — they are not shared through `@ccaas/common`.
 
-```typescript
-type BloomLevel = 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'
-type MaterialType = 'handout' | 'digital' | 'manipulative' | 'video' | 'other'
-type ActivityType = 'introduction' | 'direct-instruction' | 'guided-practice' |
-                    'independent-practice' | 'group' | 'assessment' | 'closure'
-
-interface LearningObjective {
-  description: string
-  bloomLevel: BloomLevel
-  assessmentCriteria: string
-}
-
-interface Activity {
-  title: string
-  description: string
-  duration: number
-  type: ActivityType
-  instructions: string[]
-  materials: string[]
-  teacherNotes: string
-}
-
-// Utility functions
-import { createEmptyLessonPlan, isLessonPlanComplete, LESSON_PLAN_SYNC_FIELDS } from '@ccaas/common'
-```
+> **Architecture principle**: Core (`@ccaas/common`) = infrastructure types; Solution = domain logic and types. These two must not be mixed.
