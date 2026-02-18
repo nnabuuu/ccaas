@@ -7,8 +7,8 @@ KedgeAgentic uses a layered architecture where each layer has clear responsibili
 ```
 ┌─────────────────────────────────────────────┐
 │            Frontend Application Layer        │
-│   Web Workspace · Collaborative Editor ·     │
-│   Admin Console                              │
+│   Solution Frontend · Admin Console          │
+│                                              │
 ├─────────────────────────────────────────────┤
 │            API Gateway Layer                 │
 │   Auth · Session Management · Message        │
@@ -114,7 +114,7 @@ AI Agent Process
   │── Output Results   ──→ Structured data sync
   │
   ▼
-Frontend App ── Render Results ── User Review/Edit
+Frontend App ── Render Results ── User Interaction
 ```
 
 ## Deployment Architecture
