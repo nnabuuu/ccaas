@@ -6,7 +6,7 @@ Solutions are vertical applications built on the KedgeAgentic platform. Each Sol
 
 ### Overview
 
-AI-assisted lesson plan design where teachers review and edit the AI output, then the AI continues to refine. A quintessential Human-in-the-Loop collaboration scenario.
+Teachers describe their lesson design standards once in a Skill. The AI applies them consistently across every request, connected to curriculum resources via MCP — no re-prompting required.
 
 ### Key Features
 
