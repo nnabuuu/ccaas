@@ -289,7 +289,7 @@ export function useMySession(options = {}) {
     tenantId: 'my-solution',
     context,
     onOutputUpdate: (update) => {
-      // Queue update for user review (human-in-the-loop)
+      // Queue update for display and user interaction
     },
   })
 
