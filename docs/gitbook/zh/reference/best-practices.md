@@ -111,7 +111,7 @@ interface Options {
 在修改任何环节前，先追踪完整的数据流：
 
 ```
-UI 组件 → Hook → Socket.io → Solution 后端 → CCAAS API → Agent → MCP → 响应
+UI 组件 → Hook → SSE/REST → Solution 后端 → CCAAS API → Agent → MCP → 响应
 ```
 
 确保每个环节的数据格式都正确。
