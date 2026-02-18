@@ -4,9 +4,9 @@ This file provides guidance to Claude Code when working with this monorepo.
 
 ## Project Overview
 
-This is the **KedgeAgentic (即见Agentic)** monorepo containing all packages for running and interacting with a relay service for AgentEngine instances (supports Claude Code, OpenCode, and custom engines).
+This is the **KedgeAgentic (即见Agentic)** monorepo — an Agentic services platform where developers describe business logic in Skills and connect tools via MCP, and the platform runs it as a production-grade AI service. Core packages handle Agent Engine lifecycle, session management, skill routing, and MCP tool orchestration.
 
-**Platform Context**: KedgeAgentic is a **hosted platform** where users interact via the platform interface. Users do NOT install AgentEngine themselves - the platform manages all AgentEngine infrastructure. Always frame documentation and code from the platform user perspective, not from a self-hosted installation perspective.
+**Platform Context**: KedgeAgentic is an **Agentic services platform**. Users describe business logic in **Skills** and connect tools via **MCP** — the platform manages Agent Engine lifecycle, session persistence, and tool orchestration. Frame documentation from a Solution developer or business user perspective: they build with Skills + MCP, not with Agent Engine internals.
 
 ## Directory Structure
 

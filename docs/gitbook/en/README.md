@@ -1,30 +1,37 @@
 # What is KedgeAgentic
 
-KedgeAgentic is a **Human-in-the-Loop AI collaboration platform** designed to bridge the gap between modern AI capabilities and enterprise legacy systems.
+KedgeAgentic is an **Agentic services platform** — you describe your business logic, and the platform runs it as a production-grade AI service.
 
-Day-to-day enterprise operations rely heavily on legacy systems (SAP, Oracle, Salesforce, custom applications) that typically lack modern APIs and have limited automation capabilities. Current AI approaches either pursue full automation (high risk) or still require entirely manual operations (low efficiency).
+## The Problem
 
-KedgeAgentic offers a third path: **AI Agents and human operators working together**, with built-in version control and audit trails to ensure every step is traceable and reversible.
+AI is powerful, but it doesn't know your business. Every new integration requires rebuilding context from scratch: what your systems do, what your workflows look like, what your data means. Without persistent business context, AI stays a generic assistant — not a domain expert.
+
+## The Solution
+
+KedgeAgentic introduces two primitives that give AI permanent knowledge of your business:
+
+- **Skills** — Describe your business logic once. Skills encode workflows, rules, and domain knowledge that the AI applies consistently across every session.
+- **MCP** — Connect your tools and data once. MCP (Model Context Protocol) provides AI with structured access to your systems, APIs, and information sources.
+
+The platform handles everything else: Agent Engine lifecycle, session persistence, context management, and tool orchestration. You describe the business; the platform runs it.
 
 ## Core Philosophy
 
-- **Human-AI Collaboration**: AI handles repetitive tasks while humans focus on review and decision-making
-- **AI Engine Agnostic**: Integrates with any AI backend (Claude Code, OpenAI, open-source models, etc.)
-- **Legacy System Integration**: Connects to existing systems via browser automation, APIs, and Webhooks
-- **Enterprise-Grade Governance**: Multi-tenant isolation, audit logging, and version control
+- **Describe, don't program** — Express business logic in Skills; the AI handles execution
+- **Persistent context** — Business knowledge accumulates across sessions, not rebuilt each time
+- **Platform-managed infrastructure** — Agent Engines, sessions, and tools are managed by the platform
+- **Production-grade** — Built for real workloads: multi-tenant isolation, audit logging, session recovery
 
 ## Who Uses KedgeAgentic
 
-| Role | Typical Use Cases | Technical Level |
-|------|-------------------|-----------------|
-| Financial Analyst | Invoice processing, expense management, report generation | Non-technical |
-| Business Analyst | Data extraction, report generation | Non-technical |
-| Operations Staff | Data entry, system migration, document processing | Non-technical |
-| IT Administrator | Integration configuration, AI backend management | Technical |
-| Developer | Custom adapters, API integrations, Solution development | Technical |
+| Role | What They Build | How They Use It |
+|------|-----------------|-----------------|
+| Developer | Solutions (Skills + MCP + frontend) | Define skills, configure MCP, deploy |
+| Business Team | Domain workflows | Describe business logic in Skills |
+| End User | Agentic applications | Interact with the running service |
 
 ## Quick Navigation
 
 - **Decision Maker?** Read the [Platform Overview](platform/) to understand KedgeAgentic's value and capabilities
-- **Developer?** Jump to [Getting Started](getting-started/) to get up and running in 5 minutes
+- **Developer?** Jump to [Getting Started](getting-started/) to build your first Solution
 - **Need integrations?** Check out the [Developer Guide](guide/) and [API Reference](api/)
