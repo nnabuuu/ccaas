@@ -10,6 +10,7 @@
 
 import { useState, useCallback } from 'react'
 import { DocumentTextIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline'
+import type { ViewMode } from '../types'
 
 export interface QuizInputData {
   content: string
@@ -20,7 +21,7 @@ export interface QuizInputData {
 interface QuizInputFormProps {
   onSubmit: (data: QuizInputData) => void
   disabled?: boolean
-  viewMode?: 'teacher' | 'student'
+  viewMode?: ViewMode
 }
 
 export default function QuizInputForm({

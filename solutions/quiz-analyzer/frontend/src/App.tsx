@@ -23,9 +23,10 @@ import StandardizedQuizDisplay, {
 import ChatWithQuickActions from './components/ChatWithQuickActions'
 import ViewModeToggle from './components/ViewModeToggle'
 import { useQuizSession } from './hooks/useQuizSession'
+import type { ViewMode } from './types'
 
 function AppNew() {
-  const [viewMode, setViewMode] = useState<'teacher' | 'student'>('teacher')
+  const [viewMode, setViewMode] = useState<ViewMode>('teacher')
   const session = useQuizSession({ viewMode })
 
   // Chat layout hook
@@ -134,7 +135,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 
   // Switch view mode: change template and reset (new sessionId picks up new template)
   const handleViewModeChange = useCallback(
-    (mode: 'teacher' | 'student') => {
+    (mode: ViewMode) => {
       setViewMode(mode)
       resetSession()
     },

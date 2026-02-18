@@ -8,8 +8,8 @@ export class ConfigController {
 
   constructor() {
     try {
-      // solution.json is 2 levels up from dist/common/
-      const configPath = join(__dirname, '..', '..', '..', 'solution.json');
+      // SOLUTION_CONFIG_PATH env var overrides the default path (useful if build structure changes)
+      const configPath = process.env.SOLUTION_CONFIG_PATH || join(__dirname, '..', '..', '..', 'solution.json');
       this.solutionConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
     } catch {
       console.warn('Could not load solution.json for config endpoint');

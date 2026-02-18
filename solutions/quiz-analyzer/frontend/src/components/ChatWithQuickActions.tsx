@@ -11,12 +11,13 @@
 import { RocketLaunchIcon, AcademicCapIcon } from '@heroicons/react/24/solid'
 import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@ccaas/react-sdk'
 import type { ToolActivity, ActiveSubAgent } from '@ccaas/react-sdk'
+import type { ViewMode } from '../types'
 
 interface ChatWithQuickActionsProps {
   // Quick action
   onStartAnalysis: () => void
   canAnalyze: boolean
-  viewMode?: 'teacher' | 'student'
+  viewMode?: ViewMode
 
   // Chat props
   messages: Message[]

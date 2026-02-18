@@ -11,7 +11,7 @@ import {
   useAgentStatus,
 } from '@ccaas/react-sdk'
 import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@ccaas/react-sdk'
-import type { QuizAnalysis } from '../types'
+import type { QuizAnalysis, ViewMode } from '../types'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
@@ -51,9 +51,12 @@ export interface UseQuizSessionReturn {
 }
 
 interface UseQuizSessionOptions {
-  viewMode?: 'teacher' | 'student'
+  viewMode?: ViewMode
 }
 
+// NOTE: When viewMode changes, the caller must also call clearConversation() to start a
+// new session so the updated sessionTemplate takes effect. Changing viewMode alone only
+// updates the template used in the next sendMessage on the *current* session.
 export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionReturn {
   const viewMode = options?.viewMode ?? 'teacher'
 

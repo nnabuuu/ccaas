@@ -4,9 +4,11 @@
  * Switches between teacher view (full analysis) and student view (guided tutoring)
  */
 
+import type { ViewMode } from '../types'
+
 interface ViewModeToggleProps {
-  value: 'teacher' | 'student'
-  onChange: (mode: 'teacher' | 'student') => void
+  value: ViewMode
+  onChange: (mode: ViewMode) => void
 }
 
 export default function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {

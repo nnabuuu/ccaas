@@ -1,3 +1,5 @@
+export type ViewMode = 'teacher' | 'student'
+
 export interface Subject {
   id: string;
   name: string;
