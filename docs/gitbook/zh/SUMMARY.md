@@ -5,7 +5,7 @@
 ## 平台介绍 <a href="#platform" id="platform"></a>
 
 * [平台概述](platform/README.md)
-* [核心价值：Human-in-the-Loop](platform/value.md)
+* [核心价值：Skills + MCP](platform/value.md)
 * [平台架构](platform/architecture.md)
 * [核心能力](platform/capabilities.md)
 * [Solution 案例展示](platform/solutions.md)

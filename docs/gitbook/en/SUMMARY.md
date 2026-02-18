@@ -5,7 +5,7 @@
 ## Platform Introduction <a href="#platform" id="platform"></a>
 
 * [Platform Overview](platform/README.md)
-* [Core Value: Human-in-the-Loop](platform/value.md)
+* [Core Value: Skills + MCP](platform/value.md)
 * [Platform Architecture](platform/architecture.md)
 * [Core Capabilities](platform/capabilities.md)
 * [Solution Showcase](platform/solutions.md)
