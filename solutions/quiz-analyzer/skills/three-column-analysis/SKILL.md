@@ -1,36 +1,6 @@
 ---
 name: Quiz Analyzer - Three Column Analysis
-slug: three-column-analysis
 description: 三栏布局题目分析 - 解析题目、标注知识点、查找目录、生成思路（使用 JSON 数据源）
-scope: tenant
-triggers:
-  - type: keyword
-    value: 请帮我分析这道题目
-    priority: 11
-  - type: keyword
-    value: 开始分析
-    priority: 10
-  - type: keyword
-    value: 分析这道题
-    priority: 10
-  - type: keyword
-    value: 题目分析
-    priority: 9
-  - type: keyword
-    value: 解题思路
-    priority: 9
-allowedTools:
-  - parse_quiz_content
-  - search_knowledge_points_json
-  - search_catalog
-  - write_output
-  - generate_thinking_process_template
-  - verify_knowledge_point_tags
-  - get_knowledge_points_tree
-  - search_knowledge_points
-  - get_root_categories
-  - get_children_nodes
-  - get_node_path
 ---
 
 # Skill: Quiz Three-Column Analysis (三栏布局题目分析)

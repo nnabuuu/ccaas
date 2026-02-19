@@ -1,20 +1,6 @@
 ---
 name: teaching-script-generator
-slug: teaching-script-generator
 description: 基于教案生成教师讲稿，将结构化教学设计转化为口语化授课指南
-triggers:
-  - type: keyword
-    value: "生成讲稿"
-    priority: 100
-  - type: keyword
-    value: "生成教学脚本"
-    priority: 100
-  - type: intent
-    value: "将教案转化为讲稿"
-    priority: 80
-  - type: intent
-    value: "创建教学讲稿"
-    priority: 80
 ---
 
 # 教学讲稿生成器

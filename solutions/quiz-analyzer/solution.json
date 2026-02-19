@@ -49,5 +49,9 @@
       "customInit": ".solution-hooks/custom-init.sh",
       "postInstall": ".solution-hooks/post-install.sh"
     }
-  }
+  },
+  "skills": [
+    { "slug": "three-column-analysis", "name": "three-column-analysis" },
+    { "slug": "analyze-student-answer", "name": "analyze-student-answer" }
+  ]
 }

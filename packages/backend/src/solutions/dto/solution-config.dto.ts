@@ -15,16 +15,6 @@ import { z } from 'zod';
 // ============================================================================
 
 /**
- * Skill trigger configuration
- */
-export const SkillTriggerSchema = z.object({
-  type: z.enum(['keyword', 'intent', 'pattern', 'context']),
-  value: z.string().min(1),
-  priority: z.number().int().min(0).max(100).optional(),
-  description: z.string().optional(),
-});
-
-/**
  * Chained skill configuration
  */
 export const ChainedSkillSchema = z.object({
@@ -35,7 +25,7 @@ export const ChainedSkillSchema = z.object({
 });
 
 /**
- * Skill definition used in solution.json
+ * Skill definition used in solution.json (v1/v2 legacy format)
  */
 export const SkillDefinitionSchema = z.object({
   name: z.string().min(1),
@@ -44,8 +34,6 @@ export const SkillDefinitionSchema = z.object({
   skillFile: z.string().optional(),
   scope: z.enum(['tenant', 'personal']).default('tenant'),
   instructions: z.string().optional(),
-  triggers: z.array(SkillTriggerSchema).optional(),
-  allowedTools: z.array(z.string()).optional(),
   relatedSkills: z.array(z.string()).optional(),
   chainedSkills: z.record(ChainedSkillSchema).optional(),
   outputFormat: z.string().optional(),
@@ -72,6 +60,22 @@ export const SetupConfigSchema = z.object({
     customInit: z.string().optional(),
     postInstall: z.string().optional(),
   }).optional(),
+});
+
+/**
+ * Session template configuration for auto-applying to tenant config.
+ * Mirrors the SessionTemplate interface from @ccaas/common.
+ */
+export const SessionTemplateSchema = z.object({
+  description: z.string().optional(),
+  appendSystemPrompt: z.string().optional(),
+  enabledSkillSlugs: z.array(
+    z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
+  ).optional(),
+  mcpServers: z.record(McpServerDefinitionSchema).optional(),
+  model: z.string().optional(),
+  maxTokens: z.number().int().positive().optional(),
+  skillPath: z.string().optional(),
 });
 
 // ============================================================================
@@ -147,10 +151,7 @@ const V1SkillSingleSchema = z.object({
   skillFile: z.string().optional(),
   scope: z.enum(['tenant', 'personal']).optional(),
   instructions: z.string().optional(),
-  triggers: z.union([
-    z.array(SkillTriggerSchema),
-    z.array(z.string()),
-  ]).optional(),
+  triggers: z.array(z.unknown()).optional(),
   allowedTools: z.array(z.string()).optional(),
   relatedSkills: z.array(z.string()).optional(),
   chainedSkills: z.record(ChainedSkillSchema).optional(),
@@ -267,12 +268,17 @@ export function validateSolutionConfig(config: unknown): SolutionConfigValidatio
 // ============================================================================
 
 /**
- * Skill reference in v3 - can be a string path or object with folder
- * Supports wildcard patterns: "skills/*", "custom-skills/analyzer"
+ * Skill reference in v3 - several equivalent forms accepted:
+ *   - string wildcard: "skills/*"
+ *   - string path:     "skills/my-skill"
+ *   - folder object:   { folder: "skills/my-skill" }
+ *   - slug object:     { slug: "my-skill" }  →  resolved as "skills/my-skill"
+ *   - slug+name:       { slug: "my-skill", name: "My Skill" }  (name ignored, slug used)
  */
 export const SkillReferenceV3Schema = z.union([
-  z.string().min(1),  // "skills/*" or "skills/specific-skill"
-  z.object({ folder: z.string().min(1) }),  // { folder: "skills/specific-skill" }
+  z.string().min(1),
+  z.object({ folder: z.string().min(1) }),
+  z.object({ slug: z.string().min(1), name: z.string().optional() }),
 ]);
 
 /**
@@ -314,6 +320,12 @@ export const SolutionConfigV3Schema = z.object({
 
   /** MCP server configuration */
   mcpServers: z.record(McpServerDefinitionSchema).default({}),
+
+  /**
+   * Session templates to auto-apply to this tenant's config.
+   * Keyed by template name, merged with existing templates on each load.
+   */
+  sessionTemplates: z.record(SessionTemplateSchema).optional(),
 
   // ============ Solution Internal Configuration ============
   /** Synchronized fields for real-time updates (not used by CCAAS Core) */
@@ -360,8 +372,8 @@ export type SkillDefinition = z.infer<typeof SkillDefinitionSchema>;
 /** MCP server definition */
 export type McpServerDefinition = z.infer<typeof McpServerDefinitionSchema>;
 
-/** Skill trigger */
-export type SkillTriggerConfig = z.infer<typeof SkillTriggerSchema>;
+/** Session template configuration */
+export type SessionTemplateConfig = z.infer<typeof SessionTemplateSchema>;
 
 /** Setup configuration */
 export type SetupConfig = z.infer<typeof SetupConfigSchema>;

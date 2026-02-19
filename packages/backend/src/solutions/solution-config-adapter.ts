@@ -361,18 +361,6 @@ export class SolutionConfigAdapter {
     if (typeof s.instructions === 'string') skill.instructions = s.instructions;
     if (typeof s.outputFormat === 'string') skill.outputFormat = s.outputFormat;
 
-    // Triggers
-    if (Array.isArray(s.triggers)) {
-      skill.triggers = this.normalizeTriggers(s.triggers, warnings);
-    }
-
-    // Allowed tools
-    if (Array.isArray(s.allowedTools)) {
-      skill.allowedTools = s.allowedTools.filter(
-        (t): t is string => typeof t === 'string' && t.length > 0,
-      );
-    }
-
     // Related skills
     if (Array.isArray(s.relatedSkills)) {
       skill.relatedSkills = s.relatedSkills.filter(
@@ -388,49 +376,6 @@ export class SolutionConfigAdapter {
     }
 
     return skill;
-  }
-
-  private normalizeTriggers(
-    triggers: unknown[],
-    warnings: string[],
-  ): Array<{ type: 'keyword' | 'intent' | 'pattern' | 'context'; value: string; priority?: number; description?: string }> {
-    const result: Array<{ type: 'keyword' | 'intent' | 'pattern' | 'context'; value: string; priority?: number; description?: string }> = [];
-
-    for (const t of triggers) {
-      if (typeof t === 'string') {
-        // Some v1 configs might have string-only triggers
-        result.push({ type: 'keyword', value: t });
-        continue;
-      }
-
-      if (t && typeof t === 'object') {
-        const trigger = t as Record<string, unknown>;
-        const type = trigger.type;
-        const value = trigger.value;
-
-        if (
-          typeof value === 'string' &&
-          value.length > 0 &&
-          (type === 'keyword' || type === 'intent' || type === 'pattern' || type === 'context')
-        ) {
-          const normalized: { type: 'keyword' | 'intent' | 'pattern' | 'context'; value: string; priority?: number; description?: string } = {
-            type,
-            value,
-          };
-          if (typeof trigger.priority === 'number') {
-            normalized.priority = trigger.priority;
-          }
-          if (typeof trigger.description === 'string') {
-            normalized.description = trigger.description;
-          }
-          result.push(normalized);
-        } else {
-          warnings.push(`Skipping invalid trigger: type=${String(type)}, value=${String(value)}`);
-        }
-      }
-    }
-
-    return result;
   }
 
   private normalizeChainedSkills(

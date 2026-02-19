@@ -30,5 +30,11 @@
       "customInit": ".solution-hooks/custom-init.sh",
       "postInstall": ".solution-hooks/post-install.sh"
     }
-  }
+  },
+  "skills": [
+    { "slug": "lesson-plan-designer", "name": "lesson-plan-designer" },
+    { "slug": "teaching-script-generator", "name": "teaching-script-generator" },
+    { "slug": "lesson-plan-pptx", "name": "lesson-plan-pptx" },
+    { "slug": "notebooklm", "name": "notebooklm" }
+  ]
 }

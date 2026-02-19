@@ -1,16 +1,17 @@
 import {
   SolutionConfigV2Schema,
   SolutionConfigV1Schema,
+  SolutionConfigV3Schema,
   detectSchemaVersion,
   validateSolutionConfig,
   TenantConfigSchema,
   DiscoveryConfigSchema,
   SkillDefinitionSchema,
   McpServerDefinitionSchema,
-  SkillTriggerSchema,
   InternalConfigSchema,
   CcaasConfigSchema,
   SetupConfigSchema,
+  SessionTemplateSchema,
 } from './solution-config.dto';
 
 // ============================================================================
@@ -331,71 +332,6 @@ describe('SkillDefinitionSchema', () => {
   });
 });
 
-// ============================================================================
-// SkillTrigger Schema Tests
-// ============================================================================
-
-describe('SkillTriggerSchema', () => {
-  it('should validate keyword trigger', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'keyword',
-      value: '分析',
-      priority: 10,
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should validate pattern trigger', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'pattern',
-      value: 'fix.*bug',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should validate intent trigger', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'intent',
-      value: 'analyze_quiz',
-      description: 'Analyze a quiz question',
-    });
-    expect(result.success).toBe(true);
-  });
-
-  it('should reject invalid trigger type', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'unknown',
-      value: 'test',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject empty value', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'keyword',
-      value: '',
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject priority out of range', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'keyword',
-      value: 'test',
-      priority: 101,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('should reject negative priority', () => {
-    const result = SkillTriggerSchema.safeParse({
-      type: 'keyword',
-      value: 'test',
-      priority: -1,
-    });
-    expect(result.success).toBe(false);
-  });
-});
 
 // ============================================================================
 // McpServerDefinition Schema Tests
@@ -958,5 +894,182 @@ describe('Real-world v1 solution configs', () => {
 
     const result = SolutionConfigV1Schema.safeParse(legoPlayground);
     expect(result.success).toBe(true);
+  });
+});
+
+// ============================================================================
+// SolutionConfigV3Schema Tests
+// ============================================================================
+
+describe('SolutionConfigV3Schema', () => {
+  const minimalV3 = {
+    schemaVersion: '3.0' as const,
+    tenant: { name: 'Quiz Analyzer', slug: 'quiz-analyzer' },
+  };
+
+  it('should validate minimal v3 config with defaults applied', () => {
+    const result = SolutionConfigV3Schema.safeParse(minimalV3);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.skills).toEqual(['skills/*']);
+      expect(result.data.mcpServers).toEqual({});
+      expect(result.data.discovery.enabled).toBe(true);
+    }
+  });
+
+  it('should accept string wildcard skill reference', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: ['skills/*'],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept specific string skill path', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: ['skills/three-column-analysis', 'skills/analyze-student-answer'],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept folder object skill reference', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: [{ folder: 'skills/three-column-analysis' }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept { slug } skill reference (actual solution.json format)', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: [
+        { slug: 'three-column-analysis', name: 'three-column-analysis' },
+        { slug: 'analyze-student-answer', name: 'analyze-student-answer' },
+      ],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept { slug } without name', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: [{ slug: 'my-skill' }],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject schemaVersion !== 3.0', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      schemaVersion: '2.0',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing tenant', () => {
+    const result = SolutionConfigV3Schema.safeParse({ schemaVersion: '3.0' });
+    expect(result.success).toBe(false);
+  });
+
+  it('should validate v3 with sessionTemplates', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      sessionTemplates: {
+        teacher: {
+          description: '教师视图',
+          appendSystemPrompt: '你正在为教师提供完整的题目分析材料',
+          enabledSkillSlugs: ['three-column-analysis'],
+        },
+        student: {
+          description: '学生视图',
+          appendSystemPrompt: '你正在辅导一名学生解题',
+        },
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(Object.keys(result.data.sessionTemplates!)).toEqual(['teacher', 'student']);
+    }
+  });
+
+  it('should accept quiz-analyzer actual solution.json shape', () => {
+    const actual = {
+      schemaVersion: '3.0',
+      tenant: { name: 'Quiz Analyzer', slug: 'quiz-analyzer' },
+      skills: [
+        { slug: 'three-column-analysis', name: 'three-column-analysis' },
+        { slug: 'analyze-student-answer', name: 'analyze-student-answer' },
+      ],
+      mcpServers: {
+        'quiz-analyzer-tools': {
+          command: 'node',
+          args: ['mcp-server/dist/index.js'],
+          env: { MCP_PORT: '3006' },
+        },
+      },
+    };
+    const result = SolutionConfigV3Schema.safeParse(actual);
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject skills array with empty string', () => {
+    const result = SolutionConfigV3Schema.safeParse({
+      ...minimalV3,
+      skills: [''],
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+// ============================================================================
+// SessionTemplateSchema Tests
+// ============================================================================
+
+describe('SessionTemplateSchema', () => {
+  it('should accept an empty object (all fields optional)', () => {
+    const result = SessionTemplateSchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept a fully populated template', () => {
+    const result = SessionTemplateSchema.safeParse({
+      description: '教师视图',
+      appendSystemPrompt: '你正在为教师提供完整的题目分析',
+      enabledSkillSlugs: ['three-column-analysis', 'analyze-student-answer'],
+      model: 'claude-opus-4-6',
+      maxTokens: 8192,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject maxTokens of 0', () => {
+    const result = SessionTemplateSchema.safeParse({ maxTokens: 0 });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject negative maxTokens', () => {
+    const result = SessionTemplateSchema.safeParse({ maxTokens: -1 });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject non-integer maxTokens', () => {
+    const result = SessionTemplateSchema.safeParse({ maxTokens: 1.5 });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid slug in enabledSkillSlugs', () => {
+    const result = SessionTemplateSchema.safeParse({
+      enabledSkillSlugs: ['valid-slug', 'INVALID SLUG'],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject empty string in enabledSkillSlugs', () => {
+    const result = SessionTemplateSchema.safeParse({
+      enabledSkillSlugs: [''],
+    });
+    expect(result.success).toBe(false);
   });
 });

@@ -2,17 +2,17 @@
  * Skill Metadata Parser Service
  *
  * Reads SKILL.md files, extracts YAML frontmatter, validates against the
- * SkillFrontmatter schema, and provides a fallback chain:
+ * SkillFrontmatter schema, and provides a two-path fallback:
  *
  *   SKILL.md frontmatter (preferred)
- *     -> solution.json skill definition (fallback)
- *       -> sensible defaults (last resort)
+ *     -> sensible defaults (last resort)
+ *
+ * The skill slug is always inferred from the containing directory name,
+ * never from frontmatter.
  *
  * Usage:
  *   const metadata = await parser.parseSkillFile(
  *     '/abs/path/to/skills/my-skill/SKILL.md',
- *     solutionConfig,  // optional fallback source
- *     'my-skill',      // optional slug for fallback lookup
  *   );
  */
 
@@ -25,26 +25,24 @@ import {
   type SkillFrontmatter,
   type SkillFrontmatterValidationError,
 } from './dto/skill-frontmatter.dto';
-import type {
-  SolutionConfigV2,
-  SkillDefinition,
-} from './dto/solution-config.dto';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /**
- * The merged result returned by parseSkillFile.
+ * The parsed result returned by parseSkillFile.
  */
 export interface SkillMetadata {
-  /** Validated frontmatter (from SKILL.md, fallback, or defaults) */
+  /** Validated frontmatter (from SKILL.md or defaults) */
   frontmatter: SkillFrontmatter;
+  /** Skill slug inferred from the containing directory name */
+  slug: string;
   /** Raw markdown body (without frontmatter) from SKILL.md */
   content: string;
   /** Where the frontmatter data came from */
-  source: 'frontmatter' | 'solution-json' | 'defaults';
-  /** Absolute path to the SKILL.md file (may not exist if source != 'frontmatter') */
+  source: 'frontmatter' | 'defaults';
+  /** Absolute path to the SKILL.md file */
   filePath: string;
   /** Warnings collected during parsing */
   warnings: string[];
@@ -62,16 +60,13 @@ export class SkillMetadataParserService {
    * Parse a SKILL.md file and return validated metadata.
    *
    * @param skillPath - Path to the SKILL.md file (absolute or relative to cwd)
-   * @param solutionConfig - Optional v2 config to use as fallback
-   * @param skillSlug - Optional slug to locate the skill definition in solutionConfig
    */
-  async parseSkillFile(
-    skillPath: string,
-    solutionConfig?: SolutionConfigV2,
-    skillSlug?: string,
-  ): Promise<SkillMetadata> {
+  async parseSkillFile(skillPath: string): Promise<SkillMetadata> {
     const resolvedPath = path.resolve(skillPath);
     const warnings: string[] = [];
+
+    // Slug is always inferred from the containing directory name
+    const slug = this.toSlug(path.basename(path.dirname(resolvedPath)));
 
     // Step 1: Try reading and parsing the SKILL.md file
     const fileResult = await this.readSkillFile(resolvedPath);
@@ -94,6 +89,7 @@ export class SkillMetadataParserService {
           );
           return {
             frontmatter: validation.data,
+            slug,
             content,
             source: 'frontmatter',
             filePath: resolvedPath,
@@ -101,54 +97,19 @@ export class SkillMetadataParserService {
           };
         }
 
-        // Frontmatter present but invalid - try merging with fallback
+        // Frontmatter present but invalid
         this.logValidationErrors(resolvedPath, validation.errors, warnings);
-
-        const merged = this.mergeFrontmatterWithFallback(
-          frontmatterData,
-          solutionConfig,
-          skillSlug,
-          warnings,
-        );
-
-        if (merged) {
-          return {
-            frontmatter: merged,
-            content,
-            source: 'frontmatter',
-            filePath: resolvedPath,
-            warnings,
-          };
-        }
       }
 
-      // Frontmatter missing or completely invalid - try solution.json fallback
       if (!frontmatterData || Object.keys(frontmatterData).length === 0) {
-        warnings.push(
-          `No YAML frontmatter found in ${resolvedPath}`,
-        );
+        warnings.push(`No YAML frontmatter found in ${resolvedPath}`);
       }
 
-      const fallback = this.buildFromSolutionConfig(
-        solutionConfig,
-        skillSlug,
-        warnings,
-      );
-
-      if (fallback) {
-        return {
-          frontmatter: fallback,
-          content,
-          source: 'solution-json',
-          filePath: resolvedPath,
-          warnings,
-        };
-      }
-
-      // Last resort: defaults with whatever info we can infer
-      const defaults = this.buildDefaults(resolvedPath, warnings);
+      // Fall through to defaults
+      const defaults = this.buildDefaults(resolvedPath, slug, warnings);
       return {
         frontmatter: defaults,
+        slug,
         content,
         source: 'defaults',
         filePath: resolvedPath,
@@ -158,26 +119,10 @@ export class SkillMetadataParserService {
 
     // SKILL.md file not found
     warnings.push(`SKILL.md not found at ${resolvedPath}`);
-
-    const fallback = this.buildFromSolutionConfig(
-      solutionConfig,
-      skillSlug,
-      warnings,
-    );
-
-    if (fallback) {
-      return {
-        frontmatter: fallback,
-        content: '',
-        source: 'solution-json',
-        filePath: resolvedPath,
-        warnings,
-      };
-    }
-
-    const defaults = this.buildDefaults(resolvedPath, warnings);
+    const defaults = this.buildDefaults(resolvedPath, slug, warnings);
     return {
       frontmatter: defaults,
+      slug,
       content: '',
       source: 'defaults',
       filePath: resolvedPath,
@@ -240,89 +185,18 @@ export class SkillMetadataParserService {
   }
 
   // --------------------------------------------------------------------------
-  // Merge / Fallback
+  // Defaults
   // --------------------------------------------------------------------------
 
   /**
-   * Attempt to merge partial/invalid frontmatter with solution.json skill data.
-   * Returns a valid SkillFrontmatter or null if merge still fails validation.
-   */
-  private mergeFrontmatterWithFallback(
-    partial: Record<string, unknown>,
-    solutionConfig?: SolutionConfigV2,
-    skillSlug?: string,
-    warnings?: string[],
-  ): SkillFrontmatter | null {
-    const skillDef = this.findSkillDefinition(solutionConfig, skillSlug);
-    if (!skillDef) return null;
-
-    const merged = {
-      name: partial.name ?? skillDef.name,
-      slug: partial.slug ?? skillDef.slug,
-      description: partial.description ?? skillDef.description ?? '',
-      scope: partial.scope ?? (skillDef.scope === 'personal' ? 'tenant' : skillDef.scope) ?? 'tenant',
-      triggers: partial.triggers ?? this.convertTriggers(skillDef.triggers),
-      allowedTools: partial.allowedTools ?? skillDef.allowedTools ?? [],
-    };
-
-    const validation = validateSkillFrontmatter(merged);
-    if (validation.success) {
-      warnings?.push(
-        `Merged frontmatter with solution.json fallback for slug="${skillSlug}"`,
-      );
-      return validation.data;
-    }
-
-    return null;
-  }
-
-  /**
-   * Build SkillFrontmatter entirely from a solution.json skill definition.
-   */
-  private buildFromSolutionConfig(
-    solutionConfig?: SolutionConfigV2,
-    skillSlug?: string,
-    warnings?: string[],
-  ): SkillFrontmatter | null {
-    const skillDef = this.findSkillDefinition(solutionConfig, skillSlug);
-    if (!skillDef) return null;
-
-    const candidate = {
-      name: skillDef.name,
-      slug: skillDef.slug,
-      description: skillDef.description ?? `Skill: ${skillDef.name}`,
-      scope: skillDef.scope === 'personal' ? 'tenant' as const : (skillDef.scope ?? 'tenant') as 'tenant' | 'global',
-      triggers: this.convertTriggers(skillDef.triggers),
-      allowedTools: skillDef.allowedTools ?? [],
-    };
-
-    const validation = validateSkillFrontmatter(candidate);
-    if (validation.success) {
-      this.logger.debug(
-        `Using solution.json fallback for skill "${skillDef.slug}"`,
-      );
-      warnings?.push(
-        `Using solution.json as metadata source for skill "${skillDef.slug}"`,
-      );
-      return validation.data;
-    }
-
-    warnings?.push(
-      `solution.json skill definition for "${skillSlug}" also failed validation`,
-    );
-    return null;
-  }
-
-  /**
-   * Build sensible defaults when both frontmatter and solution.json are unavailable.
-   * Infers the skill name from the directory structure.
+   * Build sensible defaults when frontmatter is unavailable.
    */
   private buildDefaults(
     filePath: string,
+    slug: string,
     warnings: string[],
   ): SkillFrontmatter {
     const dirName = path.basename(path.dirname(filePath));
-    const slug = this.toSlug(dirName);
     const name = dirName || 'unknown-skill';
 
     warnings.push(
@@ -331,62 +205,13 @@ export class SkillMetadataParserService {
 
     return {
       name,
-      slug,
       description: `Auto-discovered skill: ${name}`,
-      scope: 'tenant',
-      triggers: [],
-      allowedTools: [],
     };
   }
 
   // --------------------------------------------------------------------------
   // Helpers
   // --------------------------------------------------------------------------
-
-  /**
-   * Find a SkillDefinition in the v2 config by slug.
-   */
-  private findSkillDefinition(
-    config?: SolutionConfigV2,
-    slug?: string,
-  ): SkillDefinition | undefined {
-    if (!config || !slug) return undefined;
-
-    const skills = config.ccaas?.discovery?.skills ?? [];
-    return skills.find((s) => s.slug === slug);
-  }
-
-  /**
-   * Convert solution.json triggers (which may have optional priority) to
-   * the format expected by the frontmatter schema.
-   */
-  private convertTriggers(
-    triggers?: Array<{
-      type: string;
-      value: string;
-      priority?: number;
-      description?: string;
-    }>,
-  ): Array<{
-    type: 'keyword' | 'pattern' | 'intent' | 'context';
-    value: string;
-    priority: number;
-    description?: string;
-  }> {
-    if (!triggers) return [];
-    return triggers
-      .filter(
-        (t) =>
-          ['keyword', 'pattern', 'intent', 'context'].includes(t.type) &&
-          t.value.length > 0,
-      )
-      .map((t) => ({
-        type: t.type as 'keyword' | 'pattern' | 'intent' | 'context',
-        value: t.value,
-        priority: t.priority ?? 5,
-        ...(t.description ? { description: t.description } : {}),
-      }));
-  }
 
   /**
    * Convert a directory name to a valid slug.

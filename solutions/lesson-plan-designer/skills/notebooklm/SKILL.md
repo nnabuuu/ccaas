@@ -1,8 +1,6 @@
 ---
 name: NotebookLM
-slug: notebooklm
 description: 生成教案讲解音频、PDF文档等内容
-scope: tenant
 ---
 <!-- notebooklm-py v0.2.1 -->
 

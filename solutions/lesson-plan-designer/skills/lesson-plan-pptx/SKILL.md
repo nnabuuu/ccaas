@@ -1,35 +1,6 @@
 ---
 name: lesson-plan-pptx
-slug: lesson-plan-pptx
 description: 基于教案生成演示文稿(PDF格式),使用NotebookLM AI将教案内容转化为专业幻灯片。支持"生成PPT"和"生成PDF"等多种表述
-triggers:
-  - type: keyword
-    value: "生成PPT"
-    priority: 100
-  - type: keyword
-    value: "生成pdf"
-    priority: 100
-  - type: keyword
-    value: "生成PDF"
-    priority: 100
-  - type: keyword
-    value: "生成幻灯片"
-    priority: 95
-  - type: keyword
-    value: "创建课件"
-    priority: 90
-  - type: keyword
-    value: "生成演示文稿"
-    priority: 90
-  - type: keyword
-    value: "制作PPT"
-    priority: 85
-  - type: keyword
-    value: "制作课件"
-    priority: 85
-  - type: intent
-    value: "将教案转化为幻灯片或演示文稿"
-    priority: 80
 ---
 
 # lesson-plan-pptx - 通用幻灯片生成器

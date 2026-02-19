@@ -1,35 +1,6 @@
 ---
 name: Lesson Plan Designer
-slug: lesson-plan-designer
 description: AI备课助手 - 设计教案、生成讲稿、制作音频和PPT
-scope: tenant
-triggers:
-  - type: keyword
-    value: "备课"
-    priority: 10
-  - type: keyword
-    value: "教学目标"
-    priority: 8
-  - type: keyword
-    value: "教学活动"
-    priority: 8
-  - type: keyword
-    value: "评估"
-    priority: 7
-  - type: keyword
-    value: "设计"
-    priority: 5
-  - type: keyword
-    value: "生成音频"
-    priority: 9
-  - type: keyword
-    value: "全套材料"
-    priority: 10
-allowedTools:
-  - write_output
-  - Read
-  - Write
-  - Skill
 ---
 
 # 教案优化专家 - 基于崔允漷理论

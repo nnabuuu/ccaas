@@ -32,6 +32,7 @@ import type {
   SolutionConfigV3,
   SkillReferenceV3,
   McpServerDefinition,
+  SessionTemplateConfig,
 } from './dto/solution-config.dto';
 
 // ============================================================================
@@ -221,6 +222,11 @@ export class SolutionLoaderService {
       warnings,
     );
 
+    // Step 4: Apply session templates (upsert — merge with existing)
+    if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
+      await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
+    }
+
     this.logger.log(
       `Loaded "${solution.name}": ` +
       `${skillResults.filter((s) => s.action === 'created').length} skills created, ` +
@@ -288,7 +294,16 @@ export class SolutionLoaderService {
     const results: SkillLoadResult[] = [];
 
     for (const ref of skillRefs) {
-      const pattern = typeof ref === 'string' ? ref : ref.folder;
+      // Resolve reference to a folder pattern:
+      //   "skills/*"            → wildcard glob
+      //   "skills/my-skill"     → specific folder
+      //   { folder: "..." }     → explicit folder
+      //   { slug: "my-skill" }  → convention: skills/my-skill
+      const pattern = typeof ref === 'string'
+        ? ref
+        : 'folder' in ref
+          ? ref.folder
+          : `skills/${ref.slug}`;
 
       if (pattern.includes('*')) {
         // Wildcard pattern - scan for SKILL.md files
@@ -381,6 +396,7 @@ export class SolutionLoaderService {
   /**
    * Register a single skill from a folder containing SKILL.md.
    * Uses SKILL.md frontmatter as the primary metadata source.
+   * Slug is always inferred from the directory name, not frontmatter.
    */
   private async registerSkillFromFolder(
     tenantId: string,
@@ -397,7 +413,7 @@ export class SolutionLoaderService {
       throw new Error(`SKILL.md not found in ${skillFolder}`);
     }
 
-    // Parse SKILL.md frontmatter (no fallback to solution.json in v3)
+    // Parse SKILL.md frontmatter
     const metadata = await this.parser.parseSkillFile(skillFilePath);
 
     if (metadata.source === 'defaults') {
@@ -406,10 +422,10 @@ export class SolutionLoaderService {
       );
     }
 
-    const { frontmatter, content } = metadata;
+    const { frontmatter, slug, content } = metadata;
 
     // Check if skill already exists
-    const existing = await this.skills.findOne(tenantId, frontmatter.slug);
+    const existing = await this.skills.findOne(tenantId, slug);
 
     if (existing) {
       // Update existing skill
@@ -417,18 +433,13 @@ export class SolutionLoaderService {
         name: frontmatter.name,
         description: frontmatter.description,
         content,
-        allowedTools: frontmatter.allowedTools ?? [],
-        triggers: (frontmatter.triggers ?? []).map((t) => ({
-          type: t.type,
-          value: t.value,
-          priority: t.priority,
-          description: t.description,
-        })),
-        scope: frontmatter.scope ?? 'tenant',
+        allowedTools: [],
+        triggers: [],
+        scope: 'tenant',
       });
 
       return {
-        slug: frontmatter.slug,
+        slug,
         name: frontmatter.name,
         action: 'updated',
         skillId: existing.id,
@@ -437,30 +448,25 @@ export class SolutionLoaderService {
 
     // Create new skill
     const created = await this.skills.create(tenantId, {
-      slug: frontmatter.slug,
+      slug,
       name: frontmatter.name,
       description: frontmatter.description,
       content,
       type: 'skill',
-      allowedTools: frontmatter.allowedTools ?? [],
-      triggers: (frontmatter.triggers ?? []).map((t) => ({
-        type: t.type,
-        value: t.value,
-        priority: t.priority,
-        description: t.description,
-      })),
-      scope: frontmatter.scope ?? 'tenant',
+      allowedTools: [],
+      triggers: [],
+      scope: 'tenant',
     });
 
     // Publish immediately
     try {
       await this.skills.publish(tenantId, created.id);
     } catch {
-      warnings.push(`Skill "${frontmatter.slug}" created but publish notification failed`);
+      warnings.push(`Skill "${slug}" created but publish notification failed`);
     }
 
     return {
-      slug: frontmatter.slug,
+      slug,
       name: frontmatter.name,
       action: 'created',
       skillId: created.id,
@@ -560,5 +566,38 @@ export class SolutionLoaderService {
       action: 'created',
       serverId: created.id,
     };
+  }
+
+  // --------------------------------------------------------------------------
+  // Session Template Registration
+  // --------------------------------------------------------------------------
+
+  /**
+   * Apply session templates from solution.json to the tenant config.
+   * Uses upsert logic: merges declared templates with any existing ones.
+   */
+  private async applySessionTemplates(
+    tenantId: string,
+    templates: Record<string, SessionTemplateConfig>,
+    warnings: string[],
+  ): Promise<void> {
+    const tenant = await this.tenants.findOne(tenantId);
+    if (!tenant) {
+      warnings.push(`Cannot apply session templates: tenant "${tenantId}" not found`);
+      this.logger.warn(`Cannot apply session templates: tenant "${tenantId}" not found`);
+      return;
+    }
+
+    const existing = (tenant.config?.sessionTemplates ?? {}) as Record<string, SessionTemplateConfig>;
+    const merged = { ...existing, ...templates };
+
+    await this.tenants.update(tenantId, {
+      config: { sessionTemplates: merged },
+    });
+
+    warnings.push(
+      `Applied ${Object.keys(templates).length} session template(s): ${Object.keys(templates).join(', ')}`,
+    );
+    this.logger.log(`Applied session templates for tenant "${tenantId}"`);
   }
 }
