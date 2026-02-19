@@ -118,8 +118,10 @@ export class ApiKeyService implements OnModuleInit {
   /**
    * Create a new API key for a tenant
    *
-   * @param rawKeyOverride - Optional fixed raw key value (must start with 'sk-').
-   *   Used when INITIAL_ADMIN_KEY env var is set for CI/CD reproducibility.
+   * @param rawKeyOverride - Optional fixed raw key value (must start with 'sk-' and
+   *   be at least 20 chars). Used only by `onModuleInit` when `INITIAL_ADMIN_KEY` env
+   *   var is set for CI/CD reproducibility. Not exposed via REST API.
+   * @internal
    */
   async create(tenantId: string, dto: CreateApiKeyDto, rawKeyOverride?: string): Promise<CreateApiKeyResponse> {
     const tenant = await this.tenantsService.findOne(tenantId);

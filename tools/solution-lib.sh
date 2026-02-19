@@ -300,6 +300,11 @@ wait_for_port() {
 # Requires admin auth (X-Api-Key header with bootstrap admin key).
 # Get BOOTSTRAP_KEY from: BOOTSTRAP_KEY=$(get_or_create_bootstrap_key $CCAAS_URL)
 #
+# MIGRATION NOTE (from 4-arg signature):
+#   Old: eval "$(create_or_get_tenant $URL $SLUG $NAME $DESC)"
+#   New: eval "$(create_or_get_tenant $URL $SLUG $NAME $DESC $BOOTSTRAP_KEY)"
+#   Or:  export CCAAS_BOOTSTRAP_KEY=sk-...; eval "$(create_or_get_tenant $URL $SLUG $NAME $DESC)"
+#
 # This function creates or retrieves a tenant. API keys are managed separately
 # through the modern API key system (use create_solution_api_key).
 create_or_get_tenant() {

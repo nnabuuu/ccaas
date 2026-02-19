@@ -58,40 +58,83 @@ describe('ApiKeyService - User Resolution Integration', () => {
     }
   });
 
+  describe('rawKeyOverride (INITIAL_ADMIN_KEY support)', () => {
+    let tenantId: string;
+
+    beforeAll(async () => {
+      const result = await tenantsService.create({
+        name: 'Override Test Tenant',
+        slug: 'override-test-tenant',
+      });
+      tenantId = result.id;
+    });
+
+    it('should use rawKeyOverride when valid sk- prefix and min length', async () => {
+      const override = 'sk-test-override-12345'  // 22 chars, starts with sk-
+      const { rawKey } = await service.create(tenantId, { name: 'Override Key', scopes: ['chat'] }, override)
+
+      expect(rawKey).toBe(override)
+
+      // Validate the key works for auth
+      const context = await service.createContext(rawKey)
+      expect(context.tenantId).toBe(tenantId)
+    })
+
+    it('should fall back to auto-generated key when override lacks sk- prefix', async () => {
+      const override = 'no-prefix-key-long-enough'
+      const { rawKey } = await service.create(tenantId, { name: 'No Prefix Key', scopes: ['chat'] }, override)
+
+      expect(rawKey).not.toBe(override)
+      expect(rawKey.startsWith('sk-')).toBe(true)
+    })
+
+    it('should fall back to auto-generated key when override is too short', async () => {
+      const override = 'sk-short'  // Only 8 chars, below MIN_KEY_LENGTH of 20
+      const { rawKey } = await service.create(tenantId, { name: 'Short Override Key', scopes: ['chat'] }, override)
+
+      expect(rawKey).not.toBe(override)
+      expect(rawKey.startsWith('sk-')).toBe(true)
+      expect(rawKey.length).toBeGreaterThan(20)
+    })
+
+    it('should behave identically without rawKeyOverride (backward compat)', async () => {
+      const { rawKey } = await service.create(tenantId, { name: 'No Override Key', scopes: ['chat'] })
+
+      expect(rawKey.startsWith('sk-')).toBe(true)
+      expect(rawKey.length).toBeGreaterThan(20)
+
+      const context = await service.createContext(rawKey)
+      expect(context.tenantId).toBe(tenantId)
+    })
+
+    it('should store override key as hash (raw key not retrievable from DB)', async () => {
+      const override = 'sk-deterministic-key-ci'
+      const { rawKey, apiKey } = await service.create(
+        tenantId,
+        { name: 'Hash Test Key', scopes: ['admin'] },
+        override,
+      )
+
+      expect(rawKey).toBe(override)
+      // keyPrefix is stored (first 16 chars), but full key is hashed
+      expect(apiKey.keyPrefix).toBe(override.substring(0, 16))
+    })
+  })
+
   describe('User Resolution', () => {
     it('should resolve user from API key', async () => {
-      // Create tenant
-      const tenant = await tenantsService.create({
-        name: 'Test Tenant',
-        slug: 'test-tenant',
-      });
-
-      // Create user
-      const user = await usersService.create({
-        email: 'test@example.com',
-        name: 'Test User',
-      });
-
-      // Create user-tenant relationship
-      await userTenantService.create({
-        userId: user.id,
-        tenantId: tenant.id,
-        role: 'developer',
-      });
-
-      // Create API key with user
+      const tenant = await tenantsService.create({ name: 'Test Tenant', slug: 'test-tenant' });
+      const user = await usersService.create({ email: 'test@example.com', name: 'Test User' });
+      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'developer' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Test Key',
         scopes: ['chat', 'skills:read'],
       });
-
-      // Associate user with API key
       const apiKeyRepo = dataSource.getRepository(ApiKey);
       const apiKey = await apiKeyRepo.findOne({ where: { id: createdKey.id } });
       apiKey!.userId = user.id;
       await apiKeyRepo.save(apiKey!);
 
-      // Validate key and check user resolution
       const context = await service.createContext(rawKey);
 
       expect(context.userId).toBe(user.id);
@@ -103,19 +146,9 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should work without user (backward compatibility)', async () => {
-      // Create tenant
-      const tenant = await tenantsService.create({
-        name: 'Legacy Tenant',
-        slug: 'legacy-tenant',
-      });
+      const tenant = await tenantsService.create({ name: 'Legacy Tenant', slug: 'legacy-tenant' });
+      const { rawKey } = await service.create(tenant.id, { name: 'Legacy Key', scopes: ['chat'] });
 
-      // Create API key without user
-      const { rawKey } = await service.create(tenant.id, {
-        name: 'Legacy Key',
-        scopes: ['chat'],
-      });
-
-      // Validate key (should work without user)
       const context = await service.createContext(rawKey);
 
       expect(context.userId).toBeUndefined();
@@ -126,79 +159,35 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should reject if user is not active in tenant', async () => {
-      // Create tenant
-      const tenant = await tenantsService.create({
-        name: 'Inactive User Tenant',
-        slug: 'inactive-user-tenant',
-      });
-
-      // Create user
-      const user = await usersService.create({
-        email: 'inactive@example.com',
-        name: 'Inactive User',
-      });
-
-      // Create user-tenant relationship (inactive)
-      const userTenant = await userTenantService.create({
-        userId: user.id,
-        tenantId: tenant.id,
-        role: 'developer',
-      });
-
-      // Deactivate user in tenant
+      const tenant = await tenantsService.create({ name: 'Inactive User Tenant', slug: 'inactive-user-tenant' });
+      const user = await usersService.create({ email: 'inactive@example.com', name: 'Inactive User' });
+      const userTenant = await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'developer' });
       await userTenantService.update(userTenant.id, { isActive: false });
-
-      // Create API key with user
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Inactive User Key',
         scopes: ['chat'],
       });
-
-      // Associate user with API key
       const apiKeyRepo = dataSource.getRepository(ApiKey);
       const apiKey = await apiKeyRepo.findOne({ where: { id: createdKey.id } });
       apiKey!.userId = user.id;
       await apiKeyRepo.save(apiKey!);
 
-      // Should reject
-      await expect(service.createContext(rawKey)).rejects.toThrow(
-        'User is not active in this tenant',
-      );
+      await expect(service.createContext(rawKey)).rejects.toThrow('User is not active in this tenant');
     });
 
     it('should handle admin role correctly', async () => {
-      // Create tenant
-      const tenant = await tenantsService.create({
-        name: 'Admin Tenant',
-        slug: 'admin-tenant',
-      });
-
-      // Create user
-      const user = await usersService.create({
-        email: 'admin@example.com',
-        name: 'Admin User',
-      });
-
-      // Create user-tenant relationship with admin role
-      await userTenantService.create({
-        userId: user.id,
-        tenantId: tenant.id,
-        role: 'admin',
-      });
-
-      // Create API key with user
+      const tenant = await tenantsService.create({ name: 'Admin Tenant', slug: 'admin-tenant' });
+      const user = await usersService.create({ email: 'admin@example.com', name: 'Admin User' });
+      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'admin' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Admin Key',
         scopes: ['admin'],
       });
-
-      // Associate user with API key
       const apiKeyRepo = dataSource.getRepository(ApiKey);
       const apiKey = await apiKeyRepo.findOne({ where: { id: createdKey.id } });
       apiKey!.userId = user.id;
       await apiKeyRepo.save(apiKey!);
 
-      // Validate key
       const context = await service.createContext(rawKey);
 
       expect(context.userTenant!.role).toBe('admin');
@@ -206,38 +195,18 @@ describe('ApiKeyService - User Resolution Integration', () => {
     });
 
     it('should handle viewer role correctly', async () => {
-      // Create tenant
-      const tenant = await tenantsService.create({
-        name: 'Viewer Tenant',
-        slug: 'viewer-tenant',
-      });
-
-      // Create user
-      const user = await usersService.create({
-        email: 'viewer@example.com',
-        name: 'Viewer User',
-      });
-
-      // Create user-tenant relationship with viewer role
-      await userTenantService.create({
-        userId: user.id,
-        tenantId: tenant.id,
-        role: 'viewer',
-      });
-
-      // Create API key with user
+      const tenant = await tenantsService.create({ name: 'Viewer Tenant', slug: 'viewer-tenant' });
+      const user = await usersService.create({ email: 'viewer@example.com', name: 'Viewer User' });
+      await userTenantService.create({ userId: user.id, tenantId: tenant.id, role: 'viewer' });
       const { rawKey, apiKey: createdKey } = await service.create(tenant.id, {
         name: 'Viewer Key',
         scopes: ['chat'],
       });
-
-      // Associate user with API key
       const apiKeyRepo = dataSource.getRepository(ApiKey);
       const apiKey = await apiKeyRepo.findOne({ where: { id: createdKey.id } });
       apiKey!.userId = user.id;
       await apiKeyRepo.save(apiKey!);
 
-      // Validate key
       const context = await service.createContext(rawKey);
 
       expect(context.userTenant!.role).toBe('viewer');
