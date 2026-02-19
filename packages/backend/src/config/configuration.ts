@@ -37,6 +37,10 @@ export default () => ({
   admin: {
     email: process.env.ADMIN_EMAIL || 'admin@example.com',
     apiKeyName: process.env.ADMIN_API_KEY_NAME || 'Default Admin Key',
+    // If set, use this as the fixed bootstrap admin key instead of auto-generating.
+    // Must start with 'sk-'. Useful for CI/CD and reproducible dev environments.
+    // Example: INITIAL_ADMIN_KEY=sk-myteam-bootstrap123
+    initialAdminKey: process.env.INITIAL_ADMIN_KEY?.trim() || undefined,
   },
 
   messageQueue: {

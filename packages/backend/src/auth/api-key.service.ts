@@ -73,16 +73,38 @@ export class ApiKeyService implements OnModuleInit {
 
       if (!adminKey) {
         const adminConfig = this.configService.get('admin');
-        const { rawKey } = await this.create(defaultTenant.id, {
-          name: adminConfig.apiKeyName,
-          scopes: ['admin'], // Full admin access
-        });
+        const initialAdminKey = this.configService.get<string | undefined>('admin.initialAdminKey');
 
-        this.logger.warn('='.repeat(80));
-        this.logger.warn('🔑 ADMIN API KEY CREATED - SAVE THIS KEY!');
-        this.logger.warn(`   Key: ${rawKey}`);
-        this.logger.warn(`   This key will NOT be shown again!`);
-        this.logger.warn('='.repeat(80));
+        try {
+          const { rawKey } = await this.create(defaultTenant.id, {
+            name: adminConfig.apiKeyName,
+            scopes: ['admin'], // Full admin access
+          }, initialAdminKey);
+
+          if (initialAdminKey) {
+            this.logger.log('='.repeat(80));
+            this.logger.log('🔑 ADMIN API KEY CREATED FROM INITIAL_ADMIN_KEY ENV VAR');
+            this.logger.log(`   Key prefix: ${rawKey.substring(0, 16)}...`);
+            this.logger.log('='.repeat(80));
+          } else {
+            this.logger.warn('='.repeat(80));
+            this.logger.warn('🔑 ADMIN API KEY CREATED - SAVE THIS KEY!');
+            this.logger.warn(`   Key: ${rawKey}`);
+            this.logger.warn(`   This key will NOT be shown again!`);
+            this.logger.warn('='.repeat(80));
+          }
+        } catch (error) {
+          // Handle unique constraint violation — key hash already exists (e.g., INITIAL_ADMIN_KEY
+          // reused across environments or DB was partially reset while env var stayed the same).
+          const isUniqueConstraint =
+            (error as { code?: string })?.code === 'SQLITE_CONSTRAINT' ||
+            (error as { message?: string })?.message?.includes('UNIQUE constraint');
+          if (isUniqueConstraint) {
+            this.logger.warn('Admin API key hash already exists in database — skipping creation.');
+          } else {
+            throw error;
+          }
+        }
       } else {
         this.logger.log(`Admin API key exists: ${adminKey.keyPrefix}...`);
       }
@@ -95,15 +117,31 @@ export class ApiKeyService implements OnModuleInit {
 
   /**
    * Create a new API key for a tenant
+   *
+   * @param rawKeyOverride - Optional fixed raw key value (must start with 'sk-').
+   *   Used when INITIAL_ADMIN_KEY env var is set for CI/CD reproducibility.
    */
-  async create(tenantId: string, dto: CreateApiKeyDto): Promise<CreateApiKeyResponse> {
+  async create(tenantId: string, dto: CreateApiKeyDto, rawKeyOverride?: string): Promise<CreateApiKeyResponse> {
     const tenant = await this.tenantsService.findOne(tenantId);
     if (!tenant) {
       throw new NotFoundException(`Tenant not found: ${tenantId}`);
     }
 
-    // Generate raw key with prefix
-    const rawKey = this.generateRawKey(tenant.slug);
+    // Generate raw key with prefix, or use override if provided.
+    // Override is only accepted if it starts with 'sk-' and meets minimum length (20 chars).
+    const MIN_KEY_LENGTH = 20;
+    if (rawKeyOverride) {
+      if (!rawKeyOverride.startsWith(API_KEY_PREFIX)) {
+        this.logger.warn(`rawKeyOverride does not start with '${API_KEY_PREFIX}', ignoring override`);
+      } else if (rawKeyOverride.length < MIN_KEY_LENGTH) {
+        this.logger.warn(
+          `rawKeyOverride is too short (${rawKeyOverride.length} chars, minimum ${MIN_KEY_LENGTH}), ignoring override`,
+        );
+      }
+    }
+    const isValidOverride = rawKeyOverride?.startsWith(API_KEY_PREFIX)
+      && rawKeyOverride.length >= MIN_KEY_LENGTH;
+    const rawKey = isValidOverride ? rawKeyOverride! : this.generateRawKey(tenant.slug);
     const keyHash = this.hashKey(rawKey);
 
     const apiKey = this.apiKeyRepository.create({

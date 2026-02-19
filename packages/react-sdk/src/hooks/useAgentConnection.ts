@@ -161,6 +161,20 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     }
   }, [])
 
+  // Warn once (on mount or serverUrl change) when serverUrl is empty or relative.
+  // All SDK API calls use full URLs, so Vite proxy will NOT intercept them.
+  useEffect(() => {
+    if (serverUrl === '' || serverUrl === '/') {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '<unknown>'
+      console.warn(
+        `[CCAAS] Warning: serverUrl is "${serverUrl}". ` +
+        `All API requests will target the current page origin (${origin}). ` +
+        `Use an absolute URL like 'http://localhost:3001' to connect to the CCAAS backend. ` +
+        `Vite proxy does NOT intercept SDK fetch() calls with full URLs.`,
+      )
+    }
+  }, [serverUrl])
+
   useEffect(() => {
     if (transport === 'sse') return // SSE mode: no socket lifecycle
 

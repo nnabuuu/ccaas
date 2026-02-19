@@ -294,8 +294,11 @@ wait_for_port() {
 # ==============================================================================
 
 # Create or get tenant
-# Usage: eval "$(create_or_get_tenant CCAAS_URL SLUG NAME DESCRIPTION)"
+# Usage: eval "$(create_or_get_tenant CCAAS_URL SLUG NAME DESCRIPTION BOOTSTRAP_KEY)"
 # Sets: TENANT_ID
+#
+# Requires admin auth (X-Api-Key header with bootstrap admin key).
+# Get BOOTSTRAP_KEY from: BOOTSTRAP_KEY=$(get_or_create_bootstrap_key $CCAAS_URL)
 #
 # This function creates or retrieves a tenant. API keys are managed separately
 # through the modern API key system (use create_solution_api_key).
@@ -304,14 +307,25 @@ create_or_get_tenant() {
     local slug="$2"
     local name="$3"
     local description="$4"
+    local bootstrap_key="${5:-${CCAAS_BOOTSTRAP_KEY:-}}"
+
+    if [ -z "$bootstrap_key" ]; then
+        log_error "create_or_get_tenant: bootstrap_key (arg 5) is required" >&2
+        echo "" >&2
+        echo "Provide it as 5th argument or set CCAAS_BOOTSTRAP_KEY env var:" >&2
+        echo "  BOOTSTRAP_KEY=\$(get_or_create_bootstrap_key \$CCAAS_URL)" >&2
+        echo "  eval \"\$(create_or_get_tenant \$CCAAS_URL \$SLUG \$NAME \$DESC \$BOOTSTRAP_KEY)\"" >&2
+        return 1
+    fi
 
     # Send log messages to stderr to avoid interfering with eval
     log_info "Setting up tenant '$slug'..." >&2
 
-    # Try to create new tenant
+    # Try to create new tenant (requires admin auth)
     local create_response
     create_response=$(curl -s -X POST "$ccaas_url/api/v1/tenants" \
         -H "Content-Type: application/json" \
+        -H "X-Api-Key: $bootstrap_key" \
         -d "{
             \"slug\": \"$slug\",
             \"name\": \"$name\",
@@ -321,6 +335,11 @@ create_or_get_tenant() {
     local tenant_id=$(echo "$create_response" | jq -r '.id // empty')
 
     if [ -n "$tenant_id" ]; then
+        # Validate UUID format before eval to prevent shell injection
+        if [[ ! "$tenant_id" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            log_error "API returned unexpected tenant ID format: $tenant_id" >&2
+            return 1
+        fi
         log_success "Tenant created: $tenant_id" >&2
         echo "export TENANT_ID='$tenant_id'"
         return 0
@@ -330,11 +349,17 @@ create_or_get_tenant() {
     if echo "$create_response" | grep -q "already exists"; then
         log_info "Tenant exists, fetching..." >&2
         local existing_tenant
-        existing_tenant=$(curl -s "$ccaas_url/api/v1/tenants/$slug" 2>/dev/null)
+        existing_tenant=$(curl -s "$ccaas_url/api/v1/tenants/$slug" \
+            -H "X-Api-Key: $bootstrap_key" 2>/dev/null)
 
         tenant_id=$(echo "$existing_tenant" | jq -r '.id // empty')
 
         if [ -n "$tenant_id" ]; then
+            # Validate UUID format before eval to prevent shell injection
+            if [[ ! "$tenant_id" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+                log_error "API returned unexpected tenant ID format: $tenant_id" >&2
+                return 1
+            fi
             log_success "Tenant found: $tenant_id" >&2
             echo "export TENANT_ID='$tenant_id'"
             return 0
@@ -432,6 +457,11 @@ create_solution_api_key() {
     local raw_key=$(echo "$create_response" | jq -r '.rawKey // empty')
 
     if [ -n "$raw_key" ]; then
+        # Validate sk- key format before eval to prevent shell injection
+        if [[ ! "$raw_key" =~ ^sk-[a-zA-Z0-9_-]+$ ]]; then
+            log_error "API returned unexpected API key format: ${raw_key:0:16}..." >&2
+            return 1
+        fi
         log_success "Modern API key created: ${raw_key:0:16}..." >&2
         echo "export API_KEY='$raw_key'"
         return 0
@@ -685,6 +715,9 @@ inject_single_skill() {
     else
         # Create new skill
         log_info "  Creating new skill..."
+        # Valid type values: "skill" | "sub-agent"
+        # Using "skill" for standard AI skills loaded as system prompts.
+        # "sub-agent" is for skills that spawn a dedicated sub-agent process.
         local create_skill_response=$(curl -s -X POST "$ccaas_url/api/v1/skills" \
             -H "Content-Type: application/json" \
             -H "X-Tenant-Id: $tenant_id" \
