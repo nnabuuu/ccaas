@@ -12,6 +12,7 @@ import {
   useAgentStatus,
   useOutputSync,
   type Message,
+  type ToolActivity,
 } from '@ccaas/react-sdk'
 import type {
   RehabPlan,
@@ -46,6 +47,7 @@ export interface UseRehabSessionReturn {
   // Status
   isThinking: boolean
   thinkingContent: string
+  activeTools: Map<string, ToolActivity>
 
   // Rehab plan
   plan: RehabPlan
@@ -175,6 +177,7 @@ export function useRehabSession(): UseRehabSessionReturn {
     // Status
     isThinking: status.isThinking,
     thinkingContent: status.thinkingContent,
+    activeTools: status.activeTools,
 
     // Plan
     plan,
