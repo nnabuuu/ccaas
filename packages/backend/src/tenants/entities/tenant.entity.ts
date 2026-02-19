@@ -44,6 +44,7 @@ export class Tenant {
     };
     sessionTemplates?: SessionTemplateMap;
     defaultSessionTemplate?: string;
+    solutionAppliedAt?: string;
   };
 
   @Column({ default: 100 })

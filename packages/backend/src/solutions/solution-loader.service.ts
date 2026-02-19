@@ -227,6 +227,11 @@ export class SolutionLoaderService {
       await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
     }
 
+    // Step 5: Stamp solutionAppliedAt so callers can confirm this run completed
+    await this.tenants.update(tenantId, {
+      config: { solutionAppliedAt: new Date().toISOString() },
+    });
+
     this.logger.log(
       `Loaded "${solution.name}": ` +
       `${skillResults.filter((s) => s.action === 'created').length} skills created, ` +
@@ -590,6 +595,19 @@ export class SolutionLoaderService {
 
     const existing = (tenant.config?.sessionTemplates ?? {}) as Record<string, SessionTemplateConfig>;
     const merged = { ...existing, ...templates };
+
+    // Validate that every enabledSkillSlugs entry is registered for this tenant
+    for (const [templateName, template] of Object.entries(templates)) {
+      for (const slug of template.enabledSkillSlugs ?? []) {
+        const skill = await this.skills.findOne(tenantId, slug);
+        if (!skill) {
+          warnings.push(
+            `Session template "${templateName}": skill slug "${slug}" not found in tenant — ` +
+            `template saved but enabledSkillSlugs may not work until skill is registered`,
+          );
+        }
+      }
+    }
 
     await this.tenants.update(tenantId, {
       config: { sessionTemplates: merged },
