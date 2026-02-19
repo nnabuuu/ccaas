@@ -357,6 +357,10 @@ export interface UseAgentConnectionReturn {
   disconnect: () => void
   /** Clear current session storage and start a new conversation with a fresh sessionId */
   startNewConversation: () => void
+  /** Whether the backend session is known to exist (true after first sendMessage call) */
+  sessionReady: boolean
+  /** Called by useAgentChat when a message is about to be sent, marking the session as ready */
+  markSessionReady: () => void
 }
 
 export interface PageContext {

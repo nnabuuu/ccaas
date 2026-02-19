@@ -100,6 +100,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
   // In SSE mode, connection is always "ready" (HTTP is stateless)
   const [socketConnected, setSocketConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [sessionReady, setSessionReady] = useState(false)
   const socketRef = useRef<Socket | null>(null)
   const initialSessionId = useRef<string>(
     resolveSessionId(tenantId, sessionPrefix, forceNewConversation),
@@ -151,6 +152,8 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     })
   }, [serverUrl, transport])
 
+  const markSessionReady = useCallback(() => setSessionReady(true), [])
+
   const disconnect = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect()
@@ -200,6 +203,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     const newId = tenantId ? generateConversationId() : `${sessionPrefix}_${generateId()}`
     sessionIdRef.current = newId
     setSessionId(newId)
+    setSessionReady(false)
 
     // Save new session to localStorage
     if (tenantId) {
@@ -223,5 +227,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
     connect,
     disconnect,
     startNewConversation,
+    sessionReady,
+    markSessionReady,
   }
 }

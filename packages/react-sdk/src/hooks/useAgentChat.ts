@@ -355,6 +355,10 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       if (!connection.connected || !connection.clientId || isProcessing) return
     }
 
+    // Notify connection that session is about to be created (POST is imminent).
+    // useAgentStatus SSE effect waits for this before opening GET /events.
+    connection.markSessionReady()
+
     // Add user message
     const userMessage: Message = {
       id: generateId(),

@@ -266,7 +266,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   // that fire after the per-turn stream closes are still delivered here.
   useEffect(() => {
     if (connection.socket) return  // Socket mode: handled by the effect above
-    if (!connection.serverUrl || !connection.sessionId) return
+    if (!connection.serverUrl || !connection.sessionId || !connection.sessionReady) return
 
     const controller = new AbortController()
     let retryCount = 0
@@ -279,6 +279,15 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
           `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/events`,
           { signal: controller.signal, headers: { Accept: 'text/event-stream' } }
         )
+        if (response.status === 404) {
+          // Session is created lazily on first chat message.
+          // Retry until the session exists or component unmounts.
+          if (!controller.signal.aborted && retryCount < MAX_RETRIES) {
+            retryCount++
+            setTimeout(connect, 3000)
+          }
+          return
+        }
         if (!response.ok || !response.body) return
 
         retryCount = 0  // Reset retry count on successful connection
@@ -314,7 +323,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
 
     connect()
     return () => controller.abort()
-  }, [connection.socket, connection.serverUrl, connection.sessionId, onSubAgentStarted, onSubAgentCompleted])
+  }, [connection.socket, connection.serverUrl, connection.sessionId, connection.sessionReady, onSubAgentStarted, onSubAgentCompleted])
 
   // Update thinking verb when duration crosses phase thresholds (30s, 90s)
   // This implements the "smart verb selection based on duration" feature
