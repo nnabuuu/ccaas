@@ -5,10 +5,12 @@
 ## Platform Introduction <a href="#platform" id="platform"></a>
 
 * [Platform Overview](platform/README.md)
+* [Key Concepts](platform/concepts.md)
 * [Core Value: Skills + MCP](platform/value.md)
 * [Platform Architecture](platform/architecture.md)
 * [Core Capabilities](platform/capabilities.md)
 * [Solution Showcase](platform/solutions.md)
+* [Pricing](platform/pricing.md)
 
 ## Getting Started <a href="#getting-started" id="getting-started"></a>
 

@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即见Agentic · 见即所得</title>
+<meta name="description" content="描述你的业务，AI 自然就能做到。用 Skills 和 MCP 表达业务逻辑，即见平台将其化为生产级 Agentic 服务。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1419;
+    --ink-secondary: #536471;
+    --ink-muted: #8899a6;
+    --surface: #fafbfc;
+    --surface-elevated: #ffffff;
+    --surface-subtle: #f0f2f4;
+    --border: #e1e4e8;
+    --border-subtle: #eef0f2;
+    --accent: #4a7c6f;
+    --accent-light: #e8f0ed;
+    --accent-dark: #3a6359;
+    --warm: #b8a088;
+    --warm-light: #f5f0eb;
+    --navy: #1a2332;
+    --navy-light: #2d3a4a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--ink);
+    background: var(--surface);
+    line-height: 1.6;
+  }
+
+  .serif { font-family: 'Noto Serif', Georgia, serif; }
+
+  /* ─── LANGUAGE TOGGLE ─── */
+  html[lang="en"] .zh { display: none; }
+  html[lang="zh"] .en { display: none; }
+
+  .lang-toggle {
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--ink-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.04em;
+  }
+  .lang-toggle:hover {
+    border-color: var(--ink-muted);
+    color: var(--ink);
+    background: var(--surface-subtle);
+  }
+
+  /* ─── NAV ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    background: rgba(250, 251, 252, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: box-shadow 0.3s ease;
+  }
+  nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .nav-logo-mark {
+    width: 32px; height: 32px;
+    background: var(--navy);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  .nav-logo-text { font-weight: 600; font-size: 18px; letter-spacing: -0.3px; }
+  .nav-links { display: flex; align-items: center; gap: 28px; }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--ink-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-cta {
+    padding: 8px 20px;
+    background: var(--navy);
+    color: #fff !important;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s, transform 0.15s;
+    cursor: pointer;
+  }
+  .nav-cta:hover { background: var(--navy-light); transform: translateY(-1px); }
+
+  /* ─── HERO ─── */
+  .hero {
+    padding: 160px 24px 100px;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    border-radius: 100px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 32px;
+    letter-spacing: 0.02em;
+  }
+  .hero-badge-dot {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+  .hero h1 .cn-title {
+    display: block;
+    font-size: clamp(14px, 2vw, 16px);
+    font-weight: 400;
+    color: var(--ink-muted);
+    letter-spacing: 0.15em;
+    margin-bottom: 12px;
+    font-family: 'Noto Serif', serif;
+  }
+  /* ─── HERO STEPS (v2) ─── */
+  .hero-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0;
+    margin: 20px auto 16px;
+    max-width: 640px;
+  }
+  .hs-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    padding: 0 8px;
+  }
+  .hs-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-secondary);
+    font-size: 20px;
+  }
+  .hs-icon.accent {
+    background: var(--accent-light);
+    border-color: rgba(74,124,111,0.3);
+    color: var(--accent-dark);
+  }
+  .hs-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    text-align: center;
+    line-height: 1.3;
+  }
+  .hs-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 120px;
+  }
+  .hs-connector {
+    padding: 0 4px;
+    padding-top: 22px;
+    color: var(--border);
+    flex-shrink: 0;
+  }
+  /* Social proof bar */
+  .hero-proof {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+    margin: 0 auto 40px;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+    max-width: 560px;
+  }
+  .hero-proof-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .hero-proof-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.03em;
+  }
+  .hero-proof-label {
+    font-size: 11px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+  .hero-proof-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--border);
+  }
+
+  .hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    padding: 14px 32px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--navy-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(26,35,50,0.2);
+  }
+  .btn-secondary {
+    padding: 14px 32px;
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+  }
+  .btn-secondary:hover { border-color: var(--ink-muted); background: var(--surface-subtle); }
+
+  /* ─── SECTIONS ─── */
+  section { padding: 100px 24px; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+  .section-desc {
+    font-size: 17px;
+    color: var(--ink-secondary);
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  /* ─── NARRATIVE ─── */
+  .narrative { background: var(--surface); }
+  .narrative-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .narrative-quote {
+    font-family: 'Noto Serif', serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--ink-muted);
+    line-height: 1.8;
+    margin-top: 32px;
+    padding-left: 20px;
+    border-left: 2px solid var(--border);
+  }
+  .narrative-cards { display: flex; flex-direction: column; gap: 20px; }
+  .narrative-card {
+    padding: 28px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .narrative-card:hover {
+    border-color: var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  }
+  .narrative-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--ink);
+  }
+  .narrative-card p {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    line-height: 1.6;
+  }
+  .narrative-card-icon {
+    width: 36px; height: 36px;
+    background: var(--accent-light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  /* ─── FEATURES ─── */
+  .features { background: var(--navy); color: #fff; }
+  .features .section-label { color: var(--accent); opacity: 0.9; }
+  .features .section-title { color: #fff; }
+  .features .section-desc { color: rgba(255,255,255,0.6); }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+  .feature-card {
+    padding: 32px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .feature-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    background: rgba(74, 124, 111, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    color: var(--accent);
+  }
+  .feature-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #fff;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+  }
+
+  /* ─── ARCHITECTURE ─── */
+  .architecture { background: var(--surface-subtle); }
+  .arch-diagram {
+    margin-top: 56px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 48px;
+    overflow-x: auto;
+  }
+  .arch-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    min-width: 700px;
+  }
+  .arch-node {
+    padding: 20px 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    text-align: center;
+    min-width: 140px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .arch-node:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(74,124,111,0.1);
+  }
+  .arch-node-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .arch-node-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .arch-node-desc {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .arch-arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    color: var(--ink-muted);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .arch-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .arch-outputs {
+    display: flex;
+    gap: 16px;
+    margin-top: 40px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .arch-output {
+    padding: 12px 20px;
+    background: var(--warm-light);
+    border: 1px solid rgba(184,160,136,0.2);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-secondary);
+  }
+
+  /* ─── USE CASES ─── */
+  .usecases { background: var(--surface); }
+  .usecase-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+  }
+  .usecase-card {
+    padding: 36px;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+    cursor: pointer;
+  }
+  .usecase-card:hover {
+    border-color: var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+  }
+  .usecase-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .usecase-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .usecase-card p {
+    font-size: 14px;
+    color: var(--ink-secondary);
+    line-height: 1.7;
+  }
+  .usecase-detail {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 13px;
+    color: var(--ink-muted);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .usecase-detail span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ─── CTA ─── */
+  .cta-section {
+    background: var(--surface-subtle);
+    text-align: center;
+  }
+  .cta-section .section-title { max-width: 540px; margin: 0 auto 16px; }
+  .cta-section .section-desc { margin: 0 auto 40px; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    padding: 60px 24px;
+    background: var(--navy);
+    color: rgba(255,255,255,0.5);
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .footer-brand { max-width: 280px; }
+  .footer-brand-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .footer-brand p { font-size: 14px; line-height: 1.6; }
+  .footer-cols { display: flex; gap: 64px; }
+  .footer-col h4 {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    margin-bottom: 16px;
+    letter-spacing: 0.03em;
+  }
+  .footer-col a {
+    display: block;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    font-size: 14px;
+    margin-bottom: 10px;
+    transition: color 0.2s;
+    cursor: pointer;
+  }
+  .footer-col a:hover { color: rgba(255,255,255,0.8); }
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 40px auto 0;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    .narrative-grid { gap: 48px; }
+  }
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hero { padding: 120px 24px 80px; }
+    .section { padding: 80px 24px; }
+    .narrative-grid { grid-template-columns: 1fr; gap: 40px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .usecase-grid { grid-template-columns: 1fr; }
+    .arch-diagram { padding: 24px; }
+    .footer-cols { gap: 40px; }
+    .footer-inner { flex-direction: column; }
+    .footer-bottom { flex-direction: column; gap: 8px; }
+  }
+
+  /* ─── PRICING ─── */
+  .pricing { background: var(--surface-subtle); }
+  .demo-banner {
+    background: var(--accent-light);
+    border: 1px solid rgba(74,124,111,0.2);
+    border-radius: 12px;
+    padding: 20px 28px;
+    margin-top: 40px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .demo-banner-icon {
+    width: 36px; height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .demo-banner-text { flex: 1; }
+  .demo-banner-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-dark);
+    margin-bottom: 4px;
+  }
+  .demo-banner-text p {
+    font-size: 13px;
+    color: var(--ink-secondary);
+    line-height: 1.5;
+    margin: 0;
+  }
+  .demo-banner-cta {
+    padding: 8px 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .demo-banner-cta:hover { background: var(--accent-dark); }
+  .plan-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  .plan-card {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .plan-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+  .plan-card.recommended {
+    background: var(--navy);
+    border-color: var(--navy);
+  }
+  .recommended-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 14px;
+    border-radius: 100px;
+    white-space: nowrap;
+  }
+  .plan-header { margin-bottom: 24px; }
+  .plan-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .plan-card.recommended .plan-name { color: #fff; }
+  .plan-tagline {
+    font-size: 13px;
+    color: var(--ink-muted);
+    line-height: 1.4;
+  }
+  .plan-card.recommended .plan-tagline { color: rgba(255,255,255,0.55); }
+  .plan-price { margin-bottom: 28px; }
+  .plan-price-amount {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .plan-card.recommended .plan-price-amount { color: #fff; }
+  .plan-price-unit {
+    font-size: 14px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .plan-card.recommended .plan-price-unit { color: rgba(255,255,255,0.5); }
+  .plan-features {
+    flex: 1;
+    list-style: none;
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .plan-features li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--ink-secondary);
+    line-height: 1.4;
+  }
+  .plan-card.recommended .plan-features li { color: rgba(255,255,255,0.7); }
+  .feat-check { flex-shrink: 0; margin-top: 1px; color: var(--accent); }
+  .plan-cta {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink);
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .plan-cta:hover { border-color: var(--ink-muted); background: var(--surface-subtle); }
+  .plan-card.recommended .plan-cta {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .plan-card.recommended .plan-cta:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+    transform: translateY(-1px);
+  }
+  .enterprise-strip {
+    background: var(--navy);
+    border-radius: 16px;
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .enterprise-strip-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .enterprise-strip-desc {
+    font-size: 14px;
+    color: rgba(255,255,255,0.55);
+  }
+  .enterprise-strip-cta {
+    padding: 11px 28px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .enterprise-strip-cta:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.35);
+  }
+  @media (max-width: 1024px) {
+    .plan-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .plan-grid { grid-template-columns: 1fr; }
+    .demo-banner { flex-direction: column; align-items: flex-start; }
+    .enterprise-strip { flex-direction: column; align-items: flex-start; }
+  }
+
+  /* ─── ANIMATION ─── */
+  @media (prefers-reduced-motion: no-preference) {
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fade-in { opacity: 1; transform: none; }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">KA</div>
+      <span class="nav-logo-text">KedgeAgentic</span>
+    </a>
+    <div class="nav-links">
+      <a href="#narrative">
+        <span class="zh">为什么选择即见</span>
+        <span class="en">Why KedgeAgentic</span>
+      </a>
+      <a href="#features">
+        <span class="zh">平台能力</span>
+        <span class="en">Features</span>
+      </a>
+      <a href="#architecture">
+        <span class="zh">架构</span>
+        <span class="en">Architecture</span>
+      </a>
+      <a href="#usecases">
+        <span class="zh">应用场景</span>
+        <span class="en">Use Cases</span>
+      </a>
+      <a href="#pricing">
+        <span class="zh">定价</span>
+        <span class="en">Pricing</span>
+      </a>
+      <button class="lang-toggle" id="langToggle" onclick="toggleLang()">EN</button>
+      <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank" class="nav-cta">
+        <span class="zh">开始使用</span>
+        <span class="en">Get Started</span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Agentic as a Service
+  </div>
+  <h1>
+    <span class="cn-title">即见Agentic · 见即所得</span>
+    <span class="zh">你所描述的，<br>即 AI 所能做到的。</span>
+    <span class="en">What you describe,<br>the AI delivers.</span>
+  </h1>
+  <!-- Hero 3-step visual (v2) -->
+  <div class="hero-steps">
+    <div class="hs-step">
+      <div class="hs-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </div>
+      <div class="hs-title zh">描述业务</div>
+      <div class="hs-title en">Describe</div>
+      <div class="hs-desc zh">用 Skills 定义逻辑，用 MCP 连接工具和数据</div>
+      <div class="hs-desc en">Define logic in Skills, connect tools via MCP</div>
+    </div>
+
+    <div class="hs-connector">
+      <svg width="24" height="14" viewBox="0 0 24 14" fill="none">
+        <path d="M0 7h16M13 2l5 5-5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="hs-step">
+      <div class="hs-icon accent">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h10M7 11h6"/></svg>
+      </div>
+      <div class="hs-title">即见平台</div>
+      <div class="hs-desc zh">调度 Agent 执行，接入模型服务，管理会话</div>
+      <div class="hs-desc en">Runs agents, calls model APIs, manages sessions</div>
+    </div>
+
+    <div class="hs-connector">
+      <svg width="24" height="14" viewBox="0 0 24 14" fill="none">
+        <path d="M0 7h16M13 2l5 5-5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <div class="hs-step">
+      <div class="hs-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="hs-title zh">交付 Agent 服务</div>
+      <div class="hs-title en">Ship Service</div>
+      <div class="hs-desc zh">增强现有系统，或直接面向你的用户</div>
+      <div class="hs-desc en">Enhance existing systems or ship to users</div>
+    </div>
+  </div>
+
+  <!-- Social proof bar -->
+  <div class="hero-proof">
+    <div class="hero-proof-item">
+      <span class="hero-proof-num">3+</span>
+      <span class="hero-proof-label zh">生产场景落地</span>
+      <span class="hero-proof-label en">Production use cases</span>
+    </div>
+    <div class="hero-proof-divider"></div>
+    <div class="hero-proof-item">
+      <span class="hero-proof-num">20+</span>
+      <span class="hero-proof-label zh">Agent 事件类型</span>
+      <span class="hero-proof-label en">Agent event types</span>
+    </div>
+    <div class="hero-proof-divider"></div>
+    <div class="hero-proof-item">
+      <span class="hero-proof-num">On-Prem</span>
+      <span class="hero-proof-label zh">支持私有化部署</span>
+      <span class="hero-proof-label en">Self-hosted available</span>
+    </div>
+  </div>
+
+  <div class="hero-actions">
+    <a href="https://kedgetech.gitbook.io/ji-jian-agentic/getting-started/quickstart" target="_blank" class="btn-primary">
+      <span class="zh">快速开始</span>
+      <span class="en">Quickstart Guide</span>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.33 8h9.34M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank" class="btn-secondary">
+      <span class="zh">浏览文档</span>
+      <span class="en">Browse Docs</span>
+    </a>
+  </div>
+</section>
+
+<!-- NARRATIVE -->
+<section class="narrative" id="narrative">
+  <div class="container">
+    <div class="narrative-grid">
+      <div>
+        <div class="section-label">
+          <span class="zh">为什么选择即见</span>
+          <span class="en">Why KedgeAgentic</span>
+        </div>
+        <h2 class="section-title">
+          <span class="zh">AI 能力很强，<br>却不懂你的业务</span>
+          <span class="en">Generic AI doesn't<br>know your business</span>
+        </h2>
+        <p class="section-desc zh">
+          每次把 AI 接入业务，都要重建上下文、反复解释规则、手动传入数据。模型很强，给的却是「一般情况下」的答案——而你的业务从来不是「一般情况」。
+        </p>
+        <p class="section-desc zh" style="margin-top:16px;">
+          问题不在模型，在于缺少一种语言让它理解你。Skills 描述业务逻辑，MCP 连接工具与数据——AI 自此真正说你的语言。
+        </p>
+        <p class="section-desc en">
+          Every time you connect AI to your systems, you rebuild context from scratch — re-explaining rules, pasting in data, hoping it understands. A powerful model giving 'generally speaking' answers to your very specific problems.
+        </p>
+        <p class="section-desc en" style="margin-top:16px;">
+          The problem isn't the model. There's just no persistent language for it to understand what your business actually does. Skills express your logic. MCP connects your tools. Together, they make AI fluent in your business.
+        </p>
+        <p class="narrative-quote">
+          若见诸相非相，即见如来。
+        </p>
+      </div>
+      <div class="narrative-cards">
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h3>
+            <span class="zh">描述即能力</span>
+            <span class="en">Describe. Enable.</span>
+          </h3>
+          <p class="zh">用 Skills 定义业务逻辑，用 MCP 连接工具与数据。你描述的，就是 AI 能理解和执行的——这就是见即所得。</p>
+          <p class="en">Define business logic in Skills. Connect tools and data via MCP. What you describe is exactly what AI can understand and act on — that's what 见即所得 means.</p>
+        </div>
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3>
+            <span class="zh">服务，即时可交付</span>
+            <span class="en">Ship Agentic Services</span>
+          </h3>
+          <p class="zh">平台负责 Agent 生命周期、会话持久化、上下文管理、工具编排。全托管 SaaS 开箱即用，私有化部署亦可。你专注描述业务，其余交给平台。</p>
+          <p class="en">The platform handles agent lifecycle, session persistence, context management, and tool orchestration. Deploy as managed SaaS or self-host on your own infrastructure. You describe the business — the platform runs it.</p>
+        </div>
+        <div class="narrative-card fade-in">
+          <div class="narrative-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <h3>
+            <span class="zh">今天描述，明天上线</span>
+            <span class="en">Describe Today, Ship Tomorrow</span>
+          </h3>
+          <p class="zh">不需要搭建 Agent 基础设施，不需要处理模型调用、会话状态或工具编排。你只需描述业务——平台负责其余一切，Agent 服务随时可交付。</p>
+          <p class="en">No need to build agent infrastructure, manage model calls, session state, or tool orchestration. Describe the business — the platform handles the rest. Your Agentic service is ready to ship.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="usecases" id="usecases">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">应用场景</span>
+      <span class="en">Use Cases</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">真实业务，已在运行</span>
+      <span class="en">Built for real workloads</span>
+    </h2>
+    <p class="section-desc zh">从业务团队的第一个 AI 落地，到开发者构建生产级 Agentic 应用。</p>
+    <p class="section-desc en">From a team's first AI deployment to developers shipping production-grade Agentic applications.</p>
+    <div class="usecase-grid">
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">
+          <span class="zh">定时执行</span>
+          <span class="en">Scheduled</span>
+        </div>
+        <h3>
+          <span class="zh">每日内容聚合</span>
+          <span class="en">Daily Content Aggregation</span>
+        </h3>
+        <p class="zh">Agent 每天 4 点自动运行，抓取配置的站点、汇总更新，通过 MCP 工具发送邮件摘要。</p>
+        <p class="en">Agent runs at 4 AM daily, crawls configured websites, summarizes updates, and sends an email digest via MCP tools.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Cron: 0 4 * * *
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            <span class="zh">无界面执行</span>
+            <span class="en">Headless</span>
+          </span>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">
+          <span class="zh">人机协作</span>
+          <span class="en">Interactive</span>
+        </div>
+        <h3>
+          <span class="zh">课程方案设计师</span>
+          <span class="en">Lesson Plan Designer</span>
+        </h3>
+        <p class="zh">老师只需定义教学 Skills，平台负责执行。AI 生成课程内容，实时同步结构化数据到表单字段——无需写任何代码。</p>
+        <p class="en">Teachers define teaching Skills; the platform handles execution. AI generates curriculum content and syncs structured data to form fields in real-time — no code required.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+            9 MCP tools
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
+            <span class="zh">实时同步</span>
+            <span class="en">Real-time sync</span>
+          </span>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">
+          <span class="zh">监控</span>
+          <span class="en">Monitoring</span>
+        </div>
+        <h3>
+          <span class="zh">自动化系统巡检</span>
+          <span class="en">Automated System Checks</span>
+        </h3>
+        <p class="zh">Agent 每 5 分钟检查各服务健康状态，在异常时给出上下文感知的分析与告警。</p>
+        <p class="en">Agent runs every 5 minutes, checks service health across endpoints, and alerts on anomalies with context-aware analysis.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span class="zh">间隔：5 分钟</span>
+            <span class="en">Interval: 5min</span>
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span class="zh">完整审计链路</span>
+            <span class="en">Full audit trail</span>
+          </span>
+        </div>
+      </div>
+      <div class="usecase-card fade-in">
+        <div class="usecase-tag">
+          <span class="zh">零 Agent 代码</span>
+          <span class="en">Skills Only · No Agent Code</span>
+        </div>
+        <h3>
+          <span class="zh">McKinsey 风格分析报告</span>
+          <span class="en">McKinsey-Style Analysis</span>
+        </h3>
+        <p class="zh">咨询团队只需定义分析框架 Skills 和数据源 MCP，平台负责 Agent 执行与报告生成全流程——无需编写任何 Agent 代码，即可交付专业结构化分析报告。</p>
+        <p class="en">Define analysis framework Skills and data source MCP tools. The platform handles agent execution and report generation end-to-end — ship a production-grade AI solution without writing a single line of agent code.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span class="zh">Skills 驱动</span>
+            <span class="en">Skills-driven</span>
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/></svg>
+            <span class="zh">结构化输出</span>
+            <span class="en">Structured output</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">平台能力</span>
+      <span class="en">Platform Capabilities</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">生产级所需的一切</span>
+      <span class="en">Everything agents need<br>to run in production</span>
+    </h2>
+    <p class="section-desc zh">平台负责 Agent 执行、上下文管理、会话持久化、工具编排。你只需专注 Skills 和 MCP——描述你的业务，其余交给平台。</p>
+    <p class="section-desc en">The platform handles agent execution, context management, session persistence, and tool orchestration. You focus on Skills and MCP — describe your business, the platform does the rest.</p>
+    <div class="feature-grid">
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <h3>
+          <span class="zh">会话管理</span>
+          <span class="en">Session Management</span>
+        </h3>
+        <p class="zh">长时运行的 CLI 进程，上下文保留、会话恢复、空闲超时、每会话进程隔离。</p>
+        <p class="en">Long-running CLI processes with context preservation, session resume, idle timeout, and process isolation per session.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        </div>
+        <h3>
+          <span class="zh">Skill 路由</span>
+          <span class="en">Skill Routing</span>
+        </h3>
+        <p class="zh">关键词、正则、意图、上下文触发器，自动将消息分发到专项 Agent Skills。</p>
+        <p class="en">Keyword, regex, intent, and context-based triggers automatically dispatch messages to specialized agent skills.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+        </div>
+        <h3>
+          <span class="zh">MCP 工具编排</span>
+          <span class="en">MCP Tool Orchestration</span>
+        </h3>
+        <p class="zh">中央化工具池，健康检查，REST API 适配器封装遗留服务，多认证支持。</p>
+        <p class="en">Centralized tool pool with health checks, REST API adapter for wrapping legacy services, and multi-auth support.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3>
+          <span class="zh">定时执行</span>
+          <span class="en">Scheduled Execution</span>
+        </h3>
+        <p class="zh">Cron、Interval、One-time 调度，无界面 CLI 执行，重试逻辑、并发控制与遗漏恢复。</p>
+        <p class="en">Cron, interval, and one-time scheduling with headless CLI execution, retry logic, concurrency control, and missed-run recovery.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3>
+          <span class="zh">全链路可观测</span>
+          <span class="en">Full Observability</span>
+        </h3>
+        <p class="zh">22 种实体类型全程追踪——每次工具调用、思考过程、Token 用量与进程生命周期事件，均持久化可查。</p>
+        <p class="en">22 entity types tracked — every tool call, thinking block, token usage, and process lifecycle event persisted and queryable.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h3>
+          <span class="zh">多租户与权限</span>
+          <span class="en">Multi-Tenant &amp; Auth</span>
+        </h3>
+        <p class="zh">API Key 认证，9 种权限范围，租户隔离、速率限制与完整审计日志。</p>
+        <p class="en">API key authentication with 9 scopes, tenant isolation, rate limiting, and complete audit logging.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="architecture" id="architecture">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">工作原理</span>
+      <span class="en">How It Works</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">架构</span>
+      <span class="en">Architecture</span>
+    </h2>
+    <p class="section-desc zh">分层系统，每个组件职责清晰。</p>
+    <p class="section-desc en">A layered system where each component has clear responsibilities.</p>
+    <div class="arch-diagram fade-in">
+      <div class="arch-flow">
+        <div class="arch-node">
+          <div class="arch-node-label">
+            <span class="zh">输入</span>
+            <span class="en">Input</span>
+          </div>
+          <div class="arch-node-title">
+            <span class="zh">用户意图</span>
+            <span class="en">User Intent</span>
+          </div>
+          <div class="arch-node-desc">
+            <span class="zh">对话 / API 调用 / 定时</span>
+            <span class="en">Prompt / API call / Cron</span>
+          </div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-node">
+          <div class="arch-node-label">
+            <span class="zh">路由</span>
+            <span class="en">Routing</span>
+          </div>
+          <div class="arch-node-title">
+            <span class="zh">Skill 路由器</span>
+            <span class="en">Skill Router</span>
+          </div>
+          <div class="arch-node-desc">
+            <span class="zh">触发器匹配</span>
+            <span class="en">Trigger matching</span>
+          </div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-node" style="border-color: var(--accent); background: var(--accent-light);">
+          <div class="arch-node-label">
+            <span class="zh">引擎</span>
+            <span class="en">Engine</span>
+          </div>
+          <div class="arch-node-title">
+            <span class="zh">Agent 运行时</span>
+            <span class="en">Agent Runtime</span>
+          </div>
+          <div class="arch-node-desc">Agent Engine</div>
+        </div>
+        <div class="arch-arrow">
+          <svg width="32" height="16" viewBox="0 0 32 16" fill="none"><path d="M0 8h28M24 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="arch-branch">
+          <div class="arch-node">
+            <div class="arch-node-label">
+              <span class="zh">工具</span>
+              <span class="en">Tools</span>
+            </div>
+            <div class="arch-node-title">MCP Pool</div>
+            <div class="arch-node-desc">
+              <span class="zh">内置 + REST 适配器</span>
+              <span class="en">Built-in + REST adapters</span>
+            </div>
+          </div>
+          <div class="arch-node">
+            <div class="arch-node-label">
+              <span class="zh">调度</span>
+              <span class="en">Scheduler</span>
+            </div>
+            <div class="arch-node-title">
+              <span class="zh">任务引擎</span>
+              <span class="en">Task Engine</span>
+            </div>
+            <div class="arch-node-desc">Cron / Interval / Once</div>
+          </div>
+        </div>
+      </div>
+      <div class="arch-outputs">
+        <div class="arch-output">
+          <span class="zh">事件流（20+ 类型）</span>
+          <span class="en">Event Stream (20+ types)</span>
+        </div>
+        <div class="arch-output">
+          <span class="zh">消息持久化</span>
+          <span class="en">Message Persistence</span>
+        </div>
+        <div class="arch-output">
+          <span class="zh">结构化输出</span>
+          <span class="en">Structured Output</span>
+        </div>
+        <div class="arch-output">
+          <span class="zh">管理后台</span>
+          <span class="en">Admin Dashboard</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="pricing">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">定价</span>
+      <span class="en">Pricing</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">从验证到规模化，<br>无需迁移平台</span>
+      <span class="en">From pilot to scale,<br>no platform migration</span>
+    </h2>
+    <p class="section-desc zh">从 Demo 到生产，同一平台，技术栈不变，数据不迁移。</p>
+    <p class="section-desc en">Demo to production on the same platform. Same stack, no data migration.</p>
+
+    <!-- Demo Banner -->
+    <div class="demo-banner">
+      <div class="demo-banner-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="demo-banner-text">
+        <strong>
+          <span class="zh">Demo / POC 专项通道</span>
+          <span class="en">Demo / POC Track</span>
+        </strong>
+        <p>
+          <span class="zh">乙方团队申请 60 天 POC 权限，平台承担 LLM 费用，全功能测试环境，项目结束可一键升级。</span>
+          <span class="en">SI / consulting teams: apply for 60-day POC access. Platform covers LLM costs, full feature access. Upgrade in one click after project close.</span>
+        </p>
+      </div>
+      <a href="mailto:hello@kedgetech.io" class="demo-banner-cta">
+        <span class="zh">申请 Demo 通道</span>
+        <span class="en">Apply for Demo</span>
+      </a>
+    </div>
+
+    <!-- Plan Grid -->
+    <div class="plan-grid">
+      <!-- Free -->
+      <div class="plan-card fade-in">
+        <div class="plan-header">
+          <div class="plan-name">Free</div>
+          <div class="plan-tagline">
+            <span class="zh">邀请码注册，免费评估平台能力</span>
+            <span class="en">Invite-only. Free evaluation.</span>
+          </div>
+        </div>
+        <div class="plan-price">
+          <div class="plan-price-amount">¥0</div>
+          <div class="plan-price-unit">
+            <span class="zh">免费，永久</span>
+            <span class="en">Free forever</span>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">5 个 Skills</span><span class="en">5 Skills</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">3 个 MCP Server</span><span class="en">3 MCP Servers</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">3 路并发 Agent</span><span class="en">3 concurrent Agents</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">20 个 Workspace</span><span class="en">20 Workspaces</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">50K Token / 月（平台提供）</span><span class="en">50K tokens/mo (platform-provided)</span></span>
+          </li>
+        </ul>
+        <a href="mailto:hello@kedgetech.io" class="plan-cta">
+          <span class="zh">申请邀请码</span>
+          <span class="en">Request Invite Key</span>
+        </a>
+      </div>
+
+      <!-- Starter (Recommended) -->
+      <div class="plan-card recommended fade-in">
+        <div class="recommended-badge">
+          <span class="zh">推荐</span>
+          <span class="en">Recommended</span>
+        </div>
+        <div class="plan-header">
+          <div class="plan-name">Starter</div>
+          <div class="plan-tagline">
+            <span class="zh">生产级起点，自带 LLM Key</span>
+            <span class="en">Production-ready. Bring your own key.</span>
+          </div>
+        </div>
+        <div class="plan-price">
+          <div class="plan-price-amount">¥1,999</div>
+          <div class="plan-price-unit">
+            <span class="zh">/ 月</span>
+            <span class="en">/ month</span>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">15 个 Skills</span><span class="en">15 Skills</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">8 个 MCP Server</span><span class="en">8 MCP Servers</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">10 路并发 Agent</span><span class="en">10 concurrent Agents</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">500 个 Workspace</span><span class="en">500 Workspaces</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">自带 LLM Key，无 Token 上限</span><span class="en">Bring your own key, no token cap</span></span>
+          </li>
+        </ul>
+        <a href="mailto:hello@kedgetech.io" class="plan-cta">
+          <span class="zh">联系我们</span>
+          <span class="en">Get Started</span>
+        </a>
+      </div>
+
+      <!-- Business -->
+      <div class="plan-card fade-in">
+        <div class="plan-header">
+          <div class="plan-name">Business</div>
+          <div class="plan-tagline">
+            <span class="zh">无限扩展，适合规模化部署</span>
+            <span class="en">Unlimited scale for enterprise deployment</span>
+          </div>
+        </div>
+        <div class="plan-price">
+          <div class="plan-price-amount">¥9,999</div>
+          <div class="plan-price-unit">
+            <span class="zh">/ 月</span>
+            <span class="en">/ month</span>
+          </div>
+        </div>
+        <ul class="plan-features">
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">无限 Skills</span><span class="en">Unlimited Skills</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">无限 MCP Server</span><span class="en">Unlimited MCP Servers</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">50 路并发 Agent</span><span class="en">50 concurrent Agents</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">5,000 个 Workspace</span><span class="en">5,000 Workspaces</span></span>
+          </li>
+          <li>
+            <span class="feat-check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+            <span><span class="zh">自带 LLM Key，无 Token 上限</span><span class="en">Bring your own key, no token cap</span></span>
+          </li>
+        </ul>
+        <a href="mailto:hello@kedgetech.io" class="plan-cta">
+          <span class="zh">联系销售</span>
+          <span class="en">Talk to Sales</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Workspace note -->
+    <p style="font-size:13px; color:var(--ink-muted); margin-bottom:24px;">
+      <span class="zh">* 1 Workspace = 1 个终端用户账号。</span>
+      <span class="en">* 1 Workspace = 1 end-user account.</span>
+      <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/concepts" target="_blank" style="color:var(--accent); text-decoration:none;">
+        <span class="zh">了解核心概念 →</span>
+        <span class="en">Learn more →</span>
+      </a>
+    </p>
+
+    <!-- Enterprise Strip -->
+    <div class="enterprise-strip fade-in">
+      <div>
+        <div class="enterprise-strip-title">
+          <span class="zh">Enterprise — 定制合约</span>
+          <span class="en">Enterprise — Custom Contract</span>
+        </div>
+        <div class="enterprise-strip-desc">
+          <span class="zh">私有化部署 · 定制 Skills &amp; 并发 · SLA 保障 · 甲方自负 LLM 成本 · 专属对接团队</span>
+          <span class="en">On-premise deployment · Custom Skills &amp; concurrency · SLA guarantee · Client-owned LLM cost · Dedicated team</span>
+        </div>
+      </div>
+      <a href="mailto:hello@kedgetech.io" class="enterprise-strip-cta">
+        <span class="zh">洽谈合作</span>
+        <span class="en">Contact Us</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="section-label">
+      <span class="zh">开始使用</span>
+      <span class="en">Get Started</span>
+    </div>
+    <h2 class="section-title">
+      <span class="zh">描述你的业务。<br>其余，交给即见。</span>
+      <span class="en">Describe your business.<br>We handle the rest.</span>
+    </h2>
+    <p class="section-desc zh">从 Skills 到生产服务，平台全程托管。</p>
+    <p class="section-desc en">From Skills to production service — the platform handles everything in between.</p>
+    <div class="hero-actions" style="margin-top: 40px;">
+      <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank" class="btn-primary">
+        <span class="zh">开始构建</span>
+        <span class="en">Start Building</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.33 8h9.34M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank" class="btn-secondary">
+        <span class="zh">阅读文档</span>
+        <span class="en">Read the Docs</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-brand-name">
+        <div class="nav-logo-mark" style="width:28px;height:28px;font-size:12px;border-radius:6px;">KA</div>
+        KedgeAgentic
+      </div>
+      <p class="zh">企业级 Agentic AI 基础设施。你所描述的，即 AI 所能做到的。</p>
+      <p class="en">Agentic AI Infrastructure. What you describe is what you get.</p>
+    </div>
+    <div class="footer-cols">
+      <div class="footer-col">
+        <h4>
+          <span class="zh">产品</span>
+          <span class="en">Product</span>
+        </h4>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/capabilities" target="_blank">
+          <span class="zh">功能特性</span>
+          <span class="en">Features</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/architecture" target="_blank">
+          <span class="zh">架构</span>
+          <span class="en">Architecture</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/solutions" target="_blank">
+          <span class="zh">解决方案</span>
+          <span class="en">Solutions</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/platform/value" target="_blank">
+          <span class="zh">为什么选择即见</span>
+          <span class="en">Why KedgeAgentic</span>
+        </a>
+      </div>
+      <div class="footer-col">
+        <h4>
+          <span class="zh">开发者</span>
+          <span class="en">Developers</span>
+        </h4>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic" target="_blank">
+          <span class="zh">文档</span>
+          <span class="en">Documentation</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/api/rest" target="_blank">REST API</a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/api/websocket" target="_blank">WebSocket API</a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/guide/skill-writing" target="_blank">
+          <span class="zh">Skill 编写指南</span>
+          <span class="en">Skill Guide</span>
+        </a>
+      </div>
+      <div class="footer-col">
+        <h4>
+          <span class="zh">快速上手</span>
+          <span class="en">Getting Started</span>
+        </h4>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/getting-started/installation" target="_blank">
+          <span class="zh">安装部署</span>
+          <span class="en">Installation</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/getting-started/quickstart" target="_blank">
+          <span class="zh">快速开始</span>
+          <span class="en">Quickstart</span>
+        </a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/guide/mcp-server" target="_blank">MCP Server</a>
+        <a href="https://kedgetech.gitbook.io/ji-jian-agentic/reference/best-practices" target="_blank">
+          <span class="zh">最佳实践</span>
+          <span class="en">Best Practices</span>
+        </a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>&copy; 2025 KedgeAgentic. All rights reserved.</span>
+    <span style="font-family:'Noto Serif',serif; font-style:italic; opacity:0.6;">见即所得</span>
+  </div>
+</footer>
+
+<script>
+// Language toggle
+function toggleLang() {
+  const html = document.documentElement;
+  const isZh = html.lang === 'zh';
+  html.lang = isZh ? 'en' : 'zh';
+  document.getElementById('langToggle').textContent = isZh ? 'ZH' : 'EN';
+  localStorage.setItem('ka-lang', html.lang);
+}
+
+// Restore saved language preference
+(function() {
+  const saved = localStorage.getItem('ka-lang');
+  if (saved && saved !== 'zh') {
+    document.documentElement.lang = saved;
+    const btn = document.getElementById('langToggle');
+    if (btn) btn.textContent = saved === 'zh' ? 'EN' : 'ZH';
+  }
+})();
+
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 10);
+}, { passive: true });
+
+// Fade in on scroll
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+}
+
+// Smooth scroll for nav links
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+
+</body>
+</html>

@@ -5,10 +5,12 @@
 ## 平台介绍 <a href="#platform" id="platform"></a>
 
 * [平台概述](platform/README.md)
+* [核心概念](platform/concepts.md)
 * [核心价值：Skills + MCP](platform/value.md)
 * [平台架构](platform/architecture.md)
 * [核心能力](platform/capabilities.md)
 * [Solution 案例展示](platform/solutions.md)
+* [定价](platform/pricing.md)
 
 ## 快速开始 <a href="#getting-started" id="getting-started"></a>
 
