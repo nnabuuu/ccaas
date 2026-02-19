@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
+import { useOutputSync } from '@ccaas/react-sdk'
 import type { SyncField, OutputUpdate, UndoEntry, LessonPlan } from '../types'
 
 const UNDO_TIMEOUT_MS = 30000 // 30 seconds
@@ -88,30 +89,27 @@ export interface UseLessonPlanSyncReturn {
 }
 
 export function useLessonPlanSync(): UseLessonPlanSyncReturn {
-  const [pendingUpdates, setPendingUpdates] = useState<Map<SyncField, OutputUpdate>>(new Map())
+  // Delegate pendingUpdates Map management to the SDK's generic hook
+  const {
+    pendingUpdates,
+    handleOutputUpdate,
+    discardUpdate,
+    reset: resetPending,
+  } = useOutputSync({ mode: 'manual' })
+
+  // modifiedFields and undoStack are managed locally since syncToForm uses a
+  // non-standard setter (crud.setLessonPlan) incompatible with useOutputSync.syncToForm
   const [modifiedFields, setModifiedFields] = useState<Set<SyncField>>(new Set())
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
-
-  // Use ref to track undo timeouts
   const undoTimeouts = useRef<Map<SyncField, NodeJS.Timeout>>(new Map())
 
-  // Add a pending update from AI
   const addPendingUpdate = useCallback((update: OutputUpdate) => {
-    setPendingUpdates(prev => {
-      const next = new Map(prev)
-      next.set(update.field, update)
-      return next
-    })
-  }, [])
+    handleOutputUpdate(update)
+  }, [handleOutputUpdate])
 
-  // Remove a pending update (when user discards it)
   const removePendingUpdate = useCallback((field: SyncField) => {
-    setPendingUpdates(prev => {
-      const next = new Map(prev)
-      next.delete(field)
-      return next
-    })
-  }, [])
+    discardUpdate(field)
+  }, [discardUpdate])
 
   // Sync a field from AI output to the form
   const syncToForm = useCallback((
@@ -150,14 +148,7 @@ export function useLessonPlanSync(): UseLessonPlanSyncReturn {
     setUndoStack(prev => [...prev.filter(e => e.field !== field), undoEntry])
 
     // Mark as synced with timestamp (don't remove, allow re-sync)
-    setPendingUpdates(prev => {
-      const next = new Map(prev)
-      const existing = next.get(field)
-      if (existing) {
-        next.set(field, { ...existing, synced: true, syncedAt: new Date() })
-      }
-      return next
-    })
+    handleOutputUpdate({ ...update, synced: true, syncedAt: new Date() })
 
     // Set timeout to remove from undo stack
     const existingTimeout = undoTimeouts.current.get(field)
@@ -171,7 +162,7 @@ export function useLessonPlanSync(): UseLessonPlanSyncReturn {
     }, UNDO_TIMEOUT_MS)
 
     undoTimeouts.current.set(field, timeout)
-  }, [pendingUpdates, removePendingUpdate])
+  }, [pendingUpdates, handleOutputUpdate])
 
   // Undo a sync operation
   const undoSync = useCallback((
@@ -226,13 +217,13 @@ export function useLessonPlanSync(): UseLessonPlanSyncReturn {
 
   // Reset all sync state
   const resetSyncState = useCallback(() => {
-    setPendingUpdates(new Map())
+    resetPending()
     setModifiedFields(new Set())
     clearUndoStack()
-  }, [clearUndoStack])
+  }, [resetPending, clearUndoStack])
 
   return {
-    pendingUpdates,
+    pendingUpdates: pendingUpdates as unknown as Map<SyncField, OutputUpdate>,
     modifiedFields,
     undoStack,
     addPendingUpdate,
