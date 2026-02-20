@@ -30,7 +30,7 @@ Ensure your Solution has installed:
 ```json
 {
   "dependencies": {
-    "@ccaas/react-sdk": "^2.x",
+    "@kedge-agentic/react-sdk": "^2.x",
     "react": "^18.0.0"
   }
 }
@@ -57,7 +57,7 @@ import {
   useAgentConnection,
   useAgentChat,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 // Required for Side-by-Side mode
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
@@ -153,7 +153,7 @@ import {
   useAgentConnection,
   useAgentChat,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function App() {
   const layout = useChatLayout()
@@ -219,7 +219,7 @@ import {
   useAgentConnection,
   useAgentChat,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function App() {
   const layout = useChatLayout()
@@ -303,7 +303,7 @@ import {
   useAgentConnection,
   useAgentChat,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 
 function App() {
@@ -404,7 +404,7 @@ import {
   useAgentChat,
   useAgentStatus,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 
 const TENANT_ID = 'default'
@@ -842,4 +842,4 @@ location.reload()
 ## Update History
 
 - **2026-02-16**: Initial version
-- Compatible with `@ccaas/react-sdk` v2.x
+- Compatible with `@kedge-agentic/react-sdk` v2.x

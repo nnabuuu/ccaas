@@ -1,4 +1,4 @@
-import { QuickActions, type QuickAction } from '@ccaas/react-sdk'
+import { QuickActions, type QuickAction } from '@kedge-agentic/react-sdk'
 
 interface QuickPromptsProps {
   onSelect: (prompt: string) => void

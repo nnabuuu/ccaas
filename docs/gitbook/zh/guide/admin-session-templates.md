@@ -125,7 +125,7 @@ npm run dev:admin
 ### 3. 在前端使用模板
 
 ```typescript
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 export function TeacherView() {
   const chat = useAgentChat({
@@ -462,5 +462,5 @@ curl -H "Authorization: Bearer <key>" \
 ## 相关指南
 
 - [管理员 API Key 管理](admin-api-keys.md) — 创建管理员 API 密钥
-- [前端集成指南](frontend.md) — 使用 `@ccaas/react-sdk`
+- [前端集成指南](frontend.md) — 使用 `@kedge-agentic/react-sdk`
 - [技能编写指南](skill-writing.md) — 创建自定义技能

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { ActiveSubAgent } from '@ccaas/common'
+import type { ActiveSubAgent } from '@kedge-agentic/common'
 
 export interface SubAgentCardProps {
   subAgent: ActiveSubAgent

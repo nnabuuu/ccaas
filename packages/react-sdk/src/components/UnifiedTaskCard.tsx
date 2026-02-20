@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react'
 import type { UnifiedTask } from '../types'
 import { SubAgentCard } from './SubAgentCard'
-import type { ActiveSubAgent } from '@ccaas/common'
+import type { ActiveSubAgent } from '@kedge-agentic/common'
 
 export interface UnifiedTaskCardProps {
   task: UnifiedTask

@@ -9,8 +9,8 @@ This guide shows how to integrate the CCAAS chat components into your solution.
 ```json
 {
   "dependencies": {
-    "@ccaas/react-sdk": "workspace:*",
-    "@ccaas/common": "workspace:*",
+    "@kedge-agentic/react-sdk": "workspace:*",
+    "@kedge-agentic/common": "workspace:*",
     "socket.io-client": "^4.8.1"
   }
 }
@@ -26,7 +26,7 @@ import {
   useAgentChat,
   useAgentStatus,
   useChatLayout
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 export function useMySession() {
   // Core SDK hooks
@@ -61,7 +61,7 @@ export function useMySession() {
 ### 3. Use ChatPanel Component
 
 ```tsx
-import { ChatPanel, MessageBubble } from '@ccaas/react-sdk'
+import { ChatPanel, MessageBubble } from '@kedge-agentic/react-sdk'
 
 export function App() {
   const session = useMySession()
@@ -112,7 +112,7 @@ export function App() {
 ### 5. Add Quick Actions (Optional)
 
 ```tsx
-import { QuickActions } from '@ccaas/react-sdk'
+import { QuickActions } from '@kedge-agentic/react-sdk'
 
 const myActions = [
   { id: 'action1', label: 'Generate Report', prompt: 'Generate a report' },
@@ -301,7 +301,7 @@ const FIELD_LABELS: Record<string, string> = {
 ### Basic Actions
 
 ```tsx
-import { QuickActions, type QuickAction } from '@ccaas/react-sdk'
+import { QuickActions, type QuickAction } from '@kedge-agentic/react-sdk'
 
 const actions: QuickAction[] = [
   { id: 'summarize', label: 'Summarize', prompt: 'Please summarize this' },
@@ -360,7 +360,7 @@ const actions = ACTIONS.map(action => ({
 ### With Layout Controls
 
 ```tsx
-import { ChatPanel, ChatLayoutControls } from '@ccaas/react-sdk'
+import { ChatPanel, ChatLayoutControls } from '@kedge-agentic/react-sdk'
 
 export function App() {
   const session = useMySession()
@@ -408,7 +408,7 @@ import {
   useAgentStatus,
   useChatLayout,
   useSkills
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 const BACKEND_URL = 'http://localhost:3001'
 const TENANT_ID = 'default'
@@ -494,7 +494,7 @@ export function useDemoSession() {
 }
 
 // App.tsx
-import { ChatPanel, MessageBubble, ChatLayoutControls } from '@ccaas/react-sdk'
+import { ChatPanel, MessageBubble, ChatLayoutControls } from '@kedge-agentic/react-sdk'
 import { useDemoSession } from './hooks/useDemoSession'
 
 export function App() {

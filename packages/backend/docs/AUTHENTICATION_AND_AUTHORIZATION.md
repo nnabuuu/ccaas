@@ -664,7 +664,7 @@ This is your skill prompt.
 
 **React 示例：**
 ```typescript
-import { useAgentChat } from '@ccaas/react-sdk';
+import { useAgentChat } from '@kedge-agentic/react-sdk';
 
 function YourApp() {
   const { connection, chat, status } = useAgentChat({
@@ -691,7 +691,7 @@ function YourApp() {
 **Vue 示例：**
 ```vue
 <script setup lang="ts">
-import { useAgentConnection, useAgentChat } from '@ccaas/vue-sdk';
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/vue-sdk';
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',

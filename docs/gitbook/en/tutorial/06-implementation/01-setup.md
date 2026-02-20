@@ -337,8 +337,8 @@ Create `frontend/package.json`:
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@ccaas/common": "file:../../../packages/common",
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -364,8 +364,8 @@ Create `frontend/package.json`:
 
 **Key dependencies:**
 
-- `@ccaas/react-sdk`: Provides hooks for WebSocket connection, chat, and output\_update handling
-- `@ccaas/common`: Shared types used across the platform
+- `@kedge-agentic/react-sdk`: Provides hooks for WebSocket connection, chat, and output\_update handling
+- `@kedge-agentic/common`: Shared types used across the platform
 - `socket.io-client`: WebSocket client for real-time communication
 - `lucide-react`: Icons library
 

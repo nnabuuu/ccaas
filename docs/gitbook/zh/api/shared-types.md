@@ -1,21 +1,21 @@
-# @ccaas/common 类型
+# @kedge-agentic/common 类型
 
-`@ccaas/common` 包提供所有 CCAAS 包共享的 TypeScript 类型定义和 Zod 运行时验证 Schema。
+`@kedge-agentic/common` 包提供所有 CCAAS 包共享的 TypeScript 类型定义和 Zod 运行时验证 Schema。
 
 ## 安装
 
 ```bash
-npm install @ccaas/common
+npm install @kedge-agentic/common
 ```
 
 ## 导入方式
 
 ```typescript
 // 导入类型
-import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@ccaas/common'
+import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@kedge-agentic/common'
 
 // 导入 Zod Schema
-import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
+import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@kedge-agentic/common'
 ```
 
 ## 核心类型
@@ -204,7 +204,7 @@ interface HttpErrorResponse {
 **使用示例:**
 
 ```typescript
-import { HttpErrorResponse } from '@ccaas/common'
+import { HttpErrorResponse } from '@kedge-agentic/common'
 
 async function handleApiError(response: Response) {
   if (!response.ok) {
@@ -228,12 +228,12 @@ async function handleApiError(response: Response) {
 
 ## 事件 Schema（Zod）
 
-`@ccaas/common` 提供 Zod Schema 进行运行时事件验证：
+`@kedge-agentic/common` 提供 Zod Schema 进行运行时事件验证：
 
 ### OutputUpdateEvent
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/common'
+import { OutputUpdateEventSchema } from '@kedge-agentic/common'
 
 const result = OutputUpdateEventSchema.safeParse(rawEvent)
 if (result.success) {
@@ -245,7 +245,7 @@ if (result.success) {
 ### AgentStatusEvent
 
 ```typescript
-import { AgentStatusEventSchema } from '@ccaas/common'
+import { AgentStatusEventSchema } from '@kedge-agentic/common'
 
 // Status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error'
 ```
@@ -253,7 +253,7 @@ import { AgentStatusEventSchema } from '@ccaas/common'
 ### ToolActivityEvent
 
 ```typescript
-import { ToolActivityEventSchema } from '@ccaas/common'
+import { ToolActivityEventSchema } from '@kedge-agentic/common'
 
 // Phase: 'start' | 'progress' | 'end'
 // Includes: toolName, toolId, description, decisionLogic, duration, success
@@ -263,10 +263,10 @@ import { ToolActivityEventSchema } from '@ccaas/common'
 
 ### 字段映射
 
-`@ccaas/common` 提供后端字段名到前端字段名的映射：
+`@kedge-agentic/common` 提供后端字段名到前端字段名的映射：
 
 ```typescript
-import { fieldMapping } from '@ccaas/common'
+import { fieldMapping } from '@kedge-agentic/common'
 
 // 示例映射：
 // 'learningTasks' → 'learningProcess'
@@ -276,7 +276,7 @@ import { fieldMapping } from '@ccaas/common'
 ### 验证函数
 
 ```typescript
-import { validate, safeValidate } from '@ccaas/common'
+import { validate, safeValidate } from '@kedge-agentic/common'
 
 // validate: 抛出异常
 // safeValidate: 返回 { success, data?, error? }
@@ -284,6 +284,6 @@ import { validate, safeValidate } from '@ccaas/common'
 
 ## Solution 领域类型
 
-`@ccaas/common` 只包含平台基础设施类型。领域类型（如教案、题目等）属于各 Solution 的内部实现，定义在 Solution 自身的代码库中，不通过 `@ccaas/common` 共享。
+`@kedge-agentic/common` 只包含平台基础设施类型。领域类型（如教案、题目等）属于各 Solution 的内部实现，定义在 Solution 自身的代码库中，不通过 `@kedge-agentic/common` 共享。
 
-> **架构原则**：Core（`@ccaas/common`）= 基础设施类型；Solution = 领域逻辑与类型。两者不应混用。
+> **架构原则**：Core（`@kedge-agentic/common`）= 基础设施类型；Solution = 领域逻辑与类型。两者不应混用。

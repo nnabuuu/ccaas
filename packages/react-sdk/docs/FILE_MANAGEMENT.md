@@ -27,16 +27,16 @@ Complete guide for using file management hooks and components in the CCAAS React
 
 ### Installation
 
-The file management system is included in `@ccaas/react-sdk`:
+The file management system is included in `@kedge-agentic/react-sdk`:
 
 ```bash
-npm install @ccaas/react-sdk
+npm install @kedge-agentic/react-sdk
 ```
 
 ### Basic Usage
 
 ```tsx
-import { FilePanel, useAgentConnection } from '@ccaas/react-sdk';
+import { FilePanel, useAgentConnection } from '@kedge-agentic/react-sdk';
 
 function MyApp() {
   const connection = useAgentConnection({
@@ -100,7 +100,7 @@ interface UseFilesReturn {
 #### Example: Basic Usage
 
 ```tsx
-import { useFiles, useAgentConnection } from '@ccaas/react-sdk';
+import { useFiles, useAgentConnection } from '@kedge-agentic/react-sdk';
 
 function FileManager() {
   const connection = useAgentConnection({ serverUrl, tenantId });
@@ -404,7 +404,7 @@ interface FilePreviewData {
 #### Example: Text File Preview
 
 ```tsx
-import { useFilePreview } from '@ccaas/react-sdk';
+import { useFilePreview } from '@kedge-agentic/react-sdk';
 
 function TextPreview({ fileId }: { fileId: string }) {
   const preview = useFilePreview({
@@ -499,7 +499,7 @@ interface FilePanelProps {
 #### Example: Basic Usage
 
 ```tsx
-import { FilePanel } from '@ccaas/react-sdk';
+import { FilePanel } from '@kedge-agentic/react-sdk';
 
 function App() {
   return (
@@ -566,7 +566,7 @@ interface FileListProps {
 #### Example
 
 ```tsx
-import { FileList } from '@ccaas/react-sdk';
+import { FileList } from '@kedge-agentic/react-sdk';
 
 function MyFileList() {
   const files = useFiles({ connection, sessionId });
@@ -608,7 +608,7 @@ interface FileListItemProps {
 #### Example: Custom Item Rendering
 
 ```tsx
-import { FileListItem } from '@ccaas/react-sdk';
+import { FileListItem } from '@kedge-agentic/react-sdk';
 
 function CustomFileItem({ file }: { file: FileMetadata }) {
   return (
@@ -643,7 +643,7 @@ interface FilePreviewProps {
 #### Example
 
 ```tsx
-import { FilePreview } from '@ccaas/react-sdk';
+import { FilePreview } from '@kedge-agentic/react-sdk';
 
 function PreviewPanel({ selectedFile }: { selectedFile: FileMetadata }) {
   if (!selectedFile) {
@@ -680,7 +680,7 @@ interface FileVersionHistoryProps {
 #### Example
 
 ```tsx
-import { FileVersionHistory } from '@ccaas/react-sdk';
+import { FileVersionHistory } from '@kedge-agentic/react-sdk';
 
 function VersionPanel({ file }: { file: FileMetadata }) {
   const [comparing, setComparing] = useState(null);
@@ -729,7 +729,7 @@ interface FileVersionCompareProps {
 #### Example
 
 ```tsx
-import { FileVersionCompare } from '@ccaas/react-sdk';
+import { FileVersionCompare } from '@kedge-agentic/react-sdk';
 
 function ComparisonModal({ file, from, to }: Props) {
   return (
@@ -755,7 +755,7 @@ function ComparisonModal({ file, from, to }: Props) {
 Override upload behavior for solution-specific needs:
 
 ```tsx
-import { FilePanel, useFiles } from '@ccaas/react-sdk';
+import { FilePanel, useFiles } from '@kedge-agentic/react-sdk';
 
 function LessonPlanFilePanel() {
   const files = useFiles({ connection, sessionId });
@@ -797,7 +797,7 @@ function LessonPlanFilePanel() {
 ### Custom Badge Styles
 
 ```tsx
-import { FileListItem } from '@ccaas/react-sdk';
+import { FileListItem } from '@kedge-agentic/react-sdk';
 
 function StyledFileItem({ file }: { file: FileMetadata }) {
   return (
@@ -851,7 +851,7 @@ import {
   FilePanel,
   useFiles,
   useAgentConnection,
-} from '@ccaas/react-sdk';
+} from '@kedge-agentic/react-sdk';
 
 function FileManager() {
   const connection = useAgentConnection({
@@ -891,7 +891,7 @@ function FileManager() {
 ### Example 2: File Watcher with Notifications
 
 ```tsx
-import { useFiles, useAgentConnection } from '@ccaas/react-sdk';
+import { useFiles, useAgentConnection } from '@kedge-agentic/react-sdk';
 import { toast } from 'react-hot-toast';
 
 function FileWatcher() {

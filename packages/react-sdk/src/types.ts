@@ -1,11 +1,11 @@
 /**
- * @ccaas/react-sdk types
+ * @kedge-agentic/react-sdk types
  *
  * Common types used by React SDK hooks. Domain-specific types
  * (e.g., LessonPlan, Explanation) remain in each solution.
  */
 
-import type { TokenUsage } from '@ccaas/common'
+import type { TokenUsage } from '@kedge-agentic/common'
 
 // Re-export TokenUsage for consumers
 export type { TokenUsage }
@@ -103,7 +103,7 @@ export interface UseFilePreviewReturn {
   refetch: () => Promise<void>
 }
 
-// Re-export event types from @ccaas/common
+// Re-export event types from @kedge-agentic/common
 export type {
   TextDeltaEvent,
   OutputUpdateEvent,
@@ -120,10 +120,10 @@ export type {
   TodoUpdateEvent,
   Skill,
   ActiveSubAgent,
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 
 // Re-export EventTodoItem as TodoItem for convenience
-export type { EventTodoItem as TodoItem } from '@ccaas/common'
+export type { EventTodoItem as TodoItem } from '@kedge-agentic/common'
 
 // ============================================================================
 // Todo Types
@@ -153,7 +153,7 @@ export interface UnifiedTask {
   progress?: number
   activeForm?: string
   nestingLevel?: number
-  raw: import('@ccaas/common').ActiveSubAgent | import('@ccaas/common').EventTodoItem
+  raw: import('@kedge-agentic/common').ActiveSubAgent | import('@kedge-agentic/common').EventTodoItem
 }
 
 export interface TaskGroups {
@@ -170,8 +170,8 @@ export interface TaskBadgeState {
 }
 
 export interface UseTaskTrackingOptions {
-  activeSubAgents: import('@ccaas/common').ActiveSubAgent[]
-  todoItems: import('@ccaas/common').EventTodoItem[]
+  activeSubAgents: import('@kedge-agentic/common').ActiveSubAgent[]
+  todoItems: import('@kedge-agentic/common').EventTodoItem[]
   maxHistorySize?: number
 }
 
@@ -311,8 +311,8 @@ export interface UndoEntry {
 // Solution Config Types
 // ============================================================================
 
-// Import and re-export from @ccaas/common to avoid duplication
-import type { McpServerConfig as McpServerConfigCommon } from '@ccaas/common'
+// Import and re-export from @kedge-agentic/common to avoid duplication
+import type { McpServerConfig as McpServerConfigCommon } from '@kedge-agentic/common'
 export type McpServerConfig = McpServerConfigCommon
 
 export interface SolutionConfig {
@@ -320,7 +320,7 @@ export interface SolutionConfig {
   skillPath?: string | null
   skillSlug?: string | null
   /** Session templates defined in solution.json */
-  sessionTemplates?: import('@ccaas/common').SessionTemplateMap
+  sessionTemplates?: import('@kedge-agentic/common').SessionTemplateMap
   // NOTE: defaultSessionTemplate will be added in Phase 2
   // when we implement automatic fallback to default template
 }
@@ -428,9 +428,9 @@ export interface UseAgentStatusReturn {
   thinkingStartTime: number | null  // 思考开始时间戳
   thinkingVerb: string               // 当前思考动词
   tokenUsage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } | null
-  todoItems: import('@ccaas/common').EventTodoItem[]
+  todoItems: import('@kedge-agentic/common').EventTodoItem[]
   todoStats: TodoStats
-  activeSubAgents: import('@ccaas/common').ActiveSubAgent[]
+  activeSubAgents: import('@kedge-agentic/common').ActiveSubAgent[]
   currentActivity: string
 }
 
@@ -465,12 +465,12 @@ export interface UseSkillsOptions {
 }
 
 export interface UseSkillsReturn {
-  skills: import('@ccaas/common').Skill[]
+  skills: import('@kedge-agentic/common').Skill[]
   loading: boolean
   error: string | null
   searchQuery: string
   setSearchQuery: (q: string) => void
-  filteredSkills: import('@ccaas/common').Skill[]
+  filteredSkills: import('@kedge-agentic/common').Skill[]
   toggleSkill: (skillId: string) => Promise<void>
   enabledSkillIds: Set<string>
   isSkillEnabled: (skillId: string) => boolean
@@ -533,9 +533,9 @@ export interface ChatPanelProps {
   thinkingContent?: string
   thinkingStartTime?: number | null  // 新增
   thinkingVerb?: string              // 新增
-  todoItems?: import('@ccaas/common').EventTodoItem[]
+  todoItems?: import('@kedge-agentic/common').EventTodoItem[]
   todoStats?: TodoStats | null
-  activeSubAgents?: import('@ccaas/common').ActiveSubAgent[]
+  activeSubAgents?: import('@kedge-agentic/common').ActiveSubAgent[]
   tokenUsage?: TokenUsage | null     // Session-level token usage
   onSendMessage: (content: string) => void
   onCancel?: () => void

@@ -9,8 +9,8 @@
  */
 
 import { RocketLaunchIcon, AcademicCapIcon } from '@heroicons/react/24/solid'
-import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@ccaas/react-sdk'
-import type { ToolActivity, ActiveSubAgent } from '@ccaas/react-sdk'
+import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@kedge-agentic/react-sdk'
+import type { ToolActivity, ActiveSubAgent } from '@kedge-agentic/react-sdk'
 import type { ViewMode } from '../types'
 
 interface ChatWithQuickActionsProps {

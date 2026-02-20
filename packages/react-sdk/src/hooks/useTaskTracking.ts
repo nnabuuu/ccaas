@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { ActiveSubAgent, EventTodoItem } from '@ccaas/common'
+import type { ActiveSubAgent, EventTodoItem } from '@kedge-agentic/common'
 import type {
   UnifiedTask,
   TaskGroups,

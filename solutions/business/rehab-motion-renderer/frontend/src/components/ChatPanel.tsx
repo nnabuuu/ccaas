@@ -4,7 +4,7 @@
 // ═══════════════════════════════════════════
 
 import { useState, useRef, useEffect } from 'react'
-import type { Message, ToolActivity } from '@ccaas/react-sdk'
+import type { Message, ToolActivity } from '@kedge-agentic/react-sdk'
 import { MONO_FONT } from '../constants'
 
 interface ChatPanelProps {

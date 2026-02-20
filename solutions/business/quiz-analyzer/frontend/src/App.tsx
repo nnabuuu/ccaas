@@ -11,7 +11,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
-import { useChatLayout, ChatSection, CollapsedChatTab } from '@ccaas/react-sdk'
+import { useChatLayout, ChatSection, CollapsedChatTab } from '@kedge-agentic/react-sdk'
 import ErrorBoundary from './components/ErrorBoundary'
 import ConnectionStatus from './components/ConnectionStatus'
 import QuizInputForm, { type QuizInputData } from './components/QuizInputForm'

@@ -119,7 +119,7 @@ curl http://localhost:3006/health
 **Before modifying any code**:
 - [ ] Run `npm test` to confirm all tests pass
 - [ ] If changing API/interface, check frontend type definitions and existing tests
-- [ ] Review @ccaas/common types for contract definitions
+- [ ] Review @kedge-agentic/common types for contract definitions
 
 **After modifying code**:
 - [ ] Immediately run related tests, don't wait until the end
@@ -343,12 +343,12 @@ AND parent_id NOT IN (SELECT id FROM knowledge_points);
 
 ## Type Safety
 
-### Using @ccaas/common
+### Using @kedge-agentic/common
 
-When backend is implemented, all shared types should come from `@ccaas/common`:
+When backend is implemented, all shared types should come from `@kedge-agentic/common`:
 
 ```typescript
-import { Session, OutputUpdateEvent } from '@ccaas/common'
+import { Session, OutputUpdateEvent } from '@kedge-agentic/common'
 ```
 
 ### Zod Validation

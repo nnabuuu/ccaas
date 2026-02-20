@@ -46,10 +46,10 @@ const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
 
 ### Use Shared Types
 
-Always import shared types from `@ccaas/common` to keep frontend and backend types consistent:
+Always import shared types from `@kedge-agentic/common` to keep frontend and backend types consistent:
 
 ```typescript
-import { Session, Skill, TokenUsage } from '@ccaas/common'
+import { Session, Skill, TokenUsage } from '@kedge-agentic/common'
 ```
 
 ### Runtime Validation

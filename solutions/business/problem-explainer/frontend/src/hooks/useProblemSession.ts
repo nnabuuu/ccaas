@@ -105,7 +105,7 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
       setIsConnected(false);
     });
 
-    // Handle text streaming (using TextDeltaEvent from @ccaas/common)
+    // Handle text streaming (using TextDeltaEvent from @kedge-agentic/common)
     socket.on('text_delta', (data: TextDeltaEvent) => {
       console.log('[Socket] text_delta received, length:', data.delta?.length, 'preview:', data.delta?.substring(0, 50));
       const blocks = contentBlocksRef.current;
@@ -134,7 +134,7 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
       });
     });
 
-    // Handle agent status changes (using AgentStatusEvent from @ccaas/common)
+    // Handle agent status changes (using AgentStatusEvent from @kedge-agentic/common)
     // Valid statuses: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error'
     socket.on('agent_status', (data: AgentStatusEvent) => {
       console.log('[Socket] agent_status received:', data.status, 'context:', data.context);

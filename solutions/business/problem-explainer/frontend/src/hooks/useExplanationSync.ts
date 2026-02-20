@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import type { OutputUpdate as SdkOutputUpdate } from '@ccaas/react-sdk';
+import type { OutputUpdate as SdkOutputUpdate } from '@kedge-agentic/react-sdk';
 import { Explanation, OutputUpdate, SyncField, SYNC_FIELDS } from '../types';
 
 interface UndoEntry {

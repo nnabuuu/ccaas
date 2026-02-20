@@ -1,7 +1,7 @@
 /**
  * Demo Session Hook - Combines SDK hooks with demo-specific features
  *
- * Uses @ccaas/react-sdk hooks for core chat functionality,
+ * Uses @kedge-agentic/react-sdk hooks for core chat functionality,
  * adds demo-specific features:
  * - Skills CRUD operations
  * - File tracking and download
@@ -14,9 +14,9 @@ import {
   useAgentChat,
   useAgentStatus,
   useChatLayout,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type { Skill, SkillFormData, FileInfo } from '../types'
-import type { ToolActivityEvent } from '@ccaas/common'
+import type { ToolActivityEvent } from '@kedge-agentic/common'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'

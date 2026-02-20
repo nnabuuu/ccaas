@@ -1,5 +1,5 @@
 {
-  "name": "@ccaas/shared-context-server",
+  "name": "@kedge-agentic/shared-context-server",
   "version": "1.0.0",
   "description": "Shared MCP server for reading page context across all CCAAS solutions",
   "type": "module",

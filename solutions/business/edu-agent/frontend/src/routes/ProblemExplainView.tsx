@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Play } from 'lucide-react'
-import { useOutputSync, type OutputUpdate } from '@ccaas/react-sdk'
+import { useOutputSync, type OutputUpdate } from '@kedge-agentic/react-sdk'
 import { useSessionContext } from '../context/SessionContext'
 import type { Explanation } from '../types/problem-explain'
 

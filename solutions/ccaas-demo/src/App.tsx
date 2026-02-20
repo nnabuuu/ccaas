@@ -14,7 +14,7 @@ import {
   ChatPanel,
   MessageBubble,
   ChatLayoutControls,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { SkillsSidebar } from './components/SkillsSidebar'
 import { SkillEditor } from './components/SkillEditor'
 import { ConfirmDialog } from './components/ConfirmDialog'

@@ -51,7 +51,7 @@ const defaultStringArray = ref<string[]>([])
  * @example
  * ```vue
  * <script setup>
- * import { useThinking } from '@ccaas/vue-sdk'
+ * import { useThinking } from '@kedge-agentic/vue-sdk'
  *
  * const { isThinking, thinkingContent, thinkingPreview } = useThinking()
  * </script>

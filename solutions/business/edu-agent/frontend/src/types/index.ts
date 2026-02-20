@@ -11,7 +11,7 @@ export type {
   UseAgentStatusReturn,
   AgentStatusValue,
   SolutionConfig,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 // Navigation
 export interface NavigationUpdate {

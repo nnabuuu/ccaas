@@ -1,4 +1,4 @@
-import { OutputUpdateCard } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@kedge-agentic/react-sdk'
 import type { SyncField } from '../types'
 
 interface SyncButtonProps {

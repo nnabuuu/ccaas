@@ -1,4 +1,4 @@
-import { ChatPanel } from '@ccaas/react-sdk'
+import { ChatPanel } from '@kedge-agentic/react-sdk'
 import ChatLayoutControls from './ChatLayoutControls'
 import type { ChatLayoutMode } from '../hooks/useChatLayout'
 import type { UseQuizSessionReturn } from '../hooks/useQuizSession'

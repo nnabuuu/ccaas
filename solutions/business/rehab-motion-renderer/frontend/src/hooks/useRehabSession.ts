@@ -13,7 +13,7 @@ import {
   useOutputSync,
   type Message,
   type ToolActivity,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type {
   RehabPlan,
   SyncField,

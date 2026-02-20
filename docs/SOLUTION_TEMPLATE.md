@@ -52,8 +52,8 @@ solutions/my-solution/
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ccaas/react-sdk": "workspace:*",
-    "@ccaas/common": "workspace:*",
+    "@kedge-agentic/react-sdk": "workspace:*",
+    "@kedge-agentic/common": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io-client": "^4.8.1"
@@ -110,7 +110,7 @@ import {
   ChatPanel,
   MessageBubble,
   ChatLayoutControls
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import './App.css'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
@@ -179,8 +179,8 @@ import {
   useAgentChat,
   useAgentStatus,
   useChatLayout,
-} from '@ccaas/react-sdk'
-import type { OutputUpdateEvent } from '@ccaas/common'
+} from '@kedge-agentic/react-sdk'
+import type { OutputUpdateEvent } from '@kedge-agentic/common'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'default'
@@ -579,7 +579,7 @@ cd frontend && npm run build
 ## Best Practices
 
 1. **Use Custom Hook**: Extract complex logic into `useMySession` hook
-2. **Type Safety**: Define types in `types/index.ts`, import from `@ccaas/common` where possible
+2. **Type Safety**: Define types in `types/index.ts`, import from `@kedge-agentic/common` where possible
 3. **Event Handling**: Always cleanup socket listeners in `useEffect` cleanup
 4. **Error Handling**: Handle connection errors gracefully
 5. **State Management**: Keep solution state local, use SDK hooks for shared state

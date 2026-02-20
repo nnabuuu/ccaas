@@ -26,7 +26,7 @@ This chapter walks you through implementing the complete Lesson Plan Designer So
 | Frontend | React 18 + Vite + Tailwind CSS | User interface |
 | MCP Server | Node.js + @modelcontextprotocol/sdk | AI tool service |
 | Skills | Markdown (SKILL.md) | AI behavior definitions |
-| Chat Integration | @ccaas/react-sdk + Socket.io | Real-time AI communication |
+| Chat Integration | @kedge-agentic/react-sdk + Socket.io | Real-time AI communication |
 
 ## Chapter Overview
 

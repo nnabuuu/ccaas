@@ -1,5 +1,5 @@
 /**
- * @ccaas/react-sdk
+ * @kedge-agentic/react-sdk
  *
  * React hooks and utilities for integrating with Claude-Code-as-a-Service backend.
  *
@@ -173,7 +173,7 @@ export type {
   SolutionDefaults,
 } from './utils/templateResolver'
 
-// Re-export commonly used @ccaas/common types for convenience
+// Re-export commonly used @kedge-agentic/common types for convenience
 export type {
   TextDeltaEvent,
   OutputUpdateEvent,
@@ -187,9 +187,9 @@ export type {
   ActiveSubAgent,
   SessionTemplate,
   SessionTemplateMap,
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 
-export type { EventTodoItem as TodoItem } from '@ccaas/common'
+export type { EventTodoItem as TodoItem } from '@kedge-agentic/common'
 
 // Queue status hook types
 export type {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 import type { SyncField, OutputUpdate, UndoEntry, LessonPlan } from '../types'
 
 const UNDO_TIMEOUT_MS = 30000 // 30 seconds

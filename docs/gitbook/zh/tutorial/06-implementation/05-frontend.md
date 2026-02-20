@@ -31,8 +31,8 @@
 ```json
 {
   "dependencies": {
-    "@ccaas/common": "file:../../../packages/common",
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io-client": "^4.8.1"
@@ -40,12 +40,12 @@
 }
 ```
 
-- **@ccaas/common** -- 共享的 TypeScript 类型（`OutputUpdateEvent`、`TextDeltaEvent`、`TokenUsage`）
-- **@ccaas/react-sdk** -- 模块化 hooks 和预构建组件（`useAgentConnection`、`useAgentChat`、`useAgentStatus`、`usePageContext`、`useFiles`、`AgentActivityLine`、`OutputUpdateCard`）
+- **@kedge-agentic/common** -- 共享的 TypeScript 类型（`OutputUpdateEvent`、`TextDeltaEvent`、`TokenUsage`）
+- **@kedge-agentic/react-sdk** -- 模块化 hooks 和预构建组件（`useAgentConnection`、`useAgentChat`、`useAgentStatus`、`usePageContext`、`useFiles`、`AgentActivityLine`、`OutputUpdateCard`）
 
 ## 第一步：理解 SDK Hook 架构
 
-`@ccaas/react-sdk` 提供五个核心 hooks，每个处理一个关注点：
+`@kedge-agentic/react-sdk` 提供五个核心 hooks，每个处理一个关注点：
 
 | Hook | 职责 |
 |------|------|
@@ -84,7 +84,7 @@ import {
   usePageContext,
   useFiles,
   type Message,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
@@ -236,7 +236,7 @@ import {
   useMessageSplitter,
   AssistantMessageGroup,
   type ToolActivity,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type { Message, SyncField } from '../types'
 
 export function ChatPanel({
@@ -346,7 +346,7 @@ SDK 提供 `OutputUpdateCard` 用于渲染每个待处理的更新：
 ```typescript
 // frontend/src/components/SyncButton.tsx
 
-import { OutputUpdateCard } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@kedge-agentic/react-sdk'
 import type { SyncField } from '../types'
 
 const FIELD_LABELS: Record<SyncField, string> = {
@@ -590,7 +590,7 @@ function App() {
 {% endhint %}
 
 {% hint style="danger" %}
-**陷阱 2：定义本地事件类型而不使用 @ccaas/common。** 对于平台事件如 `OutputUpdateEvent` 和 `TextDeltaEvent`，始终从 `@ccaas/common` 导入类型。定义本地类型在事件格式变化时会导致不匹配。领域类型（LessonPlan、Task）是 Solution 特有的，应该在本地定义。
+**陷阱 2：定义本地事件类型而不使用 @kedge-agentic/common。** 对于平台事件如 `OutputUpdateEvent` 和 `TextDeltaEvent`，始终从 `@kedge-agentic/common` 导入类型。定义本地类型在事件格式变化时会导致不匹配。领域类型（LessonPlan、Task）是 Solution 特有的，应该在本地定义。
 {% endhint %}
 
 {% hint style="danger" %}

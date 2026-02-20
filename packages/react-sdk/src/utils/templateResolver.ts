@@ -1,11 +1,11 @@
 /**
- * @ccaas/react-sdk/utils/templateResolver
+ * @kedge-agentic/react-sdk/utils/templateResolver
  *
  * Session Template resolution utilities for frontend clients.
  * Resolves named templates and merges parameters according to priority rules.
  */
 
-import type { SessionTemplate, SessionTemplateMap } from '@ccaas/common'
+import type { SessionTemplate, SessionTemplateMap } from '@kedge-agentic/common'
 import type { McpServerConfig } from '../types'
 
 /**

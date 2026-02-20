@@ -1,6 +1,6 @@
 # React SDK Troubleshooting Guide
 
-Common issues, debugging techniques, and solutions for `@ccaas/react-sdk`.
+Common issues, debugging techniques, and solutions for `@kedge-agentic/react-sdk`.
 
 ## Table of Contents
 
@@ -708,7 +708,7 @@ const handleSend = async (content: string) => {
 ```tsx
 import { vi } from 'vitest'
 
-vi.mock('@ccaas/react-sdk', () => ({
+vi.mock('@kedge-agentic/react-sdk', () => ({
   useAgentConnection: () => ({
     socket: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
     connected: true,

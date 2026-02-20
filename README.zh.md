@@ -6,23 +6,23 @@
 
 | 包 | 描述 | 端口 |
 |---------|-------------|------|
-| [`@ccaas/backend`](./packages/backend) | NestJS API 服务器，会话管理，技能路由 | 3001 |
-| [`@ccaas/admin-next`](./packages/admin-next) | React 管理后台（基于 Refine + shadcn/ui） | 5175 |
-| [`@ccaas/vue-sdk`](./packages/vue-sdk) | Vue 组合式函数，用于智能体集成 | - |
-| [`@ccaas/react-sdk`](./packages/react-sdk) | React Hooks，用于智能体集成 | - |
-| [`@ccaas/common`](./packages/common) | 共享的 TypeScript 类型和协议 | - |
+| [`@kedge-agentic/backend`](./packages/backend) | NestJS API 服务器，会话管理，技能路由 | 3001 |
+| [`@kedge-agentic/admin-next`](./packages/admin-next) | React 管理后台（基于 Refine + shadcn/ui） | 5175 |
+| [`@kedge-agentic/vue-sdk`](./packages/vue-sdk) | Vue 组合式函数，用于智能体集成 | - |
+| [`@kedge-agentic/react-sdk`](./packages/react-sdk) | React Hooks，用于智能体集成 | - |
+| [`@kedge-agentic/common`](./packages/common) | 共享的 TypeScript 类型和协议 | - |
 
 ## 架构图
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   前端界面  │◄───►│  @ccaas/backend  │◄───►│  AgentEngine        │
+│   前端界面  │◄───►│  @kedge-agentic/backend  │◄───►│  AgentEngine        │
 │ (React/Vue) │     │  (NestJS)        │     │ (claude/opencode)   │
 └─────────────┘     └──────────────────┘     └─────────────────────┘
       │                     │
       └──────SDK────────────┤
              │              │
-             └──@ccaas/common
+             └──@kedge-agentic/common
 ```
 
 **支持的 AgentEngine 类型：**
@@ -63,7 +63,7 @@ npm run build
 
 ## 核心特性
 
-### 后端 (`@ccaas/backend`)
+### 后端 (`@kedge-agentic/backend`)
 
 - **AgentEngine 生命周期管理**：启动和管理 AgentEngine 实例（Claude Code、OpenCode、自定义）
 - **技能路由**：基于触发器的路由（关键词、模式、意图）
@@ -72,14 +72,14 @@ npm run build
 - **消息持久化**：SQLite/PostgreSQL 存储
 - **实时流式传输**：Socket.io 事件流
 
-### 管理界面 (`@ccaas/admin-next`)
+### 管理界面 (`@kedge-agentic/admin-next`)
 
 - **仪表板**：概览指标和活跃会话
 - **会话管理**：查看、监控和终止会话
 - **技能管理**：CRUD、版本控制和发布工作流
 - **数据分析**：令牌使用和成本追踪
 
-### Vue SDK (`@ccaas/vue-sdk`)
+### Vue SDK (`@kedge-agentic/vue-sdk`)
 
 - **useAgentState**：集中式智能体状态管理
 - **useFormBridge**：表单与智能体同步
@@ -88,7 +88,7 @@ npm run build
 - **useToolActivity**：工具执行追踪
 - **useTokenUsage**：实时令牌指标
 
-### React SDK (`@ccaas/react-sdk`)
+### React SDK (`@kedge-agentic/react-sdk`)
 
 - **useAgentConnection**：WebSocket 连接管理
 - **useAgentChat**：聊天消息和历史记录
@@ -96,7 +96,7 @@ npm run build
 - **ChatPanel**：完整的聊天界面组件
 - **MessageBubble**：消息气泡组件
 
-### 共享包 (`@ccaas/common`)
+### 共享包 (`@kedge-agentic/common`)
 
 - **类型**：Session、Message、Skill、Tenant、ApiKey 接口
 - **协议**：输出更新事件定义

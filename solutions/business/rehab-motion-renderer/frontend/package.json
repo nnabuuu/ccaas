@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ccaas/common": "file:../../../packages/common",
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io-client": "^4.8.1"

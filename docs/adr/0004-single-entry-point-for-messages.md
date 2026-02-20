@@ -202,7 +202,7 @@ GET /api/v1/chat/status    # Server statistics (public)
 
 **Use react-sdk hooks** (handles all complexity):
 ```typescript
-import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({ serverUrl, tenantId })
 const { sendMessage, cancelProcessing } = useAgentChat({ connection })
@@ -247,7 +247,7 @@ POST /api/v1/chat/cancel
 **With**:
 ```typescript
 // ✅ NEW (use react-sdk)
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 const { sendMessage, cancelProcessing } = useAgentChat({ connection })
 ```
 

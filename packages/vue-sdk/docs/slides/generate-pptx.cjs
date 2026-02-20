@@ -8,7 +8,7 @@ async function createPresentation() {
     const pptx = new pptxgen();
     pptx.layout = 'LAYOUT_16x9';
     pptx.author = 'CCAAS Team';
-    pptx.title = '@ccaas/vue-sdk';
+    pptx.title = '@kedge-agentic/vue-sdk';
     pptx.subject = 'Vue Composables for Claude-Code-as-a-Service';
 
     const slidesDir = __dirname;

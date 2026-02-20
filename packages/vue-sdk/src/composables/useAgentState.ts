@@ -116,7 +116,7 @@ const defaultUndefined = ref<number | undefined>(undefined)
  * @example
  * ```vue
  * <script setup>
- * import { useAgentState } from '@ccaas/vue-sdk'
+ * import { useAgentState } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   isProcessing,

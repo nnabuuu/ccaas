@@ -25,7 +25,7 @@ npm install
 
 ## 3. 构建共享包
 
-共享包（`@ccaas/common`）必须最先构建，其他包依赖它的类型定义：
+共享包（`@kedge-agentic/common`）必须最先构建，其他包依赖它的类型定义：
 
 ```bash
 npm run build:shared
@@ -71,9 +71,9 @@ npm run build
 npm run test
 
 # 运行特定包的测试
-npm run test -w @ccaas/backend
-npm run test -w @ccaas/vue-sdk
-npm run test -w @ccaas/common
+npm run test -w @kedge-agentic/backend
+npm run test -w @kedge-agentic/vue-sdk
+npm run test -w @kedge-agentic/common
 ```
 
 ## 服务端口

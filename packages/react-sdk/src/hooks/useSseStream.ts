@@ -11,7 +11,7 @@
  */
 
 import { useRef, useCallback } from 'react'
-import type { FrontendEvent } from '@ccaas/common'
+import type { FrontendEvent } from '@kedge-agentic/common'
 
 /**
  * SSE envelope wrapping a frontend event (matches StreamRegistryService format)

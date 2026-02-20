@@ -8,22 +8,22 @@ A production-ready relay service for AgentEngine instances (Claude Code, OpenCod
 
 | Package | Description | Port |
 |---------|-------------|------|
-| [`@ccaas/backend`](./packages/backend) | NestJS API server, session management, skill routing | 3001 |
-| [`@ccaas/admin`](./packages/admin) | Vue 3 admin dashboard for skill/session management | 5174 |
-| [`@ccaas/vue-sdk`](./packages/vue-sdk) | Vue composables for agent integration | - |
-| [`@ccaas/common`](./packages/shared) | Shared TypeScript types and protocols | - |
+| [`@kedge-agentic/backend`](./packages/backend) | NestJS API server, session management, skill routing | 3001 |
+| [`@kedge-agentic/admin`](./packages/admin) | Vue 3 admin dashboard for skill/session management | 5174 |
+| [`@kedge-agentic/vue-sdk`](./packages/vue-sdk) | Vue composables for agent integration | - |
+| [`@kedge-agentic/common`](./packages/shared) | Shared TypeScript types and protocols | - |
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
-│   Frontend  │◄───►│  @ccaas/backend  │◄───►│  AgentEngine        │
+│   Frontend  │◄───►│  @kedge-agentic/backend  │◄───►│  AgentEngine        │
 │ (Vue 3)     │     │  (NestJS)        │     │ (claude/opencode)   │
 └─────────────┘     └──────────────────┘     └─────────────────────┘
       │                     │
-      └──────@ccaas/vue-sdk │
+      └──────@kedge-agentic/vue-sdk │
              │              │
-             └──@ccaas/common
+             └──@kedge-agentic/common
 ```
 
 **Supported AgentEngine Types:**
@@ -95,7 +95,7 @@ npm run build:shared      # Build types/protocols
 
 ## Features
 
-### Backend (`@ccaas/backend`)
+### Backend (`@kedge-agentic/backend`)
 
 - **AgentEngine Lifecycle Management**: Spawn and manage AgentEngine instances (Claude Code, OpenCode, custom)
 - **Skill Routing**: Trigger-based routing (keyword, pattern, intent)
@@ -105,14 +105,14 @@ npm run build:shared      # Build types/protocols
 - **Message Persistence**: SQLite/PostgreSQL storage
 - **Real-time Streaming**: Socket.io event streaming
 
-### Admin UI (`@ccaas/admin`)
+### Admin UI (`@kedge-agentic/admin`)
 
 - **Dashboard**: Overview metrics and active sessions
 - **Session Management**: View, monitor, and terminate sessions
 - **Skill Management**: CRUD, versioning, and publishing workflow
 - **Analytics**: Token usage and cost tracking
 
-### Vue SDK (`@ccaas/vue-sdk`)
+### Vue SDK (`@kedge-agentic/vue-sdk`)
 
 - **useAgentState**: Centralized agent state management
 - **useFormBridge**: Form synchronization with agent
@@ -121,7 +121,7 @@ npm run build:shared      # Build types/protocols
 - **useToolActivity**: Tool execution tracking
 - **useTokenUsage**: Real-time token metrics
 
-### Shared (`@ccaas/common`)
+### Shared (`@kedge-agentic/common`)
 
 - **Types**: Session, Message, Skill, Tenant, ApiKey interfaces
 - **Protocols**: Output update event definitions
@@ -305,7 +305,7 @@ curl -X POST http://your-domain:3001/api/v1/mcp-servers \
 
 ```typescript
 // React
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   serverUrl: 'http://your-domain:3001',
@@ -314,7 +314,7 @@ const chat = useAgentChat({
 })
 
 // Vue
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 const agent = useAgentState({
   serverUrl: 'http://your-domain:3001',

@@ -1,6 +1,6 @@
 # React SDK API Reference
 
-Complete API documentation for `@ccaas/react-sdk`.
+Complete API documentation for `@kedge-agentic/react-sdk`.
 
 ## Table of Contents
 
@@ -63,7 +63,7 @@ interface UseAgentConnectionReturn {
 #### Example
 
 ```tsx
-import { useAgentConnection } from '@ccaas/react-sdk'
+import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 function MyApp() {
   const connection = useAgentConnection({
@@ -135,7 +135,7 @@ interface SendMessageOptions {
 #### Example
 
 ```tsx
-import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 function ChatApp() {
   const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
@@ -243,7 +243,7 @@ interface TodoStats {
 #### Example
 
 ```tsx
-import { useAgentConnection, useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentStatus } from '@kedge-agentic/react-sdk'
 
 function StatusDisplay() {
   const connection = useAgentConnection()
@@ -316,7 +316,7 @@ interface UseOutputSyncReturn<T> {
 #### Example: Manual Mode
 
 ```tsx
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 
 function ManualSyncForm() {
   const [formData, setFormData] = useState({ title: '', content: '' })
@@ -351,7 +351,7 @@ function ManualSyncForm() {
 #### Example: Auto Mode
 
 ```tsx
-import { useAgentChat, useOutputSync } from '@ccaas/react-sdk'
+import { useAgentChat, useOutputSync } from '@kedge-agentic/react-sdk'
 
 function AutoSyncForm() {
   const [formData, setFormData] = useState({ title: '', content: '' })
@@ -427,7 +427,7 @@ interface UseSkillsReturn {
 #### Example
 
 ```tsx
-import { useSkills } from '@ccaas/react-sdk'
+import { useSkills } from '@kedge-agentic/react-sdk'
 
 function SkillsManager() {
   const skills = useSkills({
@@ -496,7 +496,7 @@ type ChatLayoutMode = 'default' | 'overlay' | 'side-by-side'
 #### Example
 
 ```tsx
-import { useChatLayout } from '@ccaas/react-sdk'
+import { useChatLayout } from '@kedge-agentic/react-sdk'
 
 function LayoutDemo() {
   const layout = useChatLayout()
@@ -570,7 +570,7 @@ interface ChatPanelProps {
 #### Example
 
 ```tsx
-import { ChatPanel } from '@ccaas/react-sdk'
+import { ChatPanel } from '@kedge-agentic/react-sdk'
 
 function MyChat() {
   const connection = useAgentConnection()
@@ -617,7 +617,7 @@ interface MessageBubbleProps {
 #### Example
 
 ```tsx
-import { MessageBubble } from '@ccaas/react-sdk'
+import { MessageBubble } from '@kedge-agentic/react-sdk'
 
 <MessageBubble
   message={msg}
@@ -649,7 +649,7 @@ interface AgentActivityLineProps {
 #### Example
 
 ```tsx
-import { AgentActivityLine } from '@ccaas/react-sdk'
+import { AgentActivityLine } from '@kedge-agentic/react-sdk'
 
 <AgentActivityLine
   currentActivity={status.currentActivity}

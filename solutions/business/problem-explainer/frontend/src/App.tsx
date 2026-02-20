@@ -8,8 +8,8 @@ import {
   useAgentConnection,
   useAgentChat,
   useAgentStatus,
-} from '@ccaas/react-sdk'
-import type { Message } from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
+import type { Message } from '@kedge-agentic/react-sdk'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'

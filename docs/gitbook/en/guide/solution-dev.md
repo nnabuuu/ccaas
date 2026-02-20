@@ -156,7 +156,7 @@ Instructions for the AI agent...
 
 ## Direct Connection with React SDK
 
-The Solution frontend connects directly to the CCAAS backend using the `@ccaas/react-sdk`. No relay layer is needed:
+The Solution frontend connects directly to the CCAAS backend using the `@kedge-agentic/react-sdk`. No relay layer is needed:
 
 ```typescript
 import {
@@ -165,7 +165,7 @@ import {
   useAgentStatus,
   usePageContext,
   useFiles,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 export function useMySession() {
   // 1. Connect directly to CCAAS backend
@@ -299,7 +299,7 @@ This is useful when you want fine-grained control over which solutions are loade
 
 ### 1. Use Direct Connection Architecture
 
-- Connect the frontend **directly** to CCAAS via `@ccaas/react-sdk` -- do not relay through the Solution backend
+- Connect the frontend **directly** to CCAAS via `@kedge-agentic/react-sdk` -- do not relay through the Solution backend
 - Use the Solution backend only for domain-specific CRUD (e.g., saving lesson plans, listing textbooks)
 - Use CCAAS session management instead of implementing your own
 - Manage Skills through the CCAAS API instead of directly accessing the database

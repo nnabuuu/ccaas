@@ -1,4 +1,4 @@
-import type { SplitMessage } from '@ccaas/react-sdk'
+import type { SplitMessage } from '@kedge-agentic/react-sdk'
 import type { MessageTokenUsage } from '../types'
 import { SegmentBubble } from './SegmentBubble'
 

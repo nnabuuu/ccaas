@@ -159,7 +159,7 @@ describe('Architecture Rules', () => {
         throw new Error(
           `❌ Core backend imports from solutions:\n\n${errorMessage}\n\n` +
           `Core backend must not depend on Solution backends.\n` +
-          `If you need shared code, put it in @ccaas/common package.`
+          `If you need shared code, put it in @kedge-agentic/common package.`
         );
       }
     });

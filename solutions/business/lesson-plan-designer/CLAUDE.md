@@ -73,16 +73,16 @@ TextbookChapter[] = [{ id: number, title: string, children?: TextbookChapter[] }
 - 前端定义了本地的 `OutputUpdateEvent` 类型，期望 flat 结构 `{ field, value, preview }`
 - 但后端 EventMapper 实际发送嵌套结构 `{ payload: { data: { field, value, preview } } }`
 - 错误的注释误导："backend sends flat structure"（实际发送嵌套结构）
-- 没有使用 `@ccaas/common` 的类型定义
+- 没有使用 `@kedge-agentic/common` 的类型定义
 
 **修复**：
 1. 创建 `src/utils/outputUpdateParser.ts` 解析嵌套结构
-2. 删除本地的 `OutputUpdateEvent` 类型，使用 `@ccaas/common` 的定义
+2. 删除本地的 `OutputUpdateEvent` 类型，使用 `@kedge-agentic/common` 的定义
 3. 更新 `useLessonPlanSession.ts` 使用解析器
 
 **教训**：
 ```
-使用 @ccaas/common 的类型定义，不要定义本地类型
+使用 @kedge-agentic/common 的类型定义，不要定义本地类型
 注释必须与代码行为一致
 添加集成测试验证前后端事件结构匹配
 ```

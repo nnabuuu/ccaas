@@ -2,7 +2,7 @@
 
 即见Agentic 使用 **SSE（Server-Sent Events）** 作为默认 transport。所有实时事件通过标准 HTTP 连接流式传输，无需 WebSocket 或 Socket.IO。
 
-> **推荐做法**：直接使用 React SDK（`@ccaas/react-sdk`）而非手动处理 SSE 流。SDK 封装了所有连接管理、事件解析和状态逻辑。
+> **推荐做法**：直接使用 React SDK（`@kedge-agentic/react-sdk`）而非手动处理 SSE 流。SDK 封装了所有连接管理、事件解析和状态逻辑。
 >
 > 仅在构建非 React 客户端（如原生 iOS/Android、CLI 工具、Python 脚本）时才需要直接使用本 API。
 
@@ -371,7 +371,7 @@ async function streamMessages(
 直接使用 React SDK 可跳过以上所有手动处理：
 
 ```tsx
-import { useAgentConnection, useAgentChat, useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 
 function MyApp() {
   // SSE 是默认 transport

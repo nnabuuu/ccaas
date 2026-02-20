@@ -4,7 +4,7 @@ import {
   useAgentChat,
   useAgentStatus,
   type OutputUpdate,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '../types'
 
 // Output update handler type

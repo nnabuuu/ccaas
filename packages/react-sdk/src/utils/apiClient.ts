@@ -1,5 +1,5 @@
 import type { ApiClientOptions, CompletionParams, SolutionConfig } from '../types'
-import type { Skill } from '@ccaas/common'
+import type { Skill } from '@kedge-agentic/common'
 
 export interface ApiClient {
   sendCompletion: (sessionId: string, params: CompletionParams) => Promise<Response>

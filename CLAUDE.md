@@ -14,11 +14,11 @@ This is the **KedgeAgentic (即见Agentic)** monorepo — an Agentic services pl
 ccaas/
 ├── package.json                 # Workspace root (npm workspaces)
 ├── packages/
-│   ├── backend/                 # @ccaas/backend - NestJS server
-│   ├── admin-next/              # @ccaas/admin-next - React admin UI (Refine + shadcn/ui)
-│   ├── vue-sdk/                 # @ccaas/vue-sdk - Vue composables
-│   ├── react-sdk/               # @ccaas/react-sdk - React hooks
-│   └── shared/                  # @ccaas/common - Shared types
+│   ├── backend/                 # @kedge-agentic/backend - NestJS server
+│   ├── admin-next/              # @kedge-agentic/admin-next - React admin UI (Refine + shadcn/ui)
+│   ├── vue-sdk/                 # @kedge-agentic/vue-sdk - Vue composables
+│   ├── react-sdk/               # @kedge-agentic/react-sdk - React hooks
+│   └── shared/                  # @kedge-agentic/common - Shared types
 └── docs/                        # Consolidated documentation
 ```
 
@@ -26,11 +26,11 @@ ccaas/
 
 | Package | Tech Stack | Purpose |
 |---------|------------|---------|
-| `@ccaas/backend` | NestJS, TypeORM, Socket.io | API server, AgentEngine lifecycle management, session management, scheduled tasks |
-| `@ccaas/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
-| `@ccaas/vue-sdk` | Vue 3 Composition API | Vue client integration |
-| `@ccaas/react-sdk` | React hooks, Socket.io | React client integration |
-| `@ccaas/common` | TypeScript, Zod | Types and protocols |
+| `@kedge-agentic/backend` | NestJS, TypeORM, Socket.io | API server, AgentEngine lifecycle management, session management, scheduled tasks |
+| `@kedge-agentic/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
+| `@kedge-agentic/vue-sdk` | Vue 3 Composition API | Vue client integration |
+| `@kedge-agentic/react-sdk` | React hooks, Socket.io | React client integration |
+| `@kedge-agentic/common` | TypeScript, Zod | Types and protocols |
 
 ## Build Commands
 
@@ -56,14 +56,14 @@ npm run dev:admin       # Start admin on :5175
 ## Package Dependencies
 
 ```
-@ccaas/common           <- No internal deps
+@kedge-agentic/common           <- No internal deps
     ↑
-@ccaas/vue-sdk         <- Depends on shared
-@ccaas/react-sdk       <- Depends on shared
+@kedge-agentic/vue-sdk         <- Depends on shared
+@kedge-agentic/react-sdk       <- Depends on shared
     ↑
-@ccaas/admin-next      <- Can use react-sdk (optional)
+@kedge-agentic/admin-next      <- Can use react-sdk (optional)
 
-@ccaas/backend         <- Can use shared types (optional)
+@kedge-agentic/backend         <- Can use shared types (optional)
 ```
 
 **Build order:** shared → vue-sdk/react-sdk → admin-next/backend
@@ -74,8 +74,8 @@ npm run dev:admin       # Start admin on :5175
 
 ```typescript
 // Import from workspace packages
-import { Session, Skill, TokenUsage } from '@ccaas/common'
-import { useAgentState, useFormBridge } from '@ccaas/vue-sdk'
+import { Session, Skill, TokenUsage } from '@kedge-agentic/common'
+import { useAgentState, useFormBridge } from '@kedge-agentic/vue-sdk'
 ```
 
 ### Adding New Types
@@ -83,7 +83,7 @@ import { useAgentState, useFormBridge } from '@ccaas/vue-sdk'
 1. Add interface to `packages/common/src/types/index.ts`
 2. Re-export from `packages/common/src/index.ts`
 3. Run `npm run build:shared`
-4. Import from `@ccaas/common` in consumer packages
+4. Import from `@kedge-agentic/common` in consumer packages
 
 ### Adding New Protocols
 
@@ -104,20 +104,20 @@ import { useAgentState, useFormBridge } from '@ccaas/vue-sdk'
 npm run test
 
 # Run specific package tests
-npm run test -w @ccaas/backend
-npm run test -w @ccaas/vue-sdk
-npm run test -w @ccaas/common
+npm run test -w @kedge-agentic/backend
+npm run test -w @kedge-agentic/vue-sdk
+npm run test -w @kedge-agentic/common
 ```
 
 ## Individual Package Details
 
 Each package has its own documentation:
 
-- **@ccaas/backend**: See `packages/backend/CLAUDE.md`
-- **@ccaas/admin-next**: See `packages/admin-next/README.md`
-- **@ccaas/vue-sdk**: See `packages/vue-sdk/docs/ARCHITECTURE.md`
-- **@ccaas/react-sdk**: See `packages/react-sdk/README.md`
-- **@ccaas/common**: See `packages/common/README.md`
+- **@kedge-agentic/backend**: See `packages/backend/CLAUDE.md`
+- **@kedge-agentic/admin-next**: See `packages/admin-next/README.md`
+- **@kedge-agentic/vue-sdk**: See `packages/vue-sdk/docs/ARCHITECTURE.md`
+- **@kedge-agentic/react-sdk**: See `packages/react-sdk/README.md`
+- **@kedge-agentic/common**: See `packages/common/README.md`
 
 For package-specific conventions and guidelines, refer to the documentation within each package directory.
 

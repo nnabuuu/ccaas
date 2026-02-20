@@ -52,6 +52,6 @@ cd frontend && npm install && npm run dev
 
 ## Dependencies
 
-- `@ccaas/react-sdk` — React hooks for Socket.io + session management
-- `@ccaas/common` — Shared types and Zod schemas
+- `@kedge-agentic/react-sdk` — React hooks for Socket.io + session management
+- `@kedge-agentic/common` — Shared types and Zod schemas
 - CCAAS Backend must be running on port 3001

@@ -1,5 +1,5 @@
 /**
- * @ccaas/vue-sdk
+ * @kedge-agentic/vue-sdk
  *
  * Vue composables and utilities for integrating with Claude-Code-as-a-Service backend.
  *
@@ -11,7 +11,7 @@
  *   useFormBridge,
  *   useAIEditing,
  *   usePlanMode
- * } from '@ccaas/vue-sdk'
+ * } from '@kedge-agentic/vue-sdk'
  *
  * // Access centralized agent state
  * const { isProcessing, currentToolName, todoItems } = useAgentState()

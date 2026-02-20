@@ -98,7 +98,7 @@ Get server runtime status and session statistics. Used for monitoring system met
 
 ## Messages & Sessions (SessionsController)
 
-> **💡 Recommended**: Use `@ccaas/react-sdk` or `@ccaas/vue-sdk` for integration. No need to call HTTP APIs directly. The SDK automatically manages WebSocket connections and state.
+> **💡 Recommended**: Use `@kedge-agentic/react-sdk` or `@kedge-agentic/vue-sdk` for integration. No need to call HTTP APIs directly. The SDK automatically manages WebSocket connections and state.
 
 ### POST /sessions/:sessionId/completion
 

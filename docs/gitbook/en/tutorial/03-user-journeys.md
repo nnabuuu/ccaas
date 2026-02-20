@@ -33,7 +33,7 @@ Before mapping journeys, recall the CCAAS architecture from [Chapter 1](01-archi
 │   Frontend   │◄───────►│  (NestJS)        │  stdout  │   Process    │
 └──────────────┘         └──────────────────┘◄────────►└──────────────┘
   Vue + SDK                Session Mgmt                  Claude Code
-  @ccaas/vue-sdk           Skill Router
+  @kedge-agentic/vue-sdk           Skill Router
                            Event Streaming
 
 ┌──────────────┐         ┌──────────────────┐

@@ -1,8 +1,8 @@
-# @ccaas/vue-sdk 架构文档
+# @kedge-agentic/vue-sdk 架构文档
 
 ## 概述
 
-`@ccaas/vue-sdk` 是一个基于 Vue 3 Composition API 的 SDK，用于与 Claude-Code-as-a-Service 后端服务集成。该 SDK 采用 **Composables 优先** 的设计理念，提供可复用的状态管理和交互模式。
+`@kedge-agentic/vue-sdk` 是一个基于 Vue 3 Composition API 的 SDK，用于与 Claude-Code-as-a-Service 后端服务集成。该 SDK 采用 **Composables 优先** 的设计理念，提供可复用的状态管理和交互模式。
 
 ## 设计理念
 
@@ -19,7 +19,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        @ccaas/vue-sdk                             │
+│                        @kedge-agentic/vue-sdk                             │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌────────────────────────────────────────────────────────────────────┐ │
@@ -59,7 +59,7 @@
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    @ccaas/shared                        │
+│                    @kedge-agentic/shared                        │
 │                    (共享协议定义)                                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -338,7 +338,7 @@ dist/
 
 ```vue
 <script setup lang="ts">
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName } = useAgentState()
 const { progress, currentTodo, isComplete } = useTodoProgress()
@@ -362,7 +362,7 @@ const { progress, currentTodo, isComplete } = useTodoProgress()
 // stores/lessonPlanStore.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 export const useLessonPlanStore = defineStore('lessonPlan', () => {
   const sections = ref({

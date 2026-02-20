@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FileMetadata } from '@ccaas/react-sdk'
+import type { FileMetadata } from '@kedge-agentic/react-sdk'
 
 /**
  * Hook for attaching uploaded files to lesson plans

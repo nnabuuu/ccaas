@@ -8,8 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
-    "@ccaas/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
     "lucide-react": "^0.263.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -64,7 +64,7 @@ export const SetupConfigSchema = z.object({
 
 /**
  * Session template configuration for auto-applying to tenant config.
- * Mirrors the SessionTemplate interface from @ccaas/common.
+ * Mirrors the SessionTemplate interface from @kedge-agentic/common.
  */
 export const SessionTemplateSchema = z.object({
   description: z.string().optional(),

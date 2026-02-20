@@ -10,7 +10,7 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useTaskTracking } from '../src/hooks/useTaskTracking'
-import type { ActiveSubAgent, EventTodoItem } from '@ccaas/common'
+import type { ActiveSubAgent, EventTodoItem } from '@kedge-agentic/common'
 
 describe('useTaskTracking', () => {
   const mockSubAgent: ActiveSubAgent = {

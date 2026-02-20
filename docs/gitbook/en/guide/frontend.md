@@ -2,14 +2,14 @@
 
 ## Overview
 
-CCAAS provides official SDKs for both Vue (`@ccaas/vue-sdk`) and React (`@ccaas/react-sdk`), as well as a general Socket.io integration pattern for custom implementations.
+CCAAS provides official SDKs for both Vue (`@kedge-agentic/vue-sdk`) and React (`@kedge-agentic/react-sdk`), as well as a general Socket.io integration pattern for custom implementations.
 
 ## Vue SDK Integration
 
 ### Installation
 
 ```bash
-npm install @ccaas/vue-sdk
+npm install @kedge-agentic/vue-sdk
 ```
 
 ### Architecture
@@ -46,7 +46,7 @@ Types & Symbols Layer
 ```vue
 <!-- Using composables in a component -->
 <script setup lang="ts">
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName } = useAgentState()
 const { progress, currentTodo, isComplete } = useTodoProgress()
@@ -65,7 +65,7 @@ const { progress, currentTodo, isComplete } = useTodoProgress()
 Use `useFormBridge` to enable two-way data synchronization between the AI Agent and forms:
 
 ```typescript
-import { useFormBridge } from '@ccaas/vue-sdk'
+import { useFormBridge } from '@kedge-agentic/vue-sdk'
 
 const form = reactive({ title: '', content: '' })
 
@@ -89,7 +89,7 @@ const { isActive } = useFormBridge({
 Use `useAIEditing` to manage batch AI edits:
 
 ```typescript
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 const {
   aiEditingMode,
@@ -110,12 +110,12 @@ const {
 })
 ```
 
-## React SDK Integration (@ccaas/react-sdk)
+## React SDK Integration (@kedge-agentic/react-sdk)
 
 ### Installation
 
 ```bash
-npm install @ccaas/react-sdk
+npm install @kedge-agentic/react-sdk
 ```
 
 ### Core Hooks
@@ -136,7 +136,7 @@ The React SDK provides six essential hooks for Solution development:
 Manages WebSocket connection to CCAAS backend:
 
 ```typescript
-import { useAgentConnection } from '@ccaas/react-sdk'
+import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS backend (absolute URL required)
@@ -158,7 +158,7 @@ When `tenantId` is provided, the session ID is persisted in `localStorage` under
 Manages chat messages and streaming:
 
 ```typescript
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   connection,
@@ -186,7 +186,7 @@ const chat = useAgentChat({
 Tracks Agent processing state, SubAgents, and tool activity:
 
 ```typescript
-import { useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentStatus } from '@kedge-agentic/react-sdk'
 
 const status = useAgentStatus({ connection })
 
@@ -206,7 +206,7 @@ SubAgent tracking is handled entirely via WebSocket events (`subagent_started`, 
 Context-aware Skill triggering -- sends current page state with every chat message:
 
 ```typescript
-import { usePageContext } from '@ccaas/react-sdk'
+import { usePageContext } from '@kedge-agentic/react-sdk'
 
 const { context, updateContext } = usePageContext()
 
@@ -232,7 +232,7 @@ Pass `context` to `useAgentChat` so it is automatically attached to every messag
 File upload and management for the current session:
 
 ```typescript
-import { useFiles } from '@ccaas/react-sdk'
+import { useFiles } from '@kedge-agentic/react-sdk'
 
 const files = useFiles({
   connection,
@@ -253,7 +253,7 @@ const files = useFiles({
 Manages the pending state for AI output fields (`output_update` event → user clicks Sync → applied to form).
 
 ```typescript
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 
 const { pendingUpdates, addPendingUpdate, removePendingUpdate, clearPendingUpdates } =
   useOutputSync()
@@ -309,7 +309,7 @@ import {
   usePageContext,
   useFiles,
   useOutputSync,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 export function useMySession(options = {}) {
   const connection = useAgentConnection({
@@ -339,7 +339,7 @@ See tutorial [Chapter 6.5](../tutorial/06-implementation/05-frontend.md) for a c
 
 ## Custom React Integration (Advanced)
 
-> For most use cases, prefer using `@ccaas/react-sdk` hooks documented above.
+> For most use cases, prefer using `@kedge-agentic/react-sdk` hooks documented above.
 
 The following patterns show how to integrate directly via Socket.io without the SDK, for cases where you need full control over the connection and event handling.
 
@@ -407,7 +407,7 @@ useEffect(() => {
 
 ### Sync Management
 
-> **If you are using `@ccaas/react-sdk`**, use [`useOutputSync`](#6-useoutputsync) instead — it provides this pattern out of the box.
+> **If you are using `@kedge-agentic/react-sdk`**, use [`useOutputSync`](#6-useoutputsync) instead — it provides this pattern out of the box.
 
 The following shows the raw implementation for custom integrations that bypass the SDK:
 
@@ -458,7 +458,7 @@ export function useSyncManager() {
 
 ## Best Practices
 
-1. **Use type definitions** -- Import event types from `@ccaas/common`
+1. **Use type definitions** -- Import event types from `@kedge-agentic/common`
 2. **Unified parsing** -- Use `parseOutputUpdateEvent` for handling output\_update
 3. **Error handling** -- Listen for `error` events and provide user feedback
 4. **Status indicators** -- Use `agent_status` and `tool_activity` to display execution progress

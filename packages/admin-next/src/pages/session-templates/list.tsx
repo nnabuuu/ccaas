@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { useTenantContext } from '@/hooks/use-tenant-context'
-import type { SessionTemplate } from '@ccaas/common'
+import type { SessionTemplate } from '@kedge-agentic/common'
 
 interface TemplateItem {
   name: string

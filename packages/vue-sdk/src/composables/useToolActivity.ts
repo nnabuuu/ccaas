@@ -54,7 +54,7 @@ const defaultNumber = { value: 0 }
  * @example
  * ```vue
  * <script setup>
- * import { useToolActivity } from '@ccaas/vue-sdk'
+ * import { useToolActivity } from '@kedge-agentic/vue-sdk'
  *
  * const { current, isRunning, decisionLogic, recentActivities } = useToolActivity()
  * </script>

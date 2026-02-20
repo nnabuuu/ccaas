@@ -18,12 +18,12 @@
 
 ## 使用 React SDK 的 FilePanel
 
-展示工作区文件的推荐方式是 `@ccaas/react-sdk` 中的 `FilePanel` 组件。它开箱即用地处理文件列表、选择、预览和上传。
+展示工作区文件的推荐方式是 `@kedge-agentic/react-sdk` 中的 `FilePanel` 组件。它开箱即用地处理文件列表、选择、预览和上传。
 
 ### 基本用法
 
 ```tsx
-import { FilePanel } from '@ccaas/react-sdk'
+import { FilePanel } from '@kedge-agentic/react-sdk'
 
 function MySolution() {
   const connection = useAgentConnection({
@@ -92,7 +92,7 @@ interface FilePanelProps {
 如果你需要比 `FilePanel` 提供的更多控制权，直接使用 `useFiles`：
 
 ```tsx
-import { useFiles } from '@ccaas/react-sdk'
+import { useFiles } from '@kedge-agentic/react-sdk'
 
 function MyFileList({ connection, sessionId }) {
   const files = useFiles({ connection, sessionId, enabled: true })

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { FilesView } from '../FilesView'
-import type { UseAgentConnectionReturn, FileMetadata } from '@ccaas/react-sdk'
+import type { UseAgentConnectionReturn, FileMetadata } from '@kedge-agentic/react-sdk'
 
 // Mock dependencies
-vi.mock('@ccaas/react-sdk', async () => {
-  const actual = await vi.importActual('@ccaas/react-sdk')
+vi.mock('@kedge-agentic/react-sdk', async () => {
+  const actual = await vi.importActual('@kedge-agentic/react-sdk')
   return {
     ...actual,
     useFiles: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('@ccaas/react-sdk', async () => {
   }
 })
 
-import { useFiles } from '@ccaas/react-sdk'
+import { useFiles } from '@kedge-agentic/react-sdk'
 
 describe('FilesView', () => {
   const mockConnection = {

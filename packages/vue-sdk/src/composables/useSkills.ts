@@ -1,5 +1,5 @@
 import { ref, computed, onMounted } from 'vue'
-import type { Skill } from '@ccaas/common'
+import type { Skill } from '@kedge-agentic/common'
 import type { UseSkillsOptions, UseSkillsReturn } from '../types'
 
 /**

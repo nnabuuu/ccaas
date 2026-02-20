@@ -38,7 +38,7 @@ const connection = useAgentConnection({
 The easiest way to customize message display is the `renderMessage` prop. It lets you intercept individual messages and render them however you want, while `ChatPanel` still handles layout, input, and status.
 
 ```tsx
-import { ChatPanel, MessageBubble } from '@ccaas/react-sdk'
+import { ChatPanel, MessageBubble } from '@kedge-agentic/react-sdk'
 
 <ChatPanel
   messages={chat.messages}
@@ -114,7 +114,7 @@ Sometimes a single agent message contains both tool results and text content tha
 `useMessageSplitter` splits `ContentBlock[]` arrays into named segments based on delimiters you define:
 
 ```tsx
-import { useMessageSplitter } from '@ccaas/react-sdk'
+import { useMessageSplitter } from '@kedge-agentic/react-sdk'
 
 function SplitMessageView({ message }) {
   const { segments } = useMessageSplitter({
@@ -196,7 +196,7 @@ import {
   useAgentConnection,
   useAgentChat,
   useAgentStatus
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function CustomChatUI() {
   const connection = useAgentConnection({

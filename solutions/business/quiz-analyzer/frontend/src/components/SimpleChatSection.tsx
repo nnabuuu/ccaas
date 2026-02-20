@@ -1,11 +1,11 @@
 /**
  * SimpleChatSection - Simplified chat interface without layout controls
  *
- * Uses @ccaas/react-sdk ChatPanel directly
+ * Uses @kedge-agentic/react-sdk ChatPanel directly
  */
 
-import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@ccaas/react-sdk'
-import type { ToolActivity, ActiveSubAgent } from '@ccaas/react-sdk'
+import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@kedge-agentic/react-sdk'
+import type { ToolActivity, ActiveSubAgent } from '@kedge-agentic/react-sdk'
 
 interface SimpleChatSectionProps {
   messages: Message[]

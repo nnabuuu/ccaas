@@ -23,7 +23,7 @@ CCAAS uses a **direct connection architecture** where your Solution frontend con
 │   Frontend   │◄───────►│  (NestJS)        │  stdout  │   Process    │
 └──────────────┘         └──────────────────┘◄────────►└──────────────┘
   React + SDK              Session Mgmt                  Claude Code /
-  @ccaas/react-sdk         Skill Router                  OpenCode / etc.
+  @kedge-agentic/react-sdk         Skill Router                  OpenCode / etc.
                            Event Streaming
                            Authentication
 
@@ -126,7 +126,7 @@ The SDK hooks automatically listen for these events and update React state. You 
 
 ## React SDK Hooks
 
-The `@ccaas/react-sdk` package provides five core hooks that together manage the complete data flow. Here is how they compose in a real Solution:
+The `@kedge-agentic/react-sdk` package provides five core hooks that together manage the complete data flow. Here is how they compose in a real Solution:
 
 ```typescript
 // From: solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
@@ -137,7 +137,7 @@ import {
   useAgentStatus,
   usePageContext,
   useFiles,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 export function useLessonPlanSession(options) {
   // 1. Connection management

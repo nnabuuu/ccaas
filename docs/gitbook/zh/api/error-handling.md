@@ -670,4 +670,4 @@ class MetricsCollector {
 
 - [REST API 端点](rest.md) - 完整 API 参考
 - [WebSocket 事件](websocket.md) - 实时事件流格式
-- [@ccaas/common 类型](shared-types.md) - TypeScript 类型定义
+- [@kedge-agentic/common 类型](shared-types.md) - TypeScript 类型定义

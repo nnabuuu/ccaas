@@ -7,7 +7,7 @@
  */
 
 import { useMemo, useState, useEffect } from 'react'
-import type { EventTodoItem, ActiveSubAgent } from '@ccaas/common'
+import type { EventTodoItem, ActiveSubAgent } from '@kedge-agentic/common'
 import type { TodoStats, ToolActivity } from '../types'
 import { formatDuration } from '../utils/formatDuration'
 import { getToolActivityDescription } from '../utils/toolActivityMapping'

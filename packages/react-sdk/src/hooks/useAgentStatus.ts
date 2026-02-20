@@ -16,7 +16,7 @@ import type {
   ActiveSubAgent,
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 import { getThinkingVerb, THINKING_VERBS } from '../utils/thinkingVerbs'
 
 /**

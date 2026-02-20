@@ -1,21 +1,21 @@
-# @ccaas/common Types
+# @kedge-agentic/common Types
 
-The `@ccaas/common` package provides TypeScript type definitions and Zod runtime validation schemas shared across all CCAAS packages.
+The `@kedge-agentic/common` package provides TypeScript type definitions and Zod runtime validation schemas shared across all CCAAS packages.
 
 ## Installation
 
 ```bash
-npm install @ccaas/common
+npm install @kedge-agentic/common
 ```
 
 ## Import Usage
 
 ```typescript
 // Import types
-import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@ccaas/common'
+import { Session, Skill, Message, TokenUsage, ErrorCode, HttpErrorResponse } from '@kedge-agentic/common'
 
 // Import Zod schemas
-import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@ccaas/common'
+import { OutputUpdateEventSchema, AgentStatusEventSchema } from '@kedge-agentic/common'
 ```
 
 ## Core Types
@@ -204,7 +204,7 @@ interface HttpErrorResponse {
 **Usage Example:**
 
 ```typescript
-import { HttpErrorResponse } from '@ccaas/common'
+import { HttpErrorResponse } from '@kedge-agentic/common'
 
 async function handleApiError(response: Response) {
   if (!response.ok) {
@@ -228,12 +228,12 @@ async function handleApiError(response: Response) {
 
 ## Event Schemas (Zod)
 
-`@ccaas/common` provides Zod schemas for runtime event validation:
+`@kedge-agentic/common` provides Zod schemas for runtime event validation:
 
 ### OutputUpdateEvent
 
 ```typescript
-import { OutputUpdateEventSchema } from '@ccaas/common'
+import { OutputUpdateEventSchema } from '@kedge-agentic/common'
 
 const result = OutputUpdateEventSchema.safeParse(rawEvent)
 if (result.success) {
@@ -245,7 +245,7 @@ if (result.success) {
 ### AgentStatusEvent
 
 ```typescript
-import { AgentStatusEventSchema } from '@ccaas/common'
+import { AgentStatusEventSchema } from '@kedge-agentic/common'
 
 // Status: 'idle' | 'thinking' | 'exploring' | 'executing' | 'running' | 'complete' | 'error'
 ```
@@ -253,7 +253,7 @@ import { AgentStatusEventSchema } from '@ccaas/common'
 ### ToolActivityEvent
 
 ```typescript
-import { ToolActivityEventSchema } from '@ccaas/common'
+import { ToolActivityEventSchema } from '@kedge-agentic/common'
 
 // Phase: 'start' | 'progress' | 'end'
 // Includes: toolName, toolId, description, decisionLogic, duration, success
@@ -263,10 +263,10 @@ import { ToolActivityEventSchema } from '@ccaas/common'
 
 ### Field Mapping
 
-`@ccaas/common` provides mappings from backend field names to frontend field names:
+`@kedge-agentic/common` provides mappings from backend field names to frontend field names:
 
 ```typescript
-import { fieldMapping } from '@ccaas/common'
+import { fieldMapping } from '@kedge-agentic/common'
 
 // Example mappings:
 // 'learningTasks' -> 'learningProcess'
@@ -276,7 +276,7 @@ import { fieldMapping } from '@ccaas/common'
 ### Validation Functions
 
 ```typescript
-import { validate, safeValidate } from '@ccaas/common'
+import { validate, safeValidate } from '@kedge-agentic/common'
 
 // validate: Throws an exception on failure
 // safeValidate: Returns { success, data?, error? }
@@ -284,6 +284,6 @@ import { validate, safeValidate } from '@ccaas/common'
 
 ## Solution Domain Types
 
-`@ccaas/common` only contains platform infrastructure types. Domain types (such as lesson plans, quiz data, etc.) belong to each Solution's internal implementation and are defined within the Solution's own codebase — they are not shared through `@ccaas/common`.
+`@kedge-agentic/common` only contains platform infrastructure types. Domain types (such as lesson plans, quiz data, etc.) belong to each Solution's internal implementation and are defined within the Solution's own codebase — they are not shared through `@kedge-agentic/common`.
 
-> **Architecture principle**: Core (`@ccaas/common`) = infrastructure types; Solution = domain logic and types. These two must not be mixed.
+> **Architecture principle**: Core (`@kedge-agentic/common`) = infrastructure types; Solution = domain logic and types. These two must not be mixed.

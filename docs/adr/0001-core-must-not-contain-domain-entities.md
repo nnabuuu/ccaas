@@ -137,7 +137,7 @@ TypeOrmModule.forRoot({
 
 ### Alternative C: Shared Entity Library
 
-**Description**: Put common entities in `@ccaas/common` package
+**Description**: Put common entities in `@kedge-agentic/common` package
 
 **Pros**:
 - ✅ Code reuse across solutions

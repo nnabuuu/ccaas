@@ -21,10 +21,10 @@ This section helps you set up the KedgeAgentic development environment locally a
 ccaas/
 ├── package.json                # Workspace root config (npm workspaces)
 ├── packages/
-│   ├── backend/                # @ccaas/backend - NestJS backend service
-│   ├── admin/                  # @ccaas/admin - Vue 3 admin dashboard
-│   ├── vue-sdk/                # @ccaas/vue-sdk - Vue frontend SDK
-│   └── shared/                 # @ccaas/common - Shared types and protocols
+│   ├── backend/                # @kedge-agentic/backend - NestJS backend service
+│   ├── admin/                  # @kedge-agentic/admin - Vue 3 admin dashboard
+│   ├── vue-sdk/                # @kedge-agentic/vue-sdk - Vue frontend SDK
+│   └── shared/                 # @kedge-agentic/common - Shared types and protocols
 ├── solutions/                  # Solution example projects
 │   ├── ccaas-demo/             # Basic demo
 │   ├── lesson-plan-designer/   # Lesson Plan Designer

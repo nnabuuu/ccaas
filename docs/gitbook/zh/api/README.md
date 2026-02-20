@@ -1,6 +1,6 @@
 # API 概述
 
-即见Agentic 提供 REST API 和 SSE（Server-Sent Events）两种接口，配合 `@ccaas/common` 包提供完整的类型定义。
+即见Agentic 提供 REST API 和 SSE（Server-Sent Events）两种接口，配合 `@kedge-agentic/common` 包提供完整的类型定义。
 
 ## 接口模式
 
@@ -14,7 +14,7 @@
        ←──SSE 推送───────  接收后台任务完成通知（跨轮次）
 ```
 
-**推荐做法**：使用 `@ccaas/react-sdk`，SDK 封装了所有 SSE 连接管理和事件解析。
+**推荐做法**：使用 `@kedge-agentic/react-sdk`，SDK 封装了所有 SSE 连接管理和事件解析。
 
 ## 认证
 
@@ -53,4 +53,4 @@ curl -H "X-API-Key: YOUR_API_KEY" ...
 | [SSE Transport（推荐）](sse.md) | SSE 事件流协议，端点和事件格式定义 |
 | [WebSocket 事件（已弃用）](websocket.md) | 旧版 Socket.IO 协议，仅供历史参考 |
 | [错误处理](error-handling.md) | 标准化错误响应和重试策略 |
-| [@ccaas/common 类型](shared-types.md) | 共享 TypeScript 类型定义 |
+| [@kedge-agentic/common 类型](shared-types.md) | 共享 TypeScript 类型定义 |

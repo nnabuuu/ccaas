@@ -18,7 +18,7 @@ export interface DefaultSyncButtonProps {
  *
  * @example
  * ```tsx
- * import { DefaultSyncButton } from '@ccaas/react-sdk'
+ * import { DefaultSyncButton } from '@kedge-agentic/react-sdk'
  *
  * <DefaultSyncButton
  *   update={outputUpdate}

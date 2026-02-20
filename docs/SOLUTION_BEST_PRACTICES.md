@@ -4,14 +4,14 @@
 
 ## 1. 类型与契约
 
-### 1.1 使用 @ccaas/common 共享类型
+### 1.1 使用 @kedge-agentic/common 共享类型
 
 前后端应从同一包导入类型定义，确保 API 响应格式一致。
 
 ✅ 正确做法：
 ```typescript
 // 从 shared 包导入
-import { Session, Skill, TokenUsage } from '@ccaas/common'
+import { Session, Skill, TokenUsage } from '@kedge-agentic/common'
 ```
 
 ❌ 错误做法：
@@ -224,4 +224,4 @@ const { sendMessage } = useSession({ enabledSkillSlugs })
 ### 新增 Solution 功能
 - [ ] 是否需要 skill toggle？添加 useSkills + SkillsPanel
 - [ ] 是否需要与 CCAAS 通信？配置代理和 API 调用
-- [ ] 是否有类型共享需求？使用 @ccaas/common
+- [ ] 是否有类型共享需求？使用 @kedge-agentic/common

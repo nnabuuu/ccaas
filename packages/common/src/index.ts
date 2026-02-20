@@ -1,5 +1,5 @@
 /**
- * @ccaas/common
+ * @kedge-agentic/common
  *
  * Shared types and schemas for Claude Code as a Service.
  *

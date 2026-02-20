@@ -98,7 +98,7 @@
 
 ## 消息与会话（SessionsController）
 
-> **💡 推荐使用**: 使用 `@ccaas/react-sdk` 或 `@ccaas/vue-sdk` 进行集成，无需直接调用 HTTP API。SDK 会自动管理 WebSocket 连接和状态。
+> **💡 推荐使用**: 使用 `@kedge-agentic/react-sdk` 或 `@kedge-agentic/vue-sdk` 进行集成，无需直接调用 HTTP API。SDK 会自动管理 WebSocket 连接和状态。
 
 ### POST /sessions/:sessionId/completion
 

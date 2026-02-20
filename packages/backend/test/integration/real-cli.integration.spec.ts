@@ -4,7 +4,7 @@
  * These tests spawn actual Claude Code CLI processes and make real API calls.
  * Requires: `claude login` to authenticate with your Claude subscription.
  *
- * Run with: npm run test:e2e:real -w @ccaas/backend
+ * Run with: npm run test:e2e:real -w @kedge-agentic/backend
  *
  * NOTE: These tests:
  * - Use your Claude subscription credits

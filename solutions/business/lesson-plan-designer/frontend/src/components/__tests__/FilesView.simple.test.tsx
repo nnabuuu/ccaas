@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { FilesView } from '../FilesView'
-import type { UseAgentConnectionReturn } from '@ccaas/react-sdk'
+import type { UseAgentConnectionReturn } from '@kedge-agentic/react-sdk'
 
 // Mock dependencies
-vi.mock('@ccaas/react-sdk', () => ({
+vi.mock('@kedge-agentic/react-sdk', () => ({
   useFiles: () => ({
     files: [],
     isLoading: false,

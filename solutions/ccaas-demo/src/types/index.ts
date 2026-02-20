@@ -150,7 +150,7 @@ export interface TodoStats {
   total: number
 }
 
-// ChatLayout removed - now using ChatLayoutMode from @ccaas/react-sdk
+// ChatLayout removed - now using ChatLayoutMode from @kedge-agentic/react-sdk
 
 export type ProtocolEvent =
   | { type: 'text_delta'; delta: string }

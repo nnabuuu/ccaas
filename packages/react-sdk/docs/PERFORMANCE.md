@@ -1,6 +1,6 @@
 # React SDK Performance Optimization Guide
 
-Performance optimization strategies and best practices for `@ccaas/react-sdk` based on real-world analysis and testing.
+Performance optimization strategies and best practices for `@kedge-agentic/react-sdk` based on real-world analysis and testing.
 
 ## Table of Contents
 
@@ -66,7 +66,7 @@ function MessageList({ messages }) {
 
 ```tsx
 import { memo } from 'react'
-import { MessageBubble } from '@ccaas/react-sdk'
+import { MessageBubble } from '@kedge-agentic/react-sdk'
 
 // ✅ Only re-render if props actually changed
 const MemoizedMessageBubble = memo(
@@ -592,7 +592,7 @@ function useEfficientContentBlocks() {
 ### Current Size Analysis
 
 ```
-@ccaas/react-sdk: ~77KB ESM, ~80KB CJS
+@kedge-agentic/react-sdk: ~77KB ESM, ~80KB CJS
 ```
 
 ### Code Splitting
@@ -601,7 +601,7 @@ function useEfficientContentBlocks() {
 // ✅ Lazy load heavy components
 import { lazy, Suspense } from 'react'
 
-const ChatPanel = lazy(() => import('@ccaas/react-sdk').then(m => ({ default: m.ChatPanel })))
+const ChatPanel = lazy(() => import('@kedge-agentic/react-sdk').then(m => ({ default: m.ChatPanel })))
 
 function App() {
   return (
@@ -616,10 +616,10 @@ function App() {
 
 ```tsx
 // ❌ Imports everything
-import * as SDK from '@ccaas/react-sdk'
+import * as SDK from '@kedge-agentic/react-sdk'
 
 // ✅ Import only what you need
-import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 ```
 
 ---

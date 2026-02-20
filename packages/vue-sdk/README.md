@@ -1,11 +1,11 @@
-# @ccaas/vue-sdk
+# @kedge-agentic/vue-sdk
 
 Vue composables and utilities for integrating with KedgeAgentic backend.
 
 ## Installation
 
 ```bash
-npm install @ccaas/vue-sdk
+npm install @kedge-agentic/vue-sdk
 ```
 
 ## Requirements
@@ -32,7 +32,7 @@ The SDK expects an `AgentListener` component to be mounted as a parent. This com
 
 ```vue
 <script setup lang="ts">
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName, todoItems } = useAgentState()
 </script>
@@ -54,7 +54,7 @@ const { isProcessing, currentToolName, todoItems } = useAgentState()
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useFormBridge } from '@ccaas/vue-sdk'
+import { useFormBridge } from '@kedge-agentic/vue-sdk'
 
 const form = reactive({
   title: '',
@@ -77,7 +77,7 @@ const { isActive } = useFormBridge({
 ```ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 export const useMyStore = defineStore('my', () => {
   const sections = ref({
@@ -114,7 +114,7 @@ export const useMyStore = defineStore('my', () => {
 
 ```vue
 <script setup lang="ts">
-import { usePlanMode } from '@ccaas/vue-sdk'
+import { usePlanMode } from '@kedge-agentic/vue-sdk'
 
 const {
   pendingProposal,
@@ -298,7 +298,7 @@ const {
 Centralized form state synchronization service.
 
 ```ts
-import { getFormStateSynchronizer } from '@ccaas/vue-sdk'
+import { getFormStateSynchronizer } from '@kedge-agentic/vue-sdk'
 
 const sync = getFormStateSynchronizer()
 
@@ -324,7 +324,7 @@ import {
   IsAgentProcessingKey,
   CurrentToolNameKey,
   TodoItemsKey
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 
 const isProcessing = inject(IsAgentProcessingKey)
 const currentTool = inject(CurrentToolNameKey)
@@ -364,7 +364,7 @@ import type {
   AgentStatusEvent,
   ToolActivityEvent,
   TodoUpdateEvent
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 ```
 
 ## Documentation

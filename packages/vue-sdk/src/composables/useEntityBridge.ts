@@ -7,7 +7,7 @@
  * @example
  * ```vue
  * <script setup>
- * import { useEntityBridge } from '@ccaas/vue-sdk'
+ * import { useEntityBridge } from '@kedge-agentic/vue-sdk'
  *
  * const draft = reactive({
  *   textbookAnalysis: '',

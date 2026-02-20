@@ -1,15 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useLessonPlanSession } from '../useLessonPlanSession'
-import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@ccaas/react-sdk'
+import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@kedge-agentic/react-sdk'
 
-// Mock @ccaas/react-sdk
+// Mock @kedge-agentic/react-sdk
 let mockConnectionReturn: UseAgentConnectionReturn
 let mockChatReturn: UseAgentChatReturn
 let mockStatusReturn: UseAgentStatusReturn
 
-vi.mock('@ccaas/react-sdk', async () => {
-  const actual = await vi.importActual('@ccaas/react-sdk')
+vi.mock('@kedge-agentic/react-sdk', async () => {
+  const actual = await vi.importActual('@kedge-agentic/react-sdk')
   return {
     ...actual,
     useAgentConnection: vi.fn(() => mockConnectionReturn),

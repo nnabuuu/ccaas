@@ -1,5 +1,5 @@
 /**
- * @ccaas/common/types
+ * @kedge-agentic/common/types
  *
  * Shared TypeScript interfaces for Claude Code as a Service.
  *
@@ -633,15 +633,6 @@ export {
   type GoalNarrative,
   type ActiveSubAgent,
 } from '../schemas/events';
-
-// Legacy type alias for backward compatibility
-/** @deprecated Use AgentThinkingEvent instead */
-export interface ThinkingDeltaEvent {
-  type: 'thinking_delta';
-  sessionId: string;
-  timestamp?: string;
-  content: string;
-}
 
 // ============================================================================
 // Pagination Types

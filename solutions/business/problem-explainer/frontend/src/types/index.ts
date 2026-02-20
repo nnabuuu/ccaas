@@ -1,10 +1,10 @@
-// Re-export event types from @ccaas/common for type safety
+// Re-export event types from @kedge-agentic/common for type safety
 export type {
   AgentStatusEvent,
   TextDeltaEvent,
   OutputUpdateEvent,
   ToolActivityEvent,
-} from '@ccaas/common';
+} from '@kedge-agentic/common';
 
 // SYNC_FIELDS - Must match backend and MCP server definitions
 export const SYNC_FIELDS = [

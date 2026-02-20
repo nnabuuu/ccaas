@@ -72,7 +72,7 @@ localStorage:
 import {
   useAgentConnection,
   useAgentChat,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 const SOCKET_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 

@@ -1,6 +1,6 @@
 # Vue SDK Troubleshooting Guide
 
-Common issues, debugging techniques, and solutions for `@ccaas/vue-sdk`.
+Common issues, debugging techniques, and solutions for `@kedge-agentic/vue-sdk`.
 
 ## Table of Contents
 
@@ -65,7 +65,7 @@ const agentState = useAgentState()
 <!-- ✅ Provide state at app level -->
 <script setup lang="ts">
 import { provide } from 'vue'
-import { AgentStateKey, createAgentState } from '@ccaas/vue-sdk'
+import { AgentStateKey, createAgentState } from '@kedge-agentic/vue-sdk'
 
 const agentState = createAgentState()
 provide(AgentStateKey, agentState)
@@ -106,7 +106,7 @@ const title = computed(() => formData.value.title)
 
 **Debugging:**
 ```typescript
-import { useAgentChat } from '@ccaas/vue-sdk'
+import { useAgentChat } from '@kedge-agentic/vue-sdk'
 
 const { connectionState } = useAgentChat()
 

@@ -1,5 +1,5 @@
 /**
- * @ccaas/common/schemas
+ * @kedge-agentic/common/schemas
  *
  * Re-exports all Zod schemas for runtime validation.
  *

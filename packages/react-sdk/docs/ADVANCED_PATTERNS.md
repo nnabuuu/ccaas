@@ -1,6 +1,6 @@
 # React SDK Advanced Patterns
 
-Advanced patterns and techniques for building production applications with `@ccaas/react-sdk`.
+Advanced patterns and techniques for building production applications with `@kedge-agentic/react-sdk`.
 
 ## Table of Contents
 
@@ -27,7 +27,7 @@ import {
   useAgentStatus,
   useChatLayout,
   useOutputSync,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { useState, useCallback } from 'react'
 
 interface MyDomainData {
@@ -126,7 +126,7 @@ export function useMyDomainSession() {
 Managing multiple concurrent agent sessions.
 
 ```tsx
-import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 import { useState, useCallback } from 'react'
 
 interface Session {
@@ -195,9 +195,9 @@ export function useMultiSession() {
 ### Comprehensive Error Handling
 
 ```tsx
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 import { useState, useCallback } from 'react'
-import { ApiError } from '@ccaas/react-sdk/utils'
+import { ApiError } from '@kedge-agentic/react-sdk/utils'
 
 export function useRobustChat(connection) {
   const [errorState, setErrorState] = useState<{
@@ -348,7 +348,7 @@ export class ChatErrorBoundary extends Component<Props, State> {
 ### Auto-Reconnection with Exponential Backoff
 
 ```tsx
-import { useAgentConnection } from '@ccaas/react-sdk'
+import { useAgentConnection } from '@kedge-agentic/react-sdk'
 import { useEffect, useRef, useState } from 'react'
 
 export function useReconnectingConnection(options) {
@@ -419,7 +419,7 @@ export function useReconnectingConnection(options) {
 ### Connection Status Indicator
 
 ```tsx
-import { useAgentConnection } from '@ccaas/react-sdk'
+import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 export function ConnectionStatus({ connection }) {
   if (connection.connected) {
@@ -459,7 +459,7 @@ export function ConnectionStatus({ connection }) {
 ```tsx
 import { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { useAgentChat, useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 
 // Redux actions
 export const chatActions = {
@@ -506,7 +506,7 @@ export function useReduxChat(connection) {
 
 ```tsx
 import { create } from 'zustand'
-import { useAgentChat, useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 import { useEffect } from 'react'
 
 // Zustand store
@@ -558,7 +558,7 @@ export function useSyncedChat(connection) {
 ### Custom Message Renderer
 
 ```tsx
-import { ChatPanel, MessageBubble } from '@ccaas/react-sdk'
+import { ChatPanel, MessageBubble } from '@kedge-agentic/react-sdk'
 import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 
@@ -710,7 +710,7 @@ export function CustomChatInput({
 
 ```tsx
 import { memo, useMemo } from 'react'
-import { MessageBubble } from '@ccaas/react-sdk'
+import { MessageBubble } from '@kedge-agentic/react-sdk'
 
 const MemoizedMessageBubble = memo(MessageBubble, (prev, next) => {
   return (
@@ -790,7 +790,7 @@ export function VirtualizedMessageList({ messages }) {
 ### Debounced Output Sync
 
 ```tsx
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 import { useMemo } from 'react'
 import debounce from 'lodash.debounce'
 
@@ -826,7 +826,7 @@ import { renderHook } from '@testing-library/react'
 import { vi } from 'vitest'
 
 // Mock useAgentConnection
-vi.mock('@ccaas/react-sdk', () => ({
+vi.mock('@kedge-agentic/react-sdk', () => ({
   useAgentConnection: vi.fn(() => ({
     socket: { on: vi.fn(), emit: vi.fn(), off: vi.fn() },
     connected: true,
@@ -853,7 +853,7 @@ vi.mock('@ccaas/react-sdk', () => ({
 ```tsx
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ChatPanel } from '@ccaas/react-sdk'
+import { ChatPanel } from '@kedge-agentic/react-sdk'
 import { setupServer } from 'msw/node'
 import { rest } from 'msw'
 

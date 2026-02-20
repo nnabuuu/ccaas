@@ -58,7 +58,7 @@
 * [REST API Endpoints](api/rest.md)
 * [WebSocket Events](api/websocket.md)
 * [Error Handling](api/error-handling.md)
-* [@ccaas/common Types](api/shared-types.md)
+* [@kedge-agentic/common Types](api/shared-types.md)
 
 ## Reference <a href="#reference" id="reference"></a>
 

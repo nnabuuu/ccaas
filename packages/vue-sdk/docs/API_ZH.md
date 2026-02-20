@@ -1,6 +1,6 @@
 # Vue SDK API 参考文档
 
-`@ccaas/vue-sdk` 完整 API 文档 - Vue 3 组合式函数和工具库，用于与 Claude-Code-as-a-Service 后端集成。
+`@kedge-agentic/vue-sdk` 完整 API 文档 - Vue 3 组合式函数和工具库，用于与 Claude-Code-as-a-Service 后端集成。
 
 ## 目录
 
@@ -32,7 +32,7 @@
 ## 安装
 
 ```bash
-npm install @ccaas/vue-sdk
+npm install @kedge-agentic/vue-sdk
 ```
 
 **依赖要求:**
@@ -57,7 +57,7 @@ npm install @ccaas/vue-sdk
 
 ```vue
 <script setup lang="ts">
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName } = useAgentState()
 const { progress, currentTodo } = useTodoProgress()
@@ -172,7 +172,7 @@ interface UseAgentStateReturn {
 
 ```vue
 <script setup lang="ts">
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 const {
   isProcessing,
@@ -273,7 +273,7 @@ interface UseAgentChatReturn {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAgentChat } from '@ccaas/vue-sdk'
+import { useAgentChat } from '@kedge-agentic/vue-sdk'
 
 const message = ref('')
 const messages = ref<string[]>([])
@@ -396,7 +396,7 @@ interface UseFormBridgeReturn {
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useFormBridge } from '@ccaas/vue-sdk'
+import { useFormBridge } from '@kedge-agentic/vue-sdk'
 
 const form = reactive({
   title: '',
@@ -515,7 +515,7 @@ interface UseAIEditingReturn<T extends string> {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 const sectionIds = ['objectives', 'activities', 'assessment'] as const
 type SectionId = typeof sectionIds[number]
@@ -622,7 +622,7 @@ interface PlanProposalSection {
 
 ```vue
 <script setup lang="ts">
-import { usePlanMode } from '@ccaas/vue-sdk'
+import { usePlanMode } from '@kedge-agentic/vue-sdk'
 
 const {
   pendingProposal,
@@ -699,7 +699,7 @@ interface TodoItem {
 
 ```vue
 <script setup lang="ts">
-import { useTodoProgress } from '@ccaas/vue-sdk'
+import { useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const {
   todoItems,
@@ -798,7 +798,7 @@ interface ToolActivity {
 
 ```vue
 <script setup lang="ts">
-import { useToolActivity } from '@ccaas/vue-sdk'
+import { useToolActivity } from '@kedge-agentic/vue-sdk'
 
 const {
   current,
@@ -869,7 +869,7 @@ interface UseThinkingReturn {
 
 ```vue
 <script setup lang="ts">
-import { useThinking } from '@ccaas/vue-sdk'
+import { useThinking } from '@kedge-agentic/vue-sdk'
 
 const {
   isThinking,
@@ -945,7 +945,7 @@ interface SessionTokens {
 
 ```vue
 <script setup lang="ts">
-import { useTokenUsage } from '@ccaas/vue-sdk'
+import { useTokenUsage } from '@kedge-agentic/vue-sdk'
 
 const {
   tokenUsage,
@@ -1048,7 +1048,7 @@ interface ExplorationActivity {
 
 ```vue
 <script setup lang="ts">
-import { useExploration } from '@ccaas/vue-sdk'
+import { useExploration } from '@kedge-agentic/vue-sdk'
 
 const {
   exploration,
@@ -1130,7 +1130,7 @@ interface UseSkillsReturn {
 
 ```vue
 <script setup lang="ts">
-import { useSkills } from '@ccaas/vue-sdk'
+import { useSkills } from '@kedge-agentic/vue-sdk'
 
 const {
   filteredSkills,
@@ -1223,7 +1223,7 @@ interface OutputUpdate {
 ```vue
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useOutputSync } from '@ccaas/vue-sdk'
+import { useOutputSync } from '@kedge-agentic/vue-sdk'
 
 const formData = ref({
   title: '',
@@ -1345,7 +1345,7 @@ type LessonPlanSyncField =
 
 ```vue
 <script setup lang="ts">
-import { useLessonPlanSync } from '@ccaas/vue-sdk'
+import { useLessonPlanSync } from '@kedge-agentic/vue-sdk'
 
 const {
   lessonPlan,
@@ -1465,7 +1465,7 @@ interface SectionState {
 ```vue
 <script setup lang="ts">
 import { reactive } from 'vue'
-import { useEntityBridge } from '@ccaas/vue-sdk'
+import { useEntityBridge } from '@kedge-agentic/vue-sdk'
 
 const draft = reactive({
   textbookAnalysis: '',
@@ -1588,7 +1588,7 @@ interface FormUpdateEvent {
 #### 用法
 
 ```typescript
-import { getFormStateSynchronizer } from '@ccaas/vue-sdk'
+import { getFormStateSynchronizer } from '@kedge-agentic/vue-sdk'
 
 const sync = getFormStateSynchronizer()
 
@@ -1645,10 +1645,10 @@ class AgentConnection {
 }
 
 // 获取单例实例
-import { agentConnection } from '@ccaas/vue-sdk'
+import { agentConnection } from '@kedge-agentic/vue-sdk'
 
 // 或创建自定义实例
-import { createAgentConnection } from '@ccaas/vue-sdk'
+import { createAgentConnection } from '@kedge-agentic/vue-sdk'
 const connection = createAgentConnection()
 ```
 
@@ -1852,7 +1852,7 @@ import {
   // 探索
   ExplorationActivityKey,
   ExplorationHistoryKey,
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 
 // 使用
 const isProcessing = inject(IsAgentProcessingKey)
@@ -1973,7 +1973,7 @@ const debouncedSync = debounce((field) => {
 ### 8. 使用模拟连接测试
 
 ```typescript
-import { createAgentConnection } from '@ccaas/vue-sdk'
+import { createAgentConnection } from '@kedge-agentic/vue-sdk'
 
 const mockConnection = createAgentConnection()
 const { isConnected } = useAgentChat({ connection: mockConnection })

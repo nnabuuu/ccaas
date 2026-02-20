@@ -202,10 +202,10 @@ export function validateField(field: string, value: unknown) {
 
 ## The output\_update Event Structure
 
-When the CCAAS backend receives a `write_output` tool result, EventMapper wraps it as an `output_update` WebSocket event. The `@ccaas/common` package defines the schema:
+When the CCAAS backend receives a `write_output` tool result, EventMapper wraps it as an `output_update` WebSocket event. The `@kedge-agentic/common` package defines the schema:
 
 ```typescript
-// From @ccaas/common - OutputUpdatePayloadSchema (Zod)
+// From @kedge-agentic/common - OutputUpdatePayloadSchema (Zod)
 {
   field?: string,          // Field name (when using generic format)
   value?: unknown,         // Field value (when using generic format)
@@ -239,7 +239,7 @@ The full event shape received by the frontend:
 {% hint style="danger" %}
 **The most common mistake**: Accessing `event.payload.field` instead of `event.payload.data.field`. The data returned by `write_output` is nested one level deeper than you might expect. Always access field data through `event.payload.data`.
 
-This was a real production bug in the lesson-plan-designer: the frontend defined a local `OutputUpdateEvent` type expecting a flat structure, but the backend EventMapper sends a nested `payload.data` structure. The fix was to use the `@ccaas/common` type and create a proper parser.
+This was a real production bug in the lesson-plan-designer: the frontend defined a local `OutputUpdateEvent` type expecting a flat structure, but the backend EventMapper sends a nested `payload.data` structure. The fix was to use the `@kedge-agentic/common` type and create a proper parser.
 {% endhint %}
 
 ### Multiple Event Formats
@@ -281,7 +281,7 @@ The `useAgentChat` hook provides an `onOutputUpdate` callback that fires wheneve
 ```typescript
 // From solutions/lesson-plan-designer/frontend/src/hooks/useLessonPlanSession.ts
 
-import { useAgentConnection, useAgentChat } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // Core CCAAS backend
@@ -310,10 +310,10 @@ The SDK also handles a secondary detection path: when a `tool_event` fires for a
 
 ### Manual Parsing (Without SDK)
 
-If you are not using the react-sdk, you can parse the event manually. Use the `@ccaas/common` types for type safety:
+If you are not using the react-sdk, you can parse the event manually. Use the `@kedge-agentic/common` types for type safety:
 
 ```typescript
-import type { OutputUpdateEvent } from '@ccaas/common'
+import type { OutputUpdateEvent } from '@kedge-agentic/common'
 
 socket.on('output_update', (event: OutputUpdateEvent) => {
   // Try payload.data first (primary format)
@@ -467,10 +467,10 @@ const syncAll = useCallback(async () => {
 
 ### OutputUpdateCard (react-sdk)
 
-The `@ccaas/react-sdk` provides a generic `OutputUpdateCard` component that renders pending updates with Sync/Discard actions and synced state with a Re-sync option.
+The `@kedge-agentic/react-sdk` provides a generic `OutputUpdateCard` component that renders pending updates with Sync/Discard actions and synced state with a Re-sync option.
 
 ```tsx
-import { OutputUpdateCard } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@kedge-agentic/react-sdk'
 
 <OutputUpdateCard
   field="objectives"

@@ -95,7 +95,7 @@ function formatNumber(num: number): string {
  * @example
  * ```vue
  * <script setup>
- * import { useTokenUsage } from '@ccaas/vue-sdk'
+ * import { useTokenUsage } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   tokenUsage,

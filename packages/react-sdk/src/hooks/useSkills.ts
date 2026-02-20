@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import type { Skill } from '@ccaas/common'
+import type { Skill } from '@kedge-agentic/common'
 import type { UseSkillsOptions, UseSkillsReturn } from '../types'
 
 /**

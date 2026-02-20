@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useOutputSync, type OutputUpdate } from '@ccaas/react-sdk'
+import { useOutputSync, type OutputUpdate } from '@kedge-agentic/react-sdk'
 import { useSessionContext } from '../context/SessionContext'
 import type { LessonPlan } from '../types/lesson-plan'
 

@@ -56,7 +56,7 @@ function createDefaultTodoStats(): Ref<{ completed: number; inProgress: number; 
  * @example
  * ```vue
  * <script setup>
- * import { useTodoProgress } from '@ccaas/vue-sdk'
+ * import { useTodoProgress } from '@kedge-agentic/vue-sdk'
  *
  * const { todoItems, progress, currentTodo, isComplete } = useTodoProgress()
  * </script>

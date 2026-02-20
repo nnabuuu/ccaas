@@ -38,7 +38,7 @@ const connection = useAgentConnection({
 自定义消息展示最简单的方式是 `renderMessage` prop。它让你拦截单条消息并按需渲染，同时 `ChatPanel` 仍然处理布局、输入框和状态。
 
 ```tsx
-import { ChatPanel, MessageBubble } from '@ccaas/react-sdk'
+import { ChatPanel, MessageBubble } from '@kedge-agentic/react-sdk'
 
 <ChatPanel
   messages={chat.messages}
@@ -114,7 +114,7 @@ function MessageContent({ blocks }: { blocks: ContentBlock[] }) {
 `useMessageSplitter` 根据你定义的分隔符，将 `ContentBlock[]` 数组分割为命名片段：
 
 ```tsx
-import { useMessageSplitter } from '@ccaas/react-sdk'
+import { useMessageSplitter } from '@kedge-agentic/react-sdk'
 
 function SplitMessageView({ message }) {
   const { segments } = useMessageSplitter({
@@ -196,7 +196,7 @@ import {
   useAgentConnection,
   useAgentChat,
   useAgentStatus
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function CustomChatUI() {
   const connection = useAgentConnection({

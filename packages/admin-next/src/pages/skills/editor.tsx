@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { ArrowLeft, Upload, Archive, RotateCcw, GitCompare } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
-import type { Skill, SkillVersion } from '@ccaas/common'
+import type { Skill, SkillVersion } from '@kedge-agentic/common'
 
 interface SkillDetail extends Skill {
   enabled: boolean

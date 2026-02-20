@@ -11,7 +11,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import type { SessionTemplateMap } from '@ccaas/common';
+import type { SessionTemplateMap } from '@kedge-agentic/common';
 
 export type TenantPlan = 'free' | 'starter' | 'professional' | 'enterprise';
 export type TenantStatus = 'active' | 'suspended' | 'pending' | 'deleted';

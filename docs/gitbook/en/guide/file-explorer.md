@@ -18,12 +18,12 @@ If your quiz analyzer generates a PDF report the teacher downloads, add `FilePan
 
 ## Using FilePanel from the React SDK
 
-The recommended way to display workspace files is the `FilePanel` component from `@ccaas/react-sdk`. It handles file listing, selection, preview, and upload out of the box.
+The recommended way to display workspace files is the `FilePanel` component from `@kedge-agentic/react-sdk`. It handles file listing, selection, preview, and upload out of the box.
 
 ### Basic Usage
 
 ```tsx
-import { FilePanel } from '@ccaas/react-sdk'
+import { FilePanel } from '@kedge-agentic/react-sdk'
 
 function MySolution() {
   const connection = useAgentConnection({
@@ -92,7 +92,7 @@ interface FilePanelProps {
 If you need more control than `FilePanel` provides, use `useFiles` directly:
 
 ```tsx
-import { useFiles } from '@ccaas/react-sdk'
+import { useFiles } from '@kedge-agentic/react-sdk'
 
 function MyFileList({ connection, sessionId }) {
   const files = useFiles({ connection, sessionId, enabled: true })

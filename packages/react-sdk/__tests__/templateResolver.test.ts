@@ -1,5 +1,5 @@
 /**
- * @ccaas/react-sdk tests for templateResolver
+ * @kedge-agentic/react-sdk tests for templateResolver
  */
 
 import { describe, it, expect } from 'vitest'
@@ -8,7 +8,7 @@ import {
   mergeTemplateParams,
   type ResolvedTemplateParams,
 } from '../src/utils/templateResolver'
-import type { SessionTemplateMap, SessionTemplate } from '@ccaas/common'
+import type { SessionTemplateMap, SessionTemplate } from '@kedge-agentic/common'
 import type { McpServerConfig } from '../src/types'
 
 describe('resolveSessionTemplate', () => {

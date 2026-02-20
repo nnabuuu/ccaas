@@ -1,6 +1,6 @@
 # Vue SDK 高级模式
 
-使用 `@ccaas/vue-sdk` 构建生产应用的高级模式和技术。
+使用 `@kedge-agentic/vue-sdk` 构建生产应用的高级模式和技术。
 
 ## 目录
 
@@ -27,7 +27,7 @@ import {
   useAIEditing,
   usePlanMode,
   useTodoProgress
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 import { computed, ref } from 'vue'
 
 export function useLessonPlanEditor() {

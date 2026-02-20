@@ -10,7 +10,7 @@
  * @example
  * ```vue
  * <script setup>
- * import { useSseChat } from '@ccaas/vue-sdk'
+ * import { useSseChat } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   messages,

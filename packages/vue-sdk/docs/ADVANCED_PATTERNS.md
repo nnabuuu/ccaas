@@ -1,6 +1,6 @@
 # Advanced Patterns Guide
 
-This guide covers advanced usage patterns for @ccaas/vue-sdk, including composable composition, provide/inject patterns, reactivity optimization, and state management integration.
+This guide covers advanced usage patterns for @kedge-agentic/vue-sdk, including composable composition, provide/inject patterns, reactivity optimization, and state management integration.
 
 ## Table of Contents
 
@@ -20,7 +20,7 @@ Build higher-level composables by composing lower-level ones.
 
 ```typescript
 // Low-level composable
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 export function useAgentProgress() {
   const { isProcessing, currentToolName } = useAgentState()
@@ -50,7 +50,7 @@ export function useAgentProgress() {
 Wrap SDK composables with domain logic.
 
 ```typescript
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 import { useNotification } from './useNotification'
 
 export function useLessonPlanAIEditing(form: Ref<LessonPlanForm>) {
@@ -113,7 +113,7 @@ import {
   useTodoProgress,
   usePlanMode,
   useFormBridge
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 
 export function useDocumentEditor(documentId: string) {
   const form = reactive<DocumentForm>({
@@ -193,7 +193,7 @@ provide(DocumentContextKey, {
 // ChildComponent.vue
 <script setup lang="ts">
 import { inject } from 'vue'
-import { useFormBridge } from '@ccaas/vue-sdk'
+import { useFormBridge } from '@kedge-agentic/vue-sdk'
 import { DocumentContextKey } from './ParentComponent.vue'
 
 const context = inject(DocumentContextKey)
@@ -244,7 +244,7 @@ Inject computed values that react to parent state changes.
 // ParentComponent.vue
 <script setup lang="ts">
 import { provide, computed } from 'vue'
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing } = useAgentState()
 
@@ -644,7 +644,7 @@ import {
   useAgentState,
   useTodoProgress,
   usePlanMode
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 
 export const useAgentStore = defineStore('agent', () => {
   // SDK composables
@@ -705,7 +705,7 @@ import { Module } from 'vuex'
 import {
   useAgentState,
   useTodoProgress
-} from '@ccaas/vue-sdk'
+} from '@kedge-agentic/vue-sdk'
 
 // Create composables outside component context
 let agentStateInstance: ReturnType<typeof useAgentState>
@@ -751,7 +751,7 @@ export const agentModule: Module<any, any> = {
 // stores/documentStore.ts
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
-import { useFormBridge, useAIEditing } from '@ccaas/vue-sdk'
+import { useFormBridge, useAIEditing } from '@kedge-agentic/vue-sdk'
 
 export const useDocumentStore = defineStore('document', () => {
   const document = ref({
@@ -812,7 +812,7 @@ export const useDocumentStore = defineStore('document', () => {
 ```vue
 <script setup lang="ts">
 import { defineAsyncComponent, ref } from 'vue'
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing } = useAgentState()
 
@@ -846,7 +846,7 @@ const showDashboard = ref(false)
 ```vue
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useTodoProgress } from '@ccaas/vue-sdk'
+import { useTodoProgress } from '@kedge-agentic/vue-sdk'
 import { useVirtualList } from '@vueuse/core'
 
 const { todoItems } = useTodoProgress()
@@ -880,7 +880,7 @@ const { list, containerProps, wrapperProps } = useVirtualList(
 
 ```typescript
 import { computed, ref } from 'vue'
-import { useTodoProgress } from '@ccaas/vue-sdk'
+import { useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 export function useTaskAnalytics() {
   const { todoItems } = useTodoProgress()
@@ -910,7 +910,7 @@ export function useTaskAnalytics() {
 ```typescript
 import { ref, watch } from 'vue'
 import { useThrottleFn } from '@vueuse/core'
-import { useAgentState } from '@ccaas/vue-sdk'
+import { useAgentState } from '@kedge-agentic/vue-sdk'
 
 export function useActivityMonitor() {
   const { currentToolName } = useAgentState()

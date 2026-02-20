@@ -16,7 +16,7 @@ import type {
   OutputUpdateEvent,
   ToolActivityPayload,
   FrontendEvent,
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
 import {
@@ -64,7 +64,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const streamContentRef = useRef('')
   const contentBlocksRef = useRef<ContentBlock[]>([])
   const currentMessageRef = useRef<Message | null>(null)
-  const latestTokenUsageRef = useRef<import('@ccaas/common').TokenUsage | null>(null)
+  const latestTokenUsageRef = useRef<import('@kedge-agentic/common').TokenUsage | null>(null)
 
   // Solution config (loaded from endpoint if provided)
   const solutionConfigRef = useRef<SolutionConfig | null>(null)

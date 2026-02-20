@@ -36,7 +36,7 @@ export interface UsePlanModeReturn {
  * @example
  * ```vue
  * <script setup>
- * import { usePlanMode } from '@ccaas/vue-sdk'
+ * import { usePlanMode } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   pendingProposal,

@@ -45,7 +45,7 @@ export interface AssistantMessageGroupProps {
  *
  * @example
  * ```tsx
- * import { AssistantMessageGroup } from '@ccaas/react-sdk'
+ * import { AssistantMessageGroup } from '@kedge-agentic/react-sdk'
  *
  * // Basic usage (no SyncButtons)
  * <AssistantMessageGroup splitMessage={msg} />

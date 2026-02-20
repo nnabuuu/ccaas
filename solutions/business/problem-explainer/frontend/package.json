@@ -9,8 +9,8 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
-    "@ccaas/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
     "lucide-react": "^0.263.1",
     "react-resizable-panels": "^2.1.0",
     "react": "^18.2.0",

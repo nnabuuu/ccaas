@@ -9,7 +9,7 @@ import {
   type UseAgentConnectionReturn,
   type FileMetadata,
   type TokenUsage,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType, MessageTokenUsage, PendingUpdateWithMeta } from '../types'
 import MessageBubble from './MessageBubble'
 import { SegmentBubble } from './SegmentBubble'

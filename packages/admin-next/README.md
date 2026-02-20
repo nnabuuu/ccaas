@@ -1,4 +1,4 @@
-# @ccaas/admin-next
+# @kedge-agentic/admin-next
 
 Admin dashboard for Claude Code as a Service, built with React, Refine, shadcn/ui, and Tailwind CSS.
 
@@ -142,6 +142,6 @@ npx shadcn@latest add <component-name>
 
 ## Related Packages
 
-- `@ccaas/backend` - NestJS API server
-- `@ccaas/shared` - Shared types and schemas
-- `@ccaas/react-sdk` - React SDK for client integration
+- `@kedge-agentic/backend` - NestJS API server
+- `@kedge-agentic/shared` - Shared types and schemas
+- `@kedge-agentic/react-sdk` - React SDK for client integration

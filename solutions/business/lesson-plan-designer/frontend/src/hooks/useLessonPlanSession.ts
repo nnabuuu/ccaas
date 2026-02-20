@@ -11,7 +11,7 @@ import {
   useFiles,
   type Message,
   type UseAgentConnectionReturn,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'

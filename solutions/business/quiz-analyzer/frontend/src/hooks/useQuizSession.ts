@@ -1,7 +1,7 @@
 /**
  * Quiz Session Hook - Combines SDK hooks with quiz-specific features
  *
- * Uses @ccaas/react-sdk hooks for core chat functionality
+ * Uses @kedge-agentic/react-sdk hooks for core chat functionality
  */
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
@@ -9,8 +9,8 @@ import {
   useAgentConnection,
   useAgentChat,
   useAgentStatus,
-} from '@ccaas/react-sdk'
-import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
+import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@kedge-agentic/react-sdk'
 import type { QuizAnalysis, ViewMode } from '../types'
 
 // Backend configuration

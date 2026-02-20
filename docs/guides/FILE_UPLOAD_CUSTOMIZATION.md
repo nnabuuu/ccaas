@@ -78,7 +78,7 @@ UI updates
 **Use when**: You need full control over upload UI and logic
 
 ```tsx
-import { FilePanel } from '@ccaas/react-sdk';
+import { FilePanel } from '@kedge-agentic/react-sdk';
 
 function MySolution() {
   return (
@@ -118,7 +118,7 @@ function CustomUploadButton({ onUpload }: FileUploadButtonProps) {
 **Use when**: You need custom logic but standard UI
 
 ```tsx
-import { useFiles, FileUploadButton } from '@ccaas/react-sdk';
+import { useFiles, FileUploadButton } from '@kedge-agentic/react-sdk';
 
 function MySolution() {
   const files = useFiles({ connection, sessionId });
@@ -204,7 +204,7 @@ export function DomainFileUpload({ domainEntityId }: Props) {
 ```tsx
 // solutions/lesson-plan-designer/components/LessonPlanFileUpload.tsx
 
-import { useFiles } from '@ccaas/react-sdk';
+import { useFiles } from '@kedge-agentic/react-sdk';
 import { useLessonPlanSession } from '../hooks/useLessonPlanSession';
 
 export function LessonPlanFileUpload() {
@@ -498,7 +498,7 @@ export function ValidatedFileUpload() {
 
 ```tsx
 // Custom upload with full workflow
-import { FilePanel, useFiles } from '@ccaas/react-sdk';
+import { FilePanel, useFiles } from '@kedge-agentic/react-sdk';
 import { toast } from 'react-hot-toast';
 
 function CustomFilePanel() {
@@ -915,7 +915,7 @@ const handleUpload = async (file: File) => {
 **Solution**:
 
 ```tsx
-import { useFileVersions } from '@ccaas/react-sdk';
+import { useFileVersions } from '@kedge-agentic/react-sdk';
 
 const handleUpload = async (file: File) => {
   const uploaded = await files.uploadFile(file);

@@ -1,4 +1,4 @@
-# @ccaas/common
+# @kedge-agentic/common
 
 Shared types, protocols, and utilities for Claude Code as a Service.
 
@@ -6,14 +6,14 @@ Shared types, protocols, and utilities for Claude Code as a Service.
 
 This package provides shared TypeScript definitions used across all CCAAS packages:
 
-- **Types** (`@ccaas/common/types`) - Core interfaces for sessions, messages, skills, tenants, etc.
-- **Protocols** (`@ccaas/common/protocols`) - Real-time event protocols for output updates
+- **Types** (`@kedge-agentic/common/types`) - Core interfaces for sessions, messages, skills, tenants, etc.
+- **Protocols** (`@kedge-agentic/common/protocols`) - Real-time event protocols for output updates
 
 ## Installation
 
 ```bash
 # Install from workspace
-npm install @ccaas/common
+npm install @kedge-agentic/common
 ```
 
 ## Usage
@@ -31,17 +31,17 @@ import {
   OutputUpdateEvent,
   validateOutputUpdateEvent,
   mapFieldsToFrontend,
-} from '@ccaas/common';
+} from '@kedge-agentic/common';
 ```
 
 ### Import Specific Modules
 
 ```typescript
 // Just types
-import { Session, Message, Skill } from '@ccaas/common/types';
+import { Session, Message, Skill } from '@kedge-agentic/common/types';
 
 // Just protocols
-import { OutputUpdateEvent, validateOutputUpdateEvent } from '@ccaas/common/protocols';
+import { OutputUpdateEvent, validateOutputUpdateEvent } from '@kedge-agentic/common/protocols';
 ```
 
 ## Types Module
@@ -49,7 +49,7 @@ import { OutputUpdateEvent, validateOutputUpdateEvent } from '@ccaas/common/prot
 ### Session Types
 
 ```typescript
-import { Session, SessionStatus, SessionSummary } from '@ccaas/common/types';
+import { Session, SessionStatus, SessionSummary } from '@kedge-agentic/common/types';
 
 const session: Session = {
   id: 'sess_123',
@@ -63,7 +63,7 @@ const session: Session = {
 ### Message Types
 
 ```typescript
-import { Message, ToolCall, ThinkingBlock } from '@ccaas/common/types';
+import { Message, ToolCall, ThinkingBlock } from '@kedge-agentic/common/types';
 
 const message: Message = {
   id: 'msg_123',
@@ -78,7 +78,7 @@ const message: Message = {
 ### Skill Types
 
 ```typescript
-import { Skill, SkillVersion, SkillTrigger } from '@ccaas/common/types';
+import { Skill, SkillVersion, SkillTrigger } from '@kedge-agentic/common/types';
 
 const skill: Skill = {
   id: 'skill_123',
@@ -97,7 +97,7 @@ const skill: Skill = {
 ### API Key Types
 
 ```typescript
-import { ApiKey, ApiKeyScope } from '@ccaas/common/types';
+import { ApiKey, ApiKeyScope } from '@kedge-agentic/common/types';
 
 const scopes: ApiKeyScope[] = ['skills:read', 'skills:execute', 'chat'];
 ```
@@ -109,7 +109,7 @@ import {
   TextDeltaEvent,
   ToolActivityEvent,
   AgentStatusEvent,
-} from '@ccaas/common/types';
+} from '@kedge-agentic/common/types';
 
 // Type-safe event handling
 socket.on('text_delta', (event: TextDeltaEvent) => {
@@ -129,7 +129,7 @@ import {
   validateOutputUpdateEvent,
   safeValidateOutputUpdateEvent,
   mapFieldsToFrontend,
-} from '@ccaas/common/protocols';
+} from '@kedge-agentic/common/protocols';
 
 // Backend: Emit event
 const event: OutputUpdateEvent = {
@@ -162,7 +162,7 @@ Some fields have different names in backend vs frontend:
 | homeworkTasks | homeworkAssessment |
 
 ```typescript
-import { mapFieldsToFrontend, mapFieldsToBackend } from '@ccaas/common/protocols';
+import { mapFieldsToFrontend, mapFieldsToBackend } from '@kedge-agentic/common/protocols';
 
 // Backend → Frontend
 const frontendData = mapFieldsToFrontend(backendData);

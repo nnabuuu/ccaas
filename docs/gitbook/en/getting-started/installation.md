@@ -25,7 +25,7 @@ npm install
 
 ## 3. Build the Shared Package
 
-The shared package (`@ccaas/common`) must be built first, as other packages depend on its type definitions:
+The shared package (`@kedge-agentic/common`) must be built first, as other packages depend on its type definitions:
 
 ```bash
 npm run build:shared
@@ -71,9 +71,9 @@ npm run build
 npm run test
 
 # Run tests for a specific package
-npm run test -w @ccaas/backend
-npm run test -w @ccaas/vue-sdk
-npm run test -w @ccaas/common
+npm run test -w @kedge-agentic/backend
+npm run test -w @kedge-agentic/vue-sdk
+npm run test -w @kedge-agentic/common
 ```
 
 ## Service Ports

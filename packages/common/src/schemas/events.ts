@@ -1,5 +1,5 @@
 /**
- * @ccaas/common/schemas/events
+ * @kedge-agentic/common/schemas/events
  *
  * Zod schemas for frontend event types.
  * These schemas match the backend's actual event structure.
@@ -74,9 +74,6 @@ export const ToolActivityEventSchema = BaseEventSchema.extend({
 
 export const GoalNarrativeSchema = z.object({
   title: z.string().optional(),
-  subject: z.string().optional(),
-  chapter: z.string().optional(),
-  edition: z.string().optional(),
 });
 
 export const ActiveSubAgentSchema = z.object({

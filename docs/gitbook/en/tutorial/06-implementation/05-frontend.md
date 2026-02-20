@@ -31,8 +31,8 @@ The frontend depends on two workspace packages from the monorepo:
 ```json
 {
   "dependencies": {
-    "@ccaas/common": "file:../../../packages/common",
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "socket.io-client": "^4.8.1"
@@ -40,12 +40,12 @@ The frontend depends on two workspace packages from the monorepo:
 }
 ```
 
-- **@ccaas/common** -- shared TypeScript types (`OutputUpdateEvent`, `TextDeltaEvent`, `TokenUsage`)
-- **@ccaas/react-sdk** -- modular hooks and pre-built components (`useAgentConnection`, `useAgentChat`, `useAgentStatus`, `usePageContext`, `useFiles`, `AgentActivityLine`, `OutputUpdateCard`)
+- **@kedge-agentic/common** -- shared TypeScript types (`OutputUpdateEvent`, `TextDeltaEvent`, `TokenUsage`)
+- **@kedge-agentic/react-sdk** -- modular hooks and pre-built components (`useAgentConnection`, `useAgentChat`, `useAgentStatus`, `usePageContext`, `useFiles`, `AgentActivityLine`, `OutputUpdateCard`)
 
 ## Step 1: Understand the SDK Hook Architecture
 
-The `@ccaas/react-sdk` provides five core hooks. Each handles one concern:
+The `@kedge-agentic/react-sdk` provides five core hooks. Each handles one concern:
 
 | Hook | Responsibility |
 |------|---------------|
@@ -84,7 +84,7 @@ import {
   usePageContext,
   useFiles,
   type Message,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
 import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
@@ -236,7 +236,7 @@ import {
   useMessageSplitter,
   AssistantMessageGroup,
   type ToolActivity,
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 import type { Message, SyncField } from '../types'
 
 export function ChatPanel({
@@ -346,7 +346,7 @@ The SDK provides `OutputUpdateCard` for rendering each pending update:
 ```typescript
 // frontend/src/components/SyncButton.tsx
 
-import { OutputUpdateCard } from '@ccaas/react-sdk'
+import { OutputUpdateCard } from '@kedge-agentic/react-sdk'
 import type { SyncField } from '../types'
 
 const FIELD_LABELS: Record<SyncField, string> = {
@@ -590,7 +590,7 @@ function App() {
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 2: Defining local event types instead of using @ccaas/common.** For platform events like `OutputUpdateEvent` and `TextDeltaEvent`, always import types from `@ccaas/common`. Defining local types leads to mismatches when the event format changes. Domain types (LessonPlan, Task) are Solution-specific and should be defined locally.
+**Pitfall 2: Defining local event types instead of using @kedge-agentic/common.** For platform events like `OutputUpdateEvent` and `TextDeltaEvent`, always import types from `@kedge-agentic/common`. Defining local types leads to mismatches when the event format changes. Domain types (LessonPlan, Task) are Solution-specific and should be defined locally.
 {% endhint %}
 
 {% hint style="danger" %}

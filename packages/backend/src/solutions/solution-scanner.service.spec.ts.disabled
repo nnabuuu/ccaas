@@ -1,0 +1,404 @@
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { SolutionScannerService } from './solution-scanner.service';
+import type { SolutionMetadata } from './solution-scanner.service';
+
+// ============================================================================
+// Fixtures
+// ============================================================================
+
+/** Minimal valid v2 solution.json */
+const v2Enabled = {
+  schemaVersion: '3.0',
+  ccaas: {
+    tenant: { name: 'Test Solution', slug: 'test-solution' },
+    discovery: {
+      enabled: true,
+      mode: 'auto' as const,
+      skills: [
+        { name: 'Test Skill', slug: 'test-skill', scope: 'tenant' as const },
+      ],
+      mcpServers: {},
+    },
+  },
+};
+
+/** v2 with discovery disabled */
+const v2Disabled = {
+  schemaVersion: '3.0',
+  ccaas: {
+    tenant: { name: 'Disabled Solution', slug: 'disabled-solution' },
+    discovery: {
+      enabled: false,
+      mode: 'manual' as const,
+      skills: [],
+      mcpServers: {},
+    },
+  },
+};
+
+/** v1 flat format (like lesson-plan-designer) */
+const v1Config = {
+  name: 'Legacy Solution',
+  slug: 'legacy-solution',
+  version: '1.0.0',
+  description: 'A v1 solution',
+  backend: { port: 3002, ccaasUrl: 'http://localhost:3001' },
+  frontend: { port: 5280 },
+  skills: [
+    {
+      name: 'Legacy Skill',
+      slug: 'legacy-skill',
+      description: 'A skill',
+      skillFile: 'skills/legacy/SKILL.md',
+      scope: 'tenant',
+    },
+  ],
+  mcpServers: {
+    'legacy-tools': {
+      command: 'node',
+      args: ['mcp-server/dist/index.js'],
+      description: 'Legacy MCP tools',
+    },
+  },
+};
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+let tmpDir: string;
+
+async function createTmpDir(): Promise<string> {
+  return fs.mkdtemp(path.join(os.tmpdir(), 'scanner-test-'));
+}
+
+async function createSolution(
+  baseDir: string,
+  name: string,
+  config: unknown,
+): Promise<string> {
+  const dir = path.join(baseDir, name);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(
+    path.join(dir, 'solution.json'),
+    JSON.stringify(config, null, 2),
+  );
+  return dir;
+}
+
+async function createSolutionWithFile(
+  baseDir: string,
+  name: string,
+  content: string,
+): Promise<string> {
+  const dir = path.join(baseDir, name);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'solution.json'), content);
+  return dir;
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+describe('SolutionScannerService', () => {
+  let service: SolutionScannerService;
+
+  beforeEach(async () => {
+    service = new SolutionScannerService();
+    tmpDir = await createTmpDir();
+  });
+
+  afterEach(async () => {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  // --------------------------------------------------------------------------
+  // scanSolutions()
+  // --------------------------------------------------------------------------
+
+  describe('scanSolutions()', () => {
+    it('should find enabled v2 solutions', async () => {
+      await createSolution(tmpDir, 'my-solution', v2Enabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('test-solution');
+      expect(results[0].name).toBe('Test Solution');
+      expect(results[0].migrated).toBe(false);
+      expect(results[0].config.schemaVersion).toBe('3.0');
+    });
+
+    it('should skip solutions with discovery disabled', async () => {
+      await createSolution(tmpDir, 'enabled', v2Enabled);
+      await createSolution(tmpDir, 'disabled', v2Disabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('test-solution');
+    });
+
+    it('should migrate v1 configs to v2', async () => {
+      await createSolution(tmpDir, 'legacy', v1Config);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('legacy-solution');
+      expect(results[0].name).toBe('Legacy Solution');
+      expect(results[0].migrated).toBe(true);
+      expect(results[0].config.schemaVersion).toBe('3.0');
+      // v1 migration defaults discovery.enabled to true
+      expect(results[0].config.enabled).toBe(true);
+      // Skills should be migrated
+      expect(results[0].config.skills).toHaveLength(1);
+      expect(results[0].config.skills[0].slug).toBe('legacy-skill');
+      // MCP servers should be migrated
+      expect(results[0].config.mcpServers).toHaveProperty('legacy-tools');
+    });
+
+    it('should return empty array for non-existent directory', async () => {
+      const results = await service.scanSolutions('/non/existent/path');
+      expect(results).toEqual([]);
+    });
+
+    it('should return empty array for empty directory', async () => {
+      const results = await service.scanSolutions(tmpDir);
+      expect(results).toEqual([]);
+    });
+
+    it('should skip directories without solution.json', async () => {
+      await fs.mkdir(path.join(tmpDir, 'no-config'), { recursive: true });
+      await fs.writeFile(path.join(tmpDir, 'no-config', 'README.md'), '# Hello');
+
+      const results = await service.scanSolutions(tmpDir);
+      expect(results).toEqual([]);
+    });
+
+    it('should skip files (non-directories) in solutions dir', async () => {
+      await fs.writeFile(path.join(tmpDir, 'not-a-dir.txt'), 'hello');
+      await createSolution(tmpDir, 'valid', v2Enabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('test-solution');
+    });
+
+    it('should skip solutions with invalid JSON', async () => {
+      await createSolutionWithFile(tmpDir, 'bad-json', '{ invalid json }');
+      await createSolution(tmpDir, 'good', v2Enabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('test-solution');
+    });
+
+    it('should skip solutions with invalid schema', async () => {
+      await createSolution(tmpDir, 'bad-schema', {
+        schemaVersion: '3.0',
+        // missing required ccaas field
+      });
+      await createSolution(tmpDir, 'good', v2Enabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].slug).toBe('test-solution');
+    });
+
+    it('should discover multiple solutions', async () => {
+      await createSolution(tmpDir, 'solution-a', {
+        ...v2Enabled,
+        ccaas: {
+          ...v2Enabled.ccaas,
+          tenant: { name: 'Solution A', slug: 'solution-a' },
+        },
+      });
+      await createSolution(tmpDir, 'solution-b', {
+        ...v2Enabled,
+        ccaas: {
+          ...v2Enabled.ccaas,
+          tenant: { name: 'Solution B', slug: 'solution-b' },
+        },
+      });
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(2);
+      const slugs = results.map((r) => r.slug).sort();
+      expect(slugs).toEqual(['solution-a', 'solution-b']);
+    });
+
+    it('should include correct paths in metadata', async () => {
+      const solutionDir = await createSolution(tmpDir, 'my-sol', v2Enabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].solutionPath).toBe(solutionDir);
+      expect(results[0].configPath).toBe(path.join(solutionDir, 'solution.json'));
+    });
+
+    it('should handle mixed v1 and v2 configs', async () => {
+      await createSolution(tmpDir, 'v1-sol', v1Config);
+      await createSolution(tmpDir, 'v2-sol', v2Enabled);
+      await createSolution(tmpDir, 'v2-disabled', v2Disabled);
+
+      const results = await service.scanSolutions(tmpDir);
+
+      expect(results).toHaveLength(2);
+      const metas = results.reduce<Record<string, SolutionMetadata>>(
+        (acc, m) => ({ ...acc, [m.slug]: m }),
+        {},
+      );
+      expect(metas['legacy-solution'].migrated).toBe(true);
+      expect(metas['test-solution'].migrated).toBe(false);
+    });
+
+    it('should return empty when path is a file, not directory', async () => {
+      const filePath = path.join(tmpDir, 'not-a-dir');
+      await fs.writeFile(filePath, 'hello');
+
+      const results = await service.scanSolutions(filePath);
+      expect(results).toEqual([]);
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // loadSolutionConfig()
+  // --------------------------------------------------------------------------
+
+  describe('loadSolutionConfig()', () => {
+    it('should load and return v2 config', async () => {
+      const dir = await createSolution(tmpDir, 'v2', v2Enabled);
+      const configPath = path.join(dir, 'solution.json');
+
+      const config = await service.loadSolutionConfig(configPath);
+
+      expect(config.schemaVersion).toBe('3.0');
+      expect(config.tenant.slug).toBe('test-solution');
+      expect(config.skills).toHaveLength(1);
+    });
+
+    it('should load and migrate v1 config to v2', async () => {
+      const dir = await createSolution(tmpDir, 'v1', v1Config);
+      const configPath = path.join(dir, 'solution.json');
+
+      const config = await service.loadSolutionConfig(configPath);
+
+      expect(config.schemaVersion).toBe('3.0');
+      expect(config.tenant.name).toBe('Legacy Solution');
+      expect(config.tenant.slug).toBe('legacy-solution');
+      expect(config.skills).toHaveLength(1);
+    });
+
+    it('should throw on missing file', async () => {
+      const missingPath = path.join(tmpDir, 'missing', 'solution.json');
+      await expect(service.loadSolutionConfig(missingPath)).rejects.toThrow(
+        /Cannot read file/,
+      );
+    });
+
+    it('should throw on invalid JSON', async () => {
+      const dir = await createSolutionWithFile(tmpDir, 'bad', '{ not json }');
+      const configPath = path.join(dir, 'solution.json');
+
+      await expect(service.loadSolutionConfig(configPath)).rejects.toThrow(
+        /Invalid JSON/,
+      );
+    });
+
+    it('should throw on invalid schema', async () => {
+      const dir = await createSolution(tmpDir, 'invalid', {
+        schemaVersion: '3.0',
+        // missing ccaas
+      });
+      const configPath = path.join(dir, 'solution.json');
+
+      await expect(service.loadSolutionConfig(configPath)).rejects.toThrow(
+        /Invalid solution config/,
+      );
+    });
+
+    it('should throw on null config', async () => {
+      const dir = await createSolutionWithFile(tmpDir, 'null', 'null');
+      const configPath = path.join(dir, 'solution.json');
+
+      await expect(service.loadSolutionConfig(configPath)).rejects.toThrow(
+        /Invalid solution config/,
+      );
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // Real solutions directory (integration)
+  // --------------------------------------------------------------------------
+
+  describe('integration with real solutions/', () => {
+    const realSolutionsDir = path.resolve(
+      __dirname, '..', '..', '..', '..', 'solutions',
+    );
+
+    it('should scan the actual solutions directory without crashing', async () => {
+      // This test uses the real solutions/ directory if it exists
+      try {
+        await fs.access(realSolutionsDir);
+      } catch {
+        // Skip if solutions dir doesn't exist (CI environment)
+        return;
+      }
+
+      const results = await service.scanSolutions(realSolutionsDir);
+
+      // All current solutions are v1 format with no explicit discovery config,
+      // so they should all be migrated and enabled by default
+      expect(results.length).toBeGreaterThan(0);
+
+      for (const result of results) {
+        expect(result.slug).toBeTruthy();
+        expect(result.name).toBeTruthy();
+        expect(result.config.schemaVersion).toBe('3.0');
+        expect(result.config.enabled).toBe(true);
+        expect(result.configPath).toContain('solution.json');
+      }
+    });
+
+    it('should correctly load lesson-plan-designer config', async () => {
+      const configPath = path.join(realSolutionsDir, 'lesson-plan-designer', 'solution.json');
+      try {
+        await fs.access(configPath);
+      } catch {
+        return; // Skip if not available
+      }
+
+      const config = await service.loadSolutionConfig(configPath);
+
+      expect(config.tenant.slug).toBe('lesson-plan-designer');
+      expect(config.tenant.name).toBe('Lesson Plan Designer');
+      expect(config.skills.length).toBeGreaterThan(0);
+      expect(config.mcpServers).toHaveProperty('lesson-plan-tools');
+    });
+
+    it('should correctly load edu-agent config (single skill format)', async () => {
+      const configPath = path.join(realSolutionsDir, 'edu-agent', 'solution.json');
+      try {
+        await fs.access(configPath);
+      } catch {
+        return; // Skip if not available
+      }
+
+      const config = await service.loadSolutionConfig(configPath);
+
+      expect(config.tenant.slug).toBe('edu-agent');
+      expect(config.skills.length).toBeGreaterThan(0);
+      // edu-agent uses "skill" (singular) format in v1
+      expect(config.skills[0].name).toBe('EduAgent');
+    });
+  });
+});

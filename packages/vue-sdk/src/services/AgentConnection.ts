@@ -7,11 +7,11 @@
  * @example
  * ```ts
  * // Production usage - use default singleton
- * import { agentConnection } from '@ccaas/vue-sdk'
+ * import { agentConnection } from '@kedge-agentic/vue-sdk'
  * agentConnection.connect()
  *
  * // Testing - use factory for isolation
- * import { createAgentConnection } from '@ccaas/vue-sdk'
+ * import { createAgentConnection } from '@kedge-agentic/vue-sdk'
  * const connection = createAgentConnection()
  * ```
  */

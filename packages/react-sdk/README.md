@@ -1,4 +1,4 @@
-# @ccaas/react-sdk
+# @kedge-agentic/react-sdk
 
 React SDK for building KedgeAgentic solutions with chat UI, real-time updates, and agent status tracking.
 
@@ -10,12 +10,12 @@ React SDK for building KedgeAgentic solutions with chat UI, real-time updates, a
 - **Agent Tracking**: Monitor tool execution, subagents, thinking, and todos
 - **Form Sync**: Output update protocol for AI-suggested form changes
 - **Layout Controls**: Multiple chat modes (default, overlay, expanded)
-- **Type Safe**: Full TypeScript support with types from @ccaas/common
+- **Type Safe**: Full TypeScript support with types from @kedge-agentic/common
 
 ## Installation
 
 ```bash
-npm install @ccaas/react-sdk @ccaas/common socket.io-client
+npm install @kedge-agentic/react-sdk @kedge-agentic/common socket.io-client
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ import {
   useAgentChat,
   useAgentStatus,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function App() {
   const connection = useAgentConnection({
@@ -334,7 +334,7 @@ import {
   useAgentChat,
   useAgentStatus,
   useChatLayout
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 const TENANT_ID = 'my-solution'
 
@@ -428,7 +428,7 @@ function useFormSync<T>(initialForm: T) {
 
 ## TypeScript Support
 
-All components and hooks are fully typed. Import types from `@ccaas/common`:
+All components and hooks are fully typed. Import types from `@kedge-agentic/common`:
 
 ```tsx
 import type {
@@ -437,12 +437,12 @@ import type {
   ActiveSubAgent,
   TodoItem,
   OutputUpdateEvent
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 
 import type {
   AgentConnectionConfig,
   ChatLayoutMode
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 ```
 
 ## Testing
@@ -545,7 +545,7 @@ See complete examples in:
 
 When adding new components or hooks:
 
-1. Add TypeScript types to `@ccaas/common` if shared
+1. Add TypeScript types to `@kedge-agentic/common` if shared
 2. Document props with JSDoc comments
 3. Add examples to this README
 4. Update CHAT_INTEGRATION_GUIDE.md if needed

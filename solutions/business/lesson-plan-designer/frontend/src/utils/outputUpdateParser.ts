@@ -1,4 +1,4 @@
-import type { OutputUpdateEvent } from '@ccaas/common'
+import type { OutputUpdateEvent } from '@kedge-agentic/common'
 import type { SyncField, OutputUpdate } from '../types'
 
 /**

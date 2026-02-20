@@ -1,6 +1,6 @@
 {
-  "name": "@ccaas/react-sdk",
-  "version": "1.0.0",
+  "name": "@kedge-agentic/react-sdk",
+  "version": "0.0.1-SNAPSHOT",
   "description": "React hooks and utilities for integrating with Claude-Code-as-a-Service backend",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -52,7 +52,7 @@
     "vitest": "^1.0.0"
   },
   "dependencies": {
-    "@ccaas/common": "^1.0.0",
+    "@kedge-agentic/common": "*",
     "@tanstack/react-query": "^5.90.21",
     "date-fns": "^4.1.0"
   },

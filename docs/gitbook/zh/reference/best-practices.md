@@ -46,10 +46,10 @@ const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
 
 ### 使用共享类型
 
-始终从 `@ccaas/common` 导入共享类型，保持前后端类型一致：
+始终从 `@kedge-agentic/common` 导入共享类型，保持前后端类型一致：
 
 ```typescript
-import { Session, Skill, TokenUsage } from '@ccaas/common'
+import { Session, Skill, TokenUsage } from '@kedge-agentic/common'
 ```
 
 ### 运行时验证

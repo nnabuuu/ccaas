@@ -154,7 +154,7 @@ allowedTools:
 
 ## 前端直连 CCAAS
 
-前端通过 `@ccaas/react-sdk` 直接连接 CCAAS 后端，无需 Solution 后端中继：
+前端通过 `@kedge-agentic/react-sdk` 直接连接 CCAAS 后端，无需 Solution 后端中继：
 
 ```tsx
 import {
@@ -162,7 +162,7 @@ import {
   useAgentChat,
   useAgentStatus,
   ChatPanel
-} from '@ccaas/react-sdk'
+} from '@kedge-agentic/react-sdk'
 
 function MySolution() {
   // 直连 CCAAS 后端
@@ -317,7 +317,7 @@ const domainData = await fetch('http://localhost:3002/api/lessons')
 
 ```typescript
 // 通过 React SDK 的 useOutputSync hook 处理
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 
 const sync = useOutputSync({
   connection,

@@ -48,7 +48,7 @@ curl http://localhost:3001/api/v1/chat/status
 
 ### Send a Message (Recommended: Use SDK)
 
-> **💡 Tip**: Calling REST API directly requires managing WebSocket connections simultaneously. We recommend using `@ccaas/react-sdk` or `@ccaas/vue-sdk` for integration.
+> **💡 Tip**: Calling REST API directly requires managing WebSocket connections simultaneously. We recommend using `@kedge-agentic/react-sdk` or `@kedge-agentic/vue-sdk` for integration.
 
 If you really need to call the API directly:
 
@@ -109,7 +109,7 @@ while (true) {
 }
 ```
 
-> **Note**: Socket.IO transport is deprecated. Use `@ccaas/react-sdk` or `@ccaas/vue-sdk` for a higher-level integration that handles SSE automatically.
+> **Note**: Socket.IO transport is deprecated. Use `@kedge-agentic/react-sdk` or `@kedge-agentic/vue-sdk` for a higher-level integration that handles SSE automatically.
 
 ## Next Steps
 

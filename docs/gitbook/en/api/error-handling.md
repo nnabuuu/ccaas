@@ -670,4 +670,4 @@ class MetricsCollector {
 
 - [REST API Endpoints](rest.md) - Complete API reference
 - [WebSocket Events](websocket.md) - Real-time event stream format
-- [@ccaas/common Types](shared-types.md) - TypeScript type definitions
+- [@kedge-agentic/common Types](shared-types.md) - TypeScript type definitions

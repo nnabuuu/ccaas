@@ -56,7 +56,7 @@ describe('findMonorepoRoot', () => {
 
     // Create: tmpDir/packages/backend/package.json (without workspaces)
     await writeJson(path.join(tmpDir, 'packages', 'backend', 'package.json'), {
-      name: '@ccaas/backend',
+      name: '@kedge-agentic/backend',
       version: '1.0.0',
     });
 

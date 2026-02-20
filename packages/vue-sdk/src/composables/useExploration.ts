@@ -90,7 +90,7 @@ const ACTION_LABELS: Record<string, string> = {
  * @example
  * ```vue
  * <script setup>
- * import { useExploration } from '@ccaas/vue-sdk'
+ * import { useExploration } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   exploration,

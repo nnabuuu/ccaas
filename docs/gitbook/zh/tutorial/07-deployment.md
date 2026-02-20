@@ -171,7 +171,7 @@ COPY package*.json ./
 COPY packages/shared/package*.json ./packages/shared/
 COPY packages/backend/package*.json ./packages/backend/
 
-RUN npm ci --workspace=@ccaas/backend --workspace=@ccaas/common
+RUN npm ci --workspace=@kedge-agentic/backend --workspace=@kedge-agentic/common
 
 COPY packages/shared/ ./packages/shared/
 COPY packages/backend/ ./packages/backend/

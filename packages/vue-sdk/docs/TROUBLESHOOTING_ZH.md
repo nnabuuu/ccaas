@@ -1,6 +1,6 @@
 # Vue SDK 故障排除指南
 
-`@ccaas/vue-sdk` 的常见问题、调试技术和解决方案。
+`@kedge-agentic/vue-sdk` 的常见问题、调试技术和解决方案。
 
 ## 目录
 
@@ -65,7 +65,7 @@ const agentState = useAgentState()
 <!-- ✅ 在应用级别提供状态 -->
 <script setup lang="ts">
 import { provide } from 'vue'
-import { AgentStateKey, createAgentState } from '@ccaas/vue-sdk'
+import { AgentStateKey, createAgentState } from '@kedge-agentic/vue-sdk'
 
 const agentState = createAgentState()
 provide(AgentStateKey, agentState)
@@ -106,7 +106,7 @@ const title = computed(() => formData.value.title)
 
 **调试：**
 ```typescript
-import { useAgentChat } from '@ccaas/vue-sdk'
+import { useAgentChat } from '@kedge-agentic/vue-sdk'
 
 const { connectionState } = useAgentChat()
 

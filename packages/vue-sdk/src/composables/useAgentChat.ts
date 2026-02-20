@@ -7,7 +7,7 @@
  * @example
  * ```vue
  * <script setup>
- * import { useAgentChat } from '@ccaas/vue-sdk'
+ * import { useAgentChat } from '@kedge-agentic/vue-sdk'
  *
  * const {
  *   isConnected,
@@ -123,7 +123,7 @@ export interface UseAgentChatReturn {
  * @example
  * ```vue
  * // Migrate to:
- * import { useSseChat } from '@ccaas/vue-sdk'
+ * import { useSseChat } from '@kedge-agentic/vue-sdk'
  * ```
  */
 export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatReturn {

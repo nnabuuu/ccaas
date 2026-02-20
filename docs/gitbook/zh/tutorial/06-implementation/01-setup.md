@@ -337,8 +337,8 @@ export class AppModule {}
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@ccaas/common": "file:../../../packages/common",
-    "@ccaas/react-sdk": "file:../../../packages/react-sdk",
+    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -364,8 +364,8 @@ export class AppModule {}
 
 **关键依赖：**
 
-- `@ccaas/react-sdk`：提供 WebSocket 连接、聊天和 output\_update 处理的 Hooks
-- `@ccaas/common`：平台中使用的共享类型
+- `@kedge-agentic/react-sdk`：提供 WebSocket 连接、聊天和 output\_update 处理的 Hooks
+- `@kedge-agentic/common`：平台中使用的共享类型
 - `socket.io-client`：用于实时通信的 WebSocket 客户端
 - `lucide-react`：图标库
 

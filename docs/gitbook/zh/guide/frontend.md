@@ -2,14 +2,14 @@
 
 ## 概述
 
-即见Agentic 提供 Vue SDK（`@ccaas/vue-sdk`）和 React SDK（`@ccaas/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
+即见Agentic 提供 Vue SDK（`@kedge-agentic/vue-sdk`）和 React SDK（`@kedge-agentic/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
 
 ## Vue SDK 集成
 
 ### 安装
 
 ```bash
-npm install @ccaas/vue-sdk
+npm install @kedge-agentic/vue-sdk
 ```
 
 ### 基础架构
@@ -46,7 +46,7 @@ Types & Symbols 层
 ```vue
 <!-- 组件中使用 -->
 <script setup lang="ts">
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName } = useAgentState()
 const { progress, currentTodo, isComplete } = useTodoProgress()
@@ -65,7 +65,7 @@ const { progress, currentTodo, isComplete } = useTodoProgress()
 使用 `useFormBridge` 实现 AI Agent 与表单的双向数据同步：
 
 ```typescript
-import { useFormBridge } from '@ccaas/vue-sdk'
+import { useFormBridge } from '@kedge-agentic/vue-sdk'
 
 const form = reactive({ title: '', content: '' })
 
@@ -89,7 +89,7 @@ const { isActive } = useFormBridge({
 使用 `useAIEditing` 管理 AI 批量编辑：
 
 ```typescript
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 const {
   aiEditingMode,
@@ -110,12 +110,12 @@ const {
 })
 ```
 
-## React SDK 集成 (@ccaas/react-sdk)
+## React SDK 集成 (@kedge-agentic/react-sdk)
 
 ### 安装
 
 ```bash
-npm install @ccaas/react-sdk
+npm install @kedge-agentic/react-sdk
 ```
 
 ### 核心 Hooks
@@ -127,7 +127,7 @@ React SDK 提供六个核心 Hooks，用于 Solution 开发：
 管理与 CCAAS 后端的 WebSocket 连接：
 
 ```typescript
-import { useAgentConnection } from '@ccaas/react-sdk'
+import { useAgentConnection } from '@kedge-agentic/react-sdk'
 
 const connection = useAgentConnection({
   serverUrl: 'http://localhost:3001',  // CCAAS 后端
@@ -145,7 +145,7 @@ const connection = useAgentConnection({
 管理聊天消息与流式传输：
 
 ```typescript
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 const chat = useAgentChat({
   sessionId,
@@ -162,7 +162,7 @@ const chat = useAgentChat({
 追踪 Agent 处理状态：
 
 ```typescript
-import { useAgentStatus } from '@ccaas/react-sdk'
+import { useAgentStatus } from '@kedge-agentic/react-sdk'
 
 const status = useAgentStatus()
 
@@ -176,7 +176,7 @@ const status = useAgentStatus()
 上下文感知的 Skill 触发：
 
 ```typescript
-import { usePageContext } from '@ccaas/react-sdk'
+import { usePageContext } from '@kedge-agentic/react-sdk'
 
 const { setContext } = usePageContext()
 
@@ -193,7 +193,7 @@ setContext({
 文件上传与管理：
 
 ```typescript
-import { useFiles } from '@ccaas/react-sdk'
+import { useFiles } from '@kedge-agentic/react-sdk'
 
 const { files, uploadFile, removeFile } = useFiles({ sessionId })
 
@@ -207,7 +207,7 @@ const handleUpload = async (file: File) => {
 管理 AI 输出字段的 pending 状态（`output_update` 事件 → 用户点击 Sync → 应用到表单）。
 
 ```typescript
-import { useOutputSync } from '@ccaas/react-sdk'
+import { useOutputSync } from '@kedge-agentic/react-sdk'
 
 const { pendingUpdates, addPendingUpdate, removePendingUpdate, clearPendingUpdates } =
   useOutputSync()
@@ -242,7 +242,7 @@ clearPendingUpdates()
 
 ## 自定义 React 集成（高级）
 
-> 大多数场景下，建议优先使用上文介绍的 `@ccaas/react-sdk` Hooks。
+> 大多数场景下，建议优先使用上文介绍的 `@kedge-agentic/react-sdk` Hooks。
 
 React 应用也可以通过 Socket.io 直接集成。以下是底层 Hook 模式。
 
@@ -310,7 +310,7 @@ useEffect(() => {
 
 ### 同步管理
 
-> **如果使用 `@ccaas/react-sdk`**，请直接使用 [`useOutputSync`](#6-useoutputsync)，该 Hook 已内置此模式。
+> **如果使用 `@kedge-agentic/react-sdk`**，请直接使用 [`useOutputSync`](#6-useoutputsync)，该 Hook 已内置此模式。
 
 以下是不使用 SDK 的自定义集成实现方式：
 
@@ -361,7 +361,7 @@ export function useSyncManager() {
 
 ## 最佳实践
 
-1. **使用类型定义** —— 从 `@ccaas/common` 导入事件类型
+1. **使用类型定义** —— 从 `@kedge-agentic/common` 导入事件类型
 2. **统一解析** —— 使用 `parseOutputUpdateEvent` 处理 output\_update
 3. **错误处理** —— 监听 `error` 事件并提供用户反馈
 4. **状态指示** —— 利用 `agent_status` 和 `tool_activity` 展示执行进度

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useFileAttachment } from '../useFileAttachment'
-import type { FileMetadata } from '@ccaas/react-sdk'
+import type { FileMetadata } from '@kedge-agentic/react-sdk'
 
 // Mock fetch globally
 const mockFetch = vi.fn()

@@ -77,7 +77,7 @@ fi
 1. Create directory
 2. Create solution.json
 3. **Create setup.sh with tenant creation** (critical step)
-4. Create frontend with @ccaas/react-sdk
+4. Create frontend with @kedge-agentic/react-sdk
 5. Configure tenantId in frontend
 6. Run setup
 7. Test

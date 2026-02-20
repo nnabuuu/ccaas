@@ -125,7 +125,7 @@ Click **Save**.
 ### 3. Use Template in Frontend
 
 ```typescript
-import { useAgentChat } from '@ccaas/react-sdk'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
 export function TeacherView() {
   const chat = useAgentChat({
@@ -462,5 +462,5 @@ curl -H "Authorization: Bearer <key>" \
 ## Related Guides
 
 - [Admin API Key Management](admin-api-keys.md) — Creating admin API keys
-- [Frontend Integration Guide](frontend.md) — Using `@ccaas/react-sdk`
+- [Frontend Integration Guide](frontend.md) — Using `@kedge-agentic/react-sdk`
 - [Skill Writing Guide](skill-writing.md) — Creating custom skills

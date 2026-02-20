@@ -36,10 +36,10 @@ cd solutions/ccaas-demo
 
 ## React SDK 快速集成（推荐）
 
-推荐使用 `@ccaas/react-sdk` 与后端交互，无需手动处理 SSE 流或状态管理：
+推荐使用 `@kedge-agentic/react-sdk` 与后端交互，无需手动处理 SSE 流或状态管理：
 
 ```tsx
-import { useAgentConnection, useAgentChat, useAgentStatus, ChatPanel } from '@ccaas/react-sdk'
+import { useAgentConnection, useAgentChat, useAgentStatus, ChatPanel } from '@kedge-agentic/react-sdk'
 
 function App() {
   const connection = useAgentConnection({

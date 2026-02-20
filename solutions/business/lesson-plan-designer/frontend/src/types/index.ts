@@ -164,19 +164,19 @@ export interface ChatEvent {
   }
 }
 
-// Re-export from @ccaas/common for type consistency
+// Re-export from @kedge-agentic/common for type consistency
 export type {
   TextDeltaEvent,
   OutputUpdateEvent,
   ActiveSubAgent,
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
-} from '@ccaas/common'
+} from '@kedge-agentic/common'
 
 // Import for local use in SessionState
-import type { ActiveSubAgent } from '@ccaas/common'
+import type { ActiveSubAgent } from '@kedge-agentic/common'
 
-// Note: AgentStatusEvent is kept local because @ccaas/common has nested AgentStatusError
+// Note: AgentStatusEvent is kept local because @kedge-agentic/common has nested AgentStatusError
 // but the backend actually sends `error: string` directly
 export interface AgentStatusEvent {
   status: 'running' | 'complete' | 'error' | 'cancelled'
@@ -326,8 +326,8 @@ export interface TextbookChapter {
   children?: TextbookChapter[]
 }
 
-// Todo tracking types - now using types from @ccaas/common
-export type { EventTodoItem as TodoItem } from '@ccaas/common'
+// Todo tracking types - now using types from @kedge-agentic/common
+export type { EventTodoItem as TodoItem } from '@kedge-agentic/common'
 
 // TodoStats is solution-specific (extends common type)
 export interface TodoStats {

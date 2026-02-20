@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseOutputUpdateEvent } from '../src/utils/outputUpdateParser'
-import type { OutputUpdateEvent } from '@ccaas/common'
+import type { OutputUpdateEvent } from '@kedge-agentic/common'
 import type { SyncField } from '../src/types'
 
 describe('parseOutputUpdateEvent', () => {

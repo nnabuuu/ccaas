@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useFiles, FileUploadButton, type UseAgentConnectionReturn, type FileMetadata } from '@ccaas/react-sdk'
+import { useFiles, FileUploadButton, type UseAgentConnectionReturn, type FileMetadata } from '@kedge-agentic/react-sdk'
 import { Download, Paperclip, File, Music, FileText, FileCode, Presentation } from 'lucide-react'
 
 interface FilesViewProps {

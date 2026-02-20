@@ -1,4 +1,4 @@
-import { DisplaySegment, InlineToolCard } from '@ccaas/react-sdk'
+import { DisplaySegment, InlineToolCard } from '@kedge-agentic/react-sdk'
 
 interface SegmentBubbleProps {
   segment: DisplaySegment

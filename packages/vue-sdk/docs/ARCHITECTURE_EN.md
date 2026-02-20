@@ -1,8 +1,8 @@
-# @ccaas/vue-sdk Architecture Documentation
+# @kedge-agentic/vue-sdk Architecture Documentation
 
 ## Overview
 
-`@ccaas/vue-sdk` is a Vue 3 Composition API-based SDK for integrating with Claude-Code-as-a-Service backend services. The SDK follows a **Composables-First** design philosophy, providing reusable state management and interaction patterns.
+`@kedge-agentic/vue-sdk` is a Vue 3 Composition API-based SDK for integrating with Claude-Code-as-a-Service backend services. The SDK follows a **Composables-First** design philosophy, providing reusable state management and interaction patterns.
 
 ## Design Philosophy
 
@@ -19,7 +19,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                        @ccaas/vue-sdk                                   │
+│                        @kedge-agentic/vue-sdk                                   │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌────────────────────────────────────────────────────────────────────┐ │
@@ -59,7 +59,7 @@
                                     │
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                    @ccaas/common                                        │
+│                    @kedge-agentic/common                                        │
 │                    (Shared Protocol Definitions)                        │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -338,7 +338,7 @@ dist/
 
 ```vue
 <script setup lang="ts">
-import { useAgentState, useTodoProgress } from '@ccaas/vue-sdk'
+import { useAgentState, useTodoProgress } from '@kedge-agentic/vue-sdk'
 
 const { isProcessing, currentToolName } = useAgentState()
 const { progress, currentTodo, isComplete } = useTodoProgress()
@@ -362,7 +362,7 @@ const { progress, currentTodo, isComplete } = useTodoProgress()
 // stores/lessonPlanStore.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { useAIEditing } from '@ccaas/vue-sdk'
+import { useAIEditing } from '@kedge-agentic/vue-sdk'
 
 export const useLessonPlanStore = defineStore('lessonPlan', () => {
   const sections = ref({

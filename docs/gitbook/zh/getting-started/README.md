@@ -21,10 +21,10 @@
 ccaas/
 ├── package.json                # Workspace 根配置（npm workspaces）
 ├── packages/
-│   ├── backend/                # @ccaas/backend - NestJS 后端服务
-│   ├── admin/                  # @ccaas/admin - Vue 3 管理后台
-│   ├── vue-sdk/                # @ccaas/vue-sdk - Vue 前端 SDK
-│   └── shared/                 # @ccaas/common - 共享类型与协议
+│   ├── backend/                # @kedge-agentic/backend - NestJS 后端服务
+│   ├── admin/                  # @kedge-agentic/admin - Vue 3 管理后台
+│   ├── vue-sdk/                # @kedge-agentic/vue-sdk - Vue 前端 SDK
+│   └── shared/                 # @kedge-agentic/common - 共享类型与协议
 ├── solutions/                  # Solution 示例项目
 │   ├── ccaas-demo/             # 基础演示
 │   ├── lesson-plan-designer/   # 教案设计助手

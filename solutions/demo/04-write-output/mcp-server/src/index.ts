@@ -18,6 +18,7 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js'
+import { OutputUpdatePayloadSchema } from '@kedge-agentic/common/schemas'
 
 const VALID_FIELDS = ['title', 'summary'] as const
 type ValidField = (typeof VALID_FIELDS)[number]
@@ -83,11 +84,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     //   content: [{ type: 'text', text: JSON.stringify({ success: true }) }],
     //   _meta: { outputUpdate: { field, value, preview } },  // EventMapper ignores _meta!
     // }
+    const payload = OutputUpdatePayloadSchema.parse({
+      data: { field, value, preview },
+      status: 'success',
+    })
     return {
-      content: [{ type: 'text', text: JSON.stringify({
-        data: { field, value, preview },
-        status: 'success',
-      })}],
+      content: [{ type: 'text', text: JSON.stringify(payload) }],
     }
   }
 
