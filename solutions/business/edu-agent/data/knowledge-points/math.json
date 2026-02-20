@@ -1,0 +1,97 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "math",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "math-algebra",
+      "subject": "math",
+      "name": "代数",
+      "description": "研究数量关系和运算规律",
+      "children": [
+        {
+          "id": "math-algebra-equation",
+          "subject": "math",
+          "name": "方程与不等式",
+          "description": "包含未知数的等式和不等式",
+          "commonProblemTypes": ["一元一次方程", "一元二次方程", "不等式组"],
+          "relatedFormulas": ["ax + b = 0", "ax² + bx + c = 0", "求根公式"]
+        },
+        {
+          "id": "math-algebra-function",
+          "subject": "math",
+          "name": "函数",
+          "description": "变量之间的对应关系",
+          "commonProblemTypes": ["函数图像", "函数性质", "函数应用"],
+          "relatedFormulas": ["y = kx + b", "y = ax²", "y = aˣ"]
+        },
+        {
+          "id": "math-algebra-sequence",
+          "subject": "math",
+          "name": "数列",
+          "description": "按规律排列的数",
+          "commonProblemTypes": ["等差数列", "等比数列", "求和"],
+          "relatedFormulas": ["aₙ = a₁ + (n-1)d", "Sₙ = n(a₁+aₙ)/2"]
+        }
+      ]
+    },
+    {
+      "id": "math-geometry",
+      "subject": "math",
+      "name": "几何",
+      "description": "研究图形的形状、大小和位置关系",
+      "children": [
+        {
+          "id": "math-geometry-plane",
+          "subject": "math",
+          "name": "平面几何",
+          "description": "平面上的图形",
+          "commonProblemTypes": ["三角形", "四边形", "圆"],
+          "relatedFormulas": ["S = ½ah", "S = πr²", "勾股定理"]
+        },
+        {
+          "id": "math-geometry-solid",
+          "subject": "math",
+          "name": "立体几何",
+          "description": "三维空间中的图形",
+          "commonProblemTypes": ["棱柱", "棱锥", "球"],
+          "relatedFormulas": ["V = Sh", "V = ⅓Sh", "V = ⁴⁄₃πr³"]
+        },
+        {
+          "id": "math-geometry-coordinate",
+          "subject": "math",
+          "name": "解析几何",
+          "description": "用代数方法研究几何",
+          "commonProblemTypes": ["直线方程", "圆的方程", "圆锥曲线"],
+          "relatedFormulas": ["y - y₁ = k(x - x₁)", "(x-a)² + (y-b)² = r²"]
+        }
+      ]
+    },
+    {
+      "id": "math-stats",
+      "subject": "math",
+      "name": "概率与统计",
+      "description": "研究随机现象的规律性",
+      "children": [
+        {
+          "id": "math-stats-probability",
+          "subject": "math",
+          "name": "概率",
+          "description": "事件发生的可能性",
+          "commonProblemTypes": ["古典概型", "条件概率", "独立事件"],
+          "relatedFormulas": ["P(A) = m/n", "P(A|B) = P(AB)/P(B)"]
+        },
+        {
+          "id": "math-stats-statistics",
+          "subject": "math",
+          "name": "统计",
+          "description": "数据的收集、整理和分析",
+          "commonProblemTypes": ["平均数", "方差", "抽样调查"],
+          "relatedFormulas": ["x̄ = Σxᵢ/n", "s² = Σ(xᵢ-x̄)²/n"]
+        }
+      ]
+    }
+  ]
+}

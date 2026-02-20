@@ -1,0 +1,574 @@
+---
+name: Quiz Analyzer - Knowledge Point Matching
+slug: knowledge-point-matching
+description: 智能标注题目知识点，支持多知识点综合题
+scope: tenant
+triggers:
+  - type: keyword
+    value: 标注知识点
+    priority: 10
+  - type: keyword
+    value: 这道题考察
+    priority: 9
+  - type: keyword
+    value: 知识点
+    priority: 8
+  - type: keyword
+    value: 批量分析
+    priority: 10
+allowedTools:
+  - write_output
+  - get_knowledge_points_tree
+  - verify_knowledge_point_tags
+  - generate_thinking_process_template
+  - search_quizzes
+  - search_knowledge_points
+  - get_quiz_details
+  - get_root_categories
+  - get_children_nodes
+  - get_node_path
+  - search_in_scope
+---
+
+# Skill: 题目知识点匹配
+
+## 目标
+
+为教育题目精准标注所有相关知识点，特别是涉及多个知识点的综合题。
+
+## 触发条件
+
+- 用户说："分析这道题"、"标注知识点"、"这道题考察哪些知识点"
+- 用户提供题目内容并询问知识点
+- 批量分析题目时
+
+## 核心原则
+
+⚠️ **关键**：综合题往往涉及多个知识点，**必须**使用层级导航避免遗漏！
+
+❌ **错误做法**：只用 `search_knowledge_points` 搜索一个关键词
+✅ **正确做法**：层级导航 → 展开节点 → 查看全部子知识点 → 多选
+
+## 标准工作流
+
+### 步骤1: 分析题干，提取 question 知识点
+
+从题干中识别学生**看到题目就应该能识别**的知识点（题目类型、考察方向）。
+
+**示例**：
+- 题目："解方程 x² - 4 = 0，用因式分解法"
+- 提取 question 关键词：`["方程", "因式分解"]`（2个主题）
+- 这些是学生读题时就能识别的
+
+### 步骤2: 分析答案，识别 solution 知识点 ⭐ 新增！
+
+**核心原则**：
+> 题干告诉我们"做什么"，答案告诉我们"怎么做"
+
+从答案/解题过程中识别**具体使用的方法**（精确的子知识点）。
+
+**答案分析策略**：
+
+| 答案特征 | 识别的知识点 | source |
+|---------|------------|--------|
+| `(x+2)(x+3) = 0` | 十字相乘法因式分解 | solution |
+| `(x-2)(x+2) = 0` | 平方差公式法因式分解 | solution |
+| `(x+3)² = 0` | 完全平方公式因式分解 | solution |
+| `3x(x+2) = 0` | 提公因式法因式分解 | solution |
+
+**示例**：
+- 题目："用因式分解法解方程 x² + 5x + 6 = 0"
+- 答案："(x+2)(x+3) = 0, x = -2 或 x = -3"
+- 分析答案形式 `(x+2)(x+3)` → 识别为"十字相乘法因式分解"
+- 这个知识点**从题干无法确定**，但从答案可以**精确识别**！
+
+**如果没有答案**：
+- 只能标注 question 知识点
+- solution 知识点使用 Fallback 策略（父节点 + note）
+
+### 步骤3: 定位科目（可选）
+
+如果已知科目（如"数学"），先获取该科目的根分类：
+
+```bash
+# MCP工具: get_root_categories
+POST /tools/get_root_categories
+{
+  "limit": 50
+}
+→ 返回所有科目的根分类
+→ 找到目标科目的 subject_id
+```
+
+### 步骤4: 全局搜索，找到候选节点
+
+对 **question 和 solution** 关键词都进行搜索：
+
+```bash
+# 搜索 question 关键词
+# MCP工具: search_knowledge_points
+POST /tools/search_knowledge_points
+{
+  "query": "方程",  // question 关键词
+  "limit": 10
+}
+→ 返回包含"方程"的知识点列表
+
+# 搜索 solution 关键词
+POST /tools/search_knowledge_points
+{
+  "query": "十字相乘",  // solution 关键词（从答案识别）
+  "limit": 10
+}
+→ 返回精确的解题方法知识点
+```
+
+**关键**：记录每个结果的：
+- `id`（节点ID）
+- `name`（知识点名称）
+- `level`（层级深度）
+- `children_count`（子节点数量）← 重要！
+- `parent_name`（父节点名称）
+- **来源**：是从题干(question)还是答案(solution)识别的
+
+### 步骤5: 展开有子节点的候选项（核心步骤）
+
+对于 `children_count > 0` 的节点，**必须展开**查看所有子知识点：
+
+```bash
+# MCP工具: get_children_nodes
+POST /tools/get_children_nodes
+{
+  "parentId": "因式分解的ID",
+  "limit": 50
+}
+→ 返回该节点下的所有子知识点
+→ 可能有10+个精确的子知识点
+```
+
+**示例**：
+- "因式分解"节点 → 展开后看到：
+  - 公式法因式分解（还有2个子节点）
+    - 平方差公式法因式分解 ← 如果不展开会遗漏！
+    - 完全平方公式因式分解
+  - 提公因式法因式分解
+  - 十字相乘法因式分解
+  - ...
+
+### 步骤5: 递归展开（如果需要）
+
+如果子节点仍有 `children_count > 0`，继续展开到叶子节点。
+
+**最大深度建议**：3层（避免过度展开）
+
+### 步骤6: 构建候选池
+
+将所有找到的知识点（包括展开的）整理成候选池：
+
+```typescript
+const candidatePool = [
+  // 从"方程"搜索得到
+  { id: "xxx", name: "一元二次方程", level: 5, parent: "方程与方程组" },
+
+  // 从"因式分解"搜索并展开得到
+  { id: "yyy", name: "因式分解", level: 5, parent: "代数式" },
+  { id: "zzz", name: "平方差公式法因式分解", level: 7, parent: "公式法因式分解" },
+  { id: "aaa", name: "提公因式法因式分解", level: 6, parent: "因式分解" },
+  // ... 更多子知识点
+];
+```
+
+### 步骤7: 从候选池中多选相关知识点
+
+根据题目内容，从候选池中选择**所有相关**的知识点：
+
+**判断标准**：
+- 题目直接使用了该知识点
+- 解题过程需要该知识点
+- 该知识点是核心考点
+
+**选择优先级**：
+1. **首选叶子节点**（最精确）：如果题目明确使用了某个具体方法
+2. **次选父节点** + 备注说明：如果无法确定具体是哪个叶子节点
+
+**示例1：精确匹配（理想情况）**
+- 题目："解方程 x² - 4 = 0，用因式分解法"
+- 选择：
+  1. ✅ 一元二次方程（需要识别方程类型）
+  2. ✅ 平方差公式法因式分解（直接使用，**精确到叶子节点**）
+  3. ❌ 提公因式法因式分解（题目未使用）
+  4. ❌ 十字相乘法因式分解（题目未使用）
+
+**示例2：无法精确匹配（需要父节点 + 备注）**
+- 题目："用因式分解法解方程 x² + 5x + 6 = 0"
+- 分析：题目只说"用因式分解法"，但没有明确是哪种方法
+- 候选池中有：
+  - 因式分解（level 5, children_count=10）
+  - 十字相乘法因式分解（level 6）
+  - 公式法因式分解（level 6）
+  - 提公因式法因式分解（level 6）
+- **无法确定**具体用哪种方法
+
+**正确做法**：
+```json
+{
+  "id": "因式分解ID",
+  "name": "因式分解",
+  "confidence": 0.75,  // ← 置信度降低
+  "verified": true,
+  "level": 5,
+  "path": ["初中-数学", "数与代数", "代数式", "因式分解"],
+  "note": "题目未明确具体方法，标注为父节点。可能涉及的具体方法：十字相乘法、公式法"
+  //     ↑ 备注说明原因和可能的子节点
+}
+```
+
+**Fallback 策略规则**：
+
+1. **尝试精确匹配**：
+   - 在候选池的叶子节点中查找明确匹配的
+   - 如果找到 → 选择叶子节点，`confidence: 0.9-1.0`
+
+2. **无法精确匹配时**：
+   - 选择最近的父节点（通常是 level 较高的节点）
+   - 降低置信度：`confidence: 0.6-0.8`
+   - **必须添加 `note` 字段**说明：
+     - 为什么无法精确匹配
+     - 可能涉及哪些子知识点
+
+3. **置信度指南**：
+   - `0.95-1.0`：精确匹配叶子节点，题目明确使用
+   - `0.85-0.94`：精确匹配叶子节点，需要推理
+   - `0.70-0.84`：父节点，题目暗示但不明确
+   - `0.60-0.69`：父节点，仅能确定大致范围
+   - `< 0.60`：不建议标注，太不确定
+
+### 步骤8: 验证和输出
+
+对选中的知识点，获取完整路径（面包屑）：
+
+```bash
+# MCP工具: get_node_path
+POST /tools/get_node_path
+{
+  "nodeId": "平方差公式法因式分解的ID"
+}
+→ 返回: ["初中-数学", "数与代数", "代数式", "因式分解", "公式法因式分解", "平方差公式法因式分解"]
+```
+
+输出格式：
+```json
+{
+  "knowledgePointTags": [
+    {
+      "id": "xxx",
+      "name": "一元二次方程",
+      "confidence": 0.95,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "方程与方程组", "一元二次方程"]
+    },
+    {
+      "id": "zzz",
+      "name": "平方差公式法因式分解",
+      "confidence": 0.98,
+      "verified": true,
+      "level": 7,
+      "path": ["初中-数学", "数与代数", "代数式", "因式分解", "公式法因式分解", "平方差公式法因式分解"]
+    }
+  ]
+}
+```
+
+## 可用MCP工具清单
+
+### 1. search_knowledge_points (全局搜索)
+**用途**：快速找到包含关键词的知识点
+**何时用**：步骤3 - 初始候选搜索
+**参数**：
+- `query`: 关键词（如"方程"、"因式分解"）
+- `gradeLevel`: 可选，按年级筛选
+- `limit`: 返回数量，建议10-20
+
+### 2. get_children_nodes (获取子节点)
+**用途**：展开某个节点，查看所有子知识点
+**何时用**：步骤4 - 展开有 children_count > 0 的节点
+**参数**：
+- `parentId`: 要展开的节点ID
+- `subjectId`: 可选，科目ID
+- `limit`: 返回数量，建议50
+
+### 3. get_root_categories (获取根分类)
+**用途**：获取所有科目的根分类
+**何时用**：步骤2 - 定位科目
+**参数**：
+- `limit`: 返回数量
+
+### 4. get_node_path (获取面包屑路径)
+**用途**：获取知识点的完整层级路径
+**何时用**：步骤8 - 验证和输出
+**参数**：
+- `nodeId`: 知识点ID
+
+### 5. search_in_scope (范围内搜索)
+**用途**：在特定子树或科目内搜索
+**何时用**：补充搜索，在已定位的章节内查找
+**参数**：
+- `query`: 搜索关键词
+- `parentId`: 可选，限定在某个节点下
+- `subjectId`: 可选，限定在某个科目下
+- `maxDepth`: 可选，搜索深度
+- `limit`: 返回数量
+
+### 6. verify_knowledge_point_tags (验证标签)
+**用途**：AI验证提议的知识点标签是否合理
+**何时用**：最终验证环节
+**参数**：
+- `quizContent`: 题目内容
+- `proposedTags`: 提议的知识点列表
+
+## 常见错误及避免方法
+
+### ❌ 错误1：只搜索不展开
+
+```typescript
+// 错误
+const result = await search_knowledge_points({ query: "因式分解" });
+const tags = [result.knowledgePoints[0]]; // 只取第一个
+```
+
+**问题**：遗漏了"因式分解"下的10个子知识点（平方差、完全平方等）
+
+**正确做法**：
+```typescript
+const result = await search_knowledge_points({ query: "因式分解" });
+const node = result.knowledgePoints[0];
+
+// 检查是否有子节点
+if (node.children_count > 0) {
+  const children = await get_children_nodes({ parentId: node.id });
+  // 从 children 中选择相关的
+}
+```
+
+### ❌ 错误2：只搜索一个关键词
+
+```typescript
+// 错误：题目涉及"方程"和"因式分解"，但只搜索了一个
+const result = await search_knowledge_points({ query: "方程" });
+```
+
+**问题**：遗漏了"因式分解"相关的知识点
+
+**正确做法**：
+```typescript
+const keywords = ["方程", "因式分解"];
+const allCandidates = [];
+
+for (const keyword of keywords) {
+  const result = await search_knowledge_points({ query: keyword });
+  allCandidates.push(...result.knowledgePoints);
+}
+
+// 然后展开每个候选节点
+```
+
+### ❌ 错误3：选择过于笼统的知识点（无备注说明）
+
+```typescript
+// 错误：选择了父节点"因式分解"，但没有说明原因
+tags = [{
+  name: "因式分解",
+  confidence: 0.90  // 置信度还很高？
+  // 缺少 note 字段！
+}];
+```
+
+**问题**：
+1. 如果题目明确用了"平方差公式"，应该选叶子节点
+2. 如果无法确定具体方法，必须添加 `note` 说明原因
+
+**正确做法1（题目明确时）**：
+```typescript
+// 题目："解 x² - 4 = 0，用平方差公式"
+tags = [{
+  name: "平方差公式法因式分解",
+  confidence: 0.98,  // 精确匹配，高置信度
+  level: 7
+}];
+```
+
+**正确做法2（题目不明确时）**：
+```typescript
+// 题目："解 x² - 4 = 0，用因式分解法"（未明确哪种）
+tags = [{
+  name: "因式分解",
+  confidence: 0.75,  // ← 降低置信度
+  level: 5,
+  note: "题目未明确具体方法。可能涉及：平方差公式、十字相乘法等。建议人工复核。"
+  //    ↑ 必须添加备注说明
+}];
+```
+
+### ❌ 错误4：没有验证路径
+
+```typescript
+// 错误：选了知识点但不知道它属于哪个章节
+tags = [{ id: "xxx", name: "平方差公式" }];
+```
+
+**问题**：无法确认知识点的层级关系和科目归属
+
+**正确做法**：
+```typescript
+const path = await get_node_path({ nodeId: "xxx" });
+tags = [{
+  id: "xxx",
+  name: "平方差公式法因式分解",
+  path: path.data.path,
+  level: 7
+}];
+```
+
+## 性能优化建议
+
+1. **并行展开**：如果有多个候选节点需要展开，并行调用 `get_children_nodes`
+2. **缓存结果**：同一个节点在一次会话中不需要重复展开
+3. **限制深度**：最多展开3层，避免过度递归
+4. **批量验证**：最后一次性调用 `verify_knowledge_point_tags` 验证所有标签
+
+## 输出示例
+
+**示例1：简单题目**（单知识点，精确匹配）
+
+题目："下列汉字书写正确的是"
+
+```json
+{
+  "quizAnalysis": "本题考察字形辨析能力",
+  "knowledgePointTags": [
+    {
+      "id": "1998702114322394012",
+      "name": "字形辨析",
+      "source": "question",  // ← 从题干直接识别
+      "confidence": 0.95,
+      "verified": true,
+      "level": 3,
+      "path": ["初中-语文", "识字与写字", "字形辨析"]
+    }
+  ]
+}
+```
+
+**示例2：综合题目**（多知识点，question + solution）
+
+题目："解方程 x² - 4 = 0"
+答案："(x-2)(x+2) = 0, x = ±2"
+
+```json
+{
+  "quizAnalysis": "本题综合考察一元二次方程和因式分解（平方差公式）",
+  "knowledgePointTags": [
+    {
+      "id": "xxx",
+      "name": "一元二次方程",
+      "source": "question",  // ← 从题干"解方程"识别
+      "confidence": 0.95,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "方程与方程组", "一元二次方程"]
+    },
+    {
+      "id": "yyy",
+      "name": "因式分解",
+      "source": "question",  // ← 从题干暗示（需要因式分解）
+      "confidence": 0.85,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "代数式", "因式分解"]
+    },
+    {
+      "id": "zzz",
+      "name": "平方差公式法因式分解",
+      "source": "solution",  // ← 从答案 (x-2)(x+2) 识别！
+      "confidence": 0.98,
+      "verified": true,
+      "level": 7,
+      "path": ["初中-数学", "数与代数", "代数式", "因式分解", "公式法因式分解", "平方差公式法因式分解"]
+    }
+  ]
+}
+```
+
+**示例3：无法精确匹配**（使用父节点 + 备注）
+```json
+{
+  "quizAnalysis": "本题考察因式分解方法，但未明确具体使用哪种方法",
+  "knowledgePointTags": [
+    {
+      "id": "xxx",
+      "name": "一元二次方程",
+      "confidence": 0.95,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "方程与方程组", "一元二次方程"]
+    },
+    {
+      "id": "yyy",
+      "name": "因式分解",
+      "confidence": 0.75,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "代数式", "因式分解"],
+      "note": "题目未明确具体因式分解方法。可能涉及：十字相乘法、公式法（平方差/完全平方）、提公因式法。建议人工复核确定具体方法。"
+    }
+  ]
+}
+```
+
+**示例4：部分精确匹配**（混合场景）
+```json
+{
+  "quizAnalysis": "本题综合考察函数和不等式",
+  "knowledgePointTags": [
+    {
+      "id": "aaa",
+      "name": "二次函数",
+      "confidence": 0.92,
+      "verified": true,
+      "level": 5,
+      "path": ["初中-数学", "数与代数", "函数", "二次函数"]
+    },
+    {
+      "id": "bbb",
+      "name": "不等式",
+      "confidence": 0.70,
+      "verified": true,
+      "level": 4,
+      "path": ["初中-数学", "数与代数", "不等式"],
+      "note": "题目涉及不等式但未明确类型（一元一次/一元二次/不等式组等）。已标注为父节点。"
+    }
+  ]
+}
+```
+
+## 检查清单
+
+在完成知识点标注后，自检：
+
+- [ ] 是否提取了题目中的所有主题关键词？
+- [ ] 是否展开了所有 `children_count > 0` 的候选节点？
+- [ ] 是否查看了展开后的所有子知识点？
+- [ ] 选择的知识点是否足够精确（优先叶子节点）？
+- [ ] 如果选择了父节点，是否：
+  - [ ] 降低了置信度（0.6-0.8）？
+  - [ ] 添加了 `note` 字段说明原因？
+  - [ ] 列出了可能涉及的子知识点？
+- [ ] 是否涵盖了题目的所有考点（多知识点）？
+- [ ] 是否获取了每个知识点的完整路径？
+- [ ] 标注数量是否合理（1-5个，综合题可能3-5个）？
+- [ ] 置信度是否合理反映了匹配的精确程度？
+
+## 记住
+
+> "展开节点，查看全貌，精确多选" —— 避免遗漏的黄金法则

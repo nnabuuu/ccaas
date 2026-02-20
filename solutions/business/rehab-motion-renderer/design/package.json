@@ -1,0 +1,12 @@
+{
+  "name": "rehab-motion-renderer",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:renderer": "npm run dev --workspace=@rehab-motion/renderer",
+    "dev:mcp": "npm run dev --workspace=@rehab-motion/mcp-server",
+    "build": "npm run build --workspaces"
+  }
+}

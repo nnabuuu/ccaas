@@ -1,0 +1,97 @@
+{
+  "name": "complete-analysis",
+  "version": "1.0.0",
+  "description": "完整分析题目的所有 10 个维度，生成详细的分析报告",
+
+  "triggers": [
+    {
+      "type": "keyword",
+      "value": "完整分析",
+      "priority": 10
+    },
+    {
+      "type": "keyword",
+      "value": "生成分析报告",
+      "priority": 10
+    },
+    {
+      "type": "keyword",
+      "value": "全面分析这道题",
+      "priority": 10
+    },
+    {
+      "type": "keyword",
+      "value": "分析题目",
+      "priority": 9
+    },
+    {
+      "type": "keyword",
+      "value": "详细分析",
+      "priority": 9
+    }
+  ],
+
+  "allowedTools": [
+    "write_output",
+    "get_quiz_details",
+    "get_knowledge_points_tree",
+    "search_knowledge_points",
+    "get_children_nodes",
+    "get_node_path",
+    "search_in_scope",
+    "verify_knowledge_point_tags",
+    "generate_thinking_process_template",
+    "search_quizzes",
+    "save_complete_analysis"
+  ],
+
+  "instructions": "请严格遵循 SKILL.md 中的标准工作流进行完整分析。关键步骤：1) 获取题目信息 2) 分析知识点（区分题干/解答来源）3) 生成所有 10 个分析维度 4) 使用 write_output 保存 5) 询问用户是否持久化。注意：相关题目推荐必须过滤掉当前题目本身。",
+
+  "outputFormat": "QuizAnalysis",
+
+  "examples": [
+    {
+      "input": "完整分析题目 quiz-001",
+      "expectedBehavior": "获取题目信息，分析知识点（区分题干/解答来源），生成 10 个维度的分析（整体分析、知识点标签、解题思路、解题步骤、常见错误、知识缺口分析、难度、难度说明、时间预估、相关题目推荐），使用 write_output 保存，询问用户是否持久化到数据库"
+    },
+    {
+      "input": "生成分析报告：解方程 x²-4=0",
+      "expectedBehavior": "如果题目在数据库中，获取题目信息；否则提示用户提供题目 ID。完成知识点分析、整体分析、解题思路、解题步骤等 10 个维度的生成，并保存到 SYNC_FIELDS"
+    }
+  ],
+
+  "errorHandling": {
+    "quizNotFound": "如果题目不存在，提示用户检查题目 ID，建议使用搜索功能",
+    "knowledgePointMatchingFailed": "如果知识点匹配不完全，提示用户已找到的知识点，询问是否继续",
+    "relatedQuizzesInsufficient": "如果相关题目不足 3 道，询问用户是否放宽条件（扩大难度范围）",
+    "toolCallFailed": "如果工具调用失败，显示错误信息，建议稍后重试"
+  },
+
+  "qualityChecks": [
+    "所有 10 个维度都已生成",
+    "知识点标签包含 source 字段（question/solution/both）",
+    "知识点标签的置信度在 0.0-1.0 范围内",
+    "解题步骤至少有 2 步",
+    "常见错误至少有 1 个",
+    "难度在 1-5 范围内",
+    "难度说明简洁明了（1-2 句话）",
+    "时间预估格式正确（如 '约 10-12 分钟'）",
+    "相关题目推荐过滤掉了当前题目本身",
+    "相关题目推荐至少有 1 道（理想 3-5 道）",
+    "所有 Markdown 格式正确",
+    "所有字段符合前端类型定义"
+  ],
+
+  "performance": {
+    "parallelCalls": "可以并行调用 search_knowledge_points（多个关键词）、get_children_nodes（多个节点）、search_quizzes（多个知识点）",
+    "cachingStrategy": "知识点树结构可以缓存，题目信息可以缓存，相关题目推荐可以缓存",
+    "batchProcessing": "支持批量分析多道题目，共享知识点树查询"
+  },
+
+  "integrationPoints": {
+    "reuseKnowledgePointMatching": "复用 knowledge-point-matching 的知识点分析逻辑",
+    "differenceFromStudentAnswer": "关注题目本身的分析，而非学生答案的错误分析",
+    "frontendComponent": "输出格式对应前端 CompleteAnalysisView 组件",
+    "syncFields": "符合 solution.json 中的 syncFields 定义"
+  }
+}

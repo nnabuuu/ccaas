@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "geography",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "geo-physical",
+      "subject": "geography",
+      "name": "自然地理",
+      "description": "地球的自然环境和变化规律",
+      "children": [
+        {
+          "id": "geo-physical-earth",
+          "subject": "geography",
+          "name": "地球与地图",
+          "description": "地球运动、地图判读",
+          "commonProblemTypes": ["经纬度计算", "时区换算", "地图判读"]
+        },
+        {
+          "id": "geo-physical-atmosphere",
+          "subject": "geography",
+          "name": "大气与气候",
+          "description": "大气运动和气候类型",
+          "commonProblemTypes": ["气压带风带", "气候成因", "天气系统"]
+        },
+        {
+          "id": "geo-physical-water",
+          "subject": "geography",
+          "name": "水文与地貌",
+          "description": "水循环和地表形态",
+          "commonProblemTypes": ["水循环", "河流特征", "地貌成因"]
+        }
+      ]
+    },
+    {
+      "id": "geo-human",
+      "subject": "geography",
+      "name": "人文地理",
+      "description": "人类活动与地理环境的关系",
+      "children": [
+        {
+          "id": "geo-human-population",
+          "subject": "geography",
+          "name": "人口与城市",
+          "description": "人口分布和城市化",
+          "commonProblemTypes": ["人口金字塔", "城市化问题", "人口迁移"]
+        },
+        {
+          "id": "geo-human-economy",
+          "subject": "geography",
+          "name": "农业与工业",
+          "description": "产业布局和区位因素",
+          "commonProblemTypes": ["农业区位", "工业区位", "产业转移"]
+        },
+        {
+          "id": "geo-human-transport",
+          "subject": "geography",
+          "name": "交通与资源",
+          "description": "交通运输和资源利用",
+          "commonProblemTypes": ["交通区位", "资源分布", "可持续发展"]
+        }
+      ]
+    },
+    {
+      "id": "geo-regional",
+      "subject": "geography",
+      "name": "区域地理",
+      "description": "世界和中国主要区域特征",
+      "children": [
+        {
+          "id": "geo-regional-world",
+          "subject": "geography",
+          "name": "世界区域",
+          "description": "各大洲和主要国家",
+          "commonProblemTypes": ["区域定位", "区域特征", "区域比较"]
+        },
+        {
+          "id": "geo-regional-china",
+          "subject": "geography",
+          "name": "中国地理",
+          "description": "中国各区域特征",
+          "commonProblemTypes": ["区域差异", "区域发展", "生态环境"]
+        }
+      ]
+    }
+  ]
+}

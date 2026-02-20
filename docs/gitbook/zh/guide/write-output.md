@@ -304,6 +304,42 @@ socket.on('output_update', (raw) => {
 { "field": "assessment", "value": {"rubric": "新评分标准"}, "operation": "merge" }
 ```
 
+## ⚠️ 常见错误：将 value 放在 \_meta 中
+
+以下实现**看似合理但实际无效**：
+
+```typescript
+// ❌ 错误：EventMapper 不读取 _meta，value 不会被传递到前端
+return {
+  content: [{ type: 'text', text: JSON.stringify({ success: true, field, preview }) }],
+  _meta: { outputUpdate: { field, value, preview } },  // 被忽略！
+}
+```
+
+CCAAS EventMapper 处理 write\_output 时，**只读取 `content[].text` 的 JSON**：
+
+```
+parsedResult.data || parsedResult → payload.data
+```
+
+`_meta` 字段会被 EventMapper 完全忽略。前端会收到 `output_update` 事件，但 `payload.data` 中没有 `value`，表单字段不会更新。
+
+正确实现（`value` 必须在 `content[].text` 的 JSON 中）：
+
+```typescript
+// ✅ 正确：data 对象（含 value）在 content[].text 的 JSON 中
+return {
+  content: [{ type: 'text', text: JSON.stringify({
+    data: { field, value, preview },
+    status: 'success',
+  })}],
+}
+```
+
+{% hint style="info" %}
+参考实现：`solutions/demo/01-write-output/mcp-server/src/index.ts` 演示了正确模式，并在代码注释中对比了错误用法。
+{% endhint %}
+
 ## 常见问题
 
 ### write\_output 不显示

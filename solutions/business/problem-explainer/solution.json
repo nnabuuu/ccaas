@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "Problem Explainer",
+    "slug": "problem-explainer",
+    "description": "AI讲题助手 - 智能解析题目，逐步讲解解题思路，生成讲稿、音频和PPT"
+  },
+  "mcpServers": {
+    "problem-explainer-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/stdio-server.js"],
+      "description": "Problem Explainer MCP tools: write_output, get_subjects, get_knowledge_points, calculate_difficulty, generate_script_template",
+      "type": "stdio",
+      "env": {
+        "MCP_PORT": "3004"
+      }
+    }
+  },
+  "syncFields": [
+    "problemAnalysis",
+    "keyKnowledge",
+    "solutionSteps",
+    "answer",
+    "commonMistakes",
+    "relatedProblems",
+    "hints",
+    "difficulty"
+  ],
+  "setup": {
+    "skipSteps": [],
+    "customScripts": {
+      "preInstall": ".solution-hooks/pre-install.sh",
+      "customInit": ".solution-hooks/custom-init.sh",
+      "postInstall": ".solution-hooks/post-install.sh"
+    }
+  }
+}

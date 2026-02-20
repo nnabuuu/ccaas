@@ -1,0 +1,152 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "generatedAt": "2026-01-26T16:20:42.807Z",
+    "source": "V2025_12_22_003__seed_textbook_data.sql"
+  },
+  "subjects": [
+    "数学",
+    "物理",
+    "化学"
+  ],
+  "editions": [
+    {
+      "subject": "数学",
+      "grade": 1,
+      "volume": "上册",
+      "file": "数学-1-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 1,
+      "volume": "下册",
+      "file": "数学-1-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 2,
+      "volume": "上册",
+      "file": "数学-2-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 2,
+      "volume": "下册",
+      "file": "数学-2-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 3,
+      "volume": "上册",
+      "file": "数学-3-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 3,
+      "volume": "下册",
+      "file": "数学-3-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 4,
+      "volume": "上册",
+      "file": "数学-4-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 4,
+      "volume": "下册",
+      "file": "数学-4-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 5,
+      "volume": "上册",
+      "file": "数学-5-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 5,
+      "volume": "下册",
+      "file": "数学-5-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 6,
+      "volume": "上册",
+      "file": "数学-6-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 6,
+      "volume": "下册",
+      "file": "数学-6-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 7,
+      "volume": "上册",
+      "file": "数学-7-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 7,
+      "volume": "下册",
+      "file": "数学-7-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 8,
+      "volume": "上册",
+      "file": "数学-8-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 8,
+      "volume": "下册",
+      "file": "数学-8-下册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 9,
+      "volume": "上册",
+      "file": "数学-9-上册.json"
+    },
+    {
+      "subject": "数学",
+      "grade": 9,
+      "volume": "下册",
+      "file": "数学-9-下册.json"
+    },
+    {
+      "subject": "物理",
+      "grade": 8,
+      "volume": "上册",
+      "file": "物理-8-上册.json"
+    },
+    {
+      "subject": "物理",
+      "grade": 8,
+      "volume": "下册",
+      "file": "物理-8-下册.json"
+    },
+    {
+      "subject": "物理",
+      "grade": 9,
+      "volume": "全一册",
+      "file": "物理-9-全一册.json"
+    },
+    {
+      "subject": "化学",
+      "grade": 9,
+      "volume": "上册",
+      "file": "化学-9-上册.json"
+    },
+    {
+      "subject": "化学",
+      "grade": 9,
+      "volume": "下册",
+      "file": "化学-9-下册.json"
+    }
+  ]
+}

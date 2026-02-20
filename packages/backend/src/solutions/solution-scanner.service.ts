@@ -96,11 +96,49 @@ export class SolutionScannerService {
         continue;
       }
 
-      // Skip if no solution.json
+      // Skip if no solution.json — may be a group directory
+      let hasSolutionJson = true;
       try {
         await fs.access(configPath);
       } catch {
-        this.logger.debug(`No solution.json in ${entry}, skipping`);
+        hasSolutionJson = false;
+      }
+
+      if (!hasSolutionJson) {
+        // Treat as a group directory: scan one level deeper
+        const subEntries = await fs.readdir(solutionPath).catch(() => [] as string[]);
+        let foundAny = false;
+        for (const subEntry of subEntries) {
+          const subSolutionPath = path.join(solutionPath, subEntry);
+          const subConfigPath = path.join(subSolutionPath, 'solution.json');
+
+          try {
+            const subStat = await fs.stat(subSolutionPath);
+            if (!subStat.isDirectory()) continue;
+          } catch {
+            continue;
+          }
+
+          try {
+            await fs.access(subConfigPath);
+          } catch {
+            continue;
+          }
+
+          try {
+            const metadata = await this.loadSolutionMetadata(subEntry, subSolutionPath, subConfigPath);
+            if (!metadata) continue;
+            results.push(metadata);
+            foundAny = true;
+          } catch (err) {
+            this.logger.warn(
+              `Failed to load solution "${entry}/${subEntry}": ${(err as Error).message}`,
+            );
+          }
+        }
+        if (!foundAny) {
+          this.logger.debug(`No solution.json in ${entry} (not a group directory either), skipping`);
+        }
         continue;
       }
 

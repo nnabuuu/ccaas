@@ -1,0 +1,10 @@
+{
+  "name": "quiz-analyzer-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "xlsx": "^0.18.5",
+    "better-sqlite3": "^9.2.0",
+    "uuid": "^9.0.0"
+  }
+}

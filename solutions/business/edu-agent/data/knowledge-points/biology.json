@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "biology",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "bio-cell",
+      "subject": "biology",
+      "name": "细胞",
+      "description": "生物体的基本结构和功能单位",
+      "children": [
+        {
+          "id": "bio-cell-structure",
+          "subject": "biology",
+          "name": "细胞结构",
+          "description": "细胞的组成部分",
+          "commonProblemTypes": ["细胞器识别", "细胞膜功能", "原核与真核细胞比较"]
+        },
+        {
+          "id": "bio-cell-metabolism",
+          "subject": "biology",
+          "name": "细胞代谢",
+          "description": "细胞内的物质和能量变化",
+          "commonProblemTypes": ["光合作用", "细胞呼吸", "ATP合成"]
+        },
+        {
+          "id": "bio-cell-division",
+          "subject": "biology",
+          "name": "细胞分裂",
+          "description": "细胞的增殖过程",
+          "commonProblemTypes": ["有丝分裂", "减数分裂", "染色体变化"]
+        }
+      ]
+    },
+    {
+      "id": "bio-genetics",
+      "subject": "biology",
+      "name": "遗传与变异",
+      "description": "生物性状的传递和改变",
+      "children": [
+        {
+          "id": "bio-genetics-mendelian",
+          "subject": "biology",
+          "name": "孟德尔遗传",
+          "description": "基因的分离和自由组合",
+          "commonProblemTypes": ["基因型判断", "遗传概率计算", "测交实验"]
+        },
+        {
+          "id": "bio-genetics-molecular",
+          "subject": "biology",
+          "name": "分子遗传",
+          "description": "DNA复制、转录和翻译",
+          "commonProblemTypes": ["中心法则", "基因突变", "基因工程"]
+        }
+      ]
+    },
+    {
+      "id": "bio-ecology",
+      "subject": "biology",
+      "name": "生态学",
+      "description": "生物与环境的相互关系",
+      "children": [
+        {
+          "id": "bio-ecology-population",
+          "subject": "biology",
+          "name": "种群与群落",
+          "description": "生物群体的特征和动态",
+          "commonProblemTypes": ["种群密度", "群落演替", "生态位"]
+        },
+        {
+          "id": "bio-ecology-ecosystem",
+          "subject": "biology",
+          "name": "生态系统",
+          "description": "能量流动和物质循环",
+          "commonProblemTypes": ["食物链", "能量金字塔", "碳循环"]
+        }
+      ]
+    }
+  ]
+}

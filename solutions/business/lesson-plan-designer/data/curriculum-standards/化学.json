@@ -1,0 +1,2081 @@
+{
+  "_meta": {
+    "syncedAt": "2025-12-30T07:01:24.602Z"
+  },
+  "subject": "化学",
+  "count": 259,
+  "standards": [
+    {
+      "id": 1307,
+      "standardCode": "化学-段第-1307",
+      "title": "初步形成节能低碳、节约资源、保护环境的态度和健康的生活方式。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1304,
+      "standardCode": "化学-段第-1304",
+      "title": "在跨学科实践活动中，具有恪守科学伦理和遵守法律法规的意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1303,
+      "standardCode": "化学-段第-1303",
+      "title": "在跨学科实践活动中，能综合运用化学、技术、工程及跨学科知识，秉承可持续发展观，设计、评估解决实际问题的方案，制作项目作品，并进行改进和优化，体现创新意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1301,
+      "standardCode": "化学-段第-1301",
+      "title": "能举例说明化学在保护环境、维护人体健康等方面的作用，具有安全用药的意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1302,
+      "standardCode": "化学-段第-1302",
+      "title": "能从物质的组成及变化视角，分析和讨论资源综合利用、材料选取与使用、生态环境保护等有关问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1300,
+      "standardCode": "化学-段第-1300",
+      "title": "能列举生活中常见的能源和资源、金属材料和有机合成材料及其应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1305,
+      "standardCode": "化学-段第-1305",
+      "title": "能积极参与小组合作，勇于批判、质疑，自觉反思，能克服困难，敢于面对陌生的、不确定性的挑战。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1306,
+      "standardCode": "化学-段第-1306",
+      "title": "能积极参加与化学有关的社会热点问题的讨论并作出合理的价值判断。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1283,
+      "standardCode": "化学-段第-1283",
+      "title": "体会有效使用科学技术，以及合作、协同创新解决问题的重要性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1282,
+      "standardCode": "化学-段第-1282",
+      "title": "认识在解决实际问题时，需要综合运用各学科知识，采用合适的方法和工具，以及系统规划和实施。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1281,
+      "standardCode": "化学-段第-1281",
+      "title": "通过实践活动，初步形成应用元素观、变化观等化学观念和科学探究方法解决问题的思路。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1276,
+      "standardCode": "化学-段第-1276",
+      "title": "主动践行节约资源、环境友好的生活方式，树立人与自然和谐共生的科学自然观和绿色发展观。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1275,
+      "standardCode": "化学-段第-1275",
+      "title": "体会化学是推动人类社会可持续发展的重要力量，树立建  设美丽中国、为全球生态安全作贡献的信念。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1272,
+      "standardCode": "化学-段第-1272",
+      "title": "使用科学和技术时要考虑其对社会和环境的影响。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1273,
+      "standardCode": "化学-段第-1273",
+      "title": "理解科学、技术、社会、环境的相互关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1271,
+      "standardCode": "化学-段第-1271",
+      "title": "知道科学和技术有助于解决社会问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1274,
+      "standardCode": "化学-段第-1274",
+      "title": "认识化学在解决与资源、能源、材料、环境、人类健康等相关的问题 中的作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1279,
+      "standardCode": "化学-段第-1279",
+      "title": "了解酒精、天然气、有机高分子材料等在社会生活中的应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1278,
+      "standardCode": "化学-段第-1278",
+      "title": "理解化学与生态环境保护、医药研制及营养健康的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1280,
+      "standardCode": "化学-段第-1280",
+      "title": "知道资源开发、能源利用和材料使用可能会对环境产生影响，树立环保意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1277,
+      "standardCode": "化学-段第-1277",
+      "title": "结合实例，从物质及其变化的视角，认识资源的综合利用与新能源的开发、材料的科学利用与新材料的研发。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1288,
+      "standardCode": "化学-段第-1288",
+      "title": "知道人类生存与发展会面临来自环境、能源、资源、健康和公共卫生等方面的危机与不确定性挑战。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1287,
+      "standardCode": "化学-段第-1287",
+      "title": "知道现代科学技术的开发和应用可能会引起与生态环境、伦理道德、经济发展等相关的问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1289,
+      "standardCode": "化学-段第-1289",
+      "title": "通过参与社会性科学议题的探讨活动，体会以理性、积极的态度和系统、创新的思维应对挑战的重要性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1286,
+      "standardCode": "化学-段第-1286",
+      "title": "知道国家在生态环境保护，化学品、食品、药品安全等方面颁布了法律法规，增强遵纪守法、自我保护及维护社会安全的意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1285,
+      "standardCode": "化学-段第-1285",
+      "title": "认识到应用科学知识解决问题时，应恪守科学伦理。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1284,
+      "standardCode": "化学-段第-1284",
+      "title": "通过实例分析或参加与化学相关的职业体验活动。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1297,
+      "standardCode": "化学-段第-1297",
+      "title": "制作模型并展示科学家探索物质组成与结构的历程。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1294,
+      "standardCode": "化学-段第-1294",
+      "title": "垃圾的分类与回收利用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1291,
+      "standardCode": "化学-段第-1291",
+      "title": "基于特定需求设计和制作简易供氧器。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1293,
+      "standardCode": "化学-段第-1293",
+      "title": "基于碳中和理念设计低碳行动方案。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1290,
+      "standardCode": "化学-段第-1290",
+      "title": "微型空气质量“检测站”的组装与使用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1295,
+      "standardCode": "化学-段第-1295",
+      "title": "探究土壤酸碱性对植物生长的影响。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1292,
+      "standardCode": "化学-段第-1292",
+      "title": "水质检测及自制净水器。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1296,
+      "standardCode": "化学-段第-1296",
+      "title": "海洋资源的综合利用与制盐。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1298,
+      "standardCode": "化学-段第-1298",
+      "title": "调查家用燃料的变迁与合理使用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1299,
+      "standardCode": "化学-段第-1299",
+      "title": "调查我国航天科技领域中新型材料、新型能源的应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "化学与社会·跨学科实践"
+    },
+    {
+      "id": 1261,
+      "standardCode": "化学-段第-1261",
+      "title": "能举例说明化学变化在自然界和生产生活中的重要应用价值。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1262,
+      "standardCode": "化学-段第-1262",
+      "title": "能举例说明化学家利用化学反应造福人类的创造性贡献。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1257,
+      "standardCode": "化学-段第-1257",
+      "title": "能判断常见的物理变化和化学变化，能从宏观和微观的视角说明二者的区别。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1267,
+      "standardCode": "化学-段第-1267",
+      "title": "能利用化学反应及绿色环保理念设计实验方案，完成常见物质的制备、检验等任务。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1263,
+      "standardCode": "化学-段第-1263",
+      "title": "能利用化学反应相关知识分析和解释自然界、生产生活、实验中的常见现象。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1270,
+      "standardCode": "化学-段第-1270",
+      "title": "能利用化学反应知识完成相关的项目式学习任务及跨学科实践活动。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1264,
+      "standardCode": "化学-段第-1264",
+      "title": "能基于守恒和比例关系推断化学反应的相关信息。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1268,
+      "standardCode": "化学-段第-1268",
+      "title": "能基于真实的问题情境，多角度分析和解决生产生活中有关化学变化的简单问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1265,
+      "standardCode": "化学-段第-1265",
+      "title": "能根据化学方程式进行简单的计算，并解决生产生活中的简单问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1260,
+      "standardCode": "化学-段第-1260",
+      "title": "能根据实验事实用文字和符号描述、表示化学变化，并正确书写常见的化学方程式。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1269,
+      "standardCode": "化学-段第-1269",
+      "title": "能积极参与有关合理使用化学物质及其反应的媒体信息的评论。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1258,
+      "standardCode": "化学-段第-1258",
+      "title": "能辨别常见的化合反应、分解反应、置换反应和复分解反应。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1266,
+      "standardCode": "化学-段第-1266",
+      "title": "能运用变量控制思想设计燃烧条件等实验探究方案。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1259,
+      "standardCode": "化学-段第-1259",
+      "title": "能选取实验证据说明质量守恒定律，并阐释其微观本质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1241,
+      "standardCode": "化学-段第-1241",
+      "title": "理解质量守恒定律的微观本质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1240,
+      "standardCode": "化学-段第-1240",
+      "title": "认识化学反应中的各物质间存在定量关系，化学反应遵守质量守恒定律。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1235,
+      "standardCode": "化学-段第-1235",
+      "title": "了解化学反应需要一定的条件。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1239,
+      "standardCode": "化学-段第-1239",
+      "title": "初步体会调控化学反应的重要意义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1230,
+      "standardCode": "化学-段第-1230",
+      "title": "理解化学反应的本质是原子的重新组合，化学反应前后，原子的种类和数量不变，分子的种类发生改变。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1238,
+      "standardCode": "化学-段第-1238",
+      "title": "理解燃烧和灭火的原理及其在生活中的应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1236,
+      "standardCode": "化学-段第-1236",
+      "title": "知道催化剂对化学反应的重要作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1229,
+      "standardCode": "化学-段第-1229",
+      "title": "知道化学变化常伴随生成沉淀、产生气体、发生颜色变化、发光，以及吸热或放热等现象。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1228,
+      "standardCode": "化学-段第-1228",
+      "title": "认识化学变化是产生新物质的过程。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1232,
+      "standardCode": "化学-段第-1232",
+      "title": "认识常见的分解反应及简单应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1231,
+      "standardCode": "化学-段第-1231",
+      "title": "认识常见的化合反应及简单应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1234,
+      "standardCode": "化学-段第-1234",
+      "title": "认识常见的复分解反应及简单应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1233,
+      "standardCode": "化学-段第-1233",
+      "title": "认识常见的置换反应及简单应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1237,
+      "standardCode": "化学-段第-1237",
+      "title": "通过实验探究认识燃烧的条件。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1253,
+      "standardCode": "化学-段第-1253",
+      "title": "关注产品需求和成本核算。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1254,
+      "standardCode": "化学-段第-1254",
+      "title": "初步树立资源循环使用、绿色环保的发展理念。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1251,
+      "standardCode": "化学-段第-1251",
+      "title": "欣赏化学反应造福人类的独特价值，学习化学家的创新精神。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1255,
+      "standardCode": "化学-段第-1255",
+      "title": "燃烧条件的探究。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1250,
+      "standardCode": "化学-段第-1250",
+      "title": "结合实例体会通过化学反应实现物质转化的意义和价值。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1252,
+      "standardCode": "化学-段第-1252",
+      "title": "结合实例认识合理利用、调控化学反应的重要性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1249,
+      "standardCode": "化学-段第-1249",
+      "title": "认识化学变化在自然界和生产生活中的广泛存在及重要应用，感受大自然中化学变化的神奇。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1256,
+      "standardCode": "化学-段第-1256",
+      "title": "跨学科实践活动。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1227,
+      "standardCode": "化学-段第-1227",
+      "title": "初步形成变化观。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1223,
+      "standardCode": "化学-段第-1223",
+      "title": "知道物质是在不断变化的，物质变化分为物理变化和化学变化。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1226,
+      "standardCode": "化学-段第-1226",
+      "title": "认识化学反应中的各物质间存在定量关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1225,
+      "standardCode": "化学-段第-1225",
+      "title": "认识在一定条件下通过化学反应可以实现物质转化。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1224,
+      "standardCode": "化学-段第-1224",
+      "title": "认识物质的变化过程伴随着能量变化。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1248,
+      "standardCode": "化学-段第-1248",
+      "title": "初步体会化学反应与技术、工程的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1246,
+      "standardCode": "化学-段第-1246",
+      "title": "初步形成利用化学反应探究物质性质和组成、解决物质制备和检",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1243,
+      "standardCode": "化学-段第-1243",
+      "title": "初步形成认识化学反应的系统思维意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1242,
+      "standardCode": "化学-段第-1242",
+      "title": "学习从物质变化、能量变化、反应条件、反应现象、反应类型和元素守恒等视角认识化学反应。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1244,
+      "standardCode": "化学-段第-1244",
+      "title": "学习利用质量关系、比例关系定量认识化学反应。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1245,
+      "standardCode": "化学-段第-1245",
+      "title": "认识定量研究对化学科学发展的重大作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1247,
+      "standardCode": "化学-段第-1247",
+      "title": "验等实际问题的思路。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的化学变化"
+    },
+    {
+      "id": 1186,
+      "standardCode": "化学-段第-1186",
+      "title": "对空气和水体保护、金属材料使用与金属资源开发、低碳行动、资源回收、化学品合理使用等社会性科学议题展开讨论，积极参与相关的综合实践活动。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1174,
+      "standardCode": "化学-段第-1174",
+      "title": "能举例说明物质性质的广泛应用及性质与用途的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1180,
+      "standardCode": "化学-段第-1180",
+      "title": "能从定性和定量的视角，说明饱和溶液、溶解度和溶质质量分数的含义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1172,
+      "standardCode": "化学-段第-1172",
+      "title": "能依据物质的类别列举一些简单的单质、氧化物、酸、碱、盐及生活中常见的有机物。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1170,
+      "standardCode": "化学-段第-1170",
+      "title": "能依据物质的组成对物质进行分类。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1175,
+      "standardCode": "化学-段第-1175",
+      "title": "能利用常见物质的性质，分析、解释一些简单的化学现象和事实。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1183,
+      "standardCode": "化学-段第-1183",
+      "title": "能利用物质的溶解性，设计粗盐提纯、水的净化等物质分离的方案。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1185,
+      "standardCode": "化学-段第-1185",
+      "title": "能基于物质的性质和用途，从辩证的角度，初步分析和评价物质的实际应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1184,
+      "standardCode": "化学-段第-1184",
+      "title": "能基于真实问题情境，依据常见物质的性质，初步分析和解决相关的综合问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1182,
+      "standardCode": "化学-段第-1182",
+      "title": "能根据需要配制一定溶质质量分数的溶液。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1177,
+      "standardCode": "化学-段第-1177",
+      "title": "能检验溶液的酸碱性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1176,
+      "standardCode": "化学-段第-1176",
+      "title": "能设计简单实验，制备并检验氧气和二氧化碳。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1171,
+      "standardCode": "化学-段第-1171",
+      "title": "能识别纯净物和混合物、单质和化合物。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1178,
+      "standardCode": "化学-段第-1178",
+      "title": "能运用研究物质性质的一般思路与方法，从物质类别的视角，依据金属活动性顺序、中和反应等，初步预测常见的金属、酸和碱的主要性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1181,
+      "standardCode": "化学-段第-1181",
+      "title": "能进行溶质质量分数的简单计算。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1173,
+      "standardCode": "化学-段第-1173",
+      "title": "能通过实验说明氧气、二氧化碳，以及常见的金属、酸和碱的主要性质，并能用化学方程式表示。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1179,
+      "standardCode": "化学-段第-1179",
+      "title": "设计实验方案，分析、解释有关的实验现象，进行证据推理，得出合理的结论。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1168,
+      "standardCode": "化学-段第-1168",
+      "title": "一定溶质质量分数的氯化钠溶液的配制。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1165,
+      "standardCode": "化学-段第-1165",
+      "title": "二氧化碳的实验室制取与性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1167,
+      "standardCode": "化学-段第-1167",
+      "title": "常见酸、碱的化学性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1166,
+      "standardCode": "化学-段第-1166",
+      "title": "常见金属的物理性质和化学性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1164,
+      "standardCode": "化学-段第-1164",
+      "title": "氧气的实验室制取与性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1163,
+      "standardCode": "化学-段第-1163",
+      "title": "粗盐中难溶性杂质的去除。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1169,
+      "standardCode": "化学-段第-1169",
+      "title": "跨学科实践活动（从学习主题5中选择）。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1148,
+      "standardCode": "化学-段第-1148",
+      "title": "了解检验溶液酸碱性的基本方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1150,
+      "standardCode": "化学-段第-1150",
+      "title": "了解食盐、纯碱、小苏打和碳酸钙等盐在日常生活中的应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1147,
+      "standardCode": "化学-段第-1147",
+      "title": "以氢氧化钠和氢氧化钙为例，通过实验探究认识碱的主要性质和用途。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1146,
+      "standardCode": "化学-段第-1146",
+      "title": "以盐酸、硫酸为例，通过实验探究认识酸的主要性质和用途。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1151,
+      "standardCode": "化学-段第-1151",
+      "title": "知道一些常用化肥及其在农业生产中的作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1149,
+      "standardCode": "化学-段第-1149",
+      "title": "知道酸碱性对人体健康和农作物生长的影响。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1128,
+      "standardCode": "化学-段第-1128",
+      "title": "了解吸附、沉降、过滤和蒸馏是净化水的常用方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1132,
+      "standardCode": "化学-段第-1132",
+      "title": "了解饱和溶液和溶解度的含义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1137,
+      "standardCode": "化学-段第-1137",
+      "title": "体会溶液在生产生活中的应用价值。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1136,
+      "standardCode": "化学-段第-1136",
+      "title": "初步感受定量研究的意义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1135,
+      "standardCode": "化学-段第-1135",
+      "title": "学习计算溶质质量分数和配制一定溶质质量分数的溶液的基本方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1130,
+      "standardCode": "化学-段第-1130",
+      "title": "知道溶液是由溶质和溶剂组成的，具有均一性和稳定性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1133,
+      "standardCode": "化学-段第-1133",
+      "title": "知道溶质质量分数可以表示浓度。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1131,
+      "standardCode": "化学-段第-1131",
+      "title": "知道绝大多数物质在溶剂中的溶解是有限度的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1127,
+      "standardCode": "化学-段第-1127",
+      "title": "认识水的组成，知道水是一种重要的溶剂。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1129,
+      "standardCode": "化学-段第-1129",
+      "title": "认识溶解和结晶现象。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1134,
+      "standardCode": "化学-段第-1134",
+      "title": "认识溶质质量分数的含义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1119,
+      "standardCode": "化学-段第-1119",
+      "title": "了解空气的主要成分。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1126,
+      "standardCode": "化学-段第-1126",
+      "title": "以自然界中的氧循环和碳循环为例，认识物质在自然界中可以相互转化及其对维持人类生活与生态平衡的意义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1124,
+      "standardCode": "化学-段第-1124",
+      "title": "初步学习二氧化碳的实验室制法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1123,
+      "standardCode": "化学-段第-1123",
+      "title": "初步学习氧气的实验室制法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1125,
+      "standardCode": "化学-段第-1125",
+      "title": "归纳实验室制取气体的一般思路与方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1122,
+      "standardCode": "化学-段第-1122",
+      "title": "认识物质的性质与用途的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1121,
+      "standardCode": "化学-段第-1121",
+      "title": "通过实验探究认识二氧化碳的主要性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1120,
+      "standardCode": "化学-段第-1120",
+      "title": "通过实验探究认识氧气的主要性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1145,
+      "standardCode": "化学-段第-1145",
+      "title": "了解废弃金属对环境的影响及金属回收再利用的价值。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1143,
+      "standardCode": "化学-段第-1143",
+      "title": "了解金属、金属材料在生产生活和社会发展中的重要作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1144,
+      "standardCode": "化学-段第-1144",
+      "title": "以铁生锈为例，了解防止金属腐蚀的常用方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1139,
+      "standardCode": "化学-段第-1139",
+      "title": "体会化学方法在金属冶炼中的重要性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1142,
+      "standardCode": "化学-段第-1142",
+      "title": "知道在金属中加入其他元素形成合金可以改变金属材料的性能。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1138,
+      "standardCode": "化学-段第-1138",
+      "title": "知道大多数金属在自然界中是以金属矿物形式存在的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1140,
+      "standardCode": "化学-段第-1140",
+      "title": "知道金属具有一些共同的物理性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1141,
+      "standardCode": "化学-段第-1141",
+      "title": "通过实验探究等活动认识常见金属的主要化学性质及金属活动性顺序。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1158,
+      "standardCode": "化学-段第-1158",
+      "title": "体会科学地利用物质性质对提高人们的生活质量具有重要作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1162,
+      "standardCode": "化学-段第-1162",
+      "title": "形成保护和节约资 源的可持续发展意识与社会责任。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1159,
+      "standardCode": "化学-段第-1159",
+      "title": "结合实例体会化学品的保存、选择和使用与物质性质的重要关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1160,
+      "standardCode": "化学-段第-1160",
+      "title": "认识合理使用化学品对保护环境的重要意义，形成合理使用化学品的意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1157,
+      "standardCode": "化学-段第-1157",
+      "title": "认识物质性质在生活、生产、科技发展等方面的广泛应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1161,
+      "standardCode": "化学-段第-1161",
+      "title": "认识空气、水、金属矿物是宝贵的自然资源。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1118,
+      "standardCode": "化学-段第-1118",
+      "title": "知道物质具有广泛的应用价值，物质的性质决定用途。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1117,
+      "standardCode": "化学-段第-1117",
+      "title": "知道物质具有独特的物理性质和化学性质，同类物质在性质上具有一定的相似性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1116,
+      "standardCode": "化学-段第-1116",
+      "title": "知道物质可以分为纯净物和混合物、单质和化合物等。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1115,
+      "standardCode": "化学-段第-1115",
+      "title": "知道物质既有天然存在的也有人工创造的， 既有无机物也有有机物。认识依据物质的组成和性质可以对物质进行分类。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1114,
+      "standardCode": "化学-段第-1114",
+      "title": "认识物质是多样的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1152,
+      "standardCode": "化学-段第-1152",
+      "title": "了解物质性质包括物理性质和化学性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1156,
+      "standardCode": "化学-段第-1156",
+      "title": "了解观察、实验，以及对事实进行归纳概括、分析解释等认识物质性质的基本方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1155,
+      "standardCode": "化学-段第-1155",
+      "title": "了解通过物质的共性和差异性认识一类物质性质的方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1153,
+      "standardCode": "化学-段第-1153",
+      "title": "知道可以从物质的存在、组成、变化和用途等视角认识物质的性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1154,
+      "standardCode": "化学-段第-1154",
+      "title": "知道可以通过物质类别认识具体物质的性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的性质与应用"
+    },
+    {
+      "id": 1216,
+      "standardCode": "化学-段第-1216",
+      "title": "能从宏观与微观、定性与定量相结合的视角说明化学式的含义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1211,
+      "standardCode": "化学-段第-1211",
+      "title": "能从组成物质的元素的角度判断物质的类别。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1221,
+      "standardCode": "化学-段第-1221",
+      "title": "能依据化学反应过程中元素不变的规律，推断反应物或生成物的元素组成。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1215,
+      "standardCode": "化学-段第-1215",
+      "title": "能分析常见物质中元素的化合价。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1222,
+      "standardCode": "化学-段第-1222",
+      "title": "能基于真实情境，从元素、原子、分子的视角分析有关物质及其变化的简单问题，并作出合理的解释和判断。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1209,
+      "standardCode": "化学-段第-1209",
+      "title": "能对元素进行简单分类。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1213,
+      "standardCode": "化学-段第-1213",
+      "title": "能根据元素的原子序数在元素周期表中查到该元素的名称、符号、相对原子质量等信息。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1217,
+      "standardCode": "化学-段第-1217",
+      "title": "能根据化学式进行物质组成的简单计算。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1212,
+      "standardCode": "化学-段第-1212",
+      "title": "能根据原子的核电荷数判断核内质子数和核外电子数。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1218,
+      "standardCode": "化学-段第-1218",
+      "title": "能根据相关标签或说明书辨识某些食品、药品的主要成分，并能比较、分析相应物质的含量。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1220,
+      "standardCode": "化学-段第-1220",
+      "title": "能用分子的观点解释生活中的某些变化或现象。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1214,
+      "standardCode": "化学-段第-1214",
+      "title": "能用化学式表示某些常见物质的组成。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1210,
+      "standardCode": "化学-段第-1210",
+      "title": "能识记并正确书写常见元素的名称和符号。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1219,
+      "standardCode": "化学-段第-1219",
+      "title": "能说明分子、原子、离子的区别和联系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1192,
+      "standardCode": "化学-段第-1192",
+      "title": "了解在化学反应中元素的种类是不变的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1193,
+      "standardCode": "化学-段第-1193",
+      "title": "初步认识元素周期表。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1191,
+      "standardCode": "化学-段第-1191",
+      "title": "知道质子数相同的一类原子属于同种元素。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1190,
+      "standardCode": "化学-段第-1190",
+      "title": "认识物质是由元素组成的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1196,
+      "standardCode": "化学-段第-1196",
+      "title": "知道原子可以结合成分子，也可以转变为离子。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1194,
+      "standardCode": "化学-段第-1194",
+      "title": "知道物质是由分子、原子等微观粒子构成的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1195,
+      "standardCode": "化学-段第-1195",
+      "title": "认识原子是由原子核和核外电子构成的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1200,
+      "standardCode": "化学-段第-1200",
+      "title": "法，认识相对原子质量、相对分子质量的含义及应用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1197,
+      "standardCode": "化学-段第-1197",
+      "title": "知道可以用符号表示物质的组成。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1199,
+      "standardCode": "化学-段第-1199",
+      "title": "知道常见元素的化合价，学习用化学式表示常见物质组成的方",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1198,
+      "standardCode": "化学-段第-1198",
+      "title": "认识表示分子、原子、离子的符号。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1207,
+      "standardCode": "化学-段第-1207",
+      "title": "水的组成及变化的探究。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1208,
+      "standardCode": "化学-段第-1208",
+      "title": "跨学科实践活动（从学习主题5中选择）。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1187,
+      "standardCode": "化学-段第-1187",
+      "title": "初步形成基于元素和分子、原子认识物质及其变化的视角。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1188,
+      "standardCode": "化学-段第-1188",
+      "title": "建立认识物质的宏观和微观视角之间的关联。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1189,
+      "standardCode": "化学-段第-1189",
+      "title": "知道物质的性质与组成、结构有关。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1204,
+      "standardCode": "化学-段第-1204",
+      "title": "了解人类对物质的组成与结构的探索是不断发展的。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1206,
+      "standardCode": "化学-段第-1206",
+      "title": "了解研究物质的组成与结构对认识和创造物质的重要意义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1205,
+      "standardCode": "化学-段第-1205",
+      "title": "初步认识物质的组成、结构与性质之间的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1203,
+      "standardCode": "化学-段第-1203",
+      "title": "初步学习利用物质的性质和化学反应探究物质组成的基本思路与方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1202,
+      "standardCode": "化学-段第-1202",
+      "title": "知道可以通过实验、想象、推理、假说、模型等方法探索物质的结构。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1201,
+      "standardCode": "化学-段第-1201",
+      "title": "通过科学史实体会科学家探索物质的组成与结构的智慧。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "物质的组成与结构"
+    },
+    {
+      "id": 1104,
+      "standardCode": "化学-段第-1104",
+      "title": "具有预防化学实验安全事故的意识。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1094,
+      "standardCode": "化学-段第-1094",
+      "title": "列举化学家创造的对日常生活有价值的物质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1102,
+      "standardCode": "化学-段第-1102",
+      "title": "能严格遵守实验室安全规则。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1093,
+      "standardCode": "化学-段第-1093",
+      "title": "能举例说明化学科学对促进社会发展的重要作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1109,
+      "standardCode": "化学-段第-1109",
+      "title": "能体现严谨求实、敢于质疑的科学态度。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1113,
+      "standardCode": "化学-段第-1113",
+      "title": "能体现创新意识和勇于克服困难的品质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1106,
+      "standardCode": "化学-段第-1106",
+      "title": "能全面、准确地记录实验过程和现象。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1108,
+      "standardCode": "化学-段第-1108",
+      "title": "能分析实验实施的合理性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1100,
+      "standardCode": "化学-段第-1100",
+      "title": "能基于事实，分析证据与假设的关系，形成结论。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1110,
+      "standardCode": "化学-段第-1110",
+      "title": "能基于必做实验形成的探究思路与方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1101,
+      "standardCode": "化学-段第-1101",
+      "title": "能撰写简单的实验报告，并与他人交流和评价探究过程及结果。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1095,
+      "standardCode": "化学-段第-1095",
+      "title": "能查找资料并讲述我国化学家胸怀祖国、艰苦奋斗、勇于创新的故事。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1105,
+      "standardCode": "化学-段第-1105",
+      "title": "能正确选取实验试剂和仪器，依据实验方案完成必做实验。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1099,
+      "standardCode": "化学-段第-1099",
+      "title": "能独立或与他人合作开展化学实验，收集证据。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1097,
+      "standardCode": "化学-段第-1097",
+      "title": "能独立或经过启发发现和表述有探究价值的问题，提出猜想与假设。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1096,
+      "standardCode": "化学-段第-1096",
+      "title": "能结合具体探究活动说明科学探究的要素及各要素之间的关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1111,
+      "standardCode": "化学-段第-1111",
+      "title": "能结合物质的组成及变化等相关知识，分析解决真实情境中的简单实验问题。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1098,
+      "standardCode": "化学-段第-1098",
+      "title": "能设计简单的实验方案或实践活动方案。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1103,
+      "standardCode": "化学-段第-1103",
+      "title": "能识别实验室安全警示标志和常用危险化学品标志。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1107,
+      "standardCode": "化学-段第-1107",
+      "title": "能说明必做实验的基本思路与方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1112,
+      "standardCode": "化学-段第-1112",
+      "title": "能通过小组合作，有意识地应用化学、技术、工程及其他学科知识，完成实验探究及跨学科实践活动。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "学业要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1053,
+      "standardCode": "化学-段第-1053",
+      "title": "了解化学科学对社会发展和人类文明进步的重要价值。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1051,
+      "standardCode": "化学-段第-1051",
+      "title": "体会实验探究和模型建构是化学科学研究的基本方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1050,
+      "standardCode": "化学-段第-1050",
+      "title": "初步了解化学科学的发展历程。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1055,
+      "standardCode": "化学-段第-1055",
+      "title": "学习科学家爱国、奉献的精神，团结协作、攻坚克难的品格。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1054,
+      "standardCode": "化学-段第-1054",
+      "title": "感悟科学家崇尚真理、严谨求实的科学态度，勇于质疑、批判和创新的精神。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1049,
+      "standardCode": "化学-段第-1049",
+      "title": "知道化学是研究物质的组成、结构、性质、转化及应用的一门基础学科，其特征是从分子层次认识物质，通过化学变化创造物质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1052,
+      "standardCode": "化学-段第-1052",
+      "title": "认识化学科学、技术、社会、环境的相互关系。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1077,
+      "standardCode": "化学-段第-1077",
+      "title": "学习和体会化学家进行科学探究的智慧和方法，理解科学探究的本质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1075,
+      "standardCode": "化学-段第-1075",
+      "title": "学习控制变量和对比实验的实验设计方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1072,
+      "standardCode": "化学-段第-1072",
+      "title": "知道围绕实验目的确定实验原理，选择实验仪器，组装实验装置，设计实验步骤，实施实验并完成实验记录，基于实验事实得出结论。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1074,
+      "standardCode": "化学-段第-1074",
+      "title": "进行物质分离、检验和制备等不同类型化学实验探究活动的一般思路与基本方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1073,
+      "standardCode": "化学-段第-1073",
+      "title": "通过具体的化学实验探究活动，学习研究物质性质，探究物质组成和反应规律。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1071,
+      "standardCode": "化学-段第-1071",
+      "title": "通过具体的实验活动初步形成化学实验探究的一般思路与方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1076,
+      "standardCode": "化学-段第-1076",
+      "title": "通过化学科学发展历程中的经典实验。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1068,
+      "standardCode": "化学-段第-1068",
+      "title": "初步学习使用过滤、蒸发的方法对混合物进行分离。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1069,
+      "standardCode": "化学-段第-1069",
+      "title": "初步学习运用简单的装置和方法制取某些气体。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1064,
+      "standardCode": "化学-段第-1064",
+      "title": "初步学会在教师指导下根据实验需要选择实验试剂和仪器，并能安全操作。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1067,
+      "standardCode": "化学-段第-1067",
+      "title": "初步学会根据某些性质检验和区分一些常见的物质。 ",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1070,
+      "standardCode": "化学-段第-1070",
+      "title": "初步学会观察实验现象，并如实记录、处理实验数据，撰写实验报告等技能。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1065,
+      "standardCode": "化学-段第-1065",
+      "title": "初步学会配制一定溶质质量分数的溶液。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1066,
+      "standardCode": "化学-段第-1066",
+      "title": "学会用酸碱指示剂、pH 试纸检验溶液的酸碱性。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1063,
+      "standardCode": "化学-段第-1063",
+      "title": "学会试剂的取用、简单仪器的使用及连接、加热等实验基本操作。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1062,
+      "standardCode": "化学-段第-1062",
+      "title": "熟悉化学实验室安全警示标志，学会正确使用安全防护设施，学习妥善应对实验安全问题的必要措施。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1060,
+      "standardCode": "化学-段第-1060",
+      "title": "知道化学实验是进行科学探究的重要方式，具备基本的化学实验",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1061,
+      "standardCode": "化学-段第-1061",
+      "title": "知道技能是学习化学和进行探究活动的基础和保证。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1089,
+      "standardCode": "化学-段第-1089",
+      "title": "一定溶质质量分数的氯化钠溶液的配制。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1086,
+      "standardCode": "化学-段第-1086",
+      "title": "二氧化碳的实验室制取与性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1088,
+      "standardCode": "化学-段第-1088",
+      "title": "常见酸、碱的化学性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1087,
+      "standardCode": "化学-段第-1087",
+      "title": "常见金属的物理性质和化学性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1085,
+      "standardCode": "化学-段第-1085",
+      "title": "氧气的实验室制取与性质。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1090,
+      "standardCode": "化学-段第-1090",
+      "title": "水的组成及变化的探究。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1091,
+      "standardCode": "化学-段第-1091",
+      "title": "燃烧条件的探究。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1084,
+      "standardCode": "化学-段第-1084",
+      "title": "粗盐中难溶性杂质的去除。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1092,
+      "standardCode": "化学-段第-1092",
+      "title": "跨学科实践活动（原则上从学习主题5中选择，所用课时不少于本学科总课时的10%）。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1082,
+      "standardCode": "化学-段第-1082",
+      "title": "了解实验室基本布局，学会正确使用安全防护设施。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1080,
+      "standardCode": "化学-段第-1080",
+      "title": "具有敢于提出并坚持自己的见解、勇于修正或放弃错误观点、反对伪科学的科学精神。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1083,
+      "standardCode": "化学-段第-1083",
+      "title": "养成节约和环保的习惯。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1078,
+      "standardCode": "化学-段第-1078",
+      "title": "发展科学探究的好奇心、想象力与探究欲。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1081,
+      "standardCode": "化学-段第-1081",
+      "title": "树立自觉的安全意识和观念，知道化学实验存在安全风险，明确化学实验室安全规则和实验操作规范。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1079,
+      "standardCode": "化学-段第-1079",
+      "title": "通过探究活动，初步养成注重实证、严谨求实的科学态度，初步学会批判性思维方法。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1057,
+      "standardCode": "化学-段第-1057",
+      "title": "了解科学探究过程包括提出问题、形成假设、设计并实施实验或调查方案、获取证据、分析解释数据、形成结论及建构模型、反思评价及表达交流等要素。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1059,
+      "standardCode": "化学-段第-1059",
+      "title": "体会合作与交流在科学探究中的重要作用。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1056,
+      "standardCode": "化学-段第-1056",
+      "title": "知道科学探究是收集证据和作出解释，进行发现、创造与应用的科学实践活动，也是获取科学知识、理解科学本质、认识客观世界的重要途径。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    },
+    {
+      "id": 1058,
+      "standardCode": "化学-段第-1058",
+      "title": "经历科学探究的一般过程，认识从问题和假设出发确定探究目标、依据探究目标设计并实施实验方案、通过观察和实验等方法获取证据、基于证据进行分析推理及形成结论等对于科学探究的意义。",
+      "stage": "义务教育阶段第四学段",
+      "standardType": "内容要求",
+      "contentDomain": "科学探究与化学实验"
+    }
+  ]
+}

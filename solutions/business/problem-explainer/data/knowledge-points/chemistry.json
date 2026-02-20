@@ -1,0 +1,91 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "chemistry",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "chem-basic",
+      "subject": "chemistry",
+      "name": "基本概念",
+      "description": "化学的基础知识",
+      "children": [
+        {
+          "id": "chem-basic-atom",
+          "subject": "chemistry",
+          "name": "原子结构",
+          "description": "原子的组成和电子排布",
+          "commonProblemTypes": ["核外电子排布", "原子序数", "同位素"]
+        },
+        {
+          "id": "chem-basic-periodic",
+          "subject": "chemistry",
+          "name": "元素周期律",
+          "description": "元素性质的周期性变化",
+          "commonProblemTypes": ["周期表位置", "原子半径", "电负性"]
+        },
+        {
+          "id": "chem-basic-bond",
+          "subject": "chemistry",
+          "name": "化学键",
+          "description": "原子间的相互作用",
+          "commonProblemTypes": ["离子键", "共价键", "金属键"]
+        }
+      ]
+    },
+    {
+      "id": "chem-reaction",
+      "subject": "chemistry",
+      "name": "化学反应",
+      "description": "物质的变化和规律",
+      "children": [
+        {
+          "id": "chem-reaction-type",
+          "subject": "chemistry",
+          "name": "反应类型",
+          "description": "各种化学反应的分类",
+          "commonProblemTypes": ["氧化还原", "置换反应", "复分解反应"]
+        },
+        {
+          "id": "chem-reaction-rate",
+          "subject": "chemistry",
+          "name": "反应速率与平衡",
+          "description": "反应快慢和平衡状态",
+          "commonProblemTypes": ["反应速率计算", "化学平衡", "勒夏特列原理"],
+          "relatedFormulas": ["v = Δc/Δt", "K = [C]ᶜ[D]ᵈ/[A]ᵃ[B]ᵇ"]
+        },
+        {
+          "id": "chem-reaction-energy",
+          "subject": "chemistry",
+          "name": "化学能",
+          "description": "化学反应中的能量变化",
+          "commonProblemTypes": ["放热反应", "吸热反应", "盖斯定律"],
+          "relatedFormulas": ["ΔH = H产物 - H反应物"]
+        }
+      ]
+    },
+    {
+      "id": "chem-organic",
+      "subject": "chemistry",
+      "name": "有机化学",
+      "description": "含碳化合物的化学",
+      "children": [
+        {
+          "id": "chem-organic-hydrocarbon",
+          "subject": "chemistry",
+          "name": "烃类",
+          "description": "只含碳氢的有机物",
+          "commonProblemTypes": ["烷烃", "烯烃", "芳香烃"]
+        },
+        {
+          "id": "chem-organic-derivative",
+          "subject": "chemistry",
+          "name": "烃的衍生物",
+          "description": "含官能团的有机物",
+          "commonProblemTypes": ["醇", "醛", "羧酸", "酯"]
+        }
+      ]
+    }
+  ]
+}

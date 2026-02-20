@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "rehab-motion-renderer": {
+      "command": "npx",
+      "args": ["tsx", "packages/mcp-server/src/index.ts"],
+      "env": {
+        "RENDERER_BASE_URL": "http://localhost:5173"
+      }
+    }
+  }
+}

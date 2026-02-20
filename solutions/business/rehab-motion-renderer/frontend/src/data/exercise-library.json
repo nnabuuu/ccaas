@@ -1,0 +1,147 @@
+{
+  "pelvic-tilt": {
+    "name": "Pelvic Tilt",
+    "nameZh": "骨盆前倾",
+    "muscles": "腹横肌 · 骨盆底肌 · 臀肌",
+    "figure": "lying",
+    "phases": ["仰卧放松", "收紧腹部", "骨盆后倾", "HOLD 保持", "缓慢放松"],
+    "phaseDurations": [2, 1.5, 3, 2, 2],
+    "keyframes": [
+      { "rHip": -75, "rKnee": 75, "lHip": -72, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 0 },
+      { "rHip": -75, "rKnee": 75, "lHip": -72, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 0.3 },
+      { "rHip": -78, "rKnee": 75, "lHip": -75, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 1 },
+      { "rHip": -78, "rKnee": 75, "lHip": -75, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 1 },
+      { "rHip": -78, "rKnee": 75, "lHip": -75, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 1 },
+      { "rHip": -75, "rKnee": 75, "lHip": -72, "lKnee": 72, "rSh": 100, "lSh": 105, "tilt": 0 }
+    ],
+    "visualHints": [
+      {
+        "type": "indicator",
+        "trigger": { "field": "tilt", "condition": "gt", "value": 0.7 },
+        "text": "✓ 腰贴地面",
+        "color": "#22d3ee"
+      },
+      {
+        "type": "label",
+        "trigger": { "field": "tilt", "condition": "gt", "value": 0.9 },
+        "text": "HOLD 保持",
+        "color": "#22d3ee",
+        "position": "center"
+      },
+      {
+        "type": "glow",
+        "trigger": { "field": "tilt", "condition": "gt", "value": 0.5 },
+        "color": "#22d3ee",
+        "position": "center"
+      }
+    ]
+  },
+  "dead-bug": {
+    "name": "Dead Bug",
+    "nameZh": "死虫式",
+    "muscles": "腹横肌 · 腹直肌 · 髂屈肌",
+    "figure": "lying",
+    "phases": ["起始位", "右腿伸出+左臂", "回收", "左腿伸出+右臂", "回收"],
+    "phaseDurations": [2, 3, 2, 3, 2],
+    "keyframes": [
+      { "rHip": -80, "rKnee": 80, "lHip": -77, "lKnee": 77, "rSh": -85, "lSh": -80, "tilt": 0 },
+      { "rHip": -80, "rKnee": 80, "lHip": -77, "lKnee": 77, "rSh": -85, "lSh": -80, "tilt": 0 },
+      { "rHip": -25, "rKnee": 8,  "lHip": -77, "lKnee": 77, "rSh": -85, "lSh": -155, "tilt": 0 },
+      { "rHip": -80, "rKnee": 80, "lHip": -77, "lKnee": 77, "rSh": -85, "lSh": -80, "tilt": 0 },
+      { "rHip": -80, "rKnee": 80, "lHip": -20, "lKnee": 6,  "rSh": -160, "lSh": -80, "tilt": 0 },
+      { "rHip": -80, "rKnee": 80, "lHip": -77, "lKnee": 77, "rSh": -85, "lSh": -80, "tilt": 0 }
+    ],
+    "visualHints": [
+      {
+        "type": "arrow",
+        "trigger": { "field": "rHip", "condition": "gt", "value": -60 },
+        "text": "→",
+        "color": "#22d3ee",
+        "position": "right"
+      },
+      {
+        "type": "arrow",
+        "trigger": { "field": "lHip", "condition": "gt", "value": -55 },
+        "text": "→",
+        "color": "#22d3ee",
+        "position": "right"
+      },
+      {
+        "type": "glow",
+        "trigger": { "field": "rHip", "condition": "gt", "value": -60 },
+        "color": "#22d3ee",
+        "position": "center"
+      }
+    ]
+  },
+  "cat-cow": {
+    "name": "Cat Stretch",
+    "nameZh": "猫式拉伸",
+    "muscles": "竖脊肌 · 腹肌 · 多裂肌",
+    "figure": "cat",
+    "phases": ["四点跪姿", "弓背(猫式)↑", "回正", "轻微塌腰↓", "回正"],
+    "phaseDurations": [2, 3, 2, 2, 2],
+    "keyframes": [
+      { "spine": 0, "headDrop": 0 },
+      { "spine": 0, "headDrop": 0 },
+      { "spine": -1, "headDrop": 18 },
+      { "spine": 0, "headDrop": 0 },
+      { "spine": 0.3, "headDrop": -8 },
+      { "spine": 0, "headDrop": 0 }
+    ],
+    "visualHints": [
+      {
+        "type": "label",
+        "trigger": { "field": "spine", "condition": "lt", "value": -0.3 },
+        "text": "↑ 弓背 · 呼气",
+        "color": "#22d3ee",
+        "position": "top"
+      },
+      {
+        "type": "label",
+        "trigger": { "field": "spine", "condition": "gt", "value": 0.15 },
+        "text": "↓ 轻微塌腰 · 吸气 · 幅度减半!",
+        "color": "#f59e0b",
+        "position": "top"
+      }
+    ]
+  },
+  "seated-boxing": {
+    "name": "Seated Boxing",
+    "nameZh": "坐姿拳击",
+    "muscles": "三角肌 · 肱三头肌 · 核心",
+    "figure": "seated",
+    "phases": ["防守姿势", "左直拳 Jab", "右直拳 Cross", "左勾拳 Hook", "右上勾 Upper"],
+    "phaseDurations": [1.5, 0.8, 0.8, 1, 1],
+    "keyframes": [
+      { "lArmX": 0, "lArmY": 0, "rArmX": 0, "rArmY": 0 },
+      { "lArmX": 0, "lArmY": 0, "rArmX": 0, "rArmY": 0 },
+      { "lArmX": 150, "lArmY": -12, "rArmX": 0, "rArmY": 0 },
+      { "lArmX": 0, "lArmY": 0, "rArmX": 155, "rArmY": -12 },
+      { "lArmX": 100, "lArmY": -40, "rArmX": 0, "rArmY": 0 },
+      { "lArmX": 0, "lArmY": 0, "rArmX": 60, "rArmY": -65 }
+    ],
+    "visualHints": [
+      {
+        "type": "label",
+        "trigger": { "field": "lArmX", "condition": "gt", "value": 100 },
+        "text": "JAB →",
+        "color": "#5ec4db",
+        "position": "right"
+      },
+      {
+        "type": "label",
+        "trigger": { "field": "rArmX", "condition": "gt", "value": 100 },
+        "text": "CROSS →",
+        "color": "#a78bfa",
+        "position": "right"
+      },
+      {
+        "type": "glow",
+        "trigger": { "field": "lArmX", "condition": "gt", "value": 30 },
+        "color": "#f59e0b",
+        "position": "center"
+      }
+    ]
+  }
+}

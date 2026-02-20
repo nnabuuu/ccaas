@@ -1,0 +1,89 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "physics",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "physics-mechanics",
+      "subject": "physics",
+      "name": "力学",
+      "description": "研究物体的运动和受力",
+      "children": [
+        {
+          "id": "physics-mechanics-kinematics",
+          "subject": "physics",
+          "name": "运动学",
+          "description": "描述物体的运动",
+          "commonProblemTypes": ["匀速直线运动", "匀变速直线运动", "抛体运动"],
+          "relatedFormulas": ["v = s/t", "v = v₀ + at", "s = v₀t + ½at²"]
+        },
+        {
+          "id": "physics-mechanics-dynamics",
+          "subject": "physics",
+          "name": "动力学",
+          "description": "研究力与运动的关系",
+          "commonProblemTypes": ["牛顿定律", "摩擦力", "向心力"],
+          "relatedFormulas": ["F = ma", "f = μN", "F = mv²/r"]
+        },
+        {
+          "id": "physics-mechanics-energy",
+          "subject": "physics",
+          "name": "能量与动量",
+          "description": "功、能量和动量守恒",
+          "commonProblemTypes": ["功和功率", "动能定理", "动量守恒"],
+          "relatedFormulas": ["W = Fs", "Eₖ = ½mv²", "p = mv"]
+        }
+      ]
+    },
+    {
+      "id": "physics-electromagnetism",
+      "subject": "physics",
+      "name": "电磁学",
+      "description": "研究电场和磁场",
+      "children": [
+        {
+          "id": "physics-em-electrostatics",
+          "subject": "physics",
+          "name": "静电场",
+          "description": "静止电荷产生的场",
+          "commonProblemTypes": ["库仑力", "电场强度", "电势"],
+          "relatedFormulas": ["F = kq₁q₂/r²", "E = F/q", "U = W/q"]
+        },
+        {
+          "id": "physics-em-circuit",
+          "subject": "physics",
+          "name": "电路",
+          "description": "电流的流动和计算",
+          "commonProblemTypes": ["欧姆定律", "串并联", "电功率"],
+          "relatedFormulas": ["I = U/R", "P = UI", "Q = I²Rt"]
+        },
+        {
+          "id": "physics-em-magnetism",
+          "subject": "physics",
+          "name": "磁场",
+          "description": "磁场的性质和应用",
+          "commonProblemTypes": ["安培力", "洛伦兹力", "电磁感应"],
+          "relatedFormulas": ["F = BIL", "F = qvB", "ε = BLv"]
+        }
+      ]
+    },
+    {
+      "id": "physics-optics",
+      "subject": "physics",
+      "name": "光学",
+      "description": "研究光的传播和性质",
+      "children": [
+        {
+          "id": "physics-optics-geometric",
+          "subject": "physics",
+          "name": "几何光学",
+          "description": "光的直线传播、反射和折射",
+          "commonProblemTypes": ["反射定律", "折射定律", "透镜成像"],
+          "relatedFormulas": ["n = c/v", "n₁sinθ₁ = n₂sinθ₂", "1/f = 1/u + 1/v"]
+        }
+      ]
+    }
+  ]
+}

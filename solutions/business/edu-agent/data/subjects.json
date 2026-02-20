@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "subjects": [
+    {
+      "id": "math",
+      "name": "数学",
+      "hasFormula": true,
+      "grades": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
+    },
+    {
+      "id": "physics",
+      "name": "物理",
+      "hasFormula": true,
+      "grades": ["8", "9", "10", "11", "12"]
+    },
+    {
+      "id": "chemistry",
+      "name": "化学",
+      "hasFormula": true,
+      "grades": ["9", "10", "11", "12"]
+    },
+    {
+      "id": "biology",
+      "name": "生物",
+      "hasFormula": false,
+      "grades": ["7", "8", "10", "11", "12"]
+    },
+    {
+      "id": "chinese",
+      "name": "语文",
+      "hasFormula": false,
+      "grades": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
+    },
+    {
+      "id": "english",
+      "name": "英语",
+      "hasFormula": false,
+      "grades": ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"]
+    },
+    {
+      "id": "history",
+      "name": "历史",
+      "hasFormula": false,
+      "grades": ["7", "8", "9", "10", "11", "12"]
+    },
+    {
+      "id": "geography",
+      "name": "地理",
+      "hasFormula": false,
+      "grades": ["7", "8", "10", "11", "12"]
+    },
+    {
+      "id": "politics",
+      "name": "政治",
+      "hasFormula": false,
+      "grades": ["7", "8", "9", "10", "11", "12"]
+    }
+  ]
+}

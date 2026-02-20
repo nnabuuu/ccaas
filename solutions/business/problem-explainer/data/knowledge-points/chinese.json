@@ -1,0 +1,82 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "subject": "chinese",
+    "generatedAt": "2026-01-27T00:00:00.000Z"
+  },
+  "knowledgePoints": [
+    {
+      "id": "chinese-reading",
+      "subject": "chinese",
+      "name": "阅读理解",
+      "description": "理解文章内容、结构和意义",
+      "children": [
+        {
+          "id": "chinese-reading-comprehension",
+          "subject": "chinese",
+          "name": "内容理解",
+          "description": "把握文章主旨和细节",
+          "commonProblemTypes": ["主旨概括", "细节理解", "推断判断"]
+        },
+        {
+          "id": "chinese-reading-structure",
+          "subject": "chinese",
+          "name": "结构分析",
+          "description": "分析文章层次和脉络",
+          "commonProblemTypes": ["段落作用", "行文思路", "过渡照应"]
+        },
+        {
+          "id": "chinese-reading-technique",
+          "subject": "chinese",
+          "name": "表达技巧",
+          "description": "分析修辞和写作手法",
+          "commonProblemTypes": ["修辞手法", "表现手法", "语言特点"]
+        }
+      ]
+    },
+    {
+      "id": "chinese-writing",
+      "subject": "chinese",
+      "name": "写作",
+      "description": "各类文体的写作技巧",
+      "children": [
+        {
+          "id": "chinese-writing-narrative",
+          "subject": "chinese",
+          "name": "记叙文",
+          "description": "记人叙事类文章",
+          "commonProblemTypes": ["人物描写", "事件叙述", "场景描绘"]
+        },
+        {
+          "id": "chinese-writing-argumentative",
+          "subject": "chinese",
+          "name": "议论文",
+          "description": "论点论据论证",
+          "commonProblemTypes": ["立论", "论据", "论证方法"]
+        }
+      ]
+    },
+    {
+      "id": "chinese-poetry",
+      "subject": "chinese",
+      "name": "古诗词",
+      "description": "古代诗词鉴赏",
+      "children": [
+        {
+          "id": "chinese-poetry-image",
+          "subject": "chinese",
+          "name": "意象与意境",
+          "description": "诗歌中的形象和氛围",
+          "commonProblemTypes": ["意象分析", "意境描述", "情感把握"]
+        },
+        {
+          "id": "chinese-poetry-technique",
+          "subject": "chinese",
+          "name": "艺术手法",
+          "description": "诗歌的表达技巧",
+          "commonProblemTypes": ["用典", "对仗", "借景抒情"]
+        }
+      ]
+    }
+  ]
+}

@@ -304,6 +304,42 @@ Merges into an object field:
 { "field": "assessment", "value": {"rubric": "New rubric"}, "operation": "merge" }
 ```
 
+## ⚠️ Common Mistake: Putting value in \_meta
+
+The following implementation **looks reasonable but is silently broken**:
+
+```typescript
+// ❌ WRONG: EventMapper ignores _meta — value never reaches the frontend
+return {
+  content: [{ type: 'text', text: JSON.stringify({ success: true, field, preview }) }],
+  _meta: { outputUpdate: { field, value, preview } },  // Ignored!
+}
+```
+
+When CCAAS EventMapper processes a `write_output` result, it **only reads `content[].text` JSON**:
+
+```
+parsedResult.data || parsedResult → payload.data
+```
+
+The `_meta` field is completely ignored. The frontend will receive an `output_update` event, but `payload.data` will have no `value` — form fields will not update.
+
+Correct implementation (`value` must be inside `content[].text` JSON):
+
+```typescript
+// ✅ CORRECT: data object (including value) is in content[].text JSON
+return {
+  content: [{ type: 'text', text: JSON.stringify({
+    data: { field, value, preview },
+    status: 'success',
+  })}],
+}
+```
+
+{% hint style="info" %}
+Reference implementation: `solutions/demo/01-write-output/mcp-server/src/index.ts` demonstrates the correct pattern with inline comments contrasting the wrong approach.
+{% endhint %}
+
 ## Troubleshooting
 
 ### write\_output Not Showing Up

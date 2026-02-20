@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "3.0",
+  "name": "康复训练设计器",
+  "slug": "rehab-motion-renderer",
+  "description": "从医学检查报告出发，AI 生成个性化康复训练方案，渲染为 SVG 骨架动画训练页面",
+  "tenant": {
+    "name": "康复训练设计器",
+    "slug": "rehab-motion-renderer",
+    "description": "从医学检查报告出发，AI 生成个性化康复训练方案，渲染为 SVG 骨架动画训练页面"
+  },
+  "mcpServers": {
+    "rehab-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "康复训练工具：write_output + get_exercise_library",
+      "type": "stdio",
+      "env": {}
+    }
+  },
+  "skills": [
+    {
+      "slug": "exercise-planner",
+      "name": "exercise-planner"
+    }
+  ]
+}

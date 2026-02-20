@@ -1,0 +1,116 @@
+{
+  "name": "Problem Explainer",
+  "slug": "problem-explainer",
+  "version": "1.0.0",
+  "description": "AI讲题助手 - 智能解析题目，逐步讲解解题思路，生成讲稿、音频和PPT",
+  "author": "CCAAS Team",
+  "tags": ["education", "tutoring", "problem-solving", "content-generation"],
+
+  "mcpServers": {
+    "problem-explainer-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/stdio-server.js"],
+      "description": "Problem Explainer MCP tools: write_output, get_subjects, get_knowledge_points, calculate_difficulty, generate_script_template"
+    }
+  },
+
+  "skill": {
+    "name": "Problem Explainer",
+    "description": "AI讲题助手 - 分析题目、生成讲稿、制作音频和PPT的完整工作流",
+    "triggers": [
+      { "type": "keyword", "value": "讲题", "priority": 10 },
+      { "type": "keyword", "value": "讲解", "priority": 9 },
+      { "type": "keyword", "value": "解题", "priority": 9 },
+      { "type": "keyword", "value": "这道题", "priority": 8 },
+      { "type": "keyword", "value": "怎么做", "priority": 8 },
+      { "type": "keyword", "value": "帮我分析", "priority": 7 },
+      { "type": "keyword", "value": "看不懂", "priority": 7 },
+      { "type": "keyword", "value": "不会做", "priority": 7 },
+      { "type": "keyword", "value": "举一反三", "priority": 6 },
+      { "type": "keyword", "value": "全套材料", "priority": 10 },
+      { "type": "keyword", "value": "生成讲稿", "priority": 9 },
+      { "type": "keyword", "value": "生成音频", "priority": 9 },
+      { "type": "keyword", "value": "生成PPT", "priority": 9 }
+    ],
+    "allowedTools": [
+      "write_output",
+      "Read",
+      "Write",
+      "Skill",
+      "get_subjects",
+      "get_knowledge_points",
+      "calculate_difficulty",
+      "generate_script_template"
+    ],
+    "skillFile": "skills/problem-explainer/SKILL.md",
+    "relatedSkills": ["notebooklm", "example-skills:pptx"],
+    "chainedSkills": {
+      "notebooklm": {
+        "description": "生成讲题音频",
+        "triggerPhrase": "生成音频",
+        "inputFrom": "Phase 2 讲稿内容",
+        "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/讲解音频.mp3"
+      },
+      "example-skills:pptx": {
+        "description": "生成讲题PPT",
+        "triggerPhrase": "生成PPT",
+        "inputFrom": "Phase 1-2 分析结果",
+        "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/讲解PPT.pptx"
+      }
+    }
+  },
+
+  "backend": {
+    "port": 3003,
+    "ccaasUrl": "http://localhost:3001"
+  },
+
+  "frontend": {
+    "port": 5281
+  },
+
+  "mcpServer": {
+    "port": 3004
+  },
+
+  "syncFields": [
+    "problemAnalysis",
+    "keyKnowledge",
+    "solutionSteps",
+    "answer",
+    "commonMistakes",
+    "relatedProblems",
+    "hints",
+    "difficulty"
+  ],
+
+  "workflow": {
+    "description": "完整讲题工作流",
+    "phases": [
+      {
+        "name": "分析题目",
+        "description": "识别知识点、分析解题步骤、评估难度",
+        "tools": ["get_knowledge_points", "calculate_difficulty", "write_output"]
+      },
+      {
+        "name": "生成讲稿",
+        "description": "创建结构化的讲解文稿",
+        "tools": ["generate_script_template", "Write"]
+      },
+      {
+        "name": "生成音频",
+        "description": "通过 NotebookLM 生成讲解音频",
+        "skill": "notebooklm"
+      },
+      {
+        "name": "生成PPT",
+        "description": "创建演示文稿",
+        "skill": "example-skills:pptx"
+      },
+      {
+        "name": "输出文件",
+        "description": "将所有产出物附加到消息供下载"
+      }
+    ]
+  }
+}
