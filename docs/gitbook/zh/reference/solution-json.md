@@ -249,6 +249,10 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 | `description` | string | 模板说明 |
 | `appendSystemPrompt` | string（可选） | 追加到系统提示的内容 |
 | `enabledSkillSlugs` | string[]（可选） | 此模板启用的 skill slug 列表 |
+| `mcpServers` | object（可选） | MCP 服务器配置（格式同顶层 `mcpServers`） |
+| `model` | string（可选） | 模型覆盖（如 `claude-opus-4-6`） |
+
+> 完整详情（Admin UI、API 端点、合并规则、安全配置、问题排查）请参阅 [Session Templates 管理指南](../guide/admin-session-templates.md)。
 
 > **部署验证:** 每次 solution 完整加载后，backend 自动在 `tenant.config.solutionAppliedAt` 写入 ISO 时间戳，可用于 CI/CD 验证部署状态。
 

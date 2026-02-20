@@ -249,6 +249,10 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 | `description` | string | Template description |
 | `appendSystemPrompt` | string (optional) | Text appended to the system prompt |
 | `enabledSkillSlugs` | string[] (optional) | Skill slugs enabled for this template |
+| `mcpServers` | object (optional) | MCP server configurations (same format as top-level `mcpServers`) |
+| `model` | string (optional) | Model override (e.g. `claude-opus-4-6`) |
+
+> For full details — Admin UI, API endpoints, merge rules, security, and troubleshooting — see the [Session Templates Management guide](../guide/admin-session-templates.md).
 
 > **Deployment verification:** After each complete solution load, the backend automatically writes an ISO timestamp to `tenant.config.solutionAppliedAt`. Use this for CI/CD deployment verification.
 
