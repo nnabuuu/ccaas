@@ -65,4 +65,3 @@
 
 * [solution.json 配置参考 (v3.0)](reference/solution-json.md)
 * [最佳实践汇总](reference/best-practices.md)
-* [MCP REST 迁移指南](reference/migration.md)

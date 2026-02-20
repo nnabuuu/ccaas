@@ -64,4 +64,3 @@
 
 * [solution.json Reference (v3.0)](reference/solution-json.md)
 * [Best Practices](reference/best-practices.md)
-* [MCP REST Migration Guide](reference/migration.md)
