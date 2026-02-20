@@ -294,7 +294,6 @@ npm run skill:import -- quiz-analyzer --verbose
 
 This is useful when you want fine-grained control over which solutions are loaded and when — without restarting the backend.
 
-> **Note:** The old `inject-skills.sh` shell script is no longer needed. Use `npm run skill:import` for manual imports.
 
 ## Best Practices
 

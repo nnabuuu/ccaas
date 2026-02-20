@@ -285,7 +285,6 @@ npm run skill:import -- quiz-analyzer --verbose
 
 适用于需要精细控制哪些解决方案何时加载的场景，无需重启后端。
 
-> **说明：** 旧的 `inject-skills.sh` shell 脚本已废弃。手动导入请使用 `npm run skill:import`。
 
 ## 最佳实践
 
