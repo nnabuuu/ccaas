@@ -1,69 +1,22 @@
 ---
-# ============================================================================
-# SKILL.md Frontmatter - Canonical Example
-# ============================================================================
-# This frontmatter block is parsed by the CCAAS backend during auto-discovery.
-# It defines the skill's identity, routing triggers, and tool permissions.
-# See docs/SKILL_MD_FRONTMATTER.md for the full schema reference.
+# SKILL.md Frontmatter — Current Format
+#
+# Only two fields live here. Everything else (slug, triggers, allowedTools,
+# scope) belongs in solution.json under the skill's entry.
+#
+# See: docs/SKILL_MD_FRONTMATTER.md for schema reference.
+#      docs/gitbook/en/guide/skill-writing.md for authoring guide.
 
 # Required: Human-readable name (supports Unicode)
 name: Quiz Three-Column Analysis
 
-# Required: URL-safe identifier. Must match the directory name.
-# Pattern: lowercase letters, digits, and hyphens only
-slug: three-column-analysis
-
 # Required: Brief description of the skill's purpose
 description: 三栏布局题目分析 - 解析题目、标注知识点、查找目录、生成解题思路
-
-# Optional (default: "tenant"): Visibility scope
-# "tenant" = available within the same tenant
-# "global" = available across all tenants
-scope: tenant
-
-# Optional (default: []): Routing triggers for automatic skill activation
-# The SkillRouterService evaluates these when a user sends a message.
-# Higher priority wins when multiple skills match.
-triggers:
-  # keyword: Exact substring match (most common, most predictable)
-  - type: keyword
-    value: "请帮我分析这道题目"
-    priority: 11
-
-  - type: keyword
-    value: "开始分析"
-    priority: 10
-
-  - type: keyword
-    value: "分析这道题"
-    priority: 10
-
-  - type: keyword
-    value: "题目分析"
-    priority: 9
-
-  # pattern: Regex match (for flexible matching across phrasings)
-  - type: pattern
-    value: "分析.*题目"
-    priority: 8
-    description: Matches variations like "分析一下这道题目" or "帮我分析数学题目"
-
-# Optional (default: []): MCP tools this skill is allowed to invoke.
-# Only these tools will be available when the skill is active.
-# Omit entirely to allow all tools.
-allowedTools:
-  - parse_quiz_content
-  - search_knowledge_points_json
-  - search_catalog
-  - write_output
-  - generate_thinking_process_template
-  - verify_knowledge_point_tags
 ---
 
 <!-- ======================================================================
-     Everything below this line is the skill prompt content.
-     It is injected as the system prompt for the AgentEngine when this
-     skill is activated. Write it as instructions for the AI agent.
+     Everything below is the skill prompt injected as the system prompt
+     when this skill is activated. Write it as instructions for the AI.
      ====================================================================== -->
 
 # Skill: Quiz Three-Column Analysis (三栏布局题目分析)
@@ -72,7 +25,6 @@ allowedTools:
 
 配合前端三栏布局，提供完整的题目分析流程：解析题目 → 标注知识点 → 查找目录 → 生成思路。
 
-This skill drives a three-column frontend layout for quiz analysis:
 - **Left column**: Chat interaction with the user
 - **Middle column**: Structured analysis data (parsed quiz, knowledge points, difficulty)
 - **Right column**: Thinking process and solution steps
@@ -249,13 +201,13 @@ This skill drives a three-column frontend layout for quiz analysis:
 
 ## MCP 工具清单 / Tool Reference
 
-| 工具名称 (Tool Name) | 用途 (Purpose) | 数据源 (Source) |
-|----------------------|----------------|-----------------|
-| `parse_quiz_content` | 解析题目内容为结构化数据 | - |
+| 工具名称 | 用途 | 数据源 |
+|----------|------|--------|
+| `parse_quiz_content` | 解析题目内容为结构化数据 | — |
 | `search_knowledge_points_json` | 从 JSON 搜索知识点 | JSON |
 | `search_catalog` | 从 JSON 搜索目录位置 | JSON |
-| `write_output` | 更新前端同步字段 | - |
-| `generate_thinking_process_template` | 生成解题思路模板 | - |
+| `write_output` | 更新前端同步字段 | — |
+| `generate_thinking_process_template` | 生成解题思路模板 | — |
 | `verify_knowledge_point_tags` | 验证知识点标注准确性 | 数据库 |
 
 ## 输出字段映射 / Output Field Mapping
@@ -271,8 +223,6 @@ This skill drives a three-column frontend layout for quiz analysis:
 
 ## 注意事项 / Guidelines
 
-### 最佳实践 (Best Practices)
-
 1. **实时反馈**: 每步完成立即 `write_output`，提升用户体验
 2. **详细日志**: 在聊天中展示每步进展，让用户了解分析状态
 3. **友好错误**: 工具调用失败时解释原因，不中断流程
@@ -280,10 +230,10 @@ This skill drives a three-column frontend layout for quiz analysis:
 
 ### 常见错误 (Common Mistakes)
 
-1. 等所有步骤完成后才调用 `write_output` -- 用户会看到长时间空白
-2. 跳过解析步骤直接生成思路 -- 缺少结构化数据支撑
-3. 同时调用多个互相依赖的工具 -- 后续步骤需要前置步骤的输出
-4. 用户提供了学生答案但未分析 -- 忽略了可选步骤 6
+1. 等所有步骤完成后才调用 `write_output` — 用户会看到长时间空白
+2. 跳过解析步骤直接生成思路 — 缺少结构化数据支撑
+3. 同时调用多个互相依赖的工具 — 后续步骤需要前置步骤的输出
+4. 用户提供了学生答案但未分析 — 忽略了可选步骤 6
 
 ## 完成提示 / Completion Message
 

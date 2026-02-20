@@ -120,7 +120,7 @@ npm install @ccaas/react-sdk
 
 ### Core Hooks
 
-The React SDK provides five essential hooks for Solution development:
+The React SDK provides six essential hooks for Solution development:
 
 | Hook | Responsibility |
 |------|---------------|
@@ -129,6 +129,7 @@ The React SDK provides five essential hooks for Solution development:
 | `useAgentStatus` | Tool activity, thinking state, SubAgent tracking, todo items |
 | `usePageContext` | Sends current page/form state as context with every message |
 | `useFiles` | Session file listing, upload, download, new-file tracking |
+| `useOutputSync` | Pending state management for AI output fields (output_update → Sync → apply) |
 
 #### 1. useAgentConnection
 
@@ -247,6 +248,40 @@ const files = useFiles({
 // files.markAllSeen    - Mark all files as seen
 ```
 
+#### 6. useOutputSync
+
+Manages the pending state for AI output fields (`output_update` event → user clicks Sync → applied to form).
+
+```typescript
+import { useOutputSync } from '@ccaas/react-sdk'
+
+const { pendingUpdates, addPendingUpdate, removePendingUpdate, clearPendingUpdates } =
+  useOutputSync()
+
+// When an output_update event arrives (typically in useAgentChat's onOutputUpdate callback)
+const chat = useAgentChat({
+  connection,
+  onOutputUpdate: (update) => addPendingUpdate(update.field, update.value),
+})
+
+// When the user clicks the Sync button for a field
+const handleSync = (field: string) => {
+  applyField(field)           // Apply to form
+  removePendingUpdate(field)  // Clear pending state
+}
+
+// Clear all pending updates
+clearPendingUpdates()
+```
+
+**Returns:**
+- `pendingUpdates` - `Record<string, any>` — Current pending fields and their values
+- `addPendingUpdate(field, value)` - Add or update a pending field
+- `removePendingUpdate(field)` - Remove a specific pending field
+- `clearPendingUpdates()` - Remove all pending fields
+
+> This hook replaces 30+ lines of pending state boilerplate found in every Solution frontend. Already used in rehab-motion-renderer and lesson-plan-designer.
+
 ### Pre-built Components
 
 The React SDK also provides ready-to-use UI components:
@@ -264,7 +299,7 @@ The React SDK also provides ready-to-use UI components:
 
 ### Complete Integration Example
 
-A typical Solution composes the five hooks inside a single session hook, then passes the state to components:
+A typical Solution composes the six hooks inside a single session hook, then passes the state to components:
 
 ```typescript
 import {
@@ -273,6 +308,7 @@ import {
   useAgentStatus,
   usePageContext,
   useFiles,
+  useOutputSync,
 } from '@ccaas/react-sdk'
 
 export function useMySession(options = {}) {
@@ -283,20 +319,19 @@ export function useMySession(options = {}) {
   })
 
   const { context, updateContext } = usePageContext()
+  const { pendingUpdates, addPendingUpdate, removePendingUpdate } = useOutputSync()
 
   const chat = useAgentChat({
     connection,
     tenantId: 'my-solution',
     context,
-    onOutputUpdate: (update) => {
-      // Queue update for display and user interaction
-    },
+    onOutputUpdate: (update) => addPendingUpdate(update.field, update.value),
   })
 
   const status = useAgentStatus({ connection })
   const files = useFiles({ connection, sessionId: connection.sessionId, enabled: connection.connected })
 
-  return { connection, chat, status, files, context, updateContext }
+  return { connection, chat, status, files, context, updateContext, pendingUpdates, removePendingUpdate }
 }
 ```
 
@@ -372,7 +407,9 @@ useEffect(() => {
 
 ### Sync Management
 
-Implement a "sync button" pattern that lets users choose whether to accept AI-generated content:
+> **If you are using `@ccaas/react-sdk`**, use [`useOutputSync`](#6-useoutputsync) instead — it provides this pattern out of the box.
+
+The following shows the raw implementation for custom integrations that bypass the SDK:
 
 ```typescript
 export function useSyncManager() {

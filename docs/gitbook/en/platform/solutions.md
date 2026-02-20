@@ -68,6 +68,28 @@ A demo application showcasing core platform capabilities including Skill managem
 
 ---
 
+## Rehab Motion Renderer
+
+### Overview
+
+Starting from a medical examination report, AI generates a personalized rehabilitation training plan and renders it as an interactive SVG skeleton animation page.
+
+### Key Features
+
+- **SVG Skeleton Animation** -- LyingFigure / CatFigure / SeatedFigure postures with real-time bone animations
+- **AI Plan Generation** -- Upload a medical report; AI analyzes it and outputs a structured training plan
+- **MCP Server** -- rehab-tools (`write_output` + `get_exercise_library`)
+- **Exercise Library** -- Built-in exercise-library.json; frontend auto-matches keyframes
+- **10 Sync Fields** -- title, exercises, medicalSummary, difficulty, and more
+
+### Technical Highlights
+
+- Frontend port 5283, backend reuses CCAAS core (3001)
+- `exercises` field is a JSON array; frontend matches animation keyframes from the exercise library
+- `useOutputSync` hook manages pending state with zero boilerplate
+
+---
+
 ## Build Your Own Solution
 
 The KedgeAgentic platform provides a complete Solution development framework, enabling developers to quickly build applications for specific use cases.

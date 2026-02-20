@@ -1,0 +1,22 @@
+flowchart TD
+    A[用户提问] --> B[Agent 思考中...]
+    B --> C1[🔍 正在查询数据库]
+    B --> C2[📚 正在搜索知识库]
+    B --> C3[🔧 正在调用分析工具]
+
+    C1 --> D[✅ 已获取 1,234 条记录]
+    C2 --> E[✅ 找到 5 个相关文档]
+    C3 --> F[✅ 分析完成]
+
+    D --> G[Agent 正在综合分析...]
+    E --> G
+    F --> G
+
+    G --> H[返回答案 + 执行过程]
+
+    style B fill:#fff3e0
+    style C1 fill:#e3f2fd
+    style C2 fill:#e3f2fd
+    style C3 fill:#e3f2fd
+    style G fill:#fff3e0
+    style H fill:#e8f5e9

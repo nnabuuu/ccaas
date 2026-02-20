@@ -1,0 +1,35 @@
+sequenceDiagram
+    participant T as 教师
+    participant F as 前端<br/>(Vue SDK)
+    participant P as 即见平台
+    participant M as MCP<br/>(filesystem)
+    participant DB as 业务数据库
+
+    T->>F: 输入课程主题<br/>"分数的初步认识"
+    F->>P: 创建 Session<br/>加载 lesson-plan-designer
+
+    P->>P: 激活 Skill<br/>lesson-plan-generator
+
+    loop 分段生成
+        P->>P: 生成字段内容
+        P->>F: write_output<br/>("lesson_title", "分数的初步认识")
+        F->>F: 实时更新表单<br/>(useFormBridge)
+        T->>T: 看到实时生成
+    end
+
+    P->>F: write_output<br/>("learning_objectives", "...")
+    P->>F: write_output<br/>("teaching_activities", "...")
+
+    T->>F: 审核修改内容
+    T->>F: 要求生成 PPT
+
+    F->>P: 调用 lesson-plan-pptx Skill
+    P->>M: 生成 PPT 文件<br/>/workspace/教学PPT.pptx
+    M-->>P: 文件已保存
+    P-->>F: PPT 生成完成
+
+    T->>F: 下载 PPT 预览
+    T->>F: 确认保存教案
+    F->>DB: POST /api/lesson-plans<br/>保存到业务系统
+
+    Note over P,DB: 即见平台不直接写业务库<br/>由前端调用业务 API

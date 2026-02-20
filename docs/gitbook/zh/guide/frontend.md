@@ -120,7 +120,7 @@ npm install @ccaas/react-sdk
 
 ### 核心 Hooks
 
-React SDK 提供五个核心 Hooks，用于 Solution 开发：
+React SDK 提供六个核心 Hooks，用于 Solution 开发：
 
 #### 1. useAgentConnection
 
@@ -202,6 +202,40 @@ const handleUpload = async (file: File) => {
 }
 ```
 
+#### 6. useOutputSync
+
+管理 AI 输出字段的 pending 状态（`output_update` 事件 → 用户点击 Sync → 应用到表单）。
+
+```typescript
+import { useOutputSync } from '@ccaas/react-sdk'
+
+const { pendingUpdates, addPendingUpdate, removePendingUpdate, clearPendingUpdates } =
+  useOutputSync()
+
+// output_update 事件触发时（通常在 useAgentChat 的 onOutputUpdate 回调中）
+const chat = useAgentChat({
+  connection,
+  onOutputUpdate: (update) => addPendingUpdate(update.field, update.value),
+})
+
+// 用户点击某字段的 Sync 按钮
+const handleSync = (field: string) => {
+  applyField(field)           // 应用到表单
+  removePendingUpdate(field)  // 清除 pending 状态
+}
+
+// 全部清除
+clearPendingUpdates()
+```
+
+**返回值:**
+- `pendingUpdates` - `Record<string, any>` — 当前 pending 字段及其值
+- `addPendingUpdate(field, value)` - 添加/更新一个 pending 字段
+- `removePendingUpdate(field)` - 移除某个 pending 字段
+- `clearPendingUpdates()` - 清除所有 pending 字段
+
+> 此 hook 替代了每个 Solution frontend 中的 30+ 行 pending state 样板代码。已在 rehab-motion-renderer 和 lesson-plan-designer 中落地。
+
 ### 完整集成示例
 
 参见教程第 6.5 章，了解如何将所有 Hooks 组合使用的完整示例。
@@ -276,7 +310,9 @@ useEffect(() => {
 
 ### 同步管理
 
-实现"同步按钮"模式，让用户选择是否接受 AI 生成的内容：
+> **如果使用 `@ccaas/react-sdk`**，请直接使用 [`useOutputSync`](#6-useoutputsync)，该 Hook 已内置此模式。
+
+以下是不使用 SDK 的自定义集成实现方式：
 
 ```typescript
 export function useSyncManager() {

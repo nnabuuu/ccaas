@@ -218,6 +218,42 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 
 ---
 
+### sessionTemplates（可选）
+
+**类型:** `Record<string, SessionTemplateConfig>`
+**必需:** 否
+
+为不同使用场景预设 AI 行为配置。解决方案加载时自动 upsert 到 `tenant.config`。
+
+```json
+{
+  "sessionTemplates": {
+    "teacher": {
+      "description": "教师模式",
+      "appendSystemPrompt": "你正在与教师交互，重点提供教学建议。",
+      "enabledSkillSlugs": ["analyze-student-answer"]
+    },
+    "student": {
+      "description": "学生模式",
+      "enabledSkillSlugs": ["three-column-analysis"]
+    }
+  }
+}
+```
+
+**字段:**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `<templateName>` | object | 模板名称（如 `teacher`、`student`） |
+| `description` | string | 模板说明 |
+| `appendSystemPrompt` | string（可选） | 追加到系统提示的内容 |
+| `enabledSkillSlugs` | string[]（可选） | 此模板启用的 skill slug 列表 |
+
+> **部署验证:** 每次 solution 完整加载后，backend 自动在 `tenant.config.solutionAppliedAt` 写入 ISO 时间戳，可用于 CI/CD 验证部署状态。
+
+---
+
 ## 解决方案特定配置
 
 这些字段供你的解决方案内部使用。**CCAAS 忽略它们**。

@@ -956,7 +956,7 @@
   <!-- Social proof bar -->
   <div class="hero-proof">
     <div class="hero-proof-item">
-      <span class="hero-proof-num">3+</span>
+      <span class="hero-proof-num">4+</span>
       <span class="hero-proof-label zh">生产场景落地</span>
       <span class="hero-proof-label en">Production use cases</span>
     </div>
@@ -1160,6 +1160,34 @@
           </span>
         </div>
       </div>
+      <div class="usecase-card fade-in" style="grid-column: span 2;">
+        <div class="usecase-tag">
+          <span class="zh">动画渲染</span>
+          <span class="en">Animation Rendering</span>
+        </div>
+        <h3>
+          <span class="zh">康复训练设计器</span>
+          <span class="en">Rehab Motion Renderer</span>
+        </h3>
+        <p class="zh">从医学检查报告出发，AI 生成个性化康复训练方案，渲染为 SVG 骨架动画交互训练页面。医生上传报告，平台自动输出结构化方案并驱动骨架动画——动作、时长、阶段一目了然。</p>
+        <p class="en">Starting from a medical examination report, AI generates a personalized rehabilitation plan and renders it as an interactive SVG skeleton animation page. Upload a report, and the platform outputs a structured plan driving real-time bone animations — exercises, duration, and phases at a glance.</p>
+        <div class="usecase-detail">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <span class="zh">SVG 骨架动画</span>
+            <span class="en">SVG skeleton animation</span>
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+            10 sync fields
+          </span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+            <span class="zh">useOutputSync</span>
+            <span class="en">useOutputSync</span>
+          </span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1243,6 +1271,28 @@
         </h3>
         <p class="zh">API Key 认证，9 种权限范围，租户隔离、速率限制与完整审计日志。</p>
         <p class="en">API key authentication with 9 scopes, tenant isolation, rate limiting, and complete audit logging.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <h3>
+          <span class="zh">Session Templates</span>
+          <span class="en">Session Templates</span>
+        </h3>
+        <p class="zh">在 solution.json 中预设多角色 AI 行为（如教师模式/学生模式），平台自动 upsert 到租户配置，无需代码修改。</p>
+        <p class="en">Define multi-role AI behaviors in solution.json (e.g. teacher/student mode). The platform auto-upserts them to tenant config — no code changes required.</p>
+      </div>
+      <div class="feature-card fade-in">
+        <div class="feature-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+        </div>
+        <h3>
+          <span class="zh">useOutputSync</span>
+          <span class="en">useOutputSync</span>
+        </h3>
+        <p class="zh">SDK 内置 pending state 管理 hook，替代每个 Solution frontend 中的 30+ 行同步样板代码，开箱即用。</p>
+        <p class="en">Built-in SDK hook for managing output pending state. Replaces 30+ lines of sync boilerplate in every Solution frontend — works out of the box.</p>
       </div>
     </div>
   </div>

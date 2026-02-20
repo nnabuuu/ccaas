@@ -218,6 +218,42 @@ Defines MCP tool servers available to skills.
 
 ---
 
+### sessionTemplates (Optional)
+
+**Type:** `Record<string, SessionTemplateConfig>`
+**Required:** No
+
+Preset AI behavior configurations for different usage scenarios. Automatically upserted to `tenant.config` when the solution loads.
+
+```json
+{
+  "sessionTemplates": {
+    "teacher": {
+      "description": "Teacher mode",
+      "appendSystemPrompt": "You are interacting with a teacher. Focus on pedagogical guidance.",
+      "enabledSkillSlugs": ["analyze-student-answer"]
+    },
+    "student": {
+      "description": "Student mode",
+      "enabledSkillSlugs": ["three-column-analysis"]
+    }
+  }
+}
+```
+
+**Fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `<templateName>` | object | Template name (e.g. `teacher`, `student`) |
+| `description` | string | Template description |
+| `appendSystemPrompt` | string (optional) | Text appended to the system prompt |
+| `enabledSkillSlugs` | string[] (optional) | Skill slugs enabled for this template |
+
+> **Deployment verification:** After each complete solution load, the backend automatically writes an ISO timestamp to `tenant.config.solutionAppliedAt`. Use this for CI/CD deployment verification.
+
+---
+
 ## Solution-Specific Configuration
 
 These fields are for your solution's internal use. **CCAAS ignores them**.

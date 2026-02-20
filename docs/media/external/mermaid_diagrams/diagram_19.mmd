@@ -1,0 +1,17 @@
+flowchart TD
+    A[AI 返回结果] --> B[前端展示]
+    B --> C{用户操作}
+
+    C -->|直接确认| D[调用业务 API]
+    C -->|修改后确认| E[用户编辑]
+    C -->|重新生成| F[发起新请求]
+    C -->|取消| G[丢弃结果]
+
+    E --> D
+    F --> A
+
+    D --> H[写入业务系统]
+
+    style B fill:#e3f2fd
+    style D fill:#e8f5e9
+    style H fill:#ffebee
