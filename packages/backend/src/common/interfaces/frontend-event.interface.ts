@@ -20,7 +20,7 @@ export interface FrontendEvent {
  */
 export interface AgentStatusEvent extends FrontendEvent {
   type: 'agent_status';
-  status: 'idle' | 'running' | 'complete' | 'error';
+  status: 'idle' | 'running' | 'complete' | 'error' | 'cancelled';
   exitCode?: number | null;
   error?: string;
 }

@@ -366,7 +366,14 @@ export class CliProcessService {
     // Set final status based on cancellation or exit code
     if (wasCancelled) {
       session.status = 'idle';  // Cancelled - back to idle
-      // Cancelled event already sent in cancelSession, don't send again
+      // Emit cancelled so orchestrateMessage's completionPromise can resolve.
+      // For REST cancel, the SSE stream is already closed; emitEvent on a closed
+      // session is a no-op, but resolveCompletion() unblocks the awaiting controller.
+      onEvent({
+        type: 'agent_status',
+        status: 'cancelled',
+        sessionId: session.sessionId,
+      });
     } else {
       session.status = code === 0 ? 'idle' : 'error';
       onEvent({

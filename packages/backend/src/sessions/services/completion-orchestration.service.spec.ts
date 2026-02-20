@@ -38,8 +38,22 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
 
   beforeEach(async () => {
     mockSessionService = {
-      sendFollowUp: jest.fn().mockResolvedValue(undefined),
-      ensureCLIProcess: jest.fn().mockResolvedValue(undefined),
+      ensureCLIProcess: jest.fn().mockImplementation(
+        (_session: unknown, _msg: unknown, onEvent: (e: unknown) => void) => {
+          process.nextTick(() =>
+            onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' }),
+          );
+          return Promise.resolve();
+        },
+      ),
+      sendFollowUp: jest.fn().mockImplementation(
+        (_session: unknown, _msg: unknown, onEvent: (e: unknown) => void) => {
+          process.nextTick(() =>
+            onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' }),
+          );
+          return Promise.resolve();
+        },
+      ),
     };
 
     const mockSkillSyncService = {
@@ -137,6 +151,79 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
 
       expect(mockSessionService.ensureCLIProcess).toHaveBeenCalledTimes(1);
       expect(mockSessionService.sendFollowUp).not.toHaveBeenCalled();
+    });
+  });
+
+  // ─── Fix 3: spawn rejection handling ─────────────────────────────────────
+
+  describe('Fix 3: spawn rejection resolves orchestrateMessage', () => {
+    it('resolves when ensureCLIProcess rejects (messageCount === 0)', async () => {
+      mockSessionService.ensureCLIProcess = jest.fn().mockRejectedValue(
+        new Error('CLI spawn failed'),
+      );
+
+      await expect(
+        service.orchestrateMessage({ ...baseInput, session: makeSession(0) }),
+      ).resolves.toBeDefined();
+    });
+
+    it('resolves when sendFollowUp rejects (messageCount > 0)', async () => {
+      mockSessionService.sendFollowUp = jest.fn().mockRejectedValue(
+        new Error('Follow-up failed'),
+      );
+
+      await expect(
+        service.orchestrateMessage({ ...baseInput, session: makeSession(3) }),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  // ─── Fix 2: idempotent resolveCompletion ──────────────────────────────────
+
+  describe('Fix 2: idempotent resolveCompletion', () => {
+    it('handles multiple terminal events without throwing', async () => {
+      mockSessionService.ensureCLIProcess = jest.fn().mockImplementation(
+        (_session: unknown, _msg: unknown, onEvent: (e: unknown) => void) => {
+          process.nextTick(() => {
+            // Fire several terminal events — only the first should take effect
+            onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' });
+            onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' });
+            onEvent({ type: 'agent_status', status: 'error', sessionId: 'test-session-id' });
+          });
+          return Promise.resolve();
+        },
+      );
+
+      await expect(
+        service.orchestrateMessage({ ...baseInput, session: makeSession(0) }),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  // ─── Fix 2: timeout safety net ────────────────────────────────────────────
+
+  describe('Fix 2: completionPromise timeout safety net', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      // Never emit a terminal event — simulates a hung agent
+      mockSessionService.ensureCLIProcess = jest.fn().mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('resolves via 10-minute timeout when agent never signals terminal status', async () => {
+      const orchestrationPromise = service.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+      });
+
+      // Advance all timers (including the 10-min completionPromise timeout)
+      // and flush microtask continuations between each timer step.
+      await jest.runAllTimersAsync();
+
+      await orchestrationPromise;
     });
   });
 });

@@ -308,11 +308,37 @@ export class CompletionOrchestrationService {
     // Track accumulated text for message update
     let accumulatedText = '';
 
-    // Completion promise: resolves when agent signals complete/error/cancelled
+    // Completion promise: resolves when agent signals complete/error/cancelled,
+    // or after a 10-minute safety timeout to prevent leaked connections.
+    const COMPLETION_TIMEOUT_MS = 10 * 60 * 1000;
+
+    let completionResolved = false;
     let resolveCompletion!: () => void;
-    const completionPromise = new Promise<void>((resolve) => {
-      resolveCompletion = resolve;
+
+    const basePromise = new Promise<void>((resolve) => {
+      resolveCompletion = () => {
+        if (!completionResolved) {
+          completionResolved = true;
+          resolve();
+        }
+      };
     });
+
+    const timeoutPromise = new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        this.logger.warn(
+          `Completion timeout (${COMPLETION_TIMEOUT_MS}ms) for session ${sessionId}`,
+        );
+        resolveCompletion();
+        resolve();
+      }, COMPLETION_TIMEOUT_MS);
+
+      // Don't prevent process exit if this is the only remaining timer
+      // (important for graceful shutdown and Jest test teardown)
+      timer.unref();
+    });
+
+    const completionPromise = Promise.race([basePromise, timeoutPromise]);
 
     const handleEvent = (event: FrontendEvent) => {
       // Accumulate text_delta events
@@ -361,16 +387,20 @@ export class CompletionOrchestrationService {
     // Step 10: Fire-and-forget CLI process (new or resume), then wait for completion signal
     if (session.messageCount > 0) {
       // Follow-up message - use --resume
-      void this.sessionService.sendFollowUp(session, message, handleEvent, attachments);
+      void this.sessionService
+        .sendFollowUp(session, message, handleEvent, attachments)
+        .catch((err) => {
+          this.logger.error(`Failed to start follow-up for session ${sessionId}: ${err}`);
+          resolveCompletion();
+        });
     } else {
       // First message - spawn new CLI process
-      void this.sessionService.ensureCLIProcess(
-        session,
-        message,
-        handleEvent,
-        attachments,
-        systemPrompt,
-      );
+      void this.sessionService
+        .ensureCLIProcess(session, message, handleEvent, attachments, systemPrompt)
+        .catch((err) => {
+          this.logger.error(`Failed to spawn CLI for session ${sessionId}: ${err}`);
+          resolveCompletion();
+        });
     }
 
     // Wait until agent emits agent_status: complete|error|cancelled
