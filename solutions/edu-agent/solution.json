@@ -1,9 +1,10 @@
 {
-  "name": "EduAgent",
-  "slug": "edu-agent",
-  "version": "1.0.0",
-  "description": "AI教育助手 - 统一备课设计与讲题解析",
-
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "EduAgent",
+    "slug": "edu-agent",
+    "description": "AI教育助手 - 统一备课设计与讲题解析"
+  },
   "mcpServers": {
     "edu-agent-tools": {
       "command": "node",
@@ -11,60 +12,6 @@
       "description": "EduAgent MCP tools: write_output, navigate_to, textbook tools, problem tools"
     }
   },
-
-  "skill": {
-    "name": "EduAgent",
-    "description": "AI教育助手 - 备课设计、讲题解析、生成讲稿和PPT",
-    "triggers": [
-      { "type": "keyword", "value": "备课", "priority": 10 },
-      { "type": "keyword", "value": "教学目标", "priority": 8 },
-      { "type": "keyword", "value": "教学活动", "priority": 8 },
-      { "type": "keyword", "value": "讲题", "priority": 10 },
-      { "type": "keyword", "value": "讲解", "priority": 9 },
-      { "type": "keyword", "value": "解题", "priority": 9 },
-      { "type": "keyword", "value": "这道题", "priority": 8 },
-      { "type": "keyword", "value": "怎么做", "priority": 8 },
-      { "type": "keyword", "value": "帮我分析", "priority": 7 },
-      { "type": "keyword", "value": "举一反三", "priority": 6 },
-      { "type": "keyword", "value": "全套材料", "priority": 10 },
-      { "type": "keyword", "value": "生成音频", "priority": 9 },
-      { "type": "keyword", "value": "生成PPT", "priority": 9 }
-    ],
-    "allowedTools": [
-      "write_output",
-      "navigate_to",
-      "Read",
-      "Write",
-      "Skill",
-      "get_textbook_subjects",
-      "get_textbook_grades",
-      "get_textbook_volumes",
-      "get_textbook_chapters",
-      "get_curriculum_standards",
-      "get_subjects",
-      "get_knowledge_points",
-      "calculate_difficulty",
-      "generate_script_template"
-    ],
-    "skillFile": "skills/edu-agent/SKILL.md",
-    "relatedSkills": ["notebooklm", "example-skills:pptx"]
-  },
-
-  "chainedSkills": {
-    "notebooklm": {
-      "description": "生成讲解音频",
-      "triggerPhrase": "生成音频",
-      "inputFrom": "讲稿内容",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/讲解音频.mp3"
-    },
-    "example-skills:pptx": {
-      "description": "生成PPT",
-      "triggerPhrase": "生成PPT",
-      "inputFrom": "教案/讲题内容",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/PPT.pptx"
-    }
-  },
-
   "syncFields": {
     "lessonPlan": [
       "title", "subject", "gradeLevel", "duration",

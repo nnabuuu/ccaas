@@ -1,8 +1,49 @@
 ---
-name: lego-mosaic-designer
+name: LEGO Mosaic Designer
 slug: lego-mosaic-designer
 description: AI 乐高马赛克设计师 - 将图片转换为 2D 乐高拼图，生成零件清单和拼装指南
 scope: tenant
+triggers:
+  - type: keyword
+    value: "mosaic"
+    priority: 10
+  - type: keyword
+    value: "LEGO"
+    priority: 10
+  - type: keyword
+    value: "乐高"
+    priority: 10
+  - type: keyword
+    value: "马赛克"
+    priority: 10
+  - type: keyword
+    value: "brick"
+    priority: 8
+  - type: keyword
+    value: "砖块"
+    priority: 8
+  - type: keyword
+    value: "refine"
+    priority: 8
+  - type: keyword
+    value: "拼图"
+    priority: 8
+  - type: keyword
+    value: "convert"
+    priority: 7
+allowedTools:
+  - write_output
+  - analyze_image
+  - generate_mosaic
+  - generate_mosaic_from_grid
+  - generate_mosaic_from_coarse_grid
+  - refine_mosaic_regions
+  - generate_assembly_pdf
+  - get_lego_colors
+  - get_lego_bricks
+  - Read
+  - Write
+  - Skill
 ---
 
 # LEGO 马赛克设计师

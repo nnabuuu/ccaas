@@ -1,8 +1,57 @@
 ---
-name: problem-explainer
+name: Problem Explainer
 slug: problem-explainer
 description: AI讲题专家 - 分析题目、生成讲稿、制作音频和PPT的完整工作流
 scope: tenant
+triggers:
+  - type: keyword
+    value: "讲题"
+    priority: 10
+  - type: keyword
+    value: "讲解"
+    priority: 9
+  - type: keyword
+    value: "解题"
+    priority: 9
+  - type: keyword
+    value: "这道题"
+    priority: 8
+  - type: keyword
+    value: "怎么做"
+    priority: 8
+  - type: keyword
+    value: "帮我分析"
+    priority: 7
+  - type: keyword
+    value: "看不懂"
+    priority: 7
+  - type: keyword
+    value: "不会做"
+    priority: 7
+  - type: keyword
+    value: "举一反三"
+    priority: 6
+  - type: keyword
+    value: "全套材料"
+    priority: 10
+  - type: keyword
+    value: "生成讲稿"
+    priority: 9
+  - type: keyword
+    value: "生成音频"
+    priority: 9
+  - type: keyword
+    value: "生成PPT"
+    priority: 9
+allowedTools:
+  - write_output
+  - Read
+  - Write
+  - Skill
+  - get_subjects
+  - get_knowledge_points
+  - calculate_difficulty
+  - generate_script_template
 ---
 
 # 讲题专家 (Problem Explainer)
