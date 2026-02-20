@@ -247,4 +247,89 @@ describe('useOutputSync', () => {
       expect(setData).toHaveBeenCalled()
     })
   })
+
+  describe('page grouping', () => {
+    it('should group updates by page in pendingUpdatesByPage', () => {
+      const { result } = renderHook(() =>
+        useOutputSync({ mode: 'manual' }),
+      )
+
+      act(() => {
+        result.current.handleOutputUpdate({ field: 'title', value: 'T', preview: '', page: 'patientInfo' })
+        result.current.handleOutputUpdate({ field: 'exercises', value: [], preview: '', page: 'exercisePlan' })
+        result.current.handleOutputUpdate({ field: 'frequency', value: '3x/week', preview: '' }) // no page
+      })
+
+      expect(result.current.pendingUpdatesByPage.size).toBe(3)
+      expect(result.current.pendingUpdatesByPage.has('patientInfo')).toBe(true)
+      expect(result.current.pendingUpdatesByPage.has('exercisePlan')).toBe(true)
+      expect(result.current.pendingUpdatesByPage.has('__default__')).toBe(true)
+      expect(result.current.pendingUpdatesByPage.get('patientInfo')?.has('title')).toBe(true)
+      expect(result.current.pendingUpdatesByPage.get('exercisePlan')?.has('exercises')).toBe(true)
+    })
+
+    it('getPendingUpdatesForPage should return correct subset', () => {
+      const { result } = renderHook(() =>
+        useOutputSync({ mode: 'manual' }),
+      )
+
+      act(() => {
+        result.current.handleOutputUpdate({ field: 'title', value: 'T', preview: '', page: 'patientInfo' })
+        result.current.handleOutputUpdate({ field: 'subtitle', value: 'S', preview: '', page: 'patientInfo' })
+        result.current.handleOutputUpdate({ field: 'exercises', value: [], preview: '', page: 'exercisePlan' })
+      })
+
+      const patientInfoUpdates = result.current.getPendingUpdatesForPage('patientInfo')
+      expect(patientInfoUpdates.size).toBe(2)
+      expect(patientInfoUpdates.has('title')).toBe(true)
+      expect(patientInfoUpdates.has('subtitle')).toBe(true)
+      expect(patientInfoUpdates.has('exercises')).toBe(false)
+
+      const exercisePlanUpdates = result.current.getPendingUpdatesForPage('exercisePlan')
+      expect(exercisePlanUpdates.size).toBe(1)
+      expect(exercisePlanUpdates.has('exercises')).toBe(true)
+    })
+
+    it('getPendingUpdatesForPage(undefined) returns __default__ updates', () => {
+      const { result } = renderHook(() =>
+        useOutputSync({ mode: 'manual' }),
+      )
+
+      act(() => {
+        result.current.handleOutputUpdate({ field: 'frequency', value: '3x', preview: '' }) // no page
+        result.current.handleOutputUpdate({ field: 'exercises', value: [], preview: '', page: 'plan' })
+      })
+
+      const defaultUpdates = result.current.getPendingUpdatesForPage()
+      expect(defaultUpdates.size).toBe(1)
+      expect(defaultUpdates.has('frequency')).toBe(true)
+    })
+
+    it('getPendingUpdatesForPage returns empty Map for unknown page', () => {
+      const { result } = renderHook(() =>
+        useOutputSync({ mode: 'manual' }),
+      )
+
+      const updates = result.current.getPendingUpdatesForPage('nonexistent')
+      expect(updates.size).toBe(0)
+    })
+
+    it('pendingUpdatesByPage stays in sync after reset', () => {
+      const { result } = renderHook(() =>
+        useOutputSync({ mode: 'manual' }),
+      )
+
+      act(() => {
+        result.current.handleOutputUpdate({ field: 'title', value: 'T', preview: '', page: 'p1' })
+      })
+
+      expect(result.current.pendingUpdatesByPage.size).toBe(1)
+
+      act(() => {
+        result.current.reset()
+      })
+
+      expect(result.current.pendingUpdatesByPage.size).toBe(0)
+    })
+  })
 })

@@ -9,6 +9,10 @@ export interface WriteOutputData {
   field: string
   value: unknown
   preview?: string
+  /** Optional page routing key for multi-page solutions. */
+  page?: string
+  /** When false, MCP server validation failed; the update should be ignored. */
+  success?: boolean
 }
 
 /**
@@ -20,6 +24,10 @@ export interface WriteOutputData {
  * 3. payload.data as content blocks array [{ type: "text", text: "{JSON}" }]
  *
  * This function normalizes all formats into a consistent OutputUpdate structure.
+ *
+ * Returns null when:
+ * - No field is found in any supported format
+ * - The MCP tool returned success: false (validation failed; Claude will retry)
  */
 export function parseOutputUpdate(event: OutputUpdateEvent): OutputUpdate | null {
   const { payload } = event
@@ -27,10 +35,13 @@ export function parseOutputUpdate(event: OutputUpdateEvent): OutputUpdate | null
   // Format 1: payload.data.field (write_output MCP tool format)
   const dataField = payload.data as WriteOutputData | undefined
   if (dataField && typeof dataField === 'object' && !Array.isArray(dataField) && dataField.field) {
+    // MCP server validation failed — ignore, Claude will auto-retry
+    if (dataField.success === false) return null
     return {
       field: dataField.field,
       value: dataField.value,
       preview: dataField.preview || `Update ${dataField.field}`,
+      page: dataField.page,
       synced: false,
     }
   }
@@ -44,10 +55,12 @@ export function parseOutputUpdate(event: OutputUpdateEvent): OutputUpdate | null
           // May be wrapped: { status, data: { field, value, preview } }
           const source = obj.data?.field ? obj.data : obj.field ? obj : null
           if (source?.field) {
+            if (source.success === false) return null
             return {
               field: source.field,
               value: source.value,
               preview: source.preview || `Update ${source.field}`,
+              page: source.page,
               synced: false,
             }
           }

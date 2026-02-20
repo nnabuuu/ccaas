@@ -163,4 +163,72 @@ describe('parseOutputUpdate', () => {
     const result = parseOutputUpdate(event)
     expect(result).toBeNull()
   })
+
+  it('should extract page field from payload.data.field format', () => {
+    const event = {
+      type: 'output_update' as const,
+      sessionId: 'test-session',
+      payload: {
+        status: 'success',
+        data: {
+          field: 'exercises',
+          value: [],
+          preview: 'Updated exercises',
+          page: 'exercisePlan',
+        },
+      },
+    }
+
+    const result = parseOutputUpdate(event)
+    expect(result).toEqual({
+      field: 'exercises',
+      value: [],
+      preview: 'Updated exercises',
+      page: 'exercisePlan',
+      synced: false,
+    })
+  })
+
+  it('should return null when success is false (MCP validation failed)', () => {
+    const event = {
+      type: 'output_update' as const,
+      sessionId: 'test-session',
+      payload: {
+        status: 'error',
+        data: {
+          field: 'exercises',
+          value: 'invalid json',
+          preview: 'error',
+          success: false,
+        },
+      },
+    }
+
+    const result = parseOutputUpdate(event)
+    expect(result).toBeNull()
+  })
+
+  it('should extract page from content blocks format', () => {
+    const event = {
+      type: 'output_update' as const,
+      sessionId: 'test-session',
+      payload: {
+        status: 'success',
+        data: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              field: 'title',
+              value: 'My Title',
+              preview: 'Title updated',
+              page: 'patientInfo',
+            }),
+          },
+        ],
+      },
+    }
+
+    const result = parseOutputUpdate(event)
+    expect(result?.page).toBe('patientInfo')
+  })
 })

@@ -1,7 +1,10 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import type { UseOutputSyncOptions, UseOutputSyncReturn, OutputUpdate, UndoEntry } from '../types'
 
 const DEFAULT_UNDO_TIMEOUT_MS = 30000
+
+/** Page key used for updates that carry no explicit page. */
+const DEFAULT_PAGE = '__default__'
 
 /**
  * Parse JSON string if the value is a string that looks like JSON.
@@ -30,6 +33,10 @@ function parseJsonIfString(value: unknown): unknown {
  *   (Used by problem-explainer)
  *
  * Domain-specific field normalization is injected via `normalizeField` option.
+ *
+ * Multi-page support: when an `OutputUpdate` carries a `page` field, it is grouped
+ * under that key in `pendingUpdatesByPage`. Use `getPendingUpdatesForPage(page)` to
+ * retrieve updates for a specific page without filtering manually.
  */
 export function useOutputSync<T extends Record<string, unknown>>(
   options: UseOutputSyncOptions,
@@ -44,6 +51,24 @@ export function useOutputSync<T extends Record<string, unknown>>(
   const [modifiedFields, setModifiedFields] = useState<Set<string>>(new Set())
   const [undoStack, setUndoStack] = useState<UndoEntry[]>([])
   const undoTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map())
+
+  // Derived: group pendingUpdates by page (no extra state needed)
+  const pendingUpdatesByPage = useMemo(() => {
+    const byPage = new Map<string, Map<string, OutputUpdate>>()
+    for (const update of pendingUpdates.values()) {
+      const page = update.page ?? DEFAULT_PAGE
+      if (!byPage.has(page)) {
+        byPage.set(page, new Map())
+      }
+      byPage.get(page)!.set(update.field, update)
+    }
+    return byPage
+  }, [pendingUpdates])
+
+  const getPendingUpdatesForPage = useCallback((page?: string): Map<string, OutputUpdate> => {
+    const key = page ?? DEFAULT_PAGE
+    return pendingUpdatesByPage.get(key) ?? new Map()
+  }, [pendingUpdatesByPage])
 
   // Internal: apply an update to data via setter
   const applyUpdate = useCallback((
@@ -203,6 +228,8 @@ export function useOutputSync<T extends Record<string, unknown>>(
 
   return {
     pendingUpdates,
+    pendingUpdatesByPage,
+    getPendingUpdatesForPage,
     modifiedFields,
     handleOutputUpdate,
     syncToForm,
