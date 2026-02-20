@@ -1,16 +1,21 @@
 # KedgeAgentic Documentation
 
-Welcome to the KedgeAgentic (即见Agentic) documentation. This documentation is organized into several sections to help you find what you need quickly.
+Welcome to the KedgeAgentic (即见Agentic) documentation.
 
 ## 📚 Documentation Structure
 
 ### [Guides](guides/) - Solution Development Tutorials
+
 Step-by-step guides for creating KedgeAgentic solutions:
 
 - **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create a solution in 10 minutes
 - **[Creating a Solution - Complete Guide](guides/CREATING_A_SOLUTION.md)** - Comprehensive solution development guide
+- **[File Upload Customization](guides/FILE_UPLOAD_CUSTOMIZATION.md)** - File attachment system guide
+- **[Solution Troubleshooting](guides/solution-troubleshooting.md)** - Debugging common issues
+- **[Migrating to Solution Lib](guides/migrating-to-solution-lib.md)** - Migration guide
 
 ### [SDK Documentation](sdk/) - Client SDK Libraries
+
 Complete documentation for React and Vue SDK client libraries:
 
 - **[SDK Comparison](sdk/SDK_COMPARISON.md)** - Feature comparison between React and Vue SDKs
@@ -21,15 +26,14 @@ Complete documentation for React and Vue SDK client libraries:
 - **[API Reference](../packages/react-sdk/docs/API.md)** - Complete API for hooks and components
 - **[Advanced Patterns](../packages/react-sdk/docs/ADVANCED_PATTERNS.md)** - Custom hooks, error handling, state management
 - **[Troubleshooting](../packages/react-sdk/docs/TROUBLESHOOTING.md)** - Common issues and debugging
-- **[Performance](../packages/react-sdk/docs/PERFORMANCE.md)** - Optimization strategies
 
 **Vue SDK Documentation (Bilingual 双语):**
 - **[API Reference](../packages/vue-sdk/docs/API.md)** | **[API 参考](../packages/vue-sdk/docs/API_ZH.md)**
 - **[Advanced Patterns](../packages/vue-sdk/docs/ADVANCED_PATTERNS.md)** | **[高级模式](../packages/vue-sdk/docs/ADVANCED_PATTERNS_ZH.md)**
-- **[Troubleshooting](../packages/vue-sdk/docs/TROUBLESHOOTING.md)** | **[故障排除](../packages/vue-sdk/docs/TROUBLESHOOTING_ZH.md)**
 - **[Architecture](../packages/vue-sdk/docs/ARCHITECTURE_EN.md)** | **[架构文档](../packages/vue-sdk/docs/ARCHITECTURE.md)**
 
 ### [GitBook](gitbook/) - Comprehensive Platform Documentation
+
 Main documentation for the KedgeAgentic platform, available in English and Chinese.
 
 - **[English](gitbook/en/)** - Full English documentation
@@ -42,174 +46,116 @@ Topics covered:
 - API reference (REST, WebSocket, Types)
 - Best practices and migration guides
 
-### [Implementation](implementation/) - Feature Implementation Guides
-Detailed implementation documentation for various platform features:
+### [ADR](adr/) - Architecture Decision Records
 
-- **[Attachments](implementation/attachments/)** - File attachment system implementation
-- **[Subagents](implementation/subagents/)** - Background agent system
-- **[File Explorer](implementation/file-explorer/)** - Workspace file browser UI
-- **[Skills](implementation/skills/)** - Skill system enhancements
-- **[API Integration](implementation/api-integration/)** - Backend API integrations
+Key architectural decisions and their rationale:
+
+- **[0001](adr/0001-core-must-not-contain-domain-entities.md)** - Core must not contain domain entities
+- **[0002](adr/0002-rest-resource-naming-principles.md)** - REST resource naming principles
+- **[0003](adr/0003-tenant-level-mcp-server-management.md)** - Tenant-level MCP server management
+- **[0004](adr/0004-single-entry-point-for-messages.md)** - Single entry point for messages
+- **[0006](adr/0006-ai-assisted-development-workflow.md)** - AI-assisted development workflow
+- **[0007](adr/0007-messaging-hierarchy-and-resource-ownership.md)** - Messaging hierarchy and resource ownership
+- **[0009](adr/0009-conversation-persistence-architecture.md)** - Conversation persistence architecture
+- **[0011](adr/0011-solution-json-v3-simplification.md)** - Solution.json v3 simplification
+
+### [Advanced](advanced/) - Internal Implementation Guides
+
+Deep-dive documentation for platform internals:
+
+- **[SSE Session Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)** - Complete REST/SSE message pipeline with sequence diagrams
+- **[AgentEngine Lifecycle](advanced/AGENT_ENGINE_LIFECYCLE.md)** - CLI process management details
+- **[Engine Integration Guide](advanced/ENGINE_INTEGRATION_GUIDE.md)** - Implementing custom AgentEngine types
 
 ### [Testing](testing/) - Testing Documentation
-Testing guides and procedures:
 
-- Backend testing guides
-- Integration test documentation
-- Test coverage requirements
+- **[Backend SubAgent Testing Guide](testing/BACKEND_SUBAGENT_TESTING_GUIDE.md)**
+- **[FilesView Testing Guide](testing/FILESVIEW_TESTING_GUIDE.md)**
+- **[AgentActivityLine Testing Guide](testing/AGENTACTIVITYLINE_TESTING_GUIDE.md)**
+- **[Manual Test Instructions](testing/MANUAL_TEST_INSTRUCTIONS.md)**
 
-### [Design](design/) - Design Documents
-Architecture and design decision documents:
+### [Design & Designs](design/) - Design Documents
 
-- API design specifications
-- Feature design documents
-- System architecture diagrams
+- **[Session Workspace File API](design/session-workspace-file-api.md)** - API design spec
+- **[Admin Sessions Phase 2 PRD](designs/admin-sessions-phase-2-prd.md)**
+- **[Sync Card Optimization](designs/sync-card-optimization-design.md)**
 
-### [Reference](reference/) - Quick References
-Quick reference guides for developers:
+### [Migration](migration/) - Migration Guides
 
-- API quick reference
-- Common patterns
-- Troubleshooting checklists
+- **[Solution JSON v2 → v3](migration/solution-json-v2-to-v3.md)**
+
+---
 
 ## 🚀 Quick Links
 
-### For New Users
-1. [What is LoopAI?](gitbook/zh/README.md) (中文) / [What is LoopAI?](gitbook/en/README.md) (English)
-2. [Installation Guide](gitbook/zh/getting-started/installation.md)
-3. [5-Minute Quickstart](gitbook/zh/getting-started/quickstart.md)
-4. **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - Create your first solution in 10 minutes
+### For Solution Developers
+1. **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - 10-minute tutorial
+2. **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide with tenant setup, MCP, skills
+3. **[Solution Best Practices](SOLUTION_BEST_PRACTICES.md)**
+4. **[Auto Discovery](AUTO_DISCOVERY.md)** - solution.json v3 format reference
+5. **[Skill Frontmatter](SKILL_MD_FRONTMATTER.md)** - SKILL.md format reference
+6. **[MCP REST Migration](SOLUTION_MCP_REST_MIGRATION.md)** - stdio → REST API migration
 
-### For Developers
-1. **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide to building solutions (NEW)
-2. **[SDK Documentation](sdk/)** - React & Vue client SDKs (NEW)
-   - [SDK Comparison](sdk/SDK_COMPARISON.md) - Choose the right SDK
-   - [React SDK API](../packages/react-sdk/docs/API.md) - Full React hooks & components reference
-   - [Vue SDK API](../packages/vue-sdk/docs/API.md) - Full Vue composables reference
-3. [Solution Development Guide](gitbook/zh/guide/solution-dev.md)
-4. [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
-5. [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
-6. [API Reference](gitbook/zh/api/README.md)
+### For Frontend Developers
+1. **[SDK Documentation](sdk/)** - Client SDK libraries for React & Vue
+2. **[Frontend Integration Guide](gitbook/zh/guide/frontend.md)**
+3. **[SSE Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)** - Understanding the event pipeline
 
-### For Contributors
-1. [Best Practices](SOLUTION_BEST_PRACTICES.md)
-2. [write_output Guidelines](BEST_PRACTICE_WRITE_OUTPUT.md)
-3. [Testing Guide](testing/BACKEND_SUBAGENT_TESTING_GUIDE.md)
+### For Backend Developers
+1. **[REST API Endpoints](gitbook/zh/api/rest.md)**
+2. **[Session Workspace API](design/session-workspace-file-api.md)**
+3. **[SSE Session Event Flow](advanced/SSE_SESSION_EVENT_FLOW.md)**
+4. **[ADR Index](adr/README.md)** - Architectural decisions
 
-## 📖 Documentation by Role
+### For Skill Writers
+1. **[Skill Writing Guide](gitbook/zh/guide/skill-writing.md)**
+2. **[Skill Frontmatter Spec](SKILL_MD_FRONTMATTER.md)**
+3. **[write_output Best Practices](BEST_PRACTICE_WRITE_OUTPUT.md)**
 
-### Solution Developers
-- **[Solution Quick Start](guides/SOLUTION_QUICK_START.md)** - 10-minute tutorial (NEW)
-- **[Creating a Solution](guides/CREATING_A_SOLUTION.md)** - Complete guide with tenant setup, MCP, skills (NEW)
-- [Solution Development Guide](gitbook/zh/guide/solution-dev.md) - Additional development patterns
-- [MCP Server Development](gitbook/zh/guide/mcp-server.md) - Create custom MCP servers
-- [File Explorer Component](gitbook/zh/guide/file-explorer.md) - Use the file browser UI
-- [Best Practices](SOLUTION_BEST_PRACTICES.md)
-
-### Frontend Developers
-- **[SDK Documentation](sdk/)** - Client SDK libraries for React & Vue (NEW)
-  - [React SDK](../packages/react-sdk/README.md) - Hooks & pre-built components
-  - [Vue SDK](../packages/vue-sdk/README.md) - Composables & services
-- [Frontend Integration Guide](gitbook/zh/guide/frontend.md)
-- [File Explorer Implementation](implementation/file-explorer/)
-- [WebSocket Events](gitbook/zh/api/websocket.md)
-- [@ccaas/common Types](gitbook/zh/api/shared-types.md)
-
-### Backend Developers
-- [REST API Endpoints](gitbook/zh/api/rest.md)
-- [Session Workspace API](design/session-workspace-file-api.md)
-- [Backend Testing Guide](testing/BACKEND_SUBAGENT_TESTING_GUIDE.md)
-
-### Skill Writers
-- [Skill Writing Guide](gitbook/zh/guide/skill-writing.md)
-- [write_output Best Practices](gitbook/zh/guide/write-output.md)
-- [Skill Implementation Examples](implementation/skills/)
-
-## 🔍 Finding Specific Topics
-
-### Platform Capabilities
-- [Core Capabilities](gitbook/zh/platform/capabilities.md)
-- [Human-in-the-Loop](gitbook/zh/platform/value.md)
-- [Solution Showcase](gitbook/zh/platform/solutions.md)
-
-### API Documentation
-- [REST API](gitbook/zh/api/rest.md) - HTTP endpoints
-- [WebSocket API](gitbook/zh/api/websocket.md) - Real-time events
-- [Shared Types](gitbook/zh/api/shared-types.md) - TypeScript interfaces
-
-### Implementation Features
-- [Attachment System](implementation/attachments/) - File upload/download
-- [Subagent System](implementation/subagents/) - Background agents
-- [File Explorer](implementation/file-explorer/) - Workspace file browser
-- [File Service Integration](implementation/api-integration/CCAAS_FILE_SERVICE_INTEGRATION.md)
-
-### Testing & Quality
-- [Backend Testing](testing/BACKEND_SUBAGENT_TESTING_GUIDE.md)
-- [Best Practices](SOLUTION_BEST_PRACTICES.md)
-- Test coverage requirements in individual packages
+---
 
 ## 📝 Document Organization
 
 ```
 docs/
-├── README.md (this file)          # Main documentation index
-├── guides/                        # Step-by-step tutorials (NEW)
-│   ├── SOLUTION_QUICK_START.md    # 10-minute solution tutorial
-│   └── CREATING_A_SOLUTION.md     # Complete solution guide
-├── gitbook/                       # GitBook documentation
-│   ├── en/                        # English version
-│   └── zh/                        # Chinese version
-├── implementation/                # Implementation guides
-│   ├── attachments/
-│   ├── subagents/
-│   ├── file-explorer/
-│   ├── skills/
-│   └── api-integration/
-├── testing/                       # Testing documentation
-├── design/                        # Design documents
-├── reference/                     # Quick references
-├── articles/                      # Technical articles
+├── README.md                      # This file
+│
+├── adr/                           # Architecture Decision Records
+├── advanced/                      # Internal implementation deep-dives
+├── design/                        # API design specs
+├── designs/                       # Feature design docs & PRDs
+├── external/                      # Partner/client-facing materials (Chinese)
+├── features/                      # Feature-specific documentation
+├── gitbook/                       # Full platform docs (EN + ZH)
+├── guides/                        # Step-by-step developer tutorials
+├── migration/                     # Migration guides between versions
+├── prd/                           # Product requirement documents
+├── quickstart/                    # Quick start references
+├── sdk/                           # SDK comparison & selection guides
+├── testing/                       # Testing guides & procedures
+│
+├── AUTO_DISCOVERY.md              # solution.json auto-discovery spec
+├── BEST_PRACTICE_WRITE_OUTPUT.md  # write_output tool guidelines
+├── CONVERSATION_PERSISTENCE.md    # Conversation persistence architecture
+├── DEVELOPMENT_PRINCIPLES.md      # Core development principles
+├── PROJECT_MANAGEMENT_GUIDE.md    # When & how to create docs
+├── SKILL_MD_FRONTMATTER.md        # SKILL.md frontmatter spec
 ├── SOLUTION_BEST_PRACTICES.md     # Solution development best practices
-├── BEST_PRACTICE_WRITE_OUTPUT.md  # write_output usage guide
-└── SOLUTION_DEVELOPER_GUIDE.md    # Comprehensive developer guide
+├── SOLUTION_DEVELOPER_GUIDE.md    # Comprehensive developer guide
+├── SOLUTION_MCP_REST_MIGRATION.md # MCP stdio → REST migration guide
+├── SOLUTION_TEMPLATE.md           # Solution scaffolding template
+└── WORKFLOW.md                    # Development workflow guide
 ```
+
+---
 
 ## 🌐 Language Availability
 
 Most documentation is available in both English and Chinese:
 - **English**: [`docs/gitbook/en/`](gitbook/en/)
-- **中文**: [`docs/gitbook/zh/`](gitbook/zh/)
+- **中文**: [`docs/gitbook/zh/`](gitbook/zh/) and [`docs/zh/`](zh/)
 
 ## 🔗 External Resources
 
-- **GitHub Repository**: [anthropics/claude-code](https://github.com/anthropics/claude-code)
 - **Claude API Docs**: [docs.anthropic.com](https://docs.anthropic.com)
 - **MCP Protocol**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
-
-## 📮 Contributing to Documentation
-
-Found an issue or want to improve the docs? Here's how:
-
-1. **Typos/Fixes**: Submit a PR with the fix
-2. **New Features**: Add implementation docs in `implementation/`
-3. **API Changes**: Update both `gitbook/en/` and `gitbook/zh/`
-4. **Examples**: Add to relevant solution directories
-
-## 🔄 Documentation Updates
-
-This documentation is continuously updated. Check the git history for recent changes:
-
-```bash
-git log -- docs/
-```
-
-## 💡 Need Help?
-
-- **Issues**: [GitHub Issues](https://github.com/anthropics/claude-code/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/anthropics/claude-code/discussions)
-- **Email**: support@anthropic.com
-
----
-
-**Last Updated**: 2026-02-05
-**Version**: Platform v1.0.0
