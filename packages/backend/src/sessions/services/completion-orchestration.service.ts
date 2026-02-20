@@ -308,6 +308,12 @@ export class CompletionOrchestrationService {
     // Track accumulated text for message update
     let accumulatedText = '';
 
+    // Completion promise: resolves when agent signals complete/error/cancelled
+    let resolveCompletion!: () => void;
+    const completionPromise = new Promise<void>((resolve) => {
+      resolveCompletion = resolve;
+    });
+
     const handleEvent = (event: FrontendEvent) => {
       // Accumulate text_delta events
       if (event.type === 'text_delta' && (event as any).delta) {
@@ -342,15 +348,23 @@ export class CompletionOrchestrationService {
           session.currentTurnId = undefined;
         }
       }
+
+      // Resolve completion promise when agent signals a terminal status
+      if (event.type === 'agent_status') {
+        const status = (event as any).status;
+        if (status === 'complete' || status === 'error' || status === 'cancelled') {
+          resolveCompletion();
+        }
+      }
     };
 
-    // Step 10: Execute CLI process (new or resume)
+    // Step 10: Fire-and-forget CLI process (new or resume), then wait for completion signal
     if (session.messageCount > 0) {
       // Follow-up message - use --resume
-      await this.sessionService.sendFollowUp(session, message, handleEvent, attachments);
+      void this.sessionService.sendFollowUp(session, message, handleEvent, attachments);
     } else {
       // First message - spawn new CLI process
-      await this.sessionService.ensureCLIProcess(
+      void this.sessionService.ensureCLIProcess(
         session,
         message,
         handleEvent,
@@ -358,6 +372,9 @@ export class CompletionOrchestrationService {
         systemPrompt,
       );
     }
+
+    // Wait until agent emits agent_status: complete|error|cancelled
+    await completionPromise;
 
     return {
       sessionId,
