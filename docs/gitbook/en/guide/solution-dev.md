@@ -282,9 +282,19 @@ Skills and MCP servers defined in `solution.json` are **automatically registered
 
 Solutions with `discovery.enabled: false` are completely skipped on startup — no skills or MCP servers are loaded. This is useful for work-in-progress solutions you want to keep in the repo but not expose yet.
 
-**To activate a disabled solution:** set `enabled: true` (or remove the `discovery` block entirely) and restart the backend. Skills and MCP servers are registered automatically on the next startup — no manual import script needed.
+**To activate a disabled solution:** set `enabled: true` (or remove the `discovery` block entirely) and restart the backend. Skills and MCP servers are registered automatically on the next startup.
 
-> **Note:** The old `inject-skills.sh` script and `npm run skill:import` command are no longer needed. Skills are registered automatically every time the backend starts.
+**Prefer manual control?** You can import any solution on-demand regardless of its `enabled` flag:
+
+```bash
+# Import a specific solution manually (bypasses discovery.enabled)
+npm run skill:import -- <solution-name>
+npm run skill:import -- quiz-analyzer --verbose
+```
+
+This is useful when you want fine-grained control over which solutions are loaded and when — without restarting the backend.
+
+> **Note:** The old `inject-skills.sh` shell script is no longer needed. Use `npm run skill:import` for manual imports.
 
 ## Best Practices
 

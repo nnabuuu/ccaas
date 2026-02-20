@@ -273,9 +273,19 @@ echo "Solution 启动完成！"
 
 设置 `discovery.enabled: false` 的解决方案在启动时会被完全跳过 — 不加载任何 Skill 或 MCP 服务器。适用于仍在开发中、暂不对外开放的解决方案。
 
-**启用已禁用的解决方案：** 将 `enabled` 改为 `true`（或直接删除 `discovery` 字段），然后重启后端。下次启动时会自动注册 Skills 和 MCP 服务器，无需手动执行任何导入脚本。
+**启用已禁用的解决方案：** 将 `enabled` 改为 `true`（或直接删除 `discovery` 字段），然后重启后端。下次启动时会自动注册 Skills 和 MCP 服务器。
 
-> **说明：** 旧的 `inject-skills.sh` 脚本和 `npm run skill:import` 命令不再需要。每次后端启动时会自动注册 Skills。
+**偏好手动管理？** 无论 `enabled` 状态如何，都可以随时按需导入指定解决方案：
+
+```bash
+# 手动导入指定解决方案（绕过 discovery.enabled 检查）
+npm run skill:import -- <solution-name>
+npm run skill:import -- quiz-analyzer --verbose
+```
+
+适用于需要精细控制哪些解决方案何时加载的场景，无需重启后端。
+
+> **说明：** 旧的 `inject-skills.sh` shell 脚本已废弃。手动导入请使用 `npm run skill:import`。
 
 ## 最佳实践
 
