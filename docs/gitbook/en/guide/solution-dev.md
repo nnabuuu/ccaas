@@ -280,7 +280,11 @@ Skills and MCP servers defined in `solution.json` are **automatically registered
 }
 ```
 
-> **Note:** The `inject-skills.sh` script and `npm run skill:import` command are no longer needed. Skills are registered automatically every time the backend starts.
+Solutions with `discovery.enabled: false` are completely skipped on startup — no skills or MCP servers are loaded. This is useful for work-in-progress solutions you want to keep in the repo but not expose yet.
+
+**To activate a disabled solution:** set `enabled: true` (or remove the `discovery` block entirely) and restart the backend. Skills and MCP servers are registered automatically on the next startup — no manual import script needed.
+
+> **Note:** The old `inject-skills.sh` script and `npm run skill:import` command are no longer needed. Skills are registered automatically every time the backend starts.
 
 ## Best Practices
 

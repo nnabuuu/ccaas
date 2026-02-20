@@ -271,7 +271,11 @@ echo "Solution 启动完成！"
 }
 ```
 
-> **说明：** `inject-skills.sh` 脚本和 `npm run skill:import` 命令不再需要。每次后端启动时会自动注册 Skills。
+设置 `discovery.enabled: false` 的解决方案在启动时会被完全跳过 — 不加载任何 Skill 或 MCP 服务器。适用于仍在开发中、暂不对外开放的解决方案。
+
+**启用已禁用的解决方案：** 将 `enabled` 改为 `true`（或直接删除 `discovery` 字段），然后重启后端。下次启动时会自动注册 Skills 和 MCP 服务器，无需手动执行任何导入脚本。
+
+> **说明：** 旧的 `inject-skills.sh` 脚本和 `npm run skill:import` 命令不再需要。每次后端启动时会自动注册 Skills。
 
 ## 最佳实践
 
