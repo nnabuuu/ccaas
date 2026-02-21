@@ -1,25 +1,29 @@
 /**
  * Integration Tests: Rehab Solution ↔ CCAAS Backend
  *
- * Tests the full pipeline against a real CCAAS backend at localhost:3001.
- * The backend handles the Anthropic API key server-side — no client-side key needed.
+ * Tests the full pipeline against a running CCAAS backend (localhost:3001).
+ * Assumes the solution has already been set up via setup.sh, which creates
+ * the tenant, API key, and registers the exercise-planner skill.
  *
  * Environment variables:
- *   CCAAS_BOOTSTRAP_KEY  — Admin key from backend startup logs (sk-default-...)
- *   CCAAS_BACKEND_URL    — Default: http://localhost:3001
+ *   CCAAS_API_KEY    — Solution API key output by setup.sh (required for B/C)
+ *   CCAAS_TENANT_ID  — Tenant ID output by setup.sh (required for B/C)
+ *   CCAAS_BACKEND_URL — Default: http://localhost:3001
  *
  * Groups:
  *   A — Connectivity (no keys needed)
- *   B — Tenant + API key (needs CCAAS_BOOTSTRAP_KEY)
- *   C — Skill registration (needs CCAAS_BOOTSTRAP_KEY)
- *   D — Full E2E with AI (needs CCAAS_BOOTSTRAP_KEY; backend provides Anthropic key)
+ *   B — API key + skill verification (needs CCAAS_API_KEY + CCAAS_TENANT_ID)
+ *   C — Full E2E with AI (needs CCAAS_API_KEY + CCAAS_TENANT_ID;
+ *         backend provides Anthropic key)
  *
- * Run:
- *   CCAAS_BOOTSTRAP_KEY=sk-... npm run test:integration
+ * Workflow:
+ *   1. cd solutions/business/rehab-motion-renderer && ./setup.sh
+ *   2. Copy CCAAS_API_KEY and TENANT_ID from setup.sh output
+ *   3. CCAAS_API_KEY=sk-... CCAAS_TENANT_ID=... npm run test:integration
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
-import { readFileSync, existsSync } from 'fs'
+import { existsSync } from 'fs'
 import { execSync } from 'child_process'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -32,38 +36,23 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const BACKEND_URL = process.env.CCAAS_BACKEND_URL ?? 'http://localhost:3001'
-const BOOTSTRAP_KEY = process.env.CCAAS_BOOTSTRAP_KEY ?? ''
-const HAS_BOOTSTRAP_KEY = BOOTSTRAP_KEY.length > 0
+const API_KEY = process.env.CCAAS_API_KEY ?? ''
+const TENANT_ID = process.env.CCAAS_TENANT_ID ?? ''
+const HAS_SOLUTION_KEYS = API_KEY.length > 0 && TENANT_ID.length > 0
 
-const TENANT_SLUG = 'rehab-integration-test'
 const SKILL_SLUG = 'exercise-planner'
-
-// Shared state populated by Group B, consumed by Groups C and D
-let tenantId = ''
-let apiKey = ''
 
 // ═══════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════
 
-async function adminFetch(path: string, options: RequestInit = {}) {
+async function solutionFetch(path: string, options: RequestInit = {}) {
   return fetch(`${BACKEND_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': BOOTSTRAP_KEY,
-      ...(options.headers ?? {}),
-    },
-  })
-}
-
-async function tenantFetch(path: string, options: RequestInit = {}) {
-  return fetch(`${BACKEND_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'x-tenant-id': tenantId,
+      'x-api-key': API_KEY,
+      'x-tenant-id': TENANT_ID,
       ...(options.headers ?? {}),
     },
   })
@@ -88,26 +77,24 @@ async function collectSSEEvents(opts: {
 }): Promise<SseEvent[]> {
   const { sessionId, message, mcpServerPath, timeout = 90_000 } = opts
 
-  const body = JSON.stringify({
-    message,
-    tenantId,
-    enabledSkillSlugs: [SKILL_SLUG],
-    mcpServers: {
-      'rehab-tools': {
-        command: 'node',
-        args: [mcpServerPath],
-      },
-    },
-  })
-
   const response = await fetch(`${BACKEND_URL}/api/v1/sessions/${sessionId}/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'x-tenant-id': tenantId,
+      'x-api-key': API_KEY,
+      'x-tenant-id': TENANT_ID,
     },
-    body,
+    body: JSON.stringify({
+      message,
+      tenantId: TENANT_ID,
+      enabledSkillSlugs: [SKILL_SLUG],
+      mcpServers: {
+        'rehab-tools': {
+          command: 'node',
+          args: [mcpServerPath],
+        },
+      },
+    }),
     signal: AbortSignal.timeout(timeout),
   })
 
@@ -121,14 +108,14 @@ async function collectSSEEvents(opts: {
   const decoder = new TextDecoder()
   let buffer = ''
 
-  const done = new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     const deadline = setTimeout(() => reject(new Error('SSE timeout')), timeout)
 
     async function pump() {
       try {
         while (true) {
-          const { value, done: streamDone } = await reader.read()
-          if (streamDone) {
+          const { value, done } = await reader.read()
+          if (done) {
             clearTimeout(deadline)
             resolve()
             return
@@ -149,11 +136,9 @@ async function collectSSEEvents(opts: {
               const envelope = JSON.parse(jsonStr) as SseEvent
               events.push(envelope)
 
-              // Stop on completion
               const evt = envelope.event
               if (
-                evt &&
-                evt.type === 'agent_status' &&
+                evt?.type === 'agent_status' &&
                 (evt as any).payload?.status === 'complete'
               ) {
                 clearTimeout(deadline)
@@ -175,7 +160,6 @@ async function collectSSEEvents(opts: {
     pump()
   })
 
-  await done
   return events
 }
 
@@ -188,7 +172,7 @@ describe('Group A: Connectivity', () => {
     const res = await fetch(`${BACKEND_URL}/api/v1/health`).catch(() => null)
     if (!res) {
       throw new Error(
-        `Cannot reach CCAAS backend at ${BACKEND_URL}. ` +
+        `Cannot reach CCAAS backend at ${BACKEND_URL}.\n` +
           'Start it with: npm run dev:backend (from monorepo root)'
       )
     }
@@ -197,166 +181,48 @@ describe('Group A: Connectivity', () => {
 })
 
 // ═══════════════════════════════════════════
-// Group B: Tenant + API key
+// Group B: API key + skill verification
 // ═══════════════════════════════════════════
 
-describe('Group B: Tenant + API key', () => {
-  // Skip entire group if no bootstrap key
+describe('Group B: API key + skill verification', () => {
   beforeAll(() => {
-    if (!HAS_BOOTSTRAP_KEY) {
+    if (!HAS_SOLUTION_KEYS) {
       console.log(
-        '[integration] Skipping Group B/C/D: CCAAS_BOOTSTRAP_KEY not set.\n' +
-          'Find it in backend startup logs (sk-default-...) and re-run with:\n' +
-          `  CCAAS_BOOTSTRAP_KEY=<key> npm run test:integration`
+        '[integration] Skipping Group B/C: CCAAS_API_KEY or CCAAS_TENANT_ID not set.\n' +
+          'Run setup.sh first, then re-run with:\n' +
+          '  CCAAS_API_KEY=sk-... CCAAS_TENANT_ID=<id> npm run test:integration'
       )
     }
   })
 
-  it('creates or retrieves test tenant (idempotent)', async () => {
-    if (!HAS_BOOTSTRAP_KEY) return
+  it('solution API key is accepted by backend (GET /api/v1/skills → 200)', async () => {
+    if (!HAS_SOLUTION_KEYS) return
 
-    // Try to find existing tenant by slug
-    const listRes = await adminFetch('/api/v1/tenants')
-    if (listRes.ok) {
-      const tenants = (await listRes.json()) as Array<{ id: string; slug: string }>
-      const existing = tenants.find((t) => t.slug === TENANT_SLUG)
-      if (existing) {
-        tenantId = existing.id
-        console.log(`[integration] Using existing tenant: ${tenantId}`)
-        return
-      }
-    }
-
-    // Create new tenant
-    const createRes = await adminFetch('/api/v1/tenants', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: 'Rehab Integration Test',
-        slug: TENANT_SLUG,
-        autoCreateApiKey: false,
-      }),
-    })
-
-    expect(createRes.status).toBe(201)
-    const tenant = (await createRes.json()) as { id: string; slug: string }
-    expect(tenant.id).toBeTruthy()
-    expect(tenant.slug).toBe(TENANT_SLUG)
-
-    tenantId = tenant.id
-    console.log(`[integration] Created tenant: ${tenantId}`)
-  })
-
-  it('creates an API key for the test tenant', async () => {
-    if (!HAS_BOOTSTRAP_KEY || !tenantId) return
-
-    const createRes = await adminFetch('/api/v1/admin/api-keys', {
-      method: 'POST',
-      body: JSON.stringify({
-        tenantId,
-        name: 'rehab-integration-test-key',
-        scopes: ['chat', 'skills:read', 'skills:write', 'skills:execute'],
-      }),
-    })
-
-    expect(createRes.status).toBe(201)
-    const body = (await createRes.json()) as { rawKey?: string; apiKey?: { key?: string } }
-
-    // Backend may return rawKey directly or nested
-    const raw = body.rawKey ?? (body.apiKey as any)?.rawKey ?? ''
-    expect(raw).toBeTruthy()
-
-    apiKey = raw
-    console.log(`[integration] Created API key: ${raw.slice(0, 20)}...`)
-  })
-
-  it('API key is accepted by backend (GET /api/v1/skills → 200)', async () => {
-    if (!HAS_BOOTSTRAP_KEY || !apiKey || !tenantId) return
-
-    const res = await tenantFetch('/api/v1/skills')
+    const res = await solutionFetch('/api/v1/skills')
     expect(res.status).toBe(200)
   })
-})
 
-// ═══════════════════════════════════════════
-// Group C: Skill registration
-// ═══════════════════════════════════════════
+  it('exercise-planner skill is registered and published', async () => {
+    if (!HAS_SOLUTION_KEYS) return
 
-describe('Group C: Skill registration', () => {
-  it('registers exercise-planner skill from SKILL.md', async () => {
-    if (!HAS_BOOTSTRAP_KEY || !apiKey || !tenantId) return
-
-    // Read SKILL.md
-    const skillMdPath = resolve(__dirname, '../../../../skills/exercise-planner/SKILL.md')
-    const skillContent = readFileSync(skillMdPath, 'utf-8')
-
-    // Parse frontmatter (---\nname: ...\n---)
-    const frontmatterMatch = skillContent.match(/^---\n([\s\S]*?)\n---/)
-    const nameMatch = frontmatterMatch?.[1].match(/^name:\s*(.+)$/m)
-    const descriptionMatch = frontmatterMatch?.[1].match(/^description:\s*(.+)$/m)
-
-    const skillName = nameMatch?.[1]?.trim() ?? '康复训练规划师'
-    const skillDescription = descriptionMatch?.[1]?.trim() ?? '个性化康复训练方案'
-    const systemPrompt = skillContent
-
-    // If skill already exists, delete it first (ensure fresh content)
-    const listRes = await tenantFetch('/api/v1/skills')
-    if (listRes.ok) {
-      const skills = (await listRes.json()) as Array<{ id: string; slug: string }>
-      const existing = Array.isArray(skills)
-        ? skills.find((s) => s.slug === SKILL_SLUG)
-        : undefined
-      if (existing) {
-        console.log(`[integration] Deleting existing skill: ${existing.id}`)
-        await tenantFetch(`/api/v1/skills/${existing.id}`, { method: 'DELETE' })
-      }
-    }
-
-    // Create skill
-    const createRes = await tenantFetch('/api/v1/skills', {
-      method: 'POST',
-      body: JSON.stringify({
-        name: skillName,
-        slug: SKILL_SLUG,
-        description: skillDescription,
-        type: 'prompt',
-        systemPrompt,
-        enabled: true,
-      }),
-    })
-
-    expect(createRes.status).toBe(201)
-    const skill = (await createRes.json()) as { id: string; slug: string }
-    expect(skill.id).toBeTruthy()
-    expect(skill.slug).toBe(SKILL_SLUG)
-
-    console.log(`[integration] Created skill: ${skill.id}`)
-
-    // Publish the skill
-    const publishRes = await tenantFetch(`/api/v1/skills/${skill.id}/publish`, {
-      method: 'POST',
-    })
-    expect(publishRes.status).toBeLessThan(300)
-    console.log(`[integration] Published skill: ${skill.id}`)
-  })
-
-  it('GET /api/v1/skills returns exercise-planner', async () => {
-    if (!HAS_BOOTSTRAP_KEY || !apiKey || !tenantId) return
-
-    const res = await tenantFetch('/api/v1/skills')
+    const res = await solutionFetch('/api/v1/skills')
     expect(res.status).toBe(200)
 
     const body = await res.json()
     const skills = Array.isArray(body) ? body : (body.items ?? [])
-    const found = skills.find((s: { slug: string }) => s.slug === SKILL_SLUG)
-    expect(found).toBeTruthy()
+    const skill = skills.find((s: { slug: string }) => s.slug === SKILL_SLUG)
+
+    expect(skill).toBeTruthy()
+    expect(skill.slug).toBe(SKILL_SLUG)
+    console.log(`[integration] Found skill: ${skill.id} (${skill.slug})`)
   })
 })
 
 // ═══════════════════════════════════════════
-// Group D: Full E2E with AI
+// Group C: Full E2E with AI
 // ═══════════════════════════════════════════
 
-describe('Group D: Full E2E with AI', () => {
+describe('Group C: Full E2E with AI', () => {
   const VALID_SYNC_FIELDS = [
     'title',
     'subtitle',
@@ -370,9 +236,9 @@ describe('Group D: Full E2E with AI', () => {
     'medicalReminder',
   ]
 
-  // Ensure MCP server dist is built
+  // Ensure MCP server dist exists before AI tests
   beforeAll(() => {
-    if (!HAS_BOOTSTRAP_KEY) return
+    if (!HAS_SOLUTION_KEYS) return
 
     const distPath = resolve(__dirname, '../../dist/index.js')
     if (!existsSync(distPath)) {
@@ -384,7 +250,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   })
 
-  it.skipIf(!HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_SOLUTION_KEYS)(
     'POST /api/v1/sessions/:sessionId/messages → text/event-stream (200)',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -396,12 +262,12 @@ describe('Group D: Full E2E with AI', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'x-tenant-id': tenantId,
+            'x-api-key': API_KEY,
+            'x-tenant-id': TENANT_ID,
           },
           body: JSON.stringify({
             message: '请帮我制定骨盆前倾康复训练方案',
-            tenantId,
+            tenantId: TENANT_ID,
             enabledSkillSlugs: [SKILL_SLUG],
             mcpServers: {
               'rehab-tools': {
@@ -416,13 +282,11 @@ describe('Group D: Full E2E with AI', () => {
 
       expect(response.status).toBe(200)
       expect(response.headers.get('content-type')).toContain('text/event-stream')
-
-      // Abort immediately — we just verified the stream opened correctly
       response.body?.cancel()
     }
   )
 
-  it.skipIf(!HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_SOLUTION_KEYS)(
     'receives at least 1 output_update event within 90s',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -436,12 +300,11 @@ describe('Group D: Full E2E with AI', () => {
 
       const outputUpdates = events.filter((e) => e.event?.type === 'output_update')
       expect(outputUpdates.length).toBeGreaterThanOrEqual(1)
-
       console.log(`[integration] Received ${outputUpdates.length} output_update events`)
     }
   )
 
-  it.skipIf(!HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_SOLUTION_KEYS)(
     'output_update.field is one of the 10 valid SyncFields',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -460,14 +323,13 @@ describe('Group D: Full E2E with AI', () => {
         const payload = (envelope.event as any)?.payload ?? {}
         const data = payload.data ?? payload
         const field = data.field as string
-
         expect(VALID_SYNC_FIELDS).toContain(field)
         console.log(`[integration] output_update: field=${field}`)
       }
     }
   )
 
-  it.skipIf(!HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_SOLUTION_KEYS)(
     'output_update.value is a non-empty string',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -485,15 +347,13 @@ describe('Group D: Full E2E with AI', () => {
       for (const envelope of outputUpdates) {
         const payload = (envelope.event as any)?.payload ?? {}
         const data = payload.data ?? payload
-        const value = data.value as string
-
-        expect(typeof value).toBe('string')
-        expect(value.length).toBeGreaterThan(0)
+        expect(typeof data.value).toBe('string')
+        expect((data.value as string).length).toBeGreaterThan(0)
       }
     }
   )
 
-  it.skipIf(!HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_SOLUTION_KEYS)(
     'receives agent_status:complete event within 90s',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -510,7 +370,6 @@ describe('Group D: Full E2E with AI', () => {
           e.event?.type === 'agent_status' &&
           (e.event as any)?.payload?.status === 'complete'
       )
-
       expect(completeEvents.length).toBeGreaterThanOrEqual(1)
       console.log(
         `[integration] agent_status:complete received after ${events.length} total events`
