@@ -8,7 +8,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@kedge-agentic/common": "0.0.1-SNAPSHOT",
+    "@kedge-agentic/common": "0.0.2-SNAPSHOT",
     "@modelcontextprotocol/sdk": "^1.0.0"
   },
   "devDependencies": {

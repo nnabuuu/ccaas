@@ -56,7 +56,7 @@ If you're developing a Solution **outside** the monorepo, install the published 
 npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 
 # Or install shared types only
-npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+npm install @kedge-agentic/common@0.0.2-SNAPSHOT
 ```
 
 {% hint style="warning" %}

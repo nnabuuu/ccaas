@@ -10,7 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@kedge-agentic/common": "0.0.1-SNAPSHOT",
+    "@kedge-agentic/common": "0.0.2-SNAPSHOT",
     "@kedge-agentic/react-sdk": "0.0.2-SNAPSHOT",
     "axios": "^1.6.0",
     "react": "^18.2.0",

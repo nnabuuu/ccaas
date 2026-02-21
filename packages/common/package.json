@@ -1,6 +1,6 @@
 {
   "name": "@kedge-agentic/common",
-  "version": "0.0.1-SNAPSHOT",
+  "version": "0.0.2-SNAPSHOT",
   "description": "Shared types for Claude Code as a Service",
   "type": "module",
   "main": "dist/index.cjs",

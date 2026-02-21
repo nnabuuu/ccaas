@@ -164,7 +164,7 @@ npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
 
 # 仅共享类型（MCP Server / 后端使用）
-npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+npm install @kedge-agentic/common@0.0.2-SNAPSHOT
 ```
 
 如果在 monorepo 内开发，`packages/*` 中已有本地源码，无需单独安装。

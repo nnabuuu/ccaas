@@ -337,7 +337,7 @@ export class AppModule {}
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@kedge-agentic/common": "0.0.1-SNAPSHOT",
+    "@kedge-agentic/common": "0.0.2-SNAPSHOT",
     "@kedge-agentic/react-sdk": "0.0.2-SNAPSHOT",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",

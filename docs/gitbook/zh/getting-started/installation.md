@@ -110,7 +110,7 @@ npm run test -w @kedge-agentic/common
 npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 
 # 或仅安装共享类型
-npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+npm install @kedge-agentic/common@0.0.2-SNAPSHOT
 ```
 
 {% hint style="warning" %}
