@@ -152,6 +152,23 @@ allowedTools:
 | `intent` | 语义意图识别 | `"create_lesson_plan"` |
 | `context` | 上下文条件匹配 | `"page:lesson-plan-editor"` |
 
+## 安装 SDK
+
+SDK 包已发布到 npm public registry，可直接安装：
+
+```bash
+# React 前端
+npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+
+# Vue 前端
+npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
+
+# 仅共享类型（MCP Server / 后端使用）
+npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+```
+
+如果在 monorepo 内开发，`packages/*` 中已有本地源码，无需单独安装。
+
 ## 前端直连 CCAAS
 
 前端通过 `@kedge-agentic/react-sdk` 直接连接 CCAAS 后端，无需 Solution 后端中继：

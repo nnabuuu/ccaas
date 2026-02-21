@@ -176,7 +176,7 @@ RUN npm ci --workspace=@kedge-agentic/backend --workspace=@kedge-agentic/common
 COPY packages/shared/ ./packages/shared/
 COPY packages/backend/ ./packages/backend/
 
-RUN npm run build:shared && npm run build:backend
+RUN npm run build:common && npm run build:backend
 
 FROM node:20-alpine
 WORKDIR /app

@@ -28,7 +28,7 @@ npm install
 共享包（`@kedge-agentic/common`）必须最先构建，其他包依赖它的类型定义：
 
 ```bash
-npm run build:shared
+npm run build:common
 ```
 
 ## 4. 启动后端服务
@@ -52,10 +52,11 @@ npm run dev:admin
 如果需要构建所有包，请按正确的依赖顺序执行：
 
 ```bash
-npm run build:shared    # 1. 共享类型（必须最先）
+npm run build:common    # 1. 共享类型（必须最先）
 npm run build:backend   # 2. 后端服务
 npm run build:admin     # 3. 管理后台
 npm run build:vue-sdk   # 4. Vue SDK
+npm run build:react-sdk # 5. React SDK
 ```
 
 或一次性构建所有包：
@@ -99,6 +100,22 @@ npm run test -w @kedge-agentic/common
 | `AUTH_ALLOW_ANONYMOUS` | true | 是否允许匿名访问 |
 | `AUTH_ENABLE_RATE_LIMITING` | false | 是否启用限流 |
 | `MCP_HEALTH_CHECK_INTERVAL_MS` | 30000 | MCP 健康检查间隔 |
+
+## 在 Solution 中使用 SDK（无需克隆 monorepo）
+
+如果你在 monorepo **外部**开发 Solution，可以直接从 npm 安装已发布的 SDK 包：
+
+```bash
+# 安装 React SDK（包含 common 作为依赖）
+npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+
+# 或仅安装共享类型
+npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+```
+
+{% hint style="warning" %}
+`0.0.1-SNAPSHOT` 是预发布版本，需指定完整版本号安装。`npm install @kedge-agentic/react-sdk` 不会自动安装预发布版本。
+{% endhint %}
 
 ## 启动 Solution 示例
 

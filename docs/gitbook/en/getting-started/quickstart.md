@@ -6,7 +6,7 @@ This guide walks you through the core features of KedgeAgentic in just a few min
 
 ```bash
 # Install dependencies and build
-npm install && npm run build:shared
+npm install && npm run build:common
 
 # Start the backend
 npm run dev:backend

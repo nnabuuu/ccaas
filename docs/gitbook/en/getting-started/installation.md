@@ -28,7 +28,7 @@ npm install
 The shared package (`@kedge-agentic/common`) must be built first, as other packages depend on its type definitions:
 
 ```bash
-npm run build:shared
+npm run build:common
 ```
 
 ## 4. Start the Backend Service
@@ -47,15 +47,32 @@ npm run dev:admin
 
 The admin dashboard will be available at `http://localhost:5174`.
 
+## Using SDK in a Solution (without cloning the monorepo)
+
+If you're developing a Solution **outside** the monorepo, install the published SDK packages directly from npm:
+
+```bash
+# Install React SDK (includes common as a dependency)
+npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+
+# Or install shared types only
+npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+```
+
+{% hint style="warning" %}
+`0.0.1-SNAPSHOT` is a pre-release version. You must specify the full version. `npm install @kedge-agentic/react-sdk` will NOT install pre-release versions automatically.
+{% endhint %}
+
 ## Building All Packages
 
 To build all packages, run them in the correct dependency order:
 
 ```bash
-npm run build:shared    # 1. Shared types (must be first)
+npm run build:common    # 1. Shared types (must be first)
 npm run build:backend   # 2. Backend service
 npm run build:admin     # 3. Admin dashboard
 npm run build:vue-sdk   # 4. Vue SDK
+npm run build:react-sdk # 5. React SDK
 ```
 
 Or build everything at once:

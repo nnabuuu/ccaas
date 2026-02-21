@@ -154,6 +154,23 @@ Instructions for the AI agent...
 | `intent` | Semantic intent recognition | `"create_lesson_plan"` |
 | `context` | Context condition match | `"page:lesson-plan-editor"` |
 
+## Installing the SDK
+
+SDK packages are published to the npm public registry and can be installed directly:
+
+```bash
+# React frontend
+npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+
+# Vue frontend
+npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
+
+# Shared types only (for MCP Server / backend use)
+npm install @kedge-agentic/common@0.0.1-SNAPSHOT
+```
+
+If developing inside the monorepo, the local source in `packages/*` is used automatically — no separate install needed.
+
 ## Direct Connection with React SDK
 
 The Solution frontend connects directly to the CCAAS backend using the `@kedge-agentic/react-sdk`. No relay layer is needed:

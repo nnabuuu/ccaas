@@ -9,7 +9,7 @@
 ### 安装
 
 ```bash
-npm install @kedge-agentic/vue-sdk
+npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
 ```
 
 ### 基础架构
@@ -115,7 +115,7 @@ const {
 ### 安装
 
 ```bash
-npm install @kedge-agentic/react-sdk
+npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
 ```
 
 ### 核心 Hooks
