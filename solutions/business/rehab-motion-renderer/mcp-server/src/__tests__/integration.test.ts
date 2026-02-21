@@ -2,21 +2,20 @@
  * Integration Tests: Rehab Solution ↔ CCAAS Backend
  *
  * Tests the full pipeline against a real CCAAS backend at localhost:3001.
+ * The backend handles the Anthropic API key server-side — no client-side key needed.
  *
  * Environment variables:
  *   CCAAS_BOOTSTRAP_KEY  — Admin key from backend startup logs (sk-default-...)
- *   ANTHROPIC_API_KEY    — Real Anthropic key (Group D only)
  *   CCAAS_BACKEND_URL    — Default: http://localhost:3001
  *
  * Groups:
  *   A — Connectivity (no keys needed)
  *   B — Tenant + API key (needs CCAAS_BOOTSTRAP_KEY)
  *   C — Skill registration (needs CCAAS_BOOTSTRAP_KEY)
- *   D — Full E2E with AI (needs ANTHROPIC_API_KEY, skipped if absent)
+ *   D — Full E2E with AI (needs CCAAS_BOOTSTRAP_KEY; backend provides Anthropic key)
  *
  * Run:
  *   CCAAS_BOOTSTRAP_KEY=sk-... npm run test:integration
- *   CCAAS_BOOTSTRAP_KEY=sk-... ANTHROPIC_API_KEY=sk-ant-... npm run test:integration
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
@@ -35,7 +34,6 @@ const __dirname = dirname(__filename)
 const BACKEND_URL = process.env.CCAAS_BACKEND_URL ?? 'http://localhost:3001'
 const BOOTSTRAP_KEY = process.env.CCAAS_BOOTSTRAP_KEY ?? ''
 const HAS_BOOTSTRAP_KEY = BOOTSTRAP_KEY.length > 0
-const HAS_ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '').length > 0
 
 const TENANT_SLUG = 'rehab-integration-test'
 const SKILL_SLUG = 'exercise-planner'
@@ -374,7 +372,7 @@ describe('Group D: Full E2E with AI', () => {
 
   // Ensure MCP server dist is built
   beforeAll(() => {
-    if (!HAS_ANTHROPIC_KEY) return
+    if (!HAS_BOOTSTRAP_KEY) return
 
     const distPath = resolve(__dirname, '../../dist/index.js')
     if (!existsSync(distPath)) {
@@ -386,7 +384,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   })
 
-  it.skipIf(!HAS_ANTHROPIC_KEY || !HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_BOOTSTRAP_KEY)(
     'POST /api/v1/sessions/:sessionId/messages → text/event-stream (200)',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -424,7 +422,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   )
 
-  it.skipIf(!HAS_ANTHROPIC_KEY || !HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_BOOTSTRAP_KEY)(
     'receives at least 1 output_update event within 90s',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -443,7 +441,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   )
 
-  it.skipIf(!HAS_ANTHROPIC_KEY || !HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_BOOTSTRAP_KEY)(
     'output_update.field is one of the 10 valid SyncFields',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -469,7 +467,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   )
 
-  it.skipIf(!HAS_ANTHROPIC_KEY || !HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_BOOTSTRAP_KEY)(
     'output_update.value is a non-empty string',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
@@ -495,7 +493,7 @@ describe('Group D: Full E2E with AI', () => {
     }
   )
 
-  it.skipIf(!HAS_ANTHROPIC_KEY || !HAS_BOOTSTRAP_KEY)(
+  it.skipIf(!HAS_BOOTSTRAP_KEY)(
     'receives agent_status:complete event within 90s',
     async () => {
       const sessionId = `rehab-integration-${Date.now()}`
