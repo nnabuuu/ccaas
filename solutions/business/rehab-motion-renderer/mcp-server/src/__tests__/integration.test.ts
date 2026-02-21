@@ -6,20 +6,20 @@
  * the tenant, API key, and registers the exercise-planner skill.
  *
  * Environment variables:
- *   CCAAS_API_KEY    — Solution API key output by setup.sh (required for B/C)
- *   CCAAS_TENANT_ID  — Tenant ID output by setup.sh (required for B/C)
+ *   SOLUTION_API_KEY  — Solution API key output by setup.sh (required for B/C)
+ *   CCAAS_TENANT_ID   — Tenant ID output by setup.sh (required for B/C)
  *   CCAAS_BACKEND_URL — Default: http://localhost:3001
  *
  * Groups:
  *   A — Connectivity (no keys needed)
- *   B — API key + skill verification (needs CCAAS_API_KEY + CCAAS_TENANT_ID)
- *   C — Full E2E with AI (needs CCAAS_API_KEY + CCAAS_TENANT_ID;
+ *   B — API key + skill verification (needs SOLUTION_API_KEY + CCAAS_TENANT_ID)
+ *   C — Full E2E with AI (needs SOLUTION_API_KEY + CCAAS_TENANT_ID;
  *         backend provides Anthropic key)
  *
  * Workflow:
  *   1. cd solutions/business/rehab-motion-renderer && ./setup.sh
- *   2. Copy CCAAS_API_KEY and TENANT_ID from setup.sh output
- *   3. CCAAS_API_KEY=sk-... CCAAS_TENANT_ID=... npm run test:integration
+ *   2. Copy SOLUTION_API_KEY and TENANT_ID from setup.sh output
+ *   3. SOLUTION_API_KEY=sk-... CCAAS_TENANT_ID=... npm run test:integration
  */
 
 import { describe, it, expect, beforeAll } from 'vitest'
@@ -36,7 +36,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 const BACKEND_URL = process.env.CCAAS_BACKEND_URL ?? 'http://localhost:3001'
-const API_KEY = process.env.CCAAS_API_KEY ?? ''
+const API_KEY = process.env.SOLUTION_API_KEY ?? ''
 const TENANT_ID = process.env.CCAAS_TENANT_ID ?? ''
 const HAS_SOLUTION_KEYS = API_KEY.length > 0 && TENANT_ID.length > 0
 
@@ -188,9 +188,9 @@ describe('Group B: API key + skill verification', () => {
   beforeAll(() => {
     if (!HAS_SOLUTION_KEYS) {
       console.log(
-        '[integration] Skipping Group B/C: CCAAS_API_KEY or CCAAS_TENANT_ID not set.\n' +
+        '[integration] Skipping Group B/C: SOLUTION_API_KEY or CCAAS_TENANT_ID not set.\n' +
           'Run setup.sh first, then re-run with:\n' +
-          '  CCAAS_API_KEY=sk-... CCAAS_TENANT_ID=<id> npm run test:integration'
+          '  SOLUTION_API_KEY=sk-... CCAAS_TENANT_ID=<id> npm run test:integration'
       )
     }
   })
