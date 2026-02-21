@@ -115,7 +115,7 @@ const {
 ### Installation
 
 ```bash
-npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 ```
 
 ### Core Hooks

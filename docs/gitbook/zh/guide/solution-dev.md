@@ -158,7 +158,7 @@ SDK 包已发布到 npm public registry，可直接安装：
 
 ```bash
 # React 前端
-npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 
 # Vue 前端
 npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT

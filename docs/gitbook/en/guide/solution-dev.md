@@ -160,7 +160,7 @@ SDK packages are published to the npm public registry and can be installed direc
 
 ```bash
 # React frontend
-npm install @kedge-agentic/react-sdk@0.0.1-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
 
 # Vue frontend
 npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
