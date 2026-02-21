@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@kedge-agentic/common": "file:../../../packages/common",
+    "@kedge-agentic/common": "0.0.1-SNAPSHOT",
     "konva": "^9.3.6",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
