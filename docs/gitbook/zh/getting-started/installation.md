@@ -107,15 +107,11 @@ npm run test -w @kedge-agentic/common
 
 ```bash
 # 安装 React SDK（包含 common 作为依赖）
-npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.1.0
 
 # 或仅安装共享类型
-npm install @kedge-agentic/common@0.0.2-SNAPSHOT
+npm install @kedge-agentic/common@0.1.0
 ```
-
-{% hint style="warning" %}
-`0.0.1-SNAPSHOT` 是预发布版本，需指定完整版本号安装。`npm install @kedge-agentic/react-sdk` 不会自动安装预发布版本。
-{% endhint %}
 
 ## 启动 Solution 示例
 

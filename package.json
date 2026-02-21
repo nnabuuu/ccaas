@@ -32,7 +32,10 @@
     "quiz:backend:build": "cd solutions/quiz-analyzer/backend && npm run build",
     "quiz:backend:start": "cd solutions/quiz-analyzer/backend && npm start",
     "quiz:backend:dev": "cd solutions/quiz-analyzer/backend && npm run start:dev",
-    "quiz:setup": "cd solutions/quiz-analyzer && ./setup.sh"
+    "quiz:setup": "cd solutions/quiz-analyzer && ./setup.sh",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -48,6 +51,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.29.8",
     "@commitlint/cli": "^18.0.0",
     "@commitlint/config-conventional": "^18.0.0",
     "husky": "^8.0.0",

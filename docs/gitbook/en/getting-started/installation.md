@@ -53,15 +53,11 @@ If you're developing a Solution **outside** the monorepo, install the published 
 
 ```bash
 # Install React SDK (includes common as a dependency)
-npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.1.0
 
 # Or install shared types only
-npm install @kedge-agentic/common@0.0.2-SNAPSHOT
+npm install @kedge-agentic/common@0.1.0
 ```
-
-{% hint style="warning" %}
-`0.0.1-SNAPSHOT` is a pre-release version. You must specify the full version. `npm install @kedge-agentic/react-sdk` will NOT install pre-release versions automatically.
-{% endhint %}
 
 ## Building All Packages
 

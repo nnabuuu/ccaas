@@ -9,7 +9,7 @@ CCAAS provides official SDKs for both Vue (`@kedge-agentic/vue-sdk`) and React (
 ### Installation
 
 ```bash
-npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
+npm install @kedge-agentic/vue-sdk@0.1.0
 ```
 
 ### Architecture
@@ -115,7 +115,7 @@ const {
 ### Installation
 
 ```bash
-npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.1.0
 ```
 
 ### Core Hooks

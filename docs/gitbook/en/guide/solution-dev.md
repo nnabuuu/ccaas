@@ -160,13 +160,13 @@ SDK packages are published to the npm public registry and can be installed direc
 
 ```bash
 # React frontend
-npm install @kedge-agentic/react-sdk@0.0.2-SNAPSHOT
+npm install @kedge-agentic/react-sdk@0.1.0
 
 # Vue frontend
-npm install @kedge-agentic/vue-sdk@0.0.1-SNAPSHOT
+npm install @kedge-agentic/vue-sdk@0.1.0
 
 # Shared types only (for MCP Server / backend use)
-npm install @kedge-agentic/common@0.0.2-SNAPSHOT
+npm install @kedge-agentic/common@0.1.0
 ```
 
 If developing inside the monorepo, the local source in `packages/*` is used automatically — no separate install needed.
