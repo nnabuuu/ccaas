@@ -137,9 +137,10 @@ async function collectSSEEvents(opts: {
               events.push(envelope)
 
               const evt = envelope.event
+              // agent_status has status at top level: { type, status, sessionId, ... }
               if (
                 evt?.type === 'agent_status' &&
-                (evt as any).payload?.status === 'complete'
+                (evt as any).status === 'complete'
               ) {
                 clearTimeout(deadline)
                 reader.cancel()
@@ -236,28 +237,47 @@ describe('Group C: Full E2E with AI', () => {
     'medicalReminder',
   ]
 
-  // Ensure MCP server dist exists before AI tests
-  beforeAll(() => {
+  // Shared session — run the AI ONCE in beforeAll, assert on cached events
+  let sessionEvents: SseEvent[] = []
+  let sessionError: Error | null = null
+
+  // Provide enough detail so the AI generates the plan directly without follow-up questions.
+  const TEST_MESSAGE =
+    '体态性骨盆前倾（自我评估，无腰椎病变），主要症状：腰部酸痛和大腿前侧紧张，' +
+    '零基础运动，家中有瑜伽垫和椅子，无合并症。请直接生成完整康复训练方案，不需要再询问我任何问题。'
+
+  beforeAll(async () => {
     if (!HAS_SOLUTION_KEYS) return
 
     const distPath = resolve(__dirname, '../../dist/index.js')
     if (!existsSync(distPath)) {
       console.log('[integration] Building MCP server dist...')
-      execSync('npm run build', {
-        cwd: resolve(__dirname, '../..'),
-        stdio: 'pipe',
+      execSync('npm run build', { cwd: resolve(__dirname, '../..'), stdio: 'pipe' })
+    }
+
+    const sessionId = `rehab-integration-${Date.now()}`
+    console.log(`[integration] Starting AI session: ${sessionId}`)
+
+    try {
+      sessionEvents = await collectSSEEvents({
+        sessionId,
+        message: TEST_MESSAGE,
+        mcpServerPath: distPath,
+        timeout: 200_000,
       })
+      console.log(`[integration] Session complete. Total events: ${sessionEvents.length}`)
+    } catch (err) {
+      sessionError = err as Error
+      console.error(`[integration] Session error: ${sessionError.message}`)
     }
   })
 
   it.skipIf(!HAS_SOLUTION_KEYS)(
-    'POST /api/v1/sessions/:sessionId/messages → text/event-stream (200)',
+    'SSE stream opens with 2xx status and correct content-type',
     async () => {
-      const sessionId = `rehab-integration-${Date.now()}`
       const distPath = resolve(__dirname, '../../dist/index.js')
-
       const response = await fetch(
-        `${BACKEND_URL}/api/v1/sessions/${sessionId}/messages`,
+        `${BACKEND_URL}/api/v1/sessions/rehab-probe-${Date.now()}/messages`,
         {
           method: 'POST',
           headers: {
@@ -266,57 +286,38 @@ describe('Group C: Full E2E with AI', () => {
             'x-tenant-id': TENANT_ID,
           },
           body: JSON.stringify({
-            message: '请帮我制定骨盆前倾康复训练方案',
+            message: TEST_MESSAGE,
             tenantId: TENANT_ID,
             enabledSkillSlugs: [SKILL_SLUG],
-            mcpServers: {
-              'rehab-tools': {
-                command: 'node',
-                args: [distPath],
-              },
-            },
+            mcpServers: { 'rehab-tools': { command: 'node', args: [distPath] } },
           }),
           signal: AbortSignal.timeout(10_000),
         }
       )
-
-      expect(response.status).toBe(200)
+      // NestJS POST defaults to 201
+      expect(response.status).toBeLessThan(300)
       expect(response.headers.get('content-type')).toContain('text/event-stream')
       response.body?.cancel()
     }
   )
 
   it.skipIf(!HAS_SOLUTION_KEYS)(
-    'receives at least 1 output_update event within 90s',
-    async () => {
-      const sessionId = `rehab-integration-${Date.now()}`
-      const distPath = resolve(__dirname, '../../dist/index.js')
+    'receives at least 1 output_update event within 200s',
+    () => {
+      if (sessionError) throw sessionError
 
-      const events = await collectSSEEvents({
-        sessionId,
-        message: '请帮我制定骨盆前倾康复训练方案',
-        mcpServerPath: distPath,
-      })
-
-      const outputUpdates = events.filter((e) => e.event?.type === 'output_update')
-      expect(outputUpdates.length).toBeGreaterThanOrEqual(1)
+      const outputUpdates = sessionEvents.filter((e) => e.event?.type === 'output_update')
       console.log(`[integration] Received ${outputUpdates.length} output_update events`)
+      expect(outputUpdates.length).toBeGreaterThanOrEqual(1)
     }
   )
 
   it.skipIf(!HAS_SOLUTION_KEYS)(
     'output_update.field is one of the 10 valid SyncFields',
-    async () => {
-      const sessionId = `rehab-integration-${Date.now()}`
-      const distPath = resolve(__dirname, '../../dist/index.js')
+    () => {
+      if (sessionError) throw sessionError
 
-      const events = await collectSSEEvents({
-        sessionId,
-        message: '请帮我制定骨盆前倾康复训练方案',
-        mcpServerPath: distPath,
-      })
-
-      const outputUpdates = events.filter((e) => e.event?.type === 'output_update')
+      const outputUpdates = sessionEvents.filter((e) => e.event?.type === 'output_update')
       expect(outputUpdates.length).toBeGreaterThanOrEqual(1)
 
       for (const envelope of outputUpdates) {
@@ -331,17 +332,10 @@ describe('Group C: Full E2E with AI', () => {
 
   it.skipIf(!HAS_SOLUTION_KEYS)(
     'output_update.value is a non-empty string',
-    async () => {
-      const sessionId = `rehab-integration-${Date.now()}`
-      const distPath = resolve(__dirname, '../../dist/index.js')
+    () => {
+      if (sessionError) throw sessionError
 
-      const events = await collectSSEEvents({
-        sessionId,
-        message: '请帮我制定骨盆前倾康复训练方案',
-        mcpServerPath: distPath,
-      })
-
-      const outputUpdates = events.filter((e) => e.event?.type === 'output_update')
+      const outputUpdates = sessionEvents.filter((e) => e.event?.type === 'output_update')
       expect(outputUpdates.length).toBeGreaterThanOrEqual(1)
 
       for (const envelope of outputUpdates) {
@@ -354,25 +348,19 @@ describe('Group C: Full E2E with AI', () => {
   )
 
   it.skipIf(!HAS_SOLUTION_KEYS)(
-    'receives agent_status:complete event within 90s',
-    async () => {
-      const sessionId = `rehab-integration-${Date.now()}`
-      const distPath = resolve(__dirname, '../../dist/index.js')
+    'receives agent_status:complete event within 200s',
+    () => {
+      if (sessionError) throw sessionError
 
-      const events = await collectSSEEvents({
-        sessionId,
-        message: '请帮我制定骨盆前倾康复训练方案',
-        mcpServerPath: distPath,
-      })
-
-      const completeEvents = events.filter(
+      // agent_status has status at top level: { type, status, sessionId, ... }
+      const completeEvents = sessionEvents.filter(
         (e) =>
           e.event?.type === 'agent_status' &&
-          (e.event as any)?.payload?.status === 'complete'
+          (e.event as any)?.status === 'complete'
       )
       expect(completeEvents.length).toBeGreaterThanOrEqual(1)
       console.log(
-        `[integration] agent_status:complete received after ${events.length} total events`
+        `[integration] agent_status:complete received after ${sessionEvents.length} total events`
       )
     }
   )
