@@ -57,10 +57,11 @@ rounds[2]: keyword="面积", newKPs=[], cumulativeCount=2
 ### Mode B：层级遍历（兜底路径）
 
 ```
-Step 1: 识别科目
-  list_subjects(科目名) → 获取 subjectId（如 "初中-数学"）
+Step 1: 获取根节点（按年级直接筛选）
+  list_root_knowledge_points({ gradeLevel: "初中" })
+  → 返回该年级下所有根节点，AI 判断题目属于哪个科目分支
 
-Step 2: 从根节点开始
+Step 2: 从选中分支开始
   list_root_knowledge_points(subjectId)
   → 返回 ["数与代数", "图形与几何", "统计与概率", ...]
   → AI 判断：这道题属于哪个大类？选 1-2 个分支
@@ -372,8 +373,7 @@ Mode C 覆盖率不足时，切换 Mode B（兜底）：
 |---------|------|------|
 | `get_quiz_details` | 获取题目信息 | 步骤1 |
 | `search_knowledge_points_by_priority` | **Mode C 按优先级迭代搜索（主路径）** | 步骤2 |
-| `list_subjects` | 获取科目（Mode B 入口） | 步骤2 Mode B |
-| `list_root_knowledge_points` | 获取根节点 | 步骤2 Mode B |
+| `list_root_knowledge_points` | **Mode B 入口：按年级获取根节点** | 步骤2 Mode B |
 | `get_knowledge_point_children` | 逐层展开 | 步骤2 Mode B |
 | `search_knowledge_points_under` | 子树内搜索 | 步骤2 Mode B |
 | `verify_knowledge_point_tags` | 验证知识点存在 | 步骤2 确认 |

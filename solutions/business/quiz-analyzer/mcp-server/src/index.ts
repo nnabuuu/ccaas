@@ -129,7 +129,7 @@ const getKnowledgePointsTreeTool: Tool = {
 
 IMPORTANT: You must provide at least one of subjectId or gradeLevel. Without a filter this would return 31,000+ nodes and is rejected.
 
-Use list_subjects to discover available subjectIds first.
+NOTE: subjectId here is the KP tree subject ID (visible in any search result's subjectId field), NOT a list_subjects catalog ID. The simplest filter is gradeLevel: "小学", "初中", or "高中".
 
 Example usage:
 { "subjectId": "3601171b-5ac9-46ba-8dec-2022b42b0fa5" }
@@ -154,7 +154,7 @@ Example response:
     properties: {
       subjectId: {
         type: 'string',
-        description: 'Subject UUID (from list_subjects). Required unless gradeLevel is provided.',
+        description: 'KP tree subject UUID (from a KP search result\'s subjectId field). Required unless gradeLevel is provided.',
       },
       gradeLevel: {
         type: 'string',
@@ -561,7 +561,9 @@ const searchCatalogTool: Tool = {
   name: 'list_subjects',
   description: `Search and list subjects (学科) from the knowledge base.
 
-Returns matching subjects with their IDs and metadata. Use this to get a subjectId before calling list_root_knowledge_points to start hierarchical traversal.
+Returns matching catalog subjects/chapters from textbook catalog data. Use this in Step 3 to identify which textbook catalog section a quiz belongs to (e.g., "九年级上册 > 第二章 函数").
+
+NOTE: The IDs returned here are catalog entry IDs, NOT the KP tree subjectIds used by list_root_knowledge_points or get_knowledge_points_tree. For Mode B KP traversal, call list_root_knowledge_points with gradeLevel directly.
 
 Omit keyword to list all available subjects. Provide keyword to filter by name.
 
@@ -681,7 +683,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return {
         content: [{ type: 'text', text: JSON.stringify({
           status: 'error',
-          error: 'At least one filter (subjectId or gradeLevel) is required to avoid returning the full 31k-node tree. Use list_subjects to discover subjectIds, then pass one here.',
+          error: 'At least one filter (subjectId or gradeLevel) is required to avoid returning the full 31k-node tree. Use gradeLevel ("小学"/"初中"/"高中") as the simplest filter, or pass a subjectId from any KP search result.',
         }) }],
         isError: true,
       };

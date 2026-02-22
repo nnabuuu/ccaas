@@ -138,8 +138,9 @@ await tools.get_quiz_details({
 **Mode B：层级遍历（兜底路径）**
 
 ```
-Step 1: list_subjects(科目) → 获取 subjectId
-Step 2: list_root_knowledge_points(subjectId) → 顶层分类
+Step 1: list_root_knowledge_points({ gradeLevel: "初中" }) → 该年级所有根节点
+         AI 判断题目属于哪个科目分支（数学/物理/化学/...）
+Step 2: 从选中分支开始
 Step 3: AI 选 1-2 个最相关的根类别
 Step 4: 逐层 get_knowledge_point_children(nodeId) 向下展开
   - isLeaf: true → 加入候选
