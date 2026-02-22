@@ -1420,9 +1420,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
-      // Search all KPs by keyword, then filter to descendants only
-      const allMatches = jsonDataLoader.searchKnowledgePoints(keyword);
-      const scopedResults = allMatches.filter(kp => descendantIds.has(kp.id));
+      // Search only within the descendant subtree (O(subtree) instead of O(all 31k nodes))
+      const scopedResults = jsonDataLoader.searchKnowledgePoints(keyword, { scopeIds: descendantIds });
 
       const formattedResults = scopedResults.map(kp => {
         const { pathNames, fullName } = jsonDataLoader.getFullName(kp.id) ?? { pathNames: [], fullName: kp.name };

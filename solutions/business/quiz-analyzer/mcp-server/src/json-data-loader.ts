@@ -225,18 +225,32 @@ class JsonDataLoader {
 
   /**
    * Search knowledge points by keyword (fuzzy)
+   *
+   * @param options.scopeIds - When provided, only search within this set of IDs.
+   *   Used by search_knowledge_points_under to avoid scanning all 31k nodes.
    */
   searchKnowledgePoints(keyword: string, options?: {
     subjectId?: string;
     gradeLevel?: string;
     limit?: number;
+    scopeIds?: Set<string>;
   }): KnowledgePoint[] {
     this.load();
     if (!keyword) return [];
 
     const scored: Array<{ kp: KnowledgePoint; score: number }> = [];
 
-    for (const kp of this.knowledgePoints) {
+    // When scopeIds is provided, iterate only that subset (O(subtree) vs O(n))
+    const candidates: Iterable<KnowledgePoint> = options?.scopeIds
+      ? (function* (ids: Set<string>, byId: Map<string, KnowledgePoint>) {
+          for (const id of ids) {
+            const kp = byId.get(id);
+            if (kp) yield kp;
+          }
+        })(options.scopeIds, this.kpById)
+      : this.knowledgePoints;
+
+    for (const kp of candidates) {
       // Filter first (cheap)
       if (options?.subjectId && kp.subjectId !== options.subjectId) continue;
       if (options?.gradeLevel && kp.gradeLevel !== options.gradeLevel) continue;
