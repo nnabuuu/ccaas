@@ -237,4 +237,18 @@ describe('Edge Cases', () => {
     )
     results.forEach(r => expect(r.gradeLevel).toBe('初中'))
   })
+
+  it('subjectId 过滤有效：所有结果都属于指定 subjectId', () => {
+    // Derive a valid subjectId from a known KP (勾股定理, id verified in batch-search tests above)
+    const refKp = jsonDataLoader.getKnowledgePointById(KP.pythagoreanTheorem)!
+    expect(refKp).toBeDefined()
+    const targetSubjectId = refKp.subjectId
+
+    const results = jsonDataLoader.batchSearchKnowledgePoints(
+      ['勾股定理', '三角形'],
+      { subjectId: targetSubjectId, limit: 30 },
+    )
+    expect(results.length).toBeGreaterThan(0)
+    results.forEach(r => expect(r.subjectId).toBe(targetSubjectId))
+  })
 })
