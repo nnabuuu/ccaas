@@ -79,6 +79,8 @@ class JsonDataLoader {
   private subjectByName: Map<string, Subject[]> = new Map();
   // fullName/pathNames computed once per node during buildIndexes(), O(1) per search result
   private fullNameCache: Map<string, { pathNames: string[]; fullName: string }> = new Map();
+  // Root nodes (parentId === null), computed once during buildIndexes()
+  private rootKPs: KnowledgePoint[] = [];
 
   private loaded = false;
 
@@ -169,6 +171,7 @@ class JsonDataLoader {
     });
 
     // Precompute fullName / pathNames for every node (O(n·depth) once, then O(1) per search result)
+    // Also collect root nodes (parentId === null) to avoid O(n) scan on every getRootKnowledgePoints call
     for (const kp of this.knowledgePoints) {
       const names: string[] = [];
       let cur: KnowledgePoint | undefined = kp;
@@ -177,6 +180,10 @@ class JsonDataLoader {
         cur = cur.parentId ? this.kpById.get(cur.parentId) : undefined;
       }
       this.fullNameCache.set(kp.id, { pathNames: names, fullName: names.join(' > ') });
+
+      if (kp.parentId === null) {
+        this.rootKPs.push(kp);
+      }
     }
   }
 
@@ -317,7 +324,7 @@ class JsonDataLoader {
   }): KnowledgePoint[] {
     this.load();
 
-    let roots = this.knowledgePoints.filter(kp => kp.parentId === null);
+    let roots = this.rootKPs;
 
     if (options?.subjectId) {
       roots = roots.filter(kp => kp.subjectId === options.subjectId);
@@ -406,6 +413,7 @@ class JsonDataLoader {
     limit?: number;
   }): Subject[] {
     this.load();
+    if (!keyword) return [];
 
     let results = this.subjects.filter(s =>
       s.name.includes(keyword) || s.description.includes(keyword)
