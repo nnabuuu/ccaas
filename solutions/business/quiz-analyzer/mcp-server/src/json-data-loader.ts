@@ -208,6 +208,14 @@ class JsonDataLoader {
   }
 
   /**
+   * Get precomputed fullName and pathNames for a node (O(1) cache lookup).
+   */
+  getFullName(id: string): { pathNames: string[]; fullName: string } | undefined {
+    this.load();
+    return this.fullNameCache.get(id);
+  }
+
+  /**
    * Get knowledge points by name (exact match)
    */
   getKnowledgePointsByName(name: string): KnowledgePoint[] {

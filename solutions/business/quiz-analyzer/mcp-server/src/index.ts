@@ -1240,15 +1240,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const roots = jsonDataLoader.getRootKnowledgePoints({ subjectId, gradeLevel });
 
-      const formattedRoots = roots.map(kp => ({
-        id: kp.id,
-        name: kp.name,
-        level: kp.level,
-        subjectId: kp.subjectId,
-        gradeLevel: kp.gradeLevel,
-        childCount: kp.children.length,
-        isLeaf: kp.children.length === 0,
-      }));
+      const formattedRoots = roots.map(kp => {
+        const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
+        return {
+          id: kp.id,
+          name: kp.name.trim(),
+          fullName,
+          level: kp.level,
+          subjectId: kp.subjectId,
+          gradeLevel: kp.gradeLevel,
+          childCount: kp.children.length,
+          isLeaf: kp.children.length === 0,
+        };
+      });
 
       return {
         content: [
@@ -1278,15 +1282,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const children = jsonDataLoader.getChildrenKnowledgePoints(parentId);
 
-      const formattedChildren = children.map(kp => ({
-        id: kp.id,
-        name: kp.name,
-        level: kp.level,
-        subjectId: kp.subjectId,
-        gradeLevel: kp.gradeLevel,
-        childCount: kp.children.length,
-        isLeaf: kp.children.length === 0,
-      }));
+      const formattedChildren = children.map(kp => {
+        const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
+        return {
+          id: kp.id,
+          name: kp.name.trim(),
+          fullName,
+          level: kp.level,
+          subjectId: kp.subjectId,
+          gradeLevel: kp.gradeLevel,
+          childCount: kp.children.length,
+          isLeaf: kp.children.length === 0,
+        };
+      });
 
       return {
         content: [
@@ -1375,15 +1383,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const allMatches = jsonDataLoader.searchKnowledgePoints(keyword);
       const scopedResults = allMatches.filter(kp => descendantIds.has(kp.id));
 
-      const formattedResults = scopedResults.map(kp => ({
-        id: kp.id,
-        name: kp.name,
-        level: kp.level,
-        subjectId: kp.subjectId,
-        gradeLevel: kp.gradeLevel,
-        parentId: kp.parentId,
-        isLeaf: kp.children.length === 0,
-      }));
+      const formattedResults = scopedResults.map(kp => {
+        const { pathNames, fullName } = jsonDataLoader.getFullName(kp.id) ?? { pathNames: [], fullName: kp.name };
+        return {
+          id: kp.id,
+          name: kp.name.trim(),
+          fullName,
+          pathNames,
+          level: kp.level,
+          subjectId: kp.subjectId,
+          gradeLevel: kp.gradeLevel,
+          parentId: kp.parentId,
+          isLeaf: kp.children.length === 0,
+        };
+      });
 
       return {
         content: [
