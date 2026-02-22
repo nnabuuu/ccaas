@@ -256,3 +256,47 @@ describe('Test 7: pathNames 字段存在于结果中', () => {
     })
   })
 })
+
+// ─── Test 8: subjectId and gradeLevel in Mode C results ──────────────────────
+
+describe('Test 8: subjectId/gradeLevel 字段一致性（与 Mode A 对齐）', () => {
+  it('allResults 中每个 KP 都有非空 subjectId', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['勾股定理'], { leafOnly: true })
+    expect(result.allResults.length).toBeGreaterThan(0)
+    result.allResults.forEach(kp => {
+      expect(typeof kp.subjectId).toBe('string')
+      expect(kp.subjectId.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('allResults 中每个 KP 都有非空 gradeLevel', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['勾股定理'], { leafOnly: true })
+    result.allResults.forEach(kp => {
+      expect(typeof kp.gradeLevel).toBe('string')
+      expect(kp.gradeLevel.length).toBeGreaterThan(0)
+    })
+  })
+
+  it('newKPs 中的每个 KP 也有 subjectId 和 gradeLevel 字段', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['因式分解', '勾股定理'], { leafOnly: true })
+    result.rounds.forEach(round => {
+      round.newKPs.forEach(kp => {
+        expect(typeof kp.subjectId).toBe('string')
+        expect(kp.subjectId.length).toBeGreaterThan(0)
+        expect(typeof kp.gradeLevel).toBe('string')
+        expect(kp.gradeLevel.length).toBeGreaterThan(0)
+      })
+    })
+  })
+
+  it('gradeLevel filter returns only KPs with matching gradeLevel', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(
+      ['函数', '二次函数'],
+      { leafOnly: true, gradeLevel: '初中' }
+    )
+    expect(result.allResults.length).toBeGreaterThan(0)
+    result.allResults.forEach(kp => {
+      expect(kp.gradeLevel).toBe('初中')
+    })
+  })
+})

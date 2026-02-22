@@ -468,10 +468,10 @@ class JsonDataLoader {
     rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean; subjectId: string; gradeLevel: string }>;
       cumulativeCount: number;
     }>;
-    allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
+    allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean; subjectId: string; gradeLevel: string }>;
     coveredKeywords: string[];
     uncoveredKeywords: string[];
     coverageScore: number;
@@ -484,12 +484,12 @@ class JsonDataLoader {
     const rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean; subjectId: string; gradeLevel: string }>;
       cumulativeCount: number;
     }> = [];
     const coveredKeywords: string[] = [];
     const uncoveredKeywords: string[] = [];
-    const allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }> = [];
+    const allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean; subjectId: string; gradeLevel: string }> = [];
 
     for (const keyword of keywords) {
       let results = this.searchKnowledgePoints(keyword, { gradeLevel, limit: limitPerKeyword * 3 });
@@ -510,6 +510,8 @@ class JsonDataLoader {
           pathNames,
           level: kp.level,
           isLeaf: kp.children.length === 0,
+          subjectId: kp.subjectId,
+          gradeLevel: kp.gradeLevel,
         };
       });
       newKPs.forEach(kp => seenIds.add(kp.id));
