@@ -136,9 +136,26 @@ describe('Content Field Schemas', () => {
     expect(result.success).toBe(true);
   });
 
-  it('CurriculumRequirementsSchema accepts string', () => {
-    const result = CurriculumRequirementsSchema.safeParse('符合新课标要求...');
+  it('CurriculumRequirementsSchema accepts array of curriculum standards', () => {
+    const result = CurriculumRequirementsSchema.safeParse([{
+      id: 1,
+      standardCode: 'PEP-MATH-G3-001',
+      title: '认识分数',
+      stage: '第一学段',
+      standardType: '内容标准',
+      contentDomain: '数与代数',
+    }]);
     expect(result.success).toBe(true);
+  });
+
+  it('CurriculumRequirementsSchema accepts empty array', () => {
+    const result = CurriculumRequirementsSchema.safeParse([]);
+    expect(result.success).toBe(true);
+  });
+
+  it('CurriculumRequirementsSchema rejects plain string', () => {
+    const result = CurriculumRequirementsSchema.safeParse('符合新课标要求...');
+    expect(result.success).toBe(false);
   });
 
   it('StudentAnalysisSchema accepts string', () => {
