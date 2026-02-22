@@ -11,12 +11,14 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { SessionService } from '../sessions/session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CliProcessService } from './services/cli-process.service';
 import { WorkspaceService } from './services/workspace.service';
 import { BackgroundTaskMonitorService } from './services/background-task-monitor.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type { ManagedSession } from '../common/interfaces/session.interface';
 
 describe('SessionService - Skill Tracking (Week 3)', () => {
@@ -75,6 +77,10 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
         {
           provide: StreamRegistryService,
           useValue: { cleanupSession: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(SessionEntity),
+          useValue: { save: jest.fn(), update: jest.fn() },
         },
       ],
     }).compile();
