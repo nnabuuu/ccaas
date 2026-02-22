@@ -354,3 +354,61 @@ describe('searchKnowledgePoints — scopeIds option (search_knowledge_points_und
     }
   });
 });
+
+describe('verify_knowledge_point_tags — data layer (getKnowledgePointById + getFullName + searchKnowledgePoints)', () => {
+  // These tests exercise the exact sequence used by the verify_knowledge_point_tags handler:
+  //   1. getKnowledgePointById(id) → exists?
+  //   2. getFullName(id) → fullName for valid tags
+  //   3. searchKnowledgePoints(name, { limit: 3 }) → suggestions for invalid tags
+  //   4. getFullName(suggestedId) → fullName for suggestions
+
+  it('valid tag: known ID resolves to a node with non-empty fullName', () => {
+    const node = jsonDataLoader.getKnowledgePointById(SHUSHUSHI_ID);
+    expect(node).toBeDefined();
+    const { fullName } = jsonDataLoader.getFullName(SHUSHUSHI_ID)!;
+    expect(fullName).toBeTruthy();
+    expect(fullName).toContain('数与式');
+  });
+
+  it('invalid tag: unknown ID yields no node', () => {
+    const node = jsonDataLoader.getKnowledgePointById('nonexistent-tag-id-999');
+    expect(node).toBeUndefined();
+  });
+
+  it('invalid tag: searching by name finds suggestions with fullName', () => {
+    const similar = jsonDataLoader.searchKnowledgePoints('数与式', { limit: 3 });
+    expect(similar.length).toBeGreaterThan(0);
+    similar.forEach(kp => {
+      const result = jsonDataLoader.getFullName(kp.id);
+      expect(result).toBeDefined();
+      expect(result!.fullName).toBeTruthy();
+    });
+  });
+
+  it('suggestions for ambiguous name include fullName distinguishing homonymous nodes', () => {
+    // "三角形" appears in multiple subjects; fullName disambiguates them
+    const similar = jsonDataLoader.searchKnowledgePoints('三角形', { limit: 5 });
+    expect(similar.length).toBeGreaterThan(0);
+    const fullNames = similar.map(kp => {
+      const res = jsonDataLoader.getFullName(kp.id);
+      return res ? res.fullName : kp.name;
+    });
+    // All fullNames should be non-empty
+    fullNames.forEach(fn => expect(fn).toBeTruthy());
+    // There should be more info in fullName than just the bare node name
+    const bare = similar[0].name.trim();
+    expect(fullNames[0].length).toBeGreaterThan(bare.length);
+  });
+
+  it('valid tag fullName matches getFullName output', () => {
+    // Simulates: valid.push({ ...tag, exists: true, fullName })
+    const node = jsonDataLoader.getKnowledgePointById(SHUSHUSHI_ID)!;
+    const { fullName } = jsonDataLoader.getFullName(SHUSHUSHI_ID)!;
+    expect(fullName).toBe(jsonDataLoader.getFullName(node.id)!.fullName);
+  });
+
+  it('nonexistent name yields no suggestions (empty search)', () => {
+    const similar = jsonDataLoader.searchKnowledgePoints('絶対存在しない知识点xyz999', { limit: 3 });
+    expect(similar).toHaveLength(0);
+  });
+});

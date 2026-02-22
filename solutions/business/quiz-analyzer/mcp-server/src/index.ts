@@ -756,7 +756,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const node = jsonDataLoader.getKnowledgePointById(tagId);
 
         if (node) {
-          valid.push({ ...tag, exists: true });
+          const { fullName } = jsonDataLoader.getFullName(tagId) ?? { fullName: node.name };
+          valid.push({ ...tag, exists: true, fullName });
         } else {
           invalid.push({ ...tag, exists: false });
 
@@ -766,7 +767,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (similar.length > 0) {
             suggestions.push({
               original: tag,
-              suggestions: similar.map(kp => ({ id: kp.id, name: kp.name })),
+              suggestions: similar.map(kp => {
+                const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
+                return { id: kp.id, name: kp.name.trim(), fullName };
+              }),
             });
           }
         }
