@@ -266,7 +266,9 @@ Example usage:
 
 const searchKnowledgePointsTool: Tool = {
   name: 'search_knowledge_points',
-  description: `Search knowledge points by keyword. Returns results with fullName and pathNames for hierarchy context.
+  description: `Search knowledge points by keyword (single keyword, backup mode). For multiple keywords prefer batch_search_knowledge_points (Mode A) or search_knowledge_points_by_priority (Mode C).
+
+Each result includes: id, name, fullName (root→node path), pathNames (array), level, subjectId, gradeLevel, parentId, isLeaf.
 
 Example usage:
 {
@@ -358,6 +360,8 @@ const searchInScopeTool: Tool = {
   description: `Search knowledge points within a specific knowledge point subtree.
 
 Searches only within the descendants of a specific parent node. Use this when a branch has many children (>10) and you want to narrow down by keyword instead of traversing all children manually.
+
+Each result includes: id, name, fullName (root→node path), pathNames (array), level, subjectId, gradeLevel, parentId, isLeaf.
 
 Example usage:
 {
