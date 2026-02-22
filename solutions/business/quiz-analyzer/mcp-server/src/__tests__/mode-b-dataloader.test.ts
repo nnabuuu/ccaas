@@ -60,6 +60,19 @@ describe('getRootKnowledgePoints', () => {
       expect(kp.parentId).toBeNull();
     });
   });
+
+  it('unfiltered call covers multiple subjects (explains get_knowledge_points_tree guard)', () => {
+    // The MCP tool get_knowledge_points_tree rejects unfiltered calls because the full tree
+    // contains 31k+ nodes. This test documents the scale: even root-level nodes alone
+    // span all subjects.
+    const allRoots = jsonDataLoader.getRootKnowledgePoints();
+    const uniqueSubjectIds = new Set(allRoots.map(kp => kp.subjectId));
+    // There are 21 subjects — unfiltered roots cover all of them
+    expect(uniqueSubjectIds.size).toBeGreaterThanOrEqual(10);
+    // A gradeLevel filter meaningfully reduces the set
+    const juniorRoots = jsonDataLoader.getRootKnowledgePoints({ gradeLevel: '初中' });
+    expect(juniorRoots.length).toBeLessThan(allRoots.length);
+  });
 });
 
 describe('getChildrenKnowledgePoints', () => {

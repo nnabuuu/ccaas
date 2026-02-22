@@ -14,11 +14,11 @@
  * 9. get_knowledge_point_children - Get child nodes of a knowledge point
  * 10. get_knowledge_point_path - Get path from root to a node
  * 11. search_knowledge_points_under - Search knowledge points within a scope
- * 12. analyze_student_answer - Analyze student answer and identify errors
- * 13. recommend_by_error_pattern - Recommend resources based on error patterns
- * 14. get_error_statistics - Get error statistics for analysis
- * 15. save_complete_analysis - Save complete quiz analysis to database
- * 16. search_knowledge_points_by_priority - Search KPs by keywords in priority order (Mode C)
+ * 12. save_complete_analysis - Save complete quiz analysis to database
+ * 13. parse_quiz_content - Parse raw quiz text into structured fields
+ * 14. batch_search_knowledge_points - Search multiple keywords at once (Mode A)
+ * 15. search_knowledge_points_by_priority - Search KPs by keywords in priority order (Mode C)
+ * 16. list_subjects - List all subjects or filter by keyword
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
