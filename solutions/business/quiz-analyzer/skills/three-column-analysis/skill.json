@@ -38,15 +38,14 @@
     "get_knowledge_point_path",
     "search_knowledge_points_under",
     "verify_knowledge_point_tags",
-    "get_knowledge_points_tree",
     "generate_thinking_process_template"
   ],
 
-  "instructions": "请严格遵循 SKILL.md 中的标准工作流进行三栏布局题目分析。核心步骤：1) parse_quiz_content 解析题目 2) batch_search_knowledge_points（leafOnly: true）标注知识点；如有父节点混入则用层级遍历（Mode B）精确定位 3) list_subjects 查找所属目录 4) （可选）分析学生答案 5) 生成解题思路。每步完成后立即使用 write_output 更新前端，实现流式展示。",
+  "instructions": "请严格遵循 SKILL.md 中的标准工作流进行三栏布局题目分析。核心步骤：1) parse_quiz_content 解析题目 2) search_knowledge_points_by_priority（Mode C，leafOnly: true）标注知识点；核心概念未命中时切换 Mode B 层级遍历精确定位 3) list_subjects 查找所属目录 4) （可选）分析学生答案 5) 生成解题思路。每步完成后立即使用 write_output 更新前端，实现流式展示。",
 
   "errorHandling": {
     "parseFailure": "如果 parse_quiz_content 失败，根据原始文本直接推断题型和内容",
-    "noKnowledgePoints": "如果 batch_search 无匹配，改用 search_knowledge_points_by_priority（Mode C）再试",
+    "noKnowledgePoints": "如果 Mode C（search_knowledge_points_by_priority）覆盖率不足，切换 Mode B 层级遍历；最终备用：search_knowledge_points 单关键词搜索",
     "parentNodeOnly": "如果结果都是父节点，使用层级遍历（Mode B）精确定位叶节点"
   },
 

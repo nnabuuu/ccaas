@@ -175,8 +175,8 @@ Step 5: 确认与标注
 ```
 
 **实例（勾股定理）：**
-- Mode A 搜索 "勾股定理" → 返回父节点（isLeaf: false，有 2 个子节点）
-- 切换 Mode B：`get_knowledge_point_children("勾股定理 id")`
+- Mode C 搜索 `["勾股定理", "直角三角形"]` → rounds[0].newKPs 包含两个叶节点（isLeaf: true）✅
+- 若 Mode C 覆盖率不足：切换 Mode B `get_knowledge_point_children("勾股定理 id")`
   → 返回 "勾股定理及其证明"（isLeaf: true）和 "勾股定理的实际应用"（isLeaf: true）
 - AI 判断题目考的是证明方法 → 选 "勾股定理及其证明" ✅
 
@@ -194,36 +194,6 @@ Step 5: 确认与标注
 - 数学题：函数类型、运算方法、问题类型
 - 物理题：物理量、定律名称、实验器材
 - 化学题：物质名称、反应类型、实验操作
-
-#### 2.2 搜索知识点（JSON 数据源）
-
-**工具**：`search_knowledge_points`（单关键词备用）或 `batch_search_knowledge_points`（多关键词首选）
-
-**多关键词搜索**：
-```json
-// 搜索 "二次函数"
-{
-  "keyword": "二次函数",
-  "limit": 5
-}
-
-// 搜索 "最值"
-{
-  "keyword": "最值",
-  "limit": 5
-}
-
-// 搜索 "函数"
-{
-  "keyword": "函数",
-  "limit": 3
-}
-```
-
-**结果去重**：
-- 按 `id` 去重
-- 按 `level` 排序（优先选择深层级节点）
-- 选择最相关的 3-5 个知识点
 
 #### 2.3 计算置信度
 
@@ -531,10 +501,9 @@ difficulty = min(5, ceil(2 × 0.5 × 0.4 + 4 × 0.3 + 1.0 × 0.2 + 1.5 × 0.1))
 
 | 工具名称 | 用途 | 使用场景 |
 |---------|------|----------|
-| `search_knowledge_points` | 单关键词搜索知识点 | batch_search 无结果时的备用方案 |
+| `search_knowledge_points` | 单关键词搜索知识点 | Mode C/B 均无结果时的最终备用 |
 | `generate_thinking_process_template` | 生成思路模板 | 辅助生成标准思路 |
 | `verify_knowledge_point_tags` | 验证知识点 | 校验标注准确性 |
-| `get_knowledge_points_tree` | 获取知识点树 | 展示层级结构 |
 
 ## 输出字段映射
 

@@ -34,10 +34,7 @@
   "allowedTools": [
     "write_output",
     "get_quiz_details",
-    "get_knowledge_points_tree",
-    "search_knowledge_points",
     "search_knowledge_points_by_priority",
-    "batch_search_knowledge_points",
     "list_subjects",
     "list_root_knowledge_points",
     "get_knowledge_point_children",

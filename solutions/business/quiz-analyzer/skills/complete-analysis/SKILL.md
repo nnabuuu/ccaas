@@ -87,14 +87,19 @@ Step 5: 确认与标注
 ```
 题目：直角三角形两直角边为 3 和 4，求斜边长度。
 
-Mode A：batch_search(["勾股定理", "直角三角形"], leafOnly: true)
-  → 返回 "勾股定理及其证明"（leaf ✅）和 "勾股定理的实际应用"（leaf ✅）
+Mode C（主路径）：
+search_knowledge_points_by_priority(["勾股定理", "直角三角形", "斜边"], leafOnly: true)
+  → rounds[0]: keyword="勾股定理", newKPs=["勾股定理及其证明"（leaf）, "勾股定理的实际应用"（leaf）]
+  → rounds[1]: keyword="直角三角形", newKPs=["直角三角形三边关系"（leaf）]（若未被 dedup）
+  → rounds[2]: keyword="斜边", newKPs=[]（已在 seenIds 中，跳过）
   → AI 判断：求斜边 = 应用场景 → 选 "勾股定理的实际应用" ✅
 
-Mode A 返回父节点时的 Mode B 示例：
-  batch_search(["勾股定理"], leafOnly: false)
-  → 返回 "勾股定理"（isLeaf: false，有 2 个子节点）
-  → 切换 Mode B：get_knowledge_point_children("勾股定理 id")
+Mode C 覆盖率不足时，切换 Mode B（兜底）：
+  list_root_knowledge_points(subjectId)
+  → AI 判断：选 "图形与几何" 分支
+  get_knowledge_point_children("图形与几何 id")
+  → 找到 "勾股定理"（isLeaf: false）
+  get_knowledge_point_children("勾股定理 id")
   → 返回：
     - "勾股定理及其证明"（isLeaf: true）
     - "勾股定理的实际应用"（isLeaf: true）

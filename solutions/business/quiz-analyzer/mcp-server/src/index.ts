@@ -344,7 +344,7 @@ const getNodePathTool: Tool = {
   name: 'get_knowledge_point_path',
   description: `Get the path from root to a specific knowledge point node.
 
-Returns the full hierarchy path as an array (e.g., ["初中知识点", "数与代数", "函数", "二次函数"]). Note: batch_search_knowledge_points already returns fullName/pathNames inline — only call this when you have an ID and need to verify or display its position.
+Returns the full hierarchy path as an array (e.g., ["初中知识点", "数与代数", "函数", "二次函数"]). Note: all search tools (batch_search_knowledge_points, search_knowledge_points_by_priority, verify_knowledge_point_tags) already return fullName/pathNames inline — only call this when you have a bare ID with no path context and need to resolve its position.
 
 Example usage:
 { "nodeId": "1998702114322399941" }`,
