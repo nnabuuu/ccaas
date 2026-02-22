@@ -1134,6 +1134,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         subjectId: kp.subjectId,
         gradeLevel: kp.gradeLevel,
         parentId: kp.parentId,
+        isLeaf: kp.children.length === 0,
         matchedKeywords: kp.matchedKeywords,
         matchScore: kp.matchScore,
       }));
