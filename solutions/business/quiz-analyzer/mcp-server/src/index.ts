@@ -451,6 +451,58 @@ Example usage:
   },
 };
 
+const batchSearchKnowledgePointsTool: Tool = {
+  name: 'batch_search_knowledge_points',
+  description: `Search knowledge points by multiple keywords in a single call.
+
+Returns a deduplicated, ranked list. Each result includes:
+- matchedKeywords: which of the input keywords hit this knowledge point
+- matchScore: number of matched keywords × 10 + depth level
+  (more keyword matches wins; within same count, deeper/more specific nodes rank higher)
+
+Use this when a quiz involves multiple knowledge points and you want to find them all efficiently.
+
+Example usage:
+{
+  "keywords": ["一次函数", "二次函数", "交点"],
+  "gradeLevel": "初中",
+  "limit": 15
+}
+
+Example response:
+{
+  "count": 3,
+  "results": [
+    {
+      "id": "...",
+      "name": "一次函数图像的交点问题",
+      "matchedKeywords": ["一次函数", "交点"],
+      "matchScore": 25
+    },
+    ...
+  ]
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      keywords: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'List of keywords to search (e.g. extracted from quiz content)',
+        minItems: 1,
+      },
+      subjectId: { type: 'string', description: 'Subject ID to filter (optional)' },
+      gradeLevel: { type: 'string', description: 'Grade level to filter (optional)' },
+      limit: { type: 'number', description: 'Maximum results (default: 20)' },
+      leafOnly: {
+        type: 'boolean',
+        description: 'When true, return only leaf nodes (most specific knowledge points with no children). Falls back to all matches if no leaf matches. Recommended for quiz analysis to avoid over-general parent nodes.',
+      },
+    },
+    required: ['keywords'],
+  },
+};
+
 const searchCatalogTool: Tool = {
   name: 'search_catalog',
   description: `Search subjects/catalogs from JSON data source.
@@ -491,6 +543,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // New JSON-based tools
       parseQuizContentTool,
       searchKnowledgePointsJSONTool,
+      batchSearchKnowledgePointsTool,
       searchCatalogTool,
     ],
   };
@@ -1043,6 +1096,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: 'text',
             text: JSON.stringify({
               data: { error: `Failed to search knowledge points: ${errorMessage}` },
+              status: 'error',
+            }),
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle batch_search_knowledge_points tool
+  if (name === 'batch_search_knowledge_points') {
+    const { keywords, subjectId, gradeLevel, limit = 20, leafOnly } = args as {
+      keywords: string[];
+      subjectId?: string;
+      gradeLevel?: string;
+      limit?: number;
+      leafOnly?: boolean;
+    };
+
+    try {
+      const results = jsonDataLoader.batchSearchKnowledgePoints(keywords, {
+        subjectId,
+        gradeLevel,
+        limit,
+        leafOnly,
+      });
+
+      const formattedResults = results.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        subjectId: kp.subjectId,
+        gradeLevel: kp.gradeLevel,
+        parentId: kp.parentId,
+        matchedKeywords: kp.matchedKeywords,
+        matchScore: kp.matchScore,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              count: formattedResults.length,
+              keywords,
+              results: formattedResults,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              data: { error: `Failed to batch search knowledge points: ${errorMessage}` },
               status: 'error',
             }),
           },

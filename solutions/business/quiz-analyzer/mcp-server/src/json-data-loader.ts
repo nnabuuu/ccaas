@@ -203,6 +203,63 @@ class JsonDataLoader {
   }
 
   /**
+   * Search knowledge points by multiple keywords simultaneously.
+   *
+   * Returns a deduplicated, ranked list. Each result includes:
+   * - matchedKeywords: which of the input keywords hit this KP
+   * - matchScore: matchedKeywords.length * 10 + level
+   *   (more keyword matches wins; within same count, deeper/more specific nodes rank higher)
+   */
+  batchSearchKnowledgePoints(
+    keywords: string[],
+    options?: { subjectId?: string; gradeLevel?: string; limit?: number; leafOnly?: boolean },
+  ): Array<KnowledgePoint & { matchedKeywords: string[]; matchScore: number }> {
+    this.load();
+
+    // Map from KP id → { kp, matched set }
+    const hitMap = new Map<string, { kp: KnowledgePoint; matched: Set<string> }>();
+
+    for (const keyword of keywords) {
+      for (const kp of this.knowledgePoints) {
+        if (!kp.name.includes(keyword) && !kp.description.includes(keyword)) continue;
+        if (options?.subjectId && kp.subjectId !== options.subjectId) continue;
+        if (options?.gradeLevel && kp.gradeLevel !== options.gradeLevel) continue;
+
+        const entry = hitMap.get(kp.id);
+        if (entry) {
+          entry.matched.add(keyword);
+        } else {
+          hitMap.set(kp.id, { kp, matched: new Set([keyword]) });
+        }
+      }
+    }
+
+    let results = Array.from(hitMap.values()).map(({ kp, matched }) => ({
+      ...kp,
+      matchedKeywords: Array.from(matched),
+      matchScore: matched.size * 10 + kp.level,
+    }));
+
+    // Leaf-priority: keep only leaf nodes (children === []) when leafOnly is true.
+    // Fall back to all matched nodes if no leaf matched.
+    if (options?.leafOnly) {
+      const leafResults = results.filter(r => r.children.length === 0);
+      if (leafResults.length > 0) {
+        results = leafResults;
+      }
+    }
+
+    // Sort: highest matchScore first
+    results.sort((a, b) => b.matchScore - a.matchScore);
+
+    if (options?.limit) {
+      results = results.slice(0, options.limit);
+    }
+
+    return results;
+  }
+
+  /**
    * Get root knowledge points (parentId is null)
    */
   getRootKnowledgePoints(options?: {
