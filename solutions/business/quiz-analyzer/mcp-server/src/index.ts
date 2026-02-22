@@ -310,6 +310,8 @@ const getRootCategoriesTool: Tool = {
 
 Use this as the starting point for hierarchical traversal (Mode B): get root nodes, then call get_knowledge_point_children to drill down.
 
+Each result includes: id, name, fullName, pathNames, level, subjectId, gradeLevel, isLeaf, childCount.
+
 Example usage:
 { "gradeLevel": "初中" }`,
   inputSchema: {
@@ -325,7 +327,7 @@ const getChildrenNodesTool: Tool = {
   name: 'get_knowledge_point_children',
   description: `Get child knowledge points of a parent knowledge point node.
 
-Returns all direct children. Each child includes an isLeaf indicator (children.length === 0). Use this for hierarchical traversal (Mode B): if a child has no children, it is a leaf node suitable for tagging.
+Returns all direct children. Each child includes: id, name, fullName, pathNames, level, subjectId, gradeLevel, isLeaf (children.length === 0), childCount. Use this for hierarchical traversal (Mode B): if isLeaf is true, the node is suitable for tagging.
 
 Example usage:
 { "parentId": "1998702114322399941" }`,
