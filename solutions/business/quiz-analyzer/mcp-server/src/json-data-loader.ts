@@ -116,6 +116,19 @@ class JsonDataLoader {
   }
 
   /**
+   * Build the full path from root to the given node.
+   */
+  private buildNodePath(id: string): { pathNames: string[]; fullName: string } {
+    const names: string[] = [];
+    let current = this.kpById.get(id);
+    while (current) {
+      names.unshift(current.name.trim());
+      current = current.parentId ? this.kpById.get(current.parentId) : undefined;
+    }
+    return { pathNames: names, fullName: names.join(' > ') };
+  }
+
+  /**
    * Build in-memory indexes for fast queries
    */
   private buildIndexes() {
@@ -225,7 +238,7 @@ class JsonDataLoader {
   batchSearchKnowledgePoints(
     keywords: string[],
     options?: { subjectId?: string; gradeLevel?: string; limit?: number; leafOnly?: boolean },
-  ): Array<KnowledgePoint & { matchedKeywords: string[]; matchScore: number }> {
+  ): Array<KnowledgePoint & { matchedKeywords: string[]; matchScore: number; pathNames: string[]; fullName: string }> {
     this.load();
 
     // Map from KP id → { kp, matched set }
@@ -246,11 +259,16 @@ class JsonDataLoader {
       }
     }
 
-    let results = Array.from(hitMap.values()).map(({ kp, matched }) => ({
-      ...kp,
-      matchedKeywords: Array.from(matched),
-      matchScore: matched.size * 10 + kp.level,
-    }));
+    let results = Array.from(hitMap.values()).map(({ kp, matched }) => {
+      const { pathNames, fullName } = this.buildNodePath(kp.id);
+      return {
+        ...kp,
+        matchedKeywords: Array.from(matched),
+        matchScore: matched.size * 10 + kp.level,
+        pathNames,
+        fullName,
+      };
+    });
 
     // Leaf-priority: keep only leaf nodes (children === []) when leafOnly is true.
     // Fall back to all matched nodes if no leaf matched.
@@ -403,10 +421,10 @@ class JsonDataLoader {
     rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
       cumulativeCount: number;
     }>;
-    allResults: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+    allResults: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
     coveredKeywords: string[];
     uncoveredKeywords: string[];
     coverageScore: number;
@@ -419,12 +437,12 @@ class JsonDataLoader {
     const rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
       cumulativeCount: number;
     }> = [];
     const coveredKeywords: string[] = [];
     const uncoveredKeywords: string[] = [];
-    const allResults: Array<{ id: string; name: string; level: number; isLeaf: boolean }> = [];
+    const allResults: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }> = [];
 
     for (const keyword of keywords) {
       let results = this.searchKnowledgePoints(keyword, { gradeLevel, limit: limitPerKeyword * 3 });
@@ -439,6 +457,7 @@ class JsonDataLoader {
       const newKPsMapped = newKPs.map(kp => ({
         id: kp.id,
         name: kp.name,
+        fullName: this.buildNodePath(kp.id).fullName,
         level: kp.level,
         isLeaf: kp.children.length === 0,
       }));

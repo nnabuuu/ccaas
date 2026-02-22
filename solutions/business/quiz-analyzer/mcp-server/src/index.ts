@@ -18,6 +18,7 @@
  * 13. recommend_by_error_pattern - Recommend resources based on error patterns
  * 14. get_error_statistics - Get error statistics for analysis
  * 15. save_complete_analysis - Save complete quiz analysis to database
+ * 16. search_knowledge_points_by_priority - Search KPs by keywords in priority order (Mode C)
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -456,11 +457,13 @@ const batchSearchKnowledgePointsTool: Tool = {
   description: `Search knowledge points by multiple keywords in a single call.
 
 Returns a deduplicated, ranked list. Each result includes:
+- fullName: full path from root to this node (e.g. "识字与写字 > 拼音 > 声母 > b") — use this to understand ambiguous short names
+- pathNames: same path as an array
 - matchedKeywords: which of the input keywords hit this knowledge point
 - matchScore: number of matched keywords × 10 + depth level
   (more keyword matches wins; within same count, deeper/more specific nodes rank higher)
 
-Use this when a quiz involves multiple knowledge points and you want to find them all efficiently.
+Use this when a quiz involves multiple knowledge points and you want to find them all efficiently. The fullName field eliminates the need to call get_knowledge_point_path for disambiguation.
 
 Example usage:
 {
@@ -497,6 +500,63 @@ Example response:
       leafOnly: {
         type: 'boolean',
         description: 'When true, return only leaf nodes (most specific knowledge points with no children). Falls back to all matches if no leaf matches. Recommended for quiz analysis to avoid over-general parent nodes.',
+      },
+    },
+    required: ['keywords'],
+  },
+};
+
+const searchKnowledgePointsByPriorityTool: Tool = {
+  name: 'search_knowledge_points_by_priority',
+  description: `Search knowledge points by multiple keywords in priority order (Mode C - primary search path).
+
+Keywords are searched sequentially in importance order. Results are deduplicated across rounds — a KP only appears in the round where it was first found.
+
+Use this as the primary knowledge point search mode. The agent decides how many rounds are sufficient based on semantic coverage of the quiz question.
+
+Example usage:
+{
+  "keywords": ["勾股定理", "直角三角形", "面积"],
+  "leafOnly": true
+}
+
+Example response:
+{
+  "rounds": [
+    { "keyword": "勾股定理", "found": 2, "newKPs": [{"id": "...", "name": "勾股定理的实际应用", "isLeaf": true}], "cumulativeCount": 2 },
+    { "keyword": "直角三角形", "found": 1, "newKPs": [{"id": "...", "name": "直角三角形三边关系", "isLeaf": true}], "cumulativeCount": 3 },
+    { "keyword": "面积", "found": 0, "newKPs": [], "cumulativeCount": 3 }
+  ],
+  "allResults": [...],
+  "coveredKeywords": ["勾股定理", "直角三角形"],
+  "uncoveredKeywords": ["面积"],
+  "coverageScore": 0.67
+}
+
+Agent interpretation:
+- rounds[0].newKPs covers core knowledge → likely sufficient for simple questions
+- rounds[N].newKPs is empty → that keyword found no new KPs, can be ignored
+- coverageScore < 1.0 → some keywords found no matches, may need Mode B for those aspects`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      keywords: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Keywords sorted by importance (most important/core concept first)',
+        minItems: 1,
+      },
+      leafOnly: {
+        type: 'boolean',
+        description: 'When true, prefer leaf nodes (most specific KPs with no children). Falls back to all matches if no leaves found. Default: true.',
+      },
+      gradeLevel: {
+        type: 'string',
+        description: 'Grade level to filter results (optional)',
+      },
+      limitPerKeyword: {
+        type: 'number',
+        description: 'Max KPs to return per keyword round (default: 5)',
       },
     },
     required: ['keywords'],
@@ -544,6 +604,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       parseQuizContentTool,
       searchKnowledgePointsJSONTool,
       batchSearchKnowledgePointsTool,
+      searchKnowledgePointsByPriorityTool,
       searchCatalogTool,
     ],
   };
@@ -1125,7 +1186,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       const formattedResults = results.map(kp => ({
         id: kp.id,
-        name: kp.name,
+        name: kp.name.trim(),
+        fullName: kp.fullName,
+        pathNames: kp.pathNames,
         level: kp.level,
         subjectId: kp.subjectId,
         gradeLevel: kp.gradeLevel,
@@ -1327,6 +1390,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }, null, 2),
           },
         ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle search_knowledge_points_by_priority tool (Mode C)
+  if (name === 'search_knowledge_points_by_priority') {
+    const { keywords, leafOnly = true, gradeLevel, limitPerKeyword = 5 } = args as {
+      keywords: string[];
+      leafOnly?: boolean;
+      gradeLevel?: string;
+      limitPerKeyword?: number;
+    };
+
+    try {
+      const result = jsonDataLoader.searchKnowledgePointsByPriority(keywords, { leafOnly, gradeLevel, limitPerKeyword });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
