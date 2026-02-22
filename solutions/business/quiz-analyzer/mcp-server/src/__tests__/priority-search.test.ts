@@ -218,3 +218,41 @@ describe('Test 6: limitPerKeyword 边界', () => {
     })
   })
 })
+
+// ─── Test 7: pathNames field present in results ─────────────────────────────
+
+describe('Test 7: pathNames 字段存在于结果中', () => {
+  it('allResults 中每个 KP 都有非空 pathNames 数组', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['勾股定理'], { leafOnly: true })
+    expect(result.allResults.length).toBeGreaterThan(0)
+    result.allResults.forEach(kp => {
+      expect(kp.pathNames).toBeInstanceOf(Array)
+      expect(kp.pathNames.length).toBeGreaterThanOrEqual(1)
+    })
+  })
+
+  it('pathNames.at(-1) 等于节点 name（trimmed）', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['勾股定理'], { leafOnly: true })
+    result.allResults.forEach(kp => {
+      expect(kp.pathNames.at(-1)!.trim()).toBe(kp.name.trim())
+    })
+  })
+
+  it('fullName 等于 pathNames.join(" > ")', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['勾股定理'], { leafOnly: true })
+    result.allResults.forEach(kp => {
+      expect(kp.fullName).toBe(kp.pathNames.join(' > '))
+    })
+  })
+
+  it('newKPs 中的每个 KP 也有 pathNames 字段', () => {
+    const result = jsonDataLoader.searchKnowledgePointsByPriority(['因式分解', '勾股定理'], { leafOnly: true })
+    result.rounds.forEach(round => {
+      round.newKPs.forEach(kp => {
+        expect(kp.pathNames).toBeInstanceOf(Array)
+        expect(kp.pathNames.length).toBeGreaterThanOrEqual(1)
+        expect(kp.fullName).toBe(kp.pathNames.join(' > '))
+      })
+    })
+  })
+})

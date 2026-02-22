@@ -470,10 +470,10 @@ class JsonDataLoader {
     rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
       cumulativeCount: number;
     }>;
-    allResults: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
+    allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
     coveredKeywords: string[];
     uncoveredKeywords: string[];
     coverageScore: number;
@@ -486,12 +486,12 @@ class JsonDataLoader {
     const rounds: Array<{
       keyword: string;
       found: number;
-      newKPs: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }>;
+      newKPs: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }>;
       cumulativeCount: number;
     }> = [];
     const coveredKeywords: string[] = [];
     const uncoveredKeywords: string[] = [];
-    const allResults: Array<{ id: string; name: string; fullName: string; level: number; isLeaf: boolean }> = [];
+    const allResults: Array<{ id: string; name: string; fullName: string; pathNames: string[]; level: number; isLeaf: boolean }> = [];
 
     for (const keyword of keywords) {
       let results = this.searchKnowledgePoints(keyword, { gradeLevel, limit: limitPerKeyword * 3 });
@@ -503,13 +503,17 @@ class JsonDataLoader {
       results = results.slice(0, limitPerKeyword);
 
       const newKPs = results.filter(kp => !seenIds.has(kp.id));
-      const newKPsMapped = newKPs.map(kp => ({
-        id: kp.id,
-        name: kp.name,
-        fullName: this.buildNodePath(kp.id).fullName,
-        level: kp.level,
-        isLeaf: kp.children.length === 0,
-      }));
+      const newKPsMapped = newKPs.map(kp => {
+        const { fullName, pathNames } = this.buildNodePath(kp.id);
+        return {
+          id: kp.id,
+          name: kp.name,
+          fullName,
+          pathNames,
+          level: kp.level,
+          isLeaf: kp.children.length === 0,
+        };
+      });
       newKPs.forEach(kp => seenIds.add(kp.id));
       allResults.push(...newKPsMapped);
 
