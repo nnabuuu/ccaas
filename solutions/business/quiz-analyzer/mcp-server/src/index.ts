@@ -266,7 +266,7 @@ Example usage:
 
 const searchKnowledgePointsTool: Tool = {
   name: 'search_knowledge_points',
-  description: `Search knowledge points by keyword (single keyword, backup mode). For multiple keywords prefer batch_search_knowledge_points (Mode A) or search_knowledge_points_by_priority (Mode C).
+  description: `Search knowledge points by keyword (single keyword, last-resort backup). For multiple keywords use search_knowledge_points_by_priority (Mode C — primary) or batch_search_knowledge_points (Mode A — secondary).
 
 Each result includes: id, name, fullName (root→node path), pathNames (array), level, subjectId, gradeLevel, parentId, isLeaf.
 
@@ -564,6 +564,8 @@ const searchCatalogTool: Tool = {
 Returns matching subjects with their IDs and metadata. Use this to get a subjectId before calling list_root_knowledge_points to start hierarchical traversal.
 
 Omit keyword to list all available subjects. Provide keyword to filter by name.
+
+Each result includes: id, name, code, gradeLevels (array), hasFormula (bool).
 
 Example usage:
 {}                         — list all subjects
