@@ -1,1254 +1,558 @@
-# Quiz Analyzer MCP Server 文档
+# Quiz Analyzer MCP Server
 
-## 概述
-
-Quiz Analyzer MCP (Model Context Protocol) Server 是一个 REST API 服务，为 AI 提供教育题目分析所需的工具集。
-
-- **端口**: 3006 (可配置)
-- **协议**: HTTP REST API
-- **数据格式**: JSON
-- **数据库**: SQLite3
-
-## 目录
-
-- [快速开始](#快速开始)
-- [工具列表](#工具列表)
-- [数据分析工具](#数据分析工具)
-- [搜索工具](#搜索工具)
-- [数据结构](#数据结构)
-- [错误处理](#错误处理)
-- [使用场景](#使用场景)
-- [最佳实践](#最佳实践)
+An [MCP](https://modelcontextprotocol.io/) server that gives AI agents structured access to 31,497 hierarchical knowledge points for educational quiz analysis. The agent tags quizzes with the most specific ("leaf") knowledge points, generates solution approaches, and writes structured output to the frontend.
 
 ---
 
-## 快速开始
+## Table of Contents
 
-### 安装依赖
-
-```bash
-npm install
-```
-
-### 启动服务器
-
-```bash
-# 开发模式
-npm run dev
-
-# 生产模式
-npm run build
-npm start
-
-# 自定义端口
-MCP_PORT=3007 npm start
-```
-
-### 健康检查
-
-```bash
-curl http://localhost:3006/health
-```
-
-**响应**:
-```json
-{
-  "status": "healthy",
-  "service": "quiz-analyzer-mcp",
-  "version": "1.0.0",
-  "timestamp": "2026-02-06T08:00:00.000Z",
-  "knowledgePoints": 8
-}
-```
+- [Overview](#overview)
+- [Architecture Decisions](#architecture-decisions)
+- [Data Model](#data-model)
+- [Tool Catalog](#tool-catalog)
+- [Core Algorithm: batchSearchKnowledgePoints](#core-algorithm-batchsearchknowledgepoints)
+- [Verification Guide](#verification-guide)
+- [Developer Patterns](#developer-patterns)
 
 ---
 
-## 工具列表
+## Overview
 
-| 工具名称 | 类型 | 用途 |
-|---------|------|------|
-| [write_output](#write_output) | 数据写入 | 存储分析结果到 SYNC_FIELDS |
-| [get_knowledge_points_tree](#get_knowledge_points_tree) | 数据查询 | 获取分层知识点树 |
-| [verify_knowledge_point_tags](#verify_knowledge_point_tags) | AI辅助 | 验证知识点标签 |
-| [calculate_difficulty](#calculate_difficulty) | 计算 | 计算题目难度 |
-| [generate_thinking_process_template](#generate_thinking_process_template) | 生成 | 生成解题思路模板 |
-| [search_quizzes](#search_quizzes) | 搜索 | 多条件搜索题目 |
-| [search_knowledge_points](#search_knowledge_points) | 搜索 | 搜索知识点 |
-| [get_quiz_details](#get_quiz_details) | 查询 | 获取题目完整详情 |
+### What this server does
 
----
+The agent receives a quiz question and uses these tools to:
 
-## 数据分析工具
+1. **Parse** the quiz to extract key terms
+2. **Search** the knowledge point tree to find matching concepts
+3. **Tag** the quiz with the most specific leaf-level knowledge points
+4. **Generate** a structured solution approach (解题思路)
+5. **Write** all analysis fields to the frontend via `write_output`
 
-### write_output
+### Transport: stdio MCP (not HTTP)
 
-存储分析结果到同步字段。
-
-**端点**: `POST /tools/write_output`
-
-**请求参数**:
-```typescript
-{
-  field: SyncField;     // 字段名（必须是有效的 SYNC_FIELD）
-  value: unknown;       // 字段值（会进行 Zod 验证）
-  preview?: string;     // 预览文本（可选）
-}
-```
-
-**SYNC_FIELDS 列表**:
-- `quizAnalysis` - 整体分析总结 (string, Markdown)
-- `knowledgePointTags` - 知识点标签数组 (KnowledgePointTag[])
-- `thinkingProcess` - 解题思路 (string, Markdown)
-- `solutionSteps` - 解题步骤数组 (SolutionStep[])
-- `correctAnswer` - 正确答案 (string)
-- `commonMistakes` - 常见错误数组 (Mistake[])
-- `knowledgeGapAnalysis` - 知识盲点分析 (string, Markdown)
-- `difficulty` - 难度等级 (number, 1-5)
-- `relatedQuizzes` - 相关题目数组 (RelatedQuiz[])
-- `timeEstimate` - 预计用时 (string)
-
-**示例 1: 存储解题思路**
-
-```bash
-curl -X POST http://localhost:3006/tools/write_output \
-  -H "Content-Type: application/json" \
-  -d '{
-    "field": "thinkingProcess",
-    "value": "# 解题思路\n\n## 1. 审题\n理解题目条件...\n\n## 2. 制定策略\n选择因式分解法...",
-    "preview": "已更新解题思路"
-  }'
-```
-
-**成功响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "field": "thinkingProcess",
-    "value": "# 解题思路\n\n## 1. 审题...",
-    "preview": "已更新解题思路"
-  }
-}
-```
-
-**示例 2: 存储知识点标签**
-
-```bash
-curl -X POST http://localhost:3006/tools/write_output \
-  -H "Content-Type: application/json" \
-  -d '{
-    "field": "knowledgePointTags",
-    "value": [
-      {
-        "id": "kp-001",
-        "name": "一元二次方程",
-        "confidence": 0.95,
-        "verified": true,
-        "level": 2,
-        "path": ["代数", "方程", "一元二次方程"]
-      }
-    ]
-  }'
-```
-
-**示例 3: 存储解题步骤**
-
-```bash
-curl -X POST http://localhost:3006/tools/write_output \
-  -H "Content-Type: application/json" \
-  -d '{
-    "field": "solutionSteps",
-    "value": [
-      {
-        "stepNumber": 1,
-        "title": "因式分解",
-        "description": "将方程 x² - 5x + 6 分解为 (x-2)(x-3) = 0",
-        "formula": "(x-2)(x-3) = 0",
-        "reasoning": "6 = 2×3，且 2+3 = 5",
-        "commonErrors": ["符号错误：(x+2)(x+3)"]
-      },
-      {
-        "stepNumber": 2,
-        "title": "求解",
-        "description": "令每个因式为0",
-        "reasoning": "零因子性质",
-        "commonErrors": ["只求出一个根"]
-      }
-    ]
-  }'
-```
-
-**错误响应**:
-```json
-{
-  "status": "error",
-  "error": "Invalid field: wrongField. Must be one of: quizAnalysis, knowledgePointTags, ...",
-  "field": "wrongField"
-}
-```
+This is a **stdio MCP server**, not an HTTP REST API. The old README was wrong about port 3006 and HTTP endpoints — those never existed in the current implementation.
 
 ```json
+// solution.json registration
 {
-  "status": "error",
-  "error": "Validation failed: confidence: Number must be less than or equal to 1",
-  "field": "knowledgePointTags"
-}
-```
-
----
-
-### get_knowledge_points_tree
-
-获取分层的知识点树结构。
-
-**端点**: `POST /tools/get_knowledge_points_tree`
-
-**请求参数**:
-```typescript
-{
-  subjectId: string;      // 科目ID
-  gradeLevel?: string;    // 年级（可选，用于过滤）
-}
-```
-
-**示例**:
-
-```bash
-curl -X POST http://localhost:3006/tools/get_knowledge_points_tree \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subjectId": "b0138cae-9867-4fb9-b96b-d69e6aeaee4f",
-    "gradeLevel": "9"
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "tree": [
-      {
-        "id": "kp-001",
-        "name": "代数",
-        "code": null,
-        "level": 0,
-        "gradeLevel": "7",
-        "children": [
-          {
-            "id": "kp-002",
-            "name": "方程",
-            "level": 1,
-            "gradeLevel": "8",
-            "children": [
-              {
-                "id": "kp-003",
-                "name": "一元二次方程",
-                "level": 2,
-                "gradeLevel": "9",
-                "children": []
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "totalNodes": 3
-  }
-}
-```
-
-**使用场景**:
-- AI 分析题目前，了解可用的知识点
-- 让 AI 选择合适的知识点标签
-- 构建知识点导航菜单
-
----
-
-### verify_knowledge_point_tags
-
-验证 AI 提议的知识点标签是否准确。
-
-**端点**: `POST /tools/verify_knowledge_point_tags`
-
-**请求参数**:
-```typescript
-{
-  quizContent: string;               // 题目内容
-  proposedTags: KnowledgePointTag[]; // 建议的标签
-}
-```
-
-**示例**:
-
-```bash
-curl -X POST http://localhost:3006/tools/verify_knowledge_point_tags \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quizContent": "求解方程 x² + 3x + 2 = 0",
-    "proposedTags": [
-      {
-        "id": "kp-003",
-        "name": "一元二次方程",
-        "confidence": 0.90
-      }
-    ]
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "instructions": "Analyze the quiz content and verify each proposed knowledge point tag. For each tag, determine if it's relevant (confidence 0.0-1.0) and mark as verified.",
-    "availableKnowledgePoints": {
-      "math-id": [
-        {
-          "id": "kp-001",
-          "name": "代数",
-          "children": [...]
-        }
-      ]
+  "mcpServers": {
+    "quiz-analyzer-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"]
     }
   }
 }
 ```
 
-**AI 使用方法**:
-1. 调用此工具获取可用知识点
-2. 分析题目内容
-3. 为每个标签设置置信度 (0.0-1.0)
-4. 设置 verified = true/false
-5. 使用 write_output 存储验证后的标签
+The MCP host (CCAAS agent engine) launches this as a child process and communicates over stdin/stdout. The agent calls tools by name; there are no HTTP calls.
+
+### Data snapshot
+
+| Metric | Value |
+|--------|-------|
+| Total knowledge points | 31,497 |
+| Leaf nodes (no children) | ~74% |
+| Subjects/catalogs | varies by JSON export |
+| Tree depth | up to 10 levels |
+| In-memory footprint | ~8 MB |
 
 ---
 
-### calculate_difficulty
+## Architecture Decisions
 
-根据知识点数量和解题步骤计算题目难度。
+### Why MCP instead of HTTP REST?
 
-**端点**: `POST /tools/calculate_difficulty`
+| Concern | HTTP REST | stdio MCP |
+|---------|-----------|-----------|
+| Agent tool discovery | Agent must know endpoint paths | Agent queries `list_tools` and gets typed schemas |
+| Schema introspection | Requires separate OpenAPI doc | Built into the protocol |
+| Transport overhead | HTTP stack per call | Direct pipe, no network |
+| Agent integration | Custom connector per agent | Standard MCP client works everywhere |
 
-**请求参数**:
-```typescript
-{
-  knowledgePointCount: number;  // 涉及的知识点数量
-  stepCount: number;            // 解题步骤数量
-  quizType: string;             // 题型
-}
-```
+MCP gives the agent a self-describing interface: it can discover all 16 tools, their parameter types, and their descriptions in a single `list_tools` call.
 
-**题型权重**:
-- 选择题: 0.8
-- 填空题: 1.0
-- 解答题: 1.2
-- 证明题: 1.5
+### Why JSON files instead of SQLite for knowledge points?
 
-**计算公式**:
-```
-难度 = min(5, ceil((知识点数 × 0.5 + 步骤数 × 0.3) × 题型权重))
-```
+The original implementation used SQLite queries. The switch to JSON + in-memory indexes happened because:
 
-**示例**:
+1. **Startup speed**: JSON parse is faster than DB connection + schema init
+2. **Deployment simplicity**: One JSON file to copy, no DB migration
+3. **Query flexibility**: All 31,497 KPs fit in ~8 MB; O(1) lookup by ID, O(n) scan for text search
+4. **Pre-computed children**: The JSON export pre-populates each node's `children[]` array, enabling O(1) leaf detection (`kp.children.length === 0`)
 
-```bash
-curl -X POST http://localhost:3006/tools/calculate_difficulty \
-  -H "Content-Type: application/json" \
-  -d '{
-    "knowledgePointCount": 3,
-    "stepCount": 5,
-    "quizType": "解答题"
-  }'
-```
+Note: the SQLite database is still used for quiz data (`search_quizzes`, `get_quiz_details`, `save_complete_analysis`). Only the knowledge point tree migrated to JSON.
 
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "difficulty": 4,
-    "label": "较难",
-    "timeEstimate": "12-18分钟",
-    "formula": "min(5, ceil((3 × 0.5 + 5 × 0.3) × 1.2))"
-  }
-}
-```
-
-**难度等级**:
-1. 简单 (3-5分钟)
-2. 较易 (5-8分钟)
-3. 中等 (8-12分钟)
-4. 较难 (12-18分钟)
-5. 困难 (18分钟以上)
-
----
-
-### generate_thinking_process_template
-
-根据题型生成解题思路模板。
-
-**端点**: `POST /tools/generate_thinking_process_template`
-
-**请求参数**:
-```typescript
-{
-  quizContent?: string;      // 题目内容（可选）
-  quizType: string;          // 题型
-  knowledgePoints?: string[]; // 知识点名称数组（可选）
-}
-```
-
-**示例**:
-
-```bash
-curl -X POST http://localhost:3006/tools/generate_thinking_process_template \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quizType": "解答题",
-    "knowledgePoints": ["一元二次方程", "因式分解"]
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "template": "# 解题思路\n\n## 1. 审题\n- 理解题目条件\n- 明确求解目标\n- 识别隐含条件\n\n## 2. 制定策略\n相关知识点：一元二次方程, 因式分解\n- 选择合适方法\n- 规划解题步骤\n\n## 3. 详细求解\n[AI将在这里生成具体步骤]\n\n## 4. 检验\n- 验证结果合理性\n- 检查计算过程",
-    "instructions": "Use this template as a starting point. Fill in specific details based on the quiz content."
-  }
-}
-```
-
-**支持的题型**:
-- 选择题
-- 解答题
-- 填空题
-- 证明题
-
----
-
-## 搜索工具
-
-### search_quizzes
-
-多条件搜索题目。
-
-**端点**: `POST /tools/search_quizzes`
-
-**请求参数**:
-```typescript
-{
-  query?: string;           // 关键词（搜索题目内容）
-  subjectId?: string;       // 科目ID
-  gradeLevel?: string;      // 年级
-  quizType?: string;        // 题型
-  difficulty?: number;      // 难度 (1-5)
-  knowledgePointId?: string; // 知识点ID
-  limit?: number;           // 返回数量（默认10，最大250）
-  offset?: number;          // 偏移量（默认0）
-}
-```
-
-**示例 1: 关键词搜索**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_quizzes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "方程",
-    "limit": 3
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "quizzes": [
-      {
-        "id": "quiz-001",
-        "content": "求解方程 x² - 5x + 6 = 0",
-        "quiz_type": "解答题",
-        "difficulty": 3,
-        "grade_level": "9",
-        "correct_answer": "x₁ = 2, x₂ = 3",
-        "subject_name": "数学",
-        "knowledge_points": "一元二次方程"
-      },
-      {
-        "id": "quiz-002",
-        "content": "解方程：2x + 5 = 11",
-        "quiz_type": "解答题",
-        "difficulty": 1,
-        "grade_level": "7",
-        "correct_answer": "x = 3",
-        "subject_name": "数学",
-        "knowledge_points": "一元一次方程"
-      }
-    ],
-    "pagination": {
-      "total": 4,
-      "limit": 3,
-      "offset": 0,
-      "hasMore": true
-    }
-  }
-}
-```
-
-**示例 2: 多条件组合**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_quizzes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "subjectId": "math-id",
-    "gradeLevel": "9",
-    "difficulty": 3,
-    "quizType": "解答题",
-    "limit": 10,
-    "offset": 0
-  }'
-```
-
-**示例 3: 按知识点搜索**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_quizzes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "knowledgePointId": "kp-003",
-    "difficulty": 2
-  }'
-```
-
-**使用场景**:
-- 查找相似题目
-- 按难度筛选练习题
-- 按知识点组卷
-- 题库管理
-
----
-
-### search_knowledge_points
-
-搜索知识点，支持树形导航。
-
-**端点**: `POST /tools/search_knowledge_points`
-
-**请求参数**:
-```typescript
-{
-  query?: string;        // 关键词（搜索知识点名称）
-  subjectId?: string;    // 科目ID
-  gradeLevel?: string;   // 年级
-  parentId?: string | null; // 父知识点ID（null表示只搜索根节点）
-  limit?: number;        // 返回数量（默认20）
-}
-```
-
-**示例 1: 关键词搜索**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_knowledge_points \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "方程"
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "knowledgePoints": [
-      {
-        "id": "kp-002",
-        "name": "方程",
-        "code": null,
-        "level": 1,
-        "grade_level": "8",
-        "parent_id": "kp-001",
-        "subject_name": "数学",
-        "parent_name": "代数",
-        "children_count": 2
-      },
-      {
-        "id": "kp-003",
-        "name": "一元二次方程",
-        "code": null,
-        "level": 2,
-        "grade_level": "9",
-        "parent_id": "kp-002",
-        "subject_name": "数学",
-        "parent_name": "方程",
-        "children_count": 0
-      }
-    ],
-    "count": 2
-  }
-}
-```
-
-**示例 2: 获取根节点**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_knowledge_points \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parentId": null
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "knowledgePoints": [
-      {
-        "id": "kp-001",
-        "name": "代数",
-        "level": 0,
-        "parent_id": null,
-        "subject_name": "数学",
-        "parent_name": null,
-        "children_count": 1
-      },
-      {
-        "id": "kp-010",
-        "name": "几何",
-        "level": 0,
-        "parent_id": null,
-        "subject_name": "数学",
-        "parent_name": null,
-        "children_count": 3
-      }
-    ],
-    "count": 2
-  }
-}
-```
-
-**示例 3: 获取子节点**
-
-```bash
-curl -X POST http://localhost:3006/tools/search_knowledge_points \
-  -H "Content-Type: application/json" \
-  -d '{
-    "parentId": "kp-001"
-  }'
-```
-
-**使用场景**:
-- 树形导航
-- 知识点选择器
-- 知识图谱展示
-- 学习路径规划
-
----
-
-### get_quiz_details
-
-获取题目的完整详情，包括知识点和分析数据。
-
-**端点**: `POST /tools/get_quiz_details`
-
-**请求参数**:
-```typescript
-{
-  quizId: string;  // 题目ID（必填）
-}
-```
-
-**示例**:
-
-```bash
-curl -X POST http://localhost:3006/tools/get_quiz_details \
-  -H "Content-Type: application/json" \
-  -d '{
-    "quizId": "quiz-001"
-  }'
-```
-
-**响应**:
-```json
-{
-  "status": "success",
-  "data": {
-    "quiz": {
-      "id": "quiz-001",
-      "tenant_id": "default",
-      "content": "求解方程 x² - 5x + 6 = 0",
-      "content_html": null,
-      "image_urls": null,
-      "subject_id": "math-id",
-      "grade_level": "9",
-      "quiz_type": "解答题",
-      "difficulty": 3,
-      "source": null,
-      "chapter_reference": null,
-      "correct_answer": "x₁ = 2, x₂ = 3",
-      "answer_options": null,
-      "created_at": "2026-02-05 16:51:20",
-      "updated_at": "2026-02-05 16:51:20",
-      "subject_name": "数学",
-      "subject_code": "MATH"
-    },
-    "knowledgePoints": [
-      {
-        "id": "kp-003",
-        "name": "一元二次方程",
-        "code": null,
-        "level": 2,
-        "confidence_score": 1.0,
-        "link_type": "manual"
-      }
-    ],
-    "analysis": {
-      "id": "analysis-001",
-      "quiz_id": "quiz-001",
-      "thinking_process": "# 解题思路\n\n## 1. 审题\n方程 x² - 5x + 6 = 0 是标准的一元二次方程形式\n\n## 2. 选择方法\n可以使用因式分解法，因为常数项6可以分解为2×3，且2+3=5\n\n## 3. 求解\n将方程因式分解为 (x-2)(x-3) = 0\n因此 x₁ = 2, x₂ = 3\n\n## 4. 检验\n代入原方程验证，确认答案正确",
-      "solution_steps": "[{\"stepNumber\":1,\"title\":\"因式分解\",...}]",
-      "common_mistakes": "[{\"description\":\"符号错误\",...}]",
-      "knowledge_gap_analysis": "学生需要掌握：1) 一元二次方程的标准形式；2) 因式分解法；3) 十字相乘法",
-      "difficulty_rationale": "该题涉及一元二次方程的基本解法，属于中等难度",
-      "time_estimate": "5-8分钟",
-      "analyzed_at": "2026-02-05 16:51:20",
-      "analyzer_version": "1.0",
-      "analysis_duration_ms": null
-    }
-  }
-}
-```
-
-**没有分析数据时**:
-```json
-{
-  "status": "success",
-  "data": {
-    "quiz": {...},
-    "knowledgePoints": [...],
-    "analysis": null
-  }
-}
-```
-
-**使用场景**:
-- 展示题目详情页
-- AI 分析前获取上下文
-- 学生查看解题思路
-- 教师备课
-
----
-
-## 数据结构
-
-### KnowledgePointTag
+### Five indexes built at startup
 
 ```typescript
-interface KnowledgePointTag {
-  id: string;              // 知识点ID
-  name: string;            // 知识点名称
-  confidence: number;      // 置信度 0.0-1.0
-  verified: boolean;       // 是否已验证
-  level: number;           // 树层级
-  path: string[];          // 路径 ["代数", "方程", "一元二次方程"]
-}
+// Built once in buildIndexes(), used for every subsequent query
+kpById:       Map<string, KnowledgePoint>      // O(1) by ID
+kpByName:     Map<string, KnowledgePoint[]>    // O(1) by exact name
+kpBySubject:  Map<string, KnowledgePoint[]>    // O(1) by subject ID
+subjectById:  Map<string, Subject>             // O(1) by subject ID
+subjectByName:Map<string, Subject[]>           // O(1) by exact name
 ```
 
-### SolutionStep
+### Singleton loader with lazy init
 
 ```typescript
-interface SolutionStep {
-  stepNumber: number;      // 步骤序号
-  title: string;           // 步骤标题
-  description: string;     // 步骤描述
-  formula?: string;        // 公式（可选）
-  reasoning: string;       // 推理过程
-  commonErrors: string[];  // 常见错误
-}
+export const jsonDataLoader = new JsonDataLoader()
+// index.ts calls jsonDataLoader.load() once at startup.
+// Each query method also calls load() defensively — idempotent.
 ```
 
-### Mistake
+---
+
+## Data Model
+
+### KnowledgePoint
 
 ```typescript
-interface Mistake {
-  description: string;     // 错误描述
-  frequency: 'high' | 'medium' | 'low';  // 频率
-  knowledgeGaps: string[]; // 相关知识盲点（知识点ID）
-  remediation: string;     // 补救措施
+interface KnowledgePoint {
+  id: string;                    // Unique string ID (e.g. "1998702114322399906")
+  subjectId: string;             // Links to Subject.id
+  parentId: string | null;       // null = root node
+  name: string;                  // Display name (e.g. "一次函数的解析式")
+  code: string | null;           // Optional curriculum code
+  description: string;           // Extended description (searched along with name)
+  level: number;                 // Tree depth: 0 = root, higher = deeper
+  gradeLevel: string;            // e.g. "初中", "高中"
+  difficultyContribution: number;// Weight for difficulty calculation
+  commonProblemTypes: string[];  // Associated quiz types
+  relatedFormulas: string[];     // Formula references
+  children: string[];            // IDs of direct children — empty [] means LEAF
 }
 ```
 
-### RelatedQuiz
+**Leaf detection**: `kp.children.length === 0`
+
+This is the key invariant for `leafOnly` mode. It is O(1) because `children[]` is pre-populated in the JSON export — there is no need to query for children at runtime.
+
+### Subject
 
 ```typescript
-interface RelatedQuiz {
-  id: string;              // 题目ID
-  content: string;         // 题目内容
-  similarity: number;      // 相似度 0.0-1.0
-  sharedKnowledgePoints: string[]; // 共同知识点ID
+interface Subject {
+  id: string;
+  name: string;
+  code: string | null;
+  description: string;
+  gradeLevels: string[];   // Grade levels this subject covers
+  hasFormula: boolean;
+  createdAt: string;
 }
 ```
+
+### Tree depth reality
+
+Many nodes that seem like leaves ("obvious" leaf concepts) are actually **intermediate parents** with specific sub-topics beneath them. Empirically confirmed from data inspection:
+
+```
+一次函数 (level 2, PARENT)
+├── 一次函数的解析式 (level 3, LEAF ✅)
+├── 一次函数的图象与性质 (level 3, PARENT)
+│   ├── 一次函数的图象的特点 (level 4, LEAF ✅)
+│   └── k,b对一次函数图象及性质的影响 (level 4, LEAF ✅)
+└── 一次函数图像的交点问题 (level 3, LEAF ✅)
+
+二次函数 (level 2, PARENT)
+├── 二次函数的概念 (level 3, LEAF ✅)
+├── 二次函数的图象与性质 (level 3, PARENT)
+│   ├── 描点法画二次函数图象 (level 4, LEAF ✅)
+│   └── 二次函数的性质 (level 4, PARENT)
+│       └── 二次函数的对称轴 (level 5, LEAF ✅)
+└── 二次函数的图象变换 (level 3, LEAF ✅)
+
+勾股定理 (level 3, PARENT)     ← "obvious leaf" that is actually a parent
+├── 勾股定理及其证明 (level 4, LEAF ✅)
+└── 勾股定理的实际应用 (level 4, LEAF ✅)
+
+一元二次方程 (level 2, PARENT)  ← same pattern
+├── 一元二次方程的概念 (level 3, LEAF ✅)
+└── 一元二次方程根的判别式 (level 3, LEAF ✅)
+```
+
+This is why `leafOnly: true` matters: without it, the agent might tag a quiz with "勾股定理" (a parent) instead of "勾股定理及其证明" (the actual leaf concept being tested).
 
 ---
 
-## 错误处理
+## Tool Catalog
 
-### 标准错误响应
+16 tools in 4 groups.
+
+### Group 1: Knowledge Point Search (JSON-backed)
+
+| Tool | Purpose |
+|------|---------|
+| `search_knowledge_points_json` | Single-keyword search across name + description |
+| `batch_search_knowledge_points` | Multi-keyword search, deduplicated, ranked, leafOnly supported |
+| `search_catalog` | Search subjects/catalogs |
+| `get_root_categories` | Get top-level nodes for a subject |
+
+**Primary tool for quiz analysis: `batch_search_knowledge_points`**
 
 ```json
 {
-  "status": "error",
-  "error": "错误描述信息"
+  "keywords": ["二次函数", "对称轴", "图象"],
+  "gradeLevel": "初中",
+  "leafOnly": true,
+  "limit": 10
 }
 ```
 
-### 常见错误
+### Group 2: Tree Navigation (JSON-backed)
 
-**400 Bad Request - 参数错误**
-```json
-{
-  "status": "error",
-  "error": "Invalid field: wrongField. Must be one of: quizAnalysis, knowledgePointTags, ..."
-}
+| Tool | Purpose |
+|------|---------|
+| `get_children_nodes` | Get direct children of a parent node |
+| `get_node_path` | Get path from root to a node (for breadcrumb display) |
+| `search_in_scope` | Search within a specific parent's subtree |
+| `search_knowledge_points` | DB-based search (legacy, prefer JSON version) |
+
+### Group 3: Quiz Analysis Output
+
+| Tool | Purpose |
+|------|---------|
+| `write_output` | Write analysis fields to frontend (triggers "Sync to Form" button) |
+| `verify_knowledge_point_tags` | Verify that proposed tag IDs exist in the data |
+| `generate_thinking_process_template` | Get Markdown template for a quiz type |
+| `get_knowledge_points_tree` | Get full subject tree (legacy, expensive for large subjects) |
+
+#### write_output fields
+
+```typescript
+// All fields the agent can write:
+type SyncField =
+  | 'quiz_analysis'         // string — overall summary (Markdown)
+  | 'knowledge_point_tags'  // KnowledgePointTag[] — with confidence scores
+  | 'thinking_process'      // string — 解题思路 (Markdown)
+  | 'solution_steps'        // SolutionStep[]
+  | 'correct_answer'        // string
+  | 'common_mistakes'       // Mistake[]
+  | 'knowledge_gap_analysis'// string (Markdown)
+  | 'difficulty'            // number 1–5
+  | 'related_quizzes'       // RelatedQuiz[]
+  | 'time_estimate'         // string
 ```
 
-**400 Bad Request - 验证失败**
-```json
-{
-  "status": "error",
-  "error": "Validation failed: confidence: Number must be less than or equal to 1",
-  "field": "knowledgePointTags"
-}
-```
+### Group 4: Quiz Database (SQLite-backed)
 
-**404 Not Found - 资源不存在**
-```json
-{
-  "status": "error",
-  "error": "Quiz not found"
-}
-```
-
-**500 Internal Server Error - 服务器错误**
-```json
-{
-  "status": "error",
-  "error": "Database connection failed"
-}
-```
+| Tool | Purpose |
+|------|---------|
+| `search_quizzes` | Search quiz records by keyword/subject/type |
+| `get_quiz_details` | Get full quiz record + linked knowledge points |
+| `save_complete_analysis` | Persist all analysis fields to database |
+| `parse_quiz_content` | Parse raw quiz text into stem + options + type |
 
 ---
 
-## 使用场景
+## Core Algorithm: batchSearchKnowledgePoints
 
-### 场景 1: AI 分析新题目
+### The scoring formula
 
-```mermaid
-sequenceDiagram
-    AI->>MCP: search_quizzes(query="相似题")
-    MCP->>AI: 返回相似题目列表
-    AI->>MCP: get_quiz_details(quizId)
-    MCP->>AI: 返回详情（含已有分析）
-    AI->>MCP: get_knowledge_points_tree(subjectId)
-    MCP->>AI: 返回知识点树
-    AI->>AI: 分析题目，选择知识点
-    AI->>MCP: write_output(field="knowledgePointTags", value=[...])
-    AI->>MCP: generate_thinking_process_template(quizType)
-    MCP->>AI: 返回模板
-    AI->>AI: 生成详细思路
-    AI->>MCP: write_output(field="thinkingProcess", value="...")
-    AI->>MCP: write_output(field="solutionSteps", value=[...])
-    AI->>MCP: calculate_difficulty(...)
-    MCP->>AI: 返回难度
-    AI->>MCP: write_output(field="difficulty", value=3)
+```
+matchScore = matchedKeywords.length × 10 + kp.level
 ```
 
-**代码示例**:
+- **Keyword count dominates** (×10 weight): A KP matching 2 keywords scores at least 20, outranking any single-keyword match regardless of depth.
+- **Level as tiebreaker**: Within the same keyword count, deeper (more specific) nodes rank higher. Level 5 beats level 3 when both match the same number of keywords.
 
-```javascript
-// 1. 搜索相似题目
-const similar = await fetch('/tools/search_quizzes', {
-  method: 'POST',
-  body: JSON.stringify({ query: "一元二次方程", limit: 5 })
-});
+### Implementation
 
-// 2. 获取知识点树
-const tree = await fetch('/tools/get_knowledge_points_tree', {
-  method: 'POST',
-  body: JSON.stringify({ subjectId: "math-id" })
-});
-
-// 3. 存储知识点标签
-await fetch('/tools/write_output', {
-  method: 'POST',
-  body: JSON.stringify({
-    field: "knowledgePointTags",
-    value: [
-      {
-        id: "kp-003",
-        name: "一元二次方程",
-        confidence: 0.95,
-        verified: true,
-        level: 2,
-        path: ["代数", "方程", "一元二次方程"]
-      }
-    ]
-  })
-});
-
-// 4. 生成思路模板
-const template = await fetch('/tools/generate_thinking_process_template', {
-  method: 'POST',
-  body: JSON.stringify({
-    quizType: "解答题",
-    knowledgePoints: ["一元二次方程"]
-  })
-});
-
-// 5. 存储思路
-await fetch('/tools/write_output', {
-  method: 'POST',
-  body: JSON.stringify({
-    field: "thinkingProcess",
-    value: "# 解题思路\n\n..."
-  })
-});
-
-// 6. 计算难度
-const difficulty = await fetch('/tools/calculate_difficulty', {
-  method: 'POST',
-  body: JSON.stringify({
-    knowledgePointCount: 1,
-    stepCount: 4,
-    quizType: "解答题"
-  })
-});
-
-// 7. 存储难度
-await fetch('/tools/write_output', {
-  method: 'POST',
-  body: JSON.stringify({
-    field: "difficulty",
-    value: difficulty.data.difficulty
-  })
-});
-```
-
----
-
-### 场景 2: 学生练习
-
-```javascript
-// 1. 搜索知识点
-const kps = await fetch('/tools/search_knowledge_points', {
-  method: 'POST',
-  body: JSON.stringify({ query: "三角形" })
-});
-
-const kpId = kps.data.knowledgePoints[0].id;
-
-// 2. 查找相关题目
-const quizzes = await fetch('/tools/search_quizzes', {
-  method: 'POST',
-  body: JSON.stringify({
-    knowledgePointId: kpId,
-    difficulty: 2,
-    limit: 10
-  })
-});
-
-// 3. 获取题目详情
-const quizId = quizzes.data.quizzes[0].id;
-const details = await fetch('/tools/get_quiz_details', {
-  method: 'POST',
-  body: JSON.stringify({ quizId })
-});
-
-// 展示：题目、知识点、解题思路、常见错误
-```
-
----
-
-### 场景 3: 教师组卷
-
-```javascript
-// 1. 多条件筛选题目
-const quizzes = await fetch('/tools/search_quizzes', {
-  method: 'POST',
-  body: JSON.stringify({
-    subjectId: "math-id",
-    gradeLevel: "9",
-    quizType: "解答题",
-    difficulty: 3,
-    limit: 20
-  })
-});
-
-// 2. 批量获取详情
-const details = await Promise.all(
-  quizzes.data.quizzes.map(q =>
-    fetch('/tools/get_quiz_details', {
-      method: 'POST',
-      body: JSON.stringify({ quizId: q.id })
-    })
-  )
-);
-
-// 3. 统计知识点分布
-const kpDistribution = {};
-details.forEach(d => {
-  d.data.knowledgePoints.forEach(kp => {
-    kpDistribution[kp.name] = (kpDistribution[kp.name] || 0) + 1;
-  });
-});
-
-// 4. 生成试卷
-```
-
----
-
-## 最佳实践
-
-### 1. 知识点标签验证
-
-**推荐流程**:
-```javascript
-// 1. 获取知识点树
-const tree = await getKnowledgePointsTree(subjectId);
-
-// 2. AI 分析题目内容，提议标签
-const proposedTags = aiAnalyze(quizContent, tree);
-
-// 3. 调用验证工具获取上下文
-const verification = await verifyKnowledgePointTags(quizContent, proposedTags);
-
-// 4. AI 验证每个标签，调整置信度
-const verifiedTags = proposedTags.map(tag => ({
-  ...tag,
-  confidence: aiVerify(tag, quizContent, verification.data.availableKnowledgePoints),
-  verified: true
-}));
-
-// 5. 存储验证后的标签
-await writeOutput('knowledgePointTags', verifiedTags);
-```
-
-### 2. 难度计算
-
-**推荐步骤**:
-```javascript
-// 1. 分析知识点
-const knowledgePoints = identifyKnowledgePoints(quizContent);
-
-// 2. 生成解题步骤
-const steps = generateSolutionSteps(quizContent, knowledgePoints);
-
-// 3. 计算难度
-const result = await calculateDifficulty({
-  knowledgePointCount: knowledgePoints.length,
-  stepCount: steps.length,
-  quizType: quiz.type
-});
-
-// 4. 存储
-await writeOutput('difficulty', result.data.difficulty);
-await writeOutput('timeEstimate', result.data.timeEstimate);
-```
-
-### 3. 搜索优化
-
-**关键词搜索**:
-- 使用具体的数学术语："一元二次方程" 比 "方程" 更精确
-- 组合多个条件：`query + gradeLevel + difficulty`
-
-**分页处理**:
-```javascript
-let offset = 0;
-const limit = 10;
-let hasMore = true;
-
-while (hasMore) {
-  const result = await searchQuizzes({ query: "方程", limit, offset });
-
-  // 处理结果
-  processQuizzes(result.data.quizzes);
-
-  hasMore = result.data.pagination.hasMore;
-  offset += limit;
-}
-```
-
-### 4. 错误处理
-
-```javascript
-async function safeWriteOutput(field, value) {
-  try {
-    const response = await fetch('/tools/write_output', {
-      method: 'POST',
-      body: JSON.stringify({ field, value })
-    });
-
-    const data = await response.json();
-
-    if (data.status === 'error') {
-      console.error(`写入失败: ${data.error}`);
-      // 尝试修复并重试
-      const fixed = fixValidationErrors(field, value, data.error);
-      return await safeWriteOutput(field, fixed);
-    }
-
-    return data;
-  } catch (error) {
-    console.error(`请求失败:`, error);
-    throw error;
+```typescript
+// For each keyword, scan all KPs:
+for (const keyword of keywords) {
+  for (const kp of this.knowledgePoints) {
+    if (!kp.name.includes(keyword) && !kp.description.includes(keyword)) continue
+    // ...
+    hitMap.set(kp.id, { kp, matched: new Set([keyword]) })
   }
 }
+
+// Compute scores and deduplicate:
+let results = Array.from(hitMap.values()).map(({ kp, matched }) => ({
+  ...kp,
+  matchedKeywords: Array.from(matched),
+  matchScore: matched.size * 10 + kp.level,
+}))
 ```
 
-### 5. 批量操作
+### leafOnly mode
 
-```javascript
-// 批量获取详情
-async function batchGetDetails(quizIds) {
-  const batchSize = 10;
-  const results = [];
-
-  for (let i = 0; i < quizIds.length; i += batchSize) {
-    const batch = quizIds.slice(i, i + batchSize);
-    const promises = batch.map(id =>
-      fetch('/tools/get_quiz_details', {
-        method: 'POST',
-        body: JSON.stringify({ quizId: id })
-      })
-    );
-
-    const batchResults = await Promise.all(promises);
-    results.push(...batchResults);
-
-    // 避免压垮服务器
-    await sleep(100);
+```typescript
+if (options?.leafOnly) {
+  const leafResults = results.filter(r => r.children.length === 0)
+  if (leafResults.length > 0) {
+    results = leafResults  // Replace with leaf-only subset
   }
-
-  return results;
+  // If no leaf matched, fall back to all results (no change)
 }
 ```
 
----
+**Fallback guarantee**: `leafOnly: true` never returns fewer results than `leafOnly: false` in the "no leaf found" edge case. The fallback ensures the agent always gets something useful.
 
-## 性能建议
+**Score preservation**: `leafOnly` is a post-processing filter — it does not change `matchScore` or `matchedKeywords` for any node. The leaf entries have exactly the same scores as they would without `leafOnly`.
 
-### 响应时间
+### Expected behavior by category
 
-| 工具 | 平均响应时间 | 说明 |
-|------|-------------|------|
-| write_output | ~2ms | 仅验证，不写数据库 |
-| get_knowledge_points_tree | ~2ms | 内存缓存 |
-| search_quizzes | ~5ms | 带索引的SQL查询 |
-| search_knowledge_points | ~3ms | 简单查询 |
-| get_quiz_details | ~4ms | 多表JOIN |
-| calculate_difficulty | <1ms | 纯计算 |
-
-### 优化建议
-
-1. **缓存知识点树**: 启动时加载，避免重复查询
-2. **使用分页**: 限制每次返回数量
-3. **批量操作**: 合并多个请求
-4. **添加索引**: 所有查询字段都有索引
+| Category | Keywords | leafOnly | Expected result |
+|----------|----------|----------|-----------------|
+| A: Single leaf | `['二次函数', '对称轴']` | `true` | "二次函数的对称轴" (leaf), NOT "二次函数" (parent) |
+| A: Single leaf | `['勾股定理', '直角三角形']` | `true` | "勾股定理及其证明" (leaf), NOT "勾股定理" (parent) |
+| B: Sibling leaves | `['一次函数', '解析式', '图象']` | `true` | Both "一次函数的解析式" AND "一次函数的图象的特点" (leaves), NOT "一次函数" (parent) |
+| B: Sibling leaves | `['二次函数', '概念', '对称轴']` | `true` | Both "二次函数的概念" AND "二次函数的对称轴" (leaves) |
+| C: Cross-branch | `['一次函数', '勾股定理']` | `true` | "一次函数的解析式" (function branch leaf) + "勾股定理及其证明" (geometry branch leaf) |
+| C: Cross-branch | `['二次函数', '一元二次方程']` | `true` | Leaves from both function branch and equation branch |
+| Fallback | `['不存在的知识点xyz']` | `true` | Empty array (no results at all, not a fallback issue) |
+| No leaf | `[keyword matching only parents]` | `true` | Falls back to all matched nodes (leafOnly relaxed) |
 
 ---
 
-## 开发指南
+## Verification Guide
 
-### 添加新工具
-
-1. 在 `src/index.ts` 添加端点
-2. 在 `src/types.ts` 添加类型定义
-3. 更新 `solution.json` 的 `allowedTools`
-4. 添加测试
-5. 更新此文档
-
-### 添加新 SYNC_FIELD
-
-1. 更新 `src/types.ts` 的 `SYNC_FIELDS`
-2. 添加 TypeScript 接口
-3. 在 `src/schemas.ts` 添加 Zod schema
-4. 更新数据库 schema (如需要)
-5. 更新此文档
-
-### 运行测试
+### Run the test suite
 
 ```bash
-# 启动服务器
-npm start
-
-# 另一个终端，运行测试
+cd solutions/business/quiz-analyzer/mcp-server
 npm test
 ```
 
----
+Expected: **47 tests pass** across 3 files:
+- `__tests__/leaf-priority-search.test.ts` — 14 tests for leafOnly behavior
+- `__tests__/batch-search.test.ts` — 18 tests for multi-keyword ranking
+- `__tests__/knowledge-point-search.test.ts` — 15 tests for basic search
 
-## 故障排查
-
-### 端口被占用
-
-```bash
-# 查找占用端口的进程
-lsof -ti:3006
-
-# 杀死进程
-lsof -ti:3006 | xargs kill -9
-
-# 或使用不同端口
-MCP_PORT=3007 npm start
-```
-
-### 数据库连接失败
+### Inspect the data in Node.js REPL
 
 ```bash
-# 检查数据库文件
-ls -l ../../data/quiz-analyzer.db
+cd solutions/business/quiz-analyzer/mcp-server
+node --loader ts-node/esm --input-type=module << 'EOF'
+import { jsonDataLoader } from './src/json-data-loader.js'
+jsonDataLoader.load()
 
-# 重新创建数据库
-cd ../../scripts
-node import-excel-to-db.js
+// Check total KP count
+console.log('Total KPs:', jsonDataLoader.getAllKnowledgePoints().length)
+
+// Check leaf percentage
+const all = jsonDataLoader.getAllKnowledgePoints()
+const leaves = all.filter(kp => kp.children.length === 0)
+console.log('Leaf nodes:', leaves.length, `(${Math.round(leaves.length/all.length*100)}%)`)
+
+// Verify a known parent node has children
+const quadFunc = jsonDataLoader.getKnowledgePointById('1998702114322399941')
+console.log('二次函数 children:', quadFunc?.children.length, '(should be > 0)')
+
+// Verify leafOnly suppresses it
+const results = jsonDataLoader.batchSearchKnowledgePoints(
+  ['二次函数'], { gradeLevel: '初中', leafOnly: true }
+)
+const hasParent = results.some(r => r.id === '1998702114322399941')
+console.log('Parent in leafOnly results:', hasParent, '(should be false)')
+EOF
 ```
 
-### 知识点树为空
+### Verify specific node IDs from tests
+
+The test files use confirmed node IDs derived from data inspection. Key parent nodes that must NOT appear with `leafOnly: true`:
+
+| ID | Name | Why it matters |
+|----|------|----------------|
+| `1998702114322399941` | 二次函数 | Matches keyword "二次函数" but is a parent |
+| `1998702114322399906` | 一次函数 | Matches keyword "一次函数" but is a parent |
+| `1998702114322400154` | 勾股定理 | Classic "obvious leaf" that is actually a parent |
+| `1998702114322399803` | 一元二次方程 | Parent with concept and discriminant as leaves |
+
+Key leaf nodes that MUST appear with `leafOnly: true` for the right query:
+
+| ID | Name | Matched by keywords |
+|----|------|---------------------|
+| `1998702114322399955` | 二次函数的对称轴 | 二次函数, 对称轴 |
+| `1998702114322399908` | 一次函数的解析式 | 一次函数, 解析式 |
+| `1998702114322400157` | 勾股定理及其证明 | 勾股定理 |
+| `1998702114322399804` | 一元二次方程的概念 | 一元二次方程 |
+| `1998702114322399922` | 一次函数图像的交点问题 | 一次函数, 交点 |
+
+### Check the MCP server starts cleanly
 
 ```bash
-# 检查数据
-sqlite3 ../../data/quiz-analyzer.db "SELECT COUNT(*) FROM knowledge_points"
-
-# 重启服务器重新加载
+cd solutions/business/quiz-analyzer/mcp-server
+npm run build
+echo '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{}},"id":1}' | node dist/index.js
 ```
 
----
-
-## 相关文档
-
-- [项目 README](../README.md)
-- [快速开始](../QUICKSTART.md)
-- [开发指南](../CLAUDE.md)
-- [测试结果](../MCP_TEST_RESULTS.md)
-- [实现状态](../IMPLEMENTATION_STATUS.md)
+You should see startup logs on stderr (`📚 Loading JSON data files...`) and a valid JSON-RPC response on stdout.
 
 ---
 
-## 支持
+## Developer Patterns
 
-如有问题，请查看：
-- GitHub Issues
-- 项目文档
-- 测试示例
+These patterns emerged from building this MCP server. Use them when building similar domain-specific MCPs.
+
+### 1. In-memory index over repeated scans
+
+Build typed Maps at startup instead of filtering the full array on every query:
+
+```typescript
+// At startup: O(n) once
+this.knowledgePoints.forEach(kp => {
+  this.kpById.set(kp.id, kp)         // O(1) lookup
+  this.kpBySubject.get(kp.subjectId)?.push(kp) // O(1) filtered collection
+})
+
+// At query time: O(1)
+const kp = this.kpById.get(id)
+const subjectKPs = this.kpBySubject.get(subjectId) ?? []
+```
+
+### 2. Singleton loader with idempotent lazy init
+
+```typescript
+class JsonDataLoader {
+  private loaded = false
+
+  load() {
+    if (this.loaded) return  // idempotent
+    // ... load and index ...
+    this.loaded = true
+  }
+
+  // Each public method calls load() defensively
+  getKnowledgePointById(id: string) {
+    this.load()
+    return this.kpById.get(id)
+  }
+}
+
+export const jsonDataLoader = new JsonDataLoader()
+```
+
+This pattern avoids constructor-time I/O (which can fail silently) while guaranteeing data is available at first use.
+
+### 3. Composite matchScore for multi-criterion ranking
+
+When combining keyword relevance with structural preference:
+
+```typescript
+// Primary criterion × large weight + secondary criterion (tiebreaker)
+matchScore = matched.size * 10 + kp.level
+```
+
+The ×10 multiplier ensures the primary criterion (keyword count) always dominates. The secondary criterion (level/depth) only matters when the primary is tied.
+
+### 4. leafOnly with automatic fallback
+
+Never return zero results when a filter is "too strict":
+
+```typescript
+if (options?.leafOnly) {
+  const leafResults = results.filter(r => r.children.length === 0)
+  if (leafResults.length > 0) {
+    results = leafResults  // Apply filter only when it produces results
+  }
+  // Otherwise: silently fall back (don't throw, don't return empty)
+}
+```
+
+This pattern is agent-friendly: the agent can always use `leafOnly: true` without defensive error handling.
+
+### 5. Test with real data, not synthetic fixtures
+
+The knowledge point tests (`leaf-priority-search.test.ts`) load the actual JSON files and use real node IDs. This catches real-world edge cases (parents masquerading as leaves) that synthetic fixtures would miss.
+
+```typescript
+// Real node IDs validated by data inspection
+const PARENTS = {
+  quadraticFunction: '1998702114322399941', // confirmed: has children
+}
+const LEAVES = {
+  quadraticFnSymmetryAxis: '1998702114322399955', // confirmed: children === []
+}
+
+it('leafOnly suppresses parent, surfaces leaf', () => {
+  const results = jsonDataLoader.batchSearchKnowledgePoints(
+    ['二次函数', '对称轴'],
+    { leafOnly: true }
+  )
+  expect(results.map(r => r.id)).toContain(LEAVES.quadraticFnSymmetryAxis)
+  expect(results.map(r => r.id)).not.toContain(PARENTS.quadraticFunction)
+})
+```
+
+### 6. Separate PARENTS and LEAVES constants in tests
+
+Distinct named constants communicate intent and prevent confusion:
+
+```typescript
+// Clear: this node is expected to appear
+const LEAVES = { pythagoreanProof: '...' }
+
+// Clear: this node must NOT appear in leafOnly results
+const PARENTS = { pythagoreanTheorem: '...' }
+```
+
+Avoid using raw string IDs inline in assertions — they are opaque and don't explain why a node is expected or forbidden.
+
+### 7. MCP tool schema as developer documentation
+
+The `description` field in each MCP tool is the primary documentation developers (and agents) read. Make it complete:
+
+```typescript
+const batchSearchKnowledgePointsTool: Tool = {
+  name: 'batch_search_knowledge_points',
+  description: `Search knowledge points by multiple keywords in a single call.
+
+Returns a deduplicated, ranked list. Each result includes:
+- matchedKeywords: which of the input keywords hit this knowledge point
+- matchScore: number of matched keywords × 10 + depth level
+  (more keyword matches wins; within same count, deeper/more specific nodes rank higher)
+
+Use leafOnly: true to suppress intermediate parent nodes and return only
+the most specific (leaf) knowledge points. Falls back to all matches if no
+leaf matches.`,
+  // ...
+}
+```
+
+### 8. stdio transport for agent integration
+
+```typescript
+// index.ts — always stdio for MCP servers integrated with agent engines
+const transport = new StdioServerTransport()
+await server.connect(transport)
+
+// Log to stderr — stdout is reserved for MCP protocol
+console.error('Server started')
+```
+
+stdout is the MCP communication channel. Any `console.log()` calls in server code will corrupt the protocol stream. Always use `console.error()` for diagnostics.
 
 ---
 
-**版本**: 1.0.0
-**最后更新**: 2026-02-06
+## Quick Reference
+
+### Running tests
+
+```bash
+npm test                    # All 47 tests
+npm test leaf-priority      # Leaf-priority tests only
+npm test batch-search       # Batch search tests only
+```
+
+### Building
+
+```bash
+npm run build               # Compile TypeScript to dist/
+npm run dev                 # Watch mode
+```
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/index.ts` | MCP server entry, tool definitions, request handlers |
+| `src/json-data-loader.ts` | In-memory KP loader, all search/navigation methods |
+| `src/common/types.ts` | SYNC_FIELDS, WriteOutputInput, WriteOutputResult |
+| `src/common/schemas.ts` | Zod validators for each sync field |
+| `src/__tests__/leaf-priority-search.test.ts` | leafOnly behavior tests (real data) |
+| `src/__tests__/batch-search.test.ts` | Multi-keyword ranking tests |
+| `data/knowledge-points.json` | 31,497 KPs with pre-populated children[] |
+| `data/catalogs.json` | Subject/catalog definitions |
