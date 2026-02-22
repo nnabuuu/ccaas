@@ -88,8 +88,6 @@
   },
 
   "integrationPoints": {
-    "errorPatternAggregation": "分析结果保存后自动更新 error_patterns 表",
-    "recommendationEngine": "可调用 recommend_by_error_pattern 推荐相似题目",
     "teacherDashboard": "分析结果用于生成教师仪表板的错误统计"
   }
 }
