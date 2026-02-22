@@ -179,9 +179,9 @@ Example usage:
 
 Returns:
 {
-  "valid": [{ "id": 123, "name": "二次函数", "exists": true }],
-  "invalid": [],
-  "suggestions": []
+  "valid": [{ "id": "123", "name": "二次函数", "exists": true, "fullName": "初中知识点 > 数与代数 > 函数 > 二次函数", "pathNames": ["初中知识点", "数与代数", "函数", "二次函数"] }],
+  "invalid": [{ "id": "bad-id", "name": "unknown", "exists": false }],
+  "suggestions": [{ "id": "456", "name": "二次函数的图象与性质", "fullName": "...", "pathNames": [...] }]
 }`,
   inputSchema: {
     type: 'object',
@@ -461,6 +461,11 @@ Example response:
     {
       "id": "...",
       "name": "一次函数图像的交点问题",
+      "fullName": "初中知识点 > 数与代数 > 函数 > 一次函数图像的交点问题",
+      "pathNames": ["初中知识点", "数与代数", "函数", "一次函数图像的交点问题"],
+      "isLeaf": true,
+      "subjectId": "...",
+      "gradeLevel": "初中",
       "matchedKeywords": ["一次函数", "交点"],
       "matchScore": 25
     },

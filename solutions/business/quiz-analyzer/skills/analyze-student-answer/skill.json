@@ -47,7 +47,6 @@
     "get_knowledge_point_path",
     "search_knowledge_points_under",
     "verify_knowledge_point_tags",
-    "get_knowledge_points_tree",
     "write_output"
   ],
 
