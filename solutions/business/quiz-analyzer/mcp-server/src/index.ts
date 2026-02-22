@@ -607,9 +607,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       getNodePathTool,
       searchInScopeTool,
       saveCompleteAnalysisTool,
-      // New JSON-based tools
+      // JSON-based tools
       parseQuizContentTool,
-      searchKnowledgePointsJSONTool,
       batchSearchKnowledgePointsTool,
       searchKnowledgePointsByPriorityTool,
       searchCatalogTool,
@@ -1350,6 +1349,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }, null, 2),
           },
         ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle search_knowledge_points tool
+  if (name === 'search_knowledge_points') {
+    const { keyword, subjectId, limit = 20 } = args as {
+      keyword?: string;
+      subjectId?: string;
+      limit?: number;
+    };
+
+    if (!keyword) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ count: 0, keyword: '', results: [] }, null, 2) }],
+      };
+    }
+
+    try {
+      const results = jsonDataLoader.searchKnowledgePoints(keyword, { subjectId, limit });
+      const formattedResults = results.map(kp => {
+        const { pathNames, fullName } = jsonDataLoader.getFullName(kp.id) ?? { pathNames: [], fullName: kp.name };
+        return {
+          id: kp.id,
+          name: kp.name.trim(),
+          fullName,
+          pathNames,
+          level: kp.level,
+          subjectId: kp.subjectId,
+          gradeLevel: kp.gradeLevel,
+          parentId: kp.parentId,
+          isLeaf: kp.children.length === 0,
+        };
+      });
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ count: formattedResults.length, keyword, results: formattedResults }, null, 2) }],
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
