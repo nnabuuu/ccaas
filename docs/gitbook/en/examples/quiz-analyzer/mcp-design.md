@@ -55,12 +55,12 @@ The original implementation queried knowledge points from SQLite. The switch to 
 
 | Concern | SQLite | JSON + Map |
 |---------|--------|------------|
-| Startup speed | DB connection + schema init | Single JSON parse |
-| Deployment | DB file + migrations | One JSON file to copy |
+| Startup speed | DB connection + schema init | Single JSON parse per file |
+| Deployment | DB file + migrations | 21 subject JSON files, no migrations |
 | Query speed | SQL query per request | O(1) Map lookup |
 | Leaf detection | Query for children at runtime | O(1) — pre-populated `children[]` |
 
-All 31,497 knowledge points fit in ~8 MB. For this dataset size, an in-memory approach is strictly better than a database for read-only queries.
+All 31,497 knowledge points fit in ~8 MB. They are stored in 21 per-subject files under `data/subjects/` — one file per subject, each covering one grade level (小学, 初中, or 高中). The loader reads all 21 files at startup and merges them into a single in-memory array. For this dataset size, an in-memory approach is strictly better than a database for read-only queries.
 
 ### The five indexes
 

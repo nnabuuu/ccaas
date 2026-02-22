@@ -50,6 +50,8 @@ export interface Subject {
 interface KnowledgePointsData {
   version: string;
   lastUpdated: string;
+  subjectId?: string;   // Present in per-subject files
+  gradeLevel?: string;  // Present in per-subject files
   totalCount: number;
   knowledgePoints: KnowledgePoint[];
 }
@@ -88,11 +90,17 @@ class JsonDataLoader {
 
     console.log('📚 Loading JSON data files...');
 
-    // Load knowledge points
-    const kpFilePath = path.resolve(__dirname, '../../data/knowledge-points.json');
-    const kpData: KnowledgePointsData = JSON.parse(fs.readFileSync(kpFilePath, 'utf-8'));
-    this.knowledgePoints = kpData.knowledgePoints;
-    console.log(`   ✅ Loaded ${this.knowledgePoints.length} knowledge points`);
+    // Load knowledge points from per-subject files
+    const subjectsDir = path.resolve(__dirname, '../../data/subjects');
+    const subjectFiles = fs.readdirSync(subjectsDir).filter(f => f.endsWith('.json'));
+    this.knowledgePoints = [];
+    for (const file of subjectFiles) {
+      const data: KnowledgePointsData = JSON.parse(
+        fs.readFileSync(path.join(subjectsDir, file), 'utf-8')
+      );
+      this.knowledgePoints.push(...data.knowledgePoints);
+    }
+    console.log(`   ✅ Loaded ${this.knowledgePoints.length} knowledge points from ${subjectFiles.length} subject files`);
 
     // Load catalogs/subjects
     const catalogsFilePath = path.resolve(__dirname, '../../data/catalogs.json');
@@ -180,26 +188,30 @@ class JsonDataLoader {
   }): KnowledgePoint[] {
     this.load();
 
-    let results = this.knowledgePoints.filter(kp =>
-      kp.name.includes(keyword) || kp.description.includes(keyword)
-    );
+    const scored: Array<{ kp: KnowledgePoint; score: number }> = [];
 
-    // Filter by subject
-    if (options?.subjectId) {
-      results = results.filter(kp => kp.subjectId === options.subjectId);
+    for (const kp of this.knowledgePoints) {
+      // Filter first (cheap)
+      if (options?.subjectId && kp.subjectId !== options.subjectId) continue;
+      if (options?.gradeLevel && kp.gradeLevel !== options.gradeLevel) continue;
+
+      // Match type scoring (name only; description is always empty in this dataset)
+      const name = kp.name.trim();
+      let matchType: number;
+      if (name === keyword)              matchType = 3; // exact
+      else if (name.startsWith(keyword)) matchType = 2; // name starts with keyword
+      else if (name.includes(keyword))   matchType = 1; // substring
+      else continue;                                     // no match
+
+      const isLeaf = kp.children.length === 0 ? 1 : 0;
+      const score = matchType * 10000 + kp.level * 10 + isLeaf;
+      scored.push({ kp, score });
     }
 
-    // Filter by grade level
-    if (options?.gradeLevel) {
-      results = results.filter(kp => kp.gradeLevel === options.gradeLevel);
-    }
+    scored.sort((a, b) => b.score - a.score);
 
-    // Limit results
-    if (options?.limit) {
-      results = results.slice(0, options.limit);
-    }
-
-    return results;
+    const results = scored.map(r => r.kp);
+    return options?.limit ? results.slice(0, options.limit) : results;
   }
 
   /**
@@ -376,6 +388,81 @@ class JsonDataLoader {
   getUniqueSubjectNames(): string[] {
     this.load();
     return Array.from(this.subjectByName.keys());
+  }
+
+  /**
+   * Search knowledge points by multiple keywords in priority order (Mode C).
+   *
+   * Keywords are searched sequentially. Results are deduplicated across rounds —
+   * a KP only appears in the round where it was first found (seenIds Set).
+   */
+  searchKnowledgePointsByPriority(
+    keywords: string[],
+    options?: { leafOnly?: boolean; gradeLevel?: string; limitPerKeyword?: number },
+  ): {
+    rounds: Array<{
+      keyword: string;
+      found: number;
+      newKPs: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+      cumulativeCount: number;
+    }>;
+    allResults: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+    coveredKeywords: string[];
+    uncoveredKeywords: string[];
+    coverageScore: number;
+  } {
+    this.load();
+
+    const { leafOnly = true, gradeLevel, limitPerKeyword = 5 } = options || {};
+
+    const seenIds = new Set<string>();
+    const rounds: Array<{
+      keyword: string;
+      found: number;
+      newKPs: Array<{ id: string; name: string; level: number; isLeaf: boolean }>;
+      cumulativeCount: number;
+    }> = [];
+    const coveredKeywords: string[] = [];
+    const uncoveredKeywords: string[] = [];
+    const allResults: Array<{ id: string; name: string; level: number; isLeaf: boolean }> = [];
+
+    for (const keyword of keywords) {
+      let results = this.searchKnowledgePoints(keyword, { gradeLevel, limit: limitPerKeyword * 3 });
+
+      if (leafOnly) {
+        const leaves = results.filter(kp => kp.children.length === 0);
+        if (leaves.length > 0) results = leaves;
+      }
+      results = results.slice(0, limitPerKeyword);
+
+      const newKPs = results.filter(kp => !seenIds.has(kp.id));
+      const newKPsMapped = newKPs.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        isLeaf: kp.children.length === 0,
+      }));
+      newKPs.forEach(kp => seenIds.add(kp.id));
+      allResults.push(...newKPsMapped);
+
+      rounds.push({
+        keyword,
+        found: results.length,
+        newKPs: newKPsMapped,
+        cumulativeCount: allResults.length,
+      });
+
+      if (results.length > 0) coveredKeywords.push(keyword);
+      else uncoveredKeywords.push(keyword);
+    }
+
+    return {
+      rounds,
+      allResults,
+      coveredKeywords,
+      uncoveredKeywords,
+      coverageScore: keywords.length > 0 ? coveredKeywords.length / keywords.length : 0,
+    };
   }
 
   // ========================================

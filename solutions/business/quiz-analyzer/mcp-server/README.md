@@ -53,7 +53,7 @@ The MCP host (CCAAS agent engine) launches this as a child process and communica
 |--------|-------|
 | Total knowledge points | 31,497 |
 | Leaf nodes (no children) | ~74% |
-| Subjects/catalogs | varies by JSON export |
+| Subjects | 21 (grade levels: 小学 3, 初中 9, 高中 9) |
 | Tree depth | up to 10 levels |
 | In-memory footprint | ~8 MB |
 
@@ -77,7 +77,7 @@ MCP gives the agent a self-describing interface: it can discover all 16 tools, t
 The original implementation used SQLite queries. The switch to JSON + in-memory indexes happened because:
 
 1. **Startup speed**: JSON parse is faster than DB connection + schema init
-2. **Deployment simplicity**: One JSON file to copy, no DB migration
+2. **Deployment simplicity**: 21 per-subject JSON files (`data/subjects/`), no DB migration
 3. **Query flexibility**: All 31,497 KPs fit in ~8 MB; O(1) lookup by ID, O(n) scan for text search
 4. **Pre-computed children**: The JSON export pre-populates each node's `children[]` array, enabling O(1) leaf detection (`kp.children.length === 0`)
 
@@ -523,10 +523,11 @@ cd solutions/business/quiz-analyzer/mcp-server
 npm test
 ```
 
-Expected: **47 tests pass** across 3 files:
-- `__tests__/leaf-priority-search.test.ts` — 14 tests for leafOnly behavior
-- `__tests__/batch-search.test.ts` — 18 tests for multi-keyword ranking
-- `__tests__/knowledge-point-search.test.ts` — 15 tests for basic search
+Expected: **72 tests pass** across 4 files:
+- `__tests__/knowledge-point-search.test.ts` — 19 tests for basic search
+- `__tests__/batch-search.test.ts` — 15 tests for multi-keyword ranking
+- `__tests__/leaf-priority-search.test.ts` — 13 tests for leafOnly behavior
+- `__tests__/priority-search.test.ts` — 25 tests for scoring and ranking
 
 ### Inspect the data in Node.js REPL
 
@@ -739,9 +740,10 @@ stdout is the MCP communication channel. Any `console.log()` calls in server cod
 ### Running tests
 
 ```bash
-npm test                    # All 47 tests
+npm test                    # All 72 tests
 npm test leaf-priority      # Leaf-priority tests only
 npm test batch-search       # Batch search tests only
+npm test priority-search    # Priority/scoring tests only
 ```
 
 ### Building
@@ -761,5 +763,8 @@ npm run dev                 # Watch mode
 | `src/common/schemas.ts` | Zod validators for each sync field |
 | `src/__tests__/leaf-priority-search.test.ts` | leafOnly behavior tests (real data) |
 | `src/__tests__/batch-search.test.ts` | Multi-keyword ranking tests |
-| `data/knowledge-points.json` | 31,497 KPs with pre-populated children[] |
+| `src/__tests__/priority-search.test.ts` | Scoring and ranking tests |
+| `data/subjects/*.json` | 21 per-subject files, 31,497 KPs total with pre-populated children[] |
+| `data/knowledge-points.json` | Original monolithic backup (not loaded at runtime) |
 | `data/catalogs.json` | Subject/catalog definitions |
+| `scripts/split-knowledge-points.js` | Migration script: fixes gradeLevel + splits into subject files |

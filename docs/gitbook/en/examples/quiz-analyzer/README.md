@@ -34,7 +34,7 @@ AI tags educational quiz questions with the most specific matching knowledge poi
 ┌──────────────────────────────────┐
 │  Data Layer                      │
 │                                  │
-│  knowledge-points.json           │  ← 31,497 nodes, ~8 MB
+│  data/subjects/*.json (21 files) │  ← 31,497 nodes, ~8 MB
 │  catalogs.json                   │  ← Subject definitions
 │  quiz-analyzer.db (SQLite)       │  ← Quiz records only
 └──────────────────────────────────┘
