@@ -37,7 +37,6 @@
   ],
 
   "allowedTools": [
-    "analyze_student_answer",
     "get_quiz_details",
     "search_knowledge_points",
     "search_knowledge_points_by_priority",
@@ -49,8 +48,6 @@
     "search_knowledge_points_under",
     "verify_knowledge_point_tags",
     "get_knowledge_points_tree",
-    "recommend_by_error_pattern",
-    "get_error_statistics",
     "write_output"
   ],
 
