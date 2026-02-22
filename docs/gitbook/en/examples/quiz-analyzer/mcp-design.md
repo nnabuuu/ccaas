@@ -112,7 +112,74 @@ With `leafOnly: true`, 二次函数 (PARENT) is additionally filtered out even i
 
 ---
 
-## 4. stdio Protocol: stdout is the Channel
+## 4. Two-Mode Search Protocol
+
+`leafOnly` (Mode A) handles the common case where keywords map cleanly to leaf nodes. Mode B handles everything else.
+
+### When to use each mode
+
+| Situation | Mode |
+|-----------|------|
+| Keywords are specific and unambiguous | **Mode A** — one `batch_search_knowledge_points` call |
+| Mode A returns parent nodes (`isLeaf: false`) | **Mode B** — hierarchical traversal |
+| Quiz spans multiple knowledge domains | Mode A per domain; Mode B as fallback per domain |
+| Mode A returns 0 results | **Mode B** only |
+
+### Mode A — Fast path
+
+```
+1. Extract 2–4 keywords from quiz stem and answer
+2. batch_search_knowledge_points(keywords, leafOnly: true)
+3. All results are leaves → proceed to verify + write_output
+4. Any result is a parent → switch to Mode B for that knowledge domain
+```
+
+One tool call. Sufficient for most quizzes.
+
+### Mode B — Hierarchical traversal
+
+The agent traverses the tree level by level, making an explicit judgment at each step:
+
+```
+B1: list_subjects(subject_name) → subjectId
+
+B2: list_root_knowledge_points(subjectId)
+    → ["数与代数", "图形与几何", "统计与概率", ...]
+    → AI picks 1–2 branches that match the quiz
+
+B3: get_knowledge_point_children(selectedNodeId)
+    → returns each child with isLeaf indicator
+    → isLeaf: true  → add to candidate pool
+    → isLeaf: false → repeat B3 on that child
+
+B4 (optional — when a branch has >10 children):
+    search_knowledge_points_under(nodeId, keyword)
+    → searches within the subtree only, avoiding full-tree scan
+
+B5: verify_knowledge_point_tags(candidateIds)
+    get_knowledge_point_path(id) × N → build breadcrumbs
+    write_output(field: 'knowledge_point_tags', ...)
+```
+
+### Example: 勾股定理
+
+```
+Mode A: batch_search(["勾股定理"], leafOnly: true)
+  → returns "勾股定理及其证明" (leaf ✅) + "勾股定理的实际应用" (leaf ✅)
+  → AI picks "勾股定理及其证明" for a proof question ✅
+
+If Mode A had returned the parent instead:
+  → "勾股定理" (isLeaf: false) → switch to Mode B
+  → get_knowledge_point_children("勾股定理 id")
+  → children: ["勾股定理及其证明" (leaf), "勾股定理的实际应用" (leaf)]
+  → AI picks appropriate leaf ✅
+```
+
+The two modes complement each other: Mode A provides speed for the majority of cases; Mode B provides precision when the keyword search is ambiguous or the relevant concept sits deep in the hierarchy.
+
+---
+
+## 5. stdio Protocol: stdout is the Channel
 
 This MCP server uses **stdio transport** — the MCP host (CCAAS agent engine) launches it as a child process and communicates over stdin/stdout.
 
@@ -132,7 +199,7 @@ This applies to all stdio MCP servers regardless of domain. The pattern to remem
 
 ---
 
-## 5. Transferable Scenarios
+## 6. Transferable Scenarios
 
 The patterns in this MCP server apply when:
 

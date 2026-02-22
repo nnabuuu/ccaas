@@ -10,10 +10,10 @@
  * 5. search_quizzes - Search quizzes by various criteria
  * 6. search_knowledge_points - Search knowledge points
  * 7. get_quiz_details - Get detailed quiz information
- * 8. get_root_categories - Get root-level categories
- * 9. get_children_nodes - Get child nodes of a knowledge point
- * 10. get_node_path - Get path from root to a node
- * 11. search_in_scope - Search knowledge points within a scope
+ * 8. list_root_knowledge_points - Get root-level knowledge point categories
+ * 9. get_knowledge_point_children - Get child nodes of a knowledge point
+ * 10. get_knowledge_point_path - Get path from root to a node
+ * 11. search_knowledge_points_under - Search knowledge points within a scope
  * 12. analyze_student_answer - Analyze student answer and identify errors
  * 13. recommend_by_error_pattern - Recommend resources based on error patterns
  * 14. get_error_statistics - Get error statistics for analysis
@@ -301,10 +301,10 @@ Example usage:
 };
 
 const getRootCategoriesTool: Tool = {
-  name: 'get_root_categories',
+  name: 'list_root_knowledge_points',
   description: `Get root-level knowledge point categories for a subject.
 
-Returns top-level knowledge point categories.
+Returns top-level knowledge point categories. Use this as the starting point for hierarchical traversal (Mode B): get the root nodes, then call get_knowledge_point_children to drill down.
 
 Example usage:
 { "subjectId": "math" }`,
@@ -318,13 +318,13 @@ Example usage:
 };
 
 const getChildrenNodesTool: Tool = {
-  name: 'get_children_nodes',
-  description: `Get child knowledge points of a parent node.
+  name: 'get_knowledge_point_children',
+  description: `Get child knowledge points of a parent knowledge point node.
 
-Returns all direct children of a knowledge point.
+Returns all direct children. Each child includes an isLeaf indicator (children.length === 0). Use this for hierarchical traversal (Mode B): if a child has no children, it is a leaf node suitable for tagging.
 
 Example usage:
-{ "parentId": 123 }`,
+{ "parentId": "1998702114322399941" }`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -335,13 +335,13 @@ Example usage:
 };
 
 const getNodePathTool: Tool = {
-  name: 'get_node_path',
+  name: 'get_knowledge_point_path',
   description: `Get the path from root to a specific knowledge point node.
 
-Returns the full hierarchy path (e.g., "数学 > 代数 > 二次函数").
+Returns the full hierarchy path as an array (e.g., ["初中知识点", "数与代数", "函数", "二次函数"]). Use this to build breadcrumb navigation or verify a node's position in the tree.
 
 Example usage:
-{ "nodeId": 123 }`,
+{ "nodeId": "1998702114322399941" }`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -352,15 +352,15 @@ Example usage:
 };
 
 const searchInScopeTool: Tool = {
-  name: 'search_in_scope',
-  description: `Search knowledge points within a specific scope (parent node).
+  name: 'search_knowledge_points_under',
+  description: `Search knowledge points within a specific knowledge point subtree.
 
-Searches only within the children of a specific parent node.
+Searches only within the descendants of a specific parent node. Use this when a branch has many children (>10) and you want to narrow down by keyword instead of traversing all children manually.
 
 Example usage:
 {
-  "scopeId": 123,
-  "keyword": "函数"
+  "scopeId": "1998702114322399941",
+  "keyword": "对称轴"
 }`,
   inputSchema: {
     type: 'object',
@@ -504,14 +504,14 @@ Example response:
 };
 
 const searchCatalogTool: Tool = {
-  name: 'search_catalog',
-  description: `Search subjects/catalogs from JSON data source.
+  name: 'list_subjects',
+  description: `Search and list subjects (学科) from the knowledge base.
 
-Returns matching subjects and their metadata.
+Returns matching subjects with their IDs and metadata. Use this to get a subjectId before calling list_root_knowledge_points to start hierarchical traversal.
 
 Example usage:
 {
-  "keyword": "八年级",
+  "keyword": "初中",
   "limit": 10
 }`,
   inputSchema: {
@@ -1163,8 +1163,182 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  // Handle search_catalog tool
-  if (name === 'search_catalog') {
+  // Handle list_root_knowledge_points tool
+  if (name === 'list_root_knowledge_points') {
+    const { subjectId, gradeLevel } = args as { subjectId?: string; gradeLevel?: string };
+
+    try {
+      const roots = jsonDataLoader.getRootKnowledgePoints({ subjectId, gradeLevel });
+
+      const formattedRoots = roots.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        subjectId: kp.subjectId,
+        gradeLevel: kp.gradeLevel,
+        childCount: kp.children.length,
+        isLeaf: kp.children.length === 0,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              count: formattedRoots.length,
+              subjectId: subjectId || 'all',
+              results: formattedRoots,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle get_knowledge_point_children tool
+  if (name === 'get_knowledge_point_children') {
+    const { parentId } = args as { parentId: string };
+
+    try {
+      const children = jsonDataLoader.getChildrenKnowledgePoints(parentId);
+
+      const formattedChildren = children.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        subjectId: kp.subjectId,
+        gradeLevel: kp.gradeLevel,
+        childCount: kp.children.length,
+        isLeaf: kp.children.length === 0,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              parentId,
+              count: formattedChildren.length,
+              children: formattedChildren,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle get_knowledge_point_path tool
+  if (name === 'get_knowledge_point_path') {
+    const { nodeId } = args as { nodeId: string };
+
+    try {
+      const pathNodes = jsonDataLoader.getKnowledgePointPath(nodeId);
+
+      if (pathNodes.length === 0) {
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: `Node not found: ${nodeId}` }) }],
+          isError: true,
+        };
+      }
+
+      const pathNames = pathNodes.map(kp => kp.name.trim());
+      const pathFormatted = pathNodes.map(kp => ({
+        id: kp.id,
+        name: kp.name.trim(),
+        level: kp.level,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              nodeId,
+              depth: pathNodes.length,
+              path: pathNames,
+              nodes: pathFormatted,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle search_knowledge_points_under tool
+  if (name === 'search_knowledge_points_under') {
+    const { scopeId, keyword } = args as { scopeId: string; keyword: string };
+
+    try {
+      // BFS to collect all descendant IDs of the scope node
+      const descendantIds = new Set<string>();
+      const queue = [scopeId];
+      while (queue.length > 0) {
+        const id = queue.shift()!;
+        const node = jsonDataLoader.getKnowledgePointById(id);
+        if (node) {
+          node.children.forEach(childId => {
+            descendantIds.add(childId);
+            queue.push(childId);
+          });
+        }
+      }
+
+      // Search all KPs by keyword, then filter to descendants only
+      const allMatches = jsonDataLoader.searchKnowledgePoints(keyword);
+      const scopedResults = allMatches.filter(kp => descendantIds.has(kp.id));
+
+      const formattedResults = scopedResults.map(kp => ({
+        id: kp.id,
+        name: kp.name,
+        level: kp.level,
+        subjectId: kp.subjectId,
+        gradeLevel: kp.gradeLevel,
+        parentId: kp.parentId,
+        isLeaf: kp.children.length === 0,
+      }));
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              scopeId,
+              keyword,
+              count: formattedResults.length,
+              results: formattedResults,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle list_subjects tool
+  if (name === 'list_subjects') {
     const { keyword, limit = 20 } = args as {
       keyword: string;
       limit?: number;

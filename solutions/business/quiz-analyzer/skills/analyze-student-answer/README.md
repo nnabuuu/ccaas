@@ -77,7 +77,7 @@ Primary tools:
 
 Supporting tools:
 - `get_knowledge_points_tree` - Browse knowledge hierarchy
-- `get_node_path` - Get knowledge point path
+- `get_knowledge_point_path` - Get knowledge point path
 - `recommend_by_error_pattern` - Get similar quiz recommendations
 - `get_error_statistics` - View error statistics
 

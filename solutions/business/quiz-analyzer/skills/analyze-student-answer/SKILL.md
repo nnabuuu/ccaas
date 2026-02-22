@@ -120,8 +120,38 @@ await tools.analyze_student_answer({
 
 对于每个错误：
 - 分析该错误涉及哪些知识点
-- 使用 `search_knowledge_points` 工具查找知识点ID
+- 使用知识点搜索协议（见下文）查找知识点ID
 - 填入 `affectedKnowledgePoints` 数组
+
+#### 知识点搜索协议
+
+**Mode A：快速路径（优先尝试）**
+
+```
+1. 从错误描述提取 2-3 个关键词
+2. 调用 batch_search_knowledge_points(keywords, leafOnly: true)
+3. 若结果均为叶节点（isLeaf: true）→ 直接使用
+4. 若有父节点混入（isLeaf: false）→ 切换到 Mode B
+```
+
+**Mode B：层级遍历（精准路径）**
+
+```
+Step 1: list_subjects(科目) → 获取 subjectId
+Step 2: list_root_knowledge_points(subjectId) → 顶层分类
+Step 3: AI 选 1-2 个最相关的根类别
+Step 4: 逐层 get_knowledge_point_children(nodeId) 向下展开
+  - isLeaf: true → 加入候选
+  - isLeaf: false → 继续向下
+  - 子节点 >10 个 → 用 search_knowledge_points_under(nodeId, keyword) 缩小范围
+Step 5: verify_knowledge_point_tags(selectedIds) → 确认 ID 存在
+Step 6: get_knowledge_point_path(id) × N → 构建完整路径确认
+```
+
+**实例（平方差公式）：**
+- Mode A 搜索 ["平方差公式", "因式分解"] → 返回父节点（有子节点）
+- 切换 Mode B：`get_knowledge_point_children("因式分解 id")`
+  → 返回 "完全平方公式"、"平方差公式"（均为叶节点 ✅）
 
 **示例**：
 - 错误："混淆了完全平方公式和平方差公式"
@@ -380,14 +410,18 @@ await tools.analyze_student_answer({
 1. `analyze_student_answer` - 获取题目信息并保存分析结果
 2. `get_quiz_details` - 获取题目完整信息（备选）
 
-### 辅助工具
-3. `search_knowledge_points` - 查找知识点ID
-4. `get_knowledge_points_tree` - 浏览知识点层级结构
-5. `get_node_path` - 获取知识点的完整路径
+### 知识点搜索工具
+3. `batch_search_knowledge_points` - 批量关键词搜索（Mode A，推荐首选）
+4. `list_subjects` - 搜索科目（Mode B Step 1）
+5. `list_root_knowledge_points` - 获取根节点（Mode B Step 2）
+6. `get_knowledge_point_children` - 获取子节点（Mode B 逐层展开）
+7. `search_knowledge_points_under` - 在子树内搜索（Mode B 子节点过多时）
+8. `get_knowledge_point_path` - 获取知识点完整路径（确认步骤）
+9. `verify_knowledge_point_tags` - 验证知识点 ID 存在
 
 ### 后续推荐
-6. `recommend_by_error_pattern` - 基于错误模式推荐相似题目
-7. `get_error_statistics` - 查看该题的错误统计
+10. `recommend_by_error_pattern` - 基于错误模式推荐相似题目
+11. `get_error_statistics` - 查看该题的错误统计
 
 ## 性能优化建议
 

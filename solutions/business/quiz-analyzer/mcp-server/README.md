@@ -186,10 +186,10 @@ This is why `leafOnly: true` matters: without it, the agent might tag a quiz wit
 |------|---------|
 | `search_knowledge_points_json` | Single-keyword search across name + description |
 | `batch_search_knowledge_points` | Multi-keyword search, deduplicated, ranked, leafOnly supported |
-| `search_catalog` | Search subjects/catalogs |
-| `get_root_categories` | Get top-level nodes for a subject |
+| `list_subjects` | Search subjects by name (was `search_catalog`) |
+| `list_root_knowledge_points` | Get top-level nodes for a subject (was `get_root_categories`) |
 
-**Primary tool for quiz analysis: `batch_search_knowledge_points`**
+**Primary tool for quiz analysis: `batch_search_knowledge_points`** (Mode A)
 
 ```json
 {
@@ -204,10 +204,12 @@ This is why `leafOnly: true` matters: without it, the agent might tag a quiz wit
 
 | Tool | Purpose |
 |------|---------|
-| `get_children_nodes` | Get direct children of a parent node |
-| `get_node_path` | Get path from root to a node (for breadcrumb display) |
-| `search_in_scope` | Search within a specific parent's subtree |
+| `get_knowledge_point_children` | Get direct children of a parent node (was `get_children_nodes`) |
+| `get_knowledge_point_path` | Get path from root to a node for breadcrumb display (was `get_node_path`) |
+| `search_knowledge_points_under` | Search within a specific parent's subtree (was `search_in_scope`) |
 | `search_knowledge_points` | DB-based search (legacy, prefer JSON version) |
+
+**Group 1 + Group 2 together enable the Two-Mode Search Protocol** — see [Agent Tagging Workflow](#agent-tagging-workflow) for when to use each mode.
 
 ### Group 3: Quiz Analysis Output
 
@@ -289,7 +291,60 @@ Formula: `difficulty = min(5, ceil((知识点数 × 0.5 + 步骤数 × 0.3) × �
 
 ## Agent Tagging Workflow
 
-The recommended 8-step workflow for the agent to tag a quiz question with knowledge points.
+The recommended workflow for the agent to tag a quiz question with knowledge points. Two search modes are available — always attempt Mode A first.
+
+### Two-Mode Search Protocol
+
+| Situation | Use Mode |
+|-----------|---------|
+| Keywords are specific and unambiguous | **Mode A** (fast) |
+| `batch_search_knowledge_points` returns parent nodes | **Mode B** (hierarchical traversal) |
+| Quiz spans multiple knowledge domains | Mode A per domain, Mode B as fallback |
+| `batch_search_knowledge_points` returns 0 results | **Mode B** only |
+
+**Mode A — Fast Path (try first)**
+
+```
+1. Extract 2–4 keywords from stem and answer
+2. batch_search_knowledge_points(keywords, leafOnly: true)
+3. All results are leaves (isLeaf: true) → proceed to Step 5
+4. Any parent node in results (isLeaf: false) → switch to Mode B
+```
+
+**Mode B — Hierarchical Traversal (precise path)**
+
+```
+Step B1: list_subjects(subject_name) → get subjectId
+Step B2: list_root_knowledge_points(subjectId)
+         → ["数与代数", "图形与几何", "统计与概率", ...]
+         → AI picks 1–2 branches most relevant to the quiz
+Step B3: get_knowledge_point_children(selectedNodeId)
+         → returns children with isLeaf indicator
+         → isLeaf: true  → add to candidate pool
+         → isLeaf: false → repeat B3 on that child
+Step B4 (optional — when branch has >10 children):
+         search_knowledge_points_under(nodeId, keyword)
+         → narrows the subtree without manual traversal
+Step B5: verify_knowledge_point_tags(candidateIds)
+         get_knowledge_point_path(id) × N → build breadcrumbs
+         write_output(field: 'knowledge_point_tags', ...)
+```
+
+**Example: 勾股定理 (Mode A → Mode B)**
+
+```
+Mode A: batch_search(["勾股定理"], leafOnly: true)
+  → returns "勾股定理及其证明" (leaf ✅) and "勾股定理的实际应用" (leaf ✅)
+  → AI selects "勾股定理及其证明" for a proof-type question ✅
+
+Mode A returns parent (alternate scenario):
+  → batch_search returns "勾股定理" (isLeaf: false, 2 children)
+  → switch to Mode B: get_knowledge_point_children("勾股定理 id")
+  → children: ["勾股定理及其证明" (leaf), "勾股定理的实际应用" (leaf)]
+  → AI picks appropriate leaf ✅
+```
+
+---
 
 ### Step 1: Parse quiz stem → extract `question` keywords
 
@@ -335,7 +390,7 @@ Use `batch_search_knowledge_points` with `leafOnly: true` for all question + sol
 
 ### Step 4: Expand parent nodes (when needed)
 
-If a candidate has children but `leafOnly` did not return it (because fallback kicked in), use `get_children_nodes` to explore its subtree manually.
+If a candidate has children but `leafOnly` did not return it (because fallback kicked in), use `get_knowledge_point_children` to explore its subtree manually.
 
 ```
 "因式分解" (parent, 10 children) → expand →
@@ -380,7 +435,7 @@ Pass the selected tag IDs to confirm they exist in the data.
 
 ```bash
 # Get full path for each tag
-get_node_path({ nodeId: "..." })
+get_knowledge_point_path({ nodeId: "..." })
 
 # Write final tags to frontend
 write_output({ field: "knowledge_point_tags", value: [...], preview: "3个知识点" })
@@ -391,7 +446,7 @@ write_output({ field: "knowledge_point_tags", value: [...], preview: "3个知识
 | Mistake | Wrong | Right |
 |---------|-------|-------|
 | Only search one keyword | `search("因式分解")` only | Search all keywords in one batch call |
-| Stop at parent without expanding | Tag "因式分解" without looking at its 10 children | `get_children_nodes` to find specific method |
+| Stop at parent without expanding | Tag "因式分解" without looking at its 10 children | `get_knowledge_point_children` to find specific method |
 | Use parent node without `note` | `{ name: "因式分解", confidence: 0.9 }` | Add `note` field explaining why leaf unavailable |
 | Ignore answer/solution | Only look at quiz stem | Also analyze answer form to identify `source: 'solution'` nodes |
 
