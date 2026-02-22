@@ -742,8 +742,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const node = jsonDataLoader.getKnowledgePointById(tagId);
 
         if (node) {
-          const { fullName } = jsonDataLoader.getFullName(tagId) ?? { fullName: node.name };
-          valid.push({ ...tag, exists: true, fullName });
+          const cached = jsonDataLoader.getFullName(tagId);
+          const { fullName, pathNames } = cached ?? { fullName: node.name, pathNames: [node.name] };
+          valid.push({ ...tag, exists: true, fullName, pathNames });
         } else {
           invalid.push({ ...tag, exists: false });
 
@@ -754,8 +755,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             suggestions.push({
               original: tag,
               suggestions: similar.map(kp => {
-                const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
-                return { id: kp.id, name: kp.name.trim(), fullName };
+                const c = jsonDataLoader.getFullName(kp.id);
+                const { fullName, pathNames } = c ?? { fullName: kp.name, pathNames: [kp.name] };
+                return { id: kp.id, name: kp.name.trim(), fullName, pathNames };
               }),
             });
           }
