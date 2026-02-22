@@ -11,7 +11,8 @@
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "start:dev": "tsc && node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "eval:subjects": "node eval-subjects.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
