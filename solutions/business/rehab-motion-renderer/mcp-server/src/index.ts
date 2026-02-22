@@ -18,7 +18,8 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // ═══════════════════════════════════════════
 // VALID FIELDS (SyncFields whitelist)
@@ -155,20 +156,21 @@ function loadExerciseLibraryMeta() {
 }
 
 // ═══════════════════════════════════════════
-// MCP SERVER
+// MCP SERVER FACTORY
 // ═══════════════════════════════════════════
 
-const server = new Server(
-  { name: 'rehab-tools', version: '1.0.0' },
-  { capabilities: { tools: {} } }
-)
+export function createServer(): Server {
+  const server = new Server(
+    { name: 'rehab-tools', version: '1.0.0' },
+    { capabilities: { tools: {} } }
+  )
 
-// List tools
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [
-    {
-      name: 'write_output',
-      description: `Write a single field to the rehab training plan form.
+  // List tools
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [
+      {
+        name: 'write_output',
+        description: `Write a single field to the rehab training plan form.
 Call this once per field. Valid fields: ${VALID_FIELDS.join(', ')}.
 
 The exercises field must be JSON.stringify(ExerciseSpec[]) where each ExerciseSpec is:
@@ -183,127 +185,133 @@ The exercises field must be JSON.stringify(ExerciseSpec[]) where each ExerciseSp
 }
 
 Call get_exercise_library first to see available exercise types.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          field: {
-            type: 'string',
-            enum: VALID_FIELDS,
-            description: 'The field name to update',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            field: {
+              type: 'string',
+              enum: VALID_FIELDS,
+              description: 'The field name to update',
+            },
+            value: {
+              type: 'string',
+              description: 'The value for the field (string; exercises field is JSON.stringify)',
+            },
+            preview: {
+              type: 'string',
+              description: 'Short preview text shown in the sync button (1-2 sentences)',
+            },
           },
-          value: {
-            type: 'string',
-            description: 'The value for the field (string; exercises field is JSON.stringify)',
-          },
-          preview: {
-            type: 'string',
-            description: 'Short preview text shown in the sync button (1-2 sentences)',
-          },
+          required: ['field', 'value', 'preview'],
         },
-        required: ['field', 'value', 'preview'],
       },
-    },
-    {
-      name: 'get_exercise_library',
-      description: `Get the list of available exercises with their metadata.
+      {
+        name: 'get_exercise_library',
+        description: `Get the list of available exercises with their metadata.
 Returns exercise IDs, Chinese/English names, target muscles, and figure type.
 Use this before generating the exercises field to know what types are available.
 Does NOT return keyframes (those are handled by the frontend renderer).`,
-      inputSchema: {
-        type: 'object',
-        properties: {},
-        required: [],
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
       },
-    },
-  ],
-}))
+    ],
+  }))
 
-// Handle tool calls
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params
+  // Handle tool calls
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params
 
-  if (name === 'get_exercise_library') {
-    const library = loadExerciseLibraryMeta()
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(library, null, 2),
-        },
-      ],
+    if (name === 'get_exercise_library') {
+      const library = loadExerciseLibraryMeta()
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(library, null, 2),
+          },
+        ],
+      }
     }
-  }
 
-  if (name === 'write_output') {
-    const { field, value, preview } = args as { field: string; value: string; preview: string }
+    if (name === 'write_output') {
+      const { field, value, preview } = args as { field: string; value: string; preview: string }
 
-    // Validate field name
-    if (!VALID_FIELDS.includes(field as ValidField)) {
+      // Validate field name
+      if (!VALID_FIELDS.includes(field as ValidField)) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: false,
+                error: `Invalid field: "${field}". Valid fields: ${VALID_FIELDS.join(', ')}`,
+              }),
+            },
+          ],
+          isError: true,
+        }
+      }
+
+      // Validate field value
+      const schema = fieldSchemas[field as ValidField]
+      const result = schema.safeParse(value)
+      if (!result.success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                success: false,
+                error: `Validation failed for field "${field}": ${result.error.message}`,
+              }),
+            },
+          ],
+          isError: true,
+        }
+      }
+
+      process.stderr.write(`[rehab-tools] write_output: field=${field}, preview=${preview}\n`)
+
+      // CCAAS EventMapper reads content[].text JSON to build the output_update event.
+      // It uses: parsedResult.data || parsedResult → payload.data
+      // Frontend useOutputSync reads: payload.data.{ field, value, preview }
       return {
         content: [
           {
             type: 'text',
             text: JSON.stringify({
-              success: false,
-              error: `Invalid field: "${field}". Valid fields: ${VALID_FIELDS.join(', ')}`,
+              field,
+              value,
+              preview: preview || `已更新 ${field}`,
             }),
           },
         ],
-        isError: true,
       }
     }
 
-    // Validate field value
-    const schema = fieldSchemas[field as ValidField]
-    const result = schema.safeParse(value)
-    if (!result.success) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              success: false,
-              error: `Validation failed for field "${field}": ${result.error.message}`,
-            }),
-          },
-        ],
-        isError: true,
-      }
-    }
-
-    process.stderr.write(`[rehab-tools] write_output: field=${field}, preview=${preview}\n`)
-
-    // CCAAS EventMapper reads content[].text JSON to build the output_update event.
-    // It uses: parsedResult.data || parsedResult → payload.data
-    // Frontend useOutputSync reads: payload.data.{ field, value, preview }
     return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify({
-            field,
-            value,
-            preview: preview || `已更新 ${field}`,
-          }),
-        },
-      ],
+      content: [{ type: 'text', text: `Unknown tool: ${name}` }],
+      isError: true,
     }
-  }
+  })
 
-  return {
-    content: [{ type: 'text', text: `Unknown tool: ${name}` }],
-    isError: true,
-  }
-})
+  return server
+}
 
-// Start server
+// Start server (only when run directly, not when imported by tests)
 async function main() {
+  const server = createServer()
   const transport = new StdioServerTransport()
   await server.connect(transport)
   process.stderr.write('[rehab-tools] MCP server started\n')
 }
 
-main().catch((err) => {
-  process.stderr.write(`[rehab-tools] Fatal error: ${err}\n`)
-  process.exit(1)
-})
+if (process.argv[1] === __filename) {
+  main().catch((err) => {
+    process.stderr.write(`[rehab-tools] Fatal error: ${err}\n`)
+    process.exit(1)
+  })
+}
