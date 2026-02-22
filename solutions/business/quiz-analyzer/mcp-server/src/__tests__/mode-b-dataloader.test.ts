@@ -8,6 +8,8 @@
  *   searchSubjects → list_subjects tool
  *   getFullName → used by all Mode B handlers to attach fullName
  *   getKnowledgePointById → used by verify_knowledge_point_tags
+ *   getKnowledgePointPath → get_knowledge_point_path tool
+ *   searchKnowledgePoints (scopeIds) → search_knowledge_points_under tool
  */
 
 import { describe, it, expect } from 'vitest';
@@ -249,5 +251,106 @@ describe('getFullName — Mode B handler enrichment', () => {
     const result = jsonDataLoader.getFullName(SHUSHUSHI_ID)!;
     expect(result.fullName).toContain('数与式');
     expect(result.pathNames.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('getKnowledgePointPath — get_knowledge_point_path tool', () => {
+  it('returns empty array for a nonexistent ID', () => {
+    const path = jsonDataLoader.getKnowledgePointPath('nonexistent-id-xyz');
+    expect(path).toHaveLength(0);
+  });
+
+  it('returns a single-element array for a root node', () => {
+    const roots = jsonDataLoader.getRootKnowledgePoints();
+    const root = roots[0];
+    const path = jsonDataLoader.getKnowledgePointPath(root.id);
+    expect(path).toHaveLength(1);
+    expect(path[0].id).toBe(root.id);
+  });
+
+  it('path for 数与式 starts at root and ends at 数与式', () => {
+    const path = jsonDataLoader.getKnowledgePointPath(SHUSHUSHI_ID);
+    expect(path.length).toBeGreaterThanOrEqual(2);
+    // First node has no parent (root)
+    expect(path[0].parentId).toBeNull();
+    // Last node is 数与式 itself
+    expect(path.at(-1)!.id).toBe(SHUSHUSHI_ID);
+    expect(path.at(-1)!.name.trim()).toBe('数与式');
+  });
+
+  it('each consecutive pair forms a valid parent→child relationship', () => {
+    const path = jsonDataLoader.getKnowledgePointPath(SHUSHUSHI_ID);
+    for (let i = 0; i < path.length - 1; i++) {
+      expect(path[i + 1].parentId).toBe(path[i].id);
+    }
+  });
+
+  it('path matches getFullName pathNames for 数与式', () => {
+    const path = jsonDataLoader.getKnowledgePointPath(SHUSHUSHI_ID);
+    const { pathNames } = jsonDataLoader.getFullName(SHUSHUSHI_ID)!;
+    expect(path.map(kp => kp.name.trim())).toEqual(pathNames);
+  });
+
+  it('deeper node 实数 has longer path than its parent 数与式', () => {
+    const pathParent = jsonDataLoader.getKnowledgePointPath(SHUSHUSHI_ID);
+    const pathChild  = jsonDataLoader.getKnowledgePointPath(SHISHI_ID);
+    expect(pathChild.length).toBeGreaterThan(pathParent.length);
+    // The child path should include the parent node
+    const parentInChildPath = pathChild.find(kp => kp.id === SHUSHUSHI_ID);
+    expect(parentInChildPath).toBeDefined();
+  });
+
+  it('path for 相交线与平行线 (L4) has at least 4 elements', () => {
+    const path = jsonDataLoader.getKnowledgePointPath(XIANGJIAO_PINGXING_ID);
+    expect(path.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('searchKnowledgePoints — scopeIds option (search_knowledge_points_under)', () => {
+  it('empty scopeIds set returns no results', () => {
+    const results = jsonDataLoader.searchKnowledgePoints('数学', { scopeIds: new Set() });
+    expect(results).toHaveLength(0);
+  });
+
+  it('scopeIds restricts results to nodes in the set', () => {
+    const children = jsonDataLoader.getChildrenKnowledgePoints(SHUSHUSHI_ID);
+    const childIds = new Set(children.map(kp => kp.id));
+    const results = jsonDataLoader.searchKnowledgePoints('数', { scopeIds: childIds });
+    // Every returned node must be in the provided set
+    results.forEach(kp => expect(childIds.has(kp.id)).toBe(true));
+  });
+
+  it('scopeIds finds 有理数 when 数与式 children are the scope', () => {
+    const children = jsonDataLoader.getChildrenKnowledgePoints(SHUSHUSHI_ID);
+    const childIds = new Set(children.map(kp => kp.id));
+    const results = jsonDataLoader.searchKnowledgePoints('有理数', { scopeIds: childIds });
+    expect(results.map(kp => kp.id)).toContain(YOULI_ID);
+  });
+
+  it('keyword not matching any scoped node returns empty array', () => {
+    const children = jsonDataLoader.getChildrenKnowledgePoints(SHUSHUSHI_ID);
+    const childIds = new Set(children.map(kp => kp.id));
+    // Search for something clearly outside this subtree
+    const results = jsonDataLoader.searchKnowledgePoints('光合作用', { scopeIds: childIds });
+    expect(results).toHaveLength(0);
+  });
+
+  it('scopeIds results are a subset of unscoped results for same keyword', () => {
+    const children = jsonDataLoader.getChildrenKnowledgePoints(TUXING_XINGZHI_ID);
+    const childIds = new Set(children.map(kp => kp.id));
+    const scoped   = jsonDataLoader.searchKnowledgePoints('三角形', { scopeIds: childIds });
+    const unscoped = jsonDataLoader.searchKnowledgePoints('三角形');
+    const unscopedIds = new Set(unscoped.map(kp => kp.id));
+    scoped.forEach(kp => expect(unscopedIds.has(kp.id)).toBe(true));
+  });
+
+  it('scopeIds with single-element set returns at most that one node if it matches', () => {
+    const singleSet = new Set([SHISHI_ID]);
+    // 实数 contains "数" so this should match
+    const results = jsonDataLoader.searchKnowledgePoints('实数', { scopeIds: singleSet });
+    expect(results.length).toBeLessThanOrEqual(1);
+    if (results.length === 1) {
+      expect(results[0].id).toBe(SHISHI_ID);
+    }
   });
 });
