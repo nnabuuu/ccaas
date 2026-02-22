@@ -427,31 +427,6 @@ Returns:
   },
 };
 
-const searchKnowledgePointsJSONTool: Tool = {
-  name: 'search_knowledge_points_json',
-  description: `Search knowledge points from JSON data source (faster than database).
-
-Returns matching knowledge points with hierarchy information.
-
-Example usage:
-{
-  "keyword": "函数",
-  "subjectId": "math-001",
-  "gradeLevel": "初中",
-  "limit": 10
-}`,
-  inputSchema: {
-    type: 'object',
-    properties: {
-      keyword: { type: 'string', description: 'Search keyword' },
-      subjectId: { type: 'string', description: 'Subject ID (optional)' },
-      gradeLevel: { type: 'string', description: 'Grade level (optional)' },
-      limit: { type: 'number', description: 'Maximum results (default: 20)' },
-    },
-    required: ['keyword'],
-  },
-};
-
 const batchSearchKnowledgePointsTool: Tool = {
   name: 'batch_search_knowledge_points',
   description: `Search knowledge points by multiple keywords in a single call.
@@ -1112,61 +1087,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             type: 'text',
             text: JSON.stringify({
               data: { error: `Failed to parse quiz content: ${errorMessage}` },
-              status: 'error',
-            }),
-          },
-        ],
-        isError: true,
-      };
-    }
-  }
-
-  // Handle search_knowledge_points_json tool
-  if (name === 'search_knowledge_points_json') {
-    const { keyword, subjectId, gradeLevel, limit = 20 } = args as {
-      keyword: string;
-      subjectId?: string;
-      gradeLevel?: string;
-      limit?: number;
-    };
-
-    try {
-      const results = jsonDataLoader.searchKnowledgePoints(keyword, {
-        subjectId,
-        gradeLevel,
-        limit,
-      });
-
-      // Format results for output
-      const formattedResults = results.map(kp => ({
-        id: kp.id,
-        name: kp.name,
-        level: kp.level,
-        subjectId: kp.subjectId,
-        gradeLevel: kp.gradeLevel,
-        parentId: kp.parentId,
-        difficultyContribution: kp.difficultyContribution,
-      }));
-
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              count: formattedResults.length,
-              results: formattedResults,
-            }, null, 2),
-          },
-        ],
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              data: { error: `Failed to search knowledge points: ${errorMessage}` },
               status: 'error',
             }),
           },
