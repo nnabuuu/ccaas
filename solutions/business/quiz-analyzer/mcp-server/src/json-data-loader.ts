@@ -77,6 +77,8 @@ class JsonDataLoader {
   private kpBySubject: Map<string, KnowledgePoint[]> = new Map();
   private subjectById: Map<string, Subject> = new Map();
   private subjectByName: Map<string, Subject[]> = new Map();
+  // fullName/pathNames computed once per node during buildIndexes(), O(1) per search result
+  private fullNameCache: Map<string, { pathNames: string[]; fullName: string }> = new Map();
 
   private loaded = false;
 
@@ -116,9 +118,13 @@ class JsonDataLoader {
   }
 
   /**
-   * Build the full path from root to the given node.
+   * Return precomputed full path for a node (built once during buildIndexes).
+   * Falls back to live walk if the node wasn't in the initial dataset.
    */
   private buildNodePath(id: string): { pathNames: string[]; fullName: string } {
+    const cached = this.fullNameCache.get(id);
+    if (cached) return cached;
+    // Fallback: walk the tree (e.g. for dynamically added nodes)
     const names: string[] = [];
     let current = this.kpById.get(id);
     while (current) {
@@ -161,6 +167,17 @@ class JsonDataLoader {
       }
       this.subjectByName.get(subject.name)!.push(subject);
     });
+
+    // Precompute fullName / pathNames for every node (O(n·depth) once, then O(1) per search result)
+    for (const kp of this.knowledgePoints) {
+      const names: string[] = [];
+      let cur: KnowledgePoint | undefined = kp;
+      while (cur) {
+        names.unshift(cur.name.trim());
+        cur = cur.parentId ? this.kpById.get(cur.parentId) : undefined;
+      }
+      this.fullNameCache.set(kp.id, { pathNames: names, fullName: names.join(' > ') });
+    }
   }
 
   // ========================================
@@ -200,6 +217,7 @@ class JsonDataLoader {
     limit?: number;
   }): KnowledgePoint[] {
     this.load();
+    if (!keyword) return [];
 
     const scored: Array<{ kp: KnowledgePoint; score: number }> = [];
 
@@ -245,6 +263,7 @@ class JsonDataLoader {
     const hitMap = new Map<string, { kp: KnowledgePoint; matched: Set<string> }>();
 
     for (const keyword of keywords) {
+      if (!keyword) continue; // skip empty strings — they match every node
       for (const kp of this.knowledgePoints) {
         if (!kp.name.includes(keyword) && !kp.description.includes(keyword)) continue;
         if (options?.subjectId && kp.subjectId !== options.subjectId) continue;
