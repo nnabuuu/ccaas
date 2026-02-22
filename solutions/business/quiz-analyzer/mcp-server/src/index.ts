@@ -264,21 +264,20 @@ Example usage:
 
 const searchKnowledgePointsTool: Tool = {
   name: 'search_knowledge_points',
-  description: `Search knowledge points by name or ID.
-
-Returns matching knowledge points with their hierarchy information.
+  description: `Search knowledge points by keyword. Returns results with fullName and pathNames for hierarchy context.
 
 Example usage:
 {
   "keyword": "函数",
-  "subjectId": "math",
+  "gradeLevel": "初中",
   "limit": 10
 }`,
   inputSchema: {
     type: 'object',
     properties: {
       keyword: { type: 'string', description: 'Search keyword' },
-      subjectId: { type: 'string', description: 'Subject ID' },
+      subjectId: { type: 'string', description: 'Filter by subject ID (optional)' },
+      gradeLevel: { type: 'string', description: 'Filter by grade level: 小学/初中/高中 (optional)' },
       limit: { type: 'number', description: 'Maximum results (default: 20)' },
     },
   },
@@ -1285,9 +1284,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   // Handle search_knowledge_points tool
   if (name === 'search_knowledge_points') {
-    const { keyword, subjectId, limit = 20 } = args as {
+    const { keyword, subjectId, gradeLevel, limit = 20 } = args as {
       keyword?: string;
       subjectId?: string;
+      gradeLevel?: string;
       limit?: number;
     };
 
@@ -1298,7 +1298,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     try {
-      const results = jsonDataLoader.searchKnowledgePoints(keyword, { subjectId, limit });
+      const results = jsonDataLoader.searchKnowledgePoints(keyword, { subjectId, gradeLevel, limit });
       const formattedResults = results.map(kp => {
         const { pathNames, fullName } = jsonDataLoader.getFullName(kp.id) ?? { pathNames: [], fullName: kp.name };
         return {
