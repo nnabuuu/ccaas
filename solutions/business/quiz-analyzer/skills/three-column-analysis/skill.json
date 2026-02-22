@@ -1,0 +1,60 @@
+{
+  "name": "three-column-analysis",
+  "version": "1.0.0",
+  "description": "三栏布局题目分析 - 解析题目、标注知识点、查找目录、生成思路",
+
+  "triggers": [
+    {
+      "type": "keyword",
+      "value": "分析这道题目",
+      "priority": 10
+    },
+    {
+      "type": "keyword",
+      "value": "开始分析",
+      "priority": 9
+    },
+    {
+      "type": "keyword",
+      "value": "标注知识点",
+      "priority": 9
+    },
+    {
+      "type": "keyword",
+      "value": "解析题目",
+      "priority": 8
+    }
+  ],
+
+  "allowedTools": [
+    "write_output",
+    "parse_quiz_content",
+    "batch_search_knowledge_points",
+    "search_knowledge_points_by_priority",
+    "search_knowledge_points",
+    "list_subjects",
+    "list_root_knowledge_points",
+    "get_knowledge_point_children",
+    "get_knowledge_point_path",
+    "search_knowledge_points_under",
+    "verify_knowledge_point_tags",
+    "get_knowledge_points_tree",
+    "generate_thinking_process_template"
+  ],
+
+  "instructions": "请严格遵循 SKILL.md 中的标准工作流进行三栏布局题目分析。核心步骤：1) parse_quiz_content 解析题目 2) batch_search_knowledge_points（leafOnly: true）标注知识点；如有父节点混入则用层级遍历（Mode B）精确定位 3) list_subjects 查找所属目录 4) （可选）分析学生答案 5) 生成解题思路。每步完成后立即使用 write_output 更新前端，实现流式展示。",
+
+  "errorHandling": {
+    "parseFailure": "如果 parse_quiz_content 失败，根据原始文本直接推断题型和内容",
+    "noKnowledgePoints": "如果 batch_search 无匹配，改用 search_knowledge_points_by_priority（Mode C）再试",
+    "parentNodeOnly": "如果结果都是父节点，使用层级遍历（Mode B）精确定位叶节点"
+  },
+
+  "qualityChecks": [
+    "parsedQuiz 包含 content、quizType、options（选择题）",
+    "knowledgePointTags 优先使用叶节点（isLeaf: true）",
+    "每个知识点标签有 fullName 用于确认层级",
+    "catalog 字段来自 list_subjects 的实际搜索结果",
+    "thinkingProcess 有标准解题思路结构"
+  ]
+}
