@@ -153,9 +153,14 @@ describe('searchSubjects', () => {
     expect(results.every(s => s.name.includes('数学') || s.description.includes('数学'))).toBe(true);
   });
 
-  it('empty keyword returns empty array', () => {
+  it('undefined keyword returns all subjects', () => {
+    const results = jsonDataLoader.searchSubjects(undefined);
+    expect(results.length).toBeGreaterThan(0);
+  });
+
+  it('empty string keyword returns all subjects (same as no keyword)', () => {
     const results = jsonDataLoader.searchSubjects('');
-    expect(results).toHaveLength(0);
+    expect(results.length).toBeGreaterThan(0);
   });
 
   it('limit caps results', () => {

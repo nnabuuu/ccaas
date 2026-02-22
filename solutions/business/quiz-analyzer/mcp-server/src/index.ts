@@ -550,18 +550,18 @@ const searchCatalogTool: Tool = {
 
 Returns matching subjects with their IDs and metadata. Use this to get a subjectId before calling list_root_knowledge_points to start hierarchical traversal.
 
+Omit keyword to list all available subjects. Provide keyword to filter by name.
+
 Example usage:
-{
-  "keyword": "初中",
-  "limit": 10
-}`,
+{}                         — list all subjects
+{ "keyword": "初中" }      — filter by grade level
+{ "keyword": "数学" }      — filter by subject name`,
   inputSchema: {
     type: 'object',
     properties: {
-      keyword: { type: 'string', description: 'Search keyword' },
+      keyword: { type: 'string', description: 'Optional filter keyword (omit to list all)' },
       limit: { type: 'number', description: 'Maximum results (default: 20)' },
     },
-    required: ['keyword'],
   },
 };
 
@@ -1410,7 +1410,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // Handle list_subjects tool
   if (name === 'list_subjects') {
     const { keyword, limit = 20 } = args as {
-      keyword: string;
+      keyword?: string;
       limit?: number;
     };
 

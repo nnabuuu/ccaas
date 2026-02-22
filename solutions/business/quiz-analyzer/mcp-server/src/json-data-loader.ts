@@ -431,17 +431,15 @@ class JsonDataLoader {
   /**
    * Search subjects by keyword (fuzzy)
    */
-  searchSubjects(keyword: string, options?: {
+  searchSubjects(keyword?: string, options?: {
     limit?: number;
   }): Subject[] {
     this.load();
-    if (!keyword) return [];
 
-    let results = this.subjects.filter(s =>
-      s.name.includes(keyword) || s.description.includes(keyword)
-    );
+    let results = keyword
+      ? this.subjects.filter(s => s.name.includes(keyword) || s.description.includes(keyword))
+      : [...this.subjects];
 
-    // Limit results
     if (options?.limit) {
       results = results.slice(0, options.limit);
     }
