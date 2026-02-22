@@ -1163,11 +1163,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const roots = jsonDataLoader.getRootKnowledgePoints({ subjectId, gradeLevel });
 
       const formattedRoots = roots.map(kp => {
-        const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
+        const cached = jsonDataLoader.getFullName(kp.id);
+        const { fullName, pathNames } = cached ?? { fullName: kp.name, pathNames: [kp.name] };
         return {
           id: kp.id,
           name: kp.name.trim(),
           fullName,
+          pathNames,
           level: kp.level,
           subjectId: kp.subjectId,
           gradeLevel: kp.gradeLevel,
@@ -1205,11 +1207,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const children = jsonDataLoader.getChildrenKnowledgePoints(parentId);
 
       const formattedChildren = children.map(kp => {
-        const { fullName } = jsonDataLoader.getFullName(kp.id) ?? { fullName: kp.name };
+        const cached = jsonDataLoader.getFullName(kp.id);
+        const { fullName, pathNames } = cached ?? { fullName: kp.name, pathNames: [kp.name] };
         return {
           id: kp.id,
           name: kp.name.trim(),
           fullName,
+          pathNames,
           level: kp.level,
           subjectId: kp.subjectId,
           gradeLevel: kp.gradeLevel,
