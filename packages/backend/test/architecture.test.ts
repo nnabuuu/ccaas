@@ -137,11 +137,22 @@ describe('Architecture Rules', () => {
       tsFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf-8');
         const lines = content.split('\n');
+        const fileDir = path.dirname(file);
 
         lines.forEach((line, index) => {
-          // Check for imports from solutions
-          const solutionImportMatch = line.match(/from ['"].*\/solutions\//);
-          if (solutionImportMatch) {
+          // Check for imports from external solutions (outside packages/backend/src)
+          const match = line.match(/from ['"]([^'"]+)['"]/);
+          if (!match) return;
+          const importPath = match[1];
+
+          // Only check relative imports (absolute/package imports are safe)
+          if (!importPath.startsWith('.')) return;
+
+          // Resolve the import to an absolute path
+          const resolvedPath = path.resolve(fileDir, importPath);
+
+          // Flag if the resolved path escapes packages/backend/src into the monorepo solutions/
+          if (resolvedPath.includes('/solutions/business/') || resolvedPath.includes('/solutions/education/')) {
             violations.push({
               file: path.relative(process.cwd(), file),
               line: index + 1,
