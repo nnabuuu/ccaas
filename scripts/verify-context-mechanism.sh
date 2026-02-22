@@ -112,7 +112,7 @@ fi
 if [ -f "packages/react-sdk/dist/index.js" ]; then
   success "react-sdk built successfully"
 else
-  warning "react-sdk not built - run: npm run build -w @ccaas/react-sdk"
+  warning "react-sdk not built - run: npm run build -w @kedge-agentic/react-sdk"
 fi
 
 echo ""

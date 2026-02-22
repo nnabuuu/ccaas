@@ -22,7 +22,7 @@ labels: bug
 ## 环境信息
 - OS: [e.g., macOS 13.0]
 - Node.js: [e.g., 18.0.0]
-- Package: [e.g., @ccaas/backend]
+- Package: [e.g., @kedge-agentic/backend]
 - Version: [e.g., 1.0.0]
 
 ## 错误日志
