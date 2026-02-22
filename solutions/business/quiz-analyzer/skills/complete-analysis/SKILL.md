@@ -24,21 +24,37 @@ description: 完整分析题目所有 10 个维度，包含层级遍历知识点
 
 | 情况 | 选用模式 |
 |------|---------|
-| 题目关键词高度明确 | Mode A（快速批量搜索） |
-| batch_search 返回父节点（isLeaf: false） | Mode B（层级遍历） |
-| 题目跨多个知识域 | 每个知识域分别搜索 |
-| batch_search 返回空结果 | Mode B 兜底 |
+| **所有题目**（主路径） | **Mode C（按优先级迭代搜索）** |
+| Mode C 找不到 KP，或需要精确定位深层叶节点 | Mode B（层级遍历兜底） |
 
-### Mode A：快速路径（优先尝试）
+### Mode C：按优先级迭代搜索（主路径）
 
 ```
-1. 从题干和答案提取 2-4 个关键词
-2. batch_search_knowledge_points(keywords, leafOnly: true)
-3. 若所有结果 isLeaf: true → 直接进入确认步骤
-4. 若有 isLeaf: false 的父节点混入 → 切换 Mode B
+1. 从题干和答案提取 3-5 个关键词，按"核心程度"排序（最重要的在前）
+2. 调用 search_knowledge_points_by_priority(keywords, leafOnly: true)
+3. 审查返回的 rounds：
+   - rounds[0].newKPs 是最重要关键词的结果 → 几乎总是需要选用
+   - rounds[N].newKPs 为空 → 该关键词未找到新知识点，可忽略
+   - 判断"看到第几轮就能解释题目所有要考察的内容"
+4. 只选用必要轮次的结果，忽略多余轮次
+5. 若 coveredKeywords 覆盖不足（核心概念未命中）→ 切换 Mode B 精确定位
 ```
 
-### Mode B：层级遍历（精准路径）
+**Mode C 示例（勾股定理题）**：
+```
+输入: keywords = ["勾股定理", "直角三角形", "面积"]
+（最重要的放最前面）
+
+返回:
+rounds[0]: keyword="勾股定理", newKPs=["勾股定理的实际应用"], cumulativeCount=1
+rounds[1]: keyword="直角三角形", newKPs=["直角三角形三边关系"], cumulativeCount=2
+rounds[2]: keyword="面积", newKPs=[], cumulativeCount=2
+
+→ Agent 判断：rounds[0] 直接命中核心知识点，rounds[2] 无新增
+→ 选用 rounds[0] + rounds[1] 的结果即可
+```
+
+### Mode B：层级遍历（兜底路径）
 
 ```
 Step 1: 识别科目
@@ -62,7 +78,7 @@ Step 4: 精确匹配（当子节点 >10 个时）
 
 Step 5: 确认与标注
   verify_knowledge_point_tags(selectedIds) → 确认 ID 存在
-  get_knowledge_point_path(id) × N → 构建面包屑路径
+  ℹ️ Mode A/C 已内联 fullName/pathNames，无需额外调用 get_knowledge_point_path
   write_output(field: 'knowledge_point_tags', ...)
 ```
 
@@ -350,13 +366,13 @@ Mode A 返回父节点时的 Mode B 示例：
 | 工具名称 | 用途 | 步骤 |
 |---------|------|------|
 | `get_quiz_details` | 获取题目信息 | 步骤1 |
-| `batch_search_knowledge_points` | Mode A 批量知识点搜索 | 步骤2 |
-| `list_subjects` | 获取科目（Mode B 入口） | 步骤2 |
+| `search_knowledge_points_by_priority` | **Mode C 按优先级迭代搜索（主路径）** | 步骤2 |
+| `list_subjects` | 获取科目（Mode B 入口） | 步骤2 Mode B |
 | `list_root_knowledge_points` | 获取根节点 | 步骤2 Mode B |
 | `get_knowledge_point_children` | 逐层展开 | 步骤2 Mode B |
 | `search_knowledge_points_under` | 子树内搜索 | 步骤2 Mode B |
 | `verify_knowledge_point_tags` | 验证知识点存在 | 步骤2 确认 |
-| `get_knowledge_point_path` | 构建面包屑 | 步骤2 确认 |
+| `get_knowledge_point_path` | 构建面包屑（Mode B 专用，Mode A/C 已内联） | 步骤2 Mode B 确认 |
 | `generate_thinking_process_template` | 生成思路模板 | 步骤4 |
 | `search_quizzes` | 搜索相关题目 | 步骤10 |
 | `write_output` | 实时同步到前端 | 每步完成后 |

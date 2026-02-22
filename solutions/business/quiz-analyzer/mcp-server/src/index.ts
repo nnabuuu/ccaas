@@ -523,8 +523,13 @@ Example usage:
 Example response:
 {
   "rounds": [
-    { "keyword": "勾股定理", "found": 2, "newKPs": [{"id": "...", "name": "勾股定理的实际应用", "isLeaf": true}], "cumulativeCount": 2 },
-    { "keyword": "直角三角形", "found": 1, "newKPs": [{"id": "...", "name": "直角三角形三边关系", "isLeaf": true}], "cumulativeCount": 3 },
+    {
+      "keyword": "勾股定理",
+      "found": 2,
+      "newKPs": [{"id": "...", "name": "勾股定理的实际应用", "fullName": "初中知识点 > 图形与几何 > 图形的性质 > 三角形 > 勾股定理 > 勾股定理的实际应用", "isLeaf": true}],
+      "cumulativeCount": 2
+    },
+    { "keyword": "直角三角形", "found": 1, "newKPs": [{"id": "...", "name": "直角三角形三边关系", "fullName": "...", "isLeaf": true}], "cumulativeCount": 3 },
     { "keyword": "面积", "found": 0, "newKPs": [], "cumulativeCount": 3 }
   ],
   "allResults": [...],
@@ -532,6 +537,8 @@ Example response:
   "uncoveredKeywords": ["面积"],
   "coverageScore": 0.67
 }
+
+Each KP in newKPs and allResults includes fullName (full path from root) and pathNames (array). Use fullName to disambiguate nodes with identical short names without calling get_knowledge_point_path.
 
 Agent interpretation:
 - rounds[0].newKPs covers core knowledge → likely sufficient for simple questions

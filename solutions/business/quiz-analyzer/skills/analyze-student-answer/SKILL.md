@@ -125,16 +125,19 @@ await tools.analyze_student_answer({
 
 #### 知识点搜索协议
 
-**Mode A：快速路径（优先尝试）**
+**Mode C：按优先级迭代搜索（主路径）**
 
 ```
-1. 从错误描述提取 2-3 个关键词
-2. 调用 batch_search_knowledge_points(keywords, leafOnly: true)
-3. 若结果均为叶节点（isLeaf: true）→ 直接使用
-4. 若有父节点混入（isLeaf: false）→ 切换到 Mode B
+1. 从错误描述提取 2-3 个关键词，按"与错误最相关程度"排序（最核心的在前）
+2. 调用 search_knowledge_points_by_priority(keywords, leafOnly: true)
+3. 审查返回的 rounds：
+   - rounds[0].newKPs 是核心错误相关的 KP → 几乎总是需要选用
+   - rounds[N].newKPs 为空 → 该关键词无新 KP，忽略
+   - 判断哪些轮次的 KP 与该错误直接相关
+4. 若核心概念未命中 → 切换到 Mode B
 ```
 
-**Mode B：层级遍历（精准路径）**
+**Mode B：层级遍历（兜底路径）**
 
 ```
 Step 1: list_subjects(科目) → 获取 subjectId
@@ -145,7 +148,8 @@ Step 4: 逐层 get_knowledge_point_children(nodeId) 向下展开
   - isLeaf: false → 继续向下
   - 子节点 >10 个 → 用 search_knowledge_points_under(nodeId, keyword) 缩小范围
 Step 5: verify_knowledge_point_tags(selectedIds) → 确认 ID 存在
-Step 6: get_knowledge_point_path(id) × N → 构建完整路径确认
+Step 6: ℹ️ Mode A/C 返回结果已含 fullName/pathNames，无需额外调用 get_knowledge_point_path
+        仅 Mode B 手动展开时需要该工具
 ```
 
 **实例（平方差公式）：**
@@ -411,12 +415,12 @@ Step 6: get_knowledge_point_path(id) × N → 构建完整路径确认
 2. `get_quiz_details` - 获取题目完整信息（备选）
 
 ### 知识点搜索工具
-3. `batch_search_knowledge_points` - 批量关键词搜索（Mode A，推荐首选）
+3. `search_knowledge_points_by_priority` - 按优先级迭代搜索（Mode C，推荐首选）
 4. `list_subjects` - 搜索科目（Mode B Step 1）
 5. `list_root_knowledge_points` - 获取根节点（Mode B Step 2）
 6. `get_knowledge_point_children` - 获取子节点（Mode B 逐层展开）
 7. `search_knowledge_points_under` - 在子树内搜索（Mode B 子节点过多时）
-8. `get_knowledge_point_path` - 获取知识点完整路径（确认步骤）
+8. `get_knowledge_point_path` - 获取知识点完整路径（Mode B 确认步骤；Mode A/C 已内联 fullName）
 9. `verify_knowledge_point_tags` - 验证知识点 ID 存在
 
 ### 后续推荐
