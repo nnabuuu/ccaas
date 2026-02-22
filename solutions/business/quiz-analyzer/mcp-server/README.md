@@ -10,6 +10,7 @@ An [MCP](https://modelcontextprotocol.io/) server that gives AI agents structure
 - [Architecture Decisions](#architecture-decisions)
 - [Data Model](#data-model)
 - [Tool Catalog](#tool-catalog)
+- [Agent Tagging Workflow](#agent-tagging-workflow)
 - [Core Algorithm: batchSearchKnowledgePoints](#core-algorithm-batchsearchknowledgepoints)
 - [Verification Guide](#verification-guide)
 - [Developer Patterns](#developer-patterns)
@@ -234,6 +235,47 @@ type SyncField =
   | 'time_estimate'         // string
 ```
 
+**KnowledgePointTag schema** (for `knowledge_point_tags` field):
+
+```typescript
+interface KnowledgePointTag {
+  id: string
+  name: string
+  confidence: number      // 0.0–1.0 — see confidence guidelines below
+  verified: boolean
+  level: number           // tree depth of this node
+  path: string[]          // breadcrumb from root to this node
+  source?: 'question' | 'solution' | 'both'
+  // 'question' — identified from quiz stem (student recognizes at read time)
+  // 'solution' — identified from answer/solution process (method used to solve)
+  // 'both'     — implied by stem and confirmed by solution
+  note?: string           // REQUIRED when using a parent (non-leaf) node
+  // Explain why leaf could not be determined and list possible leaf candidates
+}
+```
+
+**Confidence guidelines:**
+
+| Range | Node type | Situation |
+|-------|-----------|-----------|
+| 0.95–1.0 | Leaf | Quiz explicitly uses this exact concept |
+| 0.85–0.94 | Leaf | Inferred with high confidence from context |
+| 0.70–0.84 | Parent | Quiz implies it but specific method unclear |
+| 0.60–0.69 | Parent | Only rough category determinable |
+| < 0.60 | — | Too uncertain — do not tag |
+
+**Difficulty levels** (for `difficulty` field):
+
+| Score | Label | Formula weight |
+|-------|-------|----------------|
+| 1 | 简单 | 选择题 × 0.8 |
+| 2 | 较易 | 填空题 × 1.0 |
+| 3 | 中等 | 解答题 × 1.2 |
+| 4 | 较难 | 证明题 × 1.5 |
+| 5 | 困难 | — |
+
+Formula: `difficulty = min(5, ceil((知识点数 × 0.5 + 步骤数 × 0.3) × 题型权重))`
+
 ### Group 4: Quiz Database (SQLite-backed)
 
 | Tool | Purpose |
@@ -242,6 +284,116 @@ type SyncField =
 | `get_quiz_details` | Get full quiz record + linked knowledge points |
 | `save_complete_analysis` | Persist all analysis fields to database |
 | `parse_quiz_content` | Parse raw quiz text into stem + options + type |
+
+---
+
+## Agent Tagging Workflow
+
+The recommended 8-step workflow for the agent to tag a quiz question with knowledge points.
+
+### Step 1: Parse quiz stem → extract `question` keywords
+
+Identify what the student recognizes just by reading the question (topic type, exam direction).
+
+```
+Quiz: "用因式分解法解方程 x² + 5x + 6 = 0"
+question keywords: ["方程", "因式分解"]   ← visible in stem
+```
+
+### Step 2: Parse answer/solution → extract `solution` keywords
+
+The answer reveals the *specific method* used — often more precise than the stem.
+
+```
+Answer: "(x+2)(x+3) = 0 → x = -2 或 x = -3"
+Answer pattern: (x+a)(x+b)  → 十字相乘法因式分解  ← source: 'solution'
+```
+
+Key answer-to-method patterns:
+
+| Answer form | Identified method |
+|-------------|------------------|
+| `(x+a)(x+b)` | 十字相乘法因式分解 |
+| `(a+b)(a-b)` | 平方差公式法因式分解 |
+| `(a+b)²` | 完全平方公式因式分解 |
+| `a(x+b)` | 提公因式法因式分解 |
+| `x = (-b±√…)/2a` | 求根公式 |
+| `对称轴 x = …` | 二次函数的对称轴 |
+
+### Step 3: Batch search all keywords
+
+Use `batch_search_knowledge_points` with `leafOnly: true` for all question + solution keywords in one call:
+
+```json
+{
+  "keywords": ["方程", "因式分解", "十字相乘法"],
+  "gradeLevel": "初中",
+  "leafOnly": true,
+  "limit": 15
+}
+```
+
+### Step 4: Expand parent nodes (when needed)
+
+If a candidate has children but `leafOnly` did not return it (because fallback kicked in), use `get_children_nodes` to explore its subtree manually.
+
+```
+"因式分解" (parent, 10 children) → expand →
+  十字相乘法因式分解 ✅
+  平方差公式法因式分解
+  完全平方公式因式分解
+  提公因式法因式分解
+  ...
+```
+
+### Step 5: Build candidate pool
+
+Collect all matching leaf (and any necessary parent) nodes from steps 3–4.
+
+### Step 6: Select and annotate
+
+Pick nodes that are directly tested or required for solving. Annotate each with `source`:
+
+```json
+[
+  { "name": "一元二次方程", "source": "question", "confidence": 0.95 },
+  { "name": "因式分解",     "source": "question", "confidence": 0.85 },
+  { "name": "十字相乘法因式分解", "source": "solution", "confidence": 0.95 }
+]
+```
+
+**Fallback rule**: If you cannot determine the specific leaf, use the nearest parent + lower confidence + `note` field:
+
+```json
+{
+  "name": "因式分解",
+  "confidence": 0.70,
+  "note": "题目未明确具体方法，可能涉及：十字相乘法、公式法、提公因式法。建议人工复核。"
+}
+```
+
+### Step 7: Validate with `verify_knowledge_point_tags`
+
+Pass the selected tag IDs to confirm they exist in the data.
+
+### Step 8: Get breadcrumb paths and write output
+
+```bash
+# Get full path for each tag
+get_node_path({ nodeId: "..." })
+
+# Write final tags to frontend
+write_output({ field: "knowledge_point_tags", value: [...], preview: "3个知识点" })
+```
+
+### Common mistakes to avoid
+
+| Mistake | Wrong | Right |
+|---------|-------|-------|
+| Only search one keyword | `search("因式分解")` only | Search all keywords in one batch call |
+| Stop at parent without expanding | Tag "因式分解" without looking at its 10 children | `get_children_nodes` to find specific method |
+| Use parent node without `note` | `{ name: "因式分解", confidence: 0.9 }` | Add `note` field explaining why leaf unavailable |
+| Ignore answer/solution | Only look at quiz stem | Also analyze answer form to identify `source: 'solution'` nodes |
 
 ---
 
