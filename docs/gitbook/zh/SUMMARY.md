@@ -36,6 +36,16 @@
   * [6.7 会话持久化](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. 部署上线](tutorial/07-deployment.md)
 
+## 案例 <a href="#examples" id="examples"></a>
+
+* [Solution 案例库](examples/README.md)
+* [Quiz Analyzer](examples/quiz-analyzer/README.md)
+  * [MCP 层设计：层级数据](examples/quiz-analyzer/mcp-design.md)
+* [Lesson Plan Designer](examples/lesson-plan-designer/README.md)
+  * [表单协议与 SYNC\_FIELDS](examples/lesson-plan-designer/form-protocol.md)
+* [Rehab Motion Renderer](examples/rehab-motion-renderer/README.md)
+  * [双 Output 设计](examples/rehab-motion-renderer/dual-output.md)
+
 ## 开发指南 <a href="#guide" id="guide"></a>
 
 * [开发指南概述](guide/README.md)

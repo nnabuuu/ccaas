@@ -36,6 +36,16 @@
   * [6.7 Conversation Persistence](tutorial/06-implementation/07-conversation-persistence.md)
 * [7. Deployment](tutorial/07-deployment.md)
 
+## Examples <a href="#examples" id="examples"></a>
+
+* [Solution Gallery](examples/README.md)
+* [Quiz Analyzer](examples/quiz-analyzer/README.md)
+  * [MCP Design: Hierarchical Data](examples/quiz-analyzer/mcp-design.md)
+* [Lesson Plan Designer](examples/lesson-plan-designer/README.md)
+  * [Form Protocol & SYNC\_FIELDS](examples/lesson-plan-designer/form-protocol.md)
+* [Rehab Motion Renderer](examples/rehab-motion-renderer/README.md)
+  * [Dual Output Design](examples/rehab-motion-renderer/dual-output.md)
+
 ## Developer Guide <a href="#guide" id="guide"></a>
 
 * [Guide Overview](guide/README.md)
