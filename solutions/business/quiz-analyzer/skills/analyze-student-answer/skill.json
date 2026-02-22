@@ -40,6 +40,7 @@
     "analyze_student_answer",
     "get_quiz_details",
     "search_knowledge_points",
+    "search_knowledge_points_by_priority",
     "batch_search_knowledge_points",
     "list_subjects",
     "list_root_knowledge_points",

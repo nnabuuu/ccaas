@@ -36,6 +36,7 @@
     "get_quiz_details",
     "get_knowledge_points_tree",
     "search_knowledge_points",
+    "search_knowledge_points_by_priority",
     "batch_search_knowledge_points",
     "list_subjects",
     "list_root_knowledge_points",
@@ -86,7 +87,7 @@
   ],
 
   "performance": {
-    "parallelCalls": "可以并行调用 batch_search_knowledge_points（多个关键词）、get_knowledge_point_children（多个节点）、search_quizzes（多个知识点）",
+    "parallelCalls": "可以并行调用 get_knowledge_point_children（多个节点）、search_quizzes（多个知识点）",
     "cachingStrategy": "知识点树结构可以缓存，题目信息可以缓存，相关题目推荐可以缓存",
     "batchProcessing": "支持批量分析多道题目，共享知识点树查询"
   },
