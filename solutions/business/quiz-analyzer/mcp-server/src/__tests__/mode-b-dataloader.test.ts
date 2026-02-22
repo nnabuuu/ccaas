@@ -429,4 +429,13 @@ describe('verify_knowledge_point_tags — data layer (getKnowledgePointById + ge
     const similar = jsonDataLoader.searchKnowledgePoints('絶対存在しない知识点xyz999', { limit: 3 });
     expect(similar).toHaveLength(0);
   });
+
+  it('valid tag: pathNames is an array with at least 1 element', () => {
+    // Simulates: valid.push({ ...tag, exists: true, fullName, pathNames })
+    const result = jsonDataLoader.getFullName(SHUSHUSHI_ID);
+    expect(result).toBeDefined();
+    expect(result!.pathNames).toBeInstanceOf(Array);
+    expect(result!.pathNames.length).toBeGreaterThanOrEqual(1);
+    expect(result!.fullName).toBe(result!.pathNames.join(' > '));
+  });
 });
