@@ -190,7 +190,7 @@ Returns:
         items: {
           type: 'object',
           properties: {
-            id: { type: 'number' },
+            id: { type: 'string' },
             name: { type: 'string' },
             confidence: { type: 'number' },
           },
@@ -302,18 +302,18 @@ Example usage:
 
 const getRootCategoriesTool: Tool = {
   name: 'list_root_knowledge_points',
-  description: `Get root-level knowledge point categories for a subject.
+  description: `Get root-level knowledge point categories. Optionally filter by subject or grade level.
 
-Returns top-level knowledge point categories. Use this as the starting point for hierarchical traversal (Mode B): get the root nodes, then call get_knowledge_point_children to drill down.
+Use this as the starting point for hierarchical traversal (Mode B): get root nodes, then call get_knowledge_point_children to drill down.
 
 Example usage:
-{ "subjectId": "math" }`,
+{ "gradeLevel": "初中" }`,
   inputSchema: {
     type: 'object',
     properties: {
-      subjectId: { type: 'string', description: 'Subject ID or name' },
+      subjectId: { type: 'string', description: 'Filter by subject ID (optional)' },
+      gradeLevel: { type: 'string', description: 'Filter by grade level: 小学/初中/高中 (optional)' },
     },
-    required: ['subjectId'],
   },
 };
 
@@ -328,7 +328,7 @@ Example usage:
   inputSchema: {
     type: 'object',
     properties: {
-      parentId: { type: 'number', description: 'Parent knowledge point ID' },
+      parentId: { type: 'string', description: 'Parent knowledge point ID' },
     },
     required: ['parentId'],
   },
@@ -338,14 +338,14 @@ const getNodePathTool: Tool = {
   name: 'get_knowledge_point_path',
   description: `Get the path from root to a specific knowledge point node.
 
-Returns the full hierarchy path as an array (e.g., ["初中知识点", "数与代数", "函数", "二次函数"]). Use this to build breadcrumb navigation or verify a node's position in the tree.
+Returns the full hierarchy path as an array (e.g., ["初中知识点", "数与代数", "函数", "二次函数"]). Note: batch_search_knowledge_points already returns fullName/pathNames inline — only call this when you have an ID and need to verify or display its position.
 
 Example usage:
 { "nodeId": "1998702114322399941" }`,
   inputSchema: {
     type: 'object',
     properties: {
-      nodeId: { type: 'number', description: 'Knowledge point ID' },
+      nodeId: { type: 'string', description: 'Knowledge point ID' },
     },
     required: ['nodeId'],
   },
@@ -365,7 +365,7 @@ Example usage:
   inputSchema: {
     type: 'object',
     properties: {
-      scopeId: { type: 'number', description: 'Scope (parent) knowledge point ID' },
+      scopeId: { type: 'string', description: 'Scope (parent) knowledge point ID' },
       keyword: { type: 'string', description: 'Search keyword' },
     },
     required: ['scopeId', 'keyword'],
