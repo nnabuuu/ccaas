@@ -125,24 +125,26 @@ Example for knowledge_point_tags:
 // Define other tools
 const getKnowledgePointsTreeTool: Tool = {
   name: 'get_knowledge_points_tree',
-  description: `Get hierarchical knowledge points structure for a subject and grade level.
+  description: `Get hierarchical knowledge points structure for a specific subject or grade level.
 
-Returns a tree structure with parent nodes and child nodes for navigation.
+IMPORTANT: You must provide at least one of subjectId or gradeLevel. Without a filter this would return 31,000+ nodes and is rejected.
+
+Use list_subjects to discover available subjectIds first.
 
 Example usage:
-{ "subjectId": "math", "gradeLevel": "9" }
+{ "subjectId": "3601171b-5ac9-46ba-8dec-2022b42b0fa5" }
 
 Example response:
 {
-  "subject": "数学",
-  "gradeLevel": "9",
+  "subject": "3601171b-...",
+  "gradeLevel": "all",
   "tree": [
     {
-      "id": 1,
-      "name": "代数",
+      "id": "...",
+      "name": "初中知识点",
       "level": 0,
       "children": [
-        { "id": 2, "name": "二次函数", "level": 1, "children": [] }
+        { "id": "...", "name": "数与代数", "level": 1, "children": [...] }
       ]
     }
   ]
@@ -152,11 +154,11 @@ Example response:
     properties: {
       subjectId: {
         type: 'string',
-        description: 'Subject ID or name',
+        description: 'Subject UUID (from list_subjects). Required unless gradeLevel is provided.',
       },
       gradeLevel: {
         type: 'string',
-        description: 'Grade level (e.g., "9")',
+        description: 'Grade level: 小学/初中/高中. Required unless subjectId is provided.',
       },
     },
   },
@@ -661,6 +663,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // Handle get_knowledge_points_tree tool
   if (name === 'get_knowledge_points_tree') {
     const { subjectId, gradeLevel } = args as { subjectId?: string; gradeLevel?: string };
+
+    if (!subjectId && !gradeLevel) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          status: 'error',
+          error: 'At least one filter (subjectId or gradeLevel) is required to avoid returning the full 31k-node tree. Use list_subjects to discover subjectIds, then pass one here.',
+        }) }],
+        isError: true,
+      };
+    }
 
     try {
       // Get root nodes from JSON data
