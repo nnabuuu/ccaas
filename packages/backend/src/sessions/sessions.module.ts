@@ -16,6 +16,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
 import { ConversationsController } from './conversations.controller';
+import { QueueController } from './queue.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -49,7 +50,7 @@ import { TurnsModule } from '../admin/turns.module';
     MessagesModule,
     FilesModule,
   ],
-  controllers: [SessionsController, ConversationsController],
+  controllers: [SessionsController, ConversationsController, QueueController],
   providers: [
     SessionsGateway,
     SessionService,

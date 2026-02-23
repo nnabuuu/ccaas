@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, IsNull } from 'typeorm';
+import { Repository, LessThanOrEqual, IsNull, LessThan } from 'typeorm';
 import { MessageQueue, MessageQueuePayload, MessageQueueStatus } from '../entities/message-queue.entity';
 
 /**
@@ -103,8 +103,7 @@ export class MessageQueueService {
       )
       .orderBy('queue.priority', 'DESC')
       .addOrderBy('queue.createdAt', 'ASC') // FIFO
-      .setLock('pessimistic_write') // Row-level lock prevents race
-      .getOne();
+      .getOne(); // SQLite uses file-level locking; pessimistic_write requires a transaction and is not needed here
 
     if (!queueItem) {
       this.logger.debug(`No pending messages for session ${sessionId}`);
@@ -234,6 +233,70 @@ export class MessageQueueService {
    */
   async getQueueItem(queueItemId: string): Promise<MessageQueue | null> {
     return this.queueRepository.findOneBy({ id: queueItemId });
+  }
+
+  /**
+   * Get global queue statistics
+   *
+   * @returns pending and processing counts, plus worker capacity
+   */
+  async getStats(): Promise<{ pending: number; processing: number; workerCapacity: number }> {
+    const [pending, processing] = await Promise.all([
+      this.queueRepository.count({ where: { status: 'pending' } }),
+      this.queueRepository.count({ where: { status: 'processing' } }),
+    ]);
+    return { pending, processing, workerCapacity: 5 }; // 5 = MessageWorkerService.concurrency
+  }
+
+  /**
+   * Get queue position for a specific session
+   *
+   * Returns:
+   * - status: 'processing' → already running (position 0)
+   * - status: 'pending'    → waiting, with 1-based position and estimated wait
+   * - status: 'not_found'  → no pending/processing message (completed or unknown)
+   *
+   * @param sessionId - Session identifier
+   */
+  async getSessionQueuePosition(sessionId: string): Promise<{
+    sessionId: string;
+    status: 'pending' | 'processing' | 'not_found';
+    position: number;
+    ahead: number;
+    estimatedWaitMs: number;
+  }> {
+    const processing = await this.queueRepository.findOne({
+      where: { sessionId, status: 'processing' },
+    });
+    if (processing) {
+      return { sessionId, status: 'processing', position: 0, ahead: 0, estimatedWaitMs: 0 };
+    }
+
+    const pending = await this.queueRepository.findOne({
+      where: { sessionId, status: 'pending' },
+      order: { createdAt: 'ASC' },
+    });
+    if (!pending) {
+      return { sessionId, status: 'not_found', position: -1, ahead: -1, estimatedWaitMs: 0 };
+    }
+
+    // Count messages queued before this one (older createdAt)
+    const ahead = await this.queueRepository.count({
+      where: { status: 'pending', createdAt: LessThan(pending.createdAt) },
+    });
+
+    // Estimate wait time from recent completed messages (last 1h)
+    const raw = await this.queueRepository
+      .createQueryBuilder('q')
+      .select('AVG(q.durationMs)', 'avg')
+      .where('q.status = :status', { status: 'completed' })
+      .andWhere('q.durationMs IS NOT NULL')
+      .andWhere('q.completedAt > :since', { since: new Date(Date.now() - 3_600_000) })
+      .getRawOne<{ avg: number | null }>();
+    const avgMs = Math.round(raw?.avg ?? 30_000);
+
+    const position = ahead + 1;
+    return { sessionId, status: 'pending', position, ahead, estimatedWaitMs: position * avgMs };
   }
 
   /**

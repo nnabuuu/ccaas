@@ -740,4 +740,11 @@ Get detailed information about a single queue item, including status, retry coun
       error: item.error,
     };
   }
+
+  @Get(':sessionId/queue-position')
+  @ApiOperation({ summary: 'Session 排队位置 / Session queue position' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  async getQueuePosition(@Param('sessionId') sessionId: string) {
+    return this.messageQueueService.getSessionQueuePosition(sessionId);
+  }
 }
