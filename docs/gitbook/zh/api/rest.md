@@ -189,6 +189,62 @@
 }
 ```
 
+### GET /sessions/:sessionId/queue-position
+
+获取 Session 在消息处理队列中的当前位置。
+
+**认证**: 🔐 需要 API Key
+
+**响应**：
+
+```json
+{
+  "sessionId": "session-uuid",
+  "status": "pending",
+  "position": 5,
+  "ahead": 4,
+  "estimatedWaitMs": 150000
+}
+```
+
+**状态值说明**：
+
+| 状态 | 描述 |
+|------|------|
+| `processing` | Session 的消息正在被处理中。`position: 0, ahead: 0, estimatedWaitMs: 0` |
+| `pending` | Session 已入队，等待 worker 空闲 |
+| `not_found` | 该 Session 没有活跃的队列项 |
+
+**`estimatedWaitMs`** 基于最近一小时内已完成消息的平均处理时间计算。如无历史数据，默认每个位置按 30 秒估算。
+
+## 队列管理（QueueController）
+
+消息处理队列的只读观测端点。用于监控 worker 饱和度，或实现客户端背压/重试策略。
+
+**认证**: 🔐 需要 API Key
+
+### GET /queue/stats
+
+获取全局队列统计信息。
+
+**响应**：
+
+```json
+{
+  "pending": 3,
+  "processing": 5,
+  "workerCapacity": 5
+}
+```
+
+| 字段 | 说明 |
+|------|------|
+| `pending` | 等待 worker 处理的消息数 |
+| `processing` | 当前正在处理的消息数 |
+| `workerCapacity` | 最大并发 worker 数（固定为 5） |
+
+**使用场景**：当 `processing >= workerCapacity` 且 `pending > 0` 时，队列已饱和。客户端可据此延迟或分散新消息的提交时间。
+
 ## Skill 管理
 
 ### GET /skills

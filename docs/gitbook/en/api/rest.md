@@ -189,6 +189,62 @@ Update session context (frontend form state).
 }
 ```
 
+### GET /sessions/:sessionId/queue-position
+
+Get a session's current position in the message processing queue.
+
+**Authentication**: 🔐 Requires API Key
+
+**Response**:
+
+```json
+{
+  "sessionId": "session-uuid",
+  "status": "pending",
+  "position": 5,
+  "ahead": 4,
+  "estimatedWaitMs": 150000
+}
+```
+
+**Status values**:
+
+| Status | Description |
+|--------|-------------|
+| `processing` | Session's message is currently being processed. `position: 0, ahead: 0, estimatedWaitMs: 0` |
+| `pending` | Session is queued and waiting for a worker |
+| `not_found` | No active queue item found for this session |
+
+**`estimatedWaitMs`** is calculated from the average processing time of completed messages in the last hour. Defaults to 30 seconds per position if no history is available.
+
+## Queue Management (QueueController)
+
+Read-only observability endpoints for the message processing queue. Useful for monitoring worker saturation and implementing client-side backpressure or retry strategies.
+
+**Authentication**: 🔐 Requires API Key
+
+### GET /queue/stats
+
+Get global queue statistics.
+
+**Response**:
+
+```json
+{
+  "pending": 3,
+  "processing": 5,
+  "workerCapacity": 5
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `pending` | Messages waiting for a worker |
+| `processing` | Messages currently being processed |
+| `workerCapacity` | Maximum concurrent workers (fixed at 5) |
+
+**Use case**: If `processing >= workerCapacity` and `pending > 0`, the queue is saturated. Clients can use this to delay or stagger new message submissions.
+
 ## Skill Management
 
 ### GET /skills
