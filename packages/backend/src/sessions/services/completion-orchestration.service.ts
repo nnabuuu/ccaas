@@ -68,6 +68,12 @@ export interface MessageProcessingInput {
   /** System prompt for CLI --append-system-prompt (REST only) */
   systemPrompt?: string;
 
+  /**
+   * Per-template session TTL override (ms), already capped at plan max by the admin controller.
+   * When set, the effective session TTL = min(tenant.sessionTtlMs, sessionTtlMs).
+   */
+  sessionTtlMs?: number;
+
   /** Transport-agnostic event emitter */
   emitEvent: (event: FrontendEvent) => void;
 }
@@ -133,6 +139,7 @@ export class CompletionOrchestrationService {
       skillPath,
       attachments,
       systemPrompt,
+      sessionTtlMs: templateTtlMs,
       emitEvent,
     } = input;
 
@@ -142,10 +149,11 @@ export class CompletionOrchestrationService {
 
     // Step 1: Resolve tenant slug/id to actual tenant UUID
     let resolvedTenantId = tenantId;
+    let resolvedTenant: Awaited<ReturnType<typeof this.tenantsService.findOne>> = null;
     try {
-      const tenant = await this.tenantsService.findOne(tenantId);
-      if (tenant) {
-        resolvedTenantId = tenant.id;
+      resolvedTenant = await this.tenantsService.findOne(tenantId);
+      if (resolvedTenant) {
+        resolvedTenantId = resolvedTenant.id;
         this.logger.debug(`Resolved tenant ${tenantId} to UUID ${resolvedTenantId}`);
       } else {
         this.logger.warn(`Tenant not found: ${tenantId}, using as-is`);
@@ -156,6 +164,15 @@ export class CompletionOrchestrationService {
 
     // Store tenant context on session (use original for display, resolved for queries)
     session.tenantId = resolvedTenantId;
+    if (resolvedTenant) {
+      session.sessionTtlMs = resolvedTenant.sessionTtlMs;
+    }
+
+    // Apply per-template TTL override (already capped at plan max by admin controller)
+    if (templateTtlMs !== undefined) {
+      session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, templateTtlMs);
+      this.logger.debug(`Session ${sessionId} TTL overridden by template: ${session.sessionTtlMs}ms`);
+    }
 
     // Step 3: Store MCP servers configuration from solution backend (if provided)
     if (mcpServers && Object.keys(mcpServers).length > 0) {

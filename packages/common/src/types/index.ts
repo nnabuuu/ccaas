@@ -712,6 +712,9 @@ export interface SessionTemplate {
 
   /** Skill path override */
   skillPath?: string;
+
+  /** Session TTL in milliseconds (overrides tenant default, bounded by plan max) */
+  sessionTtlMs?: number;
 }
 
 /**

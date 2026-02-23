@@ -57,6 +57,15 @@ export interface ManagedSession {
 
   // Skill-specific system prompt injected via --append-system-prompt
   appendSystemPrompt?: string;
+
+  // Per-session TTL cached from tenant on first message (ms)
+  sessionTtlMs?: number;
+
+  // When CLI entered processing state — used for stuck-processing detection
+  processingStartedAt?: Date;
+
+  // When CLI exited processing state — preserves start time for duration diagnostics
+  processingEndedAt?: Date;
 }
 
 /**

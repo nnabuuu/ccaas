@@ -62,6 +62,7 @@ export class SessionService implements OnModuleDestroy {
   private readonly sessionTtlMs: number;
   private readonly maxSessions: number;
   private readonly cleanupIntervalMs: number;
+  private readonly maxProcessingMs: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -74,9 +75,10 @@ export class SessionService implements OnModuleDestroy {
     private readonly sessionRepository: Repository<SessionEntity>,
   ) {
     this.workspaceDir = this.configService.get('workspace.dir', '.agent-workspace');
-    this.sessionTtlMs = this.configService.get('workspace.sessionTtlMs', 1800000);
+    this.sessionTtlMs = this.configService.get('workspace.sessionTtlMs', 300000);
     this.maxSessions = this.configService.get('workspace.maxSessions', 100);
     this.cleanupIntervalMs = this.configService.get('workspace.cleanupIntervalMs', 300000);
+    this.maxProcessingMs = this.configService.get('workspace.maxProcessingMs', 1800000);
 
     this.startCleanupTimer();
 
@@ -634,20 +636,29 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Cleanup idle sessions that have exceeded TTL
+   * Cleanup idle sessions that have exceeded TTL, and force-close stuck-processing sessions
    */
   private cleanupIdleSessions(): void {
     const now = Date.now();
     const toRemove: string[] = [];
 
     for (const [sessionId, session] of this.sessions) {
+      const ttl = session.sessionTtlMs ?? this.sessionTtlMs;
       const idleTime = now - session.lastActivity.getTime();
 
-      if (idleTime > this.sessionTtlMs && session.status !== 'processing') {
+      if (session.status !== 'processing' && idleTime > ttl) {
         this.logger.log(
-          `Session ${sessionId} expired (idle for ${Math.round(idleTime / 1000)}s)`,
+          `Session ${sessionId} expired (idle ${Math.round(idleTime / 1000)}s, ttl ${ttl / 1000}s)`,
         );
         toRemove.push(sessionId);
+      } else if (session.status === 'processing' && session.processingStartedAt) {
+        const age = now - session.processingStartedAt.getTime();
+        if (age > this.maxProcessingMs) {
+          this.logger.warn(
+            `Session ${sessionId} stuck in processing ${Math.round(age / 1000)}s — force-closing`,
+          );
+          toRemove.push(sessionId);
+        }
       }
     }
 
@@ -657,31 +668,44 @@ export class SessionService implements OnModuleDestroy {
 
     if (toRemove.length > 0) {
       this.logger.log(
-        `Cleaned up ${toRemove.length} idle sessions. Active: ${this.sessions.size}`,
+        `Cleaned up ${toRemove.length} sessions. Active: ${this.sessions.size}`,
       );
     }
   }
 
   /**
-   * Cleanup the oldest idle session to make room for new ones
+   * Cleanup the oldest idle session to make room for new ones.
+   * Falls back to the oldest stuck-processing session if no idle sessions exist.
    */
   private cleanupOldestIdleSession(): boolean {
-    let oldestSession: ManagedSession | null = null;
-    let oldestTime = Infinity;
+    let oldestIdle: ManagedSession | null = null;
+    let oldestIdleTime = Infinity;
+    let oldestStuck: ManagedSession | null = null;
+    let oldestStuckTime = Infinity;
 
     for (const session of this.sessions.values()) {
       if (session.status === 'idle') {
-        const activityTime = session.lastActivity.getTime();
-        if (activityTime < oldestTime) {
-          oldestTime = activityTime;
-          oldestSession = session;
+        const t = session.lastActivity.getTime();
+        if (t < oldestIdleTime) {
+          oldestIdleTime = t;
+          oldestIdle = session;
+        }
+      } else if (session.status === 'processing' && session.processingStartedAt) {
+        const age = Date.now() - session.processingStartedAt.getTime();
+        if (age > this.maxProcessingMs) {
+          const t = session.processingStartedAt.getTime();
+          if (t < oldestStuckTime) {
+            oldestStuckTime = t;
+            oldestStuck = session;
+          }
         }
       }
     }
 
-    if (oldestSession) {
-      this.logger.log(`Evicting oldest idle session: ${oldestSession.sessionId}`);
-      this.closeSession(oldestSession.sessionId);
+    const toEvict = oldestIdle ?? oldestStuck;
+    if (toEvict) {
+      this.logger.log(`Evicting ${toEvict.status} session: ${toEvict.sessionId}`);
+      this.closeSession(toEvict.sessionId);
       return true;
     }
 

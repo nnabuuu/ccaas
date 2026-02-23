@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TenantsService } from './tenants.service';
-import { Tenant } from './entities/tenant.entity';
+import { Tenant, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/tenant.entity';
 import { ApiKeyService } from '../auth/api-key.service';
 
 describe('TenantsService', () => {
@@ -336,6 +336,121 @@ describe('TenantsService', () => {
       const result = await service.findOne('nonexistent');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('plan-tier TTL', () => {
+    it('create() defaults sessionTtlMs to plan default (free→300000)', async () => {
+      const dto = { name: 'Free Tenant', slug: 'free-tenant' };
+      const mockTenant = {
+        id: 'tenant-free',
+        name: 'Free Tenant',
+        slug: 'free-tenant',
+        status: 'active',
+        createdAt: new Date(),
+        config: {},
+        maxSessions: 100,
+        maxSkills: 50,
+        plan: 'free',
+        sessionTtlMs: 300000,
+      };
+
+      tenantRepository.findOne.mockResolvedValue(null);
+      tenantRepository.create.mockImplementation((data: any) => ({ ...mockTenant, ...data } as any));
+      tenantRepository.save.mockResolvedValue(mockTenant as any);
+
+      const result = await service.create(dto);
+      // effectiveTtl('free', undefined) should return PLAN_DEFAULT_SESSION_TTL_MS['free'] = 300000
+      expect(tenantRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionTtlMs: PLAN_DEFAULT_SESSION_TTL_MS['free'] }),
+      );
+    });
+
+    it('create() defaults sessionTtlMs to plan default (starter→1800000)', async () => {
+      const dto = { name: 'Starter Tenant', slug: 'starter-tenant', plan: 'starter' as const };
+      const mockTenant = {
+        id: 'tenant-starter',
+        name: 'Starter Tenant',
+        slug: 'starter-tenant',
+        status: 'active',
+        createdAt: new Date(),
+        config: {},
+        maxSessions: 100,
+        maxSkills: 50,
+        plan: 'starter',
+        sessionTtlMs: 1800000,
+      };
+
+      tenantRepository.findOne.mockResolvedValue(null);
+      tenantRepository.create.mockImplementation((data: any) => ({ ...mockTenant, ...data } as any));
+      tenantRepository.save.mockResolvedValue(mockTenant as any);
+
+      await service.create(dto);
+      expect(tenantRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionTtlMs: PLAN_DEFAULT_SESSION_TTL_MS['starter'] }),
+      );
+    });
+
+    it('create() caps sessionTtlMs at plan max (free tenant cannot get 1800000)', async () => {
+      const dto = { name: 'Free Tenant', slug: 'free-capped', sessionTtlMs: 1800000 };
+      const mockTenant = {
+        id: 'tenant-free-capped',
+        name: 'Free Tenant',
+        slug: 'free-capped',
+        status: 'active',
+        createdAt: new Date(),
+        config: {},
+        maxSessions: 100,
+        maxSkills: 50,
+        plan: 'free',
+        sessionTtlMs: 300000, // capped to free max
+      };
+
+      tenantRepository.findOne.mockResolvedValue(null);
+      tenantRepository.create.mockImplementation((data: any) => ({ ...mockTenant, ...data } as any));
+      tenantRepository.save.mockResolvedValue(mockTenant as any);
+
+      await service.create(dto);
+      expect(tenantRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionTtlMs: PLAN_MAX_SESSION_TTL_MS['free'] }),
+      );
+    });
+
+    it('update() re-caps sessionTtlMs when plan changes', async () => {
+      const mockTenant = {
+        id: 'tenant-upd',
+        name: 'Tenant',
+        slug: 'tenant-upd',
+        status: 'active',
+        config: {},
+        plan: 'starter',
+        sessionTtlMs: 1800000,
+        save: jest.fn(),
+      };
+
+      tenantRepository.findOne.mockResolvedValue(mockTenant as any);
+      tenantRepository.save.mockResolvedValue({ ...mockTenant, plan: 'free', sessionTtlMs: 300000 } as any);
+
+      await service.update('tenant-upd', { plan: 'free' });
+
+      // After downgrade to free, sessionTtlMs should be capped at 300000
+      expect(tenantRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ plan: 'free', sessionTtlMs: PLAN_MAX_SESSION_TTL_MS['free'] }),
+      );
+    });
+
+    it('effectiveTtl() returns plan default when no requested value', () => {
+      expect(service.effectiveTtl('free')).toBe(300000);
+      expect(service.effectiveTtl('starter')).toBe(1800000);
+      expect(service.effectiveTtl('professional')).toBe(1800000);
+      expect(service.effectiveTtl('enterprise')).toBe(1800000);
+    });
+
+    it('effectiveTtl() caps requested value at plan max', () => {
+      expect(service.effectiveTtl('free', 1800000)).toBe(300000);
+      expect(service.effectiveTtl('free', 60000)).toBe(60000);
+      expect(service.effectiveTtl('starter', 1800000)).toBe(1800000);
+      expect(service.effectiveTtl('starter', 900000)).toBe(900000);
     });
   });
 

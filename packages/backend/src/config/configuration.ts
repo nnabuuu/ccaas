@@ -9,9 +9,10 @@ export default () => ({
 
   workspace: {
     dir: process.env.WORKSPACE_DIR || '.agent-workspace',
-    sessionTtlMs: parseInt(process.env.SESSION_TTL_MS || '1800000', 10), // 30 min
+    sessionTtlMs: parseInt(process.env.SESSION_TTL_MS || '300000', 10), // 5 min (free tier default; overridden per-tenant)
     maxSessions: parseInt(process.env.MAX_SESSIONS || '100', 10),
     cleanupIntervalMs: parseInt(process.env.CLEANUP_INTERVAL_MS || '300000', 10), // 5 min
+    maxProcessingMs: parseInt(process.env.MAX_PROCESSING_MS || '1800000', 10), // 30 min hard cap for stuck sessions
   },
 
   database: {

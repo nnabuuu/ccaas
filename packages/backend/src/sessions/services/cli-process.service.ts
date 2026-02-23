@@ -106,6 +106,7 @@ export class CliProcessService {
     session.cliProcess = cli;
     session.stdin = cli.stdin as Writable;
     session.status = 'processing';
+    session.processingStartedAt = new Date();
     session.lastActivity = new Date();
 
     this.logger.log(`AgentEngine spawned with PID ${cli.pid} for session ${session.sessionId}`);
@@ -203,6 +204,7 @@ export class CliProcessService {
     session.cliProcess = cli;
     session.stdin = cli.stdin as Writable;
     session.status = 'processing';
+    session.processingStartedAt = new Date();
     session.lastActivity = new Date();
     session.buffer = '';
 
@@ -362,6 +364,7 @@ export class CliProcessService {
     session.buffer = '';
     session.cliProcess = null;
     session.stdin = null;
+    session.processingEndedAt = new Date();
 
     // Set final status based on cancellation or exit code
     if (wasCancelled) {
@@ -474,6 +477,7 @@ export class CliProcessService {
 
       session.lastActivity = new Date();
       session.status = 'processing';
+      session.processingStartedAt = new Date();
       session.messageCount++;
     } catch (error) {
       this.logger.error(`Failed to write to AgentEngine stdin for session ${session.sessionId}: ${error.message}`);

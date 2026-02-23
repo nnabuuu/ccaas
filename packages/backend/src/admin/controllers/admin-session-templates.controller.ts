@@ -21,7 +21,7 @@ import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
-import { Tenant } from '../../tenants/entities/tenant.entity';
+import { Tenant, PLAN_MAX_SESSION_TTL_MS } from '../../tenants/entities/tenant.entity';
 import { AuditService } from '../services/audit.service';
 import {
   CreateSessionTemplateDto,
@@ -74,6 +74,21 @@ export class AdminSessionTemplatesController {
 
   private getAdminId(ctx: RequestContext): string {
     return ctx?.apiKeyId || 'system';
+  }
+
+  private capTemplateTtl(
+    template: SessionTemplateBodyDto,
+    tenant: Tenant,
+  ): SessionTemplateBodyDto {
+    if (template.sessionTtlMs === undefined) return template;
+    const max = PLAN_MAX_SESSION_TTL_MS[tenant.plan];
+    if (template.sessionTtlMs > max) {
+      this.logger.warn(
+        `Template sessionTtlMs ${template.sessionTtlMs} exceeds plan max ${max} for tenant ${tenant.id} (${tenant.plan}), capping`,
+      );
+      return { ...template, sessionTtlMs: max };
+    }
+    return template;
   }
 
   private async tryLogAudit(
@@ -155,7 +170,8 @@ export class AdminSessionTemplatesController {
       );
     }
 
-    templates[dto.name] = dto.template;
+    const cappedTemplate = this.capTemplateTtl(dto.template, tenant);
+    templates[dto.name] = cappedTemplate;
     await this.tenantsService.update(tenantId, {
       config: { ...tenant.config, sessionTemplates: templates },
     });
@@ -169,7 +185,7 @@ export class AdminSessionTemplatesController {
       metadata: { templateName: dto.name, template: dto.template },
     });
 
-    return { name: dto.name, template: dto.template };
+    return { name: dto.name, template: cappedTemplate };
   }
 
   /**
@@ -191,7 +207,8 @@ export class AdminSessionTemplatesController {
     const templates = this.getTemplates(tenant);
     const previousTemplate = this.getTemplateOrThrow(templates, name);
 
-    templates[name] = dto.template;
+    const cappedTemplate = this.capTemplateTtl(dto.template, tenant);
+    templates[name] = cappedTemplate;
     await this.tenantsService.update(tenantId, {
       config: { ...tenant.config, sessionTemplates: templates },
     });
@@ -205,7 +222,7 @@ export class AdminSessionTemplatesController {
       metadata: { templateName: name, previousValue: previousTemplate, newValue: dto.template },
     });
 
-    return { name, template: dto.template };
+    return { name, template: cappedTemplate };
   }
 
   /**

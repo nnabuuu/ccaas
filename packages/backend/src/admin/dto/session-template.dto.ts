@@ -3,6 +3,8 @@ import {
   IsOptional,
   IsObject,
   IsArray,
+  IsInt,
+  Min,
   Matches,
   MaxLength,
   ValidateNested,
@@ -54,6 +56,11 @@ export class SessionTemplateBodyDto {
   @IsOptional()
   @IsString()
   skillPath?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60000)
+  sessionTtlMs?: number;
 }
 
 export class CreateSessionTemplateDto {

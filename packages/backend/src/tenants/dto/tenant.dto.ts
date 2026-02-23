@@ -57,6 +57,11 @@ export class CreateTenantDto {
   @IsOptional()
   @IsBoolean()
   autoCreateApiKey?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60000)
+  sessionTtlMs?: number;
 }
 
 /**
@@ -96,6 +101,11 @@ export class UpdateTenantDto {
   @IsOptional()
   @IsEnum(['active', 'suspended', 'pending', 'deleted'])
   status?: TenantStatus;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60000)
+  sessionTtlMs?: number;
 }
 
 /**

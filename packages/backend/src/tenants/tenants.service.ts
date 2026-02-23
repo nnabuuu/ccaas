@@ -17,7 +17,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
-import { Tenant } from './entities/tenant.entity';
+import {
+  Tenant,
+  TenantPlan,
+  PLAN_MAX_SESSION_TTL_MS,
+  PLAN_DEFAULT_SESSION_TTL_MS,
+} from './entities/tenant.entity';
 import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
 import { ApiKeyService } from '../auth/api-key.service';
 import { DEFAULT_SCOPES } from '../auth/types';
@@ -69,6 +74,7 @@ export class TenantsService implements OnModuleInit {
       throw new ConflictException(`Tenant with slug '${slug}' already exists`);
     }
 
+    const plan = dto.plan ?? 'free';
     const tenant = this.tenantRepository.create({
       name: dto.name,
       slug,
@@ -76,9 +82,10 @@ export class TenantsService implements OnModuleInit {
       config: dto.config || {},
       maxSessions: dto.maxSessions || 100,
       maxSkills: dto.maxSkills || 50,
-      plan: dto.plan || 'free',
+      plan,
       billingEmail: dto.billingEmail,
       status: 'active',
+      sessionTtlMs: this.effectiveTtl(plan, dto.sessionTtlMs),
     });
 
     const saved = await this.tenantRepository.save(tenant);
@@ -154,6 +161,10 @@ export class TenantsService implements OnModuleInit {
     if (dto.plan !== undefined) tenant.plan = dto.plan;
     if (dto.billingEmail !== undefined) tenant.billingEmail = dto.billingEmail;
     if (dto.status !== undefined) tenant.status = dto.status;
+    if (dto.sessionTtlMs !== undefined || dto.plan !== undefined) {
+      const plan = dto.plan ?? tenant.plan;
+      tenant.sessionTtlMs = this.effectiveTtl(plan, dto.sessionTtlMs ?? tenant.sessionTtlMs);
+    }
 
     const saved = await this.tenantRepository.save(tenant);
     this.logger.log(`Updated tenant ${saved.name} (${saved.slug})`);
@@ -177,5 +188,15 @@ export class TenantsService implements OnModuleInit {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
+  }
+
+  /**
+   * Get effective session TTL, capped by plan max
+   */
+  effectiveTtl(plan: TenantPlan, requested?: number): number {
+    const max = PLAN_MAX_SESSION_TTL_MS[plan];
+    const def = PLAN_DEFAULT_SESSION_TTL_MS[plan];
+    if (requested === undefined) return def;
+    return Math.min(requested, max);
   }
 }

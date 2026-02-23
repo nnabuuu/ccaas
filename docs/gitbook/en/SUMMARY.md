@@ -60,6 +60,7 @@
 * [File Explorer Component](guide/file-explorer.md)
 * [Admin API Key Management](guide/admin-api-keys.md)
 * [Session Templates Management](guide/admin-session-templates.md)
+* [Session Timeout Configuration](guide/admin-session-ttl.md)
 * [Conversation Persistence](guide/conversation-persistence.md)
 
 ## API Reference <a href="#api" id="api"></a>

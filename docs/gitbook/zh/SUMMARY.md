@@ -60,6 +60,7 @@
 * [File Explorer 组件](guide/file-explorer.md)
 * [管理员 API Key 管理](guide/admin-api-keys.md)
 * [会话模板管理](guide/admin-session-templates.md)
+* [会话超时配置](guide/admin-session-ttl.md)
 * [会话持久化](guide/conversation-persistence.md)
 
 ## API 参考 <a href="#api" id="api"></a>

@@ -31,9 +31,10 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
       get: jest.fn((key: string, defaultValue?: any) => {
         const config: Record<string, any> = {
           'workspace.dir': '.agent-workspace',
-          'workspace.sessionTtlMs': 1800000,
+          'workspace.sessionTtlMs': 300000,
           'workspace.maxSessions': 100,
           'workspace.cleanupIntervalMs': 300000,
+          'workspace.maxProcessingMs': 1800000,
           'CLAUDE_CLI_PATH': 'claude',
         };
         return config[key] ?? defaultValue;

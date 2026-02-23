@@ -11,6 +11,7 @@
 | **MCP Servers** | 3 | 8 | Unlimited | Custom |
 | **Concurrent Agents** | 3 | 10 | 50 | Custom |
 | **Workspaces** | 20 | 500 | 5,000 | Custom |
+| **Max Session Duration** | 5 min | 30 min | 30 min | Custom |
 
 > **Workspace = 1 end-user account.** See [Key Concepts](concepts.md) for details.
 | **LLM Tokens** | 50K/mo (platform-provided) | Bring your own key | Bring your own key | Client-owned |
