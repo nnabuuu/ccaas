@@ -63,6 +63,8 @@ export class SessionService implements OnModuleDestroy {
   private readonly maxSessions: number;
   private readonly cleanupIntervalMs: number;
   private readonly maxProcessingMs: number;
+  private readonly cleanupPressureHighThreshold: number;
+  private readonly cleanupPressureCriticalThreshold: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -79,6 +81,8 @@ export class SessionService implements OnModuleDestroy {
     this.maxSessions = this.configService.get('workspace.maxSessions', 100);
     this.cleanupIntervalMs = this.configService.get('workspace.cleanupIntervalMs', 300000);
     this.maxProcessingMs = this.configService.get('workspace.maxProcessingMs', 1800000);
+    this.cleanupPressureHighThreshold = this.configService.get('workspace.cleanupPressureHighThreshold', 80);
+    this.cleanupPressureCriticalThreshold = this.configService.get('workspace.cleanupPressureCriticalThreshold', 90);
 
     this.startCleanupTimer();
 
@@ -123,6 +127,16 @@ export class SessionService implements OnModuleDestroy {
       }
       this.logger.log(`Reusing existing session ${sessionId}`);
       return session;
+    }
+
+    // Proactive pressure cleanup: if utilization ≥ high threshold, run cleanup now
+    // (don't wait for the 5-min timer)
+    const utilizationPct = (this.sessions.size / this.maxSessions) * 100;
+    if (utilizationPct >= this.cleanupPressureHighThreshold) {
+      this.logger.warn(
+        `Session pool pressure ${utilizationPct.toFixed(0)}% — triggering proactive cleanup`,
+      );
+      this.cleanupIdleSessions();
     }
 
     if (this.sessions.size >= this.maxSessions) {
@@ -636,19 +650,30 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Cleanup idle sessions that have exceeded TTL, and force-close stuck-processing sessions
+   * Cleanup idle sessions that have exceeded TTL, and force-close stuck-processing sessions.
+   * Applies pressure-aware TTL when pool utilization is high.
    */
   private cleanupIdleSessions(): void {
     const now = Date.now();
+    const utilizationPct = (this.sessions.size / this.maxSessions) * 100;
     const toRemove: string[] = [];
 
     for (const [sessionId, session] of this.sessions) {
-      const ttl = session.sessionTtlMs ?? this.sessionTtlMs;
+      // Determine effective TTL based on pool pressure
+      let effectiveTtl: number;
+      if (utilizationPct >= this.cleanupPressureCriticalThreshold) {
+        effectiveTtl = 0;                                                         // Critical: evict all idle instantly
+      } else if (utilizationPct >= this.cleanupPressureHighThreshold) {
+        effectiveTtl = Math.min(session.sessionTtlMs ?? this.sessionTtlMs, 60_000); // High: max 1 min
+      } else {
+        effectiveTtl = session.sessionTtlMs ?? this.sessionTtlMs;                // Normal: full TTL
+      }
+
       const idleTime = now - session.lastActivity.getTime();
 
-      if (session.status !== 'processing' && idleTime > ttl) {
+      if (session.status !== 'processing' && idleTime > effectiveTtl) {
         this.logger.log(
-          `Session ${sessionId} expired (idle ${Math.round(idleTime / 1000)}s, ttl ${ttl / 1000}s)`,
+          `Session ${sessionId} expired (idle ${Math.round(idleTime / 1000)}s, effectiveTtl ${effectiveTtl / 1000}s, pressure ${utilizationPct.toFixed(0)}%)`,
         );
         toRemove.push(sessionId);
       } else if (session.status === 'processing' && session.processingStartedAt) {
@@ -666,9 +691,9 @@ export class SessionService implements OnModuleDestroy {
       this.closeSession(sessionId);
     }
 
-    if (toRemove.length > 0) {
+    if (toRemove.length > 0 || utilizationPct >= this.cleanupPressureHighThreshold) {
       this.logger.log(
-        `Cleaned up ${toRemove.length} sessions. Active: ${this.sessions.size}`,
+        `Cleanup: removed ${toRemove.length}, active ${this.sessions.size}/${this.maxSessions} (${utilizationPct.toFixed(0)}%)`,
       );
     }
   }

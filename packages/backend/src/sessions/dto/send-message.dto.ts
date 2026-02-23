@@ -8,7 +8,7 @@
  * a WebSocket connection. Events stream back via SSE in the response.
  */
 
-import { IsString, IsOptional, IsObject, IsArray, IsNumber, ValidateNested, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray, IsNumber, IsBoolean, ValidateNested, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -60,6 +60,13 @@ export class SendMessageDto {
     example: 'tenant-123',
     required: false,
   })
+  /**
+   * tenantId is @IsOptional() here so class-validator does not reject the DTO
+   * when the field is absent. Runtime enforcement happens inside sendMessage():
+   * if tenantId is missing, an SSE error event is emitted and the stream is
+   * closed immediately — resulting in an application-level 400-equivalent
+   * response rather than an HTTP 400.
+   */
   @IsOptional()
   @IsString()
   tenantId?: string;
@@ -135,4 +142,12 @@ export class SendMessageDto {
   @IsString()
   @MaxLength(64)
   templateName?: string;
+
+  @ApiProperty({
+    description: '处理完成后立即关闭 session / Auto-close session after processing completes',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  autoClose?: boolean;
 }

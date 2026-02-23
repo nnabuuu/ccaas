@@ -13,6 +13,8 @@ export default () => ({
     maxSessions: parseInt(process.env.MAX_SESSIONS || '100', 10),
     cleanupIntervalMs: parseInt(process.env.CLEANUP_INTERVAL_MS || '300000', 10), // 5 min
     maxProcessingMs: parseInt(process.env.MAX_PROCESSING_MS || '1800000', 10), // 30 min hard cap for stuck sessions
+    cleanupPressureHighThreshold: parseInt(process.env.CLEANUP_PRESSURE_HIGH || '80', 10),     // % → start aggressive eviction
+    cleanupPressureCriticalThreshold: parseInt(process.env.CLEANUP_PRESSURE_CRITICAL || '90', 10), // % → evict all idle immediately
   },
 
   database: {

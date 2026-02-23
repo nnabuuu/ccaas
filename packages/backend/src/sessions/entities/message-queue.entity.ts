@@ -16,6 +16,12 @@ export interface MessageQueuePayload {
   enabledSkillSlugs?: string[];
   attachmentPaths?: string[];
   skillPath?: string;
+  /** Destroy session from pool after processing (one-shot pattern) */
+  autoClose?: boolean;
+  /** Pre-computed system prompt (skills + appendSystemPrompt, resolved at enqueue time) */
+  systemPrompt?: string;
+  /** Named session template to apply */
+  templateName?: string;
 }
 
 /**

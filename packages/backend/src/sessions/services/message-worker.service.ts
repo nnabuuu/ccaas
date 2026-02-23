@@ -2,6 +2,8 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { MessageQueueService } from './message-queue.service';
 import { CompletionOrchestrationService } from './completion-orchestration.service';
 import { SessionService } from '../session.service';
+import { StreamRegistryService } from './stream-registry.service';
+import { makeSseClientId } from '../session-utils';
 import { MessageQueue } from '../entities/message-queue.entity';
 
 /**
@@ -40,6 +42,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     private readonly queueService: MessageQueueService,
     private readonly orchestrationService: CompletionOrchestrationService,
     private readonly sessionService: SessionService,
+    private readonly streamRegistry: StreamRegistryService,
   ) {}
 
   /**
@@ -116,96 +119,81 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * Process a single message
+   * Process a single message from the queue
    *
-   * @param queueItem - Queue item to process
+   * Uses getOrCreateSession() so a session auto-closed by a prior autoClose=true
+   * request is transparently re-created for the next queued request.
+   * Events are routed to the SSE stream via StreamRegistryService.
+   * The SSE turn stream is closed here (not in the controller).
    */
   private async processMessage(queueItem: MessageQueue): Promise<void> {
     this.activeWorkers++;
+    const { sessionId } = queueItem;
     this.logger.log(`Processing message ${queueItem.id} (active workers: ${this.activeWorkers}/${this.concurrency})`);
 
     try {
-      // Get session (or create if doesn't exist)
-      const session = this.sessionService.getSession(queueItem.sessionId);
-      if (!session) {
-        throw new Error(`Session ${queueItem.sessionId} not found`);
-      }
+      // getOrCreateSession recreates the session if a prior autoClose destroyed it
+      const clientId = makeSseClientId(sessionId);
+      const session = this.sessionService.getOrCreateSession(sessionId, clientId, null);
 
-      // Get current queue depth for position
-      const queueDepth = await this.queueService.getSessionQueueDepth(queueItem.sessionId);
-
-      // Emit processing started event
-      if (session.socket) {
-        session.socket.emit('message_processing_started', {
-          queueItemId: queueItem.id,
-          sessionId: queueItem.sessionId,
-          position: queueDepth.total,
-          message: queueItem.payload.message.substring(0, 100), // First 100 chars
-        });
-      }
-
-      // Build orchestration input
-      const input = {
+      // Execute orchestration — events emitted to SSE stream
+      const result = await this.orchestrationService.orchestrateMessage({
         session,
-        clientId: queueItem.clientId,
-        tenantId: queueItem.tenantId || '', // Convert null to empty string for orchestration
+        clientId,
+        tenantId: queueItem.tenantId || '',
         message: queueItem.payload.message,
         context: queueItem.payload.context,
         mcpServers: queueItem.payload.mcpServers,
         enabledSkillSlugs: queueItem.payload.enabledSkillSlugs,
         skillPath: queueItem.payload.skillPath,
-        emitEvent: (event: any) => {
-          // Emit to session socket if connected
-          if (session.socket) {
-            session.socket.emit(event.type, event);
-          }
-        },
-      };
+        systemPrompt: queueItem.payload.systemPrompt,
+        templateName: queueItem.payload.templateName,
+        emitEvent: (event: any) => this.streamRegistry.emit(sessionId, event),
+      });
 
-      // Execute orchestration
-      const result = await this.orchestrationService.orchestrateMessage(input);
-
-      // Mark as completed
+      // Persist success BEFORE stream teardown: a stream failure must not cause
+      // the queue item to be incorrectly marked as failed.
       await this.queueService.markCompleted(
         queueItem.id,
         result.userMessageId,
         result.assistantMessageId,
       );
 
-      // Emit processing completed event
-      if (session.socket) {
-        const queueItemUpdated = await this.queueService.getQueueItem(queueItem.id);
-        session.socket.emit('message_processing_completed', {
-          queueItemId: queueItem.id,
-          sessionId: queueItem.sessionId,
-          userMessageId: result.userMessageId,
-          assistantMessageId: result.assistantMessageId,
-          durationMs: queueItemUpdated?.durationMs || 0,
-        });
+      // Honour autoClose: free pool slot immediately
+      if (queueItem.payload.autoClose) {
+        this.logger.log(`Auto-closing session ${sessionId} (autoClose=true)`);
+        this.sessionService.closeSession(sessionId);
       }
 
-      this.logger.log(`Message ${queueItem.id} completed successfully`);
+      // Close the SSE turn stream (non-fatal: a stream error must not revert
+      // the already-persisted completion)
+      try {
+        this.streamRegistry.closeSession(sessionId);
+      } catch (streamErr: any) {
+        this.logger.warn(`Failed to close SSE turn for ${sessionId}: ${streamErr.message}`);
+      }
+
+      this.logger.log(`Message ${queueItem.id} completed`);
     } catch (error: any) {
       this.logger.error(`Message ${queueItem.id} failed: ${error.message}`, error.stack);
 
-      // Mark as failed (will retry if allowed)
+      // Persist failure BEFORE stream teardown: a stream error must not leave
+      // the queue item stuck in 'processing' state.
       await this.queueService.markFailed(queueItem.id, error.message);
 
-      // Get updated queue item to check retry info
-      const queueItemUpdated = await this.queueService.getQueueItem(queueItem.id);
-
-      // Emit processing failed event
-      const session = this.sessionService.getSession(queueItem.sessionId);
-      if (session?.socket && queueItemUpdated) {
-        session.socket.emit('message_processing_failed', {
-          queueItemId: queueItem.id,
-          sessionId: queueItem.sessionId,
-          error: error.message,
-          retryCount: queueItemUpdated.retryCount,
-          maxRetries: queueItemUpdated.maxRetries,
-          nextRetryAt: queueItemUpdated.nextRetryAt,
-          status: queueItemUpdated.status, // 'pending' (will retry) or 'failed' (permanent)
+      // Emit error to SSE and close turn stream (non-fatal)
+      try {
+        this.streamRegistry.emit(sessionId, {
+          type: 'error',
+          sessionId,
+          timestamp: new Date().toISOString(),
+          code: 'PROCESSING_ERROR',
+          message: error.message,
+          recoverable: false,
         });
+        this.streamRegistry.closeSession(sessionId);
+      } catch (streamErr: any) {
+        this.logger.warn(`Failed to emit error to SSE for ${sessionId}: ${streamErr.message}`);
       }
     } finally {
       this.activeWorkers--;

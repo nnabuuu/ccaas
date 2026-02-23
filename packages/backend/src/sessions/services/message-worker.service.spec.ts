@@ -1,0 +1,547 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { MessageWorkerService } from './message-worker.service';
+import { MessageQueueService } from './message-queue.service';
+import { CompletionOrchestrationService } from './completion-orchestration.service';
+import { SessionService } from '../session.service';
+import { StreamRegistryService } from './stream-registry.service';
+import { MessageQueue } from '../entities/message-queue.entity';
+import { makeSseClientId } from '../session-utils';
+
+// ── MessageWorkerService ──────────────────────────────────────────────────────
+
+describe('MessageWorkerService — processMessage', () => {
+  let service: MessageWorkerService;
+  let queueService: any;
+  let orchestrationService: any;
+  let sessionService: any;
+  let streamRegistry: any;
+
+  const SESSION_ID = 'worker-test-session';
+  const mockSession = {
+    sessionId: SESSION_ID,
+    clientId: makeSseClientId(SESSION_ID),
+    status: 'idle',
+    workspaceDir: '/tmp/test',
+    socket: null,
+  };
+
+  function makeQueueItem(overrides: Partial<MessageQueue> = {}): MessageQueue {
+    return {
+      id: 'queue-item-1',
+      sessionId: SESSION_ID,
+      clientId: makeSseClientId(SESSION_ID),
+      tenantId: 'tenant-123',
+      payload: {
+        message: 'test message',
+        enabledSkillSlugs: ['tutor'],
+        systemPrompt: 'You are a tutor.',
+        templateName: undefined,
+        autoClose: false,
+      },
+      status: 'processing',
+      priority: 0,
+      retryCount: 0,
+      maxRetries: 2,
+      nextRetryAt: null,
+      startedAt: new Date(),
+      completedAt: null,
+      error: null,
+      userMessageId: null,
+      assistantMessageId: null,
+      durationMs: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      ...overrides,
+    } as MessageQueue;
+  }
+
+  beforeEach(async () => {
+    queueService = {
+      getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]),
+      dequeueForSession: jest.fn().mockResolvedValue(null),
+      markCompleted: jest.fn().mockResolvedValue(undefined),
+      markFailed: jest.fn().mockResolvedValue(undefined),
+      getQueueItem: jest.fn().mockResolvedValue(null),
+    };
+
+    orchestrationService = {
+      orchestrateMessage: jest.fn().mockResolvedValue({
+        sessionId: SESSION_ID,
+        userMessageId: 'msg-user-1',
+        assistantMessageId: 'msg-assistant-1',
+        skillSyncedCount: 0,
+      }),
+    };
+
+    sessionService = {
+      getOrCreateSession: jest.fn().mockReturnValue(mockSession),
+      closeSession: jest.fn(),
+    };
+
+    streamRegistry = {
+      emit: jest.fn(),
+      closeSession: jest.fn(),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MessageWorkerService,
+        { provide: MessageQueueService, useValue: queueService },
+        { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: SessionService, useValue: sessionService },
+        { provide: StreamRegistryService, useValue: streamRegistry },
+      ],
+    }).compile();
+
+    service = module.get<MessageWorkerService>(MessageWorkerService);
+    // Prevent the interval from firing during tests
+    jest.spyOn(global, 'setInterval').mockReturnValue(undefined as any);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  // Helper: access private processMessage via any cast
+  const process = (item: MessageQueue) =>
+    (service as any).processMessage(item);
+
+  // ── Session creation ────────────────────────────────────────────────────────
+
+  it('calls getOrCreateSession (not getSession) so auto-closed sessions are recreated', async () => {
+    await process(makeQueueItem());
+
+    expect(sessionService.getOrCreateSession).toHaveBeenCalledWith(
+      SESSION_ID,
+      makeSseClientId(SESSION_ID),
+      null,
+    );
+  });
+
+  // ── SSE emission ────────────────────────────────────────────────────────────
+
+  it('routes orchestration events to streamRegistry.emit()', async () => {
+    let capturedEmit: ((event: any) => void) | undefined;
+
+    orchestrationService.orchestrateMessage.mockImplementation((input: any) => {
+      capturedEmit = input.emitEvent;
+      return Promise.resolve({
+        sessionId: SESSION_ID,
+        userMessageId: 'u1',
+        assistantMessageId: 'a1',
+        skillSyncedCount: 0,
+      });
+    });
+
+    await process(makeQueueItem());
+
+    // Simulate the orchestrator emitting a text_delta event
+    capturedEmit!({ type: 'text_delta', delta: 'hi', sessionId: SESSION_ID, timestamp: '' });
+
+    expect(streamRegistry.emit).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.objectContaining({ type: 'text_delta' }),
+    );
+  });
+
+  // ── SSE teardown on success ─────────────────────────────────────────────────
+
+  it('calls streamRegistry.closeSession() after successful orchestration', async () => {
+    await process(makeQueueItem());
+
+    expect(streamRegistry.closeSession).toHaveBeenCalledWith(SESSION_ID);
+  });
+
+  it('calls markCompleted() after successful orchestration', async () => {
+    await process(makeQueueItem());
+
+    expect(queueService.markCompleted).toHaveBeenCalledWith(
+      'queue-item-1',
+      'msg-user-1',
+      'msg-assistant-1',
+    );
+  });
+
+  // ── autoClose ───────────────────────────────────────────────────────────────
+
+  it('calls sessionService.closeSession() when autoClose=true', async () => {
+    await process(makeQueueItem({ payload: { message: 'hi', autoClose: true } }));
+
+    expect(sessionService.closeSession).toHaveBeenCalledWith(SESSION_ID);
+  });
+
+  it('does NOT call sessionService.closeSession() when autoClose=false', async () => {
+    await process(makeQueueItem({ payload: { message: 'hi', autoClose: false } }));
+
+    expect(sessionService.closeSession).not.toHaveBeenCalled();
+  });
+
+  it('does NOT call sessionService.closeSession() when autoClose is absent', async () => {
+    await process(makeQueueItem({ payload: { message: 'hi' } }));
+
+    expect(sessionService.closeSession).not.toHaveBeenCalled();
+  });
+
+  // ── Error path ──────────────────────────────────────────────────────────────
+
+  it('emits error event to SSE on orchestration failure', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    await process(makeQueueItem());
+
+    expect(streamRegistry.emit).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.objectContaining({
+        code: 'PROCESSING_ERROR',
+        message: 'boom',
+        recoverable: false,
+      }),
+    );
+  });
+
+  it('closes SSE turn stream on orchestration failure', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    await process(makeQueueItem());
+
+    expect(streamRegistry.closeSession).toHaveBeenCalledWith(SESSION_ID);
+  });
+
+  it('calls markFailed() on orchestration failure', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    await process(makeQueueItem());
+
+    expect(queueService.markFailed).toHaveBeenCalledWith('queue-item-1', 'boom');
+  });
+
+  it('does NOT call sessionService.closeSession() on failure (TTL handles cleanup)', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    await process(makeQueueItem({ payload: { message: 'hi', autoClose: true } }));
+
+    // autoClose is in success path only
+    expect(sessionService.closeSession).not.toHaveBeenCalled();
+  });
+
+  // ── Payload fields passed to orchestrator ───────────────────────────────────
+
+  it('passes systemPrompt and templateName from payload to orchestrateMessage', async () => {
+    await process(makeQueueItem({
+      payload: {
+        message: 'hello',
+        systemPrompt: 'You are a helpful tutor.',
+        templateName: 'teacher',
+      },
+    }));
+
+    expect(orchestrationService.orchestrateMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        systemPrompt: 'You are a helpful tutor.',
+        templateName: 'teacher',
+      }),
+    );
+  });
+
+  // ── Ordering: DB writes before stream teardown ──────────────────────────────
+
+  it('calls markCompleted before streamRegistry.closeSession (success path)', async () => {
+    const callOrder: string[] = [];
+    queueService.markCompleted.mockImplementation(async () => { callOrder.push('markCompleted'); });
+    streamRegistry.closeSession.mockImplementation(() => { callOrder.push('closeSession'); });
+
+    await process(makeQueueItem());
+
+    expect(callOrder).toEqual(['markCompleted', 'closeSession']);
+  });
+
+  it('calls markFailed before streamRegistry.emit (error path)', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+    const callOrder: string[] = [];
+    queueService.markFailed.mockImplementation(async () => { callOrder.push('markFailed'); });
+    streamRegistry.emit.mockImplementation(() => { callOrder.push('streamEmit'); });
+
+    await process(makeQueueItem());
+
+    expect(callOrder[0]).toBe('markFailed');
+    expect(callOrder[1]).toBe('streamEmit');
+  });
+
+  it('still calls markCompleted even when streamRegistry.closeSession throws', async () => {
+    streamRegistry.closeSession.mockImplementation(() => { throw new Error('stream error'); });
+
+    await process(makeQueueItem());
+
+    expect(queueService.markCompleted).toHaveBeenCalledWith('queue-item-1', 'msg-user-1', 'msg-assistant-1');
+    expect(queueService.markFailed).not.toHaveBeenCalled();
+  });
+
+  it('still calls markFailed even when streamRegistry.emit throws', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+    streamRegistry.emit.mockImplementation(() => { throw new Error('stream error'); });
+
+    await process(makeQueueItem());
+
+    expect(queueService.markFailed).toHaveBeenCalledWith('queue-item-1', 'boom');
+  });
+
+  // ── activeWorkers counter ───────────────────────────────────────────────────
+
+  it('decrements activeWorkers in finally block even when orchestration throws', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    const before = (service as any).activeWorkers;
+    await process(makeQueueItem());
+
+    expect((service as any).activeWorkers).toBe(before);
+  });
+
+  it('decrements activeWorkers in finally block after success', async () => {
+    const before = (service as any).activeWorkers;
+    await process(makeQueueItem());
+
+    expect((service as any).activeWorkers).toBe(before);
+  });
+});
+
+// ── pollAndProcess ────────────────────────────────────────────────────────────
+
+describe('MessageWorkerService — pollAndProcess', () => {
+  let service: MessageWorkerService;
+  let queueService: any;
+  let sessionService: any;
+  let streamRegistry: any;
+
+  const SESSION_ID = 'poll-test-session';
+
+  function makeItem(id = 'qi-1', sessionId = SESSION_ID): MessageQueue {
+    return {
+      id,
+      sessionId,
+      clientId: makeSseClientId(sessionId),
+      tenantId: 'tenant-1',
+      payload: { message: 'hi' },
+      status: 'processing',
+      priority: 0,
+      retryCount: 0,
+      maxRetries: 2,
+      nextRetryAt: null,
+      startedAt: new Date(),
+      completedAt: null,
+      error: null,
+      userMessageId: null,
+      assistantMessageId: null,
+      durationMs: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as MessageQueue;
+  }
+
+  beforeEach(async () => {
+    queueService = {
+      getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]),
+      dequeueForSession: jest.fn().mockResolvedValue(null),
+      markCompleted: jest.fn().mockResolvedValue(undefined),
+      markFailed: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const orchestrationService = {
+      orchestrateMessage: jest.fn().mockResolvedValue({
+        sessionId: SESSION_ID,
+        userMessageId: 'u1',
+        assistantMessageId: 'a1',
+        skillSyncedCount: 0,
+      }),
+    };
+
+    sessionService = {
+      getOrCreateSession: jest.fn().mockReturnValue({ sessionId: SESSION_ID, socket: null, workspaceDir: '/tmp' }),
+      closeSession: jest.fn(),
+    };
+
+    streamRegistry = { emit: jest.fn(), closeSession: jest.fn() };
+
+    jest.spyOn(global, 'setInterval').mockReturnValue(undefined as any);
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MessageWorkerService,
+        { provide: MessageQueueService, useValue: queueService },
+        { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: SessionService, useValue: sessionService },
+        { provide: StreamRegistryService, useValue: streamRegistry },
+      ],
+    }).compile();
+
+    service = module.get<MessageWorkerService>(MessageWorkerService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  const poll = () => (service as any).pollAndProcess();
+
+  it('does nothing when isShuttingDown is true', async () => {
+    (service as any).isShuttingDown = true;
+    queueService.getSessionsWithPendingMessages.mockResolvedValue([SESSION_ID]);
+
+    await poll();
+
+    expect(queueService.getSessionsWithPendingMessages).not.toHaveBeenCalled();
+  });
+
+  it('does nothing when worker pool is at capacity', async () => {
+    (service as any).activeWorkers = (service as any).concurrency; // fill pool
+    queueService.getSessionsWithPendingMessages.mockResolvedValue([SESSION_ID]);
+
+    await poll();
+
+    expect(queueService.getSessionsWithPendingMessages).not.toHaveBeenCalled();
+  });
+
+  it('returns early when no sessions have pending messages', async () => {
+    queueService.getSessionsWithPendingMessages.mockResolvedValue([]);
+
+    await poll();
+
+    expect(queueService.dequeueForSession).not.toHaveBeenCalled();
+  });
+
+  it('skips a busy session when dequeue returns null and continues to next', async () => {
+    const busySession = 'session-busy';
+    const readySession = 'session-ready';
+    queueService.getSessionsWithPendingMessages.mockResolvedValue([busySession, readySession]);
+    queueService.dequeueForSession
+      .mockResolvedValueOnce(null)              // busy session
+      .mockResolvedValueOnce(makeItem('qi-2', readySession));
+
+    jest.spyOn(service as any, 'processMessage').mockResolvedValue(undefined);
+
+    await poll();
+
+    expect(queueService.dequeueForSession).toHaveBeenCalledTimes(2);
+    expect((service as any).processMessage).toHaveBeenCalledTimes(1);
+    expect((service as any).processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'qi-2' }),
+    );
+  });
+
+  it('dispatches one item per session in a single poll cycle', async () => {
+    queueService.getSessionsWithPendingMessages.mockResolvedValue(['s1', 's2', 's3']);
+    queueService.dequeueForSession
+      .mockResolvedValueOnce(makeItem('q1', 's1'))
+      .mockResolvedValueOnce(makeItem('q2', 's2'))
+      .mockResolvedValueOnce(makeItem('q3', 's3'));
+
+    jest.spyOn(service as any, 'processMessage').mockResolvedValue(undefined);
+
+    await poll();
+
+    expect((service as any).processMessage).toHaveBeenCalledTimes(3);
+  });
+
+  it('stops dispatching when concurrency fills during the loop', async () => {
+    (service as any).activeWorkers = (service as any).concurrency - 1; // one slot left
+    queueService.getSessionsWithPendingMessages.mockResolvedValue(['s1', 's2']);
+    queueService.dequeueForSession
+      .mockResolvedValueOnce(makeItem('q1', 's1'))
+      .mockResolvedValueOnce(makeItem('q2', 's2'));
+
+    // processMessage increments activeWorkers synchronously (at start of method)
+    jest.spyOn(service as any, 'processMessage').mockImplementation(async () => {
+      (service as any).activeWorkers++;
+    });
+
+    await poll();
+
+    // Only one slot was available so only one session should be dispatched
+    expect((service as any).processMessage).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── lifecycle ─────────────────────────────────────────────────────────────────
+
+describe('MessageWorkerService — lifecycle', () => {
+  let module: TestingModule;
+  let service: MessageWorkerService;
+
+  beforeEach(async () => {
+    const queueService = { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]) };
+    const orchestrationService = { orchestrateMessage: jest.fn() };
+    const sessionService = { getOrCreateSession: jest.fn(), closeSession: jest.fn() };
+    const streamRegistry = { emit: jest.fn(), closeSession: jest.fn() };
+
+    module = await Test.createTestingModule({
+      providers: [
+        MessageWorkerService,
+        { provide: MessageQueueService, useValue: queueService },
+        { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: SessionService, useValue: sessionService },
+        { provide: StreamRegistryService, useValue: streamRegistry },
+      ],
+    }).compile();
+
+    service = module.get<MessageWorkerService>(MessageWorkerService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('onModuleInit starts a poll interval at 1000 ms', () => {
+    const spy = jest.spyOn(global, 'setInterval').mockReturnValue(999 as any);
+
+    service.onModuleInit();
+
+    expect(spy).toHaveBeenCalledWith(expect.any(Function), 1000);
+    expect((service as any).pollTimer).toBe(999);
+  });
+
+  it('onModuleDestroy clears the timer and sets isShuttingDown', () => {
+    jest.spyOn(global, 'setInterval').mockReturnValue(42 as any);
+    service.onModuleInit();
+
+    const clearSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
+    service.onModuleDestroy();
+
+    expect(clearSpy).toHaveBeenCalledWith(42);
+    expect((service as any).pollTimer).toBeNull();
+    expect((service as any).isShuttingDown).toBe(true);
+  });
+});
+
+// ── getStatus ─────────────────────────────────────────────────────────────────
+
+describe('MessageWorkerService — getStatus', () => {
+  let service: MessageWorkerService;
+
+  beforeEach(async () => {
+    jest.spyOn(global, 'setInterval').mockReturnValue(undefined as any);
+
+    const module = await Test.createTestingModule({
+      providers: [
+        MessageWorkerService,
+        { provide: MessageQueueService, useValue: { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]) } },
+        { provide: CompletionOrchestrationService, useValue: {} },
+        { provide: SessionService, useValue: {} },
+        { provide: StreamRegistryService, useValue: {} },
+      ],
+    }).compile();
+
+    service = module.get<MessageWorkerService>(MessageWorkerService);
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('returns correct status fields with initial values', () => {
+    const status = service.getStatus();
+
+    expect(status).toEqual({
+      activeWorkers: 0,
+      concurrency: 5,
+      pollIntervalMs: 1000,
+      isShuttingDown: false,
+    });
+  });
+});

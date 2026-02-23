@@ -46,6 +46,7 @@ import { ConversationContextService } from '../messages/conversation-context.ser
 import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completion.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { makeSseClientId } from './session-utils';
 import type { FrontendEvent } from '../common/interfaces';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -227,7 +228,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
 
     if (!data.tenantId) {
       this.streamRegistry.emit(sessionId, {
-        type: 'error' as any,
+        type: 'error',
         sessionId,
         timestamp: new Date().toISOString(),
         code: 'MISSING_TENANT_ID',
@@ -239,19 +240,21 @@ Response is \`text/event-stream\`, closed when Turn completes.
     }
 
     try {
+      // Resolve tenant UUID once — reused for both skill loading and system
+      // prompt generation, eliminating a redundant DB round-trip per request.
+      const tenant = await this.tenantsService.findOne(data.tenantId);
+      const resolvedTenantId = tenant?.id || data.tenantId;
+
       // Auto-load tenant skills if not provided
       if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
-        const tenant = await this.tenantsService.findOne(data.tenantId);
-        const resolvedTenantId = tenant?.id || data.tenantId;
         const allSkills = await this.skillsService.findPublished(resolvedTenantId);
         enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
       }
 
-      // Generate skill system prompt
+      // Generate skill system prompt (resolved at enqueue time so the worker
+      // inherits exactly what the caller intended even if skills change later)
       let systemPrompt: string | undefined;
       if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-        const tenant = await this.tenantsService.findOne(data.tenantId);
-        const resolvedTenantId = tenant?.id || data.tenantId;
         systemPrompt = await this.skillManagementService.generateSystemPromptForSession(
           resolvedTenantId,
           enabledSkillSlugs,
@@ -264,50 +267,30 @@ Response is \`text/event-stream\`, closed when Turn completes.
           : data.appendSystemPrompt;
       }
 
-      // Use a synthetic clientId for SSE sessions (no WebSocket)
-      const clientId = `sse:${sessionId}`;
-
-      // Get or create session (no socket needed - SSE replaces it)
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, null);
-
-      const resolvedAttachments = this.attachmentService.resolveAttachments(
-        data.attachments,
-        session.workspaceDir,
-      );
-
-      // Emit function routes events to SSE stream
-      const emitEvent = (event: FrontendEvent) => {
-        this.streamRegistry.emit(sessionId, event);
-        // Fan subagent_started to the push channel during a turn so long-lived
-        // subscribers (GET /events) see task launches immediately.
-        // Note: subagent_completed is NOT fanned here — BackgroundTaskMonitorService
-        // emits it directly to :push after polling, preventing duplicate delivery.
-        if (event.type === 'subagent_started') {
-          this.streamRegistry.emit(`${sessionId}:push`, event);
-        }
-      };
-
-      await this.completionOrchestrationService.orchestrateMessage({
-        session,
+      // Enqueue — worker handles session creation, orchestration, and SSE teardown.
+      // The SSE connection is kept alive because streamRegistry.subscribe() holds
+      // the response open; streamRegistry.closeSession() is called by the worker.
+      const clientId = makeSseClientId(sessionId);
+      await this.messageQueueService.enqueue(
+        sessionId,
         clientId,
-        tenantId: data.tenantId,
-        message: data.message,
-        context: data.context,
-        mcpServers: data.mcpServers,
-        enabledSkillSlugs,
-        skillPath: data.skillPath,
-        attachments: resolvedAttachments,
-        systemPrompt,
-        templateName: data.templateName,
-        emitEvent,
-      });
-
-      // Turn complete - send done event and close SSE connection
-      this.streamRegistry.closeSession(sessionId);
+        data.tenantId,
+        {
+          message: data.message,
+          context: data.context,
+          mcpServers: data.mcpServers,
+          enabledSkillSlugs,
+          skillPath: data.skillPath,
+          systemPrompt,
+          templateName: data.templateName,
+          autoClose: data.autoClose,
+        },
+      );
+      // Return — SSE stays open until the worker calls streamRegistry.closeSession()
     } catch (error) {
       this.logger.error(`SSE sendMessage error: ${error}`);
       this.streamRegistry.emit(sessionId, {
-        type: 'error' as any,
+        type: 'error',
         sessionId,
         timestamp: new Date().toISOString(),
         code: 'INTERNAL_ERROR',

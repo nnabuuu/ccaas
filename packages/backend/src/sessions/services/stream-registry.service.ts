@@ -169,7 +169,7 @@ export class StreamRegistryService {
     if (!sessionSubscribers) return;
 
     const doneEvent: FrontendEvent = {
-      type: 'done' as any,
+      type: 'done',
       sessionId,
       timestamp: new Date().toISOString(),
     };

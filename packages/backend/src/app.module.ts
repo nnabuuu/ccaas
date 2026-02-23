@@ -62,7 +62,7 @@ import { SolutionsModule } from './solutions/solutions.module';
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1 minute
-        limit: 10,  // 10 requests per minute (default)
+        limit: 10000,  // high limit for benchmark workloads
       },
     ]),
 
