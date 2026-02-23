@@ -43,6 +43,14 @@ Accept: text/event-stream
 | `message` | string | ✅ | 用户消息内容 |
 | `tenantId` | string | ✅ | 租户 ID |
 | `apiKey` | string | ❌ | API Key（也可通过 `Authorization: Bearer` header 传递） |
+| `enabledSkillSlugs` | string[] | ❌ | 指定启用的 Skill slug 列表；不传时自动加载租户下所有已启用的 Skill |
+| `appendSystemPrompt` | string | ❌ | 追加到系统提示词末尾的额外指令 |
+| `templateName` | string | ❌ | 应用的会话模板名称（在管理后台配置） |
+| `mcpServers` | object | ❌ | 本次请求附加的 MCP Server 配置 |
+| `context` | object | ❌ | 页面上下文（如当前路由、表单数据等） |
+| `attachments` | object[] | ❌ | 附件列表（图片或文档，路径相对于会话工作区） |
+| `afterSeq` | number | ❌ | 断线重连：从此序号之后的事件开始重放 |
+| `autoClose` | boolean | ❌ | 处理完成后立即销毁 Session，适合无状态单次任务；默认 `false` |
 
 ### 响应格式
 
@@ -312,6 +320,70 @@ Token 使用统计，每轮结束时发送。
   recoverable: boolean
   suggestion?: string
 }
+```
+
+---
+
+## 一次性会话（autoClose）
+
+`autoClose: true` 启用"一次性会话"模式：请求处理完成后，Session 立即销毁，进程池槽位释放。
+
+### 适用场景
+
+| 场景 | 推荐值 |
+|------|--------|
+| 多轮对话（聊天机器人、上下文延续） | `autoClose: false`（默认） |
+| 无状态单次任务（Webhook、批处理、API 调用） | `autoClose: true` |
+
+### 行为对比
+
+| | `autoClose: false`（默认） | `autoClose: true` |
+|---|---|---|
+| 处理完成后 Session 状态 | 保留（idle，可继续对话） | 立即销毁（进程终止） |
+| 进程池槽位 | 持续占用（直到 TTL 回收） | 立即释放 |
+| 下次同 sessionId 请求 | 复用现有会话，历史上下文延续 | 创建全新 Session，无历史 |
+
+### 并发请求的处理
+
+同一 `sessionId` 连续发出多个 `autoClose: true` 请求（例如批量处理多条记录）时，平台保证 **FIFO 串行执行**：
+
+```
+请求 A (autoClose=true) ──┐
+                           ├─ 消息队列（DB 行级锁，per-session FIFO）
+请求 B (autoClose=true) ──┘
+                    │
+                    ▼ A 先处理
+              Worker 处理 A → 完成 → Session 销毁
+                    │
+                    ▼ B 自动排队等待
+              Worker 处理 B → getOrCreateSession() 重建 Session → 完成 → Session 销毁
+```
+
+B 不会因为 A 销毁了 Session 而失败——Worker 会透明地为 B 重建一个全新的 Session。
+
+### 失败时的行为
+
+处理失败时，即使设置了 `autoClose: true`，Session **不会**被强制销毁（由 TTL 自动回收）。这确保了在重试场景下不会过早销毁会话。
+
+### 示例
+
+```bash
+# 无状态分析任务（用完即销毁）
+curl -N -X POST http://localhost:3001/api/v1/sessions/job-$(uuidgen)/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "分析以下日志并输出结构化报告: ...",
+    "tenantId": "default",
+    "autoClose": true
+  }'
+```
+
+```typescript
+// React SDK 用法
+const chat = useAgentChat({ connection, tenantId: 'default' })
+
+// 发送一次性任务
+chat.sendMessage('分析这份数据', { autoClose: true })
 ```
 
 ---

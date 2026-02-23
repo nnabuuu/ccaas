@@ -67,7 +67,8 @@
 
 * [API Overview](api/README.md)
 * [REST API Endpoints](api/rest.md)
-* [WebSocket Events](api/websocket.md)
+* [SSE Transport (Recommended)](api/sse.md)
+* [WebSocket Events (Deprecated)](api/websocket.md)
 * [Error Handling](api/error-handling.md)
 * [@kedge-agentic/common Types](api/shared-types.md)
 
