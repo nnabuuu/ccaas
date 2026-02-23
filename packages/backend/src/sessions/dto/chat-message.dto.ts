@@ -4,7 +4,7 @@
  * Data transfer objects for chat-related operations.
  */
 
-import { IsString, IsOptional, IsObject, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray, MaxLength } from 'class-validator';
 
 /**
  * MCP Server configuration passed from solution backends
@@ -51,6 +51,11 @@ export class ChatMessageDto {
   @IsOptional()
   @IsString()
   appendSystemPrompt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  templateName?: string;
 }
 
 /**
@@ -109,6 +114,11 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   appendSystemPrompt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  templateName?: string;
 }
 
 /**

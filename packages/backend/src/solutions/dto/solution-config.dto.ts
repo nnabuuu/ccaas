@@ -76,6 +76,8 @@ export const SessionTemplateSchema = z.object({
   model: z.string().optional(),
   maxTokens: z.number().int().positive().optional(),
   skillPath: z.string().optional(),
+  /** Session TTL override in milliseconds. Capped at plan max on import. */
+  sessionTtlMs: z.number().int().min(60000).optional(),
 });
 
 // ============================================================================

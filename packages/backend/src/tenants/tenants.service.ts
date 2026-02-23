@@ -173,6 +173,39 @@ export class TenantsService implements OnModuleInit {
 
 
   /**
+   * Sync session templates from solution.json (upsert — never deletes existing templates).
+   * Caps sessionTtlMs at the tenant's plan maximum.
+   * Returns the number of templates synced.
+   */
+  async syncSessionTemplates(
+    tenantId: string,
+    templates: Record<string, Record<string, unknown>>,
+  ): Promise<number> {
+    const tenant = await this.findOne(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+    }
+    const existing = (tenant.config?.sessionTemplates ?? {}) as Record<string, Record<string, unknown>>;
+    const merged: Record<string, Record<string, unknown>> = { ...existing };
+    const maxTtl = PLAN_MAX_SESSION_TTL_MS[tenant.plan];
+
+    for (const [name, tmpl] of Object.entries(templates)) {
+      const sessionTtlMs = (tmpl as any).sessionTtlMs as number | undefined;
+      const capped = sessionTtlMs !== undefined
+        ? { ...tmpl, sessionTtlMs: Math.min(sessionTtlMs, maxTtl) }
+        : tmpl;
+      merged[name] = capped;
+    }
+
+    await this.tenantRepository.save({
+      ...tenant,
+      config: { ...tenant.config, sessionTemplates: merged },
+    });
+    this.logger.log(`Synced ${Object.keys(templates).length} session templates for tenant ${tenantId}`);
+    return Object.keys(templates).length;
+  }
+
+  /**
    * Get the default tenant ID
    */
   getDefaultTenantId(): string {

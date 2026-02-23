@@ -392,6 +392,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
           mcpServers: data.mcpServers,
           enabledSkillSlugs: data.enabledSkillSlugs,
           skillPath: data.skillPath,
+          templateName: data.templateName,
           emitEvent: (event) => client.emit(event.type, event),
         });
 

@@ -298,6 +298,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
         skillPath: data.skillPath,
         attachments: resolvedAttachments,
         systemPrompt,
+        templateName: data.templateName,
         emitEvent,
       });
 

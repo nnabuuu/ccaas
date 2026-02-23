@@ -8,7 +8,7 @@
  * a WebSocket connection. Events stream back via SSE in the response.
  */
 
-import { IsString, IsOptional, IsObject, IsArray, IsNumber, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsObject, IsArray, IsNumber, ValidateNested, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -125,4 +125,14 @@ export class SendMessageDto {
   @IsOptional()
   @IsNumber()
   afterSeq?: number;
+
+  @ApiProperty({
+    description: '会话模板名称 / Session template name to apply',
+    required: false,
+    example: 'teacher',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  templateName?: string;
 }

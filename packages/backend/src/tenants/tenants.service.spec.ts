@@ -485,4 +485,84 @@ describe('TenantsService', () => {
       await expect(service.update('nonexistent', { name: 'New' })).rejects.toThrow('Tenant not found: nonexistent');
     });
   });
+
+  describe('syncSessionTemplates', () => {
+    const baseTenant = {
+      id: 'tenant-123',
+      name: 'Test Tenant',
+      slug: 'test-tenant',
+      status: 'active',
+      plan: 'free' as const,
+      config: {},
+      maxSessions: 100,
+      maxSkills: 50,
+      sessionTtlMs: PLAN_DEFAULT_SESSION_TTL_MS['free'],
+      createdAt: new Date(),
+    };
+
+    it('should merge incoming templates with existing ones (upsert — no deletions)', async () => {
+      const existingTemplate = { description: 'Old template' };
+      const tenantWithTemplates = {
+        ...baseTenant,
+        config: { sessionTemplates: { existing: existingTemplate } },
+      };
+      tenantRepository.findOne.mockResolvedValue(tenantWithTemplates as any);
+      tenantRepository.save.mockResolvedValue({ ...tenantWithTemplates } as any);
+
+      const count = await service.syncSessionTemplates('tenant-123', {
+        newTemplate: { description: 'New template' },
+      });
+
+      expect(count).toBe(1);
+      const saved = tenantRepository.save.mock.calls[0][0] as any;
+      expect(saved.config.sessionTemplates).toHaveProperty('existing'); // not deleted
+      expect(saved.config.sessionTemplates).toHaveProperty('newTemplate');
+    });
+
+    it('should cap sessionTtlMs at the plan maximum', async () => {
+      tenantRepository.findOne.mockResolvedValue({ ...baseTenant, plan: 'free' } as any);
+      tenantRepository.save.mockResolvedValue(baseTenant as any);
+
+      const planMax = PLAN_MAX_SESSION_TTL_MS['free'];
+      await service.syncSessionTemplates('tenant-123', {
+        tmpl: { sessionTtlMs: planMax * 10 }, // way above max
+      });
+
+      const saved = tenantRepository.save.mock.calls[0][0] as any;
+      expect(saved.config.sessionTemplates.tmpl.sessionTtlMs).toBe(planMax);
+    });
+
+    it('should preserve undefined sessionTtlMs without capping', async () => {
+      tenantRepository.findOne.mockResolvedValue(baseTenant as any);
+      tenantRepository.save.mockResolvedValue(baseTenant as any);
+
+      await service.syncSessionTemplates('tenant-123', {
+        tmpl: { description: 'No TTL' },
+      });
+
+      const saved = tenantRepository.save.mock.calls[0][0] as any;
+      expect(saved.config.sessionTemplates.tmpl.sessionTtlMs).toBeUndefined();
+    });
+
+    it('should return the count of templates in the incoming payload', async () => {
+      tenantRepository.findOne.mockResolvedValue(baseTenant as any);
+      tenantRepository.save.mockResolvedValue(baseTenant as any);
+
+      const count = await service.syncSessionTemplates('tenant-123', {
+        t1: { description: 'A' },
+        t2: { description: 'B' },
+        t3: { description: 'C' },
+      });
+
+      expect(count).toBe(3);
+    });
+
+    it('should throw NotFoundException when tenant does not exist', async () => {
+      tenantRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.syncSessionTemplates('nonexistent', { tmpl: {} }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
 });

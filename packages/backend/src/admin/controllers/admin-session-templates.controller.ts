@@ -17,6 +17,8 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
+import { validateOrReject } from 'class-validator';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
@@ -28,6 +30,7 @@ import {
   UpdateSessionTemplateDto,
   PreviewTemplateDto,
   SessionTemplateBodyDto,
+  SyncSessionTemplatesBodyDto,
 } from '../dto/session-template.dto';
 
 const MAX_TEMPLATES_PER_TENANT = 50;
@@ -263,6 +266,66 @@ export class AdminSessionTemplatesController {
     });
 
     return { message: `Session template "${name}" deleted` };
+  }
+
+  /**
+   * POST /api/v1/admin/tenants/:tenantId/session-templates/sync
+   *
+   * Bulk-upsert session templates from solution.json or external callers.
+   * Never deletes existing templates — only adds or updates the provided ones.
+   * sessionTtlMs is capped at the tenant's plan maximum.
+   */
+  @Post('sync')
+  @ApiOperation({ summary: 'Bulk-sync session templates (upsert, never deletes)' })
+  @ApiParam({ name: 'tenantId', description: 'Tenant ID' })
+  async syncTemplates(
+    @Param('tenantId') tenantId: string,
+    @Body() dto: SyncSessionTemplatesBodyDto,
+    @Ctx() ctx: RequestContext,
+  ) {
+    const tenant = await this.findTenantOrThrow(tenantId);
+    const existing = this.getTemplates(tenant);
+
+    // MAJOR-1: Validate each template body individually (class-validator cannot
+    // recurse into Record values, so we do it programmatically).
+    for (const [name, raw] of Object.entries(dto.templates)) {
+      const instance = plainToInstance(SessionTemplateBodyDto, raw);
+      try {
+        await validateOrReject(instance, { whitelist: true, forbidNonWhitelisted: false });
+      } catch (errors) {
+        throw new BadRequestException(
+          `Template "${name}" failed validation: ${JSON.stringify(errors)}`,
+        );
+      }
+    }
+
+    // MAJOR-2: Enforce template count limit.
+    const totalAfterSync = new Set([
+      ...Object.keys(existing),
+      ...Object.keys(dto.templates),
+    ]).size;
+    if (totalAfterSync > MAX_TEMPLATES_PER_TENANT) {
+      throw new BadRequestException(
+        `Sync would result in ${totalAfterSync} templates, exceeding the maximum of ${MAX_TEMPLATES_PER_TENANT}`,
+      );
+    }
+
+    const synced = await this.tenantsService.syncSessionTemplates(
+      tenantId,
+      dto.templates as Record<string, Record<string, unknown>>,
+    );
+
+    // MAJOR-3: Audit log consistent with other mutating endpoints.
+    await this.tryLogAudit({
+      adminId: this.getAdminId(ctx),
+      action: 'sessionTemplate.sync',
+      targetType: 'tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: { templateNames: Object.keys(dto.templates), count: synced },
+    });
+
+    return { synced };
   }
 
   /**

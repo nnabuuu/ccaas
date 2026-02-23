@@ -21,6 +21,7 @@ const templateSchema = z.object({
     enabledSkillSlugs: z.array(z.string()).optional(),
     mcpServers: z.record(z.any()).optional(),
     model: z.string().optional(),
+    sessionTtlMs: z.number().int().min(60000).optional(),
   }),
 })
 
@@ -37,6 +38,7 @@ export function SessionTemplateFormPage() {
   const [skillsValue, setSkillsValue] = useState('')
   const [mcpValue, setMcpValue] = useState('{}')
   const [mcpError, setMcpError] = useState<string | null>(null)
+  const [ttlMinutes, setTtlMinutes] = useState('')
 
   const {
     register,
@@ -71,6 +73,9 @@ export function SessionTemplateFormPage() {
       setValue('template', template)
       setSkillsValue((template.enabledSkillSlugs || []).join(', '))
       setMcpValue(JSON.stringify(template.mcpServers || {}, null, 2))
+      if ((template as any).sessionTtlMs) {
+        setTtlMinutes(String(Math.round((template as any).sessionTtlMs / 60000)))
+      }
     }
   }, [templateData, setValue])
 
@@ -150,6 +155,28 @@ export function SessionTemplateFormPage() {
                 {...register('template.description')}
                 placeholder="Teacher view - full analysis features"
               />
+            </div>
+
+            <div>
+              <Label htmlFor="sessionTtlMinutes">Session Timeout (minutes)</Label>
+              <Input
+                id="sessionTtlMinutes"
+                type="number"
+                min={1}
+                placeholder="Leave blank to use tenant default"
+                value={ttlMinutes}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setTtlMinutes(val)
+                  setValue(
+                    'template.sessionTtlMs',
+                    val ? Number(val) * 60000 : undefined,
+                  )
+                }}
+              />
+              <p className="text-sm text-muted-foreground mt-1">
+                Override session TTL for this template (max set by plan tier).
+              </p>
             </div>
 
             <div>

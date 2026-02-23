@@ -74,6 +74,12 @@ export interface MessageProcessingInput {
    */
   sessionTtlMs?: number;
 
+  /**
+   * Named session template to apply (looked up from tenant config).
+   * Template fields fill in params not explicitly provided by the caller.
+   */
+  templateName?: string;
+
   /** Transport-agnostic event emitter */
   emitEvent: (event: FrontendEvent) => void;
 }
@@ -134,14 +140,14 @@ export class CompletionOrchestrationService {
       tenantId,
       message,
       context,
-      mcpServers,
-      enabledSkillSlugs,
-      skillPath,
       attachments,
-      systemPrompt,
       sessionTtlMs: templateTtlMs,
+      templateName,
       emitEvent,
     } = input;
+
+    // These may be overridden by template resolution below
+    let { mcpServers, enabledSkillSlugs, skillPath, systemPrompt } = input;
 
     const sessionId = session.sessionId;
 
@@ -172,6 +178,27 @@ export class CompletionOrchestrationService {
     if (templateTtlMs !== undefined) {
       session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, templateTtlMs);
       this.logger.debug(`Session ${sessionId} TTL overridden by template: ${session.sessionTtlMs}ms`);
+    }
+
+    // Resolve named template — fills in params not explicitly provided by the caller
+    const effectiveTemplateName =
+      templateName ?? resolvedTenant?.config?.defaultSessionTemplate;
+
+    if (effectiveTemplateName) {
+      // Tenant config is a JSON column — use explicit any cast for template fields
+      const tmpl = resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined;
+      if (tmpl) {
+        this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
+        if (!mcpServers && tmpl['mcpServers'])               mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig>;
+        if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) enabledSkillSlugs = tmpl['enabledSkillSlugs'];
+        if (!systemPrompt && tmpl['appendSystemPrompt'])     systemPrompt = tmpl['appendSystemPrompt'];
+        if (!skillPath && tmpl['skillPath'])                 skillPath = tmpl['skillPath'];
+        if (tmpl['sessionTtlMs']) {
+          session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, tmpl['sessionTtlMs'] as number);
+        }
+      } else {
+        this.logger.warn(`Template "${effectiveTemplateName}" not found for tenant ${resolvedTenantId}`);
+      }
     }
 
     // Step 3: Store MCP servers configuration from solution backend (if provided)

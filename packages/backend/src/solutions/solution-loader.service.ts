@@ -46,6 +46,7 @@ export interface LoadResult {
   skills: SkillLoadResult[];
   mcpServers: McpServerLoadResult[];
   warnings: string[];
+  templateCount?: number;
 }
 
 export interface SkillLoadResult {
@@ -223,8 +224,10 @@ export class SolutionLoaderService {
     );
 
     // Step 4: Apply session templates (upsert — merge with existing)
+    let templateCount = 0;
     if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
       await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
+      templateCount = Object.keys(config.sessionTemplates).length;
     }
 
     // Step 5: Stamp solutionAppliedAt so callers can confirm this run completed
@@ -247,6 +250,7 @@ export class SolutionLoaderService {
       skills: skillResults,
       mcpServers: mcpResults,
       warnings,
+      templateCount,
     };
   }
 

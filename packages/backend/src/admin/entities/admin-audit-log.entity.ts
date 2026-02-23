@@ -32,7 +32,8 @@ export type AdminAction =
   | 'alert.delete'
   | 'sessionTemplate.create'
   | 'sessionTemplate.update'
-  | 'sessionTemplate.delete';
+  | 'sessionTemplate.delete'
+  | 'sessionTemplate.sync';
 
 export type TargetType =
   | 'skill'

@@ -108,3 +108,21 @@ export class PreviewTemplateDto {
     appendSystemPrompt?: string;
   };
 }
+
+/**
+ * Body for POST .../sync — bulk-upsert templates from solution.json or CI pipelines.
+ *
+ * Note: class-validator does not support @ValidateNested on Record values (only arrays).
+ * The controller validates each template value programmatically via plainToInstance +
+ * validateOrReject to ensure SessionTemplateBodyDto constraints are enforced.
+ */
+export class SyncSessionTemplatesBodyDto {
+  @ApiProperty({
+    description: 'Record of template name → template body',
+    example: {
+      teacher: { description: 'Teacher view', enabledSkillSlugs: ['analysis'] },
+    },
+  })
+  @IsObject()
+  templates!: Record<string, SessionTemplateBodyDto>;
+}

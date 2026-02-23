@@ -105,6 +105,9 @@ function printResult(result: LoadResult) {
   if (result.mcpServers.length > 0) {
     console.log(`    MCP:     ${mcpCreated.length} created, ${mcpUpdated.length} updated${mcpSkipped.length ? `, ${mcpSkipped.length} skipped` : ''}`);
   }
+  if (result.templateCount !== undefined && result.templateCount > 0) {
+    console.log(`    Templates: ${result.templateCount} synced`);
+  }
   console.log(`    Tenant:  ${result.slug} (${result.tenantId})`);
   console.log('');
 
