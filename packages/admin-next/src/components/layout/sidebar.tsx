@@ -19,7 +19,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sessions', href: '/sessions', icon: MessageSquare },
   { name: 'Queue Monitor', href: '/queue', icon: ListOrdered },
   { name: 'Skills', href: '/skills', icon: Zap },
@@ -67,9 +67,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <ScrollArea className="flex-1 px-2 py-4">
           <nav className="flex flex-col gap-1">
             {navigation.map((item) => {
-              const isActive = item.href === '/'
-                ? location.pathname === '/'
-                : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+              const isActive =
+                location.pathname === item.href || location.pathname.startsWith(item.href + '/')
               const link = (
                 <Link
                   key={item.name}

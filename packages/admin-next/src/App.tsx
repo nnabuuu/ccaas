@@ -16,6 +16,7 @@ const shouldUseDevAuth =
 const activeAuthProvider = shouldUseDevAuth ? devAuthProvider : authProvider
 
 // Lazy-loaded pages
+const LandingPage = lazy(() => import('@/pages/landing').then((m) => ({ default: m.LandingPage })))
 const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.LoginPage })))
 const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))
 const SessionListPage = lazy(() => import('@/pages/sessions/list').then((m) => ({ default: m.SessionListPage })))
@@ -54,7 +55,7 @@ function App() {
         resources={[
           {
             name: 'dashboard',
-            list: '/',
+            list: '/dashboard',
             meta: { label: 'Dashboard' },
           },
           {
@@ -117,6 +118,8 @@ function App() {
       >
         <Suspense fallback={<PageLoader />}>
           <Routes>
+            {/* Public landing page */}
+            <Route path="/" element={<LandingPage />} />
             <Route
               element={
                 <Authenticated key="auth" fallback={<CatchAllNavigate to="/login" />}>
@@ -124,7 +127,7 @@ function App() {
                 </Authenticated>
               }
             >
-              <Route index element={<DashboardPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/sessions" element={<SessionListPage />} />
               <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
               <Route path="/skills" element={<SkillListPage />} />

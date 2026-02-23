@@ -18,7 +18,7 @@ export const devAuthProvider: AuthProvider = {
     if (DEV_API_KEY) {
       localStorage.setItem(API_KEY_STORAGE, DEV_API_KEY)
     }
-    return { success: true, redirectTo: '/' }
+    return { success: true, redirectTo: '/dashboard' }
   },
 
   logout: async () => {
@@ -36,7 +36,7 @@ export const devAuthProvider: AuthProvider = {
     // Check if key exists in storage
     const apiKey = localStorage.getItem(API_KEY_STORAGE)
     if (!apiKey) {
-      return { authenticated: false, redirectTo: '/login' }
+      return { authenticated: false }
     }
     return { authenticated: true }
   },

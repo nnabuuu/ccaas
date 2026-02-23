@@ -9,7 +9,7 @@ export const authProvider: AuthProvider = {
       localStorage.setItem(API_KEY_STORAGE, apiKey)
       // Validate the key by hitting the dashboard endpoint
       await apiClient.get('/admin/dashboard/summary')
-      return { success: true, redirectTo: '/' }
+      return { success: true, redirectTo: '/dashboard' }
     } catch {
       localStorage.removeItem(API_KEY_STORAGE)
       return {
@@ -27,7 +27,7 @@ export const authProvider: AuthProvider = {
   check: async () => {
     const apiKey = localStorage.getItem(API_KEY_STORAGE)
     if (!apiKey) {
-      return { authenticated: false, redirectTo: '/login' }
+      return { authenticated: false }
     }
     return { authenticated: true }
   },
