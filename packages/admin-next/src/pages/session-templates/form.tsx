@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { useTenantContext } from '@/hooks/use-tenant-context'
 
 const templateSchema = z.object({
@@ -22,6 +23,7 @@ const templateSchema = z.object({
     mcpServers: z.record(z.any()).optional(),
     model: z.string().optional(),
     sessionTtlMs: z.number().int().min(60000).optional(),
+    autoClose: z.boolean().optional(),
   }),
 })
 
@@ -39,6 +41,7 @@ export function SessionTemplateFormPage() {
   const [mcpValue, setMcpValue] = useState('{}')
   const [mcpError, setMcpError] = useState<string | null>(null)
   const [ttlMinutes, setTtlMinutes] = useState('')
+  const [autoClose, setAutoClose] = useState(false)
 
   const {
     register,
@@ -75,6 +78,10 @@ export function SessionTemplateFormPage() {
       setMcpValue(JSON.stringify(template.mcpServers || {}, null, 2))
       if ((template as any).sessionTtlMs) {
         setTtlMinutes(String(Math.round((template as any).sessionTtlMs / 60000)))
+      }
+      if ((template as any).autoClose) {
+        setAutoClose(true)
+        setValue('template.autoClose', true)
       }
     }
   }, [templateData, setValue])
@@ -185,6 +192,23 @@ export function SessionTemplateFormPage() {
                 id="model"
                 {...register('template.model')}
                 placeholder="claude-opus-4-6 (leave blank to use tenant default)"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="autoClose">One-shot Mode (Auto-close after response)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Session is destroyed after each response. Use for stateless, one-off API calls.
+                </p>
+              </div>
+              <Switch
+                id="autoClose"
+                checked={autoClose}
+                onCheckedChange={(checked) => {
+                  setAutoClose(checked)
+                  setValue('template.autoClose', checked || undefined)
+                }}
               />
             </div>
           </CardContent>

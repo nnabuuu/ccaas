@@ -53,3 +53,11 @@ if (typeof Element !== 'undefined') {
 if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = vi.fn()
 }
+
+// Mock ResizeObserver (used by Radix UI components via @radix-ui/react-use-size)
+global.ResizeObserver = class ResizeObserver {
+  constructor(_callback: ResizeObserverCallback) {}
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}

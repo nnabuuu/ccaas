@@ -23,9 +23,17 @@ import {
   XCircle,
   Clock,
   Coins,
+  ListOrdered,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
+
+interface SessionQueueStatus {
+  total: number
+  pending: number
+  processing: number
+}
 
 interface TokenBreakdown {
   inputTokens: number
@@ -296,12 +304,19 @@ export function SessionDetailPage() {
     method: 'get',
   })
 
+  // Fetch queue status
+  const { data: queueData } = useCustom<SessionQueueStatus>({
+    url: `/api/v1/sessions/${sessionId}/queue`,
+    method: 'get',
+  })
+
   // Kill session mutation
   const { mutate: killSession, isLoading: isKilling } = useCustomMutation()
 
   const session = sessionData?.data
   const timeline = timelineData?.data
   const tokenBreakdown = tokenData?.data
+  const queueStatus = queueData?.data
   const events = timeline?.events || []
   const totalEvents = timeline?.totalEvents || 0
 
@@ -553,6 +568,36 @@ export function SessionDetailPage() {
                 <p className="text-xs text-muted-foreground">
                   {tokenBreakdown.reasoningTokens.toLocaleString()}
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Queue Status */}
+      {queueStatus && queueStatus.total > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ListOrdered className="h-5 w-5" />
+              Queue Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Pending:</span>
+                <Badge variant="secondary">{queueStatus.pending}</Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Processing:</span>
+                <Badge variant={queueStatus.processing > 0 ? 'default' : 'secondary'}>
+                  {queueStatus.processing}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Total:</span>
+                <Badge variant="outline">{queueStatus.total}</Badge>
               </div>
             </div>
           </CardContent>

@@ -10,6 +10,7 @@ import {
   Key,
   ChevronLeft,
   ChevronRight,
+  ListOrdered,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Sessions', href: '/sessions', icon: MessageSquare },
+  { name: 'Queue Monitor', href: '/queue', icon: ListOrdered },
   { name: 'Skills', href: '/skills', icon: Zap },
   { name: 'Tenants', href: '/tenants', icon: Building2 },
   { name: 'API Keys', href: '/api-keys', icon: Key },
