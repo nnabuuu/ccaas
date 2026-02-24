@@ -36,6 +36,13 @@ import type {
   SessionTemplateConfig,
 } from './dto/solution-config.dto';
 
+/** Resolved MCP server config for session template injection (no toolEventTriggers, no type). */
+type ResolvedMcpServerConfig = {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -237,9 +244,14 @@ export class SolutionLoaderService {
     }
 
     // Step 5: Apply session templates (upsert — merge with existing)
+    // Inject resolved MCP servers so sessions get MCP tools without manual setup.sh
     let templateCount = 0;
     if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
-      await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
+      const resolvedMcpServers = this.resolveMcpServerAbsolutePaths(
+        config.mcpServers || {},
+        solution.solutionPath,
+      );
+      await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings, resolvedMcpServers);
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
@@ -599,11 +611,13 @@ export class SolutionLoaderService {
   /**
    * Apply session templates from solution.json to the tenant config.
    * Uses upsert logic: merges declared templates with any existing ones.
+   * Injects resolvedMcpServers into templates that have no mcpServers defined.
    */
   private async applySessionTemplates(
     tenantId: string,
     templates: Record<string, SessionTemplateConfig>,
     warnings: string[],
+    resolvedMcpServers?: Record<string, ResolvedMcpServerConfig>,
   ): Promise<void> {
     const tenant = await this.tenants.findOne(tenantId);
     if (!tenant) {
@@ -613,7 +627,24 @@ export class SolutionLoaderService {
     }
 
     const existing = (tenant.config?.sessionTemplates ?? {}) as Record<string, SessionTemplateConfig>;
-    const merged = { ...existing, ...templates };
+    let merged: Record<string, SessionTemplateConfig> = { ...existing, ...templates };
+
+    // Inject MCP servers into templates that don't have their own mcpServers.
+    // Uses spread to avoid mutating the original config objects from solution.json.
+    if (resolvedMcpServers && Object.keys(resolvedMcpServers).length > 0) {
+      const mcpToInject = { ...resolvedMcpServers } as SessionTemplateConfig['mcpServers'];
+      merged = Object.fromEntries(
+        Object.entries(merged).map(([name, template]) => {
+          if (!template.mcpServers || Object.keys(template.mcpServers).length === 0) {
+            this.logger.debug(
+              `Injected MCP servers [${Object.keys(resolvedMcpServers).join(', ')}] into template "${name}"`,
+            );
+            return [name, { ...template, mcpServers: mcpToInject }];
+          }
+          return [name, template];
+        }),
+      );
+    }
 
     // Validate that every enabledSkillSlugs entry is registered for this tenant
     for (const [templateName, template] of Object.entries(templates)) {
@@ -636,5 +667,43 @@ export class SolutionLoaderService {
       `Applied ${Object.keys(templates).length} session template(s): ${Object.keys(templates).join(', ')}`,
     );
     this.logger.log(`Applied session templates for tenant "${tenantId}"`);
+  }
+
+  /**
+   * Resolve relative MCP server args to absolute paths using the solution directory.
+   * Only resolves args that look like relative JS/TS file paths.
+   * Paths resolving outside the solution directory are left unchanged (path traversal guard).
+   * toolEventTriggers are excluded — they are handled by EventMapperService, not the CLI.
+   */
+  private resolveMcpServerAbsolutePaths(
+    mcpServers: Record<string, McpServerDefinition>,
+    solutionPath: string,
+  ): Record<string, ResolvedMcpServerConfig> {
+    const resolved: Record<string, ResolvedMcpServerConfig> = {};
+    const solutionBoundary = solutionPath + path.sep;
+
+    for (const [slug, def] of Object.entries(mcpServers)) {
+      const resolvedArgs = (def.args || []).map(arg => {
+        if (!path.isAbsolute(arg) && /\.(js|ts)$/.test(arg)) {
+          const absolute = path.resolve(solutionPath, arg);
+          if (!absolute.startsWith(solutionBoundary)) {
+            this.logger.warn(
+              `MCP server "${slug}": arg "${arg}" resolves outside solution directory — left as-is`,
+            );
+            return arg;
+          }
+          return absolute;
+        }
+        return arg;
+      });
+
+      resolved[slug] = {
+        command: def.command,
+        args: resolvedArgs,
+        ...(def.env ? { env: def.env } : {}),
+      };
+    }
+
+    return resolved;
   }
 }
