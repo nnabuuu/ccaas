@@ -1,7 +1,9 @@
+import { useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { useLiveLesson } from '../hooks/useLiveLesson'
 import DynamicBoard from '../components/DynamicBoard'
-import TeachingPanel from '../components/TeachingPanel'
+import GlobalBoard from '../components/GlobalBoard'
+import InteractionPanel from '../components/InteractionPanel'
 
 interface LocationState {
   forceNew?: boolean
@@ -22,6 +24,11 @@ export default function LessonPage() {
     connected,
     boardState,
     manifest,
+    beatState,
+    dynamicBoardActions,
+    globalBoardOps,
+    timeline,
+    currentBeat,
     messages,
     isProcessing,
     isThinking,
@@ -29,9 +36,15 @@ export default function LessonPage() {
     currentStreamContent,
     sendMessage,
     clearConversation,
-    sendConfused,
-    sendProbeSelected,
+    advanceBeat,
+    canAdvanceBeat,
   } = useLiveLesson(id, forceNew)
+
+  // Compute revealedNodeIds from globalBoardOps
+  const revealedNodeIds = useMemo(
+    () => new Set(globalBoardOps.filter(op => op.op === 'reveal').map(op => op.nodeId)),
+    [globalBoardOps],
+  )
 
   if (!lessonId) {
     return (
@@ -72,7 +85,12 @@ export default function LessonPage() {
               连接中...
             </span>
           )}
-          {boardState && (
+          {beatState && beatState.totalBeats > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
+              {beatState.currentBeatIndex + 1} / {beatState.totalBeats}
+            </span>
+          )}
+          {!beatState && boardState && (
             <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
               {boardState.currentPhase}
             </span>
@@ -80,30 +98,41 @@ export default function LessonPage() {
         </div>
       </header>
 
-      {/* Main content: 70/30 split */}
+      {/* Main content: 3-panel layout (25/50/25) */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Left: Dynamic Board (70%) */}
-        <div className="flex-[7] min-w-0 overflow-hidden">
-          <DynamicBoard
-            boardState={boardState}
-            manifest={manifest}
-            onConfused={sendConfused}
+        {/* Left: GlobalBoard (25%) */}
+        <div className="flex-[2.5] min-w-0 overflow-hidden border-r border-white/10" style={{ minWidth: '200px' }}>
+          <GlobalBoard
+            nodes={manifest?.globalBoardNodes ?? []}
+            revealedNodeIds={revealedNodeIds}
+            currentSectionId={beatState?.sectionId ?? null}
           />
         </div>
 
-        {/* Right: Teaching Panel (30%) */}
-        <div className="flex-[3] min-w-0 overflow-hidden" style={{ minWidth: '280px', maxWidth: '400px' }}>
-          <TeachingPanel
+        {/* Center: DynamicBoard (50%) */}
+        <div className="flex-[5] min-w-0 overflow-hidden">
+          <DynamicBoard
+            actions={dynamicBoardActions}
+            beatId={beatState?.currentBeatId ?? null}
+            isActive={isProcessing || isThinking}
+            canContinue={canAdvanceBeat}
+            isLoading={!manifest}
+            onContinue={advanceBeat}
+          />
+        </div>
+
+        {/* Right: InteractionPanel (25%) */}
+        <div className="flex-[2.5] min-w-0 overflow-hidden" style={{ minWidth: '200px' }}>
+          <InteractionPanel
+            timeline={timeline}
+            currentBeat={currentBeat}
+            isActive={isProcessing || isThinking}
+            connected={connected}
             messages={messages}
-            isProcessing={isProcessing}
             isThinking={isThinking}
             thinkingContent={thinkingContent}
             currentStreamContent={currentStreamContent}
-            boardState={boardState}
-            connected={connected}
             onSendMessage={sendMessage}
-            onProbeSelected={sendProbeSelected}
-            onConfused={sendConfused}
             onClearConversation={clearConversation}
           />
         </div>

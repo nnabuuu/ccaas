@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import type { LessonManifest, BoardState, HighlightedNode, ActiveProbe } from './types.js';
+import type { LessonManifest, BoardState, HighlightedNode, Beat, BeatState, ChalkboardAction, GlobalBoardOp } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -9,6 +9,10 @@ const __dirname = path.dirname(__filename);
 class StateManager {
   private manifest: LessonManifest | null = null;
   private boardState: BoardState | null = null;
+  private beatState: BeatState | null = null;
+  private dynamicBoardActions: ChalkboardAction[] = [];
+  private lastDynamicBeatId: string | null = null;
+  private globalBoardOps: GlobalBoardOp[] = [];
 
   /**
    * Load lesson manifest from data/lessons/{lessonId}/manifest.json
@@ -34,9 +38,14 @@ class StateManager {
       lessonId,
       visibleNodeIds,
       highlightedNodes: [],
-      activeProbes: [],
       currentPhase: this.manifest.teachingPhases[0]?.id ?? 'intro',
     };
+
+    // Reset beat-related state
+    this.beatState = null;
+    this.dynamicBoardActions = [];
+    this.lastDynamicBeatId = null;
+    this.globalBoardOps = [];
 
     return this.boardState;
   }
@@ -90,69 +99,6 @@ class StateManager {
   }
 
   /**
-   * Show diagnostic probes for a confusion point
-   * Also highlights the confusion point's trigger node in red
-   */
-  showConfusionProbes(confusionPointId: string): BoardState {
-    if (!this.boardState || !this.manifest) {
-      throw new Error('No lesson loaded. Call load_lesson first.');
-    }
-
-    const cp = this.manifest.confusionPoints.find(c => c.id === confusionPointId);
-    if (!cp) {
-      throw new Error(`Confusion point not found: ${confusionPointId}`);
-    }
-
-    // Set active probes from confusion point's secondaryProbes
-    this.boardState.activeProbes = cp.secondaryProbes.map(probe => ({
-      id: probe.id,
-      label: probe.label,
-      confusionPointId,
-    }));
-
-    // Highlight the board node in red
-    const startedAt = Date.now();
-    this.boardState.highlightedNodes = this.boardState.highlightedNodes.filter(
-      h => h.nodeId !== cp.boardNodeToFlash,
-    );
-    this.boardState.highlightedNodes.push({
-      nodeId: cp.boardNodeToFlash,
-      durationMs: 5000,
-      startedAt,
-      color: 'red',
-    });
-
-    return this.boardState;
-  }
-
-  /**
-   * Clear all active probes and highlights
-   */
-  dismissProbes(): BoardState {
-    if (!this.boardState) {
-      throw new Error('No lesson loaded. Call load_lesson first.');
-    }
-
-    this.boardState.activeProbes = [];
-    this.boardState.highlightedNodes = [];
-
-    return this.boardState;
-  }
-
-  /**
-   * Get the probe remediation text (used by Agent after probe selection)
-   */
-  getProbeRemediation(probeId: string): string | null {
-    if (!this.manifest) return null;
-
-    for (const cp of this.manifest.confusionPoints) {
-      const probe = cp.secondaryProbes.find(p => p.id === probeId);
-      if (probe) return probe.remediation;
-    }
-    return null;
-  }
-
-  /**
    * Update the current teaching phase
    */
   setPhase(phaseId: string): BoardState {
@@ -163,12 +109,70 @@ class StateManager {
     return this.boardState;
   }
 
+  /**
+   * Advance to a specific beat by ID
+   */
+  advanceBeat(beatId: string): { beatState: BeatState; beat: Beat | undefined } {
+    if (!this.manifest) throw new Error('No lesson loaded.');
+    const beats = this.manifest.beats ?? [];
+    const idx = beats.findIndex(b => b.id === beatId);
+    const beat = beats[idx];
+    this.beatState = {
+      currentBeatId: beatId,
+      currentBeatIndex: idx,
+      totalBeats: beats.length,
+      sectionId: beat?.sectionId ?? null,
+    };
+    // Reset dynamic board actions for new beat
+    this.dynamicBoardActions = [];
+    this.lastDynamicBeatId = beatId;
+    return { beatState: this.beatState, beat };
+  }
+
+  /**
+   * Append dynamic chalkboard actions for a beat.
+   * Resets the action list when beatId changes so UI-driven beat advances
+   * (which skip the server's advance_beat) don't cause stale action accumulation.
+   */
+  appendDynamicBoardActions(beatId: string, actions: ChalkboardAction[]): ChalkboardAction[] {
+    if (this.lastDynamicBeatId !== beatId) {
+      this.dynamicBoardActions = [];
+      this.lastDynamicBeatId = beatId;
+    }
+    this.dynamicBoardActions.push(...actions);
+    return this.dynamicBoardActions;
+  }
+
+  /**
+   * Apply a global board operation (reveal/highlight a global node)
+   */
+  applyGlobalOp(op: GlobalBoardOp): GlobalBoardOp[] {
+    this.globalBoardOps.push(op);
+    return this.globalBoardOps;
+  }
+
   getBoardState(): BoardState | null {
     return this.boardState;
   }
 
   getManifest(): LessonManifest | null {
     return this.manifest;
+  }
+
+  getBeatState(): BeatState | null {
+    return this.beatState;
+  }
+
+  getDynamicBoardActions(): ChalkboardAction[] {
+    return this.dynamicBoardActions;
+  }
+
+  getGlobalBoardOps(): GlobalBoardOp[] {
+    return this.globalBoardOps;
+  }
+
+  resetBeatActions(): void {
+    this.dynamicBoardActions = [];
   }
 }
 
