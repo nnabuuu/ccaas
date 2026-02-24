@@ -28,6 +28,18 @@ import {
 import { cn } from '@/lib/utils'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
+import { apiClient } from '@/lib/api-client'
+import { toast } from 'sonner'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 interface SessionQueueStatus {
   total: number
@@ -271,6 +283,8 @@ export function SessionDetailPage() {
   const [activeTab, setActiveTab] = useState<'timeline' | 'files'>('timeline')
   const [timelineOffset, setTimelineOffset] = useState(0)
   const timelineLimit = 50
+  const [isExporting, setIsExporting] = useState(false)
+  const [showKillDialog, setShowKillDialog] = useState(false)
 
   // Fetch session detail
   const { data: sessionData, isLoading: sessionLoading } = useCustom<SessionDetail>({
@@ -325,16 +339,18 @@ export function SessionDetailPage() {
     if (!sessionId) return
     try {
       await navigator.clipboard.writeText(sessionId)
-      // TODO: Replace with toast notification
+      toast.success('Session ID copied')
     } catch (error) {
       console.warn('Failed to copy session ID:', error)
     }
   }, [sessionId])
 
-  const handleKillSession = async () => {
-    // TODO: Replace confirm() with shadcn AlertDialog
-    if (!sessionId || !confirm('Are you sure you want to terminate this session?')) return
+  const handleKillSession = () => {
+    setShowKillDialog(true)
+  }
 
+  const confirmKillSession = () => {
+    if (!sessionId) return
     killSession(
       {
         url: `/admin/sessions/${sessionId}/kill`,
@@ -343,21 +359,40 @@ export function SessionDetailPage() {
       },
       {
         onSuccess: () => {
-          // TODO: Replace alert() with toast notification
-          alert('Session terminated successfully')
+          toast.success('Session terminated successfully')
           window.location.reload()
         },
         onError: (error: HttpError) => {
-          // TODO: Replace alert() with toast notification
-          alert(`Failed to terminate session: ${error.message}`)
+          toast.error(`Failed to terminate session: ${error.message}`)
         },
       }
     )
   }
 
-  const handleExportLogs = () => {
-    // TODO: Implement log export
-    alert('Export logs functionality coming soon')
+  const handleExportLogs = async () => {
+    if (!sessionId) return
+    setIsExporting(true)
+    try {
+      const { data } = await apiClient.get(`/admin/sessions/${sessionId}/timeline`, {
+        params: { limit: 1000, offset: 0 },
+      })
+      const exportData = {
+        exportedAt: new Date().toISOString(),
+        session,
+        timeline: data,
+      }
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `session-${sessionId}-logs.json`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Failed to export logs')
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   const handleLoadMore = () => {
@@ -610,9 +645,9 @@ export function SessionDetailPage() {
           <CardTitle>Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-2">
-          <Button variant="outline" onClick={handleExportLogs}>
+          <Button variant="outline" onClick={handleExportLogs} disabled={isExporting}>
             <Download className="h-4 w-4 mr-2" />
-            Export Logs
+            {isExporting ? 'Exporting...' : 'Export Logs'}
           </Button>
           {session.hasActiveProcess && (
             <Button variant="destructive" onClick={handleKillSession} disabled={isKilling}>
@@ -620,6 +655,22 @@ export function SessionDetailPage() {
               {isKilling ? 'Terminating...' : 'Terminate Process'}
             </Button>
           )}
+          <AlertDialog open={showKillDialog} onOpenChange={setShowKillDialog}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Terminate Session</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to terminate this session? The running process will be stopped immediately.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={confirmKillSession} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Terminate
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="outline" onClick={() => refetchTimeline()}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Timeline

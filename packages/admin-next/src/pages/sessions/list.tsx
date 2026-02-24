@@ -26,6 +26,7 @@ import { useTenantContext } from '@/hooks/use-tenant-context'
 import { formatDistanceToNow } from 'date-fns'
 import { Activity, CheckCircle, AlertCircle, Clock, StopCircle } from 'lucide-react'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
+import { toast } from 'sonner'
 
 interface SessionItem {
   sessionId: string
@@ -156,7 +157,7 @@ export function SessionListPage() {
   const handleCopySessionId = useCallback(async (sessionId: string) => {
     try {
       await navigator.clipboard.writeText(sessionId)
-      // TODO: Replace with toast notification
+      toast.success('Session ID copied')
     } catch (error) {
       // Only log in development
       if (import.meta.env.DEV) {
@@ -202,19 +203,18 @@ export function SessionListPage() {
       {
         onSuccess: (data: unknown) => {
           const result = (data as { data: { successCount: number; totalRequested: number; failedCount: number } }).data
-          alert(
-            `Terminated ${result.successCount}/${result.totalRequested} sessions successfully.` +
-              (result.failedCount > 0
-                ? `\n${result.failedCount} sessions failed to terminate.`
-                : '')
-          )
+          if (result.failedCount > 0) {
+            toast.warning(`Terminated ${result.successCount}/${result.totalRequested} sessions. ${result.failedCount} failed.`)
+          } else {
+            toast.success(`Terminated ${result.successCount} session${result.successCount !== 1 ? 's' : ''} successfully.`)
+          }
           setSelectedSessions(new Set())
           setShowBulkKillDialog(false)
           refetch()
         },
         onError: (error: unknown) => {
           const message = error instanceof Error ? error.message : String(error)
-          alert(`Failed to terminate sessions: ${message}`)
+          toast.error(`Failed to terminate sessions: ${message}`)
           setShowBulkKillDialog(false)
         },
       }

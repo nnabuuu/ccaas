@@ -13,7 +13,7 @@ interface QueueStats {
 
 export function QueueMonitorPage() {
   const { data, isLoading, refetch } = useCustom<QueueStats>({
-    url: '/api/v1/queue/stats',
+    url: '/queue/stats',
     method: 'get',
   })
 
