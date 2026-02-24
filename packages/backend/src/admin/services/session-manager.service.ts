@@ -307,8 +307,9 @@ export class SessionManagerService {
       return null;
     }
 
-    // Tenant ownership check - prevent cross-tenant access
-    if (session.tenantId !== callerTenantId) {
+    // Tenant ownership check - only restrict if caller has a specific tenantId
+    // (consistent with getSessions which shows all sessions when no tenantId filter)
+    if (callerTenantId && session.tenantId && session.tenantId !== callerTenantId) {
       throw new ForbiddenException(
         `Cannot access sessions belonging to another tenant`,
       );
