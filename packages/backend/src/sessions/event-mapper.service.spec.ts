@@ -1090,4 +1090,158 @@ describe('EventMapperService', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Tenant tool event triggers
+  // ---------------------------------------------------------------------------
+
+  describe('tenant toolEventTriggers', () => {
+    const tenantId = 'tenant-live-lesson';
+
+    /** Build a CLI tool result event for any mcp tool name */
+    const buildMcpToolResult = (toolUseId: string, jsonContent: object) => ({
+      type: 'user',
+      message: {
+        content: [
+          {
+            type: 'tool_result',
+            tool_use_id: toolUseId,
+            content: JSON.stringify(jsonContent),
+          },
+        ],
+      },
+    });
+
+    /** Register an MCP tool call then emit its result. Returns resulting frontend events. */
+    const emitMcpToolCycle = (
+      toolUseId: string,
+      mcpToolName: string,
+      resultPayload: object,
+      input: object = {},
+    ) => {
+      service.mapToFrontendEvents(
+        {
+          type: 'content_block_start',
+          content_block: { type: 'tool_use', id: toolUseId, name: mcpToolName, input },
+        } as any,
+        testSessionId,
+        testClientId,
+      );
+      return service.mapToFrontendEvents(
+        buildMcpToolResult(toolUseId, resultPayload) as any,
+        testSessionId,
+        testClientId,
+      );
+    };
+
+    beforeEach(() => {
+      service.registerSessionGetter((id) =>
+        id === testSessionId
+          ? ({ sessionId: id, clientId: testClientId, tenantId, cliProcess: null, stdin: null, socket: null } as any)
+          : undefined,
+      );
+    });
+
+    it('emits output_update when tool name matches a registered trigger', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_ab1', 'mcp__live-lesson-tools__advance_beat',
+        { data: { phase: 1 }, status: 'ok' }, { beatId: 'beat-1' },
+      );
+
+      const outputUpdate = events.find((e) => e.type === 'output_update');
+      expect(outputUpdate).toBeDefined();
+      expect((outputUpdate as any).payload.status).toBe('ok');
+      expect((outputUpdate as any).payload.data).toEqual({ phase: 1 });
+    });
+
+    it('does not emit output_update when tool name does not match', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_other1', 'mcp__live-lesson-tools__load_lesson',
+        { data: {}, status: 'ok' }, { lessonId: 'math-intro' },
+      );
+
+      expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
+    });
+
+    it('does not emit output_update when tenant has no registered triggers', () => {
+      const events = emitMcpToolCycle(
+        'toolu_no_trigger', 'mcp__live-lesson-tools__advance_beat', { data: {}, status: 'ok' },
+      );
+
+      expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
+    });
+
+    it('does not emit output_update when session has no tenantId', () => {
+      service.registerSessionGetter((id) =>
+        id === testSessionId
+          ? ({ sessionId: id, clientId: testClientId, cliProcess: null, stdin: null, socket: null } as any)
+          : undefined,
+      );
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_no_tenant', 'mcp__live-lesson-tools__advance_beat', { data: {}, status: 'ok' },
+      );
+
+      expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
+    });
+
+    it('does not crash when sessionGetter returns undefined', () => {
+      service.registerSessionGetter((_id) => undefined);
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+
+      expect(() =>
+        emitMcpToolCycle('toolu_no_session', 'mcp__live-lesson-tools__advance_beat', { data: {}, status: 'ok' }),
+      ).not.toThrow();
+    });
+
+    it('does not emit duplicate output_update for write_output even when trigger is registered', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'write_output', eventType: 'output_update' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_write_dup', 'mcp__server__write_output', { data: { text: 'hello' }, status: 'complete' },
+      );
+
+      expect(events.filter((e) => e.type === 'output_update')).toHaveLength(1);
+    });
+
+    it('includes progress field when present in parsedResult', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_progress', 'mcp__live-lesson-tools__advance_beat', { data: {}, status: 'ok', progress: 75 },
+      );
+
+      expect((events.find((e) => e.type === 'output_update') as any).payload.progress).toBe(75);
+    });
+
+    it('clearAllTenantToolTriggers removes all registered triggers', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'advance_beat', eventType: 'output_update' },
+      ]);
+      service.clearAllTenantToolTriggers();
+
+      const events = emitMcpToolCycle(
+        'toolu_after_clear', 'mcp__live-lesson-tools__advance_beat', { data: {}, status: 'ok' },
+      );
+
+      expect(events.find((e) => e.type === 'output_update')).toBeUndefined();
+    });
+  });
 });

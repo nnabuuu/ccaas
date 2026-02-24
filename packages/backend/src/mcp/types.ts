@@ -21,6 +21,13 @@ export interface McpTool {
   inputSchema: Record<string, unknown>;
 }
 
+// ToolEventTrigger is defined alongside its Zod schema in solution-config.dto.ts
+// and re-exported here for consumers that import from mcp/types.
+import type { ToolEventTrigger as _ToolEventTrigger } from '../solutions/dto/solution-config.dto';
+export type { ToolEventTrigger } from '../solutions/dto/solution-config.dto';
+/** @internal alias for use within this file */
+type ToolEventTrigger = _ToolEventTrigger;
+
 /**
  * MCP Server configuration
  */
@@ -31,6 +38,8 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   /** For REST adapter type */
   restAdapter?: RestAdapterConfig;
+  /** Tools that should trigger frontend events when they complete */
+  toolEventTriggers?: ToolEventTrigger[];
 }
 
 // ============================================================================

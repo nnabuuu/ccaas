@@ -40,6 +40,19 @@ export const SkillDefinitionSchema = z.object({
 });
 
 /**
+ * Tool event trigger — declares that a specific tool result should emit a frontend event.
+ * Stored in McpServer DB config; read at runtime by EventMapperService.
+ */
+export const ToolEventTriggerSchema = z.object({
+  toolName: z.string().min(1),
+  /** Frontend event type to emit. Only 'output_update' is supported. */
+  eventType: z.enum(['output_update']),
+});
+
+/** Inferred type — single source of truth; re-exported from mcp/types.ts */
+export type ToolEventTrigger = z.infer<typeof ToolEventTriggerSchema>;
+
+/**
  * MCP server configuration in solution.json
  */
 export const McpServerDefinitionSchema = z.object({
@@ -48,6 +61,7 @@ export const McpServerDefinitionSchema = z.object({
   description: z.string().optional(),
   type: z.enum(['stdio', 'rest-adapter']).default('stdio'),
   env: z.record(z.string()).optional(),
+  toolEventTriggers: z.array(ToolEventTriggerSchema).optional(),
 });
 
 /**

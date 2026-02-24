@@ -28,6 +28,7 @@ import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
+import { EventMapperService } from '../sessions/event-mapper.service';
 import type {
   SolutionConfigV3,
   SkillReferenceV3,
@@ -102,6 +103,7 @@ export class SolutionLoaderService {
     private readonly tenants: TenantsService,
     private readonly skills: SkillsService,
     private readonly mcpPool: McpPoolService,
+    private readonly eventMapper: EventMapperService,
   ) {}
 
   // --------------------------------------------------------------------------
@@ -113,6 +115,9 @@ export class SolutionLoaderService {
    */
   async loadAll(solutionsDir?: string): Promise<LoadAllResult> {
     this.logger.log('Starting auto-discovery of solutions...');
+
+    // Clear stale trigger registrations before re-registering from current solution set
+    this.eventMapper.clearAllTenantToolTriggers();
 
     const allSolutions = await this.scanner.scanSolutions(solutionsDir);
     // Filter out solutions with discovery.enabled = false before processing
@@ -223,14 +228,22 @@ export class SolutionLoaderService {
       warnings,
     );
 
-    // Step 4: Apply session templates (upsert — merge with existing)
+    // Step 4: Register tool event triggers with EventMapperService
+    const allTriggers = Object.values(config.mcpServers || {}).flatMap(
+      (serverDef) => serverDef.toolEventTriggers ?? [],
+    );
+    if (allTriggers.length > 0) {
+      this.eventMapper.registerTenantToolTriggers(tenantId, allTriggers);
+    }
+
+    // Step 5: Apply session templates (upsert — merge with existing)
     let templateCount = 0;
     if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
       await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings);
       templateCount = Object.keys(config.sessionTemplates).length;
     }
 
-    // Step 5: Stamp solutionAppliedAt so callers can confirm this run completed
+    // Step 6: Stamp solutionAppliedAt so callers can confirm this run completed
     await this.tenants.update(tenantId, {
       config: { solutionAppliedAt: new Date().toISOString() },
     });
@@ -543,6 +556,7 @@ export class SolutionLoaderService {
           command: serverDef.command,
           args: serverDef.args,
           env: serverDef.env,
+          toolEventTriggers: serverDef.toolEventTriggers,
         },
       });
 
@@ -564,6 +578,7 @@ export class SolutionLoaderService {
         command: serverDef.command,
         args: serverDef.args,
         env: serverDef.env,
+        toolEventTriggers: serverDef.toolEventTriggers,
       },
     };
 

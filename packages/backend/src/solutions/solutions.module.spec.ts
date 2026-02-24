@@ -13,6 +13,7 @@ import { SolutionScannerService } from './solution-scanner.service';
 import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { SolutionLoaderService } from './solution-loader.service';
 import { SolutionConfigAdapter } from './solution-config-adapter';
+import { EventMapperService } from '../sessions/event-mapper.service';
 
 // ---------------------------------------------------------------------------
 // Mocks for external service dependencies
@@ -49,19 +50,24 @@ describe('SolutionsModule', () => {
         SolutionConfigAdapter,
         {
           provide: SolutionLoaderService,
-          useFactory: (scanner, parser, tenants, skills, mcpPool) =>
-            new SolutionLoaderService(scanner, parser, tenants, skills, mcpPool),
+          useFactory: (scanner, parser, tenants, skills, mcpPool, eventMapper) =>
+            new SolutionLoaderService(scanner, parser, tenants, skills, mcpPool, eventMapper),
           inject: [
             SolutionScannerService,
             SkillMetadataParserService,
             'TenantsService',
             'SkillsService',
             'McpPoolService',
+            EventMapperService,
           ],
         },
         { provide: 'TenantsService', useValue: mockTenantsService },
         { provide: 'SkillsService', useValue: mockSkillsService },
         { provide: 'McpPoolService', useValue: mockMcpPoolService },
+        {
+          provide: EventMapperService,
+          useValue: { registerTenantToolTriggers: jest.fn(), clearAllTenantToolTriggers: jest.fn() },
+        },
       ],
     }).compile();
   });

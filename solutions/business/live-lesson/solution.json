@@ -13,14 +13,18 @@
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
       "description": "Live Lesson board state management tools",
-      "type": "stdio"
+      "type": "stdio",
+      "toolEventTriggers": [
+        { "toolName": "advance_beat", "eventType": "output_update" },
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+      ]
     }
   },
   "sessionTemplates": {
     "teaching": {
       "description": "苏格拉底式教学会话 - 动态板书引导",
       "enabledSkillSlugs": ["socratic-teacher"],
-      "appendSystemPrompt": "每次会话开始时必须先调用 load_lesson({ lessonId: 'math-linear-eq-intro' })。严格遵循苏格拉底引导原则，不直接给出答案，每次回应以问题结尾。通过 reveal_nodes 逐步展示板书内容，配合学生的思维进度。"
+      "appendSystemPrompt": "每次会话开始时必须先调用 load_lesson({ lessonId: 'math-linear-eq-intro' })，它会返回完整 manifest 供你掌握全局教学蓝图。严格遵循苏格拉底引导原则，不直接给出答案，每次回应以问题结尾。通过 reveal_nodes 逐步展示板书内容，配合学生的思维进度。收到 [ASK] {nodeId}: {content} 时，针对该节点内容用苏格拉底方式引导，可用 highlight_nodes 高亮对应节点。用 set_phase 更新教学阶段进度。"
     }
   },
   "setup": {

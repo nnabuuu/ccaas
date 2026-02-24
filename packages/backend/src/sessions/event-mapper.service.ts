@@ -23,6 +23,7 @@ import type { ThinkingEvent } from '../hooks/thinking-tracker.hook';
 import { ToolCallTrackerService } from './services/tool-call-tracker.service';
 import { SubAgentTrackerService, SubAgentTracker } from './services/subagent-tracker.service';
 import { ToolAnalysisService } from './services/tool-analysis.service';
+import type { ToolEventTrigger } from '../mcp/types';
 
 /**
  * Callback type for thinking events
@@ -36,6 +37,9 @@ export type { SubAgentTracker } from './services/subagent-tracker.service';
 export class EventMapperService {
   private readonly logger = new Logger(EventMapperService.name);
   private readonly debug: boolean;
+
+  // Tools handled by the hardcoded switch — excluded from trigger loop to prevent double-emit
+  private static readonly TRIGGER_HANDLED_TOOLS = new Set(['write_output', 'attach_file']);
 
   // Track execution order per session (messageId -> counter)
   private sessionExecutionCounters = new Map<string, number>();
@@ -60,6 +64,9 @@ export class EventMapperService {
 
   // Callbacks for background task registration
   private backgroundTaskCallbacks: Array<(sessionId: string, tracker: SubAgentTracker) => void> = [];
+
+  // Tenant-configured tool event triggers (populated at startup by SolutionLoaderService)
+  private tenantToolTriggers = new Map<string, ToolEventTrigger[]>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -110,6 +117,25 @@ export class EventMapperService {
    */
   registerSessionGetter(getter: (sessionId: string) => ManagedSession | undefined): void {
     this.sessionGetter = getter;
+  }
+
+  /**
+   * Register tool event triggers for a tenant.
+   * Called by SolutionLoaderService after loading each solution.
+   * Replaces any existing triggers for the tenant.
+   */
+  registerTenantToolTriggers(tenantId: string, triggers: ToolEventTrigger[]): void {
+    this.tenantToolTriggers.set(tenantId, triggers);
+    this.logger.debug(`Registered ${triggers.length} tool event trigger(s) for tenant ${tenantId}`);
+  }
+
+  /**
+   * Clear all tenant tool trigger registrations.
+   * Called by SolutionLoaderService at the start of loadAll() to ensure
+   * stale entries from removed solutions are purged before re-registration.
+   */
+  clearAllTenantToolTriggers(): void {
+    this.tenantToolTriggers.clear();
   }
 
   /**
@@ -986,20 +1012,22 @@ export class EventMapperService {
       parsedResult = result as Record<string, unknown>;
     }
 
+    const buildOutputUpdate = (): FrontendEvent => ({
+      type: 'output_update',
+      sessionId,
+      clientId,
+      payload: {
+        data: parsedResult.data || parsedResult,
+        status: (parsedResult.status as string) || 'unknown',
+        progress: parsedResult.progress as number | undefined,
+        timestamp,
+      },
+    });
+
     switch (normalizedName) {
       case 'write_output':
       case 'attach_file':
-        events.push({
-          type: 'output_update',
-          sessionId,
-          clientId,
-          payload: {
-            data: parsedResult.data || parsedResult,
-            status: (parsedResult.status as string) || 'unknown',
-            progress: parsedResult.progress as number | undefined,
-            timestamp,
-          },
-        });
+        events.push(buildOutputUpdate());
         break;
 
       case 'todo_write':
@@ -1026,6 +1054,20 @@ export class EventMapperService {
           },
         });
         break;
+      }
+    }
+
+    // Check tenant-configured toolEventTriggers (from solution.json mcpServers).
+    // Skip tools already handled by the switch above to avoid duplicate events.
+    const session = this.sessionGetter?.(sessionId);
+    if (session?.tenantId && !EventMapperService.TRIGGER_HANDLED_TOOLS.has(normalizedName)) {
+      const triggers = this.tenantToolTriggers.get(session.tenantId) ?? [];
+      for (const trigger of triggers) {
+        if (trigger.toolName !== normalizedName) continue;
+        // Forward-compatible: when new eventTypes are added, only matching ones fire
+        if (trigger.eventType === 'output_update') {
+          events.push(buildOutputUpdate());
+        }
       }
     }
 

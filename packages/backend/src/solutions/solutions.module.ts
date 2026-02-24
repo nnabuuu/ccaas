@@ -23,12 +23,15 @@ import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { SolutionLoaderService } from './solution-loader.service';
 import { SolutionConfigAdapter } from './solution-config-adapter';
 import { SkillsModule } from '../skills/skills.module';
+import { SessionsModule } from '../sessions/sessions.module';
 
 @Module({
   imports: [
     // SkillsModule provides SkillsService (not @Global, requires explicit import)
     // TenantsModule and McpModule are @Global — auto-available
     SkillsModule,
+    // SessionsModule provides EventMapperService for tool event trigger registration
+    SessionsModule,
   ],
   providers: [
     SolutionScannerService,
