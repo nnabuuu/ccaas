@@ -306,7 +306,7 @@ export function SessionDetailPage() {
 
   // Fetch queue status
   const { data: queueData } = useCustom<SessionQueueStatus>({
-    url: `/api/v1/sessions/${sessionId}/queue`,
+    url: `/sessions/${sessionId}/queue`,
     method: 'get',
   })
 

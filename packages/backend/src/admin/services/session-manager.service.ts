@@ -298,7 +298,11 @@ export class SessionManagerService {
     sessionId: string,
     callerTenantId: string,
   ): Promise<SessionDetail | null> {
-    const session = this.sessionService.getSession(sessionId);
+    // Try in-memory first (active sessions), fall back to DB (historical sessions)
+    const memSession = this.sessionService.getSession(sessionId);
+    const session: ManagedSession | Session | null =
+      memSession ?? (await this.sessionRepository.findOne({ where: { sessionId } })) ?? null;
+
     if (!session) {
       return null;
     }
@@ -317,9 +321,13 @@ export class SessionManagerService {
       estimatedCost: 0,
     };
 
+    const hasActiveProcess = memSession
+      ? (memSession.cliProcess !== null && !memSession.cliProcess.killed)
+      : false;
+
     return {
-      ...this.toSessionListItem(session, stats),
-      workspaceDir: session.workspaceDir,
+      ...this.toSessionListItem(session, stats, hasActiveProcess),
+      workspaceDir: session.workspaceDir ?? '',
     };
   }
 
