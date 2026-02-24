@@ -33,14 +33,18 @@ export type AdminAction =
   | 'sessionTemplate.create'
   | 'sessionTemplate.update'
   | 'sessionTemplate.delete'
-  | 'sessionTemplate.sync';
+  | 'sessionTemplate.sync'
+  | 'mcp.create'
+  | 'mcp.update'
+  | 'mcp.delete';
 
 export type TargetType =
   | 'skill'
   | 'session'
   | 'apikey'
   | 'tenant'
-  | 'alert';
+  | 'alert'
+  | 'mcp-server';
 
 export interface AuditMetadata {
   previousValue?: unknown;

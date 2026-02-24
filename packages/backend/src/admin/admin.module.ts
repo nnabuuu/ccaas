@@ -29,6 +29,7 @@ import { AdminTenantsController } from './controllers/admin-tenants.controller';
 import { AdminSdkController } from './controllers/admin-sdk.controller';
 import { AdminApiKeysController } from './controllers/admin-api-keys.controller';
 import { AdminSessionTemplatesController } from './controllers/admin-session-templates.controller';
+import { AdminMcpServersController } from './controllers/admin-mcp-servers.controller';
 
 // Dependent modules
 import { SessionsModule } from '../sessions/sessions.module';
@@ -86,6 +87,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminSdkController,
     AdminApiKeysController,
     AdminSessionTemplatesController,
+    AdminMcpServersController,
   ],
   providers: [
     AuditService,

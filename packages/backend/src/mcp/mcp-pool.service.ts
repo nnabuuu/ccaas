@@ -249,6 +249,27 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Get an MCP server by ID without tenant restriction (admin use).
+   * Checks in-memory cache first, falls back to DB for inactive/disabled servers.
+   */
+  async findById(id: string): Promise<McpServer | null> {
+    const cached = this.servers.get(id)?.server;
+    if (cached) return cached;
+    return this.mcpServerRepository.findOne({ where: { id } });
+  }
+
+  /**
+   * List ALL MCP servers for a tenant regardless of status (admin use).
+   * Queries the database directly — includes disabled/errored servers.
+   */
+  async findAllByTenantId(tenantId: string): Promise<McpServer[]> {
+    return this.mcpServerRepository.find({
+      where: { tenantId },
+      order: { name: 'ASC' },
+    });
+  }
+
+  /**
    * List all MCP servers for a tenant
    */
   async findByTenantId(tenantId: string): Promise<McpServer[]> {
