@@ -409,6 +409,53 @@ interface McpEndpoint {
 }
 ```
 
+## Tool Event Triggers (toolEventTriggers)
+
+By default, the frontend only receives an `output_update` event when the AI calls `write_output`. If your tool performs an action that should also notify the frontend, you can declare `toolEventTriggers` in `solution.json` — no changes to MCP Server code required.
+
+### Configuration
+
+Add `toolEventTriggers` under the relevant MCP Server in `solution.json`:
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "toolEventTriggers": [
+        { "toolName": "advance_beat", "eventType": "output_update" },
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+      ]
+    }
+  }
+}
+```
+
+Whenever the AI Agent calls `advance_beat` or `execute_dynamic_board` and receives a result, the platform automatically emits an `output_update` event to the frontend.
+
+### ToolEventTrigger Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `toolName` | string | Name of the MCP tool to watch |
+| `eventType` | `"output_update"` | Frontend event to emit (currently only `output_update` is supported) |
+
+### vs. write\_output
+
+| | `write_output` | `toolEventTriggers` |
+|---|---|---|
+| **How triggered** | MCP Server calls explicitly | Platform watches tool results automatically |
+| **Data payload** | Carries field/value to update | Signals frontend to re-fetch data |
+| **Best for** | AI-generated content into forms | State changes, action completion notifications |
+| **Where configured** | MCP Server code | `solution.json` (no restart needed) |
+
+{% hint style="info" %}
+Triggers are registered automatically at startup from `solution.json`. Admins can also update triggers at runtime via `PUT /api/v1/admin/mcp-servers/:id` — changes take effect immediately without restarting the backend.
+{% endhint %}
+
+---
+
 ## write\_output Tool
 
 `write_output` is the most important MCP tool, used to synchronize AI-generated structured data to frontend forms.

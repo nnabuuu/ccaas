@@ -215,6 +215,35 @@ Defines MCP tool servers available to skills.
 - `description` (string, optional) - Human-readable description
 - `type` (string, optional) - `"stdio"` (default)
 - `env` (object, optional) - Environment variables
+- `toolEventTriggers` (array, optional) - Triggers that emit frontend events when a tool call completes
+
+**toolEventTriggers configuration:**
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "toolEventTriggers": [
+        { "toolName": "advance_beat", "eventType": "output_update" },
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+      ]
+    }
+  }
+}
+```
+
+When the AI Agent calls a listed tool and receives a result, the platform immediately emits the specified event to the frontend — no need to call `write_output` from inside the MCP Server.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `toolName` | string | MCP tool name (matches the `name` in the tool definition) |
+| `eventType` | `"output_update"` | Frontend event type to emit (currently only `output_update` is supported) |
+
+{% hint style="info" %}
+`toolEventTriggers` are declared in `solution.json` and registered automatically at startup. Admins can also update triggers in real time via `PUT /api/v1/admin/mcp-servers/:id` without restarting the backend.
+{% endhint %}
 
 ---
 

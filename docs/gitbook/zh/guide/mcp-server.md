@@ -368,6 +368,53 @@ interface McpEndpoint {
 }
 ```
 
+## 工具事件触发器（toolEventTriggers）
+
+默认情况下，前端只有在 AI 调用 `write_output` 时才会收到 `output_update` 事件。如果你的工具执行完某项操作后也需要通知前端刷新，可以在 `solution.json` 中声明 `toolEventTriggers`，无需修改 MCP Server 代码。
+
+### 配置方式
+
+在 `solution.json` 的对应 MCP Server 下添加 `toolEventTriggers`：
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "toolEventTriggers": [
+        { "toolName": "advance_beat", "eventType": "output_update" },
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+      ]
+    }
+  }
+}
+```
+
+每当 AI Agent 调用 `advance_beat` 或 `execute_dynamic_board` 并收到工具结果后，平台会自动向前端发送 `output_update` 事件，触发前端刷新。
+
+### ToolEventTrigger 字段
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `toolName` | string | 要监听的 MCP 工具名称 |
+| `eventType` | `"output_update"` | 触发的前端事件（当前仅支持 `output_update`） |
+
+### 与 write\_output 的区别
+
+| | `write_output` | `toolEventTriggers` |
+|---|---|---|
+| **触发方式** | MCP Server 主动调用 | 平台自动监听工具结果 |
+| **携带数据** | 携带字段值（field/value） | 通知前端重新拉取数据 |
+| **适用场景** | AI 生成内容填入表单 | 状态变更、动作执行后刷新 |
+| **修改位置** | MCP Server 代码 | solution.json（无需重启） |
+
+{% hint style="info" %}
+触发器在平台启动时通过 `solution.json` 自动注册。Admin 也可在运行时通过 `PUT /api/v1/admin/mcp-servers/:id` 更新触发器，立即生效，无需重启服务。
+{% endhint %}
+
+---
+
 ## write\_output 工具
 
 `write_output` 是最重要的 MCP 工具，用于将 AI 生成的结构化数据同步到前端表单。

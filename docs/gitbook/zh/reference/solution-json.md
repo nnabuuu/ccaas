@@ -215,6 +215,35 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 - `description` (string, 可选) - 人类可读的描述
 - `type` (string, 可选) - `"stdio"`（默认）
 - `env` (object, 可选) - 环境变量
+- `toolEventTriggers` (array, 可选) - 工具调用完成时向前端发送事件的触发器配置
+
+**toolEventTriggers 配置:**
+
+```json
+{
+  "mcpServers": {
+    "my-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "toolEventTriggers": [
+        { "toolName": "advance_beat", "eventType": "output_update" },
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+      ]
+    }
+  }
+}
+```
+
+当 AI Agent 调用列表中的工具并收到结果后，平台会立即向前端发出指定的事件，无需在 MCP Server 中调用 `write_output`。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `toolName` | string | MCP 工具名称（与工具定义中的 `name` 一致） |
+| `eventType` | `"output_update"` | 触发的前端事件类型（当前仅支持 `output_update`） |
+
+{% hint style="info" %}
+`toolEventTriggers` 声明在 `solution.json` 中，平台启动时自动注册，无需修改核心后端代码。Admin 管理员也可通过 `/api/v1/admin/mcp-servers/:id` 实时更新触发器配置（无需重启）。
+{% endhint %}
 
 ---
 
