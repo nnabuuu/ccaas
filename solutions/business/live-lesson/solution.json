@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "3.0",
+  "name": "Live Lesson",
+  "slug": "live-lesson",
+  "description": "AI驱动的交互式动态教学系统 - 苏格拉底式板书教学引擎",
+  "tenant": {
+    "name": "Live Lesson",
+    "slug": "live-lesson",
+    "description": "AI驱动的交互式动态教学系统 - 苏格拉底式板书教学引擎"
+  },
+  "mcpServers": {
+    "live-lesson-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Live Lesson board state management tools",
+      "type": "stdio"
+    }
+  },
+  "sessionTemplates": {
+    "teaching": {
+      "description": "苏格拉底式教学会话 - 动态板书引导",
+      "enabledSkillSlugs": ["socratic-teacher"],
+      "appendSystemPrompt": "每次会话开始时必须先调用 load_lesson({ lessonId: 'math-linear-eq-intro' })。严格遵循苏格拉底引导原则，不直接给出答案，每次回应以问题结尾。通过 reveal_nodes 逐步展示板书内容，配合学生的思维进度。"
+    }
+  },
+  "setup": {
+    "skipSteps": [],
+    "customScripts": {
+      "preInstall": ".solution-hooks/pre-install.sh",
+      "customInit": ".solution-hooks/custom-init.sh",
+      "postInstall": ".solution-hooks/post-install.sh"
+    }
+  },
+  "skills": [
+    { "slug": "socratic-teacher", "name": "socratic-teacher" }
+  ]
+}

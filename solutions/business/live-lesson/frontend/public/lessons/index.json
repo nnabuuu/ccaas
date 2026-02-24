@@ -1,0 +1,12 @@
+{
+  "lessons": [
+    {
+      "id": "math-linear-eq-intro",
+      "title": "一元一次方程引言",
+      "subject": "数学",
+      "gradeLevel": "初中七年级",
+      "description": "通过登山追及问题，建立方程思维",
+      "emoji": "📐"
+    }
+  ]
+}
