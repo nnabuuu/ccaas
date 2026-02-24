@@ -146,15 +146,7 @@ function App() {
               <Route path="/session-templates/:name/edit" element={<SessionTemplateFormPage />} />
               <Route path="/queue" element={<QueueMonitorPage />} />
             </Route>
-            <Route
-              element={
-                <Authenticated key="auth" fallback={<Outlet />}>
-                  <NavigateToResource resource="dashboard" />
-                </Authenticated>
-              }
-            >
-              <Route path="/login" element={<LoginPage />} />
-            </Route>
+            <Route path="/login" element={<LoginPage />} />
           </Routes>
         </Suspense>
       </Refine>
