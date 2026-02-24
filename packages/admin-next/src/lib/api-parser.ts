@@ -58,6 +58,7 @@ export function parseApiResponseSafe<T>(
   context: string,
   fallback: T,
 ): T {
+  if (data === undefined) return fallback
   try {
     return parseApiResponse(schema, data, context)
   } catch (error) {

@@ -34,7 +34,7 @@ export function DashboardPage() {
   const { selectedTenantId } = useTenantContext()
   const { total: sdkTotal, distribution: sdkDistribution } = useSdkDistribution()
 
-  const { data: summaryData, isLoading } = useCustom<DashboardSummary>({
+  const { data: summaryData, isLoading: isSummaryLoading } = useCustom<DashboardSummary>({
     url: '/admin/dashboard/summary',
     method: 'get',
     config: {
@@ -42,7 +42,7 @@ export function DashboardPage() {
     },
   })
 
-  const { data: recentData } = useCustom({
+  const { data: recentData, isLoading: isRecentLoading } = useCustom({
     url: '/admin/dashboard/recent-sessions',
     method: 'get',
     config: {
@@ -50,7 +50,7 @@ export function DashboardPage() {
     },
   })
 
-  const { data: tokenData } = useCustom({
+  const { data: tokenData, isLoading: isTokenLoading } = useCustom({
     url: '/admin/analytics/tokens',
     method: 'get',
     config: {
@@ -61,7 +61,7 @@ export function DashboardPage() {
     },
   })
 
-  const { data: errorRateData } = useCustom({
+  const { data: errorRateData, isLoading: isErrorRateLoading } = useCustom({
     url: '/admin/analytics/error-rate-trend',
     method: 'get',
     config: {
@@ -71,6 +71,8 @@ export function DashboardPage() {
       },
     },
   })
+
+  const isAnyLoading = isSummaryLoading || isRecentLoading || isTokenLoading || isErrorRateLoading
 
   // Type-safe API response parsing with Zod schemas (memoized to prevent re-computation)
   const summary = useMemo(
@@ -161,8 +163,27 @@ export function DashboardPage() {
     return buckets.map(({ name, count }) => ({ name, count }))
   }, [recentSessions])
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading dashboard...</div>
+  if (isAnyLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-6 animate-pulse">
+              <div className="h-4 w-24 bg-muted rounded mb-4" />
+              <div className="h-8 w-16 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="rounded-lg border bg-card p-6 animate-pulse">
+              <div className="h-4 w-32 bg-muted rounded mb-4" />
+              <div className="h-48 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
