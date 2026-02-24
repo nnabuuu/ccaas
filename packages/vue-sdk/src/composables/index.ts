@@ -52,3 +52,10 @@ export { useOutputSync } from './useOutputSync'
 
 // Skills Management
 export { useSkills } from './useSkills'
+
+// Workspace File Access
+export { useFileContent } from './useFileContent'
+export type { UseFileContentOptions, UseFileContentReturn, FileContentData } from './useFileContent'
+
+export { useWorkspaceTree } from './useWorkspaceTree'
+export type { UseWorkspaceTreeOptions, UseWorkspaceTreeReturn, WorkspaceFileTreeNode } from './useWorkspaceTree'

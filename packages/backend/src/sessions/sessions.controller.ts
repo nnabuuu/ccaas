@@ -13,6 +13,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   GoneException,
   NotFoundException,
   Logger,
@@ -522,6 +523,38 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
   async listWorkspaceFiles(@Param('sessionId') sessionId: string) {
     this.logger.log(`[Workspace] List files for session ${sessionId}`);
     return this.sessionService.getWorkspaceTree(sessionId);
+  }
+
+  /**
+   * Get file content from session workspace for inline viewing
+   * GET /api/v1/sessions/:sessionId/workspace/file?path=<relative-path>
+   */
+  @Get(':sessionId/workspace/file')
+  @ApiOperation({
+    summary: '获取工作区文件内容（内联查看）/ Get Workspace File Content (Inline)',
+    description: '以 JSON 格式返回文件内容，用于前端内联展示（非下载）/ Returns file content as JSON for inline display (not download)',
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiResponse({
+    status: 200,
+    description: '文件内容 / File content',
+    schema: {
+      properties: {
+        content: { type: 'string', nullable: true },
+        mimeType: { type: 'string' },
+        size: { type: 'number' },
+        filename: { type: 'string' },
+        isBinary: { type: 'boolean' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: '文件不存在 / File not found' })
+  async getWorkspaceFileContent(
+    @Param('sessionId') sessionId: string,
+    @Query('path') filePath: string,
+  ) {
+    this.logger.log(`[Workspace] Get file content: ${sessionId}/${filePath}`);
+    return this.sessionService.getWorkspaceFileContent(sessionId, filePath);
   }
 
   /**

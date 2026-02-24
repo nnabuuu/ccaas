@@ -22,6 +22,8 @@ export { useFilePreview, clearPreviewCache } from './hooks/useFilePreview'
 export { useTaskTracking } from './hooks/useTaskTracking'
 export { useMessageSplitter } from './hooks/useMessageSplitter'
 export { useTurns } from './hooks/useTurns'
+export { useFileContent } from './hooks/useFileContent'
+export { useWorkspaceTree } from './hooks/useWorkspaceTree'
 
 // Components
 export { ChatPanel } from './components/ChatPanel'
@@ -165,6 +167,18 @@ export type { QueueStatusIndicatorProps } from './components/QueueStatusIndicato
 
 // Turns hook types
 export type { Turn, UseTurnsOptions, UseTurnsReturn } from './hooks/useTurns'
+
+// Workspace file access hook types
+export type {
+  FileContentData,
+  UseFileContentOptions,
+  UseFileContentReturn,
+} from './hooks/useFileContent'
+export type {
+  WorkspaceFileTreeNode,
+  UseWorkspaceTreeOptions,
+  UseWorkspaceTreeReturn,
+} from './hooks/useWorkspaceTree'
 
 // Template resolver types
 export type {

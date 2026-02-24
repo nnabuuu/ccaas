@@ -1,9 +1,9 @@
 # Design Doc: Session Workspace File API
 
-**Status:** Draft
+**Status:** Implemented (Updated 2026-02-24)
 **Author:** Claude
 **Date:** 2026-02-05
-**Related:** CCAAS Backend, File Explorer UI
+**Related:** CCAAS Backend, File Explorer UI, Admin Workspace Inspector
 
 ---
 
@@ -13,7 +13,10 @@ This design introduces REST API endpoints to access any file in CCAAS session wo
 
 **Key endpoints:**
 - `GET /api/v1/sessions/:sessionId/workspace` - List files as tree
-- `GET /api/v1/sessions/:sessionId/workspace/*` - Download file
+- `GET /api/v1/sessions/:sessionId/workspace/*` - Download file (stream)
+- `GET /api/v1/sessions/:sessionId/workspace/file?path=<relative-path>` - Get file content as JSON (inline viewing)
+- `GET /api/v1/admin/sessions/:sessionId/workspace` - Admin: list files as tree
+- `GET /api/v1/admin/sessions/:sessionId/workspace/file?path=<relative-path>` - Admin: get file content as JSON (requires `admin` scope)
 
 ---
 
@@ -49,7 +52,7 @@ The ccaas-demo solution needs a File Explorer component that allows users to:
 - ❌ File upload endpoint (future enhancement)
 - ❌ File editing/modification via API
 - ❌ Real-time file change notifications (WebSocket)
-- ❌ File versioning/history
+- ❌ File versioning/history — 已调研，计划在 archive 功能确定后设计数据库快照方案
 
 ---
 
@@ -116,6 +119,57 @@ GET /api/v1/sessions/:sessionId/workspace/*
 - Streaming (no memory buffering)
 - Automatic MIME type detection
 - URL-safe (NestJS handles decoding)
+
+#### 3. Get File Content (Inline Viewing) — User-Facing
+
+```
+GET /api/v1/sessions/:sessionId/workspace/file?path=<relative-path>
+```
+
+- 返回 JSON（非文件流），供 Solution 前端内联展示
+- 文本文件：返回 `content` 字符串（≤512KB）
+- 二进制/超大文件：返回 `content: null, isBinary: true`
+- 无需认证（与文件树、下载端点一致）
+
+**Response:**
+```json
+{
+  "content": "# Report\n...",
+  "mimeType": "text/markdown",
+  "size": 2048,
+  "filename": "output.md",
+  "isBinary": false
+}
+```
+
+> **Note:** Admin 端的对应端点需要 `admin` scope，位于 `/api/v1/admin/sessions/:sessionId/workspace/file?path=...`，不在 Gitbook 中记录（仅面向平台运维）。
+
+#### 4. Admin: Get File Content (Inline Viewing)
+
+```
+GET /api/v1/admin/sessions/:sessionId/workspace/file?path=<relative-path>
+```
+
+- 返回 JSON（非文件流），供 Admin UI 内联展示
+- 文本文件：返回 `content` 字符串（≤512KB）
+- 二进制/超大文件：返回 `content: null, isBinary: true`
+- 需要 admin 权限（admin scope API Key）
+
+**Response:**
+```json
+{
+  "content": "# SKILL.md\n...",
+  "mimeType": "text/markdown",
+  "size": 2048,
+  "filename": "SKILL.md",
+  "isBinary": false
+}
+```
+
+**Features:**
+- Query parameter approach (avoids wildcard routing + `%2F` URL-encoding issues in `sanitizeFilePath`)
+- Inline display in Admin Dashboard Session detail → Workspace Files tab
+- JSON text (not binary stream) — suitable for copy-to-clipboard, syntax highlighting
 
 ### Architecture
 
@@ -445,15 +499,15 @@ Track the following:
 
 ## Alternatives Considered
 
-### 1. Query Parameter Approach
+### 1. Query Parameter Approach — **ADOPTED for Admin API**
 
 ```
-GET /api/v1/sessions/:id/workspace?path=/nested/file.txt
+GET /api/v1/admin/sessions/:id/workspace/file?path=relative/path
 ```
 
 **Pros:** No wildcard routing
 **Cons:** Cluttered URLs, encoding overhead, harder to cache
-**Decision:** Rejected - wildcard is cleaner
+**Decision:** Rejected for user-facing download (wildcard is cleaner), but **adopted for Admin inline viewer** — wildcard routing combined with URL-encoded `/` (`%2F`) caused `sanitizeFilePath` to reject valid paths; query parameter avoids this entirely.
 
 ### 2. Base64-Encoded Path
 
@@ -574,4 +628,6 @@ Pre-launch security review:
 
 ## Change Log
 
+- **2026-02-24**: Added user-facing inline viewer endpoint (§3); added SDK hooks (useFileContent, useWorkspaceTree) for React and Vue; completed endpoint list in Executive Summary; updated Gitbook docs to remove cross-tenant detail from Admin section
+- **2026-02-24**: Status → Implemented; added Admin Inline Viewer endpoint (§4); corrected Alternatives §1 (Query Parameter adopted for Admin API); updated Non-Goals (versioning/history)
 - **2026-02-05**: Initial draft

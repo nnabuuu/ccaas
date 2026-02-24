@@ -156,6 +156,8 @@ The file panel reads from these endpoints automatically — you don't need to ca
 - `Content-Disposition`: `attachment; filename="test.txt"`
 - `Content-Length`: File size in bytes
 
+> **Note:** This endpoint is for Solution frontends (user-facing download). For Admin inline viewing, use the Admin API below.
+
 ## Troubleshooting
 
 ### Files Not Loading
@@ -168,3 +170,67 @@ The file panel reads from these endpoints automatically — you don't need to ca
 ### File Shows as "New" but Stays Highlighted
 
 Call `files.markAsSynced(file.id)` after the user acknowledges the file. `FilePanel` does this automatically when a file is selected.
+
+### Get File Content (Inline Viewing)
+
+**Endpoint:** `GET /api/v1/sessions/:sessionId/workspace/file?path=<relative-path>`
+
+**Example:** `GET /api/v1/sessions/abc123/workspace/scripts/output.md`
+
+**Response:**
+```json
+{
+  "content": "# Report\n...",
+  "mimeType": "text/markdown",
+  "size": 2048,
+  "filename": "output.md",
+  "isBinary": false
+}
+```
+
+- `content` holds the file text (up to 512KB); `null` for binary files
+- When `isBinary: true`, display a "binary file — preview unavailable" notice
+- No authentication required (consistent with tree and download endpoints)
+
+**React SDK Hook:**
+```tsx
+import { useFileContent } from '@kedge-agentic/react-sdk'
+
+const { content, mimeType, isBinary, isLoading, error } = useFileContent({
+  serverUrl: 'http://localhost:3001',
+  sessionId: 'session-abc',
+  filePath: selectedFilePath,  // null = skip request
+})
+```
+
+**Vue SDK Composable:**
+```vue
+<script setup>
+import { ref } from 'vue'
+import { useFileContent } from '@kedge-agentic/vue-sdk'
+
+const selectedFile = ref(null)
+const { content, isBinary, isLoading } = useFileContent({
+  serverUrl: 'http://localhost:3001',
+  sessionId: 'session-abc',
+  filePath: selectedFile,
+})
+</script>
+```
+
+---
+
+## Admin Workspace Inspector
+
+> This is a platform administration feature for operators, not end users or solution builders.
+
+The Session detail page in the Admin Dashboard includes a **Workspace Files** tab. Operators can view any file written by the agent directly in the browser — no download required.
+
+**Features:**
+- Tree-based file browser (collapsible folders, search, sort)
+- Click a file → inline Dialog with content
+- JSON files are auto-formatted
+- Binary files show a preview-unavailable notice
+- One-click copy of file content
+
+This feature is for platform operations. Solution builders should use the user-facing endpoints described above.

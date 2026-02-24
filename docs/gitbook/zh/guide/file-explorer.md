@@ -156,6 +156,8 @@ function MyFileList({ connection, sessionId }) {
 - `Content-Disposition`: `attachment; filename="test.txt"`
 - `Content-Length`: 文件大小（字节）
 
+> **注意：** 该端点供 Solution 前端使用（用户下载）。Admin 内联查看请使用下方 Admin API。
+
 ## 故障排除
 
 ### 文件无法加载
@@ -168,3 +170,67 @@ function MyFileList({ connection, sessionId }) {
 ### 文件显示为"新"但一直保持高亮
 
 在用户确认文件后调用 `files.markAsSynced(file.id)`。`FilePanel` 在文件被选中时会自动执行此操作。
+
+### 获取文件内容（内联查看）
+
+**端点：** `GET /api/v1/sessions/:sessionId/workspace/file?path=<相对路径>`
+
+**示例：** `GET /api/v1/sessions/abc123/workspace/scripts/output.md`
+
+**响应：**
+```json
+{
+  "content": "# 报告\n...",
+  "mimeType": "text/markdown",
+  "size": 2048,
+  "filename": "output.md",
+  "isBinary": false
+}
+```
+
+- `content` 为文本内容（最大 512KB），二进制文件时为 `null`
+- `isBinary: true` 时建议展示"无法预览二进制文件"提示
+- 无需认证（与文件树、下载端点一致）
+
+**React SDK Hook：**
+```tsx
+import { useFileContent } from '@kedge-agentic/react-sdk'
+
+const { content, mimeType, isBinary, isLoading, error } = useFileContent({
+  serverUrl: 'http://localhost:3001',
+  sessionId: 'session-abc',
+  filePath: selectedFilePath,  // null = 不发请求
+})
+```
+
+**Vue SDK Composable：**
+```vue
+<script setup>
+import { ref } from 'vue'
+import { useFileContent } from '@kedge-agentic/vue-sdk'
+
+const selectedFile = ref(null)
+const { content, isBinary, isLoading } = useFileContent({
+  serverUrl: 'http://localhost:3001',
+  sessionId: 'session-abc',
+  filePath: selectedFile,
+})
+</script>
+```
+
+---
+
+## Admin 工作区检查器
+
+> 这是平台管理功能，面向平台运维人员，不面向最终用户或 Solution builder。
+
+Admin Dashboard 的 Session 详情页包含 **Workspace Files** 标签页，运维人员可以直接在浏览器中查看 agent 写入的任意文件，无需下载。
+
+**功能：**
+- 树形文件浏览（支持折叠/展开/搜索/排序）
+- 点击文件 → 内联 Dialog 展示内容
+- JSON 文件自动美化
+- 二进制文件显示提示（不展示内容）
+- 一键复制文件内容
+
+此功能供平台运维使用，Solution builder 请使用上方用户侧端点。
