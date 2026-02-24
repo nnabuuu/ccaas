@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   MessageSquare,
-  Zap,
   Building2,
   ScrollText,
   BarChart3,
@@ -22,7 +21,6 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Sessions', href: '/sessions', icon: MessageSquare },
   { name: 'Queue Monitor', href: '/queue', icon: ListOrdered },
-  { name: 'Skills', href: '/skills', icon: Zap },
   { name: 'Tenants', href: '/tenants', icon: Building2 },
   { name: 'API Keys', href: '/api-keys', icon: Key },
   { name: 'Audit Log', href: '/audit', icon: ScrollText },
