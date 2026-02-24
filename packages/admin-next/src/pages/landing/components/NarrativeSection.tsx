@@ -9,20 +9,20 @@ export function NarrativeSection() {
               <span className="en">Why KedgeAgentic</span>
             </div>
             <h2 className="section-title">
-              <span className="zh">AI 能力很强，<br />却不懂你的业务</span>
-              <span className="en">Generic AI doesn't<br />know your business</span>
+              <span className="zh">AI 很好用，<br />但从 API 到上线还差很远</span>
+              <span className="en">The model is ready.<br />Building around it isn't.</span>
             </h2>
             <p className="section-desc zh">
-              每次把 AI 接入业务，都要重建上下文、反复解释规则、手动传入数据。模型很强，给的却是「一般情况下」的答案——而你的业务从来不是「一般情况」。
+              你拿到了 API Key，模型能力远超预期。但真正上线一个 Agent 服务，还需要会话管理、进程隔离、工具编排、多租户认证……这些工程问题一个都逃不掉，也没有捷径。
             </p>
             <p className="section-desc zh" style={{ marginTop: 16 }}>
-              问题不在模型，在于缺少一种语言让它理解你。Skills 描述业务逻辑，MCP 连接工具与数据——AI 自此真正说你的语言。
+              即见平台把这些工程问题全部内化了。你只需要用 Skills 描述业务逻辑，用 MCP 连接工具与数据——平台负责其余一切，Agent 服务随时可交付。
             </p>
             <p className="section-desc en">
-              Every time you connect AI to your systems, you rebuild context from scratch — re-explaining rules, pasting in data, hoping it understands. A powerful model giving 'generally speaking' answers to your very specific problems.
+              You have the API key. The model exceeds expectations. But shipping an actual agent service means building session management, process isolation, tool orchestration, multi-tenant auth — one problem at a time, each one taking weeks.
             </p>
             <p className="section-desc en" style={{ marginTop: 16 }}>
-              The problem isn't the model. There's just no persistent language for it to understand what your business actually does. Skills express your logic. MCP connects your tools. Together, they make AI fluent in your business.
+              KedgeAgentic internalizes all of it. Describe logic in Skills. Connect tools via MCP. The platform handles everything else — and your agent service is ready to ship.
             </p>
           </div>
           <div className="narrative-cards">

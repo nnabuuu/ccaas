@@ -128,7 +128,7 @@
 .landing-page .hero {
   padding: 160px 24px 100px;
   text-align: center;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 .landing-page .hero-badge {
@@ -150,12 +150,13 @@
   border-radius: 50%;
 }
 .landing-page .hero h1 {
-  font-size: clamp(40px, 6vw, 64px);
+  font-size: clamp(32px, 3.8vw, 48px);
   font-weight: 700;
-  line-height: 1.1;
+  line-height: 1.2;
   letter-spacing: -0.03em;
   color: var(--ink);
   margin-bottom: 24px;
+  white-space: nowrap;
 }
 .landing-page .hero h1 .cn-title {
   display: block;
@@ -813,6 +814,133 @@
   border-color: rgba(255,255,255,0.35);
 }
 
+/* ─── HERO SUBTITLE ─── */
+.landing-page .hero-subtitle {
+  font-size: 17px;
+  color: var(--ink-secondary);
+  line-height: 1.7;
+  max-width: 720px;
+  margin: 0 auto 36px;
+}
+
+/* ─── SKIP SECTION ─── */
+.landing-page .skip-section { background: var(--surface-subtle); }
+
+.landing-page .skip-layout {
+  display: grid;
+  grid-template-columns: 1fr 56px 1fr;
+  align-items: center;
+  margin-top: 56px;
+}
+
+/* Left: before card */
+.landing-page .skip-before {
+  background: var(--navy);
+  border-radius: 16px;
+  padding: 32px 36px;
+}
+
+.landing-page .skip-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.landing-page .skip-before .skip-card-label { color: rgba(255,255,255,0.35); }
+.landing-page .skip-after .skip-card-label { color: var(--accent); }
+
+.landing-page .skip-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-bottom: 28px;
+}
+.landing-page .skip-item {
+  font-size: 14px;
+  color: rgba(255,255,255,0.3);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255,255,255,0.15);
+  padding-left: 4px;
+  line-height: 1.4;
+}
+
+.landing-page .skip-estimate {
+  display: inline-flex;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.landing-page .skip-estimate-bad {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.4);
+}
+.landing-page .skip-estimate-good {
+  background: var(--accent-light);
+  color: var(--accent-dark);
+}
+
+/* Arrow divider */
+.landing-page .skip-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-muted);
+  opacity: 0.5;
+}
+
+/* Right: after card */
+.landing-page .skip-after {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 32px 36px;
+}
+
+.landing-page .skip-steps {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 28px;
+}
+.landing-page .skip-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+.landing-page .skip-step-connector {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  margin-left: 15px;
+}
+.landing-page .skip-step-num {
+  width: 32px;
+  height: 32px;
+  background: var(--accent-light);
+  color: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+.landing-page .skip-step-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.landing-page .skip-step-desc {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
 /* ─── ANIMATION ─── */
 @media (prefers-reduced-motion: no-preference) {
   .landing-page .fade-in {
@@ -838,6 +966,7 @@
 @media (max-width: 768px) {
   .landing-page .nav-links { display: none; }
   .landing-page .hero { padding: 120px 24px 80px; }
+  .landing-page .hero h1 { white-space: normal; font-size: clamp(28px, 7vw, 38px); }
   .landing-page section { padding: 80px 24px; }
   .landing-page .narrative-grid { grid-template-columns: 1fr; gap: 40px; }
   .landing-page .feature-grid { grid-template-columns: 1fr; }
@@ -849,4 +978,9 @@
   .landing-page .plan-grid { grid-template-columns: 1fr; }
   .landing-page .enterprise-strip { flex-direction: column; align-items: flex-start; }
   .landing-page .usecase-card[style*="span 2"] { grid-column: span 1 !important; }
+  .landing-page .skip-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .landing-page .skip-arrow { transform: rotate(90deg); }
 }

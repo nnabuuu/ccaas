@@ -11,9 +11,14 @@ export function HeroSection() {
       </div>
       <h1>
         <span className="cn-title">即见Agentic · 见即所得</span>
-        <span className="zh">你所描述的，<br />即 AI 所能做到的。</span>
-        <span className="en">What you describe,<br />the AI delivers.</span>
+        <span className="zh">描述能力，上线 Agent，如此而已</span>
+        <span className="en">Describe it. Ship it. That's all there is.</span>
       </h1>
+
+      <p className="hero-subtitle">
+        <span className="zh">无需再造轮子——写 Skill 描述业务，接 MCP 连通工具，Agent 服务随时交付</span>
+        <span className="en">No infrastructure to build first. Define your Skills, connect your tools via MCP — your agent service is ready to ship.</span>
+      </p>
 
       {/* 3-step flow */}
       <div className="hero-steps">
@@ -47,7 +52,8 @@ export function HeroSection() {
               <path d="M7 8h10M7 11h6"/>
             </svg>
           </div>
-          <div className="hs-title">即见平台</div>
+          <div className="hs-title zh">即见平台</div>
+          <div className="hs-title en">KedgeAgentic Platform</div>
           <div className="hs-desc zh">调度 Agent 执行，接入模型服务，管理会话</div>
           <div className="hs-desc en">Runs agents, calls model APIs, manages sessions</div>
         </div>

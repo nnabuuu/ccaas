@@ -3,6 +3,7 @@ import './landing.css'
 import { LandingNav } from './components/LandingNav'
 import { HeroSection } from './components/HeroSection'
 import { NarrativeSection } from './components/NarrativeSection'
+import { SkipSection } from './components/SkipSection'
 import { UseCasesSection } from './components/UseCasesSection'
 import { FeaturesGrid } from './components/FeaturesGrid'
 import { ArchitectureDiagram } from './components/ArchitectureDiagram'
@@ -45,6 +46,7 @@ export function LandingPage() {
       <LandingNav lang={lang} toggleLang={toggleLang} />
       <HeroSection />
       <NarrativeSection />
+      <SkipSection />
       <UseCasesSection />
       <FeaturesGrid />
       <ArchitectureDiagram />
