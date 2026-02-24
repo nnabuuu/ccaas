@@ -4,7 +4,7 @@
  * Admin operations for session management including force kill and restart.
  */
 
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SessionService } from '../../sessions/session.service';
@@ -26,6 +26,7 @@ import {
   TokenBreakdown,
 } from '../dto/admin.dto';
 import type { ManagedSession } from '../../common/interfaces';
+import type { ApiKeyScope } from '../../auth/types';
 
 export interface PaginatedSessions {
   data: SessionListItem[];
@@ -56,6 +57,32 @@ export class SessionManagerService {
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
   ) {}
+
+  private isAdminCaller(scopes?: ApiKeyScope[]): boolean {
+    return scopes?.includes('admin') ?? false;
+  }
+
+  /**
+   * Enforce tenant isolation for non-admin callers.
+   *
+   * Defense-in-depth: the @Auth('admin') guard on the controller already
+   * verifies admin scope before requests reach this service. This check
+   * protects against direct service invocations from non-admin contexts.
+   *
+   * Deny-by-default: sessions with a null/undefined tenantId are treated as
+   * tenant-owned data, not shared resources. Non-admin callers cannot access
+   * them unless the session's tenantId matches their own.
+   */
+  private assertTenantAccess(
+    sessionTenantId: string | null | undefined,
+    callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
+  ): void {
+    if (this.isAdminCaller(callerScopes)) return; // admin: no restriction
+    if (sessionTenantId !== callerTenantId) {
+      throw new ForbiddenException('Cannot access sessions belonging to another tenant');
+    }
+  }
 
   /**
    * Map session data to SessionListItem DTO.
@@ -297,6 +324,7 @@ export class SessionManagerService {
   async getSessionDetail(
     sessionId: string,
     callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
   ): Promise<SessionDetail | null> {
     // Try in-memory first (active sessions), fall back to DB (historical sessions)
     const memSession = this.sessionService.getSession(sessionId);
@@ -307,13 +335,7 @@ export class SessionManagerService {
       return null;
     }
 
-    // Tenant ownership check - only restrict if caller has a specific tenantId
-    // (consistent with getSessions which shows all sessions when no tenantId filter)
-    if (callerTenantId && session.tenantId && session.tenantId !== callerTenantId) {
-      throw new ForbiddenException(
-        `Cannot access sessions belonging to another tenant`,
-      );
-    }
+    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
 
     // Get token stats for this session
     const tokenStats = await this.getTokenStatsBatch([sessionId]);
@@ -343,16 +365,15 @@ export class SessionManagerService {
     sessionId: string,
     limit: number = 100,
     offset: number = 0,
-    callerTenantId?: string,
+    callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
   ): Promise<SessionTimeline> {
-    // Verify session exists and tenant ownership
-    if (callerTenantId) {
-      const session = this.sessionService.getSession(sessionId);
-      if (session && session.tenantId !== callerTenantId) {
-        throw new ForbiddenException(
-          `Cannot access sessions belonging to another tenant`,
-        );
-      }
+    // Check tenant access against memory or DB — historical sessions must be protected too
+    const session =
+      this.sessionService.getSession(sessionId) ??
+      (await this.sessionRepository.findOne({ where: { sessionId } }));
+    if (session) {
+      this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
     }
 
     // Safety bounds: Prevent OOM by limiting per-table query size
@@ -494,18 +515,19 @@ export class SessionManagerService {
     sessionId: string,
     adminId: string,
     callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
   ): Promise<boolean> {
     const session = this.sessionService.getSession(sessionId);
     if (!session) {
+      // Distinguish "doesn't exist" from "exists but already closed"
+      const dbSession = await this.sessionRepository.findOne({ where: { sessionId } });
+      if (dbSession) {
+        throw new BadRequestException(`Session ${sessionId} exists but has no active process to kill`);
+      }
       throw new NotFoundException(`Session not found: ${sessionId}`);
     }
 
-    // Tenant ownership check - prevent cross-tenant access
-    if (session.tenantId !== callerTenantId) {
-      throw new ForbiddenException(
-        `Cannot access sessions belonging to another tenant`,
-      );
-    }
+    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
 
     const success = this.sessionService.cancelSession(sessionId);
 
@@ -544,6 +566,7 @@ export class SessionManagerService {
     sessionIds: string[],
     adminId: string,
     callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
   ): Promise<{
     totalRequested: number;
     successCount: number;
@@ -556,7 +579,7 @@ export class SessionManagerService {
   }> {
     const results = await Promise.allSettled(
       sessionIds.map((sessionId) =>
-        this.killSession(sessionId, adminId, callerTenantId),
+        this.killSession(sessionId, adminId, callerTenantId, callerScopes),
       ),
     );
 
@@ -657,16 +680,15 @@ export class SessionManagerService {
    */
   async getTokenBreakdown(
     sessionId: string,
-    callerTenantId?: string,
+    callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
   ): Promise<TokenBreakdown | null> {
-    // Verify session exists and tenant ownership
-    if (callerTenantId) {
-      const session = this.sessionService.getSession(sessionId);
-      if (session && session.tenantId !== callerTenantId) {
-        throw new ForbiddenException(
-          `Cannot access sessions belonging to another tenant`,
-        );
-      }
+    // Check tenant access against memory or DB — historical sessions must be protected too
+    const session =
+      this.sessionService.getSession(sessionId) ??
+      (await this.sessionRepository.findOne({ where: { sessionId } }));
+    if (session) {
+      this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
     }
 
     const result = await this.tokenUsageRepository

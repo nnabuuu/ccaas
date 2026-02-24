@@ -69,6 +69,7 @@ export class AdminSessionsController {
     const session = await this.sessionManagerService.getSessionDetail(
       sessionId,
       ctx.tenantId,
+      ctx.apiKeyScopes,
     );
     if (!session) {
       throw new NotFoundException(`Session not found: ${sessionId}`);
@@ -92,6 +93,7 @@ export class AdminSessionsController {
       query.limit,
       query.offset,
       ctx.tenantId,
+      ctx.apiKeyScopes,
     );
   }
 
@@ -108,6 +110,7 @@ export class AdminSessionsController {
     const breakdown = await this.sessionManagerService.getTokenBreakdown(
       sessionId,
       ctx.tenantId,
+      ctx.apiKeyScopes,
     );
     if (!breakdown) {
       throw new NotFoundException(`No token data found for session: ${sessionId}`);
@@ -132,6 +135,7 @@ export class AdminSessionsController {
       sessionId,
       adminId,
       ctx.tenantId,
+      ctx.apiKeyScopes,
     );
 
     return {
@@ -185,6 +189,7 @@ export class AdminSessionsController {
       dto.sessionIds,
       adminId,
       ctx.tenantId,
+      ctx.apiKeyScopes,
     );
   }
 }

@@ -126,17 +126,17 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(detail);
 
-      const ctx = { tenantId: 'tenant-a' } as any;
+      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
       const result = await controller.getSessionDetail('s1', ctx);
 
       expect(result).toEqual(detail);
-      expect(sessionManagerService.getSessionDetail).toHaveBeenCalledWith('s1', 'tenant-a');
+      expect(sessionManagerService.getSessionDetail).toHaveBeenCalledWith('s1', 'tenant-a', ['admin']);
     });
 
     it('should throw NotFoundException when session not found', async () => {
       sessionManagerService.getSessionDetail = jest.fn().mockResolvedValue(null);
 
-      const ctx = { tenantId: 'tenant-a' } as any;
+      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any;
       await expect(controller.getSessionDetail('nonexistent', ctx)).rejects.toThrow(
         NotFoundException,
       );
@@ -150,7 +150,7 @@ describe('AdminSessionsController', () => {
     it('should return success when kill succeeds', async () => {
       sessionManagerService.killSession = jest.fn().mockResolvedValue(true);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
+      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const result = await controller.killSession('s1', ctx);
 
       expect(result.success).toBe(true);
@@ -159,7 +159,7 @@ describe('AdminSessionsController', () => {
     it('should return failure when kill fails', async () => {
       sessionManagerService.killSession = jest.fn().mockResolvedValue(false);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
+      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const result = await controller.killSession('s1', ctx);
 
       expect(result.success).toBe(false);
@@ -183,7 +183,7 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
-      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant' } as any;
+      const ctx = { apiKeyId: 'admin-key', tenantId: 'admin-tenant', apiKeyScopes: ['admin'] } as any;
       const dto = { sessionIds: ['s1', 's2', 's3'] };
       const result = await controller.bulkKillSessions(ctx, dto);
 
@@ -195,6 +195,7 @@ describe('AdminSessionsController', () => {
         ['s1', 's2', 's3'],
         'admin-key',
         'admin-tenant',
+        ['admin'],
       );
     });
 
@@ -210,7 +211,7 @@ describe('AdminSessionsController', () => {
       };
       sessionManagerService.bulkKillSessions = jest.fn().mockResolvedValue(mockResult);
 
-      const ctx = { tenantId: 'tenant-a' } as any; // No apiKeyId
+      const ctx = { tenantId: 'tenant-a', apiKeyScopes: ['admin'] } as any; // No apiKeyId
       const dto = { sessionIds: ['s1'] };
       await controller.bulkKillSessions(ctx, dto);
 
@@ -218,6 +219,7 @@ describe('AdminSessionsController', () => {
         ['s1'],
         'tenant-a',
         'tenant-a',
+        ['admin'],
       );
     });
   });
