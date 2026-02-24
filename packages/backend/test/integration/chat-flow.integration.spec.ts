@@ -33,7 +33,6 @@ import {
   createWriteFileTrackerHook,
   createToolEventTrackerHook,
   createThinkingTracker,
-  createTokenUsageTracker,
 } from '../../src/hooks';
 
 import {
@@ -216,14 +215,8 @@ describe('Chat Flow Integration Tests', () => {
       (event, sessionId) => thinkingTracker.onThinkingEvent(event, sessionId),
     );
 
-    // Register token usage tracker
-    const tokenUsageTracker = createTokenUsageTracker({
-      tokenUsageService,
-      getSession,
-    });
-    eventMapperService.registerTokenUsageCallback(
-      (usage, sessionId) => tokenUsageTracker.onTokenUsage(usage, sessionId),
-    );
+    // Register session getter so inline token recording has access to session context
+    eventMapperService.registerSessionGetter(getSession);
   }
 
   /**

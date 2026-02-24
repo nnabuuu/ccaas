@@ -11,6 +11,7 @@ import { EventMapperService } from './event-mapper.service';
 import { ToolCallTrackerService } from './services/tool-call-tracker.service';
 import { SubAgentTrackerService } from './services/subagent-tracker.service';
 import { ToolAnalysisService } from './services/tool-analysis.service';
+import { TokenUsageService } from '../messages/token-usage.service';
 import type { ToolHook, ToolResult, ToolHookContext } from '../hooks';
 import {
   createToolUseStartEvent,
@@ -26,11 +27,14 @@ import {
 
 describe('EventMapperService', () => {
   let service: EventMapperService;
+  let mockTokenUsageService: { recordUsage: jest.Mock };
 
   const testSessionId = 'test-session-123';
   const testClientId = 'test-client';
 
   beforeEach(async () => {
+    mockTokenUsageService = { recordUsage: jest.fn().mockResolvedValue({}) };
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({
@@ -43,6 +47,10 @@ describe('EventMapperService', () => {
         ToolCallTrackerService,
         SubAgentTrackerService,
         ToolAnalysisService,
+        {
+          provide: TokenUsageService,
+          useValue: mockTokenUsageService,
+        },
       ],
     }).compile();
 
@@ -873,6 +881,212 @@ describe('EventMapperService', () => {
 
         expect(hookResults[0].isError).toBe(false);
         expect(hookResults[0].errorType).toBeUndefined();
+      });
+    });
+
+    describe('token usage recording', () => {
+      const finishStepWithUsage = {
+        type: 'finish-step',
+        usage: {
+          input_tokens: 100,
+          output_tokens: 50,
+          cache_read_input_tokens: 10,
+          cache_creation_input_tokens: 5,
+          reasoning_tokens: 0,
+        },
+        model: 'claude-sonnet-4-6',
+        stop_reason: 'end_turn',
+        id: 'msg_abc123',
+      };
+
+      const messageDeltaWithUsage = {
+        type: 'message_delta',
+        message: {
+          usage: {
+            input_tokens: 80,
+            output_tokens: 30,
+            cache_read_input_tokens: 0,
+            cache_creation_input_tokens: 0,
+            reasoning_tokens: 0,
+          },
+          model: 'claude-haiku-4-5',
+          id: 'msg_def456',
+        },
+        stop_reason: 'end_turn',
+      };
+
+      const makeSession = (opts: { messageId?: string; tenantId?: string } = {}) => ({
+        sessionId: testSessionId,
+        clientId: 'test-client',
+        cliProcess: null,
+        stdin: null,
+        socket: null,
+        lastActivity: new Date(),
+        status: 'idle' as const,
+        createdAt: new Date(),
+        messageCount: 0,
+        buffer: '',
+        workspaceDir: '/tmp/test',
+        currentAssistantMessageId: opts.messageId,
+        tenantId: opts.tenantId,
+      });
+
+      // flush microtask queue (recordUsage is fire-and-forget)
+      const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+      it('should call recordUsage for finish-step with usage and session context', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-001', tenantId: 'tenant-1' }));
+
+        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-001',
+            sessionId: testSessionId,
+            tenantId: 'tenant-1',
+            model: 'claude-sonnet-4-6',
+            inputTokens: 100,
+            outputTokens: 50,
+            cachedInputTokens: 10,
+            cacheCreationTokens: 5,
+            stopReason: 'end_turn',
+            apiMessageId: 'msg_abc123',
+          }),
+        );
+      });
+
+      it('should call recordUsage for message_delta with usage and session context', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-002', tenantId: 'tenant-1' }));
+
+        service.mapToFrontendEvents(messageDeltaWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-002',
+            inputTokens: 80,
+            outputTokens: 30,
+            model: 'claude-haiku-4-5',
+          }),
+        );
+      });
+
+      it('should emit a token_usage frontend event with accumulated totals', () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-003' }));
+
+        const events = service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+
+        const tokenEvent = events.find((e) => e.type === 'token_usage');
+        expect(tokenEvent).toBeDefined();
+        expect((tokenEvent as any).payload.inputTokens).toBe(100);
+        expect((tokenEvent as any).payload.outputTokens).toBe(50);
+        expect((tokenEvent as any).payload.sessionTotalTokens).toBe(150);
+        expect((tokenEvent as any).payload.model).toBe('claude-sonnet-4-6');
+      });
+
+      it('should store null for stopReason and apiMessageId when absent from event', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-004' }));
+
+        service.mapToFrontendEvents(
+          { type: 'finish-step', usage: { input_tokens: 10, output_tokens: 5 } } as any,
+          testSessionId,
+          testClientId,
+        );
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ stopReason: null, apiMessageId: null }),
+        );
+      });
+
+      it('should pass contextWindowUsage when present in event', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ctx' }));
+        const contextWindowUsage = { used: 15000, limit: 200000, percentFull: 7.5 };
+
+        service.mapToFrontendEvents(
+          {
+            type: 'finish-step',
+            usage: { input_tokens: 10, output_tokens: 5, context_window_usage: contextWindowUsage },
+          } as any,
+          testSessionId,
+          testClientId,
+        );
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ contextWindowUsage }),
+        );
+      });
+
+      it('should pass null for contextWindowUsage when absent from event', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-noctx' }));
+
+        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({ contextWindowUsage: null }),
+        );
+      });
+
+      it.each<[string, () => void]>([
+        ['no session getter registered', () => { /* no-op */ }],
+        ['session has no currentAssistantMessageId', () => service.registerSessionGetter(() => makeSession({ messageId: undefined }))],
+        ['session getter returns undefined', () => service.registerSessionGetter(() => undefined)],
+      ])('should not call recordUsage when %s', async (_, setup) => {
+        setup();
+        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
+      });
+
+      it('should warn (not throw) when finish-step arrives without usage data', () => {
+        const warnSpy = jest.spyOn((service as any).logger, 'warn');
+
+        const events = service.mapToFrontendEvents(
+          { type: 'finish-step' } as any,
+          testSessionId,
+          testClientId,
+        );
+
+        expect(events.find((e) => e.type === 'token_usage')).toBeUndefined();
+        expect(warnSpy).toHaveBeenCalledWith(
+          expect.stringContaining("'finish-step' received without usage data"),
+        );
+      });
+
+      it('should NOT warn when message_delta arrives without usage (content-only delta)', () => {
+        const warnSpy = jest.spyOn((service as any).logger, 'warn');
+
+        service.mapToFrontendEvents(
+          { type: 'message_delta', delta: { type: 'text_delta', text: 'hi' } } as any,
+          testSessionId,
+          testClientId,
+        );
+
+        expect(warnSpy).not.toHaveBeenCalled();
+      });
+
+      it('should catch and log errors from recordUsage without throwing', async () => {
+        const errorSpy = jest.spyOn((service as any).logger, 'error');
+        mockTokenUsageService.recordUsage.mockRejectedValue(new Error('DB connection lost'));
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-005' }));
+
+        // should not throw
+        expect(() =>
+          service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId),
+        ).not.toThrow();
+
+        await flush();
+
+        expect(errorSpy).toHaveBeenCalledWith(
+          'Token recording failed',
+          expect.stringContaining('DB connection lost'),
+        );
       });
     });
   });

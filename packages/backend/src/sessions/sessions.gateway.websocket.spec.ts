@@ -20,7 +20,6 @@ import { MessagesService } from '../messages/messages.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { ToolEventsService } from '../messages/tool-events.service';
 import { ThinkingBlocksService } from '../messages/thinking-blocks.service';
-import { TokenUsageService } from '../messages/token-usage.service';
 import { ProcessLifecycleService } from '../messages/process-lifecycle.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { UserContextService } from '../messages/user-context.service';
@@ -48,8 +47,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
       handleEvent: jest.fn(),
       registerToolHook: jest.fn(),
       registerThinkingCallback: jest.fn(),
-      registerTokenUsageCallback: jest.fn(),
-      registerSessionMessageIdGetter: jest.fn(),
+      registerSessionGetter: jest.fn(),
     };
 
     const mockMessagesService = {
@@ -65,10 +63,6 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
     };
 
     const mockThinkingBlocksService = {
-      create: jest.fn(),
-    };
-
-    const mockTokenUsageService = {
       create: jest.fn(),
     };
 
@@ -125,10 +119,6 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
         {
           provide: ThinkingBlocksService,
           useValue: mockThinkingBlocksService,
-        },
-        {
-          provide: TokenUsageService,
-          useValue: mockTokenUsageService,
         },
         {
           provide: ProcessLifecycleService,

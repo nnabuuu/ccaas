@@ -30,7 +30,6 @@ import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ToolEventsService } from '../messages/tool-events.service';
 import { ThinkingBlocksService } from '../messages/thinking-blocks.service';
-import { TokenUsageService } from '../messages/token-usage.service';
 import { ProcessLifecycleService } from '../messages/process-lifecycle.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { UserContextService } from '../messages/user-context.service';
@@ -42,7 +41,6 @@ import {
   createWriteFileTrackerHook,
   createToolEventTrackerHook,
   createThinkingTracker,
-  createTokenUsageTracker,
   createProcessLifecycleTracker,
 } from '../hooks';
 import { SkillChangeNotifier, SkillChangeCallback } from '../common/skill-change-notifier';
@@ -91,7 +89,6 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     private readonly messagesService: MessagesService,
     private readonly toolEventsService: ToolEventsService,
     private readonly thinkingBlocksService: ThinkingBlocksService,
-    private readonly tokenUsageService: TokenUsageService,
     private readonly processLifecycleService: ProcessLifecycleService,
     private readonly conversationContextService: ConversationContextService,
     private readonly userContextService: UserContextService,
@@ -120,32 +117,19 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.eventMapperService.registerToolHook(writeFileTrackerHook);
     this.logger.log('Registered WriteFileTracker hook');
 
-    // Register session message ID getter for background task tracking
-    this.eventMapperService.registerSessionMessageIdGetter((sessionId) => {
-      const session = this.sessionService.getSession(sessionId);
-      return session?.currentAssistantMessageId;
-    });
-    this.logger.log('Registered session message ID getter for background task tracking');
+    // Register session getter for background task tracking and token recording
+    this.eventMapperService.registerSessionGetter((sessionId) =>
+      this.sessionService.getSession(sessionId),
+    );
+    this.logger.log('Registered session getter');
 
     // Register ThinkingTracker callback
     const thinkingTracker = createThinkingTracker({
       thinkingBlocksService: this.thinkingBlocksService,
       getSession: (sessionId) => this.sessionService.getSession(sessionId),
     });
-    this.eventMapperService.registerThinkingCallback(
-      (event, sessionId) => thinkingTracker.onThinkingEvent(event, sessionId),
-    );
+    this.eventMapperService.registerThinkingCallback(thinkingTracker.onThinkingEvent.bind(thinkingTracker));
     this.logger.log('Registered ThinkingTracker callback');
-
-    // Register TokenUsageTracker callback
-    const tokenUsageTracker = createTokenUsageTracker({
-      tokenUsageService: this.tokenUsageService,
-      getSession: (sessionId) => this.sessionService.getSession(sessionId),
-    });
-    this.eventMapperService.registerTokenUsageCallback(
-      (usage, sessionId) => tokenUsageTracker.onTokenUsage(usage, sessionId),
-    );
-    this.logger.log('Registered TokenUsageTracker callback');
 
     // Create ProcessLifecycleTracker for use in session methods
     this.processLifecycleTracker = createProcessLifecycleTracker({
@@ -155,9 +139,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.logger.log('Created ProcessLifecycleTracker');
 
     // Register skill change listener
-    this.skillChangeCallback = (tenantId, skillId, skillSlug, action) => {
-      this.handleSkillChange(tenantId, skillId, skillSlug, action);
-    };
+    this.skillChangeCallback = this.handleSkillChange.bind(this);
     SkillChangeNotifier.addListener(this.skillChangeCallback);
     this.logger.log('Registered skill change listener');
 

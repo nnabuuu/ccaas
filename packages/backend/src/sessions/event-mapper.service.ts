@@ -11,14 +11,15 @@ import { ConfigService } from '@nestjs/config';
 import type {
   CLIEvent,
   FrontendEvent,
+  ManagedSession,
   TrackedToolCall,
   TokenAccumulator,
   DecisionLogic,
 } from '../common/interfaces';
+import { TokenUsageService } from '../messages/token-usage.service';
 import type { ToolHook, ToolResult, ToolHookContext, ToolStartInfo } from '../hooks';
 import { classifyToolError } from '../hooks/error-classifier';
 import type { ThinkingEvent } from '../hooks/thinking-tracker.hook';
-import type { TokenUsageEvent } from '../hooks/token-usage-tracker.hook';
 import { ToolCallTrackerService } from './services/tool-call-tracker.service';
 import { SubAgentTrackerService, SubAgentTracker } from './services/subagent-tracker.service';
 import { ToolAnalysisService } from './services/tool-analysis.service';
@@ -27,11 +28,6 @@ import { ToolAnalysisService } from './services/tool-analysis.service';
  * Callback type for thinking events
  */
 export type ThinkingEventCallback = (event: ThinkingEvent, sessionId: string) => void | Promise<void>;
-
-/**
- * Callback type for token usage events
- */
-export type TokenUsageCallback = (usage: TokenUsageEvent, sessionId: string) => void | Promise<void>;
 
 // Re-export SubAgentTracker for backward compatibility
 export type { SubAgentTracker } from './services/subagent-tracker.service';
@@ -56,8 +52,8 @@ export class EventMapperService {
   // Track background task spawning messages (sessionId:toolUseId → messageId)
   private backgroundTaskSpawningMessages = new Map<string, string>();
 
-  // Callback to get current message ID from session
-  private sessionMessageIdGetter?: (sessionId: string) => string | undefined;
+  // Getter to retrieve session context (used for background task tracking and token recording)
+  private sessionGetter?: (sessionId: string) => ManagedSession | undefined;
 
   // Callbacks for thinking events
   private thinkingCallbacks: ThinkingEventCallback[] = [];
@@ -65,14 +61,12 @@ export class EventMapperService {
   // Callbacks for background task registration
   private backgroundTaskCallbacks: Array<(sessionId: string, tracker: SubAgentTracker) => void> = [];
 
-  // Callbacks for token usage events
-  private tokenUsageCallbacks: TokenUsageCallback[] = [];
-
   constructor(
     private readonly configService: ConfigService,
     private readonly toolCallTracker: ToolCallTrackerService,
     private readonly subAgentTracker: SubAgentTrackerService,
     private readonly toolAnalysis: ToolAnalysisService,
+    private readonly tokenUsageService: TokenUsageService,
   ) {
     this.debug = this.configService.get('debug', false);
   }
@@ -83,14 +77,6 @@ export class EventMapperService {
   registerThinkingCallback(callback: ThinkingEventCallback): void {
     this.thinkingCallbacks.push(callback);
     this.logger.log('Registered thinking event callback');
-  }
-
-  /**
-   * Register a callback for token usage events
-   */
-  registerTokenUsageCallback(callback: TokenUsageCallback): void {
-    this.tokenUsageCallbacks.push(callback);
-    this.logger.log('Registered token usage callback');
   }
 
   /**
@@ -109,21 +95,6 @@ export class EventMapperService {
   }
 
   /**
-   * Execute token usage callbacks
-   */
-  private async executeTokenUsageCallbacks(usage: TokenUsageEvent, sessionId: string): Promise<void> {
-    for (const callback of this.tokenUsageCallbacks) {
-      try {
-        await callback(usage, sessionId);
-      } catch (error) {
-        this.logger.error(
-          `Token usage callback error: ${error instanceof Error ? error.message : error}`,
-        );
-      }
-    }
-  }
-
-  /**
    * Register a tool hook
    */
   registerToolHook(hook: ToolHook): void {
@@ -133,12 +104,12 @@ export class EventMapperService {
   }
 
   /**
-   * Register callback to get current message ID from session
-   * Called from SessionsGateway during initialization
+   * Register callback to retrieve session context by sessionId.
+   * Used for background task tracking and inline token recording.
+   * Called from SessionsGateway during initialization.
    */
-  registerSessionMessageIdGetter(getter: (sessionId: string) => string | undefined): void {
-    this.sessionMessageIdGetter = getter;
-    this.logger.log('Registered session message ID getter for background task tracking');
+  registerSessionGetter(getter: (sessionId: string) => ManagedSession | undefined): void {
+    this.sessionGetter = getter;
   }
 
   /**
@@ -869,50 +840,66 @@ export class EventMapperService {
         const usageEvent = cliEvent as any;
         const usage = usageEvent.usage || usageEvent.message?.usage;
 
-        if (usage) {
-          const accumulator = this.getTokenAccumulator(sessionId);
-          this.accumulateTokens(accumulator, {
+        if (!usage) {
+          // finish-step should always carry usage; message_delta content-only variants may not
+          if (cliEvent.type === 'finish-step') {
+            this.logger.warn(
+              `Token event 'finish-step' received without usage data for session ${sessionId}`,
+            );
+          }
+          break;
+        }
+
+        const accumulator = this.getTokenAccumulator(sessionId);
+        this.accumulateTokens(accumulator, {
+          inputTokens: usage.input_tokens || 0,
+          outputTokens: usage.output_tokens || 0,
+          cachedTokens: usage.cache_read_input_tokens || 0,
+        });
+
+        const model = usageEvent.model || usageEvent.message?.model || 'unknown';
+        const stopReason = usageEvent.finish_reason || usageEvent.stop_reason || null;
+        const apiMessageId = usageEvent.id || usageEvent.message?.id || null;
+
+        events.push({
+          type: 'token_usage',
+          sessionId,
+          timestamp,
+          payload: {
             inputTokens: usage.input_tokens || 0,
             outputTokens: usage.output_tokens || 0,
-            cachedTokens: usage.cache_read_input_tokens || 0,
-          });
+            cachedInputTokens: usage.cache_read_input_tokens,
+            sessionTotalTokens: accumulator.inputTokens + accumulator.outputTokens,
+            sessionInputTokens: accumulator.inputTokens,
+            sessionOutputTokens: accumulator.outputTokens,
+            model,
+            stopReason,
+            messageId: apiMessageId,
+          },
+        });
 
-          const model = usageEvent.model || usageEvent.message?.model || 'unknown';
-          const stopReason = usageEvent.finish_reason || usageEvent.stop_reason || 'unknown';
-          const apiMessageId = usageEvent.id || usageEvent.message?.id || 'unknown';
-
-          events.push({
-            type: 'token_usage',
+        // Inline token persistence — no callback indirection needed
+        const session = this.sessionGetter?.(sessionId);
+        if (session?.currentAssistantMessageId) {
+          this.tokenUsageService.recordUsage({
+            messageId: session.currentAssistantMessageId,
             sessionId,
-            timestamp,
-            payload: {
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens,
-              sessionTotalTokens: accumulator.inputTokens + accumulator.outputTokens,
-              sessionInputTokens: accumulator.inputTokens,
-              sessionOutputTokens: accumulator.outputTokens,
-              model,
-              stopReason,
-              messageId: apiMessageId,
-            },
-          });
-
-          // Fire token usage callback (async, non-blocking)
-          this.executeTokenUsageCallbacks(
-            {
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens || 0,
-              cacheReadTokens: usage.cache_read_input_tokens || 0,
-              cacheCreationTokens: usage.cache_creation_input_tokens || 0,
-              reasoningTokens: usage.reasoning_tokens || 0,
-              model,
-              stopReason,
-              apiMessageId,
-            },
-            sessionId,
-          ).catch((err) => this.logger.error(`Token usage callback failed: ${err}`));
+            tenantId: session.tenantId ?? null,
+            model,
+            inputTokens: usage.input_tokens || 0,
+            outputTokens: usage.output_tokens || 0,
+            cachedInputTokens: usage.cache_read_input_tokens || 0,
+            cacheReadTokens: usage.cache_read_input_tokens || 0,
+            cacheCreationTokens: usage.cache_creation_input_tokens || 0,
+            reasoningTokens: usage.reasoning_tokens || 0,
+            contextWindowUsage: usage.context_window_usage ?? null,
+            stopReason,
+            apiMessageId,
+          }).catch((err) => this.logger.error('Token recording failed', err instanceof Error ? err.stack : err));
+        } else if (!session) {
+          this.logger.warn(`Cannot record tokens: session ${sessionId} not found in memory`);
+        } else {
+          this.logger.warn(`Cannot record tokens for session ${sessionId}: no assistant message ID`);
         }
         break;
       }
@@ -1155,8 +1142,7 @@ export class EventMapperService {
    */
   private getSpawningMessageId(sessionId: string): string | undefined {
     // The spawning message is the one currently being processed
-    // We use a callback to access the session's currentAssistantMessageId
-    return this.sessionMessageIdGetter?.(sessionId);
+    return this.sessionGetter?.(sessionId)?.currentAssistantMessageId;
   }
 
   /**
