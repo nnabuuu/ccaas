@@ -39,7 +39,8 @@ export class EventMapperService {
   private readonly debug: boolean;
 
   // Tools handled by the hardcoded switch — excluded from trigger loop to prevent double-emit
-  private static readonly TRIGGER_HANDLED_TOOLS = new Set(['write_output', 'attach_file']);
+  // Tools handled by the hardcoded switch — exposed for admin timeline derivation
+  static readonly TRIGGER_HANDLED_TOOLS = new Set(['write_output', 'attach_file']);
 
   // Track execution order per session (messageId -> counter)
   private sessionExecutionCounters = new Map<string, number>();
@@ -136,6 +137,14 @@ export class EventMapperService {
    */
   clearAllTenantToolTriggers(): void {
     this.tenantToolTriggers.clear();
+  }
+
+  /**
+   * Get tenant tool triggers for a given tenant.
+   * Used by SessionManagerService to derive output_update events in the admin timeline.
+   */
+  getTenantToolTriggers(tenantId: string): ToolEventTrigger[] {
+    return this.tenantToolTriggers.get(tenantId) ?? [];
   }
 
   /**

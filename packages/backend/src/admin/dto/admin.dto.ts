@@ -126,7 +126,7 @@ export interface TokenBreakdown {
 
 export interface SessionTimelineEvent {
   id: string;
-  type: 'message' | 'tool_event' | 'thinking_block' | 'process_event' | 'api_error';
+  type: 'message' | 'tool_event' | 'thinking_block' | 'process_event' | 'api_error' | 'output_update';
   timestamp: Date;
   data: unknown;
 }

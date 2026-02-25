@@ -8,6 +8,7 @@ import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestEx
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { SessionService } from '../../sessions/session.service';
+import { EventMapperService } from '../../sessions/event-mapper.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';
 import { ThinkingBlock } from '../../messages/entities/thinking-block.entity';
@@ -42,6 +43,7 @@ export class SessionManagerService {
   constructor(
     private readonly sessionService: SessionService,
     private readonly auditService: AuditService,
+    private readonly eventMapper: EventMapperService,
     @InjectRepository(Message)
     private readonly messageRepository: Repository<Message>,
     @InjectRepository(ToolEvent)
@@ -442,6 +444,14 @@ export class SessionManagerService {
           success: tool.success,
         },
       });
+
+      // Derive output_update from end-phase tool results (mirrors EventMapperService.handleSpecialToolResult)
+      if (tool.phase === 'end' && tool.toolOutput && tool.success !== false) {
+        const derived = this.deriveOutputUpdate(tool);
+        if (derived) {
+          events.push(derived);
+        }
+      }
     }
 
     for (const thinking of thinkingBlocks) {
@@ -813,6 +823,53 @@ export class SessionManagerService {
   // ===========================================================================
   // Helper Methods
   // ===========================================================================
+
+  private deriveOutputUpdate(tool: ToolEvent): SessionTimelineEvent | null {
+    const normalizedName = tool.toolName
+      .replace(/^mcp__[^_]+__/, '')
+      .replace(/^mcp__/, '');
+
+    const isBuiltinTool = EventMapperService.TRIGGER_HANDLED_TOOLS.has(normalizedName);
+
+    let isTriggerTool = false;
+    if (!isBuiltinTool && tool.tenantId) {
+      const triggers = this.eventMapper.getTenantToolTriggers(tool.tenantId);
+      isTriggerTool = triggers.some(
+        t => t.toolName === normalizedName && t.eventType === 'output_update',
+      );
+    }
+
+    if (!isBuiltinTool && !isTriggerTool) return null;
+
+    const parsed = this.parseToolOutput(tool.toolOutput);
+    return {
+      id: `${tool.id}-output`,
+      type: 'output_update',
+      timestamp: tool.createdAt,
+      data: {
+        toolName: tool.toolName,
+        data: parsed?.data || parsed,
+        status: (parsed?.status as string) || 'unknown',
+        progress: parsed?.progress,
+      },
+    };
+  }
+
+  private parseToolOutput(output: unknown): Record<string, any> | null {
+    if (!output) return null;
+    if (typeof output === 'string') {
+      try { return JSON.parse(output); } catch { return { raw: output }; }
+    }
+    if (Array.isArray(output)) {
+      const textBlock = output.find((b: any) => b.type === 'text' && typeof b.text === 'string');
+      if (textBlock) {
+        try { return JSON.parse(textBlock.text); } catch { return { raw: textBlock.text }; }
+      }
+      return null;
+    }
+    if (typeof output === 'object' && output !== null) return output as Record<string, any>;
+    return null;
+  }
 
   /**
    * Batch query token stats for multiple sessions
