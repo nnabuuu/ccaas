@@ -20,6 +20,15 @@ const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
 const TENANT_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'
 
+export type TutoringMode = 'idle' | 'picking' | 'suggesting' | 'explaining'
+
+export type SelectionMode = 'single' | 'multi'
+
+export interface SuggestedQuestionsPayload {
+  questions: string[]
+  selectionMode: SelectionMode
+}
+
 export interface UseLiveLessonReturn {
   // Connection
   connected: boolean
@@ -44,6 +53,12 @@ export interface UseLiveLessonReturn {
   isThinking: boolean
   thinkingContent: string
 
+  // Tutoring
+  tutoringMode: TutoringMode
+  isAnimating: boolean
+  suggestedQuestions: string[]
+  selectionMode: SelectionMode
+
   // Actions
   sendMessage: (content: string) => void
   cancelProcessing: () => void
@@ -52,6 +67,13 @@ export interface UseLiveLessonReturn {
   startLesson: () => void
   advanceBeat: () => void
   canAdvanceBeat: boolean
+
+  // Tutoring actions
+  raiseHand: () => void
+  dismissTutoring: () => void
+  sendExplainRequest: (question: string) => void
+  requestMoreQuestions: () => void
+  handleAnimationChange: (animating: boolean) => void
 }
 
 export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLessonReturn {
@@ -67,6 +89,12 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const [dynamicBoardActions, setDynamicBoardActions] = useState<ChalkboardAction[]>([])
   const [globalBoardOps, setGlobalBoardOps] = useState<GlobalBoardOp[]>([])
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
+
+  // Tutoring state
+  const [tutoringMode, setTutoringMode] = useState<TutoringMode>('idle')
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
+  const [selectionMode, setSelectionMode] = useState<SelectionMode>('single')
 
   // ===== Page Context (board state visible to Agent) =====
   const { context, updateContext } = usePageContext()
@@ -125,15 +153,25 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
         }
 
         // Apply beat's scripted dynamicBoardActions (embedded in beatState by advance_beat)
-        if (Array.isArray(raw.dynamicBoardActions)) {
-          setDynamicBoardActions(raw.dynamicBoardActions as ChalkboardAction[])
+        if (raw.dynamicBoardActions) {
+          const dba = typeof raw.dynamicBoardActions === 'string'
+            ? JSON.parse(raw.dynamicBoardActions)
+            : raw.dynamicBoardActions
+          if (Array.isArray(dba)) setDynamicBoardActions(dba)
         }
       } else if (update.field === 'dynamicBoardActions') {
         // execute_dynamic_board appends to existing actions (AI偏轨时)
-        setDynamicBoardActions(update.value as ChalkboardAction[])
+        const raw = typeof update.value === 'string' ? JSON.parse(update.value) : update.value
+        setDynamicBoardActions(Array.isArray(raw) ? raw : [])
       } else if (update.field === 'globalBoardOps') {
         const ops = update.value as GlobalBoardOp[]
         setGlobalBoardOps(prev => [...prev, ...ops])
+      } else if (update.field === 'suggestedQuestions') {
+        // AI returned suggested questions via suggest_questions tool
+        const payload = update.value as SuggestedQuestionsPayload
+        setSuggestedQuestions(payload.questions)
+        setSelectionMode(payload.selectionMode)
+        setTutoringMode('picking')
       }
     },
   })
@@ -173,9 +211,15 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     return () => controller.abort()
   }, [lessonId])
 
-  // Keep a ref to the latest chat so callbacks read current state, not stale closure.
+  // Keep refs to latest values so callbacks read current state, not stale closure.
   const chatRef = useRef(chat)
   chatRef.current = chat
+
+  const manifestRef = useRef(manifest)
+  manifestRef.current = manifest
+
+  const beatStateRef = useRef(beatState)
+  beatStateRef.current = beatState
 
   // Guard: prevent duplicate '开始上课' messages
   const autoStartedRef = useRef(false)
@@ -198,6 +242,10 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setGlobalBoardOps([])
     setTimeline([])
     setBoardState(null)
+    setTutoringMode('idle')
+    setSuggestedQuestions([])
+    setSelectionMode('single')
+    setIsAnimating(false)
   }, [lessonId])
 
   // Send an ask message when student clicks on a board node
@@ -248,6 +296,11 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     // Always replace actions (even with []) so the canvas doesn't replay
     // the previous beat's actions on a beat that has no board content.
     setDynamicBoardActions(Array.isArray(beat.dynamicBoardActions) ? beat.dynamicBoardActions : [])
+
+    // Reset tutoring state on beat change
+    setTutoringMode('idle')
+    setSuggestedQuestions([])
+    setSelectionMode('single')
   }, [manifest])  // ref reads are never stale, no currentBeatIndex dep needed
 
   // Derive from beatState so this stays in sync with both UI-driven and AI-driven advances
@@ -257,6 +310,71 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const currentBeat: Beat | null = beatState?.currentBeatId
     ? (manifest?.beats?.find(b => b.id === beatState.currentBeatId) ?? null)
     : null
+
+  // Keep currentBeat ref for tutoring callbacks
+  const currentBeatRef = useRef(currentBeat)
+  currentBeatRef.current = currentBeat
+
+  // ===== Tutoring callbacks =====
+
+  const raiseHand = useCallback(() => {
+    setTutoringMode('picking')
+    setSuggestedQuestions([])
+  }, [])
+
+  const dismissTutoring = useCallback(() => {
+    setTutoringMode('idle')
+    setSuggestedQuestions([])
+  }, [])
+
+  const sendExplainRequest = useCallback((question: string) => {
+    setTutoringMode('explaining')
+
+    const beat = currentBeatRef.current
+    const m = manifestRef.current
+    const bs = beatStateRef.current
+
+    const lines = [
+      '/explain',
+      '[CONTEXT]',
+      `课程: ${m?.title ?? ''}`,
+      `当前 Beat: ${bs?.currentBeatId ?? ''} (${(bs?.currentBeatIndex ?? 0) + 1}/${bs?.totalBeats ?? 0})`,
+      `章节: ${bs?.sectionId ?? ''}`,
+      `叙述内容: ${beat?.narratorText ?? ''}`,
+      '[/CONTEXT]',
+      '',
+      '[QUESTION]',
+      question,
+      '[/QUESTION]',
+    ]
+
+    chatRef.current.sendMessage(lines.join('\n'))
+  }, [])
+
+  const requestMoreQuestions = useCallback(() => {
+    setTutoringMode('suggesting')
+
+    const beat = currentBeatRef.current
+    const m = manifestRef.current
+    const bs = beatStateRef.current
+    const eqs = beat?.expectedQuestions ?? []
+
+    const lines = [
+      '/suggest-questions',
+      '[CONTEXT]',
+      `课程: ${m?.title ?? ''}`,
+      `当前 Beat: ${bs?.currentBeatId ?? ''} (${(bs?.currentBeatIndex ?? 0) + 1}/${bs?.totalBeats ?? 0})`,
+      `叙述内容: ${beat?.narratorText ?? ''}`,
+      `已有预设问题: ${eqs.join(' | ')}`,
+      '[/CONTEXT]',
+    ]
+
+    chatRef.current.sendMessage(lines.join('\n'))
+  }, [])
+
+  const handleAnimationChange = useCallback((animating: boolean) => {
+    setIsAnimating(animating)
+  }, [])
 
   return {
     connected: connection.connected,
@@ -274,6 +392,10 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     currentStreamContent: chat.currentStreamContent,
     isThinking: status.isThinking,
     thinkingContent: status.thinkingContent,
+    tutoringMode,
+    isAnimating,
+    suggestedQuestions,
+    selectionMode,
     sendMessage: chat.sendMessage,
     cancelProcessing: chat.cancelProcessing,
     clearConversation: chat.clearConversation,
@@ -281,6 +403,11 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     startLesson,
     advanceBeat,
     canAdvanceBeat,
+    raiseHand,
+    dismissTutoring,
+    sendExplainRequest,
+    requestMoreQuestions,
+    handleAnimationChange,
   }
 }
 
