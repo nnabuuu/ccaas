@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import { CaretLeft } from '@phosphor-icons/react'
 import { useLiveLesson } from '../hooks/useLiveLesson'
@@ -37,9 +37,20 @@ export default function LessonPage() {
     currentStreamContent,
     sendMessage,
     clearConversation,
+    startLesson,
     advanceBeat,
     canAdvanceBeat,
   } = useLiveLesson(id, forceNew)
+
+  // handleContinue: drives the unified "开始课程" / "继续 →" button.
+  // Always advances the beat (from manifest); on the very first click also
+  // fires '开始上课' to the AI to start the session.
+  const handleContinue = useCallback(() => {
+    advanceBeat()
+    if (!beatState) {
+      startLesson()
+    }
+  }, [advanceBeat, startLesson, beatState])
 
   // Compute revealedNodeIds from globalBoardOps
   const revealedNodeIds = useMemo(
@@ -119,7 +130,7 @@ export default function LessonPage() {
             isActive={isProcessing || isThinking}
             canContinue={canAdvanceBeat}
             isLoading={!manifest}
-            onContinue={advanceBeat}
+            onContinue={handleContinue}
           />
         </div>
 
@@ -136,6 +147,8 @@ export default function LessonPage() {
             currentStreamContent={currentStreamContent}
             onSendMessage={sendMessage}
             onClearConversation={clearConversation}
+            canContinue={canAdvanceBeat && !isProcessing && !isThinking}
+            onContinue={handleContinue}
           />
         </div>
       </main>

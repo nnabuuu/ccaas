@@ -3,12 +3,13 @@
  * Live Lesson MCP Server
  *
  * Tools:
- * 1. load_lesson - Load lesson manifest and initialize board state
- * 2. reveal_nodes - Make board skeleton nodes visible
- * 3. highlight_nodes - Flash/highlight specific nodes
- * 4. show_confusion_probes - Show diagnostic probe buttons for a confusion point
- * 5. dismiss_probes - Clear all probes and highlights
- * 6. write_output - Sync data to frontend (platform mechanism)
+ * 1. load_lesson            - Load lesson manifest and initialize board state; returns full manifest to AI
+ * 2. reveal_nodes           - Make board skeleton nodes visible
+ * 3. highlight_nodes        - Flash/highlight specific nodes
+ * 4. set_phase              - Update the current teaching phase label
+ * 5. write_output           - Sync data to frontend (platform mechanism)
+ * 6. advance_beat           - Advance to a specific beat in the lesson
+ * 7. execute_dynamic_board  - Execute custom chalkboard drawing actions
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -18,7 +19,7 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult } from './types.js';
+import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type ChalkboardAction } from './types.js';
 import { validateField } from './schemas.js';
 import { stateManager } from './state-manager.js';
 
@@ -36,8 +37,8 @@ const server = new Server(
 );
 
 /**
- * Internal: Sync current board state to frontend via write_output format
- * Returns the MCP content response for board state
+ * Internal: Sync current board state to frontend via write_output format.
+ * Always returns the boardState field for backward compatibility.
  */
 function syncBoardState(): { content: Array<{ type: string; text: string }> } {
   const state = stateManager.getBoardState();
@@ -81,11 +82,12 @@ const loadLessonTool: Tool = {
   description: `加载课程清单并初始化板书状态机。
 
 每次教学会话开始时必须首先调用此工具。
+返回完整的 manifest（所有节点内容、教学阶段、teachingNotes），供 AI 掌握全局教学蓝图。
 
 Example:
 { "lessonId": "math-linear-eq-intro" }
 
-Returns: Initial board state with visible nodes`,
+Returns: Full manifest + initial board state`,
   inputSchema: {
     type: 'object',
     properties: {
@@ -156,46 +158,23 @@ Example (clear all highlights):
   },
 };
 
-const showConfusionProbesTool: Tool = {
-  name: 'show_confusion_probes',
-  description: `展示二级诊断探针按钮，精准定位学生困惑来源。
+const setPhaseTool: Tool = {
+  name: 'set_phase',
+  description: `更新当前教学阶段标签，反映教学进度。
 
-当学生表现出困惑时（说"不明白"、发送 [CONFUSED] 信号等），调用此工具：
-1. 从课程清单查找对应困惑点
-2. 写入 activeProbes（前端显示诊断按钮）
-3. 高亮对应板书节点（红色）
-4. 自动同步板书状态到前端
+调用此工具后会自动同步板书状态到前端。
 
-Available confusion point IDs:
-- "cp-speed-ratio" - 关于1.2倍速度的困惑
-- "cp-variable-setup" - 关于设未知数x的困惑
-- "cp-equation-balance" - 关于等号含义的困惑
-
-After probes are shown, wait for [PROBE_SELECTED] {probeId} message from frontend,
-then call dismiss_probes() and provide Socratic remediation.`,
+Example:
+{ "phaseId": "equation" }`,
   inputSchema: {
     type: 'object',
     properties: {
-      confusionPointId: {
+      phaseId: {
         type: 'string',
-        description: 'Confusion point ID from the lesson manifest',
+        description: 'Phase ID from the lesson manifest teachingPhases',
       },
     },
-    required: ['confusionPointId'],
-  },
-};
-
-const dismissProbesTool: Tool = {
-  name: 'dismiss_probes',
-  description: `清除所有诊断探针按钮和高亮状态。
-
-在学生选择了探针（收到 [PROBE_SELECTED] 消息）后调用此工具，
-然后用苏格拉底方式讲解 remediation 内容。
-
-自动同步板书状态到前端。`,
-  inputSchema: {
-    type: 'object',
-    properties: {},
+    required: ['phaseId'],
   },
 };
 
@@ -207,6 +186,9 @@ Valid fields: ${SYNC_FIELDS.join(', ')}
 
 - boardState: Current board state object
 - teacherMessage: Teacher message string
+- beatState: Beat progress state
+- dynamicBoardActions: Array of chalkboard drawing actions
+- globalBoardOps: Array of global board operations
 
 The platform detects this tool call and broadcasts an output_update event to the frontend.
 
@@ -236,6 +218,63 @@ Example:
   },
 };
 
+const advanceBeatTool: Tool = {
+  name: 'advance_beat',
+  description: `推进到指定 beat，更新课程进度。
+
+调用此工具后，前端会：
+1. 更新左侧 GlobalBoard（点亮对应节点）
+2. 在 InteractionPanel 显示 narratorText（叙述文本）
+3. 显示 expectedQuestions 作为 quick-reply 按钮
+
+标准教学流程：
+- 课程开始: advance_beat({ beatId: "beat-1" })
+- 学生准备好后: advance_beat({ beatId: "beat-2" })
+
+返回: { beatState, narratorText, expectedQuestions }`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      beatId: { type: 'string', description: 'Beat ID from lesson manifest' },
+    },
+    required: ['beatId'],
+  },
+};
+
+const executeDynamicBoardTool: Tool = {
+  name: 'execute_dynamic_board',
+  description: `在动态黑板上执行自定义绘图动作（AI偏轨时使用）。
+
+当学生提问超出标准 beat 范围时，用此工具在黑板上画出自定义解释。
+
+Example:
+{
+  "beatId": "beat-2",
+  "actions": [
+    { "type": "write", "text": "速度比 = 1.2", "x": 100, "y": 200, "fontSize": 24 },
+    { "type": "draw_line", "x1": 80, "y1": 220, "x2": 350, "y2": 220 }
+  ]
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      beatId: { type: 'string', description: 'Current beat ID' },
+      actions: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            type: { type: 'string' },
+          },
+          required: ['type'],
+        },
+        description: 'Array of ChalkboardAction objects',
+      },
+    },
+    required: ['beatId', 'actions'],
+  },
+};
+
 // Handle list_tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -243,9 +282,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       loadLessonTool,
       revealNodesTool,
       highlightNodesTool,
-      showConfusionProbesTool,
-      dismissProbesTool,
+      setPhaseTool,
       writeOutputTool,
+      advanceBeatTool,
+      executeDynamicBoardTool,
     ],
   };
 });
@@ -262,7 +302,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const state = stateManager.loadLesson(lessonId);
       const manifest = stateManager.getManifest()!;
 
-      // Sync to frontend
+      // Sync board state to frontend
       const syncResponse = syncBoardState();
 
       return {
@@ -273,10 +313,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               status: 'success',
               message: `课程 "${manifest.title}" 加载成功`,
               lessonId,
-              phases: manifest.teachingPhases.map(p => p.id),
-              totalNodes: manifest.boardNodes.length,
+              manifest,
               initiallyVisibleNodes: state.visibleNodeIds,
-              confusionPoints: manifest.confusionPoints.map(cp => cp.id),
               boardStateSync: JSON.parse(syncResponse.content[0].text),
             }),
           },
@@ -327,12 +365,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  // ── show_confusion_probes ─────────────────────────────────────────────
-  if (name === 'show_confusion_probes') {
-    const { confusionPointId } = args as { confusionPointId: string };
+  // ── set_phase ─────────────────────────────────────────────────────────
+  if (name === 'set_phase') {
+    const { phaseId } = args as { phaseId: string };
 
     try {
-      stateManager.showConfusionProbes(confusionPointId);
+      stateManager.setPhase(phaseId);
       return syncBoardState();
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -343,11 +381,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
-  // ── dismiss_probes ─────────────────────────────────────────────────────
-  if (name === 'dismiss_probes') {
+  // ── advance_beat ──────────────────────────────────────────────────────
+  if (name === 'advance_beat') {
+    const { beatId } = args as { beatId: string };
     try {
-      stateManager.dismissProbes();
-      return syncBoardState();
+      const { beatState, beat } = stateManager.advanceBeat(beatId);
+      // Apply global board op for this section
+      if (beat?.sectionId) {
+        stateManager.applyGlobalOp({ nodeId: beat.sectionId, op: 'reveal' });
+      }
+
+      const result = {
+        status: 'success',
+        data: {
+          field: 'beatState' as SyncField,
+          value: {
+            ...beatState,
+            // Include extra info for AI
+            narratorText: beat?.narratorText ?? '',
+            expectedQuestions: beat?.expectedQuestions ?? [],
+            dynamicBoardActions: beat?.dynamicBoardActions ?? [],
+          },
+          preview: `Beat ${beatState.currentBeatIndex + 1}/${beatState.totalBeats}: ${beat?.narratorText?.slice(0, 40) ?? beatId}...`,
+        },
+      };
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result) }],
+      };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: msg }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // ── execute_dynamic_board ─────────────────────────────────────────────
+  if (name === 'execute_dynamic_board') {
+    const { beatId, actions } = args as { beatId: string; actions: ChalkboardAction[] };
+    try {
+      const newActions = stateManager.appendDynamicBoardActions(beatId, actions);
+      const result = {
+        status: 'success',
+        data: {
+          field: 'dynamicBoardActions' as SyncField,
+          value: newActions,
+          preview: `动态黑板：${actions.length} 个动作`,
+        },
+      };
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result) }],
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       return {

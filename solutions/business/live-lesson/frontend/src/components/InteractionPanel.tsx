@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { BookOpen, ArrowCounterClockwise, PaperPlaneRight } from '@phosphor-icons/react'
+import { BookOpen, ArrowCounterClockwise, PaperPlaneRight, ArrowRight } from '@phosphor-icons/react'
 import { motion, useMotionValue, useTransform } from 'framer-motion'
 import type { Message } from '@kedge-agentic/react-sdk'
 import type { TimelineItem } from '../types/blackboard-actions'
@@ -47,6 +47,8 @@ interface InteractionPanelProps {
   currentStreamContent: string
   onSendMessage: (content: string) => void
   onClearConversation: () => void
+  canContinue: boolean
+  onContinue: () => void
 }
 
 function TimelineEntry({ item }: { item: TimelineItem }) {
@@ -138,6 +140,8 @@ export function InteractionPanel({
   currentStreamContent,
   onSendMessage,
   onClearConversation,
+  canContinue,
+  onContinue,
 }: InteractionPanelProps) {
   const endRef = useRef<HTMLDivElement>(null)
   const [freeText, setFreeText] = useState('')
@@ -192,6 +196,15 @@ export function InteractionPanel({
 
       {/* Timeline + Messages */}
       <div className="flex-1 overflow-y-auto px-2.5 py-2">
+        {/* Empty state: shown before lesson starts */}
+        {timeline.length === 0 && messages.length === 0 && !isThinking && !currentStreamContent && (
+          <div className="flex h-full items-center justify-center pointer-events-none">
+            <p className="text-xs text-gray-700 text-center leading-relaxed px-4">
+              点击"开始课程"<br />开启 AI 互动教学
+            </p>
+          </div>
+        )}
+
         {timeline.map(item => (
           <TimelineEntry key={item.id} item={item} />
         ))}
@@ -236,7 +249,7 @@ export function InteractionPanel({
       {/* Expected questions */}
       {expectedQuestions.length > 0 && (
         <div className="px-2.5 py-2 border-t border-white/[0.05] space-y-1.5 flex-shrink-0">
-          <div className="text-[9px] text-gray-700 uppercase tracking-[0.15em] mb-1.5">常见问题</div>
+          <div className="text-[10px] text-gray-500 mb-1.5">💬 点击提问</div>
           {expectedQuestions.map((q, i) => (
             <button
               key={i}
@@ -244,8 +257,8 @@ export function InteractionPanel({
               disabled={isActive}
               className={[
                 'w-full text-left px-2.5 py-2 rounded-lg text-xs border',
-                'border-white/8 text-gray-500',
-                'hover:border-primary/20 hover:text-gray-300 hover:bg-primary/[0.04]',
+                'border-teal-500/30 text-teal-300 bg-teal-900/15',
+                'hover:bg-teal-900/30 hover:border-teal-400/50',
                 'transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
                 isActive ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer',
               ].join(' ')}
@@ -258,6 +271,22 @@ export function InteractionPanel({
 
       {/* Free text input */}
       <div className="border-t border-white/8 px-2.5 pt-2.5 pb-2.5 flex-shrink-0">
+        {canContinue && !isActive && (
+          <div className="mb-2">
+            <button
+              onClick={onContinue}
+              className={[
+                'w-full py-2 rounded-xl text-sm font-semibold',
+                'bg-primary/15 border border-primary/35 text-primary',
+                'hover:bg-primary/25 hover:border-primary/50',
+                'transition-all duration-[200ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'flex items-center justify-center gap-1.5',
+              ].join(' ')}
+            >
+              继续下一步 <ArrowRight size={13} weight="bold" />
+            </button>
+          </div>
+        )}
         <div className="flex gap-1.5 items-end">
           <textarea
             value={freeText}

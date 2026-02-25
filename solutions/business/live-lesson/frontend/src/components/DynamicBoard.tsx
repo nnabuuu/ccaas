@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 
 // Import side-effect: registers blackboard-player custom element
@@ -35,14 +35,34 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
   const prevLenRef = useRef(0)
   const prevBeatIdRef = useRef<string | null>(null)
 
+  // Track whether canvas animation is currently playing
+  const [isAnimating, setIsAnimating] = useState(false)
+
   // Reset canvas when beat changes (beatId-driven, not actions.length-driven)
+  // Pre-emptively set isAnimating=false during the transition before new actions arrive
   useEffect(() => {
     if (beatId !== null && beatId !== prevBeatIdRef.current) {
       playerRef.current?.reset()
       prevLenRef.current = 0
       prevBeatIdRef.current = beatId
+      setIsAnimating(false)
     }
   }, [beatId])
+
+  // When actions change (new beat's actions arrive), calculate total duration and auto-clear
+  useEffect(() => {
+    if (actions.length === 0) {
+      setIsAnimating(false)
+      return
+    }
+    setIsAnimating(true)
+    const totalMs = actions.reduce(
+      (sum, a) => sum + ((a as { duration?: number }).duration ?? 0.5) * 1000,
+      0,
+    )
+    const timer = setTimeout(() => setIsAnimating(false), totalMs + 500)
+    return () => clearTimeout(timer)
+  }, [actions])
 
   // Execute new actions when actions array grows
   useEffect(() => {
@@ -57,8 +77,8 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
 
   // Show "开始课程" when manifest loaded but no beat started yet
   const showStartButton = !isLoading && beatId === null
-  // Show "继续 →" when not busy, has actions, and there are more beats
-  const showContinueButton = !isActive && actions.length > 0 && canContinue
+  // Show "继续 →" only when animation done + AI idle + has content + more beats available
+  const showContinueButton = !isAnimating && !isActive && beatId !== null && actions.length > 0 && canContinue
   const showButton = showStartButton || showContinueButton
   const buttonLabel = beatId === null ? '开始课程' : '继续 →'
 

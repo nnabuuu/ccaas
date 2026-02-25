@@ -1,57 +1,57 @@
-import { gsap } from 'gsap'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 
-// Logical canvas size — all manifest coordinates use this space.
-// BlackboardPlayer scales to actual canvas dimensions automatically.
-const LOGICAL_W = 800
-const LOGICAL_H = 600
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const BG_COLOR = '#1A3A32'
 
 class BlackboardPlayer extends HTMLElement {
-  private canvas: HTMLCanvasElement
-  private ctx: CanvasRenderingContext2D
-  private tl: gsap.core.Timeline
-  private ro: ResizeObserver
-  private scaleX = 1
-  private scaleY = 1
+  private svg: SVGSVGElement
+  private bgRect: SVGRectElement
+
+  private queue: Array<{ fn: () => void; duration: number }> = []
+  private timer: ReturnType<typeof setTimeout> | null = null
+  private _paused = false
+  private _timeScale = 1
+  private _remaining = 0
+  private _startedAt = 0
 
   constructor() {
     super()
     const shadow = this.attachShadow({ mode: 'open' })
 
     const style = document.createElement('style')
-    style.textContent = `
-      :host { display: block; width: 100%; height: 100%; }
-      canvas { display: block; width: 100%; height: 100%; background: #1A3A32; }
-    `
+    style.textContent = `:host { display: block; width: 100%; height: 100%; }
+svg { display: block; width: 100%; height: 100%; }`
     shadow.appendChild(style)
 
-    this.canvas = document.createElement('canvas')
-    shadow.appendChild(this.canvas)
+    this.svg = document.createElementNS(SVG_NS, 'svg')
+    this.svg.setAttribute('viewBox', '0 0 800 600')
+    this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet')
+    shadow.appendChild(this.svg)
 
-    const ctx = this.canvas.getContext('2d')
-    if (!ctx) throw new Error('Canvas 2D not supported')
-    this.ctx = ctx
-
-    this.tl = gsap.timeline()
-
-    this.ro = new ResizeObserver(entries => {
-      const entry = entries[0]
-      if (entry) {
-        this.canvas.width = Math.round(entry.contentRect.width)
-        this.canvas.height = Math.round(entry.contentRect.height)
-        this.scaleX = this.canvas.width / LOGICAL_W
-        this.scaleY = this.canvas.height / LOGICAL_H
-      }
-    })
+    this.bgRect = document.createElementNS(SVG_NS, 'rect')
+    this.bgRect.setAttribute('id', 'bg')
+    this.bgRect.setAttribute('width', '800')
+    this.bgRect.setAttribute('height', '600')
+    this.bgRect.setAttribute('fill', BG_COLOR)
+    this.svg.appendChild(this.bgRect)
   }
 
-  connectedCallback() {
-    this.ro.observe(this)
+  private _schedule(): void {
+    if (this._paused || this.timer !== null || this.queue.length === 0) return
+    const item = this.queue.shift()!
+    item.fn()
+    const ms = (item.duration * 1000) / this._timeScale
+    this._startedAt = Date.now()
+    this._remaining = ms
+    this.timer = setTimeout(() => {
+      this.timer = null
+      this._schedule()
+    }, ms)
   }
 
-  disconnectedCallback() {
-    this.ro.disconnect()
-    this.tl.kill()
+  private _enqueue(fn: () => void, duration: number): void {
+    this.queue.push({ fn, duration })
+    this._schedule()
   }
 
   execute(actions: ChalkboardAction[]): void {
@@ -62,110 +62,146 @@ class BlackboardPlayer extends HTMLElement {
 
   private _addAction(action: ChalkboardAction): void {
     const dur = ('duration' in action && typeof action.duration === 'number') ? action.duration : 0.5
-    // Capture current scale values for the closure (avoids stale refs in GSAP callbacks)
-    const sx = this.scaleX
-    const sy = this.scaleY
-    const s = Math.min(sx, sy) // uniform scale for sizes (font, line width)
 
     switch (action.type) {
       case 'write': {
         const { text, x, y, fontSize = 20, color = '#e8e8d8' } = action
-        this.tl.call(() => {
-          this.ctx.font = `${Math.round(fontSize * s)}px 'Courier New', Courier, monospace`
-          this.ctx.fillStyle = color
-          this.ctx.fillText(text, x * sx, y * sy)
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          const el = document.createElementNS(SVG_NS, 'text')
+          el.setAttribute('x', String(x))
+          el.setAttribute('y', String(y))
+          el.setAttribute('font-size', String(fontSize))
+          el.setAttribute('fill', color)
+          el.setAttribute('font-family', "'Courier New', Courier, monospace")
+          el.textContent = text
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'draw_line': {
         const { x1, y1, x2, y2, color = '#e8e8d8', width = 2 } = action
-        this.tl.call(() => {
-          this.ctx.beginPath()
-          this.ctx.strokeStyle = color
-          this.ctx.lineWidth = Math.max(1, width * s)
-          this.ctx.moveTo(x1 * sx, y1 * sy)
-          this.ctx.lineTo(x2 * sx, y2 * sy)
-          this.ctx.stroke()
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          const el = document.createElementNS(SVG_NS, 'line')
+          el.setAttribute('x1', String(x1))
+          el.setAttribute('y1', String(y1))
+          el.setAttribute('x2', String(x2))
+          el.setAttribute('y2', String(y2))
+          el.setAttribute('stroke', color)
+          el.setAttribute('stroke-width', String(width))
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'draw_arc': {
         const { cx, cy, rx, ry, color = '#e8e8d8' } = action
-        this.tl.call(() => {
-          this.ctx.beginPath()
-          this.ctx.strokeStyle = color
-          this.ctx.lineWidth = Math.max(1, 2 * s)
-          this.ctx.ellipse(cx * sx, cy * sy, rx * sx, ry * sy, 0, 0, Math.PI * 2)
-          this.ctx.stroke()
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          const el = document.createElementNS(SVG_NS, 'ellipse')
+          el.setAttribute('cx', String(cx))
+          el.setAttribute('cy', String(cy))
+          el.setAttribute('rx', String(rx))
+          el.setAttribute('ry', String(ry))
+          el.setAttribute('stroke', color)
+          el.setAttribute('stroke-width', '2')
+          el.setAttribute('fill', 'none')
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'draw_path': {
         const { points, closed = false, color = '#e8e8d8' } = action
-        this.tl.call(() => {
+        this._enqueue(() => {
           if (points.length < 2) return
-          this.ctx.beginPath()
-          this.ctx.strokeStyle = color
-          this.ctx.lineWidth = Math.max(1, 2 * s)
-          this.ctx.moveTo(points[0][0] * sx, points[0][1] * sy)
-          for (let i = 1; i < points.length; i++) {
-            this.ctx.lineTo(points[i][0] * sx, points[i][1] * sy)
-          }
-          if (closed) this.ctx.closePath()
-          this.ctx.stroke()
-        })
-        this.tl.to({}, { duration: dur })
+          const pts = points.map(p => `${p[0]},${p[1]}`).join(' ')
+          const tag = closed ? 'polygon' : 'polyline'
+          const el = document.createElementNS(SVG_NS, tag)
+          el.setAttribute('points', pts)
+          el.setAttribute('stroke', color)
+          el.setAttribute('stroke-width', '2')
+          el.setAttribute('fill', 'none')
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'highlight_box': {
         const { x, y, w, h, color = '#FFD700' } = action
-        this.tl.call(() => {
-          this.ctx.strokeStyle = color
-          this.ctx.lineWidth = Math.max(1, 2 * s)
-          this.ctx.strokeRect(x * sx, y * sy, w * sx, h * sy)
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          const el = document.createElementNS(SVG_NS, 'rect')
+          el.setAttribute('x', String(x))
+          el.setAttribute('y', String(y))
+          el.setAttribute('width', String(w))
+          el.setAttribute('height', String(h))
+          el.setAttribute('stroke', color)
+          el.setAttribute('stroke-width', '2')
+          el.setAttribute('fill', 'none')
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'erase': {
         const { x, y, w, h } = action
-        this.tl.call(() => {
-          this.ctx.clearRect(x * sx, y * sy, w * sx, h * sy)
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          const el = document.createElementNS(SVG_NS, 'rect')
+          el.setAttribute('x', String(x))
+          el.setAttribute('y', String(y))
+          el.setAttribute('width', String(w))
+          el.setAttribute('height', String(h))
+          el.setAttribute('fill', BG_COLOR)
+          this.svg.appendChild(el)
+        }, dur)
         break
       }
       case 'clear': {
-        this.tl.call(() => {
-          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-        })
-        this.tl.to({}, { duration: dur })
+        this._enqueue(() => {
+          while (this.svg.lastChild && this.svg.lastChild !== this.bgRect) {
+            this.svg.removeChild(this.svg.lastChild)
+          }
+        }, dur)
         break
       }
       case 'pause': {
-        this.tl.to({}, { duration: action.duration })
+        this._enqueue(() => { /* intentional delay */ }, action.duration)
         break
       }
       case 'transform_region': {
-        this.tl.to({}, { duration: action.duration ?? 0.5 })
+        this._enqueue(() => { /* stub */ }, action.duration ?? 0.5)
         break
       }
     }
   }
 
-  pause(): void { this.tl.pause() }
-  resume(): void { this.tl.resume() }
-
-  reset(): void {
-    this.tl.kill()
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-    this.tl = gsap.timeline()
+  pause(): void {
+    if (this._paused || this.timer === null) return
+    clearTimeout(this.timer)
+    this.timer = null
+    this._paused = true
+    this._remaining = Math.max(0, this._remaining - (Date.now() - this._startedAt))
   }
 
-  timeScale(s: number): void { this.tl.timeScale(s) }
+  resume(): void {
+    if (!this._paused) return
+    this._paused = false
+    this._startedAt = Date.now()
+    this.timer = setTimeout(() => {
+      this.timer = null
+      this._schedule()
+    }, this._remaining)
+  }
+
+  timeScale(s: number): void {
+    this._timeScale = s
+  }
+
+  reset(): void {
+    if (this.timer !== null) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+    this.queue = []
+    this._paused = false
+    while (this.svg.lastChild && this.svg.lastChild !== this.bgRect) {
+      this.svg.removeChild(this.svg.lastChild)
+    }
+  }
 }
 
 if (!customElements.get('blackboard-player')) {

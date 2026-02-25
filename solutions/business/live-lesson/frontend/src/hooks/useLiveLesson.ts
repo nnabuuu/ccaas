@@ -49,6 +49,7 @@ export interface UseLiveLessonReturn {
   cancelProcessing: () => void
   clearConversation: () => void
   sendAsk: (nodeId: string, content: string) => void
+  startLesson: () => void
   advanceBeat: () => void
   canAdvanceBeat: boolean
 }
@@ -109,15 +110,18 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
           })
         }
 
-        // Push narrator item to timeline if narratorText provided
+        // Push narrator item to timeline if narratorText provided (dedup: skip if already added by advanceBeat)
         if (raw.narratorText) {
-          setTimeline(prev => [...prev, {
-            id: `narrator-${bs.currentBeatId}-${Date.now()}`,
-            type: 'narrator' as const,
-            content: raw.narratorText as string,
-            beatId: bs.currentBeatId ?? undefined,
-            timestamp: Date.now(),
-          }])
+          setTimeline(prev => {
+            if (prev.some(item => item.beatId === bs.currentBeatId && item.type === 'narrator')) return prev
+            return [...prev, {
+              id: `narrator-${bs.currentBeatId}-${Date.now()}`,
+              type: 'narrator' as const,
+              content: raw.narratorText as string,
+              beatId: bs.currentBeatId ?? undefined,
+              timestamp: Date.now(),
+            }]
+          })
         }
 
         // Apply beat's scripted dynamicBoardActions (embedded in beatState by advance_beat)
@@ -169,12 +173,21 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     return () => controller.abort()
   }, [lessonId])
 
-  // Keep a ref to the latest chat so timer callbacks read current state, not stale closure.
+  // Keep a ref to the latest chat so callbacks read current state, not stale closure.
   const chatRef = useRef(chat)
   chatRef.current = chat
 
-  // Auto-start: fire '开始上课' after history loading settles.
+  // Guard: prevent duplicate '开始上课' messages
   const autoStartedRef = useRef(false)
+
+  // startLesson: user-triggered — fires '开始上课' on first call only.
+  // Guards against duplicate calls and skips if session has history (resume).
+  const startLesson = useCallback(() => {
+    if (autoStartedRef.current) return
+    if (chatRef.current.messages.length > 0) return
+    autoStartedRef.current = true
+    chatRef.current.sendMessage('开始上课')
+  }, [])
 
   // Reset all beat-driven state when lesson changes
   useEffect(() => {
@@ -186,16 +199,6 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setTimeline([])
     setBoardState(null)
   }, [lessonId])
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const c = chatRef.current
-      if (!autoStartedRef.current && !c.isLoadingHistory && c.messages.length === 0 && !c.isProcessing) {
-        autoStartedRef.current = true
-        c.sendMessage('开始上课')
-      }
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [chat.isLoadingHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Send an ask message when student clicks on a board node
   // Format: [ASK] {nodeId}: {content}
@@ -230,13 +233,16 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     }
 
     if (beat.narratorText) {
-      setTimeline(prev => [...prev, {
-        id: `narrator-${beat.id}-${Date.now()}`,
-        type: 'narrator' as const,
-        content: beat.narratorText,
-        beatId: beat.id,
-        timestamp: Date.now(),
-      }])
+      setTimeline(prev => {
+        if (prev.some(item => item.beatId === beat.id && item.type === 'narrator')) return prev
+        return [...prev, {
+          id: `narrator-${beat.id}-${Date.now()}`,
+          type: 'narrator' as const,
+          content: beat.narratorText,
+          beatId: beat.id,
+          timestamp: Date.now(),
+        }]
+      })
     }
 
     // Always replace actions (even with []) so the canvas doesn't replay
@@ -272,6 +278,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     cancelProcessing: chat.cancelProcessing,
     clearConversation: chat.clearConversation,
     sendAsk,
+    startLesson,
     advanceBeat,
     canAdvanceBeat,
   }

@@ -8,24 +8,32 @@ const HighlightedNodeSchema = z.object({
   color: z.enum(['yellow', 'red', 'blue']),
 });
 
-const ActiveProbeSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  confusionPointId: z.string(),
-});
-
 const BoardStateSchema = z.object({
   lessonId: z.string(),
   visibleNodeIds: z.array(z.string()),
   highlightedNodes: z.array(HighlightedNodeSchema),
-  activeProbes: z.array(ActiveProbeSchema),
   currentPhase: z.string(),
+});
+
+const BeatStateSchema = z.object({
+  currentBeatId: z.string().nullable(),
+  currentBeatIndex: z.number(),
+  totalBeats: z.number(),
+  sectionId: z.string().nullable(),
+});
+
+const GlobalBoardOpSchema = z.object({
+  nodeId: z.string(),
+  op: z.enum(['reveal', 'highlight']),
 });
 
 // Field schemas map
 export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   boardState: BoardStateSchema,
   teacherMessage: z.string(),
+  beatState: BeatStateSchema,
+  dynamicBoardActions: z.array(z.object({ type: z.string() }).passthrough()),
+  globalBoardOps: z.array(GlobalBoardOpSchema),
 };
 
 export function validateField(
