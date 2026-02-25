@@ -1,10 +1,11 @@
-import { useMemo, useCallback } from 'react'
-import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { useMemo, useCallback, useEffect } from 'react'
+import { useParams, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { CaretLeft } from '@phosphor-icons/react'
 import { useLiveLesson } from '../hooks/useLiveLesson'
-import DynamicBoard from '../components/DynamicBoard'
-import GlobalBoard from '../components/GlobalBoard'
-import InteractionPanel from '../components/InteractionPanel'
+import BeatCarousel from '../components/BeatCarousel'
+import ProgressPills from '../components/ProgressPills'
+import LessonDock from '../components/LessonDock'
+import TutoringPanel from '../components/TutoringPanel'
 
 interface LocationState {
   forceNew?: boolean
@@ -15,6 +16,8 @@ export default function LessonPage() {
   const { lessonId } = useParams<{ lessonId: string }>()
   const location = useLocation()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const sessionFromUrl = searchParams.get('session') ?? undefined
   const state = (location.state as LocationState) || {}
   const forceNew = state.forceNew ?? false
   const lessonTitle = state.lessonTitle ?? lessonId ?? ''
@@ -23,6 +26,7 @@ export default function LessonPage() {
 
   const {
     connected,
+    sessionId,
     boardState,
     manifest,
     beatState,
@@ -35,22 +39,76 @@ export default function LessonPage() {
     isThinking,
     thinkingContent,
     currentStreamContent,
-    sendMessage,
-    clearConversation,
     startLesson,
     advanceBeat,
     canAdvanceBeat,
-  } = useLiveLesson(id, forceNew)
+    tutoringMode,
+    beatSnapshots,
+    viewingBeatIndex,
+    viewingSectionId,
+    captureBeatSnapshot,
+    navigateToBeat,
+    suggestedQuestions,
+    selectionMode,
+    raiseHand,
+    dismissTutoring,
+    sendExplainRequest,
+    requestMoreQuestions,
+    handleAnimationChange,
+    tutoringPanelOpen,
+    openTutoringPanel,
+    closeTutoringPanel,
+  } = useLiveLesson(id, forceNew, sessionFromUrl)
 
-  // handleContinue: drives the unified "开始课程" / "继续 →" button.
-  // Always advances the beat (from manifest); on the very first click also
-  // fires '开始上课' to the AI to start the session.
+  // Write sessionId back to URL so the link is shareable/bookmarkable
+  useEffect(() => {
+    if (sessionId && id) {
+      const currentSession = searchParams.get('session')
+      if (currentSession !== sessionId) {
+        const params = new URLSearchParams(searchParams)
+        params.set('session', sessionId)
+        navigate(`${location.pathname}?${params.toString()}`, { replace: true })
+      }
+    }
+  }, [sessionId, id, searchParams, navigate, location.pathname])
+
+  // handleContinue: advances to the next beat (used after lesson has started)
   const handleContinue = useCallback(() => {
     advanceBeat()
-    if (!beatState) {
-      startLesson()
+  }, [advanceBeat])
+
+  // handleStart: first beat + start lesson
+  const handleStart = useCallback(() => {
+    advanceBeat()
+    startLesson()
+  }, [advanceBeat, startLesson])
+
+  // handleRaiseHand: opens tutoring panel + enters picking mode
+  const handleRaiseHand = useCallback(() => {
+    raiseHand()
+    openTutoringPanel()
+  }, [raiseHand, openTutoringPanel])
+
+  // handleDismissTutoring: closes panel + exits tutoring mode
+  const handleDismissTutoring = useCallback(() => {
+    dismissTutoring()
+    closeTutoringPanel()
+  }, [dismissTutoring, closeTutoringPanel])
+
+  // handleContinueLearning: dismiss tutoring + close panel + auto-advance beat
+  const handleContinueLearning = useCallback(() => {
+    dismissTutoring()
+    closeTutoringPanel()
+    if (canAdvanceBeat && !isProcessing && !isThinking) {
+      advanceBeat()
     }
-  }, [advanceBeat, startLesson, beatState])
+  }, [dismissTutoring, closeTutoringPanel, canAdvanceBeat, isProcessing, isThinking, advanceBeat])
+
+  // handleCloseTutoringPanel: X button / backdrop = full dismiss (not just hide)
+  const handleCloseTutoringPanel = useCallback(() => {
+    dismissTutoring()
+    closeTutoringPanel()
+  }, [dismissTutoring, closeTutoringPanel])
 
   // Compute revealedNodeIds from globalBoardOps
   const revealedNodeIds = useMemo(
@@ -60,98 +118,119 @@ export default function LessonPage() {
 
   if (!lessonId) {
     return (
-      <div className="h-screen flex items-center justify-center bg-background-dark text-white">
+      <div className="min-h-[100dvh] flex items-center justify-center bg-surface-0 text-text-primary">
         <p>课程未找到</p>
       </div>
     )
   }
 
+  // Current narrator text for Dock
+  const currentNarratorText = currentBeat?.narratorText ?? null
+
+  // Whether to show "开始课程" (no beat state yet)
+  const showStart = !beatState
+
+  // Beat progress for Dock display
+  const beatProgress = beatState && beatState.totalBeats > 0
+    ? { current: beatState.currentBeatIndex + 1, total: beatState.totalBeats }
+    : null
+
   return (
-    <div
-      className="h-screen flex flex-col bg-background-dark font-lexend"
-      style={{ fontFamily: "'Lexend', sans-serif" }}
-    >
-      {/* Header bar */}
-      <header className="flex items-center justify-between px-5 py-2.5 bg-background-dark border-b border-white/10 flex-shrink-0">
-        <div className="flex items-center gap-3">
+    <div className="min-h-[100dvh] h-[100dvh] flex flex-col bg-surface-0">
+      {/* Header: back + title | progress pills | connection dot */}
+      <header className="flex items-center justify-between px-5 py-2.5 bg-surface-0 border-b border-white/[0.04] flex-shrink-0 gap-4">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-200 transition-colors duration-[200ms]"
+            className="flex items-center gap-1 text-text-tertiary hover:text-text-primary transition-colors"
           >
             <CaretLeft size={14} weight="regular" />
-            <span className="text-xs">课程列表</span>
           </button>
-          <div className="h-4 w-px bg-white/20" />
-          <div className="text-primary text-lg font-bold tracking-tight">即见·动态教学</div>
-          <div className="h-4 w-px bg-white/20" />
-          <span className="text-sm text-gray-400">{lessonTitle}</span>
+          <span className="text-sm font-medium text-text-primary">{lessonTitle}</span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          {connected ? (
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-              已连接
-            </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-pulse" />
-              连接中...
-            </span>
-          )}
-          {beatState && beatState.totalBeats > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
-              {beatState.currentBeatIndex + 1} / {beatState.totalBeats}
-            </span>
-          )}
+
+        {/* Center: Progress Pills */}
+        <div className="flex-1 min-w-0 flex justify-center">
+          <ProgressPills
+            nodes={manifest?.globalBoardNodes ?? []}
+            revealedNodeIds={revealedNodeIds}
+            currentSectionId={viewingSectionId}
+          />
+        </div>
+
+        {/* Right: connection dot */}
+        <div className="flex items-center gap-3 flex-shrink-0">
           {!beatState && boardState && (
-            <span className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded-full border border-primary/20">
-              {boardState.currentPhase}
-            </span>
+            <span className="text-[11px] text-text-tertiary">{boardState.currentPhase}</span>
           )}
+          <span
+            className={[
+              'w-1.5 h-1.5 rounded-full',
+              connected ? 'bg-success' : 'bg-text-tertiary animate-pulse',
+            ].join(' ')}
+          />
         </div>
       </header>
 
-      {/* Main content: 3-panel layout, left-biased */}
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-[minmax(180px,1fr)_2fr_minmax(200px,1fr)] overflow-hidden">
-        {/* Left: GlobalBoard */}
-        <div className="min-w-0 overflow-hidden border-r border-white/10 hidden md:block">
-          <GlobalBoard
-            nodes={manifest?.globalBoardNodes ?? []}
-            revealedNodeIds={revealedNodeIds}
-            currentSectionId={beatState?.sectionId ?? null}
-          />
-        </div>
-
-        {/* Center: DynamicBoard */}
-        <div className="min-w-0 overflow-hidden">
-          <DynamicBoard
-            actions={dynamicBoardActions}
-            beatId={beatState?.currentBeatId ?? null}
-            isActive={isProcessing || isThinking}
-            canContinue={canAdvanceBeat}
+      {/* Main: Blackboard fills remaining space */}
+      <main className="flex-1 min-h-0 relative overflow-hidden">
+        <div className="h-full max-w-[1400px] mx-auto">
+          <BeatCarousel
+            snapshots={beatSnapshots}
+            activeActions={dynamicBoardActions}
+            activeBeatId={beatState?.currentBeatId ?? null}
+            activeBeatIndex={beatState?.currentBeatIndex ?? -1}
             isLoading={!manifest}
-            onContinue={handleContinue}
+            onStart={handleStart}
+            onAnimationChange={handleAnimationChange}
+            onSnapshot={captureBeatSnapshot}
+            viewingIndex={viewingBeatIndex}
+            onNavigate={navigateToBeat}
           />
         </div>
 
-        {/* Right: InteractionPanel */}
-        <div className="min-w-0 overflow-hidden">
-          <InteractionPanel
-            timeline={timeline}
-            currentBeat={currentBeat}
-            isActive={isProcessing || isThinking}
-            connected={connected}
-            messages={messages}
-            isThinking={isThinking}
-            thinkingContent={thinkingContent}
-            currentStreamContent={currentStreamContent}
-            onSendMessage={sendMessage}
-            onClearConversation={clearConversation}
-            canContinue={canAdvanceBeat && !isProcessing && !isThinking}
-            onContinue={handleContinue}
-          />
-        </div>
+        {/* Tutoring panel (absolute, slides up from bottom) */}
+        <TutoringPanel
+          open={tutoringPanelOpen}
+          onClose={handleCloseTutoringPanel}
+          timeline={timeline}
+          beatState={beatState}
+          canContinue={canAdvanceBeat}
+          onContinue={handleContinue}
+          isActive={isProcessing || isThinking}
+          tutoringMode={tutoringMode}
+          currentBeat={currentBeat}
+          suggestedQuestions={suggestedQuestions}
+          selectionMode={selectionMode}
+          messages={messages}
+          isProcessing={isProcessing}
+          isThinking={isThinking}
+          thinkingContent={thinkingContent}
+          currentStreamContent={currentStreamContent}
+          connected={connected}
+          onRaiseHand={handleRaiseHand}
+          onDismissTutoring={handleDismissTutoring}
+          onSendExplainRequest={sendExplainRequest}
+          onRequestMoreQuestions={requestMoreQuestions}
+          canAdvanceBeat={canAdvanceBeat}
+          onContinueLearning={handleContinueLearning}
+        />
       </main>
+
+      {/* Bottom Dock: narrator text + action buttons */}
+      <LessonDock
+        narratorText={currentNarratorText}
+        canContinue={canAdvanceBeat}
+        onContinue={handleContinue}
+        onRaiseHand={handleRaiseHand}
+        tutoringActive={tutoringMode !== 'idle'}
+        onOpenTutoring={openTutoringPanel}
+        showStart={showStart}
+        onStart={handleStart}
+        connected={connected}
+        hasCurrentBeat={!!currentBeat}
+        beatProgress={beatProgress}
+      />
     </div>
   )
 }
