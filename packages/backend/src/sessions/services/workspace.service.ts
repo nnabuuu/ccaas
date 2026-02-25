@@ -190,6 +190,39 @@ export class WorkspaceService {
   }
 
   /**
+   * Get file content from session workspace for inline viewing
+   *
+   * Returns text content for displayable files, or null for binary/large files.
+   *
+   * @param session - Session (or null if workspace lookup by sessionId)
+   * @param sessionId - Session ID for workspace lookup
+   * @param relativePath - Relative file path within workspace
+   */
+  async getWorkspaceFileContent(
+    session: ManagedSession | null,
+    sessionId: string,
+    relativePath: string,
+  ): Promise<{ content: string | null; mimeType: string; size: number; filename: string; isBinary: boolean }> {
+    const fileInfo = await this.getWorkspaceFile(session, sessionId, relativePath);
+    const MAX_SIZE = 512 * 1024; // 512KB display limit
+
+    const isBinary = !this.isTextMimeType(fileInfo.mimeType);
+
+    if (isBinary || fileInfo.size > MAX_SIZE) {
+      return { content: null, mimeType: fileInfo.mimeType, size: fileInfo.size, filename: fileInfo.filename, isBinary: true };
+    }
+
+    const content = fs.readFileSync(fileInfo.absolutePath, 'utf8');
+    return { content, mimeType: fileInfo.mimeType, size: fileInfo.size, filename: fileInfo.filename, isBinary: false };
+  }
+
+  private isTextMimeType(mimeType: string): boolean {
+    return mimeType.startsWith('text/') ||
+      ['application/json', 'application/xml', 'application/javascript',
+       'application/typescript', 'application/yaml'].includes(mimeType);
+  }
+
+  /**
    * Get directory tree for session workspace
    *
    * @param session - Session (or null if workspace lookup by sessionId)

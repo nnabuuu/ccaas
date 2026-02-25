@@ -761,6 +761,17 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * Get file content from session workspace for inline viewing
+   */
+  async getWorkspaceFileContent(
+    sessionId: string,
+    relativePath: string,
+  ): Promise<{ content: string | null; mimeType: string; size: number; filename: string; isBinary: boolean }> {
+    const session = this.getSession(sessionId) ?? null;
+    return this.workspaceService.getWorkspaceFileContent(session, sessionId, relativePath);
+  }
+
+  /**
    * Get directory tree for session workspace
    */
   async getWorkspaceTree(sessionId: string): Promise<WorkspaceTreeResponse> {

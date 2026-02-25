@@ -448,6 +448,10 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         tenantId,
       }
 
+      // Always send sessionTemplate to backend for server-side resolution
+      // (client-side resolution may not have solutionConfig available)
+      if (sessionTemplate) payload.templateName = sessionTemplate
+
       if (resolvedParams.mcpServers) payload.mcpServers = resolvedParams.mcpServers
       if (resolvedParams.skillPath) payload.skillPath = resolvedParams.skillPath
       if (resolvedParams.enabledSkillSlugs?.length) payload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs

@@ -42,7 +42,7 @@ export function FileTreeNodeComponent({
         aria-label={
           isFolder
             ? `${isExpanded ? 'Collapse' : 'Expand'} folder ${node.name}`
-            : `Download file ${node.name}`
+            : `View file ${node.name}`
         }
       >
         {isFolder ? (

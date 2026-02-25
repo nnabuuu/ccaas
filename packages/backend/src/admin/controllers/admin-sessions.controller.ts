@@ -27,6 +27,7 @@ import {
   SessionTimeline,
   TokenBreakdown,
 } from '../dto/admin.dto';
+import type { WorkspaceTreeResponse } from '../../common/interfaces';
 import { BulkKillDto } from '../dto/bulk-kill.dto';
 import { TimelineQueryDto } from '../dto/timeline-query.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
@@ -112,10 +113,47 @@ export class AdminSessionsController {
       ctx.tenantId,
       ctx.apiKeyScopes,
     );
-    if (!breakdown) {
-      throw new NotFoundException(`No token data found for session: ${sessionId}`);
+    // Session exists but has no recorded token usage — return zeros rather than 404.
+    // (404 is reserved for when the session itself doesn't exist.)
+    return breakdown ?? {
+      inputTokens: 0,
+      outputTokens: 0,
+      cachedInputTokens: 0,
+      cacheReadTokens: 0,
+      cacheCreationTokens: 0,
+      reasoningTokens: 0,
+      totalTokens: 0,
+      estimatedCost: 0,
+    };
+  }
+
+  /**
+   * GET /api/v1/admin/sessions/:sessionId/workspace
+   *
+   * Get workspace file tree for a session
+   */
+  @Get(':sessionId/workspace')
+  async getWorkspaceTree(
+    @Param('sessionId') sessionId: string,
+  ): Promise<WorkspaceTreeResponse> {
+    return this.sessionManagerService.getWorkspaceTree(sessionId);
+  }
+
+  /**
+   * GET /api/v1/admin/sessions/:sessionId/workspace/file?path=<relative-path>
+   *
+   * Get file content from session workspace for inline viewing.
+   * Returns JSON with content string (text files) or null (binary/large files).
+   */
+  @Get(':sessionId/workspace/file')
+  async getWorkspaceFileContent(
+    @Param('sessionId') sessionId: string,
+    @Query('path') filePath: string,
+  ): Promise<{ content: string | null; mimeType: string; size: number; filename: string; isBinary: boolean }> {
+    if (!filePath) {
+      throw new BadRequestException('path query parameter is required');
     }
-    return breakdown;
+    return this.sessionManagerService.getWorkspaceFileContent(sessionId, filePath);
   }
 
   /**

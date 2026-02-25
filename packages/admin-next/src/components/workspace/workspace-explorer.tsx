@@ -3,9 +3,9 @@ import { Loader2, AlertCircle } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useWorkspaceFiles } from '@/hooks/use-workspace-files'
-import { useFileDownload } from '@/hooks/use-file-download'
 import { WorkspaceFileTreeHeader } from './workspace-file-tree-header'
 import { FileTree } from './file-tree'
+import { FileViewerPanel } from './file-viewer-panel'
 import { filterTree, sortTree, countTreeNodes, getTotalSize, formatFileSize } from '@/lib/file-utils'
 import type { FileTreeNode } from '@/types/workspace'
 
@@ -17,17 +17,17 @@ interface WorkspaceExplorerProps {
 /**
  * WorkspaceExplorer - Main container for session workspace file explorer
  *
- * Displays workspace files in a tree structure with search, sort, and download functionality
+ * Displays workspace files in a tree structure with search, sort, and inline file viewing.
  */
 export function WorkspaceExplorer({ sessionId, className = '' }: WorkspaceExplorerProps) {
   const { tree, loading, error, refetch } = useWorkspaceFiles({ sessionId, enabled: true })
-  const { downloadFile, downloading, error: downloadError } = useFileDownload({ sessionId })
 
   // State
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<'name' | 'size' | 'type'>('name')
   const [sortOrder] = useState<'asc' | 'desc'>('asc')
+  const [selectedFile, setSelectedFile] = useState<FileTreeNode | null>(null)
 
   // Toggle folder expand/collapse
   const toggleFolder = useCallback((folderId: string) => {
@@ -64,19 +64,12 @@ export function WorkspaceExplorer({ sessionId, className = '' }: WorkspaceExplor
     setExpandedFolders(new Set())
   }, [])
 
-  // Handle file click (download)
-  const handleFileClick = useCallback(
-    async (file: FileTreeNode) => {
-      if (file.type === 'file') {
-        try {
-          await downloadFile(file.path, file.name)
-        } catch (err) {
-          console.error('Failed to download file:', err)
-        }
-      }
-    },
-    [downloadFile]
-  )
+  // Handle file click — open inline viewer
+  const handleFileClick = useCallback((file: FileTreeNode) => {
+    if (file.type === 'file') {
+      setSelectedFile(file)
+    }
+  }, [])
 
   // Filter and sort tree
   const processedTree = useMemo(() => {
@@ -141,15 +134,6 @@ export function WorkspaceExplorer({ sessionId, className = '' }: WorkspaceExplor
           </Alert>
         )}
 
-        {/* Download Error Alert */}
-        {downloadError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Download failed</AlertTitle>
-            <AlertDescription>{downloadError.message}</AlertDescription>
-          </Alert>
-        )}
-
         {/* File Tree */}
         {!loading && !error && (
           <FileTree
@@ -162,15 +146,12 @@ export function WorkspaceExplorer({ sessionId, className = '' }: WorkspaceExplor
         )}
       </div>
 
-      {/* Footer - Download Status */}
-      {downloading && (
-        <div className="border-t p-3 bg-muted/50">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Downloading file...</span>
-          </div>
-        </div>
-      )}
+      {/* File Viewer Dialog */}
+      <FileViewerPanel
+        sessionId={sessionId}
+        file={selectedFile}
+        onClose={() => setSelectedFile(null)}
+      />
     </div>
   )
 }

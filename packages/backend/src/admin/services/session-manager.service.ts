@@ -25,7 +25,7 @@ import {
   RecentSession,
   TokenBreakdown,
 } from '../dto/admin.dto';
-import type { ManagedSession } from '../../common/interfaces';
+import type { ManagedSession, WorkspaceFileInfo, WorkspaceTreeResponse } from '../../common/interfaces';
 import type { ApiKeyScope } from '../../auth/types';
 
 export interface PaginatedSessions {
@@ -723,6 +723,35 @@ export class SessionManagerService {
       totalTokens,
       estimatedCost: result.estimatedCost || 0,
     };
+  }
+
+  /**
+   * Get workspace file tree for a session
+   * @param sessionId - Session ID to get workspace tree for
+   */
+  async getWorkspaceTree(sessionId: string): Promise<WorkspaceTreeResponse> {
+    return this.sessionService.getWorkspaceTree(sessionId);
+  }
+
+  /**
+   * Get a workspace file for a session
+   * @param sessionId - Session ID
+   * @param filePath - Relative path to the file within the workspace
+   */
+  async getWorkspaceFile(sessionId: string, filePath: string): Promise<WorkspaceFileInfo> {
+    return this.sessionService.getWorkspaceFile(sessionId, filePath);
+  }
+
+  /**
+   * Get file content from session workspace for inline viewing
+   * @param sessionId - Session ID
+   * @param filePath - Relative path to the file within the workspace
+   */
+  async getWorkspaceFileContent(
+    sessionId: string,
+    filePath: string,
+  ): Promise<{ content: string | null; mimeType: string; size: number; filename: string; isBinary: boolean }> {
+    return this.sessionService.getWorkspaceFileContent(sessionId, filePath);
   }
 
   // ===========================================================================
