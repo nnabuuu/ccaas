@@ -184,6 +184,7 @@ Deleting a template shows a confirmation dialog — click **Delete** to confirm.
 | `enabledSkillSlugs` | string[] | — | Skills the agent is allowed to use |
 | `mcpServers` | object | — | MCP server configurations (see format below) |
 | `model` | string | 128 | Model ID override (e.g. `claude-opus-4-6`) |
+| `skillPromptMode` | `"protocol"` \| `"inline"` | — | How skill content reaches the agent (see [Skill Prompt Mode](#skill-prompt-mode)) |
 
 ### MCP Server Format
 
@@ -196,6 +197,56 @@ Deleting a template shows a confirmation dialog — click **Delete** to confirm.
   }
 }
 ```
+
+## Skill Prompt Mode
+
+When a session template enables skills, the platform must surface Skill knowledge to the agent. The `skillPromptMode` field controls how this works:
+
+| Mode | How it works | User sees |
+|------|-------------|-----------|
+| `protocol` _(default)_ | Agent reads `SKILL.md` at runtime via the Read tool | "Let me read the skill definition..." messages |
+| `inline` | Backend reads `SKILL.md` before the agent starts and embeds it in the system prompt | Agent starts with full knowledge — no file reads |
+
+### Choosing the Right Mode
+
+| | `protocol` | `inline` |
+|---|---|---|
+| **Agent startup** | Reads files on first message | Starts with full context |
+| **User-facing messages** | Verbose — tool call output visible | Clean — no "reading skill" messages |
+| **System prompt size** | Small | Larger (full SKILL.md content added) |
+| **Token cost per turn** | Lower | Higher (system prompt sent every turn) |
+| **Best for** | Development, debugging, long/complex skills | Production, consumer-facing apps, short focused skills |
+
+**Rule of thumb:** Use `inline` when the skill is concise (< ~1500 tokens) and users should not see internal agent operations. Use `protocol` when iterating on skill content during development, or when the skill is long and token cost matters.
+
+### Configuration
+
+Add `skillPromptMode` to any session template in `solution.json`:
+
+```json
+{
+  "sessionTemplates": {
+    "teaching": {
+      "description": "Production teaching mode",
+      "enabledSkillSlugs": ["socratic-teacher"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "Wait for the student to ask a question before starting."
+    },
+    "debug": {
+      "description": "Development mode — skill loading visible in output",
+      "enabledSkillSlugs": ["socratic-teacher"]
+    }
+  }
+}
+```
+
+{% hint style="info" %}
+**Merge order with `appendSystemPrompt`:** The inlined SKILL.md content appears first, followed by `appendSystemPrompt`. The agent always reads the skill definition before session-specific instructions.
+{% endhint %}
+
+{% hint style="warning" %}
+**Token cost:** In `inline` mode, the full SKILL.md content is included in the system prompt on every API call. For skills longer than ~1500 tokens, weigh the UX benefit against the added per-turn cost. Concise, well-scoped skill definitions are especially valuable here.
+{% endhint %}
 
 ## API Endpoints
 

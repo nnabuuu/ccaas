@@ -280,6 +280,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 | `enabledSkillSlugs` | string[]（可选） | 此模板启用的 skill slug 列表 |
 | `mcpServers` | object（可选） | MCP 服务器配置（格式同顶层 `mcpServers`） |
 | `model` | string（可选） | 模型覆盖（如 `claude-opus-4-6`） |
+| `skillPromptMode` | `"protocol"` \| `"inline"`（可选） | SKILL.md 内容到达 Agent 的方式：`protocol` = Agent 运行时读取（默认）；`inline` = 启动前嵌入系统提示 |
 
 > 完整详情（Admin UI、API 端点、合并规则、安全配置、问题排查）请参阅 [Session Templates 管理指南](../guide/admin-session-templates.md)。
 

@@ -184,6 +184,7 @@ export function TeacherView() {
 | `enabledSkillSlugs` | string[] | — | 代理允许使用的技能列表 |
 | `mcpServers` | object | — | MCP 服务器配置（见下方格式） |
 | `model` | string | 128 | 模型 ID 覆盖（如 `claude-opus-4-6`） |
+| `skillPromptMode` | `"protocol"` \| `"inline"` | — | Skill 内容到达 Agent 的方式（见 [Skill 提示模式](#skill-提示模式)） |
 
 ### MCP 服务器格式
 
@@ -196,6 +197,56 @@ export function TeacherView() {
   }
 }
 ```
+
+## Skill 提示模式
+
+当 Session Template 启用了 Skills 时，平台需要将 Skill 知识传递给 Agent。`skillPromptMode` 字段控制具体方式：
+
+| 模式 | 工作原理 | 用户看到什么 |
+|------|---------|------------|
+| `protocol` _（默认）_ | Agent 在运行时通过 Read 工具读取 `SKILL.md` | "让我先读取一下 skill 定义..." |
+| `inline` | 后端在 Agent 启动前读取 `SKILL.md` 并嵌入系统提示 | Agent 直接开始工作，无文件读取消息 |
+
+### 如何选择
+
+| | `protocol` | `inline` |
+|---|---|---|
+| **Agent 启动** | 首条消息时读取文件 | 携带完整上下文启动 |
+| **用户可见消息** | 冗余——工具调用输出可见 | 干净——无"读取 skill"消息 |
+| **系统提示大小** | 小 | 较大（含完整 SKILL.md 内容） |
+| **每轮 Token 开销** | 低 | 较高（系统提示每轮都会发送） |
+| **适用场景** | 开发调试、内容较长的 Skill | 生产环境、面向用户的应用、简短聚焦的 Skill |
+
+**经验法则：** 当 Skill 内容简洁（< ~1500 tokens）且用户不应看到内部操作时，使用 `inline`。在开发阶段调试 Skill 内容时，或 Skill 较长需要控制 Token 开销时，使用 `protocol`。
+
+### 配置方式
+
+在 `solution.json` 的 Session Template 中添加 `skillPromptMode`：
+
+```json
+{
+  "sessionTemplates": {
+    "teaching": {
+      "description": "生产教学模式",
+      "enabledSkillSlugs": ["socratic-teacher"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "等待学生提问后再开始教学。"
+    },
+    "debug": {
+      "description": "开发模式——Skill 加载过程在输出中可见",
+      "enabledSkillSlugs": ["socratic-teacher"]
+    }
+  }
+}
+```
+
+{% hint style="info" %}
+**与 `appendSystemPrompt` 的合并顺序：** 内联的 SKILL.md 内容在前，`appendSystemPrompt` 拼接在后。Agent 始终先读取 Skill 定义，再执行会话级指令。
+{% endhint %}
+
+{% hint style="warning" %}
+**Token 开销：** `inline` 模式下，完整的 SKILL.md 内容会在每次 API 调用时包含在系统提示中。对于超过 ~1500 tokens 的 Skill，请权衡 UX 收益与额外的每轮开销。在使用 inline 模式时，保持 Skill 定义简洁尤为重要。
+{% endhint %}
 
 ## API 端点
 
