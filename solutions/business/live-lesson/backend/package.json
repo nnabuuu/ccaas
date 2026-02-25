@@ -1,21 +1,22 @@
 {
-  "name": "@live-lesson/mcp-server",
+  "name": "@live-lesson/backend",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsc --watch",
-    "start:dev": "tsc && node dist/index.js"
+    "dev": "tsc && node dist/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
     "better-sqlite3": "^11.0.0",
-    "zod": "^3.22.4"
+    "cors": "^2.8.5",
+    "express": "^4.21.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.0.0",
     "typescript": "^5.3.3"
   }

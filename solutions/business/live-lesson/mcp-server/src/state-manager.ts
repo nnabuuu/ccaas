@@ -1,12 +1,11 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import type { LessonManifest, BoardState, HighlightedNode, Beat, BeatState, ChalkboardAction, GlobalBoardOp } from './types.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import type Database from 'better-sqlite3';
+import type { LessonManifest, BoardState, Beat, BeatState, ChalkboardAction, GlobalBoardOp } from './types.js';
+import { loadLessonManifest, saveSessionState, loadSessionState, type SavedState } from './db.js';
 
 class StateManager {
+  private db: Database.Database;
+  private sessionId: string;
+
   private manifest: LessonManifest | null = null;
   private boardState: BoardState | null = null;
   private beatState: BeatState | null = null;
@@ -14,20 +13,65 @@ class StateManager {
   private lastDynamicBeatId: string | null = null;
   private globalBoardOps: GlobalBoardOp[] = [];
 
-  /**
-   * Load lesson manifest from data/lessons/{lessonId}/manifest.json
-   * Initializes board state with initially visible nodes
-   */
-  loadLesson(lessonId: string): BoardState {
-    // Resolve data directory relative to dist/ (one level up from dist)
-    const dataPath = path.resolve(__dirname, '../../data/lessons', lessonId, 'manifest.json');
+  constructor(db: Database.Database, sessionId: string) {
+    this.db = db;
+    this.sessionId = sessionId;
+  }
 
-    if (!fs.existsSync(dataPath)) {
-      throw new Error(`Lesson manifest not found: ${dataPath}`);
+  /**
+   * Persist all mutable state to SQLite.
+   * Called after every mutation method.
+   */
+  private persistState(): void {
+    if (!this.boardState) return; // nothing to persist until lesson is loaded
+    const state: SavedState = {
+      sessionId: this.sessionId,
+      lessonId: this.boardState.lessonId,
+      boardState: this.boardState,
+      beatState: this.beatState,
+      dynamicActions: this.dynamicBoardActions,
+      lastDynamicBeatId: this.lastDynamicBeatId,
+      globalOps: this.globalBoardOps,
+    };
+    saveSessionState(this.db, this.sessionId, state);
+  }
+
+  /**
+   * Restore session state from SQLite.
+   * Returns { restored, lessonId } so callers know if a session was recovered.
+   */
+  restoreSession(): { restored: boolean; lessonId: string | null } {
+    const saved = loadSessionState(this.db, this.sessionId);
+    if (!saved) return { restored: false, lessonId: null };
+
+    // Reload the manifest from DB
+    try {
+      this.manifest = loadLessonManifest(this.db, saved.lessonId);
+    } catch {
+      return { restored: false, lessonId: null };
     }
 
-    const raw = fs.readFileSync(dataPath, 'utf-8');
-    this.manifest = JSON.parse(raw) as LessonManifest;
+    this.boardState = saved.boardState;
+    this.beatState = saved.beatState;
+    this.dynamicBoardActions = saved.dynamicActions;
+    this.lastDynamicBeatId = saved.lastDynamicBeatId;
+    this.globalBoardOps = saved.globalOps;
+
+    return { restored: true, lessonId: saved.lessonId };
+  }
+
+  /**
+   * Load lesson manifest from SQLite.
+   * If the session was already restored with the same lessonId, returns current state
+   * without re-initializing (preserving progress).
+   */
+  loadLesson(lessonId: string): BoardState {
+    // If already loaded with same lesson (from restore), skip re-init
+    if (this.manifest && this.boardState && this.boardState.lessonId === lessonId) {
+      return this.boardState;
+    }
+
+    this.manifest = loadLessonManifest(this.db, lessonId);
 
     // Initialize board state: show initially visible nodes
     const visibleNodeIds = this.manifest.boardNodes
@@ -47,6 +91,7 @@ class StateManager {
     this.lastDynamicBeatId = null;
     this.globalBoardOps = [];
 
+    this.persistState();
     return this.boardState;
   }
 
@@ -64,6 +109,7 @@ class StateManager {
       }
     }
 
+    this.persistState();
     return this.boardState;
   }
 
@@ -95,6 +141,7 @@ class StateManager {
       }
     }
 
+    this.persistState();
     return this.boardState;
   }
 
@@ -106,6 +153,7 @@ class StateManager {
       throw new Error('No lesson loaded. Call load_lesson first.');
     }
     this.boardState.currentPhase = phaseId;
+    this.persistState();
     return this.boardState;
   }
 
@@ -126,6 +174,7 @@ class StateManager {
     // Reset dynamic board actions for new beat
     this.dynamicBoardActions = [];
     this.lastDynamicBeatId = beatId;
+    this.persistState();
     return { beatState: this.beatState, beat };
   }
 
@@ -140,6 +189,7 @@ class StateManager {
       this.lastDynamicBeatId = beatId;
     }
     this.dynamicBoardActions.push(...actions);
+    this.persistState();
     return this.dynamicBoardActions;
   }
 
@@ -148,6 +198,7 @@ class StateManager {
    */
   applyGlobalOp(op: GlobalBoardOp): GlobalBoardOp[] {
     this.globalBoardOps.push(op);
+    this.persistState();
     return this.globalBoardOps;
   }
 
@@ -173,8 +224,15 @@ class StateManager {
 
   resetBeatActions(): void {
     this.dynamicBoardActions = [];
+    this.persistState();
   }
 }
 
-// Singleton instance
-export const stateManager = new StateManager();
+/**
+ * Factory function: creates a StateManager bound to a db + sessionId.
+ */
+export function createStateManager(db: Database.Database, sessionId: string): StateManager {
+  return new StateManager(db, sessionId);
+}
+
+export type { StateManager };

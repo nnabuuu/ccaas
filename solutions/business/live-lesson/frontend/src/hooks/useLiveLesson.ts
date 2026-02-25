@@ -7,7 +7,7 @@ import {
   type Message,
   type UseAgentConnectionReturn,
 } from '@kedge-agentic/react-sdk'
-import type { BoardState, LessonManifest, BeatState, GlobalBoardOp, Beat } from '../types'
+import type { BoardState, LessonManifest, BeatState, GlobalBoardOp, Beat, BeatSnapshot } from '../types'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 import type { TimelineItem } from '../types/blackboard-actions'
 import { saveSession } from '../utils/sessionStore'
@@ -16,6 +16,7 @@ import { saveSession } from '../utils/sessionStore'
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
 const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
+const LESSON_API_URL = 'http://localhost:3006' // Solution backend (lesson list + manifest)
 
 const TENANT_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'
@@ -53,6 +54,13 @@ export interface UseLiveLessonReturn {
   isThinking: boolean
   thinkingContent: string
 
+  // Beat snapshots & navigation
+  beatSnapshots: BeatSnapshot[]
+  viewingBeatIndex: number | null
+  viewingSectionId: string | null
+  captureBeatSnapshot: (svgHtml: string) => void
+  navigateToBeat: (index: number | null) => void
+
   // Tutoring
   tutoringMode: TutoringMode
   isAnimating: boolean
@@ -74,6 +82,11 @@ export interface UseLiveLessonReturn {
   sendExplainRequest: (question: string) => void
   requestMoreQuestions: () => void
   handleAnimationChange: (animating: boolean) => void
+
+  // Tutoring panel
+  tutoringPanelOpen: boolean
+  openTutoringPanel: () => void
+  closeTutoringPanel: () => void
 }
 
 export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLessonReturn {
@@ -90,11 +103,16 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const [globalBoardOps, setGlobalBoardOps] = useState<GlobalBoardOp[]>([])
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
 
+  // Beat snapshot & navigation state
+  const [beatSnapshots, setBeatSnapshots] = useState<BeatSnapshot[]>([])
+  const [viewingBeatIndex, setViewingBeatIndex] = useState<number | null>(null)
+
   // Tutoring state
   const [tutoringMode, setTutoringMode] = useState<TutoringMode>('idle')
   const [isAnimating, setIsAnimating] = useState(false)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('single')
+  const [tutoringPanelOpen, setTutoringPanelOpen] = useState(false)
 
   // ===== Page Context (board state visible to Agent) =====
   const { context, updateContext } = usePageContext()
@@ -196,7 +214,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     if (!lessonId) return
     setManifest(null)
     const controller = new AbortController()
-    fetch(`/lessons/${lessonId}/manifest.json`, { signal: controller.signal })
+    fetch(`${LESSON_API_URL}/api/lessons/${lessonId}/manifest`, { signal: controller.signal })
       .then(res => {
         if (res.ok) return res.json()
         return null
@@ -246,6 +264,9 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setSuggestedQuestions([])
     setSelectionMode('single')
     setIsAnimating(false)
+    setBeatSnapshots([])
+    setViewingBeatIndex(null)
+    setTutoringPanelOpen(false)
   }, [lessonId])
 
   // Send an ask message when student clicks on a board node
@@ -301,6 +322,9 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setTutoringMode('idle')
     setSuggestedQuestions([])
     setSelectionMode('single')
+
+    // Auto-scroll carousel to latest beat
+    setViewingBeatIndex(null)
   }, [manifest])  // ref reads are never stale, no currentBeatIndex dep needed
 
   // Derive from beatState so this stays in sync with both UI-driven and AI-driven advances
@@ -376,6 +400,47 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setIsAnimating(animating)
   }, [])
 
+  const openTutoringPanel = useCallback(() => {
+    setTutoringPanelOpen(true)
+  }, [])
+
+  const closeTutoringPanel = useCallback(() => {
+    setTutoringPanelOpen(false)
+  }, [])
+
+  // Capture a beat snapshot (called by DynamicBoard before beat reset)
+  const captureBeatSnapshot = useCallback((svgHtml: string) => {
+    const bs = beatStateRef.current
+    if (!bs?.currentBeatId) return
+    const beat = manifestRef.current?.beats?.find(b => b.id === bs.currentBeatId)
+    const snap: BeatSnapshot = {
+      beatId: bs.currentBeatId,
+      beatIndex: bs.currentBeatIndex,
+      sectionId: bs.sectionId ?? '',
+      svgSnapshot: svgHtml,
+      narratorText: beat?.narratorText ?? '',
+    }
+    setBeatSnapshots(prev => {
+      const idx = prev.findIndex(s => s.beatId === snap.beatId)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = snap
+        return next
+      }
+      return [...prev, snap]
+    })
+  }, [])
+
+  // Navigate to a beat index (null = current/latest beat)
+  const navigateToBeat = useCallback((index: number | null) => {
+    setViewingBeatIndex(index)
+  }, [])
+
+  // Derived: section ID of the currently viewed beat (for GlobalBoard highlight)
+  const viewingSectionId: string | null = viewingBeatIndex !== null
+    ? (beatSnapshots.find(s => s.beatIndex === viewingBeatIndex)?.sectionId ?? beatState?.sectionId ?? null)
+    : (beatState?.sectionId ?? null)
+
   return {
     connected: connection.connected,
     connection,
@@ -403,11 +468,19 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     startLesson,
     advanceBeat,
     canAdvanceBeat,
+    beatSnapshots,
+    viewingBeatIndex,
+    viewingSectionId,
+    captureBeatSnapshot,
+    navigateToBeat,
     raiseHand,
     dismissTutoring,
     sendExplainRequest,
     requestMoreQuestions,
     handleAnimationChange,
+    tutoringPanelOpen,
+    openTutoringPanel,
+    closeTutoringPanel,
   }
 }
 

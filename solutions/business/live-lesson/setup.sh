@@ -63,6 +63,19 @@ main() {
     # Step 3.5: Build MCP server
     custom_init
 
+    # Step 3.6: Build & start solution backend (lesson API on port 3006)
+    log_step "3.6" "Building solution backend"
+    local backend_dir="$SCRIPT_DIR/backend"
+    if [ -d "$backend_dir" ]; then
+        cd "$backend_dir"
+        log_info "Installing backend dependencies..."
+        npm install > /dev/null 2>&1
+        log_info "Building backend..."
+        npm run build > /dev/null 2>&1
+        log_success "Solution backend built successfully"
+        cd "$SCRIPT_DIR"
+    fi
+
     # Step 4: Setup tenant and API key
     log_step "4" "Setting up tenant and API key"
 
@@ -101,9 +114,12 @@ main() {
     # Step 6: Clear ports
     log_step "6" "Preparing ports"
     kill_port "$FRONTEND_PORT"
+    kill_port 3006
 
-    # Step 7: Start frontend
+    # Step 7: Start frontend + backend
     log_step "7" "Starting services"
+    BACKEND_PID=$(start_service "backend" "$SCRIPT_DIR/backend" "3006" "node dist/index.js")
+    wait_for_port 3006 15
     FRONTEND_PID=$(start_service "frontend" "$SCRIPT_DIR/frontend" "$FRONTEND_PORT" "npm run dev")
     wait_for_port "$FRONTEND_PORT" 30
 
@@ -113,6 +129,8 @@ main() {
     echo ""
     log_warn "⚠️  Ensure CCAAS backend is running on port 3001:"
     echo "   cd packages/backend && npm run start:dev"
+    echo ""
+    log_info "Solution backend (lesson API) running on port 3006"
     echo ""
     echo "Press Ctrl+C to stop all services"
 
@@ -124,7 +142,9 @@ cleanup() {
     echo ""
     log_info "Stopping services..."
     stop_service "$FRONTEND_PID"
+    stop_service "$BACKEND_PID"
     kill_port "$FRONTEND_PORT"
+    kill_port 3006
     log_success "Services stopped"
     exit 0
 }

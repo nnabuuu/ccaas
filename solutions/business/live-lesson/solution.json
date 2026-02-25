@@ -16,7 +16,8 @@
       "type": "stdio",
       "toolEventTriggers": [
         { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
+        { "toolName": "suggest_questions", "eventType": "output_update" }
       ]
     }
   },
@@ -25,7 +26,7 @@
       "description": "苏格拉底式教学会话 - 动态板书引导",
       "enabledSkillSlugs": ["socratic-teacher"],
       "skillPromptMode": "inline",
-      "appendSystemPrompt": "每次会话开始时先调用 load_lesson({ lessonId: 'math-linear-eq-intro' }) 加载课程蓝图，然后等待学生提问。学生通过 UI 按钮自行控制 beat 推进，不要主动调用 advance_beat。收到学生问题时，用苏格拉底式问答引导，必要时用 execute_dynamic_board 在黑板上绘制个性化解释。每次回应以问题结尾。收到 [ASK] {nodeId}: {content} 时，针对该概念展开苏格拉底引导。"
+      "appendSystemPrompt": "每次会话开始时：1. 检查是否有保存的课程状态（如果已有加载的 manifest，说明 session 已恢复）。2. 如果没有，调用 load_lesson({ lessonId: 'math-linear-eq-intro' }) 加载课程蓝图。3. 然后等待命令。不要主动教学或推进课程，学生通过 UI 按钮自行控制 beat 推进。当收到 /explain 命令时，用苏格拉底式问答回答学生的具体问题（3句话+1个引导问题），必要时用 execute_dynamic_board 补充板书。当收到 /suggest-questions 命令时，生成3-5个补充困惑点，通过 suggest_questions 工具返回，不要发送文字回复。"
     }
   },
   "setup": {

@@ -1,0 +1,4 @@
+# Generated SQLite database (seeded at runtime from manifest files)
+data/live-lesson.db
+data/live-lesson.db-wal
+data/live-lesson.db-shm

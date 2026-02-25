@@ -22,7 +22,23 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type ChalkboardAction, type SuggestedQuestionsPayload } from './types.js';
 import { validateField } from './schemas.js';
-import { stateManager } from './state-manager.js';
+import { initDb, seedFromManifestFiles } from './db.js';
+import { createStateManager, type StateManager } from './state-manager.js';
+
+// ── Initialize DB & StateManager ──────────────────────────────────────────────
+const db = initDb();
+seedFromManifestFiles(db);
+
+const sessionId = process.env.AGENT_SESSION_ID ?? `local-${Date.now()}`;
+const stateManager: StateManager = createStateManager(db, sessionId);
+
+// Attempt session restore
+const { restored, lessonId: restoredLessonId } = stateManager.restoreSession();
+if (restored) {
+  console.error(`[live-lesson] Restored session ${sessionId}: lesson=${restoredLessonId}`);
+} else {
+  console.error(`[live-lesson] New session ${sessionId}`);
+}
 
 // Create the MCP server
 const server = new Server(
@@ -94,7 +110,7 @@ Returns: Full manifest + initial board state`,
     properties: {
       lessonId: {
         type: 'string',
-        description: 'Lesson ID (must match a directory in data/lessons/)',
+        description: 'Lesson ID (must match a lesson in the database)',
       },
     },
     required: ['lessonId'],
