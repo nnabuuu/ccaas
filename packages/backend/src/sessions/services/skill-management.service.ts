@@ -156,6 +156,51 @@ SKILL.md files are the authoritative source for skill usage.
   }
 
   /**
+   * Generate inline skill prompt by reading SKILL.md content directly
+   *
+   * Instead of instructing the agent to read SKILL.md at runtime (which causes
+   * visible "Let me read the skill definition" messages), this method reads
+   * SKILL.md files from the workspace and inlines their content into the system
+   * prompt. The agent starts with full skill knowledge — no file reads needed.
+   *
+   * @param workspaceDir - Path to session workspace directory
+   * @param skills - Array of skill metadata
+   * @returns Inline system prompt with SKILL.md content, or undefined if no content
+   */
+  async generateInlineSkillPrompt(
+    workspaceDir: string,
+    skills: SkillInfo[],
+  ): Promise<string | undefined> {
+    if (skills.length === 0) return undefined;
+
+    const sections: string[] = [];
+
+    for (const skill of skills) {
+      const skillMdPath = path.join(
+        workspaceDir,
+        '.claude',
+        'skills',
+        skill.slug,
+        'SKILL.md',
+      );
+
+      try {
+        const content = await fs.promises.readFile(skillMdPath, 'utf-8');
+        sections.push(`## Skill: ${skill.name}\n\n${content.trim()}`);
+        this.logger.debug(`Inlined SKILL.md for ${skill.slug} (${content.length} chars)`);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to read SKILL.md for ${skill.slug} at ${skillMdPath}: ${error}`,
+        );
+      }
+    }
+
+    if (sections.length === 0) return undefined;
+
+    return sections.join('\n\n---\n\n');
+  }
+
+  /**
    * Generate system prompt for session from skill slugs
    *
    * Convenience method that loads skills and generates prompt in one call.

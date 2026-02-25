@@ -24,6 +24,7 @@
     "teaching": {
       "description": "苏格拉底式教学会话 - 动态板书引导",
       "enabledSkillSlugs": ["socratic-teacher"],
+      "skillPromptMode": "inline",
       "appendSystemPrompt": "每次会话开始时先调用 load_lesson({ lessonId: 'math-linear-eq-intro' }) 加载课程蓝图，然后等待学生提问。学生通过 UI 按钮自行控制 beat 推进，不要主动调用 advance_beat。收到学生问题时，用苏格拉底式问答引导，必要时用 execute_dynamic_board 在黑板上绘制个性化解释。每次回应以问题结尾。收到 [ASK] {nodeId}: {content} 时，针对该概念展开苏格拉底引导。"
     }
   },

@@ -22,6 +22,7 @@ import { ConversationContextService } from '../../messages/conversation-context.
 import { UserContextService } from '../../messages/user-context.service';
 import { SkillsService } from '../../skills/skills.service';
 import { ConversationMetadataService } from './conversation-metadata.service';
+import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import type { FrontendEvent, ManagedSession } from '../../common/interfaces';
 
@@ -114,6 +115,7 @@ export class CompletionOrchestrationService {
     private readonly userContextService: UserContextService,
     private readonly skillsService: SkillsService,
     private readonly conversationMetadataService: ConversationMetadataService,
+    private readonly skillManagementService: SkillManagementService,
     private readonly turnsService: TurnsService,
   ) {}
 
@@ -184,6 +186,9 @@ export class CompletionOrchestrationService {
     const effectiveTemplateName =
       templateName ?? resolvedTenant?.config?.defaultSessionTemplate;
 
+    let skillPromptMode: 'protocol' | 'inline' | undefined;
+    let templateAppendPrompt: string | undefined;
+
     if (effectiveTemplateName) {
       // Tenant config is a JSON column — use explicit any cast for template fields
       const tmpl = resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined;
@@ -193,6 +198,8 @@ export class CompletionOrchestrationService {
         if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) enabledSkillSlugs = tmpl['enabledSkillSlugs'];
         if (!systemPrompt && tmpl['appendSystemPrompt'])     systemPrompt = tmpl['appendSystemPrompt'];
         if (!skillPath && tmpl['skillPath'])                 skillPath = tmpl['skillPath'];
+        skillPromptMode = tmpl['skillPromptMode'] as typeof skillPromptMode;
+        templateAppendPrompt = tmpl['appendSystemPrompt'] as string | undefined;
         if (tmpl['sessionTtlMs']) {
           session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, tmpl['sessionTtlMs'] as number);
         }
@@ -239,6 +246,35 @@ export class CompletionOrchestrationService {
     } catch (error) {
       this.logger.warn(`Failed to sync skills: ${error}`);
       // Continue without skills - non-fatal
+    }
+
+    // Step 4b: If skillPromptMode is "inline", read SKILL.md files and replace
+    // the protocol-style systemPrompt with inlined skill content. This eliminates
+    // agent runtime file reads (Read/Glob/ToolSearch) visible to end users.
+    if (skillPromptMode === 'inline' && skillSyncedCount > 0) {
+      try {
+        const skills = await this.skillManagementService.loadEnabledSkills(
+          resolvedTenantId,
+          enabledSkillSlugs,
+        );
+        const inlinePrompt = await this.skillManagementService.generateInlineSkillPrompt(
+          session.workspaceDir,
+          skills,
+        );
+        if (inlinePrompt) {
+          // Rebuild systemPrompt: inlined skills + template appendSystemPrompt
+          systemPrompt = templateAppendPrompt?.trim()
+            ? `${inlinePrompt}\n\n${templateAppendPrompt}`
+            : inlinePrompt;
+
+          this.logger.log(`Using inline skill prompt for session ${sessionId} (${skills.length} skills)`);
+        } else {
+          this.logger.warn(`Inline skill prompt requested but no SKILL.md content found for session ${sessionId}`);
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to generate inline skill prompt: ${error}`);
+        // Fall back to protocol-style systemPrompt already set
+      }
     }
 
     // Step 5: If solution provided a skill file path, copy it to session workspace

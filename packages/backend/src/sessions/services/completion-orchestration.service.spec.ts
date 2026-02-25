@@ -15,6 +15,7 @@ import { ConversationContextService } from '../../messages/conversation-context.
 import { UserContextService } from '../../messages/user-context.service';
 import { SkillsService } from '../../skills/skills.service';
 import { ConversationMetadataService } from './conversation-metadata.service';
+import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import type { ManagedSession } from '../../common/interfaces';
 
@@ -83,6 +84,11 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       autoGenerateTitle: jest.fn().mockResolvedValue(undefined),
     };
 
+    const mockSkillManagementService = {
+      loadEnabledSkills: jest.fn().mockResolvedValue([]),
+      generateInlineSkillPrompt: jest.fn().mockResolvedValue(undefined),
+    };
+
     const mockTurnsService = {
       createNextTurn: jest.fn().mockResolvedValue({ id: 'turn-1', turnNumber: 1 }),
       completeTurnWithRetry: jest.fn().mockResolvedValue({ turnNumber: 1, totalTokens: 0, durationMs: 0 }),
@@ -99,6 +105,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         { provide: UserContextService, useValue: mockUserContextService },
         { provide: SkillsService, useValue: mockSkillsService },
         { provide: ConversationMetadataService, useValue: mockConversationMetadataService },
+        { provide: SkillManagementService, useValue: mockSkillManagementService },
         { provide: TurnsService, useValue: mockTurnsService },
       ],
     }).compile();

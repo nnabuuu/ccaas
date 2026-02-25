@@ -92,6 +92,9 @@ export const SessionTemplateSchema = z.object({
   skillPath: z.string().optional(),
   /** Session TTL override in milliseconds. Capped at plan max on import. */
   sessionTtlMs: z.number().int().min(60000).optional(),
+  /** Skill prompt mode: 'protocol' (default) instructs agent to read SKILL.md at runtime;
+   *  'inline' embeds SKILL.md content directly in system prompt, hiding internal reads from end users. */
+  skillPromptMode: z.enum(['protocol', 'inline']).optional(),
 });
 
 // ============================================================================
