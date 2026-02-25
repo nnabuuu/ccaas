@@ -34,6 +34,10 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   beatState: BeatStateSchema,
   dynamicBoardActions: z.array(z.object({ type: z.string() }).passthrough()),
   globalBoardOps: z.array(GlobalBoardOpSchema),
+  suggestedQuestions: z.object({
+    questions: z.array(z.string().min(1)).min(1).max(10),
+    selectionMode: z.enum(['single', 'multi']).default('single'),
+  }),
 };
 
 export function validateField(

@@ -88,6 +88,16 @@ export class SkillNotFoundException extends ProtocolHttpException {
 }
 
 /**
+ * Generic resource not found error (404)
+ */
+export class ResourceNotFoundException extends ProtocolHttpException {
+  constructor(message: string = 'Resource not found') {
+    super('NOT_FOUND', message, false, false);
+    this.name = 'ResourceNotFoundException';
+  }
+}
+
+/**
  * Permission denied error (403)
  */
 export class PermissionDeniedException extends ProtocolHttpException {

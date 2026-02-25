@@ -10,6 +10,7 @@
  * 5. write_output           - Sync data to frontend (platform mechanism)
  * 6. advance_beat           - Advance to a specific beat in the lesson
  * 7. execute_dynamic_board  - Execute custom chalkboard drawing actions
+ * 8. suggest_questions      - Suggest confusion-point questions for student selection
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -19,7 +20,7 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type ChalkboardAction } from './types.js';
+import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type ChalkboardAction, type SuggestedQuestionsPayload } from './types.js';
 import { validateField } from './schemas.js';
 import { stateManager } from './state-manager.js';
 
@@ -189,6 +190,7 @@ Valid fields: ${SYNC_FIELDS.join(', ')}
 - beatState: Beat progress state
 - dynamicBoardActions: Array of chalkboard drawing actions
 - globalBoardOps: Array of global board operations
+- suggestedQuestions: Use the dedicated suggest_questions tool instead
 
 The platform detects this tool call and broadcasts an output_update event to the frontend.
 
@@ -224,8 +226,8 @@ const advanceBeatTool: Tool = {
 
 调用此工具后，前端会：
 1. 更新左侧 GlobalBoard（点亮对应节点）
-2. 在 InteractionPanel 显示 narratorText（叙述文本）
-3. 显示 expectedQuestions 作为 quick-reply 按钮
+2. 在 TranscriptPanel 显示 narratorText（叙述文本）
+3. expectedQuestions 在学生举手时显示为困惑点选择卡片
 
 标准教学流程：
 - 课程开始: advance_beat({ beatId: "beat-1" })
@@ -275,6 +277,36 @@ Example:
   },
 };
 
+const suggestQuestionsTool: Tool = {
+  name: 'suggest_questions',
+  description: `向学生推荐困惑点问题，前端渲染为单选/多选表单。
+
+基于当前 beat 上下文生成 3-5 个学生可能有的困惑点。
+前端收到后渲染为 radio（单选）或 checkbox（多选）表单。
+
+Example:
+{
+  "questions": ["为什么要设未知数？", "路程公式怎么来的？", "能不能直接猜答案？"],
+  "selectionMode": "single"
+}`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      questions: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Array of suggested question strings',
+      },
+      selectionMode: {
+        type: 'string',
+        enum: ['single', 'multi'],
+        description: 'Selection mode: single (radio) or multi (checkbox). Default: single',
+      },
+    },
+    required: ['questions'],
+  },
+};
+
 // Handle list_tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -286,6 +318,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       writeOutputTool,
       advanceBeatTool,
       executeDynamicBoardTool,
+      suggestQuestionsTool,
     ],
   };
 });
@@ -443,9 +476,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
   }
 
+  // ── suggest_questions ────────────────────────────────────────────────────
+  if (name === 'suggest_questions') {
+    const { questions, selectionMode = 'single' } = args as { questions: string[]; selectionMode?: 'single' | 'multi' };
+
+    const payload: SuggestedQuestionsPayload = { questions, selectionMode };
+    const validation = validateField('suggestedQuestions', payload);
+
+    if (!validation.success) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: `Validation failed: ${validation.errors.join('; ')}` }) }],
+        isError: true,
+      };
+    }
+
+    const result: WriteOutputResult = {
+      status: 'success',
+      data: {
+        field: 'suggestedQuestions' as SyncField,
+        value: validation.data,
+        preview: `推荐 ${questions.length} 个困惑点 (${selectionMode === 'single' ? '单选' : '多选'})`,
+      },
+    };
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result) }],
+    };
+  }
+
   // ── write_output ───────────────────────────────────────────────────────
   if (name === 'write_output') {
     const input = args as unknown as WriteOutputInput;
+
+    // Block suggestedQuestions — must use dedicated suggest_questions tool
+    if (input.field === 'suggestedQuestions') {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({
+          status: 'error',
+          error: 'Use the dedicated suggest_questions tool for this field.',
+        }) }],
+        isError: true,
+      };
+    }
 
     if (!SYNC_FIELDS.includes(input.field as SyncField)) {
       return {

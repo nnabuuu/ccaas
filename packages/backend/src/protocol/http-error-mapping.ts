@@ -13,6 +13,7 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<ErrorCode, number> = {
   // Client errors (4xx)
   VALIDATION_ERROR: 400, // Bad Request
   PERMISSION_DENIED: 403, // Forbidden
+  NOT_FOUND: 404,       // Not Found (generic)
   SKILL_NOT_FOUND: 404, // Not Found
   SESSION_EXPIRED: 401, // Unauthorized
   RATE_LIMITED: 429, // Too Many Requests
@@ -57,7 +58,7 @@ export function httpStatusToErrorCode(statusCode: number): ErrorCode {
   if (statusCode === 400) return 'VALIDATION_ERROR';
   if (statusCode === 401) return 'SESSION_EXPIRED';
   if (statusCode === 403) return 'PERMISSION_DENIED';
-  if (statusCode === 404) return 'SKILL_NOT_FOUND';
+  if (statusCode === 404) return 'NOT_FOUND';
   if (statusCode === 429) return 'RATE_LIMITED';
   if (statusCode === 502) return 'MCP_ERROR';
   if (statusCode === 503) return 'CONNECTION_LOST';

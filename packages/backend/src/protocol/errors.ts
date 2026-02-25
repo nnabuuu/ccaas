@@ -18,6 +18,7 @@ export type ErrorCode =
   | 'PARTIAL_FAILURE' // Some fields generated, others failed
   | 'CONNECTION_LOST' // WebSocket disconnected
   | 'SESSION_EXPIRED' // Session TTL exceeded
+  | 'NOT_FOUND'       // Generic resource not found (route, tenant, etc.)
   | 'SKILL_NOT_FOUND' // Requested skill doesn't exist
   | 'PERMISSION_DENIED' // API key lacks required scope
   | 'INTERNAL_ERROR' // Unexpected server error

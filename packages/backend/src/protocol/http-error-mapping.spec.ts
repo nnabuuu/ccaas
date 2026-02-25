@@ -17,6 +17,7 @@ describe('http-error-mapping', () => {
       const errorCodes: ErrorCode[] = [
         'VALIDATION_ERROR',
         'PERMISSION_DENIED',
+        'NOT_FOUND',
         'SKILL_NOT_FOUND',
         'SESSION_EXPIRED',
         'RATE_LIMITED',
@@ -39,6 +40,7 @@ describe('http-error-mapping', () => {
       expect(ERROR_CODE_TO_HTTP_STATUS.VALIDATION_ERROR).toBe(400);
       expect(ERROR_CODE_TO_HTTP_STATUS.SESSION_EXPIRED).toBe(401);
       expect(ERROR_CODE_TO_HTTP_STATUS.PERMISSION_DENIED).toBe(403);
+      expect(ERROR_CODE_TO_HTTP_STATUS.NOT_FOUND).toBe(404);
       expect(ERROR_CODE_TO_HTTP_STATUS.SKILL_NOT_FOUND).toBe(404);
       expect(ERROR_CODE_TO_HTTP_STATUS.RATE_LIMITED).toBe(429);
     });
@@ -78,6 +80,7 @@ describe('http-error-mapping', () => {
       expect(isClientError('VALIDATION_ERROR')).toBe(true);
       expect(isClientError('SESSION_EXPIRED')).toBe(true);
       expect(isClientError('PERMISSION_DENIED')).toBe(true);
+      expect(isClientError('NOT_FOUND')).toBe(true);
       expect(isClientError('SKILL_NOT_FOUND')).toBe(true);
       expect(isClientError('RATE_LIMITED')).toBe(true);
     });
@@ -116,7 +119,7 @@ describe('http-error-mapping', () => {
       expect(httpStatusToErrorCode(400)).toBe('VALIDATION_ERROR');
       expect(httpStatusToErrorCode(401)).toBe('SESSION_EXPIRED');
       expect(httpStatusToErrorCode(403)).toBe('PERMISSION_DENIED');
-      expect(httpStatusToErrorCode(404)).toBe('SKILL_NOT_FOUND');
+      expect(httpStatusToErrorCode(404)).toBe('NOT_FOUND');
       expect(httpStatusToErrorCode(429)).toBe('RATE_LIMITED');
       expect(httpStatusToErrorCode(502)).toBe('MCP_ERROR');
       expect(httpStatusToErrorCode(503)).toBe('CONNECTION_LOST');
