@@ -128,7 +128,23 @@ export interface SessionTimelineEvent {
   id: string;
   type: 'message' | 'tool_event' | 'thinking_block' | 'process_event' | 'api_error' | 'output_update';
   timestamp: Date;
+  messageId: string | null;
+  turnNumber: number | null;
   data: unknown;
+}
+
+export interface TurnSummary {
+  turnId: string;
+  turnNumber: number;
+  userMessageId: string;
+  assistantMessageId: string | null;
+  totalTokens: number;
+  durationMs: number;
+  createdAt: Date;
+  completedAt: Date | null;
+  toolCount: number;
+  hasThinking: boolean;
+  hasErrors: boolean;
 }
 
 export interface SessionTimeline {

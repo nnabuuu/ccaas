@@ -523,6 +523,220 @@
 
 **⚠️ 警告**：此操作会永久从数据库中删除密钥。建议使用吊销功能以保留审计记录。
 
+## 管理员 - 会话管理
+
+用于会话监控和调试的管理员接口。所有端点都需要 `admin` 权限范围。
+
+### GET /admin/sessions
+
+获取会话列表，支持过滤和分页。
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `tenantId` | string | 否 | 按租户过滤 |
+| `status` | string | 否 | 按状态过滤（`idle`、`processing`、`error`、`closed`） |
+| `startDate` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
+| `endDate` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
+| `page` | number | 否 | 页码（默认：1） |
+| `pageSize` | number | 否 | 每页条数（默认：50，最大：250） |
+
+**响应**：
+
+```json
+{
+  "data": [
+    {
+      "sessionId": "session-uuid",
+      "tenantId": "tenant-uuid",
+      "clientId": "client-uuid",
+      "status": "idle",
+      "messageCount": 12,
+      "totalTokens": 45230,
+      "estimatedCost": 0.15,
+      "createdAt": "2025-01-15T10:00:00Z",
+      "lastActivity": "2025-01-15T10:30:00Z",
+      "hasActiveProcess": false,
+      "title": "会话标题",
+      "isPinned": false
+    }
+  ],
+  "total": 128,
+  "page": 1,
+  "pageSize": 50
+}
+```
+
+### GET /admin/sessions/:sessionId
+
+获取会话详情。
+
+### GET /admin/sessions/:sessionId/timeline
+
+获取会话时间线，包含所有事件（消息、工具调用、思考块、进程事件、API 错误、输出更新）。
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `limit` | number | 否 | 最大返回事件数（默认：100，最大：1000） |
+| `offset` | number | 否 | 分页偏移量（默认：0） |
+| `turnNumber` | integer | 否 | 按 Turn 过滤事件（从 0 开始） |
+
+**响应**：
+
+```json
+{
+  "sessionId": "session-uuid",
+  "events": [
+    {
+      "id": "event-uuid",
+      "type": "message",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "messageId": "msg-uuid",
+      "turnNumber": 0,
+      "data": {
+        "role": "user",
+        "content": "你好",
+        "metadata": {},
+        "messageIndex": 0
+      }
+    },
+    {
+      "id": "event-uuid",
+      "type": "tool_event",
+      "timestamp": "2025-01-15T10:00:01Z",
+      "messageId": "assistant-msg-uuid",
+      "turnNumber": 0,
+      "data": {
+        "toolName": "write_output",
+        "phase": "end",
+        "input": {},
+        "output": {},
+        "durationMs": 150,
+        "success": true
+      }
+    },
+    {
+      "id": "event-uuid",
+      "type": "process_event",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "messageId": null,
+      "turnNumber": null,
+      "data": {
+        "eventType": "spawn",
+        "pid": 12345
+      }
+    }
+  ],
+  "totalEvents": 45
+}
+```
+
+**事件类型**：
+
+| 类型 | 说明 | `messageId` | `turnNumber` |
+|------|------|-------------|--------------|
+| `message` | 用户或助手消息 | 消息主键 | 匹配的 Turn 编号 |
+| `tool_event` | 工具调用（开始/结束阶段） | 父消息 ID | 继承自消息 |
+| `thinking_block` | 模型思考/推理 | 父消息 ID | 继承自消息 |
+| `process_event` | AgentEngine 进程生命周期 | `null` | `null` |
+| `api_error` | API 调用错误 | 父消息 ID（可为 null） | 继承自消息 |
+| `output_update` | 从工具结果派生 | 继承自工具 | 继承自工具 |
+
+**按 Turn 过滤**：提供 `turnNumber` 参数时，仅返回属于该 Turn 的事件。进程事件（没有 `messageId`）会从按 Turn 过滤的结果中排除。
+
+### GET /admin/sessions/:sessionId/turns
+
+获取会话的 Turn 摘要列表。每个 Turn 代表一次用户-助手对话交换。
+
+**响应**：
+
+```json
+[
+  {
+    "turnId": "turn-uuid",
+    "turnNumber": 0,
+    "userMessageId": "user-msg-uuid",
+    "assistantMessageId": "assistant-msg-uuid",
+    "totalTokens": 1523,
+    "durationMs": 4500,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "completedAt": "2025-01-15T10:00:04Z",
+    "toolCount": 3,
+    "hasThinking": true,
+    "hasErrors": false
+  }
+]
+```
+
+| 字段 | 说明 |
+|------|------|
+| `turnNumber` | 会话内从 0 开始的 Turn 索引 |
+| `assistantMessageId` | Turn 仍在进行中时为 `null` |
+| `toolCount` | 该 Turn 中已完成的工具调用次数 |
+| `hasThinking` | 助手是否使用了扩展思考 |
+| `hasErrors` | 该 Turn 中是否发生了 API 错误 |
+
+### GET /admin/sessions/:sessionId/tokens
+
+获取会话的 Token 用量明细。
+
+**响应**：
+
+```json
+{
+  "inputTokens": 12000,
+  "outputTokens": 8500,
+  "cachedInputTokens": 3000,
+  "cacheReadTokens": 1500,
+  "cacheCreationTokens": 500,
+  "reasoningTokens": 2000,
+  "totalTokens": 22500,
+  "estimatedCost": 0.15
+}
+```
+
+### POST /admin/sessions/:sessionId/kill
+
+强制终止会话的 AgentEngine 进程。
+
+**响应**：
+
+```json
+{
+  "success": true,
+  "message": "Session terminated successfully"
+}
+```
+
+### POST /admin/sessions/bulk-kill
+
+批量终止多个会话。
+
+**请求体**：
+
+```json
+{
+  "sessionIds": ["session-uuid-1", "session-uuid-2"]
+}
+```
+
+**响应**：
+
+```json
+{
+  "totalRequested": 2,
+  "successCount": 1,
+  "failedCount": 1,
+  "results": [
+    { "sessionId": "session-uuid-1", "status": "success" },
+    { "sessionId": "session-uuid-2", "status": "failed", "error": "Session has no active process" }
+  ]
+}
+```
+
 ## 定时任务管理
 
 ### POST /scheduled-tasks

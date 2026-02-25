@@ -24,6 +24,8 @@ import {
   Clock,
   Coins,
   ListOrdered,
+  Hash,
+  FileOutput,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
@@ -110,12 +112,34 @@ interface ApiErrorData {
   wasRetried?: boolean
 }
 
+interface OutputUpdateData {
+  toolName: string
+  data: unknown
+  status: string
+  progress?: number
+}
+
+interface TurnSummary {
+  turnId: string
+  turnNumber: number
+  userMessageId: string
+  assistantMessageId: string | null
+  totalTokens: number
+  durationMs: number
+  createdAt: string
+  completedAt: string | null
+  toolCount: number
+  hasThinking: boolean
+  hasErrors: boolean
+}
+
 type TimelineEvent =
-  | { id: string; type: 'message'; timestamp: string; data: MessageEventData }
-  | { id: string; type: 'tool_event'; timestamp: string; data: ToolEventData }
-  | { id: string; type: 'thinking_block'; timestamp: string; data: ThinkingBlockData }
-  | { id: string; type: 'process_event'; timestamp: string; data: ProcessEventData }
-  | { id: string; type: 'api_error'; timestamp: string; data: ApiErrorData }
+  | { id: string; type: 'message'; timestamp: string; messageId: string | null; turnNumber: number | null; data: MessageEventData }
+  | { id: string; type: 'tool_event'; timestamp: string; messageId: string | null; turnNumber: number | null; data: ToolEventData }
+  | { id: string; type: 'thinking_block'; timestamp: string; messageId: string | null; turnNumber: number | null; data: ThinkingBlockData }
+  | { id: string; type: 'process_event'; timestamp: string; messageId: string | null; turnNumber: number | null; data: ProcessEventData }
+  | { id: string; type: 'api_error'; timestamp: string; messageId: string | null; turnNumber: number | null; data: ApiErrorData }
+  | { id: string; type: 'output_update'; timestamp: string; messageId: string | null; turnNumber: number | null; data: OutputUpdateData }
 
 const EVENT_ICONS = {
   message: MessageSquare,
@@ -123,6 +147,7 @@ const EVENT_ICONS = {
   thinking_block: Brain,
   process_event: Activity,
   api_error: AlertTriangle,
+  output_update: FileOutput,
 } as const
 
 const EVENT_COLORS = {
@@ -131,6 +156,7 @@ const EVENT_COLORS = {
   thinking_block: 'text-yellow-500',
   process_event: 'text-gray-500',
   api_error: 'text-red-500',
+  output_update: 'text-purple-500',
 } as const
 
 function TimelineEventCard({ event }: { event: TimelineEvent }) {
@@ -261,6 +287,28 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
             )}
           </div>
         )
+      case 'output_update':
+        return (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">{event.data.toolName}</span>
+              <Badge variant="outline" className="text-xs">{event.data.status}</Badge>
+              {event.data.progress !== undefined && (
+                <span className="text-xs text-muted-foreground">
+                  {Math.round(event.data.progress * 100)}%
+                </span>
+              )}
+            </div>
+            {(event.data.data && (
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground">Data</summary>
+                <pre className="mt-2 p-2 bg-muted rounded overflow-x-auto">
+                  {JSON.stringify(event.data.data, null, 2)}
+                </pre>
+              </details>
+            )) as React.ReactNode}
+          </div>
+        )
     }
   }
 
@@ -271,6 +319,11 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
         <span className="text-xs text-muted-foreground">
           {format(new Date(event.timestamp), 'HH:mm:ss')}
         </span>
+        {event.turnNumber !== null && (
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+            T{event.turnNumber}
+          </Badge>
+        )}
       </div>
       <div className="flex-1">{renderEventContent()}</div>
     </div>
@@ -280,9 +333,10 @@ function TimelineEventCard({ event }: { event: TimelineEvent }) {
 export function SessionDetailPage() {
   const { sessionId } = useParams<{ sessionId: string }>()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<'timeline' | 'files'>('timeline')
+  const [activeTab, setActiveTab] = useState<'timeline' | 'turns' | 'files'>('timeline')
   const [timelineOffset, setTimelineOffset] = useState(0)
   const timelineLimit = 50
+  const [filterTurnNumber, setFilterTurnNumber] = useState<number | undefined>(undefined)
   const [isExporting, setIsExporting] = useState(false)
   const [showKillDialog, setShowKillDialog] = useState(false)
 
@@ -308,9 +362,17 @@ export function SessionDetailPage() {
       query: {
         limit: timelineLimit,
         offset: timelineOffset,
+        ...(filterTurnNumber !== undefined ? { turnNumber: filterTurnNumber } : {}),
       },
     },
   })
+
+  // Fetch turns
+  const { data: turnsData } = useCustom<TurnSummary[]>({
+    url: `/admin/sessions/${sessionId}/turns`,
+    method: 'get',
+  })
+  const turns = turnsData?.data || []
 
   // Fetch token breakdown
   const { data: tokenData } = useCustom<TokenBreakdown>({
@@ -678,24 +740,61 @@ export function SessionDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Timeline & Files Tabs */}
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'timeline' | 'files')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+      {/* Timeline, Turns & Files Tabs */}
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'timeline' | 'turns' | 'files')}>
+        <TabsList className="grid w-full max-w-md grid-cols-3">
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          <TabsTrigger value="files">Workspace Files</TabsTrigger>
+          <TabsTrigger value="turns">
+            Turns{turns.length > 0 && ` (${turns.length})`}
+          </TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
         </TabsList>
 
         {/* Timeline Tab */}
         <TabsContent value="timeline">
           <Card>
             <CardHeader>
-              <CardTitle>Timeline</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Timeline</CardTitle>
+                {turns.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <select
+                      className="text-sm border rounded px-2 py-1 bg-background"
+                      value={filterTurnNumber ?? ''}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        setFilterTurnNumber(val === '' ? undefined : Number(val))
+                        setTimelineOffset(0)
+                      }}
+                    >
+                      <option value="">All turns</option>
+                      {turns.map((t) => (
+                        <option key={t.turnNumber} value={t.turnNumber}>
+                          Turn {t.turnNumber}
+                        </option>
+                      ))}
+                    </select>
+                    {filterTurnNumber !== undefined && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setFilterTurnNumber(undefined); setTimelineOffset(0) }}
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {timelineLoading && events.length === 0 ? (
                 <p className="text-center text-muted-foreground">Loading events...</p>
               ) : events.length === 0 ? (
-                <p className="text-center text-muted-foreground">No events recorded</p>
+                <p className="text-center text-muted-foreground">
+                  {filterTurnNumber !== undefined ? `No events for turn ${filterTurnNumber}` : 'No events recorded'}
+                </p>
               ) : (
                 <>
                   {timelineOffset > 0 && (
@@ -714,6 +813,64 @@ export function SessionDetailPage() {
                     </Button>
                   )}
                 </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Turns Tab */}
+        <TabsContent value="turns">
+          <Card>
+            <CardHeader>
+              <CardTitle>Turns</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {turns.length === 0 ? (
+                <p className="text-center text-muted-foreground">No turns recorded</p>
+              ) : (
+                turns.map((turn) => (
+                  <div
+                    key={turn.turnId}
+                    className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setFilterTurnNumber(turn.turnNumber)
+                      setTimelineOffset(0)
+                      setActiveTab('timeline')
+                    }}
+                  >
+                    <Badge variant="secondary" className="text-sm font-mono min-w-[48px] justify-center">
+                      T{turn.turnNumber}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">
+                          {format(new Date(turn.createdAt), 'HH:mm:ss')}
+                        </span>
+                        {turn.completedAt ? (
+                          <span className="text-muted-foreground">
+                            — {formatDuration(turn.durationMs)}
+                          </span>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">In progress</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      {turn.toolCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Wrench className="h-3 w-3" /> {turn.toolCount}
+                        </span>
+                      )}
+                      {turn.hasThinking && (
+                        <Brain className="h-3 w-3 text-yellow-500" />
+                      )}
+                      {turn.hasErrors && (
+                        <AlertTriangle className="h-3 w-3 text-red-500" />
+                      )}
+                      <span>{formatTokens(turn.totalTokens)}</span>
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>

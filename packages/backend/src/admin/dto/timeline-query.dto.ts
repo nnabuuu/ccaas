@@ -4,7 +4,7 @@
  * Validates session timeline pagination parameters
  */
 
-import { IsOptional, IsNumber, Min, Max } from 'class-validator';
+import { IsOptional, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TimelineQueryDto {
@@ -20,4 +20,10 @@ export class TimelineQueryDto {
   @IsNumber()
   @Min(0, { message: 'offset must be non-negative' })
   offset?: number = 0;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: 'turnNumber must be an integer' })
+  @Min(0, { message: 'turnNumber must be non-negative' })
+  turnNumber?: number;
 }

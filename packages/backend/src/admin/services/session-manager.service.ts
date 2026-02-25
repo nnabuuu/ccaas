@@ -16,6 +16,7 @@ import { ProcessLifecycleEvent } from '../../messages/entities/process-lifecycle
 import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { TokenUsageEvent } from '../../messages/entities/token-usage-event.entity';
 import { Session } from '../entities/session.entity';
+import { Turn } from '../entities/turn.entity';
 import { AuditService } from './audit.service';
 import {
   SessionQueryDto,
@@ -25,6 +26,7 @@ import {
   SessionTimelineEvent,
   RecentSession,
   TokenBreakdown,
+  TurnSummary,
 } from '../dto/admin.dto';
 import type { ManagedSession, WorkspaceFileInfo, WorkspaceTreeResponse } from '../../common/interfaces';
 import type { ApiKeyScope } from '../../auth/types';
@@ -58,6 +60,8 @@ export class SessionManagerService {
     private readonly tokenUsageRepository: Repository<TokenUsageEvent>,
     @InjectRepository(Session)
     private readonly sessionRepository: Repository<Session>,
+    @InjectRepository(Turn)
+    private readonly turnRepository: Repository<Turn>,
   ) {}
 
   private isAdminCaller(scopes?: ApiKeyScope[]): boolean {
@@ -362,6 +366,8 @@ export class SessionManagerService {
    * @param limit - Maximum number of events to return
    * @param offset - Offset for pagination
    * @param callerTenantId - Tenant ID of the caller (for authorization)
+   * @param callerScopes - API key scopes of the caller
+   * @param turnNumber - Optional turn number to filter events to a specific turn
    */
   async getSessionTimeline(
     sessionId: string,
@@ -369,6 +375,7 @@ export class SessionManagerService {
     offset: number = 0,
     callerTenantId: string,
     callerScopes?: ApiKeyScope[],
+    turnNumber?: number,
   ): Promise<SessionTimeline> {
     // Check tenant access against memory or DB — historical sessions must be protected too
     const session =
@@ -378,42 +385,57 @@ export class SessionManagerService {
       this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
     }
 
+    // Build messageId→turnNumber map from turns
+    const turns = await this.turnRepository.find({
+      where: { sessionId },
+      order: { turnNumber: 'ASC' },
+    });
+
+    const messageIdToTurnNumber = new Map<string, number>();
+    for (const turn of turns) {
+      messageIdToTurnNumber.set(turn.userMessageId, turn.turnNumber);
+      if (turn.assistantMessageId) {
+        messageIdToTurnNumber.set(turn.assistantMessageId, turn.turnNumber);
+      }
+    }
+
+    // If filtering by turnNumber, resolve the turn's messageIds
+    // Note: turnNumber is 0-based. `!== undefined` is intentional (0 is a valid turn)
+    let turnMessageIds: Set<string> | null = null;
+    if (turnNumber !== undefined) {
+      const targetTurn = turns.find(t => t.turnNumber === turnNumber);
+      if (!targetTurn) {
+        return { sessionId, events: [], totalEvents: 0 };
+      }
+      turnMessageIds = new Set<string>();
+      turnMessageIds.add(targetTurn.userMessageId);
+      if (targetTurn.assistantMessageId) {
+        turnMessageIds.add(targetTurn.assistantMessageId);
+      }
+    }
+
     // Safety bounds: Prevent OOM by limiting per-table query size
-    // Use conservative limit (2x requested + offset, max 1000 per table)
-    // This allows proper pagination while preventing unbounded memory usage
     const safetyLimit = Math.min(1000, (limit + offset) * 2);
 
     // Fetch all event types for the session with safety bounds
+    // When filtering by turn, use messageId IN (...) for tables that have messageId
     const [messages, toolEvents, thinkingBlocks, processEvents, apiErrors] =
       await Promise.all([
-        this.messageRepository.find({
-          where: { sessionId },
-          order: { createdAt: 'ASC' },
-          take: safetyLimit,
-        }),
-        this.toolEventRepository.find({
-          where: { sessionId },
-          order: { createdAt: 'ASC' },
-          take: safetyLimit,
-        }),
-        this.thinkingBlockRepository.find({
-          where: { sessionId },
-          order: { createdAt: 'ASC' },
-          take: safetyLimit,
-        }),
-        this.processEventRepository.find({
-          where: { sessionId },
-          order: { createdAt: 'ASC' },
-          take: safetyLimit,
-        }),
-        this.apiErrorRepository.find({
-          where: { sessionId },
-          order: { createdAt: 'ASC' },
-          take: safetyLimit,
-        }),
+        this.queryMessages(sessionId, safetyLimit, turnMessageIds),
+        this.queryToolEvents(sessionId, safetyLimit, turnMessageIds),
+        this.queryThinkingBlocks(sessionId, safetyLimit, turnMessageIds),
+        // ProcessLifecycleEvents have no messageId — skip when filtering by turn
+        turnMessageIds
+          ? Promise.resolve([])
+          : this.processEventRepository.find({
+              where: { sessionId },
+              order: { createdAt: 'ASC' },
+              take: safetyLimit,
+            }),
+        this.queryApiErrors(sessionId, safetyLimit, turnMessageIds),
       ]);
 
-    // Convert to timeline events
+    // Convert to timeline events with messageId and turnNumber enrichment
     const events: SessionTimelineEvent[] = [];
 
     for (const msg of messages) {
@@ -421,6 +443,8 @@ export class SessionManagerService {
         id: msg.id,
         type: 'message',
         timestamp: msg.createdAt,
+        messageId: msg.id,
+        turnNumber: messageIdToTurnNumber.get(msg.id) ?? null,
         data: {
           role: msg.role,
           content: msg.content,
@@ -431,10 +455,15 @@ export class SessionManagerService {
     }
 
     for (const tool of toolEvents) {
+      const toolMessageId = tool.messageId || null;
+      const toolTurnNumber = toolMessageId ? (messageIdToTurnNumber.get(toolMessageId) ?? null) : null;
+
       events.push({
         id: tool.id,
         type: 'tool_event',
         timestamp: tool.createdAt,
+        messageId: toolMessageId,
+        turnNumber: toolTurnNumber,
         data: {
           toolName: tool.toolName,
           phase: tool.phase,
@@ -447,7 +476,7 @@ export class SessionManagerService {
 
       // Derive output_update from end-phase tool results (mirrors EventMapperService.handleSpecialToolResult)
       if (tool.phase === 'end' && tool.toolOutput && tool.success !== false) {
-        const derived = this.deriveOutputUpdate(tool);
+        const derived = this.deriveOutputUpdate(tool, toolMessageId, toolTurnNumber);
         if (derived) {
           events.push(derived);
         }
@@ -455,10 +484,13 @@ export class SessionManagerService {
     }
 
     for (const thinking of thinkingBlocks) {
+      const thinkingMessageId = thinking.messageId || null;
       events.push({
         id: thinking.id,
         type: 'thinking_block',
         timestamp: thinking.createdAt,
+        messageId: thinkingMessageId,
+        turnNumber: thinkingMessageId ? (messageIdToTurnNumber.get(thinkingMessageId) ?? null) : null,
         data: {
           status: thinking.status,
           content: thinking.content,
@@ -473,6 +505,8 @@ export class SessionManagerService {
         id: process.id,
         type: 'process_event',
         timestamp: process.createdAt,
+        messageId: null,
+        turnNumber: null,
         data: {
           eventType: process.eventType,
           pid: process.pid,
@@ -484,10 +518,13 @@ export class SessionManagerService {
     }
 
     for (const error of apiErrors) {
+      const errorMessageId = error.messageId || null;
       events.push({
         id: error.id,
         type: 'api_error',
         timestamp: error.createdAt,
+        messageId: errorMessageId,
+        turnNumber: errorMessageId ? (messageIdToTurnNumber.get(errorMessageId) ?? null) : null,
         data: {
           errorType: error.errorType,
           errorCode: error.errorCode,
@@ -505,14 +542,91 @@ export class SessionManagerService {
     const totalEvents = events.length;
     const paginatedEvents = events.slice(offset, offset + limit);
 
-    // Note: totalEvents may be capped by safetyLimit (max 5000 events across all tables)
-    // For sessions with >5000 events, pagination past this limit will show incomplete data
-    // This is an acceptable tradeoff to prevent OOM crashes
     return {
       sessionId,
       events: paginatedEvents,
       totalEvents,
     };
+  }
+
+  /**
+   * Get turn summaries for a session
+   */
+  async getSessionTurns(
+    sessionId: string,
+    callerTenantId: string,
+    callerScopes?: ApiKeyScope[],
+  ): Promise<TurnSummary[]> {
+    const session =
+      this.sessionService.getSession(sessionId) ??
+      (await this.sessionRepository.findOne({ where: { sessionId } }));
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+    this.assertTenantAccess(session.tenantId, callerTenantId, callerScopes);
+
+    const turns = await this.turnRepository.find({
+      where: { sessionId },
+      order: { turnNumber: 'ASC' },
+    });
+
+    if (turns.length === 0) return [];
+
+    // Collect all assistant messageIds for aggregate queries
+    const assistantMessageIds = turns
+      .map(t => t.assistantMessageId)
+      .filter((id): id is string => id !== null);
+
+    // Batch queries for aggregated turn stats
+    const [toolCounts, thinkingMessageIds, errorMessageIds] = await Promise.all([
+      // Count end-phase tool events per assistant messageId
+      assistantMessageIds.length > 0
+        ? this.toolEventRepository
+            .createQueryBuilder('te')
+            .select('te.messageId', 'messageId')
+            .addSelect('COUNT(*)', 'cnt')
+            .where('te.messageId IN (:...ids)', { ids: assistantMessageIds })
+            .andWhere('te.phase = :phase', { phase: 'end' })
+            .groupBy('te.messageId')
+            .getRawMany<{ messageId: string; cnt: string }>()
+        : Promise.resolve([] as { messageId: string; cnt: string }[]),
+
+      // Find assistant messageIds that have thinking blocks
+      assistantMessageIds.length > 0
+        ? this.thinkingBlockRepository
+            .createQueryBuilder('tb')
+            .select('DISTINCT tb.messageId', 'messageId')
+            .where('tb.messageId IN (:...ids)', { ids: assistantMessageIds })
+            .getRawMany<{ messageId: string }>()
+        : Promise.resolve([] as { messageId: string }[]),
+
+      // Find assistant messageIds that have api errors
+      assistantMessageIds.length > 0
+        ? this.apiErrorRepository
+            .createQueryBuilder('ae')
+            .select('DISTINCT ae.messageId', 'messageId')
+            .where('ae.messageId IN (:...ids)', { ids: assistantMessageIds })
+            .getRawMany<{ messageId: string }>()
+        : Promise.resolve([] as { messageId: string }[]),
+    ]);
+
+    const toolCountMap = new Map(toolCounts.map(r => [r.messageId, parseInt(r.cnt, 10)]));
+    const thinkingSet = new Set(thinkingMessageIds.map(r => r.messageId));
+    const errorSet = new Set(errorMessageIds.map(r => r.messageId));
+
+    return turns.map(turn => ({
+      turnId: turn.id,
+      turnNumber: turn.turnNumber,
+      userMessageId: turn.userMessageId,
+      assistantMessageId: turn.assistantMessageId,
+      totalTokens: turn.totalTokens,
+      durationMs: turn.durationMs,
+      createdAt: turn.createdAt,
+      completedAt: turn.completedAt,
+      toolCount: turn.assistantMessageId ? (toolCountMap.get(turn.assistantMessageId) ?? 0) : 0,
+      hasThinking: turn.assistantMessageId ? thinkingSet.has(turn.assistantMessageId) : false,
+      hasErrors: turn.assistantMessageId ? errorSet.has(turn.assistantMessageId) : false,
+    }));
   }
 
   /**
@@ -824,7 +938,108 @@ export class SessionManagerService {
   // Helper Methods
   // ===========================================================================
 
-  private deriveOutputUpdate(tool: ToolEvent): SessionTimelineEvent | null {
+  // ===========================================================================
+  // Turn-aware query helpers
+  // ===========================================================================
+
+  private async queryMessages(
+    sessionId: string,
+    limit: number,
+    turnMessageIds: Set<string> | null,
+  ): Promise<Message[]> {
+    if (turnMessageIds) {
+      const ids = [...turnMessageIds];
+      if (ids.length === 0) return [];
+      return this.messageRepository
+        .createQueryBuilder('m')
+        .where('m.sessionId = :sessionId', { sessionId })
+        .andWhere('m.id IN (:...ids)', { ids })
+        .orderBy('m.createdAt', 'ASC')
+        .take(limit)
+        .getMany();
+    }
+    return this.messageRepository.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+      take: limit,
+    });
+  }
+
+  private async queryToolEvents(
+    sessionId: string,
+    limit: number,
+    turnMessageIds: Set<string> | null,
+  ): Promise<ToolEvent[]> {
+    if (turnMessageIds) {
+      const ids = [...turnMessageIds];
+      if (ids.length === 0) return [];
+      return this.toolEventRepository
+        .createQueryBuilder('te')
+        .where('te.sessionId = :sessionId', { sessionId })
+        .andWhere('te.messageId IN (:...ids)', { ids })
+        .orderBy('te.createdAt', 'ASC')
+        .take(limit)
+        .getMany();
+    }
+    return this.toolEventRepository.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+      take: limit,
+    });
+  }
+
+  private async queryThinkingBlocks(
+    sessionId: string,
+    limit: number,
+    turnMessageIds: Set<string> | null,
+  ): Promise<ThinkingBlock[]> {
+    if (turnMessageIds) {
+      const ids = [...turnMessageIds];
+      if (ids.length === 0) return [];
+      return this.thinkingBlockRepository
+        .createQueryBuilder('tb')
+        .where('tb.sessionId = :sessionId', { sessionId })
+        .andWhere('tb.messageId IN (:...ids)', { ids })
+        .orderBy('tb.createdAt', 'ASC')
+        .take(limit)
+        .getMany();
+    }
+    return this.thinkingBlockRepository.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+      take: limit,
+    });
+  }
+
+  private async queryApiErrors(
+    sessionId: string,
+    limit: number,
+    turnMessageIds: Set<string> | null,
+  ): Promise<ApiErrorEvent[]> {
+    if (turnMessageIds) {
+      const ids = [...turnMessageIds];
+      if (ids.length === 0) return [];
+      // ApiErrorEvent.messageId is nullable, so only filter if we have turn messageIds
+      return this.apiErrorRepository
+        .createQueryBuilder('ae')
+        .where('ae.sessionId = :sessionId', { sessionId })
+        .andWhere('ae.messageId IN (:...ids)', { ids })
+        .orderBy('ae.createdAt', 'ASC')
+        .take(limit)
+        .getMany();
+    }
+    return this.apiErrorRepository.find({
+      where: { sessionId },
+      order: { createdAt: 'ASC' },
+      take: limit,
+    });
+  }
+
+  private deriveOutputUpdate(
+    tool: ToolEvent,
+    messageId: string | null,
+    turnNumber: number | null,
+  ): SessionTimelineEvent | null {
     const normalizedName = tool.toolName
       .replace(/^mcp__[^_]+__/, '')
       .replace(/^mcp__/, '');
@@ -846,6 +1061,8 @@ export class SessionManagerService {
       id: `${tool.id}-output`,
       type: 'output_update',
       timestamp: tool.createdAt,
+      messageId,
+      turnNumber,
       data: {
         toolName: tool.toolName,
         data: parsed?.data || parsed,

@@ -26,6 +26,7 @@ import {
   SessionDetail,
   SessionTimeline,
   TokenBreakdown,
+  TurnSummary,
 } from '../dto/admin.dto';
 import type { WorkspaceTreeResponse } from '../../common/interfaces';
 import { BulkKillDto } from '../dto/bulk-kill.dto';
@@ -93,6 +94,24 @@ export class AdminSessionsController {
       sessionId,
       query.limit,
       query.offset,
+      ctx.tenantId,
+      ctx.apiKeyScopes,
+      query.turnNumber,
+    );
+  }
+
+  /**
+   * GET /api/v1/admin/sessions/:sessionId/turns
+   *
+   * Get turn summaries for a session
+   */
+  @Get(':sessionId/turns')
+  async getSessionTurns(
+    @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
+  ): Promise<TurnSummary[]> {
+    return this.sessionManagerService.getSessionTurns(
+      sessionId,
       ctx.tenantId,
       ctx.apiKeyScopes,
     );

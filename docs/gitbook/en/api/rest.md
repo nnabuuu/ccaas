@@ -523,6 +523,220 @@ Permanently delete an API key. This action creates an audit log entry before del
 
 **⚠️ Warning**: This permanently removes the key from the database. Consider using revoke instead for audit trail preservation.
 
+## Admin - Session Management
+
+Admin API for session monitoring and debugging. All endpoints require `admin` scope.
+
+### GET /admin/sessions
+
+List sessions with filtering and pagination.
+
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `tenantId` | string | No | Filter by tenant |
+| `status` | string | No | Filter by status (`idle`, `processing`, `error`, `closed`) |
+| `startDate` | string | No | Filter by creation date (ISO 8601) |
+| `endDate` | string | No | Filter by creation date (ISO 8601) |
+| `page` | number | No | Page number (default: 1) |
+| `pageSize` | number | No | Items per page (default: 50, max: 250) |
+
+**Response**:
+
+```json
+{
+  "data": [
+    {
+      "sessionId": "session-uuid",
+      "tenantId": "tenant-uuid",
+      "clientId": "client-uuid",
+      "status": "idle",
+      "messageCount": 12,
+      "totalTokens": 45230,
+      "estimatedCost": 0.15,
+      "createdAt": "2025-01-15T10:00:00Z",
+      "lastActivity": "2025-01-15T10:30:00Z",
+      "hasActiveProcess": false,
+      "title": "Session Title",
+      "isPinned": false
+    }
+  ],
+  "total": 128,
+  "page": 1,
+  "pageSize": 50
+}
+```
+
+### GET /admin/sessions/:sessionId
+
+Get session detail.
+
+### GET /admin/sessions/:sessionId/timeline
+
+Get session timeline with all events (messages, tool calls, thinking blocks, process events, API errors, output updates).
+
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `limit` | number | No | Max events to return (default: 100, max: 1000) |
+| `offset` | number | No | Pagination offset (default: 0) |
+| `turnNumber` | integer | No | Filter events to a specific turn (0-based) |
+
+**Response**:
+
+```json
+{
+  "sessionId": "session-uuid",
+  "events": [
+    {
+      "id": "event-uuid",
+      "type": "message",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "messageId": "msg-uuid",
+      "turnNumber": 0,
+      "data": {
+        "role": "user",
+        "content": "Hello",
+        "metadata": {},
+        "messageIndex": 0
+      }
+    },
+    {
+      "id": "event-uuid",
+      "type": "tool_event",
+      "timestamp": "2025-01-15T10:00:01Z",
+      "messageId": "assistant-msg-uuid",
+      "turnNumber": 0,
+      "data": {
+        "toolName": "write_output",
+        "phase": "end",
+        "input": {},
+        "output": {},
+        "durationMs": 150,
+        "success": true
+      }
+    },
+    {
+      "id": "event-uuid",
+      "type": "process_event",
+      "timestamp": "2025-01-15T10:00:00Z",
+      "messageId": null,
+      "turnNumber": null,
+      "data": {
+        "eventType": "spawn",
+        "pid": 12345
+      }
+    }
+  ],
+  "totalEvents": 45
+}
+```
+
+**Event Types**:
+
+| Type | Description | `messageId` | `turnNumber` |
+|------|-------------|-------------|--------------|
+| `message` | User or assistant message | Message PK | Turn number if matched |
+| `tool_event` | Tool invocation (start/end phase) | Parent message ID | Inherited from message |
+| `thinking_block` | Model thinking/reasoning | Parent message ID | Inherited from message |
+| `process_event` | AgentEngine process lifecycle | `null` | `null` |
+| `api_error` | API call error | Parent message ID (nullable) | Inherited from message |
+| `output_update` | Derived from tool results | Inherited from tool | Inherited from tool |
+
+**Filtering by Turn**: When `turnNumber` is provided, only events belonging to that turn are returned. Process events (which have no `messageId`) are excluded from turn-filtered results.
+
+### GET /admin/sessions/:sessionId/turns
+
+Get turn summaries for a session. A turn represents one user-assistant exchange.
+
+**Response**:
+
+```json
+[
+  {
+    "turnId": "turn-uuid",
+    "turnNumber": 0,
+    "userMessageId": "user-msg-uuid",
+    "assistantMessageId": "assistant-msg-uuid",
+    "totalTokens": 1523,
+    "durationMs": 4500,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "completedAt": "2025-01-15T10:00:04Z",
+    "toolCount": 3,
+    "hasThinking": true,
+    "hasErrors": false
+  }
+]
+```
+
+| Field | Description |
+|-------|-------------|
+| `turnNumber` | 0-based turn index within the session |
+| `assistantMessageId` | `null` if the turn is still in progress |
+| `toolCount` | Number of completed tool calls in this turn |
+| `hasThinking` | Whether the assistant used extended thinking |
+| `hasErrors` | Whether any API errors occurred during this turn |
+
+### GET /admin/sessions/:sessionId/tokens
+
+Get token usage breakdown for a session.
+
+**Response**:
+
+```json
+{
+  "inputTokens": 12000,
+  "outputTokens": 8500,
+  "cachedInputTokens": 3000,
+  "cacheReadTokens": 1500,
+  "cacheCreationTokens": 500,
+  "reasoningTokens": 2000,
+  "totalTokens": 22500,
+  "estimatedCost": 0.15
+}
+```
+
+### POST /admin/sessions/:sessionId/kill
+
+Force terminate a session's AgentEngine process.
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "Session terminated successfully"
+}
+```
+
+### POST /admin/sessions/bulk-kill
+
+Bulk terminate multiple sessions.
+
+**Request Body**:
+
+```json
+{
+  "sessionIds": ["session-uuid-1", "session-uuid-2"]
+}
+```
+
+**Response**:
+
+```json
+{
+  "totalRequested": 2,
+  "successCount": 1,
+  "failedCount": 1,
+  "results": [
+    { "sessionId": "session-uuid-1", "status": "success" },
+    { "sessionId": "session-uuid-2", "status": "failed", "error": "Session has no active process" }
+  ]
+}
+```
+
 ## Scheduled Task Management
 
 ### POST /scheduled-tasks

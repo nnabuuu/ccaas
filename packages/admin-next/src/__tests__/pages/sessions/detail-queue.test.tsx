@@ -54,6 +54,9 @@ function setupMocks(queueData: { total: number; pending: number; processing: num
         refetch: vi.fn(),
       } as any
     }
+    if (url.includes('/turns')) {
+      return { data: { data: [] }, isLoading: false } as any
+    }
     if (url.includes('/tokens')) {
       return { data: undefined, isLoading: false } as any
     }
