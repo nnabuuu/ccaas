@@ -4,11 +4,11 @@ import type { SkeletonNodeDef, HighlightedNode } from '../types'
 interface SkeletonNodeProps {
   node: SkeletonNodeDef
   highlight: HighlightedNode | null
-  onConfused?: (nodeId: string) => void
+  onAsk?: (nodeId: string, content: string) => void
   isNew?: boolean // triggers appear animation
 }
 
-export function SkeletonNode({ node, highlight, onConfused, isNew = false }: SkeletonNodeProps) {
+export function SkeletonNode({ node, highlight, onAsk, isNew = false }: SkeletonNodeProps) {
   const [showAnimation, setShowAnimation] = useState(isNew)
   const [highlightActive, setHighlightActive] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -71,10 +71,9 @@ export function SkeletonNode({ node, highlight, onConfused, isNew = false }: Ske
     ...node.style,
   }
 
-  const hasConfusion = !!node.confusionPointId && !!onConfused
-
   return (
     <div
+      onClick={() => onAsk?.(node.id, node.content)}
       className={[
         'absolute',
         'border border-white/20',
@@ -82,12 +81,14 @@ export function SkeletonNode({ node, highlight, onConfused, isNew = false }: Ske
         'px-2 py-1',
         'text-sm leading-snug',
         'transition-all duration-300',
+        onAsk ? 'cursor-pointer hover:border-white/50 hover:bg-white/5' : '',
         showAnimation ? 'node-appear' : '',
         highlightActive ? highlightClass : '',
         highlightActive ? 'bg-white/5' : 'bg-transparent',
         typeClass,
       ].join(' ')}
       style={inlineStyle}
+      title={onAsk ? '点击提问关于此概念' : undefined}
     >
       <span className="relative z-10">
         {node.type === 'formula' ? (
@@ -96,25 +97,6 @@ export function SkeletonNode({ node, highlight, onConfused, isNew = false }: Ske
           node.content
         )}
       </span>
-
-      {/* "不明白" button - shown when node has a confusion point */}
-      {hasConfusion && (
-        <button
-          onClick={() => onConfused!(node.id)}
-          className={[
-            'absolute -top-3 -right-2',
-            'text-xs px-1.5 py-0.5',
-            'bg-warning-red/80 hover:bg-warning-red',
-            'text-white rounded',
-            'transition-colors',
-            'z-20',
-            'whitespace-nowrap',
-          ].join(' ')}
-          title="点击告诉老师你不明白这里"
-        >
-          不明白
-        </button>
-      )}
     </div>
   )
 }

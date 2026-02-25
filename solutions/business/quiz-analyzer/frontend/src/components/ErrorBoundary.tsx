@@ -5,7 +5,7 @@
  */
 
 import { Component, ReactNode } from 'react'
-import { ExclamationTriangleIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { Warning, ArrowCounterClockwise } from '@phosphor-icons/react'
 
 interface Props {
   children: ReactNode
@@ -38,11 +38,11 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
           <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-            <ExclamationTriangleIcon className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">出错了</h1>
-            <p className="text-slate-600 mb-6">
+            <Warning weight="regular" className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-zinc-900 mb-2">出错了</h1>
+            <p className="text-zinc-600 mb-6">
               应用遇到了一个意外错误。请尝试刷新页面。
             </p>
 
@@ -61,7 +61,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleReset}
               className="flex items-center gap-2 justify-center w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              <ArrowPathIcon className="w-5 h-5" />
+              <ArrowCounterClockwise weight="regular" className="w-5 h-5" />
               刷新页面
             </button>
           </div>

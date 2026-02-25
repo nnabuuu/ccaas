@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useFiles, FileUploadButton, type UseAgentConnectionReturn, type FileMetadata } from '@kedge-agentic/react-sdk'
-import { Download, Paperclip, File, Music, FileText, FileCode, Presentation } from 'lucide-react'
+import { DownloadSimple, Paperclip, File, MusicNote, FileText, FileCode, Presentation } from '@phosphor-icons/react'
 
 interface FilesViewProps {
   connection: UseAgentConnectionReturn
@@ -15,10 +15,10 @@ interface FilesViewProps {
 /**
  * Get file type icon component
  */
-function getFileIcon(mimeType: string | null): typeof File {
+function getFileIcon(mimeType: string | null) {
   if (!mimeType) return File
 
-  if (mimeType.startsWith('audio/')) return Music
+  if (mimeType.startsWith('audio/')) return MusicNote
   if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return Presentation
   if (mimeType === 'application/pdf') return FileText
   if (mimeType === 'text/plain' || mimeType === 'text/markdown') return FileCode
@@ -150,11 +150,18 @@ export function FilesView({
       {/* File List */}
       <div className="flex-1 overflow-y-auto">
         {files.isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-8 h-8 border-3 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
-              <p className="text-sm text-gray-500">加载中...</p>
-            </div>
+          <div className="space-y-1 animate-pulse">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 py-3">
+                <div className="w-5 h-5 rounded bg-zinc-200" />
+                <div className="flex-1 space-y-1.5">
+                  <div className={`h-4 rounded bg-zinc-200 ${
+                    i % 3 === 0 ? 'w-2/3' : i % 3 === 1 ? 'w-1/2' : 'w-3/5'
+                  }`} />
+                  <div className="h-3 w-16 rounded bg-zinc-200" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : files.error ? (
           <div className="flex items-center justify-center h-full">
@@ -214,7 +221,7 @@ export function FilesView({
                 >
                   {/* File Icon */}
                   <div className="flex-shrink-0">
-                    <IconComponent className={`w-5 h-5 ${iconColor}`} />
+                    <IconComponent size={20} weight="regular" className={iconColor} />
                   </div>
 
                   {/* File Info */}
@@ -245,7 +252,7 @@ export function FilesView({
                       className="p-1.5 text-gray-600 hover:text-blue-600 rounded transition-colors"
                       title="下载"
                     >
-                      <Download className="w-4 h-4" />
+                      <DownloadSimple size={16} weight="regular" />
                     </button>
 
                     {/* Attach Button - Only show if onAttachFile is provided */}
@@ -259,7 +266,7 @@ export function FilesView({
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title={attachButtonTitle || "附加文件"}
                       >
-                        <Paperclip className="w-3.5 h-3.5" />
+                        <Paperclip size={14} weight="regular" />
                         {isAttaching ? '附加中...' : (attachButtonLabel || '附加')}
                       </button>
                     )}

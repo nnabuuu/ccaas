@@ -9,13 +9,15 @@
   },
   "dependencies": {
     "@kedge-agentic/common": "^0.1.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "framer-motion": "^12.34.3",
+    "i18next": "^23.7.0",
     "konva": "^9.3.6",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-konva": "^18.2.10",
     "react-i18next": "^14.0.1",
-    "i18next": "^23.7.0",
+    "react-konva": "^18.2.10",
     "socket.io-client": "^4.7.2",
     "zustand": "^4.4.7"
   },

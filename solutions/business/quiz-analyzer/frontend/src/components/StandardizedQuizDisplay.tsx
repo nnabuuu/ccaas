@@ -8,13 +8,13 @@
 
 import { useState, useEffect } from 'react'
 import {
-  DocumentCheckIcon,
-  TagIcon,
-  FolderIcon,
-  ChartBarIcon,
-  SparklesIcon,
-} from '@heroicons/react/24/outline'
-import LoadingSpinner from './LoadingSpinner'
+  FileText,
+  Tag,
+  Folder,
+  ChartBar,
+  Sparkle,
+} from '@phosphor-icons/react'
+import { SkeletonCard } from './SkeletonLoader'
 
 export interface ParsedQuiz {
   stem: string
@@ -56,14 +56,19 @@ export default function StandardizedQuizDisplay({
 
   // Loading state
   if (isLoading) {
-    return <LoadingSpinner message="解析中..." size="md" />
+    return (
+      <div className="space-y-4">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    )
   }
 
   // Empty state
   if (!data.parsed && !data.metadata) {
     return (
-      <div className="text-center py-12 text-slate-400">
-        <SparklesIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
+      <div className="text-center py-12 text-zinc-400">
+        <Sparkle weight="regular" className="w-16 h-16 mx-auto mb-4 opacity-50" />
         <p className="text-lg">等待分析...</p>
         <p className="text-sm mt-2">提交题目后，AI 将自动解析并展示结构化内容</p>
       </div>
@@ -72,8 +77,8 @@ export default function StandardizedQuizDisplay({
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-        <DocumentCheckIcon className="w-5 h-5" />
+      <h2 className="text-lg font-semibold text-zinc-900 mb-4 flex items-center gap-2">
+        <FileText weight="regular" className="w-5 h-5" />
         标准化题目
       </h2>
 
@@ -82,21 +87,21 @@ export default function StandardizedQuizDisplay({
         <section className="space-y-4">
           {/* Quiz Stem */}
           <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-2">题干</h3>
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-              <p className="text-slate-900 whitespace-pre-wrap">{data.parsed.stem}</p>
+            <h3 className="text-sm font-medium text-zinc-700 mb-2">题干</h3>
+            <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4">
+              <p className="text-zinc-900 whitespace-pre-wrap">{data.parsed.stem}</p>
             </div>
           </div>
 
           {/* Options (if choice quiz) */}
           {data.parsed.options.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-slate-700 mb-2">选项</h3>
+              <h3 className="text-sm font-medium text-zinc-700 mb-2">选项</h3>
               <ul className="space-y-2">
                 {data.parsed.options.map((option, index) => (
                   <li
                     key={index}
-                    className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-900"
+                    className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 text-zinc-900"
                   >
                     {option}
                   </li>
@@ -108,7 +113,7 @@ export default function StandardizedQuizDisplay({
           {/* Correct Answer (hidden in student mode) */}
           {!hideCorrectAnswer && (
             <div>
-              <h3 className="text-sm font-medium text-slate-700 mb-2">正确答案</h3>
+              <h3 className="text-sm font-medium text-zinc-700 mb-2">正确答案</h3>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-green-900 font-medium">{data.parsed.correctAnswer}</p>
               </div>
@@ -117,7 +122,7 @@ export default function StandardizedQuizDisplay({
 
           {/* Quiz Type */}
           <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-2">题型</h3>
+            <h3 className="text-sm font-medium text-zinc-700 mb-2">题型</h3>
             <div className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
               {data.parsed.quizType === 'choice' && '选择题'}
               {data.parsed.quizType === 'fill' && '填空题'}
@@ -129,10 +134,10 @@ export default function StandardizedQuizDisplay({
 
       {/* Metadata Section */}
       {data.metadata && (
-        <section className="space-y-4 pt-6 border-t border-slate-200">
+        <section className="space-y-4 pt-6 border-t border-zinc-200">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-slate-700 flex items-center gap-2">
-              <TagIcon className="w-4 h-4" />
+            <h3 className="text-sm font-medium text-zinc-700 flex items-center gap-2">
+              <Tag weight="regular" className="w-4 h-4" />
               关联元数据
             </h3>
             <button
@@ -148,8 +153,8 @@ export default function StandardizedQuizDisplay({
               {/* Knowledge Points */}
               {data.metadata.knowledgePoints.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
-                    <TagIcon className="w-3 h-3" />
+                  <h4 className="text-xs font-medium text-zinc-600 mb-2 flex items-center gap-1">
+                    <Tag weight="regular" className="w-3 h-3" />
                     相关知识点
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -161,7 +166,7 @@ export default function StandardizedQuizDisplay({
                       >
                         {kp.name}
                         {kp.confidence && kp.confidence > 0.8 && (
-                          <span className="text-purple-600">★</span>
+                          <span className="text-purple-600">*</span>
                         )}
                       </span>
                     ))}
@@ -172,15 +177,15 @@ export default function StandardizedQuizDisplay({
               {/* Catalog Path */}
               {data.metadata.catalog && data.metadata.catalog.path.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
-                    <FolderIcon className="w-3 h-3" />
+                  <h4 className="text-xs font-medium text-zinc-600 mb-2 flex items-center gap-1">
+                    <Folder weight="regular" className="w-3 h-3" />
                     所属目录
                   </h4>
-                  <div className="flex items-center gap-1 text-xs text-slate-700">
+                  <div className="flex items-center gap-1 text-xs text-zinc-700">
                     {data.metadata.catalog.path.map((segment, index) => (
                       <span key={index} className="flex items-center gap-1">
-                        {index > 0 && <span className="text-slate-400">›</span>}
-                        <span className="bg-slate-100 px-2 py-1 rounded">{segment}</span>
+                        {index > 0 && <span className="text-zinc-400">&rsaquo;</span>}
+                        <span className="bg-zinc-100 px-2 py-1 rounded">{segment}</span>
                       </span>
                     ))}
                   </div>
@@ -190,8 +195,8 @@ export default function StandardizedQuizDisplay({
               {/* Difficulty */}
               {data.metadata && data.metadata.difficulty > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-slate-600 mb-2 flex items-center gap-1">
-                    <ChartBarIcon className="w-3 h-3" />
+                  <h4 className="text-xs font-medium text-zinc-600 mb-2 flex items-center gap-1">
+                    <ChartBar weight="regular" className="w-3 h-3" />
                     难度等级
                   </h4>
                   <div className="flex items-center gap-2">
@@ -202,14 +207,14 @@ export default function StandardizedQuizDisplay({
                           className={`w-8 h-8 rounded flex items-center justify-center text-xs font-medium ${
                             level <= (data.metadata?.difficulty || 0)
                               ? 'bg-orange-500 text-white'
-                              : 'bg-slate-200 text-slate-400'
+                              : 'bg-zinc-200 text-zinc-400'
                           }`}
                         >
                           {level}
                         </div>
                       ))}
                     </div>
-                    <span className="text-sm text-slate-600">
+                    <span className="text-sm text-zinc-600">
                       {data.metadata?.difficulty || 0}/5
                     </span>
                   </div>

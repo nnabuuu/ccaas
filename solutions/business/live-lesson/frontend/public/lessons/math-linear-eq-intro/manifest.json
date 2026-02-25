@@ -3,6 +3,104 @@
   "title": "一元一次方程引言：登山追及问题",
   "subject": "数学",
   "gradeLevel": "初中七年级",
+  "teachingNotes": "学生常在「为何设未知数」和「等号两侧含义」处卡壳。鼓励学生先用算术思路，再自然引出方程的必要性。1.2倍速度的来源也是常见困惑点——引导学生从「比小明快20%」出发理解倍数关系。",
+  "globalBoardNodes": [
+    { "id": "sec-problem",    "label": "问题导入", "x": 10, "y": 10, "w": 80, "h": 15, "linkedBeatIds": ["beat-1"] },
+    { "id": "sec-arithmetic", "label": "算术分析", "x": 10, "y": 30, "w": 80, "h": 15, "linkedBeatIds": ["beat-2", "beat-3"] },
+    { "id": "sec-equation",   "label": "方程建立", "x": 10, "y": 50, "w": 80, "h": 15, "linkedBeatIds": ["beat-4"] },
+    { "id": "sec-solve",      "label": "求解验证", "x": 10, "y": 70, "w": 80, "h": 15, "linkedBeatIds": ["beat-5"] }
+  ],
+  "beats": [
+    {
+      "id": "beat-1",
+      "sectionId": "sec-problem",
+      "narratorText": "今天我们来看一道登山追及问题。小明以速度 v₁ 登山，比小红早 30 分钟出发；小红以 1.2v₁ 的速度追赶。问：小红何时能追上小明？",
+      "dynamicBoardActions": [
+        { "type": "write",     "text": "登山追及问题",            "x": 230, "y": 65,  "fontSize": 32, "duration": 1.5 },
+        { "type": "draw_line", "x1": 50, "y1": 92, "x2": 750, "y2": 92, "color": "#555555", "width": 1, "duration": 0.5 },
+        { "type": "write",     "text": "小明",                   "x": 100, "y": 155, "fontSize": 24, "color": "#82cfdb", "duration": 0.6 },
+        { "type": "write",     "text": "• 速度: v₁",            "x": 100, "y": 190, "fontSize": 18, "duration": 0.8 },
+        { "type": "write",     "text": "• 提前 30 min 出发",    "x": 100, "y": 218, "fontSize": 18, "duration": 1.0 },
+        { "type": "draw_line", "x1": 400, "y1": 120, "x2": 400, "y2": 240, "color": "#444444", "width": 1, "duration": 0.4 },
+        { "type": "write",     "text": "小红",                   "x": 455, "y": 155, "fontSize": 24, "color": "#f4a261", "duration": 0.6 },
+        { "type": "write",     "text": "• 速度: 1.2v₁",         "x": 455, "y": 190, "fontSize": 18, "duration": 0.8 },
+        { "type": "write",     "text": "• 追赶小明",             "x": 455, "y": 218, "fontSize": 18, "duration": 0.8 },
+        { "type": "pause",     "duration": 0.5 },
+        { "type": "write",     "text": "问: 小红何时追上小明?", "x": 185, "y": 320, "fontSize": 22, "color": "#FFD700", "duration": 1.2 }
+      ],
+      "expectedQuestions": ["为什么是 1.2 倍？", "追及是什么意思？"],
+      "studentAck": "明白了，继续"
+    },
+    {
+      "id": "beat-2",
+      "sectionId": "sec-arithmetic",
+      "narratorText": "先用算术思路来想：小红追上小明时，两人走过的路程一定相等。设小红出发后追赶了 t 分钟，那么小明走了 (t+30) 分钟。",
+      "dynamicBoardActions": [
+        { "type": "write",     "text": "算术分析",               "x": 300, "y": 65,  "fontSize": 28, "duration": 1.0 },
+        { "type": "draw_line", "x1": 50, "y1": 92, "x2": 750, "y2": 92, "color": "#555555", "width": 1, "duration": 0.4 },
+        { "type": "write",     "text": "追上时：两人路程相等",   "x": 185, "y": 148, "fontSize": 20, "duration": 1.0 },
+        { "type": "write",     "text": "v₁(t + 30)",             "x": 100, "y": 230, "fontSize": 32, "color": "#82cfdb", "duration": 1.2 },
+        { "type": "write",     "text": "=",                      "x": 356, "y": 230, "fontSize": 36, "color": "#FFD700", "duration": 0.4 },
+        { "type": "write",     "text": "1.2v₁ · t",              "x": 430, "y": 230, "fontSize": 32, "color": "#f4a261", "duration": 1.0 },
+        { "type": "write",     "text": "t = 小红出发后追赶时间（分钟）", "x": 145, "y": 310, "fontSize": 15, "color": "#888888", "duration": 0.8 }
+      ],
+      "expectedQuestions": ["为什么路程相等？", "t+30 是什么意思？"]
+    },
+    {
+      "id": "beat-3",
+      "sectionId": "sec-arithmetic",
+      "narratorText": "但是，这个等式里有两个未知量——t 和 v₁。算术方法无法从中直接解出 t，因为我们不知道 v₁ 是多少。这就是算术的局限性，我们需要一种新工具：方程。",
+      "dynamicBoardActions": [
+        { "type": "write",     "text": "算术分析",               "x": 300, "y": 65,  "fontSize": 28, "duration": 0.4 },
+        { "type": "draw_line", "x1": 50, "y1": 92, "x2": 750, "y2": 92, "color": "#555555", "width": 1, "duration": 0.2 },
+        { "type": "write",     "text": "追上时：两人路程相等",   "x": 185, "y": 148, "fontSize": 20, "duration": 0.4 },
+        { "type": "write",     "text": "v₁(t + 30)",             "x": 100, "y": 230, "fontSize": 32, "color": "#82cfdb", "duration": 0.4 },
+        { "type": "write",     "text": "=",                      "x": 356, "y": 230, "fontSize": 36, "color": "#FFD700", "duration": 0.2 },
+        { "type": "write",     "text": "1.2v₁ · t",              "x": 430, "y": 230, "fontSize": 32, "color": "#f4a261", "duration": 0.4 },
+        { "type": "pause",     "duration": 0.3 },
+        { "type": "highlight_box", "x": 82, "y": 200, "w": 590, "h": 52, "color": "#FF4444", "duration": 0.6 },
+        { "type": "write",     "text": "v₁ 是未知数 → 算术无法直接解出 t！", "x": 95, "y": 340, "fontSize": 20, "color": "#FF6666", "duration": 1.5 },
+        { "type": "write",     "text": "→ 需要新工具：方程",    "x": 245, "y": 410, "fontSize": 24, "color": "#FFD700", "duration": 1.2 }
+      ],
+      "expectedQuestions": ["为什么算术不够用？", "什么是方程？"]
+    },
+    {
+      "id": "beat-4",
+      "sectionId": "sec-equation",
+      "narratorText": "方程的思路是：引入一个未知数 x，建立含 x 的等式，然后系统化地求解。设 x 为小红追上小明所需时间（分钟），列出方程，两边除以 v₁，化简得到 30 = 0.2x。",
+      "dynamicBoardActions": [
+        { "type": "write",     "text": "建立方程",               "x": 300, "y": 65,  "fontSize": 32, "duration": 1.0 },
+        { "type": "draw_line", "x1": 50, "y1": 92, "x2": 750, "y2": 92, "color": "#555555", "width": 1, "duration": 0.4 },
+        { "type": "write",     "text": "设 x = 小红追上小明所需时间（分钟）", "x": 80, "y": 155, "fontSize": 20, "duration": 1.2 },
+        { "type": "pause",     "duration": 0.4 },
+        { "type": "write",     "text": "v₁(x + 30)  =  1.2v₁ · x", "x": 115, "y": 245, "fontSize": 30, "duration": 1.8 },
+        { "type": "highlight_box", "x": 100, "y": 215, "w": 540, "h": 50, "color": "#FFD700", "duration": 0.5 },
+        { "type": "write",     "text": "÷ v₁ ↓",               "x": 80,  "y": 318, "fontSize": 18, "color": "#999999", "duration": 0.7 },
+        { "type": "write",     "text": "x + 30  =  1.2x",       "x": 185, "y": 318, "fontSize": 26, "duration": 1.2 },
+        { "type": "write",     "text": "30  =  0.2x",           "x": 240, "y": 385, "fontSize": 26, "duration": 1.0 }
+      ],
+      "expectedQuestions": ["为什么能消去 v₁？", "什么是一元一次方程？"]
+    },
+    {
+      "id": "beat-5",
+      "sectionId": "sec-solve",
+      "narratorText": "继续求解：x = 30 ÷ 0.2 = 150 分钟，即 2.5 小时。答案是：小红出发后 150 分钟追上小明。方程让我们用未知数建立等式，一步步系统化求解！",
+      "dynamicBoardActions": [
+        { "type": "write",     "text": "建立方程",               "x": 300, "y": 65,  "fontSize": 32, "duration": 0.3 },
+        { "type": "draw_line", "x1": 50, "y1": 92, "x2": 750, "y2": 92, "color": "#555555", "width": 1, "duration": 0.2 },
+        { "type": "write",     "text": "设 x = 小红追上小明所需时间（分钟）", "x": 80, "y": 155, "fontSize": 20, "duration": 0.3 },
+        { "type": "write",     "text": "v₁(x + 30)  =  1.2v₁ · x", "x": 115, "y": 245, "fontSize": 30, "duration": 0.5 },
+        { "type": "write",     "text": "x + 30  =  1.2x",       "x": 185, "y": 318, "fontSize": 26, "duration": 0.3 },
+        { "type": "write",     "text": "30  =  0.2x",           "x": 240, "y": 385, "fontSize": 26, "duration": 0.3 },
+        { "type": "pause",     "duration": 0.3 },
+        { "type": "write",     "text": "x  =  30 ÷ 0.2  =  150", "x": 175, "y": 460, "fontSize": 30, "color": "#13ec5b", "duration": 1.5 },
+        { "type": "highlight_box", "x": 158, "y": 430, "w": 420, "h": 50, "color": "#13ec5b", "duration": 0.5 },
+        { "type": "write",     "text": "✓ 小红出发后 150 分钟（2.5 小时）追上小明", "x": 75, "y": 548, "fontSize": 18, "color": "#13ec5b", "duration": 1.5 }
+      ],
+      "expectedQuestions": ["如何验证答案？", "方程的优势是什么？"],
+      "studentAck": "明白了！"
+    }
+  ],
   "boardNodes": [
     {
       "id": "title",
@@ -28,8 +126,7 @@
       "content": "小明路程 = v₁ × t",
       "position": { "x": 5, "y": 25, "w": 42, "h": 8 },
       "phase": "arithmetic",
-      "initiallyHidden": true,
-      "confusionPointId": "cp-speed-ratio"
+      "initiallyHidden": true
     },
     {
       "id": "arithmetic-xiaohong-dist",
@@ -37,8 +134,7 @@
       "content": "小红路程 = 1.2v₁ × (t - 30)",
       "position": { "x": 53, "y": 25, "w": 42, "h": 8 },
       "phase": "arithmetic",
-      "initiallyHidden": true,
-      "confusionPointId": "cp-speed-ratio"
+      "initiallyHidden": true
     },
     {
       "id": "speed-ratio-label",
@@ -47,8 +143,7 @@
       "position": { "x": 53, "y": 34, "w": 42, "h": 5 },
       "phase": "arithmetic",
       "initiallyHidden": true,
-      "style": { "color": "#FFD700", "fontSize": "0.85em", "fontStyle": "italic" },
-      "confusionPointId": "cp-speed-ratio"
+      "style": { "color": "#FFD700", "fontSize": "0.85em", "fontStyle": "italic" }
     },
     {
       "id": "transition-question",
@@ -65,8 +160,7 @@
       "content": "设追及时间为 x 分钟",
       "position": { "x": 5, "y": 53, "w": 40, "h": 7 },
       "phase": "equation",
-      "initiallyHidden": true,
-      "confusionPointId": "cp-variable-setup"
+      "initiallyHidden": true
     },
     {
       "id": "equation-lhs",
@@ -83,8 +177,7 @@
       "position": { "x": 36, "y": 62, "w": 8, "h": 8 },
       "phase": "equation",
       "initiallyHidden": true,
-      "style": { "fontSize": "1.6em", "fontWeight": "bold", "textAlign": "center" },
-      "confusionPointId": "cp-equation-balance"
+      "style": { "fontSize": "1.6em", "fontWeight": "bold", "textAlign": "center" }
     },
     {
       "id": "equation-rhs",
@@ -152,74 +245,6 @@
       "name": "概念升华",
       "description": "总结方程的定义和价值，连接到后续学习",
       "order": 5
-    }
-  ],
-  "confusionPoints": [
-    {
-      "id": "cp-speed-ratio",
-      "triggerNodeId": "arithmetic-xiaohong-dist",
-      "boardNodeToFlash": "speed-ratio-label",
-      "secondaryProbes": [
-        {
-          "id": "probe-speed-faster",
-          "label": "1.2倍是什么意思？",
-          "remediation": "小红比小明快20%。如果小明每分钟走10米，小红每分钟走12米。1.2是速度的倍数关系。"
-        },
-        {
-          "id": "probe-speed-formula",
-          "label": "路程公式怎么写？",
-          "remediation": "路程 = 速度 × 时间。小红的速度是1.2v₁，她出发时小明已走了30分钟，所以小红追t分钟后，小明共走了(t+30)分钟。"
-        },
-        {
-          "id": "probe-speed-time",
-          "label": "时间为什么不同？",
-          "remediation": "小明先出发30分钟，所以当小红追了t分钟时，小明已经走了(t+30)分钟。这是追及问题的关键。"
-        }
-      ]
-    },
-    {
-      "id": "cp-variable-setup",
-      "triggerNodeId": "variable-setup",
-      "boardNodeToFlash": "variable-setup",
-      "secondaryProbes": [
-        {
-          "id": "probe-why-x",
-          "label": "为什么设x？",
-          "remediation": "我们不知道追及时间，所以用字母x代替这个未知量。这就是代数的核心思想：用符号表示未知数。"
-        },
-        {
-          "id": "probe-what-x",
-          "label": "x代表什么？",
-          "remediation": "x代表小红追上小明所需的分钟数。注意x是小红的行走时间，此时小明已走了(x+30)分钟。"
-        },
-        {
-          "id": "probe-x-units",
-          "label": "x的单位是什么？",
-          "remediation": "x的单位是分钟。在方程中，等号两边的单位要一致，都是路程（米或千米）。"
-        }
-      ]
-    },
-    {
-      "id": "cp-equation-balance",
-      "triggerNodeId": "equation-equals",
-      "boardNodeToFlash": "equation-equals",
-      "secondaryProbes": [
-        {
-          "id": "probe-eq-meaning",
-          "label": "等号为什么成立？",
-          "remediation": "追上的那一刻，两人在同一位置，说明走的路程相等。等号表达的是这个相等关系。"
-        },
-        {
-          "id": "probe-eq-solve",
-          "label": "怎么解这个方程？",
-          "remediation": "v₁(x+30) = 1.2v₁·x，两边除以v₁得 x+30 = 1.2x，移项得 30 = 0.2x，所以 x = 150。"
-        },
-        {
-          "id": "probe-eq-check",
-          "label": "如何验证答案？",
-          "remediation": "代入x=150：小明路程=v₁×180，小红路程=1.2v₁×150=v₁×180。两边相等，验证正确！"
-        }
-      ]
     }
   ]
 }

@@ -10,7 +10,7 @@
  */
 
 import { useState, useRef, KeyboardEvent } from 'react'
-import { DocumentTextIcon, XMarkIcon, BeakerIcon } from '@heroicons/react/24/outline'
+import { FileText, X, Flask } from '@phosphor-icons/react'
 
 const EXAMPLE_QUIZ = `已知函数 f(x) = x² - 2x + 3，求：
 1. 函数的顶点坐标
@@ -65,7 +65,7 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
       {/* Quiz Content */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">
-          <DocumentTextIcon className="w-4 h-4 inline mr-1" />
+          <FileText weight="regular" className="w-4 h-4 inline mr-1" />
           题目内容 <span className="text-red-500">*</span>
         </label>
         <textarea
@@ -119,7 +119,7 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
           className="px-4 py-3 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:cursor-not-allowed rounded-lg transition-colors duration-200"
           title="清空输入"
         >
-          <XMarkIcon className="w-5 h-5 text-slate-600" />
+          <X weight="regular" className="w-5 h-5 text-slate-600" />
         </button>
 
         <button
@@ -128,7 +128,7 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
           className="px-4 py-3 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:cursor-not-allowed rounded-lg transition-colors duration-200"
           title="加载示例题目"
         >
-          <BeakerIcon className="w-5 h-5 text-slate-600" />
+          <Flask weight="regular" className="w-5 h-5 text-slate-600" />
         </button>
       </div>
     </div>

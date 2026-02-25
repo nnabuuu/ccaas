@@ -9,16 +9,18 @@
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@kedge-agentic/react-sdk": "^0.1.0",
     "@kedge-agentic/common": "^0.1.0",
+    "@kedge-agentic/react-sdk": "^0.1.0",
+    "@phosphor-icons/react": "^2.1.10",
+    "framer-motion": "^12.34.3",
+    "katex": "^0.16.9",
     "lucide-react": "^0.263.1",
-    "react-resizable-panels": "^2.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1",
-    "remark-math": "^6.0.0",
+    "react-resizable-panels": "^2.1.0",
     "rehype-katex": "^7.0.0",
-    "katex": "^0.16.9",
+    "remark-math": "^6.0.0",
     "socket.io-client": "^4.7.2"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@ import { Message } from '../../types';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import { User, Bot, Loader2 } from 'lucide-react';
+import { User, Robot, SpinnerGap } from '@phosphor-icons/react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -21,9 +21,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         `}
       >
         {isUser ? (
-          <User className="w-4 h-4 text-white" />
+          <User className="w-4 h-4 text-white" weight="regular" />
         ) : (
-          <Bot className="w-4 h-4 text-gray-600" />
+          <Robot className="w-4 h-4 text-gray-600" weight="regular" />
         )}
       </div>
 
@@ -36,7 +36,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       >
         {message.isStreaming && !message.content ? (
           <div className="flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <SpinnerGap className="w-4 h-4 animate-spin" weight="regular" />
             <span className="text-sm">正在输入...</span>
           </div>
         ) : (

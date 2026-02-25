@@ -10,7 +10,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { SparklesIcon, ArrowPathIcon } from '@heroicons/react/24/solid'
+import { Sparkle, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { useChatLayout, ChatSection, CollapsedChatTab } from '@kedge-agentic/react-sdk'
 import ErrorBoundary from './components/ErrorBoundary'
 import ConnectionStatus from './components/ConnectionStatus'
@@ -217,16 +217,16 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 
   return (
     <ErrorBoundary>
-      <div className="h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="h-screen flex flex-col bg-zinc-50">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-slate-200">
+        <header className="bg-white border-b border-zinc-200">
           <div className="max-w-[1920px] mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <SparklesIcon className="w-8 h-8 text-blue-600" />
+                <Sparkle weight="regular" className="w-8 h-8 text-zinc-700" />
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900">题目分析器</h1>
-                  <p className="text-sm text-slate-500">AI 驱动的智能题目分析工具</p>
+                  <h1 className="text-2xl font-bold text-zinc-900">题目分析器</h1>
+                  <p className="text-sm text-zinc-500">AI 驱动的智能题目分析工具</p>
                 </div>
               </div>
 
@@ -236,9 +236,9 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 
                 <button
                   onClick={handleClearConversation}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50"
                 >
-                  <ArrowPathIcon className="w-4 h-4" />
+                  <ArrowCounterClockwise weight="regular" className="w-4 h-4" />
                   新对话
                 </button>
               </div>
@@ -247,10 +247,10 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
         </header>
 
       {/* Main Content - Three Column Layout */}
-      <main id="main-container" className="flex-1 relative overflow-hidden max-w-[1920px] mx-auto">
-        <div id="grid-container" className="grid grid-cols-12 gap-4 h-full p-4">
-          {/* Left Column - Input Form (30%) */}
-          <div id="left-column" className="col-span-12 lg:col-span-3 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 p-6 overflow-y-auto">
+      <main id="main-container" className="flex-1 relative overflow-hidden max-w-[1920px] mx-auto w-full">
+        <div id="grid-container" className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1.2fr] gap-4 h-full p-4">
+          {/* Left Column - Input Form */}
+          <div id="left-column" className="flex flex-col bg-white rounded-lg shadow-sm border border-zinc-200 p-6 overflow-y-auto">
             <QuizInputForm
               key={viewMode}
               onSubmit={handleQuizSubmit}
@@ -259,8 +259,8 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
             />
           </div>
 
-          {/* Middle Column - Standardized Display (35%) */}
-          <div id="middle-column" className="col-span-12 lg:col-span-4 flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 p-6 overflow-y-auto">
+          {/* Middle Column - Standardized Display */}
+          <div id="middle-column" className="flex flex-col bg-white rounded-lg shadow-sm border border-zinc-200 p-6 overflow-y-auto">
             <StandardizedQuizDisplay
               data={standardizedQuiz}
               isLoading={isAnalyzing && !standardizedQuiz.parsed}
@@ -268,8 +268,8 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
             />
           </div>
 
-          {/* Right Column - AI Chat (35%) */}
-          <div id="right-column" className="col-span-12 lg:col-span-5 flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+          {/* Right Column - AI Chat */}
+          <div id="right-column" className="flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-zinc-200 p-4">
             {/* Default/side-by-side mode: use shared chatContent */}
             {(layout.mode === 'default' || layout.mode === 'side-by-side') &&
              !layout.isCollapsed && chatContent}
@@ -310,7 +310,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
       </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-slate-200">
+        <footer className="bg-white border-t border-zinc-200">
           <div className="max-w-[1920px] mx-auto px-6 py-3">
             <div className="flex items-center justify-between text-xs">
               <ConnectionStatus
@@ -318,7 +318,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
                 error={session.error}
                 onReconnect={session.reconnect}
               />
-              <div className="text-slate-500">
+              <div className="text-zinc-500">
                 {session.messages.length > 0 && (
                   <span>{session.messages.length} 条消息</span>
                 )}

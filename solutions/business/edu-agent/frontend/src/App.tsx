@@ -6,6 +6,7 @@ import { StatusBar } from './components/shared/StatusBar'
 import { HomeView } from './routes/HomeView'
 import { LessonPlanView } from './routes/LessonPlanView'
 import { ProblemExplainView } from './routes/ProblemExplainView'
+import { AnimatePresence, motion } from 'framer-motion'
 
 function AppContent() {
   const { activeTab } = useSessionContext()
@@ -18,9 +19,20 @@ function AppContent() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: functional area */}
         <main className="flex-1 flex overflow-hidden">
-          {activeTab === 'home' && <HomeView />}
-          {activeTab === 'lesson-plan' && <LessonPlanView />}
-          {activeTab === 'problem-explain' && <ProblemExplainView />}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 200, damping: 25 }}
+              className="flex-1 flex overflow-hidden"
+            >
+              {activeTab === 'home' && <HomeView />}
+              {activeTab === 'lesson-plan' && <LessonPlanView />}
+              {activeTab === 'problem-explain' && <ProblemExplainView />}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Right: Chat panel — always visible */}

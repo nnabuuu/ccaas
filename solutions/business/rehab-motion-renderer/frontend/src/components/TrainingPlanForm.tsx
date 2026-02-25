@@ -3,6 +3,7 @@
 // Displays sync fields with per-field SyncButton when AI proposes updates
 // ═══════════════════════════════════════════
 
+import { X, Sparkle } from '@phosphor-icons/react'
 import type { RehabPlan, SyncField, PendingUpdate, ExerciseRenderData } from '../types'
 import { MONO_FONT } from '../constants'
 
@@ -47,7 +48,7 @@ function SyncButton({ field, update, onApply, onDiscard }: SyncButtonProps) {
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
       }}>
-        ✦ {update.preview}
+        <Sparkle size={12} weight="regular" style={{ flexShrink: 0, verticalAlign: 'middle', marginRight: 4 }} />{update.preview}
       </div>
       <button
         onClick={() => onApply(field)}
@@ -77,7 +78,7 @@ function SyncButton({ field, update, onApply, onDiscard }: SyncButtonProps) {
           cursor: 'pointer',
         }}
       >
-        ✕
+        <X size={12} weight="regular" />
       </button>
     </div>
   )

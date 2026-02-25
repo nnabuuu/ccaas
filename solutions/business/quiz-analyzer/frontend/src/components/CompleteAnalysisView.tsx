@@ -1,12 +1,4 @@
-// ✅ Direct imports instead of barrel file (bundle-barrel-imports)
-import LightBulbIcon from '@heroicons/react/24/outline/LightBulbIcon';
-import ListBulletIcon from '@heroicons/react/24/outline/ListBulletIcon';
-import ExclamationTriangleIcon from '@heroicons/react/24/outline/ExclamationTriangleIcon';
-import ChartBarIcon from '@heroicons/react/24/outline/ChartBarIcon';
-import CalendarIcon from '@heroicons/react/24/outline/CalendarIcon';
-import TagIcon from '@heroicons/react/24/outline/TagIcon';
-import LinkIcon from '@heroicons/react/24/outline/LinkIcon';
-import CheckCircleIcon from '@heroicons/react/24/outline/CheckCircleIcon';
+import { Lightbulb, ListBullets, Warning, ChartBar, Calendar, Tag, Link as LinkIcon, CheckCircle } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import type { QuizAnalysis, Quiz } from '../types';
 
@@ -70,7 +62,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {analysis.quiz_analysis && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
-            <ChartBarIcon className="w-5 h-5 text-primary-600" />
+            <ChartBar weight="regular" className="w-5 h-5 text-primary-600" />
             <h3 className="text-lg font-bold text-slate-900">整体分析</h3>
           </div>
           <div className="prose prose-slate max-w-none">
@@ -83,7 +75,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {analysis.knowledge_point_tags && analysis.knowledge_point_tags.length > 0 && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
-            <TagIcon className="w-5 h-5 text-primary-600" />
+            <Tag weight="regular" className="w-5 h-5 text-primary-600" />
             <h3 className="text-lg font-bold text-slate-900">知识点标签</h3>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -103,7 +95,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
                   <span className="text-xs opacity-75">
                     {(tag.confidence * 100).toFixed(0)}%
                   </span>
-                  {tag.verified && <CheckCircleIcon className="w-4 h-4" />}
+                  {tag.verified && <CheckCircle weight="regular" className="w-4 h-4" />}
                 </div>
                 {tag.path && tag.path.length > 0 && (
                   <div className="text-xs mt-1 opacity-60">
@@ -125,7 +117,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {analysis.thinking_process && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
-            <LightBulbIcon className="w-5 h-5 text-cta-600" />
+            <Lightbulb weight="regular" className="w-5 h-5 text-cta-600" />
             <h3 className="text-lg font-bold text-slate-900">解题思路</h3>
           </div>
           <div className="bg-slate-50 rounded-xl p-4">
@@ -138,7 +130,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {analysis.solution_steps && analysis.solution_steps.length > 0 && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
-            <ListBulletIcon className="w-5 h-5 text-primary-600" />
+            <ListBullets weight="regular" className="w-5 h-5 text-primary-600" />
             <h3 className="text-lg font-bold text-slate-900">解题步骤</h3>
           </div>
           <div className="space-y-4">
@@ -200,12 +192,12 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       )}
 
       {/* Two Column Layout for Mistakes & Knowledge Gap */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
         {/* 5. Common Mistakes - 常见错误 */}
         {analysis.common_mistakes && analysis.common_mistakes.length > 0 && (
           <div className="bento-card">
             <div className="flex items-center gap-2 mb-4">
-              <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
+              <Warning weight="regular" className="w-5 h-5 text-orange-600" />
               <h3 className="text-lg font-bold text-slate-900">常见错误</h3>
             </div>
             <div className="space-y-3">
@@ -262,7 +254,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
         {analysis.knowledge_gap_analysis && (
           <div className="bento-card">
             <div className="flex items-center gap-2 mb-4">
-              <ChartBarIcon className="w-5 h-5 text-secondary-600" />
+              <ChartBar weight="regular" className="w-5 h-5 text-secondary-600" />
               <h3 className="text-lg font-bold text-slate-900">知识缺口分析</h3>
             </div>
             <div className="bg-slate-50 rounded-xl p-4">
@@ -281,7 +273,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
        analysis.related_quizzes.filter(r => r.id !== quiz.id).length > 0 && (
         <div className="bento-card">
           <div className="flex items-center gap-2 mb-4">
-            <LinkIcon className="w-5 h-5 text-primary-600" />
+            <LinkIcon weight="regular" className="w-5 h-5 text-primary-600" />
             <h3 className="text-lg font-bold text-slate-900">相关题目推荐</h3>
           </div>
           <div className="space-y-3">
@@ -328,7 +320,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       {analysis.analyzed_at && (
         <div className="bento-card bg-slate-50">
           <div className="flex items-center gap-3 text-sm">
-            <CalendarIcon className="w-4 h-4 text-slate-500" />
+            <Calendar weight="regular" className="w-4 h-4 text-slate-500" />
             <div>
               <span className="font-medium text-slate-700">分析时间：</span>
               <span className="text-slate-600 ml-2">

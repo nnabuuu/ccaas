@@ -64,7 +64,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Fira Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Satoshi', 'system-ui', '-apple-system', 'sans-serif'],
         mono: ['Fira Code', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
       borderRadius: {

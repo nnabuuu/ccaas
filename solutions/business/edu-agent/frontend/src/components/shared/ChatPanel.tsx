@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { Send, Paperclip } from 'lucide-react'
+import { PaperPlaneRight } from '@phosphor-icons/react'
 import { useSessionContext } from '../../context/SessionContext'
 import { MessageBubble } from './MessageBubble'
 import { ThinkingIndicator } from './ThinkingIndicator'
@@ -88,7 +88,7 @@ export function ChatPanel({ onSync, onDiscard, onUndo, canUndo, placeholder, cla
             disabled={!input.trim() || chat.isProcessing}
             className="p-1.5 rounded-lg bg-accent text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-accent-hover transition-colors duration-button"
           >
-            <Send size={16} strokeWidth={2} />
+            <PaperPlaneRight size={16} weight="bold" />
           </button>
         </div>
       </div>

@@ -1,5 +1,4 @@
-/* Google Fonts - Fira Sans + Fira Code */
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
+/* Satoshi font loaded via index.html link tag */
 
 @tailwind base;
 @tailwind components;
@@ -39,8 +38,13 @@
     @apply text-primary-600 hover:text-primary-700 transition-colors duration-200;
   }
 
-  button {
-    @apply transition-all duration-200 cursor-pointer;
+  button, a, [role="button"] {
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    cursor: pointer;
+  }
+
+  button:active, [role="button"]:active {
+    transform: translateY(1px) scale(0.98);
   }
 
   /* Focus states for accessibility */

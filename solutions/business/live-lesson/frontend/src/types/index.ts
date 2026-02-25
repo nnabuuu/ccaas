@@ -1,5 +1,7 @@
 // Board state types (mirror of MCP server types)
 
+import type { ChalkboardAction } from './blackboard-actions'
+
 export interface HighlightedNode {
   nodeId: string
   durationMs: number
@@ -7,17 +9,10 @@ export interface HighlightedNode {
   color: 'yellow' | 'red' | 'blue'
 }
 
-export interface ActiveProbe {
-  id: string
-  label: string
-  confusionPointId: string
-}
-
 export interface BoardState {
   lessonId: string
   visibleNodeIds: string[]
   highlightedNodes: HighlightedNode[]
-  activeProbes: ActiveProbe[]
   currentPhase: string
 }
 
@@ -30,7 +25,6 @@ export interface SkeletonNodeDef {
   phase: string
   initiallyHidden: boolean
   style?: Record<string, string>
-  confusionPointId?: string
 }
 
 export interface LessonManifest {
@@ -38,6 +32,7 @@ export interface LessonManifest {
   title: string
   subject: string
   gradeLevel: string
+  teachingNotes?: string
   boardNodes: SkeletonNodeDef[]
   teachingPhases: Array<{
     id: string
@@ -45,14 +40,40 @@ export interface LessonManifest {
     description: string
     order: number
   }>
-  confusionPoints: Array<{
-    id: string
-    triggerNodeId: string
-    boardNodeToFlash: string
-    secondaryProbes: Array<{
-      id: string
-      label: string
-      remediation: string
-    }>
-  }>
+  globalBoardNodes?: GlobalBoardNode[]
+  beats?: Beat[]
+}
+
+// Beat-driven architecture types
+
+export interface GlobalBoardNode {
+  id: string
+  label: string
+  x: number
+  y: number
+  w: number
+  h: number
+  linkedBeatIds: string[]
+  style?: Record<string, string>
+}
+
+export interface Beat {
+  id: string
+  sectionId: string
+  narratorText: string
+  dynamicBoardActions: ChalkboardAction[]
+  expectedQuestions?: string[]
+  studentAck?: string
+}
+
+export interface BeatState {
+  currentBeatId: string | null
+  currentBeatIndex: number
+  totalBeats: number
+  sectionId: string | null
+}
+
+export interface GlobalBoardOp {
+  nodeId: string
+  op: 'reveal' | 'highlight'
 }

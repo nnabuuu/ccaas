@@ -9,7 +9,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { DocumentTextIcon, CheckCircleIcon, UserIcon } from '@heroicons/react/24/outline'
+import { FileText, CheckCircle, User } from '@phosphor-icons/react'
 import type { ViewMode } from '../types'
 
 export interface QuizInputData {
@@ -87,7 +87,7 @@ export default function QuizInputForm({
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-        <DocumentTextIcon className="w-5 h-5" />
+        <FileText weight="regular" className="w-5 h-5" />
         {viewMode === 'student' ? '提交解答' : '输入题目'}
       </h2>
 
@@ -113,7 +113,7 @@ export default function QuizInputForm({
       {viewMode === 'teacher' && (
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-            <CheckCircleIcon className="w-4 h-4" />
+            <CheckCircle weight="regular" className="w-4 h-4" />
             参考答案 <span className="text-red-500">*</span>
           </label>
           <input
@@ -136,7 +136,7 @@ export default function QuizInputForm({
       {viewMode === 'student' && (
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
-            <UserIcon className="w-4 h-4" />
+            <User weight="regular" className="w-4 h-4" />
             我的解答 <span className="text-red-500">*</span>
           </label>
           <textarea

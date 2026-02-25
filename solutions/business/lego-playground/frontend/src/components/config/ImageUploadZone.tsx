@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import { ImageSquare } from '@phosphor-icons/react';
 import { useMosaicStore } from '../../hooks/useStore';
 
 export default function ImageUploadZone() {
@@ -41,16 +42,16 @@ export default function ImageUploadZone() {
         <img
           src={sourceImageUrl}
           alt="Source"
-          className="w-full rounded-lg border border-gray-200 object-cover"
+          className="w-full rounded-lg border border-zinc-200 object-cover"
           style={{ maxHeight: '160px' }}
         />
         <button
           onClick={() => setSourceImage(null)}
-          className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-black/80"
+          className="absolute top-1 right-1 w-5 h-5 bg-zinc-900/60 text-white rounded-full text-xs flex items-center justify-center hover:bg-zinc-900/80"
         >
-          ×
+          x
         </button>
-        <p className="text-[10px] text-gray-400 mt-1 truncate">{sourceImage.name}</p>
+        <p className="text-[10px] text-zinc-400 mt-1 truncate">{sourceImage.name}</p>
       </div>
     );
   }
@@ -64,12 +65,12 @@ export default function ImageUploadZone() {
       className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
         isDragging
           ? 'border-blue-400 bg-blue-50'
-          : 'border-gray-300 hover:border-gray-400 bg-gray-50'
+          : 'border-zinc-300 hover:border-zinc-400 bg-zinc-50'
       }`}
     >
-      <div className="text-2xl mb-1">🖼️</div>
-      <p className="text-xs text-gray-500">Drop image here or click</p>
-      <p className="text-[10px] text-gray-400 mt-0.5">JPEG, PNG, WebP (max 10MB)</p>
+      <ImageSquare size={28} weight="light" className="mx-auto mb-1 text-zinc-400" />
+      <p className="text-xs text-zinc-500">Drop image here or click</p>
+      <p className="text-[10px] text-zinc-400 mt-0.5">JPEG, PNG, WebP (max 10MB)</p>
       <input
         ref={inputRef}
         type="file"

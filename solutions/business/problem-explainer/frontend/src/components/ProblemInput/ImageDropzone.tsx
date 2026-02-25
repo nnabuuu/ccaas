@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Upload, X, Image } from 'lucide-react';
+import { UploadSimple, X, Image } from '@phosphor-icons/react';
 
 interface ImageDropzoneProps {
   imagePath: string | null;
@@ -134,7 +134,7 @@ export default function ImageDropzone({
   if (imagePath || previewUrl) {
     return (
       <div className="relative">
-        <div className="relative border rounded-lg overflow-hidden bg-gray-50">
+        <div className="relative border rounded-lg overflow-hidden bg-zinc-50">
           {previewUrl ? (
             <img
               src={previewUrl}
@@ -142,20 +142,20 @@ export default function ImageDropzone({
               className="w-full h-32 object-contain"
             />
           ) : (
-            <div className="w-full h-32 flex items-center justify-center text-gray-400">
-              <Image className="w-8 h-8" />
+            <div className="w-full h-32 flex items-center justify-center text-zinc-400">
+              <Image className="w-8 h-8" weight="regular" />
             </div>
           )}
           <button
             onClick={handleRemove}
-            className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-gray-100"
+            className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-zinc-100"
           >
-            <X className="w-4 h-4 text-gray-600" />
+            <X className="w-4 h-4 text-zinc-600" weight="regular" />
           </button>
         </div>
         {isUploading && (
           <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-            <div className="text-sm text-gray-500">uploading...</div>
+            <div className="text-sm text-zinc-500">uploading...</div>
           </div>
         )}
       </div>
@@ -165,7 +165,7 @@ export default function ImageDropzone({
   // Show dropzone
   const dropzoneClasses = isDragging 
     ? 'border-blue-500 bg-blue-50' 
-    : 'border-gray-300 hover:border-gray-400';
+    : 'border-zinc-300 hover:border-zinc-400';
 
   return (
     <div
@@ -183,8 +183,8 @@ export default function ImageDropzone({
         id={inputId}
       />
       <label htmlFor={inputId} className="cursor-pointer">
-        <Upload className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-        <p className="text-xs text-gray-500">{label}</p>
+        <UploadSimple className="w-6 h-6 mx-auto text-zinc-400 mb-2" weight="regular" />
+        <p className="text-xs text-zinc-500">{label}</p>
       </label>
     </div>
   );

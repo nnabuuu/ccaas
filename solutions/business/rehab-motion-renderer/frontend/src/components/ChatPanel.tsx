@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════
 
 import { useState, useRef, useEffect } from 'react'
+import { X, Check, SpinnerGap, Warning } from '@phosphor-icons/react'
 import type { Message, ToolActivity } from '@kedge-agentic/react-sdk'
 import { MONO_FONT } from '../constants'
 
@@ -28,8 +29,8 @@ function formatToolName(raw: string): string {
 function ToolCallBadge({ tool }: { tool: ToolActivity }) {
   const displayName = formatToolName(tool.toolName)
   const icon = tool.phase === 'end'
-    ? (tool.success === false ? '✗' : '✓')
-    : '⟳'
+    ? (tool.success === false ? <X size={10} weight="regular" /> : <Check size={10} weight="regular" />)
+    : <SpinnerGap size={10} weight="regular" style={{ animation: 'spin 1s linear infinite' }} />
   const color = tool.phase === 'end'
     ? (tool.success === false ? '#f87171' : '#22d3ee88')
     : '#3a5060'
@@ -184,7 +185,7 @@ export function ChatPanel({
           color: '#f87171',
           flexShrink: 0,
         }}>
-          ⚠ {error}
+          <Warning size={12} weight="regular" style={{ verticalAlign: 'middle', marginRight: 4 }} />{error}
         </div>
       )}
 
@@ -297,7 +298,7 @@ export function ChatPanel({
         {/* Active tool indicator — only show tools still running (phase !== 'end') */}
         {isProcessing && [...activeTools.values()].some(t => t.phase !== 'end') && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#3a5060', fontSize: 11, padding: '2px 0' }}>
-            <span style={{ color: '#22d3ee' }}>⟳</span>
+            <SpinnerGap size={12} weight="regular" style={{ color: '#22d3ee', animation: 'spin 1s linear infinite' }} />
             <span>{formatToolName([...activeTools.values()].find(t => t.phase !== 'end')!.toolName)}</span>
           </div>
         )}

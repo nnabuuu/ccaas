@@ -29,14 +29,14 @@ export default function ColorPaletteGrid() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-medium text-gray-600">
+        <label className="text-xs font-medium text-zinc-500">
           Colors {palette.length > 0 && <span className="text-blue-500">({palette.length})</span>}
         </label>
         <div className="flex gap-1">
           <button onClick={selectAll} className="text-[10px] text-blue-500 hover:underline">
             All
           </button>
-          <button onClick={clearAll} className="text-[10px] text-gray-400 hover:underline">
+          <button onClick={clearAll} className="text-[10px] text-zinc-400 hover:underline">
             Clear
           </button>
         </div>
@@ -47,7 +47,7 @@ export default function ColorPaletteGrid() {
         placeholder="Search colors..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full border border-gray-200 rounded px-2 py-1 text-xs mb-1.5"
+        className="w-full border border-zinc-200 rounded px-2 py-1 text-xs mb-1.5"
       />
 
       <div className="grid grid-cols-8 gap-0.5 max-h-32 overflow-y-auto">
@@ -61,7 +61,7 @@ export default function ColorPaletteGrid() {
               className={`w-full aspect-square rounded-sm border-2 transition-all ${
                 selected
                   ? 'border-blue-500 scale-110 shadow-sm'
-                  : 'border-transparent hover:border-gray-300'
+                  : 'border-transparent hover:border-zinc-300'
               }`}
               style={{ backgroundColor: color.hex }}
             />
@@ -69,7 +69,7 @@ export default function ColorPaletteGrid() {
         })}
       </div>
 
-      <label className="flex items-center gap-1 mt-1 text-[10px] text-gray-500 cursor-pointer">
+      <label className="flex items-center gap-1 mt-1 text-[10px] text-zinc-500 cursor-pointer">
         <input
           type="checkbox"
           checked={showTransparent}

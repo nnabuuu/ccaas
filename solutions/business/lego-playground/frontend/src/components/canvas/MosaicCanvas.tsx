@@ -73,7 +73,7 @@ export default function MosaicCanvas() {
   );
 
   return (
-    <div ref={containerRef} className="w-full h-full overflow-auto bg-gray-200">
+    <div ref={containerRef} className="w-full h-full overflow-auto bg-zinc-200">
       <div
         style={{
           transform: `scale(${zoom})`,

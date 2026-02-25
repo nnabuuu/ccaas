@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
+import { CaretLeft } from '@phosphor-icons/react'
 import { useLiveLesson } from '../hooks/useLiveLesson'
 import DynamicBoard from '../components/DynamicBoard'
 import GlobalBoard from '../components/GlobalBoard'
@@ -64,9 +65,10 @@ export default function LessonPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/')}
-            className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1"
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-200 transition-colors duration-[200ms]"
           >
-            ← 课程列表
+            <CaretLeft size={14} weight="regular" />
+            <span className="text-xs">课程列表</span>
           </button>
           <div className="h-4 w-px bg-white/20" />
           <div className="text-primary text-lg font-bold tracking-tight">即见·动态教学</div>
@@ -98,10 +100,10 @@ export default function LessonPage() {
         </div>
       </header>
 
-      {/* Main content: 3-panel layout (25/50/25) */}
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left: GlobalBoard (25%) */}
-        <div className="flex-[2.5] min-w-0 overflow-hidden border-r border-white/10" style={{ minWidth: '200px' }}>
+      {/* Main content: 3-panel layout, left-biased */}
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-[minmax(180px,1fr)_2fr_minmax(200px,1fr)] overflow-hidden">
+        {/* Left: GlobalBoard */}
+        <div className="min-w-0 overflow-hidden border-r border-white/10 hidden md:block">
           <GlobalBoard
             nodes={manifest?.globalBoardNodes ?? []}
             revealedNodeIds={revealedNodeIds}
@@ -109,8 +111,8 @@ export default function LessonPage() {
           />
         </div>
 
-        {/* Center: DynamicBoard (50%) */}
-        <div className="flex-[5] min-w-0 overflow-hidden">
+        {/* Center: DynamicBoard */}
+        <div className="min-w-0 overflow-hidden">
           <DynamicBoard
             actions={dynamicBoardActions}
             beatId={beatState?.currentBeatId ?? null}
@@ -121,8 +123,8 @@ export default function LessonPage() {
           />
         </div>
 
-        {/* Right: InteractionPanel (25%) */}
-        <div className="flex-[2.5] min-w-0 overflow-hidden" style={{ minWidth: '200px' }}>
+        {/* Right: InteractionPanel */}
+        <div className="min-w-0 overflow-hidden">
           <InteractionPanel
             timeline={timeline}
             currentBeat={currentBeat}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { FrameCorners } from '@phosphor-icons/react';
 import { useMosaicStore } from '../../hooks/useStore';
 import MosaicCanvas from './MosaicCanvas';
 import CanvasToolbar from './CanvasToolbar';
@@ -16,10 +17,8 @@ export default function CanvasWorkspace() {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Toolbar */}
       <CanvasToolbar />
 
-      {/* Canvas Area */}
       <div className="flex-1 relative overflow-hidden">
         {placements.length > 0 ? (
           <MosaicCanvas />
@@ -27,10 +26,10 @@ export default function CanvasWorkspace() {
           <div className="absolute inset-0 flex items-center justify-center">
             {isLoading ? (
               <div className="text-center">
-                <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-sm text-gray-500">{generationStatus.message || 'Processing...'}</p>
+                <div className="w-12 h-12 border-4 border-zinc-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-sm text-zinc-500">{generationStatus.message || 'Processing...'}</p>
                 {generationStatus.progress > 0 && (
-                  <div className="w-48 h-1.5 bg-gray-200 rounded-full mt-2 mx-auto">
+                  <div className="w-48 h-1.5 bg-zinc-200 rounded-full mt-2 mx-auto">
                     <div
                       className="h-full bg-blue-500 rounded-full transition-all"
                       style={{ width: `${generationStatus.progress}%` }}
@@ -39,20 +38,19 @@ export default function CanvasWorkspace() {
                 )}
               </div>
             ) : (
-              <div className="text-center text-gray-400">
-                <div className="text-4xl mb-2">🧱</div>
-                <p className="text-sm">Upload an image and generate a mosaic</p>
-                <p className="text-xs mt-1">or chat with AI to get started</p>
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-zinc-400">
+                <FrameCorners size={48} weight="light" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-zinc-500">Upload an image and generate a mosaic</p>
+                  <p className="text-xs text-zinc-600 mt-1">or chat with AI to get started</p>
+                </div>
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Iteration Timeline */}
       <IterationTimeline />
-
-      {/* BOM Drawer */}
       <BillOfMaterials />
     </div>
   );

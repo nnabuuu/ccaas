@@ -9,17 +9,17 @@ export default function IterationTimeline() {
   if (iterationHistory.length === 0) return null;
 
   return (
-    <div className="h-16 flex items-center px-4 gap-3 bg-white border-t border-gray-200 shrink-0 overflow-x-auto">
+    <div className="h-16 flex items-center px-4 gap-3 bg-white border-t border-zinc-200 shrink-0 overflow-x-auto">
       {iterationHistory.map((iter) => {
         const isCurrent = iter.iterationNumber === currentIteration;
         const percent = scoreToPercent(iter.overallScore);
         const color = scoreColor(iter.overallScore);
 
         const decisionIcon: Record<string, string> = {
-          approve: '✓',
-          reject: '✗',
-          refine: '↻',
-          pending: '…',
+          approve: '\u2713',
+          reject: '\u2717',
+          refine: '\u21BB',
+          pending: '\u2026',
         };
 
         return (
@@ -31,14 +31,14 @@ export default function IterationTimeline() {
           >
             <div
               className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs font-bold ${
-                isCurrent ? 'border-blue-500 shadow-md' : 'border-gray-200'
+                isCurrent ? 'border-blue-500 shadow-md' : 'border-zinc-200'
               }`}
               style={{ backgroundColor: `${color}20`, color }}
             >
               {percent}%
             </div>
             <div className="flex items-center gap-0.5 mt-0.5">
-              <span className="text-[9px] text-gray-400">#{iter.iterationNumber}</span>
+              <span className="text-[9px] text-zinc-400">#{iter.iterationNumber}</span>
               <span className="text-[10px]">{decisionIcon[iter.decision] || ''}</span>
             </div>
           </div>

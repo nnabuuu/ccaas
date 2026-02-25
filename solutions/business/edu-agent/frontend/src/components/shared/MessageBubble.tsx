@@ -1,4 +1,4 @@
-import { User, Sparkles } from 'lucide-react'
+import { User, Sparkle } from '@phosphor-icons/react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -23,7 +23,7 @@ export function MessageBubble({ message, onSync, onDiscard, onUndo, canUndo }: M
       <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
         isUser ? 'bg-ink text-white' : 'bg-accent-light text-accent'
       }`}>
-        {isUser ? <User size={14} strokeWidth={2} /> : <Sparkles size={14} strokeWidth={2} />}
+        {isUser ? <User size={14} weight="bold" /> : <Sparkle size={14} weight="fill" />}
       </div>
 
       {/* Content */}

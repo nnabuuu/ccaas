@@ -214,7 +214,7 @@ export function LessonPlanContent({
   const isSaving = (sectionId: string) => savingSections.has(sectionId)
 
   return (
-    <div className="h-full overflow-y-auto p-6 space-y-6">
+    <div className="h-full overflow-y-auto p-6 pl-8 md:pl-16 space-y-6">
       {/* Basic Information */}
       <EditorSection
         id="basic"

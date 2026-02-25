@@ -1,4 +1,4 @@
-import { Wrench, Check, X, Loader2 } from 'lucide-react'
+import { Wrench, Check, X, SpinnerGap } from '@phosphor-icons/react'
 import type { ToolActivity } from '../../types'
 
 interface ToolCardProps {
@@ -49,10 +49,10 @@ export function ToolCard({ tool }: ToolCardProps) {
 
   return (
     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-tertiary border border-border-subtle text-xs my-1">
-      {isRunning && <Loader2 size={12} className="animate-spin text-accent" strokeWidth={2} />}
-      {isSuccess && <Check size={12} className="text-success" strokeWidth={2} />}
-      {isError && <X size={12} className="text-error" strokeWidth={2} />}
-      {!isRunning && !isSuccess && !isError && <Wrench size={12} className="text-ink-muted" strokeWidth={2} />}
+      {isRunning && <SpinnerGap size={12} className="animate-spin text-accent" weight="bold" />}
+      {isSuccess && <Check size={12} className="text-success" weight="bold" />}
+      {isError && <X size={12} className="text-error" weight="bold" />}
+      {!isRunning && !isSuccess && !isError && <Wrench size={12} className="text-ink-muted" weight="regular" />}
 
       <span className="font-medium text-ink-secondary">{getToolLabel(tool.toolName)}</span>
       {summary && <span className="text-ink-muted truncate max-w-[200px]">{summary}</span>}

@@ -1,13 +1,13 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
 import { Panel, Group, Separator } from 'react-resizable-panels'
 import {
-  DocumentTextIcon,
-  BoltIcon,
-  AcademicCapIcon,
-  ChartBarIcon,
-  ExclamationCircleIcon,
-  ArrowUpTrayIcon,
-} from '@heroicons/react/24/outline'
+  FileText,
+  Lightning,
+  GraduationCap,
+  ChartBar,
+  WarningCircle,
+  UploadSimple,
+} from '@phosphor-icons/react'
 import { useChatLayout } from '../hooks/useChatLayout'
 import { useQuizSession } from '../hooks/useQuizSession'
 import ChatSection from './ChatSection'
@@ -35,12 +35,12 @@ export default function Layout() {
   }
 
   const navItems = [
-    { path: '/quizzes', label: '题目列表', Icon: DocumentTextIcon },
-    { path: '/import', label: '数据导入', Icon: ArrowUpTrayIcon },
-    { path: '/batch', label: '批量分析', Icon: BoltIcon },
-    { path: '/knowledge-points', label: '知识点', Icon: AcademicCapIcon },
-    { path: '/analytics', label: '数据分析', Icon: ChartBarIcon },
-    { path: '/error-patterns', label: '错误分析', Icon: ExclamationCircleIcon },
+    { path: '/quizzes', label: '题目列表', Icon: FileText },
+    { path: '/import', label: '数据导入', Icon: UploadSimple },
+    { path: '/batch', label: '批量分析', Icon: Lightning },
+    { path: '/knowledge-points', label: '知识点', Icon: GraduationCap },
+    { path: '/analytics', label: '数据分析', Icon: ChartBar },
+    { path: '/error-patterns', label: '错误分析', Icon: WarningCircle },
   ]
 
   return (
@@ -50,8 +50,8 @@ export default function Layout() {
         {/* Logo */}
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-              <AcademicCapIcon className="w-6 h-6 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center">
+              <GraduationCap weight="regular" className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-primary-900">Quiz Analyzer</h2>
@@ -79,7 +79,7 @@ export default function Layout() {
                       }
                     `}
                   >
-                    <Icon className="w-5 h-5" />
+                    <Icon weight="regular" className="w-5 h-5" />
                     <span>{label}</span>
                   </Link>
                 </li>

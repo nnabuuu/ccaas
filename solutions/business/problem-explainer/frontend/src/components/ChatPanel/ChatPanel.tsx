@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Loader2 } from 'lucide-react';
+import { PaperPlaneRight, SpinnerGap } from '@phosphor-icons/react';
 import { Message } from '../../types';
 import MessageBubble from './MessageBubble';
 
@@ -51,7 +51,7 @@ export default function ChatPanel({
 
         {isThinking && messages[messages.length - 1]?.role !== 'assistant' && (
           <div className="flex items-center gap-2 text-gray-500">
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <SpinnerGap className="w-4 h-4 animate-spin" weight="regular" />
             <span className="text-sm">思考中...</span>
           </div>
         )}
@@ -75,7 +75,7 @@ export default function ChatPanel({
             disabled={!input.trim() || isThinking}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Send className="w-4 h-4" />
+            <PaperPlaneRight className="w-4 h-4" weight="regular" />
           </button>
         </div>
       </form>

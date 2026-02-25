@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, RefreshCw } from 'lucide-react'
+import { CaretDown, CaretUp, ArrowsClockwise } from '@phosphor-icons/react'
 
 export interface CollapsibleHeaderProps {
   isExpanded: boolean
@@ -33,9 +33,9 @@ export function CollapsibleHeader({
         className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
       >
         {isExpanded ? (
-          <ChevronUp className="w-4 h-4" />
+          <CaretUp size={16} weight="regular" />
         ) : (
-          <ChevronDown className="w-4 h-4" />
+          <CaretDown size={16} weight="regular" />
         )}
         <span>
           待同步 ({unsyncedCount})
@@ -55,7 +55,7 @@ export function CollapsibleHeader({
           disabled={isSyncing}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+          <ArrowsClockwise size={14} weight="regular" className={isSyncing ? 'animate-spin' : ''} />
           {isSyncing ? '同步中...' : '全部同步'}
         </button>
       )}

@@ -4,7 +4,7 @@
  * Displays connection status and provides reconnect action
  */
 
-import { WifiIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { WifiHigh, Warning } from '@phosphor-icons/react'
 
 interface ConnectionStatusProps {
   connected: boolean
@@ -35,7 +35,7 @@ export default function ConnectionStatus({
 
       {error && (
         <div className="flex items-center gap-2 px-3 py-1 bg-red-50 border border-red-200 rounded-lg">
-          <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />
+          <Warning weight="regular" className="w-4 h-4 text-red-500" />
           <span className="text-xs text-red-700">{error}</span>
         </div>
       )}
@@ -45,7 +45,7 @@ export default function ConnectionStatus({
           onClick={onReconnect}
           className="flex items-center gap-1 px-3 py-1 text-xs text-blue-600 hover:text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
         >
-          <WifiIcon className="w-4 h-4" />
+          <WifiHigh weight="regular" className="w-4 h-4" />
           重新连接
         </button>
       )}

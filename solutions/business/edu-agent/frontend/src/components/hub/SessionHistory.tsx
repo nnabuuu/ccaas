@@ -1,4 +1,4 @@
-import { Clock, BookOpen, HelpCircle } from 'lucide-react'
+import { Clock, BookOpen, Question } from '@phosphor-icons/react'
 
 interface HistoryItem {
   id: string
@@ -20,7 +20,7 @@ export function SessionHistory() {
       <div className="flex-1 overflow-y-auto">
         {mockHistory.length === 0 ? (
           <div className="px-4 py-8 text-center">
-            <Clock size={24} className="mx-auto text-ink-muted mb-2" strokeWidth={1.5} />
+            <Clock size={24} className="mx-auto text-ink-muted mb-2" weight="regular" />
             <p className="text-xs text-ink-muted">暂无历史记录</p>
           </div>
         ) : (
@@ -31,9 +31,9 @@ export function SessionHistory() {
                 className="w-full flex items-center gap-2.5 px-4 py-2.5 hover:bg-surface-tertiary transition-colors text-left"
               >
                 {item.type === 'lesson-plan' ? (
-                  <BookOpen size={14} className="text-lesson shrink-0" strokeWidth={1.75} />
+                  <BookOpen size={14} className="text-lesson shrink-0" weight="regular" />
                 ) : (
-                  <HelpCircle size={14} className="text-problem shrink-0" strokeWidth={1.75} />
+                  <Question size={14} className="text-problem shrink-0" weight="regular" />
                 )}
                 <div className="min-w-0">
                   <p className="text-sm text-ink truncate">{item.title}</p>

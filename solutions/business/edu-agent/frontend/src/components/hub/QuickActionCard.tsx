@@ -1,7 +1,7 @@
-import type { LucideIcon } from 'lucide-react'
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 
 interface QuickActionCardProps {
-  icon: LucideIcon
+  icon: PhosphorIcon
   title: string
   description: string
   accentColor: string
@@ -16,7 +16,7 @@ export function QuickActionCard({ icon: Icon, title, description, accentColor, b
       className="group flex flex-col items-start gap-3 p-5 rounded-xl border border-border bg-surface hover:shadow-float hover:border-transparent transition-all duration-panel text-left w-full"
     >
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${bgColor}`}>
-        <Icon size={20} className={accentColor} strokeWidth={1.75} />
+        <Icon size={20} className={accentColor} weight="regular" />
       </div>
       <div>
         <h3 className="font-semibold text-[15px] text-ink group-hover:text-accent transition-colors">{title}</h3>

@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from 'react'
-import { Loader2 } from 'lucide-react'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 
 // Import side-effect: registers blackboard-player custom element
@@ -71,16 +70,20 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
         style={{ display: 'block', width: '100%', height: '100%', flexShrink: 0 }}
       />
 
-      {/* Empty state: loading spinner */}
-      {actions.length === 0 && !showStartButton && (
+      {/* Empty state: skeleton loader */}
+      {actions.length === 0 && !showStartButton && isLoading && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="flex flex-col items-center gap-3 text-center">
-            {isLoading && (
-              <>
-                <div className="w-8 h-8 rounded-full border-2 border-primary/40 border-t-primary animate-spin" />
-                <p className="text-gray-500 text-sm">课程加载中...</p>
-              </>
-            )}
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex gap-3">
+              <div className="w-24 h-3 skeleton-shimmer rounded" />
+              <div className="w-16 h-3 skeleton-shimmer rounded" />
+            </div>
+            <div className="w-40 h-3 skeleton-shimmer rounded" />
+            <div className="flex gap-3">
+              <div className="w-20 h-3 skeleton-shimmer rounded" />
+              <div className="w-28 h-3 skeleton-shimmer rounded" />
+            </div>
+            <p className="text-gray-600 text-xs mt-2">课程加载中...</p>
           </div>
         </div>
       )}
@@ -96,23 +99,15 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
       >
         <button
           onClick={onContinue}
-          disabled={isActive}
           className={[
             'px-8 py-3 rounded-xl text-base font-bold',
             'bg-primary text-background-dark',
-            'shadow-[0_0_20px_rgba(19,236,91,0.4)]',
-            'hover:bg-primary/90 hover:shadow-[0_0_28px_rgba(19,236,91,0.6)]',
-            'active:scale-95 transition-all duration-150',
+            'shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]',
+            'hover:bg-primary/90',
+            'active:scale-[0.97] transition-all duration-[200ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
           ].join(' ')}
         >
-          {isActive ? (
-            <span className="flex items-center gap-2">
-              <Loader2 size={16} className="animate-spin" />
-              处理中...
-            </span>
-          ) : (
-            buttonLabel
-          )}
+          {buttonLabel}
         </button>
       </div>
     </div>

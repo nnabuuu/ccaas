@@ -12,7 +12,9 @@
   "dependencies": {
     "@kedge-agentic/common": "^0.1.0",
     "@kedge-agentic/react-sdk": "^0.1.0",
+    "@phosphor-icons/react": "^2.1.10",
     "axios": "^1.6.0",
+    "framer-motion": "^12.34.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-resizable-panels": "^4.6.0",

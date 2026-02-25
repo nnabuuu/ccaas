@@ -1,7 +1,16 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { BookOpen, RotateCcw, Loader2, Send } from 'lucide-react'
+import { BookOpen, ArrowCounterClockwise, PaperPlaneRight } from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
 import type { Message } from '@kedge-agentic/react-sdk'
-import type { BoardState } from '../types'
+
+const messageContainer = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+}
+const messageItem = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 20 } },
+}
 
 interface TeachingPanelProps {
   messages: Message[]
@@ -9,27 +18,20 @@ interface TeachingPanelProps {
   isThinking: boolean
   thinkingContent: string
   currentStreamContent: string
-  boardState: BoardState | null
   connected: boolean
   onSendMessage: (content: string) => void
-  onProbeSelected: (probeId: string) => void
-  onConfused: (nodeId: string) => void
   onClearConversation: () => void
 }
 
 function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === 'user'
-  const isConfused = isUser && message.content.startsWith('[CONFUSED]')
-  const isProbeSelected = isUser && message.content.startsWith('[PROBE_SELECTED]')
+  const isAsk = isUser && message.content.startsWith('[ASK]')
 
   // Format special messages
   let displayContent = message.content
-  if (isConfused) {
-    const nodeId = message.content.replace('[CONFUSED] ', '')
-    displayContent = `🙋 不明白：${nodeId.replace(/-/g, ' ')}`
-  } else if (isProbeSelected) {
-    const probeId = message.content.replace('[PROBE_SELECTED] ', '')
-    displayContent = `✋ 选择：${probeId.replace(/probe-/, '').replace(/-/g, ' ')}`
+  if (isAsk) {
+    const rest = message.content.replace(/^\[ASK\]\s*[^:]+:\s*/, '')
+    displayContent = `🙋 关于：${rest}`
   }
 
   return (
@@ -42,8 +44,8 @@ function MessageBubble({ message }: { message: Message }) {
       <div
         className={[
           'max-w-[85%] px-3 py-2 rounded-xl text-sm leading-relaxed',
-          isUser && isConfused
-            ? 'bg-warning-red/20 border border-warning-red/40 text-red-200'
+          isUser && isAsk
+            ? 'bg-blue-900/30 border border-blue-400/30 text-blue-200'
             : isUser
               ? 'bg-white/10 text-gray-200'
               : 'bg-chalkboard border border-white/10 text-gray-100',
@@ -80,19 +82,14 @@ export function TeachingPanel({
   isThinking,
   thinkingContent,
   currentStreamContent,
-  boardState,
   connected,
   onSendMessage,
-  onProbeSelected,
-  onConfused: _onConfused,
   onClearConversation,
 }: TeachingPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [freeText, setFreeText] = useState('')
 
-  const activeProbes = boardState?.activeProbes ?? []
-  const hasProbes = activeProbes.length > 0
   const isActive = isProcessing || isThinking
 
   // Auto-scroll to bottom
@@ -119,7 +116,7 @@ export function TeachingPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <BookOpen size={16} className="text-primary" />
+          <BookOpen size={16} weight="regular" className="text-primary" />
           <span className="text-sm font-medium text-gray-200">教学对话</span>
           {connected ? (
             <span className="text-xs text-primary">● 已连接</span>
@@ -132,33 +129,46 @@ export function TeachingPanel({
           className="text-gray-500 hover:text-gray-300 transition-colors"
           title="新建会话"
         >
-          <RotateCcw size={14} />
+          <ArrowCounterClockwise size={14} weight="regular" />
         </button>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0">
         {messages.length === 0 && !isActive && (
-          <div className="flex items-center justify-center h-full text-gray-600 text-sm text-center">
+          <div className="flex items-start pt-6 px-1 h-full text-gray-600 text-sm">
             <div>
               <p>等待教学开始...</p>
               <p className="mt-1 text-xs">AI 教师将引导你探索一元一次方程</p>
+              <p className="mt-2 text-xs text-gray-700">点击板书上的节点可以提问</p>
+              <p className="mt-2 text-xs text-gray-700">AI 讲完后，点黑板底部「继续」前进</p>
             </div>
           </div>
         )}
 
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
+        <motion.div variants={messageContainer} initial="hidden" animate="show">
+          {messages.map((msg) => (
+            <motion.div key={msg.id} variants={messageItem}>
+              <MessageBubble message={msg} />
+            </motion.div>
+          ))}
+        </motion.div>
 
-        {/* Thinking indicator */}
+        {/* Thinking indicator — skeleton pulse */}
         {isThinking && !currentStreamContent && (
           <div className="flex justify-start mb-3">
             <div className="w-7 h-7 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mr-2 flex-shrink-0 mt-1">
-              <Loader2 size={12} className="text-primary animate-spin" />
+              <span className="text-primary text-xs font-bold">AI</span>
             </div>
-            <div className="px-3 py-2 rounded-xl bg-chalkboard border border-white/10 text-gray-500 text-xs italic">
-              {thinkingContent || '思考中...'}
+            <div className="px-3 py-2 rounded-xl bg-chalkboard border border-white/10 text-gray-500 text-xs italic space-y-1.5">
+              {thinkingContent ? (
+                thinkingContent
+              ) : (
+                <>
+                  <div className="h-2.5 w-32 skeleton-shimmer rounded" />
+                  <div className="h-2.5 w-20 skeleton-shimmer rounded" />
+                </>
+              )}
             </div>
           </div>
         )}
@@ -200,99 +210,26 @@ export function TeachingPanel({
             ].join(' ')}
             title="发送 (Enter)"
           >
-            <Send size={16} />
+            <PaperPlaneRight size={16} weight="regular" />
           </button>
         </div>
       </div>
 
-      {/* Suggested Responses / Diagnostic Probes */}
-      <div className="border-t border-white/10 p-3 space-y-2">
-        {hasProbes ? (
-          <>
-            <p className="text-xs text-gray-500 mb-2">
-              请选择你的困惑点，帮助老师精准解答：
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {activeProbes.map((probe) => (
-                <button
-                  key={probe.id}
-                  onClick={() => onProbeSelected(probe.id)}
-                  disabled={isActive}
-                  className={[
-                    'w-full text-left px-3 py-2 rounded-lg text-sm',
-                    'border border-warning-red/40 bg-warning-red/10',
-                    'text-red-200 hover:bg-warning-red/20',
-                    'transition-colors',
-                    isActive ? 'opacity-50 cursor-not-allowed' : '',
-                  ].join(' ')}
-                >
-                  {probe.label}
-                </button>
-              ))}
-              <button
-                onClick={() => onSendMessage('明白了，继续吧')}
-                disabled={isActive}
-                className={[
-                  'w-full px-3 py-2 rounded-lg text-sm',
-                  'border border-primary/40 bg-primary/10',
-                  'text-primary hover:bg-primary/20',
-                  'transition-colors',
-                  isActive ? 'opacity-50 cursor-not-allowed' : '',
-                ].join(' ')}
-              >
-                其实我明白了，继续 →
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onSendMessage('明白了，继续')}
-              disabled={isActive}
-              className={[
-                'col-span-2 px-3 py-2 rounded-lg text-sm font-medium',
-                'border border-primary/50 bg-primary/10',
-                'text-primary hover:bg-primary/20',
-                'transition-colors',
-                isActive ? 'opacity-50 cursor-not-allowed' : '',
-              ].join(' ')}
-            >
-              {isActive ? (
-                <span className="flex items-center justify-center gap-1">
-                  <Loader2 size={12} className="animate-spin" /> 处理中...
-                </span>
-              ) : (
-                '明白了，继续 →'
-              )}
-            </button>
-            <button
-              onClick={() => onSendMessage('我需要更多提示')}
-              disabled={isActive}
-              className={[
-                'px-3 py-2 rounded-lg text-xs',
-                'border border-white/20 bg-white/5',
-                'text-gray-300 hover:bg-white/10',
-                'transition-colors',
-                isActive ? 'opacity-50 cursor-not-allowed' : '',
-              ].join(' ')}
-            >
-              再给个提示
-            </button>
-            <button
-              onClick={() => onSendMessage('我不明白这道题')}
-              disabled={isActive}
-              className={[
-                'px-3 py-2 rounded-lg text-xs',
-                'border border-warning-red/30 bg-warning-red/5',
-                'text-red-300 hover:bg-warning-red/10',
-                'transition-colors',
-                isActive ? 'opacity-50 cursor-not-allowed' : '',
-              ].join(' ')}
-            >
-              🙋 有地方不明白
-            </button>
-          </div>
-        )}
+      {/* Quick replies */}
+      <div className="border-t border-white/10 p-3">
+        <button
+          onClick={() => onSendMessage('再解释一下')}
+          disabled={isActive}
+          className={[
+            'w-full px-3 py-2 rounded-lg text-xs',
+            'border border-white/20 bg-white/5',
+            'text-gray-300 hover:bg-white/10',
+            'transition-colors',
+            isActive ? 'opacity-50 cursor-not-allowed' : '',
+          ].join(' ')}
+        >
+          再解释一下
+        </button>
       </div>
     </div>
   )

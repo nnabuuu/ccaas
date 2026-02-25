@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Play } from 'lucide-react'
+import { Play } from '@phosphor-icons/react'
 import { useOutputSync, type OutputUpdate } from '@kedge-agentic/react-sdk'
 import { useSessionContext } from '../context/SessionContext'
 import type { Explanation } from '../types/problem-explain'
@@ -56,7 +56,7 @@ export function ProblemExplainView() {
             disabled={!problemText.trim() || chat.isProcessing}
             className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-problem text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity duration-150 cursor-pointer"
           >
-            <Play size={14} strokeWidth={2} />
+            <Play size={14} weight="fill" />
             开始讲解
           </button>
         </div>

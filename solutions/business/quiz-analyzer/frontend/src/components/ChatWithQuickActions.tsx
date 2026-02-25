@@ -8,7 +8,7 @@
  * - Integrated message display
  */
 
-import { RocketLaunchIcon, AcademicCapIcon } from '@heroicons/react/24/solid'
+import { RocketLaunch, GraduationCap } from '@phosphor-icons/react'
 import { ChatPanel, type Message, type TodoItem, type TodoStats } from '@kedge-agentic/react-sdk'
 import type { ToolActivity, ActiveSubAgent } from '@kedge-agentic/react-sdk'
 import type { ViewMode } from '../types'
@@ -56,10 +56,10 @@ export default function ChatWithQuickActions({
         <button
           onClick={onStartAnalysis}
           disabled={!canAnalyze || isProcessing}
-          className={`w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:shadow-none ${
+          className={`w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:shadow-none ${
             isStudent
-              ? 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 disabled:from-slate-300 disabled:to-slate-400'
-              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-300 disabled:to-slate-400'
+              ? 'bg-green-600 hover:bg-green-700 disabled:bg-zinc-300'
+              : 'bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300'
           }`}
         >
           {isProcessing ? (
@@ -69,13 +69,13 @@ export default function ChatWithQuickActions({
             </>
           ) : isStudent ? (
             <>
-              <AcademicCapIcon className="w-5 h-5" />
-              ✅ 检查我的答案
+              <GraduationCap weight="regular" className="w-5 h-5" />
+              检查我的答案
             </>
           ) : (
             <>
-              <RocketLaunchIcon className="w-5 h-5" />
-              🚀 开始分析
+              <RocketLaunch weight="regular" className="w-5 h-5" />
+              开始分析
             </>
           )}
         </button>
@@ -97,13 +97,13 @@ export default function ChatWithQuickActions({
                 onClick={() => onSendMessage('给我一个提示，不要直接告诉我答案')}
                 className="flex-1 text-xs px-2 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
               >
-                💡 给我提示
+                给我提示
               </button>
               <button
                 onClick={() => onSendMessage('我哪里理解错了？')}
                 className="flex-1 text-xs px-2 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
               >
-                🔍 哪里错了
+                哪里错了
               </button>
             </>
           ) : (
@@ -112,13 +112,13 @@ export default function ChatWithQuickActions({
                 onClick={() => onSendMessage('帮我生成几道举一反三的练习题')}
                 className="flex-1 text-xs px-2 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
               >
-                🔄 举一反三
+                举一反三
               </button>
               <button
                 onClick={() => onSendMessage('总结学生常见错误类型')}
                 className="flex-1 text-xs px-2 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
               >
-                📋 常见错误
+                常见错误
               </button>
             </>
           )}

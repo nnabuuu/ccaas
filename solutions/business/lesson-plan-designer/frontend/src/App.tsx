@@ -308,13 +308,46 @@ function App() {
     }
   }, [setLayoutMode, layoutMode, isCollapsed, setCollapsed])
 
-  // Show loading state
+  // Show loading state with skeleton
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-4 text-gray-600">加载中...</p>
+      <div className="h-screen flex flex-col bg-gray-50">
+        {/* Skeleton header */}
+        <div className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200">
+          <div className="flex items-center gap-4 animate-pulse">
+            <div className="h-6 w-40 rounded bg-zinc-200" />
+            <div className="h-4 w-16 rounded bg-zinc-200" />
+          </div>
+          <div className="flex items-center gap-3 animate-pulse">
+            <div className="h-9 w-16 rounded-lg bg-zinc-200" />
+            <div className="h-9 w-16 rounded-lg bg-zinc-200" />
+          </div>
+        </div>
+        {/* Skeleton body */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Skeleton outline */}
+          <div className="w-[200px] flex-shrink-0 bg-white border-r border-gray-200 p-4">
+            <div className="space-y-2 animate-pulse">
+              {[...Array(10)].map((_, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-zinc-200" />
+                  <div className={`h-4 rounded bg-zinc-200 ${
+                    i % 3 === 0 ? 'w-1/2' : i % 3 === 1 ? 'w-2/3' : 'w-3/5'
+                  }`} />
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Skeleton main content */}
+          <div className="flex-1 p-6 space-y-6 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                <div className="h-5 w-24 rounded bg-zinc-200" />
+                <div className="h-4 w-full rounded bg-zinc-200" />
+                <div className="h-4 w-3/4 rounded bg-zinc-200" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     )

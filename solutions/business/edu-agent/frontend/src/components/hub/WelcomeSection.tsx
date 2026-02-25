@@ -1,4 +1,4 @@
-import { BookOpen, HelpCircle, Sparkles } from 'lucide-react'
+import { BookOpen, Question, Sparkle } from '@phosphor-icons/react'
 import { useSessionContext } from '../../context/SessionContext'
 import { QuickActionCard } from './QuickActionCard'
 
@@ -11,7 +11,7 @@ export function WelcomeSection() {
         {/* Title */}
         <div className="text-center space-y-2">
           <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
-            <Sparkles size={24} className="text-accent" strokeWidth={1.75} />
+            <Sparkle size={24} className="text-accent" weight="fill" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">EduAgent</h1>
           <p className="text-ink-secondary text-[15px]">AI 教育助手 &mdash; 备课设计 &middot; 讲题解析</p>
@@ -28,7 +28,7 @@ export function WelcomeSection() {
             onClick={() => setActiveTab('lesson-plan')}
           />
           <QuickActionCard
-            icon={HelpCircle}
+            icon={Question}
             title="讲题"
             description="题目讲解分析助手"
             accentColor="text-problem"

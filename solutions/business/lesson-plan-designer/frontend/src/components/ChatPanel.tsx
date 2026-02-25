@@ -17,7 +17,7 @@ import QuickPrompts from './QuickPrompts'
 import FilesView from './FilesView'
 import { useFileAttachment } from '../hooks/useFileAttachment'
 import { GlobalSyncSection } from './sync/GlobalSyncSection'
-import { MessageSquare, File, CheckSquare, RotateCcw } from 'lucide-react'
+import { ChatCircle, File, CheckSquare, ArrowCounterClockwise } from '@phosphor-icons/react'
 
 // Helper functions for custom token usage rendering
 function formatTokens(n: number): string {
@@ -189,7 +189,7 @@ export function ChatPanel({
               className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title="新对话"
             >
-              <RotateCcw className="w-4 h-4" />
+              <ArrowCounterClockwise size={16} weight="regular" />
             </button>
           )}
         </div>
@@ -206,7 +206,7 @@ export function ChatPanel({
           }`}
           title="消息"
         >
-          <MessageSquare className="w-5 h-5" />
+          <ChatCircle size={20} weight="regular" />
           <span>消息</span>
           {newMessagesCount > 0 && (
             <span className="px-2 py-0.5 text-xs bg-red-500 text-white rounded-full">
@@ -226,7 +226,7 @@ export function ChatPanel({
           }`}
           title="文件"
         >
-          <File className="w-5 h-5" />
+          <File size={20} weight="regular" />
           <span>文件</span>
           {newFilesCount > 0 && activeTab !== 'files' && (
             <span className="px-2 py-0.5 text-xs bg-amber-500 text-white rounded-full">
@@ -246,7 +246,7 @@ export function ChatPanel({
           }`}
           title="任务"
         >
-          <CheckSquare className="w-5 h-5" />
+          <CheckSquare size={20} weight="regular" />
           <span>任务</span>
           {taskTracking.badgeState.show && activeTab !== 'tasks' && (
             <span
@@ -273,12 +273,17 @@ export function ChatPanel({
       {activeTab === 'messages' && (
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative">
         {isLoadingHistory ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-            <svg className="w-8 h-8 mb-3 animate-spin text-blue-500" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            <p className="text-sm">Loading conversation history...</p>
+          <div className="space-y-4 animate-pulse">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : 'justify-start'}`}>
+                <div className={`rounded-2xl p-3 space-y-2 ${
+                  i % 2 === 0 ? 'bg-zinc-200 w-2/5' : 'bg-zinc-100 w-3/5'
+                }`}>
+                  <div className="h-3 w-full rounded bg-zinc-300/50" />
+                  <div className="h-3 w-2/3 rounded bg-zinc-300/50" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">

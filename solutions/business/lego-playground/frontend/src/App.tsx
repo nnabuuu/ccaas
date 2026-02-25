@@ -29,7 +29,7 @@ export default function App() {
   }, [sessionId, handleNewSession]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
+    <div className="h-screen flex flex-col bg-zinc-50 overflow-hidden">
       <Header
         sessionId={sessionId}
         currentIteration={currentIteration}
@@ -40,17 +40,17 @@ export default function App() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Config Panel */}
-        <div className="w-72 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto">
+        <div className="w-72 flex-shrink-0 border-r border-zinc-200 bg-white overflow-y-auto">
           <ConfigPanel />
         </div>
 
         {/* Center: Canvas Workspace */}
-        <div className="flex-1 flex flex-col min-w-0 bg-gray-100">
+        <div className="flex-1 flex flex-col min-w-0 bg-zinc-100">
           <CanvasWorkspace />
         </div>
 
         {/* Right: Chat Panel */}
-        <div className="w-96 flex-shrink-0 border-l border-gray-200 bg-white flex flex-col">
+        <div className="w-96 flex-shrink-0 border-l border-zinc-200 bg-white flex flex-col">
           <ChatPanel sendMessage={sendMessage} />
         </div>
       </div>

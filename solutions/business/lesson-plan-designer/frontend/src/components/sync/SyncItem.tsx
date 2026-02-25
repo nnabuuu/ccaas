@@ -1,4 +1,4 @@
-import { RefreshCw, X, Check } from 'lucide-react'
+import { ArrowsClockwise, X, Check } from '@phosphor-icons/react'
 import type { PendingUpdateWithMeta } from '../../types'
 
 export interface SyncItemProps {
@@ -90,7 +90,7 @@ export function SyncItem({ update, onSync, onDiscard }: SyncItemProps) {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Check className="w-4 h-4 text-green-600" />
+              <Check size={16} weight="regular" className="text-green-600" />
               <span className="text-sm font-medium text-green-800">已同步 · {fieldLabel}</span>
             </div>
             {update.syncedAt && (
@@ -108,7 +108,7 @@ export function SyncItem({ update, onSync, onDiscard }: SyncItemProps) {
               className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
               title="重新同步"
             >
-              <RefreshCw className="w-3 h-3" />
+              <ArrowsClockwise size={12} weight="regular" />
               重新同步
             </button>
           </div>
@@ -141,7 +141,7 @@ export function SyncItem({ update, onSync, onDiscard }: SyncItemProps) {
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors"
             title="同步到表单"
           >
-            <RefreshCw className="w-3 h-3" />
+            <ArrowsClockwise size={12} weight="regular" />
             同步
           </button>
 
@@ -150,7 +150,7 @@ export function SyncItem({ update, onSync, onDiscard }: SyncItemProps) {
             className="p-1 text-yellow-600 hover:text-red-600 rounded transition-colors"
             title="忽略此更新"
           >
-            <X className="w-4 h-4" />
+            <X size={16} weight="regular" />
           </button>
         </div>
       </div>

@@ -8,9 +8,18 @@
  * - Delete button per item
  */
 
-import { ClockIcon, TrashIcon } from '@heroicons/react/24/outline'
-import { CheckCircleIcon } from '@heroicons/react/24/solid'
+import { Clock, Trash, CheckCircle } from '@phosphor-icons/react'
+import { motion } from 'framer-motion'
 import type { QuizAnalysis } from '../types'
+
+const container = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+}
+const item = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 100, damping: 20 } },
+}
 
 /** @deprecated Local history replaced by server-persisted messages */
 export interface AnalysisRecord {
@@ -54,7 +63,7 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
   if (history.length === 0) {
     return (
       <div className="text-center py-12 text-slate-400">
-        <ClockIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
+        <Clock weight="regular" className="w-12 h-12 mx-auto mb-3 opacity-50" />
         <p className="text-sm">暂无分析历史</p>
       </div>
     )
@@ -67,14 +76,15 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
         <span className="text-xs text-slate-500">{history.length} 条记录</span>
       </div>
 
-      <div className="space-y-2 max-h-[600px] overflow-y-auto">
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-2 max-h-[600px] overflow-y-auto">
         {history.map(record => {
           const isActive = current?.id === record.id
           const preview = truncate(record.quiz.content, 60)
 
           return (
-            <div
+            <motion.div
               key={record.id}
+              variants={item}
               className={`
                 relative group p-3 border rounded-lg cursor-pointer transition-all duration-200
                 ${
@@ -87,7 +97,7 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
             >
               {/* Active Indicator */}
               {isActive && (
-                <CheckCircleIcon className="absolute top-2 right-2 w-5 h-5 text-blue-600" />
+                <CheckCircle weight="regular" className="absolute top-2 right-2 w-5 h-5 text-blue-600" />
               )}
 
               {/* Content Preview */}
@@ -96,7 +106,7 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
               {/* Metadata */}
               <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
                 <span className="flex items-center gap-1">
-                  <ClockIcon className="w-3 h-3" />
+                  <Clock weight="regular" className="w-3 h-3" />
                   {formatTimestamp(record.timestamp)}
                 </span>
                 {record.quiz.answer && <span className="text-green-600">含答案</span>}
@@ -113,12 +123,12 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
                 className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 rounded bg-red-50 hover:bg-red-100 transition-opacity duration-200"
                 title="删除记录"
               >
-                <TrashIcon className="w-4 h-4 text-red-600" />
+                <Trash weight="regular" className="w-4 h-4 text-red-600" />
               </button>
-            </div>
+            </motion.div>
           )
         })}
-      </div>
+      </motion.div>
     </div>
   )
 }

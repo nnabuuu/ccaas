@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { ArrowCounterClockwise, Play, Pause, Check, Warning } from '@phosphor-icons/react'
 import { interpolate, animationSpeed } from '../engine/animation'
 import { LyingFigure } from './figures/LyingFigure'
 import { CatFigure } from './figures/CatFigure'
@@ -184,7 +185,7 @@ export function TrainingPagePreview({ exercises }: TrainingPagePreviewProps) {
               transition: 'all .2s',
             }}
           >
-            {done[e.id] ? '✓ ' : ''}{e.nameZh}
+            {done[e.id] ? <><Check size={12} weight="regular" style={{ verticalAlign: 'middle', marginRight: 2 }} /> </> : ''}{e.nameZh}
           </button>
         ))}
         <div style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: '#e2e8f0', padding: '6px 0' }}>
@@ -263,7 +264,7 @@ export function TrainingPagePreview({ exercises }: TrainingPagePreviewProps) {
             cursor: 'pointer',
           }}
         >
-          ↺ 重置
+          <ArrowCounterClockwise size={14} weight="regular" style={{ verticalAlign: 'middle', marginRight: 4 }} />重置
         </button>
         <button
           onClick={() => setPlaying((p) => !p)}
@@ -282,7 +283,10 @@ export function TrainingPagePreview({ exercises }: TrainingPagePreviewProps) {
             boxShadow: playing ? '0 4px 20px #dc262655' : '0 4px 20px #06b6d455',
           }}
         >
-          {playing ? '⏸ 暂停' : '▶ 开始'}
+          {playing
+            ? <><Pause size={16} weight="regular" style={{ verticalAlign: 'middle', marginRight: 4 }} />暂停</>
+            : <><Play size={16} weight="regular" style={{ verticalAlign: 'middle', marginRight: 4 }} />开始</>
+          }
         </button>
       </div>
 
@@ -374,7 +378,7 @@ export function TrainingPagePreview({ exercises }: TrainingPagePreviewProps) {
                 borderRadius: 5,
                 padding: '3px 8px',
               }}>
-                ⚠ {s}
+                <Warning size={12} weight="regular" style={{ verticalAlign: 'middle', marginRight: 2 }} />{s}
               </div>
             ))}
           </div>

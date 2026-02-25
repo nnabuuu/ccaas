@@ -29,3 +29,10 @@
     @apply text-xs font-medium uppercase tracking-wide text-ink-muted;
   }
 }
+
+button, a, [role="button"] {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+button:active, [role="button"]:active {
+  transform: translateY(1px) scale(0.98);
+}

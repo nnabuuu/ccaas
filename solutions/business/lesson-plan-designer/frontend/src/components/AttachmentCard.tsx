@@ -1,4 +1,4 @@
-import { Music, Presentation, FileText, FileCode, File, Download, Trash2, Check, Clock } from 'lucide-react'
+import { MusicNote, Presentation, FileText, FileCode, File, DownloadSimple, Trash, Check, Clock } from '@phosphor-icons/react'
 import type { LessonPlanAttachment } from '../types'
 
 interface AttachmentCardProps {
@@ -13,7 +13,7 @@ interface AttachmentCardProps {
 function getFileIcon(fileType: string) {
   switch (fileType) {
     case 'audio':
-      return Music
+      return MusicNote
     case 'ppt':
       return Presentation
     case 'pdf':
@@ -106,7 +106,7 @@ export function AttachmentCard({ attachment, status = 'attached', onRemove }: At
     >
       {/* File icon */}
       <div className={`flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-lg ${colors.bg}`}>
-        <IconComponent className={`w-6 h-6 ${colors.text}`} />
+        <IconComponent size={24} weight="regular" className={colors.text} />
       </div>
 
       {/* File info */}
@@ -123,13 +123,13 @@ export function AttachmentCard({ attachment, status = 'attached', onRemove }: At
           {/* Status badge */}
           {status === 'pending' && (
             <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-800 rounded flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+              <Clock size={12} weight="regular" />
               待附加
             </span>
           )}
           {status === 'attached' && (
             <span className="px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800 rounded flex items-center gap-1">
-              <Check className="w-3 h-3" />
+              <Check size={12} weight="regular" />
               已附加
             </span>
           )}
@@ -157,7 +157,7 @@ export function AttachmentCard({ attachment, status = 'attached', onRemove }: At
           className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5 text-sm font-medium"
           title="下载文件"
         >
-          <Download className="w-4 h-4" />
+          <DownloadSimple size={16} weight="regular" />
           下载
         </a>
 
@@ -168,7 +168,7 @@ export function AttachmentCard({ attachment, status = 'attached', onRemove }: At
             className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
             title="删除附件"
           >
-            <Trash2 className="w-5 h-5" />
+            <Trash size={20} weight="regular" />
           </button>
         )}
       </div>

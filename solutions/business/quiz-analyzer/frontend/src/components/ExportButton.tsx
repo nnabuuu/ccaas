@@ -8,11 +8,7 @@
  */
 
 import { useState } from 'react'
-import {
-  ArrowDownTrayIcon,
-  ClipboardDocumentIcon,
-  CheckIcon,
-} from '@heroicons/react/24/outline'
+import { DownloadSimple, ClipboardText, Check } from '@phosphor-icons/react'
 
 interface ExportButtonProps {
   onExportJSON: () => void
@@ -47,7 +43,7 @@ export default function ExportButton({
         disabled={disabled}
         className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200"
       >
-        <ArrowDownTrayIcon className="w-5 h-5" />
+        <DownloadSimple weight="regular" className="w-5 h-5" />
         导出分析
       </button>
 
@@ -69,7 +65,7 @@ export default function ExportButton({
               }}
               className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3"
             >
-              <ArrowDownTrayIcon className="w-5 h-5 text-slate-600" />
+              <DownloadSimple weight="regular" className="w-5 h-5 text-slate-600" />
               <div>
                 <div className="text-sm font-medium text-slate-800">导出 JSON</div>
                 <div className="text-xs text-slate-500">机器可读格式</div>
@@ -83,7 +79,7 @@ export default function ExportButton({
               }}
               className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3 border-t border-slate-100"
             >
-              <ArrowDownTrayIcon className="w-5 h-5 text-slate-600" />
+              <DownloadSimple weight="regular" className="w-5 h-5 text-slate-600" />
               <div>
                 <div className="text-sm font-medium text-slate-800">导出 Markdown</div>
                 <div className="text-xs text-slate-500">人类可读格式</div>
@@ -95,9 +91,9 @@ export default function ExportButton({
               className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3 border-t border-slate-100"
             >
               {copied ? (
-                <CheckIcon className="w-5 h-5 text-green-600" />
+                <Check weight="regular" className="w-5 h-5 text-green-600" />
               ) : (
-                <ClipboardDocumentIcon className="w-5 h-5 text-slate-600" />
+                <ClipboardText weight="regular" className="w-5 h-5 text-slate-600" />
               )}
               <div>
                 <div className="text-sm font-medium text-slate-800">

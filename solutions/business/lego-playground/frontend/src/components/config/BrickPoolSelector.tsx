@@ -22,7 +22,7 @@ export default function BrickPoolSelector() {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="text-xs font-medium text-gray-600">
+        <label className="text-xs font-medium text-zinc-500">
           Bricks {pool.length > 0 && <span className="text-blue-500">({pool.length})</span>}
         </label>
         <button onClick={useDefaults} className="text-[10px] text-blue-500 hover:underline">
@@ -37,7 +37,7 @@ export default function BrickPoolSelector() {
 
           return (
             <div key={type}>
-              <p className="text-[10px] text-gray-400 mb-0.5">{typeLabels[type]}</p>
+              <p className="text-[10px] text-zinc-400 mb-0.5">{typeLabels[type]}</p>
               <div className="flex flex-wrap gap-1">
                 {typeBricks.map((brick) => {
                   const selected = pool.includes(brick.bricklinkId);
@@ -49,10 +49,10 @@ export default function BrickPoolSelector() {
                       className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
                         selected
                           ? 'bg-blue-50 border-blue-300 text-blue-700'
-                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'
+                          : 'bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300'
                       }`}
                     >
-                      {brick.widthStuds}×{brick.heightStuds}
+                      {brick.widthStuds}x{brick.heightStuds}
                     </button>
                   );
                 })}
