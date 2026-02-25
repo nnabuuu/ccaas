@@ -213,12 +213,76 @@ code-simplifier 重点检查：
 3. **API contracts** (breaking changes?)
 4. **Security** (vulnerabilities, input validation)
 5. **Performance** (N+1 queries, indexes, caching)
+6. **CSS-only hiding** (overlays/panels using opacity/translate instead of conditional rendering)
 
 **code-simplifier**:
 1. **Unnecessary abstractions** (3 similar lines better than premature abstraction)
 2. **Unrequested features** (scope creep)
 3. **Over-engineering** (helper functions for one-time operations)
 4. **Complexity** (simpler implementation available?)
+
+---
+
+## 前端组件可见性规则 (2026-02 教训)
+
+### Background
+
+TutoringPanel 始终挂载在 DOM 中，仅通过 CSS 类隐藏。CSS 未及时应用时面板可见，且关闭按钮无效（状态死锁：false→false 不触发 re-render）。
+
+### Root Cause
+
+使用 CSS-only 隐藏替代条件渲染。组件始终挂载 = 始终可交互，CSS 只是视觉层。
+
+### Principle
+
+> **不需要的组件不应该存在于 DOM 中。**
+> CSS 是视觉层，不是逻辑层。
+
+### 选择正确的模式
+
+| 场景 | 模式 | 示例 |
+|------|------|------|
+| 无退场动画 | `{show && <Component />}` | 按钮、加载器、空状态 |
+| 需要退场动画 | `mounted` + `visible` 双状态 | 面板、模态框、抽屉 |
+| 小型装饰元素 | CSS 隐藏可接受 | Tooltip、badge |
+
+### 退场动画参考实现
+
+```tsx
+const [mounted, setMounted] = useState(open)
+const [visible, setVisible] = useState(open)
+
+useEffect(() => {
+  if (open) {
+    setMounted(true)
+    requestAnimationFrame(() => setVisible(true))
+  } else {
+    setVisible(false)
+    const timer = setTimeout(() => setMounted(false), 300) // match CSS duration
+    return () => clearTimeout(timer)
+  }
+}, [open])
+
+if (!mounted) return null
+
+return (
+  <div className={visible
+    ? 'opacity-100 pointer-events-auto transition-opacity duration-300'
+    : 'opacity-0 pointer-events-none transition-opacity duration-300'  // ← 退场期间阻止点击
+  }>
+    ...
+  </div>
+)
+```
+
+### Checklist
+
+```
+□ 组件隐藏时是否从 DOM 移除？（优先条件渲染）
+□ 如需退场动画，是否使用 mounted/visible 双状态？
+□ 退场动画期间是否添加 pointer-events-none？（防止动画中的点击穿透）
+□ absolute/fixed 定位的隐藏组件是否会在 CSS 失效时遮挡内容？
+```
 
 ---
 

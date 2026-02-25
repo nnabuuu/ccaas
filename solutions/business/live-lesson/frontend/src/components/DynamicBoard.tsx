@@ -18,30 +18,43 @@ interface BlackboardPlayerEl extends HTMLElement {
   pause(): void
   resume(): void
   reset(): void
+  flush(): void
   timeScale(s: number): void
+  snapshot(): string
 }
 
 interface DynamicBoardProps {
   actions: ChalkboardAction[]
   beatId: string | null
-  isActive: boolean
-  canContinue: boolean
   isLoading: boolean
-  onContinue: () => void
+  onStart: () => void
+  onAnimationChange?: (animating: boolean) => void
+  onSnapshot?: (svgHtml: string) => void
 }
 
-export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading, onContinue }: DynamicBoardProps) {
+export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationChange, onSnapshot }: DynamicBoardProps) {
   const playerRef = useRef<BlackboardPlayerEl | null>(null)
   const prevLenRef = useRef(0)
   const prevBeatIdRef = useRef<string | null>(null)
+  const onSnapshotRef = useRef(onSnapshot)
+  onSnapshotRef.current = onSnapshot
 
   // Track whether canvas animation is currently playing
   const [isAnimating, setIsAnimating] = useState(false)
 
+  // Report animation state changes to parent
+  useEffect(() => {
+    onAnimationChange?.(isAnimating)
+  }, [isAnimating, onAnimationChange])
+
   // Reset canvas when beat changes (beatId-driven, not actions.length-driven)
-  // Pre-emptively set isAnimating=false during the transition before new actions arrive
+  // Flush pending animations and capture snapshot of previous beat before resetting
   useEffect(() => {
     if (beatId !== null && beatId !== prevBeatIdRef.current) {
+      if (prevBeatIdRef.current !== null && playerRef.current && onSnapshotRef.current) {
+        playerRef.current.flush()
+        onSnapshotRef.current(playerRef.current.snapshot())
+      }
       playerRef.current?.reset()
       prevLenRef.current = 0
       prevBeatIdRef.current = beatId
@@ -49,18 +62,23 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
     }
   }, [beatId])
 
-  // When actions change (new beat's actions arrive), calculate total duration and auto-clear
+  // When actions change (new beat's actions arrive), calculate total duration and auto-clear.
+  // Only sum durations of actions before the last one — the last action's visual content
+  // renders instantly, and its duration only gates (nonexistent) subsequent actions.
   useEffect(() => {
     if (actions.length === 0) {
       setIsAnimating(false)
       return
     }
     setIsAnimating(true)
-    const totalMs = actions.reduce(
+    // Sum all durations except the last action's (its visual content renders instantly).
+    // For single-action arrays, use that action's own duration so we don't under-count.
+    const allButLast = actions.length > 1 ? actions.slice(0, -1) : actions
+    const totalMs = allButLast.reduce(
       (sum, a) => sum + ((a as { duration?: number }).duration ?? 0.5) * 1000,
       0,
     )
-    const timer = setTimeout(() => setIsAnimating(false), totalMs + 500)
+    const timer = setTimeout(() => setIsAnimating(false), totalMs + 100)
     return () => clearTimeout(timer)
   }, [actions])
 
@@ -77,10 +95,6 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
 
   // Show "开始课程" when manifest loaded but no beat started yet
   const showStartButton = !isLoading && beatId === null
-  // Show "继续 →" only when animation done + AI idle + has content + more beats available
-  const showContinueButton = !isAnimating && !isActive && beatId !== null && actions.length > 0 && canContinue
-  const showButton = showStartButton || showContinueButton
-  const buttonLabel = beatId === null ? '开始课程' : '继续 →'
 
   return (
     <div className="relative flex flex-col h-full">
@@ -103,33 +117,27 @@ export function DynamicBoard({ actions, beatId, isActive, canContinue, isLoading
               <div className="w-20 h-3 skeleton-shimmer rounded" />
               <div className="w-28 h-3 skeleton-shimmer rounded" />
             </div>
-            <p className="text-gray-600 text-xs mt-2">课程加载中...</p>
           </div>
         </div>
       )}
 
-      {/* Unified start / continue button */}
-      <div
-        className={[
-          'absolute bottom-5 left-1/2 -translate-x-1/2 transition-all duration-500',
-          showButton
-            ? 'opacity-100 translate-y-0 pointer-events-auto'
-            : 'opacity-0 translate-y-4 pointer-events-none',
-        ].join(' ')}
-      >
-        <button
-          onClick={onContinue}
-          className={[
-            'px-8 py-3 rounded-xl text-base font-bold',
-            'bg-primary text-background-dark',
-            'shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]',
-            'hover:bg-primary/90',
-            'active:scale-[0.97] transition-all duration-[200ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
-          ].join(' ')}
-        >
-          {buttonLabel}
-        </button>
-      </div>
+      {/* Start button — centered, unmounted when lesson has started */}
+      {showStartButton && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <button
+            onClick={onStart}
+            className={[
+              'px-8 py-3.5 rounded-xl text-base font-semibold',
+              'bg-accent text-white',
+              'shadow-lg shadow-accent/20',
+              'hover:bg-accent-muted',
+              'active:scale-[0.98] transition-all duration-200',
+            ].join(' ')}
+          >
+            开始课程
+          </button>
+        </div>
+      )}
     </div>
   )
 }
