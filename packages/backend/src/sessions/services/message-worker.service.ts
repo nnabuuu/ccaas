@@ -37,6 +37,9 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly concurrency = 5; // Max concurrent messages
   private readonly pollIntervalMs = 1000; // Poll every 1 second
   private isShuttingDown = false;
+  private lastStaleCheckAt = 0;
+  private readonly staleCheckIntervalMs = 60_000; // Check every 60s
+  private readonly runtimeProcessingTimeoutMs = 5 * 60_000; // 5 min runtime timeout
 
   constructor(
     private readonly queueService: MessageQueueService,
@@ -48,7 +51,12 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   /**
    * Start polling on module initialization
    */
-  onModuleInit() {
+  async onModuleInit() {
+    const resetCount = await this.queueService.resetStaleProcessingMessages();
+    if (resetCount > 0) {
+      this.logger.warn(`Reset ${resetCount} stale processing messages on startup`);
+    }
+
     this.logger.log(`Starting message worker (poll interval: ${this.pollIntervalMs}ms, concurrency: ${this.concurrency})`);
 
     this.pollTimer = setInterval(() => {
@@ -83,6 +91,20 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   private async pollAndProcess(): Promise<void> {
     if (this.isShuttingDown) {
       return;
+    }
+
+    // Periodic stale message sweep
+    const now = Date.now();
+    if (now - this.lastStaleCheckAt >= this.staleCheckIntervalMs) {
+      this.lastStaleCheckAt = now;
+      try {
+        const resetCount = await this.queueService.resetStaleProcessingMessages(this.runtimeProcessingTimeoutMs);
+        if (resetCount > 0) {
+          this.logger.warn(`Stale sweep: reset ${resetCount} processing messages (timeout: ${this.runtimeProcessingTimeoutMs}ms)`);
+        }
+      } catch (err: any) {
+        this.logger.error(`Stale sweep failed: ${err.message}`);
+      }
     }
 
     // Check if we have capacity
@@ -183,7 +205,14 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
 
       // Persist failure BEFORE stream teardown: a stream error must not leave
       // the queue item stuck in 'processing' state.
-      await this.queueService.markFailed(queueItem.id, error.message);
+      try {
+        await this.queueService.markFailed(queueItem.id, error.message);
+      } catch (markErr: any) {
+        this.logger.error(
+          `CRITICAL: Failed to mark message ${queueItem.id} as failed: ${markErr.message}. ` +
+          `Message may be stuck in processing state — will be recovered by stale message sweep.`,
+        );
+      }
 
       // Emit error to SSE and close turn stream (non-fatal)
       try {

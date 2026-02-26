@@ -61,6 +61,7 @@ describe('MessageWorkerService — processMessage', () => {
       dequeueForSession: jest.fn().mockResolvedValue(null),
       markCompleted: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined),
+      resetStaleProcessingMessages: jest.fn().mockResolvedValue(0),
       getQueueItem: jest.fn().mockResolvedValue(null),
     };
 
@@ -285,6 +286,28 @@ describe('MessageWorkerService — processMessage', () => {
     expect(queueService.markFailed).toHaveBeenCalledWith('queue-item-1', 'boom');
   });
 
+  // ── Double failure: markFailed also throws ────────────────────────────────
+
+  it('does not throw when both orchestration and markFailed fail (double failure)', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+    queueService.markFailed.mockRejectedValue(new Error('DB unavailable'));
+
+    // Should NOT throw — the error is caught and logged
+    await expect(process(makeQueueItem())).resolves.toBeUndefined();
+  });
+
+  it('still emits SSE error event even when markFailed throws', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+    queueService.markFailed.mockRejectedValue(new Error('DB unavailable'));
+
+    await process(makeQueueItem());
+
+    expect(streamRegistry.emit).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.objectContaining({ code: 'PROCESSING_ERROR', message: 'boom' }),
+    );
+  });
+
   // ── activeWorkers counter ───────────────────────────────────────────────────
 
   it('decrements activeWorkers in finally block even when orchestration throws', async () => {
@@ -343,6 +366,7 @@ describe('MessageWorkerService — pollAndProcess', () => {
       dequeueForSession: jest.fn().mockResolvedValue(null),
       markCompleted: jest.fn().mockResolvedValue(undefined),
       markFailed: jest.fn().mockResolvedValue(undefined),
+      resetStaleProcessingMessages: jest.fn().mockResolvedValue(0),
     };
 
     const orchestrationService = {
@@ -458,6 +482,37 @@ describe('MessageWorkerService — pollAndProcess', () => {
     // Only one slot was available so only one session should be dispatched
     expect((service as any).processMessage).toHaveBeenCalledTimes(1);
   });
+
+  // ── Stale message sweep ─────────────────────────────────────────────────────
+
+  it('runs stale sweep on first poll (lastStaleCheckAt is 0)', async () => {
+    await poll();
+
+    expect(queueService.resetStaleProcessingMessages).toHaveBeenCalledWith(
+      (service as any).runtimeProcessingTimeoutMs,
+    );
+  });
+
+  it('does not run stale sweep again before staleCheckIntervalMs elapses', async () => {
+    await poll(); // first call — triggers sweep
+    queueService.resetStaleProcessingMessages.mockClear();
+
+    await poll(); // second call immediately — should NOT trigger sweep
+
+    expect(queueService.resetStaleProcessingMessages).not.toHaveBeenCalled();
+  });
+
+  it('continues processing even when stale sweep throws', async () => {
+    queueService.resetStaleProcessingMessages.mockRejectedValue(new Error('DB error'));
+    queueService.getSessionsWithPendingMessages.mockResolvedValue(['s1']);
+    queueService.dequeueForSession.mockResolvedValueOnce(makeItem('q1', 's1'));
+    jest.spyOn(service as any, 'processMessage').mockResolvedValue(undefined);
+
+    await poll();
+
+    // Despite sweep failure, processing should continue
+    expect((service as any).processMessage).toHaveBeenCalledTimes(1);
+  });
 });
 
 // ── lifecycle ─────────────────────────────────────────────────────────────────
@@ -467,7 +522,10 @@ describe('MessageWorkerService — lifecycle', () => {
   let service: MessageWorkerService;
 
   beforeEach(async () => {
-    const queueService = { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]) };
+    const queueService = {
+      getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]),
+      resetStaleProcessingMessages: jest.fn().mockResolvedValue(0),
+    };
     const orchestrationService = { orchestrateMessage: jest.fn() };
     const sessionService = { getOrCreateSession: jest.fn(), closeSession: jest.fn() };
     const streamRegistry = { emit: jest.fn(), closeSession: jest.fn() };
@@ -489,18 +547,18 @@ describe('MessageWorkerService — lifecycle', () => {
     jest.restoreAllMocks();
   });
 
-  it('onModuleInit starts a poll interval at 1000 ms', () => {
+  it('onModuleInit starts a poll interval at 1000 ms', async () => {
     const spy = jest.spyOn(global, 'setInterval').mockReturnValue(999 as any);
 
-    service.onModuleInit();
+    await service.onModuleInit();
 
     expect(spy).toHaveBeenCalledWith(expect.any(Function), 1000);
     expect((service as any).pollTimer).toBe(999);
   });
 
-  it('onModuleDestroy clears the timer and sets isShuttingDown', () => {
+  it('onModuleDestroy clears the timer and sets isShuttingDown', async () => {
     jest.spyOn(global, 'setInterval').mockReturnValue(42 as any);
-    service.onModuleInit();
+    await service.onModuleInit();
 
     const clearSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
     service.onModuleDestroy();
@@ -522,7 +580,7 @@ describe('MessageWorkerService — getStatus', () => {
     const module = await Test.createTestingModule({
       providers: [
         MessageWorkerService,
-        { provide: MessageQueueService, useValue: { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]) } },
+        { provide: MessageQueueService, useValue: { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]), resetStaleProcessingMessages: jest.fn().mockResolvedValue(0) } },
         { provide: CompletionOrchestrationService, useValue: {} },
         { provide: SessionService, useValue: {} },
         { provide: StreamRegistryService, useValue: {} },
