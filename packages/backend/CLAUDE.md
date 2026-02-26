@@ -164,7 +164,7 @@ Core relay functionality. Manages WebSocket connections and AgentEngine process 
 - `get_stats` - Get server statistics
 
 **REST Endpoints (ChatController):**
-- `GET /api/v1/chat/health` - Health check
+- `GET /api/v1/health` - Health check
 - `GET /api/v1/chat/status` - Session stats
 
 **Background Task Monitoring (SessionService):**
@@ -604,7 +604,7 @@ export type FrontendEventType =
 npm run start:dev
 
 # Health check
-curl http://localhost:3001/api/v1/chat/health
+curl http://localhost:3001/api/v1/health
 
 # Use test frontend
 open test-frontend.html
