@@ -201,6 +201,37 @@ SKILL.md files are the authoritative source for skill usage.
   }
 
   /**
+   * Generate MCP tool registry prompt for system prompt injection.
+   *
+   * Maps short tool names to their full `select:mcp__<slug>__<tool>` queries,
+   * so the AI agent can load tools with a single ToolSearch call instead of
+   * doing a keyword search first.
+   *
+   * @param entries - Array of { toolName, mcpPrefixedName } pairs
+   * @returns Formatted markdown prompt, or empty string if no entries
+   */
+  generateToolRegistryPrompt(
+    entries: Array<{ toolName: string; mcpPrefixedName: string }>,
+  ): string {
+    if (entries.length === 0) return '';
+
+    const rows = entries
+      .map((e) => `| ${e.toolName} | ToolSearch("select:${e.mcpPrefixedName}") |`)
+      .join('\n');
+
+    return `## MCP Tool Registry
+
+Before first use, load each tool with ToolSearch using the exact select: query:
+
+| Tool | Load command |
+|------|-------------|
+${rows}
+
+Load all needed tools proactively at session start to avoid latency on first use.
+After loading, call tools directly — no further ToolSearch needed.`;
+  }
+
+  /**
    * Generate system prompt for session from skill slugs
    *
    * Convenience method that loads skills and generates prompt in one call.

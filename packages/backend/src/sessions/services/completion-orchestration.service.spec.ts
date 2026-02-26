@@ -17,6 +17,7 @@ import { SkillsService } from '../../skills/skills.service';
 import { ConversationMetadataService } from './conversation-metadata.service';
 import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
+import { McpPoolService } from '../../mcp/mcp-pool.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CompletionOrchestrationService - NIE-67: session spawn decision', () => {
@@ -87,11 +88,16 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
     const mockSkillManagementService = {
       loadEnabledSkills: jest.fn().mockResolvedValue([]),
       generateInlineSkillPrompt: jest.fn().mockResolvedValue(undefined),
+      generateToolRegistryPrompt: jest.fn().mockReturnValue(''),
     };
 
     const mockTurnsService = {
       createNextTurn: jest.fn().mockResolvedValue({ id: 'turn-1', turnNumber: 1 }),
       completeTurnWithRetry: jest.fn().mockResolvedValue({ turnNumber: 1, totalTokens: 0, durationMs: 0 }),
+    };
+
+    const mockMcpPoolService = {
+      findOne: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -107,6 +113,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         { provide: ConversationMetadataService, useValue: mockConversationMetadataService },
         { provide: SkillManagementService, useValue: mockSkillManagementService },
         { provide: TurnsService, useValue: mockTurnsService },
+        { provide: McpPoolService, useValue: mockMcpPoolService },
       ],
     }).compile();
 

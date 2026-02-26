@@ -38,6 +38,8 @@ export interface McpServerConfig {
   env?: Record<string, string>;
   /** For REST adapter type */
   restAdapter?: RestAdapterConfig;
+  /** Declared tool names for tool registry prompt generation */
+  tools?: string[];
   /** Tools that should trigger frontend events when they complete */
   toolEventTriggers?: ToolEventTrigger[];
 }

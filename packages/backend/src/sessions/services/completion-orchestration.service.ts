@@ -24,6 +24,7 @@ import { SkillsService } from '../../skills/skills.service';
 import { ConversationMetadataService } from './conversation-metadata.service';
 import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
+import { McpPoolService } from '../../mcp/mcp-pool.service';
 import type { FrontendEvent, ManagedSession } from '../../common/interfaces';
 
 /**
@@ -111,6 +112,7 @@ export class CompletionOrchestrationService {
     private readonly conversationMetadataService: ConversationMetadataService,
     private readonly skillManagementService: SkillManagementService,
     private readonly turnsService: TurnsService,
+    private readonly mcpPoolService: McpPoolService,
   ) {}
 
   /**
@@ -270,6 +272,49 @@ export class CompletionOrchestrationService {
       } catch (error) {
         this.logger.warn(`Failed to generate inline skill prompt: ${error}`);
         // Fall back to protocol-style systemPrompt already set
+      }
+    }
+
+    // Step 4c: Build MCP tool registry from DB for system prompt injection
+    if (session.mcpServers && Object.keys(session.mcpServers).length > 0) {
+      try {
+        const registryEntries: Array<{ toolName: string; mcpPrefixedName: string }> = [];
+        const serverSlugs = Object.keys(session.mcpServers);
+
+        // Parallel DB lookups to avoid N+1
+        const mcpServers = await Promise.all(
+          serverSlugs.map(slug => this.mcpPoolService.findOne(resolvedTenantId, slug)),
+        );
+
+        for (let i = 0; i < serverSlugs.length; i++) {
+          const mcpServer = mcpServers[i];
+          if (!mcpServer) continue;
+
+          const serverSlug = serverSlugs[i];
+
+          // Prefer explicit tools list, fall back to toolEventTriggers
+          const toolNames = mcpServer.config.tools
+            ?? mcpServer.config.toolEventTriggers?.map(t => t.toolName)
+            ?? [];
+
+          for (const toolName of [...new Set(toolNames)]) {
+            registryEntries.push({
+              toolName,
+              mcpPrefixedName: `mcp__${serverSlug}__${toolName}`,
+            });
+          }
+        }
+
+        if (registryEntries.length > 0) {
+          const registryPrompt = this.skillManagementService.generateToolRegistryPrompt(registryEntries);
+          systemPrompt = systemPrompt
+            ? `${systemPrompt}\n\n${registryPrompt}`
+            : registryPrompt;
+          this.logger.log(`Injected tool registry (${registryEntries.length} tools) for session ${sessionId}`);
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to build tool registry: ${error}`);
+        // Continue without registry - non-fatal
       }
     }
 

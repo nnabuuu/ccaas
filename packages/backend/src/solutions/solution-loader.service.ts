@@ -568,6 +568,7 @@ export class SolutionLoaderService {
           command: serverDef.command,
           args: serverDef.args,
           env: serverDef.env,
+          tools: serverDef.tools,
           toolEventTriggers: serverDef.toolEventTriggers,
         },
       });
@@ -590,6 +591,7 @@ export class SolutionLoaderService {
         command: serverDef.command,
         args: serverDef.args,
         env: serverDef.env,
+        tools: serverDef.tools,
         toolEventTriggers: serverDef.toolEventTriggers,
       },
     };

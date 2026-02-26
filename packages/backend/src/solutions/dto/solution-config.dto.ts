@@ -61,6 +61,8 @@ export const McpServerDefinitionSchema = z.object({
   description: z.string().optional(),
   type: z.enum(['stdio', 'rest-adapter']).default('stdio'),
   env: z.record(z.string()).optional(),
+  /** Explicit tool name list for registry prompt. Falls back to toolEventTriggers. */
+  tools: z.array(z.string().min(1)).optional(),
   toolEventTriggers: z.array(ToolEventTriggerSchema).optional(),
 });
 
