@@ -48,7 +48,10 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
  * @Get('skills')
  * listSkills() { ... }
  */
-export const OptionalAuth = () => SetMetadata(IS_OPTIONAL_AUTH_KEY, true);
+export const OptionalAuth = () => applyDecorators(
+  UseGuards(ApiKeyGuard),
+  SetMetadata(IS_OPTIONAL_AUTH_KEY, true),
+);
 
 /**
  * Require specific scopes for accessing the route.

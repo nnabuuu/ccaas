@@ -229,15 +229,27 @@ Request
     Controller
 ```
 
+**装饰器与 Guard 触发规则：**
+
+| 装饰器 | ApiKeyGuard | 无 Key 行为 | 无效 Key 行为 |
+|--------|-------------|------------|--------------|
+| `@Auth()` | ✅ 执行 | ❌ 401 拒绝 | ❌ 401 拒绝 |
+| `@OptionalAuth()` | ✅ 执行 | ✅ 匿名通过（`AUTH_ALLOW_ANONYMOUS=true` 时）或 null context（`false` 时），请求继续 | ❌ 401 拒绝 |
+| `@Public()` | ❌ 跳过 | ✅ 直接通过 | ✅ 直接通过（不验证） |
+
+> **注意**：`@OptionalAuth()` 和 `@Auth()` 都会注册 `ApiKeyGuard`，区别在于无 Key 时的回退行为。`@OptionalAuth()` 会尝试创建匿名上下文而非拒绝请求，但如果提供了无效/过期的 Key，仍然返回 401。
+
 **Guard 职责：**
 
 1. **ApiKeyGuard**（`@UseGuards(ApiKeyGuard)`）
-   - 从 `X-Api-Key` header 获取 API Key
+   - 由 `@Auth()` 和 `@OptionalAuth()` 两种装饰器触发
+   - 从 `X-Api-Key` 或 `Authorization` header 获取 API Key
    - 验证 Key 有效性（SHA-256 匹配）
    - 检查 Key 状态（active, expired, revoked）
    - 检查 Rate Limit（RPM, RPD）
    - 加载 API Key 关联的 User（如果有 userId）
    - 设置 `RequestContext`
+   - **可选认证回退**：当路由标记 `@OptionalAuth()` 且未提供 Key 时，尝试创建匿名上下文（`AUTH_ALLOW_ANONYMOUS=true`）或设置 null context（`false`），请求不被拒绝；但如果提供了无效/过期 Key，仍然返回 401
 
 2. **TenantGuard**（`@UseGuards(TenantGuard)`）
    - 从 `X-Tenant-Id` header 或 `context.tenantId` 获取 Tenant ID

@@ -57,6 +57,18 @@
 - 管理会话状态和上下文
 - 获取消息历史和文件
 
+### MessagesController - 消息与会话数据查询
+
+**路径**: `/api/v1/sessions/:sessionId/*` 和 `/api/v1/messages/*`
+**职责**: 会话消息、文件、工具事件、Token 用量等只读查询
+**特点**: 🔓🔐 可选认证（提供 API Key 时验证，未提供时允许匿名访问）
+
+提供会话数据的多维度查询，包括：
+- 消息历史和文件列表
+- 工具调用事件和统计
+- 思考块、Token 用量、进程事件
+- 完整会话跟踪（full-trace）
+
 ---
 
 ## 监控端点（ChatController）
@@ -242,6 +254,117 @@
 | `workerCapacity` | 最大并发 worker 数（固定为 5） |
 
 **使用场景**：当 `processing >= workerCapacity` 且 `pending > 0` 时，队列已饱和。客户端可据此延迟或分散新消息的提交时间。
+
+## 消息与会话数据（MessagesController）
+
+会话消息和扩展数据的只读查询端点。用于获取消息历史、文件、工具调用统计、Token 用量等会话数据。
+
+**认证**: 🔓🔐 可选认证（提供 API Key 时验证，未提供时允许匿名访问）
+
+> **说明**：当环境变量 `AUTH_ALLOW_ANONYMOUS=true`（默认值）时，未提供 API Key 的请求被允许。提供了有效 API Key 时，认证上下文会附加到请求。提供了无效 API Key 时，返回 401。
+
+### GET /sessions/:sessionId/messages
+
+获取会话的消息列表。
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `limit` | number | 否 | 返回条数限制 |
+| `offset` | number | 否 | 跳过条数 |
+| `includeToolEvents` | boolean | 否 | 是否包含工具调用事件 |
+
+**响应**：
+
+```json
+{
+  "messages": [
+    {
+      "id": "msg-uuid",
+      "sessionId": "session-uuid",
+      "tenantId": "tenant-uuid",
+      "role": "user",
+      "content": "你好",
+      "metadata": {},
+      "messageIndex": 0,
+      "createdAt": "2025-01-15T10:00:00Z",
+      "files": [],
+      "toolEvents": []
+    }
+  ]
+}
+```
+
+### GET /messages/:messageId
+
+根据消息 ID 获取单条消息详情。
+
+**响应**：返回 `MessageResponseDto`（结构同上述 `messages` 数组元素）。消息不存在时返回 404。
+
+### GET /sessions/:sessionId/files
+
+获取会话中所有文件资源（包含 Agent 生成和用户上传的文件）。
+
+**响应**：
+
+```json
+{
+  "files": [
+    {
+      "id": "file-uuid",
+      "filename": "output.json",
+      "mimeType": "application/json",
+      "size": 1024,
+      "messageId": "msg-uuid",
+      "createdAt": "2025-01-15T10:00:00Z",
+      "downloadUrl": "/api/v1/files/file-uuid/download"
+    }
+  ]
+}
+```
+
+### GET /messages/:messageId/files
+
+获取指定消息关联的文件列表。消息不存在时返回 404。
+
+### GET /sessions/:sessionId/full-trace
+
+获取会话的完整数据，用于重建对话或深度分析。并行获取所有维度数据，适用于会话导出、数据分析、问题诊断、成本核算等场景。
+
+**响应**：
+
+```json
+{
+  "context": { "...会话上下文" },
+  "messages": [ "...消息列表（含工具事件）" ],
+  "thinkingBlocks": [ "...思考块" ],
+  "tokenUsage": { "...Token 用量摘要" },
+  "processEvents": [ "...进程生命周期事件" ],
+  "apiErrors": [ "...API 错误记录" ],
+  "userContext": [ "...用户上下文事件" ],
+  "toolStats": { "...工具调用统计" }
+}
+```
+
+### 扩展数据查询端点
+
+以下端点提供会话的各维度细粒度数据：
+
+| 端点 | 说明 |
+|------|------|
+| `GET /messages` | 按条件查询消息（支持 `sessionId`、`tenantId`、`limit`、`offset`） |
+| `GET /messages/:messageId/tool-events` | 获取消息的工具调用事件 |
+| `GET /sessions/:sessionId/tool-stats` | 获取工具调用统计（总数、成功/失败、平均耗时） |
+| `GET /sessions/:sessionId/context` | 获取会话上下文（系统 Prompt、Skill 配置、MCP 工具列表等） |
+| `GET /sessions/:sessionId/process-events` | 获取 AgentEngine 进程生命周期事件及统计 |
+| `GET /sessions/:sessionId/api-errors` | 获取 API 错误记录及统计 |
+| `GET /messages/:messageId/thinking` | 获取消息的思考块 |
+| `GET /sessions/:sessionId/thinking` | 获取会话的思考块及统计 |
+| `GET /sessions/:sessionId/token-usage` | 获取 Token 用量明细和摘要（含模型维度拆分） |
+| `GET /sessions/:sessionId/user-context` | 获取用户上下文事件 |
+
+---
 
 ## Skill 管理
 

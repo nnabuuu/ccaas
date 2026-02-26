@@ -120,6 +120,8 @@ const connection = useAgentConnection({
 GET /api/v1/sessions/{conversationId}/messages?limit=100
 ```
 
+**Authentication**: Optional (`@OptionalAuth`) — API Key is validated if provided, anonymous access is allowed if not. The SDK does not send an API Key for this endpoint, so no changes are needed in your frontend code.
+
 Returns messages in chronological order. The `limit` parameter caps the number of messages returned (default: 100).
 
 ### Conversation Metadata

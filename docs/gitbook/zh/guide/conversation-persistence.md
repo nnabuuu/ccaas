@@ -120,6 +120,8 @@ const connection = useAgentConnection({
 GET /api/v1/sessions/{conversationId}/messages?limit=100
 ```
 
+**认证**: 可选认证（`@OptionalAuth`）— 提供 API Key 时会验证，未提供时允许匿名访问。SDK 调用此端点时不发送 API Key，前端代码无需任何改动。
+
 按时间顺序返回消息。`limit` 参数限制返回的消息数量（默认：100）。
 
 ### 会话元数据

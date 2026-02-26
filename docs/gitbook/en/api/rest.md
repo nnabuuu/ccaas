@@ -57,6 +57,17 @@ Standard entry point for all business logic, including:
 - Managing session state and context
 - Retrieving message history and files
 
+### MessagesController - Messages & Session Data
+
+**Path**: `/api/v1` (routes under `/sessions/:sessionId/*` and `/messages/*`)
+**Responsibility**: Read-only access to persisted messages, files, and session diagnostics
+**Features**: 🔓🔐 Optional Authentication (API Key validated if provided, anonymous access allowed if not)
+
+Provides data retrieval for:
+- Message history and file attachments
+- Tool events, thinking blocks, token usage
+- Full conversation trace export
+
 ---
 
 ## Monitoring Endpoints (ChatController)
@@ -242,6 +253,116 @@ Get global queue statistics.
 | `workerCapacity` | Maximum concurrent workers (fixed at 5) |
 
 **Use case**: If `processing >= workerCapacity` and `pending > 0`, the queue is saturated. Clients can use this to delay or stagger new message submissions.
+
+## Messages & Session Data (MessagesController)
+
+Read-only endpoints for retrieving persisted messages, files, and session diagnostics. Useful for building message history UIs, exporting conversations, and debugging session behavior.
+
+**Path**: `/api/v1`
+**Authentication**: 🔓🔐 Optional Authentication (API Key validated if provided, anonymous access allowed if not)
+
+### GET /sessions/:sessionId/messages
+
+Get all messages for a session.
+
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `limit` | number | No | Number of messages to return |
+| `offset` | number | No | Number of messages to skip |
+| `includeToolEvents` | boolean | No | Include tool call events with each message |
+
+**Response**:
+
+```json
+{
+  "messages": [
+    {
+      "id": "msg-uuid",
+      "sessionId": "session-uuid",
+      "tenantId": "tenant-uuid",
+      "role": "user",
+      "content": "Hello",
+      "metadata": {},
+      "messageIndex": 0,
+      "createdAt": "2025-01-15T10:00:00Z",
+      "files": [],
+      "toolEvents": []
+    }
+  ]
+}
+```
+
+### GET /messages/:messageId
+
+Get a single message by ID.
+
+**Response**: Single message object (same shape as above). Returns `404` if not found.
+
+### GET /sessions/:sessionId/files
+
+Get all files associated with a session (both agent-generated and user-uploaded).
+
+**Response**:
+
+```json
+{
+  "files": [
+    {
+      "id": "file-uuid",
+      "filename": "output.json",
+      "mimeType": "application/json",
+      "size": 1234,
+      "messageId": "msg-uuid",
+      "createdAt": "2025-01-15T10:00:00Z",
+      "downloadUrl": "/api/v1/files/file-uuid/download"
+    }
+  ]
+}
+```
+
+### GET /messages/:messageId/files
+
+Get files attached to a specific message. Returns `404` if the message does not exist.
+
+### GET /sessions/:sessionId/full-trace
+
+Get complete session data for conversation reconstruction or deep analysis. Fetches all data in parallel and returns a combined object.
+
+**Response**:
+
+```json
+{
+  "context": { "...conversation context..." },
+  "messages": [ "...all messages with tool events..." ],
+  "thinkingBlocks": [ "...thinking/reasoning blocks..." ],
+  "tokenUsage": { "...cost and token summary..." },
+  "processEvents": [ "...AgentEngine process lifecycle..." ],
+  "apiErrors": [ "...API error records..." ],
+  "userContext": [ "...user context events..." ],
+  "toolStats": { "totalEvents": 12, "successCount": 11, "errorCount": 1, "..." }
+}
+```
+
+**Use cases**: Session export/backup, data analysis, debugging, cost accounting.
+
+### Extended Data Capture Endpoints
+
+The following endpoints provide granular access to individual data categories. Each corresponds to one section of the `full-trace` response above.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /messages` | Query messages with filters (via query params) |
+| `GET /messages/:messageId/tool-events` | Tool call events for a message |
+| `GET /sessions/:sessionId/tool-stats` | Tool event statistics (counts, success rate, avg duration) |
+| `GET /sessions/:sessionId/context` | Conversation context (system prompt hash, MCP tools, model) |
+| `GET /sessions/:sessionId/process-events` | AgentEngine process lifecycle events with stats |
+| `GET /sessions/:sessionId/api-errors` | API errors with stats (rate limits, retries) |
+| `GET /messages/:messageId/thinking` | Thinking blocks for a single message |
+| `GET /sessions/:sessionId/thinking` | All thinking blocks for a session with stats |
+| `GET /sessions/:sessionId/token-usage` | Per-request token usage with cost summary |
+| `GET /sessions/:sessionId/user-context` | User context events (page URL, viewport, etc.) |
 
 ## Skill Management
 
