@@ -7,18 +7,17 @@ import { MessageQueue, MessageQueuePayload, MessageQueueStatus } from '../entiti
  * Message Queue Service
  *
  * Manages database-backed FIFO message queue per session.
- * Prevents race conditions via row-level pessimistic locking.
  *
  * Key Methods:
  * - enqueue() - Add message to queue
- * - dequeueForSession() - Get next message with locking
+ * - dequeueForSession() - Get next message for processing
  * - markCompleted() - Mark success
  * - markFailed() - Mark failure and schedule retry
  *
  * Concurrency Control:
  * - Only one message per session can be in 'processing' status
  * - dequeueForSession() checks processing count before dequeue
- * - Pessimistic write lock prevents concurrent dequeue
+ * - SQLite file-level locking prevents concurrent dequeue
  */
 @Injectable()
 export class MessageQueueService {
@@ -196,12 +195,15 @@ export class MessageQueueService {
   }
 
   /**
-   * Reset stale processing messages on startup
+   * Reset stale processing messages (zombie cleanup)
    *
-   * After an unclean shutdown (e.g., kill -9), messages may be stuck in
-   * 'processing' status with no worker handling them. This method finds
-   * such zombie messages and feeds them back through markFailed(), which
-   * will either retry (if retryCount < maxRetries) or mark as permanently failed.
+   * Finds messages stuck in 'processing' status beyond the timeout threshold
+   * and feeds them back through markFailed(), which will either retry
+   * (if retryCount < maxRetries) or mark as permanently failed.
+   *
+   * Called from two contexts:
+   * - Startup: cleans up after unclean shutdown (no excludeIds, default reason)
+   * - Runtime sweep: periodic check excludes actively-processing messages
    *
    * @param processingTimeoutMs - Messages processing longer than this are considered stale (default: 60s)
    * @param excludeIds - Message IDs to exclude (e.g., messages actively being processed by a worker)
