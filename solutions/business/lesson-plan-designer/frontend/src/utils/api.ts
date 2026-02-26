@@ -39,24 +39,7 @@ export interface CcaasMessage {
   toolEvents?: CcaasToolEvent[]
 }
 
-// Solution config from backend
-export interface SolutionConfig {
-  mcpServers: Record<string, {
-    command: string
-    args: string[]
-    description?: string
-  }>
-  skillPath: string | null
-  skillSlug: string | null
-}
-
 export const api = {
-  // Get solution config (mcpServers, skillPath for CCAAS)
-  async getSolutionConfig(): Promise<SolutionConfig> {
-    const response = await fetch(`${API_BASE}/config`)
-    return handleResponse<SolutionConfig>(response)
-  },
-
   // List all lesson plans
   async listLessonPlans(): Promise<LessonPlan[]> {
     const response = await fetch(`${API_BASE}/lesson-plans`)

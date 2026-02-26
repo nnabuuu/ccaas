@@ -111,8 +111,6 @@
 | `clientId` | string | 是 | 客户端标识 |
 | `message` | string | 是 | 用户消息 |
 | `tenantId` | string | 是 | 租户 ID |
-| `mcpServers` | object | 否 | MCP Server 配置 |
-| `skillPath` | string | 否 | Skill 文件路径 |
 | `enabledSkillSlugs` | string[] | 否 | 启用的 Skill slug 列表 |
 | `attachments` | object[] | 否 | 附件列表 |
 
@@ -753,7 +751,6 @@
 | `message` | string | 是 | 发送给 Claude 的 Prompt |
 | `scheduleType` | string | 是 | `cron`、`interval` 或 `once` |
 | `scheduleValue` | string | 是 | Cron 表达式、毫秒间隔或 ISO 日期 |
-| `mcpServers` | object | 否 | MCP Server 配置 |
 | `enabledSkillSlugs` | string[] | 否 | 启用的 Skill slug 列表 |
 | `maxConcurrent` | number | 否 | 最大并发执行数（默认：1） |
 | `maxRetries` | number | 否 | 失败重试次数（默认：0） |

@@ -270,7 +270,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
 
       // Enqueue — worker handles session creation, orchestration, and SSE teardown.
       // The SSE connection is kept alive because streamRegistry.subscribe() holds
-      // the response open; streamRegistry.closeSession() is called by the worker.
+      // the response open; the worker calls streamRegistry.closeTurn() for this subscriber.
       const clientId = makeSseClientId(sessionId);
       await this.messageQueueService.enqueue(
         sessionId,
@@ -279,12 +279,11 @@ Response is \`text/event-stream\`, closed when Turn completes.
         {
           message: data.message,
           context: data.context,
-          mcpServers: data.mcpServers,
           enabledSkillSlugs,
-          skillPath: data.skillPath,
           systemPrompt,
           templateName: data.templateName,
           autoClose: data.autoClose,
+          subscriberId,
         },
       );
       // Return — SSE stays open until the worker calls streamRegistry.closeSession()

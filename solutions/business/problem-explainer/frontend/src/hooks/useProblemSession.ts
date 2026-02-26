@@ -13,17 +13,6 @@ const generateId = (): string => {
 // Use relative URL - proxied by Vite to CCAAS backend
 const SOCKET_URL = '/';
 
-// Solution config type (from backend /api/config endpoint)
-interface SolutionConfig {
-  mcpServers: Record<string, {
-    command: string;
-    args: string[];
-    description?: string;
-  }>;
-  skillPath: string | null;
-  skillSlug: string | null;
-}
-
 interface UseProblemSessionOptions {
   sessionId?: string;
   onOutputUpdate?: (update: OutputUpdate) => void;
@@ -53,24 +42,6 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
   const socketRef = useRef<Socket | null>(null);
   const contentBlocksRef = useRef<ContentBlock[]>([]);
   const clientIdRef = useRef<string | null>(null);
-  const solutionConfigRef = useRef<SolutionConfig | null>(null);
-
-  // Load solution config on mount
-  useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const response = await fetch('/api/config');
-        if (response.ok) {
-          const config = await response.json();
-          solutionConfigRef.current = config;
-          console.log('Loaded solution config:', config);
-        }
-      } catch (err) {
-        console.warn('Failed to load solution config:', err);
-      }
-    };
-    loadConfig();
-  }, []);
 
   // Connect to Socket.io immediately (session is created on first completion request)
   useEffect(() => {
@@ -346,22 +317,13 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
         tenantId,
       };
 
+      // Use session template for server-side resolution of mcpServers/skillPath
+      chatPayload.templateName = 'problem-analysis';
+
       // Include enabled skill slugs (for tenant skill filtering)
       if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
         chatPayload.enabledSkillSlugs = enabledSkillSlugs;
         console.log('Sending with enabled skills:', enabledSkillSlugs);
-      }
-
-      // Include MCP servers from solution config (if available)
-      if (solutionConfigRef.current?.mcpServers) {
-        chatPayload.mcpServers = solutionConfigRef.current.mcpServers;
-        console.log('Sending with MCP servers:', Object.keys(solutionConfigRef.current.mcpServers));
-      }
-
-      // Include skillPath from solution config (required for CLAUDE.md creation)
-      if (solutionConfigRef.current?.skillPath) {
-        chatPayload.skillPath = solutionConfigRef.current.skillPath;
-        console.log('Sending with skill path:', solutionConfigRef.current.skillPath);
       }
 
       // Include attachments if provided

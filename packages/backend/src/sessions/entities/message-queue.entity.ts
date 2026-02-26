@@ -12,16 +12,16 @@ export type MessageQueueStatus = 'pending' | 'processing' | 'completed' | 'faile
 export interface MessageQueuePayload {
   message: string;
   context?: Record<string, unknown>;
-  mcpServers?: Record<string, any>;
   enabledSkillSlugs?: string[];
   attachmentPaths?: string[];
-  skillPath?: string;
   /** Destroy session from pool after processing (one-shot pattern) */
   autoClose?: boolean;
   /** Pre-computed system prompt (skills + appendSystemPrompt, resolved at enqueue time) */
   systemPrompt?: string;
   /** Named session template to apply */
   templateName?: string;
+  /** SSE subscriber ID for turn-scoped stream closure */
+  subscriberId?: string;
 }
 
 /**

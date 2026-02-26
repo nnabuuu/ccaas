@@ -7,8 +7,6 @@ import type {
   ContentBlock,
   ToolActivity,
   OutputUpdate,
-  SolutionConfig,
-  McpServerConfig,
 } from '../types'
 import type {
   TextDeltaEvent,
@@ -19,11 +17,7 @@ import type {
 } from '@kedge-agentic/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
-import {
-  resolveSessionTemplate,
-  mergeTemplateParams,
-  type ResolvedTemplateParams,
-} from '../utils/templateResolver'
+import type { ResolvedTemplateParams } from '../utils/templateResolver'
 import { generateId } from '../utils/generateId'
 import { useSseStream } from './useSseStream'
 
@@ -37,11 +31,8 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const {
     connection,
     tenantId,
-    mcpServers,
-    skillPath,
     enabledSkillSlugs,
     onOutputUpdate,
-    solutionConfigEndpoint,
     context,
     sessionTemplate,
     transport = 'sse',
@@ -65,9 +56,6 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const contentBlocksRef = useRef<ContentBlock[]>([])
   const currentMessageRef = useRef<Message | null>(null)
   const latestTokenUsageRef = useRef<import('@kedge-agentic/common').TokenUsage | null>(null)
-
-  // Solution config (loaded from endpoint if provided)
-  const solutionConfigRef = useRef<SolutionConfig | null>(null)
 
   // Stable ref for onOutputUpdate callback
   const onOutputUpdateRef = useRef(onOutputUpdate)
@@ -202,23 +190,6 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load solution config on mount
-  useEffect(() => {
-    if (!solutionConfigEndpoint) return
-
-    const loadConfig = async () => {
-      try {
-        const response = await fetch(solutionConfigEndpoint)
-        if (response.ok) {
-          solutionConfigRef.current = await response.json()
-        }
-      } catch {
-        // Non-critical, continue without config
-      }
-    }
-    loadConfig()
-  }, [solutionConfigEndpoint])
-
   // Register socket event handlers (Socket.IO transport only)
   useEffect(() => {
     if (transport === 'sse') return // SSE mode: skip socket handlers
@@ -348,9 +319,10 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
 
   // Send message via REST API (Socket.IO) or SSE streaming
   const sendMessage = useCallback(async (content: string, sendOptions?: SendMessageOptions) => {
-    // SSE mode: only requires sessionId and serverUrl (no socket/clientId needed)
+    // SSE mode: only requires sessionId and serverUrl (no socket/clientId needed).
+    // No isProcessing guard — the backend message queue handles concurrency.
     if (transport === 'sse') {
-      if (!connection.sessionId || isProcessing) return
+      if (!connection.sessionId) return
     } else {
       if (!connection.connected || !connection.clientId || isProcessing) return
     }
@@ -390,55 +362,12 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     setIsProcessing(true)
 
     // ========================================================================
-    // Session Template Resolution (once, outside retry loop)
+    // Resolve params (template resolution happens server-side)
     // ========================================================================
-    // If sessionTemplate is provided, resolve it and merge with explicit params
-    let resolvedParams: ResolvedTemplateParams = {}
+    const resolvedParams: ResolvedTemplateParams = {}
 
-    if (sessionTemplate && solutionConfigRef.current?.sessionTemplates) {
-      try {
-        const template = resolveSessionTemplate(
-          sessionTemplate,
-          solutionConfigRef.current.sessionTemplates
-        )
-
-        resolvedParams = mergeTemplateParams(
-          template,
-          {
-            enabledSkillSlugs,
-            mcpServers,
-            appendSystemPrompt: undefined, // Not supported in hook options yet
-            skillPath,
-          },
-          {
-            mcpServers: solutionConfigRef.current?.mcpServers,
-            skillPath: solutionConfigRef.current?.skillPath,
-          }
-        )
-      } catch (error) {
-        // Template resolution error - throw immediately to fail fast
-        setIsProcessing(false)
-        throw new Error(
-          `Session template resolution failed: ${error instanceof Error ? error.message : String(error)}`
-        )
-      }
-    } else {
-      // No template - use explicit params or solution config defaults
-      // MCP servers from options or solution config
-      const servers = mcpServers || solutionConfigRef.current?.mcpServers
-      if (servers) {
-        resolvedParams.mcpServers = servers
-      }
-
-      // Skill path from options or solution config
-      const path = skillPath !== undefined ? skillPath : solutionConfigRef.current?.skillPath
-      if (path) {
-        resolvedParams.skillPath = path
-      }
-
-      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-        resolvedParams.enabledSkillSlugs = enabledSkillSlugs
-      }
+    if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+      resolvedParams.enabledSkillSlugs = enabledSkillSlugs
     }
 
     // Build shared payload (without clientId for SSE)
@@ -449,11 +378,8 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       }
 
       // Always send sessionTemplate to backend for server-side resolution
-      // (client-side resolution may not have solutionConfig available)
       if (sessionTemplate) payload.templateName = sessionTemplate
 
-      if (resolvedParams.mcpServers) payload.mcpServers = resolvedParams.mcpServers
-      if (resolvedParams.skillPath) payload.skillPath = resolvedParams.skillPath
       if (resolvedParams.enabledSkillSlugs?.length) payload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
       if (resolvedParams.appendSystemPrompt) payload.appendSystemPrompt = resolvedParams.appendSystemPrompt
       if (sendOptions?.attachments?.length) payload.attachments = sendOptions.attachments
@@ -516,7 +442,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         throw err
       }
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, mcpServers, skillPath, enabledSkillSlugs, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkillSlugs, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
 
   const clearMessages = useCallback(() => {
     setMessages([])

@@ -46,7 +46,6 @@ Accept: text/event-stream
 | `enabledSkillSlugs` | string[] | ❌ | Skill slugs to enable; omit to auto-load all enabled skills for the tenant |
 | `appendSystemPrompt` | string | ❌ | Additional instructions appended to the system prompt |
 | `templateName` | string | ❌ | Session template to apply (configured in the admin panel) |
-| `mcpServers` | object | ❌ | Additional MCP Server configuration for this request |
 | `context` | object | ❌ | Page context (current route, form data, etc.) |
 | `attachments` | object[] | ❌ | Attachments (images or documents; paths relative to the session workspace) |
 | `afterSeq` | number | ❌ | Reconnect: replay events after this sequence number |

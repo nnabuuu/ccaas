@@ -13,16 +13,6 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * MCP Server configuration passed from solution backends
- */
-export interface McpServerConfig {
-  command: string;
-  args: string[];
-  description?: string;
-  env?: Record<string, string>;
-}
-
-/**
  * Attachment sent with a message
  */
 export class MessageAttachmentDto {
@@ -70,22 +60,6 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   tenantId?: string;
-
-  @ApiProperty({
-    description: 'MCP 服务器配置 / MCP server configurations',
-    required: false,
-  })
-  @IsOptional()
-  @IsObject()
-  mcpServers?: Record<string, McpServerConfig>;
-
-  @ApiProperty({
-    description: '技能文件路径 / Skill file path',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  skillPath?: string;
 
   @ApiProperty({
     description: '启用的技能 slug 列表 / Enabled skill slugs',

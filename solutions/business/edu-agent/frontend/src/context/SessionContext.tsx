@@ -64,7 +64,7 @@ export function SessionProvider({ children }: SessionProviderProps) {
     connection,
     tenantId: 'edu-agent',
     onOutputUpdate,
-    solutionConfigEndpoint: '/api/config',
+    sessionTemplate: 'edu-assistant',
   })
 
   const status = useAgentStatus({ connection })

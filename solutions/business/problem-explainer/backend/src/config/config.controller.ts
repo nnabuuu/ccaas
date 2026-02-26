@@ -55,23 +55,8 @@ export class SolutionConfigController {
    */
   @Get()
   getConfig() {
-    if (!this.solutionConfig) {
-      return {
-        mcpServers: {},
-        skillPath: null,
-        skillSlug: null,
-      };
-    }
-
-    // Construct absolute skill path
-    const skillPath = this.solutionConfig.skill?.skillFile
-      ? join(this.solutionDir, this.solutionConfig.skill.skillFile)
-      : null;
-
     return {
-      mcpServers: this.solutionConfig.mcpServers || {},
-      skillPath,
-      skillSlug: this.solutionConfig.slug,
+      slug: this.solutionConfig?.slug || null,
     };
   }
 }

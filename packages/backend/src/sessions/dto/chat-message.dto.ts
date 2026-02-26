@@ -7,16 +7,6 @@
 import { IsString, IsOptional, IsObject, IsArray, MaxLength } from 'class-validator';
 
 /**
- * MCP Server configuration passed from solution backends
- */
-export interface McpServerConfig {
-  command: string;
-  args: string[];
-  description?: string;
-  env?: Record<string, string>;
-}
-
-/**
  * Chat message from frontend
  */
 export class ChatMessageDto {
@@ -34,14 +24,6 @@ export class ChatMessageDto {
   @IsOptional()
   @IsString()
   tenantId?: string;
-
-  @IsOptional()
-  @IsObject()
-  mcpServers?: Record<string, McpServerConfig>;
-
-  @IsOptional()
-  @IsString()
-  skillPath?: string;
 
   @IsOptional()
   @IsArray()
@@ -97,14 +79,6 @@ export class SendMessageDto {
   @IsOptional()
   @IsObject()
   context?: Record<string, unknown>; // NEW: Page context sent with message
-
-  @IsOptional()
-  @IsObject()
-  mcpServers?: Record<string, McpServerConfig>;
-
-  @IsOptional()
-  @IsString()
-  skillPath?: string;
 
   @IsOptional()
   @IsArray()

@@ -65,7 +65,7 @@ export { computeLineDiff, formatSizeDiff, getDiffColor } from './utils/diffUtils
 export { formatDuration, formatDurationCompact } from './utils/formatDuration'
 export { getToolActivityDescription, TOOL_ACTIVITY_MAP } from './utils/toolActivityMapping'
 export { getThinkingVerb, THINKING_VERBS } from './utils/thinkingVerbs'
-export { resolveSessionTemplate, mergeTemplateParams } from './utils/templateResolver'
+// templateResolver: functions removed — template resolution now happens server-side
 
 // Non-type exports from types (COLOR_MAP)
 export { COLOR_MAP } from './types'
@@ -183,8 +183,6 @@ export type {
 // Template resolver types
 export type {
   ResolvedTemplateParams,
-  ExplicitParams,
-  SolutionDefaults,
 } from './utils/templateResolver'
 
 // Re-export commonly used @kedge-agentic/common types for convenience

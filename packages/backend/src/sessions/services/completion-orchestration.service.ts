@@ -54,14 +54,8 @@ export interface MessageProcessingInput {
   /** Page context from frontend */
   context?: Record<string, unknown>;
 
-  /** MCP servers configuration from solution backend */
-  mcpServers?: Record<string, McpServerConfig>;
-
   /** Enabled skill slugs to sync */
   enabledSkillSlugs?: string[];
-
-  /** Skill file path to copy to workspace */
-  skillPath?: string;
 
   /** File attachments (REST only) */
   attachments?: ResolvedAttachment[];
@@ -148,8 +142,10 @@ export class CompletionOrchestrationService {
       emitEvent,
     } = input;
 
-    // These may be overridden by template resolution below
-    let { mcpServers, enabledSkillSlugs, skillPath, systemPrompt } = input;
+    // These are populated from template resolution below
+    let mcpServers: Record<string, McpServerConfig> | undefined;
+    let skillPath: string | undefined;
+    let { enabledSkillSlugs, systemPrompt } = input;
 
     const sessionId = session.sessionId;
 
@@ -194,10 +190,10 @@ export class CompletionOrchestrationService {
       const tmpl = resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined;
       if (tmpl) {
         this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
-        if (!mcpServers && tmpl['mcpServers'])               mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig>;
+        mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig> | undefined;
         if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) enabledSkillSlugs = tmpl['enabledSkillSlugs'];
         if (!systemPrompt && tmpl['appendSystemPrompt'])     systemPrompt = tmpl['appendSystemPrompt'];
-        if (!skillPath && tmpl['skillPath'])                 skillPath = tmpl['skillPath'];
+        skillPath = tmpl['skillPath'] as string | undefined;
         skillPromptMode = tmpl['skillPromptMode'] as typeof skillPromptMode;
         templateAppendPrompt = tmpl['appendSystemPrompt'] as string | undefined;
         if (tmpl['sessionTtlMs']) {

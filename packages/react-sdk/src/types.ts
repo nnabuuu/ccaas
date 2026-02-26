@@ -340,6 +340,8 @@ export interface UseAgentConnectionOptions {
   tenantId?: string
   /** Force a new conversation, clearing any saved sessionId from localStorage */
   forceNewConversation?: boolean
+  /** Explicit session ID. When provided, skips localStorage resolution. */
+  sessionId?: string
   /**
    * Transport to use for chat messages. Defaults to 'sse'.
    * - 'sse' (default): HTTP streaming via POST /messages. No WebSocket required.
@@ -377,12 +379,8 @@ export interface PageContext {
 export interface UseAgentChatOptions {
   connection: UseAgentConnectionReturn
   tenantId: string
-  mcpServers?: Record<string, McpServerConfig>
-  skillPath?: string | null
   enabledSkillSlugs?: string[]
   onOutputUpdate?: (update: OutputUpdate) => void
-  /** Solution config endpoint path, e.g., '/api/config'. If provided, fetched on mount. */
-  solutionConfigEndpoint?: string
   /** Page context to send with every message (from usePageContext hook) */
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */
@@ -574,8 +572,7 @@ export interface CompletionParams {
   clientId: string
   message: string
   tenantId: string
-  mcpServers?: Record<string, McpServerConfig>
-  skillPath?: string | null
   enabledSkillSlugs?: string[]
   attachments?: { type: string; path: string }[]
+  templateName?: string
 }

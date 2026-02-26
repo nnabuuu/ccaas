@@ -143,9 +143,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         tenantId: queueItem.tenantId || '',
         message: queueItem.payload.message,
         context: queueItem.payload.context,
-        mcpServers: queueItem.payload.mcpServers,
         enabledSkillSlugs: queueItem.payload.enabledSkillSlugs,
-        skillPath: queueItem.payload.skillPath,
         systemPrompt: queueItem.payload.systemPrompt,
         templateName: queueItem.payload.templateName,
         emitEvent: (event: any) => this.streamRegistry.emit(sessionId, event),
@@ -165,10 +163,16 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         this.sessionService.closeSession(sessionId);
       }
 
-      // Close the SSE turn stream (non-fatal: a stream error must not revert
-      // the already-persisted completion)
+      // Close only the SSE subscriber for this turn (non-fatal: a stream error
+      // must not revert the already-persisted completion). Using closeTurn instead
+      // of closeSession prevents killing SSE connections from subsequent messages.
       try {
-        this.streamRegistry.closeSession(sessionId);
+        const subscriberId = queueItem.payload.subscriberId;
+        if (subscriberId) {
+          this.streamRegistry.closeTurn(sessionId, subscriberId);
+        } else {
+          this.streamRegistry.closeSession(sessionId); // fallback for legacy items
+        }
       } catch (streamErr: any) {
         this.logger.warn(`Failed to close SSE turn for ${sessionId}: ${streamErr.message}`);
       }
@@ -191,7 +195,12 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
           message: error.message,
           recoverable: false,
         });
-        this.streamRegistry.closeSession(sessionId);
+        const subscriberId = queueItem.payload.subscriberId;
+        if (subscriberId) {
+          this.streamRegistry.closeTurn(sessionId, subscriberId);
+        } else {
+          this.streamRegistry.closeSession(sessionId); // fallback for legacy items
+        }
       } catch (streamErr: any) {
         this.logger.warn(`Failed to emit error to SSE for ${sessionId}: ${streamErr.message}`);
       }

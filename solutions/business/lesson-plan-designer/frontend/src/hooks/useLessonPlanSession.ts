@@ -13,7 +13,6 @@ import {
   type UseAgentConnectionReturn,
 } from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
-import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 import { api } from '../utils/api'
 import type {
@@ -139,9 +138,6 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const connected = connection.connected
   const [error, setError] = useState<string | null>(connection.error)
 
-  // Solution config (mcpServers, skillPath from backend)
-  const { config: solutionConfig } = useSolutionConfig()
-
   // Lesson plan CRUD operations
   const crud = useLessonPlanCRUD({
     onError: (err) => setError(err),
@@ -172,9 +168,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const chat = useAgentChat({
     connection,
     tenantId,
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
     enabledSkillSlugs,
+    sessionTemplate: 'lesson-planning',
     context,  // NEW: Pass context to send with every message
     onOutputUpdate: (update) => {
       // Bridge SDK output_update to useLessonPlanSync

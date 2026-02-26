@@ -12,6 +12,12 @@
       "description": "EduAgent MCP tools: write_output, navigate_to, textbook tools, problem tools"
     }
   },
+  "sessionTemplates": {
+    "edu-assistant": {
+      "description": "AI教育助手 - 统一备课设计与讲题解析",
+      "appendSystemPrompt": "你是一个AI教育助手，擅长备课设计和讲题解析。根据用户需求，提供专业的教学方案设计、题目分析和讲解服务。"
+    }
+  },
   "syncFields": {
     "lessonPlan": [
       "title", "subject", "gradeLevel", "duration",

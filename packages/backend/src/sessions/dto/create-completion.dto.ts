@@ -9,16 +9,6 @@ import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * MCP Server configuration passed from solution backends
- */
-export interface McpServerConfig {
-  command: string;
-  args: string[];
-  description?: string;
-  env?: Record<string, string>;
-}
-
-/**
  * Attachment sent with a completion request (e.g. an uploaded image)
  */
 export class AttachmentDto {
@@ -64,30 +54,6 @@ export class CreateCompletionDto {
   @IsOptional()
   @IsString()
   tenantId?: string;
-
-  @ApiProperty({
-    description: 'MCP 服务器配置（由解决方案后端传递）/ MCP server configurations',
-    required: false,
-    example: {
-      'my-api': {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-rest'],
-        description: 'REST API MCP Server',
-      },
-    },
-  })
-  @IsOptional()
-  @IsObject()
-  mcpServers?: Record<string, McpServerConfig>;
-
-  @ApiProperty({
-    description: '技能文件路径（可选，用于临时技能注入）/ Skill file path for temporary injection',
-    required: false,
-    example: '/path/to/skill/SKILL.md',
-  })
-  @IsOptional()
-  @IsString()
-  skillPath?: string;
 
   @ApiProperty({
     description: '启用的技能 slug 列表（仅加载指定技能）/ Enabled skill slugs',

@@ -46,7 +46,6 @@ Accept: text/event-stream
 | `enabledSkillSlugs` | string[] | ❌ | 指定启用的 Skill slug 列表；不传时自动加载租户下所有已启用的 Skill |
 | `appendSystemPrompt` | string | ❌ | 追加到系统提示词末尾的额外指令 |
 | `templateName` | string | ❌ | 应用的会话模板名称（在管理后台配置） |
-| `mcpServers` | object | ❌ | 本次请求附加的 MCP Server 配置 |
 | `context` | object | ❌ | 页面上下文（如当前路由、表单数据等） |
 | `attachments` | object[] | ❌ | 附件列表（图片或文档，路径相对于会话工作区） |
 | `afterSeq` | number | ❌ | 断线重连：从此序号之后的事件开始重放 |

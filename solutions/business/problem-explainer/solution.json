@@ -16,6 +16,12 @@
       }
     }
   },
+  "sessionTemplates": {
+    "problem-analysis": {
+      "description": "讲题分析 - AI解析题目并生成讲稿",
+      "appendSystemPrompt": "你是一个专业的讲题助手，擅长分析题目结构、识别核心知识点、逐步讲解解题思路，并能生成结构化的讲解讲稿。"
+    }
+  },
   "syncFields": [
     "problemAnalysis",
     "keyKnowledge",

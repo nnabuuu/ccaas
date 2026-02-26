@@ -344,9 +344,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
           {
             message: data.message,
             context: data.context,
-            mcpServers: data.mcpServers,
             enabledSkillSlugs: data.enabledSkillSlugs,
-            skillPath: data.skillPath,
           },
         );
 
@@ -371,9 +369,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
           tenantId,
           message: data.message,
           context: data.context,
-          mcpServers: data.mcpServers,
           enabledSkillSlugs: data.enabledSkillSlugs,
-          skillPath: data.skillPath,
           templateName: data.templateName,
           emitEvent: (event) => client.emit(event.type, event),
         });
