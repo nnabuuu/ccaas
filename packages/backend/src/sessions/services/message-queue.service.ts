@@ -196,6 +196,44 @@ export class MessageQueueService {
   }
 
   /**
+   * Reset stale processing messages on startup
+   *
+   * After an unclean shutdown (e.g., kill -9), messages may be stuck in
+   * 'processing' status with no worker handling them. This method finds
+   * such zombie messages and feeds them back through markFailed(), which
+   * will either retry (if retryCount < maxRetries) or mark as permanently failed.
+   *
+   * @param processingTimeoutMs - Messages processing longer than this are considered stale (default: 60s)
+   * @param excludeIds - Message IDs to exclude (e.g., messages actively being processed by a worker)
+   * @param reason - Reason string stored in the error field (default: 'Stale processing message reset')
+   * @returns Number of reset messages
+   */
+  async resetStaleProcessingMessages(
+    processingTimeoutMs: number = 60_000,
+    excludeIds: Set<string> = new Set(),
+    reason: string = 'Stale processing message reset',
+  ): Promise<number> {
+    const cutoffTime = new Date(Date.now() - processingTimeoutMs);
+
+    const staleMessages = await this.queueRepository.find({
+      where: {
+        status: 'processing',
+        startedAt: LessThan(cutoffTime),
+      },
+    });
+
+    const filtered = staleMessages.filter((msg) => !excludeIds.has(msg.id));
+    if (filtered.length === 0) return 0;
+
+    for (const msg of filtered) {
+      await this.markFailed(msg.id, reason);
+    }
+
+    this.logger.warn(`Reset ${filtered.length} stale processing messages`);
+    return filtered.length;
+  }
+
+  /**
    * Cancel all pending messages for a session
    *
    * Used when user clicks "Cancel" button.

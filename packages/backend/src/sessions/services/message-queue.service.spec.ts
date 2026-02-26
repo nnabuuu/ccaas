@@ -18,6 +18,7 @@ describe('MessageQueueService', () => {
             create: jest.fn(),
             save: jest.fn(),
             count: jest.fn(),
+            find: jest.fn(),
             findOneBy: jest.fn(),
             update: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -108,7 +109,6 @@ describe('MessageQueueService', () => {
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         addOrderBy: jest.fn().mockReturnThis(),
-        setLock: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
 
@@ -117,7 +117,7 @@ describe('MessageQueueService', () => {
       const result = await service.dequeueForSession('session-1');
 
       expect(result).toBeNull();
-      expect(mockQueryBuilder.setLock).toHaveBeenCalledWith('pessimistic_write');
+      // Note: pessimistic_write lock removed — SQLite uses file-level locking
     });
 
     it('should dequeue oldest pending message (FIFO)', async () => {
@@ -151,7 +151,7 @@ describe('MessageQueueService', () => {
       expect(repository.save).toHaveBeenCalled();
     });
 
-    it('should use pessimistic write lock', async () => {
+    it('should query without pessimistic lock (SQLite file-level locking)', async () => {
       repository.count.mockResolvedValue(0);
 
       const mockQueryBuilder = {
@@ -159,7 +159,6 @@ describe('MessageQueueService', () => {
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         addOrderBy: jest.fn().mockReturnThis(),
-        setLock: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
 
@@ -167,7 +166,7 @@ describe('MessageQueueService', () => {
 
       await service.dequeueForSession('session-1');
 
-      expect(mockQueryBuilder.setLock).toHaveBeenCalledWith('pessimistic_write');
+      expect(mockQueryBuilder.getOne).toHaveBeenCalled();
     });
   });
 
@@ -308,6 +307,135 @@ describe('MessageQueueService', () => {
       const cancelledCount = await service.cancelSessionMessages('session-1');
 
       expect(cancelledCount).toBe(0);
+    });
+  });
+
+  describe('resetStaleProcessingMessages', () => {
+    it('should return 0 when no stale processing messages exist', async () => {
+      repository.find.mockResolvedValue([]);
+
+      const result = await service.resetStaleProcessingMessages();
+
+      expect(result).toBe(0);
+      expect(repository.find).toHaveBeenCalledWith({
+        where: {
+          status: 'processing',
+          startedAt: expect.anything(),
+        },
+      });
+    });
+
+    it('should call markFailed for each stale message', async () => {
+      const staleMessages = [
+        { id: 'queue-1', status: 'processing', startedAt: new Date(Date.now() - 120_000), retryCount: 0, maxRetries: 2 },
+        { id: 'queue-2', status: 'processing', startedAt: new Date(Date.now() - 300_000), retryCount: 1, maxRetries: 2 },
+      ] as MessageQueue[];
+
+      repository.find.mockResolvedValue(staleMessages);
+      repository.findOneBy.mockImplementation(async ({ id }: any) =>
+        staleMessages.find((m) => m.id === id) || null,
+      );
+      repository.save.mockImplementation(async (item) => item as MessageQueue);
+
+      const result = await service.resetStaleProcessingMessages();
+
+      expect(result).toBe(2);
+      // markFailed should have been called for each stale message
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'queue-1' });
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'queue-2' });
+      expect(repository.save).toHaveBeenCalledTimes(2);
+    });
+
+    it('should retry messages that have not exceeded maxRetries', async () => {
+      const staleMessage = {
+        id: 'queue-1',
+        status: 'processing',
+        startedAt: new Date(Date.now() - 120_000),
+        retryCount: 0,
+        maxRetries: 2,
+      } as MessageQueue;
+
+      repository.find.mockResolvedValue([staleMessage]);
+      repository.findOneBy.mockResolvedValue(staleMessage);
+      repository.save.mockImplementation(async (item) => item as MessageQueue);
+
+      await service.resetStaleProcessingMessages();
+
+      const savedItem = (repository.save as jest.Mock).mock.calls[0][0];
+      expect(savedItem.status).toBe('pending');
+      expect(savedItem.retryCount).toBe(1);
+      expect(savedItem.error).toBe('Stale processing message reset');
+    });
+
+    it('should permanently fail messages that have exceeded maxRetries', async () => {
+      const staleMessage = {
+        id: 'queue-1',
+        status: 'processing',
+        startedAt: new Date(Date.now() - 120_000),
+        retryCount: 2,
+        maxRetries: 2,
+      } as MessageQueue;
+
+      repository.find.mockResolvedValue([staleMessage]);
+      repository.findOneBy.mockResolvedValue(staleMessage);
+      repository.save.mockImplementation(async (item) => item as MessageQueue);
+
+      await service.resetStaleProcessingMessages();
+
+      const savedItem = (repository.save as jest.Mock).mock.calls[0][0];
+      expect(savedItem.status).toBe('failed');
+      expect(savedItem.retryCount).toBe(3);
+    });
+
+    it('should use custom timeout parameter', async () => {
+      repository.find.mockResolvedValue([]);
+
+      await service.resetStaleProcessingMessages(5_000);
+
+      const findCall = repository.find.mock.calls[0][0] as any;
+      const cutoffTime = findCall.where.startedAt.value as Date;
+      const expectedCutoff = Date.now() - 5_000;
+      expect(cutoffTime.getTime()).toBeGreaterThanOrEqual(expectedCutoff - 100);
+      expect(cutoffTime.getTime()).toBeLessThanOrEqual(expectedCutoff + 100);
+    });
+
+    it('should exclude messages in excludeIds set', async () => {
+      const staleMessages = [
+        { id: 'queue-1', status: 'processing', startedAt: new Date(Date.now() - 120_000), retryCount: 0, maxRetries: 2 },
+        { id: 'queue-2', status: 'processing', startedAt: new Date(Date.now() - 300_000), retryCount: 0, maxRetries: 2 },
+      ] as MessageQueue[];
+
+      repository.find.mockResolvedValue(staleMessages);
+      repository.findOneBy.mockImplementation(async ({ id }: any) =>
+        staleMessages.find((m) => m.id === id) || null,
+      );
+      repository.save.mockImplementation(async (item) => item as MessageQueue);
+
+      const excludeIds = new Set(['queue-1']);
+      const result = await service.resetStaleProcessingMessages(60_000, excludeIds);
+
+      expect(result).toBe(1);
+      expect(repository.findOneBy).toHaveBeenCalledWith({ id: 'queue-2' });
+      expect(repository.findOneBy).not.toHaveBeenCalledWith({ id: 'queue-1' });
+    });
+
+    it('should use custom reason string in error field', async () => {
+      const staleMessage = {
+        id: 'queue-1',
+        status: 'processing',
+        startedAt: new Date(Date.now() - 120_000),
+        retryCount: 0,
+        maxRetries: 2,
+      } as MessageQueue;
+
+      repository.find.mockResolvedValue([staleMessage]);
+      repository.findOneBy.mockResolvedValue(staleMessage);
+      repository.save.mockImplementation(async (item) => item as MessageQueue);
+
+      await service.resetStaleProcessingMessages(60_000, new Set(), 'Reset by runtime sweep');
+
+      const savedItem = (repository.save as jest.Mock).mock.calls[0][0];
+      expect(savedItem.error).toBe('Reset by runtime sweep');
     });
   });
 

@@ -325,6 +325,31 @@ describe('MessageWorkerService — processMessage', () => {
 
     expect((service as any).activeWorkers).toBe(before);
   });
+
+  // ── activeMessageIds tracking ─────────────────────────────────────────────
+
+  it('adds message ID to activeMessageIds during processing and removes after', async () => {
+    const ids = (service as any).activeMessageIds as Set<string>;
+    let capturedDuringProcessing = false;
+
+    orchestrationService.orchestrateMessage.mockImplementation(async () => {
+      capturedDuringProcessing = ids.has('queue-item-1');
+      return { sessionId: SESSION_ID, userMessageId: 'u1', assistantMessageId: 'a1', skillSyncedCount: 0 };
+    });
+
+    await process(makeQueueItem());
+
+    expect(capturedDuringProcessing).toBe(true);
+    expect(ids.has('queue-item-1')).toBe(false);
+  });
+
+  it('removes message ID from activeMessageIds even on failure', async () => {
+    orchestrationService.orchestrateMessage.mockRejectedValue(new Error('boom'));
+
+    await process(makeQueueItem());
+
+    expect((service as any).activeMessageIds.has('queue-item-1')).toBe(false);
+  });
 });
 
 // ── pollAndProcess ────────────────────────────────────────────────────────────
@@ -485,11 +510,13 @@ describe('MessageWorkerService — pollAndProcess', () => {
 
   // ── Stale message sweep ─────────────────────────────────────────────────────
 
-  it('runs stale sweep on first poll (lastStaleCheckAt is 0)', async () => {
+  it('runs stale sweep on first poll with activeMessageIds and reason', async () => {
     await poll();
 
     expect(queueService.resetStaleProcessingMessages).toHaveBeenCalledWith(
       (service as any).runtimeProcessingTimeoutMs,
+      (service as any).activeMessageIds,
+      'Stale processing message reset by runtime sweep',
     );
   });
 

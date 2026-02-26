@@ -37,6 +37,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   private readonly concurrency = 5; // Max concurrent messages
   private readonly pollIntervalMs = 1000; // Poll every 1 second
   private isShuttingDown = false;
+  private readonly activeMessageIds = new Set<string>(); // Track in-flight messages
   private lastStaleCheckAt = 0;
   private readonly staleCheckIntervalMs = 60_000; // Check every 60s
   private readonly runtimeProcessingTimeoutMs = 5 * 60_000; // 5 min runtime timeout
@@ -98,7 +99,11 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
     if (now - this.lastStaleCheckAt >= this.staleCheckIntervalMs) {
       this.lastStaleCheckAt = now;
       try {
-        const resetCount = await this.queueService.resetStaleProcessingMessages(this.runtimeProcessingTimeoutMs);
+        const resetCount = await this.queueService.resetStaleProcessingMessages(
+          this.runtimeProcessingTimeoutMs,
+          this.activeMessageIds,
+          'Stale processing message reset by runtime sweep',
+        );
         if (resetCount > 0) {
           this.logger.warn(`Stale sweep: reset ${resetCount} processing messages (timeout: ${this.runtimeProcessingTimeoutMs}ms)`);
         }
@@ -150,6 +155,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
    */
   private async processMessage(queueItem: MessageQueue): Promise<void> {
     this.activeWorkers++;
+    this.activeMessageIds.add(queueItem.id);
     const { sessionId } = queueItem;
     this.logger.log(`Processing message ${queueItem.id} (active workers: ${this.activeWorkers}/${this.concurrency})`);
 
@@ -234,6 +240,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         this.logger.warn(`Failed to emit error to SSE for ${sessionId}: ${streamErr.message}`);
       }
     } finally {
+      this.activeMessageIds.delete(queueItem.id);
       this.activeWorkers--;
       this.logger.debug(`Worker finished (active workers: ${this.activeWorkers}/${this.concurrency})`);
     }
