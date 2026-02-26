@@ -10,7 +10,7 @@ import {
 import type { BoardState, LessonManifest, BeatState, GlobalBoardOp, Beat, BeatSnapshot } from '../types'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 import type { TimelineItem } from '../types/blackboard-actions'
-import { saveSession } from '../utils/sessionStore'
+import { saveSession, getSavedSession } from '../utils/sessionStore'
 
 // IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
@@ -49,6 +49,7 @@ export interface UseLiveLessonReturn {
 
   // Chat
   messages: Message[]
+  tutoringMessages: Message[]
   isProcessing: boolean
   currentStreamContent: string
   isThinking: boolean
@@ -76,10 +77,19 @@ export interface UseLiveLessonReturn {
   advanceBeat: () => void
   canAdvanceBeat: boolean
 
+  // Sticker overlay
+  stickerActions: ChalkboardAction[]
+  stickerVisible: boolean
+  stickerExpanded: boolean
+  dismissSticker: () => void
+  toggleStickerExpanded: () => void
+  collapseStickerFromBackdrop: () => void
+
   // Tutoring actions
   raiseHand: () => void
   dismissTutoring: () => void
   sendExplainRequest: (question: string) => void
+  sendFollowUp: (text: string) => void
   requestMoreQuestions: () => void
   handleAnimationChange: (animating: boolean) => void
 
@@ -89,7 +99,7 @@ export interface UseLiveLessonReturn {
   closeTutoringPanel: () => void
 }
 
-export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLessonReturn {
+export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessionId?: string): UseLiveLessonReturn {
   const [boardState, setBoardState] = useState<BoardState | null>(null)
   const [manifest, setManifest] = useState<LessonManifest | null>(null)
 
@@ -103,6 +113,11 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const [globalBoardOps, setGlobalBoardOps] = useState<GlobalBoardOp[]>([])
   const [timeline, setTimeline] = useState<TimelineItem[]>([])
 
+  // Sticker overlay state (AI execute_dynamic_board responses)
+  const [stickerActions, setStickerActions] = useState<ChalkboardAction[]>([])
+  const [stickerVisible, setStickerVisible] = useState(false)
+  const [stickerExpanded, setStickerExpanded] = useState(false)
+
   // Beat snapshot & navigation state
   const [beatSnapshots, setBeatSnapshots] = useState<BeatSnapshot[]>([])
   const [viewingBeatIndex, setViewingBeatIndex] = useState<number | null>(null)
@@ -114,8 +129,18 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const [selectionMode, setSelectionMode] = useState<SelectionMode>('single')
   const [tutoringPanelOpen, setTutoringPanelOpen] = useState(false)
 
+  // Tutoring message offset: messages before this index belong to a previous beat
+  const [tutoringMsgOffset, setTutoringMsgOffset] = useState(0)
+
   // ===== Page Context (board state visible to Agent) =====
   const { context, updateContext } = usePageContext()
+
+  // Prevent cross-lesson session leakage: when no explicit session from URL,
+  // check per-lesson store instead of falling through to tenant-scoped localStorage
+  const effectiveSessionId = initialSessionId
+    || (!forceNew ? (getSavedSession(lessonId) || undefined) : undefined)
+  const effectiveForceNew = forceNew
+    || (!initialSessionId && !getSavedSession(lessonId))
 
   // ===== SDK Connection =====
   // CRITICAL: serverUrl must be absolute URL to CCAAS backend (port 3001)
@@ -125,7 +150,8 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     tenantId: TENANT_ID,
     autoConnect: lessonId !== '',
     transport: 'sse',
-    forceNewConversation: forceNew,
+    forceNewConversation: effectiveForceNew,
+    sessionId: effectiveSessionId,
   })
 
   // ===== SDK Chat =====
@@ -178,16 +204,23 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
           if (Array.isArray(dba)) setDynamicBoardActions(dba)
         }
       } else if (update.field === 'dynamicBoardActions') {
-        // execute_dynamic_board appends to existing actions (AI偏轨时)
+        // Route AI execute_dynamic_board to sticker overlay (not main canvas)
         const raw = typeof update.value === 'string' ? JSON.parse(update.value) : update.value
-        setDynamicBoardActions(Array.isArray(raw) ? raw : [])
+        if (Array.isArray(raw) && raw.length > 0) {
+          setStickerActions(raw)
+          setStickerVisible(true)
+        }
       } else if (update.field === 'globalBoardOps') {
         const ops = update.value as GlobalBoardOp[]
         setGlobalBoardOps(prev => [...prev, ...ops])
       } else if (update.field === 'suggestedQuestions') {
         // AI returned suggested questions via suggest_questions tool
         const payload = update.value as SuggestedQuestionsPayload
-        setSuggestedQuestions(payload.questions)
+        setSuggestedQuestions(prev => {
+          const existing = new Set(prev)
+          const newQuestions = payload.questions.filter((q: string) => !existing.has(q))
+          return [...prev, ...newQuestions]
+        })
         setSelectionMode(payload.selectionMode)
         setTutoringMode('picking')
       }
@@ -197,10 +230,33 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   // ===== SDK Status =====
   const status = useAgentStatus({ connection })
 
-  // Sync boardState + beatState into page context so Agent can see current board
+  // Sync enriched lesson context so Agent can see actual teaching content (not just IDs)
   useEffect(() => {
-    updateContext('live-lesson-board', { boardState, beatState, lessonId })
-  }, [boardState, beatState, lessonId, updateContext])
+    const currentBeatData = beatState?.currentBeatId && manifest?.beats
+      ? manifest.beats.find(b => b.id === beatState.currentBeatId)
+      : null
+
+    const sectionLabel = currentBeatData?.sectionId && manifest?.globalBoardNodes
+      ? manifest.globalBoardNodes.find(n => n.id === currentBeatData.sectionId)?.label
+          ?? currentBeatData.sectionId
+      : null
+
+    updateContext('live-lesson-board', {
+      lesson: manifest
+        ? { title: manifest.title, subject: manifest.subject, gradeLevel: manifest.gradeLevel }
+        : null,
+      currentBeat: currentBeatData && beatState ? {
+        id: beatState.currentBeatId,
+        index: beatState.currentBeatIndex,
+        totalBeats: beatState.totalBeats,
+        sectionId: beatState.sectionId,
+        sectionLabel,
+        narratorText: currentBeatData.narratorText,
+        expectedQuestions: currentBeatData.expectedQuestions ?? [],
+      } : null,
+      sections: manifest?.globalBoardNodes?.map(n => ({ id: n.id, label: n.label })) ?? [],
+    })
+  }, [manifest, beatState, updateContext])
 
   // Persist sessionId to per-lesson store whenever it changes
   useEffect(() => {
@@ -208,6 +264,15 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
       saveSession(lessonId, connection.sessionId)
     }
   }, [connection.sessionId, lessonId])
+
+  // Fallback: if AI finishes processing while still in 'suggesting' mode
+  // (e.g. AI responded with text instead of calling suggest_questions tool),
+  // revert to 'picking' so the UI isn't stuck on the spinner forever.
+  useEffect(() => {
+    if (!chat.isProcessing && tutoringMode === 'suggesting') {
+      setTutoringMode('picking')
+    }
+  }, [chat.isProcessing, tutoringMode])
 
   // Load manifest for this lesson from public static files
   useEffect(() => {
@@ -260,6 +325,9 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     setGlobalBoardOps([])
     setTimeline([])
     setBoardState(null)
+    setStickerActions([])
+    setStickerVisible(false)
+    setStickerExpanded(false)
     setTutoringMode('idle')
     setSuggestedQuestions([])
     setSelectionMode('single')
@@ -318,10 +386,16 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     // the previous beat's actions on a beat that has no board content.
     setDynamicBoardActions(Array.isArray(beat.dynamicBoardActions) ? beat.dynamicBoardActions : [])
 
-    // Reset tutoring state on beat change
+    // Reset tutoring + sticker state on beat change
     setTutoringMode('idle')
     setSuggestedQuestions([])
     setSelectionMode('single')
+    setStickerActions([])
+    setStickerVisible(false)
+    setStickerExpanded(false)
+
+    // Clear tutoring chatbox for new beat
+    setTutoringMsgOffset(chatRef.current.messages.length)
 
     // Auto-scroll carousel to latest beat
     setViewingBeatIndex(null)
@@ -349,6 +423,9 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
   const dismissTutoring = useCallback(() => {
     setTutoringMode('idle')
     setSuggestedQuestions([])
+    setStickerActions([])
+    setStickerVisible(false)
+    setStickerExpanded(false)
   }, [])
 
   const sendExplainRequest = useCallback((question: string) => {
@@ -358,12 +435,15 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     const m = manifestRef.current
     const bs = beatStateRef.current
 
+    const sectionLabel = m?.globalBoardNodes?.find(n => n.id === bs?.sectionId)?.label
+        ?? bs?.sectionId ?? ''
+
     const lines = [
       '/explain',
       '[CONTEXT]',
       `课程: ${m?.title ?? ''}`,
       `当前 Beat: ${bs?.currentBeatId ?? ''} (${(bs?.currentBeatIndex ?? 0) + 1}/${bs?.totalBeats ?? 0})`,
-      `章节: ${bs?.sectionId ?? ''}`,
+      `章节: ${sectionLabel}`,
       `叙述内容: ${beat?.narratorText ?? ''}`,
       '[/CONTEXT]',
       '',
@@ -375,6 +455,13 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     chatRef.current.sendMessage(lines.join('\n'))
   }, [])
 
+  // All free text input: send as plain text (no /explain wrapper).
+  // Switches to explaining mode so picking→explaining transition works.
+  const sendFollowUp = useCallback((text: string) => {
+    setTutoringMode('explaining')
+    chatRef.current.sendMessage(text)
+  }, [])
+
   const requestMoreQuestions = useCallback(() => {
     setTutoringMode('suggesting')
 
@@ -383,11 +470,15 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     const bs = beatStateRef.current
     const eqs = beat?.expectedQuestions ?? []
 
+    const sectionLabel = m?.globalBoardNodes?.find(n => n.id === bs?.sectionId)?.label
+        ?? bs?.sectionId ?? ''
+
     const lines = [
       '/suggest-questions',
       '[CONTEXT]',
       `课程: ${m?.title ?? ''}`,
       `当前 Beat: ${bs?.currentBeatId ?? ''} (${(bs?.currentBeatIndex ?? 0) + 1}/${bs?.totalBeats ?? 0})`,
+      `章节: ${sectionLabel}`,
       `叙述内容: ${beat?.narratorText ?? ''}`,
       `已有预设问题: ${eqs.join(' | ')}`,
       '[/CONTEXT]',
@@ -398,6 +489,19 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
 
   const handleAnimationChange = useCallback((animating: boolean) => {
     setIsAnimating(animating)
+  }, [])
+
+  const dismissSticker = useCallback(() => {
+    setStickerVisible(false)
+    setStickerExpanded(false)
+  }, [])
+
+  const toggleStickerExpanded = useCallback(() => {
+    setStickerExpanded(prev => !prev)
+  }, [])
+
+  const collapseStickerFromBackdrop = useCallback(() => {
+    setStickerExpanded(false)
   }, [])
 
   const openTutoringPanel = useCallback(() => {
@@ -453,8 +557,21 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     timeline,
     currentBeat,
     messages: chat.messages,
+    tutoringMessages: chat.messages.slice(tutoringMsgOffset),
     isProcessing: chat.isProcessing,
-    currentStreamContent: chat.currentStreamContent,
+    currentStreamContent: (() => {
+      if (!chat.currentStreamContent) return ''
+      const msgs = chat.messages
+      // Only show streaming content for tutoring messages (not 开始上课 / /suggest-questions responses)
+      for (let i = msgs.length - 1; i >= tutoringMsgOffset; i--) {
+        if (msgs[i].role === 'user') {
+          const c = msgs[i].content
+          if (c === '开始上课' || c.startsWith('/suggest-questions')) return ''
+          return chat.currentStreamContent
+        }
+      }
+      return ''
+    })(),
     isThinking: status.isThinking,
     thinkingContent: status.thinkingContent,
     tutoringMode,
@@ -473,9 +590,16 @@ export function useLiveLesson(lessonId: string, forceNew: boolean): UseLiveLesso
     viewingSectionId,
     captureBeatSnapshot,
     navigateToBeat,
+    stickerActions,
+    stickerVisible,
+    stickerExpanded,
+    dismissSticker,
+    toggleStickerExpanded,
+    collapseStickerFromBackdrop,
     raiseHand,
     dismissTutoring,
     sendExplainRequest,
+    sendFollowUp,
     requestMoreQuestions,
     handleAnimationChange,
     tutoringPanelOpen,
