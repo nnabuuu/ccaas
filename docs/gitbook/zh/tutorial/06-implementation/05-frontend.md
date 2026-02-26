@@ -65,8 +65,7 @@ useLessonPlanSession()
 ├── usePageContext()        → context, updateContext
 ├── useFiles()              → files, newFilesCount, uploadFile
 ├── useLessonPlanSync()     → pendingUpdates, syncToForm, undoSync  (Solution 特有)
-├── useLessonPlanCRUD()     → lessonPlan, savePlan, loadPlan         (Solution 特有)
-└── useSolutionConfig()     → mcpServers, skillPath                  (Solution 特有)
+└── useLessonPlanCRUD()     → lessonPlan, savePlan, loadPlan         (Solution 特有)
 ```
 
 ## 第二步：构建 Session Hook
@@ -86,7 +85,6 @@ import {
   type Message,
 } from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
-import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // 重要：必须使用 CCAAS 后端的绝对 URL，不能使用相对路径
@@ -103,16 +101,13 @@ export function useLessonPlanSession(options = {}) {
     autoConnect,
   })
 
-  // ===== 2. Solution 配置（MCP 服务器、技能路径）=====
-  const { config: solutionConfig } = useSolutionConfig()
-
-  // ===== 3. 领域 CRUD =====
+  // ===== 2. 领域 CRUD =====
   const crud = useLessonPlanCRUD({ onError: (err) => setError(err) })
 
-  // ===== 4. 页面上下文 =====
+  // ===== 3. 页面上下文 =====
   const { context, updateContext } = usePageContext()
 
-  // ===== 5. 表单同步状态 =====
+  // ===== 4. 表单同步状态 =====
   const {
     pendingUpdates, modifiedFields,
     addPendingUpdate, removePendingUpdate,
@@ -120,12 +115,11 @@ export function useLessonPlanSession(options = {}) {
     resetSyncState,
   } = useLessonPlanSync()
 
-  // ===== 6. SDK 聊天 =====
+  // ===== 5. SDK 聊天 =====
   const chat = useAgentChat({
     connection,
     tenantId,
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
+    sessionTemplate: 'lesson-plan-designer',  // 服务端解析 MCP 服务器、技能等配置
     context,
     onOutputUpdate: (update) => {
       // 将 SDK 的 output_update 事件桥接到同步 hook
@@ -137,10 +131,10 @@ export function useLessonPlanSession(options = {}) {
     },
   })
 
-  // ===== 7. SDK 状态 =====
+  // ===== 6. SDK 状态 =====
   const status = useAgentStatus({ connection })
 
-  // ===== 8. SDK 文件 =====
+  // ===== 7. SDK 文件 =====
   const files = useFiles({
     connection,
     sessionId: connection.sessionId,

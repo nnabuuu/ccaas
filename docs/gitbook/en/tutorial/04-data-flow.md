@@ -77,8 +77,7 @@ const chatPayload = {
   clientId: connection.clientId,
   message: content,
   tenantId: 'lesson-plan-designer',
-  mcpServers: solutionConfig?.mcpServers,
-  skillPath: solutionConfig?.skillPath,
+  sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
   enabledSkillSlugs: ['lesson-plan-designer'],
   context: context,  // Page context from usePageContext
 }
@@ -154,8 +153,7 @@ export function useLessonPlanSession(options) {
   const chat = useAgentChat({
     connection,
     tenantId: 'lesson-plan-designer',
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
+    sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
     enabledSkillSlugs,
     context,
     onOutputUpdate: (update) => {
@@ -218,9 +216,8 @@ Manages message state, REST-based sending, and WebSocket event processing.
 |--------|------|---------|
 | `connection` | `UseAgentConnectionReturn` | From `useAgentConnection` |
 | `tenantId` | `string` | Tenant identifier |
-| `mcpServers` | `Record<string, McpServerConfig>` | MCP server configuration |
-| `skillPath` | `string \| null` | Custom skill instructions path |
-| `enabledSkillSlugs` | `string[]` | Which skills to enable |
+| `sessionTemplate` | `string` | Session template name — MCP servers, skills, and prompts are resolved server-side |
+| `enabledSkillSlugs` | `string[]` | Override which skills to enable (replaces template value) |
 | `context` | `PageContext \| null` | Page context from `usePageContext` |
 | `onOutputUpdate` | `(update: OutputUpdate) => void` | Callback for structured field updates |
 

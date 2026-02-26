@@ -370,36 +370,41 @@ Content-Type: application/json
 
 ## 模板解析规则
 
-当前端同时传递 `sessionTemplate` 和显式参数时，按以下规则合并：
+前端通过 `sessionTemplate` 指定模板名称，服务端解析模板配置。前端**只能**传递以下显式参数覆盖模板：
 
-| 字段 | 合并策略 |
-|------|---------|
-| `enabledSkillSlugs` | **替换** — 显式参数完全覆盖模板值 |
-| `mcpServers` | **浅合并** — 显式服务器添加/覆盖模板服务器 |
-| `appendSystemPrompt` | **追加** — 显式内容追加在模板内容之后 |
-| `model` | **替换** — 显式参数完全覆盖模板值 |
+| 字段 | 前端可传递？ | 合并策略 |
+|------|------------|---------|
+| `enabledSkillSlugs` | **是** | **替换** — 显式参数完全覆盖模板值 |
+| `context` | **是** | **透传** — 直接传递给 Agent 作为页面上下文 |
+| `appendSystemPrompt` | **是** | **追加** — 显式内容追加在模板内容之后 |
+| `mcpServers` | **否（仅服务端）** | 由会话模板和 solution.json 配置，前端无法覆盖 |
+| `skillPath` | **否（仅服务端）** | 由会话模板配置，前端无法覆盖 |
+| `model` | **否（仅服务端）** | 由会话模板配置，前端无法覆盖 |
+
+{% hint style="warning" %}
+**安全设计：** `mcpServers`、`skillPath` 和 `model` 是服务端配置，前端无法传递或覆盖。这确保了 Agent 可用的工具和模型完全由管理员在会话模板中控制，防止前端篡改。
+{% endhint %}
 
 ```typescript
-// 模板配置（来自管理界面）：
+// 模板配置（来自管理界面或 solution.json）：
 {
   "appendSystemPrompt": "你是一位教师助手",
   "enabledSkillSlugs": ["knowledge-matching"],
   "mcpServers": { "server-a": { ... } }
 }
 
-// 前端显式参数：
+// 前端只传递模板名称和允许的覆盖参数：
 useAgentChat({
   sessionTemplate: 'teacher-assistant',
-  enabledSkillSlugs: ['custom-skill'],      // 替换模板列表
-  appendSystemPrompt: '附加上下文',          // 追加在模板提示词之后
-  // mcpServers 未指定 → 使用模板中的服务器
+  enabledSkillSlugs: ['custom-skill'],      // 替换模板中的技能列表
+  context,                                   // 页面上下文
 })
 
-// 发送到后端的最终解析参数：
+// 服务端最终解析的参数：
 {
   "enabledSkillSlugs": ["custom-skill"],
-  "appendSystemPrompt": "你是一位教师助手\n\n附加上下文",
-  "mcpServers": { "server-a": { ... } }
+  "appendSystemPrompt": "你是一位教师助手",
+  "mcpServers": { "server-a": { ... } }     // 来自模板，前端无法修改
 }
 ```
 

@@ -77,9 +77,7 @@ const chatPayload = {
   clientId: connection.clientId,
   message: content,
   tenantId: 'lesson-plan-designer',
-  mcpServers: solutionConfig?.mcpServers,
-  skillPath: solutionConfig?.skillPath,
-  enabledSkillSlugs: ['lesson-plan-designer'],
+  sessionTemplate: 'lesson-plan-designer',  // 会话模板名称，服务端解析配置
   context: context,  // 来自 usePageContext 的页面上下文
 }
 
@@ -154,9 +152,7 @@ export function useLessonPlanSession(options) {
   const chat = useAgentChat({
     connection,
     tenantId: 'lesson-plan-designer',
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
-    enabledSkillSlugs,
+    sessionTemplate: 'lesson-plan-designer',  // 服务端解析 MCP、技能等配置
     context,
     onOutputUpdate: (update) => {
       // 将 output_update 桥接到领域特定的同步逻辑
@@ -218,9 +214,8 @@ export function useLessonPlanSession(options) {
 |------|------|------|
 | `connection` | `UseAgentConnectionReturn` | 来自 `useAgentConnection` |
 | `tenantId` | `string` | 租户标识 |
-| `mcpServers` | `Record<string, McpServerConfig>` | MCP 服务器配置 |
-| `skillPath` | `string \| null` | 自定义技能指令路径 |
-| `enabledSkillSlugs` | `string[]` | 启用哪些技能 |
+| `sessionTemplate` | `string` | 会话模板名称，服务端解析 MCP 服务器、技能等配置 |
+| `enabledSkillSlugs` | `string[]` | 覆盖模板中的技能列表（可选） |
 | `context` | `PageContext \| null` | 来自 `usePageContext` 的页面上下文 |
 | `onOutputUpdate` | `(update: OutputUpdate) => void` | 结构化字段更新回调 |
 

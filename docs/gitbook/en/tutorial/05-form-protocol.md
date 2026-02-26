@@ -292,8 +292,7 @@ const connection = useAgentConnection({
 const chat = useAgentChat({
   connection,
   tenantId: 'my-solution',
-  mcpServers: solutionConfig?.mcpServers,
-  skillPath: solutionConfig?.skillPath,
+  sessionTemplate: 'my-template',  // MCP servers, skills resolved server-side
   onOutputUpdate: (update) => {
     // update = { field, value, preview, timestamp }
     // Bridge to your sync state management
@@ -582,7 +581,7 @@ Example:
 
 ### output\_update events not arriving
 
-1. Verify the MCP server is registered in your solution config (`mcpServers` in `useAgentChat`)
+1. Verify the MCP server is registered in your session template or `solution.json` (`mcpServers` in session templates)
 2. Verify the MCP tool returns JSON with the `{ data: { field, value }, status }` structure
 3. Check the CCAAS backend logs for EventMapper parsing errors
 4. Use browser DevTools Network tab to inspect WebSocket frames for `output_update`

@@ -65,8 +65,7 @@ useLessonPlanSession()
 ├── usePageContext()        → context, updateContext
 ├── useFiles()              → files, newFilesCount, uploadFile
 ├── useLessonPlanSync()     → pendingUpdates, syncToForm, undoSync  (Solution-specific)
-├── useLessonPlanCRUD()     → lessonPlan, savePlan, loadPlan         (Solution-specific)
-└── useSolutionConfig()     → mcpServers, skillPath                  (Solution-specific)
+└── useLessonPlanCRUD()     → lessonPlan, savePlan, loadPlan         (Solution-specific)
 ```
 
 ## Step 2: Build the Session Hook
@@ -86,7 +85,6 @@ import {
   type Message,
 } from '@kedge-agentic/react-sdk'
 import { useLessonPlanSync } from './useLessonPlanSync'
-import { useSolutionConfig } from './useSolutionConfig'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // IMPORTANT: Use absolute URL to the CCAAS backend, NOT a relative path
@@ -103,16 +101,13 @@ export function useLessonPlanSession(options = {}) {
     autoConnect,
   })
 
-  // ===== 2. Solution Config (MCP servers, skill path) =====
-  const { config: solutionConfig } = useSolutionConfig()
-
-  // ===== 3. Domain CRUD =====
+  // ===== 2. Domain CRUD =====
   const crud = useLessonPlanCRUD({ onError: (err) => setError(err) })
 
-  // ===== 4. Page Context =====
+  // ===== 3. Page Context =====
   const { context, updateContext } = usePageContext()
 
-  // ===== 5. Form Sync State =====
+  // ===== 4. Form Sync State =====
   const {
     pendingUpdates, modifiedFields,
     addPendingUpdate, removePendingUpdate,
@@ -120,12 +115,11 @@ export function useLessonPlanSession(options = {}) {
     resetSyncState,
   } = useLessonPlanSync()
 
-  // ===== 6. SDK Chat =====
+  // ===== 5. SDK Chat =====
   const chat = useAgentChat({
     connection,
     tenantId,
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
+    sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
     context,
     onOutputUpdate: (update) => {
       // Bridge SDK output_update events to the sync hook
@@ -137,10 +131,10 @@ export function useLessonPlanSession(options = {}) {
     },
   })
 
-  // ===== 7. SDK Status =====
+  // ===== 6. SDK Status =====
   const status = useAgentStatus({ connection })
 
-  // ===== 8. SDK Files =====
+  // ===== 7. SDK Files =====
   const files = useFiles({
     connection,
     sessionId: connection.sessionId,

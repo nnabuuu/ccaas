@@ -370,36 +370,45 @@ Content-Type: application/json
 
 ## Template Resolution Rules
 
-When a frontend passes both a `sessionTemplate` and explicit parameters, they merge according to these rules:
+The frontend passes a `sessionTemplate` name and may also pass `enabledSkillSlugs` and `context`. MCP servers and skill paths are **server-side only** -- they are defined in session templates (or auto-injected from `solution.json` by the Solution Loader) and cannot be overridden from the frontend.
+
+**What the frontend can pass:**
 
 | Field | Merge Strategy |
 |-------|---------------|
-| `enabledSkillSlugs` | **Replace** — explicit value wins entirely |
-| `mcpServers` | **Shallow merge** — explicit servers added/override template servers |
-| `appendSystemPrompt` | **Append** — explicit content appended after template content |
-| `model` | **Replace** — explicit value wins |
+| `enabledSkillSlugs` | **Replace** — explicit value wins entirely over template value |
+| `context` | **Passed through** — page context sent with every message |
+
+**What is server-side only (not accepted from frontend):**
+
+| Field | Source |
+|-------|--------|
+| `mcpServers` | Defined in session templates or auto-injected from `solution.json` |
+| `skillPath` | Defined in session templates |
+| `appendSystemPrompt` | Defined in session templates |
+| `model` | Defined in session templates |
 
 ```typescript
-// Template (from Admin UI):
+// Template (from Admin UI or solution.json):
 {
   "appendSystemPrompt": "You are a teacher assistant",
   "enabledSkillSlugs": ["knowledge-matching"],
   "mcpServers": { "server-a": { ... } }
 }
 
-// Frontend explicit params:
+// Frontend:
 useAgentChat({
   sessionTemplate: 'teacher-assistant',
-  enabledSkillSlugs: ['custom-skill'],       // Replaces template list
-  appendSystemPrompt: 'Additional context',  // Appended after template prompt
-  // mcpServers not specified → template servers are used
+  enabledSkillSlugs: ['custom-skill'],  // Replaces template skill list
+  context,                               // Page context from usePageContext
+  // mcpServers and skillPath are NOT passed from frontend
 })
 
-// Final resolved params sent to backend:
+// Final resolved params on the server:
 {
   "enabledSkillSlugs": ["custom-skill"],
-  "appendSystemPrompt": "You are a teacher assistant\n\nAdditional context",
-  "mcpServers": { "server-a": { ... } }
+  "appendSystemPrompt": "You are a teacher assistant",
+  "mcpServers": { "server-a": { ... } }  // From template only
 }
 ```
 

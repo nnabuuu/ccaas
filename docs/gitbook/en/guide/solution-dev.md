@@ -199,9 +199,7 @@ export function useMySession() {
   const chat = useAgentChat({
     connection,
     tenantId: 'my-solution',
-    mcpServers: solutionConfig?.mcpServers,
-    skillPath: solutionConfig?.skillPath,
-    enabledSkillSlugs: ['my-skill'],
+    sessionTemplate: 'my-template',  // MCP servers, skills resolved server-side
     context,
     onOutputUpdate: (update) => {
       // Handle structured field updates from the AI Agent

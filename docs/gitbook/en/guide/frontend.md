@@ -163,8 +163,7 @@ import { useAgentChat } from '@kedge-agentic/react-sdk'
 const chat = useAgentChat({
   connection,
   tenantId,
-  mcpServers: solutionConfig?.mcpServers,
-  skillPath: solutionConfig?.skillPath,
+  sessionTemplate: 'your-template-name',  // resolved server-side from session templates
   context,  // from usePageContext - attached to every message
   onOutputUpdate: (update) => {
     // Handle AI-generated field updates (field, value, preview)
