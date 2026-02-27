@@ -1,6 +1,6 @@
 {
   "name": "@kedge-agentic/vue-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Vue composables and utilities for integrating with Claude-Code-as-a-Service backend",
   "type": "module",
   "main": "./dist/index.cjs",
