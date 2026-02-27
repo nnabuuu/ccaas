@@ -3,6 +3,10 @@
  *
  * Validates and extracts tenant from requests.
  * Supports API key authentication and X-Tenant-Id header.
+ *
+ * Sets request.tenantId and request.tenant as the operation target.
+ * request.context (caller identity set by ApiKeyGuard) is NEVER modified.
+ * Admin API keys may cross-tenant operate via X-Tenant-Id header.
  */
 
 import {
@@ -11,8 +15,10 @@ import {
   ExecutionContext,
   UnauthorizedException,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
+import type { RequestContext } from '../auth/types';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
@@ -60,6 +66,27 @@ export class TenantGuard implements CanActivate {
 
     request.tenant = tenant;
     request.tenantId = tenant.id;
+
+    // Cross-tenant access: if ApiKeyGuard set a context with a different tenant,
+    // allow the override only when the API key has 'admin' scope.
+    // NOTE: request.context (caller identity) is NEVER modified.
+    // request.tenantId and request.tenant (operation target) are already set above.
+    const requestContext: RequestContext | undefined = request.context;
+    if (requestContext && requestContext.tenantId !== tenant.id) {
+      if (!requestContext.apiKeyScopes?.includes('admin')) {
+        this.logger.warn(
+          `API key tenant ${requestContext.tenantId} does not match X-Tenant-Id ${tenant.id} and key lacks admin scope`,
+        );
+        throw new ForbiddenException(
+          'API key does not have permission to access this tenant',
+        );
+      }
+
+      this.logger.warn(
+        `Admin cross-tenant: key=${requestContext.apiKeyId} from=${requestContext.tenantId} to=${tenant.id}`,
+      );
+    }
+
     return true;
   }
 }

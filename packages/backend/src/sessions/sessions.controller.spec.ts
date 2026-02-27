@@ -331,6 +331,46 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     );
   });
 
+  it('does NOT call findPublished when templateName is provided (defers to orchestration)', async () => {
+    const dto: SendMessageDto = {
+      message: 'match knowledge points',
+      tenantId: 'tenant-123',
+      templateName: 'kp-search',
+    };
+
+    await controller.sendMessage(SESSION_ID, dto, mockRes);
+
+    expect(skillsService.findPublished).not.toHaveBeenCalled();
+    expect(messageQueueService.enqueue).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.any(String),
+      'tenant-123',
+      expect.objectContaining({ templateName: 'kp-search' }),
+    );
+  });
+
+  it('calls findPublished when no templateName and no enabledSkillSlugs (existing behavior)', async () => {
+    skillsService.findPublished.mockResolvedValue([
+      { slug: 'tutor', enabled: true },
+      { slug: 'writer', enabled: true },
+    ]);
+
+    const dto: SendMessageDto = {
+      message: 'hello',
+      tenantId: 'tenant-123',
+    };
+
+    await controller.sendMessage(SESSION_ID, dto, mockRes);
+
+    expect(skillsService.findPublished).toHaveBeenCalledWith('tenant-123');
+    expect(messageQueueService.enqueue).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.any(String),
+      'tenant-123',
+      expect.objectContaining({ enabledSkillSlugs: ['tutor', 'writer'] }),
+    );
+  });
+
   it('does not modify systemPrompt when appendSystemPrompt is only whitespace', async () => {
     skillsService.findPublished.mockResolvedValue([{ slug: 'tutor', enabled: true }]);
     skillManagementService.generateSystemPromptForSession.mockResolvedValue('Base prompt.');
@@ -427,12 +467,15 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
       };
     });
 
-    it('should throw NotFoundException for non-existent session', async () => {
+    it('should subscribe even when session does not yet exist (early subscription)', async () => {
       sessionService.getSession.mockReturnValue(null);
 
-      await expect(controller.subscribeEvents('fake-session', mockRes)).rejects.toThrow(NotFoundException);
-      await expect(controller.subscribeEvents('fake-session', mockRes)).rejects.toThrow(
-        'Session not found: fake-session',
+      await controller.subscribeEvents('future-session', mockRes);
+
+      expect(streamRegistry.subscribe).toHaveBeenCalledWith(
+        'future-session:push',
+        expect.any(String),
+        mockRes,
       );
     });
 

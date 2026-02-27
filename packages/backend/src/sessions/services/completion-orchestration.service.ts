@@ -188,6 +188,13 @@ export class CompletionOrchestrationService {
     let templateAppendPrompt: string | undefined;
 
     if (effectiveTemplateName) {
+      const availableTemplates = Object.keys(resolvedTenant?.config?.sessionTemplates ?? {});
+      this.logger.debug(
+        `Template lookup: tenant=${resolvedTenantId}, template=${effectiveTemplateName}, ` +
+        `available=[${availableTemplates.join(',')}], tenantFound=${!!resolvedTenant}, ` +
+        `hasConfig=${!!resolvedTenant?.config}`,
+      );
+
       // Tenant config is a JSON column — use explicit any cast for template fields
       const tmpl = resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined;
       if (tmpl) {
@@ -201,8 +208,19 @@ export class CompletionOrchestrationService {
         if (tmpl['sessionTtlMs']) {
           session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, tmpl['sessionTtlMs'] as number);
         }
+        this.logger.debug(
+          `Template "${effectiveTemplateName}" resolved: enabledSkillSlugs=${JSON.stringify(enabledSkillSlugs)}, ` +
+          `skillPromptMode=${skillPromptMode}, skillPath=${skillPath}, ` +
+          `hasSystemPrompt=${!!systemPrompt}, hasMcpServers=${!!mcpServers}`,
+        );
       } else {
         this.logger.warn(`Template "${effectiveTemplateName}" not found for tenant ${resolvedTenantId}`);
+        // Fallback: load all tenant skills to prevent silent no-skill degradation
+        if (!enabledSkillSlugs) {
+          const allSkills = await this.skillsService.findPublished(resolvedTenantId);
+          enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
+          this.logger.warn(`Template fallback: loaded ${enabledSkillSlugs.length} tenant skills`);
+        }
       }
     }
 

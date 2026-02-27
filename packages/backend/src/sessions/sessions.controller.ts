@@ -246,8 +246,11 @@ Response is \`text/event-stream\`, closed when Turn completes.
       const tenant = await this.tenantsService.findOne(data.tenantId);
       const resolvedTenantId = tenant?.id || data.tenantId;
 
-      // Auto-load tenant skills if not provided
-      if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
+      // Auto-load tenant skills if not provided AND no template will resolve them
+      this.logger.debug(
+        `sendMessage: templateName=${data.templateName ?? 'none'}, enabledSkillSlugs=${JSON.stringify(enabledSkillSlugs ?? null)}`,
+      );
+      if ((!enabledSkillSlugs || enabledSkillSlugs.length === 0) && !data.templateName) {
         const allSkills = await this.skillsService.findPublished(resolvedTenantId);
         enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
       }
@@ -333,10 +336,6 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
     @Param('sessionId') sessionId: string,
     @Res() res: Response,
   ) {
-    const session = this.sessionService.getSession(sessionId);
-    if (!session) {
-      throw new NotFoundException(`Session not found: ${sessionId}`);
-    }
     const subscriberId = uuidv4();
     this.logger.log(`Push SSE subscribe: session=${sessionId} subscriber=${subscriberId}`);
     // Uses push channel key — NOT closed by turn-end (closeSession uses 'sessionId', not ':push')

@@ -124,7 +124,8 @@ export const Ctx = createParamDecorator(
 export const TenantId = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): string | undefined => {
     const request = ctx.switchToHttp().getRequest();
-    return request.context?.tenantId;
+    // Prefer operation target (set by TenantGuard), fallback to caller identity (for admin routes without TenantGuard)
+    return request.tenantId ?? request.context?.tenantId;
   },
 );
 
@@ -138,7 +139,8 @@ export const TenantId = createParamDecorator(
 export const CurrentTenant = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.context?.tenant;
+    // Prefer operation target (set by TenantGuard), fallback to caller identity
+    return request.tenant ?? request.context?.tenant;
   },
 );
 

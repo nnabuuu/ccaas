@@ -13,6 +13,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { SessionManagerService, PaginatedSessions } from './session-manager.service';
 import { SessionService } from '../../sessions/session.service';
+import { EventMapperService } from '../../sessions/event-mapper.service';
 import { AuditService } from './audit.service';
 import { Message } from '../../messages/entities/message.entity';
 import { ToolEvent } from '../../messages/entities/tool-event.entity';
@@ -21,6 +22,7 @@ import { ProcessLifecycleEvent } from '../../messages/entities/process-lifecycle
 import { ApiErrorEvent } from '../../messages/entities/api-error-event.entity';
 import { TokenUsageEvent } from '../../messages/entities/token-usage-event.entity';
 import { Session } from '../entities/session.entity';
+import { Turn } from '../entities/turn.entity';
 import { SessionQueryDto } from '../dto/admin.dto';
 import type { ManagedSession } from '../../common/interfaces';
 
@@ -124,6 +126,12 @@ describe('SessionManagerService', () => {
           },
         },
         {
+          provide: EventMapperService,
+          useValue: {
+            getTenantToolTriggers: jest.fn().mockReturnValue([]),
+          },
+        },
+        {
           provide: getRepositoryToken(Message),
           useValue: {
             createQueryBuilder: jest.fn(),
@@ -167,6 +175,13 @@ describe('SessionManagerService', () => {
             createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
             save: jest.fn(),
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Turn),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
           },
         },
       ],

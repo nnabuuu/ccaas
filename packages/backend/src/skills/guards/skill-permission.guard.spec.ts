@@ -429,6 +429,59 @@ describe('SkillPermissionGuard', () => {
       });
     });
 
+    describe('Cross-Tenant Resolution', () => {
+      it('should use request.tenantId (target) over context.tenantId (caller)', async () => {
+        const request = {
+          method: 'GET',
+          params: { id: 'skill-123' },
+          tenantId: 'tenant-target',
+          context: {
+            tenantId: 'tenant-caller',
+            userId: 'user-123',
+            apiKeyScopes: ['admin'],
+            userTenant: { role: 'admin', isActive: true },
+          },
+        };
+
+        reflector.getAllAndOverride.mockReturnValue(false);
+        skillsService.findOne.mockResolvedValue({
+          id: 'skill-123',
+          scope: 'tenant',
+        } as any);
+
+        const context = createMockContext(request);
+        const result = await guard.canActivate(context);
+
+        expect(result).toBe(true);
+        expect(skillsService.findOne).toHaveBeenCalledWith('tenant-target', 'skill-123');
+      });
+
+      it('should fall back to context.tenantId when request.tenantId is absent', async () => {
+        const request = {
+          method: 'GET',
+          params: { id: 'skill-456' },
+          // no request.tenantId — TenantGuard not applied or no header
+          context: {
+            tenantId: 'tenant-from-context',
+            userId: 'user-123',
+            userTenant: { role: 'admin', isActive: true },
+          },
+        };
+
+        reflector.getAllAndOverride.mockReturnValue(false);
+        skillsService.findOne.mockResolvedValue({
+          id: 'skill-456',
+          scope: 'tenant',
+        } as any);
+
+        const context = createMockContext(request);
+        const result = await guard.canActivate(context);
+
+        expect(result).toBe(true);
+        expect(skillsService.findOne).toHaveBeenCalledWith('tenant-from-context', 'skill-456');
+      });
+    });
+
     describe('Edge Cases', () => {
       it('should handle missing userTenant gracefully', async () => {
         const request = {

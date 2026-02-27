@@ -162,6 +162,46 @@ export class StreamRegistryService {
   }
 
   /**
+   * Close a single SSE subscriber for a session (turn-scoped closure).
+   * Only closes the specified subscriber, leaving other subscribers
+   * (e.g. from a subsequent message) intact.
+   */
+  closeTurn(sessionId: string, subscriberId: string): void {
+    const sessionSubscribers = this.subscribers.get(sessionId);
+    if (!sessionSubscribers) return;
+
+    const subscriber = sessionSubscribers.get(subscriberId);
+    if (!subscriber) return;
+
+    const doneEvent: FrontendEvent = {
+      type: 'done',
+      sessionId,
+      timestamp: new Date().toISOString(),
+    };
+
+    const sseData = this.formatSSE({
+      seq: this.nextSeq(sessionId),
+      sessionId,
+      timestamp: new Date().toISOString(),
+      event: doneEvent,
+    });
+
+    try {
+      subscriber.res.write(sseData);
+      subscriber.res.end();
+    } catch {
+      // Ignore errors on close
+    }
+
+    sessionSubscribers.delete(subscriberId);
+    if (sessionSubscribers.size === 0) {
+      this.subscribers.delete(sessionId);
+    }
+
+    this.logger.debug(`Closed SSE subscriber ${subscriberId} for session ${sessionId}`);
+  }
+
+  /**
    * Close all SSE connections for a session (send done event then close)
    */
   closeSession(sessionId: string): void {

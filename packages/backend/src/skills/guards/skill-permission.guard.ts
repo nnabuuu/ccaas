@@ -42,15 +42,17 @@ export class SkillPermissionGuard implements CanActivate {
     const method = request.method;
     const skillId = request.params?.id;
     const requestContext: RequestContext | undefined = request.context;
+    // Use operation target tenant (set by TenantGuard), not caller identity tenant
+    const tenantId: string | undefined = request.tenantId ?? requestContext?.tenantId;
 
     // READ operations (GET)
     if (method === 'GET' && skillId) {
-      return this.checkReadPermission(skillId, requestContext);
+      return this.checkReadPermission(skillId, tenantId, requestContext);
     }
 
     // WRITE operations (POST, PUT, PATCH, DELETE)
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      return this.checkWritePermission(method, skillId, requestContext);
+      return this.checkWritePermission(method, skillId, tenantId, requestContext);
     }
 
     // Default: allow (for LIST operations without ID)
@@ -62,13 +64,14 @@ export class SkillPermissionGuard implements CanActivate {
    */
   private async checkReadPermission(
     skillId: string,
+    tenantId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
-    if (!context?.tenantId) {
+    if (!tenantId) {
       throw new ForbiddenException('Tenant context required');
     }
 
-    const skill = await this.skillsService.findOne(context.tenantId, skillId);
+    const skill = await this.skillsService.findOne(tenantId, skillId);
 
     if (!skill) {
       throw new ForbiddenException('Skill not found');
@@ -107,6 +110,7 @@ export class SkillPermissionGuard implements CanActivate {
   private async checkWritePermission(
     method: string,
     skillId: string | undefined,
+    tenantId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
     // Anonymous users cannot write
@@ -133,7 +137,7 @@ export class SkillPermissionGuard implements CanActivate {
 
     // UPDATE/DELETE operations require checking existing skill
     if (skillId) {
-      return this.checkModifyPermission(skillId, context);
+      return this.checkModifyPermission(skillId, tenantId, context);
     }
 
     return true;
@@ -162,13 +166,14 @@ export class SkillPermissionGuard implements CanActivate {
    */
   private async checkModifyPermission(
     skillId: string,
+    tenantId: string | undefined,
     context: RequestContext,
   ): Promise<boolean> {
-    if (!context.tenantId) {
+    if (!tenantId) {
       throw new ForbiddenException('Tenant context required');
     }
 
-    const skill = await this.skillsService.findOne(context.tenantId, skillId);
+    const skill = await this.skillsService.findOne(tenantId, skillId);
 
     if (!skill) {
       throw new ForbiddenException('Skill not found');

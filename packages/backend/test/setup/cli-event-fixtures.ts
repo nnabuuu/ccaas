@@ -229,6 +229,88 @@ export const taskToolCallEvent = {
 };
 
 // ============================================================================
+// Assistant Events with Usage (stream-json format)
+// ============================================================================
+
+/**
+ * Assistant event with full usage data (as emitted by stream-json format)
+ * In stream-json, assistant events carry message.usage with final token counts
+ */
+export const assistantEventWithUsage = {
+  type: 'assistant',
+  message: {
+    id: 'msg_usage_test',
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'text', text: 'Here is the answer.' }],
+    model: 'claude-sonnet-4-20250514',
+    stop_reason: 'end_turn',
+    usage: {
+      input_tokens: 500,
+      output_tokens: 150,
+      cache_read_input_tokens: 100,
+      cache_creation_input_tokens: 50,
+    },
+  },
+};
+
+/**
+ * Create an assistant event with configurable usage
+ */
+export const createAssistantEventWithUsage = (
+  inputTokens: number,
+  outputTokens: number,
+  options: {
+    cacheReadTokens?: number;
+    cacheCreationTokens?: number;
+    reasoningTokens?: number;
+    model?: string;
+    stopReason?: string;
+    messageId?: string;
+    text?: string;
+  } = {},
+) => ({
+  type: 'assistant',
+  message: {
+    id: options.messageId || 'msg_test',
+    type: 'message',
+    role: 'assistant',
+    content: [{ type: 'text', text: options.text || 'Response text' }],
+    model: options.model || 'claude-sonnet-4-20250514',
+    stop_reason: options.stopReason || 'end_turn',
+    usage: {
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cache_read_input_tokens: options.cacheReadTokens || 0,
+      cache_creation_input_tokens: options.cacheCreationTokens || 0,
+      reasoning_tokens: options.reasoningTokens || 0,
+    },
+  },
+});
+
+/**
+ * Result event with usage data (stream-json format)
+ */
+export const resultEventWithUsage = {
+  type: 'result',
+  subtype: 'success',
+  cost_usd: 0.0045,
+  is_error: false,
+  duration_ms: 2500,
+  duration_api_ms: 2000,
+  num_turns: 1,
+  result: '',
+  session_id: 'test-session-123',
+  model: 'claude-sonnet-4-20250514',
+  usage: {
+    input_tokens: 500,
+    output_tokens: 150,
+    cache_read_input_tokens: 100,
+    cache_creation_input_tokens: 50,
+  },
+};
+
+// ============================================================================
 // Usage Events
 // ============================================================================
 

@@ -13,6 +13,7 @@ import {
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
+import { OptionalAuth } from '../auth/decorators';
 import { MessagesService } from './messages.service';
 import { ToolEventsService } from './tool-events.service';
 import { ConversationContextService } from './conversation-context.service';
@@ -28,6 +29,7 @@ import { ToolEvent } from './entities/tool-event.entity';
 
 @ApiTags('messages')
 @Controller('api/v1')
+@OptionalAuth()
 export class MessagesController {
   constructor(
     private readonly messagesService: MessagesService,

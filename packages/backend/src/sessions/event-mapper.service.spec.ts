@@ -1088,6 +1088,183 @@ describe('EventMapperService', () => {
           expect.stringContaining('DB connection lost'),
         );
       });
+
+      // -----------------------------------------------------------------------
+      // stream-json format: assistant event with message.usage
+      // -----------------------------------------------------------------------
+
+      it('should call recordUsage for assistant event with message.usage (stream-json)', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-001', tenantId: 'tenant-1' }));
+
+        const assistantWithUsage = {
+          type: 'assistant',
+          message: {
+            id: 'msg_api_ast',
+            type: 'message',
+            role: 'assistant',
+            content: [{ type: 'text', text: 'Hello' }],
+            model: 'claude-sonnet-4-20250514',
+            stop_reason: 'end_turn',
+            usage: {
+              input_tokens: 500,
+              output_tokens: 150,
+              cache_read_input_tokens: 100,
+              cache_creation_input_tokens: 50,
+              reasoning_tokens: 0,
+            },
+          },
+        };
+
+        service.mapToFrontendEvents(assistantWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-ast-001',
+            sessionId: testSessionId,
+            tenantId: 'tenant-1',
+            model: 'claude-sonnet-4-20250514',
+            inputTokens: 500,
+            outputTokens: 150,
+            cachedInputTokens: 100,
+            cacheCreationTokens: 50,
+            stopReason: 'end_turn',
+            apiMessageId: 'msg_api_ast',
+          }),
+        );
+      });
+
+      it('should emit token_usage frontend event from assistant event usage', () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-002' }));
+
+        const assistantWithUsage = {
+          type: 'assistant',
+          message: {
+            id: 'msg_api_ast2',
+            model: 'claude-sonnet-4-20250514',
+            content: [],
+            usage: { input_tokens: 200, output_tokens: 80 },
+          },
+        };
+
+        const events = service.mapToFrontendEvents(assistantWithUsage as any, testSessionId, testClientId);
+
+        const tokenEvent = events.find((e) => e.type === 'token_usage');
+        expect(tokenEvent).toBeDefined();
+        expect((tokenEvent as any).payload.inputTokens).toBe(200);
+        expect((tokenEvent as any).payload.outputTokens).toBe(80);
+        expect((tokenEvent as any).payload.model).toBe('claude-sonnet-4-20250514');
+      });
+
+      it('should NOT record usage from assistant event when usage has only zeros', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-003' }));
+
+        const assistantNoUsage = {
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'Hi' }],
+            usage: { input_tokens: 0, output_tokens: 0 },
+          },
+        };
+
+        service.mapToFrontendEvents(assistantNoUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
+      });
+
+      it('should NOT record usage from assistant event when usage is absent', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-ast-004' }));
+
+        const assistantWithoutUsage = {
+          type: 'assistant',
+          message: {
+            content: [{ type: 'text', text: 'Hi' }],
+          },
+        };
+
+        service.mapToFrontendEvents(assistantWithoutUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
+      });
+
+      // -----------------------------------------------------------------------
+      // stream-json format: result event with usage
+      // -----------------------------------------------------------------------
+
+      it('should call recordUsage for result event with usage (stream-json)', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-res-001', tenantId: 'tenant-2' }));
+
+        const resultWithUsage = {
+          type: 'result',
+          subtype: 'success',
+          cost_usd: 0.0045,
+          result: '',
+          model: 'claude-sonnet-4-20250514',
+          usage: {
+            input_tokens: 600,
+            output_tokens: 200,
+            cache_read_input_tokens: 150,
+            cache_creation_input_tokens: 30,
+            reasoning_tokens: 10,
+          },
+        };
+
+        service.mapToFrontendEvents(resultWithUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
+        expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
+          expect.objectContaining({
+            messageId: 'msg-res-001',
+            sessionId: testSessionId,
+            tenantId: 'tenant-2',
+            model: 'claude-sonnet-4-20250514',
+            inputTokens: 600,
+            outputTokens: 200,
+            cachedInputTokens: 150,
+            cacheCreationTokens: 30,
+            reasoningTokens: 10,
+          }),
+        );
+      });
+
+      it('should emit token_usage frontend event from result event usage', () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-res-002' }));
+
+        const resultWithUsage = {
+          type: 'result',
+          subtype: 'success',
+          result: '',
+          model: 'claude-sonnet-4-20250514',
+          usage: { input_tokens: 300, output_tokens: 100 },
+        };
+
+        const events = service.mapToFrontendEvents(resultWithUsage as any, testSessionId, testClientId);
+
+        const tokenEvent = events.find((e) => e.type === 'token_usage');
+        expect(tokenEvent).toBeDefined();
+        expect((tokenEvent as any).payload.inputTokens).toBe(300);
+        expect((tokenEvent as any).payload.outputTokens).toBe(100);
+      });
+
+      it('should NOT record usage from result event when no usage field', async () => {
+        service.registerSessionGetter(() => makeSession({ messageId: 'msg-res-003' }));
+
+        const resultNoUsage = {
+          type: 'result',
+          subtype: 'success',
+          cost_usd: 0.001,
+          result: 'done',
+        };
+
+        service.mapToFrontendEvents(resultNoUsage as any, testSessionId, testClientId);
+        await flush();
+
+        expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
+      });
     });
   });
 
