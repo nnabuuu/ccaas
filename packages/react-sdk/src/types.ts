@@ -381,6 +381,7 @@ export interface UseAgentChatOptions {
   tenantId: string
   enabledSkillSlugs?: string[]
   onOutputUpdate?: (update: OutputUpdate) => void
+  onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void
   /** Page context to send with every message (from usePageContext hook) */
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */

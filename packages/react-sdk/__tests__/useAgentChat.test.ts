@@ -27,6 +27,7 @@ function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {})
     connect: vi.fn(),
     disconnect: vi.fn(),
     startNewConversation: vi.fn(),
+    markSessionReady: vi.fn(),
     ...overrides,
   }
 }
@@ -294,6 +295,49 @@ describe('useAgentChat', () => {
     expect(callArgs).toBeDefined()
     const body = JSON.parse((callArgs![1] as Record<string, string>).body)
     expect(body.attachments).toEqual([{ type: 'image', path: '/tmp/img.png' }])
+  })
+
+  it('should call onTokenUsage callback when token_usage event received', () => {
+    const onTokenUsage = vi.fn()
+    const connection = createMockConnection()
+
+    renderHook(() =>
+      useAgentChat({ connection, tenantId: 'test', transport: 'socket', onTokenUsage }),
+    )
+
+    act(() => {
+      handlers['token_usage']?.({
+        payload: {
+          inputTokens: 100,
+          outputTokens: 50,
+          cacheReadTokens: 30,
+        },
+      })
+    })
+
+    expect(onTokenUsage).toHaveBeenCalledWith({
+      inputTokens: 100,
+      outputTokens: 50,
+      cacheReadTokens: 30,
+    })
+  })
+
+  it('should not fail when onTokenUsage is not provided', () => {
+    const connection = createMockConnection()
+
+    renderHook(() =>
+      useAgentChat({ connection, tenantId: 'test', transport: 'socket' }),
+    )
+
+    // Should not throw
+    act(() => {
+      handlers['token_usage']?.({
+        payload: {
+          inputTokens: 100,
+          outputTokens: 50,
+        },
+      })
+    })
   })
 
   it('should include enabledSkillSlugs in payload', async () => {

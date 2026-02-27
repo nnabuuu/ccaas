@@ -71,6 +71,12 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
     }))
   }, [])
 
+  // Handle token_usage via SDK callback (SSE mode — useAgentStatus only works with Socket.IO)
+  const [sseTokenUsage, setSseTokenUsage] = useState<UseAgentStatusReturn['tokenUsage']>(null)
+  const handleTokenUsage = useCallback((usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => {
+    setSseTokenUsage(usage)
+  }, [])
+
   // Core SDK hooks
   const connection: UseAgentConnectionReturn = useAgentConnection({
     serverUrl: BACKEND_URL,
@@ -84,6 +90,7 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
     transport: 'sse',
     sessionTemplate: viewMode,
     onOutputUpdate: handleOutputUpdate,
+    onTokenUsage: handleTokenUsage,
   })
 
   const status: UseAgentStatusReturn = useAgentStatus({ connection })
@@ -165,7 +172,7 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
     todoItems: status.todoItems,
     todoStats: status.todoStats,
     activeSubAgents: status.activeSubAgents,
-    tokenUsage: status.tokenUsage,
+    tokenUsage: status.tokenUsage ?? sseTokenUsage,
 
     // Computed state
     isMainProcessing,

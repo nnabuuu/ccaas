@@ -33,6 +33,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     tenantId,
     enabledSkillSlugs,
     onOutputUpdate,
+    onTokenUsage,
     context,
     sessionTemplate,
     transport = 'sse',
@@ -60,6 +61,9 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   // Stable ref for onOutputUpdate callback
   const onOutputUpdateRef = useRef(onOutputUpdate)
   onOutputUpdateRef.current = onOutputUpdate
+
+  const onTokenUsageRef = useRef(onTokenUsage)
+  onTokenUsageRef.current = onTokenUsage
 
   // SSE stream support
   const { startStream, abortStream } = useSseStream()
@@ -187,6 +191,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         outputTokens: payload.outputTokens,
         cacheReadTokens: payload.cacheReadTokens,
       }
+      onTokenUsageRef.current?.(latestTokenUsageRef.current)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
