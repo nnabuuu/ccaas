@@ -130,21 +130,6 @@ export const TenantId = createParamDecorator(
 );
 
 /**
- * Get the tenant object from the authenticated request
- *
- * @example
- * @Get()
- * async list(@CurrentTenant() tenant: Tenant) { ... }
- */
-export const CurrentTenant = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
-    // Prefer operation target (set by TenantGuard), fallback to caller identity
-    return request.tenant ?? request.context?.tenant;
-  },
-);
-
-/**
  * Get the API key ID from the authenticated request
  *
  * @example

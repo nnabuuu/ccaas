@@ -75,6 +75,54 @@ API 密钥列表显示：
 
 **⚠️ 警告**：删除是永久性的。建议使用 **吊销** 以保留审计记录。
 
+## 引导密钥链（新环境部署）
+
+部署到新环境时，会遇到先有鸡还是先有蛋的问题：你需要管理员 API 密钥来创建 Solution 专用密钥，但此时还没有任何密钥。平台通过**引导密钥链**解决这个问题：
+
+```
+INITIAL_ADMIN_KEY（环境变量）
+  → 后端启动时在数据库中创建管理员密钥
+    → setup.sh 使用 CCAAS_BOOTSTRAP_KEY 调用管理员 API
+      → 管理员 API 创建 Solution 专用密钥
+        → Solution 密钥写入 .env 文件
+```
+
+### 配置
+
+| 环境变量 | 设置位置 | 用途 |
+|---------|---------|------|
+| `INITIAL_ADMIN_KEY` | 后端 `.env` / K8s secret | 固定管理员密钥（替代自动生成） |
+| `CCAAS_BOOTSTRAP_KEY` | 运行 `setup.sh` 前的 Shell | 告诉安装脚本使用哪个管理员密钥 |
+
+### 快速开始
+
+```bash
+# 1. 生成密钥（必须以 'sk-' 开头，至少 20 个字符）
+ADMIN_KEY="sk-$(openssl rand -hex 24)"
+
+# 2. 设置后端环境变量
+export INITIAL_ADMIN_KEY="$ADMIN_KEY"
+# 启动后端...
+
+# 3. 运行 Solution 安装
+export CCAAS_BOOTSTRAP_KEY="$ADMIN_KEY"
+export CCAAS_URL="http://localhost:3001"
+cd solutions/business/my-solution && bash setup.sh
+```
+
+### 关键文件
+
+| 文件 | 作用 |
+|------|------|
+| `packages/backend/src/config/configuration.ts` | 读取 `INITIAL_ADMIN_KEY` 环境变量 |
+| `packages/backend/src/auth/api-key.service.ts` | 首次启动时创建管理员密钥 |
+| `tools/solution-lib.sh` | `get_or_create_bootstrap_key()` 读取 `CCAAS_BOOTSTRAP_KEY` |
+| `solutions/business/*/setup.sh` | 每个 Solution 的安装脚本（未设置环境变量时回退到开发默认值） |
+
+{% hint style="warning" %}
+硬编码的回退值 `sk-default-test...` 仅用于本地开发。在测试/生产环境中必须设置 `CCAAS_BOOTSTRAP_KEY`。
+{% endhint %}
+
 ## REST API 使用
 
 ### 身份验证

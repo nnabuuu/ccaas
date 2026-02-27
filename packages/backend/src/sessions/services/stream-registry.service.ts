@@ -154,6 +154,13 @@ export class StreamRegistryService {
   }
 
   /**
+   * Get the number of active subscribers for a session
+   */
+  getSubscriberCount(sessionId: string): number {
+    return this.subscribers.get(sessionId)?.size ?? 0;
+  }
+
+  /**
    * Get buffered events since a given sequence number (for reconnection)
    */
   getEventsSince(sessionId: string, afterSeq: number): StreamEventEnvelope[] {

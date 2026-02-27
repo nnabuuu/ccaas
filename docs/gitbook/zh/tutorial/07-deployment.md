@@ -50,6 +50,7 @@ CLEANUP_INTERVAL_MS=300000      # 5 分钟
 # 认证
 AUTH_ALLOW_ANONYMOUS=false       # 生产环境必须要求 API Key
 AUTH_ENABLE_RATE_LIMITING=true
+INITIAL_ADMIN_KEY=sk-<用 openssl rand 生成>  # 引导管理员密钥
 
 # Skills
 SKILL_REGISTRY_DIR=/data/ccaas/skill-packages
@@ -212,6 +213,7 @@ services:
       - WORKSPACE_DIR=/data/ccaas/agent-workspace
       - AUTH_ALLOW_ANONYMOUS=false
       - AUTH_ENABLE_RATE_LIMITING=true
+      - INITIAL_ADMIN_KEY=${INITIAL_ADMIN_KEY}  # 通过 .env 或 secret 设置
     restart: unless-stopped
 
   lesson-plan-backend:
@@ -442,6 +444,55 @@ TypeORM 会应用合理的默认值，但对于高吞吐量场景，你可能需
 AUTH_ALLOW_ANONYMOUS=false
 AUTH_ENABLE_RATE_LIMITING=true
 ```
+
+### 新环境的引导管理员密钥
+
+部署到新环境时，你需要一个引导管理员密钥来创建 Solution 专用的 API Key。平台通过 `INITIAL_ADMIN_KEY` 环境变量支持此功能 — **无需修改代码**。
+
+**第 1 步：生成随机管理员密钥**
+
+```bash
+# 必须以 'sk-' 开头，且至少 20 个字符
+ADMIN_KEY="sk-$(openssl rand -hex 24)"
+echo "$ADMIN_KEY"  # 安全保存此密钥
+```
+
+**第 2 步：设置后端环境变量**
+
+```bash
+# 在 .env.production、docker-compose、K8s secret 等中设置
+INITIAL_ADMIN_KEY=sk-<你生成的密钥>
+```
+
+后端在首次启动时读取此变量并创建管理员密钥。后续重启将复用数据库中已有的密钥。
+
+**第 3 步：使用相同密钥运行 Solution 安装脚本**
+
+```bash
+export CCAAS_BOOTSTRAP_KEY="sk-<与第 1 步相同的密钥>"
+export CCAAS_URL="http://<后端主机>:3001"
+
+# 运行任意 Solution 安装
+cd solutions/business/quiz-analyzer && bash setup.sh
+cd solutions/business/lesson-plan-designer && bash setup.sh
+```
+
+安装脚本会使用 `CCAAS_BOOTSTRAP_KEY` 替代硬编码的开发环境默认值，调用管理员 API 创建 Solution 专用密钥，并自动写入每个 Solution 的 `.env` 文件。
+
+**第 4 步：验证**
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_KEY" \
+  http://<后端主机>:3001/api/v1/admin/api-keys?tenantId=default
+```
+
+{% hint style="info" %}
+**密钥存储**：原始密钥永远不会存储在数据库中 — 仅存储 SHA-256 哈希。密钥仅在首次创建时显示在后端日志中。如果设置了 `INITIAL_ADMIN_KEY`，完整密钥不会被记录（仅显示前缀）。
+{% endhint %}
+
+{% hint style="warning" %}
+**开发环境回退**：当未设置 `CCAAS_BOOTSTRAP_KEY` 时，安装脚本会回退到硬编码的测试密钥（`sk-default-test...`）。这在本地开发时很方便，但绝不能在生产环境中使用。非开发环境必须设置 `CCAAS_BOOTSTRAP_KEY`。
+{% endhint %}
 
 ### API Key 管理
 

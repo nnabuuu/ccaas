@@ -19,6 +19,9 @@
  * 14. batch_search_knowledge_points - Search multiple keywords at once (Mode A)
  * 15. search_knowledge_points_by_priority - Search KPs by keywords in priority order (Mode C)
  * 16. list_subjects - List all subjects or filter by keyword
+ * 17. get_knowledge_point_subtree - Get all descendant nodes of one or more parent nodes
+ * 18. list_knowledge_points_at_level - Get all nodes at a specific tree depth for a grade level
+ * 19. get_leaf_nodes - Get only leaf nodes under one or more parent nodes
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -66,16 +69,17 @@ const writeOutputTool: Tool = {
 Valid fields: ${SYNC_FIELDS.join(', ')}
 
 Field schemas:
-- quiz_analysis: string (Overall analysis summary in Markdown)
-- knowledge_point_tags: KnowledgePointTag[] (Array of knowledge points with confidence scores)
-- thinking_process: string (解题思路 in Markdown)
-- solution_steps: SolutionStep[] (Array of solution steps)
-- correct_answer: string (The correct answer)
-- common_mistakes: Mistake[] (Array of common mistakes with frequency and remediation)
-- knowledge_gap_analysis: string (Analysis of knowledge gaps in Markdown)
+- quizAnalysis: string (Overall analysis summary in Markdown)
+- knowledgePointTags: KnowledgePointTag[] (Array of knowledge points with confidence scores)
+- thinkingProcess: string (解题思路 in Markdown)
+- solutionSteps: SolutionStep[] (Array of solution steps)
+- correctAnswer: string (The correct answer)
+- commonMistakes: Mistake[] (Array of common mistakes with frequency and remediation)
+- knowledgeGapAnalysis: string (Analysis of knowledge gaps in Markdown)
 - difficulty: number (Difficulty level 1-5)
-- related_quizzes: RelatedQuiz[] (Array of related quizzes with similarity scores)
-- time_estimate: string (Estimated solving time)
+- relatedQuizzes: RelatedQuiz[] (Array of related quizzes with similarity scores)
+- timeEstimate: string (Estimated solving time)
+- kpRefinementResult: { tags: [{id,name,confidence,role}], traversalType, tagCount, trace } (Complete KP refinement result)
 
 Example for quiz_analysis:
 {
@@ -110,6 +114,7 @@ Example for knowledge_point_tags:
           { type: 'string', description: 'For text fields (quiz_analysis, thinking_process, etc.)' },
           { type: 'number', description: 'For numeric fields (difficulty)' },
           { type: 'array', description: 'For array fields (knowledge_point_tags, solution_steps, etc.)' },
+          { type: 'object', description: 'For structured fields (kp_refinement_result)' },
         ],
         description: 'The value for the field.',
       },
@@ -557,6 +562,104 @@ Agent interpretation:
   },
 };
 
+const getKnowledgePointSubtreeTool: Tool = {
+  name: 'get_knowledge_point_subtree',
+  description: `Get all descendant nodes of one or more parent knowledge point nodes (full depth).
+
+Use this for top-down beam search: after selecting the 2 most relevant root/branch nodes, call this once to get their entire subtrees, then filter by level to traverse layer by layer without additional API calls.
+
+Each result node includes: id, name, fullName, pathNames, level, subjectId, gradeLevel, isLeaf, childCount.
+
+Example usage:
+{ "nodeIds": ["1998702114322399941", "1998702114322399942"] }
+
+Returns all descendants (including the input nodes themselves), deduplicated.`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      nodeIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'One or more parent node IDs whose entire subtrees to return',
+        minItems: 1,
+      },
+    },
+    required: ['nodeIds'],
+  },
+};
+
+const listKnowledgePointsAtLevelTool: Tool = {
+  name: 'list_knowledge_points_at_level',
+  description: `Get all knowledge point nodes at a specific tree depth for a grade level.
+
+Use this as Phase 1 of a two-phase search: retrieve all nodes at level 3 (the "topic" tier), scan their fullName paths to identify the relevant subject branch, pick ≤3 matching nodes, then call get_leaf_nodes to get all leaves under them.
+
+Level numbering (root = level 1):
+- level 1: root nodes (e.g., "初中知识点", "2021版")  — 1 per subject
+- level 2: major domains (e.g., "数与代数", "图形与几何")
+- level 3: topics (e.g., "函数", "方程与不等式", "数的认识")  ← DEFAULT, recommended
+- level 4: sub-topics (e.g., "二次函数", "多位数除法")
+
+For math subjects: level 3 typically returns 8–28 nodes per grade, making selection easy.
+For broader grade queries: level 3 may return 400+ nodes — use fullName paths to filter by subject
+(e.g., math nodes contain "数与代数" or "函数" in their path).
+
+Each result includes: id, name, fullName, pathNames, level, subjectId, gradeLevel, isLeaf, childCount.
+
+Example usage:
+{ "gradeLevel": "初中", "level": 3 }
+{ "subjectId": "3601171b-5ac9-46ba-8dec-2022b42b0fa5", "level": 3 }`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      gradeLevel: {
+        type: 'string',
+        description: 'Grade level: 小学/初中/高中. Required unless subjectId is provided.',
+      },
+      subjectId: {
+        type: 'string',
+        description: 'Filter to a specific subject UUID (from list_root_knowledge_points). Optional but narrows results significantly.',
+      },
+      level: {
+        type: 'number',
+        description: 'Tree depth to retrieve (default: 3). Level 1 = root, level 2 = major domains, level 3 = topics, level 4 = sub-topics.',
+      },
+    },
+  },
+};
+
+const getLeafNodesTool: Tool = {
+  name: 'get_leaf_nodes',
+  description: `Get all leaf knowledge point nodes (isLeaf: true) under one or more parent nodes.
+
+Use this as Phase 2 of a two-phase search: after selecting ≤3 topic-level nodes from list_knowledge_points_at_level, retrieve all their leaf descendants and pick the single best match for the quiz.
+
+Leaf nodes are the most specific knowledge points (no children) and are suitable for tagging.
+
+Each result includes: id, name, fullName, pathNames, level, subjectId, gradeLevel.
+
+Returns up to 200 leaves by default. If truncated, the response includes "truncated: true" — in that case, refine your parent node selection to a more specific topic.
+
+Example usage:
+{ "nodeIds": ["id_of_函数", "id_of_方程"] }`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      nodeIds: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'One or more parent node IDs whose leaf descendants to return',
+        minItems: 1,
+      },
+      limit: {
+        type: 'number',
+        description: 'Maximum number of leaves to return (default: 200)',
+      },
+    },
+    required: ['nodeIds'],
+  },
+};
+
 const searchCatalogTool: Tool = {
   name: 'list_subjects',
   description: `Search and list subjects (学科) from the knowledge base.
@@ -582,6 +685,42 @@ Example usage:
   },
 };
 
+const fuzzySearchKnowledgePointsTool: Tool = {
+  name: 'fuzzy_search_knowledge_points',
+  description: `Fuzzy search knowledge points using bigram/token/substring scoring.
+
+Unlike search_knowledge_points (exact substring match only), this tool finds candidates even when the query and node name differ slightly — e.g. "一元一次方程" will match "一元一次方程的解法".
+
+Scoring formula:
+  score = 0.5×bigramOverlap + 0.3×tokenOverlap + 0.15×substringBonus + 0.05×leafBonus
+
+Use this as Phase A (Locate) of the unified KP search: extract 2-4 keywords from the quiz, call this tool for each keyword, then use get_knowledge_point_children to refine.
+
+Each result includes: id, name, fullName, pathNames, score, isLeaf, level, subjectId, gradeLevel.
+
+Example usage:
+{ "query": "一元一次方程" }
+{ "query": "二次函数", "subject_id": "3601171b-...", "top_k": 5 }`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Search query (e.g. keyword extracted from quiz)',
+      },
+      subject_id: {
+        type: 'string',
+        description: 'Optional subject ID to narrow search scope (~31k → ~2k candidates)',
+      },
+      top_k: {
+        type: 'number',
+        description: 'Maximum results to return (default: 10)',
+      },
+    },
+    required: ['query'],
+  },
+};
+
 // Handle list_tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
@@ -603,6 +742,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       batchSearchKnowledgePointsTool,
       searchKnowledgePointsByPriorityTool,
       searchCatalogTool,
+      getKnowledgePointSubtreeTool,
+      listKnowledgePointsAtLevelTool,
+      getLeafNodesTool,
+      fuzzySearchKnowledgePointsTool,
     ],
   };
 });
@@ -1483,6 +1626,192 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             }),
           },
         ],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle get_knowledge_point_subtree tool
+  if (name === 'get_knowledge_point_subtree') {
+    const { nodeIds } = args as { nodeIds: string[] };
+
+    try {
+      const MAX_SUBTREE_NODES = 2000;
+      const seenIds = new Set<string>();
+      const result: any[] = [];
+
+      function collectDescendants(nodeId: string) {
+        if (seenIds.has(nodeId) || result.length >= MAX_SUBTREE_NODES) return;
+        const node = jsonDataLoader.getKnowledgePointById(nodeId);
+        if (!node) return;
+        seenIds.add(nodeId);
+        const cached = jsonDataLoader.getFullName(node.id);
+        const { fullName, pathNames } = cached ?? { fullName: node.name, pathNames: [node.name] };
+        result.push({
+          id: node.id,
+          name: node.name.trim(),
+          fullName,
+          pathNames,
+          level: node.level,
+          subjectId: node.subjectId,
+          gradeLevel: node.gradeLevel,
+          isLeaf: node.children.length === 0,
+          childCount: node.children.length,
+        });
+        for (const childId of node.children) {
+          if (result.length >= MAX_SUBTREE_NODES) break;
+          collectDescendants(childId);
+        }
+      }
+
+      for (const nodeId of nodeIds) {
+        if (result.length >= MAX_SUBTREE_NODES) break;
+        collectDescendants(nodeId);
+      }
+
+      const truncated = result.length >= MAX_SUBTREE_NODES;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify({
+              nodeIds,
+              count: result.length,
+              truncated,
+              nodes: result,
+            }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle list_knowledge_points_at_level tool
+  if (name === 'list_knowledge_points_at_level') {
+    const { gradeLevel, subjectId, level = 3 } = args as { gradeLevel?: string; subjectId?: string; level?: number };
+
+    if (!gradeLevel && !subjectId) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: 'Provide at least gradeLevel or subjectId to avoid returning all nodes.' }) }],
+        isError: true,
+      };
+    }
+
+    try {
+      const allKps = jsonDataLoader.getAllKnowledgePoints();
+      const filtered = allKps.filter(kp => {
+        if (kp.level !== level) return false;
+        if (gradeLevel && kp.gradeLevel !== gradeLevel) return false;
+        if (subjectId && kp.subjectId !== subjectId) return false;
+        return true;
+      });
+
+      // Sort by fullName for readability
+      const nodes = filtered.map(kp => {
+        const cached = jsonDataLoader.getFullName(kp.id);
+        const { fullName, pathNames } = cached ?? { fullName: kp.name, pathNames: [kp.name] };
+        return { id: kp.id, name: kp.name.trim(), fullName, pathNames, level: kp.level, subjectId: kp.subjectId, gradeLevel: kp.gradeLevel, isLeaf: kp.children.length === 0, childCount: kp.children.length };
+      }).sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ level, gradeLevel: gradeLevel || 'all', subjectId: subjectId || 'all', count: nodes.length, nodes }, null, 2) }],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle get_leaf_nodes tool
+  if (name === 'get_leaf_nodes') {
+    const { nodeIds, limit = 200 } = args as { nodeIds: string[]; limit?: number };
+
+    try {
+      const collected: any[] = [];
+      const seenIds = new Set<string>();
+
+      function collectLeaves(nodeId: string) {
+        if (seenIds.has(nodeId) || collected.length >= limit) return;
+        seenIds.add(nodeId);
+        const node = jsonDataLoader.getKnowledgePointById(nodeId);
+        if (!node) return;
+        if (node.children.length === 0) {
+          // This is a leaf
+          const cached = jsonDataLoader.getFullName(node.id);
+          const { fullName, pathNames } = cached ?? { fullName: node.name, pathNames: [node.name] };
+          collected.push({ id: node.id, name: node.name.trim(), fullName, pathNames, level: node.level, subjectId: node.subjectId, gradeLevel: node.gradeLevel });
+        } else {
+          for (const childId of node.children) {
+            if (collected.length >= limit) break;
+            collectLeaves(childId);
+          }
+        }
+      }
+
+      for (const nodeId of nodeIds) {
+        collectLeaves(nodeId);
+        if (collected.length >= limit) break;
+      }
+
+      const truncated = collected.length >= limit;
+      const result = collected.slice(0, limit);
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ nodeIds, count: result.length, truncated, nodes: result }, null, 2) }],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle fuzzy_search_knowledge_points tool
+  if (name === 'fuzzy_search_knowledge_points') {
+    const { query, subject_id, top_k = 10 } = args as {
+      query: string;
+      subject_id?: string;
+      top_k?: number;
+    };
+
+    if (!query || query.trim().length === 0) {
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ query: '', count: 0, results: [] }, null, 2) }],
+      };
+    }
+
+    try {
+      const results = jsonDataLoader.fuzzySearch(query, {
+        subjectId: subject_id,
+        topK: top_k,
+      });
+
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            query,
+            subjectId: subject_id || null,
+            count: results.length,
+            results,
+          }, null, 2),
+        }],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ status: 'error', error: errorMessage }) }],
         isError: true,
       };
     }

@@ -447,7 +447,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: TenantsService, useValue: {} },
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
-        { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]) }) },
+        { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]), getSubscriberCount: jest.fn().mockReturnValue(0) }) },
       ],
     }).compile();
 

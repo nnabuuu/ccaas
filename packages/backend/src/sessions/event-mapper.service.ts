@@ -148,6 +148,69 @@ export class EventMapperService {
   }
 
   /**
+   * Extract token usage from a CLI event, accumulate, emit frontend event, and persist to DB.
+   * Shared between 'assistant' and 'result' event handlers.
+   */
+  private handleTokenUsage(
+    sessionId: string,
+    usage: Record<string, any>,
+    model: string,
+    stopReason: string | null,
+    apiMessageId: string | null,
+    timestamp: string,
+    logLabel: string,
+  ): FrontendEvent {
+    const accumulator = this.getTokenAccumulator(sessionId);
+    this.accumulateTokens(accumulator, {
+      inputTokens: usage.input_tokens || 0,
+      outputTokens: usage.output_tokens || 0,
+      cachedTokens: usage.cache_read_input_tokens || 0,
+    });
+
+    const event: FrontendEvent = {
+      type: 'token_usage',
+      sessionId,
+      timestamp,
+      payload: {
+        inputTokens: usage.input_tokens || 0,
+        outputTokens: usage.output_tokens || 0,
+        cachedInputTokens: usage.cache_read_input_tokens,
+        sessionTotalTokens: accumulator.inputTokens + accumulator.outputTokens,
+        sessionInputTokens: accumulator.inputTokens,
+        sessionOutputTokens: accumulator.outputTokens,
+        model,
+        stopReason,
+        messageId: apiMessageId,
+      },
+    };
+
+    const session = this.sessionGetter?.(sessionId);
+    if (session?.currentAssistantMessageId) {
+      this.tokenUsageService.recordUsage({
+        messageId: session.currentAssistantMessageId,
+        sessionId,
+        tenantId: session.tenantId ?? null,
+        model,
+        inputTokens: usage.input_tokens || 0,
+        outputTokens: usage.output_tokens || 0,
+        cachedInputTokens: usage.cache_read_input_tokens || 0,
+        cacheReadTokens: usage.cache_read_input_tokens || 0,
+        cacheCreationTokens: usage.cache_creation_input_tokens || 0,
+        reasoningTokens: usage.reasoning_tokens || 0,
+        contextWindowUsage: usage.context_window_usage ?? null,
+        stopReason,
+        apiMessageId,
+      }).catch((err) => this.logger.error(`Token recording failed (${logLabel})`, err instanceof Error ? err.stack : err));
+    } else if (!session) {
+      this.logger.warn(`Cannot record tokens: session ${sessionId} not found in memory`);
+    } else {
+      this.logger.warn(`Cannot record tokens for session ${sessionId}: no assistant message ID`);
+    }
+
+    return event;
+  }
+
+  /**
    * Execute start hooks for a tool
    */
   private async executeToolStartHooks(
@@ -242,60 +305,11 @@ export class EventMapperService {
         const msg = (cliEvent as any).message;
 
         // Extract token usage from assistant message (stream-json format)
-        // In stream-json, assistant events carry message.usage with final token counts
         if (msg?.usage && (msg.usage.input_tokens > 0 || msg.usage.output_tokens > 0)) {
-          const usage = msg.usage;
-          const model = msg.model || 'unknown';
-          const stopReason = msg.stop_reason || null;
-          const apiMessageId = msg.id || null;
-
-          const accumulator = this.getTokenAccumulator(sessionId);
-          this.accumulateTokens(accumulator, {
-            inputTokens: usage.input_tokens || 0,
-            outputTokens: usage.output_tokens || 0,
-            cachedTokens: usage.cache_read_input_tokens || 0,
-          });
-
-          events.push({
-            type: 'token_usage',
-            sessionId,
-            timestamp,
-            payload: {
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens,
-              sessionTotalTokens: accumulator.inputTokens + accumulator.outputTokens,
-              sessionInputTokens: accumulator.inputTokens,
-              sessionOutputTokens: accumulator.outputTokens,
-              model,
-              stopReason,
-              messageId: apiMessageId,
-            },
-          });
-
-          // Persist token usage to database
-          const session = this.sessionGetter?.(sessionId);
-          if (session?.currentAssistantMessageId) {
-            this.tokenUsageService.recordUsage({
-              messageId: session.currentAssistantMessageId,
-              sessionId,
-              tenantId: session.tenantId ?? null,
-              model,
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens || 0,
-              cacheReadTokens: usage.cache_read_input_tokens || 0,
-              cacheCreationTokens: usage.cache_creation_input_tokens || 0,
-              reasoningTokens: usage.reasoning_tokens || 0,
-              contextWindowUsage: usage.context_window_usage ?? null,
-              stopReason,
-              apiMessageId,
-            }).catch((err) => this.logger.error('Token recording failed (assistant)', err instanceof Error ? err.stack : err));
-          } else if (!session) {
-            this.logger.warn(`Cannot record tokens: session ${sessionId} not found in memory`);
-          } else {
-            this.logger.warn(`Cannot record tokens for session ${sessionId}: no assistant message ID`);
-          }
+          events.push(this.handleTokenUsage(
+            sessionId, msg.usage, msg.model || 'unknown',
+            msg.stop_reason || null, msg.id || null, timestamp, 'assistant',
+          ));
         }
 
         if (msg?.content) {
@@ -603,53 +617,11 @@ export class EventMapperService {
         }
 
         // Extract token usage from result event (stream-json format)
-        // Result events may carry usage summary or cost_usd
         if (result.usage && (result.usage.input_tokens > 0 || result.usage.output_tokens > 0)) {
-          const usage = result.usage;
-          const model = result.model || 'unknown';
-
-          const accumulator = this.getTokenAccumulator(sessionId);
-          this.accumulateTokens(accumulator, {
-            inputTokens: usage.input_tokens || 0,
-            outputTokens: usage.output_tokens || 0,
-            cachedTokens: usage.cache_read_input_tokens || 0,
-          });
-
-          events.push({
-            type: 'token_usage',
-            sessionId,
-            timestamp,
-            payload: {
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens,
-              sessionTotalTokens: accumulator.inputTokens + accumulator.outputTokens,
-              sessionInputTokens: accumulator.inputTokens,
-              sessionOutputTokens: accumulator.outputTokens,
-              model,
-              stopReason: null,
-              messageId: null,
-            },
-          });
-
-          const session = this.sessionGetter?.(sessionId);
-          if (session?.currentAssistantMessageId) {
-            this.tokenUsageService.recordUsage({
-              messageId: session.currentAssistantMessageId,
-              sessionId,
-              tenantId: session.tenantId ?? null,
-              model,
-              inputTokens: usage.input_tokens || 0,
-              outputTokens: usage.output_tokens || 0,
-              cachedInputTokens: usage.cache_read_input_tokens || 0,
-              cacheReadTokens: usage.cache_read_input_tokens || 0,
-              cacheCreationTokens: usage.cache_creation_input_tokens || 0,
-              reasoningTokens: usage.reasoning_tokens || 0,
-              contextWindowUsage: usage.context_window_usage ?? null,
-              stopReason: null,
-              apiMessageId: null,
-            }).catch((err) => this.logger.error('Token recording failed (result)', err instanceof Error ? err.stack : err));
-          }
+          events.push(this.handleTokenUsage(
+            sessionId, result.usage, result.model || 'unknown',
+            null, null, timestamp, 'result',
+          ));
         }
 
         // Emit agent_status complete when result is received

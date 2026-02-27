@@ -50,6 +50,7 @@ CLEANUP_INTERVAL_MS=300000      # 5 minutes
 # Authentication
 AUTH_ALLOW_ANONYMOUS=false       # Require API keys in production
 AUTH_ENABLE_RATE_LIMITING=true
+INITIAL_ADMIN_KEY=sk-<generate-with-openssl-rand>  # Bootstrap admin key
 
 # Skills
 SKILL_REGISTRY_DIR=/data/ccaas/skill-packages
@@ -212,6 +213,7 @@ services:
       - WORKSPACE_DIR=/data/ccaas/agent-workspace
       - AUTH_ALLOW_ANONYMOUS=false
       - AUTH_ENABLE_RATE_LIMITING=true
+      - INITIAL_ADMIN_KEY=${INITIAL_ADMIN_KEY}  # Set via .env or secret
     restart: unless-stopped
 
   lesson-plan-backend:
@@ -442,6 +444,55 @@ In production, always require API key authentication:
 AUTH_ALLOW_ANONYMOUS=false
 AUTH_ENABLE_RATE_LIMITING=true
 ```
+
+### Bootstrap Admin Key for New Environments
+
+When deploying to a new environment, you need a bootstrap admin key to create Solution-specific API keys. The platform supports this via the `INITIAL_ADMIN_KEY` environment variable — **no code changes required**.
+
+**Step 1: Generate a random admin key**
+
+```bash
+# Must start with 'sk-' and be at least 20 characters
+ADMIN_KEY="sk-$(openssl rand -hex 24)"
+echo "$ADMIN_KEY"  # Save this securely
+```
+
+**Step 2: Set the backend environment variable**
+
+```bash
+# In .env.production, docker-compose, K8s secret, etc.
+INITIAL_ADMIN_KEY=sk-<your-generated-key>
+```
+
+The backend reads this on first startup and creates the admin key from it. On subsequent restarts, the existing key in the database is reused.
+
+**Step 3: Run Solution setup scripts with matching key**
+
+```bash
+export CCAAS_BOOTSTRAP_KEY="sk-<same-key-as-step-1>"
+export CCAAS_URL="http://<backend-host>:3001"
+
+# Run any Solution setup
+cd solutions/business/quiz-analyzer && bash setup.sh
+cd solutions/business/lesson-plan-designer && bash setup.sh
+```
+
+The setup scripts will use `CCAAS_BOOTSTRAP_KEY` instead of the hardcoded development fallback, call the admin API to create Solution-specific keys, and write them to each Solution's `.env` file automatically.
+
+**Step 4: Verify**
+
+```bash
+curl -H "Authorization: Bearer $ADMIN_KEY" \
+  http://<backend-host>:3001/api/v1/admin/api-keys?tenantId=default
+```
+
+{% hint style="info" %}
+**Key storage**: Raw keys are never stored in the database — only SHA-256 hashes. The key is displayed once in backend logs on first creation. If you set `INITIAL_ADMIN_KEY`, the full key is never logged (only the prefix).
+{% endhint %}
+
+{% hint style="warning" %}
+**Development fallback**: When `CCAAS_BOOTSTRAP_KEY` is not set, setup scripts fall back to a hardcoded test key (`sk-default-test...`). This is convenient for local development but must never be used in production. Always set `CCAAS_BOOTSTRAP_KEY` in non-development environments.
+{% endhint %}
 
 ### API Key Management
 

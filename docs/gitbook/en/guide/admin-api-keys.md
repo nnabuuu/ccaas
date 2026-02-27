@@ -75,6 +75,54 @@ To permanently remove a key:
 
 **⚠️ Warning**: Deletion is permanent. Consider using **Revoke** instead to maintain audit trails.
 
+## Bootstrap Key Chain (New Deployments)
+
+When deploying to a new environment, you face a chicken-and-egg problem: you need an admin API key to create Solution-specific keys, but no keys exist yet. The platform solves this with the **bootstrap key chain**:
+
+```
+INITIAL_ADMIN_KEY (env var)
+  → Backend startup creates admin key in DB
+    → setup.sh uses CCAAS_BOOTSTRAP_KEY to call admin API
+      → Admin API creates Solution-specific keys
+        → Solution keys written to .env files
+```
+
+### Configuration
+
+| Environment Variable | Where to Set | Purpose |
+|---------------------|-------------|---------|
+| `INITIAL_ADMIN_KEY` | Backend `.env` / K8s secret | Fixed admin key (instead of auto-generated) |
+| `CCAAS_BOOTSTRAP_KEY` | Shell before running `setup.sh` | Tells setup scripts which admin key to use |
+
+### Quick Start
+
+```bash
+# 1. Generate a key (must start with 'sk-', min 20 chars)
+ADMIN_KEY="sk-$(openssl rand -hex 24)"
+
+# 2. Set backend env var
+export INITIAL_ADMIN_KEY="$ADMIN_KEY"
+# Start backend...
+
+# 3. Run Solution setups
+export CCAAS_BOOTSTRAP_KEY="$ADMIN_KEY"
+export CCAAS_URL="http://localhost:3001"
+cd solutions/business/my-solution && bash setup.sh
+```
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `packages/backend/src/config/configuration.ts` | Reads `INITIAL_ADMIN_KEY` env var |
+| `packages/backend/src/auth/api-key.service.ts` | Creates admin key on first startup |
+| `tools/solution-lib.sh` | `get_or_create_bootstrap_key()` reads `CCAAS_BOOTSTRAP_KEY` |
+| `solutions/business/*/setup.sh` | Each Solution's setup (falls back to dev default if env var not set) |
+
+{% hint style="warning" %}
+The hardcoded fallback `sk-default-test...` is only for local development. Always set `CCAAS_BOOTSTRAP_KEY` in staging/production.
+{% endhint %}
+
 ## REST API Usage
 
 ### Authentication

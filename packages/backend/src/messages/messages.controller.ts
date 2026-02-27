@@ -29,7 +29,6 @@ import { ToolEvent } from './entities/tool-event.entity';
 
 @ApiTags('messages')
 @Controller('api/v1')
-@OptionalAuth()
 export class MessagesController {
   constructor(
     private readonly messagesService: MessagesService,
@@ -48,6 +47,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/messages
    */
   @Get('sessions/:sessionId/messages')
+  @OptionalAuth()
   @ApiOperation({
     summary: '获取会话消息 / Get Session Messages',
     description: '获取指定会话的所有消息（支持分页和工具事件过滤）/ Get all messages for a session with pagination',
@@ -100,6 +100,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/files
    */
   @Get('sessions/:sessionId/files')
+  @OptionalAuth()
   @ApiOperation({
     summary: '获取会话文件 / Get Session Files',
     description: '获取会话中所有文件资源（包含 Agent 生成和用户上传的文件）/ Get all file resources in the session',
@@ -144,6 +145,7 @@ export class MessagesController {
    * GET /api/v1/messages/:messageId
    */
   @Get('messages/:messageId')
+  @OptionalAuth()
   @ApiOperation({
     summary: '获取单条消息 / Get Single Message',
     description: '根据消息 ID 获取消息详情 / Get message details by ID',
@@ -175,6 +177,7 @@ export class MessagesController {
    * GET /api/v1/messages/:messageId/files
    */
   @Get('messages/:messageId/files')
+  @OptionalAuth()
   async getMessageFiles(
     @Param('messageId', ParseUUIDPipe) messageId: string,
   ): Promise<{
@@ -207,6 +210,7 @@ export class MessagesController {
    * GET /api/v1/messages
    */
   @Get('messages')
+  @OptionalAuth()
   async queryMessages(
     @Query() query: MessageQueryDto,
   ): Promise<{ messages: MessageResponseDto[] }> {
@@ -221,6 +225,7 @@ export class MessagesController {
    * GET /api/v1/messages/:messageId/tool-events
    */
   @Get('messages/:messageId/tool-events')
+  @OptionalAuth()
   async getMessageToolEvents(
     @Param('messageId', ParseUUIDPipe) messageId: string,
   ): Promise<{ toolEvents: ToolEventResponseDto[] }> {
@@ -240,6 +245,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/tool-stats
    */
   @Get('sessions/:sessionId/tool-stats')
+  @OptionalAuth()
   async getSessionToolStats(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -261,6 +267,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/context
    */
   @Get('sessions/:sessionId/context')
+  @OptionalAuth()
   async getSessionContext(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -287,6 +294,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/process-events
    */
   @Get('sessions/:sessionId/process-events')
+  @OptionalAuth()
   async getProcessEvents(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -340,6 +348,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/api-errors
    */
   @Get('sessions/:sessionId/api-errors')
+  @OptionalAuth()
   async getApiErrors(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -388,6 +397,7 @@ export class MessagesController {
    * GET /api/v1/messages/:messageId/thinking
    */
   @Get('messages/:messageId/thinking')
+  @OptionalAuth()
   async getMessageThinking(
     @Param('messageId', ParseUUIDPipe) messageId: string,
   ): Promise<{
@@ -426,6 +436,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/thinking
    */
   @Get('sessions/:sessionId/thinking')
+  @OptionalAuth()
   async getSessionThinking(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -472,6 +483,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/token-usage
    */
   @Get('sessions/:sessionId/token-usage')
+  @OptionalAuth()
   async getSessionTokenUsage(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -528,6 +540,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/user-context
    */
   @Get('sessions/:sessionId/user-context')
+  @OptionalAuth()
   async getSessionUserContext(
     @Param('sessionId') sessionId: string,
   ): Promise<{
@@ -574,6 +587,7 @@ export class MessagesController {
    * GET /api/v1/sessions/:sessionId/full-trace
    */
   @Get('sessions/:sessionId/full-trace')
+  @OptionalAuth()
   @ApiOperation({
     summary: '获取完整会话跟踪 / Get Full Conversation Trace',
     description: `

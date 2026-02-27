@@ -20,6 +20,7 @@ import {
   Res,
   StreamableFile,
   Header,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -336,6 +337,13 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
     @Param('sessionId') sessionId: string,
     @Res() res: Response,
   ) {
+    // Limit subscribers per session to prevent resource exhaustion
+    const MAX_SUBSCRIBERS_PER_SESSION = 10;
+    const pushKey = `${sessionId}:push`;
+    if (this.streamRegistry.getSubscriberCount(pushKey) >= MAX_SUBSCRIBERS_PER_SESSION) {
+      throw new BadRequestException(`Too many subscribers for session ${sessionId}`);
+    }
+
     const subscriberId = uuidv4();
     this.logger.log(`Push SSE subscribe: session=${sessionId} subscriber=${subscriberId}`);
     // Uses push channel key — NOT closed by turn-end (closeSession uses 'sessionId', not ':push')
