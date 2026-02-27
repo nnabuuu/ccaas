@@ -18,7 +18,7 @@ Teachers describe their lesson design standards once in a Skill. The AI applies 
 
 ### Technical Highlights
 
-- React 18 + NestJS backend + Socket.io real-time communication
+- React 18 + NestJS backend + SSE real-time communication
 - SQLite data persistence with lesson plan CRUD operations
 - Structured output sync across 14 fields (objectives, standards, materials, activities, assessments, differentiated instruction, etc.)
 

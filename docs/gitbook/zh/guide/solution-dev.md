@@ -214,12 +214,12 @@ function MySolution() {
 一次完整的用户交互：
 
 1. 用户在前端输入消息
-2. 前端通过 React SDK（Socket.io）直接发送 `chat` 事件到 CCAAS 后端
+2. 前端通过 React SDK 直接发送 `chat` 事件到 CCAAS 后端
 3. CCAAS 解析租户、同步 Skill、创建会话
 4. CCAAS 启动 AI Agent 进程
 5. AI Agent 读取 Skill 指令和上下文
 6. AI Agent 调用 MCP 工具（如 write\_output）
-7. CCAAS 通过 WebSocket 直接推送事件到前端
+7. CCAAS 通过 SSE 直接推送事件到前端
 8. 前端渲染实时结果
 9. 用户审核并修改
 

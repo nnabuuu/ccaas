@@ -9,7 +9,7 @@ A Solution is a vertical application built on the KedgeAgentic platform. Each So
 ```
 User ──→ Solution Frontend
             │                │
-            │ WebSocket      │ REST
+            │ SSE            │ REST
             │ (AI Chat)      │ (Domain Data)
             ▼                ▼
       CCAAS Backend    Solution Backend
@@ -22,7 +22,7 @@ User ──→ Solution Frontend
       (Tool Invocations)
 ```
 
-**Key Principle**: The Solution frontend connects **directly** to the CCAAS backend via WebSocket for AI interactions. The Solution backend is only responsible for domain-specific CRUD operations (e.g., saving lesson plans). There is no relay layer between the frontend and CCAAS.
+**Key Principle**: The Solution frontend connects **directly** to the CCAAS backend via SSE for AI interactions. The Solution backend is only responsible for domain-specific CRUD operations (e.g., saving lesson plans). There is no relay layer between the frontend and CCAAS.
 
 ## Directory Structure
 
@@ -36,7 +36,7 @@ my-solution/
 │   ├── package.json
 │   ├── src/
 │   │   ├── components/     # UI components
-│   │   ├── hooks/          # Custom hooks (Socket.io, sync, etc.)
+│   │   ├── hooks/          # Custom hooks (SSE, sync, etc.)
 │   │   └── types/          # TypeScript types
 │   └── ...
 │
@@ -195,7 +195,7 @@ export function useMySession() {
   // 2. Page context (sends current form state with every message)
   const { context, updateContext } = usePageContext()
 
-  // 3. Chat messaging (REST send + WebSocket receive)
+  // 3. Chat messaging (REST send + SSE receive)
   const chat = useAgentChat({
     connection,
     tenantId: 'my-solution',
@@ -230,7 +230,7 @@ A complete user interaction follows this sequence:
 4. CCAAS launches the AI Agent process
 5. AI Agent reads Skill instructions and page context
 6. AI Agent invokes MCP tools (e.g., write\_output)
-7. CCAAS streams events back to the frontend via WebSocket (`text_delta`, `output_update`, `agent_status`, etc.)
+7. CCAAS streams events back to the frontend via SSE (`text_delta`, `output_update`, `agent_status`, etc.)
 8. SDK hooks process events into React state automatically
 9. Frontend renders results in real time
 10. User reviews and edits

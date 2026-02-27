@@ -28,7 +28,7 @@ MCP server validates with Zod
 Returns: { data: { field, value, preview }, status: 'success' }
         │
         ▼ (stdio → CCAAS EventMapper)
-output_update WebSocket event → payload.data.{ field, value, preview }
+output_update SSE event → payload.data.{ field, value, preview }
         │
         ▼ (onOutputUpdate callback in react-sdk)
 pendingUpdates Map<SyncField, OutputUpdate>
@@ -53,7 +53,7 @@ Frontend reads → event.payload.data.field  ← correct
                  event.payload.field        ← undefined (wrong)
 ```
 
-This was a real production bug in the lesson-plan-designer. The react-sdk's `parseOutputUpdate` handles all format variants automatically — use the `onOutputUpdate` callback rather than parsing raw WebSocket events.
+This was a real production bug in the lesson-plan-designer. The react-sdk's `parseOutputUpdate` handles all format variants automatically — use the `onOutputUpdate` callback rather than parsing raw SSE events.
 
 ---
 

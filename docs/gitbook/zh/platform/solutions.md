@@ -18,7 +18,7 @@ Solution 是基于即见Agentic 平台构建的垂直场景应用。每个 Solut
 
 ### 技术亮点
 
-- React 18 + NestJS 后端 + Socket.io 实时通信
+- React 18 + NestJS 后端 + SSE 实时通信
 - SQLite 数据持久化，支持教案 CRUD
 - 结构化输出同步（14 个字段：目标、标准、材料、活动、评估、分层教学等）
 

@@ -26,7 +26,7 @@ If your agent generates a lesson plan that populates a form the teacher can edit
 AI Agent ──calls──→ write_output ──triggers──→ output_update event ──pushes──→ Frontend Form
 ```
 
-After the AI Agent calls the write\_output tool, the CCAAS backend wraps the data into an `output_update` event and pushes it to the frontend via WebSocket.
+After the AI Agent calls the write\_output tool, the CCAAS backend wraps the data into an `output_update` event and pushes it to the frontend via SSE.
 
 ## Data Format
 

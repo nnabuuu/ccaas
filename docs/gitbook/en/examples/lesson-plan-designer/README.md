@@ -15,7 +15,7 @@ AI assists teachers in designing structured lesson plans across 14 fields — fr
 │  3. Clicks Sync → value applied to form          │
 │     or Discard → suggestion removed              │
 └───────────────────┬─────────────────────────────┘
-                    │ WebSocket (output_update events)
+                    │ SSE (output_update events)
                     ▼
 ┌─────────────────────────────────────────────────┐
 │  CCAAS Backend + Agent                           │

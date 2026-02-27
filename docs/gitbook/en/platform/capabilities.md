@@ -64,9 +64,9 @@ AI Agents generate structured data via the `write_output` tool, syncing it to fr
 - **Progress Tracking** -- Real-time display of generation progress
 - **Field-Level Sync** -- Data synchronization at the individual form field level
 
-### WebSocket Event Stream
+### SSE Event Stream
 
-The platform pushes a rich set of real-time events via WebSocket:
+The platform pushes a rich set of real-time events via SSE:
 
 | Event | Description |
 |-------|-------------|
@@ -84,11 +84,11 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 - **Cron Scheduling** -- Run tasks on cron schedules (e.g., daily at 4 AM)
 - **Interval Scheduling** -- Execute tasks at fixed intervals (e.g., every 60 seconds)
 - **One-Time Scheduling** -- Schedule a single execution at a specific date/time
-- **Headless Execution** -- Tasks run in the background without an active WebSocket connection
+- **Headless Execution** -- Tasks run in the background without an active real-time connection
 - **Concurrency Control** -- Configurable maximum concurrent executions per task
 - **Retry Logic** -- Automatic retries with configurable delay on failure
 - **Execution History** -- Full audit trail of all executions with results, token usage, and duration
-- **Real-Time Notifications** -- Socket.io events pushed to the `scheduler:{tenantId}` room
+- **Real-Time Notifications** -- SSE events pushed to the `scheduler:{tenantId}` room
 - **Missed Run Detection** -- On server restart, automatically triggers tasks that missed their schedule
 
 ### Use Cases

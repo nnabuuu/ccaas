@@ -30,7 +30,7 @@ A typical workflow for building a KedgeAgentic Solution:
    └── Define AI Agent roles, knowledge, and workflows
 
 5. Build the frontend
-   └── Integrate Socket.io, handle event streams, and build the UI
+   └── Integrate the SDK, handle event streams, and build the UI
 
 6. End-to-end testing
    └── Validate the complete data flow from end to end
@@ -56,4 +56,4 @@ An MCP tool used to synchronize AI-generated structured data to frontend forms.
 
 ### Event Stream
 
-Real-time events produced during AI Agent execution (text, status, tool activity, output updates, etc.), pushed to the frontend via WebSocket.
+Real-time events produced during AI Agent execution (text, status, tool activity, output updates, etc.), pushed to the frontend via SSE.

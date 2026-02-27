@@ -28,7 +28,7 @@ MCP server 用 Zod 验证
 返回：{ data: { field, value, preview }, status: 'success' }
         │
         ▼（stdio → CCAAS EventMapper）
-output_update WebSocket 事件 → payload.data.{ field, value, preview }
+output_update SSE 事件 → payload.data.{ field, value, preview }
         │
         ▼（react-sdk 中的 onOutputUpdate 回调）
 pendingUpdates Map<SyncField, OutputUpdate>
@@ -53,7 +53,7 @@ EventMapper 发送 → payload.data = { field, value, preview }
             event.payload.field        ← undefined（错误）
 ```
 
-这是 lesson-plan-designer 中曾出现的一个真实生产 Bug。react-sdk 的 `parseOutputUpdate` 会自动处理所有格式变体 — 使用 `onOutputUpdate` 回调，而不是手动解析原始 WebSocket 事件。
+这是 lesson-plan-designer 中曾出现的一个真实生产 Bug。react-sdk 的 `parseOutputUpdate` 会自动处理所有格式变体 — 使用 `onOutputUpdate` 回调，而不是手动解析原始 SSE 事件。
 
 ---
 

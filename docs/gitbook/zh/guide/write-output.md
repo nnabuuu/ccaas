@@ -26,7 +26,7 @@
 AI Agent ──调用──→ write_output ──触发──→ output_update 事件 ──推送──→ 前端表单
 ```
 
-AI Agent 调用 write\_output 工具后，CCAAS 后端会将数据封装为 `output_update` 事件，通过 WebSocket 推送到前端。
+AI Agent 调用 write\_output 工具后，CCAAS 后端会将数据封装为 `output_update` 事件，通过 SSE 推送到前端。
 
 ## 数据格式
 
