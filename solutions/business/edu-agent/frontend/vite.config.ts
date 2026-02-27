@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5282,
+    port: 5284,
     proxy: {
       // CCAAS sessions API
       '/api/v1/sessions': {
@@ -30,11 +30,6 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3010',
         changeOrigin: true,
-      },
-      // CCAAS WebSocket
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
       },
     },
   },

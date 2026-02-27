@@ -16,7 +16,7 @@ export default function App() {
   const setSessionId = useMosaicStore((s) => s.setSessionId);
 
   useCatalog();
-  const { sendMessage } = useMosaicSync(sessionId);
+  const { sendMessage, chat } = useMosaicSync(sessionId);
 
   const handleNewSession = useCallback(() => {
     resetAll();
@@ -51,7 +51,7 @@ export default function App() {
 
         {/* Right: Chat Panel */}
         <div className="w-96 flex-shrink-0 border-l border-zinc-200 bg-white flex flex-col">
-          <ChatPanel sendMessage={sendMessage} />
+          <ChatPanel sendMessage={sendMessage} messages={chat.messages} isProcessing={chat.isProcessing} />
         </div>
       </div>
     </div>

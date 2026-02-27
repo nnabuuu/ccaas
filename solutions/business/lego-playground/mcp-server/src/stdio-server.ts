@@ -16,7 +16,7 @@ import {
 import { SYNC_FIELDS } from './types.js';
 
 // REST API base URL
-const REST_API_URL = process.env.MCP_REST_URL || 'http://localhost:3006';
+const REST_API_URL = process.env.MCP_REST_URL || 'http://localhost:3009';
 
 const server = new Server(
   { name: 'lego-mosaic-tools', version: '1.0.0' },

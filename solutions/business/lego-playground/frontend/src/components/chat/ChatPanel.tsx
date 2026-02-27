@@ -3,9 +3,12 @@ import { ChatCircle, ArrowRight, CheckCircle, ArrowClockwise, XCircle } from '@p
 import { useMosaicStore } from '../../hooks/useStore';
 import MessageBubble from './MessageBubble';
 import AssessmentCard from '../assessment/AssessmentCard';
+import type { Message } from '@kedge-agentic/react-sdk';
 
 interface ChatPanelProps {
   sendMessage: (content: string) => void | Promise<void>;
+  messages: Message[];
+  isProcessing?: boolean;
 }
 
 const QUICK_ACTIONS = [
@@ -14,8 +17,7 @@ const QUICK_ACTIONS = [
   { label: 'Export', command: '导出拼装指南 PDF' },
 ];
 
-export default function ChatPanel({ sendMessage }: ChatPanelProps) {
-  const messages = useMosaicStore((s) => s.messages);
+export default function ChatPanel({ sendMessage, messages, isProcessing }: ChatPanelProps) {
   const assessment = useMosaicStore((s) => s.assessment);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

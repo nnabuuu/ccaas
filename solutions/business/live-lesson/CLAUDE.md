@@ -6,8 +6,8 @@ AI-driven interactive teaching system with dynamic blackboard and Socratic dialo
 ## Architecture
 - **SQLite DB** (`data/live-lesson.db`): Lessons table + session_state table, WAL mode
 - **MCP Server**: State machine backed by SQLite, 8 board control tools, session restore on startup
-- **Solution Backend** (port 3006): Read-only Express server for lesson list/manifest API
-- **Frontend**: React + Vite (port 5283), boardState from output_update events
+- **Solution Backend** (port 3007): Read-only Express server for lesson list/manifest API
+- **Frontend**: React + Vite (port 5283), boardState from output_update events, SSE transport
 - **Skill**: socratic-teacher - behavior guide for AI teacher
 
 ## Key Files
@@ -33,5 +33,5 @@ cd frontend && npm install && npm run dev
 
 ## Ports
 - Frontend: 5283
-- Solution Backend: 3006 (lesson list + manifest API)
+- Solution Backend: 3007 (lesson list + manifest API)
 - CCAAS Backend: 3001 (required)

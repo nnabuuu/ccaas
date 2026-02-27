@@ -8,7 +8,7 @@ EduAgent is a unified AI education assistant solution that combines lesson plan 
 
 ```
 edu-agent/
-├── frontend/          # React 18 + Router v6 + Tailwind (port 5282)
+├── frontend/          # React 18 + Router v6 + Tailwind (port 5284)
 ├── backend/           # NestJS (port 3010)
 ├── mcp-server/        # Unified stdio MCP server (11 tools)
 ├── data/              # Textbooks, curriculum standards, knowledge points
@@ -17,13 +17,26 @@ edu-agent/
 
 ## Key Patterns
 
+### SSE Transport
+
+Frontend uses `@kedge-agentic/react-sdk` with SSE transport to communicate with CCAAS backend.
+
+```typescript
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',  // Absolute URL to CCAAS
+  sessionPrefix: 'edu',
+  transport: 'sse',
+  autoConnect: true,
+})
+```
+
 ### Navigation via output_update
 
 The `navigate_to` MCP tool returns data in output_update format with `field: "__navigation__"`. The frontend `NavigationHandler` component intercepts this and uses react-router to navigate.
 
 ### Session Continuity
 
-`SessionContext` wraps the entire app, so the Socket.io connection and chat messages persist across page navigations.
+`SessionContext` wraps the entire app, so the SSE connection and chat messages persist across page navigations.
 
 ### Output Update Handlers
 
@@ -33,7 +46,7 @@ Each page registers its own output update handler via `registerOutputHandler()`.
 
 | Service | Port |
 |---------|------|
-| Frontend | 5282 |
+| Frontend | 5284 |
 | Backend | 3010 |
 | CCAAS Backend | 3001 (required) |
 
@@ -52,6 +65,6 @@ cd frontend && npm install && npm run dev
 
 ## Dependencies
 
-- `@kedge-agentic/react-sdk` — React hooks for Socket.io + session management
+- `@kedge-agentic/react-sdk` — React hooks for SSE + session management
 - `@kedge-agentic/common` — Shared types and Zod schemas
 - CCAAS Backend must be running on port 3001

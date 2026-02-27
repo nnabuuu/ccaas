@@ -1,8 +1,8 @@
 import React from 'react';
-import type { ChatMessage } from '../../types';
+import type { Message } from '@kedge-agentic/react-sdk';
 
 interface MessageBubbleProps {
-  message: ChatMessage;
+  message: Message;
 }
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
@@ -17,6 +17,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     );
   }
 
+  const timeStr = message.createdAt
+    ? new Date(message.createdAt).toLocaleTimeString()
+    : message.timestamp
+      ? new Date(message.timestamp).toLocaleTimeString()
+      : '';
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -27,13 +33,15 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         }`}
       >
         <p className="whitespace-pre-wrap break-words">{message.content}</p>
-        <p
-          className={`text-[9px] mt-1 ${
-            isUser ? 'text-blue-200' : 'text-zinc-400'
-          }`}
-        >
-          {new Date(message.timestamp).toLocaleTimeString()}
-        </p>
+        {timeStr && (
+          <p
+            className={`text-[9px] mt-1 ${
+              isUser ? 'text-blue-200' : 'text-zinc-400'
+            }`}
+          >
+            {timeStr}
+          </p>
+        )}
       </div>
     </div>
   );

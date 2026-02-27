@@ -31,7 +31,7 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-const PORT = process.env.MCP_PORT || 3006;
+const PORT = process.env.MCP_PORT || 3009;
 
 // Static file serving for generated PDFs
 const DOWNLOADS_DIR = process.env.DOWNLOADS_DIR || path.resolve(process.cwd(), 'downloads');

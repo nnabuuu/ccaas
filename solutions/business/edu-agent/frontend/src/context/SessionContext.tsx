@@ -56,7 +56,9 @@ export function SessionProvider({ children }: SessionProviderProps) {
   }, [])
 
   const connection = useAgentConnection({
+    serverUrl: 'http://localhost:3001',
     sessionPrefix: 'edu',
+    transport: 'sse',
     autoConnect: true,
   })
 

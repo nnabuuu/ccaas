@@ -10,7 +10,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5282,
+    port: 5285,
     proxy: {
       // CCAAS sessions API (must be before /api to take precedence)
       '/api/v1/sessions': {
@@ -24,13 +24,8 @@ export default defineConfig({
       },
       // Solution backend API
       '/api': {
-        target: 'http://localhost:3005',
+        target: 'http://localhost:3008',
         changeOrigin: true,
-      },
-      // CCAAS WebSocket
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
       },
     },
   },

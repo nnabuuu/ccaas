@@ -12,6 +12,12 @@
       "description": "LEGO Mosaic Designer MCP tools: write_output, analyze_image, generate_mosaic, generate_mosaic_from_grid, generate_mosaic_from_coarse_grid, refine_mosaic_regions, generate_assembly_pdf, get_lego_colors, get_lego_bricks"
     }
   },
+  "sessionTemplates": {
+    "mosaic-designer": {
+      "description": "AI 乐高马赛克设计 - 从图片生成 2D 乐高拼图",
+      "enabledSkillSlugs": ["lego-mosaic-designer"]
+    }
+  },
   "syncFields": [
     "mosaicConfig",
     "placements",

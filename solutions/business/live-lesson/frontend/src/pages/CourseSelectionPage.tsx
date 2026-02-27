@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { CaretRight, ArrowCounterClockwise } from '@phosphor-icons/react'
 import { getSavedSession, clearSession } from '../utils/sessionStore'
 
-const LESSON_API_URL = 'http://localhost:3006' // Solution backend (lesson list + manifest)
+const LESSON_API_URL = 'http://localhost:3007' // Solution backend (lesson list + manifest)
 
 interface LessonMeta {
   id: string

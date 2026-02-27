@@ -1,4 +1,4 @@
-const MCP_BASE = 'http://localhost:3006';
+const MCP_BASE = 'http://localhost:3009';
 
 export async function fetchCatalogColors(options?: {
   includeTransparent?: boolean;

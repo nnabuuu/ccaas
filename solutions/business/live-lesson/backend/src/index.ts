@@ -52,7 +52,7 @@ app.get('/api/lessons/:id/manifest', (req, res) => {
   }
 });
 
-const PORT = process.env.PORT ?? 3006;
+const PORT = process.env.PORT ?? 3007;
 const server = app.listen(PORT, () => {
   console.log(`Live-lesson backend listening on http://localhost:${PORT}`);
 });

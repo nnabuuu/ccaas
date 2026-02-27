@@ -16,7 +16,7 @@ import { saveSession, getSavedSession } from '../utils/sessionStore'
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
 const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
-const LESSON_API_URL = 'http://localhost:3006' // Solution backend (lesson list + manifest)
+const LESSON_API_URL = 'http://localhost:3007' // Solution backend (lesson list + manifest)
 
 const TENANT_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'

@@ -9,7 +9,7 @@
 | 服务 | 端口 |
 |------|------|
 | Core CCAAS backend | 3001 |
-| Rehab frontend | 5283 |
+| Rehab frontend | 5286 |
 
 ## 目录结构
 
@@ -27,7 +27,7 @@ rehab-motion-renderer/
 │   └── src/index.ts           # write_output + get_exercise_library
 ├── frontend/
 │   ├── package.json
-│   ├── vite.config.ts         # 端口 5283
+│   ├── vite.config.ts         # 端口 5286
 │   └── src/
 │       ├── App.tsx            # 主布局（左聊天 + 右表单/预览）
 │       ├── components/
@@ -66,7 +66,7 @@ cd solutions/rehab-motion-renderer
 
 ```
 用户描述病情
-  → ChatPanel → CCAAS ws://localhost:3001
+  → ChatPanel → CCAAS http://localhost:3001 (SSE)
     → exercise-planner Skill
       → get_exercise_library（获取可用动作）
       → write_output × N（每个字段一次调用）
@@ -123,7 +123,7 @@ AI 输出 `JSON.stringify(ExerciseSpec[])`:
 // ✅ 正确
 const SOCKET_URL = 'http://localhost:3001'
 
-// ❌ 错误（会把请求发到前端端口 5283）
+// ❌ 错误（会把请求发到前端端口 5286）
 const SOCKET_URL = ''
 const SOCKET_URL = '/'
 ```

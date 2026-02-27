@@ -14,7 +14,7 @@ async function bootstrap() {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
-  const port = process.env.PORT || 3005;
+  const port = process.env.PORT || 3008;
   await app.listen(port);
   console.log(`LEGO Playground Backend running on http://localhost:${port}`);
 }

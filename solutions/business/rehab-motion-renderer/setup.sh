@@ -20,7 +20,7 @@ source "$TOOLS_DIR/solution-lib.sh"
 load_solution_config "$SCRIPT_DIR"
 
 # Port configuration
-FRONTEND_PORT=5283
+FRONTEND_PORT=5286
 
 # Default bootstrap key for internal solutions
 CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"

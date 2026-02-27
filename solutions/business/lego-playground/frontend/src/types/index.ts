@@ -150,9 +150,6 @@ export interface MosaicState {
   currentIteration: number;
   maxIterations: number;
 
-  // Chat
-  messages: ChatMessage[];
-
   // UI
   selectedLayer: number | null;
   visibleLayers: boolean[];

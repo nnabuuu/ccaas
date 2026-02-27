@@ -10,7 +10,6 @@ import type {
   ImageAnalysis,
   LegoColor,
   BrickPart,
-  ChatMessage,
 } from '../types';
 
 const DEFAULT_CONFIG: MosaicConfig = {
@@ -59,10 +58,6 @@ interface MosaicActions {
   setSessionId: (id: string | null) => void;
   incrementIteration: () => void;
 
-  // Chat
-  addMessage: (message: ChatMessage) => void;
-  clearMessages: () => void;
-
   // UI
   setSelectedLayer: (layer: number | null) => void;
   toggleLayerVisibility: (layer: number) => void;
@@ -92,7 +87,6 @@ export const useMosaicStore = create<MosaicState & MosaicActions>((set, get) => 
   sessionId: null,
   currentIteration: 0,
   maxIterations: 5,
-  messages: [],
   selectedLayer: null,
   visibleLayers: [true, true, true],
   showOriginalOverlay: false,
@@ -168,10 +162,6 @@ export const useMosaicStore = create<MosaicState & MosaicActions>((set, get) => 
   incrementIteration: () =>
     set((state) => ({ currentIteration: state.currentIteration + 1 })),
 
-  addMessage: (message) =>
-    set((state) => ({ messages: [...state.messages, message] })),
-  clearMessages: () => set({ messages: [] }),
-
   setSelectedLayer: (layer) => set({ selectedLayer: layer }),
   toggleLayerVisibility: (layer) =>
     set((state) => {
@@ -197,7 +187,6 @@ export const useMosaicStore = create<MosaicState & MosaicActions>((set, get) => 
       assemblyGuideUrl: null,
       sessionId: null,
       currentIteration: 0,
-      messages: [],
       selectedLayer: null,
       visibleLayers: [true, true, true],
       showOriginalOverlay: false,

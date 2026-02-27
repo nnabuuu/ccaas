@@ -89,7 +89,7 @@ function App() {
     connection,
     tenantId: TENANT_ID,
     enabledSkillSlugs: ['problem-explainer'],
-    solutionConfigEndpoint: '/api/config',
+    sessionTemplate: 'problem-analysis',
     onOutputUpdate: handleOutputUpdate,
   })
 

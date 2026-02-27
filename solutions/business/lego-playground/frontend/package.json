@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@kedge-agentic/common": "file:../../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../../packages/react-sdk",
     "@phosphor-icons/react": "^2.1.10",
     "framer-motion": "^12.34.3",
     "i18next": "^23.7.0",
@@ -18,7 +19,6 @@
     "react-dom": "^18.2.0",
     "react-i18next": "^14.0.1",
     "react-konva": "^18.2.10",
-    "socket.io-client": "^4.7.2",
     "zustand": "^4.4.7"
   },
   "devDependencies": {
