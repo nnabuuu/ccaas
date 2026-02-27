@@ -13,8 +13,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-refine': ['@refinedev/core', '@refinedev/react-router-v6'],
+          'vendor-react': ['react', 'react-dom', 'react-router-dom', '@refinedev/core', '@refinedev/react-router-v6'],
           'vendor-recharts': ['recharts'],
           'vendor-radix': [
             '@radix-ui/react-dialog',
