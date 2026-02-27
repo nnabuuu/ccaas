@@ -54,9 +54,11 @@ Services will start in order:
 ### 3. Access the Application
 
 Open your browser to:
-- **Frontend**: http://localhost:5282
+- **Frontend**: http://localhost:5282 (dev) / https://app.zhushou.one/quiz-analyzer/ (production)
 - **Backend API**: http://localhost:3005/health
 - **MCP Health**: http://localhost:3006/health
+
+> **Note**: The frontend is configured for subpath deployment at `/quiz-analyzer/` (via Vite `base` and React Router `basename`). In local dev mode it still works at the root of port 5282.
 
 ### 4. Stop Services
 
