@@ -83,7 +83,6 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
     tenantId: TENANT_ID,
     transport: 'sse',
     sessionTemplate: viewMode,
-    solutionConfigEndpoint: `${SOLUTION_BACKEND_URL}/config`,
     onOutputUpdate: handleOutputUpdate,
   })
 
