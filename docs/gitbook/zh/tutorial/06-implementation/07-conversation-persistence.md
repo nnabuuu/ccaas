@@ -26,7 +26,7 @@ useAgentConnection({ tenantId })
   |      +--> 找到: 使用已保存的 conversationId
   |      +--> 未找到: 生成 conv_{uuid}, 保存到 localStorage
   |
-  +--> 使用 conversationId 连接 WebSocket
+  +--> 使用 conversationId 连接 SSE
   |
   v
 useAgentChat({ connection, tenantId })
@@ -218,7 +218,7 @@ messages 表:
 
 1. `useAgentConnection` 从 localStorage 读取 `ccaas_session_task-manager-tutorial`
 2. 获取 `conv_a1b2c3d4...` 作为 conversationId
-3. 使用此 conversationId 连接 WebSocket
+3. 使用此 conversationId 建立 SSE 连接
 4. `useAgentChat` 调用 `GET /api/v1/sessions/conv_a1b2c3d4.../messages?limit=100`
 5. 后端按时间顺序返回消息
 6. 消息填充到 `messages[]` 状态中

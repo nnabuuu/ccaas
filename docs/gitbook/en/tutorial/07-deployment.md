@@ -419,15 +419,15 @@ For larger deployments, split services across nodes:
                                                └──────────────┘
 ```
 
-{% hint style="warning" %}
-**Sticky sessions required**: WebSocket connections must route to the same backend node throughout their lifetime. Configure your load balancer for session affinity (e.g., based on the Socket.io `sid` cookie).
+{% hint style="info" %}
+**SSE connections**: SSE uses standard HTTP, so sticky sessions are not required. If using long-lived connections, ensure your load balancer supports HTTP streaming.
 {% endhint %}
 
 ### Scaling Checklist
 
 ```
 [] Database: SQLite for single-node, PostgreSQL for multi-node
-[] Load balancer: sticky sessions enabled for WebSocket
+[] Load balancer: supports SSE streaming connections
 [] Storage: persistent volumes for database and workspace
 [] Secrets: environment variables injected securely
 [] MCP servers: health checks configured
@@ -575,7 +575,7 @@ Use this checklist before every production deployment:
 
 ```
 [] Health endpoint returns 200
-[] Can create a new session via WebSocket
+[] Can create a new session via SSE
 [] Can send a message and receive a response
 [] Message history persists across page refresh
 [] Admin dashboard accessible
@@ -589,7 +589,7 @@ At this point, you have covered the full lifecycle of building a Solution on the
 1. **Architecture** -- Understanding how CCAAS core, Solution backends, and frontends interact
 2. **Domain Model** -- Designing entities that live in your Solution backend
 3. **User Journeys** -- Mapping the flows your users will follow
-4. **Data Flow** -- Connecting WebSocket events, REST APIs, and state management
+4. **Data Flow** -- Connecting SSE events, REST APIs, and state management
 5. **Forms** -- Using the `output_update` protocol for structured data synchronization
 6. **Implementation** -- Building the backend, MCP server, Skills, frontend, and tests
 7. **Deployment** -- Configuring, optimizing, and securing for production

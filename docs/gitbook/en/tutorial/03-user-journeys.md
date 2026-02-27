@@ -8,7 +8,7 @@ By the end of this chapter, you will be able to:
 
 - Decompose a feature into a step-by-step user journey
 - Identify where the AI Agent, Solution backend, and frontend each play a role
-- Map WebSocket events to specific moments in the journey
+- Map SSE events to specific moments in the journey
 - Design journeys that account for both AI-generated and user-edited content
 - Spot gaps and edge cases early in the design process
 
@@ -25,11 +25,11 @@ If you skip the journey mapping step, you will discover these interaction patter
 
 ## Architecture Recap: Direct Connection
 
-Before mapping journeys, recall the CCAAS architecture from [Chapter 1](01-architecture.md). The frontend connects **directly** to CCAAS via WebSocket for all AI interactions. The Solution backend is only involved for domain data (CRUD operations on lesson plans, textbooks, etc.):
+Before mapping journeys, recall the CCAAS architecture from [Chapter 1](01-architecture.md). The frontend connects **directly** to CCAAS via SSE for all AI interactions. The Solution backend is only involved for domain data (CRUD operations on lesson plans, textbooks, etc.):
 
 ```
 ┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
-│   Solution   │  WS     │  CCAAS Backend   │  stdin/  │   AI Agent   │
+│   Solution   │  SSE    │  CCAAS Backend   │  stdin/  │   AI Agent   │
 │   Frontend   │◄───────►│  (NestJS)        │  stdout  │   Process    │
 └──────────────┘         └──────────────────┘◄────────►└──────────────┘
   Vue + SDK                Session Mgmt                  Claude Code
@@ -45,7 +45,7 @@ Before mapping journeys, recall the CCAAS architecture from [Chapter 1](01-archi
 ```
 
 Two separate channels:
-- **AI channel**: Frontend ↔ CCAAS (WebSocket + REST)
+- **AI channel**: Frontend ↔ CCAAS (SSE + REST)
 - **Domain data channel**: Frontend ↔ Solution Backend (REST)
 
 ## Journey 1: Create a Lesson Plan with AI Assistance
@@ -96,7 +96,7 @@ This is the primary journey. A teacher selects a textbook chapter, asks the AI A
   │                         │                         │   value: [...])    │                    │
   │                         │                         │                    │                    │
   │                         │  11. output_update      │                    │                    │
-  │                         │      event via WS       │                    │                    │
+  │                         │      event via SSE       │                    │                    │
   │                         │◀────────────────────────│                    │                    │
   │                         │                         │                    │                    │
   │  12. Editor section     │                         │                    │                    │
@@ -135,15 +135,15 @@ This is the primary journey. A teacher selects a textbook chapter, asks the AI A
 | 8 | Frontend → CCAAS | Sends message via REST (POST /completion) | AI REST |
 | 9 | CCAAS | Launches AI Agent with Skill context | -- |
 | 10 | AI Agent → CCAAS | Calls `write_output` for each section | -- |
-| 11 | CCAAS → Frontend | Pushes structured data via WebSocket | AI WebSocket |
+| 11 | CCAAS → Frontend | Pushes structured data via SSE | AI SSE |
 | 12 | Frontend | Updates editor section in real time, highlights AI changes | -- |
 | 13 | User | Reviews and optionally edits sections | -- |
 | 14-16 | Frontend → Solution Backend | Standard PATCH to save content | Domain REST |
 | 17 | Frontend | Shows confirmation | -- |
 
-### WebSocket Events During This Journey
+### SSE Events During This Journey
 
-The frontend receives these events via the direct CCAAS WebSocket connection:
+The frontend receives these events via the direct CCAAS SSE connection:
 
 ```typescript
 // 1. Agent starts thinking
@@ -184,7 +184,7 @@ agent_status: { status: 'idle' }
 2. **The user edits after the AI generates.** Each editor section (e.g., `LearningObjectivesEditor`, `LearningTasksEditor`) must be editable both during and after AI generation.
 3. **Save is a separate action.** The AI Agent does not save -- it only fills the form. The user must explicitly click "Save" to persist changes.
 4. **The Solution backend owns the data.** The save request (step 15) goes to the Solution backend, not to CCAAS. CCAAS handles only AI relay.
-5. **Two separate connections.** The frontend maintains a WebSocket to CCAAS for AI events and REST calls to the Solution backend for domain data. These are independent channels.
+5. **Two separate connections.** The frontend maintains an SSE connection to CCAAS for AI events and REST calls to the Solution backend for domain data. These are independent channels.
 
 ## Journey 2: Edit an Existing Lesson Plan Section with AI
 
@@ -383,7 +383,7 @@ Here is an overview of all journeys and the components involved:
               ▼                         ▼
     ┌─────────────────┐      ┌─────────────────┐
     │ Frontend        │      │ Frontend        │
-    │    ↓ (WS+REST)  │      │    ↓ (REST)     │
+    │    ↓ (SSE+REST) │      │    ↓ (REST)     │
     │ CCAAS Backend   │      │ Solution Backend│
     │    ↓            │      │ (direct CRUD)   │
     │ AI Agent        │      └─────────────────┘
@@ -391,7 +391,7 @@ Here is an overview of all journeys and the components involved:
     │ write_output    │
     │    ↓            │
     │ output_update   │
-    │    ↓ (WS)       │
+    │    ↓ (SSE)      │
     │ Frontend (form) │
     └─────────────────┘
 ```
@@ -486,7 +486,7 @@ The AI has sent `textbookAnalysis` and `learningObjectives` via `output_update`,
 
 The user clicks "Cancel" while the AI is still calling `write_output`.
 
-**Decision:** Emit a `cancel` event via Socket.io to CCAAS. The frontend should stop updating editor sections from subsequent `output_update` events. Sections already updated remain in the editor for the user to discard or keep.
+**Decision:** Send a `cancel` request via the SDK to CCAAS. The frontend should stop updating editor sections from subsequent `output_update` events. Sections already updated remain in the editor for the user to discard or keep.
 
 ### What If the Teacher Wants to Revert a Section?
 
@@ -509,7 +509,7 @@ Before moving to the next chapter, verify that you can answer these questions:
 Design the complete user journey for generating all sections of a lesson plan at once:
 
 1. **Draw the sequence diagram** showing all participants (User, Frontend, AI Agent, CCAAS, Solution Backend).
-2. **List the WebSocket events** the frontend receives in order.
+2. **List the SSE events** the frontend receives in order.
 3. **Identify the output_update fields** the AI sends (hint: there are 6+ sections).
 4. **Design the save mechanism** -- should all sections save together or per-section?
 5. **Identify two edge cases** specific to bulk generation.
@@ -529,8 +529,8 @@ In this chapter you learned how to:
 
 - **Trace complete user journeys** from initial action to final result
 - **Identify the role of each component** (Frontend, Solution Backend, CCAAS, AI Agent) at each step
-- **Distinguish the two channels** -- AI interactions go through CCAAS (direct WebSocket), domain data goes through the Solution backend (REST)
-- **Map WebSocket events** to specific moments in the journey
+- **Distinguish the two channels** -- AI interactions go through CCAAS (direct SSE), domain data goes through the Solution backend (REST)
+- **Map SSE events** to specific moments in the journey
 - **Discover design decisions** that journeys reveal (partial updates, merge vs. replace, per-section editing, AI-modified highlights)
 - **Design UI layouts** informed by interaction patterns
 - **Identify edge cases** before writing any code

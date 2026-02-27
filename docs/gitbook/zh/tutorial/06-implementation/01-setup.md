@@ -342,7 +342,6 @@ export class AppModule {}
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "socket.io-client": "^4.8.1",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
@@ -364,9 +363,8 @@ export class AppModule {}
 
 **关键依赖：**
 
-- `@kedge-agentic/react-sdk`：提供 WebSocket 连接、聊天和 output\_update 处理的 Hooks
+- `@kedge-agentic/react-sdk`：提供 SSE 连接、聊天和 output\_update 处理的 Hooks
 - `@kedge-agentic/common`：平台中使用的共享类型
-- `socket.io-client`：用于实时通信的 WebSocket 客户端
 - `lucide-react`：图标库
 
 ## 步骤 5：创建启动脚本

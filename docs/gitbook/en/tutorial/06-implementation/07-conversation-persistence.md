@@ -26,7 +26,7 @@ useAgentConnection({ tenantId })
   |      +--> Found: Use saved conversationId
   |      +--> Not found: Generate conv_{uuid}, save to localStorage
   |
-  +--> Connect WebSocket with conversationId
+  +--> Connect via SSE with conversationId
   |
   v
 useAgentChat({ connection, tenantId })
@@ -218,7 +218,7 @@ When the user refreshes the page:
 
 1. `useAgentConnection` reads `ccaas_session_task-manager-tutorial` from localStorage
 2. Gets `conv_a1b2c3d4...` as the conversationId
-3. Connects the WebSocket with this conversationId
+3. Establishes an SSE connection with this conversationId
 4. `useAgentChat` calls `GET /api/v1/sessions/conv_a1b2c3d4.../messages?limit=100`
 5. The backend returns messages in chronological order
 6. Messages are populated into the `messages[]` state

@@ -8,7 +8,7 @@
 
 - 将功能分解为分步用户旅程
 - 识别 AI Agent、Solution 后端和前端各自在哪里发挥作用
-- 将 WebSocket 事件映射到旅程中的特定时刻
+- 将 SSE 事件映射到旅程中的特定时刻
 - 设计同时处理 AI 生成内容和用户编辑内容的旅程
 - 在设计阶段尽早发现缺口和边界情况
 
@@ -25,11 +25,11 @@
 
 ## 架构回顾：直连模式
 
-在映射旅程之前，回顾[第 1 章](01-architecture.md)中的 CCAAS 架构。前端通过 WebSocket **直接连接** CCAAS 进行所有 AI 交互。Solution 后端仅处理领域数据（备课方案、教材等的 CRUD 操作）：
+在映射旅程之前，回顾[第 1 章](01-architecture.md)中的 CCAAS 架构。前端通过 SSE **直接连接** CCAAS 进行所有 AI 交互。Solution 后端仅处理领域数据（备课方案、教材等的 CRUD 操作）：
 
 ```
 ┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
-│   Solution   │  WS     │  CCAAS 后端      │  stdin/  │   AI Agent   │
+│   Solution   │  SSE    │  CCAAS 后端      │  stdin/  │   AI Agent   │
 │   前端       │◄───────►│  (NestJS)        │  stdout  │   进程       │
 └──────────────┘         └──────────────────┘◄────────►└──────────────┘
   Vue + SDK                会话管理                      Claude Code
@@ -45,7 +45,7 @@
 ```
 
 两条独立通道：
-- **AI 通道**：前端 ↔ CCAAS（WebSocket + REST）
+- **AI 通道**：前端 ↔ CCAAS（SSE + REST）
 - **领域数据通道**：前端 ↔ Solution 后端（REST）
 
 ## 旅程 1：通过 AI 辅助创建备课方案
@@ -94,7 +94,7 @@
   │                         │                         │   value: [...])    │                    │
   │                         │                         │                    │                    │
   │                         │  11. output_update      │                    │                    │
-  │                         │      事件 (WS)          │                    │                    │
+  │                         │      事件 (SSE)          │                    │                    │
   │                         │◀────────────────────────│                    │                    │
   │                         │                         │                    │                    │
   │  12. 编辑器"学习目标"   │                         │                    │                    │
@@ -131,15 +131,15 @@
 | 8 | 前端 → CCAAS | 通过 REST 发送消息（POST /completion） | AI REST |
 | 9 | CCAAS | 启动带有 Skill 上下文的 AI Agent | -- |
 | 10 | AI Agent → CCAAS | 对每个区域调用 `write_output` | -- |
-| 11 | CCAAS → 前端 | 通过 WebSocket 推送结构化数据 | AI WebSocket |
+| 11 | CCAAS → 前端 | 通过 SSE 推送结构化数据 | AI SSE |
 | 12 | 前端 | 实时更新编辑器区域，高亮 AI 修改 | -- |
 | 13 | 用户 | 审查并可选编辑各区域 | -- |
 | 14-16 | 前端 → Solution 后端 | 标准 PATCH 保存内容 | 领域 REST |
 | 17 | 前端 | 显示确认消息 | -- |
 
-### 此旅程中的 WebSocket 事件
+### 此旅程中的 SSE 事件
 
-前端通过与 CCAAS 的直连 WebSocket 接收这些事件：
+前端通过与 CCAAS 的直连 SSE 接收这些事件：
 
 ```typescript
 // 1. Agent 开始思考
@@ -180,7 +180,7 @@ agent_status: { status: 'idle' }
 2. **用户在 AI 生成后编辑。** 每个编辑器区域（如 `LearningObjectivesEditor`、`LearningTasksEditor`）在 AI 生成期间和之后都必须可编辑。
 3. **保存是独立操作。** AI Agent 不保存——它只填充表单。用户必须显式点击"保存"来持久化修改。
 4. **Solution 后端拥有数据。** 保存请求（步骤 15）发送到 Solution 后端，而不是 CCAAS。CCAAS 仅处理 AI 中继。
-5. **两条独立连接。** 前端维护与 CCAAS 的 WebSocket 用于 AI 事件，以及与 Solution 后端的 REST 调用用于领域数据。这是两条独立的通道。
+5. **两条独立连接。** 前端维护与 CCAAS 的 SSE 连接用于 AI 事件，以及与 Solution 后端的 REST 调用用于领域数据。这是两条独立的通道。
 
 ## 旅程 2：用 AI 编辑现有备课方案的某个区域
 
@@ -366,7 +366,7 @@ agent_status: { status: 'idle' }
               ▼                         ▼
     ┌─────────────────┐      ┌─────────────────┐
     │ 前端            │      │ 前端            │
-    │    ↓ (WS+REST)  │      │    ↓ (REST)     │
+    │    ↓ (SSE+REST) │      │    ↓ (REST)     │
     │ CCAAS 后端      │      │ Solution 后端   │
     │    ↓            │      │ (直接 CRUD)     │
     │ AI Agent        │      └─────────────────┘
@@ -374,7 +374,7 @@ agent_status: { status: 'idle' }
     │ write_output    │
     │    ↓            │
     │ output_update   │
-    │    ↓ (WS)       │
+    │    ↓ (SSE)      │
     │ 前端 (表单)     │
     └─────────────────┘
 ```
@@ -469,7 +469,7 @@ AI 已经通过 `output_update` 发送了 `textbookAnalysis` 和 `learningObject
 
 AI 还在调用 `write_output` 时用户点击了"取消"。
 
-**决策：** 通过 Socket.io 向 CCAAS 发送 `cancel` 事件。前端应停止从后续的 `output_update` 事件更新编辑器区域。已更新的区域保留在编辑器中，供用户丢弃或保留。
+**决策：** 通过 SDK 向 CCAAS 发送 `cancel` 请求。前端应停止从后续的 `output_update` 事件更新编辑器区域。已更新的区域保留在编辑器中，供用户丢弃或保留。
 
 ### 教师想恢复某个区域怎么办？
 
@@ -492,7 +492,7 @@ AI 更新了 `learningTasks` 区域，但教师更喜欢原始版本。
 设计一次性生成备课方案所有区域的完整用户旅程：
 
 1. **画出时序图**，展示所有参与者（用户、前端、AI Agent、CCAAS、Solution 后端）。
-2. **列出前端按顺序接收的 WebSocket 事件。**
+2. **列出前端按顺序接收的 SSE 事件。**
 3. **确定 AI 发送的 output_update 字段**（提示：有 6+ 个区域）。
 4. **设计保存机制**——所有区域一起保存还是逐区域保存？
 5. **找出两个**批量生成特有的边界情况。
@@ -512,8 +512,8 @@ AI 更新了 `learningTasks` 区域，但教师更喜欢原始版本。
 
 - **追踪完整的用户旅程**，从初始操作到最终结果
 - **识别每个组件的角色**（前端、Solution 后端、CCAAS、AI Agent）在每个步骤中
-- **区分两条通道**——AI 交互通过 CCAAS（直连 WebSocket），领域数据通过 Solution 后端（REST）
-- **将 WebSocket 事件映射**到旅程中的特定时刻
+- **区分两条通道**——AI 交互通过 CCAAS（直连 SSE），领域数据通过 Solution 后端（REST）
+- **将 SSE 事件映射**到旅程中的特定时刻
 - **发现旅程揭示的设计决策**（部分更新、合并 vs. 替换、逐区域编辑、AI 修改高亮）
 - **设计 UI 布局**，基于交互模式
 - **在编写任何代码之前识别边界情况**

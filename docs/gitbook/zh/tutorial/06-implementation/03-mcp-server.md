@@ -19,7 +19,7 @@
 用户 → 前端 → CCAAS → AI Agent → MCP Server → (响应) → CCAAS → 前端
 ```
 
-MCP Server 处于这个链条的末端。当 AI Agent 决定更新表单字段时，它会调用 MCP Server 上的 `write_output`。MCP Server 验证输入并返回结构化响应。然后 CCAAS 将该响应包装成 `output_update` WebSocket 事件并推送到前端。
+MCP Server 处于这个链条的末端。当 AI Agent 决定更新表单字段时，它会调用 MCP Server 上的 `write_output`。MCP Server 验证输入并返回结构化响应。然后 CCAAS 将该响应包装成 `output_update` SSE 事件并推送到前端。
 
 MCP Server **不会**直接与前端通信——CCAAS 负责处理这个中继。
 
@@ -456,7 +456,7 @@ CCAAS EventMapper 将其包装为 output_update 事件:
 }
           │
           ▼
-CCAAS 通过 WebSocket 推送到 Solution 后端，
+CCAAS 通过 SSE 推送到 Solution 后端，
 Solution 后端再中继到前端。
 ```
 

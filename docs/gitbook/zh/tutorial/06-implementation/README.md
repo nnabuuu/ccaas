@@ -26,7 +26,7 @@
 | 前端 | React 18 + Vite + Tailwind CSS | 用户界面 |
 | MCP Server | Node.js + @modelcontextprotocol/sdk | AI 工具服务 |
 | Skills | Markdown (SKILL.md) | AI 行为定义 |
-| 聊天集成 | @kedge-agentic/react-sdk + Socket.io | 实时 AI 通信 |
+| 聊天集成 | @kedge-agentic/react-sdk (SSE) | 实时 AI 通信 |
 
 ## 章节概览
 

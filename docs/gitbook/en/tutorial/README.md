@@ -35,7 +35,7 @@ Before starting this tutorial, you should have:
 
 - **Node.js 18+** and **npm** installed
 - Basic knowledge of **TypeScript** and **React**
-- Familiarity with REST APIs and WebSocket concepts
+- Familiarity with REST APIs and SSE concepts
 - A working KedgeAgentic installation (see [Installation](../getting-started/installation.md))
 
 {% hint style="info" %}
@@ -62,7 +62,7 @@ With the design in hand, we learn how data moves through the system and how AI o
 
 | Chapter | What You Learn | Key Deliverable |
 |---------|---------------|-----------------|
-| [4. Data Flow and State Management](04-data-flow.md) | How messages flow through WebSocket events | Data flow diagram for Lesson Plan Designer |
+| [4. Data Flow and State Management](04-data-flow.md) | How messages flow through SSE events | Data flow diagram for Lesson Plan Designer |
 | [5. Forms and output\_update Protocol](05-form-protocol.md) | How AI writes structured data to forms | SyncField definitions and write\_output spec |
 
 ### Phase 3: Implementation (Chapter 6)

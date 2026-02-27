@@ -419,15 +419,15 @@ TypeORM 会应用合理的默认值，但对于高吞吐量场景，你可能需
                                                └──────────────┘
 ```
 
-{% hint style="warning" %}
-**需要 Sticky Session**：WebSocket 连接在整个生命周期内必须路由到同一后端节点。配置负载均衡器的会话亲和性（例如基于 Socket.io 的 `sid` cookie）。
+{% hint style="info" %}
+**SSE 连接**：SSE 连接使用标准 HTTP，无需特殊的 sticky session 配置。如果使用长连接，确保负载均衡器支持 HTTP streaming。
 {% endhint %}
 
 ### 扩展检查清单
 
 ```
 [] 数据库：单节点使用 SQLite，多节点使用 PostgreSQL
-[] 负载均衡器：为 WebSocket 启用 sticky session
+[] 负载均衡器：确保支持 SSE streaming 长连接
 [] 存储：为数据库和工作空间配置持久化卷
 [] 密钥：通过安全方式注入环境变量
 [] MCP 服务器：配置健康检查
@@ -575,7 +575,7 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 
 ```
 [] 健康端点返回 200
-[] 可以通过 WebSocket 创建新会话
+[] 可以通过 SSE 创建新会话
 [] 可以发送消息并收到响应
 [] 消息历史在页面刷新后保持
 [] 管理后台可访问
@@ -589,7 +589,7 @@ CORS_ORIGINS=https://app.example.com,https://admin.example.com
 1. **架构** -- 理解 CCAAS 核心、Solution 后端和前端如何交互
 2. **领域模型** -- 设计驻留在 Solution 后端的实体
 3. **用户旅程** -- 映射用户将遵循的流程
-4. **数据流** -- 连接 WebSocket 事件、REST API 和状态管理
+4. **数据流** -- 连接 SSE 事件、REST API 和状态管理
 5. **表单** -- 使用 `output_update` 协议进行结构化数据同步
 6. **实现** -- 构建后端、MCP 服务器、Skills、前端和测试
 7. **部署** -- 为生产环境进行配置、优化和安全加固

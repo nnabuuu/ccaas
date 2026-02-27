@@ -342,7 +342,6 @@ Create `frontend/package.json`:
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "socket.io-client": "^4.8.1",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
@@ -364,9 +363,8 @@ Create `frontend/package.json`:
 
 **Key dependencies:**
 
-- `@kedge-agentic/react-sdk`: Provides hooks for WebSocket connection, chat, and output\_update handling
+- `@kedge-agentic/react-sdk`: Provides hooks for SSE connection, chat, and output\_update handling
 - `@kedge-agentic/common`: Shared types used across the platform
-- `socket.io-client`: WebSocket client for real-time communication
 - `lucide-react`: Icons library
 
 ## Step 5: Create the Startup Script

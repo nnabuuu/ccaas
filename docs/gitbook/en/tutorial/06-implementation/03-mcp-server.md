@@ -19,7 +19,7 @@ Recall from the architecture chapter:
 User → Frontend → CCAAS → AI Agent → MCP Server → (response) → CCAAS → Frontend
 ```
 
-The MCP Server sits at the end of this chain. When the AI Agent decides to update a form field, it calls `write_output` on the MCP Server. The MCP Server validates the input and returns a structured response. CCAAS then wraps that response into an `output_update` WebSocket event and pushes it to the frontend.
+The MCP Server sits at the end of this chain. When the AI Agent decides to update a form field, it calls `write_output` on the MCP Server. The MCP Server validates the input and returns a structured response. CCAAS then wraps that response into an `output_update` SSE event and pushes it to the frontend.
 
 The MCP Server does **not** directly communicate with the frontend -- CCAAS handles that relay.
 
@@ -456,7 +456,7 @@ CCAAS EventMapper wraps it into an output_update event:
 }
           │
           ▼
-CCAAS pushes via WebSocket to Solution Backend,
+CCAAS pushes via SSE to the Solution Backend,
 which relays to the Frontend.
 ```
 

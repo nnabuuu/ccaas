@@ -29,7 +29,7 @@ The KedgeAgentic platform and your Solution have clearly separated responsibilit
 |  |  Management    |  |   Routing     |  |  Persistence        | |
 |  +---------------+  +---------------+  +---------------------+ |
 |  +---------------+  +---------------+  +---------------------+ |
-|  |  AI Agent      |  |   WebSocket   |  |   Authentication    | |
+|  |  AI Agent      |  |   SSE         |  |   Authentication    | |
 |  |  Lifecycle     |  |   Events      |  |   & Tenants         | |
 |  +---------------+  +---------------+  +---------------------+ |
 +-----------------------------------------------------------------+
@@ -52,7 +52,7 @@ The KedgeAgentic platform and your Solution have clearly separated responsibilit
 |----------------|-------------|---------|
 | Creating and destroying AI Agent sessions | Platform | CCAAS manages agent processes |
 | Routing messages to the right Skill | Platform | Keyword/pattern matching |
-| Streaming events to the frontend | Platform | WebSocket events (text\_delta, output\_update) |
+| Streaming events to the frontend | Platform | SSE events (text\_delta, output\_update) |
 | Persisting conversation history | Platform | Message storage |
 | Defining what the AI knows and does | Solution | SKILL.md files |
 | Providing tools the AI can call | Solution | MCP Server with write\_output |
@@ -105,7 +105,7 @@ Data flow describes how information moves between the frontend, the platform, an
                   |     Frontend      |
                   +-------------------+
                    /                \
-     WebSocket (AI chat)      REST API (domain data)
+        SSE (AI chat)         REST API (domain data)
                  /                    \
     +------------+              +------------------+
     |   CCAAS    |              | Solution Backend |
@@ -123,7 +123,7 @@ Data flow describes how information moves between the frontend, the platform, an
 
 Understanding this data flow is critical:
 
-- **Frontend to CCAAS** (WebSocket): Chat messages, streaming responses, output\_update events. The frontend connects directly using `useAgentConnection({ serverUrl: 'http://localhost:3001' })`.
+- **Frontend to CCAAS** (SSE): Chat messages, streaming responses, output\_update events. The frontend connects directly using `useAgentConnection({ serverUrl: 'http://localhost:3001' })`.
 - **Frontend to Solution Backend** (REST API): CRUD operations for lesson plans, textbook catalog queries, curriculum standards lookup. These are standard HTTP calls proxied by Vite in development.
 
 The AI Agent does not write to your database directly. Instead, it calls `write_output` (an MCP tool), which triggers an `output_update` event that reaches your frontend via CCAAS. Your frontend then renders the data for teacher review. Only when the teacher clicks "Save" does the data get persisted to your Solution backend.
@@ -136,7 +136,7 @@ The form protocol defines how AI-generated data maps to your frontend form field
 // The AI calls write_output with:
 { field: "objectives", value: "1. Students will understand...", operation: "set" }
 
-// CCAAS delivers this as an output_update event via WebSocket:
+// CCAAS delivers this as an output_update event via SSE:
 onOutputUpdate: (update) => {
   // update.field = "objectives"
   // update.value = "1. Students will understand..."
@@ -271,7 +271,7 @@ The central configuration file that tells the platform about your Solution:
 
 ### Frontend
 
-A React application that renders forms and handles `output_update` events from the AI. It connects **directly to CCAAS** via Socket.io for chat and AI streaming, and to the Solution backend via REST API for domain data (textbooks, lesson plans).
+A React application that renders forms and handles `output_update` events from the AI. It connects **directly to CCAAS** via SSE for chat and AI streaming, and to the Solution backend via REST API for domain data (textbooks, lesson plans).
 
 ### Backend
 
@@ -293,7 +293,7 @@ To make this concrete, let us trace a single request through the entire system:
 
 ```
 Step 1: Teacher sends message via chat input
-        Frontend -> WebSocket -> CCAAS (port 3001)
+        Frontend -> SSE -> CCAAS (port 3001)
 
 Step 2: CCAAS receives the message with page context
         The message includes the current lesson plan form state
@@ -312,7 +312,7 @@ Step 5: AI Agent calls write_output multiple times
         { field: "assessmentMethods", value: "Exit ticket..." }
 
 Step 6: CCAAS delivers each call as an output_update event
-        Pushes via WebSocket directly to Frontend
+        Pushes via SSE directly to Frontend
 
 Step 7: Frontend receives output_update events
         Sync buttons appear next to each form field
@@ -364,7 +364,7 @@ Before moving on, answer these questions to check your understanding:
 3. **How does the frontend connect to CCAAS and the Solution backend?**
    <details>
    <summary>Answer</summary>
-   The frontend has two separate connections. It connects directly to CCAAS (port 3001) via WebSocket for all AI interactions -- chat messages, streaming, and output_update events. It connects to the Solution backend (port 3002) via REST API for domain data -- lesson plan CRUD, textbook catalog queries, and curriculum standards.
+   The frontend has two separate connections. It connects directly to CCAAS (port 3001) via SSE for all AI interactions -- chat messages, streaming, and output_update events. It connects to the Solution backend (port 3002) via REST API for domain data -- lesson plan CRUD, textbook catalog queries, and curriculum standards.
    </details>
 
 4. **Why is the design phase (Chapters 1-3) important before coding?**

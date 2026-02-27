@@ -35,7 +35,7 @@
 
 - 已安装 **Node.js 18+** 和 **npm**
 - 具备 **TypeScript** 和 **React** 基础知识
-- 了解 REST API 和 WebSocket 概念
+- 了解 REST API 和 SSE 概念
 - 已完成即见Agentic 安装（参见[安装与启动](../getting-started/installation.md)）
 
 {% hint style="info" %}
@@ -62,7 +62,7 @@
 
 | 章节 | 学习内容 | 关键产出 |
 |------|---------|---------|
-| [4. 数据流与状态管理](04-data-flow.md) | 消息如何通过 WebSocket 事件流动 | Lesson Plan Designer 数据流图 |
+| [4. 数据流与状态管理](04-data-flow.md) | 消息如何通过 SSE 事件流动 | Lesson Plan Designer 数据流图 |
 | [5. 表单与 output\_update 协议](05-form-protocol.md) | AI 如何将结构化数据写入表单 | SyncField 定义和 write\_output 规范 |
 
 ### 第三阶段：实现（第 6 章）

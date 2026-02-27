@@ -12,17 +12,17 @@
 │                                                              │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────┐  ┌───────┐ │
 │  │ 表单编辑器    │  │ 聊天面板    │  │ 文件视图  │  │ 任务  │ │
-│  │ (REST)       │  │ (WebSocket)│  │ (SDK)    │  │ (SDK) │ │
+│  │ (REST)       │  │ (SSE)      │  │ (SDK)    │  │ (SDK) │ │
 │  └──────┬───────┘  └─────┬──────┘  └────┬─────┘  └───┬───┘ │
 │         │                │              │             │      │
 └─────────┼────────────────┼──────────────┼─────────────┼──────┘
           │                │              │             │
     Solution 后端        CCAAS          CCAAS         CCAAS
     (端口 3002)        (端口 3001)    (端口 3001)   (端口 3001)
-    GET /api/plans    WebSocket      文件 API     SubAgents
+    GET /api/plans    SSE            文件 API     SubAgents
 ```
 
-前端与两个后端通信。领域数据（教案、教材）通过 REST 从 Solution 后端获取。聊天、文件、Agent 状态和实时事件通过 WebSocket 从 CCAAS 核心后端流入。
+前端与两个后端通信。领域数据（教案、教材）通过 REST 从 Solution 后端获取。聊天、文件、Agent 状态和实时事件通过 SSE 从 CCAAS 核心后端流入。
 
 ## 项目依赖
 
@@ -34,8 +34,7 @@
     "@kedge-agentic/common": "file:../../../packages/common",
     "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "socket.io-client": "^4.8.1"
+    "react-dom": "^18.3.1"
   }
 }
 ```
@@ -49,7 +48,7 @@
 
 | Hook | 职责 |
 |------|------|
-| `useAgentConnection` | Socket.io 连接、会话 ID 持久化、自动重连 |
+| `useAgentConnection` | SSE 连接、会话 ID 持久化、自动重连 |
 | `useAgentChat` | 消息历史、文本流式传输、通过 REST 发送消息、会话生命周期 |
 | `useAgentStatus` | 工具活动、思考状态、SubAgent 跟踪、待办事项 |
 | `usePageContext` | 将当前页面/表单状态作为上下文随每条消息发送 |
@@ -88,15 +87,15 @@ import { useLessonPlanSync } from './useLessonPlanSync'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // 重要：必须使用 CCAAS 后端的绝对 URL，不能使用相对路径
-// Vite 代理仅适用于 HTML/CSS，不适用于 Socket.IO 连接
-const SOCKET_URL = 'http://localhost:3001'
+// Vite 代理仅适用于 HTML/CSS，不适用于 SSE 连接
+const SERVER_URL = 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
   const { tenantId = 'lesson-plan-designer', autoConnect = true } = options
 
   // ===== 1. SDK 连接 =====
   const connection = useAgentConnection({
-    serverUrl: SOCKET_URL,
+    serverUrl: SERVER_URL,
     tenantId,
     autoConnect,
   })
@@ -207,11 +206,11 @@ export function useLessonPlanSession(options = {}) {
 
 ### 关键模式
 
-**绝对 Socket URL。** 连接必须使用 `http://localhost:3001`，不能使用相对路径。Socket.IO 不会经过 Vite 的代理系统。
+**绝对 Server URL。** 连接必须使用 `http://localhost:3001`，不能使用相对路径。SSE 连接不会经过 Vite 的代理系统。
 
 **tenantId 启用会话持久化。** 当提供 `tenantId` 时，SDK 会将 `sessionId` 持久化到 `localStorage` 的 `ccaas_session_{tenantId}` 键下。页面刷新后，会恢复相同的会话并自动加载消息历史。
 
-**onOutputUpdate 桥接 SDK 与 Solution 同步。** `useAgentChat` hook 解析 `output_update` WebSocket 事件，并以 `{ field, value, preview }` 调用你的回调。你的 session hook 将这些转发给同步 hook，后者将它们排队为待处理更新。
+**onOutputUpdate 桥接 SDK 与 Solution 同步。** `useAgentChat` hook 解析 `output_update` SSE 事件，并以 `{ field, value, preview }` 调用你的回调。你的 session hook 将这些转发给同步 hook，后者将它们排队为待处理更新。
 
 **usePageContext 随每条消息发送表单状态。** 当用户发送聊天消息时，SDK 会附加当前的 `context` 对象，这样 AI agent 始终了解当前的表单内容。
 
@@ -331,7 +330,7 @@ export function ChatPanel({
 
 ## 第四步：处理 output\_update 事件
 
-当 AI agent 通过 MCP 调用 `write_output` 时，CCAAS 通过 WebSocket 发送 `output_update` 事件。SDK 的 `useAgentChat` hook 解析这些事件并调用你的 `onOutputUpdate` 回调。你的 Solution 然后渲染同步卡片，让用户审查并应用 AI 的建议。
+当 AI agent 通过 MCP 调用 `write_output` 时，CCAAS 通过 SSE 发送 `output_update` 事件。SDK 的 `useAgentChat` hook 解析这些事件并调用你的 `onOutputUpdate` 回调。你的 Solution 然后渲染同步卡片，让用户审查并应用 AI 的建议。
 
 ### OutputUpdateCard 组件
 
@@ -416,9 +415,9 @@ export function useLessonPlanSync() {
 - **字段归一化。** 来自 AI 的值被归一化为期望的类型（如 `gradeLevel` 转为 `Number`，`curriculumRequirements` 转为 `Array`）。
 - **已修改字段跟踪。** 从 AI 输出同步的字段会有视觉指示器（如蓝色左边框），让用户看到 AI 修改了哪些部分。
 
-## 第五步：通过 WebSocket 跟踪 SubAgent
+## 第五步：通过 SSE 跟踪 SubAgent
 
-当 AI agent 创建 SubAgent（如 Task 或 Explore agent）时，CCAAS 发送实时 WebSocket 事件。SDK 完全处理这一切 -- 无需轮询。
+当 AI agent 创建 SubAgent（如 Task 或 Explore agent）时，CCAAS 发送实时 SSE 事件。SDK 完全处理这一切 -- 无需轮询。
 
 **数据流：**
 
@@ -442,7 +441,7 @@ interface ActiveSubAgent {
 `AgentActivityLine` 组件以紧凑的可展开视图渲染 SubAgent。每个 SubAgent 显示其类型、描述和实时运行时长。已完成或失败的 SubAgent 在 3 秒后自动移除。
 
 {% hint style="info" %}
-**为什么用 WebSocket 而不是轮询？** 早期实现使用 `useSubAgentPolling` 定期调用 REST API。这已被移除，因为 WebSocket 提供即时更新（对比轮询的 2-10 秒延迟），消除了不必要的 HTTP 请求，并避免了轮询数据与 WebSocket 数据之间的状态同步问题。
+**为什么用 SSE 而不是轮询？** 早期实现使用 `useSubAgentPolling` 定期调用 REST API。这已被移除，因为 SSE 提供即时更新（对比轮询的 2-10 秒延迟），消除了不必要的 HTTP 请求，并避免了轮询数据与 SSE 数据之间的状态同步问题。
 {% endhint %}
 
 ## 第六步：会话持久化
@@ -452,7 +451,7 @@ interface ActiveSubAgent {
 **工作原理：**
 
 1. `useAgentConnection` 生成 `conv_{uuid}` 会话 ID 并存储在 `localStorage` 的 `ccaas_session_{tenantId}` 键下
-2. 重新连接时，使用相同的会话 ID 重新加入 WebSocket 房间
+2. 重新连接时，使用相同的会话 ID 重新建立 SSE 连接
 3. `useAgentChat` 自动通过 `GET /api/v1/sessions/{sessionId}/messages` 获取消息历史
 4. 加载历史时，`chat.isLoadingHistory` 为 `true` -- 显示加载指示器
 
@@ -580,7 +579,7 @@ function App() {
 ## 常见陷阱
 
 {% hint style="danger" %}
-**陷阱 1：Socket.IO 使用相对 URL。** Vite 的代理仅适用于浏览器同源上下文中的 HTTP 请求。Socket.IO 创建自己的连接，不经过 Vite 的代理。始终使用绝对 URL `http://localhost:3001`。
+**陷阱 1：SSE 连接使用相对 URL。** Vite 的代理仅适用于浏览器同源上下文中的 HTTP 请求。SDK 构建完整的 SSE 端点 URL，不经过 Vite 的代理。始终使用绝对 URL `http://localhost:3001`。
 {% endhint %}
 
 {% hint style="danger" %}
@@ -588,7 +587,7 @@ function App() {
 {% endhint %}
 
 {% hint style="danger" %}
-**陷阱 3：轮询 SubAgent 状态。** SubAgent 跟踪完全由 SDK 的 `useAgentStatus` hook 通过 WebSocket 事件（`subagent_started`、`subagent_completed`）处理。不要添加轮询机制 -- 它引入延迟、不必要的 HTTP 请求和状态同步问题。
+**陷阱 3：轮询 SubAgent 状态。** SubAgent 跟踪完全由 SDK 的 `useAgentStatus` hook 通过 SSE 事件（`subagent_started`、`subagent_completed`）处理。不要添加轮询机制 -- 它引入延迟、不必要的 HTTP 请求和状态同步问题。
 {% endhint %}
 
 {% hint style="danger" %}

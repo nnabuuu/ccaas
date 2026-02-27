@@ -12,17 +12,17 @@ Before writing code, recall how the frontend fits into the data flow:
 │                                                              │
 │  ┌──────────────┐  ┌────────────┐  ┌──────────┐  ┌───────┐ │
 │  │ FormEditor   │  │ ChatPanel  │  │ FilesView│  │ Tasks │ │
-│  │ (REST)       │  │ (WebSocket)│  │ (SDK)    │  │ (SDK) │ │
+│  │ (REST)       │  │ (SSE)      │  │ (SDK)    │  │ (SDK) │ │
 │  └──────┬───────┘  └─────┬──────┘  └────┬─────┘  └───┬───┘ │
 │         │                │              │             │      │
 └─────────┼────────────────┼──────────────┼─────────────┼──────┘
           │                │              │             │
     Solution Backend     CCAAS          CCAAS         CCAAS
     (port 3002)        (port 3001)    (port 3001)   (port 3001)
-    GET /api/plans    WebSocket      Files API     SubAgents
+    GET /api/plans    SSE            Files API     SubAgents
 ```
 
-The frontend talks to two backends. Domain data (lesson plans, textbooks) comes from the Solution backend via REST. Chat, files, agent status, and real-time events flow through the CCAAS core backend via WebSocket.
+The frontend talks to two backends. Domain data (lesson plans, textbooks) comes from the Solution backend via REST. Chat, files, agent status, and real-time events flow through the CCAAS core backend via SSE.
 
 ## Project Dependencies
 
@@ -34,8 +34,7 @@ The frontend depends on two workspace packages from the monorepo:
     "@kedge-agentic/common": "file:../../../packages/common",
     "@kedge-agentic/react-sdk": "file:../../../packages/react-sdk",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "socket.io-client": "^4.8.1"
+    "react-dom": "^18.3.1"
   }
 }
 ```
@@ -49,7 +48,7 @@ The `@kedge-agentic/react-sdk` provides five core hooks. Each handles one concer
 
 | Hook | Responsibility |
 |------|---------------|
-| `useAgentConnection` | Socket.io connection, session ID persistence, reconnection |
+| `useAgentConnection` | SSE connection, session ID persistence, reconnection |
 | `useAgentChat` | Message history, text streaming, send via REST, conversation lifecycle |
 | `useAgentStatus` | Tool activity, thinking state, SubAgent tracking, todo items |
 | `usePageContext` | Sends current page/form state as context with every message |
@@ -88,15 +87,15 @@ import { useLessonPlanSync } from './useLessonPlanSync'
 import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // IMPORTANT: Use absolute URL to the CCAAS backend, NOT a relative path
-// Vite proxy only works for HTML/CSS, not for Socket.IO connections
-const SOCKET_URL = 'http://localhost:3001'
+// Vite proxy only works for HTML/CSS, not for SSE connections
+const SERVER_URL = 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
   const { tenantId = 'lesson-plan-designer', autoConnect = true } = options
 
   // ===== 1. SDK Connection =====
   const connection = useAgentConnection({
-    serverUrl: SOCKET_URL,
+    serverUrl: SERVER_URL,
     tenantId,
     autoConnect,
   })
@@ -207,11 +206,11 @@ export function useLessonPlanSession(options = {}) {
 
 ### Key Patterns to Note
 
-**Absolute Socket URL.** The connection must use `http://localhost:3001`, not a relative path. Socket.IO does not go through Vite's proxy system.
+**Absolute Server URL.** The connection must use `http://localhost:3001`, not a relative path. SSE connections do not go through Vite's proxy system.
 
 **tenantId enables conversation persistence.** When `tenantId` is provided, the SDK persists the `sessionId` in `localStorage` under `ccaas_session_{tenantId}`. On page refresh, the same session is recovered and message history is loaded automatically.
 
-**onOutputUpdate bridges SDK to Solution sync.** The `useAgentChat` hook parses `output_update` WebSocket events and calls your callback with `{ field, value, preview }`. Your session hook forwards these to the sync hook, which queues them as pending updates.
+**onOutputUpdate bridges SDK to Solution sync.** The `useAgentChat` hook parses `output_update` SSE events and calls your callback with `{ field, value, preview }`. Your session hook forwards these to the sync hook, which queues them as pending updates.
 
 **usePageContext sends form state with every message.** When the user sends a chat message, the SDK attaches the current `context` object so the AI agent always knows the current form contents.
 
@@ -331,7 +330,7 @@ export function ChatPanel({
 
 ## Step 4: Handle output\_update Events
 
-When the AI agent calls `write_output` via MCP, CCAAS sends an `output_update` event through the WebSocket. The SDK's `useAgentChat` hook parses these events and calls your `onOutputUpdate` callback. Your Solution then renders sync cards to let the user review and apply the AI's suggestions.
+When the AI agent calls `write_output` via MCP, CCAAS sends an `output_update` event through SSE. The SDK's `useAgentChat` hook parses these events and calls your `onOutputUpdate` callback. Your Solution then renders sync cards to let the user review and apply the AI's suggestions.
 
 ### The OutputUpdateCard Component
 
@@ -416,9 +415,9 @@ The key design decisions:
 - **Field normalization.** Values from the AI are normalized to match expected types (e.g., `gradeLevel` to `Number`, `curriculumRequirements` to `Array`).
 - **Modified field tracking.** Fields synced from AI output get a visual indicator (e.g., a blue left border) so the user can see which parts the AI changed.
 
-## Step 5: SubAgent Tracking via WebSocket
+## Step 5: SubAgent Tracking via SSE
 
-When the AI agent spawns SubAgents (e.g., Task or Explore agents), CCAAS sends real-time WebSocket events. The SDK handles this entirely -- no polling required.
+When the AI agent spawns SubAgents (e.g., Task or Explore agents), CCAAS sends real-time SSE events. The SDK handles this entirely -- no polling required.
 
 **Data flow:**
 
@@ -442,7 +441,7 @@ interface ActiveSubAgent {
 The `AgentActivityLine` component renders SubAgents in a compact expandable view. Each SubAgent shows its type, description, and a live duration timer. Completed or failed SubAgents are automatically removed after 3 seconds.
 
 {% hint style="info" %}
-**Why WebSocket instead of polling?** An earlier implementation used `useSubAgentPolling` to periodically call a REST API. This was removed because WebSocket provides instant updates (vs. 2-10 second polling delay), eliminates unnecessary HTTP requests, and avoids state synchronization issues between the polling data and the WebSocket data.
+**Why SSE instead of polling?** An earlier implementation used `useSubAgentPolling` to periodically call a REST API. This was removed because SSE provides instant updates (vs. 2-10 second polling delay), eliminates unnecessary HTTP requests, and avoids state synchronization issues between the polling data and the SSE data.
 {% endhint %}
 
 ## Step 6: Conversation Persistence
@@ -452,7 +451,7 @@ Conversation persistence is built into the SDK hooks. When `tenantId` is provide
 **How it works:**
 
 1. `useAgentConnection` generates a `conv_{uuid}` session ID and stores it in `localStorage` under `ccaas_session_{tenantId}`
-2. On reconnection, the same session ID is used to rejoin the WebSocket room
+2. On reconnection, the same session ID is used to re-establish the SSE connection
 3. `useAgentChat` automatically fetches message history via `GET /api/v1/sessions/{sessionId}/messages`
 4. While history is loading, `chat.isLoadingHistory` is `true` -- show a loading indicator
 
@@ -580,7 +579,7 @@ function App() {
 ## Common Pitfalls
 
 {% hint style="danger" %}
-**Pitfall 1: Using relative URL for Socket.IO.** Vite's proxy only works for HTTP requests made from the browser's same-origin context. Socket.IO creates its own connection and does not go through Vite's proxy. Always use the absolute URL `http://localhost:3001`.
+**Pitfall 1: Using relative URL for SSE connection.** Vite's proxy only works for HTTP requests made from the browser's same-origin context. The SDK constructs full SSE endpoint URLs that do not go through Vite's proxy. Always use the absolute URL `http://localhost:3001`.
 {% endhint %}
 
 {% hint style="danger" %}
@@ -588,7 +587,7 @@ function App() {
 {% endhint %}
 
 {% hint style="danger" %}
-**Pitfall 3: Polling for SubAgent status.** SubAgent tracking is handled entirely by WebSocket events (`subagent_started`, `subagent_completed`) through the SDK's `useAgentStatus` hook. Do not add a polling mechanism -- it introduces latency, unnecessary HTTP requests, and state synchronization issues.
+**Pitfall 3: Polling for SubAgent status.** SubAgent tracking is handled entirely by SSE events (`subagent_started`, `subagent_completed`) through the SDK's `useAgentStatus` hook. Do not add a polling mechanism -- it introduces latency, unnecessary HTTP requests, and state synchronization issues.
 {% endhint %}
 
 {% hint style="danger" %}
