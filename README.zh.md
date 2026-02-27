@@ -70,7 +70,7 @@ npm run build
 - **多租户**：租户隔离与 API 密钥认证
 - **MCP 集成**：MCP 服务器池与 REST 适配器
 - **消息持久化**：SQLite/PostgreSQL 存储
-- **实时流式传输**：Socket.io 事件流
+- **实时流式传输**：SSE（Server-Sent Events）事件流
 
 ### 管理界面 (`@kedge-agentic/admin-next`)
 
@@ -90,7 +90,7 @@ npm run build
 
 ### React SDK (`@kedge-agentic/react-sdk`)
 
-- **useAgentConnection**：WebSocket 连接管理
+- **useAgentConnection**：连接管理（SSE 默认）
 - **useAgentChat**：聊天消息和历史记录
 - **useAgentStatus**：智能体状态和活动追踪
 - **ChatPanel**：完整的聊天界面组件

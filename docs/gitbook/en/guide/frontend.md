@@ -2,7 +2,7 @@
 
 ## Overview
 
-CCAAS provides official SDKs for both Vue (`@kedge-agentic/vue-sdk`) and React (`@kedge-agentic/react-sdk`), as well as a general Socket.io integration pattern for custom implementations.
+CCAAS provides official SDKs for both Vue (`@kedge-agentic/vue-sdk`) and React (`@kedge-agentic/react-sdk`), using SSE (Server-Sent Events) as the default real-time transport.
 
 ## Vue SDK Integration
 
@@ -124,7 +124,7 @@ The React SDK provides six essential hooks for Solution development:
 
 | Hook | Responsibility |
 |------|---------------|
-| `useAgentConnection` | Socket.io connection, session ID persistence, reconnection |
+| `useAgentConnection` | SSE connection (default), session ID persistence, reconnection |
 | `useAgentChat` | Message history, text streaming, send via REST, conversation lifecycle |
 | `useAgentStatus` | Tool activity, thinking state, SubAgent tracking, todo items |
 | `usePageContext` | Sends current page/form state as context with every message |
@@ -133,7 +133,7 @@ The React SDK provides six essential hooks for Solution development:
 
 #### 1. useAgentConnection
 
-Manages WebSocket connection to CCAAS backend:
+Manages connection to CCAAS backend (SSE by default):
 
 ```typescript
 import { useAgentConnection } from '@kedge-agentic/react-sdk'
@@ -144,9 +144,8 @@ const connection = useAgentConnection({
   autoConnect: true,
 })
 
-// connection.connected  - Whether the socket is connected
+// connection.connected  - Whether connected
 // connection.sessionId  - Current session ID (persisted in localStorage)
-// connection.socket     - Socket.io client instance
 // connection.sendMessage(message, sessionId) - Send chat message
 // connection.cancelCompletion(sessionId) - Cancel ongoing request
 ```
@@ -198,7 +197,7 @@ const status = useAgentStatus({ connection })
 // status.todoStats        - Aggregated todo progress statistics
 ```
 
-SubAgent tracking is handled entirely via WebSocket events (`subagent_started`, `subagent_completed`) -- no polling required.
+SubAgent tracking is handled entirely via SSE events (`subagent_started`, `subagent_completed`) -- no polling required.
 
 #### 4. usePageContext
 
@@ -336,11 +335,15 @@ export function useMySession(options = {}) {
 
 See tutorial [Chapter 6.5](../tutorial/06-implementation/05-frontend.md) for a complete working example with the Lesson Plan Designer.
 
-## Custom React Integration (Advanced)
+## Custom React Integration (Advanced / Legacy Socket.io)
+
+{% hint style="warning" %}
+The following patterns use the legacy Socket.io transport. **New Solutions should use `@kedge-agentic/react-sdk` with the default SSE transport.** Only use these patterns if you need full control over the low-level connection.
+{% endhint %}
 
 > For most use cases, prefer using `@kedge-agentic/react-sdk` hooks documented above.
 
-The following patterns show how to integrate directly via Socket.io without the SDK, for cases where you need full control over the connection and event handling.
+The following patterns show how to integrate directly via Socket.io without the SDK (legacy approach), for cases where you need full control over the connection and event handling.
 
 ### useSocket Hook
 
@@ -441,7 +444,7 @@ export function useSyncManager() {
 }
 ```
 
-## Socket.io Event Reference
+## Event Reference (SSE / Socket.io)
 
 | Event | Direction | Data Format |
 |-------|-----------|-------------|
@@ -461,4 +464,4 @@ export function useSyncManager() {
 2. **Unified parsing** -- Use `parseOutputUpdateEvent` for handling output\_update
 3. **Error handling** -- Listen for `error` events and provide user feedback
 4. **Status indicators** -- Use `agent_status` and `tool_activity` to display execution progress
-5. **Reconnection** -- Implement Socket.io auto-reconnection and session recovery
+5. **Reconnection** -- The SDK provides built-in SSE auto-reconnection and session recovery

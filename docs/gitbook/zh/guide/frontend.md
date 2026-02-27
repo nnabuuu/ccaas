@@ -2,7 +2,7 @@
 
 ## 概述
 
-即见Agentic 提供 Vue SDK（`@kedge-agentic/vue-sdk`）和 React SDK（`@kedge-agentic/react-sdk`），以及通用 Socket.io 集成模式，支持 Vue 和 React 前端框架。
+即见Agentic 提供 Vue SDK（`@kedge-agentic/vue-sdk`）和 React SDK（`@kedge-agentic/react-sdk`），默认使用 SSE（Server-Sent Events）实时通信，支持 Vue 和 React 前端框架。
 
 ## Vue SDK 集成
 
@@ -124,7 +124,7 @@ React SDK 提供六个核心 Hooks，用于 Solution 开发：
 
 #### 1. useAgentConnection
 
-管理与 CCAAS 后端的 WebSocket 连接：
+管理与 CCAAS 后端的连接（SSE 默认）：
 
 ```typescript
 import { useAgentConnection } from '@kedge-agentic/react-sdk'
@@ -135,7 +135,8 @@ const connection = useAgentConnection({
   autoConnect: true,
 })
 
-// connection.socket - Socket.io 客户端实例
+// connection.connected - 连接状态
+// connection.sessionId - 当前会话 ID（持久化在 localStorage）
 // connection.sendMessage(message, sessionId) - 发送聊天消息
 // connection.cancelCompletion(sessionId) - 取消正在进行的请求
 ```
@@ -240,11 +241,15 @@ clearPendingUpdates()
 
 参见教程第 6.5 章，了解如何将所有 Hooks 组合使用的完整示例。
 
-## 自定义 React 集成（高级）
+## 自定义 React 集成（高级 / 遗留 Socket.io）
+
+{% hint style="warning" %}
+以下模式使用遗留 Socket.io 传输。**新 Solution 应使用 `@kedge-agentic/react-sdk` 的 SSE 默认传输。** 仅当你需要完全控制底层连接时才使用此模式。
+{% endhint %}
 
 > 大多数场景下，建议优先使用上文介绍的 `@kedge-agentic/react-sdk` Hooks。
 
-React 应用也可以通过 Socket.io 直接集成。以下是底层 Hook 模式。
+React 应用也可以通过 Socket.io 直接集成（遗留方式）。以下是底层 Hook 模式。
 
 ### useSocket Hook
 
@@ -345,7 +350,7 @@ export function useSyncManager() {
 }
 ```
 
-## Socket.io 事件参考
+## 事件参考（SSE / Socket.io）
 
 | 事件 | 方向 | 数据格式 |
 |------|------|----------|
@@ -365,4 +370,4 @@ export function useSyncManager() {
 2. **统一解析** —— 使用 `parseOutputUpdateEvent` 处理 output\_update
 3. **错误处理** —— 监听 `error` 事件并提供用户反馈
 4. **状态指示** —— 利用 `agent_status` 和 `tool_activity` 展示执行进度
-5. **断线重连** —— 实现 Socket.io 自动重连和会话恢复
+5. **断线重连** —— SDK 内置 SSE 自动重连和会话恢复

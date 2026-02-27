@@ -103,7 +103,7 @@ npm run build:shared      # Build types/protocols
 - **Standardized Error Handling**: Unified HTTP error responses with retry guidance
 - **MCP Integration**: MCP server pool with REST adapter
 - **Message Persistence**: SQLite/PostgreSQL storage
-- **Real-time Streaming**: Socket.io event streaming
+- **Real-time Streaming**: SSE (Server-Sent Events) streaming
 
 ### Admin UI (`@kedge-agentic/admin`)
 

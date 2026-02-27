@@ -6,7 +6,7 @@ React SDK for building KedgeAgentic solutions with chat UI, real-time updates, a
 
 - **Chat Components**: Pre-built ChatPanel, MessageBubble, AgentActivityLine
 - **React Hooks**: Modular hooks for connection, chat, status, and layout
-- **Real-time Updates**: Socket.io integration with automatic reconnection
+- **Real-time Updates**: SSE (Server-Sent Events) integration with automatic reconnection
 - **Agent Tracking**: Monitor tool execution, subagents, thinking, and todos
 - **Form Sync**: Output update protocol for AI-suggested form changes
 - **Layout Controls**: Multiple chat modes (default, overlay, expanded)
@@ -15,7 +15,7 @@ React SDK for building KedgeAgentic solutions with chat UI, real-time updates, a
 ## Installation
 
 ```bash
-npm install @kedge-agentic/react-sdk @kedge-agentic/common socket.io-client
+npm install @kedge-agentic/react-sdk @kedge-agentic/common
 ```
 
 ## Quick Start
@@ -104,7 +104,7 @@ A: `messageIndex` is a 0-based sequential number that guarantees message order, 
 
 ### useAgentConnection
 
-Manages WebSocket connection to KedgeAgentic backend with optional conversation persistence.
+Manages connection to KedgeAgentic backend (SSE by default) with optional conversation persistence.
 
 ```tsx
 const connection = useAgentConnection({
@@ -512,9 +512,9 @@ For CI pipelines, ensure the KedgeAgentic backend is started before running inte
     npm run test:integration
 ```
 
-## Socket Events
+## Events
 
-The SDK listens for these standard events from the backend:
+The SDK handles these standard events from the backend (delivered via SSE stream or Socket.IO):
 
 - `chat_message` - New assistant message
 - `text_delta` - Streaming text updates

@@ -1,6 +1,22 @@
 # WebSocket Events
 
-KedgeAgentic uses Socket.io for WebSocket communication, providing a rich real-time event stream.
+{% hint style="danger" %}
+**⚠️ Deprecated**
+
+Socket.IO / WebSocket transport is deprecated. **Use SSE transport instead.**
+
+- Legacy endpoint `POST /api/v1/sessions/:id/completion` now returns **410 Gone**
+- Legacy endpoint `DELETE /api/v1/sessions/:id/completion` now returns **410 Gone**
+- New endpoints: `POST /api/v1/sessions/:id/messages` (SSE stream), `GET /api/v1/sessions/:id/events` (push channel)
+
+👉 See [SSE Transport Reference](sse.md) and [React SDK Chat Integration](../guide/chat-integration.md)
+{% endhint %}
+
+This page is kept for historical reference, documenting the event protocol from the Socket.io era. **New Solutions should not use Socket.IO.**
+
+---
+
+KedgeAgentic previously used Socket.io for WebSocket communication, providing a rich real-time event stream.
 
 ## Connection
 

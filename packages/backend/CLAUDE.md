@@ -4,14 +4,14 @@ This file provides context for AI assistants working with this codebase.
 
 ## Project Overview
 
-**Claude Code as a Service** is a production-ready relay server built with NestJS that spawns AgentEngine instances (Claude Code, OpenCode, custom engines) as subprocesses and streams events to frontend clients via Socket.io. It provides multi-tenant API key authentication, skill management, MCP server integration, and message persistence.
+**Claude Code as a Service** is a production-ready relay server built with NestJS that spawns AgentEngine instances (Claude Code, OpenCode, custom engines) as subprocesses and streams events to frontend clients via SSE (Server-Sent Events). It provides multi-tenant API key authentication, skill management, MCP server integration, and message persistence.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────────┐
 │   Frontend  │◄───►│  NestJS Server   │◄───►│  AgentEngine        │
-│ (Socket.io) │     │  (ChatGateway)   │     │ (claude/opencode)   │
+│   (SSE)     │     │  (Sessions API)  │     │ (claude/opencode)   │
 └─────────────┘     └──────────────────┘     └─────────────────────┘
                            │
                     ┌──────┴──────┐
@@ -149,7 +149,7 @@ See [docs/ERROR_HANDLING.md](./docs/ERROR_HANDLING.md) for complete documentatio
 
 ### ChatModule (chat/)
 
-Core relay functionality. Manages WebSocket connections and AgentEngine process lifecycle.
+Core relay functionality. Manages SSE connections and AgentEngine process lifecycle.
 
 **AgentEngine Lifecycle:**
 - `SessionService` spawns and manages AgentEngine instances
@@ -157,20 +157,21 @@ Core relay functionality. Manages WebSocket connections and AgentEngine process 
 - Handles process cleanup, cancellation (SIGTERM/SIGKILL), and timeout
 - See [docs/advanced/AGENT_ENGINE_LIFECYCLE.md](../../docs/advanced/AGENT_ENGINE_LIFECYCLE.md) for details
 
-**WebSocket Events (ChatGateway):**
-- `chat` - Send message to Claude
-- `cancel` - Cancel current operation
-- `reconnect_session` - Reconnect to existing session
-- `get_stats` - Get server statistics
+**SSE Endpoints (SessionsController):**
+- `POST /api/v1/sessions/:id/messages` - Send message, receive SSE event stream
+- `GET /api/v1/sessions/:id/events` - Subscribe to push channel (cross-turn)
+- `POST /api/v1/sessions/:id/cancel` - Cancel current operation
 
 **REST Endpoints (ChatController):**
 - `GET /api/v1/health` - Health check
 - `GET /api/v1/chat/status` - Session stats
 
+> **Legacy:** Socket.IO WebSocket gateway (`ChatGateway`) is still present as an optional transport but is no longer the default. New Solutions should use SSE.
+
 **Background Task Monitoring (SessionService):**
 - Automatically detects Task tool calls with `run_in_background: true`
 - Polls output file every 3 seconds to detect completion
-- Sends `subagent_completed` WebSocket event when task finishes
+- Sends `subagent_completed` event when task finishes (via SSE push channel)
 - 30-minute timeout protection with automatic cleanup
 - Session cleanup automatically stops all monitors
 
@@ -548,16 +549,15 @@ export type FrontendEventType =
 ## Session Lifecycle
 
 ```
-1. Client connects → WebSocket handshake
+1. Client sends POST /sessions/:id/messages with SSE Accept header
 2. Auth guard validates API key (if provided)
-3. Client sends chat message → session created
-4. SkillRouter matches triggers (optional)
-5. CLI spawned with --output-format stream-json
-6. CLI stdout → EventMapperService → Socket.io emit
-7. Messages persisted to database
-8. CLI exits → agent_status: complete
-9. Follow-up message → CLI spawned with --resume
-10. Idle timeout → session cleanup
+3. SkillRouter matches triggers (optional)
+4. CLI spawned with --output-format stream-json (or resumed with --resume)
+5. CLI stdout → EventMapperService → SSE event stream
+6. Messages persisted to database
+7. CLI exits → agent_status: complete → SSE connection closes
+8. Follow-up message → new POST /messages, CLI resumed
+9. Idle timeout → session cleanup
 ```
 
 ## Background Task Lifecycle
@@ -592,7 +592,7 @@ export type FrontendEventType =
 7. SkillSyncService syncs enabled skills
 8. CLI spawned with --output-format stream-json --permission-mode bypassPermissions
 9. stdin receives user message, stdout parsed via EventMapperService
-10. Events emitted to Socket.io room scheduler:{tenantId}
+10. Events emitted to SSE push channel or Socket.io room scheduler:{tenantId}
 11. On completion: persist messages, update execution status
 12. Cleanup workspace directory
 ```

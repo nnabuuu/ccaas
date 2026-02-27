@@ -2,7 +2,7 @@
 
 In the previous chapters, we designed the domain model and mapped user journeys for our Lesson Plan Designer Solution. Now we need to understand **how data actually moves** through the CCAAS platform -- from a user typing a message to structured data appearing in the frontend form.
 
-This chapter covers the complete data flow architecture, the WebSocket event system, and the React SDK hooks you will use in your Solution.
+This chapter covers the complete data flow architecture, the SSE event system, and the React SDK hooks you will use in your Solution.
 
 ## Learning Objectives
 
@@ -10,16 +10,16 @@ By the end of this chapter, you will be able to:
 
 - Trace a message through the CCAAS direct connection architecture
 - Use the React SDK hooks (`useAgentConnection`, `useAgentChat`, `useAgentStatus`, `usePageContext`, `useFiles`)
-- Identify all WebSocket event types and their purposes
+- Identify all SSE event types and their purposes
 - Design state management patterns for your Solution frontend
 
 ## The Direct Connection Architecture
 
-CCAAS uses a **direct connection architecture** where your Solution frontend connects directly to the CCAAS backend via WebSocket. The CCAAS backend manages AI Agent processes and streams events back to the frontend in real time.
+CCAAS uses a **direct connection architecture** where your Solution frontend connects directly to the CCAAS backend via SSE (Server-Sent Events). The CCAAS backend manages AI Agent processes and streams events back to the frontend in real time.
 
 ```
 ┌──────────────┐         ┌──────────────────┐         ┌──────────────┐
-│   Solution   │  WS     │  CCAAS Backend   │  stdin/  │   AI Agent   │
+│   Solution   │  SSE    │  CCAAS Backend   │  stdin/  │   AI Agent   │
 │   Frontend   │◄───────►│  (NestJS)        │  stdout  │   Process    │
 └──────────────┘         └──────────────────┘◄────────►└──────────────┘
   React + SDK              Session Mgmt                  Claude Code /
@@ -38,14 +38,14 @@ CCAAS uses a **direct connection architecture** where your Solution frontend con
 Key architectural facts:
 
 - **The Solution frontend connects directly to CCAAS** -- there is no relay through a Solution backend for AI interactions
-- **Messages are sent via REST** (`POST /api/v1/sessions/:sessionId/completion`) and **responses stream back via WebSocket** events
+- **Messages are sent via REST** (`POST /api/v1/sessions/:sessionId/messages`, returns SSE stream) and **responses stream back via SSE** events
 - **Domain data** (e.g., lesson plans, tasks) uses a separate REST channel to the Solution backend
 
 ## Complete Data Flow: Message Lifecycle
 
 Let us trace a complete interaction from start to finish. When a user types "Generate learning objectives for this lesson plan" in the Lesson Plan Designer frontend:
 
-### Step 1: Frontend establishes a WebSocket connection
+### Step 1: Frontend establishes an SSE connection
 
 The `useAgentConnection` hook connects to the CCAAS backend and manages session identity:
 
@@ -61,48 +61,46 @@ const connection = useAgentConnection({
 
 On connect, the hook:
 
-1. Creates a Socket.io connection with WebSocket transport
-2. Emits `session:join` with the sessionId
-3. Receives a `client_id` event with a unique client identifier
-4. Persists the sessionId in localStorage under `ccaas_session_${tenantId}`
+1. Creates an SSE connection to the CCAAS backend
+2. Establishes a push channel via `GET /api/v1/sessions/:sessionId/events`
+3. Persists the sessionId in localStorage under `ccaas_session_${tenantId}`
 
 ### Step 2: Frontend sends a message via REST
 
-The `useAgentChat` hook sends messages through a REST endpoint, not through WebSocket:
+The `useAgentChat` hook sends messages through a REST endpoint that returns an SSE stream:
 
 ```typescript
 // From: packages/react-sdk/src/hooks/useAgentChat.ts
 
 const chatPayload = {
-  clientId: connection.clientId,
   message: content,
   tenantId: 'lesson-plan-designer',
   sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
-  enabledSkillSlugs: ['lesson-plan-designer'],
   context: context,  // Page context from usePageContext
 }
 
-await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
+// POST returns text/event-stream (SSE stream)
+await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/messages`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(chatPayload),
 })
 ```
 
-The REST call tells the backend which WebSocket client should receive the streaming response.
+The POST request returns an SSE stream with events delivered directly in the response.
 
 ### Step 3: CCAAS backend processes the request
 
-The backend (`SessionsController.createCompletion`) performs these operations:
+The backend (`SessionsController.sendMessage`) performs these operations:
 
-1. **WebSocket lookup** -- Finds the Socket.io connection by `clientId`
+1. **SSE stream creation** -- Establishes an SSE response stream
 2. **Skill resolution** -- Generates a system prompt from enabled skills
 3. **Session management** -- Gets or creates an AgentEngine session
 4. **Agent launch** -- Spawns the AI Agent process (or resumes an existing one with `--resume`)
 
-### Step 4: Events stream back via WebSocket
+### Step 4: Events stream back via SSE
 
-As the AI Agent works, the CCAAS backend parses its stdout and emits structured WebSocket events to the connected client:
+As the AI Agent works, the CCAAS backend parses its stdout and emits structured events through the SSE stream to the connected client:
 
 ```
 Timeline:
@@ -121,7 +119,7 @@ t=1800ms agent_status      { status: 'complete' }
 
 ### Step 5: SDK hooks process events into React state
 
-The SDK hooks automatically listen for these events and update React state. You do not write socket event listeners manually.
+The SDK hooks automatically listen for these SSE events and update React state. You do not write event listeners manually.
 
 ## React SDK Hooks
 
@@ -180,7 +178,7 @@ export function useLessonPlanSession(options) {
 
 ### Hook 1: useAgentConnection
 
-Manages the Socket.io connection lifecycle and session identity.
+Manages the SSE connection lifecycle and session identity.
 
 **Options:**
 
@@ -195,7 +193,7 @@ Manages the Socket.io connection lifecycle and session identity.
 
 | Property | Type | Purpose |
 |----------|------|---------|
-| `socket` | `Socket \| null` | Raw Socket.io instance |
+| `socket` | `Socket \| null` | Underlying connection instance (may be null in SSE mode) |
 | `connected` | `boolean` | Connection status |
 | `clientId` | `string \| null` | Server-assigned client ID |
 | `sessionId` | `string` | Current session/conversation ID |
@@ -208,7 +206,7 @@ Manages the Socket.io connection lifecycle and session identity.
 
 ### Hook 2: useAgentChat
 
-Manages message state, REST-based sending, and WebSocket event processing.
+Manages message state, REST-based sending, and SSE event processing.
 
 **Options:**
 
@@ -229,7 +227,7 @@ Manages message state, REST-based sending, and WebSocket event processing.
 | `isProcessing` | `boolean` | Whether the agent is currently processing |
 | `isLoadingHistory` | `boolean` | Whether message history is being loaded |
 | `currentStreamContent` | `string` | Live-updating text during streaming |
-| `sendMessage(content, options?)` | function | Send a message (REST + WebSocket response) |
+| `sendMessage(content, options?)` | function | Send a message (REST + SSE response) |
 | `clearMessages()` | function | Clear local messages |
 | `clearConversation()` | function | Clear messages AND start a new conversation |
 | `cancelProcessing()` | function | Cancel current agent processing |
@@ -241,7 +239,7 @@ Manages message state, REST-based sending, and WebSocket event processing.
 - Listens for `tool_activity` events and creates inline tool cards in messages
 - Listens for `agent_status` events to finalize messages on completion
 - Auto-loads message history on connection via `GET /api/v1/sessions/:sessionId/messages`
-- Retries on WebSocket disconnection (up to 2 attempts)
+- Retries on SSE disconnection (up to 2 attempts)
 
 ### Hook 3: useAgentStatus
 
@@ -356,9 +354,9 @@ const files = useFiles({
 - `file.created` -- refetch file list when agent creates a file
 - `file.modified` -- refetch file list when agent modifies a file
 
-## WebSocket Event Types
+## SSE Event Types
 
-The CCAAS backend emits several categories of events. Understanding each category is essential for building a responsive frontend. Note that the SDK hooks handle all of these for you -- this reference is for understanding what happens under the hood.
+The CCAAS backend emits several categories of events via SSE streams. Understanding each category is essential for building a responsive frontend. Note that the SDK hooks handle all of these for you -- this reference is for understanding what happens under the hood.
 
 ### Control Events
 
@@ -429,14 +427,14 @@ Here is the complete data flow for the Lesson Plan Designer Solution:
 │  └──────┬───────┘  └──────▲────────┘  └────▲────┘  └──────▲────────┘  │
 │         │                 │                │               │           │
 │    sendMessage     onOutputUpdate   file.created    agent_status      │
-│    (REST POST)     (WebSocket)      (WebSocket)     (WebSocket)      │
+│    (REST POST)     (SSE)            (SSE)           (SSE)            │
 └─────────┼─────────────────┼────────────────┼───────────────┼──────────┘
           │                 │                │               │
      ┌────▼─────────────────┴────────────────┴───────────────┴──────────┐
      │                       CCAAS Backend (:3001)                       │
      │                                                                   │
-     │  POST /sessions/:id/completion        WebSocket event streaming   │
-     │  GET  /sessions/:id/messages          via Socket.io               │
+     │  POST /sessions/:id/messages           SSE event streaming         │
+     │  GET  /sessions/:id/events            Push channel                │
      │  GET  /files/session/:id/tree                                     │
      └──────────────────────────┬────────────────────────────────────────┘
                                 │ stdin / stdout
@@ -465,8 +463,8 @@ A Solution uses **two separate data channels**:
 
 ### Channel 1: CCAAS (AI interactions)
 
-- **Outbound**: REST `POST /api/v1/sessions/:sessionId/completion`
-- **Inbound**: WebSocket events (`text_delta`, `output_update`, `agent_status`, `tool_activity`, etc.)
+- **Outbound**: REST `POST /api/v1/sessions/:sessionId/messages` (returns SSE stream)
+- **Inbound**: SSE events (`text_delta`, `output_update`, `agent_status`, `tool_activity`, etc.)
 - **Purpose**: Real-time AI Agent interaction
 
 ### Channel 2: Solution Backend (Domain CRUD)
@@ -543,7 +541,7 @@ Given this user message: "Add assessment methods for this lesson plan"
 
 Identify:
 1. Which REST endpoint receives the message?
-2. What WebSocket events will stream back?
+2. What SSE events will stream back?
 3. How does the AI Agent know the current form state?
 4. Where does the `output_update` end up in the React component tree?
 
@@ -558,15 +556,15 @@ Using the five SDK hooks, design the session hook for a hypothetical "Quiz Build
 
 Given this scenario: the user asks the AI to "Create a lesson plan for grade 3 math, chapter 2, with objectives and teaching methods"
 
-Write out the expected timeline of WebSocket events, including:
+Write out the expected timeline of SSE events, including:
 - Event type
 - Key payload data
 - Which SDK hook processes each event
 
 ## Key Takeaways
 
-1. **CCAAS uses direct connection** -- the Solution frontend connects directly to the CCAAS backend via Socket.io, not through a Solution backend relay
-2. **Messages go via REST, responses stream via WebSocket** -- `POST /sessions/:id/completion` sends the message, WebSocket events deliver the response
+1. **CCAAS uses direct connection** -- the Solution frontend connects directly to the CCAAS backend via SSE, not through a Solution backend relay
+2. **Messages go via REST, responses stream via SSE** -- `POST /sessions/:id/messages` sends the message and returns an SSE stream
 3. **Five SDK hooks cover the complete data flow** -- `useAgentConnection` (connection), `useAgentChat` (messaging), `useAgentStatus` (status), `usePageContext` (form state), `useFiles` (file management)
 4. **`usePageContext` is key for AI awareness** -- it sends the current form state with every message so the AI Agent knows what is already filled in
 5. **Solutions use dual data channels** -- CCAAS for AI interactions, Solution backend for domain CRUD

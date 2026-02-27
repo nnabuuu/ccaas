@@ -1,6 +1,6 @@
 # 5. Forms and the output\_update Protocol
 
-The `output_update` protocol bridges AI Agent output and frontend form state. When the Agent calls the `write_output` MCP tool, the CCAAS backend emits an `output_update` WebSocket event that the frontend can parse and present as a SyncCard for human approval. This chapter explains how `write_output` works, the event structure (including its nested `payload.data` format), and the SyncCard approval pattern used in production.
+The `output_update` protocol bridges AI Agent output and frontend form state. When the Agent calls the `write_output` MCP tool, the CCAAS backend emits an `output_update` SSE event that the frontend can parse and present as a SyncCard for human approval. This chapter explains how `write_output` works, the event structure (including its nested `payload.data` format), and the SyncCard approval pattern used in production.
 
 ## Learning Objectives
 
@@ -35,13 +35,13 @@ By the end of this chapter, you will be able to:
 │                                                                     │
 │ 1. Parses tool result from Agent stdout                             │
 │ 2. Detects { data: { field, value }, status } structure             │
-│ 3. Emits output_update WebSocket event with payload.data            │
+│ 3. Emits output_update SSE event with payload.data                  │
 └─────────────────────┬───────────────────────────────────────────────┘
                       │
 ┌─────────────────────▼───────────────────────────────────────────────┐
 │ react-sdk (useAgentChat)                                            │
 │                                                                     │
-│ 1. Listens for output_update on socket                              │
+│ 1. Listens for output_update on SSE stream                          │
 │ 2. parseOutputUpdate() normalizes multiple formats                  │
 │ 3. Calls onOutputUpdate({ field, value, preview }) callback         │
 │ 4. Attaches to current assistant message's outputUpdates[]           │
@@ -202,7 +202,7 @@ export function validateField(field: string, value: unknown) {
 
 ## The output\_update Event Structure
 
-When the CCAAS backend receives a `write_output` tool result, EventMapper wraps it as an `output_update` WebSocket event. The `@kedge-agentic/common` package defines the schema:
+When the CCAAS backend receives a `write_output` tool result, EventMapper wraps it as an `output_update` SSE event. The `@kedge-agentic/common` package defines the schema:
 
 ```typescript
 // From @kedge-agentic/common - OutputUpdatePayloadSchema (Zod)
@@ -584,7 +584,7 @@ Example:
 1. Verify the MCP server is registered in your session template or `solution.json` (`mcpServers` in session templates)
 2. Verify the MCP tool returns JSON with the `{ data: { field, value }, status }` structure
 3. Check the CCAAS backend logs for EventMapper parsing errors
-4. Use browser DevTools Network tab to inspect WebSocket frames for `output_update`
+4. Use browser DevTools Network tab to inspect SSE stream for `output_update`
 
 ### SyncCards not appearing
 

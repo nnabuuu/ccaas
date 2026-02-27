@@ -102,7 +102,7 @@ import { ApiKey, ApiKeyScope } from '@kedge-agentic/common/types';
 const scopes: ApiKeyScope[] = ['skills:read', 'skills:execute', 'chat'];
 ```
 
-### Event Types (Socket.io)
+### Event Types
 
 ```typescript
 import {
@@ -111,10 +111,11 @@ import {
   AgentStatusEvent,
 } from '@kedge-agentic/common/types';
 
-// Type-safe event handling
-socket.on('text_delta', (event: TextDeltaEvent) => {
+// Type-safe event handling (SSE or Socket.IO)
+// SSE example:
+function handleEvent(event: TextDeltaEvent) {
   console.log(event.delta);
-});
+}
 ```
 
 ## Protocols Module

@@ -26,10 +26,10 @@ ccaas/
 
 | Package | Tech Stack | Purpose |
 |---------|------------|---------|
-| `@kedge-agentic/backend` | NestJS, TypeORM, Socket.io | API server, AgentEngine lifecycle management, session management, scheduled tasks |
+| `@kedge-agentic/backend` | NestJS, TypeORM, SSE | API server, AgentEngine lifecycle management, session management, scheduled tasks |
 | `@kedge-agentic/admin-next` | React, Refine, shadcn/ui, Tailwind | Admin dashboard |
 | `@kedge-agentic/vue-sdk` | Vue 3 Composition API | Vue client integration |
-| `@kedge-agentic/react-sdk` | React hooks, Socket.io | React client integration |
+| `@kedge-agentic/react-sdk` | React hooks, SSE | React client integration |
 | `@kedge-agentic/common` | TypeScript, Zod | Types and protocols |
 
 ## Build Commands
