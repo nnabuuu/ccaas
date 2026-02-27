@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CaretRight, ArrowCounterClockwise } from '@phosphor-icons/react'
-import { getSavedSession, clearSession, restoreSessionToSDK } from '../utils/sessionStore'
+import { getSavedSession, clearSession } from '../utils/sessionStore'
 
 const LESSON_API_URL = 'http://localhost:3006' // Solution backend (lesson list + manifest)
 
@@ -182,8 +182,8 @@ export default function CourseSelectionPage() {
   }, [])
 
   function handleContinue(lesson: LessonMeta) {
-    restoreSessionToSDK(lesson.id)
-    navigate(`/lesson/${lesson.id}`, {
+    const sessionId = getSavedSession(lesson.id)
+    navigate(`/lesson/${lesson.id}${sessionId ? `?session=${sessionId}` : ''}`, {
       state: { forceNew: false, lessonTitle: lesson.title },
     })
   }

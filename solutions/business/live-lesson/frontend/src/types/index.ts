@@ -77,3 +77,11 @@ export interface GlobalBoardOp {
   nodeId: string
   op: 'reveal' | 'highlight'
 }
+
+export interface BeatSnapshot {
+  beatId: string
+  beatIndex: number
+  sectionId: string
+  svgSnapshot: string  // BlackboardPlayer SVG innerHTML
+  narratorText: string
+}

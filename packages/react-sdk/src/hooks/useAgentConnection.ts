@@ -49,7 +49,14 @@ const resolveSessionId = (
   tenantId: string | undefined,
   sessionPrefix: string,
   forceNewConversation: boolean,
+  explicitSessionId?: string,
 ): string => {
+  // If explicitly provided, use it directly (and persist for recovery)
+  if (explicitSessionId) {
+    if (tenantId) safeSetItem(getStorageKey(tenantId), explicitSessionId)
+    return explicitSessionId
+  }
+
   // No tenantId: use legacy prefix-based ID (no persistence)
   if (!tenantId) {
     return `${sessionPrefix}_${generateId()}`
@@ -103,7 +110,7 @@ export function useAgentConnection(options: UseAgentConnectionOptions = {}): Use
   const [sessionReady, setSessionReady] = useState(false)
   const socketRef = useRef<Socket | null>(null)
   const initialSessionId = useRef<string>(
-    resolveSessionId(tenantId, sessionPrefix, forceNewConversation),
+    resolveSessionId(tenantId, sessionPrefix, forceNewConversation, options.sessionId),
   ).current
   const [sessionId, setSessionId] = useState<string>(initialSessionId)
   const sessionIdRef = useRef<string>(initialSessionId)

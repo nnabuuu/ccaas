@@ -5,6 +5,7 @@
   "dependencies": {
     "xlsx": "^0.18.5",
     "better-sqlite3": "^9.2.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@anthropic-ai/sdk": "^0.38.0"
   }
 }

@@ -9,9 +9,9 @@ interface GlobalBoardProps {
 export function GlobalBoard({ nodes, revealedNodeIds, currentSectionId }: GlobalBoardProps) {
   if (nodes.length === 0) {
     return (
-      <div className="flex flex-col h-full bg-background-dark/80">
-        <div className="px-3 py-3 border-b border-white/8">
-          <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-[0.18em]">课程地图</span>
+      <div className="flex flex-col h-full">
+        <div className="px-4 py-3 border-b border-white/[0.04]">
+          <span className="text-xs text-text-secondary">课程地图</span>
         </div>
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-2">
@@ -24,50 +24,50 @@ export function GlobalBoard({ nodes, revealedNodeIds, currentSectionId }: Global
   }
 
   return (
-    <div className="flex flex-col h-full bg-background-dark/80">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-3 py-3 border-b border-white/8 flex-shrink-0">
-        <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-[0.18em]">课程地图</span>
+      <div className="px-4 py-3 border-b border-white/[0.04] flex-shrink-0">
+        <span className="text-xs text-text-secondary">课程地图</span>
       </div>
 
       {/* Node list */}
-      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-3">
+      <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {nodes.map((node, idx) => {
           const isRevealed = revealedNodeIds.has(node.id)
           const isCurrent = node.id === currentSectionId
 
           return (
             <div key={node.id} className="relative">
-              {/* Connector line — tinted when revealed */}
+              {/* Connector line */}
               {idx > 0 && (
                 <div
                   className={[
-                    'absolute -top-3 left-4 w-px h-3 transition-colors duration-500',
-                    isRevealed || isCurrent ? 'bg-primary/20' : 'bg-white/8',
+                    'absolute -top-1 left-[15px] w-px h-1 transition-colors duration-500',
+                    isRevealed || isCurrent ? 'bg-accent/20' : 'bg-white/[0.04]',
                   ].join(' ')}
                 />
               )}
 
-              {/* Node box */}
+              {/* Node row */}
               <div
                 className={[
-                  'flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'flex items-center gap-2.5 px-3 py-3 rounded-lg transition-all duration-500',
                   isCurrent
-                    ? 'bg-primary/[0.09] border-primary/35 shadow-[inset_0_1px_0_rgba(19,236,91,0.12)]'
+                    ? 'bg-surface-2 border-l-2 border-accent'
                     : isRevealed
-                      ? 'bg-white/[0.05] border-white/15'
-                      : 'bg-white/[0.02] border-white/6',
+                      ? 'border-l-2 border-transparent'
+                      : 'border-l-2 border-transparent opacity-50',
                 ].join(' ')}
               >
-                {/* Step indicator */}
+                {/* Step number */}
                 <div
                   className={[
-                    'flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all duration-500',
+                    'flex-shrink-0 w-5 h-5 rounded flex items-center justify-center text-[10px] font-medium transition-all duration-500',
                     isCurrent
-                      ? 'bg-primary text-background-dark border-primary/70'
+                      ? 'bg-accent text-white'
                       : isRevealed
-                        ? 'bg-primary/15 text-primary/60 border-primary/25'
-                        : 'bg-white/[0.04] text-gray-700 border-white/8',
+                        ? 'bg-white/[0.06] text-text-secondary'
+                        : 'bg-white/[0.03] text-text-tertiary',
                   ].join(' ')}
                 >
                   {idx + 1}
@@ -76,16 +76,16 @@ export function GlobalBoard({ nodes, revealedNodeIds, currentSectionId }: Global
                 {/* Label */}
                 <span
                   className={[
-                    'text-xs font-medium leading-tight transition-colors duration-500',
-                    isCurrent ? 'text-primary' : isRevealed ? 'text-gray-300' : 'text-gray-700',
+                    'text-[13px] leading-tight transition-colors duration-500',
+                    isCurrent ? 'text-text-primary font-medium' : isRevealed ? 'text-text-secondary' : 'text-text-tertiary',
                   ].join(' ')}
                 >
                   {node.label}
                 </span>
 
-                {/* Current indicator — breathing dot */}
+                {/* Current indicator */}
                 {isCurrent && (
-                  <div className="ml-auto flex-shrink-0 w-1.5 h-1.5 rounded-full bg-primary/70 animate-pulse" />
+                  <div className="ml-auto flex-shrink-0 w-1.5 h-1.5 rounded-full bg-accent/70 animate-pulse" />
                 )}
               </div>
             </div>

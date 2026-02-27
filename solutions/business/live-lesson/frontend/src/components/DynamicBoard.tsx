@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react'
 import type { ChalkboardAction } from '../types/blackboard-actions'
+import { StickerOverlay } from './StickerOverlay'
 
 // Import side-effect: registers blackboard-player custom element
 import './BlackboardPlayer'
@@ -30,9 +31,16 @@ interface DynamicBoardProps {
   onStart: () => void
   onAnimationChange?: (animating: boolean) => void
   onSnapshot?: (svgHtml: string) => void
+  paused?: boolean
+  stickerActions?: ChalkboardAction[]
+  stickerVisible?: boolean
+  stickerExpanded?: boolean
+  onDismissSticker?: () => void
+  onToggleStickerExpand?: () => void
+  onCollapseStickerBackdrop?: () => void
 }
 
-export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationChange, onSnapshot }: DynamicBoardProps) {
+export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationChange, onSnapshot, paused, stickerActions, stickerVisible, stickerExpanded, onDismissSticker, onToggleStickerExpand, onCollapseStickerBackdrop }: DynamicBoardProps) {
   const playerRef = useRef<BlackboardPlayerEl | null>(null)
   const prevLenRef = useRef(0)
   const prevBeatIdRef = useRef<string | null>(null)
@@ -46,6 +54,14 @@ export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationC
   useEffect(() => {
     onAnimationChange?.(isAnimating)
   }, [isAnimating, onAnimationChange])
+
+  // Pause / resume blackboard animation
+  useEffect(() => {
+    const player = playerRef.current
+    if (!player) return
+    if (paused) player.pause()
+    else player.resume()
+  }, [paused])
 
   // Reset canvas when beat changes (beatId-driven, not actions.length-driven)
   // Flush pending animations and capture snapshot of previous beat before resetting
@@ -137,6 +153,18 @@ export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationC
             开始课程
           </button>
         </div>
+      )}
+
+      {/* Sticker overlay for AI execute_dynamic_board responses */}
+      {stickerActions && onDismissSticker && onToggleStickerExpand && onCollapseStickerBackdrop && (
+        <StickerOverlay
+          actions={stickerActions}
+          visible={stickerVisible ?? false}
+          expanded={stickerExpanded ?? false}
+          onDismiss={onDismissSticker}
+          onToggleExpand={onToggleStickerExpand}
+          onCollapseFromBackdrop={onCollapseStickerBackdrop}
+        />
       )}
     </div>
   )

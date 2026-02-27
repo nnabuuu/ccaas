@@ -30,6 +30,7 @@ interface TutoringPanelProps {
   onRaiseHand: () => void
   onDismissTutoring: () => void
   onSendExplainRequest: (q: string) => void
+  onSendFollowUp: (text: string) => void
   onRequestMoreQuestions: () => void
   canAdvanceBeat: boolean
   onContinueLearning: () => void
@@ -42,7 +43,7 @@ export function TutoringPanel({
   beatState,
   canContinue,
   onContinue,
-  isActive,
+  isActive: _isActive,
   tutoringMode,
   currentBeat,
   suggestedQuestions,
@@ -56,6 +57,7 @@ export function TutoringPanel({
   onRaiseHand,
   onDismissTutoring,
   onSendExplainRequest,
+  onSendFollowUp,
   onRequestMoreQuestions,
   canAdvanceBeat,
   onContinueLearning,
@@ -141,6 +143,7 @@ export function TutoringPanel({
               onRaiseHand={onRaiseHand}
               onDismissTutoring={onDismissTutoring}
               onSendExplainRequest={onSendExplainRequest}
+              onSendFollowUp={onSendFollowUp}
               onRequestMoreQuestions={onRequestMoreQuestions}
               canAdvanceBeat={canAdvanceBeat}
               onContinueLearning={onContinueLearning}

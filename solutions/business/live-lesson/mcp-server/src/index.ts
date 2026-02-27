@@ -66,7 +66,7 @@ function syncBoardState(): { content: Array<{ type: string; text: string }> } {
           type: 'text',
           text: JSON.stringify({
             status: 'error',
-            error: 'No board state to sync. Call load_lesson first.',
+            error: 'No board state to sync.',
           } satisfies WriteOutputResult),
         },
       ],
@@ -96,15 +96,12 @@ function syncBoardState(): { content: Array<{ type: string; text: string }> } {
 
 const loadLessonTool: Tool = {
   name: 'load_lesson',
-  description: `加载课程清单并初始化板书状态机。
+  description: `加载指定课程的完整 manifest（节点内容、教学阶段、teachingNotes）并初始化板书状态机。
 
-每次教学会话开始时必须首先调用此工具。
-返回完整的 manifest（所有节点内容、教学阶段、teachingNotes），供 AI 掌握全局教学蓝图。
+返回 manifest JSON + 初始板书状态。
 
 Example:
-{ "lessonId": "math-linear-eq-intro" }
-
-Returns: Full manifest + initial board state`,
+{ "lessonId": "math-linear-eq-intro" }`,
   inputSchema: {
     type: 'object',
     properties: {

@@ -1,5 +1,5 @@
 // SYNC_FIELDS Definition
-export const SYNC_FIELDS = ['boardState', 'teacherMessage', 'beatState', 'dynamicBoardActions', 'globalBoardOps'] as const;
+export const SYNC_FIELDS = ['boardState', 'teacherMessage', 'beatState', 'dynamicBoardActions', 'globalBoardOps', 'suggestedQuestions'] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
 
@@ -94,6 +94,12 @@ export interface BoardState {
   visibleNodeIds: string[];
   highlightedNodes: HighlightedNode[];
   currentPhase: string;
+}
+
+// Suggested questions payload (structured data from suggest_questions tool)
+export interface SuggestedQuestionsPayload {
+  questions: string[]
+  selectionMode: 'single' | 'multi'
 }
 
 // write_output input/output

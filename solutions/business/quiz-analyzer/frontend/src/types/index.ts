@@ -286,3 +286,19 @@ export interface ErrorStatistics {
     relatedKnowledgePoints: string[];
   }>;
 }
+
+// ============ KP REFINEMENT (unified-kp-search) ============
+
+export interface KpRefinementTag {
+  id: string
+  name: string
+  confidence: number
+  role: 'primary' | 'secondary' | 'tertiary'
+}
+
+export interface KpRefinementResult {
+  tags: KpRefinementTag[]
+  traversalType: string
+  tagCount: number
+  trace: Record<string, unknown>
+}

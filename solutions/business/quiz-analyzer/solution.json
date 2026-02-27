@@ -28,6 +28,20 @@
       "description": "学生视图 - 引导式解题辅导",
       "enabledSkillSlugs": ["analyze-student-answer"],
       "appendSystemPrompt": "你正在辅导一名学生解题。规则：1) 不要直接给出完整答案或完整解题步骤；2) 先判断学生答案是否正确；3) 如果错误，指出具体错在哪一步、是什么类型的错误；4) 用苏格拉底式提问引导学生自己发现问题；5) 可以给阶段性提示，但保留最后答案让学生自己得出；6) 语气鼓励积极，帮助学生建立信心。"
+    },
+    "kp-refinement": {
+      "description": "知识点精化 - 已有KP锚点，精化到叶节点",
+      "enabledSkillSlugs": ["kp-leaf-refinement"],
+      "skillPath": "skills/kp-leaf-refinement/SKILL.md",
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "你是知识点精化助手，使用置信度驱动双向遍历(CDBT)算法。用户会提供题干（含选项和答案）和已有的知识点锚点（任意层级），你的任务是：1) 在兄弟节点中验证锚点是否正确；2) 置信度不足时上溯到祖父节点检查其他分支；3) 选出最精确的叶节点。全程输出遍历追踪供人工review。"
+    },
+    "kp-search": {
+      "description": "知识点搜索 - 模糊搜索定位 + 语义遍历精化（统一策略）",
+      "enabledSkillSlugs": ["unified-kp-search"],
+      "skillPath": "skills/unified-kp-search/SKILL.md",
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "你是知识点标注助手。严格按照技能提示操作。不要输出任何对话文本——不要解题、不要分析、不要状态说明。直接调用工具，最终通过 write_output 输出结果即可。"
     }
   },
   "setup": {
@@ -40,6 +54,10 @@
   },
   "skills": [
     { "slug": "three-column-analysis", "name": "three-column-analysis" },
-    { "slug": "analyze-student-answer", "name": "analyze-student-answer" }
+    { "slug": "analyze-student-answer", "name": "analyze-student-answer" },
+    { "slug": "kp-leaf-refinement", "name": "kp-leaf-refinement" },
+    { "slug": "two-phase-kp-search", "name": "two-phase-kp-search" },
+    { "slug": "top-down-kp-search", "name": "top-down-kp-search" },
+    { "slug": "unified-kp-search", "name": "unified-kp-search" }
   ]
 }

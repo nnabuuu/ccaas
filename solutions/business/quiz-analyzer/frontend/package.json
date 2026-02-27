@@ -10,8 +10,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@kedge-agentic/common": "^0.1.0",
-    "@kedge-agentic/react-sdk": "^0.1.0",
+    "@kedge-agentic/common": "file:../../../../packages/common",
+    "@kedge-agentic/react-sdk": "file:../../../../packages/react-sdk",
     "@phosphor-icons/react": "^2.1.10",
     "axios": "^1.6.0",
     "framer-motion": "^12.34.3",

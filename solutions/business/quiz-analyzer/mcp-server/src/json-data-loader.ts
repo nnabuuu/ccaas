@@ -13,6 +13,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import { fuzzySearchKnowledgePoints, type ScoredResult, type FuzzySearchOptions } from './fuzzy-search.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -398,6 +399,32 @@ class JsonDataLoader {
   getKnowledgePointsBySubject(subjectId: string): KnowledgePoint[] {
     this.load();
     return this.kpBySubject.get(subjectId) || [];
+  }
+
+  /**
+   * Fuzzy search knowledge points using bigram/token/substring scoring.
+   *
+   * Narrows candidates by subjectId when provided (31k → ~2k), then delegates
+   * to the fuzzy-search engine. Preserves existing searchKnowledgePoints() for
+   * backward compatibility.
+   */
+  fuzzySearch(query: string, options?: {
+    subjectId?: string;
+    topK?: number;
+    threshold?: number;
+  }): ScoredResult[] {
+    this.load();
+
+    const candidates = options?.subjectId
+      ? this.kpBySubject.get(options.subjectId) ?? []
+      : this.knowledgePoints;
+
+    return fuzzySearchKnowledgePoints(
+      query,
+      candidates,
+      (id) => this.fullNameCache.get(id),
+      { topK: options?.topK, threshold: options?.threshold },
+    );
   }
 
   // ========================================

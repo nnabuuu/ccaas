@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@kedge-agentic/common": "^0.1.0",
+    "@kedge-agentic/common": "file:../../../../packages/common",
     "@phosphor-icons/react": "^2.1.10",
     "framer-motion": "^12.34.3",
     "i18next": "^23.7.0",

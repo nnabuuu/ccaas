@@ -4,14 +4,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#13ec5b',
-        'background-dark': '#102216',
-        chalkboard: '#1A3A32',
-        'logic-yellow': '#FFD700',
-        'warning-red': '#FF4444',
+        // Neutral dark backgrounds (Linear-inspired)
+        surface: {
+          0: '#0a0a0b',
+          1: '#111113',
+          2: '#1c1c1e',
+          3: '#252528',
+        },
+        // Accent
+        accent: '#818cf8',
+        'accent-muted': '#6366f1',
+        // Semantic text
+        'text-primary': '#ececef',
+        'text-secondary': '#8b8b8e',
+        'text-tertiary': '#56565a',
+        // Borders
+        border: 'rgba(255,255,255,0.05)',
+        'border-hover': 'rgba(255,255,255,0.10)',
+        // Status
+        success: '#22c55e',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        // Legacy aliases (keep for DynamicBoard/BlackboardPlayer)
+        primary: '#818cf8',
+        'background-dark': '#0a0a0b',
       },
       fontFamily: {
-        lexend: ['Lexend', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       animation: {
         'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',

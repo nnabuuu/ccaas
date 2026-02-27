@@ -35,6 +35,7 @@ export default function LessonPage() {
     timeline,
     currentBeat,
     messages,
+    tutoringMessages,
     isProcessing,
     isThinking,
     thinkingContent,
@@ -48,11 +49,18 @@ export default function LessonPage() {
     viewingSectionId,
     captureBeatSnapshot,
     navigateToBeat,
+    stickerActions,
+    stickerVisible,
+    stickerExpanded,
+    dismissSticker,
+    toggleStickerExpanded,
+    collapseStickerFromBackdrop,
     suggestedQuestions,
     selectionMode,
     raiseHand,
     dismissTutoring,
     sendExplainRequest,
+    sendFollowUp,
     requestMoreQuestions,
     handleAnimationChange,
     tutoringPanelOpen,
@@ -184,6 +192,13 @@ export default function LessonPage() {
             onStart={handleStart}
             onAnimationChange={handleAnimationChange}
             onSnapshot={captureBeatSnapshot}
+            paused={tutoringMode !== 'idle'}
+            stickerActions={stickerActions}
+            stickerVisible={stickerVisible}
+            stickerExpanded={stickerExpanded}
+            onDismissSticker={dismissSticker}
+            onToggleStickerExpand={toggleStickerExpanded}
+            onCollapseStickerBackdrop={collapseStickerFromBackdrop}
             viewingIndex={viewingBeatIndex}
             onNavigate={navigateToBeat}
           />
@@ -202,7 +217,7 @@ export default function LessonPage() {
           currentBeat={currentBeat}
           suggestedQuestions={suggestedQuestions}
           selectionMode={selectionMode}
-          messages={messages}
+          messages={tutoringMessages}
           isProcessing={isProcessing}
           isThinking={isThinking}
           thinkingContent={thinkingContent}
@@ -211,6 +226,7 @@ export default function LessonPage() {
           onRaiseHand={handleRaiseHand}
           onDismissTutoring={handleDismissTutoring}
           onSendExplainRequest={sendExplainRequest}
+          onSendFollowUp={sendFollowUp}
           onRequestMoreQuestions={requestMoreQuestions}
           canAdvanceBeat={canAdvanceBeat}
           onContinueLearning={handleContinueLearning}

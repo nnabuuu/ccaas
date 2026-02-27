@@ -191,6 +191,31 @@ svg { display: block; width: 100%; height: 100%; }`
     this._timeScale = s
   }
 
+  /** Make the background transparent (used by StickerOverlay). */
+  setTransparentBg(): void {
+    this.bgRect.setAttribute('fill', 'transparent')
+  }
+
+  /** Synchronously execute all remaining queued actions so SVG reflects final state. */
+  flush(): void {
+    if (this.timer !== null) {
+      clearTimeout(this.timer)
+      this.timer = null
+    }
+    while (this.queue.length > 0) {
+      const item = this.queue.shift()!
+      item.fn()
+    }
+  }
+
+  snapshot(): string {
+    return this.svg.innerHTML
+  }
+
+  disconnectedCallback(): void {
+    this.reset()
+  }
+
   reset(): void {
     if (this.timer !== null) {
       clearTimeout(this.timer)

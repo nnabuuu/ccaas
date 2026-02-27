@@ -100,7 +100,7 @@ class StateManager {
    */
   revealNodes(nodeIds: string[]): BoardState {
     if (!this.boardState) {
-      throw new Error('No lesson loaded. Call load_lesson first.');
+      throw new Error('No lesson loaded.');
     }
 
     for (const nodeId of nodeIds) {
@@ -123,7 +123,7 @@ class StateManager {
     durationMs: number = 3000,
   ): BoardState {
     if (!this.boardState) {
-      throw new Error('No lesson loaded. Call load_lesson first.');
+      throw new Error('No lesson loaded.');
     }
 
     if (durationMs === 0) {
@@ -150,7 +150,7 @@ class StateManager {
    */
   setPhase(phaseId: string): BoardState {
     if (!this.boardState) {
-      throw new Error('No lesson loaded. Call load_lesson first.');
+      throw new Error('No lesson loaded.');
     }
     this.boardState.currentPhase = phaseId;
     this.persistState();
