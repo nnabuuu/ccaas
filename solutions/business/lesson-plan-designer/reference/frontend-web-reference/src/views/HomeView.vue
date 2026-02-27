@@ -4,11 +4,11 @@
  *
  * Displays:
  * - AttentionFeed: Work-focused items requiring user attention
- * - CalendarWidget: Monthly calendar (static for now)
+ * - RecentlyEdited: Quick access to recently edited lesson plans and courses
  * - QuickActions: Shortcuts to common actions
  */
 import AttentionFeed from '../components/attention-feed/AttentionFeed.vue'
-import CalendarWidget from '../components/CalendarWidget.vue'
+import RecentlyEdited from '../components/home/RecentlyEdited.vue'
 import QuickActions from '../components/home/QuickActions.vue'
 </script>
 
@@ -22,7 +22,7 @@ import QuickActions from '../components/home/QuickActions.vue'
 
       <!-- Sidebar -->
       <aside class="home-sidebar">
-        <CalendarWidget />
+        <RecentlyEdited />
         <QuickActions />
       </aside>
     </div>

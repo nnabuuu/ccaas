@@ -6,26 +6,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
 import QuestionEditor from '@/components/question-bank/QuestionEditor.vue'
-import type { ApprovalStatus } from '@/types'
-
-interface QuestionFormData {
-  id?: number
-  title: string
-  content: string
-  questionType: 'single_choice' | 'multiple_choice' | 'true_false' | 'fill_blank' | 'essay'
-  subject: string
-  gradeLevel: number
-  difficulty: number
-  options: string[]
-  answer: string
-  explanation: string
-  tags: string
-  approvalStatus?: ApprovalStatus
-}
+import { useQuestionBank } from '@/composables/useQuestionBank'
+import type { QuestionFormData } from '@/composables/useQuestionBank'
 
 const router = useRouter()
 const route = useRoute()
 const store = useQuestionBankStore()
+const { canEdit: canEditQuestion } = useQuestionBank()
 
 const selectedStandards = ref<number[]>([])
 const notFound = ref(false)
@@ -52,8 +39,8 @@ const questionData = computed<Partial<QuestionFormData>>(() => {
 })
 
 const canEdit = computed(() => {
-  const status = store.currentItem?.approvalStatus
-  return status === 'draft' || status === 'needs_revision'
+  if (!store.currentItem) return false
+  return canEditQuestion(store.currentItem)
 })
 
 const loadQuestion = async () => {

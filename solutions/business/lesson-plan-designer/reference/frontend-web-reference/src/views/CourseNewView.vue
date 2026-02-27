@@ -10,7 +10,6 @@ import PageContainer from '../components/layout/PageContainer.vue'
 const router = useRouter()
 const schoolStore = useSchoolStore()
 
-const step = ref(1)
 const submitting = ref(false)
 
 const today = new Date().toISOString().split('T')[0]
@@ -33,18 +32,16 @@ const subjects = [
 
 const schoolId = computed(() => schoolStore.currentSchoolId)
 
-const canProceed = computed(() => {
+const canSubmit = computed(() => {
   return form.value.courseName.trim() &&
     form.value.scheduleDate &&
     form.value.startTime &&
     form.value.endTime &&
-    form.value.subject
+    form.value.subject &&
+    schoolId.value
 })
 
-const nextStep = () => { if (canProceed.value) step.value = 2 }
-const prevStep = () => { step.value = 1 }
-
-const submit = async (withLessonPlan = true) => {
+const submit = async () => {
   if (!schoolId.value) {
     toast.error('请先在顶部导航栏选择学校')
     return
@@ -59,7 +56,7 @@ const submit = async (withLessonPlan = true) => {
       endTime: form.value.endTime,
       location: form.value.location.trim() || undefined,
       subject: form.value.subject,
-      lessonPlanId: withLessonPlan && selectedLessonPlanId.value ? selectedLessonPlanId.value : undefined,
+      lessonPlanId: selectedLessonPlanId.value || undefined,
       schoolId: schoolId.value,
       status: 'active' as const
     }
@@ -101,20 +98,14 @@ const cancel = () => { router.push('/course') }
           </button>
         </div>
 
-        <div class="step-indicator">
-          <div :class="['step', { active: step === 1, done: step > 1 }]">
-            <span class="step-num">1</span>
-            <span class="step-label">基本信息</span>
+        <div class="step-content">
+          <!-- School info -->
+          <div v-if="schoolStore.currentSchool" class="school-info">
+            <span class="school-label">当前学校：</span>
+            <span class="school-value">{{ schoolStore.currentSchoolName }}</span>
           </div>
-          <div class="step-line"></div>
-          <div :class="['step', { active: step === 2 }]">
-            <span class="step-num">2</span>
-            <span class="step-label">关联教案</span>
-          </div>
-        </div>
+          <div v-else class="warning-box">请先在顶部导航栏选择学校</div>
 
-        <!-- Step 1 -->
-        <div v-if="step === 1" class="step-content">
           <div class="form-group">
             <label class="form-label">课程名称 <span class="required">*</span></label>
             <input v-model="form.courseName" type="text" class="form-input" placeholder="例如：数学第一课" />
@@ -148,25 +139,16 @@ const cancel = () => { router.push('/course') }
             </div>
           </div>
 
-          <div v-if="!schoolId" class="warning-box">请先在顶部导航栏选择学校</div>
+          <!-- Lesson Plan Association (optional, inline) -->
+          <div class="form-group">
+            <label class="form-label">关联教案 <span class="optional">(可选，可稍后添加)</span></label>
+            <LessonPlanSelector v-model="selectedLessonPlanId" :subject="form.subject" />
+          </div>
 
           <div class="form-actions">
             <button class="btn-secondary" @click="cancel">取消</button>
-            <button class="btn-primary" @click="nextStep" :disabled="!canProceed || !schoolId">下一步 →</button>
-          </div>
-        </div>
-
-        <!-- Step 2 -->
-        <div v-if="step === 2" class="step-content">
-          <p class="hint">选择一个教案关联到此课程，或跳过稍后添加</p>
-          <LessonPlanSelector v-model="selectedLessonPlanId" :subject="form.subject" />
-          <div class="form-actions three">
-            <button class="btn-secondary" @click="prevStep">← 上一步</button>
-            <button class="btn-secondary" @click="submit(false)" :disabled="submitting">
-              {{ submitting ? '创建中...' : '跳过' }}
-            </button>
-            <button class="btn-primary" @click="submit(true)" :disabled="submitting || !selectedLessonPlanId">
-              {{ submitting ? '创建中...' : '关联并创建' }}
+            <button class="btn-primary" @click="submit" :disabled="!canSubmit || submitting">
+              {{ submitting ? '创建中...' : '创建课程' }}
             </button>
           </div>
         </div>
@@ -194,17 +176,22 @@ const cancel = () => { router.push('/course') }
 .close-btn { background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px; }
 .close-btn:hover { color: #6b7280; }
 
-.step-indicator { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
-.step { display: flex; align-items: center; gap: 8px; color: #9ca3af; }
-.step.active, .step.done { color: #3b82f6; }
-.step-num { width: 24px; height: 24px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; }
-.step.active .step-num, .step.done .step-num { background: #3b82f6; color: white; }
-.step-label { font-size: 14px; }
-.step-line { width: 40px; height: 2px; background: #e5e7eb; }
-
 .step-content { display: flex; flex-direction: column; gap: 20px; }
 
-.hint { color: #6b7280; font-size: 14px; margin: 0; }
+.school-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.school-label { font-size: 14px; color: #64748b; }
+.school-value { font-size: 14px; font-weight: 500; color: #0369a1; }
+
+.optional { color: #9ca3af; font-weight: 400; }
 
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -240,7 +227,6 @@ const cancel = () => { router.push('/course') }
 }
 
 .form-actions { display: flex; gap: 12px; margin-top: 12px; }
-.form-actions.three { justify-content: space-between; }
 
 .btn-primary, .btn-secondary {
   padding: 10px 20px;

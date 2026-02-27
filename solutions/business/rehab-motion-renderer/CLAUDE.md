@@ -121,11 +121,11 @@ AI 输出 `JSON.stringify(ExerciseSpec[])`:
 
 ```typescript
 // ✅ 正确
-const SOCKET_URL = 'http://localhost:3001'
+const SERVER_URL = 'http://localhost:3001'
 
 // ❌ 错误（会把请求发到前端端口 5286）
-const SOCKET_URL = ''
-const SOCKET_URL = '/'
+const SERVER_URL = ''
+const SERVER_URL = '/'
 ```
 
 ## 可用动作库

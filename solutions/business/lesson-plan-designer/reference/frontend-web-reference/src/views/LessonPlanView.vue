@@ -152,14 +152,6 @@ const handleCreate = () => {
   router.push('/lesson-plan/new')
 }
 
-const handleEdit = (id: number) => {
-  router.push(`/lesson-plan/${id}`)
-}
-
-const handlePublish = (id: number) => {
-  alert('发布教案功能开发中...')
-}
-
 watch([selectedGrade, selectedSubject], () => {
   fetchLessonPlans()
 })
@@ -239,8 +231,6 @@ onMounted(() => {
                 <router-link :to="`/lesson-plan/${item.id}`" @click.stop>{{ item.title }}</router-link>
               </h3>
               <div class="card-actions">
-                <button class="action-btn" @click.stop="handleEdit(item.id)">编辑</button>
-                <button class="action-btn" @click.stop="handlePublish(item.id)">发布</button>
                 <button class="action-btn danger" @click.stop="handleDelete(item.id)">删除</button>
               </div>
             </div>

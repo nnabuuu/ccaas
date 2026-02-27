@@ -15,6 +15,8 @@ export interface OutputUpdate {
   field: string
   value: unknown
   preview: string
+  /** Optional page routing key. When set, useOutputSync groups this update under the given page. */
+  page?: string
   synced?: boolean
   syncedAt?: Date
   timestamp?: number
@@ -41,6 +43,10 @@ export interface UseOutputSyncOptions {
 
 export interface UseOutputSyncReturn<T extends Record<string, unknown>> {
   pendingUpdates: Ref<Map<string, OutputUpdate>>
+  /** Updates grouped by page key. Updates without a page are under '__default__'. */
+  pendingUpdatesByPage: Ref<Map<string, Map<string, OutputUpdate>>>
+  /** Returns pending updates for a specific page (or '__default__' when page is undefined). */
+  getPendingUpdatesForPage: (page?: string) => Map<string, OutputUpdate>
   modifiedFields: Ref<Set<string>>
   handleOutputUpdate: (update: OutputUpdate) => void
   syncToForm: (field: string, formData: Ref<T>) => void

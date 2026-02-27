@@ -23,7 +23,6 @@ interface CourseItem {
   org: string
   updateTime: string
   status: string | null
-  favorited: boolean
 }
 
 interface GradeOption {
@@ -48,8 +47,7 @@ const linking = ref(false)
 
 const sidebarItems = [
   { label: '全部课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
-  { label: '我的课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
-  { label: '我的收藏', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' }
+  { label: '我的课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
 ]
 
 const courses = ref<CourseItem[]>([])
@@ -137,8 +135,7 @@ const fetchCourses = async () => {
       author: item.createByName || item.teacherName || '未知',
       org: item.deptName || '',
       updateTime: formatDateTime(item.updateTime || item.createTime),
-      status: String(item.status) === '1' ? 'submitted' : null,
-      favorited: item.favorited || false
+      status: String(item.status) === '1' ? 'submitted' : null
     }))
   } catch (error) {
     console.error('Failed to fetch courses:', error)
@@ -183,10 +180,6 @@ const handleDelete = async (id: number) => {
 
 const handleCreate = () => {
   router.push('/course/new')
-}
-
-const toggleFavorite = (course: CourseItem) => {
-  course.favorited = !course.favorited
 }
 
 const openLinkModal = (course: CourseItem) => {
@@ -297,11 +290,7 @@ onMounted(() => {
                 </span>
               </h3>
               <div class="card-actions">
-                <button v-if="course.favorited" class="action-btn favorited" @click.stop="toggleFavorite(course)">已收藏</button>
-                <template v-else>
-                  <button class="action-btn" @click.stop="toggleFavorite(course)">收藏</button>
-                  <button class="action-btn danger" @click.stop="handleDelete(course.id)">删除</button>
-                </template>
+                <button class="action-btn danger" @click.stop="handleDelete(course.id)">删除</button>
               </div>
             </div>
             <div v-if="course.time" class="card-meta">
@@ -465,10 +454,6 @@ onMounted(() => {
 
 .action-btn.danger:hover {
   color: #ef4444;
-}
-
-.action-btn.favorited {
-  color: #f59e0b;
 }
 
 .card-meta {

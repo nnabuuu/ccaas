@@ -15,7 +15,7 @@ import { saveSession, getSavedSession } from '../utils/sessionStore'
 // IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
-const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
+const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend
 const LESSON_API_URL = 'http://localhost:3007' // Solution backend (lesson list + manifest)
 
 const TENANT_ID = 'live-lesson'
@@ -146,7 +146,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
   // CRITICAL: serverUrl must be absolute URL to CCAAS backend (port 3001)
   // autoConnect is disabled for empty lessonId to avoid wasting a backend session
   const connection = useAgentConnection({
-    serverUrl: SOCKET_URL,
+    serverUrl: SERVER_URL,
     tenantId: TENANT_ID,
     autoConnect: lessonId !== '',
     transport: 'sse',

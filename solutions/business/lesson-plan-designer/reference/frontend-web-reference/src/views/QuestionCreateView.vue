@@ -6,20 +6,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
 import QuestionEditor from '@/components/question-bank/QuestionEditor.vue'
-
-interface QuestionFormData {
-  id?: number
-  title: string
-  content: string
-  questionType: 'single_choice' | 'multiple_choice' | 'true_false' | 'fill_blank' | 'essay'
-  subject: string
-  gradeLevel: number
-  difficulty: number
-  options: string[]
-  answer: string
-  explanation: string
-  tags: string
-}
+import type { QuestionFormData } from '@/composables/useQuestionBank'
 
 const router = useRouter()
 const store = useQuestionBankStore()

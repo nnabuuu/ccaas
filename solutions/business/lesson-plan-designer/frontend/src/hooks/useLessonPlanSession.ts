@@ -25,7 +25,7 @@ import type {
 // IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
-const SOCKET_URL = 'http://localhost:3001' // Core CCAAS backend
+const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend
 
 interface UseLessonPlanSessionOptions {
   planId?: string
@@ -116,7 +116,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
   // ===== SDK Connection =====
   const connection = useAgentConnection({
-    serverUrl: SOCKET_URL,
+    serverUrl: SERVER_URL,
     tenantId,
     autoConnect,
     transport: 'sse', // SSE is the default; explicit for clarity

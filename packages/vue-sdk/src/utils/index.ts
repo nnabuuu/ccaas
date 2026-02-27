@@ -104,3 +104,22 @@ export type { WriteOutputData } from './parseOutputUpdate'
 
 export { createApiClient, ApiError } from './apiClient'
 export type { ApiClient } from './apiClient'
+
+// ============================================================================
+// ID Generation
+// ============================================================================
+
+export { generateId } from './generateId'
+
+// ============================================================================
+// Thinking Verbs
+// ============================================================================
+
+export { THINKING_VERBS, getThinkingVerb } from './thinkingVerbs'
+
+// ============================================================================
+// SSE Parsing
+// ============================================================================
+
+export { parseSseChunk } from './parseSseChunk'
+export type { SseEnvelope } from './parseSseChunk'

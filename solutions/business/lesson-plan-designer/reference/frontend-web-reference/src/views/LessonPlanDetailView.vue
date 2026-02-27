@@ -431,6 +431,20 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="header-actions">
+          <!-- Save status indicator -->
+          <span v-if="saving" class="save-status saving">
+            <svg class="save-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" stroke-dasharray="31.4" stroke-dashoffset="10" />
+            </svg>
+            保存中...
+          </span>
+          <span v-else-if="isDirty" class="save-status unsaved">有未保存修改</span>
+          <span v-else class="save-status saved">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            已保存
+          </span>
           <!-- Global Save/Cancel when editing -->
           <template v-if="isDirty">
             <button class="btn-secondary" @click="handleCancelAll">取消</button>
@@ -757,6 +771,36 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 12px;
   align-items: center;
+}
+
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.save-status.saved {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.save-status.unsaved {
+  color: #d97706;
+  background: #fffbeb;
+}
+
+.save-status.saving {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.save-spinner {
+  animation: spin 1s linear infinite;
 }
 
 /* Overflow Menu Styles */

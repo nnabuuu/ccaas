@@ -7,19 +7,32 @@
  * - Display submitted questions from all users
  * - Sorted by submission date (oldest first)
  * - Student name and submission date columns
- * - Approve/Reject actions
+ * - Approve/Reject actions with rejection reason modal
  */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
+import { useQuestionBank } from '@/composables/useQuestionBank'
 import type { QuestionBankItem } from '@/types'
 
 const router = useRouter()
 const store = useQuestionBankStore()
+const {
+  getQuestionTypeLabel,
+  getDifficultyLabel,
+  getAuthorName,
+  formatDate
+} = useQuestionBank()
 
 // State
 const selectedQuestion = ref<QuestionBankItem | null>(null)
 const showReviewModal = ref(false)
+
+// Rejection reason modal state
+const showRejectModal = ref(false)
+const rejectingQuestion = ref<QuestionBankItem | null>(null)
+const rejectionReason = ref('')
+const rejectionError = ref('')
 
 // Methods
 const loadReviewQueue = async () => {
@@ -56,49 +69,37 @@ const handleApprove = async (question: QuestionBankItem) => {
   }
 }
 
-const handleReject = async (question: QuestionBankItem) => {
-  if (!confirm('确定要退回这道题目吗？学生将需要修改后重新提交。')) return
+// --- Rejection with reason ---
+
+const openRejectModal = (question: QuestionBankItem) => {
+  rejectingQuestion.value = question
+  rejectionReason.value = ''
+  rejectionError.value = ''
+  showRejectModal.value = true
+}
+
+const closeRejectModal = () => {
+  rejectingQuestion.value = null
+  rejectionReason.value = ''
+  rejectionError.value = ''
+  showRejectModal.value = false
+}
+
+const confirmReject = async () => {
+  if (!rejectingQuestion.value) return
+  if (!rejectionReason.value.trim()) {
+    rejectionError.value = '请填写退回原因'
+    return
+  }
   try {
-    await store.rejectQuestion(question.id)
+    await store.rejectQuestion(rejectingQuestion.value.id)
+    closeRejectModal()
     closeReviewModal()
     await loadReviewQueue()
   } catch (err) {
     console.error('[QuestionBankReviewView] Failed to reject question:', err)
-    alert('操作失败，请重试')
+    rejectionError.value = '操作失败，请重试'
   }
-}
-
-const getQuestionTypeLabel = (type: string) => {
-  const typeMap: Record<string, string> = {
-    single_choice: '单选题',
-    multiple_choice: '多选题',
-    true_false: '判断题',
-    fill_blank: '填空题',
-    essay: '问答题'
-  }
-  return typeMap[type] || type
-}
-
-const getDifficultyLabel = (difficulty?: number) => {
-  const labels = ['', '很简单', '简单', '中等', '较难', '困难']
-  return labels[difficulty || 3] || '中等'
-}
-
-const getAuthorName = (question: QuestionBankItem) => {
-  // Use RuoYi framework's createByName field from BaseEntity
-  return question.createByName || '未知'
-}
-
-const formatDate = (dateStr?: string) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 // Lifecycle
@@ -183,7 +184,7 @@ onMounted(() => {
             <button class="btn btn-success" @click="handleApprove(question)">
               通过
             </button>
-            <button class="btn btn-warning" @click="handleReject(question)">
+            <button class="btn btn-warning" @click="openRejectModal(question)">
               需修改
             </button>
           </div>
@@ -233,8 +234,46 @@ onMounted(() => {
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" @click="closeReviewModal">取消</button>
-          <button class="btn btn-warning" @click="handleReject(selectedQuestion)">需修改</button>
+          <button class="btn btn-warning" @click="openRejectModal(selectedQuestion)">需修改</button>
           <button class="btn btn-success" @click="handleApprove(selectedQuestion)">通过</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div v-if="showRejectModal && rejectingQuestion" class="modal-overlay" @click="closeRejectModal">
+      <div class="modal-content reject-modal" @click.stop>
+        <div class="modal-header">
+          <h3>退回题目</h3>
+          <button class="modal-close" @click="closeRejectModal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="reject-hint">请填写退回原因，学生将收到通知并根据您的意见进行修改。</p>
+          <div class="reject-question-info">
+            <span class="reject-question-label">题目：</span>
+            <span>{{ rejectingQuestion.title || rejectingQuestion.content }}</span>
+          </div>
+          <div class="reject-form">
+            <label class="reject-label" for="rejectionReason">退回原因 <span class="required">*</span></label>
+            <textarea
+              id="rejectionReason"
+              v-model="rejectionReason"
+              class="reject-textarea"
+              :class="{ 'has-error': rejectionError }"
+              placeholder="请描述需要修改的内容，例如：题目描述不够清晰、选项设置有误、答案解析需要补充等..."
+              rows="4"
+            />
+            <p v-if="rejectionError" class="reject-error">{{ rejectionError }}</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" @click="closeRejectModal">取消</button>
+          <button class="btn btn-warning" @click="confirmReject">确认退回</button>
         </div>
       </div>
     </div>
@@ -545,6 +584,79 @@ onMounted(() => {
 .empty-hint {
   font-size: 14px !important;
   color: var(--gray-400, #9ca3af) !important;
+}
+
+/* Rejection Reason Modal */
+.reject-modal {
+  max-width: 500px;
+}
+
+.reject-hint {
+  font-size: 14px;
+  color: var(--gray-600, #4b5563);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.reject-question-info {
+  display: flex;
+  gap: 4px;
+  padding: 10px 14px;
+  background: var(--gray-50, #f9fafb);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: var(--gray-700, #374151);
+  line-height: 1.4;
+}
+
+.reject-question-label {
+  color: var(--gray-500, #6b7280);
+  flex-shrink: 0;
+}
+
+.reject-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.reject-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700, #374151);
+}
+
+.reject-label .required {
+  color: #ef4444;
+}
+
+.reject-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--gray-200, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--gray-900, #111827);
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+  transition: border-color 0.15s;
+}
+
+.reject-textarea:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+}
+
+.reject-textarea.has-error {
+  border-color: #ef4444;
+}
+
+.reject-error {
+  font-size: 13px;
+  color: #ef4444;
+  margin: 0;
 }
 
 @media (max-width: 640px) {

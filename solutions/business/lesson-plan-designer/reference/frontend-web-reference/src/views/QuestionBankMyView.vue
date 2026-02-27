@@ -12,19 +12,19 @@ import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
 import type { QuestionBankItem, ApprovalStatus } from '@/types'
-
-interface CurriculumFilter {
-  selectedCurriculumId: { value: number | null }
-  clearFilter: () => void
-}
-
-interface StatusTab {
-  value: ApprovalStatus | 'all'
-  label: string
-}
+import { useQuestionBank, STATUS_TABS } from '@/composables/useQuestionBank'
+import type { CurriculumFilter } from '@/composables/useQuestionBank'
 
 const router = useRouter()
 const store = useQuestionBankStore()
+const {
+  getStatusInfo,
+  getQuestionTypeLabel,
+  getDifficultyLabel,
+  canEdit,
+  canSubmit,
+  canDelete
+} = useQuestionBank()
 
 // Inject curriculum filter from parent layout
 const curriculumFilter = inject<CurriculumFilter>('curriculumFilter')
@@ -39,13 +39,7 @@ const activeTab = ref<ApprovalStatus | 'all'>('all')
 const searchKeyword = ref('')
 
 // Status tabs
-const statusTabs: StatusTab[] = [
-  { value: 'all', label: '全部' },
-  { value: 'draft', label: '草稿' },
-  { value: 'submitted', label: '待审核' },
-  { value: 'approved', label: '已通过' },
-  { value: 'needs_revision', label: '需修改' }
-]
+const statusTabs = STATUS_TABS
 
 // Computed
 const activeCurriculumId = computed(() => {
@@ -125,41 +119,6 @@ const handleDelete = async (question: QuestionBankItem) => {
     console.error('[QuestionBankMyView] Failed to delete question:', err)
   }
 }
-
-const getStatusInfo = (status?: ApprovalStatus) => {
-  const statusMap: Record<string, { label: string; class: string }> = {
-    draft: { label: '草稿', class: 'draft' },
-    submitted: { label: '待审核', class: 'pending' },
-    approved: { label: '已通过', class: 'approved' },
-    needs_revision: { label: '需修改', class: 'revision' }
-  }
-  return statusMap[status || 'draft'] || statusMap.draft
-}
-
-const getQuestionTypeLabel = (type: QuestionBankItem['questionType']) => {
-  const typeMap: Record<string, string> = {
-    single_choice: '单选题',
-    multiple_choice: '多选题',
-    true_false: '判断题',
-    fill_blank: '填空题',
-    essay: '问答题'
-  }
-  return typeMap[type] || type
-}
-
-const getDifficultyLabel = (difficulty?: number) => {
-  const labels = ['', '很简单', '简单', '中等', '较难', '困难']
-  return labels[difficulty || 3] || '中等'
-}
-
-const canEdit = (question: QuestionBankItem) =>
-  question.approvalStatus === 'draft' || question.approvalStatus === 'needs_revision'
-
-const canSubmit = (question: QuestionBankItem) =>
-  question.approvalStatus === 'draft' || question.approvalStatus === 'needs_revision'
-
-const canDelete = (question: QuestionBankItem) =>
-  question.approvalStatus === 'draft'
 
 // Lifecycle
 onMounted(() => {

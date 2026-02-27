@@ -7,8 +7,8 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const account = ref('admin')
-const password = ref('admin123')
+const account = ref('')
+const password = ref('')
 const rememberPassword = ref(false)
 const showPassword = ref(false)
 const loading = ref(false)
@@ -59,76 +59,13 @@ if (savedAccount) {
 
 <template>
   <div class="login-page">
-    <!-- Left Panel - Illustration -->
+    <!-- Left Panel - Brand -->
     <div class="login-illustration">
       <div class="illustration-container">
-        <!-- Decorative circles -->
-        <div class="deco-circle deco-circle-1"></div>
-        <div class="deco-circle deco-circle-2"></div>
-        <div class="deco-circle deco-circle-3"></div>
-
-        <!-- Doodle text -->
-        <span class="doodle doodle-1">SOLAR SYSTEM</span>
-        <span class="doodle doodle-2">SCIENCE!</span>
-        <span class="doodle doodle-3">ART AND DESIGN</span>
-        <span class="doodle doodle-4">GEOGRAPHY</span>
-
-        <!-- Paper Plane SVG -->
-        <svg class="paper-plane" width="80" height="60" viewBox="0 0 80 60" fill="none">
-          <path d="M5 30L75 5L55 55L40 35L5 30Z" fill="white" fill-opacity="0.9"/>
-          <path d="M40 35L55 55L75 5L40 35Z" fill="white" fill-opacity="0.7"/>
-          <path d="M40 35V50L48 42" stroke="white" stroke-opacity="0.5" stroke-width="2"/>
-        </svg>
-
-        <!-- Pencils SVG -->
-        <svg class="pencils" width="60" height="80" viewBox="0 0 60 80" fill="none">
-          <rect x="5" y="10" width="8" height="60" rx="2" fill="#fbbf24" transform="rotate(-15 5 10)"/>
-          <rect x="25" y="5" width="8" height="65" rx="2" fill="#ef4444"/>
-          <rect x="45" y="15" width="8" height="55" rx="2" fill="#22c55e" transform="rotate(10 45 15)"/>
-        </svg>
-
-        <!-- Main Illustration Scene -->
-        <svg class="illustration-scene" viewBox="0 0 400 300" fill="none">
-          <!-- Books stack -->
-          <rect x="50" y="200" width="120" height="20" rx="2" fill="#3b82f6"/>
-          <rect x="55" y="180" width="110" height="20" rx="2" fill="#60a5fa"/>
-          <rect x="60" y="160" width="100" height="20" rx="2" fill="#93c5fd"/>
-          <rect x="45" y="220" width="130" height="25" rx="2" fill="#2563eb"/>
-          <rect x="40" y="245" width="140" height="30" rx="2" fill="#1d4ed8"/>
-
-          <!-- Globe -->
-          <circle cx="280" cy="180" r="50" fill="#60a5fa" stroke="white" stroke-width="3"/>
-          <ellipse cx="280" cy="180" rx="50" ry="20" stroke="white" stroke-width="2" fill="none"/>
-          <ellipse cx="280" cy="180" rx="20" ry="50" stroke="white" stroke-width="2" fill="none"/>
-          <line x1="230" y1="180" x2="330" y2="180" stroke="white" stroke-width="2"/>
-          <rect x="270" y="230" width="20" height="40" fill="#1e40af"/>
-          <ellipse cx="280" cy="275" rx="30" ry="8" fill="#1e3a8a"/>
-
-          <!-- Light bulb -->
-          <circle cx="320" cy="80" r="25" fill="#fbbf24" opacity="0.9"/>
-          <rect x="310" y="105" width="20" height="15" rx="3" fill="#f59e0b"/>
-          <path d="M305 120 L335 120 L330 130 L310 130 Z" fill="#d97706"/>
-          <line x1="320" y1="45" x2="320" y2="35" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-          <line x1="350" y1="60" x2="358" y2="52" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-          <line x1="290" y1="60" x2="282" y2="52" stroke="#fbbf24" stroke-width="3" stroke-linecap="round"/>
-
-          <!-- Student figure -->
-          <circle cx="180" cy="120" r="20" fill="#fde68a"/>
-          <rect x="160" y="140" width="40" height="50" rx="5" fill="#3b82f6"/>
-          <rect x="150" y="145" width="15" height="35" rx="3" fill="#3b82f6"/>
-          <rect x="195" y="145" width="15" height="35" rx="3" fill="#3b82f6"/>
-          <rect x="165" y="190" width="12" height="40" rx="3" fill="#1e40af"/>
-          <rect x="183" y="190" width="12" height="40" rx="3" fill="#1e40af"/>
-          <rect x="145" y="170" width="50" height="30" rx="2" fill="#1f2937"/>
-          <rect x="148" y="173" width="44" height="22" rx="1" fill="#60a5fa"/>
-
-          <!-- Plant decoration -->
-          <path d="M30 280 Q40 250 50 280" stroke="#22c55e" stroke-width="3" fill="none"/>
-          <ellipse cx="40" cy="255" rx="8" ry="15" fill="#22c55e" transform="rotate(-20 40 255)"/>
-          <ellipse cx="50" cy="260" rx="8" ry="15" fill="#16a34a" transform="rotate(20 50 260)"/>
-        </svg>
-
-        <!-- Footer ICP -->
+        <div class="brand-content">
+          <h2 class="brand-title">师范生发展平台</h2>
+          <p class="brand-subtitle">备课 / 上课 / 反思 / 研究</p>
+        </div>
         <div class="login-footer">京ICP备14XXXXXXX号-1</div>
       </div>
     </div>
@@ -214,74 +151,28 @@ if (savedAccount) {
   position: relative;
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.deco-circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.1;
-  background: white;
+.brand-content {
+  text-align: center;
+  color: white;
 }
 
-.deco-circle-1 {
-  width: 300px;
-  height: 300px;
-  top: -100px;
-  left: -100px;
+.brand-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 var(--space-4) 0;
+  letter-spacing: 0.05em;
 }
 
-.deco-circle-2 {
-  width: 200px;
-  height: 200px;
-  bottom: 20%;
-  right: -50px;
-}
-
-.deco-circle-3 {
-  width: 150px;
-  height: 150px;
-  top: 40%;
-  left: 10%;
-  opacity: 0.05;
-}
-
-.paper-plane {
-  position: absolute;
-  top: 15%;
-  left: 20%;
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) rotate(-10deg); }
-  50% { transform: translateY(-15px) rotate(-5deg); }
-}
-
-.pencils {
-  position: absolute;
-  top: 10%;
-  right: 15%;
-}
-
-.doodle {
-  position: absolute;
-  color: rgba(255, 255, 255, 0.3);
-  font-size: var(--text-xs);
-  font-family: monospace;
-}
-
-.doodle-1 { top: 20%; right: 25%; }
-.doodle-2 { top: 35%; left: 15%; }
-.doodle-3 { top: 25%; right: 10%; }
-.doodle-4 { bottom: 40%; left: 8%; }
-
-.illustration-scene {
-  position: absolute;
-  bottom: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  max-width: 500px;
+.brand-subtitle {
+  font-size: var(--text-lg);
+  opacity: 0.8;
+  margin: 0;
+  letter-spacing: 0.1em;
 }
 
 .login-footer {

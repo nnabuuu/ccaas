@@ -45,6 +45,7 @@ export function useOutputSync<T extends Record<string, unknown>>(
   } = options
 
   const pendingUpdates = ref<Map<string, OutputUpdate>>(new Map()) as Ref<Map<string, OutputUpdate>>
+  const pendingUpdatesByPage = ref<Map<string, Map<string, OutputUpdate>>>(new Map()) as Ref<Map<string, Map<string, OutputUpdate>>>
   const modifiedFields = ref<Set<string>>(new Set()) as Ref<Set<string>>
   const undoStack = ref<UndoEntry[]>([])
   const undoTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
@@ -92,6 +93,20 @@ export function useOutputSync<T extends Record<string, unknown>>(
     const next = new Map(pendingUpdates.value)
     next.set(update.field, update)
     pendingUpdates.value = next
+
+    // Also maintain page-grouped updates
+    const pageKey = update.page || '__default__'
+    const nextByPage = new Map(pendingUpdatesByPage.value)
+    const pageMap = new Map(nextByPage.get(pageKey) || new Map())
+    pageMap.set(update.field, update)
+    nextByPage.set(pageKey, pageMap)
+    pendingUpdatesByPage.value = nextByPage
+  }
+
+  // Get pending updates for a specific page
+  function getPendingUpdatesForPage(page?: string): Map<string, OutputUpdate> {
+    const pageKey = page || '__default__'
+    return pendingUpdatesByPage.value.get(pageKey) || new Map()
   }
 
   // Sync a single field to form data
@@ -177,6 +192,8 @@ export function useOutputSync<T extends Record<string, unknown>>(
 
   return {
     pendingUpdates,
+    pendingUpdatesByPage,
+    getPendingUpdatesForPage,
     modifiedFields,
     handleOutputUpdate,
     syncToForm,

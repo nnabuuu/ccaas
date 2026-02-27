@@ -12,8 +12,6 @@ const user = ref({
   school: '',
   subject: '',
   avatar: '',
-  following: 0,
-  followers: 0,
   lessonPlans: 0,
   courses: 0
 })
@@ -21,7 +19,6 @@ const user = ref({
 const fetchUserProfile = async () => {
   loading.value = true
   try {
-    // Use auth store user info first
     if (authStore.user) {
       const userObj = authStore.user as { nickName?: string; userName?: string; deptName?: string; dept?: { deptName?: string }; subject?: string; avatar?: string }
       user.value.name = userObj.nickName || userObj.userName || '用户'
@@ -30,7 +27,6 @@ const fetchUserProfile = async () => {
       user.value.avatar = userObj.avatar || ''
     }
 
-    // Fetch additional profile stats
     const [lessonPlansRes, coursesRes] = await Promise.allSettled([
       lessonPlanApi.getList({ createBy: authStore.userId ?? undefined, pageSize: 1 }),
       scheduleApi.getList({ createBy: authStore.userId ?? undefined, pageSize: 1 })
@@ -54,14 +50,6 @@ const fetchUserProfile = async () => {
   }
 }
 
-const handleEditProfile = () => {
-  alert('编辑资料功能开发中...')
-}
-
-const handleEditCover = () => {
-  alert('编辑封面功能开发中...')
-}
-
 onMounted(() => {
   fetchUserProfile()
 })
@@ -70,16 +58,7 @@ onMounted(() => {
 <template>
   <div class="profile-page">
     <!-- Cover -->
-    <div class="profile-cover">
-      <button class="cover-edit-btn" @click="handleEditCover">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-          <circle cx="8.5" cy="8.5" r="1.5"/>
-          <polyline points="21 15 16 10 5 21"/>
-        </svg>
-        编辑封面图片
-      </button>
-    </div>
+    <div class="profile-cover"></div>
 
     <!-- Profile Header -->
     <div class="profile-header">
@@ -95,20 +74,9 @@ onMounted(() => {
             <span v-if="user.subject">{{ user.subject }}</span>
           </div>
         </div>
-        <button class="btn btn-primary" @click="handleEditProfile">编辑资料</button>
       </div>
 
       <div class="profile-stats">
-        <div class="stat-item">
-          <span class="stat-label">我关注的</span>
-          <span class="stat-value">{{ user.following }}</span>
-        </div>
-        <span class="stat-divider">|</span>
-        <div class="stat-item">
-          <span class="stat-label">关注我的</span>
-          <span class="stat-value">{{ user.followers }}</span>
-        </div>
-        <span class="stat-divider">|</span>
         <div class="stat-item">
           <span class="stat-label">我创建的教案</span>
           <span class="stat-value">{{ user.lessonPlans }}</span>
@@ -137,22 +105,6 @@ onMounted(() => {
   height: 200px;
   background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
   position: relative;
-}
-
-.cover-edit-btn {
-  position: absolute;
-  top: var(--space-4);
-  right: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  background: rgba(0, 0, 0, 0.3);
-  color: var(--white);
-  border: none;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  cursor: pointer;
 }
 
 .profile-header {

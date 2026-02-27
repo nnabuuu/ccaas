@@ -12,13 +12,11 @@ import { ref, computed, onMounted, watch, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { questionBankApi } from '../api/index'
 import type { QuestionBankItem } from '@/types'
-
-interface CurriculumFilter {
-  selectedCurriculumId: { value: number | null }
-  clearFilter: () => void
-}
+import { useQuestionBank, SUBJECT_OPTIONS, DIFFICULTY_OPTIONS } from '@/composables/useQuestionBank'
+import type { CurriculumFilter } from '@/composables/useQuestionBank'
 
 const router = useRouter()
+const { getQuestionTypeLabel, getDifficultyStars, getAuthorName } = useQuestionBank()
 
 // Inject curriculum filter from parent layout
 const curriculumFilter = inject<CurriculumFilter>('curriculumFilter')
@@ -40,23 +38,8 @@ const selectedSubject = ref('')
 const selectedDifficulty = ref('')
 const sortBy = ref('latest')
 
-const subjectOptions = [
-  { value: '', label: '全部科目' },
-  { value: '语文', label: '语文' },
-  { value: '数学', label: '数学' },
-  { value: '英语', label: '英语' },
-  { value: '物理', label: '物理' },
-  { value: '化学', label: '化学' }
-]
-
-const difficultyOptions = [
-  { value: '', label: '全部难度' },
-  { value: '1', label: '很简单' },
-  { value: '2', label: '简单' },
-  { value: '3', label: '中等' },
-  { value: '4', label: '较难' },
-  { value: '5', label: '困难' }
-]
+const subjectOptions = SUBJECT_OPTIONS
+const difficultyOptions = DIFFICULTY_OPTIONS
 
 // Computed
 const activeCurriculumId = computed(() => {
@@ -99,26 +82,6 @@ const fetchQuestions = async () => {
 
 const handleView = (question: QuestionBankItem) => {
   router.push(`/question/${question.id}`)
-}
-
-const getQuestionTypeLabel = (type: string) => {
-  const typeMap: Record<string, string> = {
-    single_choice: '单选题',
-    multiple_choice: '多选题',
-    true_false: '判断题',
-    fill_blank: '填空题',
-    essay: '问答题'
-  }
-  return typeMap[type] || type
-}
-
-const getDifficultyStars = (difficulty?: number) => {
-  return difficulty || 3
-}
-
-const getAuthorName = (question: QuestionBankItem) => {
-  // Use RuoYi framework's createByName field from BaseEntity
-  return question.createByName || '未知作者'
 }
 
 // Watchers

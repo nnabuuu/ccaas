@@ -27,7 +27,7 @@ import exerciseLibrary from '../data/exercise-library.json'
 
 // CRITICAL: Absolute URL to CCAAS backend, not empty string
 // See MEMORY.md: "serverUrl Configuration - Empty String Causes Wrong Backend"
-const SOCKET_URL = 'http://localhost:3001'
+const SERVER_URL = 'http://localhost:3001'
 
 const TENANT_ID = 'rehab-motion-renderer'
 
@@ -67,8 +67,9 @@ export function useRehabSession(): UseRehabSessionReturn {
 
   // ===== CCAAS Connection =====
   const connection = useAgentConnection({
-    serverUrl: SOCKET_URL,
+    serverUrl: SERVER_URL,
     tenantId: TENANT_ID,
+    transport: 'sse',
     autoConnect: true,
   })
 
@@ -79,6 +80,7 @@ export function useRehabSession(): UseRehabSessionReturn {
   const chat = useAgentChat({
     connection,
     tenantId: TENANT_ID,
+    sessionTemplate: 'exercise-planner',
     onOutputUpdate: (update) => {
       handleOutputUpdate(update)
     },

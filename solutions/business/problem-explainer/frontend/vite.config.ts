@@ -26,11 +26,6 @@ export default defineConfig({
         target: 'http://localhost:3003',
         changeOrigin: true,
       },
-      // CCAAS WebSocket (direct connection)
-      '/socket.io': {
-        target: 'http://localhost:3001',
-        ws: true,
-      },
     },
   },
 })

@@ -5,11 +5,19 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
-import type { ApprovalStatus } from '@/types'
+import { useQuestionBank } from '@/composables/useQuestionBank'
 
 const router = useRouter()
 const route = useRoute()
 const store = useQuestionBankStore()
+const {
+  getStatusInfo,
+  getQuestionTypeLabel,
+  getDifficultyLabel,
+  parseOptions,
+  canEdit: canEditQuestion,
+  canSubmit: canSubmitQuestion
+} = useQuestionBank()
 
 const notFound = ref(false)
 
@@ -18,13 +26,13 @@ const question = computed(() => store.currentItem)
 const standards = computed(() => store.currentItemStandards)
 
 const canEdit = computed(() => {
-  const status = question.value?.approvalStatus
-  return status === 'draft' || status === 'needs_revision'
+  if (!question.value) return false
+  return canEditQuestion(question.value)
 })
 
 const canSubmit = computed(() => {
-  const status = question.value?.approvalStatus
-  return status === 'draft' || status === 'needs_revision'
+  if (!question.value) return false
+  return canSubmitQuestion(question.value)
 })
 
 const loadQuestion = async () => {
@@ -50,41 +58,6 @@ const handleSubmit = async () => {
     await loadQuestion()
   } catch (err) {
     console.error('[QuestionDetailView] Failed to submit:', err)
-  }
-}
-
-const getStatusInfo = (status?: ApprovalStatus) => {
-  const statusMap: Record<string, { label: string; class: string }> = {
-    draft: { label: '草稿', class: 'draft' },
-    submitted: { label: '待审核', class: 'pending' },
-    approved: { label: '已通过', class: 'approved' },
-    needs_revision: { label: '需修改', class: 'revision' }
-  }
-  return statusMap[status || 'draft'] || statusMap.draft
-}
-
-const getQuestionTypeLabel = (type?: string) => {
-  const typeMap: Record<string, string> = {
-    single_choice: '单选题',
-    multiple_choice: '多选题',
-    true_false: '判断题',
-    fill_blank: '填空题',
-    essay: '问答题'
-  }
-  return typeMap[type || ''] || type
-}
-
-const getDifficultyLabel = (difficulty?: number) => {
-  const labels = ['', '很简单', '简单', '中等', '较难', '困难']
-  return labels[difficulty || 3] || '中等'
-}
-
-const parseOptions = (options?: string): string[] => {
-  if (!options) return []
-  try {
-    return JSON.parse(options)
-  } catch {
-    return []
   }
 }
 

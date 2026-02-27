@@ -21,6 +21,6 @@ After both calls, confirm to the user that the form has been filled.
 ## Purpose
 
 This skill demonstrates that:
-- `write_output` fills frontend form fields in real-time via WebSocket
+- `write_output` fills frontend form fields in real-time via SSE
 - Each field requires a separate `write_output` call
 - The `value` is in `content[].text` JSON — not in `_meta`
