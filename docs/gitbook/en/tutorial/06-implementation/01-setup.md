@@ -337,8 +337,8 @@ Create `frontend/package.json`:
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@kedge-agentic/common": "^0.1.0",
-    "@kedge-agentic/react-sdk": "^0.1.0",
+    "@kedge-agentic/common": "^0.2.0",
+    "@kedge-agentic/react-sdk": "^0.2.0",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
