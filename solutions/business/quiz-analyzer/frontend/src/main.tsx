@@ -7,7 +7,7 @@ import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename="/quiz-analyzer">
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/kp-match" element={<KpMatchPage />} />
