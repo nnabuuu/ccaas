@@ -2,6 +2,19 @@
 
 本指南演示如何在本地运行即见Agentic 平台，用于 **Solution 开发**。
 
+## 线上演示
+
+提供托管实例用于测试和演示：
+
+| 服务 | 地址 |
+|------|------|
+| CCAAS 管理后台 | [https://ccaas.zhushou.one/](https://ccaas.zhushou.one/) |
+| CCAAS 后端 API | [https://ccaas.zhushou.one/api/](https://ccaas.zhushou.one/api/) |
+
+Solution 前端连接线上实例时，使用 `https://ccaas.zhushou.one` 作为 `serverUrl`。
+
+## 本地开发环境
+
 {% hint style="info" %}
 **面向 Solution 开发者**：本安装流程会在你的本机运行完整的即见Agentic 平台。平台内置了 AI 能力支持，你无需单独安装或配置任何 AI 引擎。
 {% endhint %}

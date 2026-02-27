@@ -2,7 +2,11 @@
 
 This guide walks you through the core features of KedgeAgentic in just a few minutes.
 
-## Start the Service
+## Try It Online
+
+A hosted instance is available at [https://ccaas.zhushou.one/](https://ccaas.zhushou.one/). You can explore the admin dashboard and API without any local setup.
+
+## Start the Service (Local)
 
 ```bash
 # Install dependencies and build

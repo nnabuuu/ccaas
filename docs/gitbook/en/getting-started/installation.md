@@ -2,6 +2,19 @@
 
 This guide shows you how to run CCAAS platform locally for **Solution development**.
 
+## Live Demo
+
+A hosted instance is available for testing and demonstration:
+
+| Service | URL |
+|---------|-----|
+| CCAAS Admin Dashboard | [https://ccaas.zhushou.one/](https://ccaas.zhushou.one/) |
+| CCAAS Backend API | [https://ccaas.zhushou.one/api/](https://ccaas.zhushou.one/api/) |
+
+When connecting a Solution frontend to the hosted instance, use `https://ccaas.zhushou.one` as the `serverUrl`.
+
+## Local Development Setup
+
 {% hint style="info" %}
 **For Solution Developers**: This setup runs the full CCAAS platform on your local machine. The platform comes with built-in AI capabilities - you don't need to install or configure any AI engines separately.
 {% endhint %}

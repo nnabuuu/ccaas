@@ -2,7 +2,11 @@
 
 本指南帮助你快速体验即见Agentic 的核心功能。
 
-## 启动服务
+## 在线体验
+
+托管实例地址：[https://ccaas.zhushou.one/](https://ccaas.zhushou.one/)。无需本地部署即可体验管理后台和 API。
+
+## 启动服务（本地）
 
 ```bash
 # 安装依赖并构建
