@@ -14,6 +14,8 @@ import { useRouter } from 'vue-router'
 import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
 import { useQuestionBank } from '@/composables/useQuestionBank'
 import type { QuestionBankItem } from '@/types'
+import { BaseModal } from '@/components/layout'
+import toast from '@/utils/toast'
 
 const router = useRouter()
 const store = useQuestionBankStore()
@@ -33,6 +35,9 @@ const showRejectModal = ref(false)
 const rejectingQuestion = ref<QuestionBankItem | null>(null)
 const rejectionReason = ref('')
 const rejectionError = ref('')
+
+// Confirm modal state (approve)
+const confirmAction = ref<{ type: 'approve'; question: QuestionBankItem } | null>(null)
 
 // Methods
 const loadReviewQueue = async () => {
@@ -57,15 +62,21 @@ const closeReviewModal = () => {
   showReviewModal.value = false
 }
 
-const handleApprove = async (question: QuestionBankItem) => {
-  if (!confirm('确定要通过这道题目吗？')) return
+const handleApprove = (question: QuestionBankItem) => {
+  confirmAction.value = { type: 'approve', question }
+}
+
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  const { question } = confirmAction.value
+  confirmAction.value = null
   try {
     await store.approveQuestion(question.id)
     closeReviewModal()
     await loadReviewQueue()
   } catch (err) {
     console.error('[QuestionBankReviewView] Failed to approve question:', err)
-    alert('审批失败，请重试')
+    toast.error('审批失败，请重试')
   }
 }
 
@@ -197,7 +208,7 @@ onMounted(() => {
       <div class="modal-content" @click.stop>
         <div class="modal-header">
           <h3>审核题目</h3>
-          <button class="modal-close" @click="closeReviewModal">
+          <button class="modal-close" aria-label="关闭" @click="closeReviewModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
@@ -245,7 +256,7 @@ onMounted(() => {
       <div class="modal-content reject-modal" @click.stop>
         <div class="modal-header">
           <h3>退回题目</h3>
-          <button class="modal-close" @click="closeRejectModal">
+          <button class="modal-close" aria-label="关闭" @click="closeRejectModal">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"/>
               <line x1="6" y1="6" x2="18" y2="18"/>
@@ -277,6 +288,20 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Approve Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      title="确认通过"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p>确定要通过这道题目吗？</p>
+      <template #footer>
+        <button class="btn btn-outline" @click="confirmAction = null">取消</button>
+        <button class="btn btn-success" @click="executeConfirmAction">确认通过</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 

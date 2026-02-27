@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { projectApi, projectContentApi, ossApi } from '../api/index'
-import PageContainer from '../components/layout/PageContainer.vue'
+import { PageContainer, BaseModal } from '../components/layout'
 import ProjectReflectionTab from '../components/project-detail/ProjectReflectionTab.vue'
 import ProjectEvaluationTab from '../components/project-detail/ProjectEvaluationTab.vue'
 import MarkdownSection from '../components/lesson-plan/MarkdownSection.vue'
@@ -66,6 +66,9 @@ const project = ref<Project | null>(null)
 const contents = ref<ProjectContent[]>([])
 const loading = ref(true)
 const saving = ref(false)
+
+// Confirm modal state
+const confirmAction = ref<{ type: 'cancel_edits' } | null>(null)
 
 // Original state for dirty tracking
 const originalProject = ref<{ title: string; description?: string } | null>(null)
@@ -401,16 +404,18 @@ const handleSaveAll = async () => {
 // Cancel all changes and revert to original state
 const handleCancelAll = () => {
   if (!project.value || !originalProject.value) return
-  if (!confirm('确定要取消所有未保存的更改吗？')) return
+  confirmAction.value = { type: 'cancel_edits' }
+}
 
+const executeConfirmAction = () => {
+  if (!confirmAction.value || !project.value || !originalProject.value) return
+  confirmAction.value = null
   // Revert project header
   project.value.title = originalProject.value.title
   project.value.description = originalProject.value.description
   project.value.remark = originalProject.value.description
-
   // Revert content state
   subItemContentState.value = { ...originalContentState.value }
-
   toast.info('已取消更改')
 }
 
@@ -744,6 +749,20 @@ onMounted(() => {
       <ProjectEvaluationTab v-if="activeMainTab === 'evaluation'" :project-id="project.id" />
       </template>
     </div>
+
+    <!-- Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      title="确认取消"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p>确定要取消所有未保存的更改吗？</p>
+      <template #footer>
+        <button class="btn btn-secondary" @click="confirmAction = null">取消</button>
+        <button class="btn btn-primary" @click="executeConfirmAction">确认取消</button>
+      </template>
+    </BaseModal>
   </PageContainer>
 </template>
 

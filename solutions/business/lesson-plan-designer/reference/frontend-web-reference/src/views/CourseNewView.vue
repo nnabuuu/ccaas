@@ -91,7 +91,7 @@ const cancel = () => { router.push('/course') }
     <div class="wizard-card">
         <div class="wizard-header">
           <h1>创建新课程</h1>
-          <button class="close-btn" @click="cancel">
+          <button class="close-btn" aria-label="关闭" @click="cancel">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M18 6L6 18M6 6l12 12"/>
             </svg>

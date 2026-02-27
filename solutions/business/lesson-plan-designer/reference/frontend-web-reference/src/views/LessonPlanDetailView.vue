@@ -5,6 +5,7 @@ import { useLessonPlanStore } from '../stores/domain/lessonPlanStore'
 import { useNavigationStore } from '../stores/core/uiStore'
 import { LessonPlanEditor } from '../components/lesson-plan'
 import AIEditingOverlay from '../components/agent/AIEditingOverlay.vue'
+import { BaseModal } from '../components/layout'
 import toast from '../utils/toast'
 import {
   InlineEditText,
@@ -55,6 +56,9 @@ const showOverflowMenu = ref(false)
 // Textbook chapter association state
 const showChapterSelector = ref(false)
 
+// Confirm modal state
+const confirmAction = ref<{ type: 'delete' | 'cancel_edits' } | null>(null)
+
 // Use textbookChapters from integrated API response (no separate fetch needed)
 const textbookChapters = computed(() => lessonPlan.value?.textbookChapters || [])
 
@@ -100,14 +104,7 @@ const closeOverflowMenu = () => {
 }
 
 const handleDelete = async () => {
-  if (!confirm('确定要删除这个教案吗？')) return
-  try {
-    await store.deleteLessonPlan(lessonPlanId.value)
-    toast.success('删除成功')
-    router.push('/lesson-plan')
-  } catch (err) {
-    toast.error('删除失败：' + ((err as Error).message || '未知错误'))
-  }
+  confirmAction.value = { type: 'delete' }
 }
 
 const handleBack = () => router.push('/lesson-plan')
@@ -133,9 +130,25 @@ const handleSaveAll = async () => {
 
 // Global cancel all changes
 const handleCancelAll = () => {
-  if (!confirm('确定要取消所有未保存的更改吗？')) return
-  store.cancelAllEdits()
-  toast.info('已取消更改')
+  confirmAction.value = { type: 'cancel_edits' }
+}
+
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  const actionType = confirmAction.value.type
+  confirmAction.value = null
+  if (actionType === 'delete') {
+    try {
+      await store.deleteLessonPlan(lessonPlanId.value)
+      toast.success('删除成功')
+      router.push('/lesson-plan')
+    } catch (err) {
+      toast.error('删除失败：' + ((err as Error).message || '未知错误'))
+    }
+  } else if (actionType === 'cancel_edits') {
+    store.cancelAllEdits()
+    toast.info('已取消更改')
+  }
 }
 
 // Textbook chapter functions
@@ -374,7 +387,7 @@ onBeforeUnmount(() => {
       <!-- Header: Back arrow + Title + Status + Edit state + Overflow menu -->
       <div :class="['lesson-header', { editing: isDirty }]">
         <div class="header-left">
-          <button class="back-button" @click="handleBack" title="返回列表">
+          <button class="back-button" @click="handleBack" title="返回列表" aria-label="返回列表">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
@@ -454,7 +467,7 @@ onBeforeUnmount(() => {
           </template>
           <!-- Overflow Menu -->
           <div class="overflow-menu-container" @click.stop>
-            <button class="overflow-button" @click="toggleOverflowMenu" title="更多操作">
+            <button class="overflow-button" @click="toggleOverflowMenu" title="更多操作" aria-label="更多操作">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <circle cx="12" cy="5" r="2"/>
                 <circle cx="12" cy="12" r="2"/>
@@ -489,6 +502,27 @@ onBeforeUnmount(() => {
         @confirm="handleChaptersConfirm"
       />
     </template>
+
+    <!-- Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      :title="confirmAction?.type === 'delete' ? '确认删除' : '确认取消'"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p v-if="confirmAction?.type === 'delete'">确定要删除这个教案吗？此操作不可撤销。</p>
+      <p v-else-if="confirmAction?.type === 'cancel_edits'">确定要取消所有未保存的更改吗？</p>
+      <template #footer>
+        <button class="btn-secondary" @click="confirmAction = null">取消</button>
+        <button
+          :class="confirmAction?.type === 'delete' ? 'btn-primary' : 'btn-primary'"
+          :style="confirmAction?.type === 'delete' ? 'background: #ef4444; border-color: #ef4444;' : ''"
+          @click="executeConfirmAction"
+        >
+          {{ confirmAction?.type === 'delete' ? '确认删除' : '确认取消' }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- AI Editing Mode Overlay (shows when AI is generating content) -->
     <AIEditingOverlay />
@@ -972,12 +1006,14 @@ onBeforeUnmount(() => {
   color: #2563eb;
   font-size: 14px;
   cursor: pointer;
-  padding: 0;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
 .chapters-edit-btn:hover,
 .chapters-add-btn:hover {
   text-decoration: underline;
+  background: rgba(37, 99, 235, 0.05);
 }
 
 /* Modal styles */

@@ -14,6 +14,7 @@ import { useQuestionBankStore } from '@/stores/domain/questionBankStore'
 import type { QuestionBankItem, ApprovalStatus } from '@/types'
 import { useQuestionBank, STATUS_TABS } from '@/composables/useQuestionBank'
 import type { CurriculumFilter } from '@/composables/useQuestionBank'
+import { BaseModal } from '@/components/layout'
 
 const router = useRouter()
 const store = useQuestionBankStore()
@@ -37,6 +38,9 @@ const props = defineProps<{
 // State
 const activeTab = ref<ApprovalStatus | 'all'>('all')
 const searchKeyword = ref('')
+
+// Confirm modal state
+const confirmAction = ref<{ type: 'delete'; question: QuestionBankItem } | null>(null)
 
 // Status tabs
 const statusTabs = STATUS_TABS
@@ -108,10 +112,14 @@ const handleSubmit = async (question: QuestionBankItem) => {
   }
 }
 
-const handleDelete = async (question: QuestionBankItem) => {
-  if (!confirm('确定要删除这道题目吗？此操作不可撤销。')) {
-    return
-  }
+const handleDelete = (question: QuestionBankItem) => {
+  confirmAction.value = { type: 'delete', question }
+}
+
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  const { question } = confirmAction.value
+  confirmAction.value = null
   try {
     await store.remove(question.id)
     await loadQuestions()
@@ -217,6 +225,7 @@ watch(activeCurriculumId, () => {
               v-if="canEdit(question)"
               class="btn-icon"
               title="编辑"
+              aria-label="编辑"
               @click="handleEdit(question)"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -227,6 +236,7 @@ watch(activeCurriculumId, () => {
             <button
               class="btn-icon"
               title="查看"
+              aria-label="查看"
               @click="handleView(question)"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -238,6 +248,7 @@ watch(activeCurriculumId, () => {
               v-if="canDelete(question)"
               class="btn-icon btn-danger"
               title="删除"
+              aria-label="删除"
               @click="handleDelete(question)"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -279,6 +290,20 @@ watch(activeCurriculumId, () => {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      title="确认删除"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p>确定要删除这道题目吗？此操作不可撤销。</p>
+      <template #footer>
+        <button class="btn btn-primary" style="background: #f3f4f6; border-color: #d1d5db; color: #374151;" @click="confirmAction = null">取消</button>
+        <button class="btn btn-primary" style="background: #ef4444; border-color: #ef4444;" @click="executeConfirmAction">确认删除</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 

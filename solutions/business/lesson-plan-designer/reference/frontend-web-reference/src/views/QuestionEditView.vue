@@ -104,7 +104,7 @@ onMounted(() => {
     <!-- Edit Form -->
     <template v-else>
       <div class="page-header">
-        <button class="btn-back" @click="handleCancel">
+        <button class="btn-back" aria-label="返回" @click="handleCancel">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5"/>
             <path d="m12 19-7-7 7-7"/>

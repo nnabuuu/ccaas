@@ -89,7 +89,7 @@ onMounted(() => {
     <!-- Question Detail -->
     <template v-else-if="question">
       <div class="page-header">
-        <button class="btn-back" @click="handleBack">
+        <button class="btn-back" aria-label="返回" @click="handleBack">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M19 12H5"/>
             <path d="m12 19-7-7 7-7"/>
@@ -139,7 +139,7 @@ onMounted(() => {
             >
               <span class="option-label">{{ String.fromCharCode(65 + index) }}.</span>
               <span class="option-text">{{ option }}</span>
-              <svg v-if="question.answer?.includes(String.fromCharCode(65 + index))" class="correct-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg v-if="question.answer?.includes(String.fromCharCode(65 + index))" class="correct-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
             </div>

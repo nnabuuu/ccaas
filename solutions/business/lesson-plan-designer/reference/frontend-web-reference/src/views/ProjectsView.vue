@@ -29,6 +29,7 @@ const authStore = useAuthStore()
 const activeSidebarIndex = ref(0)
 const loading = ref(false)
 const searchKeyword = ref('')
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 const selectedStatus = ref('')
 
 const sidebarItems = [
@@ -205,6 +206,13 @@ const handleCreateProject = (activityId?: number) => {
   }
 }
 
+watch(searchKeyword, () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => {
+    fetchData()
+  }, 300)
+})
+
 watch([activeSidebarIndex, selectedStatus], () => {
   fetchData()
 })
@@ -237,9 +245,8 @@ onMounted(() => {
                 class="form-input"
                 placeholder="搜索活动或项目"
                 v-model="searchKeyword"
-                @keyup.enter="fetchData"
               >
-              <button class="search-btn" @click="fetchData">
+              <button class="search-btn" aria-label="搜索" @click="fetchData">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="11" cy="11" r="8"/>
                   <path d="m21 21-4.35-4.35"/>

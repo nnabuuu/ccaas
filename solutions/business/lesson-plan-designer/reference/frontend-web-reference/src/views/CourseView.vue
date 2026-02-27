@@ -45,9 +45,13 @@ const linkingCourse = ref<CourseItem | null>(null)
 const selectedLessonPlanId = ref<number | undefined>(undefined)
 const linking = ref(false)
 
+// Confirm modal state (delete)
+const confirmAction = ref<{ type: 'delete'; id: number; title: string } | null>(null)
+
 const sidebarItems = [
   { label: '全部课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
-  { label: '我的课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' }
+  { label: '我的课程', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { label: '我的收藏', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' }
 ]
 
 const courses = ref<CourseItem[]>([])
@@ -165,8 +169,27 @@ const fetchGrades = async () => {
   }
 }
 
-const handleDelete = async (id: number) => {
-  if (!confirm('确定要删除这个课程吗？')) return
+const handleSidebarSelect = (index: number) => {
+  if (index === 2) {
+    toast.info('收藏功能即将上线')
+    return
+  }
+  activeSidebarIndex.value = index
+}
+
+const toggleFavorite = (course: CourseItem) => {
+  void course
+  toast.info('收藏功能即将上线')
+}
+
+const handleDelete = async (id: number, title: string) => {
+  confirmAction.value = { type: 'delete', id, title }
+}
+
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  const { id } = confirmAction.value
+  confirmAction.value = null
   try {
     await scheduleApi.delete(id)
     toast.success('删除成功')
@@ -230,7 +253,7 @@ onMounted(() => {
       <PageSidebar
         :items="sidebarItems"
         :active-index="activeSidebarIndex"
-        @select="activeSidebarIndex = $event"
+        @select="handleSidebarSelect"
       />
 
       <main class="page-main">
@@ -290,7 +313,11 @@ onMounted(() => {
                 </span>
               </h3>
               <div class="card-actions">
-                <button class="action-btn danger" @click.stop="handleDelete(course.id)">删除</button>
+                <button class="action-btn favorite-btn" @click.stop="toggleFavorite(course)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  收藏
+                </button>
+                <button class="action-btn danger" @click.stop="handleDelete(course.id, course.title)">删除</button>
               </div>
             </div>
             <div v-if="course.time" class="card-meta">
@@ -343,6 +370,20 @@ onMounted(() => {
         <button class="btn-primary" @click="linkLessonPlan" :disabled="!selectedLessonPlanId || linking">
           {{ linking ? '关联中...' : '确认关联' }}
         </button>
+      </template>
+    </BaseModal>
+
+    <!-- Delete Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      title="确认删除"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p>确定要删除课程「{{ confirmAction?.title }}」吗？此操作不可撤销。</p>
+      <template #footer>
+        <button class="btn-secondary" @click="confirmAction = null">取消</button>
+        <button class="btn-primary" style="background: #ef4444; border-color: #ef4444;" @click="executeConfirmAction">确认删除</button>
       </template>
     </BaseModal>
   </div>
@@ -440,16 +481,18 @@ onMounted(() => {
 }
 
 .action-btn {
-  padding: 0;
+  padding: 4px 8px;
   background: none;
   border: none;
   font-size: 14px;
   color: #6b7280;
   cursor: pointer;
+  border-radius: 4px;
 }
 
 .action-btn:hover {
   color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
 }
 
 .action-btn.danger:hover {

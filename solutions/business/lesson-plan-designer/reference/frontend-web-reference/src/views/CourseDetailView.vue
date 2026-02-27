@@ -84,6 +84,9 @@ const showSaveDialog = ref(false)
 const saveMode = ref<'snapshot' | 'base'>('snapshot')
 const savingLessonPlan = ref(false)
 
+// Confirm modal state
+const confirmAction = ref<{ type: 'delete' | 'reset_lesson_plan' } | null>(null)
+
 // Evaluation form state
 const showEvalForm = ref(false)
 const evalFormType = ref<'lesson' | 'teaching'>('lesson')
@@ -229,15 +232,7 @@ const handleEdit = () => {
 
 const handleDelete = async () => {
   showDropdown.value = false
-  if (!confirm('确定要删除这个课程吗？')) return
-  try {
-    await scheduleApi.delete(courseId.value)
-    toast.success('删除成功')
-    router.push('/course')
-  } catch (error) {
-    console.error('Failed to delete course:', error)
-    toast.error('删除失败：' + (error as Error).message)
-  }
+  confirmAction.value = { type: 'delete' }
 }
 
 const openLinkModal = () => {
@@ -332,14 +327,31 @@ const saveLessonPlan = async () => {
 }
 
 const resetToBase = async () => {
-  if (!confirm('确定要重置为原教案内容吗？本次修改将丢失。')) return
-  try {
-    await scheduleApi.clearSnapshot(courseId.value)
-    toast.success('已重置为原教案')
-    await fetchCourse()
-  } catch (error) {
-    console.error('Failed to reset snapshot:', error)
-    toast.error('重置失败')
+  confirmAction.value = { type: 'reset_lesson_plan' }
+}
+
+const executeConfirmAction = async () => {
+  if (!confirmAction.value) return
+  const actionType = confirmAction.value.type
+  confirmAction.value = null
+  if (actionType === 'delete') {
+    try {
+      await scheduleApi.delete(courseId.value)
+      toast.success('删除成功')
+      router.push('/course')
+    } catch (error) {
+      console.error('Failed to delete course:', error)
+      toast.error('删除失败：' + (error as Error).message)
+    }
+  } else if (actionType === 'reset_lesson_plan') {
+    try {
+      await scheduleApi.clearSnapshot(courseId.value)
+      toast.success('已重置为原教案')
+      await fetchCourse()
+    } catch (error) {
+      console.error('Failed to reset snapshot:', error)
+      toast.error('重置失败')
+    }
   }
 }
 
@@ -611,7 +623,7 @@ onMounted(() => {
               />
               <div class="header-actions">
                 <div class="dropdown">
-                  <button class="btn btn-icon btn-sm" @click="showDropdown = !showDropdown">
+                  <button class="btn btn-icon btn-sm" aria-label="更多操作" @click="showDropdown = !showDropdown">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                       <circle cx="12" cy="12" r="1"/>
                       <circle cx="19" cy="12" r="1"/>
@@ -905,6 +917,27 @@ onMounted(() => {
         @submit="handleEvalFormSubmit"
         @cancel="closeEvalForm"
       />
+    </BaseModal>
+
+    <!-- Confirm Modal -->
+    <BaseModal
+      :visible="!!confirmAction"
+      :title="confirmAction?.type === 'delete' ? '确认删除' : '确认重置'"
+      size="sm"
+      @close="confirmAction = null"
+    >
+      <p v-if="confirmAction?.type === 'delete'">确定要删除这个课程吗？此操作不可撤销。</p>
+      <p v-else-if="confirmAction?.type === 'reset_lesson_plan'">确定要重置为原教案内容吗？本次修改将丢失。</p>
+      <template #footer>
+        <button class="btn btn-secondary" @click="confirmAction = null">取消</button>
+        <button
+          class="btn"
+          :style="confirmAction?.type === 'delete' ? 'background: #ef4444; border-color: #ef4444; color: white;' : 'background: #3b82f6; border-color: #3b82f6; color: white;'"
+          @click="executeConfirmAction"
+        >
+          {{ confirmAction?.type === 'delete' ? '确认删除' : '确认重置' }}
+        </button>
+      </template>
     </BaseModal>
   </PageContainer>
 </template>
