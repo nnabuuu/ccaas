@@ -3,26 +3,38 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAgentChat } from '../src/hooks/useAgentChat'
 import type { UseAgentConnectionReturn } from '../src/types'
 
-// Mock socket
-const handlers: Record<string, Function> = {}
-const mockSocket = {
-  on: vi.fn((event: string, handler: Function) => {
-    handlers[event] = handler
-  }),
-  off: vi.fn((event: string) => {
-    delete handlers[event]
-  }),
-  emit: vi.fn(),
-  connected: true,
+/**
+ * Helper: create a ReadableStream that emits SSE-formatted events.
+ * Each event is wrapped in the SSE envelope format used by the backend.
+ */
+function createSseStream(events: Array<Record<string, unknown>> = []): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder()
+  let idx = 0
+  return new ReadableStream({
+    pull(controller) {
+      if (idx < events.length) {
+        const envelope = {
+          seq: idx + 1,
+          sessionId: 'test-session-id',
+          timestamp: new Date().toISOString(),
+          event: events[idx],
+        }
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(envelope)}\n\n`))
+        idx++
+      } else {
+        controller.close()
+      }
+    },
+  })
 }
 
 function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {}): UseAgentConnectionReturn {
   return {
-    socket: mockSocket as any,
+    socket: null as any,
     connected: true,
-    clientId: 'test-client-id',
+    clientId: null,
     sessionId: 'test-session-id',
-    serverUrl: '', // Empty string creates relative URLs for testing
+    serverUrl: '',
     error: null,
     connect: vi.fn(),
     disconnect: vi.fn(),
@@ -32,12 +44,38 @@ function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {})
   }
 }
 
-/** Helper to find the POST completion call from fetch mock calls */
+/** Set up fetch mock with SSE stream support */
+function mockFetch(sseEvents: Array<Record<string, unknown>> = []) {
+  global.fetch = vi.fn((url: string, options?: RequestInit) => {
+    // GET /messages - history endpoint
+    if (typeof url === 'string' && url.includes('/messages') && (!options || options.method === 'GET')) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ messages: [] }),
+      })
+    }
+    // POST /messages - SSE stream endpoint
+    if (typeof url === 'string' && url.includes('/messages') && options?.method === 'POST') {
+      return Promise.resolve({
+        ok: true,
+        body: createSseStream(sseEvents),
+      })
+    }
+    // Fallback
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({}),
+    })
+  }) as any
+}
+
+/** Helper to find the POST /messages call */
 function findPostCall(fetchMock: ReturnType<typeof vi.fn>): unknown[] | undefined {
   return fetchMock.mock.calls.find(
     (call: unknown[]) => {
+      const url = call[0] as string
       const opts = call[1] as Record<string, unknown> | undefined
-      return opts?.method === 'POST'
+      return opts?.method === 'POST' && url.includes('/messages')
     },
   )
 }
@@ -45,21 +83,6 @@ function findPostCall(fetchMock: ReturnType<typeof vi.fn>): unknown[] | undefine
 describe('useAgentChat', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    Object.keys(handlers).forEach(key => delete handlers[key])
-    global.fetch = vi.fn((url: string, options?: RequestInit) => {
-      // History endpoint (GET) - return empty messages
-      if (typeof url === 'string' && url.includes('/messages') && (!options || options.method === 'GET')) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ messages: [] }),
-        })
-      }
-      // Completion endpoint (POST) and others
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({}),
-      })
-    }) as any
   })
 
   afterEach(() => {
@@ -67,6 +90,7 @@ describe('useAgentChat', () => {
   })
 
   it('should start with empty messages', () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
@@ -77,55 +101,38 @@ describe('useAgentChat', () => {
     expect(result.current.currentStreamContent).toBe('')
   })
 
-  it('should register socket event handlers', () => {
-    const connection = createMockConnection()
-    renderHook(() => useAgentChat({ connection, tenantId: 'test' }))
-
-    const registeredEvents = mockSocket.on.mock.calls.map((c: unknown[]) => c[0])
-    expect(registeredEvents).toContain('text_delta')
-    expect(registeredEvents).toContain('output_update')
-    expect(registeredEvents).toContain('agent_status')
-    expect(registeredEvents).toContain('tool_activity')
-    expect(registeredEvents).toContain('tool_event')
-  })
-
-  it('should send message via REST API', async () => {
+  it('should send message via SSE stream', async () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test-tenant' }),
     )
 
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
+
     await act(async () => {
       await result.current.sendMessage('Hello')
     })
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/v1/sessions/test-session-id/completion',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    )
-
-    // Check the payload (find POST call, not the GET history call)
     const callArgs = findPostCall(global.fetch as ReturnType<typeof vi.fn>)
     expect(callArgs).toBeDefined()
+    const url = callArgs![0] as string
+    expect(url).toContain('/api/v1/sessions/test-session-id/messages')
     const body = JSON.parse((callArgs![1] as Record<string, string>).body)
-    expect(body.clientId).toBe('test-client-id')
     expect(body.message).toBe('Hello')
     expect(body.tenantId).toBe('test-tenant')
+    // SSE mode does not include clientId
+    expect(body.clientId).toBeUndefined()
   })
 
   it('should add user and assistant messages when sending', async () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -135,11 +142,11 @@ describe('useAgentChat', () => {
     expect(result.current.messages[0].role).toBe('user')
     expect(result.current.messages[0].content).toBe('Hello')
     expect(result.current.messages[1].role).toBe('assistant')
-    expect(result.current.messages[1].isStreaming).toBe(true)
   })
 
-  it('should not send when disconnected', async () => {
-    const connection = createMockConnection({ connected: false })
+  it('should not send when no sessionId', async () => {
+    mockFetch()
+    const connection = createMockConnection({ sessionId: '' })
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
@@ -148,62 +155,32 @@ describe('useAgentChat', () => {
       await result.current.sendMessage('Hello')
     })
 
-    // No POST completion call should have been made
-    expect(findPostCall(global.fetch as ReturnType<typeof vi.fn>)).toBeUndefined()
-  })
-
-  it('should not send when no clientId', async () => {
-    const connection = createMockConnection({ clientId: null })
-    const { result } = renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test' }),
-    )
-
-    await act(async () => {
-      await result.current.sendMessage('Hello')
-    })
-
-    // No POST completion call should have been made (GET history may have fired)
     expect(findPostCall(global.fetch as ReturnType<typeof vi.fn>)).toBeUndefined()
   })
 
   it('should accumulate text_delta into stream content', async () => {
+    mockFetch([
+      { type: 'text_delta', delta: 'Hello ' },
+      { type: 'text_delta', delta: 'world' },
+    ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
-    // First send a message to create assistant placeholder
     await act(async () => {
       await result.current.sendMessage('Hello')
-    })
-
-    // Simulate text_delta
-    act(() => {
-      handlers['text_delta']?.({ delta: 'Hello ' })
-    })
-
-    act(() => {
-      handlers['text_delta']?.({ delta: 'world' })
     })
 
     expect(result.current.currentStreamContent).toBe('Hello world')
   })
 
-  it('should call onOutputUpdate when output_update received', () => {
+  it('should call onOutputUpdate when output_update received', async () => {
     const onOutputUpdate = vi.fn()
-    const connection = createMockConnection()
-
-    renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test', onOutputUpdate }),
-    )
-
-    act(() => {
-      handlers['output_update']?.({
+    mockFetch([
+      {
         type: 'output_update',
         sessionId: 'test',
         payload: {
@@ -214,7 +191,17 @@ describe('useAgentChat', () => {
             preview: 'Title updated',
           },
         },
-      })
+      },
+    ])
+    const connection = createMockConnection()
+    const { result } = renderHook(() =>
+      useAgentChat({ connection, tenantId: 'test', onOutputUpdate }),
+    )
+
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
+
+    await act(async () => {
+      await result.current.sendMessage('Hello')
     })
 
     expect(onOutputUpdate).toHaveBeenCalledWith(
@@ -227,39 +214,34 @@ describe('useAgentChat', () => {
   })
 
   it('should finalize message on agent_status complete', async () => {
+    mockFetch([
+      { type: 'text_delta', delta: 'response' },
+      { type: 'agent_status', status: 'complete' },
+    ])
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
     })
 
-    expect(result.current.isProcessing).toBe(true)
-
-    act(() => {
-      handlers['agent_status']?.({ status: 'complete' })
-    })
-
     expect(result.current.isProcessing).toBe(false)
+    const lastMsg = result.current.messages[result.current.messages.length - 1]
+    expect(lastMsg.isStreaming).toBe(false)
   })
 
   it('should clear messages', async () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
@@ -275,15 +257,13 @@ describe('useAgentChat', () => {
   })
 
   it('should include attachments in payload', async () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({ connection, tenantId: 'test' }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
     await act(async () => {
       await result.current.sendMessage('Check this', {
@@ -297,22 +277,27 @@ describe('useAgentChat', () => {
     expect(body.attachments).toEqual([{ type: 'image', path: '/tmp/img.png' }])
   })
 
-  it('should call onTokenUsage callback when token_usage event received', () => {
+  it('should call onTokenUsage callback when token_usage received', async () => {
     const onTokenUsage = vi.fn()
-    const connection = createMockConnection()
-
-    renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test', transport: 'socket', onTokenUsage }),
-    )
-
-    act(() => {
-      handlers['token_usage']?.({
+    mockFetch([
+      {
+        type: 'token_usage',
         payload: {
           inputTokens: 100,
           outputTokens: 50,
           cacheReadTokens: 30,
         },
-      })
+      },
+    ])
+    const connection = createMockConnection()
+    const { result } = renderHook(() =>
+      useAgentChat({ connection, tenantId: 'test', onTokenUsage }),
+    )
+
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
+
+    await act(async () => {
+      await result.current.sendMessage('Hello')
     })
 
     expect(onTokenUsage).toHaveBeenCalledWith({
@@ -322,25 +307,28 @@ describe('useAgentChat', () => {
     })
   })
 
-  it('should not fail when onTokenUsage is not provided', () => {
+  it('should not fail when onTokenUsage is not provided', async () => {
+    mockFetch([
+      {
+        type: 'token_usage',
+        payload: { inputTokens: 100, outputTokens: 50 },
+      },
+    ])
     const connection = createMockConnection()
-
-    renderHook(() =>
-      useAgentChat({ connection, tenantId: 'test', transport: 'socket' }),
+    const { result } = renderHook(() =>
+      useAgentChat({ connection, tenantId: 'test' }),
     )
 
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
+
     // Should not throw
-    act(() => {
-      handlers['token_usage']?.({
-        payload: {
-          inputTokens: 100,
-          outputTokens: 50,
-        },
-      })
+    await act(async () => {
+      await result.current.sendMessage('Hello')
     })
   })
 
   it('should include enabledSkillSlugs in payload', async () => {
+    mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({
@@ -350,10 +338,7 @@ describe('useAgentChat', () => {
       }),
     )
 
-    // Wait for history loading to complete
-    await waitFor(() => {
-      expect(result.current.isLoadingHistory).toBe(false)
-    })
+    await waitFor(() => expect(result.current.isLoadingHistory).toBe(false))
 
     await act(async () => {
       await result.current.sendMessage('Hello')
