@@ -1020,8 +1020,8 @@ export class EventMapperService {
       }
 
       default:
-        // Always log unhandled events to help diagnose missing data carriers
-        this.logger.warn(`Unhandled CLI event type: ${cliEvent.type} | keys: ${Object.keys(cliEvent).join(',')}`);
+        // Log unhandled events at debug level to avoid log spam in production
+        this.logger.debug(`Unhandled CLI event type: ${cliEvent.type} | keys: ${Object.keys(cliEvent).join(',')}`);
     }
 
     return events;

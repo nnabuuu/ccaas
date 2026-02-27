@@ -467,16 +467,13 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
       };
     });
 
-    it('should subscribe even when session does not yet exist (early subscription)', async () => {
+    it('should throw NotFoundException when session does not exist', async () => {
       sessionService.getSession.mockReturnValue(null);
 
-      await controller.subscribeEvents('future-session', mockRes);
+      await expect(controller.subscribeEvents('future-session', mockRes))
+        .rejects.toThrow(NotFoundException);
 
-      expect(streamRegistry.subscribe).toHaveBeenCalledWith(
-        'future-session:push',
-        expect.any(String),
-        mockRes,
-      );
+      expect(streamRegistry.subscribe).not.toHaveBeenCalled();
     });
 
     it('should subscribe to push channel key for valid session', async () => {

@@ -337,6 +337,12 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
     @Param('sessionId') sessionId: string,
     @Res() res: Response,
   ) {
+    // Verify session exists before subscribing
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
     // Limit subscribers per session to prevent resource exhaustion
     const MAX_SUBSCRIBERS_PER_SESSION = 10;
     const pushKey = `${sessionId}:push`;
