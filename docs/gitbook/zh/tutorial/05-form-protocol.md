@@ -307,24 +307,45 @@ const chat = useAgentChat({
 
 SDK 还处理了一条辅助检测路径：当 `tool_event` 触发且工具名匹配 `*write_output` 时，SDK 从工具输入中提取 `{ field, value }` 并调用相同的 `onOutputUpdate` 回调。这确保即使 `output_update` 事件丢失，输出更新也能被捕获。
 
-### 手动解析（不使用 SDK）
+### 进阶：自定义事件解析
 
-如果不使用 react-sdk，可以手动解析事件。使用 `@kedge-agentic/common` 的类型确保类型安全：
+如果需要手动解析原始事件格式（例如不使用 react-sdk 的情况），使用 `@kedge-agentic/common` 的类型确保类型安全：
 
 ```typescript
 import type { OutputUpdateEvent } from '@kedge-agentic/common'
 
-socket.on('output_update', (event: OutputUpdateEvent) => {
-  // 先尝试 payload.data（主要格式）
+// 手动 SSE 事件解析（不使用 SDK）
+function handleRawOutputUpdate(event: OutputUpdateEvent) {
+  // 先尝试 payload.data（主要格式，来自 write_output）
   const data = event.payload.data as { field?: string; value?: unknown; preview?: string }
   if (data?.field) {
     handleUpdate(data.field, data.value, data.preview)
     return
   }
 
-  // 回退到 payload.field（通用格式）
+  // 回退到 payload.field（通用/遗留格式）
   if (event.payload.field) {
     handleUpdate(event.payload.field, event.payload.value, '')
+  }
+}
+```
+
+使用 react-sdk 时，解析由 SDK 自动完成。`onOutputUpdate` 回调直接传递 flat `OutputUpdate` 对象：
+
+```typescript
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  tenantId: 'my-solution',
+})
+
+const { sendMessage } = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (update) => {
+    // 已标准化: { field, value, preview }
+    handleUpdate(update.field, update.value, update.preview)
   }
 })
 ```

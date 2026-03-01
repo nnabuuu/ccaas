@@ -125,17 +125,14 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # Proxy API and WebSocket to backend
+    # Proxy API to backend (includes SSE endpoints)
     location /api/ {
         proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
-    }
-
-    location /socket.io/ {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_buffering off;              # Required for SSE streaming
+        proxy_cache off;
+        proxy_set_header Connection '';    # Required for SSE keep-alive
+        proxy_read_timeout 3600s;         # SSE connections are long-lived
     }
 }
 ```

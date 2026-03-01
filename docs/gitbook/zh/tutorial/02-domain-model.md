@@ -487,32 +487,45 @@ export const FieldSchemas = {
 **3. 前端表单处理**
 
 ```typescript
-socket.on('output_update', (event) => {
-  const { field, value } = event.payload.data;
+// 使用 SDK（推荐）
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
-  switch (field) {
-    case 'objectives':
-      setObjectives(value as string);
-      break;
-    case 'content':
-      setContent(value as string);
-      break;
-    case 'teachingMethods':
-      setTeachingMethods(value as string);
-      break;
-    case 'materialsNeeded':
-      setMaterialsNeeded(value as string);
-      break;
-    case 'assessmentMethods':
-      setAssessmentMethods(value as string);
-      break;
-    case 'studentAnalysis':
-      setStudentAnalysis(value as string);
-      break;
-    case 'curriculumRequirements':
-      setCurriculumRequirements(value as CurriculumStandard[]);
-      break;
-    // ... 其余字段
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  tenantId: 'lesson-plan-designer',
+})
+
+const { messages, sendMessage } = useAgentChat({
+  connection,
+  tenantId: 'lesson-plan-designer',
+  onOutputUpdate: (update) => {
+    // SDK 将原始事件标准化为 flat OutputUpdate 对象
+    const { field, value } = update;
+
+    switch (field) {
+      case 'objectives':
+        setObjectives(value as string);
+        break;
+      case 'content':
+        setContent(value as string);
+        break;
+      case 'teachingMethods':
+        setTeachingMethods(value as string);
+        break;
+      case 'materialsNeeded':
+        setMaterialsNeeded(value as string);
+        break;
+      case 'assessmentMethods':
+        setAssessmentMethods(value as string);
+        break;
+      case 'studentAnalysis':
+        setStudentAnalysis(value as string);
+        break;
+      case 'curriculumRequirements':
+        setCurriculumRequirements(value as CurriculumStandard[]);
+        break;
+      // ... 其余字段
+    }
   }
 });
 ```

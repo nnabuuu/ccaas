@@ -210,7 +210,7 @@ Main chat interface with message list, input, and activity line.
   todoItems={todoItems}
   todoStats={todoStats}
   onSendMessage={sendMessage}
-  onCancel={() => socket?.emit('cancel')}
+  onCancel={() => chat.cancelProcessing()}
   renderMessage={(msg) => (
     <MessageBubble message={msg}>
       {/* Custom content */}
@@ -248,7 +248,7 @@ Status bar showing tool execution, thinking, todos, and subagents.
   activeSubAgents={activeSubAgents}
   todoItems={todoItems}
   todoStats={todoStats}
-  onCancel={() => socket?.emit('cancel')}
+  onCancel={() => chat.cancelProcessing()}
 />
 ```
 
@@ -395,20 +395,18 @@ export function useMySession() {
 ```tsx
 function useFormSync<T>(initialForm: T) {
   const connection = useAgentConnection({...})
+  const chat = useAgentChat({
+    connection,
+    tenantId: 'my-solution',
+    onOutputUpdate: (update) => handleOutputUpdate(update),
+  })
   const [formData, setFormData] = useState(initialForm)
   const [pendingUpdates, setPendingUpdates] = useState(new Map())
 
-  useEffect(() => {
-    if (!connection.socket) return
-
-    const handleOutputUpdate = (event: OutputUpdateEvent) => {
-      const { field, value, preview } = event.payload.data
-      setPendingUpdates(prev => new Map(prev).set(field, { value, preview }))
-    }
-
-    connection.socket.on('output_update', handleOutputUpdate)
-    return () => connection.socket.off('output_update', handleOutputUpdate)
-  }, [connection.socket])
+  const handleOutputUpdate = (event: OutputUpdateEvent) => {
+    const { field, value, preview } = event.payload.data
+    setPendingUpdates(prev => new Map(prev).set(field, { value, preview }))
+  }
 
   const syncToForm = (field: string) => {
     const update = pendingUpdates.get(field)
@@ -514,7 +512,7 @@ For CI pipelines, ensure the KedgeAgentic backend is started before running inte
 
 ## Events
 
-The SDK handles these standard events from the backend (delivered via SSE stream or Socket.IO):
+The SDK handles these standard events from the backend (delivered via SSE stream):
 
 - `chat_message` - New assistant message
 - `text_delta` - Streaming text updates

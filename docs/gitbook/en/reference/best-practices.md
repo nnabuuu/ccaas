@@ -17,21 +17,6 @@ const chat = useAgentChat({ connection, tenantId: 'my-solution' })
 
 Chat messages stream via `POST /api/v1/sessions/:id/messages` returning `text/event-stream`.
 
-### Socket.IO Transport is Deprecated
-
-```typescript
-// ❌ DEPRECATED - The backend returns 410 Gone
-const chat = useAgentChat({
-  connection,
-  tenantId: 'my-solution',
-  transport: 'socket', // Will print deprecation warning
-})
-```
-
-The backend endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**.
-
-> **Known limitation:** Background task (`subagent_completed`) events currently only arrive via Socket.IO. In SSE mode, background task completion notifications are not received. This will be resolved in a future release.
-
 ### Always Use Absolute serverUrl
 
 ```typescript
@@ -138,12 +123,17 @@ const { field, value } = event
 
 ```typescript
 import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-socket.on('output_update', (raw) => {
-  const parsed = parseOutputUpdateEvent(raw)
-  if (parsed) {
-    updateField(parsed.field, parsed.value, parsed.operation)
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (raw) => {
+    const parsed = parseOutputUpdateEvent(raw)
+    if (parsed) {
+      updateField(parsed.field, parsed.value, parsed.operation)
+    }
+  },
 })
 ```
 

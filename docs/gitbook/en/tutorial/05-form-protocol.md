@@ -307,24 +307,45 @@ const chat = useAgentChat({
 
 The SDK also handles a secondary detection path: when a `tool_event` fires for a tool named `*write_output`, the SDK extracts `{ field, value }` from the tool input and calls the same `onOutputUpdate` callback. This ensures output updates are captured even if the `output_update` event is missed.
 
-### Manual Parsing (Without SDK)
+### Advanced: Custom Event Parsing
 
-If you are not using the react-sdk, you can parse the event manually. Use the `@kedge-agentic/common` types for type safety:
+If you need to parse the raw event format manually (e.g., without the react-sdk), use the `@kedge-agentic/common` types for type safety:
 
 ```typescript
 import type { OutputUpdateEvent } from '@kedge-agentic/common'
 
-socket.on('output_update', (event: OutputUpdateEvent) => {
-  // Try payload.data first (primary format)
+// Manual SSE event parsing (without SDK)
+function handleRawOutputUpdate(event: OutputUpdateEvent) {
+  // Try payload.data first (primary format from write_output)
   const data = event.payload.data as { field?: string; value?: unknown; preview?: string }
   if (data?.field) {
     handleUpdate(data.field, data.value, data.preview)
     return
   }
 
-  // Fallback to payload.field (generic format)
+  // Fallback to payload.field (generic/legacy format)
   if (event.payload.field) {
     handleUpdate(event.payload.field, event.payload.value, '')
+  }
+}
+```
+
+When using the react-sdk, this parsing is handled automatically. The `onOutputUpdate` callback delivers a flat `OutputUpdate` object:
+
+```typescript
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
+
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  tenantId: 'my-solution',
+})
+
+const { sendMessage } = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (update) => {
+    // Already normalized: { field, value, preview }
+    handleUpdate(update.field, update.value, update.preview)
   }
 })
 ```

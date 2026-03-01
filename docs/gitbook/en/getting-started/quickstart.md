@@ -113,8 +113,6 @@ while (true) {
 }
 ```
 
-> **Note**: Socket.IO transport is deprecated. Use `@kedge-agentic/react-sdk` or `@kedge-agentic/vue-sdk` for a higher-level integration that handles SSE automatically.
-
 ## Next Steps
 
 - Read the [Solution Development Guide](../guide/solution-dev.md) to build your own application

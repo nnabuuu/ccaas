@@ -238,43 +238,43 @@ interface OutputUpdateEvent {
 **Common mistake**: Accessing `event.field` directly instead of `event.payload.data.field`. output\_update uses a nested structure -- make sure to parse it correctly.
 {% endhint %}
 
-### Correct Handling Example
+### Correct Handling Example (SDK)
+
+Use `useAgentChat` with the `onOutputUpdate` callback to handle `output_update` events:
 
 ```typescript
-socket.on('output_update', (event) => {
-  // Correct: use the nested path
-  const { field, value, operation } = event.payload.data
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-  switch (operation) {
-    case 'set':
-      formState[field] = value
-      break
-    case 'append':
-      if (Array.isArray(formState[field])) {
-        formState[field].push(value)
-      } else {
-        formState[field] += value
-      }
-      break
-    case 'merge':
-      formState[field] = { ...formState[field], ...value }
-      break
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (update) => {
+    // The SDK normalizes raw events into a flat OutputUpdate
+    const { field, value, preview } = update
+
+    // Apply the update to form state
+    formState[field] = value
+  },
 })
 ```
 
 ### Using a Parser
 
-It is recommended to use the `parseOutputUpdateEvent` parser for unified handling:
+It is recommended to use the `parseOutputUpdateEvent` parser for unified handling inside the `onOutputUpdate` callback:
 
 ```typescript
 import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-socket.on('output_update', (raw) => {
-  const parsed = parseOutputUpdateEvent(raw)
-  if (parsed) {
-    updateField(parsed.field, parsed.value, parsed.operation)
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (raw) => {
+    const parsed = parseOutputUpdateEvent(raw)
+    if (parsed) {
+      updateField(parsed.field, parsed.value, parsed.operation)
+    }
+  },
 })
 ```
 

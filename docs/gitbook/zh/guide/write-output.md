@@ -238,43 +238,43 @@ interface OutputUpdateEvent {
 **常见错误**：直接访问 `event.field` 而非 `event.payload.data.field`。output\_update 使用嵌套结构，请务必正确解析。
 {% endhint %}
 
-### 正确处理示例
+### 正确处理示例（SDK）
+
+使用 `useAgentChat` 的 `onOutputUpdate` 回调处理 `output_update` 事件：
 
 ```typescript
-socket.on('output_update', (event) => {
-  // 正确：使用嵌套路径
-  const { field, value, operation } = event.payload.data
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-  switch (operation) {
-    case 'set':
-      formState[field] = value
-      break
-    case 'append':
-      if (Array.isArray(formState[field])) {
-        formState[field].push(value)
-      } else {
-        formState[field] += value
-      }
-      break
-    case 'merge':
-      formState[field] = { ...formState[field], ...value }
-      break
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (update) => {
+    // SDK 将原始事件标准化为 flat OutputUpdate 对象
+    const { field, value, preview } = update
+
+    // 将更新应用到表单状态
+    formState[field] = value
+  },
 })
 ```
 
 ### 使用解析器
 
-推荐使用 `parseOutputUpdateEvent` 解析器统一处理：
+推荐在 `onOutputUpdate` 回调中使用 `parseOutputUpdateEvent` 解析器统一处理：
 
 ```typescript
 import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-socket.on('output_update', (raw) => {
-  const parsed = parseOutputUpdateEvent(raw)
-  if (parsed) {
-    updateField(parsed.field, parsed.value, parsed.operation)
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (raw) => {
+    const parsed = parseOutputUpdateEvent(raw)
+    if (parsed) {
+      updateField(parsed.field, parsed.value, parsed.operation)
+    }
+  },
 })
 ```
 

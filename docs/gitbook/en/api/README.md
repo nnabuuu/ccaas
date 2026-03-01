@@ -15,8 +15,6 @@ Client ──REST──→ Send messages / Manage resources
 2. The server streams real-time events via SSE (text streaming, status changes, tool activity, etc.)
 3. Chat messages stream directly as `text/event-stream` from `POST /api/v1/sessions/:id/messages`
 
-> **Note**: Socket.IO (WebSocket) transport is deprecated as of v1.1.0. The endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**.
-
 ## Authentication
 
 All API requests require API Key authentication:

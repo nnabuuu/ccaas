@@ -241,77 +241,7 @@ clearPendingUpdates()
 
 参见教程第 6.5 章，了解如何将所有 Hooks 组合使用的完整示例。
 
-## 自定义 React 集成（高级 / 遗留 Socket.io）
-
-{% hint style="warning" %}
-以下模式使用遗留 Socket.io 传输。**新 Solution 应使用 `@kedge-agentic/react-sdk` 的 SSE 默认传输。** 仅当你需要完全控制底层连接时才使用此模式。
-{% endhint %}
-
-> 大多数场景下，建议优先使用上文介绍的 `@kedge-agentic/react-sdk` Hooks。
-
-React 应用也可以通过 Socket.io 直接集成（遗留方式）。以下是底层 Hook 模式。
-
-### useSocket Hook
-
-```typescript
-import { useEffect, useRef, useCallback } from 'react'
-import { io, Socket } from 'socket.io-client'
-
-export function useSocket(url: string) {
-  const socketRef = useRef<Socket | null>(null)
-
-  useEffect(() => {
-    socketRef.current = io(url)
-    return () => { socketRef.current?.disconnect() }
-  }, [url])
-
-  const sendMessage = useCallback((message: string, sessionId?: string) => {
-    socketRef.current?.emit('chat', { message, sessionId })
-  }, [])
-
-  const cancel = useCallback((sessionId: string) => {
-    socketRef.current?.emit('cancel', { sessionId })
-  }, [])
-
-  return { socket: socketRef.current, sendMessage, cancel }
-}
-```
-
-### 事件处理
-
-```typescript
-useEffect(() => {
-  if (!socket) return
-
-  // 文本流
-  socket.on('text_delta', (data) => {
-    setMessages(prev => appendText(prev, data.delta))
-  })
-
-  // 结构化输出
-  socket.on('output_update', (event) => {
-    const { field, value } = event.payload.data
-    setFormData(prev => ({ ...prev, [field]: value }))
-  })
-
-  // Agent 状态
-  socket.on('agent_status', (data) => {
-    setAgentStatus(data.status)
-  })
-
-  // 工具活动
-  socket.on('tool_activity', (data) => {
-    setCurrentTool(data.toolName)
-  })
-
-  return () => {
-    socket.off('text_delta')
-    socket.off('output_update')
-    socket.off('agent_status')
-    socket.off('tool_activity')
-  }
-}, [socket])
-```
+## 自定义 React 集成（高级）
 
 ### 同步管理
 
@@ -350,7 +280,7 @@ export function useSyncManager() {
 }
 ```
 
-## 事件参考（SSE / Socket.io）
+## 事件参考（SSE）
 
 | 事件 | 方向 | 数据格式 |
 |------|------|----------|

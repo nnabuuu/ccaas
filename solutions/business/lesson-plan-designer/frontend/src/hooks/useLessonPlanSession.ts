@@ -78,6 +78,10 @@ interface UseLessonPlanSessionReturn {
   modifiedFields: Set<SyncField>
   pendingUpdatesWithMeta: Map<SyncField, import('../types').PendingUpdateWithMeta>
 
+  // Auto-sync
+  autoSync: boolean
+  toggleAutoSync: () => void
+
   // Tool activity state
   activeTools: Map<string, ToolActivity>
   isThinking: boolean
@@ -164,6 +168,10 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   // Extended pending updates with metadata (for Global Sync Section)
   const [pendingUpdatesWithMeta, setPendingUpdatesWithMeta] = useState<Map<SyncField, PendingUpdateWithMeta>>(new Map())
 
+  // Auto-sync mode: automatically apply pending updates to form
+  const [autoSync, setAutoSync] = useState(false)
+  const toggleAutoSync = useCallback(() => setAutoSync(prev => !prev), [])
+
   // ===== SDK Chat =====
   const chat = useAgentChat({
     connection,
@@ -223,8 +231,8 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const hasActiveSubAgents = activeSubAgents.length > 0
   const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
 
-  // SubAgent tracking is now fully handled by SDK's useAgentStatus via WebSocket
-  // Removed useSubAgentPolling - WebSocket provides real-time updates without polling overhead
+  // SubAgent tracking is now fully handled by SDK's useAgentStatus via SSE
+  // Removed useSubAgentPolling - SSE provides real-time updates without polling overhead
 
   // Register event listeners on SDK-managed socket
   useEffect(() => {
@@ -333,6 +341,22 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     }
   }, [crud.lessonPlan, pendingUpdates, syncToForm])
 
+  // Auto-sync effect: when enabled, auto-apply unsynced pending updates (skip attachments)
+  useEffect(() => {
+    if (!autoSync || !crud.lessonPlan) return
+    const unsyncedFields: SyncField[] = []
+    for (const [field, update] of pendingUpdates.entries()) {
+      if (!update.synced && field !== 'attachments') {
+        unsyncedFields.push(field as SyncField)
+      }
+    }
+    if (unsyncedFields.length === 0) return
+    const timer = setTimeout(() => {
+      for (const field of unsyncedFields) { syncToForm(field) }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [autoSync, pendingUpdates, crud.lessonPlan, syncToForm])
+
   // Discard update
   const discardUpdate = useCallback((field: SyncField) => {
     removePendingUpdate(field)
@@ -406,6 +430,10 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
     pendingUpdates,
     modifiedFields,
     pendingUpdatesWithMeta,
+
+    // Auto-sync
+    autoSync,
+    toggleAutoSync,
 
     // Tool activity state
     activeTools,

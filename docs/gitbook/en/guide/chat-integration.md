@@ -15,11 +15,7 @@
 
 ## Transport: SSE (Default)
 
-The SDK uses **SSE (Server-Sent Events) as the default transport** since v1.1.0. SSE streams agent responses over a single HTTP connection — no WebSocket required.
-
-> **⚠️ Socket.IO transport is deprecated.** The backend endpoint `POST /api/v1/sessions/:id/completion` returns **410 Gone**. Use SSE (the default) instead.
->
-> **Known limitation:** Background task (`subagent_completed`) events currently only arrive via Socket.IO. In SSE mode, background task completion notifications are not received. This will be addressed in a future release.
+The SDK uses **SSE (Server-Sent Events) as the default transport**. SSE streams agent responses over a single HTTP connection — no WebSocket required.
 
 SSE is the default — no extra configuration needed:
 

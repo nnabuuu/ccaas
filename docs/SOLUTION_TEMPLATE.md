@@ -55,8 +55,7 @@ solutions/my-solution/
     "@kedge-agentic/react-sdk": "workspace:*",
     "@kedge-agentic/common": "workspace:*",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "socket.io-client": "^4.8.1"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
@@ -84,7 +83,6 @@ solutions/my-solution/
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",
     "@nestjs/platform-express": "^10.4.15",
-    "@nestjs/platform-socket.io": "^10.4.15",
     "@nestjs/typeorm": "^10.0.2",
     "typeorm": "^0.3.20",
     "sqlite3": "^5.1.7"
@@ -157,7 +155,7 @@ function App() {
           todoItems={status.todoItems}
           todoStats={status.todoStats}
           onSendMessage={chat.sendMessage}
-          onCancel={() => connection.socket?.emit('cancel')}
+          onCancel={() => chat.cancelProcessing()}
         />
       </div>
     </div>
@@ -180,8 +178,6 @@ import {
   useAgentStatus,
   useChatLayout,
 } from '@kedge-agentic/react-sdk'
-import type { OutputUpdateEvent } from '@kedge-agentic/common'
-
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001'
 const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'default'
 
@@ -192,32 +188,23 @@ export function useMySession() {
     sessionPrefix: 'my-solution',
   })
 
-  const chat = useAgentChat({
-    connection,
-    tenantId: TENANT_ID,
-  })
-
-  const status = useAgentStatus({ connection })
-  const layout = useChatLayout()
-
   // Solution-specific state
   const [formData, setFormData] = useState({})
   const [pendingUpdates, setPendingUpdates] = useState(new Map())
 
-  // Listen for custom events
-  useEffect(() => {
-    if (!connection.socket) return
-
-    const handleOutputUpdate = (event: OutputUpdateEvent) => {
-      const { field, value, preview } = event.payload.data
+  // Chat with output update handler (SSE-based, managed by SDK)
+  const chat = useAgentChat({
+    connection,
+    tenantId: TENANT_ID,
+    onOutputUpdate: (update) => {
+      // The SDK normalizes raw events into a flat OutputUpdate
+      const { field, value, preview } = update
       setPendingUpdates(prev => new Map(prev).set(field, { value, preview }))
-    }
+    },
+  })
 
-    connection.socket.on('output_update', handleOutputUpdate)
-    return () => {
-      connection.socket.off('output_update', handleOutputUpdate)
-    }
-  }, [connection.socket])
+  const status = useAgentStatus({ connection })
+  const layout = useChatLayout()
 
   // Solution-specific methods
   const syncToForm = (field: string) => {
@@ -244,7 +231,7 @@ export function useMySession() {
     // Connection
     connected: connection.connected,
     sessionId: connection.sessionId,
-    socket: connection.socket,
+    cancelProcessing: chat.cancelProcessing,
 
     // Chat
     messages: chat.messages,
@@ -409,35 +396,7 @@ export class MySolutionController {
 }
 ```
 
-### 3. Add Socket.io Gateway
-
-```typescript
-// backend/src/my-solution/my-solution.gateway.ts
-import {
-  WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
-} from '@nestjs/websockets'
-import { Socket } from 'socket.io'
-
-@WebSocketGateway({ cors: true })
-export class MySolutionGateway {
-  @SubscribeMessage('my_event')
-  handleMyEvent(
-    @MessageBody() data: any,
-    @ConnectedSocket() client: Socket,
-  ) {
-    // Emit to specific client
-    client.emit('my_response', { data })
-
-    // Or broadcast to all
-    this.server.emit('my_response', { data })
-  }
-}
-```
-
-### 4. Configure CORS
+### 3. Configure CORS
 
 ```typescript
 // backend/src/main.ts
@@ -457,58 +416,30 @@ async function bootstrap() {
 bootstrap()
 ```
 
-### 5. Emit Standard Events
+### 4. Standard SSE Events
 
-Ensure your backend emits these events for SDK compatibility:
+The core CCAAS backend streams events to the frontend via SSE. The SDK handles them automatically through hooks like `useAgentChat`, `useAgentStatus`, etc.
 
-```typescript
-// output_update - AI suggests form field updates
-client.emit('output_update', {
-  payload: {
-    data: {
-      field: 'title',
-      value: 'New Title',
-      preview: 'New Title (truncated...)',
-    }
-  }
-})
+**Event types handled by the SDK:**
 
-// tool_activity - Tool execution tracking
-client.emit('tool_activity', {
-  payload: {
-    toolName: 'search',
-    toolId: 'tool-123',
-    phase: 'start',
-    description: 'Searching database...',
-  }
-})
+| Event | SDK Hook | Purpose |
+|-------|----------|---------|
+| `output_update` | `useAgentChat({ onOutputUpdate })` | AI suggests form field updates |
+| `tool_activity` | `useAgentStatus()` → `activeTools` | Tool execution tracking |
+| `agent_status` | `useAgentStatus()` → `isProcessing` | Agent completion |
+| `subagent_started` | `useAgentStatus()` → `activeSubAgents` | SubAgent tracking |
+| `subagent_completed` | `useAgentStatus()` → `activeSubAgents` | SubAgent finished |
 
-// agent_status - Agent completion
-client.emit('agent_status', {
-  payload: {
-    status: 'complete',
-  }
-})
+**Using output_update in your skill (SKILL.md):**
 
-// subagent_started - SubAgent tracking
-client.emit('subagent_started', {
-  payload: {
-    subAgentId: 'agent-123',
-    agentType: 'Explore',
-    status: 'running',
-    description: 'Exploring codebase...',
-    startedAt: new Date().toISOString(),
-  }
-})
+To send structured updates to the frontend, use the `write_output` MCP tool in your skill:
 
-// subagent_completed - SubAgent finished
-client.emit('subagent_completed', {
-  payload: {
-    subAgentId: 'agent-123',
-    status: 'completed',
-  }
-})
+```markdown
+## Tools
+- write_output: Write structured data to a specific output field
 ```
+
+The core backend converts MCP tool results into SSE events that the SDK processes automatically.
 
 ## Solution Metadata
 
@@ -580,7 +511,7 @@ cd frontend && npm run build
 
 1. **Use Custom Hook**: Extract complex logic into `useMySession` hook
 2. **Type Safety**: Define types in `types/index.ts`, import from `@kedge-agentic/common` where possible
-3. **Event Handling**: Always cleanup socket listeners in `useEffect` cleanup
+3. **Event Handling**: Use SDK callback props (e.g., `onOutputUpdate`) instead of manual event listeners
 4. **Error Handling**: Handle connection errors gracefully
 5. **State Management**: Keep solution state local, use SDK hooks for shared state
 6. **Styling**: Use CSS variables for theming, override SDK styles as needed

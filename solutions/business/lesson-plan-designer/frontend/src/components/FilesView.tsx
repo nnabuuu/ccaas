@@ -85,7 +85,7 @@ export function FilesView({
       const result = await onAttachFile(file)
       if (result.success) {
         // Success feedback is handled by the parent component via toast
-        console.log(`File ${file.filename} attached successfully`)
+        // File attached successfully
       }
     } finally {
       setAttachingFileId(null)

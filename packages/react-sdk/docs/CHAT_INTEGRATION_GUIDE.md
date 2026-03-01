@@ -10,8 +10,7 @@ This guide shows how to integrate the CCAAS chat components into your solution.
 {
   "dependencies": {
     "@kedge-agentic/react-sdk": "workspace:*",
-    "@kedge-agentic/common": "workspace:*",
-    "socket.io-client": "^4.8.1"
+    "@kedge-agentic/common": "workspace:*"
   }
 }
 ```
@@ -78,7 +77,7 @@ export function App() {
       todoItems={session.todoItems}
       todoStats={session.todoStats}
       onSendMessage={session.sendMessage}
-      onCancel={() => session.socket?.emit('cancel')}
+      onCancel={() => session.cancelProcessing()}
     />
   )
 }
@@ -183,18 +182,15 @@ export function useFormSession<T>(initialForm: T) {
   const [formData, setFormData] = useState(initialForm)
   const [pendingUpdates, setPendingUpdates] = useState(new Map())
 
-  // Listen for output updates
-  useEffect(() => {
-    if (!connection.socket) return
-
-    const handleOutputUpdate = (event: OutputUpdateEvent) => {
+  // Listen for output updates via chat hook callback
+  const chat = useAgentChat({
+    connection,
+    tenantId: 'default',
+    onOutputUpdate: (event: OutputUpdateEvent) => {
       const { field, value, preview } = event.payload.data
       setPendingUpdates(prev => new Map(prev).set(field, { value, preview }))
-    }
-
-    connection.socket.on('output_update', handleOutputUpdate)
-    return () => { connection.socket?.off('output_update', handleOutputUpdate) }
-  }, [connection.socket])
+    },
+  })
 
   const syncToForm = (field: string) => {
     const update = pendingUpdates.get(field)
@@ -437,26 +433,10 @@ export function useDemoSession() {
     useSkills({ tenantId: TENANT_ID })
 
   // File tracking (solution-specific)
+  // File events are delivered via SSE and handled by the SDK's event system.
+  // Use the useAgentChat onFileRegistered callback or fetch files via REST API.
   const [filesInMessages, setFilesInMessages] = useState(new Map())
   const [trackedFiles, setTrackedFiles] = useState([])
-
-  useEffect(() => {
-    if (!connection.socket) return
-
-    const handleFileRegistered = (data: any) => {
-      const { sessionId, file } = data
-      setFilesInMessages(prev => {
-        const updated = new Map(prev)
-        const existing = updated.get(sessionId) || []
-        updated.set(sessionId, [...existing, file])
-        return updated
-      })
-      setTrackedFiles(prev => [...prev, file])
-    }
-
-    connection.socket.on('file_registered', handleFileRegistered)
-    return () => connection.socket.off('file_registered', handleFileRegistered)
-  }, [connection.socket])
 
   return {
     // Connection
@@ -528,7 +508,7 @@ export function App() {
           todoItems={session.todoItems}
           todoStats={session.todoStats}
           onSendMessage={session.sendMessage}
-          onCancel={() => session.socket?.emit('cancel')}
+          onCancel={() => session.cancelProcessing()}
           renderMessage={(msg) => (
             <MessageBubble message={msg}>
               {session.filesInMessages.get(session.sessionId)?.map((file, idx) => (
@@ -554,7 +534,7 @@ export function App() {
 - [ ] Backend emits standard events: `output_update`, `tool_activity`, `agent_status`
 - [ ] Session ID format matches `sessionPrefix` pattern
 - [ ] CORS configured for frontend origin
-- [ ] Socket.io namespace matches (default: `/`)
+- [ ] SSE endpoints accessible from frontend origin
 - [ ] Tenant ID passed in chat events
 - [ ] File upload endpoints return proper file metadata
 

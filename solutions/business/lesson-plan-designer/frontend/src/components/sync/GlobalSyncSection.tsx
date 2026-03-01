@@ -5,6 +5,7 @@ import { SyncItemList } from './SyncItemList'
 
 export interface GlobalSyncSectionProps {
   pendingUpdates: Map<SyncField, PendingUpdateWithMeta>
+  autoSync?: boolean
   onSyncAll: () => Promise<void>
   onSyncField: (field: SyncField) => void
   onDiscardField: (field: SyncField) => void
@@ -22,6 +23,7 @@ export interface GlobalSyncSectionProps {
  */
 export function GlobalSyncSection({
   pendingUpdates,
+  autoSync = false,
   onSyncAll,
   onSyncField,
   onDiscardField,
@@ -38,17 +40,17 @@ export function GlobalSyncSection({
   const unsyncedCount = unsynced.length
   const syncedCount = synced.length
 
-  // 如果没有任何更新（包括已同步的），不显示
-  if (allUpdates.length === 0) {
-    return null
-  }
-
   // 当没有待同步更新时，自动折叠（但不隐藏，因为可能还有已同步的）
   useEffect(() => {
     if (unsyncedCount === 0 && isExpanded) {
       setIsExpanded(false)
     }
   }, [unsyncedCount, isExpanded])
+
+  // 如果没有任何更新（包括已同步的），不显示
+  if (allUpdates.length === 0) {
+    return null
+  }
 
   const handleSyncAll = async () => {
     setIsSyncing(true)
@@ -72,6 +74,7 @@ export function GlobalSyncSection({
         unsyncedCount={unsyncedCount}
         syncedCount={syncedCount}
         isSyncing={isSyncing}
+        autoSync={autoSync}
         onToggle={() => setIsExpanded(!isExpanded)}
         onSyncAll={handleSyncAll}
       />

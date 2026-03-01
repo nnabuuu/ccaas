@@ -461,7 +461,7 @@ POST /api/v1/files/:fileId/rollback
 1. Copies content from target version to current file
 2. Updates file metadata (size, status)
 3. Creates new version (e.g., 1.0.2) with changelog "Rollback to version 1.0.0"
-4. Emits `file.modified` Socket.io event
+4. Emits `file.modified` event via SSE push channel
 
 **Errors**:
 - `404 Not Found` - File or version does not exist
@@ -635,35 +635,39 @@ curl -X POST http://localhost:3001/api/v1/files/file-abc/rollback \
 
 ---
 
-### Example 3: Real-time Updates via Socket.io
+### Example 3: Real-time Updates via SSE
 
-```javascript
-import { io } from 'socket.io-client';
+File events are delivered through the SSE push channel. Use the SDK hooks to subscribe:
 
-const socket = io('http://localhost:3001', {
-  extraHeaders: { 'x-api-key': 'sk-your-key' }
-});
+```typescript
+// React SDK - file events via useAgentChat callback
+import { useAgentConnection, useAgentChat } from '@kedge-agentic/react-sdk'
 
-// Listen for file events
-socket.on('file.created', (event) => {
-  console.log('New file created:', event.file);
-  // Update UI badge count
-});
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+})
 
-socket.on('file.modified', (event) => {
-  console.log('File modified:', event.fileId, event.status);
-  // Update file status in UI
-});
+// File events (file.created, file.modified, file.version_created, file.deleted)
+// are automatically handled by the SDK and delivered through the event stream.
+// Subscribe to the push channel for cross-turn file events:
+// GET /api/v1/sessions/:id/events (SSE endpoint)
+```
 
-socket.on('file.version_created', (event) => {
-  console.log('New version:', event.version);
-  // Refresh version history
-});
+```typescript
+// Or subscribe to the SSE push channel directly
+const eventSource = new EventSource(
+  `http://localhost:3001/api/v1/sessions/${sessionId}/events`
+)
 
-socket.on('file.deleted', (event) => {
-  console.log('File deleted:', event.fileId);
-  // Remove from UI
-});
+eventSource.addEventListener('file.created', (e) => {
+  const event = JSON.parse(e.data)
+  console.log('New file created:', event.file)
+})
+
+eventSource.addEventListener('file.modified', (e) => {
+  const event = JSON.parse(e.data)
+  console.log('File modified:', event.fileId, event.status)
+})
 ```
 
 ---
@@ -684,7 +688,7 @@ X-RateLimit-Reset: 1642252800
 
 ---
 
-## WebSocket Events
+## Real-time Events
 
 ### file.created
 
@@ -752,7 +756,7 @@ Emitted when a file is deleted.
 1. **Badge Management**: Always call `mark-synced` after user views/downloads file to clear badges
 2. **Version Control**: Create versions before major changes to enable rollback
 3. **Changelog**: Always provide meaningful changelog messages for version tracking
-4. **Real-time Updates**: Use Socket.io events to keep UI synchronized
+4. **Real-time Updates**: Use SSE push channel events to keep UI synchronized
 5. **Error Handling**: Check for 404 errors and handle gracefully (file may have been deleted)
 6. **File Size**: Check file size before upload to avoid exceeding limits
 7. **Preview Caching**: Cache preview content client-side to reduce API calls

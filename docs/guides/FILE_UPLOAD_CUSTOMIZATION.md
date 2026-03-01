@@ -42,7 +42,7 @@ POST /api/v1/files/upload
     ↓
 File stored in CCAAS
     ↓
-Socket.io event: file.created
+SSE event: file.created
     ↓
 UI updates with new file
 ```

@@ -335,77 +335,7 @@ export function useMySession(options = {}) {
 
 See tutorial [Chapter 6.5](../tutorial/06-implementation/05-frontend.md) for a complete working example with the Lesson Plan Designer.
 
-## Custom React Integration (Advanced / Legacy Socket.io)
-
-{% hint style="warning" %}
-The following patterns use the legacy Socket.io transport. **New Solutions should use `@kedge-agentic/react-sdk` with the default SSE transport.** Only use these patterns if you need full control over the low-level connection.
-{% endhint %}
-
-> For most use cases, prefer using `@kedge-agentic/react-sdk` hooks documented above.
-
-The following patterns show how to integrate directly via Socket.io without the SDK (legacy approach), for cases where you need full control over the connection and event handling.
-
-### useSocket Hook
-
-```typescript
-import { useEffect, useRef, useCallback } from 'react'
-import { io, Socket } from 'socket.io-client'
-
-export function useSocket(url: string) {
-  const socketRef = useRef<Socket | null>(null)
-
-  useEffect(() => {
-    socketRef.current = io(url)
-    return () => { socketRef.current?.disconnect() }
-  }, [url])
-
-  const sendMessage = useCallback((message: string, sessionId?: string) => {
-    socketRef.current?.emit('chat', { message, sessionId })
-  }, [])
-
-  const cancel = useCallback((sessionId: string) => {
-    socketRef.current?.emit('cancel', { sessionId })
-  }, [])
-
-  return { socket: socketRef.current, sendMessage, cancel }
-}
-```
-
-### Event Handling
-
-```typescript
-useEffect(() => {
-  if (!socket) return
-
-  // Text streaming
-  socket.on('text_delta', (data) => {
-    setMessages(prev => appendText(prev, data.delta))
-  })
-
-  // Structured output
-  socket.on('output_update', (event) => {
-    const { field, value } = event.payload.data
-    setFormData(prev => ({ ...prev, [field]: value }))
-  })
-
-  // Agent status
-  socket.on('agent_status', (data) => {
-    setAgentStatus(data.status)
-  })
-
-  // Tool activity
-  socket.on('tool_activity', (data) => {
-    setCurrentTool(data.toolName)
-  })
-
-  return () => {
-    socket.off('text_delta')
-    socket.off('output_update')
-    socket.off('agent_status')
-    socket.off('tool_activity')
-  }
-}, [socket])
-```
+## Custom React Integration (Advanced)
 
 ### Sync Management
 
@@ -444,7 +374,7 @@ export function useSyncManager() {
 }
 ```
 
-## Event Reference (SSE / Socket.io)
+## Event Reference (SSE)
 
 | Event | Direction | Data Format |
 |-------|-----------|-------------|

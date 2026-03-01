@@ -17,21 +17,6 @@ const chat = useAgentChat({ connection, tenantId: 'my-solution' })
 
 Chat 消息通过 `POST /api/v1/sessions/:id/messages` 以 `text/event-stream` 流式传输。
 
-### Socket.IO Transport 已弃用
-
-```typescript
-// ❌ 已弃用 - 后端返回 410 Gone
-const chat = useAgentChat({
-  connection,
-  tenantId: 'my-solution',
-  transport: 'socket', // 会打印 deprecation warning
-})
-```
-
-后端端点 `POST /api/v1/sessions/:id/completion` 返回 **410 Gone**。
-
-> **已知限制：** 后台任务（`subagent_completed`）事件目前仍仅通过 Socket.IO 推送。在 SSE 模式下，后台任务完成通知不会收到。将在后续版本中解决。
-
 ### 始终使用绝对 serverUrl
 
 ```typescript
@@ -138,12 +123,17 @@ const { field, value } = event
 
 ```typescript
 import { parseOutputUpdateEvent } from '../utils/outputUpdateParser'
+import { useAgentChat } from '@kedge-agentic/react-sdk'
 
-socket.on('output_update', (raw) => {
-  const parsed = parseOutputUpdateEvent(raw)
-  if (parsed) {
-    updateField(parsed.field, parsed.value, parsed.operation)
-  }
+const chat = useAgentChat({
+  connection,
+  tenantId: 'my-solution',
+  onOutputUpdate: (raw) => {
+    const parsed = parseOutputUpdateEvent(raw)
+    if (parsed) {
+      updateField(parsed.field, parsed.value, parsed.operation)
+    }
+  },
 })
 ```
 
