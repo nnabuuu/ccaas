@@ -404,6 +404,18 @@ export interface UseAgentChatReturn {
   messages: Message[]
   isProcessing: boolean
   isLoadingHistory: boolean
+  /**
+   * The current streaming text content. This value mirrors the `content`
+   * of the last assistant message in `messages[]` while it has `isStreaming: true`.
+   *
+   * **IMPORTANT**: Do NOT render this separately if you already render
+   * `messages[]` in a loop — the streaming message's `content` is updated
+   * in real-time and will cause duplicate text. Use this only for non-rendering
+   * purposes such as scroll triggers or conditional UI checks.
+   *
+   * To display streaming text, simply render `messages[]` — the last assistant
+   * message will have live-updating `content` and `contentBlocks`.
+   */
   currentStreamContent: string
   sendMessage: (content: string, options?: SendMessageOptions) => Promise<void>
   clearMessages: () => void

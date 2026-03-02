@@ -187,10 +187,10 @@ export function ChatPanel({
           </div>
         ))}
 
-        {/*
-          Note: currentStreamContent is already synced into the last assistant message
-          in messages[] by the SDK, so we don't render it separately to avoid duplication.
-        */}
+        {/* NOTE: Do NOT render currentStreamContent separately here.
+            The SDK syncs streaming text into messages[last].content in real-time,
+            so the messages.map() loop above already displays it. Rendering both
+            would cause duplicate messages. */}
 
         {/* ── Consumer mode: Friendly progress pipeline (farmer) ── */}
         {showProgress && viewMode === 'farmer' && (
