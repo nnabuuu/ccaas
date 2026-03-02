@@ -10,10 +10,10 @@ interface HeaderProps {
 
 export function Header({ viewMode, onViewChange, connected, onOpenHistory }: HeaderProps) {
   return (
-    <header className={`h-14 flex items-center justify-between px-4 border-b ${
+    <header className={`h-14 flex items-center justify-between px-4 shadow-md transition-colors duration-500 ${
       viewMode === 'farmer'
-        ? 'bg-agri-green-600 border-agri-green-700'
-        : 'bg-bank-blue-600 border-bank-blue-700'
+        ? 'bg-gradient-to-r from-agri-green-700 via-agri-green-600 to-agri-green-500'
+        : 'bg-gradient-to-r from-bank-blue-800 via-bank-blue-700 to-bank-blue-600'
     }`}>
       <div className="flex items-center gap-2">
         {onOpenHistory && (
@@ -28,19 +28,21 @@ export function Header({ viewMode, onViewChange, connected, onOpenHistory }: Hea
             </svg>
           </button>
         )}
-        <span className="text-2xl">🌾</span>
-        <h1 className="text-white text-lg font-bold">
-          慧农服
-          {viewMode === 'bank' && <span className="text-sm font-normal ml-2 opacity-80">· 信贷评估</span>}
-        </h1>
+        <div className="bg-white/10 rounded-lg px-2 py-1 flex items-center gap-2">
+          <span className="text-2xl">🌾</span>
+          <h1 className="text-white text-lg font-bold">
+            慧农服
+            {viewMode === 'bank' && <span className="text-sm font-normal ml-2 opacity-80">· 信贷评估</span>}
+          </h1>
+        </div>
       </div>
 
-      <div className="flex bg-white/20 rounded-lg p-0.5">
+      <div className="flex backdrop-blur-sm bg-white/15 rounded-lg p-0.5">
         <button
           onClick={() => onViewChange('farmer')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
             viewMode === 'farmer'
-              ? 'bg-white text-agri-green-700'
+              ? 'bg-white text-agri-green-700 shadow-sm'
               : 'text-white/80 hover:text-white hover:bg-white/10'
           }`}
         >
@@ -48,9 +50,9 @@ export function Header({ viewMode, onViewChange, connected, onOpenHistory }: Hea
         </button>
         <button
           onClick={() => onViewChange('bank')}
-          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
             viewMode === 'bank'
-              ? 'bg-white text-bank-blue-700'
+              ? 'bg-white text-bank-blue-700 shadow-sm'
               : 'text-white/80 hover:text-white hover:bg-white/10'
           }`}
         >
@@ -59,7 +61,7 @@ export function Header({ viewMode, onViewChange, connected, onOpenHistory }: Hea
       </div>
 
       <div className="flex items-center gap-2">
-        <div className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-green-300' : 'bg-red-400'}`} />
+        <div className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-red-400'}`} />
         <span className="text-white/80 text-sm">{connected ? '已连接' : '未连接'}</span>
       </div>
     </header>

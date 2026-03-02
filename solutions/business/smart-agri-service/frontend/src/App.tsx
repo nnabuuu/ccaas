@@ -57,6 +57,8 @@ function MainLayout() {
     setActiveSessionId(undefined)
   }
 
+  const isFarmer = viewMode === 'farmer'
+
   return (
     <div className="h-screen flex flex-col">
       <Header
@@ -76,9 +78,9 @@ function MainLayout() {
         onNewSession={handleNewSession}
       />
 
-      <div className="flex-1 flex overflow-hidden" key={sessionKey}>
+      <div className="flex-1 flex overflow-hidden transition-colors duration-500" key={sessionKey}>
         {/* Chat Panel - 40% */}
-        <div className="w-[40%] border-r border-gray-200 flex flex-col">
+        <div className="w-[40%] border-r border-gray-200 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.08)] flex flex-col">
           <ChatPanel
             messages={session.messages}
             isProcessing={session.isProcessing}
@@ -92,8 +94,12 @@ function MainLayout() {
         </div>
 
         {/* Right Panel - 60% */}
-        <div className="w-[60%]">
-          {viewMode === 'farmer' ? (
+        <div className={`w-[60%] transition-colors duration-500 ${
+          isFarmer
+            ? 'bg-gradient-to-b from-agri-green-50/50 to-gray-50'
+            : 'bg-gradient-to-b from-bank-blue-50/50 to-gray-50'
+        }`}>
+          {isFarmer ? (
             <FarmerProfilePanel
               displayData={session.displayData}
               isProcessing={session.isProcessing}

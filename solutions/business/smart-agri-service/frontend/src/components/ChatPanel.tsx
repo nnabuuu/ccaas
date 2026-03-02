@@ -165,15 +165,15 @@ export function ChatPanel({
         {messages.map((msg) => (
           <div
             key={msg.id}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            className={`flex animate-fade-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+              className={`max-w-[85%] px-3 py-2 text-sm ${
                 msg.role === 'user'
                   ? viewMode === 'farmer'
-                    ? 'bg-agri-green-600 text-white'
-                    : 'bg-bank-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-800'
+                    ? 'bg-agri-green-600 text-white rounded-2xl rounded-br-sm'
+                    : 'bg-bank-blue-600 text-white rounded-2xl rounded-br-sm'
+                  : 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm shadow-sm'
               }`}
             >
               {msg.role === 'user' ? (
@@ -189,8 +189,8 @@ export function ChatPanel({
 
         {/* Streaming content */}
         {currentStreamContent && (
-          <div className="flex justify-start">
-            <div className="max-w-[85%] rounded-lg px-3 py-2 text-sm bg-gray-100 text-gray-800">
+          <div className="flex justify-start animate-fade-in">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-sm px-3 py-2 text-sm bg-gray-100 text-gray-800 shadow-sm">
               <div className="markdown-content">
                 <ReactMarkdown>{currentStreamContent}</ReactMarkdown>
               </div>
@@ -223,8 +223,10 @@ export function ChatPanel({
 
         {/* Thinking indicator (before first tool appears) */}
         {isThinking && !showProgress && (
-          <div className={`flex items-center gap-2 text-xs ${
-            viewMode === 'farmer' ? 'text-agri-green-600' : 'text-bank-blue-600'
+          <div className={`inline-flex items-center gap-2 rounded-full shadow-sm px-4 py-2 text-xs ${
+            viewMode === 'farmer'
+              ? 'text-agri-green-600 bg-agri-green-50'
+              : 'text-bank-blue-600 bg-bank-blue-50'
           }`}>
             <div className={`w-3 h-3 border-2 border-t-transparent rounded-full animate-spin ${
               viewMode === 'farmer' ? 'border-agri-green-500' : 'border-bank-blue-500'
@@ -245,7 +247,9 @@ export function ChatPanel({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={viewMode === 'farmer' ? '有什么想了解的？' : '请输入您的问题...'}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-opacity-50"
+            className={`flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
+              viewMode === 'farmer' ? 'focus:ring-agri-green-500' : 'focus:ring-bank-blue-500'
+            }`}
             style={{ minHeight: '40px', maxHeight: '120px' }}
             rows={1}
             disabled={isProcessing}
@@ -253,11 +257,11 @@ export function ChatPanel({
           <button
             type="submit"
             disabled={!input.trim() || isProcessing}
-            className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium text-white shadow-sm hover:shadow-md transition-all ${
               viewMode === 'farmer'
                 ? 'bg-agri-green-600 hover:bg-agri-green-700 disabled:bg-gray-300'
                 : 'bg-bank-blue-600 hover:bg-bank-blue-700 disabled:bg-gray-300'
-            } disabled:cursor-not-allowed`}
+            } disabled:cursor-not-allowed disabled:shadow-none`}
           >
             发送
           </button>
@@ -286,7 +290,7 @@ function ConsumerProgressView({
   isThinking: boolean
 }) {
   return (
-    <div className="bg-agri-green-50 rounded-lg p-3 space-y-2.5 border border-agri-green-100">
+    <div className="bg-gradient-to-br from-agri-green-50 to-white rounded-xl p-3 space-y-2.5 shadow-card">
       {stages.map((stage, idx) => {
         const status = getStageStatus(stage, seenTools, activeToolNames)
         return (
@@ -376,7 +380,7 @@ function CreatorToolChainView({
     .map(t => t.dataSource!)
 
   return (
-    <div className="bg-bank-blue-50 rounded-lg p-3 space-y-1 border border-bank-blue-100">
+    <div className="bg-gradient-to-br from-bank-blue-50 to-white rounded-xl p-3 space-y-1 shadow-card">
       {/* Header */}
       <div className="text-xs font-medium text-bank-blue-700 mb-2 flex items-center gap-1">
         🔧 工具链追踪
@@ -390,10 +394,16 @@ function CreatorToolChainView({
 
         return (
           <div key={tool.name} className="flex items-center gap-2 text-xs font-mono leading-5">
-            {/* Tree connector */}
-            <span className="text-bank-blue-300 w-3 shrink-0">
-              {isLast ? '└' : '├'}
-            </span>
+            {/* Vertical connector line */}
+            <div className={`w-3 flex justify-center shrink-0 ${
+              isLast ? '' : 'border-l-2 border-bank-blue-200'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                status === 'completed' ? 'bg-bank-blue-500' :
+                status === 'running' ? 'bg-bank-blue-400' :
+                'bg-gray-300'
+              }`} />
+            </div>
 
             {/* Status icon */}
             {status === 'completed' && (

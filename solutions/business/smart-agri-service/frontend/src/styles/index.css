@@ -7,6 +7,18 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Button press feedback */
+button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Skeleton shimmer effect */
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 /* Markdown content styling */
 .markdown-content h1 { @apply text-lg font-bold mb-2; }
 .markdown-content h2 { @apply text-base font-semibold mb-1.5; }
@@ -19,6 +31,7 @@ body {
 .markdown-content table { @apply w-full border-collapse mb-2 text-sm; }
 .markdown-content th { @apply border border-gray-300 px-2 py-1 bg-gray-50 text-left font-medium; }
 .markdown-content td { @apply border border-gray-300 px-2 py-1; }
+.markdown-content tr:nth-child(even) td { @apply bg-gray-50/50; }
 
 /* Custom scrollbar */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }

@@ -68,28 +68,29 @@ export function SessionDrawer({
     .sort((a, b) => b.createdAt - a.createdAt)
 
   const groups = groupByDate(filtered)
+  const isFarmer = viewMode === 'farmer'
 
   return (
     <>
       {/* Backdrop */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
           onClick={onClose}
         />
       )}
 
       {/* Drawer */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full w-80 bg-white shadow-2xl rounded-r-2xl z-50 transform transition-transform duration-300 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className={`h-14 flex items-center justify-between px-4 border-b ${
-          viewMode === 'farmer'
+        <div className={`h-14 flex items-center justify-between px-4 border-b rounded-tr-2xl ${
+          isFarmer
             ? 'bg-agri-green-50 border-agri-green-200'
-            : 'bg-blue-50 border-blue-200'
+            : 'bg-bank-blue-50 border-bank-blue-200'
         }`}>
           <h2 className="font-semibold text-gray-800">历史对话</h2>
           <button
@@ -108,9 +109,9 @@ export function SessionDrawer({
           <button
             onClick={() => { onNewSession(); onClose(); }}
             className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === 'farmer'
+              isFarmer
                 ? 'bg-agri-green-600 text-white hover:bg-agri-green-700'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-bank-blue-600 text-white hover:bg-bank-blue-700'
             }`}
           >
             + 新对话
@@ -133,8 +134,14 @@ export function SessionDrawer({
                   <button
                     key={item.sessionId}
                     onClick={() => { onSelectSession(item.sessionId); onClose(); }}
-                    className={`w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                      activeSessionId === item.sessionId ? 'bg-blue-50 border-l-2 border-l-blue-400' : ''
+                    className={`w-full text-left px-4 py-3 border-b border-gray-100 transition-colors ${
+                      activeSessionId === item.sessionId
+                        ? isFarmer
+                          ? 'bg-agri-green-50/50 border-l-2 border-l-agri-green-400'
+                          : 'bg-bank-blue-50/50 border-l-2 border-l-bank-blue-400'
+                        : isFarmer
+                          ? 'hover:bg-agri-green-50/50'
+                          : 'hover:bg-bank-blue-50/50'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">

@@ -31,8 +31,12 @@ export function PhoneInput({ onSubmit, viewMode, disabled }: PhoneInputProps) {
   const isFarmer = viewMode === 'farmer'
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 border-b border-gray-200">
-      <label className="block text-sm text-gray-600 mb-2">
+    <form onSubmit={handleSubmit} className={`p-4 border-b border-gray-200 ${
+      isFarmer ? 'bg-agri-green-50/30' : 'bg-bank-blue-50/30'
+    }`}>
+      <label className={`block text-sm font-medium mb-2 ${
+        isFarmer ? 'text-agri-green-700' : 'text-bank-blue-700'
+      }`}>
         {isFarmer ? '📱 输入手机号查询农户信息' : '📱 输入农户手机号开始评估'}
       </label>
       <div className="flex gap-2">
@@ -41,7 +45,7 @@ export function PhoneInput({ onSubmit, viewMode, disabled }: PhoneInputProps) {
           value={phone}
           onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
           placeholder="138 1234 5001"
-          className={`flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+          className={`flex-1 px-3 py-2 border rounded-lg text-sm shadow-sm focus:outline-none focus:ring-2 ${
             isFarmer
               ? 'focus:ring-agri-green-500 border-gray-300'
               : 'focus:ring-bank-blue-500 border-gray-300'
@@ -51,11 +55,11 @@ export function PhoneInput({ onSubmit, viewMode, disabled }: PhoneInputProps) {
         <button
           type="submit"
           disabled={!isValid || disabled}
-          className={`px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium text-white shadow-sm hover:shadow-md transition-all ${
             isFarmer
               ? 'bg-agri-green-600 hover:bg-agri-green-700 disabled:bg-gray-300'
               : 'bg-bank-blue-600 hover:bg-bank-blue-700 disabled:bg-gray-300'
-          } disabled:cursor-not-allowed`}
+          } disabled:cursor-not-allowed disabled:shadow-none`}
         >
           查询
         </button>
@@ -66,17 +70,17 @@ export function PhoneInput({ onSubmit, viewMode, disabled }: PhoneInputProps) {
 
       <div className="mt-3">
         <p className="text-xs text-gray-400 mb-1.5">快速体验</p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="grid grid-cols-3 gap-2">
           {PRESET_PHONES.map(({ label, phone: presetPhone }) => (
             <button
               key={presetPhone}
               type="button"
               disabled={disabled}
               onClick={() => onSubmit(presetPhone)}
-              className={`px-2.5 py-1 rounded-full text-xs border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs border shadow-card hover:shadow-card-hover transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
                 isFarmer
-                  ? 'border-agri-green-300 text-agri-green-700 hover:bg-agri-green-50'
-                  : 'border-bank-blue-300 text-bank-blue-700 hover:bg-bank-blue-50'
+                  ? 'border-agri-green-200 text-agri-green-700 hover:bg-agri-green-50 bg-white'
+                  : 'border-bank-blue-200 text-bank-blue-700 hover:bg-bank-blue-50 bg-white'
               }`}
             >
               {label}
