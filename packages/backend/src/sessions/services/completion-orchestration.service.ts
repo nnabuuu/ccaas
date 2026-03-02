@@ -25,6 +25,7 @@ import { ConversationMetadataService } from './conversation-metadata.service';
 import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
+import { SessionEventsService } from '../../messages/session-events.service';
 import type { FrontendEvent, ManagedSession } from '../../common/interfaces';
 
 /**
@@ -113,6 +114,7 @@ export class CompletionOrchestrationService {
     private readonly skillManagementService: SkillManagementService,
     private readonly turnsService: TurnsService,
     private readonly mcpPoolService: McpPoolService,
+    private readonly sessionEventsService: SessionEventsService,
   ) {}
 
   /**
@@ -221,6 +223,18 @@ export class CompletionOrchestrationService {
           enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
           this.logger.warn(`Template fallback: loaded ${enabledSkillSlugs.length} tenant skills`);
         }
+      }
+    }
+
+    // Persist template name on session for later filtering.
+    // For new sessions (messageCount === 0), persistSessionToDatabase will include it.
+    // For resumed sessions, we need an explicit DB update.
+    if (effectiveTemplateName) {
+      session.templateName = effectiveTemplateName;
+      if (session.messageCount > 0) {
+        this.sessionService.persistTemplateName(session.sessionId, effectiveTemplateName).catch(
+          (err) => this.logger.warn(`Failed to persist templateName: ${err.message}`),
+        );
       }
     }
 
@@ -444,6 +458,14 @@ export class CompletionOrchestrationService {
     }
 
     // Step 9: Setup event handlers
+    // Event persistence configuration (from tenant config)
+    const DEFAULT_EXCLUDE_TYPES = new Set(['text_delta']);
+    const eventConfig = resolvedTenant?.config?.features?.eventPersistence;
+    const persistEnabled = eventConfig?.enabled !== false; // default: true
+    const excludeTypes = eventConfig?.excludeTypes
+      ? new Set(eventConfig.excludeTypes)
+      : DEFAULT_EXCLUDE_TYPES;
+
     // Track accumulated text for message update
     let accumulatedText = '';
 
@@ -483,6 +505,13 @@ export class CompletionOrchestrationService {
       // Accumulate text_delta events
       if (event.type === 'text_delta' && (event as any).delta) {
         accumulatedText += (event as any).delta;
+      }
+
+      // Persist event (fire-and-forget)
+      if (persistEnabled && !excludeTypes.has(event.type)) {
+        this.sessionEventsService
+          .recordEvent(sessionId, resolvedTenantId, event as any)
+          .catch((err) => this.logger.warn(`Event persist failed: ${err.message}`));
       }
 
       // Emit to client (transport-agnostic)

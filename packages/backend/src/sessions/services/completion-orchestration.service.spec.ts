@@ -18,11 +18,13 @@ import { ConversationMetadataService } from './conversation-metadata.service';
 import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
+import { SessionEventsService } from '../../messages/session-events.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CompletionOrchestrationService - NIE-67: session spawn decision', () => {
   let service: CompletionOrchestrationService;
   let mockSessionService: jest.Mocked<Pick<SessionService, 'sendFollowUp' | 'ensureCLIProcess'>>;
+  let mockSessionEventsService: { recordEvent: jest.Mock };
 
   const makeSession = (messageCount: number): ManagedSession =>
     ({
@@ -100,6 +102,10 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       findOne: jest.fn().mockResolvedValue(null),
     };
 
+    mockSessionEventsService = {
+      recordEvent: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CompletionOrchestrationService,
@@ -114,6 +120,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         { provide: SkillManagementService, useValue: mockSkillManagementService },
         { provide: TurnsService, useValue: mockTurnsService },
         { provide: McpPoolService, useValue: mockMcpPoolService },
+        { provide: SessionEventsService, useValue: mockSessionEventsService },
       ],
     }).compile();
 
@@ -238,6 +245,60 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       await jest.runAllTimersAsync();
 
       await orchestrationPromise;
+    });
+  });
+
+  // ─── Event persistence ──────────────────────────────────────────────────
+
+  describe('Event persistence (SessionEventsService)', () => {
+    it('should persist non-excluded events via recordEvent', async () => {
+      // The default mock fires agent_status:complete, which is NOT excluded
+      await service.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+      });
+
+      expect(mockSessionEventsService.recordEvent).toHaveBeenCalled();
+      const calls = mockSessionEventsService.recordEvent.mock.calls;
+      // Should have been called with agent_status event
+      const eventTypes = calls.map((c) => c[2]?.type);
+      expect(eventTypes).toContain('agent_status');
+    });
+
+    it('should NOT persist text_delta events (default exclude)', async () => {
+      mockSessionService.ensureCLIProcess = jest.fn().mockImplementation(
+        (_session: unknown, _msg: unknown, onEvent: (e: unknown) => void) => {
+          process.nextTick(() => {
+            onEvent({ type: 'text_delta', delta: 'Hello' });
+            onEvent({ type: 'text_delta', delta: ' world' });
+            onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' });
+          });
+          return Promise.resolve();
+        },
+      );
+
+      await service.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+      });
+
+      const calls = mockSessionEventsService.recordEvent.mock.calls;
+      const eventTypes = calls.map((c) => c[2]?.type);
+      expect(eventTypes).not.toContain('text_delta');
+      expect(eventTypes).toContain('agent_status');
+    });
+
+    it('should pass correct sessionId and tenantId to recordEvent', async () => {
+      await service.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+      });
+
+      expect(mockSessionEventsService.recordEvent).toHaveBeenCalledWith(
+        'test-session-id',           // sessionId
+        'tenant-uuid-1',             // resolved tenantId
+        expect.objectContaining({ type: 'agent_status' }),
+      );
     });
   });
 });

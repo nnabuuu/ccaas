@@ -58,6 +58,9 @@ export interface ManagedSession {
   // Skill-specific system prompt injected via --append-system-prompt
   appendSystemPrompt?: string;
 
+  // Session template name (e.g., 'farmer-advisor', 'bank-assessor')
+  templateName?: string;
+
   // Per-session TTL cached from tenant on first message (ms)
   sessionTtlMs?: number;
 

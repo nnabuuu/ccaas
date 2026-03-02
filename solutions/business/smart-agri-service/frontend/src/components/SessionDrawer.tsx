@@ -1,18 +1,20 @@
 import React from 'react'
-import type { SessionHistoryItem, ViewMode } from '../types'
+import { VIEW_MODE_TEMPLATES } from '../types'
+import type { Conversation, ViewMode } from '../types'
 
 interface SessionDrawerProps {
   open: boolean
   onClose: () => void
-  history: SessionHistoryItem[]
+  conversations: Conversation[]
+  loading: boolean
   viewMode: ViewMode
   activeSessionId?: string
   onSelectSession: (sessionId: string) => void
   onNewSession: () => void
 }
 
-function formatTime(ts: number) {
-  const d = new Date(ts)
+function formatTime(isoStr: string) {
+  const d = new Date(isoStr)
   const now = new Date()
   const isToday = d.toDateString() === now.toDateString()
 
@@ -27,12 +29,12 @@ function formatTime(ts: number) {
   return `${d.getMonth() + 1}/${d.getDate()} ${time}`
 }
 
-function groupByDate(items: SessionHistoryItem[]): Map<string, SessionHistoryItem[]> {
-  const groups = new Map<string, SessionHistoryItem[]>()
+function groupByDate(items: Conversation[]): Map<string, Conversation[]> {
+  const groups = new Map<string, Conversation[]>()
   const now = new Date()
 
   for (const item of items) {
-    const d = new Date(item.createdAt)
+    const d = new Date(item.lastActivity)
     let label: string
 
     if (d.toDateString() === now.toDateString()) {
@@ -57,17 +59,15 @@ function groupByDate(items: SessionHistoryItem[]): Map<string, SessionHistoryIte
 export function SessionDrawer({
   open,
   onClose,
-  history,
+  conversations,
+  loading,
   viewMode,
   activeSessionId,
   onSelectSession,
   onNewSession,
 }: SessionDrawerProps) {
-  const filtered = history
-    .filter(h => h.viewMode === viewMode)
-    .sort((a, b) => b.createdAt - a.createdAt)
-
-  const groups = groupByDate(filtered)
+  // Conversations are already sorted by lastActivity DESC from backend
+  const groups = groupByDate(conversations)
   const isFarmer = viewMode === 'farmer'
 
   return (
@@ -120,7 +120,11 @@ export function SessionDrawer({
 
         {/* Session List */}
         <div className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 120px)' }}>
-          {filtered.length === 0 ? (
+          {loading && conversations.length === 0 ? (
+            <div className="p-6 text-center text-gray-400 text-sm">
+              加载中...
+            </div>
+          ) : conversations.length === 0 ? (
             <div className="p-6 text-center text-gray-400 text-sm">
               暂无历史对话
             </div>
@@ -146,17 +150,17 @@ export function SessionDrawer({
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm">
-                        {item.viewMode === 'farmer' ? '🧑‍🌾' : '🏦'}
+                        {item.templateName === VIEW_MODE_TEMPLATES.farmer ? '🧑‍🌾' : '🏦'}
                       </span>
                       <span className="text-xs text-gray-400">
-                        {formatTime(item.createdAt)}
+                        {formatTime(item.lastActivity)}
                       </span>
                       <span className="text-xs text-gray-300 ml-auto">
                         {item.messageCount} 条消息
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 truncate">
-                      {item.preview || '新对话'}
+                      {item.title || '新对话'}
                     </p>
                   </button>
                 ))}

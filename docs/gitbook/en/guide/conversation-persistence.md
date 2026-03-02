@@ -185,6 +185,18 @@ const newConversation = () => {
 - `isLoadingHistory` is a new state for showing loading indicators
 - `connection.startNewConversation()` is available for lower-level control
 
+## Listing Conversations by Template
+
+For Solutions with multiple roles or templates (e.g., a "farmer advisor" and a "bank assessor"), use the `templateName` query parameter on the conversations API to filter by template:
+
+```
+GET /api/v1/conversations?templateName=farmer-advisor&limit=50
+```
+
+This returns only conversations that were created under the `farmer-advisor` session template. The `templateName` is automatically persisted when the first message is processed.
+
+See [REST API — Conversation Management](../api/rest.md#conversation-management-conversationscontroller) for full endpoint documentation.
+
 ## Troubleshooting
 
 ### Messages don't persist after refresh

@@ -98,6 +98,7 @@ describe('SessionManagerService', () => {
     workspaceDir: `/tmp/${sessionId}`,
     title: null,
     isPinned: false,
+    templateName: null,
     updatedAt: new Date(),
     ...overrides,
   });

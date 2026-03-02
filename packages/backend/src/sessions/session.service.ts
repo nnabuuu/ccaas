@@ -467,6 +467,14 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
+   * Persist templateName to database for an existing session.
+   * Called by orchestration after template resolution on first message.
+   */
+  async persistTemplateName(sessionId: string, templateName: string): Promise<void> {
+    await this.updateSessionInDatabase(sessionId, { templateName });
+  }
+
+  /**
    * Check if a session can be restarted
    *
    * Week 4: New method for restart validation
@@ -797,6 +805,7 @@ export class SessionService implements OnModuleDestroy {
         lastActivity: session.lastActivity,
         closedAt: null,
         workspaceDir: session.workspaceDir,
+        templateName: session.templateName || null,
       });
       this.logger.debug(`[Phase 2] Persisted session ${session.sessionId} to database`);
     } catch (error) {

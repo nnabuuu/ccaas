@@ -5,9 +5,7 @@ import {
 } from '@kedge-agentic/react-sdk'
 import type { ToolActivity } from '@kedge-agentic/react-sdk'
 import type { SyncField, DisplayItem, ViewMode } from '../types'
-
-const SERVER_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001' // MUST be absolute URL to CCAAS core backend
-const TENANT_ID = 'smart-agri-service'
+import { SERVER_URL, TENANT_ID } from '../config'
 
 export function useAgriSession(viewMode: ViewMode, targetSessionId?: string) {
   const [displayData, setDisplayData] = useState<Map<SyncField, DisplayItem>>(new Map())

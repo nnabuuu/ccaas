@@ -33,6 +33,7 @@ describe('ConversationMetadataService', () => {
     closedAt: null,
     title: null,
     isPinned: false,
+    templateName: null,
     workspaceDir: `/tmp/${sessionId}`,
     updatedAt: new Date(),
     ...overrides,

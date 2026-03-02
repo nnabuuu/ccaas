@@ -1,5 +1,10 @@
 export type ViewMode = 'farmer' | 'bank';
 
+export const VIEW_MODE_TEMPLATES: Record<ViewMode, string> = {
+  farmer: 'farmer-advisor',
+  bank: 'bank-assessor',
+};
+
 export type FarmerSyncField =
   | 'narrative_profile'
   | 'farming_analysis'
@@ -57,15 +62,16 @@ export const BANK_FIELDS: FieldConfig[] = [
 ];
 
 // ============================================================================
-// Session History Types
+// Conversation Types (from backend API)
 // ============================================================================
 
-export interface SessionHistoryItem {
+export interface Conversation {
   sessionId: string;
-  createdAt: number;
-  viewMode: ViewMode;
-  preview: string;
+  title: string | null;
+  templateName: string | null;
   messageCount: number;
+  lastActivity: string;
+  createdAt: string;
 }
 
 // ============================================================================

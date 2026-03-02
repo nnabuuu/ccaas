@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import React, { useState, useRef, useCallback, useEffect } from 'react'
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { Header } from './components/Header'
 import { ChatPanel } from './components/ChatPanel'
 import { FarmerProfilePanel } from './components/FarmerProfilePanel'
@@ -7,55 +7,66 @@ import { CreditReportPanel } from './components/CreditReportPanel'
 import { SessionDrawer } from './components/SessionDrawer'
 import { PolicyDocumentPage } from './pages/PolicyDocumentPage'
 import { useAgriSession } from './hooks/useAgriSession'
-import { useSessionHistory } from './hooks/useSessionHistory'
+import { useConversations } from './hooks/useConversations'
+import { VIEW_MODE_TEMPLATES } from './types'
 import type { ViewMode } from './types'
 
-function MainLayout() {
-  const [viewMode, setViewMode] = useState<ViewMode>('farmer')
-  const [activeSessionId, setActiveSessionId] = useState<string | undefined>()
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  const sessionHistory = useSessionHistory()
+interface MainLayoutProps {
+  viewMode: ViewMode
+}
 
-  // key-based remount: changing this forces all hooks to re-initialize
+function MainLayout({ viewMode }: MainLayoutProps) {
+  const { sessionId: activeSessionId } = useParams<{ sessionId?: string }>()
+  const navigate = useNavigate()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  const templateName = VIEW_MODE_TEMPLATES[viewMode]
+  const { conversations, loading: conversationsLoading, refresh: refreshConversations } = useConversations(templateName)
+
+  // Key forces ChatPanel and display panels to remount on session/view change
   const sessionKey = activeSessionId || `new-${viewMode}`
   const session = useAgriSession(viewMode, activeSessionId)
 
-  // Track session in history when user sends first message
+  // If URL has a sessionId but connection error occurred, redirect to new session
+  useEffect(() => {
+    if (activeSessionId && session.error) {
+      navigate(`/${viewMode}`, { replace: true })
+    }
+  }, [activeSessionId, session.error, viewMode, navigate])
+
+  // Refresh conversations list when a new session gets its first message
   const trackedRef = useRef<string | null>(null)
   useEffect(() => {
-    const sid = session.sessionId
-    if (!sid || session.messages.length === 0) return
-    // Only track once per session, or update message count
-    if (trackedRef.current !== sid || session.messages.length > 1) {
-      trackedRef.current = sid
-      const userMsgs = session.messages.filter(m => m.role === 'user')
-      if (userMsgs.length > 0) {
-        sessionHistory.trackSession({
-          sessionId: sid,
-          createdAt: Date.now(),
-          viewMode,
-          preview: userMsgs[0].content.slice(0, 50),
-          messageCount: session.messages.length,
-        })
-      }
+    if (session.sessionId && session.messages.length > 0 && trackedRef.current !== session.sessionId) {
+      trackedRef.current = session.sessionId
+      // Delay refresh to let backend persist the session
+      const timer = setTimeout(() => refreshConversations(), 2000)
+      return () => clearTimeout(timer)
     }
-  }, [session.sessionId, session.messages.length, viewMode])
+  }, [session.sessionId, session.messages.length, refreshConversations])
 
-  // Clear session when view mode changes
-  const handleViewChange = (mode: ViewMode) => {
+  // Periodically refresh conversations as messages accumulate
+  const prevMsgCount = useRef(0)
+  useEffect(() => {
+    if (session.messages.length > prevMsgCount.current + 2) {
+      prevMsgCount.current = session.messages.length
+      refreshConversations()
+    }
+  }, [session.messages.length, refreshConversations])
+
+  const handleViewChange = useCallback((mode: ViewMode) => {
     if (mode !== viewMode) {
-      setActiveSessionId(undefined)
-      setViewMode(mode)
+      navigate(`/${mode}`)
     }
-  }
+  }, [viewMode, navigate])
 
-  const handleSelectSession = (sessionId: string) => {
-    setActiveSessionId(sessionId)
-  }
+  const handleSelectSession = useCallback((sid: string) => {
+    navigate(`/${viewMode}/session/${sid}`)
+  }, [viewMode, navigate])
 
-  const handleNewSession = () => {
-    setActiveSessionId(undefined)
-  }
+  const handleNewSession = useCallback(() => {
+    navigate(`/${viewMode}`)
+  }, [viewMode, navigate])
 
   const isFarmer = viewMode === 'farmer'
 
@@ -71,7 +82,8 @@ function MainLayout() {
       <SessionDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        history={sessionHistory.history}
+        conversations={conversations}
+        loading={conversationsLoading}
         viewMode={viewMode}
         activeSessionId={activeSessionId}
         onSelectSession={handleSelectSession}
@@ -119,7 +131,11 @@ function MainLayout() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<MainLayout />} />
+      <Route path="/" element={<Navigate to="/farmer" replace />} />
+      <Route path="/farmer" element={<MainLayout viewMode="farmer" />} />
+      <Route path="/farmer/session/:sessionId" element={<MainLayout viewMode="farmer" />} />
+      <Route path="/bank" element={<MainLayout viewMode="bank" />} />
+      <Route path="/bank/session/:sessionId" element={<MainLayout viewMode="bank" />} />
       <Route path="/policy/:id" element={<PolicyDocumentPage />} />
     </Routes>
   )

@@ -39,6 +39,7 @@ import {
   IsInt,
   IsNotEmpty,
   MaxLength,
+  Matches,
   Min,
   Max,
 } from 'class-validator';
@@ -92,6 +93,20 @@ export class ListConversationsQuery {
   @Type(() => Boolean)
   @IsBoolean()
   isPinned?: boolean;
+
+  @ApiProperty({
+    description: 'Filter by session template name (e.g., farmer-advisor, bank-assessor)',
+    required: false,
+    maxLength: 64,
+    example: 'farmer-advisor',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @Matches(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, {
+    message: 'templateName must be a lowercase slug (letters, numbers, hyphens)',
+  })
+  templateName?: string;
 }
 
 export class SearchConversationsQuery {
@@ -200,6 +215,7 @@ export class ConversationsController {
   @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 20, max: 100)' })
   @ApiQuery({ name: 'isPinned', required: false, type: Boolean, description: 'Filter by pinned status' })
+  @ApiQuery({ name: 'templateName', required: false, type: String, description: 'Filter by session template name' })
   @ApiResponse({
     status: 200,
     description: 'Conversation list retrieved successfully',
@@ -228,6 +244,10 @@ export class ConversationsController {
     // Optional filters
     if (query.isPinned !== undefined) {
       qb.andWhere('session.isPinned = :isPinned', { isPinned: query.isPinned });
+    }
+
+    if (query.templateName) {
+      qb.andWhere('session.templateName = :templateName', { templateName: query.templateName });
     }
 
     const total = await qb.getCount();

@@ -56,6 +56,7 @@ describe('ConversationsController', () => {
     closedAt: null,
     title: null,
     isPinned: false,
+    templateName: null,
     workspaceDir: `/tmp/${sessionId}`,
     updatedAt: new Date(),
     ...overrides,
@@ -163,6 +164,24 @@ describe('ConversationsController', () => {
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         'session.isPinned = :isPinned',
         { isPinned: true },
+      );
+    });
+
+    it('should filter by templateName when provided', async () => {
+      const mockQb = createMockQueryBuilder({
+        getCount: jest.fn().mockResolvedValue(0),
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+      sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
+
+      await controller.listConversations(
+        { page: 1, limit: 20, templateName: 'farmer-advisor' },
+        { tenantId: 'tenant-a' } as any,
+      );
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        'session.templateName = :templateName',
+        { templateName: 'farmer-advisor' },
       );
     });
 

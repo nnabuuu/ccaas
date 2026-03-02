@@ -29,6 +29,7 @@ interface Session {
   id: string
   tenantId: string
   status: SessionStatus
+  templateName?: string  // Session template slug (e.g., 'farmer-advisor')
   createdAt: string
   updatedAt: string
   metadata?: Record<string, any>

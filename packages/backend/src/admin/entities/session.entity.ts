@@ -99,6 +99,13 @@ export class Session {
   isPinned!: boolean;
 
   /**
+   * Session template name (e.g., 'farmer-advisor', 'bank-assessor')
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  @Index('IDX_sessions_template_name')
+  templateName!: string | null;
+
+  /**
    * Workspace directory path
    */
   @Column({ type: 'varchar', length: 500, nullable: true })

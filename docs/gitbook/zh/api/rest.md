@@ -332,6 +332,26 @@
 
 获取会话的完整数据，用于重建对话或深度分析。并行获取所有维度数据，适用于会话导出、数据分析、问题诊断、成本核算等场景。
 
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `include` | string | 否 | 要返回的数据段（逗号分隔）。不提供时返回全部数据。 |
+
+**`include` 有效值**：
+
+| 段名 | 说明 |
+|------|------|
+| `context` | 会话上下文（系统 Prompt、Skill 配置、MCP 工具列表等） |
+| `messages` | 消息列表（含工具事件） |
+| `thinkingBlocks` | 思考块 |
+| `tokenUsage` | Token 用量摘要 |
+| `processEvents` | AgentEngine 进程生命周期事件 |
+| `apiErrors` | API 错误记录 |
+| `userContext` | 用户上下文事件 |
+| `toolStats` | 工具调用统计 |
+| `sessionEvents` | 持久化会话事件（output_update、agent_status 等） |
+
 **响应**：
 
 ```json
@@ -343,9 +363,32 @@
   "processEvents": [ "...进程生命周期事件" ],
   "apiErrors": [ "...API 错误记录" ],
   "userContext": [ "...用户上下文事件" ],
-  "toolStats": { "...工具调用统计" }
+  "toolStats": { "...工具调用统计" },
+  "sessionEvents": [ "...持久化会话事件" ]
 }
 ```
+
+**示例**：
+
+```bash
+# 获取全部数据（默认）
+curl /api/v1/sessions/:sessionId/full-trace
+
+# 仅获取消息、会话事件和 Token 用量
+curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,tokenUsage
+```
+
+> **💡 通过 Admin 管理页面查看会话数据**
+>
+> 除了 REST API，同样的会话数据可以在 Admin 管理面板中通过图形化界面查看和操作：
+>
+> 1. **进入会话列表**：导航至「Sessions」页面，可按租户、状态、时间范围过滤
+> 2. **查看会话详情**：点击会话行进入详情页
+> 3. **Timeline 标签页**：查看所有事件（消息、工具调用、思考块、进程事件、API 错误、输出更新），支持按 Turn 过滤
+> 4. **Turns 标签页**：以对话轮次视角查看摘要，点击可跳转到对应 Turn 的 Timeline
+> 5. **Files 标签页**：浏览会话工作区的文件树
+> 6. **导出日志**：点击「Export Logs」下载完整时间线 JSON
+> 7. **终止会话**：对活跃会话点击「Terminate Process」强制停止
 
 ### 扩展数据查询端点
 
@@ -363,6 +406,113 @@
 | `GET /sessions/:sessionId/thinking` | 获取会话的思考块及统计 |
 | `GET /sessions/:sessionId/token-usage` | 获取 Token 用量明细和摘要（含模型维度拆分） |
 | `GET /sessions/:sessionId/user-context` | 获取用户上下文事件 |
+| `GET /sessions/:sessionId/events` | 获取持久化会话事件（支持 `type`、`limit`、`offset` 过滤） |
+
+---
+
+## 会话管理（ConversationsController）
+
+会话元数据管理端点：列表、搜索、更新和删除会话。与 SessionsController（运行时操作）和 MessagesController（消息查询）职责分离。
+
+**路径**: `/api/v1/conversations`
+**认证**: 🔐 需要 API Key（`chat` 权限范围）
+
+### GET /conversations
+
+获取会话列表，支持分页和可选过滤。
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `page` | number | 否 | 页码（默认：1） |
+| `limit` | number | 否 | 每页条数（默认：20，最大：100） |
+| `isPinned` | boolean | 否 | 按置顶状态过滤 |
+| `templateName` | string | 否 | 按会话模板名过滤（如 `farmer-advisor`、`bank-assessor`） |
+
+**响应**：
+
+```json
+{
+  "conversations": [
+    {
+      "sessionId": "conv_abc123",
+      "tenantId": "tenant-uuid",
+      "title": "会话标题",
+      "templateName": "farmer-advisor",
+      "messageCount": 8,
+      "lastActivity": "2025-01-15T10:30:00Z",
+      "createdAt": "2025-01-15T10:00:00Z",
+      "isPinned": false
+    }
+  ],
+  "total": 42,
+  "hasMore": true
+}
+```
+
+**`templateName` 过滤**：使用此参数获取特定会话模板的会话。适用于多模板 Solution（例如，同一 Solution 同时包含「农户顾问」和「银行评估」两种角色）。
+
+### GET /conversations/search
+
+按标题搜索会话，支持日期范围过滤。
+
+**查询参数**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `q` | string | 是 | 标题搜索关键词（最大：255 字符） |
+| `dateFrom` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
+| `dateTo` | string | 否 | 按创建时间过滤（ISO 8601 格式） |
+
+**响应**：匹配的 `Session` 对象数组（最多 50 条，按最后活动时间降序排列）。
+
+### PATCH /conversations/:id
+
+更新会话元数据（标题、置顶状态）。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `title` | string | 否 | 新标题（最大：255 字符） |
+| `isPinned` | boolean | 否 | 置顶或取消置顶 |
+
+**响应**：更新后的 `Session` 对象。
+
+### DELETE /conversations/:id
+
+软删除会话。设置 `closedAt` 和状态为 `closed`。数据保留在数据库中，可恢复。
+
+**响应**：
+
+```json
+{ "success": true }
+```
+
+### GET /conversations/:id/turns
+
+获取会话的所有 Turn（用户-助手对话轮次），包含 Token 用量和耗时统计。
+
+**响应**：
+
+```json
+[
+  {
+    "turnId": "turn-uuid",
+    "turnNumber": 0,
+    "userMessageId": "user-msg-uuid",
+    "assistantMessageId": "assistant-msg-uuid",
+    "totalTokens": 1523,
+    "durationMs": 4500,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "completedAt": "2025-01-15T10:00:04Z",
+    "toolCount": 3,
+    "hasThinking": true,
+    "hasErrors": false
+  }
+]
+```
 
 ---
 

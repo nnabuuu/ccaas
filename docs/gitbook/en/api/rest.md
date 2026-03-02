@@ -330,6 +330,26 @@ Get files attached to a specific message. Returns `404` if the message does not 
 
 Get complete session data for conversation reconstruction or deep analysis. Fetches all data in parallel and returns a combined object.
 
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `include` | string | No | Sections to return (comma-separated). Returns all sections when omitted. |
+
+**Valid `include` values**:
+
+| Section | Description |
+|---------|-------------|
+| `context` | Conversation context (system prompt, Skill config, MCP tools, etc.) |
+| `messages` | Messages with tool events |
+| `thinkingBlocks` | Thinking/reasoning blocks |
+| `tokenUsage` | Token usage and cost summary |
+| `processEvents` | AgentEngine process lifecycle events |
+| `apiErrors` | API error records |
+| `userContext` | User context events |
+| `toolStats` | Tool call statistics |
+| `sessionEvents` | Persisted session events (output_update, agent_status, etc.) |
+
 **Response**:
 
 ```json
@@ -341,11 +361,34 @@ Get complete session data for conversation reconstruction or deep analysis. Fetc
   "processEvents": [ "...AgentEngine process lifecycle..." ],
   "apiErrors": [ "...API error records..." ],
   "userContext": [ "...user context events..." ],
-  "toolStats": { "totalEvents": 12, "successCount": 11, "errorCount": 1, "..." }
+  "toolStats": { "totalEvents": 12, "successCount": 11, "errorCount": 1, "..." },
+  "sessionEvents": [ "...persisted session events..." ]
 }
 ```
 
+**Examples**:
+
+```bash
+# Get all data (default)
+curl /api/v1/sessions/:sessionId/full-trace
+
+# Get only messages, session events, and token usage
+curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,tokenUsage
+```
+
 **Use cases**: Session export/backup, data analysis, debugging, cost accounting.
+
+> **💡 Viewing session data via the Admin UI**
+>
+> The same session data is also accessible through the Admin dashboard with a graphical interface:
+>
+> 1. **Session list**: Navigate to the "Sessions" page. Filter by tenant, status, or time range.
+> 2. **Session detail**: Click a session row to open its detail page.
+> 3. **Timeline tab**: View all events (messages, tool calls, thinking blocks, process events, API errors, output updates). Supports filtering by Turn.
+> 4. **Turns tab**: View turn-by-turn summaries. Click a turn to jump to the corresponding Timeline events.
+> 5. **Files tab**: Browse the session workspace file tree.
+> 6. **Export logs**: Click "Export Logs" to download the full timeline as JSON.
+> 7. **Terminate session**: Click "Terminate Process" on active sessions to force stop.
 
 ### Extended Data Capture Endpoints
 
@@ -363,6 +406,113 @@ The following endpoints provide granular access to individual data categories. E
 | `GET /sessions/:sessionId/thinking` | All thinking blocks for a session with stats |
 | `GET /sessions/:sessionId/token-usage` | Per-request token usage with cost summary |
 | `GET /sessions/:sessionId/user-context` | User context events (page URL, viewport, etc.) |
+| `GET /sessions/:sessionId/events` | Persisted session events (supports `type`, `limit`, `offset` filters) |
+
+## Conversation Management (ConversationsController)
+
+Endpoints for managing conversation metadata: listing, searching, updating, and deleting conversations. Distinct from SessionsController (runtime operations) and MessagesController (message queries).
+
+**Path**: `/api/v1/conversations`
+**Authentication**: 🔐 Requires API Key (`chat` scope)
+
+### GET /conversations
+
+List conversations with pagination and optional filters.
+
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20, max: 100) |
+| `isPinned` | boolean | No | Filter by pinned status |
+| `templateName` | string | No | Filter by session template name (e.g., `farmer-advisor`, `bank-assessor`) |
+
+**Response**:
+
+```json
+{
+  "conversations": [
+    {
+      "sessionId": "conv_abc123",
+      "tenantId": "tenant-uuid",
+      "title": "Conversation Title",
+      "templateName": "farmer-advisor",
+      "messageCount": 8,
+      "lastActivity": "2025-01-15T10:30:00Z",
+      "createdAt": "2025-01-15T10:00:00Z",
+      "isPinned": false
+    }
+  ],
+  "total": 42,
+  "hasMore": true
+}
+```
+
+**`templateName` filtering**: Use this parameter to retrieve conversations belonging to a specific session template. This is useful for multi-template Solutions (e.g., one Solution with both a "farmer advisor" and a "bank assessor" role).
+
+### GET /conversations/search
+
+Search conversations by title with optional date range filtering.
+
+**Query Parameters**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `q` | string | Yes | Search query for conversation titles (max: 255 chars) |
+| `dateFrom` | string | No | Filter by creation date (ISO 8601) |
+| `dateTo` | string | No | Filter by creation date (ISO 8601) |
+
+**Response**: Array of matching `Session` objects (up to 50 results, ordered by last activity).
+
+### PATCH /conversations/:id
+
+Update conversation metadata (title, pinned status).
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | No | New title (max: 255 chars) |
+| `isPinned` | boolean | No | Pin or unpin |
+
+**Response**: Updated `Session` object.
+
+### DELETE /conversations/:id
+
+Soft delete a conversation. Sets `closedAt` and status to `closed`. Data is preserved and can be recovered.
+
+**Response**:
+
+```json
+{ "success": true }
+```
+
+### GET /conversations/:id/turns
+
+Get all turns (user-assistant exchanges) for a conversation, including token usage and duration metrics.
+
+**Response**:
+
+```json
+[
+  {
+    "turnId": "turn-uuid",
+    "turnNumber": 0,
+    "userMessageId": "user-msg-uuid",
+    "assistantMessageId": "assistant-msg-uuid",
+    "totalTokens": 1523,
+    "durationMs": 4500,
+    "createdAt": "2025-01-15T10:00:00Z",
+    "completedAt": "2025-01-15T10:00:04Z",
+    "toolCount": 3,
+    "hasThinking": true,
+    "hasErrors": false
+  }
+]
+```
+
+---
 
 ## Skill Management
 
