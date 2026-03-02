@@ -37,7 +37,6 @@ npm install @kedge-agentic/vue-sdk
 
 **依赖要求:**
 - Vue 3.3+
-- socket.io-client 4.x
 - TypeScript 5.0+ (推荐)
 
 ## 快速开始
@@ -210,7 +209,7 @@ const {
 
 ### useAgentChat
 
-响应式 Socket.io 连接管理,用于 Agent 通信。
+响应式 SSE 连接管理,用于 Agent 通信。
 
 #### 函数签名
 
@@ -1251,13 +1250,9 @@ const {
   }
 })
 
-// 订阅 output_update 事件
-socket.on('output_update', (event) => {
-  handleOutputUpdate({
-    field: event.field,
-    value: event.content
-  })
-})
+// output_update 事件由 SDK 通过 SSE 自动处理。
+// 使用 useAgentChat composable 的 onOutputUpdate 回调,
+// 或使用 useOutputSync composable 直接处理更新。
 </script>
 
 <template>
@@ -1371,10 +1366,8 @@ const {
   }
 })
 
-// 订阅 output_update
-socket.on('output_update', (event) => {
-  handleOutputUpdate(event.field, event.value)
-})
+// output_update 事件通过 SSE 自动传递。
+// useLessonPlanSync composable 内部集成了 useAgentChat。
 </script>
 
 <template>
@@ -1610,7 +1603,7 @@ const unsubscribe = sync.onFormUpdated((event) => {
 
 ### AgentConnection
 
-用于 Agent 通信的单例 Socket.io 连接管理器。
+用于 Agent 通信的单例 SSE 连接管理器。
 
 #### 方法
 

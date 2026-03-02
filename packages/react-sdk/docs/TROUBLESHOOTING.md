@@ -197,14 +197,12 @@ app.enableCors({
 - Look for WebSocket connection attempts
 - Check for 101 Switching Protocols response
 
-4. **Test with polling transport:**
+4. **Test SSE connection directly:**
 ```tsx
-import { io } from 'socket.io-client'
-
-// Temporarily force polling to isolate WebSocket issues
-const socket = io(serverUrl, {
-  transports: ['polling'], // Test without WebSocket
-})
+// Verify SSE endpoint is reachable
+const eventSource = new EventSource(`${serverUrl}/api/v1/sessions/test/events`)
+eventSource.onopen = () => console.log('SSE connected')
+eventSource.onerror = (e) => console.error('SSE error:', e)
 ```
 
 ---
@@ -224,44 +222,25 @@ const socket = io(serverUrl, {
 **Solutions:**
 
 ```tsx
-// ✅ Implement auto-reconnection
-function useAutoReconnect(connection) {
-  useEffect(() => {
-    const socket = connection.socket
-    if (!socket) return
+// ✅ The SDK has built-in auto-reconnection for SSE connections.
+// Configure reconnection behavior via useAgentConnection:
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  autoConnect: true,  // Automatically reconnect on disconnect
+})
 
-    const handleDisconnect = (reason: string) => {
-      console.log('Disconnected:', reason)
-
-      // Reconnect unless intentional disconnect
-      if (reason !== 'io client disconnect') {
-        setTimeout(() => {
-          console.log('Attempting to reconnect...')
-          socket.connect()
-        }, 1000)
-      }
-    }
-
-    socket.on('disconnect', handleDisconnect)
-
-    return () => {
-      socket.off('disconnect', handleDisconnect)
-    }
-  }, [connection.socket])
-}
-
-// Usage
-const connection = useAgentConnection({ serverUrl: '...' })
-useAutoReconnect(connection)
+// ✅ Monitor connection state changes
+useEffect(() => {
+  if (!connection.connected) {
+    console.log('Connection lost, SDK will auto-reconnect...')
+  }
+}, [connection.connected])
 ```
 
 **Server-side solution:**
 ```typescript
-// Increase server timeout
-const io = new Server(httpServer, {
-  pingTimeout: 60000, // 60 seconds
-  pingInterval: 25000, // 25 seconds
-})
+// Ensure SSE keep-alive is configured
+// The backend sends periodic keep-alive comments to prevent proxy timeouts
 ```
 
 ---
@@ -330,7 +309,7 @@ function MessageList({ messages }) {
 ### Stream Content Not Updating
 
 **Symptoms:**
-- `text_delta` events received (check with socket.io dev tools)
+- `text_delta` events received (check with browser DevTools Network tab)
 - `currentStreamContent` not updating
 - UI shows blank or stale content
 
@@ -515,26 +494,22 @@ See [PERFORMANCE.md](./PERFORMANCE.md) for detailed optimization strategies.
 
 **Common Causes:**
 
-1. **Socket event listeners not cleaned up:**
+1. **Event listeners not cleaned up:**
 ```tsx
 // ❌ Bad: No cleanup
 useEffect(() => {
-  const socket = connection.socket
-  socket?.on('text_delta', handleDelta)
-}, [connection.socket])
+  const unsubscribe = connection.on('text_delta', handleDelta)
+  // Missing cleanup!
+}, [connection])
 
 // ✅ Good: Cleanup on unmount
 useEffect(() => {
-  const socket = connection.socket
-  if (!socket) return
-
-  const handleDelta = (data) => { /* ... */ }
-  socket.on('text_delta', handleDelta)
+  const unsubscribe = connection.on('text_delta', (data) => { /* ... */ })
 
   return () => {
-    socket.off('text_delta', handleDelta)
+    unsubscribe()
   }
-}, [connection.socket])
+}, [connection])
 ```
 
 2. **Intervals/timeouts not cleared:**
@@ -576,14 +551,17 @@ const addMessage = (msg) => {
 
 ## Debugging Techniques
 
-### Enable Socket.io Debug Logs
+### Enable SDK Debug Logging
 
 ```tsx
-import { io } from 'socket.io-client'
+// Enable debug mode in the connection hook
+const connection = useAgentConnection({
+  serverUrl: 'http://localhost:3001',
+  debug: true,  // Logs SSE events and connection state changes
+})
 
-localStorage.setItem('debug', 'socket.io-client:*')
-
-// Reload page to see debug logs
+// Or check browser DevTools → Network tab → filter by "EventStream"
+// to inspect SSE connections and events directly
 ```
 
 ### React DevTools Profiler
@@ -634,7 +612,7 @@ function MyComponent(props) {
 ### Network Monitoring
 
 ```tsx
-// Monitor all fetch requests
+// Monitor all fetch requests (including SSE message sends)
 const originalFetch = window.fetch
 
 window.fetch = async (...args) => {
@@ -644,26 +622,11 @@ window.fetch = async (...args) => {
   return response
 }
 
-// Monitor socket events
-useEffect(() => {
-  const socket = connection.socket
-  if (!socket) return
-
-  const originalEmit = socket.emit
-  socket.emit = function (...args: any[]) {
-    console.log('Socket emit:', args[0], args[1])
-    return originalEmit.apply(this, args)
-  }
-
-  const originalOn = socket.on
-  socket.on = function (event: string, handler: any) {
-    const wrappedHandler = (...args: any[]) => {
-      console.log('Socket event:', event, args)
-      return handler(...args)
-    }
-    return originalOn.call(this, event, wrappedHandler)
-  }
-}, [connection.socket])
+// Monitor SSE events via browser DevTools:
+// 1. Open DevTools → Network tab
+// 2. Filter by "EventStream" type
+// 3. Click on the SSE connection to see events in the "EventStream" tab
+// 4. Each event shows type, data, and timestamp
 ```
 
 ---

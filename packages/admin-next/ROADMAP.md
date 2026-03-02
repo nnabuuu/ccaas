@@ -19,7 +19,7 @@ This roadmap tracks the development of admin panel features for the CCAAS platfo
 - React 18 + TypeScript
 - Refine framework (data management)
 - shadcn/ui + Tailwind CSS
-- Socket.io (real-time updates)
+- SSE (real-time updates)
 - Recharts (visualizations)
 - Backend: NestJS with 18 controllers, 24 entity types
 

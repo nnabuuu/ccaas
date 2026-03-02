@@ -261,7 +261,7 @@ interface PlanProposal {
 
 ## 与后端集成
 
-### Socket.io 事件映射
+### SSE 事件映射
 
 | 后端事件 | SDK 处理 | 更新的状态 |
 |----------|----------|-----------|
@@ -440,7 +440,7 @@ const { isActive } = useFormBridge({
 | 依赖 | 最低版本 |
 |------|----------|
 | Vue | 3.3.0+ |
-| socket.io-client | 4.0.0+ |
+| @kedge-agentic/common | 0.2.0+ |
 | TypeScript | 5.0.0+ |
 
 ## 许可证

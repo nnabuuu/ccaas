@@ -111,8 +111,7 @@ import {
   AgentStatusEvent,
 } from '@kedge-agentic/common/types';
 
-// Type-safe event handling (SSE or Socket.IO)
-// SSE example:
+// Type-safe event handling (via SSE)
 function handleEvent(event: TextDeltaEvent) {
   console.log(event.delta);
 }
@@ -143,14 +142,14 @@ const event: OutputUpdateEvent = {
 // Validate before emitting
 validateOutputUpdateEvent(event);
 
-// Frontend: Receive event
-socket.on('output_update', (rawEvent) => {
-  const result = safeValidateOutputUpdateEvent(rawEvent);
-  if (result.success) {
-    const formData = mapFieldsToFrontend(result.data.data);
-    store.updateFields(formData);
-  }
-});
+// Frontend: Receive event via SDK
+// React: useAgentChat({ onOutputUpdate: (rawEvent) => { ... } })
+// Vue: useOutputSync() composable handles this automatically
+const result = safeValidateOutputUpdateEvent(rawEvent);
+if (result.success) {
+  const formData = mapFieldsToFrontend(result.data.data);
+  store.updateFields(formData);
+}
 ```
 
 ### Field Mappings

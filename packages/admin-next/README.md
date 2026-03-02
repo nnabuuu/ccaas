@@ -34,7 +34,7 @@ See [ROADMAP.md](./ROADMAP.md) for the complete feature roadmap with 14 tracked 
 - **UI Library**: [Refine](https://refine.dev/) + [shadcn/ui](https://ui.shadcn.com/)
 - **Styling**: Tailwind CSS
 - **Routing**: React Router v6
-- **Real-time**: Socket.io client
+- **Real-time**: SSE (Server-Sent Events)
 - **Charts**: Recharts
 
 ## Development
@@ -128,7 +128,6 @@ For development, you can bypass authentication by setting `VITE_DISABLE_AUTH=tru
 The dev server proxies API requests to the backend:
 
 - `/api` → `http://localhost:3001`
-- `/socket.io` → `http://localhost:3001` (WebSocket)
 
 Configure the backend URL in `vite.config.ts` if needed.
 

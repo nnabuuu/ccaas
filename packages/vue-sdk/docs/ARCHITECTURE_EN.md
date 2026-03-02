@@ -261,7 +261,7 @@ interface PlanProposal {
 
 ## Backend Integration
 
-### Socket.io Event Mapping
+### SSE Event Mapping
 
 | Backend Event | SDK Handler | Updated State |
 |---------------|-------------|---------------|
@@ -440,7 +440,7 @@ const { isActive } = useFormBridge({
 | Dependency | Minimum Version |
 |------------|-----------------|
 | Vue | 3.3.0+ |
-| socket.io-client | 4.0.0+ |
+| @kedge-agentic/common | 0.2.0+ |
 | TypeScript | 5.0.0+ |
 
 ## License

@@ -166,7 +166,7 @@ Core relay functionality. Manages SSE connections and AgentEngine process lifecy
 - `GET /api/v1/health` - Health check
 - `GET /api/v1/chat/status` - Session stats
 
-> **Legacy:** Socket.IO WebSocket gateway (`ChatGateway`) is still present as an optional transport but is no longer the default. New Solutions should use SSE.
+> **Deprecated:** Socket.IO WebSocket gateway (`ChatGateway`) is deprecated and will be removed in a future release. New Solutions must use SSE.
 
 **Background Task Monitoring (SessionService):**
 - Automatically detects Task tool calls with `run_in_background: true`

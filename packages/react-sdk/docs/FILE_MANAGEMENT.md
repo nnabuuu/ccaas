@@ -58,7 +58,7 @@ That's it! The FilePanel includes:
 - ✅ File preview with syntax highlighting
 - ✅ Version history and comparison
 - ✅ Upload/download functionality
-- ✅ Real-time updates via Socket.io
+- ✅ Real-time updates via SSE
 
 ---
 
@@ -166,7 +166,7 @@ function FileUploader() {
 function FileWatcher() {
   const files = useFiles({ connection, sessionId });
 
-  // Files automatically update via Socket.io
+  // Files automatically update via SSE
   useEffect(() => {
     if (files.hasNewFiles) {
       console.log(`${files.newFilesCount} new files detected!`);
@@ -1038,7 +1038,7 @@ interface VersionComparison {
 5. **Version before major changes**: Create version before destructive operations
 6. **Provide changelog**: Always include meaningful changelog when creating versions
 7. **Lazy load versions**: Only fetch versions when user opens history panel
-8. **Real-time updates**: Rely on Socket.io events, avoid polling
+8. **Real-time updates**: Rely on SSE events, avoid polling
 9. **Responsive design**: Use provided components for mobile-friendly UI
 10. **Accessibility**: Use provided components for keyboard navigation and ARIA labels
 

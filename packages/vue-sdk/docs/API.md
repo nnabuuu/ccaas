@@ -37,7 +37,6 @@ npm install @kedge-agentic/vue-sdk
 
 **Requirements:**
 - Vue 3.3+
-- socket.io-client 4.x
 - TypeScript 5.0+ (recommended)
 
 ## Quick Start
@@ -210,7 +209,7 @@ const {
 
 ### useAgentChat
 
-Reactive Socket.io connection management for agent communication.
+Reactive SSE connection management for agent communication.
 
 #### Signature
 
@@ -1251,13 +1250,9 @@ const {
   }
 })
 
-// Subscribe to output_update events
-socket.on('output_update', (event) => {
-  handleOutputUpdate({
-    field: event.field,
-    value: event.content
-  })
-})
+// Output updates are handled automatically by the SDK via SSE.
+// Use the useAgentChat composable which provides onOutputUpdate callback,
+// or the useOutputSync composable which processes updates directly.
 </script>
 
 <template>
@@ -1371,10 +1366,8 @@ const {
   }
 })
 
-// Subscribe to output_update
-socket.on('output_update', (event) => {
-  handleOutputUpdate(event.field, event.value)
-})
+// Output updates are delivered automatically via SSE.
+// The useLessonPlanSync composable integrates with useAgentChat internally.
 </script>
 
 <template>
@@ -1610,7 +1603,7 @@ const unsubscribe = sync.onFormUpdated((event) => {
 
 ### AgentConnection
 
-Singleton Socket.io connection manager for agent communication.
+Singleton SSE connection manager for agent communication.
 
 #### Methods
 

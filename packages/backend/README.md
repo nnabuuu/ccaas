@@ -36,7 +36,7 @@ npm run dev
 │  │                      API GATEWAY LAYER                              │ │
 │  │  • Authentication (API Keys)                                        │ │
 │  │  • Rate Limiting (per tenant)                                       │ │
-│  │  • WebSocket Multiplexing (Socket.io)                               │ │
+│  │  • SSE Event Streaming                                               │ │
 │  └────────────────────────────────────────────────────────────────────┘ │
 │                                    │                                     │
 │  ┌────────────────────────────────▼────────────────────────────────────┐│
@@ -385,46 +385,36 @@ const tools = adapter.generateTools();
 
 ## Frontend Integration
 
-```javascript
-import { io } from 'socket.io-client';
+Use the React SDK or Vue SDK for frontend integration. The SDKs handle SSE connections, event parsing, and state management automatically.
 
-const socket = io('http://localhost:3001');
+```typescript
+// React SDK
+import { useAgentConnection, useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 
-// Connection established
-socket.on('client_id', ({ clientId }) => {
-  console.log('Connected with client ID:', clientId);
-});
+const connection = useAgentConnection({ serverUrl: 'http://localhost:3001' })
+const chat = useAgentChat({ connection, tenantId: 'my-app' })
+const status = useAgentStatus({ connection })
 
-// Agent status updates
-socket.on('agent_status', ({ status, sessionId, skill }) => {
-  console.log('Agent status:', status);
-  if (skill) console.log('Using skill:', skill.name);
-});
+// Send a message (SSE stream response)
+chat.sendMessage('Hello, Claude!')
+```
 
-// Streaming text
-socket.on('text_delta', ({ delta }) => {
-  process.stdout.write(delta);
-});
+```typescript
+// Or use the REST API directly with SSE
+const response = await fetch('http://localhost:3001/api/v1/sessions/my-session/messages', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'text/event-stream',
+    'X-API-Key': 'sk-your-api-key',
+  },
+  body: JSON.stringify({ message: 'Hello, Claude!' }),
+})
 
-// Tool activity
-socket.on('tool_activity', ({ payload }) => {
-  console.log(`Tool ${payload.toolName}: ${payload.phase}`);
-});
-
-// Send a message (basic)
-socket.emit('chat', {
-  message: 'Hello, Claude!',
-  sessionId: 'my-session-123',
-});
-
-// Send a message with skill routing (authenticated)
-socket.emit('skill_chat', {
-  apiKey: 'sk-your-api-key',
-  request: {
-    skillId: 'customer-support',
-    message: 'I need help with my order',
-  }
-});
+// Parse SSE events
+const reader = response.body.getReader()
+const decoder = new TextDecoder()
+// ... process SSE events (text_delta, tool_activity, agent_status, etc.)
 ```
 
 ## Comparison with v1

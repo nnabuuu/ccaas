@@ -33,7 +33,7 @@ Complete API documentation for `@kedge-agentic/react-sdk`.
 
 ### useAgentConnection
 
-Manages Socket.io connection to the CCAAS backend. Handles connect/disconnect, client_id assignment, and session joining.
+Manages SSE connection to the CCAAS backend. Handles connect/disconnect, client_id assignment, and session joining.
 
 #### Parameters
 
@@ -49,7 +49,7 @@ interface UseAgentConnectionOptions {
 
 ```typescript
 interface UseAgentConnectionReturn {
-  socket: Socket | null           // Socket.io instance
+  socket: Socket | null           // Connection instance (SSE-based)
   connected: boolean              // Connection status
   clientId: string | null         // Assigned client ID from server
   sessionId: string               // Generated session ID

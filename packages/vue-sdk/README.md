@@ -11,7 +11,6 @@ npm install @kedge-agentic/vue-sdk
 ## Requirements
 
 - Vue 3.3+
-- socket.io-client 4.x
 
 ## Quick Start
 

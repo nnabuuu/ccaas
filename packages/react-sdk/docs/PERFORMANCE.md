@@ -31,7 +31,7 @@ Based on codebase analysis, the SDK has these performance characteristics:
 
 **Strengths:**
 - Clean hook separation
-- Efficient WebSocket event handling
+- Efficient SSE event handling
 - Minimal re-renders in connection hooks
 
 **Areas for Improvement:**
@@ -431,79 +431,62 @@ function StreamingMessage({ message, currentStreamContent }) {
 ```tsx
 import { useState, useEffect, useRef } from 'react'
 
-function useBatchedTextStream(socket) {
-  const [content, setContent] = useState('')
-  const bufferRef = useRef('')
+function useBatchedTextStream(currentStreamContent: string) {
+  const [throttled, setThrottled] = useState('')
+  const bufferRef = useRef(currentStreamContent)
   const flushTimeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
-    if (!socket) return
+    bufferRef.current = currentStreamContent
 
-    const handleTextDelta = (data: { text: string }) => {
-      // Accumulate in buffer
-      bufferRef.current += data.text
-
-      // Debounce flush
-      if (flushTimeoutRef.current) {
-        clearTimeout(flushTimeoutRef.current)
-      }
-
-      flushTimeoutRef.current = setTimeout(() => {
-        setContent((prev) => prev + bufferRef.current)
-        bufferRef.current = ''
-      }, 16) // Flush every ~60 FPS
+    // Debounce flush
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current)
     }
 
-    socket.on('text_delta', handleTextDelta)
+    flushTimeoutRef.current = setTimeout(() => {
+      setThrottled(bufferRef.current)
+    }, 16) // Flush every ~60 FPS
 
     return () => {
-      socket.off('text_delta', handleTextDelta)
       if (flushTimeoutRef.current) {
         clearTimeout(flushTimeoutRef.current)
       }
     }
-  }, [socket])
+  }, [currentStreamContent])
 
-  return content
+  return throttled
 }
 ```
 
 **Solution 2: RequestAnimationFrame for Smooth Updates**
 
 ```tsx
-function useRAFTextStream(socket) {
-  const [content, setContent] = useState('')
-  const bufferRef = useRef('')
+function useRAFTextStream(currentStreamContent: string) {
+  const [displayed, setDisplayed] = useState('')
+  const latestRef = useRef(currentStreamContent)
   const rafRef = useRef<number>()
 
   useEffect(() => {
-    if (!socket) return
+    latestRef.current = currentStreamContent
+  }, [currentStreamContent])
 
+  useEffect(() => {
     const flush = () => {
-      if (bufferRef.current) {
-        setContent((prev) => prev + bufferRef.current)
-        bufferRef.current = ''
-      }
+      setDisplayed(latestRef.current)
       rafRef.current = requestAnimationFrame(flush)
     }
 
     rafRef.current = requestAnimationFrame(flush)
 
-    const handleTextDelta = (data: { text: string }) => {
-      bufferRef.current += data.text
-    }
-
-    socket.on('text_delta', handleTextDelta)
-
     return () => {
-      socket.off('text_delta', handleTextDelta)
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current)
       }
     }
-  }, [socket])
+  }, [])
 
-  return content
+  return displayed
 }
 ```
 
