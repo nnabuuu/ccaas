@@ -96,7 +96,7 @@ function MainLayout({ viewMode }: MainLayoutProps) {
         onNewSession={handleNewSession}
       />
 
-      <div className="flex-1 flex overflow-hidden transition-colors duration-500" key={sessionKey}>
+      <div className="flex-1 flex overflow-hidden transition-colors duration-500 animate-fade-in" key={sessionKey}>
         {/* Chat Panel - 40% */}
         <div className="w-[40%] border-r border-gray-200 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.08)] flex flex-col">
           <ChatPanel
@@ -112,11 +112,14 @@ function MainLayout({ viewMode }: MainLayoutProps) {
         </div>
 
         {/* Right Panel - 60% */}
-        <div className={`w-[60%] transition-colors duration-500 ${
-          isFarmer
-            ? 'bg-gradient-to-b from-agri-green-50/50 to-gray-50'
-            : 'bg-gradient-to-b from-bank-blue-50/50 to-gray-50'
-        }`}>
+        <div
+          className={`w-[60%] transition-colors duration-500 animate-fade-in ${
+            isFarmer
+              ? 'bg-gradient-to-b from-agri-green-50/50 to-gray-50'
+              : 'bg-gradient-to-b from-bank-blue-50/50 to-gray-50'
+          }`}
+          style={{ animationDelay: '100ms', animationFillMode: 'both' }}
+        >
           {isFarmer ? (
             <FarmerProfilePanel
               displayData={session.displayData}

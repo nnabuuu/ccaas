@@ -164,14 +164,15 @@ export function ChatPanel({
           </div>
         )}
 
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
           // Skip empty assistant messages (streaming placeholder before content arrives)
           if (msg.role === 'assistant' && !msg.content) return null
 
           return (
             <div
               key={msg.id}
-              className={`flex animate-fade-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex animate-slide-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              style={{ animationDelay: `${Math.min(index * 30, 300)}ms`, animationFillMode: 'both' }}
             >
               <div
                 className={`max-w-[85%] px-3 py-2 text-sm ${
@@ -236,6 +237,22 @@ export function ChatPanel({
           </div>
         )}
 
+        {/* Connecting indicator (after send, before thinking/tools) */}
+        {isProcessing && !isThinking && !showProgress && (
+          <div className={`inline-flex items-center gap-2 rounded-full shadow-sm px-4 py-2 text-xs animate-fade-in ${
+            viewMode === 'farmer'
+              ? 'text-agri-green-600 bg-agri-green-50'
+              : 'text-bank-blue-600 bg-bank-blue-50'
+          }`}>
+            <span className="flex gap-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
+            </span>
+            <span>{viewMode === 'farmer' ? '正在连接...' : '正在连接服务...'}</span>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -248,9 +265,9 @@ export function ChatPanel({
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={viewMode === 'farmer' ? '有什么想了解的？' : '请输入您的问题...'}
-            className={`flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-opacity-50 ${
+            className={`flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm shadow-sm resize-none focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-opacity duration-200 ${
               viewMode === 'farmer' ? 'focus:ring-agri-green-500' : 'focus:ring-bank-blue-500'
-            }`}
+            } ${isProcessing ? 'opacity-60' : ''}`}
             style={{ minHeight: '40px', maxHeight: '120px' }}
             rows={1}
             disabled={isProcessing}
@@ -291,11 +308,11 @@ function ConsumerProgressView({
   isThinking: boolean
 }) {
   return (
-    <div className="bg-gradient-to-br from-agri-green-50 to-white rounded-xl p-3 space-y-2.5 shadow-card">
+    <div className="bg-gradient-to-br from-agri-green-50 to-white rounded-xl p-3 space-y-2.5 shadow-card animate-slide-in">
       {stages.map((stage, idx) => {
         const status = getStageStatus(stage, seenTools, activeToolNames)
         return (
-          <div key={idx} className="flex items-center gap-2.5 text-sm">
+          <div key={idx} className="flex items-center gap-2.5 text-sm transition-colors duration-300">
             {/* Status indicator */}
             {status === 'completed' && (
               <span className="text-agri-green-600 w-5 text-center shrink-0">✅</span>
@@ -381,7 +398,7 @@ function CreatorToolChainView({
     .map(t => t.dataSource!)
 
   return (
-    <div className="bg-gradient-to-br from-bank-blue-50 to-white rounded-xl p-3 space-y-1 shadow-card">
+    <div className="bg-gradient-to-br from-bank-blue-50 to-white rounded-xl p-3 space-y-1 shadow-card animate-slide-in">
       {/* Header */}
       <div className="text-xs font-medium text-bank-blue-700 mb-2 flex items-center gap-1">
         🔧 工具链追踪
@@ -394,12 +411,12 @@ function CreatorToolChainView({
         const isLast = idx === toolSequence.length - 1
 
         return (
-          <div key={tool.name} className="flex items-center gap-2 text-xs font-mono leading-5">
+          <div key={tool.name} className="flex items-center gap-2 text-xs font-mono leading-5 transition-colors duration-300">
             {/* Vertical connector line */}
             <div className={`w-3 flex justify-center shrink-0 ${
               isLast ? '' : 'border-l-2 border-bank-blue-200'
             }`}>
-              <div className={`w-1.5 h-1.5 rounded-full ${
+              <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
                 status === 'completed' ? 'bg-bank-blue-500' :
                 status === 'running' ? 'bg-bank-blue-400' :
                 'bg-gray-300'

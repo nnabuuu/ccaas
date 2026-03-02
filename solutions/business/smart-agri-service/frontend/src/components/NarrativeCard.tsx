@@ -21,7 +21,7 @@ export function NarrativeCard({ title, icon, content, viewMode, isLoading, index
   if (isLoading) {
     return (
       <div
-        className="bg-white rounded-xl shadow-card p-4 mb-3 animate-fade-in"
+        className="bg-white rounded-xl shadow-card p-4 mb-3 animate-slide-in"
         style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}
       >
         <div className="flex items-center gap-2 mb-3">
@@ -133,7 +133,7 @@ export function NarrativeCard({ title, icon, content, viewMode, isLoading, index
 
   return (
     <div
-      className={`bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow mb-3 overflow-hidden animate-fade-in ${
+      className={`bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow mb-3 overflow-hidden animate-slide-in ${
         expanded ? (isFarmer ? 'border-l-[3px] border-l-agri-green-400' : 'border-l-[3px] border-l-bank-blue-400') : ''
       }`}
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'both' }}

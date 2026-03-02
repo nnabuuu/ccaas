@@ -31,6 +31,7 @@ export default {
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',
+        'slide-in': 'slideIn 0.3s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'shimmer': 'shimmer 2s infinite linear',
       },
@@ -38,6 +39,10 @@ export default {
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
+        },
+        slideIn: {
+          '0%': { opacity: '0', transform: 'translateY(12px) scale(0.97)' },
+          '100%': { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
         slideUp: {
           '0%': { opacity: '0', transform: 'translateY(8px)' },
