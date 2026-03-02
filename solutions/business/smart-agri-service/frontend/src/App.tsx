@@ -5,6 +5,7 @@ import { ChatPanel } from './components/ChatPanel'
 import { FarmerProfilePanel } from './components/FarmerProfilePanel'
 import { CreditReportPanel } from './components/CreditReportPanel'
 import { SessionDrawer } from './components/SessionDrawer'
+import { DemoGuideModal } from './components/DemoGuideModal'
 import { PolicyDocumentPage } from './pages/PolicyDocumentPage'
 import { useAgriSession } from './hooks/useAgriSession'
 import { useConversations } from './hooks/useConversations'
@@ -19,6 +20,7 @@ function MainLayout({ viewMode }: MainLayoutProps) {
   const { sessionId: activeSessionId } = useParams<{ sessionId?: string }>()
   const navigate = useNavigate()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [demoOpen, setDemoOpen] = useState(false)
 
   const templateName = VIEW_MODE_TEMPLATES[viewMode]
   const { conversations, loading: conversationsLoading, refresh: refreshConversations } = useConversations(templateName)
@@ -77,7 +79,10 @@ function MainLayout({ viewMode }: MainLayoutProps) {
         onViewChange={handleViewChange}
         connected={session.connected}
         onOpenHistory={() => setDrawerOpen(true)}
+        onOpenDemo={() => setDemoOpen(true)}
       />
+
+      <DemoGuideModal open={demoOpen} onClose={() => setDemoOpen(false)} />
 
       <SessionDrawer
         open={drawerOpen}

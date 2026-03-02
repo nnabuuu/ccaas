@@ -1,4 +1,5 @@
 import React from 'react'
+import { Info } from 'lucide-react'
 import type { ViewMode } from '../types'
 
 interface HeaderProps {
@@ -6,9 +7,10 @@ interface HeaderProps {
   onViewChange: (mode: ViewMode) => void
   connected: boolean
   onOpenHistory?: () => void
+  onOpenDemo?: () => void
 }
 
-export function Header({ viewMode, onViewChange, connected, onOpenHistory }: HeaderProps) {
+export function Header({ viewMode, onViewChange, connected, onOpenHistory, onOpenDemo }: HeaderProps) {
   return (
     <header className={`h-14 flex items-center justify-between px-4 shadow-md transition-colors duration-500 ${
       viewMode === 'farmer'
@@ -61,6 +63,16 @@ export function Header({ viewMode, onViewChange, connected, onOpenHistory }: Hea
       </div>
 
       <div className="flex items-center gap-2">
+        {onOpenDemo && (
+          <button
+            onClick={onOpenDemo}
+            className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+            aria-label="演示说明"
+            title="演示说明"
+          >
+            <Info className="w-5 h-5" />
+          </button>
+        )}
         <div className={`w-2.5 h-2.5 rounded-full ${connected ? 'bg-green-300 animate-pulse' : 'bg-red-400'}`} />
         <span className="text-white/80 text-sm">{connected ? '已连接' : '未连接'}</span>
       </div>
