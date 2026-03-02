@@ -162,30 +162,35 @@ export function ChatPanel({
           </div>
         )}
 
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex animate-fade-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+        {messages.map((msg) => {
+          // Skip empty assistant messages (streaming placeholder before content arrives)
+          if (msg.role === 'assistant' && !msg.content) return null
+
+          return (
             <div
-              className={`max-w-[85%] px-3 py-2 text-sm ${
-                msg.role === 'user'
-                  ? viewMode === 'farmer'
-                    ? 'bg-agri-green-600 text-white rounded-2xl rounded-br-sm'
-                    : 'bg-bank-blue-600 text-white rounded-2xl rounded-br-sm'
-                  : 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm shadow-sm'
-              }`}
+              key={msg.id}
+              className={`flex animate-fade-in ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {msg.role === 'user' ? (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-              ) : (
-                <div className="markdown-content">
-                  <ReactMarkdown>{msg.content || ''}</ReactMarkdown>
-                </div>
-              )}
+              <div
+                className={`max-w-[85%] px-3 py-2 text-sm ${
+                  msg.role === 'user'
+                    ? viewMode === 'farmer'
+                      ? 'bg-agri-green-600 text-white rounded-2xl rounded-br-sm'
+                      : 'bg-bank-blue-600 text-white rounded-2xl rounded-br-sm'
+                    : 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm shadow-sm'
+                }`}
+              >
+                {msg.role === 'user' ? (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                ) : (
+                  <div className="markdown-content">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {/* NOTE: Do NOT render currentStreamContent separately here.
             The SDK syncs streaming text into messages[last].content in real-time,

@@ -34,6 +34,8 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     enabledSkillSlugs,
     onOutputUpdate,
     onTokenUsage,
+    onToolActivity,
+    onThinkingUpdate,
     context,
     sessionTemplate,
     transport = 'sse',
@@ -64,6 +66,12 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
 
   const onTokenUsageRef = useRef(onTokenUsage)
   onTokenUsageRef.current = onTokenUsage
+
+  const onToolActivityRef = useRef(onToolActivity)
+  onToolActivityRef.current = onToolActivity
+
+  const onThinkingUpdateRef = useRef(onThinkingUpdate)
+  onThinkingUpdateRef.current = onThinkingUpdate
 
   // SSE stream support
   const { startStream, abortStream } = useSseStream()
@@ -184,6 +192,10 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         }
         return updated
       })
+      onToolActivityRef.current?.(toolActivity)
+    } else if (eventType === 'agent_thinking') {
+      const payload = (data as any).payload as { phase: 'start' | 'delta' | 'end'; content?: string }
+      onThinkingUpdateRef.current?.(payload.phase, payload.content)
     } else if (eventType === 'token_usage') {
       const payload = (data as any).payload
       latestTokenUsageRef.current = {

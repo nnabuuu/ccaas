@@ -382,6 +382,18 @@ export interface UseAgentChatOptions {
   enabledSkillSlugs?: string[]
   onOutputUpdate?: (update: OutputUpdate) => void
   onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void
+  /**
+   * Called when a tool_activity event is received from the per-turn SSE stream.
+   * In SSE mode, useAgentStatus does not receive these events, so this callback
+   * lets consumers track tool activity from the chat stream.
+   */
+  onToolActivity?: (activity: ToolActivity) => void
+  /**
+   * Called when an agent_thinking event is received from the per-turn SSE stream.
+   * In SSE mode, useAgentStatus does not receive these events, so this callback
+   * lets consumers track thinking state from the chat stream.
+   */
+  onThinkingUpdate?: (phase: 'start' | 'delta' | 'end', content?: string) => void
   /** Page context to send with every message (from usePageContext hook) */
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */

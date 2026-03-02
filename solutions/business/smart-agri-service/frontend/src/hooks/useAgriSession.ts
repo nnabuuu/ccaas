@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
-  useAgentStatus,
 } from '@kedge-agentic/react-sdk'
+import type { ToolActivity } from '@kedge-agentic/react-sdk'
 import type { SyncField, DisplayItem, ViewMode } from '../types'
 
 const SERVER_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001' // MUST be absolute URL to CCAAS core backend
@@ -11,6 +11,11 @@ const TENANT_ID = 'smart-agri-service'
 
 export function useAgriSession(viewMode: ViewMode, targetSessionId?: string) {
   const [displayData, setDisplayData] = useState<Map<SyncField, DisplayItem>>(new Map())
+
+  // ── Local tool & thinking state (SSE mode: useAgentStatus can't receive these) ──
+  const [activeTools, setActiveTools] = useState<Map<string, ToolActivity>>(new Map())
+  const [isThinking, setIsThinking] = useState(false)
+  const [thinkingContent, setThinkingContent] = useState('')
 
   const sessionTemplate = viewMode === 'farmer' ? 'farmer-advisor' : 'bank-assessor'
 
@@ -41,9 +46,56 @@ export function useAgriSession(viewMode: ViewMode, targetSessionId?: string) {
         return next
       })
     },
+    onToolActivity: (activity) => {
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        if (activity.phase === 'end') {
+          updated.set(activity.toolId, { ...activity, endTime: Date.now() })
+        } else {
+          updated.set(activity.toolId, activity)
+        }
+        return updated
+      })
+    },
+    onThinkingUpdate: (phase, content) => {
+      if (phase === 'start') {
+        setIsThinking(true)
+        setThinkingContent('')
+      } else if (phase === 'delta' && content) {
+        setThinkingContent(prev => prev + content)
+      } else if (phase === 'end') {
+        setTimeout(() => setIsThinking(false), 3000)
+      }
+    },
   })
 
-  const status = useAgentStatus({ connection })
+  // Cleanup ended tools after 2 seconds (mirrors useAgentStatus behavior)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveTools(prev => {
+        const updated = new Map(prev)
+        const now = Date.now()
+        for (const [toolId, tool] of updated.entries()) {
+          if (tool.phase === 'end' && tool.endTime && (now - tool.endTime > 2000)) {
+            updated.delete(toolId)
+          }
+        }
+        return updated.size === prev.size ? prev : updated
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Reset thinking/tools on completion
+  const prevProcessingRef = useRef(false)
+  useEffect(() => {
+    if (!chat.isProcessing && prevProcessingRef.current) {
+      setIsThinking(false)
+      setThinkingContent('')
+      setActiveTools(new Map())
+    }
+    prevProcessingRef.current = chat.isProcessing
+  }, [chat.isProcessing])
 
   // Restore displayData from persisted events when loading a history session
   useEffect(() => {
@@ -91,10 +143,10 @@ export function useAgriSession(viewMode: ViewMode, targetSessionId?: string) {
     sendMessage: chat.sendMessage,
     clearConversation: chat.clearConversation,
 
-    // Status
-    activeTools: status.activeTools,
-    isThinking: status.isThinking,
-    thinkingContent: status.thinkingContent,
+    // Status (from SSE per-turn stream callbacks)
+    activeTools,
+    isThinking,
+    thinkingContent,
 
     // Display data
     displayData,
