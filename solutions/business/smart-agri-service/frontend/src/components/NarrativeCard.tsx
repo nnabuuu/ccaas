@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Link } from 'react-router-dom'
 import type { ViewMode } from '../types'
+import { policyMarkdownComponents } from '../utils/markdownComponents'
 
 interface NarrativeCardProps {
   title: string
@@ -46,7 +48,7 @@ export function NarrativeCard({ title, icon, content, viewMode, isLoading, index
     if (typeof content === 'string') {
       return (
         <div className="markdown-content text-gray-700">
-          <ReactMarkdown>{content}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={policyMarkdownComponents}>{content}</ReactMarkdown>
         </div>
       )
     }

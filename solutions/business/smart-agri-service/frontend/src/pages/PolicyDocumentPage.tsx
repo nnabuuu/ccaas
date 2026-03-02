@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useEffect, useMemo, useState, useRef } from 'react'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, FileText, Paperclip, Calendar, MapPin, Users, Banknote, Building2 } from 'lucide-react'
+import { parsePolicySections } from '../utils/parsePolicySections'
+import { HighlightedText } from '../components/HighlightedText'
 
 // Solution backend URL
 const API_BASE = (import.meta.env.VITE_API_BASE || 'http://localhost:3003') + '/api'
@@ -26,9 +28,14 @@ interface PolicyData {
 export function PolicyDocumentPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const highlightKey = searchParams.get('highlight')
+  const textQuery = searchParams.get('q')
   const [policy, setPolicy] = useState<PolicyData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const highlightRef = useRef<HTMLDivElement>(null)
+  const markRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (!id) return
@@ -47,6 +54,19 @@ export function PolicyDocumentPage() {
         setLoading(false)
       })
   }, [id])
+
+  // Scroll highlighted section into view after render
+  useEffect(() => {
+    if (!loading && highlightKey) {
+      // Small delay to ensure DOM is painted
+      const timer = setTimeout(() => {
+        // Prefer mark element for precise scrolling, fall back to section
+        const target = markRef.current || highlightRef.current
+        target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, highlightKey])
 
   if (loading) {
     return (
@@ -149,9 +169,7 @@ export function PolicyDocumentPage() {
           {/* Full Text or Structured Summary */}
           <div className="px-8 pb-8">
             {policy.has_full_text && policy.full_text ? (
-              <div className="policy-full-text text-gray-700 text-[15px] leading-relaxed whitespace-pre-wrap font-serif">
-                {formatPolicyText(policy.full_text)}
-              </div>
+              <PolicyFullText fullText={policy.full_text} highlightKey={highlightKey} textQuery={textQuery} highlightRef={highlightRef} markRef={markRef} />
             ) : (
               <div className="space-y-4">
                 <div className="text-gray-500 text-sm italic mb-4">
@@ -205,25 +223,79 @@ function extractTitle(fullText: string, fallback: string): string {
   return fallback
 }
 
-/** Format the policy full text - strip the header lines that are already shown above */
-function formatPolicyText(fullText: string): string {
+/** Strip header lines (before and including doc number line) from full text */
+function stripHeader(fullText: string): string {
   const lines = fullText.split('\n')
-
-  // Find where the body starts (after the doc number line)
   let bodyStart = 0
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim()
-    // Look for patterns like 〔2026〕 which indicate the doc number line
     if (/〔\d{4}〕/.test(trimmed) && !trimmed.startsWith('各')) {
       bodyStart = i + 1
       break
     }
   }
-
-  // Skip any blank lines after the doc number
   while (bodyStart < lines.length && lines[bodyStart].trim() === '') {
     bodyStart++
   }
-
   return lines.slice(bodyStart).join('\n').trim()
+}
+
+/** Renders full text with section anchors and optional highlighting */
+function PolicyFullText({
+  fullText,
+  highlightKey,
+  textQuery,
+  highlightRef,
+  markRef,
+}: {
+  fullText: string
+  highlightKey: string | null
+  textQuery: string | null
+  highlightRef: React.RefObject<HTMLDivElement>
+  markRef: React.RefObject<HTMLElement>
+}) {
+  const { stripped, preamble, sections } = useMemo(() => {
+    const s = stripHeader(fullText)
+    const parsed = parsePolicySections(s)
+    return { stripped: s, ...parsed }
+  }, [fullText])
+
+  // If no sections found, fall back to plain rendering
+  if (sections.length === 0) {
+    return (
+      <div className="policy-full-text text-gray-700 text-[15px] leading-relaxed whitespace-pre-wrap font-serif">
+        {stripped}
+      </div>
+    )
+  }
+
+  return (
+    <div className="policy-full-text text-gray-700 text-[15px] leading-relaxed font-serif">
+      {preamble && (
+        <div className="whitespace-pre-wrap mb-4">{preamble}</div>
+      )}
+      {sections.map((section) => {
+        const isHighlighted = highlightKey === section.key
+        const hasTextMatch = isHighlighted && !!textQuery && section.content.includes(textQuery)
+        return (
+          <div
+            key={section.key}
+            id={`section-${section.key}`}
+            ref={isHighlighted ? highlightRef : undefined}
+            className={`whitespace-pre-wrap mb-3 px-3 py-2 rounded-lg transition-all duration-500 ${
+              isHighlighted
+                ? 'bg-amber-50 ring-2 ring-amber-300'
+                : ''
+            }`}
+          >
+            {hasTextMatch ? (
+              <HighlightedText text={section.content} query={textQuery!} markRef={markRef} />
+            ) : (
+              section.content
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 }

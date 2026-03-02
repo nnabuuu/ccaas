@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import type { Message, ToolActivity } from '@kedge-agentic/react-sdk'
 import { PhoneInput } from './PhoneInput'
 import type {
@@ -9,6 +10,7 @@ import type {
   CreatorToolConfig,
 } from '../types'
 import { CONSUMER_STAGES, BANK_TOOL_SEQUENCE } from '../types'
+import { policyMarkdownComponents } from '../utils/markdownComponents'
 
 interface ChatPanelProps {
   messages: Message[]
@@ -184,7 +186,7 @@ export function ChatPanel({
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 ) : (
                   <div className="markdown-content">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={policyMarkdownComponents}>{msg.content}</ReactMarkdown>
                   </div>
                 )}
               </div>

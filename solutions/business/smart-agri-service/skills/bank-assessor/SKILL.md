@@ -28,6 +28,30 @@ description: 银行信贷评估助手 - 提供专业的农户信贷评估报告
 9. `get_policy_document` - 获取政策原文（引用贴息、补贴等条款作为还款能力支撑）
 10. `get_market_prices` - 获取市场行情
 
+#### 政策条款引用格式
+
+在 credit_narrative、risk_assessment 等文本字段中引用政策条款时，使用 markdown 链接格式：
+
+```
+[显示文字](/policy/POLICY_ID#section=条款编号&text=引用的关键文字)
+```
+
+条款编号用中文数字：
+- 顶级章节：一、二、三（如 `section=二` 对应 "二、补贴标准"）
+- 子章节：父-子（如 `section=三-一` 对应第三章第（一）节）
+
+`text` 参数：
+- 值为政策原文中被引用的关键短语（5-30字）
+- 用于悬浮时只显示相关句子，以及在政策页中精确高亮
+- 如无法确定具体文字，可省略 `&text=`，回退到章节级高亮
+
+**示例**：
+```
+根据[《农业信贷担保贴息政策》第三条](/policy/xyz789#section=三&text=贴息比例为2%)，可降低融资成本
+```
+
+POLICY_ID 必须使用 `search_gov_policies` / `get_policy_document` 返回的真实 id，不得编造。
+
 ### 第二步：专业评估与输出
 
 获取全部数据后，使用 `write_output` 工具按顺序输出以下字段：

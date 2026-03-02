@@ -9,6 +9,7 @@ import { DemoGuideModal } from './components/DemoGuideModal'
 import { PolicyDocumentPage } from './pages/PolicyDocumentPage'
 import { useAgriSession } from './hooks/useAgriSession'
 import { useConversations } from './hooks/useConversations'
+import { PolicyCacheProvider } from './hooks/usePolicyCache'
 import { VIEW_MODE_TEMPLATES } from './types'
 import type { ViewMode } from './types'
 
@@ -135,14 +136,16 @@ function MainLayout({ viewMode }: MainLayoutProps) {
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/farmer" replace />} />
-      <Route path="/farmer" element={<MainLayout viewMode="farmer" />} />
-      <Route path="/farmer/session/:sessionId" element={<MainLayout viewMode="farmer" />} />
-      <Route path="/bank" element={<MainLayout viewMode="bank" />} />
-      <Route path="/bank/session/:sessionId" element={<MainLayout viewMode="bank" />} />
-      <Route path="/policy/:id" element={<PolicyDocumentPage />} />
-    </Routes>
+    <PolicyCacheProvider>
+      <Routes>
+        <Route path="/" element={<Navigate to="/farmer" replace />} />
+        <Route path="/farmer" element={<MainLayout viewMode="farmer" />} />
+        <Route path="/farmer/session/:sessionId" element={<MainLayout viewMode="farmer" />} />
+        <Route path="/bank" element={<MainLayout viewMode="bank" />} />
+        <Route path="/bank/session/:sessionId" element={<MainLayout viewMode="bank" />} />
+        <Route path="/policy/:id" element={<PolicyDocumentPage />} />
+      </Routes>
+    </PolicyCacheProvider>
   )
 }
 
