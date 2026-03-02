@@ -188,11 +188,11 @@ load_solution_config() {
 
     log_info "Loading solution configuration from $config_file"
 
-    # Parse solution.json
-    SOLUTION_NAME=$(jq -r '.name // ""' "$config_file")
-    SOLUTION_SLUG=$(jq -r '.slug // ""' "$config_file")
+    # Parse solution.json (supports both top-level and .tenant.* fields for v3.0 schema)
+    SOLUTION_NAME=$(jq -r '.tenant.name // .name // ""' "$config_file")
+    SOLUTION_SLUG=$(jq -r '.tenant.slug // .slug // ""' "$config_file")
     SOLUTION_VERSION=$(jq -r '.version // "1.0.0"' "$config_file")
-    SOLUTION_DESCRIPTION=$(jq -r '.description // ""' "$config_file")
+    SOLUTION_DESCRIPTION=$(jq -r '.tenant.description // .description // ""' "$config_file")
 
     # Validate required fields
     if [ -z "$SOLUTION_NAME" ]; then
