@@ -27,6 +27,10 @@ const defaultConfig = {
     enableSubAgents: true,
     enableCustomMcp: false,
     enableAnalytics: true,
+    eventPersistence: {
+      enabled: true,
+      excludeTypes: ['text_delta'],
+    },
   },
   webhookUrl: 'https://example.com/webhook',
 }
@@ -53,6 +57,7 @@ describe('EditConfigModal', () => {
     expect(screen.getByLabelText('Enable Sub-Agents')).toBeInTheDocument()
     expect(screen.getByLabelText('Enable Custom MCP')).toBeInTheDocument()
     expect(screen.getByLabelText('Enable Analytics')).toBeInTheDocument()
+    expect(screen.getByText('Event Persistence')).toBeInTheDocument()
   })
 
   it('should not render when closed', () => {
@@ -94,6 +99,10 @@ describe('EditConfigModal', () => {
               enableSubAgents: true,
               enableCustomMcp: false,
               enableAnalytics: true,
+              eventPersistence: {
+                enabled: true,
+                excludeTypes: ['text_delta'],
+              },
             }),
           }),
         },
@@ -211,6 +220,119 @@ describe('EditConfigModal', () => {
     expect(screen.getByLabelText('Max Tokens per Request')).toHaveValue(8192)
   })
 
+  it('should render event persistence sub-toggles when master toggle is on', () => {
+    render(<EditConfigModal {...defaultProps} />)
+
+    expect(screen.getByLabelText('text_delta')).toBeInTheDocument()
+    expect(screen.getByLabelText('thinking')).toBeInTheDocument()
+    expect(screen.getByLabelText('tool events')).toBeInTheDocument()
+    expect(screen.getByLabelText('exploration')).toBeInTheDocument()
+  })
+
+  it('should hide sub-toggles when event persistence master toggle is off', async () => {
+    const user = userEvent.setup()
+    render(
+      <EditConfigModal
+        {...defaultProps}
+        currentConfig={{
+          ...defaultConfig,
+          features: {
+            ...defaultConfig.features,
+            eventPersistence: { enabled: false, excludeTypes: [] },
+          },
+        }}
+      />,
+    )
+
+    expect(screen.queryByLabelText('text_delta')).not.toBeInTheDocument()
+
+    // Toggle on
+    await user.click(screen.getByLabelText('Event Persistence'))
+
+    expect(screen.getByLabelText('text_delta')).toBeInTheDocument()
+  })
+
+  it('should show text_delta warning when its toggle is on', async () => {
+    const user = userEvent.setup()
+    render(<EditConfigModal {...defaultProps} />)
+
+    // text_delta is off by default (excluded), no warning
+    expect(screen.queryByText(/High volume/)).not.toBeInTheDocument()
+
+    // Enable text_delta
+    await user.click(screen.getByLabelText('text_delta'))
+
+    expect(screen.getByText(/High volume/)).toBeInTheDocument()
+  })
+
+  it('should construct excludeTypes correctly from toggle states', async () => {
+    const user = userEvent.setup()
+    vi.mocked(apiClient.put).mockResolvedValue({ data: {} })
+
+    // Config with everything persisted (no excludes)
+    render(
+      <EditConfigModal
+        {...defaultProps}
+        currentConfig={{
+          ...defaultConfig,
+          features: {
+            ...defaultConfig.features,
+            eventPersistence: { enabled: true, excludeTypes: [] },
+          },
+        }}
+      />,
+    )
+
+    // Turn off thinking and tool events
+    await user.click(screen.getByLabelText('thinking'))
+    await user.click(screen.getByLabelText('tool events'))
+
+    await user.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => {
+      const call = vi.mocked(apiClient.put).mock.calls[0]
+      const config = (call[1] as { config: Record<string, unknown> }).config
+      const features = config.features as { eventPersistence: { excludeTypes: string[] } }
+      expect(features.eventPersistence.excludeTypes).toEqual(
+        expect.arrayContaining(['thinking_start', 'thinking_delta', 'thinking_end', 'tool_start', 'tool_end']),
+      )
+      expect(features.eventPersistence.excludeTypes).not.toContain('text_delta')
+      expect(features.eventPersistence.excludeTypes).not.toContain('exploration_activity')
+    })
+  })
+
+  it('should preserve event persistence config on modal reopen', () => {
+    const configWithEp = {
+      ...defaultConfig,
+      features: {
+        ...defaultConfig.features,
+        eventPersistence: {
+          enabled: true,
+          excludeTypes: ['text_delta', 'exploration_activity'],
+        },
+      },
+    }
+
+    const { rerender } = render(
+      <EditConfigModal {...defaultProps} currentConfig={configWithEp} />,
+    )
+
+    // text_delta excluded → toggle off
+    expect(screen.getByLabelText('text_delta')).not.toBeChecked()
+    // exploration excluded → toggle off
+    expect(screen.getByLabelText('exploration')).not.toBeChecked()
+    // thinking not excluded → toggle on
+    expect(screen.getByLabelText('thinking')).toBeChecked()
+
+    // Close and reopen
+    rerender(<EditConfigModal {...defaultProps} open={false} currentConfig={configWithEp} />)
+    rerender(<EditConfigModal {...defaultProps} open={true} currentConfig={configWithEp} />)
+
+    expect(screen.getByLabelText('text_delta')).not.toBeChecked()
+    expect(screen.getByLabelText('exploration')).not.toBeChecked()
+    expect(screen.getByLabelText('thinking')).toBeChecked()
+  })
+
   it('should allow editing the default model before submitting', async () => {
     const user = userEvent.setup()
     vi.mocked(apiClient.put).mockResolvedValue({ data: {} })
@@ -238,6 +360,11 @@ describe('EditConfigModal schema validation', () => {
     enableSubAgents: z.boolean(),
     enableCustomMcp: z.boolean(),
     enableAnalytics: z.boolean(),
+    eventPersistenceEnabled: z.boolean(),
+    persistTextDelta: z.boolean(),
+    persistThinking: z.boolean(),
+    persistToolEvents: z.boolean(),
+    persistExploration: z.boolean(),
   })
 
   it('should accept valid values', () => {
@@ -247,6 +374,11 @@ describe('EditConfigModal schema validation', () => {
       enableSubAgents: true,
       enableCustomMcp: false,
       enableAnalytics: true,
+      eventPersistenceEnabled: true,
+      persistTextDelta: false,
+      persistThinking: true,
+      persistToolEvents: true,
+      persistExploration: true,
     })
     expect(result.success).toBe(true)
   })
@@ -257,6 +389,11 @@ describe('EditConfigModal schema validation', () => {
       enableSubAgents: false,
       enableCustomMcp: false,
       enableAnalytics: false,
+      eventPersistenceEnabled: false,
+      persistTextDelta: false,
+      persistThinking: false,
+      persistToolEvents: false,
+      persistExploration: false,
     })
     expect(result.success).toBe(true)
   })
@@ -268,6 +405,11 @@ describe('EditConfigModal schema validation', () => {
       enableSubAgents: false,
       enableCustomMcp: false,
       enableAnalytics: false,
+      eventPersistenceEnabled: true,
+      persistTextDelta: true,
+      persistThinking: true,
+      persistToolEvents: true,
+      persistExploration: true,
     })
     expect(result.success).toBe(true)
   })
@@ -278,6 +420,11 @@ describe('EditConfigModal schema validation', () => {
       enableSubAgents: 'yes',
       enableCustomMcp: false,
       enableAnalytics: false,
+      eventPersistenceEnabled: true,
+      persistTextDelta: false,
+      persistThinking: true,
+      persistToolEvents: true,
+      persistExploration: true,
     })
     expect(result.success).toBe(false)
   })

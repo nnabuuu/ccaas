@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertCircle } from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { AlertCircle, AlertTriangle } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
 
@@ -25,6 +26,11 @@ export const editConfigSchema = z.object({
   enableSubAgents: z.boolean(),
   enableCustomMcp: z.boolean(),
   enableAnalytics: z.boolean(),
+  eventPersistenceEnabled: z.boolean(),
+  persistTextDelta: z.boolean(),
+  persistThinking: z.boolean(),
+  persistToolEvents: z.boolean(),
+  persistExploration: z.boolean(),
 })
 
 type FormValues = z.infer<typeof editConfigSchema>
@@ -32,7 +38,15 @@ type FormValues = z.infer<typeof editConfigSchema>
 interface ConfigData {
   defaultModel?: string
   maxTokensPerRequest?: number
-  features?: Record<string, boolean>
+  features?: Record<string, unknown> & {
+    enableSubAgents?: boolean
+    enableCustomMcp?: boolean
+    enableAnalytics?: boolean
+    eventPersistence?: {
+      enabled?: boolean
+      excludeTypes?: string[]
+    }
+  }
   [key: string]: unknown
 }
 
@@ -68,15 +82,27 @@ export function EditConfigModal({
   const enableSubAgents = watch('enableSubAgents')
   const enableCustomMcp = watch('enableCustomMcp')
   const enableAnalytics = watch('enableAnalytics')
+  const eventPersistenceEnabled = watch('eventPersistenceEnabled')
+  const persistTextDelta = watch('persistTextDelta')
+  const persistThinking = watch('persistThinking')
+  const persistToolEvents = watch('persistToolEvents')
+  const persistExploration = watch('persistExploration')
 
   useEffect(() => {
     if (open) {
+      const ep = currentConfig?.features?.eventPersistence
+      const excludeTypes = ep?.excludeTypes ?? []
       reset({
         defaultModel: currentConfig?.defaultModel ?? '',
         maxTokensPerRequest: currentConfig?.maxTokensPerRequest ?? ('' as unknown as undefined),
         enableSubAgents: currentConfig?.features?.enableSubAgents ?? false,
         enableCustomMcp: currentConfig?.features?.enableCustomMcp ?? false,
         enableAnalytics: currentConfig?.features?.enableAnalytics ?? false,
+        eventPersistenceEnabled: ep?.enabled !== false,
+        persistTextDelta: !excludeTypes.includes('text_delta'),
+        persistThinking: !excludeTypes.includes('thinking_start'),
+        persistToolEvents: !excludeTypes.includes('tool_start'),
+        persistExploration: !excludeTypes.includes('exploration_activity'),
       })
       setError(null)
     }
@@ -86,6 +112,12 @@ export function EditConfigModal({
     setIsSubmitting(true)
     setError(null)
     try {
+      const excludeTypes = [
+        ...(!data.persistTextDelta ? ['text_delta'] : []),
+        ...(!data.persistThinking ? ['thinking_start', 'thinking_delta', 'thinking_end'] : []),
+        ...(!data.persistToolEvents ? ['tool_start', 'tool_end'] : []),
+        ...(!data.persistExploration ? ['exploration_activity'] : []),
+      ]
       const config = {
         ...currentConfig,
         defaultModel: data.defaultModel || undefined,
@@ -95,6 +127,10 @@ export function EditConfigModal({
           enableSubAgents: data.enableSubAgents,
           enableCustomMcp: data.enableCustomMcp,
           enableAnalytics: data.enableAnalytics,
+          eventPersistence: {
+            enabled: data.eventPersistenceEnabled,
+            excludeTypes,
+          },
         },
       }
       await apiClient.put(`/admin/tenants/${tenantId}/sdk-config`, { config })
@@ -171,6 +207,67 @@ export function EditConfigModal({
                 onCheckedChange={(checked) => setValue('enableAnalytics', checked)}
               />
             </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="eventPersistenceEnabled" className="text-sm font-medium">Event Persistence</Label>
+              <Switch
+                id="eventPersistenceEnabled"
+                checked={eventPersistenceEnabled}
+                onCheckedChange={(checked) => setValue('eventPersistenceEnabled', checked)}
+              />
+            </div>
+
+            {eventPersistenceEnabled && (
+              <div className="ml-4 space-y-3 border-l-2 pl-4">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="persistTextDelta" className="font-normal">text_delta</Label>
+                    <Switch
+                      id="persistTextDelta"
+                      checked={persistTextDelta}
+                      onCheckedChange={(checked) => setValue('persistTextDelta', checked)}
+                    />
+                  </div>
+                  {persistTextDelta && (
+                    <p className="flex items-center gap-1 text-xs text-amber-600">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      High volume. Content already stored in messages.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="persistThinking" className="font-normal">thinking</Label>
+                  <Switch
+                    id="persistThinking"
+                    checked={persistThinking}
+                    onCheckedChange={(checked) => setValue('persistThinking', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="persistToolEvents" className="font-normal">tool events</Label>
+                  <Switch
+                    id="persistToolEvents"
+                    checked={persistToolEvents}
+                    onCheckedChange={(checked) => setValue('persistToolEvents', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="persistExploration" className="font-normal">exploration</Label>
+                  <Switch
+                    id="persistExploration"
+                    checked={persistExploration}
+                    onCheckedChange={(checked) => setValue('persistExploration', checked)}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (

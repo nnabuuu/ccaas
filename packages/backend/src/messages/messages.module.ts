@@ -15,6 +15,7 @@ import { ApiErrorEvent } from './entities/api-error-event.entity';
 import { ThinkingBlock } from './entities/thinking-block.entity';
 import { TokenUsageEvent } from './entities/token-usage-event.entity';
 import { UserContextEvent } from './entities/user-context-event.entity';
+import { SessionEvent } from './entities/session-event.entity';
 import { MessagesService } from './messages.service';
 import { ToolEventsService } from './tool-events.service';
 import { ConversationContextService } from './conversation-context.service';
@@ -23,6 +24,7 @@ import { ApiErrorService } from './api-error.service';
 import { ThinkingBlocksService } from './thinking-blocks.service';
 import { TokenUsageService } from './token-usage.service';
 import { UserContextService } from './user-context.service';
+import { SessionEventsService } from './session-events.service';
 import { MessagesController } from './messages.controller';
 import { FilesModule } from '../files/files.module';
 
@@ -37,6 +39,7 @@ import { FilesModule } from '../files/files.module';
       ThinkingBlock,
       TokenUsageEvent,
       UserContextEvent,
+      SessionEvent,
     ]),
     FilesModule,
   ],
@@ -50,6 +53,7 @@ import { FilesModule } from '../files/files.module';
     ThinkingBlocksService,
     TokenUsageService,
     UserContextService,
+    SessionEventsService,
   ],
   exports: [
     MessagesService,
@@ -60,6 +64,7 @@ import { FilesModule } from '../files/files.module';
     ThinkingBlocksService,
     TokenUsageService,
     UserContextService,
+    SessionEventsService,
   ],
 })
 export class MessagesModule {}

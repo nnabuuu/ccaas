@@ -32,6 +32,7 @@ import { ApiErrorEvent } from './messages/entities/api-error-event.entity';
 import { ThinkingBlock } from './messages/entities/thinking-block.entity';
 import { TokenUsageEvent } from './messages/entities/token-usage-event.entity';
 import { UserContextEvent } from './messages/entities/user-context-event.entity';
+import { SessionEvent } from './messages/entities/session-event.entity';
 import { AgentFile } from './files/entities/agent-file.entity';
 import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
@@ -94,6 +95,7 @@ import { SolutionsModule } from './solutions/solutions.module';
         ThinkingBlock,
         TokenUsageEvent,
         UserContextEvent,
+        SessionEvent,
         // Session entities
         MessageQueue,
         Session,

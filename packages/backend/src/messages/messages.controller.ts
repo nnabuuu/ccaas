@@ -22,6 +22,7 @@ import { ApiErrorService } from './api-error.service';
 import { ThinkingBlocksService } from './thinking-blocks.service';
 import { TokenUsageService } from './token-usage.service';
 import { UserContextService } from './user-context.service';
+import { SessionEventsService } from './session-events.service';
 import { FilesService } from '../files/files.service';
 import { MessageQueryDto, MessageResponseDto, ToolEventResponseDto } from './dto/message.dto';
 import { Message } from './entities/message.entity';
@@ -39,6 +40,7 @@ export class MessagesController {
     private readonly thinkingBlocksService: ThinkingBlocksService,
     private readonly tokenUsageService: TokenUsageService,
     private readonly userContextService: UserContextService,
+    private readonly sessionEventsService: SessionEventsService,
     private readonly filesService: FilesService,
   ) {}
 
@@ -583,6 +585,45 @@ export class MessagesController {
   }
 
   /**
+   * Get persisted session events (output_update, agent_status, etc.)
+   * GET /api/v1/sessions/:sessionId/events
+   */
+  @Get('sessions/:sessionId/events')
+  @OptionalAuth()
+  @ApiOperation({
+    summary: '获取会话事件 / Get Session Events',
+    description: '获取持久化的会话事件（如 output_update、agent_status 等），用于恢复历史会话的结构化数据 / Get persisted session events for historical session reconstruction',
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiQuery({ name: 'type', required: false, description: '事件类型过滤（逗号分隔）/ Event type filter (comma-separated)', example: 'output_update' })
+  @ApiQuery({ name: 'limit', required: false, description: '返回条数限制 / Max events to return', example: 100 })
+  @ApiQuery({ name: 'offset', required: false, description: '跳过条数 / Events to skip', example: 0 })
+  async getSessionEvents(
+    @Param('sessionId') sessionId: string,
+    @Query('type') type?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<{ events: Array<{ id: string; sessionId: string; type: string; payload: unknown; seq: number; createdAt: Date }> }> {
+    const types = type ? type.split(',').map(t => t.trim()).filter(Boolean) : undefined;
+    const events = await this.sessionEventsService.findBySession(sessionId, {
+      types,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
+
+    return {
+      events: events.map(e => ({
+        id: e.id,
+        sessionId: e.sessionId,
+        type: e.type,
+        payload: e.payload,
+        seq: e.seq,
+        createdAt: e.createdAt,
+      })),
+    };
+  }
+
+  /**
    * Get full conversation trace (all data for reconstruction)
    * GET /api/v1/sessions/:sessionId/full-trace
    */
@@ -593,13 +634,16 @@ export class MessagesController {
     description: `
 获取会话的完整数据，用于重建对话或深度分析。
 
-**包含数据：**
-- 所有消息和工具事件
-- Token 使用统计和成本分析
-- 思考块（Thinking Blocks）
-- 进程生命周期事件
-- API 错误记录
-- 用户上下文事件
+**包含数据段 / Data sections：**
+- context - 会话上下文
+- messages - 消息和工具事件
+- thinkingBlocks - 思考块
+- tokenUsage - Token 使用统计和成本分析
+- processEvents - 进程生命周期事件
+- apiErrors - API 错误记录
+- userContext - 用户上下文事件
+- toolStats - 工具调用统计
+- sessionEvents - 持久化会话事件（output_update, agent_status 等）
 
 **适用场景：**
 - 会话导出和备份
@@ -609,11 +653,18 @@ export class MessagesController {
 
 **English:**
 Get complete session data for conversation reconstruction or deep analysis.
+Use the \`include\` query parameter to select specific sections.
     `,
   })
   @ApiParam({
     name: 'sessionId',
     description: '会话 ID / Session ID',
+  })
+  @ApiQuery({
+    name: 'include',
+    required: false,
+    description: '要包含的数据段（逗号分隔）/ Sections to include (comma-separated). Default: all. Valid: context, messages, thinkingBlocks, tokenUsage, processEvents, apiErrors, userContext, toolStats, sessionEvents',
+    example: 'messages,sessionEvents,tokenUsage',
   })
   @ApiResponse({
     status: 200,
@@ -621,17 +672,32 @@ Get complete session data for conversation reconstruction or deep analysis.
   })
   async getFullTrace(
     @Param('sessionId') sessionId: string,
+    @Query('include') include?: string,
   ): Promise<{
-    context: Awaited<ReturnType<typeof this.getSessionContext>>['context'];
+    context: Awaited<ReturnType<typeof this.getSessionContext>>['context'] | null;
     messages: MessageResponseDto[];
     thinkingBlocks: Awaited<ReturnType<typeof this.getSessionThinking>>['thinkingBlocks'];
-    tokenUsage: Awaited<ReturnType<typeof this.getSessionTokenUsage>>['summary'];
+    tokenUsage: Awaited<ReturnType<typeof this.getSessionTokenUsage>>['summary'] | null;
     processEvents: Awaited<ReturnType<typeof this.getProcessEvents>>['events'];
     apiErrors: Awaited<ReturnType<typeof this.getApiErrors>>['errors'];
     userContext: Awaited<ReturnType<typeof this.getSessionUserContext>>['events'];
-    toolStats: Awaited<ReturnType<typeof this.getSessionToolStats>>;
+    toolStats: Awaited<ReturnType<typeof this.getSessionToolStats>> | null;
+    sessionEvents: Array<{
+      id: string;
+      type: string;
+      payload: unknown;
+      seq: number;
+      messageId: string | null;
+      createdAt: Date;
+    }>;
   }> {
-    // Fetch all data in parallel for performance
+    // Parse include parameter: null means include all sections
+    const sections = include
+      ? new Set(include.split(',').map((s) => s.trim()))
+      : null;
+    const shouldInclude = (key: string) => !sections || sections.has(key);
+
+    // Fetch all requested data in parallel for performance
     const [
       context,
       messages,
@@ -641,21 +707,23 @@ Get complete session data for conversation reconstruction or deep analysis.
       apiErrorsResult,
       userContextResult,
       toolStats,
+      sessionEventsResult,
     ] = await Promise.all([
-      this.conversationContextService.getBySessionId(sessionId),
-      this.messagesService.findBySessionId(sessionId, { includeToolEvents: true }),
-      this.thinkingBlocksService.getBySessionId(sessionId),
-      this.tokenUsageService.getSessionSummary(sessionId),
-      this.processLifecycleService.getBySessionId(sessionId),
-      this.apiErrorService.getBySessionId(sessionId),
-      this.userContextService.getBySessionId(sessionId),
-      this.toolEventsService.getSessionStats(sessionId),
+      shouldInclude('context') ? this.conversationContextService.getBySessionId(sessionId) : null,
+      shouldInclude('messages') ? this.messagesService.findBySessionId(sessionId, { includeToolEvents: true }) : [],
+      shouldInclude('thinkingBlocks') ? this.thinkingBlocksService.getBySessionId(sessionId) : [],
+      shouldInclude('tokenUsage') ? this.tokenUsageService.getSessionSummary(sessionId) : null,
+      shouldInclude('processEvents') ? this.processLifecycleService.getBySessionId(sessionId) : [],
+      shouldInclude('apiErrors') ? this.apiErrorService.getBySessionId(sessionId) : [],
+      shouldInclude('userContext') ? this.userContextService.getBySessionId(sessionId) : [],
+      shouldInclude('toolStats') ? this.toolEventsService.getSessionStats(sessionId) : null,
+      shouldInclude('sessionEvents') ? this.sessionEventsService.findBySession(sessionId) : [],
     ]);
 
     return {
       context,
-      messages: messages.map((m) => this.toResponseDto(m)),
-      thinkingBlocks: thinkingResult.map((b) => ({
+      messages: (messages as Message[]).map((m) => this.toResponseDto(m)),
+      thinkingBlocks: (thinkingResult as any[]).map((b) => ({
         id: b.id,
         messageId: b.messageId,
         thinkingId: b.thinkingId,
@@ -667,7 +735,7 @@ Get complete session data for conversation reconstruction or deep analysis.
         createdAt: b.createdAt,
       })),
       tokenUsage: tokenUsageResult,
-      processEvents: processEventsResult.map((e) => ({
+      processEvents: (processEventsResult as any[]).map((e) => ({
         id: e.id,
         sessionId: e.sessionId,
         eventType: e.eventType,
@@ -680,7 +748,7 @@ Get complete session data for conversation reconstruction or deep analysis.
         workingDir: e.workingDir,
         createdAt: e.createdAt,
       })),
-      apiErrors: apiErrorsResult.map((e) => ({
+      apiErrors: (apiErrorsResult as any[]).map((e) => ({
         id: e.id,
         sessionId: e.sessionId,
         messageId: e.messageId,
@@ -693,7 +761,7 @@ Get complete session data for conversation reconstruction or deep analysis.
         retryAttempt: e.retryAttempt,
         createdAt: e.createdAt,
       })),
-      userContext: userContextResult.map((e) => ({
+      userContext: (userContextResult as any[]).map((e) => ({
         id: e.id,
         sessionId: e.sessionId,
         messageId: e.messageId,
@@ -706,6 +774,14 @@ Get complete session data for conversation reconstruction or deep analysis.
         createdAt: e.createdAt,
       })),
       toolStats,
+      sessionEvents: (sessionEventsResult as any[]).map((e) => ({
+        id: e.id,
+        type: e.type,
+        payload: e.payload,
+        seq: e.seq,
+        messageId: e.messageId,
+        createdAt: e.createdAt,
+      })),
     };
   }
 

@@ -55,6 +55,10 @@ export class Tenant {
       enableSubAgents?: boolean;
       enableCustomMcp?: boolean;
       enableAnalytics?: boolean;
+      eventPersistence?: {
+        enabled?: boolean;
+        excludeTypes?: string[];
+      };
     };
     sessionTemplates?: SessionTemplateMap;
     defaultSessionTemplate?: string;

@@ -34,7 +34,12 @@ interface TenantDetail {
   config?: {
     defaultModel?: string
     maxTokensPerRequest?: number
-    features?: Record<string, boolean>
+    features?: Record<string, unknown> & {
+      eventPersistence?: {
+        enabled?: boolean
+        excludeTypes?: string[]
+      }
+    }
     [key: string]: unknown
   }
   createdAt: string
@@ -234,14 +239,31 @@ export function TenantDetailPage() {
               <CardContent>
                 {tenant.config?.features ? (
                   <div className="space-y-2">
-                    {Object.entries(tenant.config.features).map(([key, enabled]) => (
-                      <div key={key} className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{key}</span>
-                        <Badge variant={enabled ? 'success' : 'secondary'}>
-                          {enabled ? 'Enabled' : 'Disabled'}
-                        </Badge>
+                    {Object.entries(tenant.config.features)
+                      .filter(([key]) => key !== 'eventPersistence')
+                      .map(([key, enabled]) => (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{key}</span>
+                          <Badge variant={enabled ? 'success' : 'secondary'}>
+                            {enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </div>
+                      ))}
+                    {tenant.config.features.eventPersistence && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">eventPersistence</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={tenant.config.features.eventPersistence.enabled !== false ? 'success' : 'secondary'}>
+                            {tenant.config.features.eventPersistence.enabled !== false ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                          {(tenant.config.features.eventPersistence.excludeTypes?.length ?? 0) > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              Excluded: {tenant.config.features.eventPersistence.excludeTypes!.join(', ')}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No features configured</p>
