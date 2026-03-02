@@ -19,6 +19,7 @@ import {
 import { Auth, TenantId, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
+import { UpdateTenantDto } from '../../tenants/dto/tenant.dto';
 import { SkillsService } from '../../skills/skills.service';
 import { AuditService } from '../services/audit.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -73,6 +74,52 @@ export class AdminTenantsController {
       throw new NotFoundException(`Tenant not found: ${id}`);
     }
     return tenant;
+  }
+
+  /**
+   * PUT /api/v1/admin/tenants/:tenantId
+   *
+   * Update tenant basic info (name, description, plan, status, limits, etc.)
+   */
+  @Put(':tenantId')
+  @HttpCode(HttpStatus.OK)
+  async updateTenant(
+    @Param('tenantId') tenantId: string,
+    @Body() dto: UpdateTenantDto,
+    @Ctx() ctx: RequestContext,
+  ) {
+    const tenant = await this.tenantsService.findOne(tenantId);
+    if (!tenant) {
+      throw new NotFoundException(`Tenant not found: ${tenantId}`);
+    }
+
+    const previousValue = {
+      name: tenant.name,
+      description: tenant.description,
+      plan: tenant.plan,
+      status: tenant.status,
+      billingEmail: tenant.billingEmail,
+      maxSessions: tenant.maxSessions,
+      maxSkills: tenant.maxSkills,
+      sessionTtlMs: tenant.sessionTtlMs,
+    };
+
+    const updated = await this.tenantsService.update(tenant.id, dto);
+
+    await this.auditService.log({
+      adminId: ctx?.apiKeyId || 'system',
+      action: 'tenant.update',
+      targetType: 'tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: {
+        previousValue,
+        newValue: dto,
+        reason: 'Updated tenant info via admin',
+      },
+    });
+
+    return updated;
   }
 
   /**

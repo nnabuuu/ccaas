@@ -10,10 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { StatusBadge } from '@/components/shared/status-badge'
 import { SdkConnections } from '@/components/shared/sdk-connections'
 import { TenantApiKeysTab } from '@/components/tenants/api-keys-tab'
-import { ArrowLeft, Zap } from 'lucide-react'
+import { EditQuotaModal } from '@/components/tenants/edit-quota-modal'
+import { EditTenantModal } from '@/components/tenants/edit-tenant-modal'
+import { EditConfigModal } from '@/components/tenants/edit-config-modal'
+import { ArrowLeft, Pencil, Zap } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { formatTokens } from '@/lib/format'
+import { toast } from 'sonner'
 
 interface TenantDetail {
   id: string
@@ -26,10 +30,12 @@ interface TenantDetail {
   maxSkills: number
   maxMcpServers: number
   billingEmail?: string
+  sessionTtlMs?: number
   config?: {
     defaultModel?: string
     maxTokensPerRequest?: number
     features?: Record<string, boolean>
+    [key: string]: unknown
   }
   createdAt: string
   updatedAt: string
@@ -48,6 +54,12 @@ interface TenantQuota {
   tokens: { used: number; limit: number }
   sessions: { used: number; limit: number }
   apiCalls: { used: number; limit: number }
+  alertThreshold?: number
+  period?: 'monthly' | 'daily'
+}
+
+function quotaPercent(used: number, limit: number): number {
+  return limit > 0 ? Math.min((used / limit) * 100, 100) : 0
 }
 
 export function TenantDetailPage() {
@@ -55,20 +67,26 @@ export function TenantDetailPage() {
   const navigate = useNavigate()
   const [skills, setSkills] = useState<TenantSkill[]>([])
   const [togglingSkillId, setTogglingSkillId] = useState<string | null>(null)
+  const [showEditQuota, setShowEditQuota] = useState(false)
+  const [showEditTenant, setShowEditTenant] = useState(false)
+  const [showEditConfig, setShowEditConfig] = useState(false)
 
-  const { data, isLoading } = useCustom<TenantDetail>({
+  const { data, isLoading, refetch: refetchTenant } = useCustom<TenantDetail>({
     url: `/admin/tenants/${tenantId}`,
     method: 'get',
+    queryOptions: { enabled: !!tenantId },
   })
 
   const { data: skillsData, refetch: refetchSkills } = useCustom({
     url: `/admin/tenants/${tenantId}/skills`,
     method: 'get',
+    queryOptions: { enabled: !!tenantId },
   })
 
-  const { data: quotaData } = useCustom({
+  const { data: quotaData, refetch: refetchQuotas } = useCustom({
     url: `/admin/tenants/${tenantId}/quotas`,
     method: 'get',
+    queryOptions: { enabled: !!tenantId },
   })
 
   const tenant = data?.data as TenantDetail | undefined
@@ -81,13 +99,20 @@ export function TenantDetailPage() {
   }, [skillsData])
 
   const handleToggleSkill = async (skillId: string, enabled: boolean) => {
+    if (!tenantId) return
     setTogglingSkillId(skillId)
     try {
       await apiClient.put(`/admin/tenants/${tenantId}/skills/${skillId}/toggle`, { enabled })
       refetchSkills()
+    } catch {
+      toast.error('Failed to toggle skill')
     } finally {
       setTogglingSkillId(null)
     }
+  }
+
+  if (!tenantId) {
+    return <div className="text-center text-muted-foreground py-12">Invalid tenant ID</div>
   }
 
   if (isLoading) {
@@ -97,8 +122,6 @@ export function TenantDetailPage() {
   if (!tenant) {
     return <div className="text-center text-muted-foreground py-12">Tenant not found</div>
   }
-
-  const quotaPercent = (used: number, limit: number) => limit > 0 ? Math.min((used / limit) * 100, 100) : 0
 
   return (
     <div className="space-y-6">
@@ -126,6 +149,36 @@ export function TenantDetailPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base">Tenant Info</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setShowEditTenant(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Edit
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {tenant.description && (
+                <div>
+                  <span className="text-muted-foreground">Description</span>
+                  <p className="mt-1">{tenant.description}</p>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Billing Email</span>
+                <span>{tenant.billingEmail ?? 'Not set'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Created</span>
+                <span>{formatDistanceToNow(new Date(tenant.createdAt), { addSuffix: true })}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Updated</span>
+                <span>{formatDistanceToNow(new Date(tenant.updatedAt), { addSuffix: true })}</span>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 md:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
@@ -155,8 +208,12 @@ export function TenantDetailPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">Configuration</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setShowEditConfig(true)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
@@ -166,10 +223,6 @@ export function TenantDetailPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Max Tokens/Request</span>
                   <span className="font-mono">{tenant.config?.maxTokensPerRequest ?? 'Not set'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Billing Email</span>
-                  <span>{tenant.billingEmail ?? 'Not set'}</span>
                 </div>
               </CardContent>
             </Card>
@@ -197,27 +250,19 @@ export function TenantDetailPage() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {tenant.description && (
-                <div>
-                  <span className="text-muted-foreground">Description</span>
-                  <p className="mt-1">{tenant.description}</p>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span>{formatDistanceToNow(new Date(tenant.createdAt), { addSuffix: true })}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Updated</span>
-                <span>{formatDistanceToNow(new Date(tenant.updatedAt), { addSuffix: true })}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <EditTenantModal
+            open={showEditTenant}
+            onClose={() => setShowEditTenant(false)}
+            onSuccess={() => refetchTenant()}
+            tenant={tenant}
+          />
+          <EditConfigModal
+            open={showEditConfig}
+            onClose={() => setShowEditConfig(false)}
+            onSuccess={() => refetchTenant()}
+            tenantId={tenantId}
+            currentConfig={tenant.config}
+          />
         </TabsContent>
 
         <TabsContent value="skills">
@@ -266,8 +311,12 @@ export function TenantDetailPage() {
 
         <TabsContent value="quotas">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Usage Quotas</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setShowEditQuota(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Edit
+              </Button>
             </CardHeader>
             <CardContent className="space-y-6">
               {quotas ? (
@@ -316,6 +365,13 @@ export function TenantDetailPage() {
               )}
             </CardContent>
           </Card>
+          <EditQuotaModal
+            open={showEditQuota}
+            onClose={() => setShowEditQuota(false)}
+            onSuccess={() => refetchQuotas()}
+            tenantId={tenantId}
+            currentQuotas={quotas}
+          />
         </TabsContent>
 
         <TabsContent value="api-keys">
