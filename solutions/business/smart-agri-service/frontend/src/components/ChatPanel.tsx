@@ -187,16 +187,10 @@ export function ChatPanel({
           </div>
         ))}
 
-        {/* Streaming content */}
-        {currentStreamContent && (
-          <div className="flex justify-start animate-fade-in">
-            <div className="max-w-[85%] rounded-2xl rounded-bl-sm px-3 py-2 text-sm bg-gray-100 text-gray-800 shadow-sm">
-              <div className="markdown-content">
-                <ReactMarkdown>{currentStreamContent}</ReactMarkdown>
-              </div>
-            </div>
-          </div>
-        )}
+        {/*
+          Note: currentStreamContent is already synced into the last assistant message
+          in messages[] by the SDK, so we don't render it separately to avoid duplication.
+        */}
 
         {/* ── Consumer mode: Friendly progress pipeline (farmer) ── */}
         {showProgress && viewMode === 'farmer' && (
