@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { Sparkle } from '@phosphor-icons/react'
 import type { ChalkboardAction } from '../types/blackboard-actions'
 import { StickerOverlay } from './StickerOverlay'
 
@@ -38,9 +39,11 @@ interface DynamicBoardProps {
   onDismissSticker?: () => void
   onToggleStickerExpand?: () => void
   onCollapseStickerBackdrop?: () => void
+  hasDismissedSticker?: boolean
+  onRestoreSticker?: () => void
 }
 
-export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationChange, onSnapshot, paused, stickerActions, stickerVisible, stickerExpanded, onDismissSticker, onToggleStickerExpand, onCollapseStickerBackdrop }: DynamicBoardProps) {
+export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationChange, onSnapshot, paused, stickerActions, stickerVisible, stickerExpanded, onDismissSticker, onToggleStickerExpand, onCollapseStickerBackdrop, hasDismissedSticker, onRestoreSticker }: DynamicBoardProps) {
   const playerRef = useRef<BlackboardPlayerEl | null>(null)
   const prevLenRef = useRef(0)
   const prevBeatIdRef = useRef<string | null>(null)
@@ -156,6 +159,22 @@ export function DynamicBoard({ actions, beatId, isLoading, onStart, onAnimationC
       )}
 
       {/* Sticker overlay for AI execute_dynamic_board responses */}
+      {/* Floating pill to restore dismissed sticker */}
+      {hasDismissedSticker && onRestoreSticker && (
+        <button
+          onClick={onRestoreSticker}
+          aria-label="恢复 AI 补充面板"
+          className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1.5
+                     rounded-lg bg-[#2A5A4A]/80 backdrop-blur border border-white/[0.08]
+                     text-[11px] text-amber-300/90 font-medium
+                     hover:bg-[#2A5A4A] hover:border-amber-400/30
+                     transition-all duration-200 shadow-lg"
+        >
+          <Sparkle size={12} weight="fill" />
+          AI 补充
+        </button>
+      )}
+
       {stickerActions && onDismissSticker && onToggleStickerExpand && onCollapseStickerBackdrop && (
         <StickerOverlay
           actions={stickerActions}

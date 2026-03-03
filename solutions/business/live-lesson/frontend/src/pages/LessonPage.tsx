@@ -55,6 +55,8 @@ export default function LessonPage() {
     dismissSticker,
     toggleStickerExpanded,
     collapseStickerFromBackdrop,
+    hasDismissedSticker,
+    restoreSticker,
     suggestedQuestions,
     selectionMode,
     raiseHand,
@@ -199,6 +201,8 @@ export default function LessonPage() {
             onDismissSticker={dismissSticker}
             onToggleStickerExpand={toggleStickerExpanded}
             onCollapseStickerBackdrop={collapseStickerFromBackdrop}
+            hasDismissedSticker={hasDismissedSticker}
+            onRestoreSticker={restoreSticker}
             viewingIndex={viewingBeatIndex}
             onNavigate={navigateToBeat}
           />

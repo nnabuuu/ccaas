@@ -81,9 +81,11 @@ export interface UseLiveLessonReturn {
   stickerActions: ChalkboardAction[]
   stickerVisible: boolean
   stickerExpanded: boolean
+  hasDismissedSticker: boolean
   dismissSticker: () => void
   toggleStickerExpanded: () => void
   collapseStickerFromBackdrop: () => void
+  restoreSticker: () => void
 
   // Tutoring actions
   raiseHand: () => void
@@ -504,6 +506,16 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
     setStickerExpanded(false)
   }, [])
 
+  const stickerActionsRef = useRef(stickerActions)
+  stickerActionsRef.current = stickerActions
+
+  const restoreSticker = useCallback(() => {
+    if (stickerActionsRef.current.length > 0) {
+      setStickerExpanded(false)
+      setStickerVisible(true)
+    }
+  }, [])
+
   const openTutoringPanel = useCallback(() => {
     setTutoringPanelOpen(true)
   }, [])
@@ -593,9 +605,11 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
     stickerActions,
     stickerVisible,
     stickerExpanded,
+    hasDismissedSticker: stickerActions.length > 0 && !stickerVisible,
     dismissSticker,
     toggleStickerExpanded,
     collapseStickerFromBackdrop,
+    restoreSticker,
     raiseHand,
     dismissTutoring,
     sendExplainRequest,

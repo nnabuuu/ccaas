@@ -31,6 +31,8 @@ interface BeatCarouselProps {
   onDismissSticker?: () => void
   onToggleStickerExpand?: () => void
   onCollapseStickerBackdrop?: () => void
+  hasDismissedSticker?: boolean
+  onRestoreSticker?: () => void
   // Navigation
   viewingIndex: number | null
   onNavigate: (index: number | null) => void
@@ -52,6 +54,8 @@ export function BeatCarousel({
   onDismissSticker,
   onToggleStickerExpand,
   onCollapseStickerBackdrop,
+  hasDismissedSticker,
+  onRestoreSticker,
   viewingIndex,
   onNavigate,
   activeBeatIndex,
@@ -145,6 +149,8 @@ export function BeatCarousel({
         onDismissSticker={onDismissSticker}
         onToggleStickerExpand={onToggleStickerExpand}
         onCollapseStickerBackdrop={onCollapseStickerBackdrop}
+        hasDismissedSticker={hasDismissedSticker}
+        onRestoreSticker={onRestoreSticker}
       />
     )
   }
@@ -190,6 +196,8 @@ export function BeatCarousel({
                 onDismissSticker={onDismissSticker}
                 onToggleStickerExpand={onToggleStickerExpand}
                 onCollapseStickerBackdrop={onCollapseStickerBackdrop}
+                hasDismissedSticker={hasDismissedSticker}
+                onRestoreSticker={onRestoreSticker}
               />
             </div>
           </div>
