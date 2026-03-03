@@ -132,7 +132,7 @@ server {
         proxy_buffering off;              # Required for SSE streaming
         proxy_cache off;
         proxy_set_header Connection '';    # Required for SSE keep-alive
-        proxy_read_timeout 3600s;         # SSE connections are long-lived
+        proxy_read_timeout 3600s;         # SSE long-lived; backend sends heartbeat every 30s
     }
 }
 ```

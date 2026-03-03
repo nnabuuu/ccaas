@@ -146,6 +146,18 @@ curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
 
 ---
 
+## 连接保活（Heartbeat）
+
+平台在所有 SSE 连接上每 30 秒发送一次 **SSE 注释心跳**（`: heartbeat`），防止代理服务器、负载均衡器和 CDN 因空闲超时关闭长时间运行的连接（如扩展思考、复杂工具调用等）。
+
+- **格式**：`: heartbeat\n\n` — 标准 SSE 注释，非数据事件
+- **客户端无需处理**：SSE 规范要求解析器忽略注释行。React SDK 和下方的解析示例均已自动兼容。
+- **不消耗序号**：心跳不占用 `id:` 序号，不影响 `afterSeq` 断线重连
+
+> 如果你在构建自定义 SSE 解析器，请确保只处理 `data:` 开头的行——以 `:` 开头的注释行应被忽略。
+
+---
+
 ## 事件参考
 
 所有事件遵循同一基础结构：
@@ -422,8 +434,9 @@ async function streamMessages(
     buffer = parts.pop() ?? ''
 
     for (const chunk of parts) {
+      // SSE 注释行（如 ": heartbeat"）没有 data: 前缀，直接跳过
       const dataLine = chunk.split('\n').find(l => l.startsWith('data:'))
-      if (!dataLine) continue
+      if (!dataLine) continue  // 心跳注释和空 chunk 被忽略
       try {
         const event = JSON.parse(dataLine.slice(5).trim())
         onEvent(event)

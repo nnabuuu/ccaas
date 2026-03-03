@@ -146,6 +146,18 @@ curl -X POST http://localhost:3001/api/v1/sessions/my-session/cancel \
 
 ---
 
+## Connection Keep-Alive
+
+The platform sends **SSE comment heartbeats** (`: heartbeat`) every 30 seconds on all SSE connections. This prevents proxies, load balancers, and CDNs from closing idle connections during long-running operations (extended thinking, complex tool calls, etc.).
+
+- **Format**: `: heartbeat\n\n` — a standard SSE comment, not a data event
+- **No client action required**: SSE parsers ignore comment lines by spec. The React SDK and the parsing example below both handle this automatically.
+- **No sequence number**: heartbeats don't consume `id:` sequence numbers or affect reconnection via `afterSeq`
+
+> If you're building a custom SSE parser, ensure it only processes lines starting with `data:` — comment lines (starting with `:`) should be skipped.
+
+---
+
 ## One-Shot Sessions (autoClose)
 
 `autoClose: true` enables "one-shot session" mode: the session is destroyed immediately after processing completes, freeing the process pool slot.
@@ -422,8 +434,9 @@ async function streamMessages(
     buffer = parts.pop() ?? ''
 
     for (const chunk of parts) {
+      // SSE comment lines (e.g. ": heartbeat") have no data: prefix — skip them
       const dataLine = chunk.split('\n').find(l => l.startsWith('data:'))
-      if (!dataLine) continue
+      if (!dataLine) continue  // heartbeat comments and empty chunks are ignored
       try {
         const event = JSON.parse(dataLine.slice(5).trim())
         onEvent(event)
