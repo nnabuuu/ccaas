@@ -6,6 +6,7 @@ import type {
   TaskBadgeState,
   UseTaskTrackingOptions,
   UseTaskTrackingReturn,
+  JobInfo,
 } from '../types'
 
 /**
@@ -41,6 +42,26 @@ function convertTodoToTask(todo: EventTodoItem, index: number): UnifiedTask {
 }
 
 /**
+ * Converts a Job to UnifiedTask
+ */
+function convertJobToTask(job: JobInfo): UnifiedTask {
+  return {
+    id: job.id,
+    type: 'job',
+    status: job.status,
+    title: job.name,
+    description: job.type,
+    startedAt: job.startedAt ? new Date(job.startedAt) : undefined,
+    completedAt: job.completedAt ? new Date(job.completedAt) : undefined,
+    jobId: job.id,
+    jobType: job.type,
+    resultFiles: job.resultFiles,
+    messageId: job.messageId,
+    raw: job,
+  }
+}
+
+/**
  * Hook for tracking and aggregating tasks from multiple sources (SubAgents, TodoItems).
  *
  * Features:
@@ -65,7 +86,7 @@ function convertTodoToTask(todo: EventTodoItem, index: number): UnifiedTask {
  * ```
  */
 export function useTaskTracking(options: UseTaskTrackingOptions): UseTaskTrackingReturn {
-  const { activeSubAgents, todoItems, maxHistorySize = 50 } = options
+  const { activeSubAgents, todoItems, jobs = [], maxHistorySize = 50 } = options
 
   // History: stores completed/failed tasks with timestamps
   const [taskHistory, setTaskHistory] = useState<Map<string, { task: UnifiedTask; timestamp: number }>>(new Map())
@@ -74,8 +95,9 @@ export function useTaskTracking(options: UseTaskTrackingOptions): UseTaskTrackin
   const currentTasks = useMemo(() => {
     const subAgentTasks = activeSubAgents.map(convertSubAgentToTask)
     const todoTasks = todoItems.map(convertTodoToTask)
-    return [...subAgentTasks, ...todoTasks]
-  }, [activeSubAgents, todoItems])
+    const jobTasks = jobs.map(convertJobToTask)
+    return [...subAgentTasks, ...todoTasks, ...jobTasks]
+  }, [activeSubAgents, todoItems, jobs])
 
   // Track completed/failed tasks in history
   useEffect(() => {

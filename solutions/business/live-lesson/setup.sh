@@ -19,6 +19,11 @@ source "$TOOLS_DIR/solution-lib.sh"
 # Load solution configuration
 load_solution_config "$SCRIPT_DIR"
 
+# Load port configuration from solution.config
+if [ -f "$SCRIPT_DIR/solution.config" ]; then
+    source "$SCRIPT_DIR/solution.config"
+fi
+
 # Default bootstrap key
 CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
 

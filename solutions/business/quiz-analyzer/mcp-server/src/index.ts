@@ -77,9 +77,12 @@ Field schemas:
 - commonMistakes: Mistake[] (Array of common mistakes with frequency and remediation)
 - knowledgeGapAnalysis: string (Analysis of knowledge gaps in Markdown)
 - difficulty: number (Difficulty level 1-5)
+- difficultyAssessment: { score: number (1-5), pitfalls: string[], reasoning: string } (Rich difficulty with pitfalls)
 - relatedQuizzes: RelatedQuiz[] (Array of related quizzes with similarity scores)
 - timeEstimate: string (Estimated solving time)
+- timeAssessment: { estimate: string, reasoning: string } (Rich time estimate with reasoning)
 - kpRefinementResult: { tags: [{id,name,confidence,role}], traversalType, tagCount, trace } (Complete KP refinement result)
+- parsedContent: { stem: string, options: string[], correctAnswer?: string, quizType: 'choice'|'fill'|'subjective' } (Parsed quiz structure)
 
 Example for quiz_analysis:
 {

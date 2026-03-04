@@ -3,11 +3,13 @@ interface HeaderProps {
   connected: boolean
   saving: boolean
   hasChanges: boolean
+  autoSync?: boolean
+  onToggleAutoSync?: () => void
   onSave: () => void
   onNew: () => void
 }
 
-export function Header({ title, connected, saving, hasChanges, onSave, onNew }: HeaderProps) {
+export function Header({ title, connected, saving, hasChanges, autoSync, onToggleAutoSync, onSave, onNew }: HeaderProps) {
   return (
     <header className="flex items-center justify-between px-6 py-3 bg-white border-b border-gray-200 shadow-sm">
       <div className="flex items-center gap-4">
@@ -29,6 +31,21 @@ export function Header({ title, connected, saving, hasChanges, onSave, onNew }: 
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Auto-Sync Toggle */}
+        {onToggleAutoSync && (
+          <button
+            onClick={onToggleAutoSync}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors ${
+              autoSync
+                ? 'bg-blue-50 text-blue-700 border-blue-300'
+                : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+            }`}
+            title={autoSync ? '自动同步已开启' : '自动同步已关闭'}
+          >
+            <span className={`w-2 h-2 rounded-full transition-colors ${autoSync ? 'bg-blue-500' : 'bg-gray-300'}`} />
+            <span>自动同步</span>
+          </button>
+        )}
         {/* New Button */}
         <button
           onClick={onNew}

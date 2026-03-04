@@ -4,6 +4,7 @@ import {
   IsObject,
   IsArray,
   IsNumber,
+  IsBoolean,
   Min,
 } from 'class-validator';
 
@@ -50,4 +51,8 @@ export class CreateJobDto {
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsBoolean()
+  trackingOnly?: boolean;
 }

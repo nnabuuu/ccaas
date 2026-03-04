@@ -40,6 +40,7 @@ import { TenantsModule } from '../tenants/tenants.module';
 import { MessagesModule } from '../messages/messages.module';
 import { FilesModule } from '../files/files.module';
 import { TurnsModule } from '../admin/turns.module';
+import { BundleModule } from '../bundles/bundle.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { TurnsModule } from '../admin/turns.module';
     TenantsModule,
     MessagesModule,
     FilesModule,
+    BundleModule,
   ],
   controllers: [SessionsController, ConversationsController, QueueController],
   providers: [

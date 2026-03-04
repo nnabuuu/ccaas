@@ -5,6 +5,7 @@ import type {
   AgentStatusValue,
   ToolActivity,
   TodoStats,
+  JobInfo,
 } from '../types'
 import type {
   AgentStatusEvent,
@@ -16,6 +17,7 @@ import type {
   ActiveSubAgent,
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
+  JobUpdateEvent,
 } from '@kedge-agentic/common'
 import { getThinkingVerb, THINKING_VERBS } from '../utils/thinkingVerbs'
 
@@ -38,6 +40,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   const [todoItems, setTodoItems] = useState<EventTodoItem[]>([])
   const [todoStats, setTodoStats] = useState<TodoStats>({ completed: 0, inProgress: 0, pending: 0, total: 0 })
   const [activeSubAgents, setActiveSubAgents] = useState<ActiveSubAgent[]>([])
+  const [jobs, setJobs] = useState<JobInfo[]>([])
 
   const isProcessing = agentStatus === 'thinking' || agentStatus === 'running' ||
     agentStatus === 'exploring' || agentStatus === 'executing'
@@ -103,6 +106,33 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       pendingTimeoutsRef.current.delete(timeoutId)
     }, 3000)
     pendingTimeoutsRef.current.add(timeoutId)
+  }, [])
+
+  // Job update handler — shared by socket and SSE effects
+  const onJobUpdate = useCallback((data: JobUpdateEvent) => {
+    setJobs(prev => {
+      const job: JobInfo = {
+        id: data.jobId,
+        sessionId: data.sessionId,
+        messageId: data.messageId,
+        type: data.jobType,
+        name: data.name,
+        status: data.status,
+        startedAt: data.startedAt,
+        completedAt: data.completedAt,
+        progress: data.progress,
+        metadata: data.metadata,
+        resultFiles: data.resultFiles,
+        errorMessage: data.errorMessage,
+      }
+      const idx = prev.findIndex(j => j.id === data.jobId)
+      if (idx >= 0) {
+        const updated = [...prev]
+        updated[idx] = job
+        return updated
+      }
+      return [...prev, job]
+    })
   }, [])
 
   useEffect(() => {
@@ -248,6 +278,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     socket.on('todo_update', onTodoUpdate)
     socket.on('subagent_started', onSubAgentStarted)
     socket.on('subagent_completed', onSubAgentCompleted)
+    socket.on('job_update', onJobUpdate)
 
     return () => {
       socket.off('agent_status', onAgentStatus)
@@ -257,8 +288,9 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       socket.off('todo_update', onTodoUpdate)
       socket.off('subagent_started', onSubAgentStarted)
       socket.off('subagent_completed', onSubAgentCompleted)
+      socket.off('job_update', onJobUpdate)
     }
-  }, [connection.socket, handleComplete, onSubAgentStarted, onSubAgentCompleted])
+  }, [connection.socket, handleComplete, onSubAgentStarted, onSubAgentCompleted, onJobUpdate])
 
   // SSE mode — subscribe to GET /events push channel for subagent lifecycle events.
   // In SSE mode, connection.socket is null (Socket.IO is not initialized).
@@ -308,6 +340,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
               const event = envelope.event ?? envelope
               if (event.type === 'subagent_started') onSubAgentStarted(event)
               if (event.type === 'subagent_completed') onSubAgentCompleted(event)
+              if (event.type === 'job_update') onJobUpdate(event)
             } catch { /* ignore parse errors */ }
           }
         }
@@ -323,7 +356,34 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
 
     connect()
     return () => controller.abort()
-  }, [connection.socket, connection.serverUrl, connection.sessionId, connection.sessionReady, onSubAgentStarted, onSubAgentCompleted])
+  }, [connection.socket, connection.serverUrl, connection.sessionId, connection.sessionReady, onSubAgentStarted, onSubAgentCompleted, onJobUpdate])
+
+  // Fetch persisted jobs on session ready (for re-entry)
+  useEffect(() => {
+    if (!connection.serverUrl || !connection.sessionId || !connection.sessionReady) return
+
+    fetch(`${connection.serverUrl}/api/v1/jobs?sessionId=${connection.sessionId}`)
+      .then(res => res.json())
+      .then(result => {
+        if (result.data?.length) {
+          setJobs(result.data.map((j: any) => ({
+            id: j.id,
+            sessionId: j.sessionId,
+            messageId: j.messageId,
+            type: j.type,
+            name: j.name,
+            status: j.status,
+            startedAt: j.startedAt,
+            completedAt: j.completedAt,
+            progress: j.progress,
+            metadata: j.metadata,
+            resultFiles: j.resultFiles,
+            errorMessage: j.errorMessage,
+          })))
+        }
+      })
+      .catch(() => {}) // silent fail
+  }, [connection.serverUrl, connection.sessionId, connection.sessionReady])
 
   // Update thinking verb when duration crosses phase thresholds (30s, 90s)
   // This implements the "smart verb selection based on duration" feature
@@ -390,6 +450,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     todoItems,
     todoStats,
     activeSubAgents,
+    jobs,
     currentActivity,
   }
 }

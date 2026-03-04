@@ -20,6 +20,7 @@ const SolutionStepSchema = z.object({
   formula: z.string().optional(),
   reasoning: z.string().min(1),
   commonErrors: z.array(z.string()),
+  relatedKnowledgePoints: z.array(z.string()).optional(),
 });
 
 const MistakeSchema = z.object({
@@ -61,9 +62,24 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   commonMistakes: z.array(MistakeSchema),
   knowledgeGapAnalysis: z.string().min(1),
   difficulty: z.number().int().min(1).max(5),
+  difficultyAssessment: z.object({
+    score: z.number().int().min(1).max(5),
+    pitfalls: z.array(z.string().min(1)).min(1),
+    reasoning: z.string().min(1),
+  }),
   relatedQuizzes: z.array(RelatedQuizSchema),
   timeEstimate: z.string().min(1),
+  timeAssessment: z.object({
+    estimate: z.string().min(1),
+    reasoning: z.string().min(1),
+  }),
   kpRefinementResult: KpRefinementResultSchema,
+  parsedContent: z.object({
+    stem: z.string().min(1),
+    options: z.array(z.string()),
+    correctAnswer: z.string().optional(),
+    quizType: z.enum(['choice', 'fill', 'subjective']),
+  }),
 };
 
 // ============ ERROR TRACKING SCHEMAS (Error-Based Recommendation System) ============

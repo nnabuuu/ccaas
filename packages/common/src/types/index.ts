@@ -627,11 +627,12 @@ export {
   type SubAgentCompletedPayload,
   type SubAgentCompletedEvent,
   type ErrorEvent,
-  type FrontendEvent,
-  type FrontendEventType,
+  type SessionEvent,
+  type SessionEventType,
   type DecisionLogic,
   type GoalNarrative,
   type ActiveSubAgent,
+  type JobUpdateEventZod,
 } from '../schemas/events';
 
 // ============================================================================
@@ -715,10 +716,68 @@ export interface SessionTemplate {
 
   /** Session TTL in milliseconds (overrides tenant default, bounded by plan max) */
   sessionTtlMs?: number;
+
+  /** Bundle IDs to activate for this session template */
+  bundles?: string[];
 }
 
 /**
  * Map of template names to template configurations
  */
 export type SessionTemplateMap = Record<string, SessionTemplate>;
+
+// ============================================================================
+// Bundle Types
+// ============================================================================
+
+/**
+ * Tool event trigger — maps an MCP tool name to a frontend event type.
+ * When the tool completes, the platform emits the corresponding event.
+ */
+export interface ToolEventTrigger {
+  /** MCP tool name (without mcp__ prefix) */
+  toolName: string;
+  /** Frontend event type to emit */
+  eventType: 'output_update';
+}
+
+/**
+ * Bundle = platform-level capability package.
+ *
+ * Bundles encapsulate:
+ * - Optional MCP server (tool implementation)
+ * - Tool-to-event trigger mappings
+ * - Optional system prompt additions
+ *
+ * Bundles are enabled at the tenant level and referenced by session templates.
+ *
+ * @example
+ * ```typescript
+ * const bundle: BundleDefinition = {
+ *   id: 'structured-output',
+ *   name: '结构化输出',
+ *   description: 'Sync structured data to frontend via write_output tool',
+ *   toolEventTriggers: [{ toolName: 'write_output', eventType: 'output_update' }],
+ * }
+ * ```
+ */
+export interface BundleDefinition {
+  /** Unique bundle identifier (e.g. 'structured-output', 'file-attachments') */
+  id: string;
+
+  /** Display name */
+  name: string;
+
+  /** Description of what this bundle provides */
+  description: string;
+
+  /** Optional MCP server that this bundle provides */
+  mcpServer?: McpServerConfig;
+
+  /** Tool name → event type mappings */
+  toolEventTriggers: ToolEventTrigger[];
+
+  /** Optional text appended to the system prompt when this bundle is active */
+  appendSystemPrompt?: string;
+}
 

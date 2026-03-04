@@ -112,6 +112,7 @@ export type {
   UnifiedTask,
   TaskGroups,
   TaskBadgeState,
+  JobInfo,
   FileMetadata,
   FileVersion,
   FilePreviewData,

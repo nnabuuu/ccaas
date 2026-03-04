@@ -10,7 +10,9 @@ import {
   type FileMetadata,
   type TokenUsage,
 } from '@kedge-agentic/react-sdk'
+import type { JobInfo } from '@kedge-agentic/react-sdk'
 import type { Message, SyncField, TodoItem, TodoStats, ActiveSubAgent, TabType, MessageTokenUsage, PendingUpdateWithMeta } from '../types'
+import { JobMiniCard } from './JobMiniCard'
 import MessageBubble from './MessageBubble'
 import { SegmentBubble } from './SegmentBubble'
 import QuickPrompts from './QuickPrompts'
@@ -62,10 +64,12 @@ interface ChatPanelProps {
   todoItems?: TodoItem[]
   todoStats?: TodoStats | null
   activeSubAgents?: ActiveSubAgent[]
+  jobs?: JobInfo[]
   tokenUsage?: TokenUsage | null
   pendingUpdates?: Map<SyncField, { field: SyncField; value: unknown; preview: string; synced?: boolean; syncedAt?: Date }>
   pendingUpdatesWithMeta?: Map<SyncField, PendingUpdateWithMeta>
   modifiedFields?: Set<SyncField>
+  autoSync?: boolean
   newFilesCount?: number
   sessionId?: string
   lessonPlanId?: string
@@ -92,10 +96,12 @@ export function ChatPanel({
   todoItems = [],
   todoStats = null,
   activeSubAgents = [],
+  jobs = [],
   tokenUsage = null,
   pendingUpdates,
   pendingUpdatesWithMeta,
   modifiedFields,
+  autoSync = false,
   newFilesCount = 0,
   sessionId,
   lessonPlanId,
@@ -121,6 +127,7 @@ export function ChatPanel({
   const taskTracking = useTaskTracking({
     activeSubAgents,
     todoItems,
+    jobs,
   })
 
   // File attachment handler - only available when lessonPlanId exists
@@ -294,38 +301,50 @@ export function ChatPanel({
             <p className="mt-1 text-sm">向AI助手描述您的备课需求</p>
           </div>
         ) : (
-          splitMessages.map((splitMsg) => (
-            splitMsg.role === 'assistant' ? (
-              <AssistantMessageGroup
-                key={splitMsg.messageId}
-                splitMessage={splitMsg}
-                tokenUsage={splitMsg.tokenUsage as MessageTokenUsage}
-                timestamp={splitMsg.timestamp}
-                outputUpdates={splitMsg.original.outputUpdates}
-                onSync={(field) => onSync(field as SyncField)}
-                onDiscard={(field) => onDiscard(field as SyncField)}
-                renderSyncButton={undefined}
-                renderTokenUsage={(usage) => <CustomTokenUsageFooter usage={usage as MessageTokenUsage} />}
-                renderSegment={(segment, isLast) => (
-                  <SegmentBubble
-                    key={segment.id}
-                    segment={segment}
-                    isLast={isLast}
+          splitMessages.map((splitMsg) => {
+            // Find jobs associated with this message
+            const associatedJobs = jobs.filter(j => j.messageId === splitMsg.messageId)
+
+            return (
+              <div key={splitMsg.messageId}>
+                {splitMsg.role === 'assistant' ? (
+                  <AssistantMessageGroup
+                    splitMessage={splitMsg}
+                    tokenUsage={splitMsg.tokenUsage as MessageTokenUsage}
+                    timestamp={splitMsg.timestamp}
+                    outputUpdates={splitMsg.original.outputUpdates}
+                    onSync={(field) => onSync(field as SyncField)}
+                    onDiscard={(field) => onDiscard(field as SyncField)}
+                    renderSyncButton={undefined}
+                    renderTokenUsage={(usage) => <CustomTokenUsageFooter usage={usage as MessageTokenUsage} />}
+                    renderSegment={(segment, isLast) => (
+                      <SegmentBubble
+                        key={segment.id}
+                        segment={segment}
+                        isLast={isLast}
+                      />
+                    )}
+                  />
+                ) : (
+                  <MessageBubble
+                    message={splitMsg.original as any}
+                    onSync={onSync}
+                    onDiscard={onDiscard}
+                    pendingUpdates={pendingUpdates}
+                    modifiedFields={modifiedFields}
                   />
                 )}
-              />
-            ) : (
-              <MessageBubble
-                key={splitMsg.messageId}
-                message={splitMsg.original as any}
-                onSync={onSync}
-                onDiscard={onDiscard}
-                pendingUpdates={pendingUpdates}
-                modifiedFields={modifiedFields}
-              />
+                {associatedJobs.map(job => (
+                  <JobMiniCard
+                    key={job.id}
+                    job={job}
+                    onSwitchToTasks={() => setActiveTab('tasks')}
+                  />
+                ))}
+              </div>
             )
-          ))
-        )}
+          }))
+        }
         <div ref={messagesEndRef} />
         </div>
       )}
@@ -372,6 +391,7 @@ export function ChatPanel({
       {pendingUpdatesWithMeta && onSyncAll && (
         <GlobalSyncSection
           pendingUpdates={pendingUpdatesWithMeta}
+          autoSync={autoSync}
           onSyncAll={onSyncAll}
           onSyncField={onSync}
           onDiscardField={onDiscard}

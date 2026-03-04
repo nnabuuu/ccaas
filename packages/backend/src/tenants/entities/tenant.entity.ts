@@ -63,6 +63,8 @@ export class Tenant {
     sessionTemplates?: SessionTemplateMap;
     defaultSessionTemplate?: string;
     solutionAppliedAt?: string;
+    /** Enabled bundle IDs for this tenant (e.g. ['structured-output', 'file-attachments']) */
+    enabledBundles?: string[];
   };
 
   @Column({ default: 100 })

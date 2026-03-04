@@ -10,13 +10,13 @@
  * - Sequence-based event replay on reconnect
  */
 
-import type { FrontendEvent } from '@kedge-agentic/common'
+import type { SessionEvent } from '@kedge-agentic/common'
 import { parseSseChunk } from '../utils/parseSseChunk'
 
 export interface SseStreamOptions {
   serverUrl: string
   sessionId: string
-  onEvent: (event: FrontendEvent) => void
+  onEvent: (event: SessionEvent) => void
   onError?: (error: Error) => void
   onDone?: () => void
 }
@@ -90,7 +90,7 @@ export function useSseStream() {
             const envelopes = parseSseChunk(buffer)
             for (const envelope of envelopes) {
               lastSeq = Math.max(lastSeq, envelope.seq)
-              onEvent(envelope.event as FrontendEvent)
+              onEvent(envelope.event as SessionEvent)
             }
           }
           onDone?.()
@@ -114,7 +114,7 @@ export function useSseStream() {
               onDone?.()
               return
             }
-            onEvent(envelope.event as FrontendEvent)
+            onEvent(envelope.event as SessionEvent)
           }
         }
       }

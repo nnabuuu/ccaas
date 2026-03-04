@@ -223,7 +223,7 @@ describe('Chat Flow Integration Tests', () => {
    * Simulate CLI events by calling eventMapperService directly
    */
   function emitCLIEvent(event: object) {
-    return eventMapperService.mapToFrontendEvents(
+    return eventMapperService.mapToSessionEvents(
       event as any,
       mockSession.sessionId,
       mockSession.clientId,

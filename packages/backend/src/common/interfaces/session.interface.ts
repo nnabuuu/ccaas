@@ -7,6 +7,7 @@
 import type { ChildProcess } from 'node:child_process';
 import type { Writable } from 'node:stream';
 import type { Socket } from 'socket.io';
+import type { SessionEvent } from './session-event.interface';
 
 /**
  * Status of a managed session
@@ -69,6 +70,10 @@ export interface ManagedSession {
 
   // When CLI exited processing state — preserves start time for duration diagnostics
   processingEndedAt?: Date;
+
+  // Current event handler — updated on each turn so reused CLI processes
+  // route events to the correct orchestration's completionPromise
+  currentOnEvent?: (event: SessionEvent) => void;
 }
 
 /**

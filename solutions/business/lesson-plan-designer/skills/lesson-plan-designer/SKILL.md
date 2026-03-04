@@ -342,6 +342,17 @@ AI：[每次都调用 read_context() 不带 mode 参数]
 
 ---
 
+## 全自动备课模式
+
+当用户请求"全自动备课"或"一键完成所有内容"时：
+
+1. 调用 `read_context()` 获取当前表单状态
+2. 按顺序依次调用 `write_output`（每个字段一次）：
+   objectives → studentAnalysis → materialsNeeded → content → assessmentMethods → teachingMethods
+3. 不要在字段之间等待用户确认
+4. 基于已有的基本信息（学科、年级、章节）生成内容
+5. 跳过已有内容的字段（除非明显不完整）
+
 ## 使用方式
 
 1. **【强制】读取当前状态**：调用 `read_context()` 了解当前备课方案

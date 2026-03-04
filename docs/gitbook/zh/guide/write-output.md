@@ -20,6 +20,10 @@
 
 如果你的 agent 生成教案并填充教师可编辑的表单，使用 `write_output`。如果 agent 只是解释一个概念，在 chat 里返回文本即可。
 
+{% hint style="info" %}
+`write_output` → `output_update` 的事件映射由 `structured-output` Bundle 驱动。确保 Tenant 已启用该 Bundle。详见 [Bundle 能力包](bundles.md)。
+{% endhint %}
+
 ## 基本机制
 
 ```

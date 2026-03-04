@@ -45,7 +45,7 @@ describe('HeadlessExecutionService', () => {
 
   beforeEach(async () => {
     eventMapperService = {
-      mapToFrontendEvents: jest.fn().mockReturnValue([]),
+      mapToSessionEvents: jest.fn().mockReturnValue([]),
     };
 
     skillSyncService = {
@@ -95,7 +95,7 @@ describe('HeadlessExecutionService', () => {
       (child_process.spawn as jest.Mock).mockReturnValue(mockProcess);
 
       // Map events to return a text_delta
-      eventMapperService.mapToFrontendEvents.mockImplementation((cliEvent: any) => {
+      eventMapperService.mapToSessionEvents.mockImplementation((cliEvent: any) => {
         if (cliEvent.type === 'assistant') {
           return [{
             type: 'text_delta',

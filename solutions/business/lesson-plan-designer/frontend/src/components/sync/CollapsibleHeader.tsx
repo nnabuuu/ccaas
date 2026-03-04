@@ -5,6 +5,7 @@ export interface CollapsibleHeaderProps {
   unsyncedCount: number
   syncedCount?: number
   isSyncing: boolean
+  autoSync?: boolean
   onToggle: () => void
   onSyncAll: () => void
 }
@@ -22,6 +23,7 @@ export function CollapsibleHeader({
   unsyncedCount,
   syncedCount = 0,
   isSyncing,
+  autoSync = false,
   onToggle,
   onSyncAll,
 }: CollapsibleHeaderProps) {
@@ -45,19 +47,26 @@ export function CollapsibleHeader({
         </span>
       </button>
 
-      {/* Right: Sync All button (只在有未同步字段时显示) */}
+      {/* Right: Auto-sync indicator or Sync All button */}
       {unsyncedCount > 0 && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onSyncAll()
-          }}
-          disabled={isSyncing}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ArrowsClockwise size={14} weight="regular" className={isSyncing ? 'animate-spin' : ''} />
-          {isSyncing ? '同步中...' : '全部同步'}
-        </button>
+        autoSync ? (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600">
+            <ArrowsClockwise size={14} weight="regular" className="animate-spin" />
+            自动同步中...
+          </span>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onSyncAll()
+            }}
+            disabled={isSyncing}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <ArrowsClockwise size={14} weight="regular" className={isSyncing ? 'animate-spin' : ''} />
+            {isSyncing ? '同步中...' : '全部同步'}
+          </button>
+        )
       )}
     </div>
   )

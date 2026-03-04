@@ -3,7 +3,6 @@ import { Group, Panel, Separator, usePanelRef } from 'react-resizable-panels'
 import { useLessonPlanSession } from './hooks/useLessonPlanSession'
 import { useScrollSpy } from './hooks/useScrollSpy'
 import { useSectionEditor } from './hooks/useSectionEditor'
-import { useSkills } from './hooks/useSkills'
 import { useChatLayout } from './hooks/useChatLayout'
 import Header from './components/Header'
 import OutlinePanel from './components/OutlinePanel'
@@ -81,19 +80,8 @@ function App() {
   // Panel ref for side-by-side mode
   const chatPanelRef = usePanelRef()
 
-  // Skills hook (must be before session hook to provide enabledSkillSlugs)
-  const {
-    skills,
-    enabledSkillIds,
-    refresh: refreshSkills,
-  } = useSkills(TENANT_ID)
-
-  // Convert enabled skill IDs to slugs for the session hook
-  const enabledSkillSlugs = useMemo(() => {
-    return skills
-      .filter(s => enabledSkillIds.has(s.id))
-      .map(s => s.slug)
-  }, [skills, enabledSkillIds])
+  // Skills are managed by Session Templates on the server side.
+  // No need to fetch skills from admin API in the frontend.
 
   // Lesson plan session hook
   const {
@@ -111,6 +99,8 @@ function App() {
     pendingUpdates,
     pendingUpdatesWithMeta,
     modifiedFields,
+    autoSync,
+    toggleAutoSync,
     activeTools,
     isThinking,
     thinkingContent,
@@ -120,6 +110,7 @@ function App() {
     todoItems,
     todoStats,
     activeSubAgents,
+    jobs,
     newFilesCount,
     isLoadingHistory,
     cancelProcessing,
@@ -135,7 +126,6 @@ function App() {
     updateField,
   } = useLessonPlanSession({
     tenantId: TENANT_ID,
-    enabledSkillSlugs,
   })
 
   // Context sync is now handled automatically in useLessonPlanSession hook
@@ -239,12 +229,11 @@ function App() {
     setSkillSaving(true)
     try {
       await api.updateSkill(skillId, { content })
-      await refreshSkills()
       setEditingSkill(null)
     } finally {
       setSkillSaving(false)
     }
-  }, [refreshSkills])
+  }, [])
 
   // Create savingSections set from isSaving function
   const savingSections = useMemo(() => {
@@ -273,10 +262,12 @@ function App() {
     todoItems,
     todoStats,
     activeSubAgents,
+    jobs,
     tokenUsage,
     pendingUpdates,
     pendingUpdatesWithMeta,
     modifiedFields,
+    autoSync,
     newFilesCount,
     isLoadingHistory,
     onSendMessage: sendMessage,
@@ -285,7 +276,7 @@ function App() {
     onDiscard: discardUpdate,
     onCancel: cancelProcessing,
     onClearConversation: clearConversation,
-  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, tokenUsage, pendingUpdates, pendingUpdatesWithMeta, modifiedFields, newFilesCount, isLoadingHistory, sendMessage, syncToForm, syncAll, discardUpdate, cancelProcessing, clearConversation])
+  }), [messages, isProcessing, isMainProcessing, hasActiveSubAgents, connected, connection, sessionId, lessonPlan?.id, activeTools, isThinking, thinkingContent, thinkingStartTime, thinkingVerb, todoItems, todoStats, activeSubAgents, jobs, tokenUsage, pendingUpdates, pendingUpdatesWithMeta, modifiedFields, autoSync, newFilesCount, isLoadingHistory, sendMessage, syncToForm, syncAll, discardUpdate, cancelProcessing, clearConversation])
 
   // Collapse/expand handlers
   const handleToggleCollapse = useCallback(() => {
@@ -457,6 +448,8 @@ function App() {
         connected={connected}
         saving={saving}
         hasChanges={hasUnsavedChanges}
+        autoSync={autoSync}
+        onToggleAutoSync={toggleAutoSync}
         onSave={handleSave}
         onNew={() => setShowNewDialog(true)}
       />

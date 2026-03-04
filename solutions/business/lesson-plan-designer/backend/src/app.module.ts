@@ -8,6 +8,9 @@ import { CurriculumStandardsModule } from './curriculum-standards/curriculum-sta
 import { TextbookModule } from './textbook/textbook.module';
 import { FilesModule } from './files/files.module';
 import { HooksModule } from './hooks/hooks.module';
+import { AttentionFeedModule } from './attention-feed/attention-feed.module';
+import { FavoritesModule } from './favorites/favorites.module';
+import { SharesModule } from './shares/shares.module';
 
 @Module({
   imports: [
@@ -16,6 +19,7 @@ import { HooksModule } from './hooks/hooks.module';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    AttentionFeedModule,
     LessonPlansModule,
     SessionsModule,
     SolutionConfigModule,
@@ -24,6 +28,8 @@ import { HooksModule } from './hooks/hooks.module';
     TextbookModule,
     FilesModule,
     HooksModule,
+    FavoritesModule,
+    SharesModule,
   ],
 })
 export class AppModule {}

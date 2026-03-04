@@ -11,7 +11,7 @@
  */
 
 import { useRef, useCallback } from 'react'
-import type { FrontendEvent } from '@kedge-agentic/common'
+import type { SessionEvent } from '@kedge-agentic/common'
 
 /**
  * SSE envelope wrapping a frontend event (matches StreamRegistryService format)
@@ -20,13 +20,13 @@ interface SseEnvelope {
   seq: number
   sessionId: string
   timestamp: string
-  event: FrontendEvent
+  event: SessionEvent
 }
 
 export interface SseStreamOptions {
   serverUrl: string
   sessionId: string
-  onEvent: (event: FrontendEvent) => void
+  onEvent: (event: SessionEvent) => void
   onError?: (error: Error) => void
   onDone?: () => void
 }

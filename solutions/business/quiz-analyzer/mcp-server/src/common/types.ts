@@ -8,9 +8,12 @@ export const SYNC_FIELDS = [
   'commonMistakes',        // Array of Mistake
   'knowledgeGapAnalysis',  // Analysis of knowledge gaps (string, Markdown)
   'difficulty',            // Difficulty 1-5 (number)
+  'difficultyAssessment',  // Rich difficulty with pitfalls + reasoning
   'relatedQuizzes',        // Array of RelatedQuiz
   'timeEstimate',          // Estimated solving time (string)
+  'timeAssessment',        // Rich time estimate with reasoning
   'kpRefinementResult',    // Complete KP refinement result (tags + trace + metadata)
+  'parsedContent',         // Standardized parsed quiz content (stem, options, type)
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
@@ -37,6 +40,12 @@ export interface SolutionStep {
   formula?: string;
   reasoning: string;
   commonErrors: string[];
+  relatedKnowledgePoints?: string[];  // 该步涉及的知识点名称
+}
+
+export interface TimeAssessment {
+  estimate: string;       // "约 3-5 分钟"
+  reasoning: string;      // "需要画辅助线+两次角度计算，计算量中等"
 }
 
 export interface Mistake {
@@ -65,6 +74,19 @@ export interface KpRefinementResult {
   traversalType: string;
   tagCount: number;
   trace: Record<string, unknown>;
+}
+
+export interface ParsedContent {
+  stem: string;
+  options: string[];
+  correctAnswer?: string;
+  quizType: 'choice' | 'fill' | 'subjective';
+}
+
+export interface DifficultyAssessment {
+  score: number;           // 1-5
+  pitfalls: string[];      // 容易犯的错误
+  reasoning: string;       // 为什么是这个难度
 }
 
 export interface WriteOutputInput {

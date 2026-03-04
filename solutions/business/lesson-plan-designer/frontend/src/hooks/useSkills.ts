@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Skill } from '../types'
 
+const CCAAS_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
+
 export interface UseSkillsReturn {
   /**
    * List of all skills fetched from the CCAAS API
@@ -72,7 +74,7 @@ export function useSkills(tenantId: string): UseSkillsReturn {
 
     try {
       // Fetch from CCAAS skills API (via vite proxy)
-      const response = await fetch('/api/v1/skills', {
+      const response = await fetch(`${CCAAS_URL}/api/v1/skills`, {
         headers: {
           'X-Tenant-Id': tenantId,
         },
@@ -121,7 +123,7 @@ export function useSkills(tenantId: string): UseSkillsReturn {
   // Toggle skill enabled state via CCAAS API
   const toggleSkill = useCallback(async (skillId: string) => {
     try {
-      const response = await fetch(`/api/v1/skills/${skillId}/toggle`, {
+      const response = await fetch(`${CCAAS_URL}/api/v1/skills/${skillId}/toggle`, {
         method: 'PATCH',
         headers: {
           'X-Tenant-Id': tenantId,

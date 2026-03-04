@@ -49,7 +49,7 @@ import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completio
 import { SendMessageDto } from './dto/send-message.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
-import type { FrontendEvent } from '../common/interfaces';
+import type { SessionEvent } from '../common/interfaces';
 import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('sessions')

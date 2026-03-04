@@ -61,6 +61,7 @@ export interface SolutionStep {
   formula?: string;
   reasoning: string;
   commonErrors: string[];
+  relatedKnowledgePoints?: string[];
 }
 
 export interface Mistake {
@@ -285,6 +286,32 @@ export interface ErrorStatistics {
     topDescriptions: string[];
     relatedKnowledgePoints: string[];
   }>;
+}
+
+// ============ TIME ASSESSMENT (quiz-analyze-explain) ============
+
+export interface TimeAssessment {
+  estimate: string;       // "约 3-5 分钟"
+  reasoning: string;      // "需要画辅助线+两次角度计算，计算量中等"
+}
+
+// ============ DIFFICULTY ASSESSMENT (quiz-analyze-explain) ============
+
+export interface DifficultyAssessment {
+  score: number        // 1-5
+  pitfalls: string[]   // 容易犯的错误
+  reasoning: string    // 为什么是这个难度
+}
+
+// ============ PARSED CONTENT (quiz-analyze-explain) ============
+// Separate from ParsedQuiz above — this matches the 'parsedContent' SYNC_FIELD
+// used by the analyze-explain skill, while ParsedQuiz is used by QuizAnalysis.
+
+export interface ParsedContent {
+  stem: string
+  options: string[]
+  correctAnswer?: string
+  quizType: 'choice' | 'fill' | 'subjective'
 }
 
 // ============ KP REFINEMENT (unified-kp-search) ============

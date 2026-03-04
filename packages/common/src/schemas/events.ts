@@ -1,7 +1,7 @@
 /**
  * @kedge-agentic/common/schemas/events
  *
- * Zod schemas for frontend event types.
+ * Zod schemas for session event types.
  * These schemas match the backend's actual event structure.
  *
  * @packageDocumentation
@@ -61,6 +61,9 @@ export const ToolActivityPayloadSchema = z.object({
   // Timing
   duration: z.number().optional(),
   success: z.boolean().optional(),
+
+  // Turn context (attached by CCAAS backend, not from agent)
+  turnId: z.string().optional(),
 });
 
 export const ToolActivityEventSchema = BaseEventSchema.extend({
@@ -301,10 +304,34 @@ export const SubAgentCompletedEventSchema = BaseEventSchema.extend({
 });
 
 // ============================================================================
-// Union Schema for All Frontend Events
+// Job Update Event
 // ============================================================================
 
-export const FrontendEventSchema = z.discriminatedUnion('type', [
+export const JobUpdateEventSchema = BaseEventSchema.extend({
+  type: z.literal('job_update'),
+  jobId: z.string(),
+  messageId: z.string().optional(),
+  status: z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']),
+  name: z.string(),
+  jobType: z.string(),
+  progress: z.object({ step: z.string(), percent: z.number() }).optional(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(),
+  resultFiles: z.array(z.object({
+    name: z.string(),
+    path: z.string(),
+    size: z.number(),
+    mimeType: z.string(),
+  })).optional(),
+  errorMessage: z.string().optional(),
+});
+
+// ============================================================================
+// Union Schema for All Session Events
+// ============================================================================
+
+export const SessionEventSchema = z.discriminatedUnion('type', [
   TextDeltaEventSchema,
   ToolActivityEventSchema,
   AgentStatusEventSchema,
@@ -315,6 +342,7 @@ export const FrontendEventSchema = z.discriminatedUnion('type', [
   TodoUpdateEventSchema,
   SubAgentStartedEventSchema,
   SubAgentCompletedEventSchema,
+  JobUpdateEventSchema,
   ErrorEventSchema,
 ]);
 
@@ -344,8 +372,9 @@ export type SubAgentStartedEvent = z.infer<typeof SubAgentStartedEventSchema>;
 export type SubAgentCompletedPayload = z.infer<typeof SubAgentCompletedPayloadSchema>;
 export type SubAgentCompletedEvent = z.infer<typeof SubAgentCompletedEventSchema>;
 export type ErrorEvent = z.infer<typeof ErrorEventSchema>;
-export type FrontendEvent = z.infer<typeof FrontendEventSchema>;
-export type FrontendEventType = FrontendEvent['type'];
+export type SessionEvent = z.infer<typeof SessionEventSchema>;
+export type SessionEventType = SessionEvent['type'];
 export type DecisionLogic = z.infer<typeof DecisionLogicSchema>;
 export type GoalNarrative = z.infer<typeof GoalNarrativeSchema>;
 export type ActiveSubAgent = z.infer<typeof ActiveSubAgentSchema>;
+export type JobUpdateEventZod = z.infer<typeof JobUpdateEventSchema>;

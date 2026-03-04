@@ -13,14 +13,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventMapperService } from '../sessions/event-mapper.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
-import type { CLIEvent, FrontendEvent } from '../common/interfaces';
+import type { CLIEvent, SessionEvent } from '../common/interfaces';
 import type { ScheduledTask } from './entities/scheduled-task.entity';
 import type { ScheduledTaskExecution } from './entities/scheduled-task-execution.entity';
 
 export interface HeadlessResult {
   resultText: string;
   tokenUsage: { input: number; output: number; cached: number };
-  events: FrontendEvent[];
+  events: SessionEvent[];
   exitCode: number | null;
   workspacePath?: string;
 }
@@ -53,7 +53,7 @@ export class HeadlessExecutionService {
   async execute(
     task: ScheduledTask,
     execution: ScheduledTaskExecution,
-    onEvent?: (event: FrontendEvent) => void,
+    onEvent?: (event: SessionEvent) => void,
   ): Promise<HeadlessResult> {
     const sessionId = execution.sessionId;
 
@@ -232,7 +232,7 @@ export class HeadlessExecutionService {
       enabledSkillSlugs?: string[];
     },
     options?: HeadlessExecuteOptions,
-    onEvent?: (event: FrontendEvent) => void,
+    onEvent?: (event: SessionEvent) => void,
   ): Promise<HeadlessResult> {
     const { sessionId, tenantId, prompt, mcpServers, enabledSkillSlugs } = params;
     const timeoutMs = options?.timeoutMs ?? 600000;
@@ -402,9 +402,9 @@ export class HeadlessExecutionService {
     sessionId: string,
     tenantId: string,
     result: HeadlessResult,
-    onEvent?: (event: FrontendEvent) => void,
+    onEvent?: (event: SessionEvent) => void,
   ): void {
-    const frontendEvents = this.eventMapperService.mapToFrontendEvents(
+    const frontendEvents = this.eventMapperService.mapToSessionEvents(
       cliEvent,
       sessionId,
       `scheduled_${tenantId}`,

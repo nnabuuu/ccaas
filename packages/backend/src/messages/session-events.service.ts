@@ -8,7 +8,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { SessionEvent } from './entities/session-event.entity';
+import { SessionEventRecord } from './entities/session-event.entity';
 
 @Injectable()
 export class SessionEventsService {
@@ -16,8 +16,8 @@ export class SessionEventsService {
   private readonly seqCounters = new Map<string, number>();
 
   constructor(
-    @InjectRepository(SessionEvent)
-    private readonly repo: Repository<SessionEvent>,
+    @InjectRepository(SessionEventRecord)
+    private readonly repo: Repository<SessionEventRecord>,
   ) {}
 
   /**
@@ -51,7 +51,7 @@ export class SessionEventsService {
       limit?: number;
       offset?: number;
     },
-  ): Promise<SessionEvent[]> {
+  ): Promise<SessionEventRecord[]> {
     const qb = this.repo
       .createQueryBuilder('e')
       .where('e.sessionId = :sessionId', { sessionId })

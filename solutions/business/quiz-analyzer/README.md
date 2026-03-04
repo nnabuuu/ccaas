@@ -1,400 +1,168 @@
-# Quiz Analyzer - 教育题目智能分析系统
+# Quiz Analyzer (题目分析器)
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)]()
-[![Version](https://img.shields.io/badge/version-1.0.0-blue)]()
-[![License](https://img.shields.io/badge/license-MIT-green)]()
+AI 驱动的题目分析与讲解系统。粘贴一道题，自动完成知识点精准定位、难度评估、正确答案生成和分步解题思路讲解。
 
-An AI-powered educational quiz analysis system with knowledge point tagging, solution explanation, wrong answer analysis, and batch processing capabilities.
+## 快速开始
 
-## ✨ Features
+### 环境要求
 
-- 🎯 **AI-Powered Analysis**: Automated quiz analysis with thinking process (思路) and solution steps (解题步骤)
-- 🏷️ **Knowledge Point Tagging**: Hierarchical knowledge point classification with confidence scores
-- ⚠️ **Wrong Answer Analysis**: Common mistakes identification with frequency tracking and remediation advice
-- 📊 **Knowledge Gap Detection**: Identify learning gaps and suggest targeted improvements
-- ⚡ **Batch Processing**: Analyze multiple quizzes efficiently with real-time progress tracking and ETA
-- 🌳 **Knowledge Tree Viewer**: Interactive hierarchical knowledge point structure visualization
-- 🔄 **Real-time Updates**: Socket.io integration for live AI analysis results
-- 📱 **Responsive Design**: Mobile-friendly UI with dark mode support
+- Node.js 18+
+- CCAAS 平台后端运行中（默认 `http://localhost:3001`）
+- SQLite3（数据库已包含 31,000+ 知识点）
 
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+ (with npm)
-- SQLite3
-- curl (for testing)
-
-### 1. One-Command Setup
+### 启动
 
 ```bash
-# Install all dependencies and initialize database
+cd solutions/business/quiz-analyzer
+
+# 一键安装 + 初始化
 ./setup.sh
-```
 
-This will:
-- Install dependencies for all packages (scripts, mcp-server, backend, frontend)
-- Initialize SQLite database from schema
-- Import sample data (2 subjects, 8 knowledge points, 6 quizzes)
-- Build all packages
-- Verify installation
-
-### 2. Start All Services
-
-```bash
-# Start MCP Server, Backend, and Frontend
+# 启动所有服务
 ./start.sh
 ```
 
-Services will start in order:
-1. **MCP Server** (port 3006) - AI tools API
-2. **Backend** (port 3005) - REST API
-3. **Frontend** (port 5282) - Web UI
+服务启动后：
+- 前端：http://localhost:5282
+- MCP Server：端口 3006（由后端自动管理）
 
-### 3. Access the Application
-
-Open your browser to:
-- **Frontend**: http://localhost:5282 (dev) / https://app.zhushou.one/quiz-analyzer/ (production)
-- **Backend API**: http://localhost:3005/health
-- **MCP Health**: http://localhost:3006/health
-
-> **Note**: The frontend is configured for subpath deployment at `/quiz-analyzer/` (via Vite `base` and React Router `basename`). In local dev mode it still works at the root of port 5282.
-
-### 4. Stop Services
-
-```bash
-./stop.sh
-```
-
-## ⚙️ Skill Registration (Required)
-
-**Important**: Before using quiz-analyzer with the CCAAS platform, you must register the solution's skills to the CCAAS backend database.
-
-### Why Skill Registration is Required
-
-Quiz-analyzer defines its AI skills in `solution.json`, but these must be registered to the CCAAS backend before they can be used. Without registration:
-- ❌ AI will use global/default skills instead of quiz-analyzer-specific tools
-- ❌ `parse_quiz_content`, `write_output`, etc. won't be available to the AI
-- ❌ Frontend won't receive `output_update` events from AI analysis
-
-### One-Time Setup
-
-After installing dependencies (via `./setup.sh` or `npm install`), register the skills:
+### 首次使用前：注册 Skill
 
 ```bash
 cd ../../packages/backend
 npm run skill:import -- quiz-analyzer
 ```
 
-**Expected Output:**
+## 三种分析模式
+
+### 1. 题目分析与讲解（推荐）
+
+入口：首页 `/quiz-analyze`，两栏布局。
+
+**使用方式**：
+1. 左栏粘贴题目内容
+2. `Ctrl+Enter` 或点击"开始分析"
+3. 右栏逐步出现分析结果
+
+**输出内容**（按展示顺序）：
+
+| 顺序 | 内容 | 说明 |
+|------|------|------|
+| 1 | 题目结构 | 题干、选项、题型 + 难度条 + 时间预估 + KP 快速标签 |
+| 2 | 正确答案 | 标准答案 |
+| 3 | 分步解题 | 每步含标题、描述、公式、推理、常见错误 |
+| 4 | 知识点详情 | 完整匹配过程（仅教师视图） |
+
+**两阶段工作流**：
+- 阶段 1（分析）：知识点定位 → 题目解析 → 难度评估 → 时间评估
+- 阶段 2（讲解）：正确答案 → 分步解题思路
+
+分析过程中左栏实时显示 AI 的工具调用序列，完成后自动折叠。
+
+### 2. 完整分析
+
+入口：`/full-analysis`，三栏布局。
+
+- 左栏：粘贴题目 + 参考答案
+- 中栏：实时渲染解析后的题目结构和元数据
+- 右栏：AI 对话 + 工具调用过程
+
+适合需要 10 维度全面分析的场景。
+
+### 3. 知识点匹配
+
+入口：`/kp-match`，单栏聚焦。
+
+专注知识点定位，展示完整的 CDBT（置信度驱动双向遍历）决策路径：
+- 模糊搜索候选列表
+- 兄弟验证 / 上溯验证的每步推理
+- 最终确认的知识点标签（含置信度）
+
+## 教师 / 学生视图
+
+页面右上角切换：
+
+| | 教师视图 | 学生视图 |
+|---|---------|---------|
+| 题目结构 + 难度 + 时间 | 显示 | 显示 |
+| 正确答案 | 显示 | 显示 |
+| 解题步骤 | 显示（含每步关联 KP 标签） | 显示（隐藏 KP 标签） |
+| 知识点匹配详情 | 显示 | 隐藏 |
+
+## 分析输出字段说明
+
+### 难度评估 (DifficultyAssessment)
+
 ```
-🚀 Importing skills for solution: quiz-analyzer
+难度等级：3/5 (中等)
 
-📦 Solution: Quiz Analyzer
-📋 Skills to import: 4
+易错点：
+- 忘记对分母为零的情况进行讨论
+- 将绝对值不等式方向搞反
+- 漏掉负数情况的验证
 
-✅ Tenant exists: quiz-analyzer (227f2b75-d73a-d450-27ee-d523e270161f)
-
-📝 Processing: three-column-analysis
-   ✅ Created: three-column-analysis
-   📢 Published: three-column-analysis
-
-... (3 more skills)
-
-✨ Import complete!
-
-📊 Summary:
-   • Created: 4 skill(s)
-   • Total: 4 skill(s)
-   • Tenant: quiz-analyzer (227f2b75...)
+评估理由：涉及两个知识点交叉，需要分类讨论，计算量中等
 ```
 
-### Verification
+### 时间评估 (TimeAssessment)
 
-Check that skills are registered:
+```
+预估用时：约 5-7 分钟
+推理依据：需要画辅助线 + 两次角度计算，计算量中等偏上
+```
+
+### 分步解题 (SolutionSteps)
+
+每步包含：
+- 步骤标题 + 详细描述
+- 相关公式（如有）
+- 推理过程解释
+- 该步常见错误
+- 关联知识点（教师视图可见）
+
+## 数据要求
+
+系统使用 SQLite 数据库 (`data/quiz-analyzer.db`)：
+
+| 数据 | 规模 | 说明 |
+|------|------|------|
+| 学科目录 | 21 个 | 覆盖中小学主要学科 |
+| 知识点树 | 31,000+ 节点 | 层级结构，支持模糊搜索 |
+| 题库 | 可选 | 用于相似题推荐 |
+
+导入新数据：
+```bash
+cd scripts
+node analyze-excel-structure.js   # 分析 Excel 结构
+node import-excel-to-db.js        # 导入到 SQLite
+```
+
+## 配置
+
+前端配置位于 `frontend/src/lib/constants.ts`：
+
+```typescript
+export const APP_CONFIG = {
+  BACKEND_URL: 'http://localhost:3001',  // CCAAS 后端地址（必须是绝对 URL）
+  TENANT_ID: 'your-tenant-id',
+}
+```
+
+> **重要**：`BACKEND_URL` 必须是包含端口的绝对地址，**不能**为空字符串或相对路径。空字符串会导致请求发往前端端口，所有功能失效。
+
+## 常见问题
+
+**Q: 分析没有反应 / 请求发到了前端端口？**
+检查 `BACKEND_URL` 是否指向后端端口（3001），不能为空字符串。
+
+**Q: AI 使用了错误的工具？**
+确认已注册 Skill：`curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer"`
+
+**Q: 知识点搜索不准？**
+查看 `/kp-match` 页面的决策路径，了解模糊搜索锚点和 CDBT 验证过程。更精确的题目描述通常能改善结果。
+
+## 停止服务
 
 ```bash
-# Via API
-curl "http://localhost:3001/api/v1/skills?tenantId=quiz-analyzer" | python3 -m json.tool
-
-# Via database
-sqlite3 ../../packages/backend/.agent-workspace/data.db \
-  "SELECT slug, status, enabled FROM skills WHERE tenantId='227f2b75-d73a-d450-27ee-d523e270161f';"
-
-# Expected output:
-# analyze-student-answer|published|1
-# complete-analysis|published|1
-# knowledge-point-matching|published|1
-# three-column-analysis|published|1
-```
-
-### Troubleshooting
-
-**If AI uses wrong tools** (e.g., `list_issues` instead of `parse_quiz_content`):
-1. ✅ Verify skills are registered (see verification above)
-2. ✅ Check frontend sends `tenantId: 'quiz-analyzer'` in API requests
-3. ✅ Restart CCAAS backend to reload skill cache
-4. ✅ Clear browser console and retry analysis
-
-**If skill import fails**:
-- Ensure CCAAS backend is installed: `cd ../../packages/backend && npm install`
-- Ensure solution.json exists: `ls solution.json`
-- Check for syntax errors in solution.json: `cat solution.json | python3 -m json.tool`
-
-## 📖 Usage
-
-### Web Interface
-
-1. **Browse Quizzes** - Navigate to "题目列表" to see all quizzes
-2. **View Analysis** - Click on a quiz to see detailed AI analysis
-3. **Start AI Analysis** - Click "开始分析" to trigger real-time AI analysis
-4. **Batch Processing** - Go to "批量分析" to analyze multiple quizzes at once
-5. **Knowledge Tree** - Explore "知识点" to see the hierarchical structure
-
-### API Usage
-
-```bash
-# Health check
-curl http://localhost:3005/health
-
-# List quizzes
-curl http://localhost:3005/api/v1/quizzes?limit=10
-
-# Search quizzes
-curl -X POST http://localhost:3005/api/v1/quizzes/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "方程", "difficulty": 3}'
-
-# Get quiz analysis
-curl http://localhost:3005/api/v1/analyses/quiz-001
-
-# Get knowledge points tree
-curl http://localhost:3005/api/v1/knowledge-points/tree
-
-# Create batch job
-curl -X POST http://localhost:3005/api/v1/batch/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"name": "Math Grade 9", "quiz_ids": ["quiz-001", "quiz-002"]}'
-```
-
-See [Backend API Documentation](./backend/README.md) for complete API reference.
-
-## 🧪 Testing
-
-### Integration Test Suite
-
-```bash
-# Run full integration tests (requires services running)
-./test-integration.sh
-```
-
-Tests include:
-- ✓ Service health checks (MCP, Backend, Frontend)
-- ✓ MCP tool endpoints (8 tools)
-- ✓ Backend API endpoints (18 endpoints)
-- ✓ Database integrity
-- ✓ Frontend page loads
-
-## 🏗️ Architecture
-
-```
-quiz-analyzer/
-├── scripts/           # Excel import & database setup scripts
-│   ├── schema.sql             # Database schema (8 tables)
-│   ├── import-excel-to-db.js  # Two-pass import algorithm
-│   └── create-sample-data.js  # Sample data generator
-├── mcp-server/        # REST MCP Server - AI Tools (port 3006)
-│   ├── src/
-│   │   ├── index.ts           # 8 REST endpoints
-│   │   ├── types.ts           # SYNC_FIELDS definitions
-│   │   ├── schemas.ts         # Zod validation
-│   │   └── data-loader.ts     # Knowledge points tree loader
-│   └── README.md
-├── backend/           # NestJS API Server (port 3005)
-│   ├── src/
-│   │   ├── quizzes/           # Quiz CRUD + search
-│   │   ├── knowledge-points/  # Hierarchical tree API
-│   │   ├── analyses/          # Analysis CRUD
-│   │   ├── batch/             # Batch processing engine
-│   │   ├── common/            # Health check + filters
-│   │   └── database/          # TypeORM entities
-│   └── README.md
-├── frontend/          # React + Vite UI (port 5282)
-│   ├── src/
-│   │   ├── api/               # API client (axios)
-│   │   ├── hooks/             # useQuizSession (Socket.io)
-│   │   ├── components/        # Layout, AnalysisView
-│   │   └── pages/             # QuizList, QuizDetail, Batch, KnowledgePoints
-│   └── README.md
-├── data/              # SQLite database
-│   └── quiz-analyzer.db
-├── logs/              # Service logs
-└── solution.json      # CCAAS configuration
-```
-
-## 📊 Data Model
-
-### SYNC_FIELDS (10 Fields)
-
-AI analysis results synchronized in real-time:
-
-1. **quizAnalysis** - Overall summary (Markdown)
-2. **knowledgePointTags** - Tagged knowledge points with confidence
-3. **thinkingProcess** - Solution approach (思路, Markdown)
-4. **solutionSteps** - Step-by-step breakdown
-5. **correctAnswer** - The correct answer
-6. **commonMistakes** - Frequent errors with remediation
-7. **knowledgeGapAnalysis** - Learning gap analysis (Markdown)
-8. **difficulty** - Difficulty rating (1-5)
-9. **relatedQuizzes** - Similar quiz recommendations
-10. **timeEstimate** - Estimated solving time
-
-### Database Schema
-
-8 tables:
-- `subjects` - Subject catalog
-- `knowledge_points` - Hierarchical tree (self-referencing)
-- `quizzes` - Quiz content
-- `quiz_knowledge_links` - Many-to-many (quiz ↔ KP)
-- `quiz_analyses` - AI analysis results
-- `solution_steps` - Detailed steps
-- `batch_analysis_jobs` - Batch processing
-
-See [Database Schema](./scripts/schema.sql) for details.
-
-## 🔧 Tech Stack
-
-### Backend
-- **NestJS** 10.3 - Progressive Node.js framework
-- **TypeORM** 0.3.19 - ORM with SQLite support
-- **Socket.io** 4.6 - Real-time communication
-- **class-validator** - DTO validation
-
-### MCP Server
-- **Express** - REST API framework
-- **Zod** - Runtime validation
-- **better-sqlite3** - SQLite driver
-
-### Frontend
-- **React** 18 - UI library
-- **Vite** 5 - Build tool (fast HMR)
-- **TypeScript** 5.3 - Type safety
-- **React Router** 6 - Routing
-- **Socket.io Client** - Real-time updates
-- **Axios** - HTTP client
-
-### Database
-- **SQLite** - Lightweight database
-
-## 🛠️ Development
-
-### Individual Service Development
-
-```bash
-# MCP Server (port 3006)
-cd mcp-server
-npm install
-npm run build
-npm start
-
-# Backend (port 3005)
-cd backend
-npm install
-npm run start:dev  # Watch mode
-
-# Frontend (port 5282)
-cd frontend
-npm install
-npm run dev  # HMR enabled
-```
-
-### Database Management
-
-```bash
-# Access SQLite database
-sqlite3 data/quiz-analyzer.db
-
-# Common queries
-SELECT COUNT(*) FROM quizzes;
-SELECT COUNT(*) FROM knowledge_points;
-SELECT * FROM subjects;
-```
-
-### View Logs
-
-```bash
-# Real-time logs
-tail -f logs/mcp.log
-tail -f logs/backend.log
-tail -f logs/frontend.log
-```
-
-## 📝 Documentation
-
-- **[QUICKSTART.md](./QUICKSTART.md)** - Quick start guide
-- **[CLAUDE.md](./CLAUDE.md)** - Claude Code development guide
-- **[backend/README.md](./backend/README.md)** - Backend API documentation
-- **[frontend/README.md](./frontend/README.md)** - Frontend component guide
-- **[MCP_DOCUMENTATION_COMPLETE.md](./MCP_DOCUMENTATION_COMPLETE.md)** - MCP tools reference
-- **[IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md)** - Implementation tracking
-
-## 🐛 Troubleshooting
-
-### Port Already in Use
-
-```bash
-# Kill processes on specific ports
-lsof -ti:3006 | xargs kill -9  # MCP
-lsof -ti:3005 | xargs kill -9  # Backend
-lsof -ti:5282 | xargs kill -9  # Frontend
-
-# Or use stop script
 ./stop.sh
 ```
-
-### Database Not Found
-
-```bash
-# Regenerate database
-cd scripts
-npm install
-node create-sample-data.js
-```
-
-### Build Errors
-
-```bash
-# Clean and rebuild
-cd mcp-server && npm run build
-cd backend && npm run build
-cd frontend && npm run build
-```
-
-### Services Won't Start
-
-```bash
-# Check logs
-cat logs/mcp.log
-cat logs/backend.log
-cat logs/frontend.log
-
-# Verify database
-sqlite3 data/quiz-analyzer.db ".tables"
-```
-
-## 📄 License
-
-MIT License - see LICENSE file for details
-
-## 🙏 Acknowledgments
-
-- Built with Claude Code as a Service (CCAAS)
-- Uses NestJS framework for backend
-- React + Vite for modern frontend
-- Socket.io for real-time updates
-
----
-
-**Version**: 1.0.0
-**Last Updated**: 2026-02-06
-**Status**: ✅ Complete and Production Ready

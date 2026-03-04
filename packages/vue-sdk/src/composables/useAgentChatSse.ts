@@ -28,7 +28,7 @@
 
 import { ref, watch, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
-import type { FrontendEvent, TextDeltaEvent, AgentStatusEvent, OutputUpdateEvent, ToolActivityPayload } from '@kedge-agentic/common'
+import type { SessionEvent, TextDeltaEvent, AgentStatusEvent, OutputUpdateEvent, ToolActivityPayload } from '@kedge-agentic/common'
 import type {
   UseAgentConnectionReturn,
   UseSseChatV2Options,
@@ -81,7 +81,7 @@ export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Retur
   /**
    * Shared event dispatcher - handles events from both Socket.IO and SSE transports.
    */
-  function dispatchEvent(eventType: string, data: FrontendEvent) {
+  function dispatchEvent(eventType: string, data: SessionEvent) {
     if (eventType === 'text_delta') {
       const ev = data as TextDeltaEvent
       const last = contentBlocks[contentBlocks.length - 1]
@@ -227,12 +227,12 @@ export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Retur
 
       if (transport === 'sse' || !socket) return
 
-      const onTextDelta = (data: TextDeltaEvent) => dispatchEvent('text_delta', data as FrontendEvent)
-      const onOutputUpdateEv = (event: OutputUpdateEvent) => dispatchEvent('output_update', event as FrontendEvent)
-      const onAgentStatus = (data: AgentStatusEvent) => dispatchEvent('agent_status', data as FrontendEvent)
-      const onToolActivity = (data: { payload: ToolActivityPayload }) => dispatchEvent('tool_activity', data as unknown as FrontendEvent)
+      const onTextDelta = (data: TextDeltaEvent) => dispatchEvent('text_delta', data as SessionEvent)
+      const onOutputUpdateEv = (event: OutputUpdateEvent) => dispatchEvent('output_update', event as SessionEvent)
+      const onAgentStatus = (data: AgentStatusEvent) => dispatchEvent('agent_status', data as SessionEvent)
+      const onToolActivity = (data: { payload: ToolActivityPayload }) => dispatchEvent('tool_activity', data as unknown as SessionEvent)
       const onTokenUsageEv = (data: { payload: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } }) =>
-        dispatchEvent('token_usage', data as unknown as FrontendEvent)
+        dispatchEvent('token_usage', data as unknown as SessionEvent)
 
       socket.on('text_delta', onTextDelta)
       socket.on('output_update', onOutputUpdateEv)

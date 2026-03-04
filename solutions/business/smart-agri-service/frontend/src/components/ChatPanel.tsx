@@ -25,7 +25,13 @@ interface ChatPanelProps {
 
 /** Strip MCP server prefix from tool names */
 function normalizeToolName(name: string) {
-  return name.replace(/^mcp__[^_]+__/, '').replace(/^mcp__/, '')
+  // MCP tool format: mcp__{serverName}__{toolName}
+  // Server names can contain underscores, so split on double-underscore separator
+  const parts = name.split('__')
+  if (parts.length >= 3 && parts[0] === 'mcp') {
+    return parts.slice(2).join('__')
+  }
+  return name
 }
 
 /** Determine a consumer stage's display status */
@@ -87,6 +93,7 @@ export function ChatPanel({
           startTime: tool.timestamp.getTime(),
           endTime: tool.endTime,
           phase: tool.phase,
+          turnId: tool.turnId,
         })
         changed = true
       } else if (tool.phase !== existing.phase || (tool.endTime && !existing.endTime)) {

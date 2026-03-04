@@ -18,20 +18,19 @@ interface CompleteAnalysisViewProps {
 ---
 
 ### 2. useQuizSession.ts (Line 141)
-**Error**: `'connection.socket' is possibly 'null'`
+**Error**: Manual event listener setup with null-check issues (previously `connection.socket` based)
 
 **Fix**:
 ```typescript
-useEffect(() => {
-  const socket = connection.socket  // ✅ Extract to variable
-  if (!socket) return
-
-  socket.on('output_update', handleOutputUpdate)
-  return () => socket.off('output_update', handleOutputUpdate)
-}, [connection.socket])
+// ✅ Use SDK's onOutputUpdate callback instead of manual event listeners
+const chat = useAgentChat({
+  connection,
+  tenantId: TENANT_ID,
+  onOutputUpdate: handleOutputUpdate,
+})
 ```
 
-**Reason**: TypeScript type narrowing works better with a local variable than accessing properties in closures.
+**Reason**: The SDK now uses SSE instead of Socket.IO. Output updates are handled via the `onOutputUpdate` callback prop, eliminating null-check issues with socket references.
 
 ---
 

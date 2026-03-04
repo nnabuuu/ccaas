@@ -84,6 +84,7 @@ export interface ToolTimelineEntry {
   startTime: number;
   endTime?: number;
   phase: string;
+  turnId?: string;
 }
 
 // Consumer progress stages (farmer mode - friendly, human-readable)

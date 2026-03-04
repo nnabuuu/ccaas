@@ -29,7 +29,7 @@ import { Session as SessionEntity } from '../admin/entities/session.entity';
 import type {
   ManagedSession,
   SessionStats,
-  FrontendEvent,
+  SessionEvent,
   WorkspaceFileInfo,
   WorkspaceTreeResponse,
 } from '../common/interfaces';
@@ -248,7 +248,7 @@ export class SessionService implements OnModuleDestroy {
   async ensureCLIProcess(
     session: ManagedSession,
     initialMessage: string,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
     attachments?: ResolvedAttachment[],
     appendSystemPrompt?: string,
   ): Promise<void> {
@@ -268,7 +268,7 @@ export class SessionService implements OnModuleDestroy {
   async sendFollowUp(
     session: ManagedSession,
     message: string,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
     attachments?: ResolvedAttachment[],
   ): Promise<void> {
     return this.cliProcessService.sendFollowUp(session, message, onEvent, attachments);

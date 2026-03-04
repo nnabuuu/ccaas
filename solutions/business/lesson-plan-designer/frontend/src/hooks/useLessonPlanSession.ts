@@ -4,6 +4,7 @@ import {
   type TodoItem,
   type TodoStats,
   type ActiveSubAgent,
+  type JobInfo,
   useAgentConnection,
   useAgentChat,
   useAgentStatus,
@@ -25,7 +26,7 @@ import type {
 // IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
 // Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
-const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend
+const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 interface UseLessonPlanSessionOptions {
   planId?: string
@@ -92,6 +93,9 @@ interface UseLessonPlanSessionReturn {
 
   // SubAgent tracking
   activeSubAgents: ActiveSubAgent[]
+
+  // Job tracking
+  jobs: JobInfo[]
 
   // Todo state
   todoItems: TodoItem[]
@@ -226,6 +230,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const todoItems = status.todoItems
   const todoStats = status.todoStats
   const activeSubAgents = status.activeSubAgents
+  const jobs = status.jobs
 
   // Computed state
   const hasActiveSubAgents = activeSubAgents.length > 0
@@ -445,6 +450,9 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
 
     // SubAgent tracking
     activeSubAgents,
+
+    // Job tracking
+    jobs,
 
     // Todo state
     todoItems,

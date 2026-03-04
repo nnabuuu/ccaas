@@ -36,7 +36,7 @@ describe('CliProcessService - handleCLIClose', () => {
         },
         {
           provide: EventMapperService,
-          useValue: { mapToFrontendEvents: jest.fn().mockReturnValue([]) },
+          useValue: { mapToSessionEvents: jest.fn().mockReturnValue([]) },
         },
         { provide: WorkspaceService, useValue: {} },
       ],

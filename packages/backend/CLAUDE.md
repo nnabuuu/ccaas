@@ -533,13 +533,13 @@ export interface ToolHook {
 
 ```typescript
 // protocol/events.ts
-export interface MyCustomEvent extends FrontendEvent {
+export interface MyCustomEvent extends SessionEvent {
   type: 'my_custom_event';
   payload: { /* ... */ };
 }
 
-// Add to FrontendEventType union
-export type FrontendEventType =
+// Add to SessionEventType union
+export type SessionEventType =
   | 'text_delta'
   | 'tool_activity'
   | 'my_custom_event'

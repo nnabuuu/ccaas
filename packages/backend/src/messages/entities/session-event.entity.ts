@@ -18,7 +18,7 @@ import {
 @Index('IDX_session_events_session_type', ['sessionId', 'type'])
 @Index('IDX_session_events_session_seq', ['sessionId', 'seq'])
 @Index('IDX_session_events_tenant_created', ['tenantId', 'createdAt'])
-export class SessionEvent {
+export class SessionEventRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

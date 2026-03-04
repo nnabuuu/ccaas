@@ -10,6 +10,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,13 +22,16 @@ import * as path from 'node:path';
 import { JobEntity, type JobStatus } from './entities/job.entity';
 import { QueueService, type JobPayload } from './queue.service';
 import { HeadlessExecutionService } from '../scheduler/headless-execution.service';
+import { StreamRegistryService } from '../sessions/services/stream-registry.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 import type { Server } from 'socket.io';
 
 @Injectable()
-export class JobService implements OnModuleInit {
+export class JobService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(JobService.name);
   private ioServer: Server | null = null;
+  private lazyLoadTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     @InjectRepository(JobEntity)
@@ -35,6 +39,7 @@ export class JobService implements OnModuleInit {
     private readonly queueService: QueueService,
     private readonly headlessExecution: HeadlessExecutionService,
     private readonly moduleRef: ModuleRef,
+    private readonly streamRegistry: StreamRegistryService,
   ) {}
 
   async onModuleInit() {
@@ -125,7 +130,7 @@ export class JobService implements OnModuleInit {
     );
 
     // Lazy-load Socket.io server to avoid circular deps
-    setTimeout(async () => {
+    this.lazyLoadTimer = setTimeout(async () => {
       try {
         const { SessionsGateway } = await import('../sessions/sessions.gateway');
         const gateway = this.moduleRef.get(SessionsGateway, { strict: false });
@@ -139,15 +144,23 @@ export class JobService implements OnModuleInit {
     }, 1000);
   }
 
+  onModuleDestroy() {
+    if (this.lazyLoadTimer) {
+      clearTimeout(this.lazyLoadTimer);
+      this.lazyLoadTimer = null;
+    }
+  }
+
   /**
-   * Create a new background job and enqueue it.
+   * Create a new background job and optionally enqueue it.
+   * When trackingOnly=true, creates a DB record with status=running without enqueuing.
    */
   async create(dto: CreateJobDto): Promise<JobEntity> {
     const entity = this.jobRepo.create({
       tenantId: dto.tenantId,
       type: dto.type,
       name: dto.name,
-      prompt: dto.prompt,
+      prompt: dto.prompt || '',
       sessionId: dto.sessionId,
       messageId: dto.messageId,
       mcpServers: dto.mcpServers,
@@ -155,28 +168,55 @@ export class JobService implements OnModuleInit {
       maxAttempts: dto.maxAttempts ?? 3,
       timeoutMs: dto.timeoutMs ?? 600000,
       metadata: dto.metadata,
-      status: 'pending' as JobStatus,
+      status: dto.trackingOnly ? ('running' as JobStatus) : ('pending' as JobStatus),
+      startedAt: dto.trackingOnly ? new Date() : undefined,
       attempts: 0,
     });
 
     const saved = await this.jobRepo.save(entity);
 
-    // Enqueue to liteque
-    const payload: JobPayload = {
-      jobEntityId: saved.id,
-      type: dto.type,
-      prompt: dto.prompt,
-      tenantId: dto.tenantId,
-      mcpServers: dto.mcpServers,
-      enabledSkillSlugs: dto.enabledSkillSlugs,
-    };
+    if (!dto.trackingOnly) {
+      // Enqueue to liteque for headless execution
+      const payload: JobPayload = {
+        jobEntityId: saved.id,
+        type: dto.type,
+        prompt: dto.prompt,
+        tenantId: dto.tenantId,
+        mcpServers: dto.mcpServers,
+        enabledSkillSlugs: dto.enabledSkillSlugs,
+      };
 
-    await this.queueService.enqueue(payload, {
-      numRetries: (dto.maxAttempts ?? 3) - 1,
-    });
+      await this.queueService.enqueue(payload, {
+        numRetries: (dto.maxAttempts ?? 3) - 1,
+      });
+    }
 
-    this.logger.log(`Created job ${saved.id}: "${saved.name}" (type: ${saved.type})`);
+    this.logger.log(`Created job ${saved.id}: "${saved.name}" (type: ${saved.type}${dto.trackingOnly ? ', tracking-only' : ''})`);
     this.emitJobUpdate(saved);
+    return saved;
+  }
+
+  /**
+   * Update a job's status and metadata (used by tracking-only jobs via MCP tools).
+   */
+  async update(id: string, dto: UpdateJobDto): Promise<JobEntity> {
+    const entity = await this.findById(id);
+
+    if (dto.status) entity.status = dto.status as JobStatus;
+    if (dto.resultText) entity.resultText = dto.resultText;
+    if (dto.resultFiles) entity.resultFiles = dto.resultFiles;
+    if (dto.errorMessage) entity.errorMessage = dto.errorMessage;
+    if (dto.progress) entity.progress = dto.progress;
+    if (dto.metadata) entity.metadata = { ...entity.metadata, ...dto.metadata };
+
+    // Set completedAt for terminal states
+    if (dto.status === 'completed' || dto.status === 'failed' || dto.status === 'cancelled') {
+      entity.completedAt = new Date();
+    }
+
+    const saved = await this.jobRepo.save(entity);
+    this.emitJobUpdate(saved);
+    this.logger.log(`Updated job ${saved.id}: status=${saved.status}`);
     return saved;
   }
 
@@ -360,29 +400,39 @@ export class JobService implements OnModuleInit {
   }
 
   /**
-   * Emit a job_update event via Socket.io.
+   * Emit a job_update event via Socket.io and SSE push channel.
    */
   private emitJobUpdate(entity: JobEntity): void {
-    if (!this.ioServer) return;
-
     const event = {
-      type: 'job_update',
+      type: 'job_update' as const,
       jobId: entity.id,
       sessionId: entity.sessionId,
       messageId: entity.messageId,
       status: entity.status,
+      name: entity.name,
+      jobType: entity.type,
       progress: entity.progress,
-      resultText: entity.status === 'completed' ? entity.resultText : undefined,
+      startedAt: entity.startedAt?.toISOString(),
+      completedAt: entity.completedAt?.toISOString(),
+      metadata: entity.metadata,
       resultFiles: entity.status === 'completed' ? entity.resultFiles : undefined,
       errorMessage: entity.status === 'failed' ? entity.errorMessage : undefined,
     };
 
-    // Emit to tenant-specific room
-    this.ioServer.to(`jobs:${entity.tenantId}`).emit('job_update', event);
+    // Socket.IO push (if available)
+    if (this.ioServer) {
+      // Emit to tenant-specific room
+      this.ioServer.to(`jobs:${entity.tenantId}`).emit('job_update', event);
 
-    // Also emit to session room if available
+      // Also emit to session room if available
+      if (entity.sessionId) {
+        this.ioServer.to(entity.sessionId).emit('job_update', event);
+      }
+    }
+
+    // SSE push channel (for SSE-mode frontends)
     if (entity.sessionId) {
-      this.ioServer.to(entity.sessionId).emit('job_update', event);
+      this.streamRegistry.emit(`${entity.sessionId}:push`, event as any);
     }
   }
 }

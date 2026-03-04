@@ -62,14 +62,14 @@ describe('EventMapperService', () => {
     service.clearSessionState(testSessionId);
   });
 
-  describe('mapToFrontendEvents', () => {
+  describe('mapToSessionEvents', () => {
     describe('CLI user message with tool_result', () => {
       it('should emit tool_activity end event for CLI format', () => {
         // First, emit tool start to register the tool call
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Then emit CLI format tool result
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -87,10 +87,10 @@ describe('EventMapperService', () => {
 
       it('should set success: true when is_error is false or undefined', () => {
         // Register tool call
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Emit CLI format result (no is_error = success)
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -106,7 +106,7 @@ describe('EventMapperService', () => {
 
       it('should set success: false when is_error is true', () => {
         // Register tool call for the error case
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'content_block_start',
             content_block: {
@@ -121,7 +121,7 @@ describe('EventMapperService', () => {
         );
 
         // Emit CLI format error result
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliErrorToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -138,10 +138,10 @@ describe('EventMapperService', () => {
 
       it('should include toolOutput in payload', () => {
         // Register tool call
-        service.mapToFrontendEvents(readToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, testSessionId, testClientId);
 
         // Emit CLI format result with content
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliReadToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -169,10 +169,10 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // Register tool call
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Emit CLI format result
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -190,7 +190,7 @@ describe('EventMapperService', () => {
       it('should emit exploration_activity for exploration tools', () => {
         // Register Glob tool call with sub-agent session ID
         const subAgentSessionId = 'session_Explore_123';
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'content_block_start',
             content_block: {
@@ -205,7 +205,7 @@ describe('EventMapperService', () => {
         );
 
         // Emit CLI format result
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           createCliToolResultEvent('toolu_glob_explore', ['file1.ts', 'file2.ts']) as any,
           subAgentSessionId,
           testClientId,
@@ -220,7 +220,7 @@ describe('EventMapperService', () => {
 
       it('should handle multiple tool_result blocks in one message', () => {
         // Register two tool calls
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'content_block_start',
             content_block: {
@@ -234,7 +234,7 @@ describe('EventMapperService', () => {
           testClientId,
         );
 
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'content_block_start',
             content_block: {
@@ -249,7 +249,7 @@ describe('EventMapperService', () => {
         );
 
         // Emit CLI format with multiple results
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliMultipleToolResultsEvent as any,
           testSessionId,
           testClientId,
@@ -269,7 +269,7 @@ describe('EventMapperService', () => {
 
       it('should handle missing tool call gracefully (unknown tool)', () => {
         // Emit CLI format result without registering the tool call first
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           {
             type: 'user',
             message: {
@@ -298,13 +298,13 @@ describe('EventMapperService', () => {
 
       it('should include duration in tool_activity end event', async () => {
         // Register tool call
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Wait a bit to create measurable duration
         await new Promise((resolve) => setTimeout(resolve, 20));
 
         // Emit CLI format result
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -320,10 +320,10 @@ describe('EventMapperService', () => {
 
       it('should preserve toolInput from start event', () => {
         // Register tool call with specific input
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Emit CLI format result
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -342,17 +342,17 @@ describe('EventMapperService', () => {
 
       it('should clean up tool call after result is processed', () => {
         // Register tool call
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
 
         // Emit CLI format result
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
         );
 
         // Emit the same tool result again - should not find the tool call
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -383,16 +383,16 @@ describe('EventMapperService', () => {
         service.registerToolHook(wildcardHook);
 
         // Test with Write tool
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
         );
 
         // Test with Read tool
-        service.mapToFrontendEvents(readToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(readToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(
           cliReadToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -423,7 +423,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(persistentTaskCall as any, testSessionId, testClientId);
+        service.mapToSessionEvents(persistentTaskCall as any, testSessionId, testClientId);
 
         // Emit CLI format result with output_file
         const persistentTaskResult = {
@@ -440,7 +440,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           persistentTaskResult as any,
           testSessionId,
           testClientId,
@@ -475,7 +475,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(normalTaskCall as any, testSessionId, testClientId);
+        service.mapToSessionEvents(normalTaskCall as any, testSessionId, testClientId);
 
         // Emit CLI format result
         const normalTaskResult = {
@@ -492,7 +492,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           normalTaskResult as any,
           testSessionId,
           testClientId,
@@ -525,7 +525,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(persistentTaskCall as any, testSessionId, testClientId);
+        service.mapToSessionEvents(persistentTaskCall as any, testSessionId, testClientId);
 
         // Emit CLI format error result
         const errorResult = {
@@ -542,7 +542,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           errorResult as any,
           testSessionId,
           testClientId,
@@ -573,7 +573,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(bashCall as any, testSessionId, testClientId);
+        service.mapToSessionEvents(bashCall as any, testSessionId, testClientId);
 
         // Emit CLI format result
         const bashResult = {
@@ -590,7 +590,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           bashResult as any,
           testSessionId,
           testClientId,
@@ -609,8 +609,8 @@ describe('EventMapperService', () => {
     describe('comparison with tool_result format', () => {
       it('should produce equivalent events for CLI format and tool_result format', () => {
         // Test CLI format
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        const cliEvents = service.mapToFrontendEvents(
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        const cliEvents = service.mapToSessionEvents(
           cliWriteToolResultEvent as any,
           testSessionId,
           testClientId,
@@ -618,8 +618,8 @@ describe('EventMapperService', () => {
 
         // Clear and test tool_result format
         service.clearSessionState(testSessionId);
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        const toolResultEvents = service.mapToFrontendEvents(
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        const toolResultEvents = service.mapToSessionEvents(
           {
             type: 'tool_result',
             tool_result: {
@@ -670,8 +670,8 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // First tool
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 30));
 
@@ -691,12 +691,12 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // First tool
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
 
         // Second tool
-        service.mapToFrontendEvents(readToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -718,15 +718,15 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // First tool gets order 1
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
 
         // Reset the execution order
         service.resetExecutionOrder(testSessionId);
 
         // Next tool should start at 1 again
-        service.mapToFrontendEvents(readToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -751,16 +751,16 @@ describe('EventMapperService', () => {
         const session2 = 'session-2';
 
         // Tool in session 1
-        service.mapToFrontendEvents(writeToolCallEvent as any, session1, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, session1, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, session1, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, session1, testClientId);
 
         // Tool in session 2
-        service.mapToFrontendEvents(readToolCallEvent as any, session2, testClientId);
-        service.mapToFrontendEvents(cliReadToolResultEvent as any, session2, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, session2, testClientId);
+        service.mapToSessionEvents(cliReadToolResultEvent as any, session2, testClientId);
 
         // Another tool in session 1
-        service.mapToFrontendEvents(readToolCallEvent as any, session1, testClientId);
-        service.mapToFrontendEvents(cliReadToolResultEvent as any, session1, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, session1, testClientId);
+        service.mapToSessionEvents(cliReadToolResultEvent as any, session1, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -791,15 +791,15 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // First tool gets order 1
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
 
         // Clear session state (simulates session cleanup)
         service.clearSessionState(testSessionId);
 
         // Next tool should start at 1 again
-        service.mapToFrontendEvents(readToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(readToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliReadToolResultEvent as any, testSessionId, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -823,7 +823,7 @@ describe('EventMapperService', () => {
         service.registerToolHook(mockHook);
 
         // Register tool and emit error result
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'content_block_start',
             content_block: {
@@ -837,7 +837,7 @@ describe('EventMapperService', () => {
           testClientId,
         );
 
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'user',
             message: {
@@ -874,8 +874,8 @@ describe('EventMapperService', () => {
 
         service.registerToolHook(mockHook);
 
-        service.mapToFrontendEvents(writeToolCallEvent as any, testSessionId, testClientId);
-        service.mapToFrontendEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(writeToolCallEvent as any, testSessionId, testClientId);
+        service.mapToSessionEvents(cliWriteToolResultEvent as any, testSessionId, testClientId);
 
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -937,7 +937,7 @@ describe('EventMapperService', () => {
       it('should call recordUsage for finish-step with usage and session context', async () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-001', tenantId: 'tenant-1' }));
 
-        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
@@ -960,7 +960,7 @@ describe('EventMapperService', () => {
       it('should call recordUsage for message_delta with usage and session context', async () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-002', tenantId: 'tenant-1' }));
 
-        service.mapToFrontendEvents(messageDeltaWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(messageDeltaWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
@@ -977,7 +977,7 @@ describe('EventMapperService', () => {
       it('should emit a token_usage frontend event with accumulated totals', () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-003' }));
 
-        const events = service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        const events = service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId);
 
         const tokenEvent = events.find((e) => e.type === 'token_usage');
         expect(tokenEvent).toBeDefined();
@@ -990,7 +990,7 @@ describe('EventMapperService', () => {
       it('should store null for stopReason and apiMessageId when absent from event', async () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-004' }));
 
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           { type: 'finish-step', usage: { input_tokens: 10, output_tokens: 5 } } as any,
           testSessionId,
           testClientId,
@@ -1006,7 +1006,7 @@ describe('EventMapperService', () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-ctx' }));
         const contextWindowUsage = { used: 15000, limit: 200000, percentFull: 7.5 };
 
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           {
             type: 'finish-step',
             usage: { input_tokens: 10, output_tokens: 5, context_window_usage: contextWindowUsage },
@@ -1024,7 +1024,7 @@ describe('EventMapperService', () => {
       it('should pass null for contextWindowUsage when absent from event', async () => {
         service.registerSessionGetter(() => makeSession({ messageId: 'msg-noctx' }));
 
-        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).toHaveBeenCalledWith(
@@ -1038,7 +1038,7 @@ describe('EventMapperService', () => {
         ['session getter returns undefined', () => service.registerSessionGetter(() => undefined)],
       ])('should not call recordUsage when %s', async (_, setup) => {
         setup();
-        service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
@@ -1047,7 +1047,7 @@ describe('EventMapperService', () => {
       it('should warn (not throw) when finish-step arrives without usage data', () => {
         const warnSpy = jest.spyOn((service as any).logger, 'warn');
 
-        const events = service.mapToFrontendEvents(
+        const events = service.mapToSessionEvents(
           { type: 'finish-step' } as any,
           testSessionId,
           testClientId,
@@ -1062,7 +1062,7 @@ describe('EventMapperService', () => {
       it('should NOT warn when message_delta arrives without usage (content-only delta)', () => {
         const warnSpy = jest.spyOn((service as any).logger, 'warn');
 
-        service.mapToFrontendEvents(
+        service.mapToSessionEvents(
           { type: 'message_delta', delta: { type: 'text_delta', text: 'hi' } } as any,
           testSessionId,
           testClientId,
@@ -1078,7 +1078,7 @@ describe('EventMapperService', () => {
 
         // should not throw
         expect(() =>
-          service.mapToFrontendEvents(finishStepWithUsage as any, testSessionId, testClientId),
+          service.mapToSessionEvents(finishStepWithUsage as any, testSessionId, testClientId),
         ).not.toThrow();
 
         await flush();
@@ -1115,7 +1115,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(assistantWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(assistantWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
@@ -1148,7 +1148,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        const events = service.mapToFrontendEvents(assistantWithUsage as any, testSessionId, testClientId);
+        const events = service.mapToSessionEvents(assistantWithUsage as any, testSessionId, testClientId);
 
         const tokenEvent = events.find((e) => e.type === 'token_usage');
         expect(tokenEvent).toBeDefined();
@@ -1168,7 +1168,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(assistantNoUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(assistantNoUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
@@ -1184,7 +1184,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(assistantWithoutUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(assistantWithoutUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
@@ -1212,7 +1212,7 @@ describe('EventMapperService', () => {
           },
         };
 
-        service.mapToFrontendEvents(resultWithUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(resultWithUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).toHaveBeenCalledTimes(1);
@@ -1242,7 +1242,7 @@ describe('EventMapperService', () => {
           usage: { input_tokens: 300, output_tokens: 100 },
         };
 
-        const events = service.mapToFrontendEvents(resultWithUsage as any, testSessionId, testClientId);
+        const events = service.mapToSessionEvents(resultWithUsage as any, testSessionId, testClientId);
 
         const tokenEvent = events.find((e) => e.type === 'token_usage');
         expect(tokenEvent).toBeDefined();
@@ -1260,7 +1260,7 @@ describe('EventMapperService', () => {
           result: 'done',
         };
 
-        service.mapToFrontendEvents(resultNoUsage as any, testSessionId, testClientId);
+        service.mapToSessionEvents(resultNoUsage as any, testSessionId, testClientId);
         await flush();
 
         expect(mockTokenUsageService.recordUsage).not.toHaveBeenCalled();
@@ -1296,7 +1296,7 @@ describe('EventMapperService', () => {
       resultPayload: object,
       input: object = {},
     ) => {
-      service.mapToFrontendEvents(
+      service.mapToSessionEvents(
         {
           type: 'content_block_start',
           content_block: { type: 'tool_use', id: toolUseId, name: mcpToolName, input },
@@ -1304,7 +1304,7 @@ describe('EventMapperService', () => {
         testSessionId,
         testClientId,
       );
-      return service.mapToFrontendEvents(
+      return service.mapToSessionEvents(
         buildMcpToolResult(toolUseId, resultPayload) as any,
         testSessionId,
         testClientId,
@@ -1384,7 +1384,7 @@ describe('EventMapperService', () => {
       ).not.toThrow();
     });
 
-    it('does not emit duplicate output_update for write_output even when trigger is registered', () => {
+    it('emits output_update for write_output when trigger is registered', () => {
       service.registerTenantToolTriggers(tenantId, [
         { toolName: 'write_output', eventType: 'output_update' },
       ]);

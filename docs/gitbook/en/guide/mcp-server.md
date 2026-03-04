@@ -413,6 +413,10 @@ interface McpEndpoint {
 
 By default, the frontend only receives an `output_update` event when the AI calls `write_output`. If your tool performs an action that should also notify the frontend, you can declare `toolEventTriggers` in `solution.json` — no changes to MCP Server code required.
 
+{% hint style="info" %}
+Platform built-in Bundles also use the `toolEventTriggers` mechanism. For example, the `structured-output` Bundle automatically registers the `write_output` → `output_update` mapping. If you're using a Bundle, you don't need to configure these mappings manually. See [Bundles (Capability Packages)](bundles.md) for details.
+{% endhint %}
+
 ### Configuration
 
 Add `toolEventTriggers` under the relevant MCP Server in `solution.json`:

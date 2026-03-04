@@ -372,6 +372,10 @@ interface McpEndpoint {
 
 默认情况下，前端只有在 AI 调用 `write_output` 时才会收到 `output_update` 事件。如果你的工具执行完某项操作后也需要通知前端刷新，可以在 `solution.json` 中声明 `toolEventTriggers`，无需修改 MCP Server 代码。
 
+{% hint style="info" %}
+平台内置的 Bundle 能力包也使用 `toolEventTriggers` 机制。例如 `structured-output` Bundle 自动注册 `write_output` → `output_update` 映射。如果你使用了 Bundle，无需手动配置这些映射。详见 [Bundle 能力包](bundles.md)。
+{% endhint %}
+
 ### 配置方式
 
 在 `solution.json` 的对应 MCP Server 下添加 `toolEventTriggers`：

@@ -8,6 +8,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Body,
   Query,
@@ -18,6 +19,7 @@ import {
 import { Response } from 'express';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
+import { UpdateJobDto } from './dto/update-job.dto';
 
 @Controller('api/v1/jobs')
 export class JobController {
@@ -51,6 +53,12 @@ export class JobController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.jobService.findById(id);
+  }
+
+  @Patch(':id')
+  async update(@Param('id') id: string, @Body() dto: UpdateJobDto) {
+    this.logger.log(`Updating job ${id}: ${JSON.stringify(dto)}`);
+    return this.jobService.update(id, dto);
   }
 
   @Post(':id/resume')

@@ -22,9 +22,8 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult, type LessonPlanAttachment } from './types.js';
+import { SYNC_FIELDS, type SyncField, type WriteOutputInput, type WriteOutputResult } from './types.js';
 import { validateAndFixField, type ValidationResult } from './schemas.js';
-import { lookup as mimeLookup } from 'mime-types';
 import {
   searchCurriculumStandards,
   searchTextbook,
@@ -39,9 +38,6 @@ import {
   getCurriculumStages,
   getCurriculumStandards,
 } from './data-loader.js';
-import * as fs from 'fs';
-import * as path from 'path';
-import { randomUUID } from 'crypto';
 
 // Create the MCP server
 const server = new Server(
@@ -418,55 +414,69 @@ Example for extraProperties:
   },
 };
 
-// Define the attach_file tool
-const attachFileTool: Tool = {
-  name: 'attach_file',
-  description: `Attach a generated file to the current lesson plan.
+// ===== Background Job Tools =====
 
-This tool allows you to attach files (teaching scripts, audio, PPT, PDF, etc.) that you've created in the session workspace to the lesson plan. The frontend will display a sync button allowing the user to add the attachment.
+// Define the create_job tool
+const createJobTool: Tool = {
+  name: 'create_job',
+  description: `Create a background job record to track long-running tasks.
 
-File types:
-- script: Teaching scripts (.md, .txt)
-- audio: Audio files (.mp3, .wav, .ogg, .m4a)
-- ppt: PowerPoint presentations (.ppt, .pptx)
-- pdf: PDF documents (.pdf)
-- other: Other file types
+Use this BEFORE spawning a background Task for NotebookLM generation or any long-running operation.
+The returned jobId should be passed to the background Task prompt so it can update job status on completion.
 
-Example usage:
-{
-  "filePath": "教学讲稿.md",
-  "fileType": "script",
-  "description": "教学讲稿 - 包含9个章节的完整授课指南"
-}
+Job types for NotebookLM artifacts:
+- notebooklm_slides: PDF slide deck generation
+- notebooklm_audio: Audio overview generation
+- notebooklm_video: Video generation
+- notebooklm_study_guide: Study guide generation
 
-Note: The filePath should be relative to the session workspace directory.`,
+Example:
+  create_job({ name: "生成课件PDF", type: "notebooklm_slides", metadata: { notebookId: "nb_xxx", artifactId: "art_xxx" } })
+  → { jobId: "uuid-xxx", status: "running" }`,
   inputSchema: {
     type: 'object',
     properties: {
-      filePath: {
-        type: 'string',
-        description: 'Path to file in session workspace (relative path)',
-      },
-      fileType: {
-        type: 'string',
-        enum: ['script', 'audio', 'ppt', 'pdf', 'other'],
-        description: 'Type of file being attached',
-      },
-      description: {
-        type: 'string',
-        description: 'Optional description of the file',
-      },
+      name: { type: 'string', description: 'Display name (e.g. "生成课件PDF")' },
+      type: { type: 'string', description: 'Job type: notebooklm_slides, notebooklm_audio, notebooklm_video, notebooklm_study_guide' },
+      metadata: { type: 'object', description: 'Extra data (notebookId, artifactId, language, etc.)' },
     },
-    required: ['filePath', 'fileType'],
+    required: ['name', 'type'],
   },
 };
+
+// Define the update_job_status tool
+const updateJobStatusTool: Tool = {
+  name: 'update_job_status',
+  description: `Update a background job's status. Call when the monitored task completes or fails.
+
+Must be called by the background Task to notify the frontend of completion/failure.
+
+Example (success):
+  update_job_status({ jobId: "uuid-xxx", status: "completed" })
+
+Example (failure):
+  update_job_status({ jobId: "uuid-xxx", status: "failed", errorMessage: "Generation timed out" })`,
+  inputSchema: {
+    type: 'object',
+    properties: {
+      jobId: { type: 'string', description: 'Job ID returned by create_job' },
+      status: { type: 'string', enum: ['completed', 'failed'], description: 'New status' },
+      errorMessage: { type: 'string', description: 'Error message (when status=failed)' },
+    },
+    required: ['jobId', 'status'],
+  },
+};
+
+// attach_file tool is now provided by core bundle (file-attachments)
+// See: packages/mcp/attach-file-server/
 
 // Handle list_tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       writeOutputTool,
-      attachFileTool,
+      createJobTool,
+      updateJobStatusTool,
       // Real data tools (recommended)
       getTextbookSubjectsTool,
       getTextbookGradesTool,
@@ -555,117 +565,98 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
   }
 
-  // Handle attach_file tool
-  if (name === 'attach_file') {
-    const { filePath, fileType, description } = args as {
-      filePath: string;
-      fileType: 'script' | 'audio' | 'ppt' | 'pdf' | 'other';
-      description?: string;
+  // attach_file is now handled by core bundle (file-attachments)
+
+  // ===== Background Job Tool Handlers =====
+
+  // Handle create_job tool
+  if (name === 'create_job') {
+    const { name: jobName, type: jobType, metadata } = args as {
+      name: string;
+      type: string;
+      metadata?: Record<string, unknown>;
     };
 
-    // Get absolute path to the file in the session workspace
-    const absolutePath = path.resolve(process.cwd(), filePath);
-
-    // Check if file exists
-    if (!fs.existsSync(absolutePath)) {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              data: {
-                error: `File not found: ${filePath}`,
-              },
-              status: 'error',
-            } satisfies WriteOutputResult),
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    // Get file stats
-    const stats = fs.statSync(absolutePath);
-    const fileName = path.basename(filePath);
-
-    // Get MIME type using mime-types library
-    const mimeType = mimeLookup(absolutePath) || 'application/octet-stream';
-
-    // Register file with CCAAS
-    const sessionId = process.env.AGENT_SESSION_ID || 'unknown';
-    const tenantId = process.env.AGENT_CLIENT_ID;
     const ccaasUrl = process.env.CCAAS_URL || 'http://localhost:3001';
+    const sessionId = process.env.AGENT_SESSION_ID;
+    const tenantId = process.env.AGENT_CLIENT_ID;
 
     try {
-      const response = await fetch(`${ccaasUrl}/api/v1/files/register`, {
+      const response = await fetch(`${ccaasUrl}/api/v1/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          originalPath: absolutePath,
+          tenantId: tenantId || 'default',
           sessionId,
-          tenantId,
+          type: jobType,
+          name: jobName,
+          prompt: '',
+          trackingOnly: true,
+          metadata,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`CCAAS file registration failed: ${response.statusText}`);
+        throw new Error(`CCAAS job creation failed: ${response.statusText}`);
       }
 
-      const { fileId, filename, downloadUrl } = await response.json();
-
-      // Format file size for preview
-      const formatBytes = (bytes: number): string => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-      };
-
-      // Create attachment object with CCAAS file info
-      const attachment: Partial<LessonPlanAttachment> = {
-        id: randomUUID(),
-        fileId,           // Real fileId from CCAAS
-        fileName: filename,
-        fileType,
-        mimeType,
-        size: stats.size,
-        downloadUrl,      // CCAAS download URL
-        uploadedAt: new Date().toISOString(),
-        description,
-      };
-
-      // Return result in the same format as write_output
-      // This will trigger an output_update event with field='attachments'
-      const result: WriteOutputResult = {
-        data: {
-          field: 'attachments',
-          value: [attachment], // Single attachment in array
-          preview: `📎 ${filename} (${formatBytes(stats.size)})`,
-        },
-        status: 'success',
-      };
-
+      const job = await response.json();
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(result),
-          },
-        ],
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ jobId: job.id, status: job.status }),
+        }],
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify({
-              data: {
-                error: `Failed to register file with CCAAS: ${errorMessage}`,
-              },
-              status: 'error',
-            } satisfies WriteOutputResult),
-          },
-        ],
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ error: `Failed to create job: ${errorMessage}` }),
+        }],
+        isError: true,
+      };
+    }
+  }
+
+  // Handle update_job_status tool
+  if (name === 'update_job_status') {
+    const { jobId, status, errorMessage } = args as {
+      jobId: string;
+      status: 'completed' | 'failed';
+      errorMessage?: string;
+    };
+
+    const ccaasUrl = process.env.CCAAS_URL || 'http://localhost:3001';
+
+    try {
+      const body: Record<string, unknown> = { status };
+      if (errorMessage) body.errorMessage = errorMessage;
+
+      const response = await fetch(`${ccaasUrl}/api/v1/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        throw new Error(`CCAAS job update failed: ${response.statusText}`);
+      }
+
+      const job = await response.json();
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ jobId: job.id, status: job.status }),
+        }],
+      };
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({ error: `Failed to update job: ${errorMsg}` }),
+        }],
         isError: true,
       };
     }

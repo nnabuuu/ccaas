@@ -266,15 +266,20 @@ packages/
 当前Chat使用模拟响应，要集成真实AI：
 
 1. 在 `LessonPlanDesignerView.vue` 中替换 `handleChatMessage`
-2. 连接Socket.io监听 `output_update` 事件
+2. 使用 SDK 的 `onOutputUpdate` 回调监听 `output_update` 事件
 3. 调用 `handleOutputUpdate(field, value)` 处理AI输出
 
 ```typescript
-// 示例：连接真实AI
-socket.on('output_update', (event) => {
-  if (event.field && LESSON_PLAN_SYNC_FIELDS.includes(event.field)) {
-    handleOutputUpdate(event.field, event.value)
-  }
+// 示例：使用 SDK 连接真实AI
+const chat = useAgentChat({
+  connection,
+  tenantId: TENANT_ID,
+  onOutputUpdate: (event) => {
+    const { field, value } = event.payload.data
+    if (field && LESSON_PLAN_SYNC_FIELDS.includes(field)) {
+      handleOutputUpdate(field, value)
+    }
+  },
 })
 ```
 

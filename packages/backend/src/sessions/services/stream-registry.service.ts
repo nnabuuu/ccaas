@@ -10,7 +10,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Response } from 'express';
-import { FrontendEvent } from '../../common/interfaces/frontend-event.interface';
+import { SessionEvent } from '../../common/interfaces/session-event.interface';
 
 export interface StreamSubscriber {
   subscriberId: string;
@@ -27,7 +27,7 @@ export interface StreamEventEnvelope {
   seq: number;
   sessionId: string;
   timestamp: string;
-  event: FrontendEvent;
+  event: SessionEvent;
 }
 
 /**
@@ -35,6 +35,9 @@ export interface StreamEventEnvelope {
  * Keeps last N events per session
  */
 const EVENT_BUFFER_SIZE = 200;
+
+/** SSE heartbeat interval in milliseconds (30 seconds) */
+const HEARTBEAT_INTERVAL_MS = 30_000;
 
 @Injectable()
 export class StreamRegistryService {
@@ -45,6 +48,12 @@ export class StreamRegistryService {
    * sessionId -> Map<subscriberId, StreamSubscriber>
    */
   private subscribers = new Map<string, Map<string, StreamSubscriber>>();
+
+  /**
+   * Heartbeat timers per session per subscriber
+   * sessionId -> Map<subscriberId, NodeJS.Timeout>
+   */
+  private heartbeatTimers = new Map<string, Map<string, NodeJS.Timeout>>();
 
   /**
    * Event sequence number per session
@@ -82,6 +91,9 @@ export class StreamRegistryService {
 
     this.logger.log(`SSE subscriber registered: session=${sessionId} subscriber=${subscriberId}`);
 
+    // Start heartbeat to keep connection alive through proxies
+    this.startHeartbeat(sessionId, subscriberId, res);
+
     // Handle client disconnect
     res.on('close', () => {
       this.unsubscribe(sessionId, subscriberId);
@@ -92,6 +104,8 @@ export class StreamRegistryService {
    * Unsubscribe an SSE connection
    */
   unsubscribe(sessionId: string, subscriberId: string): void {
+    this.stopHeartbeat(sessionId, subscriberId);
+
     const sessionSubscribers = this.subscribers.get(sessionId);
     if (sessionSubscribers) {
       sessionSubscribers.delete(subscriberId);
@@ -106,7 +120,7 @@ export class StreamRegistryService {
    * Emit an event to all SSE subscribers of a session
    * Also buffers the event for reconnection
    */
-  emit(sessionId: string, event: FrontendEvent): void {
+  emit(sessionId: string, event: SessionEvent): void {
     const seq = this.nextSeq(sessionId);
     const envelope: StreamEventEnvelope = {
       seq,
@@ -174,13 +188,15 @@ export class StreamRegistryService {
    * (e.g. from a subsequent message) intact.
    */
   closeTurn(sessionId: string, subscriberId: string): void {
+    this.stopHeartbeat(sessionId, subscriberId);
+
     const sessionSubscribers = this.subscribers.get(sessionId);
     if (!sessionSubscribers) return;
 
     const subscriber = sessionSubscribers.get(subscriberId);
     if (!subscriber) return;
 
-    const doneEvent: FrontendEvent = {
+    const doneEvent: SessionEvent = {
       type: 'done',
       sessionId,
       timestamp: new Date().toISOString(),
@@ -212,10 +228,12 @@ export class StreamRegistryService {
    * Close all SSE connections for a session (send done event then close)
    */
   closeSession(sessionId: string): void {
+    this.stopAllHeartbeats(sessionId);
+
     const sessionSubscribers = this.subscribers.get(sessionId);
     if (!sessionSubscribers) return;
 
-    const doneEvent: FrontendEvent = {
+    const doneEvent: SessionEvent = {
       type: 'done',
       sessionId,
       timestamp: new Date().toISOString(),
@@ -282,5 +300,58 @@ export class StreamRegistryService {
     if (buffer.length > EVENT_BUFFER_SIZE) {
       buffer.splice(0, buffer.length - EVENT_BUFFER_SIZE);
     }
+  }
+
+  /**
+   * Start a heartbeat timer that sends SSE comment keep-alive every 30s.
+   * Keeps connections alive through proxies/load balancers with idle timeouts.
+   */
+  private startHeartbeat(sessionId: string, subscriberId: string, res: Response): void {
+    const timer = setInterval(() => {
+      try {
+        res.write(': heartbeat\n\n');
+      } catch {
+        this.stopHeartbeat(sessionId, subscriberId);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+
+    // Don't prevent Node.js process exit
+    timer.unref();
+
+    if (!this.heartbeatTimers.has(sessionId)) {
+      this.heartbeatTimers.set(sessionId, new Map());
+    }
+    this.heartbeatTimers.get(sessionId)!.set(subscriberId, timer);
+  }
+
+  /**
+   * Stop heartbeat timer for a single subscriber
+   */
+  private stopHeartbeat(sessionId: string, subscriberId: string): void {
+    const sessionTimers = this.heartbeatTimers.get(sessionId);
+    if (!sessionTimers) return;
+
+    const timer = sessionTimers.get(subscriberId);
+    if (timer) {
+      clearInterval(timer);
+      sessionTimers.delete(subscriberId);
+    }
+
+    if (sessionTimers.size === 0) {
+      this.heartbeatTimers.delete(sessionId);
+    }
+  }
+
+  /**
+   * Stop all heartbeat timers for a session
+   */
+  private stopAllHeartbeats(sessionId: string): void {
+    const sessionTimers = this.heartbeatTimers.get(sessionId);
+    if (!sessionTimers) return;
+
+    for (const timer of sessionTimers.values()) {
+      clearInterval(timer);
+    }
+    this.heartbeatTimers.delete(sessionId);
   }
 }

@@ -13,7 +13,7 @@ import type {
   AgentStatusEvent,
   OutputUpdateEvent,
   ToolActivityPayload,
-  FrontendEvent,
+  SessionEvent,
 } from '@kedge-agentic/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
 import { ApiError } from '../utils/apiClient'
@@ -80,7 +80,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
    * Shared event dispatcher - handles events from both Socket.IO and SSE transports.
    * Extracted to avoid duplication between socket handler and SSE handler.
    */
-  const dispatchEvent = useCallback((eventType: string, data: FrontendEvent) => {
+  const dispatchEvent = useCallback((eventType: string, data: SessionEvent) => {
     if (eventType === 'text_delta') {
       const ev = data as TextDeltaEvent
       const blocks = contentBlocksRef.current
@@ -171,6 +171,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         toolOutput: payload.toolOutput,
         agentType: payload.agentType,
         nestingLevel: payload.nestingLevel,
+        turnId: (data as any).turnId,
       }
       const blocks = contentBlocksRef.current
       if (payload.phase === 'start') {
@@ -215,12 +216,12 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     if (!socket) return
 
     // Delegate to shared event dispatcher
-    const onTextDelta = (data: TextDeltaEvent) => dispatchEvent('text_delta', data as FrontendEvent)
-    const onOutputUpdate = (event: OutputUpdateEvent) => dispatchEvent('output_update', event as FrontendEvent)
-    const onAgentStatus = (data: AgentStatusEvent) => dispatchEvent('agent_status', data as FrontendEvent)
-    const onToolActivity = (data: { payload: ToolActivityPayload }) => dispatchEvent('tool_activity', data as unknown as FrontendEvent)
+    const onTextDelta = (data: TextDeltaEvent) => dispatchEvent('text_delta', data as SessionEvent)
+    const onOutputUpdate = (event: OutputUpdateEvent) => dispatchEvent('output_update', event as SessionEvent)
+    const onAgentStatus = (data: AgentStatusEvent) => dispatchEvent('agent_status', data as SessionEvent)
+    const onToolActivity = (data: { payload: ToolActivityPayload }) => dispatchEvent('tool_activity', data as unknown as SessionEvent)
     const onTokenUsage = (data: { payload: { inputTokens: number; outputTokens: number; cacheReadTokens?: number } }) =>
-      dispatchEvent('token_usage', data as unknown as FrontendEvent)
+      dispatchEvent('token_usage', data as unknown as SessionEvent)
 
     // Also handle tool_event for write_output (problem-explainer pattern)
     const onToolEvent = (data: { toolName: string; input?: Record<string, unknown>; output?: unknown }) => {

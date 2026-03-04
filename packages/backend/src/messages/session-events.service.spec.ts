@@ -7,7 +7,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { SessionEventsService } from './session-events.service';
-import { SessionEvent } from './entities/session-event.entity';
+import { SessionEventRecord } from './entities/session-event.entity';
 
 describe('SessionEventsService', () => {
   let service: SessionEventsService;
@@ -25,7 +25,7 @@ describe('SessionEventsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SessionEventsService,
-        { provide: getRepositoryToken(SessionEvent), useValue: mockRepo },
+        { provide: getRepositoryToken(SessionEventRecord), useValue: mockRepo },
       ],
     }).compile();
 

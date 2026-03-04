@@ -748,3 +748,37 @@ After calling `attach_file`:
 - **Video**: Mention duration, content focus (e.g., "重点讲解方程解法")
 - **Slides**: Mention format (e.g., "PDF格式"), page count if known
 - Keep concise (under 50 characters)
+
+## 后台任务模式（Background Job Pattern）
+
+生成 NotebookLM artifact（音频、PDF课件、视频等）时，使用后台任务模式避免阻塞用户对话。
+
+### 流程
+
+1. 创建 notebook，添加源内容，触发 artifact 生成
+2. 调用 `create_job` 创建跟踪记录：
+   ```
+   create_job({
+     name: "生成课件PDF",
+     type: "notebooklm_slides",
+     metadata: { notebookId: "nb_xxx", artifactId: "art_xxx" }
+   })
+   ```
+3. 使用 Task 工具启动后台监控（`run_in_background: true`）：
+   - Prompt: "使用 notebooklm artifact wait 监控 artifact {artifactId}。完成后下载文件。如果 attach_file 工具可用，调用它注册文件。最后调用 update_job_status 标记 Job {jobId} 为 completed。"
+4. 立即回复用户："已开始后台生成，请在任务面板查看进度。"
+
+### Job Type 映射
+
+| Artifact 类型 | job.type | 图标 |
+|---------------|----------|------|
+| slide-deck (PDF) | `notebooklm_slides` | 📄 |
+| audio | `notebooklm_audio` | 🎵 |
+| video | `notebooklm_video` | 🎬 |
+| study-guide | `notebooklm_study_guide` | 📝 |
+
+### 注意事项
+
+- 后台 Task 必须调用 `update_job_status` 更新状态，否则前端无法得知完成
+- 如果 `attach_file` 工具可用，后台 Task 应调用它注册生成的文件，方便用户后续使用
+- 如果生成失败，调用 `update_job_status({ jobId, status: "failed", errorMessage: "..." })`

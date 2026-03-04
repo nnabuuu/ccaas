@@ -72,7 +72,7 @@ export interface CreateJobDto {
 }
 
 // ============================================================================
-// Socket.io Event
+// Socket.io / SSE Event
 // ============================================================================
 
 export interface JobUpdateEvent {
@@ -81,8 +81,12 @@ export interface JobUpdateEvent {
   sessionId?: string;
   messageId?: string;
   status: JobStatus;
+  name: string;
+  jobType: string;
   progress?: { step: string; percent: number };
-  resultText?: string;
+  startedAt?: string;
+  completedAt?: string;
+  metadata?: Record<string, unknown>;
   resultFiles?: JobFile[];
   errorMessage?: string;
 }

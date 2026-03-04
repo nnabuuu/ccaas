@@ -71,5 +71,5 @@ export interface TrackedToolCall {
   input: Record<string, unknown>;
 }
 
-// Note: CustomToolHandler and ToolDescriptionGenerator are defined in frontend-event.interface.ts
+// Note: CustomToolHandler and ToolDescriptionGenerator are defined in session-event.interface.ts
 // to avoid circular imports

@@ -15,7 +15,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { promises as fsPromises } from 'node:fs';
 import { EventMapperService } from '../event-mapper.service';
 import { StreamRegistryService } from './stream-registry.service';
-import type { ManagedSession, FrontendEvent } from '../../common/interfaces';
+import type { ManagedSession, SessionEvent } from '../../common/interfaces';
 
 /**
  * Background task tracker info
@@ -209,7 +209,7 @@ export class BackgroundTaskMonitorService {
     if (tracker) {
       const session = getSession(sessionId);
       const durationMs = Date.now() - tracker.startedAt.getTime();
-      const event: FrontendEvent = {
+      const event: SessionEvent = {
         type: 'subagent_completed',
         sessionId,
         clientId: session?.clientId ?? '',

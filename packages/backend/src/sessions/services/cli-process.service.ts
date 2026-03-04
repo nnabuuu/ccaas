@@ -19,7 +19,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventMapperService } from '../event-mapper.service';
 import { WorkspaceService } from './workspace.service';
-import type { ManagedSession, CLIEvent, FrontendEvent } from '../../common/interfaces';
+import type { ManagedSession, CLIEvent, SessionEvent } from '../../common/interfaces';
 
 export interface ResolvedAttachment {
   type: string;
@@ -51,12 +51,13 @@ export class CliProcessService {
   async ensureCLIProcess(
     session: ManagedSession,
     initialMessage: string,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
     attachments?: ResolvedAttachment[],
     appendSystemPrompt?: string,
   ): Promise<void> {
     if (session.cliProcess && session.stdin && !session.cliProcess.killed) {
       this.logger.log(`Reusing AgentEngine for session ${session.sessionId}`);
+      session.currentOnEvent = onEvent;
       this.sendMessageToProcess(session, initialMessage, attachments);
       return;
     }
@@ -108,6 +109,7 @@ export class CliProcessService {
     session.status = 'processing';
     session.processingStartedAt = new Date();
     session.lastActivity = new Date();
+    session.currentOnEvent = onEvent;
 
     this.logger.log(`AgentEngine spawned with PID ${cli.pid} for session ${session.sessionId}`);
 
@@ -116,8 +118,9 @@ export class CliProcessService {
       this.sendMessageToProcess(session, initialMessage, attachments);
     });
 
+    // Route through session.currentOnEvent so follow-up turns can swap the handler
     cli.stdout.on('data', (chunk: Buffer) => {
-      this.handleCLIOutput(session, chunk, onEvent);
+      this.handleCLIOutput(session, chunk, session.currentOnEvent!);
     });
 
     cli.stderr.on('data', (chunk: Buffer) => {
@@ -126,13 +129,13 @@ export class CliProcessService {
 
     cli.on('close', (code: number | null) => {
       this.logger.log(`AgentEngine exited with code ${code} for session ${session.sessionId}`);
-      this.handleCLIClose(session, code, onEvent);
+      this.handleCLIClose(session, code, session.currentOnEvent!);
     });
 
     cli.on('error', (error: Error) => {
       this.logger.error(`AgentEngine error for session ${session.sessionId}: ${error.message}`);
       session.status = 'error';
-      onEvent({
+      session.currentOnEvent?.({
         type: 'agent_status',
         status: 'error',
         sessionId: session.sessionId,
@@ -148,13 +151,14 @@ export class CliProcessService {
   async sendFollowUp(
     session: ManagedSession,
     message: string,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
     attachments?: ResolvedAttachment[],
   ): Promise<void> {
     this.logger.log(`Sending follow-up message to session ${session.sessionId}`);
 
     if (session.cliProcess && !session.cliProcess.killed && session.stdin) {
       this.logger.log('Reusing existing AgentEngine for follow-up');
+      session.currentOnEvent = onEvent;  // Swap callback so events route to new turn
       this.sendMessageToProcess(session, message, attachments);
       onEvent({
         type: 'agent_status',
@@ -207,6 +211,7 @@ export class CliProcessService {
     session.processingStartedAt = new Date();
     session.lastActivity = new Date();
     session.buffer = '';
+    session.currentOnEvent = onEvent;
 
     onEvent({
       type: 'agent_status',
@@ -218,8 +223,9 @@ export class CliProcessService {
       this.sendMessageToProcess(session, message, attachments);
     });
 
+    // Route through session.currentOnEvent so follow-up turns can swap the handler
     cli.stdout.on('data', (chunk: Buffer) => {
-      this.handleCLIOutput(session, chunk, onEvent);
+      this.handleCLIOutput(session, chunk, session.currentOnEvent!);
     });
 
     cli.stderr.on('data', (chunk: Buffer) => {
@@ -228,13 +234,13 @@ export class CliProcessService {
 
     cli.on('close', (code: number | null) => {
       this.logger.log(`CLI exited with code ${code} for session ${session.sessionId}`);
-      this.handleCLIClose(session, code, onEvent);
+      this.handleCLIClose(session, code, session.currentOnEvent!);
     });
 
     cli.on('error', (error: Error) => {
       this.logger.error(`CLI error for session ${session.sessionId}: ${error.message}`);
       session.status = 'error';
-      onEvent({
+      session.currentOnEvent?.({
         type: 'agent_status',
         status: 'error',
         sessionId: session.sessionId,
@@ -300,7 +306,7 @@ export class CliProcessService {
   private handleCLIOutput(
     session: ManagedSession,
     chunk: Buffer,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
   ): void {
     session.buffer += chunk.toString();
     session.lastActivity = new Date();
@@ -313,7 +319,7 @@ export class CliProcessService {
 
       try {
         const cliEvent: CLIEvent = JSON.parse(line);
-        const frontendEvents = this.eventMapperService.mapToFrontendEvents(
+        const frontendEvents = this.eventMapperService.mapToSessionEvents(
           cliEvent,
           session.sessionId,
           session.clientId,
@@ -340,12 +346,12 @@ export class CliProcessService {
   private handleCLIClose(
     session: ManagedSession,
     code: number | null,
-    onEvent: (event: FrontendEvent) => void,
+    onEvent: (event: SessionEvent) => void,
   ): void {
     if (session.buffer.trim()) {
       try {
         const cliEvent: CLIEvent = JSON.parse(session.buffer);
-        const frontendEvents = this.eventMapperService.mapToFrontendEvents(
+        const frontendEvents = this.eventMapperService.mapToSessionEvents(
           cliEvent,
           session.sessionId,
           session.clientId,

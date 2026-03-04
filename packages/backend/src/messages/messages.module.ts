@@ -15,7 +15,7 @@ import { ApiErrorEvent } from './entities/api-error-event.entity';
 import { ThinkingBlock } from './entities/thinking-block.entity';
 import { TokenUsageEvent } from './entities/token-usage-event.entity';
 import { UserContextEvent } from './entities/user-context-event.entity';
-import { SessionEvent } from './entities/session-event.entity';
+import { SessionEventRecord } from './entities/session-event.entity';
 import { MessagesService } from './messages.service';
 import { ToolEventsService } from './tool-events.service';
 import { ConversationContextService } from './conversation-context.service';
@@ -39,7 +39,7 @@ import { FilesModule } from '../files/files.module';
       ThinkingBlock,
       TokenUsageEvent,
       UserContextEvent,
-      SessionEvent,
+      SessionEventRecord,
     ]),
     FilesModule,
   ],

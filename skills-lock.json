@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "skills": {
+    "design-everyday-things": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "b2ec256b91ce6dda39439366a79b5442451ce75bb93f95626c8b5529ac5171ee"
+    },
+    "hooked-ux": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "21071166f94d9ec8ff063eccde279124767662a029161629f4b1250de0a7a499"
+    },
+    "jobs-to-be-done": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "234dbc3fd40a93c3365db5e801af7a55993ed1b8428ea09c9c543eb19a7b52e5"
+    },
+    "lean-ux": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "72bfd885bae4d490d36bfe9a1117ea618a3d7a9386eb603177aeff3d1c52d490"
+    },
+    "microinteractions": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "efd849fc74c68b851120ae9e89fe76da3bf89311a564f48ea296e09d62ad64c1"
+    },
+    "refactoring-patterns": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "db96f6f1953645be6d318aeef537e239ee496e80b5f96cc5884fec9b93c47f7a"
+    },
+    "refactoring-ui": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "cdf42009a0eec7fa9b0174a8f5de234bd1d6fe25ec81cb6cdcf7866ad74f9909"
+    },
+    "ux-heuristics": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "247932fa41630006ddce6f50a8795633c816e4acc3635be2939a1459c9e3a975"
+    },
+    "web-typography": {
+      "source": "wondelai/skills",
+      "sourceType": "github",
+      "computedHash": "154c59a8ef89a5f47127eec776cf46a7d00e6ae331bc2ac407b395b819589017"
+    }
+  }
+}

@@ -245,7 +245,7 @@ export interface ChatResponseEvent extends BaseEvent {
 /**
  * All frontend event types
  */
-export type FrontendEvent =
+export type SessionEvent =
   | AgentThinkingEvent
   | ExplorationActivityEvent
   | EnhancedToolActivityEvent
@@ -259,4 +259,4 @@ export type FrontendEvent =
 /**
  * All event type strings
  */
-export type FrontendEventType = FrontendEvent['type'];
+export type SessionEventType = SessionEvent['type'];

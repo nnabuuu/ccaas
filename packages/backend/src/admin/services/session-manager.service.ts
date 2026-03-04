@@ -1044,17 +1044,16 @@ export class SessionManagerService {
       .replace(/^mcp__[^_]+__/, '')
       .replace(/^mcp__/, '');
 
-    const isBuiltinTool = EventMapperService.TRIGGER_HANDLED_TOOLS.has(normalizedName);
-
+    // Check if this tool has a registered trigger (from bundles or solution config)
     let isTriggerTool = false;
-    if (!isBuiltinTool && tool.tenantId) {
+    if (tool.tenantId) {
       const triggers = this.eventMapper.getTenantToolTriggers(tool.tenantId);
       isTriggerTool = triggers.some(
         t => t.toolName === normalizedName && t.eventType === 'output_update',
       );
     }
 
-    if (!isBuiltinTool && !isTriggerTool) return null;
+    if (!isTriggerTool) return null;
 
     const parsed = this.parseToolOutput(tool.toolOutput);
     return {

@@ -20,6 +20,10 @@ The core question: **does your agent's output need to be reviewed or applied by 
 
 If your agent generates a lesson plan that populates a form the teacher can edit, use `write_output`. If your agent just explains a concept, return text in the chat.
 
+{% hint style="info" %}
+The `write_output` → `output_update` event mapping is powered by the `structured-output` Bundle. Ensure the Tenant has this Bundle enabled. See [Bundles (Capability Packages)](bundles.md) for details.
+{% endhint %}
+
 ## Core Mechanism
 
 ```

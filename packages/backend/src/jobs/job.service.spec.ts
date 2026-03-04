@@ -13,9 +13,11 @@ import { JobService } from './job.service';
 import { JobEntity } from './entities/job.entity';
 import { QueueService } from './queue.service';
 import { HeadlessExecutionService } from '../scheduler/headless-execution.service';
+import { StreamRegistryService } from '../sessions/services/stream-registry.service';
 import { CreateJobDto } from './dto/create-job.dto';
 
 describe('JobService', () => {
+  let module: TestingModule;
   let service: JobService;
   let jobRepo: any;
   let queueService: any;
@@ -82,17 +84,22 @@ describe('JobService', () => {
       get: jest.fn().mockReturnValue(null),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       providers: [
         JobService,
         { provide: getRepositoryToken(JobEntity), useValue: jobRepo },
         { provide: QueueService, useValue: queueService },
         { provide: HeadlessExecutionService, useValue: headlessExecution },
+        { provide: StreamRegistryService, useValue: { emit: jest.fn() } },
         { provide: ModuleRef, useValue: moduleRef },
       ],
     }).compile();
 
     service = module.get<JobService>(JobService);
+  });
+
+  afterEach(async () => {
+    await module.close();
   });
 
   describe('create', () => {
