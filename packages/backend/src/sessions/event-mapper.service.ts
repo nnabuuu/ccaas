@@ -10,7 +10,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type {
   CLIEvent,
-  FrontendEvent,
+  SessionEvent,
   ManagedSession,
   TrackedToolCall,
   TokenAccumulator,
@@ -38,9 +38,12 @@ export class EventMapperService {
   private readonly logger = new Logger(EventMapperService.name);
   private readonly debug: boolean;
 
-  // Tools handled by the hardcoded switch — excluded from trigger loop to prevent double-emit
-  // Tools handled by the hardcoded switch — exposed for admin timeline derivation
-  static readonly TRIGGER_HANDLED_TOOLS = new Set(['write_output', 'attach_file']);
+  /**
+   * @deprecated Use tenant tool triggers (including bundle triggers) instead.
+   * Kept as empty set for backward-compatible API surface (e.g. session-manager timeline).
+   * write_output and attach_file are now handled via the unified trigger mechanism.
+   */
+  static readonly TRIGGER_HANDLED_TOOLS = new Set<string>();
 
   // Track execution order per session (messageId -> counter)
   private sessionExecutionCounters = new Map<string, number>();
@@ -68,6 +71,10 @@ export class EventMapperService {
 
   // Tenant-configured tool event triggers (populated at startup by SolutionLoaderService)
   private tenantToolTriggers = new Map<string, ToolEventTrigger[]>();
+
+  // Bundle-sourced tool event triggers (separate from solution triggers to avoid
+  // merge/dedup ambiguity when bundles are enabled/disabled at runtime)
+  private bundleTriggers = new Map<string, ToolEventTrigger[]>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -131,6 +138,17 @@ export class EventMapperService {
   }
 
   /**
+   * Register bundle-sourced tool event triggers for a tenant.
+   * Separated from solution triggers so that enabling/disabling bundles
+   * at runtime (via admin PATCH) can cleanly replace bundle triggers
+   * without affecting solution-specific triggers.
+   */
+  registerBundleTriggers(tenantId: string, triggers: ToolEventTrigger[]): void {
+    this.bundleTriggers.set(tenantId, triggers);
+    this.logger.debug(`Registered ${triggers.length} bundle trigger(s) for tenant ${tenantId}`);
+  }
+
+  /**
    * Clear all tenant tool trigger registrations.
    * Called by SolutionLoaderService at the start of loadAll() to ensure
    * stale entries from removed solutions are purged before re-registration.
@@ -140,11 +158,13 @@ export class EventMapperService {
   }
 
   /**
-   * Get tenant tool triggers for a given tenant.
+   * Get all tool triggers for a tenant (solution + bundle combined).
    * Used by SessionManagerService to derive output_update events in the admin timeline.
    */
   getTenantToolTriggers(tenantId: string): ToolEventTrigger[] {
-    return this.tenantToolTriggers.get(tenantId) ?? [];
+    const solution = this.tenantToolTriggers.get(tenantId) ?? [];
+    const bundle = this.bundleTriggers.get(tenantId) ?? [];
+    return [...solution, ...bundle];
   }
 
   /**
@@ -159,7 +179,7 @@ export class EventMapperService {
     apiMessageId: string | null,
     timestamp: string,
     logLabel: string,
-  ): FrontendEvent {
+  ): SessionEvent {
     const accumulator = this.getTokenAccumulator(sessionId);
     this.accumulateTokens(accumulator, {
       inputTokens: usage.input_tokens || 0,
@@ -167,7 +187,7 @@ export class EventMapperService {
       cachedTokens: usage.cache_read_input_tokens || 0,
     });
 
-    const event: FrontendEvent = {
+    const event: SessionEvent = {
       type: 'token_usage',
       sessionId,
       timestamp,
@@ -282,12 +302,12 @@ export class EventMapperService {
   /**
    * Maps a single CLI event to zero or more frontend events
    */
-  mapToFrontendEvents(
+  mapToSessionEvents(
     cliEvent: CLIEvent,
     sessionId: string,
     clientId: string,
-  ): FrontendEvent[] {
-    const events: FrontendEvent[] = [];
+  ): SessionEvent[] {
+    const events: SessionEvent[] = [];
     const timestamp = new Date().toISOString();
 
     switch (cliEvent.type) {
@@ -1070,8 +1090,8 @@ export class EventMapperService {
     sessionId: string,
     clientId: string,
     timestamp: string,
-  ): FrontendEvent[] {
-    const events: FrontendEvent[] = [];
+  ): SessionEvent[] {
+    const events: SessionEvent[] = [];
 
     const normalizedName = toolName
       .replace(/^mcp__[^_]+__/, '')
@@ -1100,7 +1120,7 @@ export class EventMapperService {
       parsedResult = result as Record<string, unknown>;
     }
 
-    const buildOutputUpdate = (): FrontendEvent => ({
+    const buildOutputUpdate = (): SessionEvent => ({
       type: 'output_update',
       sessionId,
       clientId,
@@ -1112,47 +1132,39 @@ export class EventMapperService {
       },
     });
 
-    switch (normalizedName) {
-      case 'write_output':
-      case 'attach_file':
-        events.push(buildOutputUpdate());
-        break;
+    // Handle todo_write specially (not a trigger-based tool)
+    if (normalizedName === 'todo_write' || normalizedName === 'TodoWrite') {
+      const todos = (parsedResult.todos || []) as Array<{
+        status?: string;
+        [key: string]: unknown;
+      }>;
+      const completed = todos.filter((t) => t.status === 'completed').length;
+      const inProgress = todos.filter((t) => t.status === 'in_progress').length;
+      const pending = todos.filter((t) => t.status === 'pending').length;
 
-      case 'todo_write':
-      case 'TodoWrite': {
-        const todos = (parsedResult.todos || []) as Array<{
-          status?: string;
-          [key: string]: unknown;
-        }>;
-        const completed = todos.filter((t) => t.status === 'completed').length;
-        const inProgress = todos.filter((t) => t.status === 'in_progress').length;
-        const pending = todos.filter((t) => t.status === 'pending').length;
-
-        events.push({
-          type: 'todo_update',
-          sessionId,
-          clientId,
-          payload: {
-            todos,
-            completed,
-            inProgress,
-            pending,
-            total: todos.length,
-            timestamp,
-          },
-        });
-        break;
-      }
+      events.push({
+        type: 'todo_update',
+        sessionId,
+        clientId,
+        payload: {
+          todos,
+          completed,
+          inProgress,
+          pending,
+          total: todos.length,
+          timestamp,
+        },
+      });
     }
 
-    // Check tenant-configured toolEventTriggers (from solution.json mcpServers).
-    // Skip tools already handled by the switch above to avoid duplicate events.
+    // Unified trigger mechanism: check tenant-configured toolEventTriggers.
+    // This covers both bundle triggers (write_output, attach_file) and
+    // solution-specific triggers (from solution.json mcpServers).
     const session = this.sessionGetter?.(sessionId);
-    if (session?.tenantId && !EventMapperService.TRIGGER_HANDLED_TOOLS.has(normalizedName)) {
+    if (session?.tenantId) {
       const triggers = this.tenantToolTriggers.get(session.tenantId) ?? [];
       for (const trigger of triggers) {
         if (trigger.toolName !== normalizedName) continue;
-        // Forward-compatible: when new eventTypes are added, only matching ones fire
         if (trigger.eventType === 'output_update') {
           events.push(buildOutputUpdate());
         }

@@ -19,6 +19,8 @@ import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
 import { SessionEventsService } from '../../messages/session-events.service';
+import { BundleService } from '../../bundles/bundle.service';
+import { EventMapperService } from '../event-mapper.service';
 import type { ManagedSession } from '../../common/interfaces';
 
 describe('CompletionOrchestrationService - NIE-67: session spawn decision', () => {
@@ -121,6 +123,25 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         { provide: TurnsService, useValue: mockTurnsService },
         { provide: McpPoolService, useValue: mockMcpPoolService },
         { provide: SessionEventsService, useValue: mockSessionEventsService },
+        {
+          provide: BundleService,
+          useValue: {
+            resolveActiveBundles: jest.fn().mockReturnValue({
+              mcpServers: {},
+              toolEventTriggers: [],
+              appendSystemPrompts: [],
+              activeBundleIds: [],
+            }),
+          },
+        },
+        {
+          provide: EventMapperService,
+          useValue: {
+            getTenantToolTriggers: jest.fn().mockReturnValue([]),
+            registerTenantToolTriggers: jest.fn(),
+            registerBundleTriggers: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

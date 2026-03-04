@@ -13,7 +13,8 @@ import { TenantApiKeysTab } from '@/components/tenants/api-keys-tab'
 import { EditQuotaModal } from '@/components/tenants/edit-quota-modal'
 import { EditTenantModal } from '@/components/tenants/edit-tenant-modal'
 import { EditConfigModal } from '@/components/tenants/edit-config-modal'
-import { ArrowLeft, Pencil, Zap } from 'lucide-react'
+import { EditBundlesModal } from '@/components/tenants/edit-bundles-modal'
+import { ArrowLeft, Pencil, Zap, Package } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { formatDistanceToNow } from 'date-fns'
 import { formatTokens } from '@/lib/format'
@@ -34,6 +35,7 @@ interface TenantDetail {
   config?: {
     defaultModel?: string
     maxTokensPerRequest?: number
+    enabledBundles?: string[]
     features?: Record<string, unknown> & {
       eventPersistence?: {
         enabled?: boolean
@@ -75,6 +77,7 @@ export function TenantDetailPage() {
   const [showEditQuota, setShowEditQuota] = useState(false)
   const [showEditTenant, setShowEditTenant] = useState(false)
   const [showEditConfig, setShowEditConfig] = useState(false)
+  const [showEditBundles, setShowEditBundles] = useState(false)
 
   const { data, isLoading, refetch: refetchTenant } = useCustom<TenantDetail>({
     url: `/admin/tenants/${tenantId}`,
@@ -272,6 +275,30 @@ export function TenantDetailPage() {
             </Card>
           </div>
 
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Bundles
+              </CardTitle>
+              <Button variant="outline" size="sm" onClick={() => setShowEditBundles(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Edit
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {tenant.config?.enabledBundles?.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {tenant.config.enabledBundles.map((id) => (
+                    <Badge key={id} variant="secondary">{id}</Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No bundles enabled</p>
+              )}
+            </CardContent>
+          </Card>
+
           <EditTenantModal
             open={showEditTenant}
             onClose={() => setShowEditTenant(false)}
@@ -284,6 +311,12 @@ export function TenantDetailPage() {
             onSuccess={() => refetchTenant()}
             tenantId={tenantId}
             currentConfig={tenant.config}
+          />
+          <EditBundlesModal
+            open={showEditBundles}
+            onClose={() => setShowEditBundles(false)}
+            onSuccess={() => refetchTenant()}
+            tenantId={tenantId}
           />
         </TabsContent>
 

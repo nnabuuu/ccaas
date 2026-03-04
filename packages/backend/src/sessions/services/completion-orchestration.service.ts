@@ -26,7 +26,8 @@ import { SkillManagementService } from './skill-management.service';
 import { TurnsService } from '../../admin/services/turns.service';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
 import { SessionEventsService } from '../../messages/session-events.service';
-import type { FrontendEvent, ManagedSession } from '../../common/interfaces';
+import type { SessionEvent, ManagedSession } from '../../common/interfaces';
+import { BundleService } from '../../bundles/bundle.service';
 
 /**
  * MCP Server configuration from solution backend
@@ -78,7 +79,7 @@ export interface MessageProcessingInput {
   templateName?: string;
 
   /** Transport-agnostic event emitter */
-  emitEvent: (event: FrontendEvent) => void;
+  emitEvent: (event: SessionEvent) => void;
 }
 
 /**
@@ -115,6 +116,8 @@ export class CompletionOrchestrationService {
     private readonly turnsService: TurnsService,
     private readonly mcpPoolService: McpPoolService,
     private readonly sessionEventsService: SessionEventsService,
+    private readonly bundleService: BundleService,
+    private readonly eventMapper: EventMapperService,
   ) {}
 
   /**
@@ -234,6 +237,51 @@ export class CompletionOrchestrationService {
       if (session.messageCount > 0) {
         this.sessionService.persistTemplateName(session.sessionId, effectiveTemplateName).catch(
           (err) => this.logger.warn(`Failed to persist templateName: ${err.message}`),
+        );
+      }
+    }
+
+    // Step 2b: Resolve active bundles and inject their MCP servers / system prompts
+    const tenantEnabledBundles = resolvedTenant?.config?.enabledBundles ?? [];
+    if (tenantEnabledBundles.length > 0) {
+      // Template bundles (if specified) are filtered against tenant-enabled bundles
+      const tmpl = effectiveTemplateName
+        ? resolvedTenant?.config?.sessionTemplates?.[effectiveTemplateName] as Record<string, any> | undefined
+        : undefined;
+      const templateBundles = tmpl?.['bundles'] as string[] | undefined;
+
+      const bundleResolution = this.bundleService.resolveActiveBundles(
+        templateBundles,
+        tenantEnabledBundles,
+      );
+
+      // Inject bundle MCP servers
+      if (Object.keys(bundleResolution.mcpServers).length > 0) {
+        mcpServers = { ...(mcpServers ?? {}), ...bundleResolution.mcpServers };
+        this.logger.log(
+          `Session ${sessionId} bundle MCP servers: ${Object.keys(bundleResolution.mcpServers).join(', ')}`,
+        );
+      }
+
+      // Append bundle system prompts
+      for (const prompt of bundleResolution.appendSystemPrompts) {
+        systemPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+      }
+
+      if (bundleResolution.activeBundleIds.length > 0) {
+        this.logger.debug(
+          `Session ${sessionId} active bundles: ${bundleResolution.activeBundleIds.join(', ')}`,
+        );
+      }
+
+      // Ensure bundle triggers are registered in the running EventMapperService.
+      // SolutionLoaderService registers triggers at import time in a separate process,
+      // but those registrations are lost when that process exits. This ensures the
+      // running backend always has the correct triggers for event generation.
+      if (bundleResolution.toolEventTriggers.length > 0) {
+        this.eventMapper.registerBundleTriggers(
+          resolvedTenantId,
+          bundleResolution.toolEventTriggers,
         );
       }
     }
@@ -501,7 +549,7 @@ export class CompletionOrchestrationService {
 
     const completionPromise = Promise.race([basePromise, timeoutPromise]);
 
-    const handleEvent = (event: FrontendEvent) => {
+    const handleEvent = (event: SessionEvent) => {
       // Accumulate text_delta events
       if (event.type === 'text_delta' && (event as any).delta) {
         accumulatedText += (event as any).delta;
@@ -514,8 +562,11 @@ export class CompletionOrchestrationService {
           .catch((err) => this.logger.warn(`Event persist failed: ${err.message}`));
       }
 
-      // Emit to client (transport-agnostic)
-      emitEvent(event);
+      // Emit to client with turn context (CCAAS-provided metadata)
+      emitEvent({
+        ...event,
+        ...(session.currentTurnId && { turnId: session.currentTurnId }),
+      });
 
       // On completion, update the assistant message with accumulated content
       if (event.type === 'agent_status' && (event as any).status === 'complete') {
