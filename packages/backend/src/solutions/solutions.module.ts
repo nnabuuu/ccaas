@@ -24,6 +24,7 @@ import { SolutionLoaderService } from './solution-loader.service';
 import { SolutionConfigAdapter } from './solution-config-adapter';
 import { SkillsModule } from '../skills/skills.module';
 import { SessionsModule } from '../sessions/sessions.module';
+import { BundleModule } from '../bundles/bundle.module';
 
 @Module({
   imports: [
@@ -32,6 +33,8 @@ import { SessionsModule } from '../sessions/sessions.module';
     SkillsModule,
     // SessionsModule provides EventMapperService for tool event trigger registration
     SessionsModule,
+    // BundleModule provides BundleService for resolving bundle triggers
+    BundleModule,
   ],
   providers: [
     SolutionScannerService,

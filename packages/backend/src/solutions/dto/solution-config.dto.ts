@@ -97,6 +97,8 @@ export const SessionTemplateSchema = z.object({
   /** Skill prompt mode: 'protocol' (default) instructs agent to read SKILL.md at runtime;
    *  'inline' embeds SKILL.md content directly in system prompt, hiding internal reads from end users. */
   skillPromptMode: z.enum(['protocol', 'inline']).optional(),
+  /** Bundle IDs to activate for this session template (e.g. ['structured-output', 'file-attachments']) */
+  bundles: z.array(z.string().min(1)).optional(),
 });
 
 // ============================================================================
@@ -319,6 +321,13 @@ export const SolutionConfigV3Schema = z.object({
   // ============ CCAAS Core Configuration ============
   /** Tenant identification - required by CCAAS Core */
   tenant: TenantConfigSchema,
+
+  /**
+   * Bundle mode:
+   * - 'simple' (default): All built-in bundles auto-enabled, no manual config needed
+   * - 'advanced': Manual bundle configuration via sessionTemplates.bundles
+   */
+  mode: z.enum(['simple', 'advanced']).default('simple'),
 
   /**
    * Discovery control - opt-out of automatic registration at startup.

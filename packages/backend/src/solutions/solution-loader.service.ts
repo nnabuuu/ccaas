@@ -29,6 +29,7 @@ import { TenantsService } from '../tenants/tenants.service';
 import { SkillsService } from '../skills/skills.service';
 import { McpPoolService, type CreateMcpServerDto } from '../mcp/mcp-pool.service';
 import { EventMapperService } from '../sessions/event-mapper.service';
+import { BundleService } from '../bundles/bundle.service';
 import type {
   SolutionConfigV3,
   SkillReferenceV3,
@@ -111,6 +112,7 @@ export class SolutionLoaderService {
     private readonly skills: SkillsService,
     private readonly mcpPool: McpPoolService,
     private readonly eventMapper: EventMapperService,
+    private readonly bundleService: BundleService,
   ) {}
 
   // --------------------------------------------------------------------------
@@ -229,16 +231,54 @@ export class SolutionLoaderService {
     );
 
     // Step 3: Register MCP servers
+    // In simple mode, filter out MCP servers that are already provided by bundles
+    const mode: 'simple' | 'advanced' = config.mode ?? 'simple';
+    const filteredMcpServers = this.filterBundleProvidedServers(
+      config.mcpServers || {},
+      mode,
+    );
+    const filteredConfig = { ...config, mcpServers: filteredMcpServers };
     const mcpResults = await this.registerMcpServers(
       tenantId,
-      config,
+      filteredConfig,
       warnings,
     );
 
+    // Step 3b: Auto-sync enabledBundles to tenant config
+    let bundleIdsToSync: string[];
+    if (mode === 'simple') {
+      bundleIdsToSync = this.bundleService.getAvailableBundles().map(b => b.id);
+    } else {
+      const templateBundleIds = new Set<string>();
+      if (config.sessionTemplates) {
+        for (const tmpl of Object.values(config.sessionTemplates)) {
+          if (tmpl.bundles) {
+            tmpl.bundles.forEach((id) => templateBundleIds.add(id));
+          }
+        }
+      }
+      bundleIdsToSync = [...templateBundleIds];
+    }
+
+    const syncedBundles = await this.syncEnabledBundles(
+      tenantId,
+      bundleIdsToSync,
+      mode === 'simple'
+        ? 'simple mode — auto-enabled all built-in bundles'
+        : 'synced enabledBundles from session templates',
+    );
+
     // Step 4: Register tool event triggers with EventMapperService
-    const allTriggers = Object.values(config.mcpServers || {}).flatMap(
+    // Merge solution triggers (from filtered mcpServers) + bundle triggers (from tenant config)
+    const solutionTriggers = Object.values(filteredMcpServers).flatMap(
       (serverDef) => serverDef.toolEventTriggers ?? [],
     );
+
+    // Use the syncedBundles from Step 3b directly (no re-read needed)
+    const bundleResolution = this.bundleService.resolveActiveBundles(undefined, syncedBundles);
+    const bundleTriggers = bundleResolution.toolEventTriggers;
+
+    const allTriggers = [...bundleTriggers, ...solutionTriggers];
     if (allTriggers.length > 0) {
       this.eventMapper.registerTenantToolTriggers(tenantId, allTriggers);
     }
@@ -248,7 +288,7 @@ export class SolutionLoaderService {
     let templateCount = 0;
     if (config.sessionTemplates && Object.keys(config.sessionTemplates).length > 0) {
       const resolvedMcpServers = this.resolveMcpServerAbsolutePaths(
-        config.mcpServers || {},
+        filteredMcpServers,
         solution.solutionPath,
       );
       await this.applySessionTemplates(tenantId, config.sessionTemplates, warnings, resolvedMcpServers);
@@ -669,6 +709,71 @@ export class SolutionLoaderService {
       `Applied ${Object.keys(templates).length} session template(s): ${Object.keys(templates).join(', ')}`,
     );
     this.logger.log(`Applied session templates for tenant "${tenantId}"`);
+  }
+
+  /**
+   * Merge bundleIdsToSync into tenant's existing enabledBundles (no duplicates).
+   * Skips the update if all IDs are already present.
+   * Returns the final merged list of enabled bundle IDs.
+   */
+  private async syncEnabledBundles(
+    tenantId: string,
+    bundleIdsToSync: string[],
+    logMessage: string,
+  ): Promise<string[]> {
+    if (bundleIdsToSync.length === 0) {
+      const tenant = await this.tenants.findOne(tenantId);
+      return tenant?.config?.enabledBundles ?? [];
+    }
+
+    const tenant = await this.tenants.findOne(tenantId);
+    const existing = new Set(tenant?.config?.enabledBundles ?? []);
+    const merged = [...new Set([...existing, ...bundleIdsToSync])];
+
+    if (merged.length > existing.size) {
+      await this.tenants.update(tenantId, {
+        config: { enabledBundles: merged },
+      });
+      this.logger.log(`Tenant ${tenantId}: ${logMessage}: [${merged.join(', ')}]`);
+    }
+    return merged;
+  }
+
+  /**
+   * In simple mode, filter out MCP servers that are already provided by built-in bundles.
+   * Detects bundle-provided servers by matching args against bundle MCP server paths.
+   * This prevents duplicate tools (e.g., two read_context or two attach_file).
+   */
+  private filterBundleProvidedServers(
+    mcpServers: Record<string, McpServerDefinition>,
+    mode: 'simple' | 'advanced',
+  ): Record<string, McpServerDefinition> {
+    if (mode !== 'simple') return mcpServers;
+
+    // Collect server directory names from all bundle MCP server definitions
+    // e.g. '${CORE_MCP_DIR}/shared-context-server/dist/index.js' → 'shared-context-server'
+    const bundleServerDirNames = this.bundleService.getAvailableBundles()
+      .filter(b => b.mcpServer)
+      .map(b => {
+        const lastArg = b.mcpServer!.args[b.mcpServer!.args.length - 1];
+        const match = lastArg.match(/\/([^/]+)\/dist\/index\.js$/);
+        return match ? match[1] : null;
+      })
+      .filter((name): name is string => name !== null);
+
+    const filtered: Record<string, McpServerDefinition> = {};
+    for (const [slug, def] of Object.entries(mcpServers)) {
+      const argsStr = (def.args || []).join(' ');
+      const matchedBundle = bundleServerDirNames.find(dir => argsStr.includes(`${dir}/`));
+      if (matchedBundle) {
+        this.logger.log(
+          `Simple mode: skipping MCP server "${slug}" (provided by ${matchedBundle} bundle)`,
+        );
+        continue;
+      }
+      filtered[slug] = def;
+    }
+    return filtered;
   }
 
   /**

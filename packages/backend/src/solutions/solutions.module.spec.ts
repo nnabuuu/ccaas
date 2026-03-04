@@ -14,6 +14,7 @@ import { SkillMetadataParserService } from './skill-metadata-parser.service';
 import { SolutionLoaderService } from './solution-loader.service';
 import { SolutionConfigAdapter } from './solution-config-adapter';
 import { EventMapperService } from '../sessions/event-mapper.service';
+import { BundleService } from '../bundles/bundle.service';
 
 // ---------------------------------------------------------------------------
 // Mocks for external service dependencies
@@ -37,6 +38,15 @@ const mockMcpPoolService = {
   update: jest.fn(),
 };
 
+const mockBundleService = {
+  resolveActiveBundles: jest.fn().mockReturnValue({
+    mcpServers: {},
+    toolEventTriggers: [],
+    appendSystemPrompts: [],
+    activeBundleIds: [],
+  }),
+};
+
 describe('SolutionsModule', () => {
   let module: TestingModule;
 
@@ -50,8 +60,8 @@ describe('SolutionsModule', () => {
         SolutionConfigAdapter,
         {
           provide: SolutionLoaderService,
-          useFactory: (scanner, parser, tenants, skills, mcpPool, eventMapper) =>
-            new SolutionLoaderService(scanner, parser, tenants, skills, mcpPool, eventMapper),
+          useFactory: (scanner, parser, tenants, skills, mcpPool, eventMapper, bundleService) =>
+            new SolutionLoaderService(scanner, parser, tenants, skills, mcpPool, eventMapper, bundleService),
           inject: [
             SolutionScannerService,
             SkillMetadataParserService,
@@ -59,6 +69,7 @@ describe('SolutionsModule', () => {
             'SkillsService',
             'McpPoolService',
             EventMapperService,
+            BundleService,
           ],
         },
         { provide: 'TenantsService', useValue: mockTenantsService },
@@ -68,6 +79,7 @@ describe('SolutionsModule', () => {
           provide: EventMapperService,
           useValue: { registerTenantToolTriggers: jest.fn(), clearAllTenantToolTriggers: jest.fn() },
         },
+        { provide: BundleService, useValue: mockBundleService },
       ],
     }).compile();
   });

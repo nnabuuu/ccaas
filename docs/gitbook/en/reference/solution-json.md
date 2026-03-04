@@ -73,6 +73,25 @@ The simplest valid solution.json (recommended for most solutions):
 
 Always use `"3.0"` for new solutions.
 
+### mode
+
+**Type:** `"simple" | "advanced"`
+**Default:** `"simple"`
+**Required:** No
+
+Controls how Bundles are configured for this solution.
+
+- **`simple`** (default): All built-in Bundles are automatically enabled at the tenant level. No need to declare `bundles` in session templates.
+- **`advanced`**: Only Bundles explicitly declared in `sessionTemplates.bundles` are enabled. This is the previous behavior.
+
+```json
+{
+  "mode": "advanced"
+}
+```
+
+Most solutions should omit this field to use the default `simple` mode, which provides `write_output`, `attach_file`, and `read_context` tools out of the box.
+
 ### tenant
 
 **Type:** `Object`
@@ -281,8 +300,11 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 | `mcpServers` | object (optional) | MCP server configurations (same format as top-level `mcpServers`) |
 | `model` | string (optional) | Model override (e.g. `claude-opus-4-6`) |
 | `skillPromptMode` | `"protocol"` \| `"inline"` (optional) | How SKILL.md content is delivered to the agent: `protocol` = agent reads at runtime (default); `inline` = embedded in system prompt before start |
+| `bundles` | string[] (optional) | Bundle IDs to activate for this template (must be a subset of Tenant `enabledBundles`) |
 
 > For full details — Admin UI, API endpoints, merge rules, security, and troubleshooting — see the [Session Templates Management guide](../guide/admin-session-templates.md).
+>
+> For details on Bundle capability packages, see the [Bundles guide](../guide/bundles.md).
 
 > **Deployment verification:** After each complete solution load, the backend automatically writes an ISO timestamp to `tenant.config.solutionAppliedAt`. Use this for CI/CD deployment verification.
 

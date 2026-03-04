@@ -73,6 +73,25 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 
 新解决方案始终使用 `"3.0"`。
 
+### mode
+
+**类型:** `"simple" | "advanced"`
+**默认值:** `"simple"`
+**必需:** 否
+
+控制此解决方案的 Bundle 配置方式。
+
+- **`simple`**（默认）：自动在 tenant 级别启用所有内置 Bundle。无需在 session template 中声明 `bundles`。
+- **`advanced`**：仅启用在 `sessionTemplates.bundles` 中显式声明的 Bundle。这是之前的行为。
+
+```json
+{
+  "mode": "advanced"
+}
+```
+
+大多数解决方案应省略此字段以使用默认的 `simple` 模式，开箱即用提供 `write_output`、`attach_file` 和 `read_context` 工具。
+
 ### tenant
 
 **类型:** `Object`
@@ -281,8 +300,11 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 | `mcpServers` | object（可选） | MCP 服务器配置（格式同顶层 `mcpServers`） |
 | `model` | string（可选） | 模型覆盖（如 `claude-opus-4-6`） |
 | `skillPromptMode` | `"protocol"` \| `"inline"`（可选） | SKILL.md 内容到达 Agent 的方式：`protocol` = Agent 运行时读取（默认）；`inline` = 启动前嵌入系统提示 |
+| `bundles` | string[]（可选） | 此模板激活的 Bundle ID 列表（必须是 Tenant `enabledBundles` 的子集） |
 
 > 完整详情（Admin UI、API 端点、合并规则、安全配置、问题排查）请参阅 [Session Templates 管理指南](../guide/admin-session-templates.md)。
+>
+> 关于 Bundle 能力包的详细说明，请参阅 [Bundle 能力包指南](../guide/bundles.md)。
 
 > **部署验证:** 每次 solution 完整加载后，backend 自动在 `tenant.config.solutionAppliedAt` 写入 ISO 时间戳，可用于 CI/CD 验证部署状态。
 

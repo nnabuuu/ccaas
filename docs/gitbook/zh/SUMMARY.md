@@ -54,14 +54,19 @@
 * [Skill 编写指南](guide/skill-writing.md)
 * [MCP Server 开发](guide/mcp-server.md)
 * [write\_output 最佳实践](guide/write-output.md)
+* [Bundle 能力包](guide/bundles.md)
 * [前端集成指南](guide/frontend.md)
 * [React SDK 聊天集成](guide/chat-integration.md)
 * [布局系统快速入门](guide/solution-layout-quickstart.md)
 * [File Explorer 组件](guide/file-explorer.md)
+* [会话持久化](guide/conversation-persistence.md)
+
+## 高级配置 <a href="#advanced" id="advanced"></a>
+
+* [Bundle 高级配置](guide/bundles-advanced.md)
 * [管理员 API Key 管理](guide/admin-api-keys.md)
 * [会话模板管理](guide/admin-session-templates.md)
 * [会话超时配置](guide/admin-session-ttl.md)
-* [会话持久化](guide/conversation-persistence.md)
 
 ## API 参考 <a href="#api" id="api"></a>
 

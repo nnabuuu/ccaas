@@ -32,7 +32,7 @@ import { ApiErrorEvent } from './messages/entities/api-error-event.entity';
 import { ThinkingBlock } from './messages/entities/thinking-block.entity';
 import { TokenUsageEvent } from './messages/entities/token-usage-event.entity';
 import { UserContextEvent } from './messages/entities/user-context-event.entity';
-import { SessionEvent } from './messages/entities/session-event.entity';
+import { SessionEventRecord } from './messages/entities/session-event.entity';
 import { AgentFile } from './files/entities/agent-file.entity';
 import { FileVersion } from './files/entities/file-version.entity';
 import { ApiKey } from './auth/entities/api-key.entity';
@@ -50,6 +50,7 @@ import { User } from './users/entities/user.entity';
 import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
 import { SolutionsModule } from './solutions/solutions.module';
+import { BundleModule } from './bundles/bundle.module';
 
 @Module({
   imports: [
@@ -95,7 +96,7 @@ import { SolutionsModule } from './solutions/solutions.module';
         ThinkingBlock,
         TokenUsageEvent,
         UserContextEvent,
-        SessionEvent,
+        SessionEventRecord,
         // Session entities
         MessageQueue,
         Session,
@@ -143,6 +144,9 @@ import { SolutionsModule } from './solutions/solutions.module';
 
     // Solution auto-discovery
     SolutionsModule,
+
+    // Bundle system (platform capability packages)
+    BundleModule,
   ],
   providers: [
     {

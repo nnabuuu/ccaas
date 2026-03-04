@@ -1,0 +1,23 @@
+{
+  "name": "@kedge-agentic/attach-file-server",
+  "version": "1.0.0",
+  "description": "Core MCP server providing attach_file tool for file attachments",
+  "type": "module",
+  "bin": {
+    "attach-file-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "mime-types": "^2.1.35"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^2.1.4",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

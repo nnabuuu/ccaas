@@ -54,14 +54,19 @@
 * [Skill Writing Guide](guide/skill-writing.md)
 * [MCP Server Development](guide/mcp-server.md)
 * [write\_output Best Practices](guide/write-output.md)
+* [Bundles (Capability Packages)](guide/bundles.md)
 * [Frontend Integration Guide](guide/frontend.md)
 * [Chat Integration with React SDK](guide/chat-integration.md)
 * [Layout System Quick Start](guide/solution-layout-quickstart.md)
 * [File Explorer Component](guide/file-explorer.md)
+* [Conversation Persistence](guide/conversation-persistence.md)
+
+## Advanced Configuration <a href="#advanced" id="advanced"></a>
+
+* [Bundles: Advanced Configuration](guide/bundles-advanced.md)
 * [Admin API Key Management](guide/admin-api-keys.md)
 * [Session Templates Management](guide/admin-session-templates.md)
 * [Session Timeout Configuration](guide/admin-session-ttl.md)
-* [Conversation Persistence](guide/conversation-persistence.md)
 
 ## API Reference <a href="#api" id="api"></a>
 

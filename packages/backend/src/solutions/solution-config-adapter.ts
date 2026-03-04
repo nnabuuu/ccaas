@@ -147,6 +147,7 @@ export class SolutionConfigAdapter {
     const v3: SolutionConfigV3 = {
       schemaVersion: '3.0',
       tenant: v2.ccaas.tenant,
+      mode: 'simple',
       discovery: { enabled: v2.ccaas.discovery.enabled },
       skills: skills.length > 0 ? skills : ['skills/*'], // Default to wildcard if no skills
       mcpServers: v2.ccaas.discovery.mcpServers,

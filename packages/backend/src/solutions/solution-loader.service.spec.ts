@@ -91,6 +91,7 @@ function makeV3Config(overrides: Partial<SolutionConfigV3> = {}): SolutionConfig
   return {
     schemaVersion: '3.0',
     tenant: { name: 'Test Solution', slug: 'test-solution', description: 'A test' },
+    mode: 'simple',
     discovery: { enabled: true },
     skills: ['skills/test-skill'],
     mcpServers: {},
@@ -128,6 +129,7 @@ describe('SolutionLoaderService', () => {
   let skills: ReturnType<typeof createMockSkills>;
   let mcpPool: ReturnType<typeof createMockMcpPool>;
   let eventMapper: ReturnType<typeof createMockEventMapper>;
+  let bundleService: { resolveActiveBundles: jest.Mock; getAvailableBundles: jest.Mock };
 
   beforeEach(() => {
     scanner    = createMockScanner();
@@ -136,6 +138,19 @@ describe('SolutionLoaderService', () => {
     skills     = createMockSkills();
     mcpPool    = createMockMcpPool();
     eventMapper = createMockEventMapper();
+    bundleService = {
+      resolveActiveBundles: jest.fn().mockReturnValue({
+        mcpServers: {},
+        toolEventTriggers: [],
+        appendSystemPrompts: [],
+        activeBundleIds: [],
+      }),
+      getAvailableBundles: jest.fn().mockReturnValue([
+        { id: 'structured-output' },
+        { id: 'file-attachments', mcpServer: { command: 'node', args: ['${CORE_MCP_DIR}/attach-file-server/dist/index.js'] } },
+        { id: 'shared-context', mcpServer: { command: 'node', args: ['${CORE_MCP_DIR}/shared-context-server/dist/index.js'] } },
+      ]),
+    };
 
     loader = new SolutionLoaderService(
       scanner as any,
@@ -144,6 +159,7 @@ describe('SolutionLoaderService', () => {
       skills as any,
       mcpPool as any,
       eventMapper as any,
+      bundleService as any,
     );
   });
 
@@ -484,6 +500,301 @@ describe('SolutionLoaderService', () => {
 
       expect(result.loaded[0].mcpServers[0].action).toBe('skipped');
       expect(result.loaded[0].mcpServers[0].error).toContain('Port conflict');
+    });
+  });
+
+  // ==========================================================================
+  // Bundle enabledBundles auto-sync
+  // ==========================================================================
+
+  describe('Bundle enabledBundles auto-sync (advanced mode)', () => {
+    it('syncs enabledBundles from session template bundles to tenant config', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output', 'file-attachments'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      // Find the update call that writes enabledBundles
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeDefined();
+      expect(bundleUpdateCall![1].config.enabledBundles).toEqual(
+        expect.arrayContaining(['structured-output', 'file-attachments']),
+      );
+    });
+
+    it('merges with existing tenant enabledBundles without duplicates', async () => {
+      // Tenant already has 'structured-output'
+      tenants.findOne.mockReset();
+      tenants.findOne
+        .mockResolvedValueOnce(null) // ensureTenant: slug lookup → not found
+        .mockResolvedValue({
+          id: 'tenant-123',
+          slug: 'test-solution',
+          config: { enabledBundles: ['structured-output'] },
+        });
+
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output', 'file-attachments'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeDefined();
+      const bundles = bundleUpdateCall![1].config.enabledBundles as string[];
+      expect(bundles).toContain('structured-output');
+      expect(bundles).toContain('file-attachments');
+      expect(bundles.length).toBe(2); // no duplicates
+    });
+
+    it('skips update when all template bundles already enabled', async () => {
+      tenants.findOne.mockReset();
+      tenants.findOne
+        .mockResolvedValueOnce(null) // ensureTenant
+        .mockResolvedValue({
+          id: 'tenant-123',
+          slug: 'test-solution',
+          config: { enabledBundles: ['structured-output'] },
+        });
+
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      // Should NOT have an enabledBundles update call (only solutionAppliedAt + sessionTemplates)
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeUndefined();
+    });
+
+    it('collects bundles from multiple session templates', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output'],
+          },
+          review: {
+            enabledSkillSlugs: [],
+            bundles: ['file-attachments'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeDefined();
+      const bundles = bundleUpdateCall![1].config.enabledBundles as string[];
+      expect(bundles).toContain('structured-output');
+      expect(bundles).toContain('file-attachments');
+    });
+
+    it('passes synced enabledBundles to resolveActiveBundles for trigger registration', async () => {
+      // After sync, tenant should have enabledBundles; resolveActiveBundles should receive them
+      tenants.findOne.mockReset();
+      tenants.findOne
+        .mockResolvedValueOnce(null) // ensureTenant: slug lookup → not found
+        // Step 3b pre-sync read: no bundles yet
+        .mockResolvedValueOnce({ id: 'tenant-123', slug: 'test-solution', config: {} })
+        // Step 4 re-read after sync: now has enabledBundles
+        .mockResolvedValueOnce({
+          id: 'tenant-123',
+          slug: 'test-solution',
+          config: { enabledBundles: ['structured-output'] },
+        })
+        // Step 5 applySessionTemplates read
+        .mockResolvedValue({
+          id: 'tenant-123',
+          slug: 'test-solution',
+          config: { enabledBundles: ['structured-output'] },
+        });
+
+      bundleService.resolveActiveBundles.mockReturnValue({
+        mcpServers: {},
+        toolEventTriggers: [
+          { toolName: 'write_output', eventType: 'output_update' },
+        ],
+        appendSystemPrompts: [],
+        activeBundleIds: ['structured-output'],
+      });
+
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      // resolveActiveBundles should receive the synced enabledBundles, NOT empty array
+      expect(bundleService.resolveActiveBundles).toHaveBeenCalledWith(
+        undefined,
+        ['structured-output'],
+      );
+
+      // eventMapper should get the bundle triggers
+      expect(eventMapper.registerTenantToolTriggers).toHaveBeenCalledWith(
+        'tenant-123',
+        expect.arrayContaining([
+          { toolName: 'write_output', eventType: 'output_update' },
+        ]),
+      );
+    });
+
+    it('does nothing when session templates have no bundles', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          default: { enabledSkillSlugs: [] },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      // No enabledBundles update call
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeUndefined();
+    });
+  });
+
+  // ==========================================================================
+  // Solution mode (simple / advanced)
+  // ==========================================================================
+
+  describe('Solution mode', () => {
+    it('simple mode (default): auto-enables all built-in bundles', async () => {
+      // No mode field → defaults to 'simple'
+      const config = makeV3Config();
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeDefined();
+      const bundles = bundleUpdateCall![1].config.enabledBundles as string[];
+      expect(bundles).toContain('structured-output');
+      expect(bundles).toContain('file-attachments');
+      expect(bundles).toContain('shared-context');
+    });
+
+    it('advanced mode: only syncs bundles declared in session templates', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+        sessionTemplates: {
+          lesson: {
+            enabledSkillSlugs: [],
+            bundles: ['structured-output'],
+          },
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeDefined();
+      const bundles = bundleUpdateCall![1].config.enabledBundles as string[];
+      expect(bundles).toContain('structured-output');
+      expect(bundles).not.toContain('file-attachments');
+      expect(bundles).not.toContain('shared-context');
+    });
+
+    it('advanced mode: does not auto-enable bundles when no session templates declare bundles', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      const bundleUpdateCall = tenants.update.mock.calls.find(
+        ([, p]) => p?.config?.enabledBundles !== undefined,
+      );
+      expect(bundleUpdateCall).toBeUndefined();
+    });
+
+    it('simple mode: filters out shared-context-server from solution mcpServers', async () => {
+      const config = makeV3Config({
+        mcpServers: {
+          'solution-tools': mcpDef(['mcp-server/dist/index.js']),
+          'shared-context-server': mcpDef(['shared-context-server/dist/index.js']),
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      // solution-tools should be registered, shared-context-server should not
+      expect(mcpPool.create).toHaveBeenCalledWith(
+        'tenant-123',
+        expect.objectContaining({ slug: 'solution-tools' }),
+      );
+      // Check that shared-context-server was NOT passed to mcpPool.create
+      const createCalls = mcpPool.create.mock.calls.map(([, dto]: any) => dto.slug);
+      expect(createCalls).not.toContain('shared-context-server');
+    });
+
+    it('advanced mode: does NOT filter shared-context-server from solution mcpServers', async () => {
+      const config = makeV3Config({
+        mode: 'advanced',
+        mcpServers: {
+          'shared-context-server': mcpDef(['shared-context-server/dist/index.js']),
+        },
+      });
+      scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
+
+      await loader.loadAll();
+
+      expect(mcpPool.create).toHaveBeenCalledWith(
+        'tenant-123',
+        expect.objectContaining({ slug: 'shared-context-server' }),
+      );
     });
   });
 

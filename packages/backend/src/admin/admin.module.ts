@@ -30,6 +30,7 @@ import { AdminSdkController } from './controllers/admin-sdk.controller';
 import { AdminApiKeysController } from './controllers/admin-api-keys.controller';
 import { AdminSessionTemplatesController } from './controllers/admin-session-templates.controller';
 import { AdminMcpServersController } from './controllers/admin-mcp-servers.controller';
+import { AdminBundlesController } from './controllers/admin-bundles.controller';
 
 // Dependent modules
 import { SessionsModule } from '../sessions/sessions.module';
@@ -37,6 +38,7 @@ import { SkillsModule } from '../skills/skills.module';
 import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
 import { TenantsModule } from '../tenants/tenants.module';
+import { BundleModule } from '../bundles/bundle.module';
 import { TurnsModule } from './turns.module';
 
 // Entities from other modules (for analytics queries)
@@ -76,6 +78,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AuthModule,
     MessagesModule,
     TenantsModule,
+    BundleModule,
   ],
   controllers: [
     AdminDashboardController,
@@ -88,6 +91,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminApiKeysController,
     AdminSessionTemplatesController,
     AdminMcpServersController,
+    AdminBundlesController,
   ],
   providers: [
     AuditService,
