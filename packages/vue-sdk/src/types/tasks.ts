@@ -8,6 +8,21 @@
 import type { Ref, ComputedRef } from 'vue'
 import type { ActiveSubAgent, EventTodoItem } from '@kedge-agentic/common'
 
+export interface JobInfo {
+  id: string
+  sessionId?: string
+  messageId?: string
+  type: string
+  name: string
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+  startedAt?: string
+  completedAt?: string
+  progress?: { step: string; percent: number }
+  metadata?: Record<string, unknown>
+  resultFiles?: { name: string; path: string; size: number; mimeType: string }[]
+  errorMessage?: string
+}
+
 export interface TodoStats {
   completed: number
   inProgress: number
@@ -17,8 +32,8 @@ export interface TodoStats {
 
 export interface UnifiedTask {
   id: string
-  type: 'subagent' | 'todo'
-  status: 'running' | 'completed' | 'failed' | 'pending' | 'in_progress'
+  type: 'subagent' | 'todo' | 'job'
+  status: 'running' | 'completed' | 'failed' | 'pending' | 'in_progress' | 'cancelled'
   title: string
   description?: string
   startedAt?: Date
@@ -28,7 +43,11 @@ export interface UnifiedTask {
   progress?: number
   activeForm?: string
   nestingLevel?: number
-  raw: ActiveSubAgent | EventTodoItem
+  jobId?: string
+  jobType?: string
+  resultFiles?: { name: string; path: string; size: number; mimeType: string }[]
+  messageId?: string
+  raw: ActiveSubAgent | EventTodoItem | JobInfo
 }
 
 export interface TaskGroups {
@@ -47,6 +66,7 @@ export interface TaskBadgeState {
 export interface UseTaskTrackingOptions {
   activeSubAgents: Ref<ActiveSubAgent[]> | ActiveSubAgent[]
   todoItems: Ref<EventTodoItem[]> | EventTodoItem[]
+  jobs?: Ref<JobInfo[]> | JobInfo[]
   maxHistorySize?: number
 }
 

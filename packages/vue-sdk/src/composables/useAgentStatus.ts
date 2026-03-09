@@ -38,11 +38,11 @@
  * ```
  */
 
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import type { Ref, ComputedRef } from 'vue'
 import type { UseAgentConnectionReturn } from '../types/connection'
 import type { ChatToolActivity } from '../types/chat'
-import type { TodoStats } from '../types/tasks'
+import type { TodoStats, JobInfo } from '../types/tasks'
 import type {
   ActiveSubAgent,
   EventTodoItem,
@@ -53,6 +53,7 @@ import type {
   TodoUpdatePayload,
   SubAgentStartedEvent,
   SubAgentCompletedEvent,
+  JobUpdateEvent,
 } from '@kedge-agentic/common'
 import { getThinkingVerb, THINKING_VERBS } from '../utils/thinkingVerbs'
 
@@ -85,6 +86,7 @@ export interface UseAgentStatusReturn {
   todoItems: Ref<EventTodoItem[]>
   todoStats: Ref<TodoStats>
   activeSubAgents: Ref<ActiveSubAgent[]>
+  jobs: Ref<JobInfo[]>
   currentActivity: ComputedRef<string>
 }
 
@@ -106,6 +108,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   const todoItems = ref<EventTodoItem[]>([])
   const todoStats = ref<TodoStats>({ completed: 0, inProgress: 0, pending: 0, total: 0 })
   const activeSubAgents = ref<ActiveSubAgent[]>([])
+  const jobs = ref<JobInfo[]>([])
 
   // ---- Computed ----
   const isProcessing = computed(() =>
@@ -161,6 +164,32 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       pendingTimeouts.delete(timeoutId)
     }, 3000)
     pendingTimeouts.add(timeoutId)
+  }
+
+  // ---- Job update handler (shared between socket and SSE) ----
+  function onJobUpdate(data: JobUpdateEvent) {
+    const job: JobInfo = {
+      id: data.jobId,
+      sessionId: data.sessionId,
+      messageId: data.messageId,
+      type: data.jobType,
+      name: data.name,
+      status: data.status,
+      startedAt: data.startedAt,
+      completedAt: data.completedAt,
+      progress: data.progress,
+      metadata: data.metadata,
+      resultFiles: data.resultFiles,
+      errorMessage: data.errorMessage,
+    }
+    const idx = jobs.value.findIndex(j => j.id === data.jobId)
+    if (idx >= 0) {
+      const updated = [...jobs.value]
+      updated[idx] = job
+      jobs.value = updated
+    } else {
+      jobs.value = [...jobs.value, job]
+    }
   }
 
   // ---- Socket event handlers ----
@@ -299,6 +328,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     socket.on('todo_update', onTodoUpdate)
     socket.on('subagent_started', onSubAgentStarted)
     socket.on('subagent_completed', onSubAgentCompleted)
+    socket.on('job_update', onJobUpdate)
 
     socketCleanup = () => {
       socket.off('agent_status', onAgentStatus)
@@ -308,6 +338,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       socket.off('todo_update', onTodoUpdate)
       socket.off('subagent_started', onSubAgentStarted)
       socket.off('subagent_completed', onSubAgentCompleted)
+      socket.off('job_update', onJobUpdate)
     }
   }
 
@@ -372,6 +403,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
               const event = envelope.event ?? envelope
               if (event.type === 'subagent_started') onSubAgentStarted(event)
               if (event.type === 'subagent_completed') onSubAgentCompleted(event)
+              if (event.type === 'job_update') onJobUpdate(event)
             } catch { /* ignore parse errors */ }
           }
         }
@@ -397,6 +429,45 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     ],
     () => {
       connectSsePushChannel()
+    },
+    { immediate: true },
+  )
+
+  // ---- Fetch persisted jobs on session ready (for re-entry) ----
+  watch(
+    [() => connection.serverUrl, () => connection.sessionId.value, () => connection.sessionReady.value],
+    ([serverUrl, sessionId, sessionReady]) => {
+      if (!serverUrl || !sessionId || !sessionReady) return
+
+      fetch(`${serverUrl}/api/v1/jobs?sessionId=${sessionId}`)
+        .then(res => res.json())
+        .then(result => {
+          if (result.data?.length) {
+            const fetched: JobInfo[] = result.data.map((j: any) => ({
+              id: j.id,
+              sessionId: j.sessionId,
+              messageId: j.messageId,
+              type: j.type,
+              name: j.name,
+              status: j.status,
+              startedAt: j.startedAt,
+              completedAt: j.completedAt,
+              progress: j.progress,
+              metadata: j.metadata,
+              resultFiles: j.resultFiles,
+              errorMessage: j.errorMessage,
+            }))
+            // Merge with existing state to avoid overwriting real-time updates
+            const existing = new Map(jobs.value.map(j => [j.id, j]))
+            fetched.forEach(j => {
+              if (!existing.has(j.id)) {
+                existing.set(j.id, j)
+              }
+            })
+            jobs.value = Array.from(existing.values())
+          }
+        })
+        .catch(() => {}) // silent fail
     },
     { immediate: true },
   )
@@ -494,6 +565,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
     todoItems,
     todoStats,
     activeSubAgents,
+    jobs,
     currentActivity,
   }
 }

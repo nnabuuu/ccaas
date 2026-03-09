@@ -38,6 +38,7 @@ export interface ChatToolActivity {
   agentType?: string
   nestingLevel?: number
   endTime?: number
+  turnId?: string
 }
 
 export interface TextBlock {
