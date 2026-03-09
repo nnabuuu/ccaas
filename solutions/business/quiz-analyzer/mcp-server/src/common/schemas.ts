@@ -18,9 +18,24 @@ const SolutionStepSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
   formula: z.string().optional(),
-  reasoning: z.string().min(1),
-  commonErrors: z.array(z.string()),
+  reasoning: z.string().optional(),
+  commonErrors: z.array(z.string()).optional(),
   relatedKnowledgePoints: z.array(z.string()).optional(),
+});
+
+const ApproachPathSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().min(1),
+  viability: z.enum(['viable', 'complex', 'dead_end']),
+  reason: z.string().min(1),
+});
+
+const AnalysisStrategySchema = z.object({
+  goal: z.string().min(1),
+  goalDecomposition: z.string().min(1),
+  approaches: z.array(ApproachPathSchema).min(1).max(5),
+  chosenApproach: z.string().min(1),
+  keyInsight: z.string().min(1),
 });
 
 const MistakeSchema = z.object({
@@ -52,6 +67,53 @@ const KpRefinementResultSchema = z.object({
   trace: z.record(z.unknown()),  // Loosely validated — complex nested structure
 });
 
+// JXGConstruction schemas (JSXGraph JSON serialization)
+const ParentSchema = z.union([
+  z.string(),
+  z.number(),
+  z.tuple([z.number(), z.number()]),
+  z.tuple([z.number(), z.number(), z.number()]),
+  z.object({ expr: z.string().min(1) }),
+]);
+
+const JXGElementSchema = z.object({
+  type: z.string().min(1),
+  parents: z.array(ParentSchema),
+  attrs: z.record(z.unknown()),
+  id: z.string().optional(),
+});
+
+const SnapValueSchema = z.object({
+  value: z.number(), label: z.string(), note: z.string().optional(),
+});
+
+const AutoPlaySchema = z.object({
+  fps: z.number().positive().optional(),
+  duration: z.number().positive().optional(),
+  mode: z.enum(['loop', 'bounce', 'once']).optional(),
+});
+
+const AnimationSpecSchema = z.object({
+  param: z.string().min(1),
+  range: z.tuple([z.number(), z.number()]),
+  default: z.number(),
+  label: z.string().optional(),
+  snapValues: z.array(SnapValueSchema).optional(),
+  autoPlay: AutoPlaySchema.optional(),
+});
+
+const JXGConstructionSchema = z.object({
+  kind: z.enum(['2d', '3d']),
+  bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  bbox3d: z.tuple([
+    z.tuple([z.number(), z.number()]),
+    z.tuple([z.number(), z.number()]),
+    z.tuple([z.number(), z.number()]),
+  ]).optional(),
+  elements: z.array(JXGElementSchema).min(1),
+  animation: AnimationSpecSchema.optional(),
+});
+
 // Field mapping
 export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   quizAnalysis: z.string().min(1),
@@ -59,6 +121,7 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   thinkingProcess: z.string().min(1),
   solutionSteps: z.array(SolutionStepSchema),
   correctAnswer: z.string().min(1),
+  analysisStrategy: AnalysisStrategySchema,
   commonMistakes: z.array(MistakeSchema),
   knowledgeGapAnalysis: z.string().min(1),
   difficulty: z.number().int().min(1).max(5),
@@ -80,6 +143,10 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
     correctAnswer: z.string().optional(),
     quizType: z.enum(['choice', 'fill', 'subjective']),
   }),
+  geometryFigure: JXGConstructionSchema,
+  solutionGeometryFigure: JXGConstructionSchema,
+  quickSummary: z.string().min(1),
+  lectureScript: z.string().min(1),
 };
 
 // ============ ERROR TRACKING SCHEMAS (Error-Based Recommendation System) ============

@@ -5,6 +5,7 @@ export const SYNC_FIELDS = [
   'thinkingProcess',       // 思路 - How to approach (string, Markdown)
   'solutionSteps',         // Array of SolutionStep
   'correctAnswer',         // The answer (string)
+  'analysisStrategy',      // AnalysisStrategy — 解题策略层思考
   'commonMistakes',        // Array of Mistake
   'knowledgeGapAnalysis',  // Analysis of knowledge gaps (string, Markdown)
   'difficulty',            // Difficulty 1-5 (number)
@@ -14,6 +15,10 @@ export const SYNC_FIELDS = [
   'timeAssessment',        // Rich time estimate with reasoning
   'kpRefinementResult',    // Complete KP refinement result (tags + trace + metadata)
   'parsedContent',         // Standardized parsed quiz content (stem, options, type)
+  'geometryFigure',        // Geometry figure specification (JXGConstruction)
+  'solutionGeometryFigure', // Solution geometry figure with animation (JXGConstruction)
+  'quickSummary',           // One-sentence summary for quick scanning (string)
+  'lectureScript',          // Oral-style lecture script for classroom teaching (string)
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
@@ -38,9 +43,24 @@ export interface SolutionStep {
   title: string;
   description: string;
   formula?: string;
-  reasoning: string;
-  commonErrors: string[];
+  reasoning?: string;
+  commonErrors?: string[];
   relatedKnowledgePoints?: string[];  // 该步涉及的知识点名称
+}
+
+export interface ApproachPath {
+  name: string;                    // "路径A: 角度差 ∠CAB - ∠EAB"
+  description: string;             // 这条路怎么走
+  viability: 'viable' | 'complex' | 'dead_end';
+  reason: string;                  // 为什么这个评估
+}
+
+export interface AnalysisStrategy {
+  goal: string;                    // "求 ∠CAE 的度数"
+  goalDecomposition: string;       // 自由文本，目标如何拆解
+  approaches: ApproachPath[];      // 1-4 条路径
+  chosenApproach: string;          // 选了哪条+为什么
+  keyInsight: string;              // 核心洞察（对教学最有价值）
 }
 
 export interface TimeAssessment {
@@ -87,6 +107,49 @@ export interface DifficultyAssessment {
   score: number;           // 1-5
   pitfalls: string[];      // 容易犯的错误
   reasoning: string;       // 为什么是这个难度
+}
+
+// ============ GEOMETRY FIGURE (JXGConstruction — JSXGraph JSON serialization) ============
+
+export interface JXGConstruction {
+  kind: '2d' | '3d';
+  bbox: [number, number, number, number];
+  bbox3d?: [[number, number], [number, number], [number, number]];
+  elements: JXGElement[];
+  animation?: AnimationSpec;
+}
+
+export interface JXGElement {
+  type: string;
+  parents: Parent[];
+  attrs: Record<string, any>;
+  id?: string;
+}
+
+export type Parent =
+  | string | number
+  | [number, number] | [number, number, number]
+  | { expr: string };
+
+export interface AnimationSpec {
+  param: string;
+  range: [number, number];
+  default: number;
+  label?: string;
+  snapValues?: SnapValue[];
+  autoPlay?: AutoPlaySpec;
+}
+
+export interface SnapValue {
+  value: number;
+  label: string;
+  note?: string;
+}
+
+export interface AutoPlaySpec {
+  fps?: number;
+  duration?: number;
+  mode?: 'loop' | 'bounce' | 'once';
 }
 
 export interface WriteOutputInput {

@@ -27,7 +27,7 @@ interface QuizInputFormProps {
 export default function QuizInputForm({
   onSubmit,
   disabled = false,
-  viewMode = 'teacher',
+  viewMode = 'prep',
 }: QuizInputFormProps) {
   const [content, setContent] = useState('')
   const [correctAnswer, setCorrectAnswer] = useState('')
@@ -42,7 +42,7 @@ export default function QuizInputForm({
       newErrors.content = '请输入题目内容'
     }
 
-    if (viewMode === 'teacher' && !correctAnswer.trim()) {
+    if (viewMode === 'prep' && !correctAnswer.trim()) {
       newErrors.correctAnswer = '请输入参考答案'
     }
 
@@ -62,7 +62,7 @@ export default function QuizInputForm({
 
     onSubmit({
       content: content.trim(),
-      correctAnswer: viewMode === 'teacher' ? correctAnswer.trim() : undefined,
+      correctAnswer: viewMode === 'prep' ? correctAnswer.trim() : undefined,
       studentAnswer: viewMode === 'student' ? studentAnswer.trim() : undefined,
     })
   }, [content, correctAnswer, studentAnswer, viewMode, validate, onSubmit])
@@ -81,7 +81,7 @@ export default function QuizInputForm({
   const isSubmitDisabled =
     disabled ||
     !content.trim() ||
-    (viewMode === 'teacher' && !correctAnswer.trim()) ||
+    (viewMode === 'prep' && !correctAnswer.trim()) ||
     (viewMode === 'student' && !studentAnswer.trim())
 
   return (
@@ -110,7 +110,7 @@ export default function QuizInputForm({
       </div>
 
       {/* Teacher mode: Correct Answer (required) */}
-      {viewMode === 'teacher' && (
+      {viewMode === 'prep' && (
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
             <CheckCircle weight="regular" className="w-4 h-4" />

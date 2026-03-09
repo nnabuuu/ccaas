@@ -35,7 +35,7 @@ interface ChatWithQuickActionsProps {
 export default function ChatWithQuickActions({
   onStartAnalysis,
   canAnalyze,
-  viewMode = 'teacher',
+  viewMode = 'prep',
   messages,
   isProcessing,
   isThinking,

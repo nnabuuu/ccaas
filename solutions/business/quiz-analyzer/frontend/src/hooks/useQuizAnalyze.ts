@@ -11,7 +11,7 @@ import {
 } from '@kedge-agentic/react-sdk'
 import type { UseAgentChatReturn, UseAgentStatusReturn, OutputUpdate } from '@kedge-agentic/react-sdk'
 import { APP_CONFIG } from '../lib/constants'
-import type { KpRefinementResult, ParsedContent, SolutionStep, DifficultyAssessment, TimeAssessment } from '../types'
+import type { KpRefinementResult, ParsedContent, SolutionStep, DifficultyAssessment, TimeAssessment, JXGConstruction, AnalysisStrategy } from '../types'
 
 export interface AnalyzeExplainResult {
   kpRefinementResult: KpRefinementResult | null
@@ -20,7 +20,12 @@ export interface AnalyzeExplainResult {
   timeAssessment: TimeAssessment | null
   timeEstimate: string | null
   correctAnswer: string | null
+  quickSummary: string | null
+  analysisStrategy: AnalysisStrategy | null
   solutionSteps: SolutionStep[] | null
+  geometryFigure: JXGConstruction | null
+  solutionGeometryFigure: JXGConstruction | null
+  lectureScript: string | null
 }
 
 export interface UseQuizAnalyzeReturn {
@@ -49,7 +54,12 @@ const EMPTY_RESULT: AnalyzeExplainResult = {
   timeAssessment: null,
   timeEstimate: null,
   correctAnswer: null,
+  quickSummary: null,
+  analysisStrategy: null,
   solutionSteps: null,
+  geometryFigure: null,
+  solutionGeometryFigure: null,
+  lectureScript: null,
 }
 
 export function useQuizAnalyze(): UseQuizAnalyzeReturn {
@@ -75,8 +85,23 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
       case 'correctAnswer':
         setResult(prev => ({ ...prev, correctAnswer: update.value as string }))
         break
+      case 'quickSummary':
+        setResult(prev => ({ ...prev, quickSummary: update.value as string }))
+        break
+      case 'lectureScript':
+        setResult(prev => ({ ...prev, lectureScript: update.value as string }))
+        break
+      case 'analysisStrategy':
+        setResult(prev => ({ ...prev, analysisStrategy: update.value as AnalysisStrategy }))
+        break
       case 'solutionSteps':
         setResult(prev => ({ ...prev, solutionSteps: update.value as SolutionStep[] }))
+        break
+      case 'geometryFigure':
+        setResult(prev => ({ ...prev, geometryFigure: update.value as JXGConstruction }))
+        break
+      case 'solutionGeometryFigure':
+        setResult(prev => ({ ...prev, solutionGeometryFigure: update.value as JXGConstruction }))
         break
     }
   }, [])

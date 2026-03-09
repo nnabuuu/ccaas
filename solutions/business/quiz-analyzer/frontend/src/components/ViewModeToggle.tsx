@@ -1,7 +1,10 @@
 /**
  * View Mode Toggle Component
  *
- * Switches between teacher view (full analysis) and student view (guided tutoring)
+ * Three modes:
+ * - prep (备课): Full analysis for lesson preparation
+ * - classroom (课堂): Brief view for in-class quick reference
+ * - student (学生): Guided tutoring view
  */
 
 import type { ViewMode } from '../types'
@@ -11,31 +14,29 @@ interface ViewModeToggleProps {
   onChange: (mode: ViewMode) => void
 }
 
+const modes: { key: ViewMode; icon: string; label: string; activeColor: string }[] = [
+  { key: 'prep', icon: '📋', label: '备课', activeColor: 'text-blue-700' },
+  { key: 'classroom', icon: '🏫', label: '课堂', activeColor: 'text-violet-700' },
+  { key: 'student', icon: '👨‍🎓', label: '学生', activeColor: 'text-green-700' },
+]
+
 export default function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
   return (
     <div className="flex items-center bg-slate-100 rounded-lg p-1 gap-1">
-      <button
-        onClick={() => onChange('teacher')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-          value === 'teacher'
-            ? 'bg-white text-blue-700 shadow-sm'
-            : 'text-slate-600 hover:text-slate-900'
-        }`}
-      >
-        <span>👨‍🏫</span>
-        教师视图
-      </button>
-      <button
-        onClick={() => onChange('student')}
-        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-          value === 'student'
-            ? 'bg-white text-green-700 shadow-sm'
-            : 'text-slate-600 hover:text-slate-900'
-        }`}
-      >
-        <span>👨‍🎓</span>
-        学生视图
-      </button>
+      {modes.map(mode => (
+        <button
+          key={mode.key}
+          onClick={() => onChange(mode.key)}
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-all ${
+            value === mode.key
+              ? `bg-white ${mode.activeColor} shadow-sm`
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          <span className="text-xs">{mode.icon}</span>
+          {mode.label}
+        </button>
+      ))}
     </div>
   )
 }

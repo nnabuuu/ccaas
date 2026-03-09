@@ -15,7 +15,6 @@ import type { QuizAnalysis, ViewMode } from '../types'
 
 // Backend configuration
 const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
-const SOLUTION_BACKEND_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3005'
 const TENANT_ID = 'quiz-analyzer'
 
 export interface UseQuizSessionReturn {
@@ -58,7 +57,10 @@ interface UseQuizSessionOptions {
 // new session so the updated sessionTemplate takes effect. Changing viewMode alone only
 // updates the template used in the next sendMessage on the *current* session.
 export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionReturn {
-  const viewMode = options?.viewMode ?? 'teacher'
+  const viewMode = options?.viewMode ?? 'prep'
+
+  // Map ViewMode to session template key (solution.json uses 'teacher'/'student')
+  const sessionTemplate = viewMode === 'student' ? 'student' : 'teacher'
 
   // Quiz-specific state: accumulated analysis results from output_update events
   const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
@@ -88,7 +90,7 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
     connection,
     tenantId: TENANT_ID,
     transport: 'sse',
-    sessionTemplate: viewMode,
+    sessionTemplate,
     onOutputUpdate: handleOutputUpdate,
     onTokenUsage: handleTokenUsage,
   })

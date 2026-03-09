@@ -1,4 +1,4 @@
-export type ViewMode = 'teacher' | 'student'
+export type ViewMode = 'prep' | 'classroom' | 'student'
 
 export interface Subject {
   id: string;
@@ -59,8 +59,8 @@ export interface SolutionStep {
   title: string;
   description: string;
   formula?: string;
-  reasoning: string;
-  commonErrors: string[];
+  reasoning?: string;
+  commonErrors?: string[];
   relatedKnowledgePoints?: string[];
 }
 
@@ -314,6 +314,23 @@ export interface ParsedContent {
   quizType: 'choice' | 'fill' | 'subjective'
 }
 
+// ============ ANALYSIS STRATEGY (quiz-analyze-explain) ============
+
+export interface ApproachPath {
+  name: string
+  description: string
+  viability: 'viable' | 'complex' | 'dead_end'
+  reason: string
+}
+
+export interface AnalysisStrategy {
+  goal: string
+  goalDecomposition: string
+  approaches: ApproachPath[]
+  chosenApproach: string
+  keyInsight: string
+}
+
 // ============ KP REFINEMENT (unified-kp-search) ============
 
 export interface KpRefinementTag {
@@ -328,4 +345,47 @@ export interface KpRefinementResult {
   traversalType: string
   tagCount: number
   trace: Record<string, unknown>
+}
+
+// ============ GEOMETRY FIGURE (JXGConstruction — JSXGraph JSON serialization) ============
+
+export interface JXGConstruction {
+  kind: '2d' | '3d'
+  bbox: [number, number, number, number]
+  bbox3d?: [[number, number], [number, number], [number, number]]
+  elements: JXGElement[]
+  animation?: AnimationSpec
+}
+
+export interface JXGElement {
+  type: string
+  parents: Parent[]
+  attrs: Record<string, any>
+  id?: string
+}
+
+export type Parent =
+  | string | number
+  | [number, number] | [number, number, number]
+  | { expr: string }
+
+export interface AnimationSpec {
+  param: string
+  range: [number, number]
+  default: number
+  label?: string
+  snapValues?: SnapValue[]
+  autoPlay?: AutoPlaySpec
+}
+
+export interface SnapValue {
+  value: number
+  label: string
+  note?: string
+}
+
+export interface AutoPlaySpec {
+  fps?: number
+  duration?: number
+  mode?: 'loop' | 'bounce' | 'once'
 }

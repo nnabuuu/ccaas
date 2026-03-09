@@ -26,7 +26,7 @@ import { useQuizSession } from './hooks/useQuizSession'
 import type { ViewMode } from './types'
 
 function AppNew() {
-  const [viewMode, setViewMode] = useState<ViewMode>('teacher')
+  const [viewMode, setViewMode] = useState<ViewMode>('prep')
   const session = useQuizSession({ viewMode })
 
   // Chat layout hook
