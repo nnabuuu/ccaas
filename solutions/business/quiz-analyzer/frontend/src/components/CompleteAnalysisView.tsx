@@ -1,57 +1,11 @@
 import { Lightbulb, ListBullets, Warning, ChartBar, Calendar, Tag, Link as LinkIcon, CheckCircle } from '@phosphor-icons/react';
 import { Link } from 'react-router-dom';
 import type { QuizAnalysis, Quiz } from '../types';
+import Markdown from './Markdown';
 
 interface CompleteAnalysisViewProps {
   analysis: Partial<QuizAnalysis>;
   quiz: Quiz | null;
-}
-
-// ✅ Extract renderMarkdown outside component (rerender-memo)
-function renderMarkdown(text?: string) {
-  if (!text) return null;
-  // Simple markdown rendering (in production, use a library like react-markdown)
-  return (
-    <div className="space-y-3">
-      {text.split('\n').map((line, i) => {
-        if (line.startsWith('###')) {
-          return (
-            <h4 key={i} className="text-base font-semibold text-slate-800 mt-4">
-              {line.replace(/^###\s*/, '')}
-            </h4>
-          );
-        }
-        if (line.startsWith('##')) {
-          return (
-            <h3 key={i} className="text-lg font-semibold text-slate-900 mt-4">
-              {line.replace(/^##\s*/, '')}
-            </h3>
-          );
-        }
-        if (line.startsWith('#')) {
-          return (
-            <h2 key={i} className="text-xl font-bold text-slate-900 mt-4">
-              {line.replace(/^#\s*/, '')}
-            </h2>
-          );
-        }
-        if (line.startsWith('- ')) {
-          return (
-            <li key={i} className="text-slate-700 ml-4 list-disc">
-              {line.replace(/^-\s*/, '')}
-            </li>
-          );
-        }
-        return line ? (
-          <p key={i} className="text-slate-700 leading-relaxed">
-            {line}
-          </p>
-        ) : (
-          <br key={i} />
-        );
-      })}
-    </div>
-  );
 }
 
 export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysisViewProps) {
@@ -66,7 +20,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
             <h3 className="text-lg font-bold text-slate-900">整体分析</h3>
           </div>
           <div className="prose prose-slate max-w-none">
-            {renderMarkdown(analysis.quiz_analysis)}
+            <Markdown>{analysis.quiz_analysis}</Markdown>
           </div>
         </div>
       )}
@@ -121,7 +75,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
             <h3 className="text-lg font-bold text-slate-900">解题思路</h3>
           </div>
           <div className="bg-slate-50 rounded-xl p-4">
-            {renderMarkdown(analysis.thinking_process)}
+            <Markdown>{analysis.thinking_process}</Markdown>
           </div>
         </div>
       )}
@@ -147,17 +101,17 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
                     <h4 className="font-semibold text-slate-900 mb-2">
                       {step.title}
                     </h4>
-                    <p className="text-slate-700 leading-relaxed">
+                    <Markdown compact className="text-slate-700">
                       {step.description}
-                    </p>
+                    </Markdown>
                   </div>
                 </div>
 
                 {step.formula && (
                   <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <code className="text-sm font-mono text-slate-800">
+                    <Markdown compact className="text-sm text-slate-800">
                       {step.formula}
-                    </code>
+                    </Markdown>
                   </div>
                 )}
 
@@ -258,7 +212,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
               <h3 className="text-lg font-bold text-slate-900">知识缺口分析</h3>
             </div>
             <div className="bg-slate-50 rounded-xl p-4">
-              {renderMarkdown(analysis.knowledge_gap_analysis)}
+              <Markdown>{analysis.knowledge_gap_analysis}</Markdown>
             </div>
           </div>
         )}

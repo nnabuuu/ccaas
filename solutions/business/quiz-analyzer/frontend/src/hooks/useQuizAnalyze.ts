@@ -3,7 +3,7 @@
  * Captures multiple output fields progressively.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import {
   useAgentConnection,
   useAgentChat,
@@ -11,21 +11,18 @@ import {
 } from '@kedge-agentic/react-sdk'
 import type { UseAgentChatReturn, UseAgentStatusReturn, OutputUpdate } from '@kedge-agentic/react-sdk'
 import { APP_CONFIG } from '../lib/constants'
-import type { KpRefinementResult, ParsedContent, SolutionStep, DifficultyAssessment, TimeAssessment, JXGConstruction, AnalysisStrategy } from '../types'
+import type { KpRefinementResult, ParsedContent, SolutionStep, DifficultyAssessment, JXGConstruction, AnalysisStrategy } from '../types'
 
 export interface AnalyzeExplainResult {
   kpRefinementResult: KpRefinementResult | null
   parsedContent: ParsedContent | null
   difficultyAssessment: DifficultyAssessment | null
-  timeAssessment: TimeAssessment | null
-  timeEstimate: string | null
   correctAnswer: string | null
   quickSummary: string | null
   analysisStrategy: AnalysisStrategy | null
   solutionSteps: SolutionStep[] | null
   geometryFigure: JXGConstruction | null
   solutionGeometryFigure: JXGConstruction | null
-  lectureScript: string | null
 }
 
 export interface UseQuizAnalyzeReturn {
@@ -51,15 +48,12 @@ const EMPTY_RESULT: AnalyzeExplainResult = {
   kpRefinementResult: null,
   parsedContent: null,
   difficultyAssessment: null,
-  timeAssessment: null,
-  timeEstimate: null,
   correctAnswer: null,
   quickSummary: null,
   analysisStrategy: null,
   solutionSteps: null,
   geometryFigure: null,
   solutionGeometryFigure: null,
-  lectureScript: null,
 }
 
 export function useQuizAnalyze(): UseQuizAnalyzeReturn {
@@ -76,20 +70,11 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
       case 'difficultyAssessment':
         setResult(prev => ({ ...prev, difficultyAssessment: update.value as DifficultyAssessment }))
         break
-      case 'timeAssessment':
-        setResult(prev => ({ ...prev, timeAssessment: update.value as TimeAssessment }))
-        break
-      case 'timeEstimate':
-        setResult(prev => ({ ...prev, timeEstimate: update.value as string }))
-        break
       case 'correctAnswer':
         setResult(prev => ({ ...prev, correctAnswer: update.value as string }))
         break
       case 'quickSummary':
         setResult(prev => ({ ...prev, quickSummary: update.value as string }))
-        break
-      case 'lectureScript':
-        setResult(prev => ({ ...prev, lectureScript: update.value as string }))
         break
       case 'analysisStrategy':
         setResult(prev => ({ ...prev, analysisStrategy: update.value as AnalysisStrategy }))
@@ -122,15 +107,14 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
 
   const status = useAgentStatus({ connection })
 
-  // Clear results when new user message starts processing
-  useEffect(() => {
-    if (chat.isProcessing && chat.messages.length > 0) {
-      const last = chat.messages[chat.messages.length - 1]
-      if (last.role === 'user') {
-        setResult(EMPTY_RESULT)
-      }
-    }
-  }, [chat.isProcessing, chat.messages.length])
+  const sendMessageRef = useRef(chat.sendMessage)
+  sendMessageRef.current = chat.sendMessage
+
+  // Clear results immediately when sending a new message
+  const sendMessage = useCallback((content: string) => {
+    setResult(EMPTY_RESULT)
+    sendMessageRef.current(content)
+  }, [])
 
   const clearConversationRef = useRef(chat.clearConversation)
   clearConversationRef.current = chat.clearConversation
@@ -148,7 +132,7 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
 
     messages: chat.messages,
     isProcessing: chat.isProcessing,
-    sendMessage: chat.sendMessage,
+    sendMessage,
     clearConversation,
     cancelProcessing: chat.cancelProcessing,
 

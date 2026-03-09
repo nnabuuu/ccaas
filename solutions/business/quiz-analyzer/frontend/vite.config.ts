@@ -5,7 +5,22 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig({
   base: '/quiz-analyzer/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: 'redirect-no-trailing-slash',
+      configureServer(server) {
+        server.middlewares.use((req, _res, next) => {
+          if (req.url === '/quiz-analyzer') {
+            _res.writeHead(301, { Location: '/quiz-analyzer/' });
+            _res.end();
+            return;
+          }
+          next();
+        });
+      },
+    },
+  ],
   server: {
     port: 5282,
     // No proxy needed - frontends use environment variables directly:

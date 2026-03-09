@@ -62,6 +62,7 @@ export interface SolutionStep {
   reasoning?: string;
   commonErrors?: string[];
   relatedKnowledgePoints?: string[];
+  addElements?: JXGElement[];
 }
 
 export interface Mistake {
@@ -286,13 +287,6 @@ export interface ErrorStatistics {
     topDescriptions: string[];
     relatedKnowledgePoints: string[];
   }>;
-}
-
-// ============ TIME ASSESSMENT (quiz-analyze-explain) ============
-
-export interface TimeAssessment {
-  estimate: string;       // "约 3-5 分钟"
-  reasoning: string;      // "需要画辅助线+两次角度计算，计算量中等"
 }
 
 // ============ DIFFICULTY ASSESSMENT (quiz-analyze-explain) ============

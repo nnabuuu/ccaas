@@ -32,7 +32,6 @@ export default function KpMatchPage() {
   const session = useKpMatch()
   const [quizText, setQuizText] = useState('')
   const [showChat, setShowChat] = useState(false)
-  const [processCollapsed, setProcessCollapsed] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const resultRef = useRef<HTMLDivElement>(null)
   const prevIsProcessing = useRef(session.isProcessing)
@@ -42,24 +41,15 @@ export default function KpMatchPage() {
     textareaRef.current?.focus()
   }, [])
 
-  // Auto-collapse ProcessPanel and auto-scroll to result when processing finishes
+  // Auto-scroll to result when processing finishes
   useEffect(() => {
     if (prevIsProcessing.current && !session.isProcessing && session.kpResult) {
-      setProcessCollapsed(true)
-      // Small delay so DOM updates with collapsed panel before scrolling
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 100)
     }
     prevIsProcessing.current = session.isProcessing
   }, [session.isProcessing, session.kpResult])
-
-  // Expand ProcessPanel when a new search starts
-  useEffect(() => {
-    if (session.isProcessing) {
-      setProcessCollapsed(false)
-    }
-  }, [session.isProcessing])
 
   const handleSubmit = useCallback(() => {
     const trimmed = quizText.trim()
@@ -81,7 +71,6 @@ export default function KpMatchPage() {
     session.clearConversation()
     setQuizText('')
     setShowChat(false)
-    setProcessCollapsed(false)
   }, [session.clearConversation])
 
   const handleContinueMatch = useCallback(() => {
@@ -185,8 +174,6 @@ export default function KpMatchPage() {
           <ProcessPanel
             blocks={toolBlocks}
             isProcessing={session.isProcessing}
-            collapsed={processCollapsed}
-            onToggleCollapsed={() => setProcessCollapsed(c => !c)}
             phaseLabels={TOOL_PHASE_LABELS}
           />
 

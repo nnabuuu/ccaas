@@ -1,10 +1,12 @@
 /**
- * QuizAnalyzePage — Single-column layout organized by teacher workflow:
+ * QuizAnalyzePage — Single-column layout organized by information hierarchy:
+ *
+ * Layout: ① 题目(含答案) → ② 知识点 → ③ 解题思路 → ④ 教学参考
  *
  * View modes:
- * - prep (备课): Full analysis — quickSummary → 题目概览 → 正确答案 → 解题思路 → 讲解稿 → 教学参考 → 处理详情
- * - classroom (课堂): Brief — quickSummary → 正确答案 → 核心洞察
- * - student (学生): Guided — quickSummary → 题目概览 → 正确答案 → 解题思路(no KP pills)
+ * - prep (备课): Full analysis — all sections
+ * - classroom (课堂): Brief — 核心思路 only
+ * - student (学生): Guided — ①②③ (no KP pills in steps)
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
@@ -17,7 +19,7 @@ import {
   Notepad,
   Warning,
 } from '@phosphor-icons/react'
-import type { ToolBlock } from '@kedge-agentic/react-sdk'
+import type { ContentBlock } from '@kedge-agentic/react-sdk'
 import type { ViewMode, DifficultyAssessment } from '../types'
 import ErrorBoundary from '../components/ErrorBoundary'
 import ConnectionStatus from '../components/ConnectionStatus'
@@ -25,9 +27,9 @@ import ProcessPanel from '../components/ProcessPanel'
 import KpResultPanel from '../components/KpResultPanel'
 import ParsedContentPanel from '../components/ParsedContentPanel'
 import SolutionStepsPanel from '../components/SolutionStepsPanel'
-import AnalysisStrategyPanel from '../components/AnalysisStrategyPanel'
 import { GeometryFigure } from '../components/GeometryFigure'
 import ViewModeToggle from '../components/ViewModeToggle'
+import Markdown from '../components/Markdown'
 import { useQuizAnalyze } from '../hooks/useQuizAnalyze'
 
 const TOOL_PHASE_LABELS: Record<string, string> = {
@@ -67,7 +69,6 @@ export default function QuizAnalyzePage() {
   const session = useQuizAnalyze()
   const [quizText, setQuizText] = useState('')
   const [viewMode, setViewMode] = useState<ViewMode>('prep')
-  const [processCollapsed, setProcessCollapsed] = useState(true)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const resultTopRef = useRef<HTMLDivElement>(null)
   const prevIsProcessing = useRef(session.isProcessing)
@@ -77,23 +78,15 @@ export default function QuizAnalyzePage() {
     textareaRef.current?.focus()
   }, [])
 
-  // Auto-collapse process panel when done, scroll to result
+  // Scroll to result when processing completes
   useEffect(() => {
     if (prevIsProcessing.current && !session.isProcessing && session.result.solutionSteps) {
-      setProcessCollapsed(true)
       setTimeout(() => {
         resultTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 100)
     }
     prevIsProcessing.current = session.isProcessing
   }, [session.isProcessing, session.result.solutionSteps])
-
-  // Expand process panel when new analysis starts
-  useEffect(() => {
-    if (session.isProcessing) {
-      setProcessCollapsed(false)
-    }
-  }, [session.isProcessing])
 
   const handleSubmit = useCallback(() => {
     const trimmed = quizText.trim()
@@ -114,13 +107,27 @@ export default function QuizAnalyzePage() {
   const handleReset = useCallback(() => {
     session.clearConversation()
     setQuizText('')
-    setProcessCollapsed(true)
   }, [session.clearConversation])
 
-  // Extract tool blocks
-  const toolBlocks = session.messages
+  // Extract all content blocks (text + tool) for ProcessPanel
+  const contentBlocks: ContentBlock[] = session.messages
     .flatMap(m => m.contentBlocks ?? [])
-    .filter((b): b is ToolBlock => b.type === 'tool')
+
+  // Extract latest AI text output as status text for ProcessPanel
+  const latestStatusText = (() => {
+    if (!session.isProcessing) return undefined
+    const msgs = session.messages
+    if (!msgs.length) return undefined
+    const lastMsg = msgs[msgs.length - 1]
+    if (!lastMsg?.contentBlocks?.length) return undefined
+    for (let i = lastMsg.contentBlocks.length - 1; i >= 0; i--) {
+      const block = lastMsg.contentBlocks[i]
+      if (block.type === 'text' && block.text.trim()) {
+        return block.text.trim()
+      }
+    }
+    return undefined
+  })()
 
   const { result } = session
   const hasAnyResult = result.kpRefinementResult || result.parsedContent || result.correctAnswer || result.analysisStrategy || result.solutionSteps || result.quickSummary
@@ -196,16 +203,14 @@ export default function QuizAnalyzePage() {
             </div>
           </div>
 
-          {/* Processing indicator — minimal, one line */}
-          {session.isProcessing && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-600">
-              <span className="spinner !w-4 !h-4 !border-2" />
-              分析中…
-              {session.isThinking && session.thinkingContent && (
-                <span className="text-xs text-zinc-400 truncate ml-2">{session.thinkingContent}</span>
-              )}
-            </div>
-          )}
+          {/* Process panel — unified "分析中…" / "分析完成" bar */}
+          <ProcessPanel
+            blocks={contentBlocks}
+            isProcessing={session.isProcessing}
+            thinkingContent={session.isThinking ? session.thinkingContent : undefined}
+            phaseLabels={TOOL_PHASE_LABELS}
+            statusText={latestStatusText}
+          />
 
           {/* Empty state */}
           {!hasAnyResult && !session.isProcessing && (
@@ -227,24 +232,13 @@ export default function QuizAnalyzePage() {
             </div>
           )}
 
-          {/* ⓪ 一句话总结 — prominent top card, visible in all modes */}
-          {result.quickSummary && (
-            <section
-              ref={resultTopRef}
-              className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 animate-fade-in"
-            >
-              <p className="text-sm font-medium text-indigo-900">{result.quickSummary}</p>
-            </section>
-          )}
-
-          {/* ① 题目概览 — metadata + stem + options + geometry (hidden in classroom mode) */}
+          {/* ① 题目卡片 — stem + options + answer + one-line meta + geometry (prep + student) */}
           {!showClassroomBrief && result.parsedContent && (
-            <section className={`bg-white border border-zinc-200 rounded-xl p-4 animate-fade-in ${!result.quickSummary ? '' : ''}`} ref={!result.quickSummary ? resultTopRef : undefined}>
+            <section ref={resultTopRef} className="bg-white border border-zinc-200 rounded-xl p-4 animate-fade-in">
               <ParsedContentPanel
                 parsedContent={result.parsedContent}
                 difficultyAssessment={result.difficultyAssessment}
-                timeAssessment={result.timeAssessment}
-                timeEstimate={result.timeEstimate}
+                correctAnswer={result.correctAnswer}
               />
               {result.geometryFigure && (
                 <div className="mt-4 pt-4 border-t border-zinc-100">
@@ -262,29 +256,19 @@ export default function QuizAnalyzePage() {
             </section>
           )}
 
-          {/* ② 正确答案 — standalone prominent card (visible in all modes) */}
-          {result.correctAnswer && (
-            <section className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 animate-fade-in flex items-center gap-3">
-              <span className="text-lg">✅</span>
-              <div>
-                <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">正确答案</span>
-                <p className="text-base font-semibold text-green-900 whitespace-pre-wrap">{result.correctAnswer}</p>
-              </div>
+          {/* ② 知识点 — KP refinement result (prep + student) */}
+          {!showClassroomBrief && result.kpRefinementResult && (
+            <section className="bg-white border border-zinc-200 rounded-xl p-4 animate-fade-in">
+              <h3 className="text-sm font-semibold text-zinc-700 mb-3">知识点</h3>
+              <KpResultPanel result={result.kpRefinementResult} />
             </section>
           )}
 
-          {/* ③ 解题思路 — strategy + solution steps */}
-          {/* Classroom mode: only show key insight from strategy */}
+          {/* ③ 解题思路 — merged strategy + solution steps */}
+          {/* Classroom mode: only show key insight */}
           {showClassroomBrief && result.analysisStrategy && (
             <section className="bg-white border border-zinc-200 rounded-xl p-4 space-y-3 animate-fade-in">
               <h3 className="text-sm font-semibold text-zinc-700">核心思路</h3>
-              {/* Chosen approach — compact */}
-              <div className="bg-violet-50 border border-violet-200 rounded-lg px-3 py-2.5">
-                <p className="text-sm text-violet-900 font-medium">
-                  {result.analysisStrategy.chosenApproach.split(/[。.！!？?\n]/)[0]}
-                </p>
-              </div>
-              {/* Key insight */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -292,28 +276,21 @@ export default function QuizAnalyzePage() {
                   </svg>
                   核心洞察
                 </div>
-                <p className="text-sm text-blue-800 mt-1">{result.analysisStrategy.keyInsight}</p>
+                <Markdown compact className="text-sm text-blue-800 mt-1">{result.analysisStrategy.keyInsight}</Markdown>
               </div>
             </section>
           )}
 
-          {/* Full analysis view (prep + student modes): strategy + steps */}
+          {/* prep + student modes: unified strategy + steps */}
           {!showClassroomBrief && (result.analysisStrategy || (result.solutionSteps && result.solutionSteps.length > 0)) && (
             <section className="bg-white border border-zinc-200 rounded-xl p-4 space-y-4 animate-fade-in">
               <h3 className="text-sm font-semibold text-zinc-700">解题思路</h3>
-              {result.analysisStrategy && (
-                <AnalysisStrategyPanel strategy={result.analysisStrategy} />
-              )}
-              {result.solutionSteps && result.solutionSteps.length > 0 && (
-                <>
-                  <div className="flex items-center gap-2 pt-1">
-                    <div className="flex-1 h-px bg-zinc-200" />
-                    <span className="text-xs font-semibold text-zinc-500">分步解析</span>
-                    <div className="flex-1 h-px bg-zinc-200" />
-                  </div>
-                  <SolutionStepsPanel steps={result.solutionSteps} viewMode={viewMode} />
-                </>
-              )}
+              <SolutionStepsPanel
+                steps={result.solutionSteps ?? []}
+                viewMode={viewMode}
+                baseGeometryFigure={result.geometryFigure ?? undefined}
+                analysisStrategy={result.analysisStrategy ?? undefined}
+              />
               {result.solutionGeometryFigure && (
                 <div className="pt-4 border-t border-zinc-100">
                   <h4 className="text-xs font-semibold text-zinc-500 mb-2">解题图形（可交互）</h4>
@@ -331,44 +308,23 @@ export default function QuizAnalyzePage() {
             </section>
           )}
 
-          {/* ④ 讲解稿 — oral-style lecture script (prep mode only) */}
-          {showFullAnalysis && result.lectureScript && (
-            <section className="bg-white border border-zinc-200 rounded-xl p-4 space-y-3 animate-fade-in">
-              <div className="flex items-center gap-2">
-                <span className="text-sm">🎙️</span>
-                <h3 className="text-sm font-semibold text-zinc-700">讲解稿</h3>
-                <span className="text-xs text-zinc-400">可直接用于课堂讲解</span>
-              </div>
-              <div className="bg-orange-50 border border-orange-200 rounded-lg px-4 py-3">
-                <p className="text-sm text-zinc-800 leading-relaxed whitespace-pre-wrap">{result.lectureScript}</p>
-              </div>
-            </section>
-          )}
-
-          {/* ⑤ 教学参考 (备课视图) — pitfalls + KP details */}
-          {showFullAnalysis && (result.difficultyAssessment || result.kpRefinementResult) && (
+          {/* ④ 教学参考 (备课视图) — quickSummary + pitfalls */}
+          {showFullAnalysis && (result.quickSummary || result.difficultyAssessment) && (
             <section className="bg-white border border-zinc-200 rounded-xl p-4 space-y-4 animate-fade-in">
               <h3 className="text-sm font-semibold text-zinc-700">教学参考</h3>
+              {/* 一句话总结 */}
+              {result.quickSummary && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2.5">
+                  <Markdown compact className="text-sm font-medium text-indigo-900">{result.quickSummary}</Markdown>
+                </div>
+              )}
               {/* 易错点 */}
               {result.difficultyAssessment && (
                 <PitfallsBlock assessment={result.difficultyAssessment} />
               )}
-              {/* 知识点详情 */}
-              {result.kpRefinementResult && (
-                <KpResultPanel result={result.kpRefinementResult} />
-              )}
             </section>
           )}
 
-          {/* 🔧 处理详情 — bottom, default collapsed */}
-          <ProcessPanel
-            blocks={toolBlocks}
-            isProcessing={session.isProcessing}
-            collapsed={processCollapsed}
-            onToggleCollapsed={() => setProcessCollapsed(c => !c)}
-            title="处理详情"
-            phaseLabels={TOOL_PHASE_LABELS}
-          />
         </main>
 
         {/* Footer */}

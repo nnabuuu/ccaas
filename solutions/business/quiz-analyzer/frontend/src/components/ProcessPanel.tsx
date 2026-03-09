@@ -1,16 +1,41 @@
 /**
- * ProcessPanel — Shared component for visualizing tool call execution process.
- * Extracted from KpMatchPage for reuse across pages.
+ * ProcessPanel — Trigger bar (always inline) + slide-over popup for tool call details.
+ *
+ * - Trigger: one-line summary with elapsed time + call count
+ * - Popup: right-side slide-over with semi-transparent backdrop
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   CaretDown,
   CaretRight,
   CheckCircle,
   XCircle,
+  X,
 } from '@phosphor-icons/react'
-import type { ToolBlock } from '@kedge-agentic/react-sdk'
+import type { ToolBlock, ContentBlock } from '@kedge-agentic/react-sdk'
+
+function useElapsed(active: boolean): number {
+  const [elapsed, setElapsed] = useState(0)
+  const startRef = useRef(0)
+
+  useEffect(() => {
+    if (active) {
+      startRef.current = Date.now()
+      setElapsed(0)
+      const id = setInterval(() => {
+        setElapsed(Date.now() - startRef.current)
+      }, 1000)
+      return () => clearInterval(id)
+    }
+  }, [active])
+
+  return elapsed
+}
+
+function formatSec(ms: number): string {
+  return (ms / 1000).toFixed(1) + 's'
+}
 
 const DEFAULT_PHASE_LABELS: Record<string, string> = {
   fuzzy_search_knowledge_points: '模糊搜索定位',
@@ -40,7 +65,8 @@ export function ProcessEventRow({
   }, [forceExpanded])
 
   const { tool } = block
-  const label = labels[tool.toolName] || tool.toolName
+  const shortName = tool.toolName.replace(/^mcp__[^_]+__/, '')
+  const label = labels[shortName] || shortName
   const isRunning = tool.phase === 'start' || tool.phase === 'progress'
   const isFailed = tool.phase === 'end' && tool.success === false
 
@@ -110,96 +136,123 @@ export function ProcessEventRow({
 export default function ProcessPanel({
   blocks,
   isProcessing,
-  collapsed,
-  onToggleCollapsed,
-  title = '匹配过程',
+  thinkingContent,
   phaseLabels,
+  statusText,
 }: {
-  blocks: ToolBlock[]
+  blocks: ContentBlock[]
   isProcessing: boolean
-  collapsed: boolean
-  onToggleCollapsed: () => void
-  title?: string
+  thinkingContent?: string
   phaseLabels?: Record<string, string>
+  statusText?: string
 }) {
+  const [isOpen, setIsOpen] = useState(false)
   const [expandOverride, setExpandOverride] = useState<boolean | null>(null)
+  const elapsed = useElapsed(isProcessing)
 
-  if (blocks.length === 0 && !isProcessing) return null
+  const toolBlocks = blocks.filter((b): b is ToolBlock => b.type === 'tool')
 
-  const completedCount = blocks.filter(b => b.tool.phase === 'end').length
-  const runningCount = blocks.filter(b => b.tool.phase === 'start' || b.tool.phase === 'progress').length
-  const totalDuration = blocks.reduce((sum, b) => sum + (b.tool.duration ?? 0), 0)
+  if (toolBlocks.length === 0 && !isProcessing) return null
+
+  const completedCount = toolBlocks.filter(b => b.tool.phase === 'end').length
+  const runningCount = toolBlocks.filter(b => b.tool.phase === 'start' || b.tool.phase === 'progress').length
 
   const toggleAll = () => setExpandOverride(prev => prev === true ? false : true)
 
-  if (collapsed && !isProcessing) {
-    return (
-      <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white animate-fade-in">
-        <button
-          onClick={onToggleCollapsed}
-          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-zinc-50 transition-colors"
-        >
-          <CaretRight weight="bold" className="w-3.5 h-3.5 text-zinc-400" />
-          <CheckCircle weight="fill" className="w-4 h-4 text-green-500" />
-          <span className="text-zinc-600">
-            {completedCount} 步完成, {(totalDuration / 1000).toFixed(1)}s
-          </span>
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white animate-fade-in">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-50 border-b border-zinc-200">
-        <div className="flex items-center gap-2">
-          {!isProcessing && (
-            <button onClick={onToggleCollapsed} className="text-zinc-400 hover:text-zinc-600 transition-colors">
-              <CaretDown weight="bold" className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <span className="text-xs font-semibold text-zinc-600">{title}</span>
-        </div>
-        <div className="flex items-center gap-3 text-[11px] text-zinc-400">
-          {blocks.length > 0 && (
-            <button
-              onClick={toggleAll}
-              className="text-[11px] text-primary-600 hover:text-primary-700 font-medium transition-colors"
-            >
-              {expandOverride === true ? '全部收缩' : '全部展开'}
-            </button>
-          )}
-          {runningCount > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="spinner !w-3 !h-3 !border-[1.5px]" />
-              {runningCount} 运行中
-            </span>
-          )}
-          {completedCount > 0 && (
-            <span className="flex items-center gap-1">
-              <CheckCircle weight="fill" className="w-3 h-3 text-green-500" />
-              {completedCount} 完成
-            </span>
-          )}
-        </div>
-      </div>
-      {blocks.length > 0 ? (
-        <div className="divide-y divide-zinc-100">
-          {blocks.map((block, i) => (
-            <ProcessEventRow
-              key={`${block.tool.toolId}-${block.tool.phase}-${i}`}
-              block={block}
-              forceExpanded={expandOverride}
-              phaseLabels={phaseLabels}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-400">
-          <span className="spinner !w-3.5 !h-3.5 !border-2" />
-          等待工具调用…
+    <>
+      {/* Trigger bar — always inline */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="w-full border border-zinc-200 rounded-xl bg-white hover:bg-zinc-50 transition-colors px-4 py-2.5 flex items-center gap-2 text-sm text-left animate-fade-in"
+      >
+        {isProcessing ? (
+          <span className="spinner !w-4 !h-4 !border-2 flex-shrink-0" />
+        ) : (
+          <CheckCircle weight="fill" className="w-4 h-4 text-green-500 flex-shrink-0" />
+        )}
+        <span className="font-medium text-zinc-700 truncate">
+          {isProcessing ? (statusText || '分析中…') : '分析完成'}
+        </span>
+        <span className="text-zinc-400 text-xs flex-shrink-0">
+          {isProcessing
+            ? `${toolBlocks.length} 次调用`
+            : `${completedCount} 步 · 耗时 ${formatSec(elapsed)}`}
+        </span>
+        {isProcessing && thinkingContent && (
+          <span className="text-xs text-zinc-400 truncate ml-1">{thinkingContent}</span>
+        )}
+      </button>
+
+      {/* Slide-over popup */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/20 transition-opacity"
+            onClick={() => setIsOpen(false)}
+          />
+          {/* Panel */}
+          <div className="relative w-full max-w-[420px] bg-white shadow-xl flex flex-col animate-slide-in-right">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-700">
+                  {isProcessing ? '分析中…' : '分析完成'}
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  {isProcessing
+                    ? `已运行 ${formatSec(elapsed)} · ${runningCount} 运行中 · ${completedCount} 完成`
+                    : `${completedCount} 步完成 · 耗时 ${formatSec(elapsed)}`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {toolBlocks.length > 0 && (
+                  <button
+                    onClick={toggleAll}
+                    className="text-[11px] text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  >
+                    {expandOverride === true ? '全部收缩' : '全部展开'}
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+                >
+                  <X weight="bold" className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              {blocks.length > 0 ? (
+                <div className="divide-y divide-zinc-100">
+                  {blocks.map((block, i) =>
+                    block.type === 'text' ? (
+                      <div key={`text-${i}`} className="px-4 py-1.5 text-xs text-zinc-500">
+                        {block.text}
+                      </div>
+                    ) : (
+                      <ProcessEventRow
+                        key={`${block.tool.toolId}-${block.tool.phase}-${i}`}
+                        block={block}
+                        forceExpanded={expandOverride}
+                        phaseLabels={phaseLabels}
+                      />
+                    )
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-400">
+                  <span className="spinner !w-3.5 !h-3.5 !border-2" />
+                  等待工具调用…
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
