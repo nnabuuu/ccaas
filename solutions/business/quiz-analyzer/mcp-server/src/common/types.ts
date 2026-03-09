@@ -18,7 +18,6 @@ export const SYNC_FIELDS = [
   'geometryFigure',        // Geometry figure specification (JXGConstruction)
   'solutionGeometryFigure', // Solution geometry figure with animation (JXGConstruction)
   'quickSummary',           // One-sentence summary for quick scanning (string)
-  'lectureScript',          // Oral-style lecture script for classroom teaching (string)
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];

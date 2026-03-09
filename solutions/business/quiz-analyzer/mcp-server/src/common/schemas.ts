@@ -146,7 +146,6 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   geometryFigure: JXGConstructionSchema,
   solutionGeometryFigure: JXGConstructionSchema,
   quickSummary: z.string().min(1),
-  lectureScript: z.string().min(1),
 };
 
 // ============ ERROR TRACKING SCHEMAS (Error-Based Recommendation System) ============
