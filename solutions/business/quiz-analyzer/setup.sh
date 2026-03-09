@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TOOLS_DIR="$SCRIPT_DIR/../../tools"
+TOOLS_DIR="$SCRIPT_DIR/../../../tools"
 
 # Source shared library
 if [ ! -f "$TOOLS_DIR/solution-lib.sh" ]; then
@@ -18,6 +18,11 @@ source "$TOOLS_DIR/solution-lib.sh"
 
 # Load solution configuration
 load_solution_config "$SCRIPT_DIR"
+
+# Load port configuration from solution.config
+if [ -f "$SCRIPT_DIR/solution.config" ]; then
+    source "$SCRIPT_DIR/solution.config"
+fi
 
 # Default bootstrap key for internal solutions
 # Can be overridden by setting CCAAS_BOOTSTRAP_KEY environment variable

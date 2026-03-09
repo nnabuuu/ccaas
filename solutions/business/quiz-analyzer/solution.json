@@ -49,11 +49,17 @@
     },
     "analyze-explain": {
       "description": "分析讲解模式 - 知识点定位 + 题目解析 + 答案讲解",
-      "enabledSkillSlugs": ["quiz-analyze-explain"],
+      "enabledSkillSlugs": ["quiz-analyze-explain", "geometry-problem-figure", "geometry-solution-figure"],
       "bundles": ["structured-output"],
       "skillPath": "skills/quiz-analyze-explain/SKILL.md",
       "skillPromptMode": "inline",
       "appendSystemPrompt": "你是题目分析与讲解助手。严格按照技能提示操作。不要输出任何对话文本——不要解题、不要分析、不要状态说明。直接调用工具，所有结果通过 write_output 输出。必须先完成阶段1（知识点+解析）再进入阶段2（答案+讲解）。"
+    },
+    "geometry": {
+      "description": "几何图形生成模式",
+      "enabledSkillSlugs": ["geometry-problem-figure", "geometry-solution-figure"],
+      "bundles": ["structured-output"],
+      "appendSystemPrompt": "你是几何图形可视化专家。分析题目中的几何元素并生成 JXGConstruction JSON。所有结果通过 write_output 输出，不要输出对话文本。"
     }
   },
   "setup": {
@@ -71,6 +77,8 @@
     { "slug": "two-phase-kp-search", "name": "two-phase-kp-search" },
     { "slug": "top-down-kp-search", "name": "top-down-kp-search" },
     { "slug": "unified-kp-search", "name": "unified-kp-search" },
-    { "slug": "quiz-analyze-explain", "name": "quiz-analyze-explain" }
+    { "slug": "quiz-analyze-explain", "name": "quiz-analyze-explain" },
+    { "slug": "geometry-problem-figure", "name": "geometry-problem-figure" },
+    { "slug": "geometry-solution-figure", "name": "geometry-solution-figure" }
   ]
 }
