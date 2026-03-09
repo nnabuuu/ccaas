@@ -285,15 +285,17 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
           { method: 'GET' },
         )
         if (!response.ok) {
-          setMessages([])
+          if (!currentMessageRef.current) setMessages([])
           return
         }
         const data = await response.json()
         const history = data.messages || []
+        // If streaming started during fetch, don't overwrite live messages
+        if (currentMessageRef.current) return
         setMessages(history)
       } catch {
         // Graceful fallback to empty history
-        setMessages([])
+        if (!currentMessageRef.current) setMessages([])
       } finally {
         setIsLoadingHistory(false)
       }

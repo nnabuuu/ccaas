@@ -398,16 +398,20 @@ export class CompletionOrchestrationService {
       }
     }
 
-    // Step 5: If solution provided a skill file path, copy it to session workspace
+    // Step 5: If solution provided a skill file path, copy entire skill directory to session workspace
+    // This copies SKILL.md plus any subdirectories (e.g. references/) so the agent can Read them at runtime
     if (skillPath && fs.existsSync(skillPath)) {
       try {
-        const skillName = path.basename(path.dirname(skillPath));
+        const skillSourceDir = path.dirname(skillPath);
+        const skillName = path.basename(skillSourceDir);
         const targetDir = path.join(session.workspaceDir, '.claude', 'skills', skillName);
-        fs.mkdirSync(targetDir, { recursive: true });
-        fs.copyFileSync(skillPath, path.join(targetDir, 'SKILL.md'));
-        this.logger.log(`Copied skill ${skillName} to session workspace from ${skillPath}`);
+        fs.cpSync(skillSourceDir, targetDir, {
+          recursive: true,
+          filter: (src) => !path.basename(src).startsWith('.'),
+        });
+        this.logger.log(`Copied skill directory ${skillName} to session workspace from ${skillSourceDir}`);
       } catch (error) {
-        this.logger.warn(`Failed to copy skill file: ${error}`);
+        this.logger.warn(`Failed to copy skill directory: ${error}`);
         // Continue without skill - non-fatal
       }
     }
