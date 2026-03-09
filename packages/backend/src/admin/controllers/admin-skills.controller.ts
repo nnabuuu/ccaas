@@ -8,6 +8,8 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
   Param,
   Body,
   Query,
@@ -20,6 +22,7 @@ import { RequestContext } from '../../auth/types';
 import { SkillsService } from '../../skills/skills.service';
 import { SkillVersion } from '../../skills/entities/skill-version.entity';
 import { Skill } from '../../skills/entities/skill.entity';
+import { UpsertSkillFilesDto } from '../../skills/dto/skill-file.dto';
 import { AuditService } from '../services/audit.service';
 import { VersionDiff } from '../dto/admin.dto';
 
@@ -214,14 +217,14 @@ export class AdminSkillsController {
   /**
    * GET /api/v1/admin/skills/:idOrSlug
    *
-   * Get skill details by ID or slug
+   * Get skill details by ID or slug (includes files metadata)
    */
   @Get(':idOrSlug')
   async findOne(
     @TenantId() defaultTenantId: string,
     @Param('idOrSlug') idOrSlug: string,
     @Query('tenantId') tenantId?: string,
-  ): Promise<Skill> {
+  ) {
     // Admin can query any tenant by passing tenantId parameter
     const targetTenantId = tenantId || defaultTenantId;
 
@@ -229,7 +232,17 @@ export class AdminSkillsController {
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${idOrSlug}`);
     }
-    return skill;
+
+    // Include files metadata
+    const files = await this.skillsService.getSkillFiles(skill.id);
+    return {
+      ...skill,
+      files: files.map((f) => ({
+        id: f.id,
+        relativePath: f.relativePath,
+        contentHash: f.contentHash,
+      })),
+    };
   }
 
   /**
@@ -290,6 +303,94 @@ export class AdminSkillsController {
       tenantId,
     );
 
+    return { success: true };
+  }
+
+  // ===========================================================================
+  // Skill File Endpoints
+  // ===========================================================================
+
+  /**
+   * GET /api/v1/admin/skills/:idOrSlug/files
+   *
+   * List all files for a skill
+   */
+  @Get(':idOrSlug/files')
+  async listFiles(
+    @TenantId() tenantId: string,
+    @Param('idOrSlug') idOrSlug: string,
+    @Query('tenantId') queryTenantId?: string,
+  ) {
+    const targetTenantId = queryTenantId || tenantId;
+    const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+    return this.skillsService.getSkillFiles(skill.id);
+  }
+
+  /**
+   * GET /api/v1/admin/skills/:idOrSlug/files/:fileId
+   *
+   * Get a single file with content
+   */
+  @Get(':idOrSlug/files/:fileId')
+  async getFile(
+    @TenantId() defaultTenantId: string,
+    @Param('idOrSlug') idOrSlug: string,
+    @Param('fileId') fileId: string,
+    @Query('tenantId') queryTenantId?: string,
+  ) {
+    const targetTenantId = queryTenantId || defaultTenantId;
+    const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+    const file = await this.skillsService.getSkillFile(skill.id, fileId);
+    if (!file) {
+      throw new NotFoundException(`File not found: ${fileId}`);
+    }
+    return file;
+  }
+
+  /**
+   * PUT /api/v1/admin/skills/:idOrSlug/files
+   *
+   * Batch upsert files for a skill
+   */
+  @Put(':idOrSlug/files')
+  async upsertFiles(
+    @TenantId() defaultTenantId: string,
+    @Param('idOrSlug') idOrSlug: string,
+    @Body() dto: UpsertSkillFilesDto,
+    @Query('tenantId') queryTenantId?: string,
+  ) {
+    const targetTenantId = queryTenantId || defaultTenantId;
+    const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+    return this.skillsService.upsertFiles(skill.id, dto.files);
+  }
+
+  /**
+   * DELETE /api/v1/admin/skills/:idOrSlug/files/:relativePath
+   *
+   * Delete a file by relativePath
+   */
+  @Delete(':idOrSlug/files/:relativePath(*)')
+  async deleteFile(
+    @TenantId() defaultTenantId: string,
+    @Param('idOrSlug') idOrSlug: string,
+    @Param('relativePath') relativePath: string,
+    @Query('tenantId') queryTenantId?: string,
+  ) {
+    const targetTenantId = queryTenantId || defaultTenantId;
+    const skill = await this.skillsService.findOne(targetTenantId, idOrSlug);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${idOrSlug}`);
+    }
+    await this.skillsService.deleteFile(skill.id, relativePath);
     return { success: true };
   }
 

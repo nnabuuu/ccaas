@@ -16,6 +16,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
+import { SkillFile } from './entities/skill-file.entity';
+import { SkillVersionFile } from './entities/skill-version-file.entity';
 import { SessionService } from '../sessions/session.service';
 
 describe('SkillsService - WebSocket Events (Week 5)', () => {
@@ -26,10 +28,20 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
   let versionRepository: any;
 
   beforeEach(async () => {
+    const mockManager = {
+      findOne: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockImplementation((_entity, data) => data),
+      save: jest.fn().mockImplementation((_entity, data) => Promise.resolve({ id: 'version-1', ...data })),
+      delete: jest.fn(),
+      transaction: jest.fn().mockImplementation((cb) => cb(mockManager)),
+    };
+
     const mockSkillRepository = {
       findOne: jest.fn(),
       save: jest.fn(),
       create: jest.fn(),
+      manager: mockManager,
     };
 
     const mockVersionRepository = {
@@ -57,6 +69,14 @@ describe('SkillsService - WebSocket Events (Week 5)', () => {
         {
           provide: getRepositoryToken(SkillVersion),
           useValue: mockVersionRepository,
+        },
+        {
+          provide: getRepositoryToken(SkillFile),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn(), create: jest.fn(), delete: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(SkillVersionFile),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn(), create: jest.fn() },
         },
         {
           provide: SessionService,

@@ -16,6 +16,7 @@ import {
   Index,
 } from 'typeorm';
 import { SkillVersion } from './skill-version.entity';
+import { SkillFile } from './skill-file.entity';
 import { User } from '../../users/entities/user.entity';
 
 export type SkillType = 'skill' | 'sub-agent';
@@ -90,4 +91,7 @@ export class Skill {
 
   @OneToMany(() => SkillVersion, (version) => version.skill)
   versions: SkillVersion[];
+
+  @OneToMany(() => SkillFile, (file) => file.skill)
+  files: SkillFile[];
 }

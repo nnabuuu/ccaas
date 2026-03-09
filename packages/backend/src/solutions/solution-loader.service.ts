@@ -501,6 +501,10 @@ export class SolutionLoaderService {
     // Check if skill already exists
     const existing = await this.skills.findOne(tenantId, slug);
 
+    // Discover additional files (references/, etc.) excluding SKILL.md
+    const skillDir = path.resolve(solutionPath, skillFolder);
+    const additionalFiles = await this.discoverSkillFiles(skillDir);
+
     if (existing) {
       // Update existing skill
       await this.skills.update(tenantId, existing.id, {
@@ -510,6 +514,7 @@ export class SolutionLoaderService {
         allowedTools: [],
         triggers: [],
         scope: 'tenant',
+        files: additionalFiles,
       });
 
       return {
@@ -530,6 +535,7 @@ export class SolutionLoaderService {
       allowedTools: [],
       triggers: [],
       scope: 'tenant',
+      files: additionalFiles,
     });
 
     // Publish immediately
@@ -547,6 +553,53 @@ export class SolutionLoaderService {
     };
   }
 
+
+  /** Text-safe file extensions that can be stored in DB text columns */
+  private static readonly TEXT_EXTENSIONS = new Set([
+    '.md', '.txt', '.json', '.yaml', '.yml', '.xml', '.csv',
+    '.html', '.js', '.ts', '.py', '.sh', '.toml', '.ini',
+  ]);
+
+  /**
+   * Discover additional text files in a skill directory (excluding SKILL.md).
+   * Only imports files with known text extensions to avoid corrupting binary data.
+   */
+  private async discoverSkillFiles(
+    skillDir: string,
+  ): Promise<Array<{ relativePath: string; content: string }>> {
+    try {
+      const entries = await fg('**/*', {
+        cwd: skillDir,
+        ignore: ['SKILL.md'],
+        dot: false,
+      });
+
+      const textEntries = entries.filter((e) =>
+        SolutionLoaderService.TEXT_EXTENSIONS.has(
+          path.extname(e).toLowerCase(),
+        ),
+      );
+
+      if (textEntries.length < entries.length) {
+        const skipped = entries.length - textEntries.length;
+        this.logger.debug(
+          `Skipped ${skipped} non-text file(s) in ${skillDir}`,
+        );
+      }
+
+      return Promise.all(
+        textEntries.map(async (entry) => ({
+          relativePath: entry,
+          content: await fs.readFile(path.join(skillDir, entry), 'utf-8'),
+        })),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to discover skill files in ${skillDir}: ${(error as Error).message}`,
+      );
+      return [];
+    }
+  }
 
   // --------------------------------------------------------------------------
   // MCP Server Registration

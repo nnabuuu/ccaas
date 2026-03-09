@@ -20,7 +20,7 @@ Each element maps directly to `board.create(type, parents, attrs)`.
 Two kinds of points:
 
 - **Base points** (triangle vertices, given points): hardcode coordinates.
-  Common placements: Rt△ ∠C=90° ∠B=α → C=(0,0), B=(1,0), A=(0,tan α)
+  Common placement: Rt△ ∠C=90° ∠B=α → C=(0,0), B=(1,0), A=(0,tan α)
 - **Derived points** (intersections, feet, midpoints, centers): NEVER
   hardcode — use construction elements (bisector, intersection,
   perpendicularpoint, midpoint, incenter, …). JSXGraph computes the
@@ -32,10 +32,19 @@ keepaspectratio is always true. Choose bbox so x-range ≈ y-range.
 Add ~15% padding. Wrong: triangle at x∈[0,4],y∈[0,1.9] with bbox [-0.5,2.5,4.5,-0.5]
 (x-range=5, y-range=3 → squashed angles). Fix: use [-0.5,4.8,4.5,-0.5].
 
-## Step 3 — Construction elements（构造元素）
+## Step 3 — Construction elements
 
-Rule: derived points (intersections, perpendicular feet, midpoints, centers) MUST use
-construction elements — never manually compute their coordinates.
+Rule: derived points MUST use construction elements — never manually compute coordinates.
+
+### Core construction elements (always available)
+
+```json
+{ "id":"lineBC", "type":"line", "parents":["B","C"], "attrs":{"visible":false} }
+{ "id":"bisAE", "type":"bisector", "parents":["B","A","C"], "attrs":{"visible":false} }
+{ "id":"E", "type":"intersection", "parents":["bisAE","lineBC",0], "attrs":{...} }
+{ "id":"D", "type":"perpendicularpoint", "parents":["O","lineBC"], "attrs":{...} }
+{ "id":"M", "type":"midpoint", "parents":["A","B"], "attrs":{...} }
+```
 
 ### High-level sugar (renderer auto-expands)
 
@@ -46,15 +55,30 @@ construction elements — never manually compute their coordinates.
 { "id":"G", "type":"centroid",     "parents":["A","B","C"], "attrs":{...} }
 ```
 
-### JSXGraph native construction elements
+### Extended types catalog
 
-```json
-{ "id":"lineBC", "type":"line", "parents":["B","C"], "attrs":{"visible":false} }
-{ "id":"bisAE", "type":"bisector", "parents":["B","A","C"], "attrs":{"visible":false} }
-{ "id":"E", "type":"intersection", "parents":["bisAE","lineBC",0], "attrs":{...} }
-{ "id":"D", "type":"perpendicularpoint", "parents":["O","lineBC"], "attrs":{...} }
-{ "id":"M", "type":"midpoint", "parents":["A","B"], "attrs":{...} }
-```
+Also available (see `references/` for full patterns and worked examples):
+
+| Type | Parents | Description |
+|------|---------|-------------|
+| `reflection` | `[point, line]` | Reflect point across line (axial symmetry) |
+| `mirrorpoint` | `[point, center]` | Reflect point across center (point symmetry) |
+| `tangent` | `[glider]` | Tangent line at a glider point |
+| `arc` | `[center, p1, p2]` | Circular arc counterclockwise |
+| `sector` | `[center, p1, p2]` | Filled circular sector |
+| `semicircle` | `[p1, p2]` | Semicircle on diameter |
+| `circumcircle` | `[A, B, C]` | Circle through three points |
+| `incircle` | `[A, B, C]` | Inscribed circle of triangle |
+| `glider` | `[x, y, element]` | Point constrained to element |
+| `ellipse` | `[F1, F2, a]` | Ellipse from foci + semi-major |
+| `parabola` | `[focus, directrix]` | Parabola from focus + directrix line |
+| `hyperbola` | `[F1, F2, a]` | Hyperbola from foci + semi-transverse |
+| `arrow` | `[p1, p2]` | Vector arrow |
+| `parallel` | `[line, point]` | Line through point parallel to line |
+| `parallelogram` | `[A, B, C]` | Auto-compute 4th vertex (D = A+C-B) |
+| `regularpolygon` | `[p1, p2, n]` | Regular n-gon |
+| `functiongraph` | `[func, xmin, xmax]` | Plot function (uses function string, not expr) |
+| `curve` | `[xFunc, yFunc, tmin, tmax]` | Parametric curve |
 
 Notes:
 - `bisector` parents order: `[sidePoint1, vertex, sidePoint2]` — the middle point is the angle vertex
@@ -62,6 +86,22 @@ Notes:
 - Draw visible segments separately: `{ "type":"segment", "parents":["A","E"] }`
 - `intersection` third parent is the index (0 or 1), selecting which intersection point
 - Sub-element reference: `"perpSeg.point"` refers to the foot point of a perpendicular segment
+
+## Reference files — Read before generating
+
+When the problem matches a category below, **Read the reference file FIRST** to get
+full construction patterns, coordinate recipes, and worked examples.
+
+| Keywords in problem | File | Category |
+|---------------------|------|----------|
+| 翻折, 折叠, fold, reflect, 对称轴, 对称 | references/fold-reflection.md | 翻折/反射 |
+| 旋转, rotate, 绕...转 | references/rotation.md | 旋转 |
+| 圆, 切线, tangent, 弧, 扇形, 内切, 外接 | references/circles-tangents.md | 圆与切线 |
+| 椭圆, 抛物线, 双曲线, 焦点, 准线, ellipse | references/analytic-geometry.md | 解析几何 |
+| 平行四边形, 菱形, 梯形, 正多边形 | references/quadrilaterals.md | 四边形 |
+| 向量, 三角函数, sin, cos, 单位圆 | references/vectors-trig.md | 向量/三角函数 |
+
+If the problem is a basic triangle/angle problem, no reference needed — core rules suffice.
 
 ## Step 4 — Elements
 
@@ -135,4 +175,3 @@ Dashed auxiliary segment:
   ]
 }
 ```
-

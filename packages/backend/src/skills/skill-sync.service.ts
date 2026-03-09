@@ -103,6 +103,32 @@ export class SkillSyncService {
           );
         }
 
+        // Write additional files from DB (references/, etc.)
+        try {
+          const files = await this.skillsService.getSkillFiles(skill.id);
+          const resolvedSkillDir = path.resolve(skillDir);
+          for (const file of files) {
+            const filePath = path.resolve(skillDir, file.relativePath);
+            // Ensure resolved path stays within skill directory
+            if (!filePath.startsWith(resolvedSkillDir + path.sep)) {
+              this.logger.warn(
+                `Skipping file with unsafe path: ${file.relativePath}`,
+              );
+              continue;
+            }
+            await fs.mkdir(path.dirname(filePath), { recursive: true });
+            await fs.writeFile(filePath, file.content, 'utf-8');
+          }
+          if (files.length > 0) {
+            this.logger.debug(
+              `Wrote ${files.length} additional files for skill ${skill.slug}`,
+            );
+          }
+        } catch (fileError) {
+          const msg = fileError instanceof Error ? fileError.message : 'Unknown error';
+          warnings.push(`Failed to write files for skill ${skill.slug}: ${msg}`);
+        }
+
         syncedSkills.push(skill.slug);
         syncedSkillIds.push(skill.id); // Week 3: Track skill ID
         this.logger.debug(`Synced skill: ${skill.name} (${skill.slug})`);

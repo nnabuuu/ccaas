@@ -8,20 +8,25 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import * as crypto from 'crypto';
+import * as path from 'path';
 import { Skill, SkillStatus, SkillType } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
+import { SkillFile } from './entities/skill-file.entity';
+import { SkillVersionFile } from './entities/skill-version-file.entity';
 import {
   CreateSkillDto,
   UpdateSkillDto,
   ListSkillsDto,
   CreateVersionDto,
 } from './dto/skill.dto';
+import { UpsertSkillFileDto } from './dto/skill-file.dto';
 import { SkillChangeNotifier } from '../common/skill-change-notifier';
 import { SessionService } from '../sessions/session.service';
 
@@ -42,6 +47,10 @@ export class SkillsService {
     private readonly skillRepository: Repository<Skill>,
     @InjectRepository(SkillVersion)
     private readonly versionRepository: Repository<SkillVersion>,
+    @InjectRepository(SkillFile)
+    private readonly skillFileRepository: Repository<SkillFile>,
+    @InjectRepository(SkillVersionFile)
+    private readonly skillVersionFileRepository: Repository<SkillVersionFile>,
     private readonly eventEmitter: EventEmitter2,
     private readonly sessionService: SessionService,
   ) {}
@@ -77,6 +86,11 @@ export class SkillsService {
     });
 
     const saved = await this.skillRepository.save(skill);
+
+    // Import files if provided
+    if (dto.files && dto.files.length > 0) {
+      await this.upsertFiles(saved.id, dto.files);
+    }
 
     // Create initial version
     await this.createVersion(saved.id, { changelog: 'Initial version' });
@@ -240,6 +254,11 @@ export class SkillsService {
 
     const saved = await this.skillRepository.save(skill);
 
+    // Upsert files if provided
+    if (dto.files && dto.files.length > 0) {
+      await this.upsertFiles(saved.id, dto.files);
+    }
+
     // Create new version if content changed and requested
     if (dto.content !== undefined && dto.createVersion) {
       await this.createVersion(skill.id, { bumpType: 'patch' });
@@ -373,50 +392,71 @@ export class SkillsService {
    * Create a new version of a skill
    */
   async createVersion(skillId: string, dto: CreateVersionDto): Promise<SkillVersion> {
-    const skill = await this.skillRepository.findOne({ where: { id: skillId } });
-    if (!skill) {
-      throw new NotFoundException(`Skill not found: ${skillId}`);
-    }
+    return this.skillRepository.manager.transaction(async (manager) => {
+      const skill = await manager.findOne(Skill, { where: { id: skillId } });
+      if (!skill) {
+        throw new NotFoundException(`Skill not found: ${skillId}`);
+      }
 
-    // Determine version number
-    let version: string;
-    if (dto.version) {
-      version = dto.version;
-    } else {
-      const existingVersions = await this.versionRepository.find({
-        where: { skillId },
-        order: { createdAt: 'DESC' },
+      // Determine version number
+      let version: string;
+      if (dto.version) {
+        version = dto.version;
+      } else {
+        const existingVersions = await manager.find(SkillVersion, {
+          where: { skillId },
+          order: { createdAt: 'DESC' },
+        });
+
+        if (existingVersions.length === 0) {
+          version = '1.0.0';
+        } else {
+          const latestVersion = existingVersions[0].version;
+          version = this.calculateNextVersion(latestVersion, dto.bumpType || 'patch');
+        }
+      }
+
+      const contentHash = this.hashContent(skill.content);
+
+      const skillVersion = manager.create(SkillVersion, {
+        skillId,
+        version,
+        content: skill.content,
+        contentHash,
+        config: skill.config,
+        allowedTools: skill.allowedTools,
+        changelog: dto.changelog,
+        deploymentStatus: 'draft',
       });
 
-      if (existingVersions.length === 0) {
-        version = '1.0.0';
-      } else {
-        const latestVersion = existingVersions[0].version;
-        version = this.calculateNextVersion(latestVersion, dto.bumpType || 'patch');
+      const saved = await manager.save(SkillVersion, skillVersion);
+
+      // Snapshot current skill files into version files
+      const currentFiles = await manager.find(SkillFile, {
+        where: { skillId },
+      });
+      if (currentFiles.length > 0) {
+        const versionFiles = currentFiles.map((f) =>
+          manager.create(SkillVersionFile, {
+            versionId: saved.id,
+            relativePath: f.relativePath,
+            content: f.content,
+            contentHash: f.contentHash,
+          }),
+        );
+        await manager.save(SkillVersionFile, versionFiles);
+        this.logger.debug(
+          `Snapshotted ${versionFiles.length} files for version ${version}`,
+        );
       }
-    }
 
-    const contentHash = this.hashContent(skill.content);
+      // Update skill's current version
+      skill.currentVersion = version;
+      await manager.save(Skill, skill);
 
-    const skillVersion = this.versionRepository.create({
-      skillId,
-      version,
-      content: skill.content,
-      contentHash,
-      config: skill.config,
-      allowedTools: skill.allowedTools,
-      changelog: dto.changelog,
-      deploymentStatus: 'draft',
+      this.logger.log(`Created version ${version} for skill ${skill.name}`);
+      return saved;
     });
-
-    const saved = await this.versionRepository.save(skillVersion);
-
-    // Update skill's current version
-    skill.currentVersion = version;
-    await this.skillRepository.save(skill);
-
-    this.logger.log(`Created version ${version} for skill ${skill.name}`);
-    return saved;
   }
 
   /**
@@ -445,15 +485,41 @@ export class SkillsService {
       throw new NotFoundException(`Version not found: ${version}`);
     }
 
-    // Update skill with versioned content
-    skill.content = skillVersion.content;
-    skill.config = skillVersion.config;
-    skill.allowedTools = skillVersion.allowedTools;
-    skill.currentVersion = version;
+    return this.skillRepository.manager.transaction(async (manager) => {
+      // Update skill with versioned content
+      skill.content = skillVersion.content;
+      skill.config = skillVersion.config;
+      skill.allowedTools = skillVersion.allowedTools;
+      skill.currentVersion = version;
 
-    const saved = await this.skillRepository.save(skill);
-    this.logger.log(`Rolled back skill ${skill.name} to version ${version}`);
-    return saved;
+      const saved = await manager.save(Skill, skill);
+
+      // Restore files from version snapshot
+      // 1. Delete all current skill files
+      await manager.delete(SkillFile, { skillId: skill.id });
+
+      // 2. Rebuild from version files
+      const versionFiles = await manager.find(SkillVersionFile, {
+        where: { versionId: skillVersion.id },
+      });
+      if (versionFiles.length > 0) {
+        const restoredFiles = versionFiles.map((vf) =>
+          manager.create(SkillFile, {
+            skillId: skill.id,
+            relativePath: vf.relativePath,
+            content: vf.content,
+            contentHash: vf.contentHash,
+          }),
+        );
+        await manager.save(SkillFile, restoredFiles);
+        this.logger.debug(
+          `Restored ${restoredFiles.length} files from version ${version}`,
+        );
+      }
+
+      this.logger.log(`Rolled back skill ${skill.name} to version ${version}`);
+      return saved;
+    });
   }
 
   /**
@@ -482,8 +548,120 @@ export class SkillsService {
   }
 
   // =========================================================================
+  // Skill File Methods
+  // =========================================================================
+
+  /**
+   * Get all files for a skill
+   */
+  async getSkillFiles(skillId: string): Promise<SkillFile[]> {
+    return this.skillFileRepository.find({
+      where: { skillId },
+      order: { relativePath: 'ASC' },
+    });
+  }
+
+  /**
+   * Get a single file by ID
+   */
+  async getSkillFile(skillId: string, fileId: string): Promise<SkillFile | null> {
+    return this.skillFileRepository.findOne({
+      where: { id: fileId, skillId },
+    });
+  }
+
+  /**
+   * Upsert files for a skill (create or update by relativePath).
+   * Batched: loads all existing files in one query, saves changed files in one call.
+   */
+  async upsertFiles(
+    skillId: string,
+    files: UpsertSkillFileDto[],
+  ): Promise<SkillFile[]> {
+    // Load all existing files for this skill in one query
+    const existingFiles = await this.skillFileRepository.find({
+      where: { skillId },
+    });
+    const existingByPath = new Map(
+      existingFiles.map((f) => [f.relativePath, f]),
+    );
+
+    const toSave: SkillFile[] = [];
+    const unchanged: SkillFile[] = [];
+
+    for (const fileDto of files) {
+      // Normalize and validate path
+      const normalizedPath = this.normalizePath(fileDto.relativePath);
+      const contentHash = this.hashContent(fileDto.content);
+
+      const existing = existingByPath.get(normalizedPath);
+      if (existing) {
+        if (existing.contentHash !== contentHash) {
+          existing.content = fileDto.content;
+          existing.contentHash = contentHash;
+          toSave.push(existing);
+        } else {
+          unchanged.push(existing);
+        }
+      } else {
+        toSave.push(
+          this.skillFileRepository.create({
+            skillId,
+            relativePath: normalizedPath,
+            content: fileDto.content,
+            contentHash,
+          }),
+        );
+      }
+    }
+
+    const saved =
+      toSave.length > 0
+        ? await this.skillFileRepository.save(toSave)
+        : [];
+
+    this.logger.debug(
+      `Upserted ${saved.length} files (${unchanged.length} unchanged) for skill ${skillId}`,
+    );
+    return [...saved, ...unchanged];
+  }
+
+  /**
+   * Delete a file by relativePath
+   */
+  async deleteFile(skillId: string, relativePath: string): Promise<void> {
+    const result = await this.skillFileRepository.delete({
+      skillId,
+      relativePath,
+    });
+    if (result.affected === 0) {
+      throw new NotFoundException(
+        `File not found: ${relativePath} in skill ${skillId}`,
+      );
+    }
+    this.logger.debug(`Deleted file ${relativePath} from skill ${skillId}`);
+  }
+
+  // =========================================================================
   // Helper Methods
   // =========================================================================
+
+  /**
+   * Normalize a relative path and reject traversal attempts.
+   */
+  private normalizePath(relativePath: string): string {
+    const normalized = path.posix.normalize(relativePath).replace(/^\.\//, '');
+    if (
+      normalized.startsWith('..') ||
+      path.posix.isAbsolute(normalized) ||
+      normalized.includes('..')
+    ) {
+      throw new BadRequestException(
+        `Invalid file path: ${relativePath} — must be relative and within skill directory`,
+      );
+    }
+    return normalized;
+  }
 
   private generateSlug(name: string): string {
     return name

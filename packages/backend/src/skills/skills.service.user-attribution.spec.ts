@@ -11,27 +11,45 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SkillsService } from './skills.service';
 import { Skill } from './entities/skill.entity';
 import { SkillVersion } from './entities/skill-version.entity';
+import { SkillFile } from './entities/skill-file.entity';
+import { SkillVersionFile } from './entities/skill-version-file.entity';
 import { SessionService } from '../sessions/session.service';
 
 describe('SkillsService - User Attribution', () => {
   let service: SkillsService;
   let skillRepository: jest.Mocked<Repository<Skill>>;
   let versionRepository: jest.Mocked<Repository<SkillVersion>>;
+  let txManager: Record<string, jest.Mock>;
 
   const tenantId = 'tenant-123';
   const userId = 'user-123';
 
   beforeEach(async () => {
+    // mockManager is used by createVersion/rollbackToVersion transactions.
+    // Its findOne delegates to skillRepository.findOne for Skill lookups.
+    const mockManager: Record<string, jest.Mock> = {
+      findOne: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
+      create: jest.fn().mockImplementation((_entity: any, data: any) => data),
+      save: jest.fn().mockImplementation((_entity: any, data: any) => Promise.resolve({ id: 'version-1', ...data })),
+      delete: jest.fn(),
+      transaction: jest.fn().mockImplementation((cb: any) => cb(mockManager)),
+    };
+
     const mockSkillRepository = {
       create: jest.fn(),
-      save: jest.fn((skill) => Promise.resolve({
+      save: jest.fn((skill: any) => Promise.resolve({
         ...skill,
-        updatedAt: skill.updatedAt || new Date(), // Week 5: Ensure updatedAt is set
+        updatedAt: skill.updatedAt || new Date(),
       })),
       find: jest.fn(),
       findOne: jest.fn(),
       createQueryBuilder: jest.fn(),
+      manager: mockManager,
     };
+
+    // createVersion (inside transaction) uses manager.findOne(Skill, { where: { id } })
+    // Tests that call create() must also configure mockManager.findOne to return the skill.
 
     const mockVersionRepository = {
       create: jest.fn(),
@@ -60,6 +78,14 @@ describe('SkillsService - User Attribution', () => {
           useValue: mockVersionRepository,
         },
         {
+          provide: getRepositoryToken(SkillFile),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn(), create: jest.fn(), findOne: jest.fn(), delete: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(SkillVersionFile),
+          useValue: { find: jest.fn().mockResolvedValue([]), save: jest.fn(), create: jest.fn() },
+        },
+        {
           provide: EventEmitter2,
           useValue: mockEventEmitter,
         },
@@ -73,6 +99,7 @@ describe('SkillsService - User Attribution', () => {
     service = module.get<SkillsService>(SkillsService);
     skillRepository = module.get(getRepositoryToken(Skill));
     versionRepository = module.get(getRepositoryToken(SkillVersion));
+    txManager = mockManager;
   });
 
   afterEach(() => {
@@ -96,18 +123,10 @@ describe('SkillsService - User Attribution', () => {
         createdBy: userId,
       };
 
-      // First call: check for duplicate (return null)
-      // Second call: find skill for createVersion (return saved skill)
-      skillRepository.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSkill as any);
+      skillRepository.findOne.mockResolvedValueOnce(null); // Duplicate check
       skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save
-        .mockResolvedValueOnce(mockSkill as any)
-        .mockResolvedValueOnce(mockSkill as any); // For version update
-      versionRepository.create.mockReturnValue({} as any);
-      versionRepository.save.mockResolvedValue({} as any);
-      versionRepository.find.mockResolvedValue([]); // No existing versions
+      skillRepository.save.mockResolvedValue(mockSkill as any);
+      txManager.findOne.mockResolvedValue(mockSkill as any); // createVersion transaction
 
       const result = await service.create(tenantId, createDto, userId);
 
@@ -135,16 +154,10 @@ describe('SkillsService - User Attribution', () => {
         scope: 'tenant',
       };
 
-      skillRepository.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSkill as any);
+      skillRepository.findOne.mockResolvedValueOnce(null);
       skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save
-        .mockResolvedValueOnce(mockSkill as any)
-        .mockResolvedValueOnce(mockSkill as any);
-      versionRepository.create.mockReturnValue({} as any);
-      versionRepository.save.mockResolvedValue({} as any);
-      versionRepository.find.mockResolvedValue([]);
+      skillRepository.save.mockResolvedValue(mockSkill as any);
+      txManager.findOne.mockResolvedValue(mockSkill as any);
 
       const result = await service.create(tenantId, createDto);
 
@@ -170,16 +183,10 @@ describe('SkillsService - User Attribution', () => {
         scope: 'tenant',
       };
 
-      skillRepository.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSkill as any);
+      skillRepository.findOne.mockResolvedValueOnce(null);
       skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save
-        .mockResolvedValueOnce(mockSkill as any)
-        .mockResolvedValueOnce(mockSkill as any);
-      versionRepository.create.mockReturnValue({} as any);
-      versionRepository.save.mockResolvedValue({} as any);
-      versionRepository.find.mockResolvedValue([]);
+      skillRepository.save.mockResolvedValue(mockSkill as any);
+      txManager.findOne.mockResolvedValue(mockSkill as any);
 
       const result = await service.create(tenantId, createDto, userId);
 
@@ -205,16 +212,10 @@ describe('SkillsService - User Attribution', () => {
         createdBy: userId,
       };
 
-      skillRepository.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(mockSkill as any);
+      skillRepository.findOne.mockResolvedValueOnce(null);
       skillRepository.create.mockReturnValue(mockSkill as any);
-      skillRepository.save
-        .mockResolvedValueOnce(mockSkill as any)
-        .mockResolvedValueOnce(mockSkill as any);
-      versionRepository.create.mockReturnValue({} as any);
-      versionRepository.save.mockResolvedValue({} as any);
-      versionRepository.find.mockResolvedValue([]);
+      skillRepository.save.mockResolvedValue(mockSkill as any);
+      txManager.findOne.mockResolvedValue(mockSkill as any);
 
       const result = await service.create(tenantId, createDto, userId);
 

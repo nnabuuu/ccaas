@@ -21,6 +21,7 @@ const LoginPage = lazy(() => import('@/pages/login').then((m) => ({ default: m.L
 const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))
 const SessionListPage = lazy(() => import('@/pages/sessions/list').then((m) => ({ default: m.SessionListPage })))
 const SessionDetailPage = lazy(() => import('@/pages/sessions/detail').then((m) => ({ default: m.SessionDetailPage })))
+const SkillListPage = lazy(() => import('@/pages/skills/list').then((m) => ({ default: m.SkillListPage })))
 const SkillEditorPage = lazy(() => import('@/pages/skills/editor').then((m) => ({ default: m.SkillEditorPage })))
 const TenantListPage = lazy(() => import('@/pages/tenants/list').then((m) => ({ default: m.TenantListPage })))
 const TenantDetailPage = lazy(() => import('@/pages/tenants/detail').then((m) => ({ default: m.TenantDetailPage })))
@@ -91,6 +92,12 @@ function App() {
             meta: { label: 'API Keys' },
           },
           {
+            name: 'skills',
+            list: '/skills',
+            show: '/skills/:idOrSlug',
+            meta: { label: 'Skills' },
+          },
+          {
             name: 'session-templates',
             list: '/session-templates',
             create: '/session-templates/create',
@@ -123,6 +130,7 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/sessions" element={<SessionListPage />} />
               <Route path="/sessions/:sessionId" element={<SessionDetailPage />} />
+              <Route path="/skills" element={<SkillListPage />} />
               <Route path="/skills/:idOrSlug" element={<SkillEditorPage />} />
               <Route path="/tenants" element={<TenantListPage />} />
               <Route path="/tenants/create" element={<CreateTenantPage />} />

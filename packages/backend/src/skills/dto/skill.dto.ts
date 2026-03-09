@@ -19,6 +19,7 @@ import {
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import type { SkillType, SkillStatus, SkillScope } from '../entities/skill.entity';
+import { UpsertSkillFileDto } from './skill-file.dto';
 
 /**
  * Trigger definition for skill routing
@@ -79,6 +80,12 @@ export class CreateSkillDto {
   @IsOptional()
   @IsEnum(['tenant', 'personal'])
   scope?: SkillScope;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpsertSkillFileDto)
+  files?: UpsertSkillFileDto[];
 }
 
 /**
@@ -119,6 +126,12 @@ export class UpdateSkillDto {
   @IsOptional()
   @IsEnum(['tenant', 'personal'])
   scope?: SkillScope;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UpsertSkillFileDto)
+  files?: UpsertSkillFileDto[];
 }
 
 /**

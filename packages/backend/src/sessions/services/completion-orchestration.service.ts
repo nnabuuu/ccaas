@@ -398,18 +398,52 @@ export class CompletionOrchestrationService {
       }
     }
 
-    // Step 5: If solution provided a skill file path, copy entire skill directory to session workspace
-    // This copies SKILL.md plus any subdirectories (e.g. references/) so the agent can Read them at runtime
+    // Step 5: Filesystem fallback — only copy skill directories if DB has no files.
+    // SkillSyncService (Step 4) now writes files from DB. This cpSync fallback is only
+    // needed when skills haven't been imported to DB yet (e.g. local dev without skill:import).
     if (skillPath && fs.existsSync(skillPath)) {
       try {
         const skillSourceDir = path.dirname(skillPath);
         const skillName = path.basename(skillSourceDir);
         const targetDir = path.join(session.workspaceDir, '.claude', 'skills', skillName);
-        fs.cpSync(skillSourceDir, targetDir, {
-          recursive: true,
-          filter: (src) => !path.basename(src).startsWith('.'),
-        });
-        this.logger.log(`Copied skill directory ${skillName} to session workspace from ${skillSourceDir}`);
+
+        // Check if DB-synced files already exist (SkillSyncService wrote them)
+        const skillMdPath = path.join(targetDir, 'SKILL.md');
+        const hasDbFiles = fs.existsSync(skillMdPath);
+
+        if (!hasDbFiles) {
+          this.logger.warn(
+            `Skill ${skillName} not found in DB sync output — falling back to cpSync from filesystem. ` +
+            `Run "npm run skill:import" to import skills into DB for proper management.`,
+          );
+          fs.cpSync(skillSourceDir, targetDir, {
+            recursive: true,
+            filter: (src) => !path.basename(src).startsWith('.'),
+          });
+          this.logger.log(`Copied skill directory ${skillName} to session workspace (filesystem fallback)`);
+        }
+
+        // Step 5b: Fallback for sibling skill directories
+        if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+          const skillsParentDir = path.dirname(skillSourceDir);
+          for (const slug of enabledSkillSlugs) {
+            if (slug === skillName) continue;
+            const siblingTarget = path.join(session.workspaceDir, '.claude', 'skills', slug);
+            const siblingSkillMd = path.join(siblingTarget, 'SKILL.md');
+
+            // Only copy from filesystem if DB sync didn't handle it
+            if (!fs.existsSync(siblingSkillMd)) {
+              const siblingDir = path.join(skillsParentDir, slug);
+              if (fs.existsSync(siblingDir) && fs.statSync(siblingDir).isDirectory()) {
+                fs.cpSync(siblingDir, siblingTarget, {
+                  recursive: true,
+                  filter: (src) => !path.basename(src).startsWith('.'),
+                });
+                this.logger.debug(`Copied sibling skill directory ${slug} to session workspace (filesystem fallback)`);
+              }
+            }
+          }
+        }
       } catch (error) {
         this.logger.warn(`Failed to copy skill directory: ${error}`);
         // Continue without skill - non-fatal

@@ -84,6 +84,29 @@ Derived points MUST use construction elements — never manually compute coordin
 { "id":"M", "type":"midpoint", "parents":["A","B"], "attrs":{...} }
 ```
 
+### Extended types (also available)
+
+| Type | Parents | Description |
+|------|---------|-------------|
+| `reflection` | `[point, line]` | Reflect point across line (axial symmetry) |
+| `mirrorpoint` | `[point, center]` | Reflect point across center (point symmetry) |
+| `tangent` | `[glider]` | Tangent line at a glider point |
+| `arc` | `[center, p1, p2]` | Circular arc counterclockwise |
+| `sector` | `[center, p1, p2]` | Filled circular sector |
+| `semicircle` | `[p1, p2]` | Semicircle on diameter |
+| `circumcircle` | `[A, B, C]` | Circle through three points |
+| `incircle` | `[A, B, C]` | Inscribed circle of triangle |
+| `glider` | `[x, y, element]` | Point constrained to element |
+| `ellipse` | `[F1, F2, a]` | Ellipse from foci + semi-major |
+| `parabola` | `[focus, directrix]` | Parabola from focus + directrix line |
+| `hyperbola` | `[F1, F2, a]` | Hyperbola from foci + semi-transverse |
+| `arrow` | `[p1, p2]` | Vector arrow |
+| `parallel` | `[line, point]` | Line through point parallel to line |
+| `parallelogram` | `[A, B, C]` | Auto-compute 4th vertex (D = A+C-B) |
+| `regularpolygon` | `[p1, p2, n]` | Regular n-gon |
+| `functiongraph` | `[func, xmin, xmax]` | Plot function (uses function string, not expr) |
+| `curve` | `[xFunc, yFunc, tmin, tmax]` | Parametric curve |
+
 Notes:
 - `bisector` parents: `[sidePoint1, vertex, sidePoint2]` — middle is the vertex
 - Helper elements: `"visible": false`

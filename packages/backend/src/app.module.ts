@@ -23,6 +23,8 @@ import { AdminModule } from './admin/admin.module';
 import { HealthModule } from './health/health.module';
 import { Skill } from './skills/entities/skill.entity';
 import { SkillVersion } from './skills/entities/skill-version.entity';
+import { SkillFile } from './skills/entities/skill-file.entity';
+import { SkillVersionFile } from './skills/entities/skill-version-file.entity';
 import { Tenant } from './tenants/entities/tenant.entity';
 import { Message } from './messages/entities/message.entity';
 import { ToolEvent } from './messages/entities/tool-event.entity';
@@ -79,6 +81,8 @@ import { BundleModule } from './bundles/bundle.module';
         // Core entities
         Skill,
         SkillVersion,
+        SkillFile,
+        SkillVersionFile,
         Tenant,
         ApiKey,
         McpServer,

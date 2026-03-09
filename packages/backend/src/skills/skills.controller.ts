@@ -24,6 +24,7 @@ import {
   ListSkillsDto,
   CreateVersionDto,
 } from './dto/skill.dto';
+import { UpsertSkillFilesDto } from './dto/skill-file.dto';
 import { TenantGuard } from '../tenants/tenant.guard';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
@@ -61,7 +62,7 @@ export class SkillsController {
   }
 
   /**
-   * Get a skill by ID or slug
+   * Get a skill by ID or slug (includes files metadata)
    */
   @Get(':id')
   async findOne(
@@ -72,7 +73,17 @@ export class SkillsController {
     if (!skill) {
       throw new NotFoundException(`Skill not found: ${id}`);
     }
-    return skill;
+
+    // Include files metadata (without content for efficiency)
+    const files = await this.skillsService.getSkillFiles(skill.id);
+    return {
+      ...skill,
+      files: files.map((f) => ({
+        id: f.id,
+        relativePath: f.relativePath,
+        contentHash: f.contentHash,
+      })),
+    };
   }
 
   /**
@@ -173,5 +184,84 @@ export class SkillsController {
     @Param('id', ParseIdOrSlugPipe) id: string,
   ) {
     return this.skillsService.toggle(tenantId, id);
+  }
+
+  // =========================================================================
+  // Skill File Endpoints
+  // =========================================================================
+
+  /**
+   * List all files for a skill (metadata only, no content)
+   */
+  @Get(':id/files')
+  async listFiles(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    const skill = await this.skillsService.findOne(tenantId, id);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${id}`);
+    }
+    const files = await this.skillsService.getSkillFiles(skill.id);
+    return files.map((f) => ({
+      id: f.id,
+      relativePath: f.relativePath,
+      contentHash: f.contentHash,
+      createdAt: f.createdAt,
+      updatedAt: f.updatedAt,
+    }));
+  }
+
+  /**
+   * Get a single file with content
+   */
+  @Get(':id/files/:fileId')
+  async getFile(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Param('fileId') fileId: string,
+  ) {
+    const skill = await this.skillsService.findOne(tenantId, id);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${id}`);
+    }
+    const file = await this.skillsService.getSkillFile(skill.id, fileId);
+    if (!file) {
+      throw new NotFoundException(`File not found: ${fileId}`);
+    }
+    return file;
+  }
+
+  /**
+   * Batch upsert files for a skill
+   */
+  @Put(':id/files')
+  async upsertFiles(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpsertSkillFilesDto,
+  ) {
+    const skill = await this.skillsService.findOne(tenantId, id);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${id}`);
+    }
+    return this.skillsService.upsertFiles(skill.id, dto.files);
+  }
+
+  /**
+   * Delete a single file by relativePath
+   */
+  @Delete(':id/files/:relativePath(*)')
+  async deleteFile(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Param('relativePath') relativePath: string,
+  ) {
+    const skill = await this.skillsService.findOne(tenantId, id);
+    if (!skill) {
+      throw new NotFoundException(`Skill not found: ${id}`);
+    }
+    await this.skillsService.deleteFile(skill.id, relativePath);
+    return { success: true };
   }
 }

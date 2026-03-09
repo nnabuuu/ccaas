@@ -10,9 +10,11 @@ import {
   Column,
   CreateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Skill } from './skill.entity';
+import { SkillVersionFile } from './skill-version-file.entity';
 
 export type DeploymentStatus = 'draft' | 'staging' | 'production' | 'deprecated';
 
@@ -54,4 +56,7 @@ export class SkillVersion {
   @ManyToOne(() => Skill, (skill) => skill.versions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'skillId' })
   skill: Skill;
+
+  @OneToMany(() => SkillVersionFile, (file) => file.version)
+  files: SkillVersionFile[];
 }
