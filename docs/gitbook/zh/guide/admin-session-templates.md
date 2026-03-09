@@ -184,6 +184,7 @@ export function TeacherView() {
 | `enabledSkillSlugs` | string[] | — | 代理允许使用的技能列表 |
 | `mcpServers` | object | — | MCP 服务器配置（见下方格式） |
 | `model` | string | 128 | 模型 ID 覆盖（如 `claude-opus-4-6`） |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | 启用的 Skill 列表，支持 per-skill promptMode 覆盖（见 [Per-Skill 提示模式](#per-skill-提示模式)）。优先于 `enabledSkillSlugs` |
 | `skillPromptMode` | `"protocol"` \| `"inline"` | — | Skill 内容到达 Agent 的方式（见 [Skill 提示模式](#skill-提示模式)） |
 
 ### MCP 服务器格式
@@ -246,6 +247,58 @@ export function TeacherView() {
 
 {% hint style="warning" %}
 **Token 开销：** `inline` 模式下，完整的 SKILL.md 内容会在每次 API 调用时包含在系统提示中。对于超过 ~1500 tokens 的 Skill，请权衡 UX 收益与额外的每轮开销。在使用 inline 模式时，保持 Skill 定义简洁尤为重要。
+{% endhint %}
+
+### Per-Skill 提示模式
+
+当一个模板启用多个 Skill 时，你可能希望**不同的 Skill 使用不同的提示模式**。例如：主 Skill 内容简短，适合 `inline`；辅助参考类 Skill 较长，适合 `protocol` 以节省 Token。
+
+`enabledSkills` 字段支持这种 per-skill 级别的 `promptMode` 覆盖。
+
+#### `enabledSkills` vs `enabledSkillSlugs`
+
+| | `enabledSkillSlugs` | `enabledSkills` |
+|---|---|---|
+| **类型** | `string[]` | `Array<string \| { slug, promptMode? }>` |
+| **Per-skill 模式覆盖** | 不支持 | 支持 |
+| **优先级** | 低 | **高** — 两者共存时 `enabledSkills` 生效 |
+
+两个字段可以同时存在于同一个模板中。当 `enabledSkills` 存在时，平台使用它来解析 Skill 列表和 promptMode 配置；`enabledSkillSlugs` 被忽略。
+
+#### 配置示例
+
+```json
+{
+  "sessionTemplates": {
+    "production": {
+      "description": "混合模式 — 主 Skill inline，辅助 Skill protocol",
+      "skillPromptMode": "protocol",
+      "enabledSkills": [
+        { "slug": "quiz-analyze-explain", "promptMode": "inline" },
+        "geometry-reference"
+      ],
+      "appendSystemPrompt": "等待用户上传题目后再开始分析。"
+    }
+  }
+}
+```
+
+**解析规则：**
+
+| 元素 | 解析方式 |
+|------|---------|
+| `"geometry-reference"`（字符串） | 继承全局 `skillPromptMode`（此例为 `protocol`） |
+| `{ "slug": "quiz-analyze-explain", "promptMode": "inline" }` | 使用显式指定的 `inline` 模式 |
+| `{ "slug": "some-skill" }`（无 `promptMode`） | 继承全局 `skillPromptMode` |
+
+#### 使用场景
+
+- **主 Skill inline，辅助 Skill protocol** — 主 Skill 内容精简（< 1500 tokens），用 `inline` 实现零延迟启动；辅助参考类 Skill 内容较长，用 `protocol` 控制 Token 开销
+- **全部 inline 但排除某个长 Skill** — 全局 `skillPromptMode: "inline"`，仅对长内容 Skill 显式设置 `"promptMode": "protocol"`
+- **渐进迁移** — 从全部 `protocol` 逐步将各 Skill 切换到 `inline`，无需一次性全切
+
+{% hint style="info" %}
+**与全局 `skillPromptMode` 的关系：** `enabledSkills` 中未指定 `promptMode` 的条目（包括纯字符串元素）会回退到模板的 `skillPromptMode`。如果 `skillPromptMode` 也未设置，则默认为 `protocol`。
 {% endhint %}
 
 ## API 端点

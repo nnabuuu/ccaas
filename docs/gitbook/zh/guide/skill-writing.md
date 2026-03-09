@@ -54,6 +54,65 @@ version: "1.0.0"
 使用 write_output 工具输出结构化教案数据...
 ```
 
+## 多文件 Skill
+
+当 Skill 需要引用较多的参考资料、示例或配置时，可以将内容拆分为多个文件，而不是全部塞进 `SKILL.md`。
+
+### 目录结构
+
+```
+skills/
+└── quiz-analyze-explain/
+    ├── SKILL.md                    # 主文件（必需）
+    └── references/                 # 附加文件目录
+        ├── geometry-formulas.md    # 参考资料
+        ├── scoring-rubric.md       # 评分标准
+        └── examples/
+            └── sample-analysis.md  # 示例分析
+```
+
+`SKILL.md` 是入口文件，定义角色、流程和元数据。`references/` 目录下的文件作为补充知识，供 Agent 在需要时读取。
+
+### 何时使用多文件 Skill
+
+| 场景 | 单文件 | 多文件 |
+|------|--------|--------|
+| Skill 内容 < 2000 tokens | ✅ | 不需要 |
+| 需要引用大量参考资料（公式、标准、示例） | 不适合 | ✅ |
+| 参考内容需要独立版本管理 | 不适合 | ✅ |
+| 不同 Skill 共享参考资料 | 不适合 | ✅ |
+
+**经验法则：** 如果参考资料让 `SKILL.md` 超过了 2000 tokens，就拆出来。SKILL.md 保留角色定义和流程，参考内容放到 `references/`。
+
+### 平台行为
+
+- **自动发现：** 平台在导入 Skill 时自动扫描 `SKILL.md` 所在目录下的所有非隐藏文件（排除以 `.` 开头的文件），存入数据库
+- **Session 同步：** 每次创建 Session 时，平台将所有 Skill 文件（包括 `references/`）同步到 Session 工作区的 `.claude/skills/{slug}/` 目录
+- **版本管理：** 附加文件的内容 hash 被追踪，只有内容变化时才更新
+- **路径安全：** 平台验证所有文件路径在 Skill 目录范围内，防止路径穿越
+
+### 在 SKILL.md 中引用附加文件
+
+```markdown
+# 工作流程
+
+## 步骤 2：查阅参考资料
+
+如需几何公式，读取参考文件：
+Read(".claude/skills/quiz-analyze-explain/references/geometry-formulas.md")
+
+评分时参考评分标准：
+Read(".claude/skills/quiz-analyze-explain/references/scoring-rubric.md")
+```
+
+### Admin UI 管理
+
+在管理后台的 Skill 编辑页面中，多文件 Skill 显示为文件树结构。支持：
+- 浏览所有文件（SKILL.md + references/）
+- 在线编辑文件内容
+- 新增、重命名、删除附加文件
+- 代码高亮和 Markdown 预览
+
 ## Skill 类型
 
 ### `type: prompt` — 默认（90% 的场景）

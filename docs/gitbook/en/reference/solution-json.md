@@ -297,10 +297,29 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 | `description` | string | Template description |
 | `appendSystemPrompt` | string (optional) | Text appended to the system prompt |
 | `enabledSkillSlugs` | string[] (optional) | Skill slugs enabled for this template |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` (optional) | Enabled skills with per-skill promptMode override. Takes priority over `enabledSkillSlugs` |
 | `mcpServers` | object (optional) | MCP server configurations (same format as top-level `mcpServers`) |
 | `model` | string (optional) | Model override (e.g. `claude-opus-4-6`) |
 | `skillPromptMode` | `"protocol"` \| `"inline"` (optional) | How SKILL.md content is delivered to the agent: `protocol` = agent reads at runtime (default); `inline` = embedded in system prompt before start |
 | `bundles` | string[] (optional) | Bundle IDs to activate for this template (must be a subset of Tenant `enabledBundles`) |
+
+**`enabledSkills` configuration example:**
+
+```json
+{
+  "sessionTemplates": {
+    "mixed-mode": {
+      "skillPromptMode": "protocol",
+      "enabledSkills": [
+        { "slug": "quiz-analyze-explain", "promptMode": "inline" },
+        "geometry-reference"
+      ]
+    }
+  }
+}
+```
+
+**Resolution rules:** String elements inherit the global `skillPromptMode`; object elements use their own `promptMode` override. When both `enabledSkills` and `enabledSkillSlugs` are present, `enabledSkills` takes priority. See [Per-Skill Prompt Mode](../guide/admin-session-templates.md#per-skill-prompt-mode) for details.
 
 > For full details — Admin UI, API endpoints, merge rules, security, and troubleshooting — see the [Session Templates Management guide](../guide/admin-session-templates.md).
 >

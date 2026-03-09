@@ -184,6 +184,7 @@ Deleting a template shows a confirmation dialog — click **Delete** to confirm.
 | `enabledSkillSlugs` | string[] | — | Skills the agent is allowed to use |
 | `mcpServers` | object | — | MCP server configurations (see format below) |
 | `model` | string | 128 | Model ID override (e.g. `claude-opus-4-6`) |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | Enabled skills with per-skill promptMode override (see [Per-Skill Prompt Mode](#per-skill-prompt-mode)). Takes priority over `enabledSkillSlugs` |
 | `skillPromptMode` | `"protocol"` \| `"inline"` | — | How skill content reaches the agent (see [Skill Prompt Mode](#skill-prompt-mode)) |
 
 ### MCP Server Format
@@ -246,6 +247,58 @@ Add `skillPromptMode` to any session template in `solution.json`:
 
 {% hint style="warning" %}
 **Token cost:** In `inline` mode, the full SKILL.md content is included in the system prompt on every API call. For skills longer than ~1500 tokens, weigh the UX benefit against the added per-turn cost. Concise, well-scoped skill definitions are especially valuable here.
+{% endhint %}
+
+### Per-Skill Prompt Mode
+
+When a template enables multiple Skills, you may want **different Skills to use different prompt modes**. For example: your primary Skill is short and benefits from `inline`, while a supplementary reference Skill is long and should use `protocol` to save tokens.
+
+The `enabledSkills` field supports per-skill `promptMode` overrides.
+
+#### `enabledSkills` vs `enabledSkillSlugs`
+
+| | `enabledSkillSlugs` | `enabledSkills` |
+|---|---|---|
+| **Type** | `string[]` | `Array<string \| { slug, promptMode? }>` |
+| **Per-skill mode override** | Not supported | Supported |
+| **Priority** | Lower | **Higher** — when both exist, `enabledSkills` takes effect |
+
+Both fields can coexist in the same template. When `enabledSkills` is present, the platform uses it to resolve the skill list and promptMode configuration; `enabledSkillSlugs` is ignored.
+
+#### Configuration Example
+
+```json
+{
+  "sessionTemplates": {
+    "production": {
+      "description": "Mixed mode — primary skill inline, auxiliary skill protocol",
+      "skillPromptMode": "protocol",
+      "enabledSkills": [
+        { "slug": "quiz-analyze-explain", "promptMode": "inline" },
+        "geometry-reference"
+      ],
+      "appendSystemPrompt": "Wait for the user to upload a quiz before starting analysis."
+    }
+  }
+}
+```
+
+**Resolution rules:**
+
+| Element | Resolution |
+|---------|-----------|
+| `"geometry-reference"` (string) | Inherits global `skillPromptMode` (`protocol` in this example) |
+| `{ "slug": "quiz-analyze-explain", "promptMode": "inline" }` | Uses the explicitly specified `inline` mode |
+| `{ "slug": "some-skill" }` (no `promptMode`) | Inherits global `skillPromptMode` |
+
+#### Use Cases
+
+- **Primary skill inline, auxiliary skills protocol** — Primary skill content is concise (< 1500 tokens), use `inline` for zero-latency startup; supplementary reference skills are longer, use `protocol` to control token cost
+- **All inline except one long skill** — Set global `skillPromptMode: "inline"`, explicitly set `"promptMode": "protocol"` only for the long-content skill
+- **Gradual migration** — Incrementally switch skills from `protocol` to `inline` without an all-or-nothing cutover
+
+{% hint style="info" %}
+**Relationship with global `skillPromptMode`:** Entries in `enabledSkills` without a `promptMode` (including plain string elements) fall back to the template's `skillPromptMode`. If `skillPromptMode` is also unset, the default is `protocol`.
 {% endhint %}
 
 ## API Endpoints

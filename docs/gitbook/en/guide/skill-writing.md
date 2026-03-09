@@ -54,6 +54,65 @@ You are an experienced instructional design expert...
 Use the write_output tool to output structured lesson plan data...
 ```
 
+## Multi-File Skills
+
+When a Skill needs to reference substantial supporting materials, examples, or configuration, you can split the content across multiple files instead of cramming everything into `SKILL.md`.
+
+### Directory Structure
+
+```
+skills/
+└── quiz-analyze-explain/
+    ├── SKILL.md                    # Main file (required)
+    └── references/                 # Additional files directory
+        ├── geometry-formulas.md    # Reference material
+        ├── scoring-rubric.md       # Scoring criteria
+        └── examples/
+            └── sample-analysis.md  # Sample analysis
+```
+
+`SKILL.md` is the entry point, defining the role, workflow, and metadata. Files under `references/` serve as supplementary knowledge that the Agent can read on demand.
+
+### When to Use Multi-File Skills
+
+| Scenario | Single file | Multi-file |
+|----------|------------|------------|
+| Skill content < 2000 tokens | ✅ | Not needed |
+| Needs extensive reference material (formulas, standards, examples) | Not ideal | ✅ |
+| Reference content needs independent version management | Not ideal | ✅ |
+| Different Skills share reference material | Not ideal | ✅ |
+
+**Rule of thumb:** If reference material pushes `SKILL.md` beyond ~2000 tokens, split it out. Keep the role definition and workflow in SKILL.md; put reference content in `references/`.
+
+### Platform Behavior
+
+- **Auto-discovery:** When importing a Skill, the platform scans all non-hidden files (excluding those starting with `.`) in the SKILL.md directory and stores them in the database
+- **Session sync:** Each time a session is created, the platform syncs all Skill files (including `references/`) to the session workspace at `.claude/skills/{slug}/`
+- **Version tracking:** Content hashes of additional files are tracked; only changed files are updated
+- **Path safety:** The platform validates that all file paths stay within the Skill directory boundary, preventing path traversal
+
+### Referencing Additional Files in SKILL.md
+
+```markdown
+# Workflow
+
+## Step 2: Consult Reference Material
+
+For geometry formulas, read the reference file:
+Read(".claude/skills/quiz-analyze-explain/references/geometry-formulas.md")
+
+When scoring, consult the rubric:
+Read(".claude/skills/quiz-analyze-explain/references/scoring-rubric.md")
+```
+
+### Admin UI Management
+
+In the Admin dashboard's Skill editing page, multi-file Skills are displayed as a file tree. Supported operations:
+- Browse all files (SKILL.md + references/)
+- Edit file content online
+- Add, rename, or delete additional files
+- Code highlighting and Markdown preview
+
 ## Skill Types
 
 ### `type: prompt` — Default (90% of cases)

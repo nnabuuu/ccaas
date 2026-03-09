@@ -297,10 +297,29 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 | `description` | string | 模板说明 |
 | `appendSystemPrompt` | string（可选） | 追加到系统提示的内容 |
 | `enabledSkillSlugs` | string[]（可选） | 此模板启用的 skill slug 列表 |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>`（可选） | 启用的 skill 列表，支持 per-skill promptMode 覆盖。优先于 `enabledSkillSlugs` |
 | `mcpServers` | object（可选） | MCP 服务器配置（格式同顶层 `mcpServers`） |
 | `model` | string（可选） | 模型覆盖（如 `claude-opus-4-6`） |
 | `skillPromptMode` | `"protocol"` \| `"inline"`（可选） | SKILL.md 内容到达 Agent 的方式：`protocol` = Agent 运行时读取（默认）；`inline` = 启动前嵌入系统提示 |
 | `bundles` | string[]（可选） | 此模板激活的 Bundle ID 列表（必须是 Tenant `enabledBundles` 的子集） |
+
+**`enabledSkills` 配置示例：**
+
+```json
+{
+  "sessionTemplates": {
+    "mixed-mode": {
+      "skillPromptMode": "protocol",
+      "enabledSkills": [
+        { "slug": "quiz-analyze-explain", "promptMode": "inline" },
+        "geometry-reference"
+      ]
+    }
+  }
+}
+```
+
+**解析规则：** 字符串元素继承全局 `skillPromptMode`；对象元素使用其 `promptMode` 覆盖。当 `enabledSkills` 和 `enabledSkillSlugs` 同时存在时，`enabledSkills` 优先。详见 [Per-Skill 提示模式](../guide/admin-session-templates.md#per-skill-提示模式)。
 
 > 完整详情（Admin UI、API 端点、合并规则、安全配置、问题排查）请参阅 [Session Templates 管理指南](../guide/admin-session-templates.md)。
 >
