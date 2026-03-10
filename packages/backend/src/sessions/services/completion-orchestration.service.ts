@@ -190,6 +190,7 @@ export class CompletionOrchestrationService {
       templateName ?? resolvedTenant?.config?.defaultSessionTemplate;
 
     let skillPromptMode: 'protocol' | 'inline' | undefined;
+    let skillPromptModeMap: Record<string, 'protocol' | 'inline'> = {};
     let templateAppendPrompt: string | undefined;
 
     if (effectiveTemplateName) {
@@ -205,7 +206,13 @@ export class CompletionOrchestrationService {
       if (tmpl) {
         this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
         mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig> | undefined;
-        if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) enabledSkillSlugs = tmpl['enabledSkillSlugs'];
+        if (!enabledSkillSlugs && Array.isArray(tmpl['enabledSkills'])) {
+          const resolved = this.resolveEnabledSkills(tmpl['enabledSkills']);
+          enabledSkillSlugs = resolved.slugs;
+          skillPromptModeMap = resolved.promptModeMap;
+        } else if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) {
+          enabledSkillSlugs = tmpl['enabledSkillSlugs'];
+        }
         if (!systemPrompt && tmpl['appendSystemPrompt'])     systemPrompt = tmpl['appendSystemPrompt'];
         skillPath = tmpl['skillPath'] as string | undefined;
         skillPromptMode = tmpl['skillPromptMode'] as typeof skillPromptMode;
@@ -326,32 +333,39 @@ export class CompletionOrchestrationService {
       // Continue without skills - non-fatal
     }
 
-    // Step 4b: If skillPromptMode is "inline", read SKILL.md files and replace
-    // the protocol-style systemPrompt with inlined skill content. This eliminates
-    // agent runtime file reads (Read/Glob/ToolSearch) visible to end users.
-    if (skillPromptMode === 'inline' && skillSyncedCount > 0) {
+    // Step 4b: Generate skill prompt based on per-skill or global promptMode.
+    // Mixed mode (per-skill overrides) or inline mode generate system prompts here.
+    // Protocol mode (default) is unchanged — agent reads SKILL.md at runtime.
+    const hasPerSkillOverrides = Object.keys(skillPromptModeMap).length > 0;
+    if (skillSyncedCount > 0 && (hasPerSkillOverrides || skillPromptMode === 'inline')) {
       try {
         const skills = await this.skillManagementService.loadEnabledSkills(
           resolvedTenantId,
           enabledSkillSlugs,
         );
-        const inlinePrompt = await this.skillManagementService.generateInlineSkillPrompt(
-          session.workspaceDir,
-          skills,
-        );
-        if (inlinePrompt) {
-          // Rebuild systemPrompt: inlined skills + template appendSystemPrompt
-          systemPrompt = templateAppendPrompt?.trim()
-            ? `${inlinePrompt}\n\n${templateAppendPrompt}`
-            : inlinePrompt;
+        let skillPromptContent: string | undefined;
 
-          this.logger.log(`Using inline skill prompt for session ${sessionId} (${skills.length} skills)`);
+        if (hasPerSkillOverrides) {
+          skillPromptContent = await this.skillManagementService.generateMixedSkillPrompt(
+            session.workspaceDir,
+            skills,
+            skillPromptModeMap,
+            skillPromptMode ?? 'protocol',
+          );
         } else {
-          this.logger.warn(`Inline skill prompt requested but no SKILL.md content found for session ${sessionId}`);
+          skillPromptContent = await this.skillManagementService.generateInlineSkillPrompt(
+            session.workspaceDir,
+            skills,
+          );
+        }
+
+        if (skillPromptContent) {
+          systemPrompt = templateAppendPrompt?.trim()
+            ? `${skillPromptContent}\n\n${templateAppendPrompt}`
+            : skillPromptContent;
         }
       } catch (error) {
-        this.logger.warn(`Failed to generate inline skill prompt: ${error}`);
-        // Fall back to protocol-style systemPrompt already set
+        this.logger.warn(`Failed to generate skill prompt: ${error}`);
       }
     }
 
@@ -671,4 +685,24 @@ export class CompletionOrchestrationService {
     };
   }
 
+  /**
+   * Parse enabledSkills array (string | object union) into slugs and per-skill promptMode map.
+   */
+  private resolveEnabledSkills(
+    enabledSkills: Array<string | { slug: string; promptMode?: 'protocol' | 'inline' }>,
+  ): { slugs: string[]; promptModeMap: Record<string, 'protocol' | 'inline'> } {
+    const slugs: string[] = [];
+    const promptModeMap: Record<string, 'protocol' | 'inline'> = {};
+    for (const entry of enabledSkills) {
+      if (typeof entry === 'string') {
+        slugs.push(entry);
+      } else if (entry && typeof entry === 'object' && typeof entry.slug === 'string') {
+        slugs.push(entry.slug);
+        if (entry.promptMode === 'protocol' || entry.promptMode === 'inline') {
+          promptModeMap[entry.slug] = entry.promptMode;
+        }
+      }
+    }
+    return { slugs, promptModeMap };
+  }
 }

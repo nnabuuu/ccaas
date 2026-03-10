@@ -233,7 +233,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         onOutputUpdateRef.current({
           field: input.field as string,
           value: input.value,
-          preview: (input.preview as string) || '',
+          preview: `Update ${input.field}`,
           timestamp: Date.now(),
         })
         return
@@ -247,7 +247,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
           onOutputUpdateRef.current({
             field: source.field as string,
             value: source.value,
-            preview: (source.preview as string) || '',
+            preview: `Update ${source.field}`,
             timestamp: Date.now(),
           })
         }

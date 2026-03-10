@@ -319,7 +319,8 @@ export interface SplitMessage {
 export interface OutputUpdate {
   field: string
   value: unknown
-  preview: string
+  /** Computed display label for sync UI. Always auto-generated from field name. */
+  preview?: string
   /** Optional page routing key. When set, useOutputSync groups this update under the given page. */
   page?: string
   synced?: boolean

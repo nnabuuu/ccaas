@@ -92,6 +92,8 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
     const mockSkillManagementService = {
       loadEnabledSkills: jest.fn().mockResolvedValue([]),
       generateInlineSkillPrompt: jest.fn().mockResolvedValue(undefined),
+      generateMixedSkillPrompt: jest.fn().mockResolvedValue(undefined),
+      generateSkillSystemPrompt: jest.fn().mockReturnValue(''),
       generateToolRegistryPrompt: jest.fn().mockReturnValue(''),
     };
 
@@ -319,6 +321,317 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         'test-session-id',           // sessionId
         'tenant-uuid-1',             // resolved tenantId
         expect.objectContaining({ type: 'agent_status' }),
+      );
+    });
+  });
+
+  // ─── resolveEnabledSkills (private method) ─────────────────────────────
+
+  describe('resolveEnabledSkills', () => {
+    const resolve = (input: unknown[]) =>
+      (service as any).resolveEnabledSkills(input);
+
+    it('should parse string-only entries', () => {
+      const result = resolve(['skill-a', 'skill-b']);
+      expect(result.slugs).toEqual(['skill-a', 'skill-b']);
+      expect(result.promptModeMap).toEqual({});
+    });
+
+    it('should parse object entries with promptMode', () => {
+      const result = resolve([
+        { slug: 'skill-a', promptMode: 'inline' },
+        { slug: 'skill-b', promptMode: 'protocol' },
+      ]);
+      expect(result.slugs).toEqual(['skill-a', 'skill-b']);
+      expect(result.promptModeMap).toEqual({
+        'skill-a': 'inline',
+        'skill-b': 'protocol',
+      });
+    });
+
+    it('should handle mixed string and object entries', () => {
+      const result = resolve([
+        'skill-a',
+        { slug: 'skill-b', promptMode: 'protocol' },
+        'skill-c',
+      ]);
+      expect(result.slugs).toEqual(['skill-a', 'skill-b', 'skill-c']);
+      expect(result.promptModeMap).toEqual({ 'skill-b': 'protocol' });
+    });
+
+    it('should omit entries without promptMode from map', () => {
+      const result = resolve([
+        { slug: 'skill-a' },
+        { slug: 'skill-b', promptMode: undefined },
+      ]);
+      expect(result.slugs).toEqual(['skill-a', 'skill-b']);
+      expect(result.promptModeMap).toEqual({});
+    });
+
+    it('should skip malformed entries gracefully', () => {
+      const result = resolve([
+        'valid',
+        null,
+        42,
+        { noSlug: true },
+        { slug: 'also-valid', promptMode: 'inline' },
+      ]);
+      expect(result.slugs).toEqual(['valid', 'also-valid']);
+      expect(result.promptModeMap).toEqual({ 'also-valid': 'inline' });
+    });
+
+    it('should return empty arrays for empty input', () => {
+      const result = resolve([]);
+      expect(result.slugs).toEqual([]);
+      expect(result.promptModeMap).toEqual({});
+    });
+  });
+
+  // ─── Per-skill promptMode (enabledSkills template resolution) ──────────
+
+  describe('Per-skill promptMode (enabledSkills)', () => {
+    let mockTenantsService: { findOne: jest.Mock };
+    let mockSkillSyncService: { syncToSession: jest.Mock };
+    let mockSkillMgmt: {
+      loadEnabledSkills: jest.Mock;
+      generateInlineSkillPrompt: jest.Mock;
+      generateMixedSkillPrompt: jest.Mock;
+      generateSkillSystemPrompt: jest.Mock;
+      generateToolRegistryPrompt: jest.Mock;
+    };
+    let svc: CompletionOrchestrationService;
+
+    const makeTenant = (templates: Record<string, any>) => ({
+      id: 'tenant-uuid-1',
+      config: { sessionTemplates: templates },
+    });
+
+    beforeEach(async () => {
+      mockTenantsService = { findOne: jest.fn() };
+      mockSkillSyncService = {
+        syncToSession: jest.fn().mockResolvedValue({ skillCount: 2, skillIds: ['s1', 's2'] }),
+      };
+      mockSkillMgmt = {
+        loadEnabledSkills: jest.fn().mockResolvedValue([
+          { slug: 'main-skill', name: 'Main Skill' },
+          { slug: 'aux-skill', name: 'Aux Skill' },
+        ]),
+        generateInlineSkillPrompt: jest.fn().mockResolvedValue('INLINE_PROMPT'),
+        generateMixedSkillPrompt: jest.fn().mockResolvedValue('MIXED_PROMPT'),
+        generateSkillSystemPrompt: jest.fn().mockReturnValue('PROTOCOL_PROMPT'),
+        generateToolRegistryPrompt: jest.fn().mockReturnValue(''),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          CompletionOrchestrationService,
+          {
+            provide: SessionService,
+            useValue: {
+              ensureCLIProcess: jest.fn().mockImplementation(
+                (_s: unknown, _m: unknown, onEvent: (e: unknown) => void) => {
+                  process.nextTick(() =>
+                    onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' }),
+                  );
+                  return Promise.resolve();
+                },
+              ),
+              sendFollowUp: jest.fn(),
+              createMcpSymlinks: jest.fn(),
+              trackSyncedSkills: jest.fn(),
+              persistTemplateName: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          { provide: SkillSyncService, useValue: mockSkillSyncService },
+          { provide: TenantsService, useValue: mockTenantsService },
+          { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn() } },
+          { provide: UserContextService, useValue: { recordContext: jest.fn() } },
+          { provide: SkillsService, useValue: {} },
+          { provide: ConversationMetadataService, useValue: { autoGenerateTitle: jest.fn().mockResolvedValue(undefined) } },
+          { provide: SkillManagementService, useValue: mockSkillMgmt },
+          { provide: TurnsService, useValue: { createNextTurn: jest.fn().mockResolvedValue({ id: 't1', turnNumber: 1 }), completeTurnWithRetry: jest.fn().mockResolvedValue({}) } },
+          { provide: McpPoolService, useValue: { findOne: jest.fn().mockResolvedValue(null) } },
+          { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
+          { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+        ],
+      }).compile();
+
+      svc = module.get<CompletionOrchestrationService>(CompletionOrchestrationService);
+    });
+
+    it('should use enabledSkills with per-skill overrides (mixed mode)', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'analyze-explain': {
+          enabledSkills: [
+            'main-skill',
+            { slug: 'aux-skill', promptMode: 'protocol' },
+          ],
+          skillPromptMode: 'inline',
+          appendSystemPrompt: 'Be helpful.',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'analyze-explain',
+      });
+
+      // Should call generateMixedSkillPrompt (not generateInlineSkillPrompt)
+      expect(mockSkillMgmt.generateMixedSkillPrompt).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Array),
+        { 'aux-skill': 'protocol' },
+        'inline',
+      );
+      expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to enabledSkillSlugs when enabledSkills is absent', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'teacher': {
+          enabledSkillSlugs: ['three-column-analysis'],
+          appendSystemPrompt: 'Be detailed.',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'teacher',
+      });
+
+      // No per-skill overrides + no skillPromptMode → protocol mode → skip Step 4b
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should use inline mode for enabledSkillSlugs when skillPromptMode is inline', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'kp-search': {
+          enabledSkillSlugs: ['unified-kp-search'],
+          skillPromptMode: 'inline',
+          appendSystemPrompt: 'Follow instructions.',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'kp-search',
+      });
+
+      // enabledSkillSlugs + inline mode → generateInlineSkillPrompt (no mixed)
+      expect(mockSkillMgmt.generateInlineSkillPrompt).toHaveBeenCalled();
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should prefer enabledSkills over enabledSkillSlugs when both present', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'test-tmpl': {
+          enabledSkillSlugs: ['old-skill'],
+          enabledSkills: [
+            'new-skill',
+            { slug: 'other-skill', promptMode: 'protocol' },
+          ],
+          skillPromptMode: 'inline',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'test-tmpl',
+      });
+
+      // Should use enabledSkills slugs, not enabledSkillSlugs
+      expect(mockSkillMgmt.loadEnabledSkills).toHaveBeenCalledWith(
+        'tenant-uuid-1',
+        ['new-skill', 'other-skill'],
+      );
+    });
+
+    it('should not enter Step 4b for protocol-mode templates (backward compat)', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'protocol-tmpl': {
+          enabledSkillSlugs: ['some-skill'],
+          skillPromptMode: 'protocol',
+          appendSystemPrompt: 'Original prompt.',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'protocol-tmpl',
+      });
+
+      // Protocol mode + no per-skill overrides → skip Step 4b entirely
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateSkillSystemPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should not enter Step 4b for templates with no skillPromptMode (backward compat)', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'default-tmpl': {
+          enabledSkillSlugs: ['some-skill'],
+          appendSystemPrompt: 'Default prompt.',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'default-tmpl',
+      });
+
+      // No skillPromptMode (undefined) + no per-skill overrides → skip Step 4b
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateSkillSystemPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should handle enabledSkills with all string entries (no overrides)', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'all-strings': {
+          enabledSkills: ['skill-a', 'skill-b'],
+          skillPromptMode: 'inline',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'all-strings',
+      });
+
+      // All strings → no per-skill overrides → promptModeMap is empty → uses inline path
+      expect(mockSkillMgmt.generateInlineSkillPrompt).toHaveBeenCalled();
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+    });
+
+    it('should ignore non-array enabledSkills gracefully', async () => {
+      mockTenantsService.findOne.mockResolvedValue(makeTenant({
+        'bad-config': {
+          enabledSkills: 'not-an-array',
+          enabledSkillSlugs: ['fallback-skill'],
+          skillPromptMode: 'inline',
+        },
+      }));
+
+      await svc.orchestrateMessage({
+        ...baseInput,
+        session: makeSession(0),
+        templateName: 'bad-config',
+      });
+
+      // Should fall back to enabledSkillSlugs
+      expect(mockSkillMgmt.loadEnabledSkills).toHaveBeenCalledWith(
+        'tenant-uuid-1',
+        ['fallback-skill'],
       );
     });
   });

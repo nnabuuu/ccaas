@@ -87,8 +87,7 @@ Field schemas:
 Example for quiz_analysis:
 {
   "field": "quiz_analysis",
-  "value": "这道题主要考察二次函数的图像与性质...",
-  "preview": "题目分析已生成"
+  "value": "这道题主要考察二次函数的图像与性质..."
 }
 
 Example for knowledge_point_tags:
@@ -101,8 +100,7 @@ Example for knowledge_point_tags:
       "confidence": 0.95,
       "source": "题干"
     }
-  ],
-  "preview": "3个知识点标签"
+  ]
 }`,
   inputSchema: {
     type: 'object',
@@ -121,12 +119,8 @@ Example for knowledge_point_tags:
         ],
         description: 'The value for the field.',
       },
-      preview: {
-        type: 'string',
-        description: 'Human-readable summary shown on the sync button',
-      },
     },
-    required: ['field', 'value', 'preview'],
+    required: ['field', 'value'],
   },
 };
 
@@ -806,7 +800,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       data: {
         field: input.field,
         value: validation.data,
-        preview: input.preview,
       },
       status: 'success',
     };
@@ -1241,15 +1234,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const stem = stemLines.join('\n');
       const options = optionLines;
 
-      return {
+      // Return in write_output-compatible format so toolEventTrigger
+    // can auto-emit an output_update event for parsedContent
+    const result: WriteOutputResult = {
+      status: 'success',
+      data: {
+        field: 'parsedContent',
+        value: { stem, options, quizType },
+      },
+    };
+
+    return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              stem,
-              options,
-              quizType,
-            }, null, 2),
+            text: JSON.stringify(result),
           },
         ],
       };

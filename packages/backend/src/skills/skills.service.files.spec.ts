@@ -66,7 +66,7 @@ describe('SkillsService - File Management', () => {
         Promise.resolve({ ...data, updatedAt: new Date() }),
       ),
       createQueryBuilder: jest.fn(),
-      manager: txManager,
+      manager: txManager as any,
     };
 
     versionRepo = {

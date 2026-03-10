@@ -1,16 +1,14 @@
 /**
  * useQuizAnalyze — Hook for the analyze-explain two-phase workflow.
  * Captures multiple output fields progressively.
+ *
+ * Uses useAgentProxy to stream through quiz-analyzer backend (port 3005)
+ * instead of connecting directly to CCAAS Core.
  */
 
 import { useState, useCallback, useRef } from 'react'
-import {
-  useAgentConnection,
-  useAgentChat,
-  useAgentStatus,
-} from '@kedge-agentic/react-sdk'
-import type { UseAgentChatReturn, UseAgentStatusReturn, OutputUpdate } from '@kedge-agentic/react-sdk'
-import { APP_CONFIG } from '../lib/constants'
+import { useAgentProxy } from './useAgentProxy'
+import type { OutputUpdate } from './useAgentProxy'
 import type { KpRefinementResult, ParsedContent, SolutionStep, DifficultyAssessment, JXGConstruction, AnalysisStrategy } from '../types'
 
 export interface AnalyzeExplainResult {
@@ -31,13 +29,13 @@ export interface UseQuizAnalyzeReturn {
   error: string | null
   reconnect: () => void
 
-  messages: UseAgentChatReturn['messages']
+  messages: ReturnType<typeof useAgentProxy>['messages']
   isProcessing: boolean
   sendMessage: (content: string) => void
   clearConversation: () => void
   cancelProcessing: () => void
 
-  activeTools: UseAgentStatusReturn['activeTools']
+  activeTools: ReturnType<typeof useAgentProxy>['activeTools']
   isThinking: boolean
   thinkingContent: string
 
@@ -91,24 +89,13 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
     }
   }, [])
 
-  const connection = useAgentConnection({
-    serverUrl: APP_CONFIG.BACKEND_URL,
-    sessionPrefix: 'qae',
-    transport: 'sse',
-  })
-
-  const chat = useAgentChat({
-    connection,
-    tenantId: APP_CONFIG.TENANT_ID,
-    transport: 'sse',
-    sessionTemplate: 'analyze-explain',
+  const proxy = useAgentProxy({
+    endpoint: 'analyze',
     onOutputUpdate: handleOutputUpdate,
   })
 
-  const status = useAgentStatus({ connection })
-
-  const sendMessageRef = useRef(chat.sendMessage)
-  sendMessageRef.current = chat.sendMessage
+  const sendMessageRef = useRef(proxy.sendMessage)
+  sendMessageRef.current = proxy.sendMessage
 
   // Clear results immediately when sending a new message
   const sendMessage = useCallback((content: string) => {
@@ -116,8 +103,8 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
     sendMessageRef.current(content)
   }, [])
 
-  const clearConversationRef = useRef(chat.clearConversation)
-  clearConversationRef.current = chat.clearConversation
+  const clearConversationRef = useRef(proxy.clearConversation)
+  clearConversationRef.current = proxy.clearConversation
 
   const clearConversation = useCallback(() => {
     clearConversationRef.current()
@@ -125,20 +112,20 @@ export function useQuizAnalyze(): UseQuizAnalyzeReturn {
   }, [])
 
   return {
-    connected: connection.connected,
-    sessionId: connection.sessionId,
-    error: connection.error,
-    reconnect: connection.connect,
+    connected: proxy.connected,
+    sessionId: proxy.sessionId,
+    error: proxy.error,
+    reconnect: () => {}, // No-op for HTTP-based proxy
 
-    messages: chat.messages,
-    isProcessing: chat.isProcessing,
+    messages: proxy.messages,
+    isProcessing: proxy.isProcessing,
     sendMessage,
     clearConversation,
-    cancelProcessing: chat.cancelProcessing,
+    cancelProcessing: proxy.cancelProcessing,
 
-    activeTools: status.activeTools,
-    isThinking: status.isThinking,
-    thinkingContent: status.thinkingContent,
+    activeTools: proxy.activeTools,
+    isThinking: proxy.isThinking,
+    thinkingContent: proxy.thinkingContent,
 
     result,
   }

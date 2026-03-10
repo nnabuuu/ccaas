@@ -20,7 +20,6 @@ const SolutionStepSchema = z.object({
   formula: z.string().optional(),
   reasoning: z.string().optional(),
   commonErrors: z.array(z.string()).optional(),
-  relatedKnowledgePoints: z.array(z.string()).optional(),
 });
 
 const ApproachPathSchema = z.object({

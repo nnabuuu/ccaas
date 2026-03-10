@@ -88,6 +88,15 @@ export const SessionTemplateSchema = z.object({
   enabledSkillSlugs: z.array(
     z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   ).optional(),
+  /** Per-skill configuration with optional promptMode override.
+   *  Takes priority over enabledSkillSlugs when both present. */
+  enabledSkills: z.array(z.union([
+    z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
+    z.object({
+      slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
+      promptMode: z.enum(['protocol', 'inline']).optional(),
+    }),
+  ])).optional(),
   mcpServers: z.record(McpServerDefinitionSchema).optional(),
   model: z.string().optional(),
   maxTokens: z.number().int().positive().optional(),

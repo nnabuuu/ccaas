@@ -7,7 +7,7 @@
  */
 
 import { useState } from 'react'
-import type { SolutionStep, ViewMode, JXGConstruction, AnalysisStrategy } from '../types'
+import type { SolutionStep, JXGConstruction, AnalysisStrategy } from '../types'
 import { GeometryFigure } from './GeometryFigure'
 import Markdown from './Markdown'
 
@@ -37,12 +37,10 @@ const viabilityConfig = {
 
 export default function SolutionStepsPanel({
   steps,
-  viewMode = 'prep',
   baseGeometryFigure,
   analysisStrategy,
 }: {
   steps: SolutionStep[]
-  viewMode?: ViewMode
   baseGeometryFigure?: JXGConstruction
   analysisStrategy?: AnalysisStrategy
 }) {
@@ -135,19 +133,6 @@ export default function SolutionStepsPanel({
                 />
               )}
 
-              {/* Related knowledge points — always visible (small, non-intrusive) */}
-              {viewMode === 'prep' && step.relatedKnowledgePoints && step.relatedKnowledgePoints.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {step.relatedKnowledgePoints.map((kp, j) => (
-                    <span
-                      key={j}
-                      className="inline-flex items-center px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-[11px] text-blue-600"
-                    >
-                      {kp}
-                    </span>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         ))}

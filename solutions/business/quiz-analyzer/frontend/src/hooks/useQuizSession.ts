@@ -1,21 +1,14 @@
 /**
- * Quiz Session Hook - Combines SDK hooks with quiz-specific features
+ * Quiz Session Hook - Uses useAgentProxy to stream through quiz-analyzer backend
  *
- * Uses @kedge-agentic/react-sdk hooks for core chat functionality
+ * Replaces direct react-sdk hooks (useAgentConnection/useAgentChat/useAgentStatus)
+ * with the SSE proxy pattern through quiz-analyzer backend (port 3005).
  */
 
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react'
-import {
-  useAgentConnection,
-  useAgentChat,
-  useAgentStatus,
-} from '@kedge-agentic/react-sdk'
-import type { UseAgentConnectionReturn, UseAgentChatReturn, UseAgentStatusReturn } from '@kedge-agentic/react-sdk'
+import { useAgentProxy } from './useAgentProxy'
+import type { OutputUpdate, ToolActivity, TokenUsage, ProxyMessage } from './useAgentProxy'
 import type { QuizAnalysis, ViewMode } from '../types'
-
-// Backend configuration
-const BACKEND_URL = import.meta.env.VITE_CCAAS_BACKEND_URL || 'http://localhost:3001'
-const TENANT_ID = 'quiz-analyzer'
 
 export interface UseQuizSessionReturn {
   // Connection state
@@ -24,22 +17,24 @@ export interface UseQuizSessionReturn {
   error: string | null
   reconnect: () => void
 
-  // Chat state from SDK
-  messages: UseAgentChatReturn['messages']
+  // Chat state
+  messages: ProxyMessage[]
   isProcessing: boolean
   isLoadingHistory: boolean
   sendMessage: (content: string) => void
   clearConversation: () => void
   cancelProcessing: () => void
 
-  // Status from SDK
-  activeTools: UseAgentStatusReturn['activeTools']
+  // Status
+  activeTools: Map<string, ToolActivity>
   isThinking: boolean
   thinkingContent: string
-  todoItems: UseAgentStatusReturn['todoItems']
-  todoStats: UseAgentStatusReturn['todoStats']
-  activeSubAgents: UseAgentStatusReturn['activeSubAgents']
-  tokenUsage: UseAgentStatusReturn['tokenUsage']
+  tokenUsage: TokenUsage | null
+
+  // Compatibility: ChatPanel expects these from useAgentStatus (empty in proxy mode)
+  todoItems: never[]
+  todoStats: { completed: number; inProgress: number; pending: number; total: number }
+  activeSubAgents: never[]
 
   // Computed state
   isMainProcessing: boolean
@@ -59,47 +54,29 @@ interface UseQuizSessionOptions {
 export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionReturn {
   const viewMode = options?.viewMode ?? 'prep'
 
-  // Map ViewMode to session template key (solution.json uses 'teacher'/'student')
-  const sessionTemplate = viewMode === 'student' ? 'student' : 'teacher'
+  // Map ViewMode to backend endpoint
+  const endpoint = viewMode === 'student' ? 'student' : 'teach'
 
   // Quiz-specific state: accumulated analysis results from output_update events
   const [analysisResults, setAnalysisResults] = useState<Partial<QuizAnalysis>>({})
 
-  // Handle output_update via SDK callback (SSE-compatible)
-  const handleOutputUpdate = useCallback((update: { field: string; value: unknown; preview: string }) => {
+  // Handle output_update via proxy callback
+  const handleOutputUpdate = useCallback((update: OutputUpdate) => {
     setAnalysisResults(prev => ({
       ...prev,
       [update.field]: update.value,
     }))
   }, [])
 
-  // Handle token_usage via SDK callback (SSE mode — useAgentStatus only works with Socket.IO)
-  const [sseTokenUsage, setSseTokenUsage] = useState<UseAgentStatusReturn['tokenUsage']>(null)
-  const handleTokenUsage = useCallback((usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => {
-    setSseTokenUsage(usage)
-  }, [])
-
-  // Core SDK hooks
-  const connection: UseAgentConnectionReturn = useAgentConnection({
-    serverUrl: BACKEND_URL,
-    sessionPrefix: 'quiz',
-    transport: 'sse',
-  })
-
-  const chat: UseAgentChatReturn = useAgentChat({
-    connection,
-    tenantId: TENANT_ID,
-    transport: 'sse',
-    sessionTemplate,
+  // Core proxy hook — routes through quiz-analyzer backend (port 3005) → CCAAS Core
+  const proxy = useAgentProxy({
+    endpoint,
     onOutputUpdate: handleOutputUpdate,
-    onTokenUsage: handleTokenUsage,
   })
-
-  const status: UseAgentStatusReturn = useAgentStatus({ connection })
 
   // Computed state
-  const hasActiveSubAgents = status.activeSubAgents.length > 0
-  const isMainProcessing = chat.isProcessing && !hasActiveSubAgents
+  const hasActiveSubAgents = false // Not tracked through proxy
+  const isMainProcessing = proxy.isProcessing && !hasActiveSubAgents
 
   // In student mode, hide solution steps from analysisResults (UI only — not a security boundary)
   const visibleResults = useMemo(() => {
@@ -110,9 +87,8 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
   }, [analysisResults, viewMode])
 
   // Listen for custom events from pages
-  // Use ref to avoid re-subscribing if sendMessage changes on every render
-  const sendMessageRef = useRef(chat.sendMessage)
-  sendMessageRef.current = chat.sendMessage
+  const sendMessageRef = useRef(proxy.sendMessage)
+  sendMessageRef.current = proxy.sendMessage
 
   useEffect(() => {
     const handleParseRequest = (e: Event) => {
@@ -137,44 +113,46 @@ export function useQuizSession(options?: UseQuizSessionOptions): UseQuizSessionR
   }, [])
 
   // Clear analysis results when a new user message starts processing
-  // Depend on isProcessing and messages.length to detect new messages without
-  // re-running on every message content change
   useEffect(() => {
-    if (chat.isProcessing && chat.messages.length > 0) {
-      const lastMessage = chat.messages[chat.messages.length - 1]
+    if (proxy.isProcessing && proxy.messages.length > 0) {
+      const lastMessage = proxy.messages[proxy.messages.length - 1]
       if (lastMessage.role === 'user') {
-        // New user message started, clear previous results
         setAnalysisResults({})
       }
     }
-  }, [chat.isProcessing, chat.messages.length])
+  }, [proxy.isProcessing, proxy.messages.length])
+
+  // Wrap clearConversation to also clear analysis results
+  const clearConversation = useCallback(() => {
+    proxy.clearConversation()
+    setAnalysisResults({})
+  }, [proxy.clearConversation])
 
   return {
     // Connection state
-    connected: connection.connected,
-    sessionId: connection.sessionId,
-    error: connection.error,
-    reconnect: connection.connect, // Alias for clarity
+    connected: proxy.connected,
+    sessionId: proxy.sessionId,
+    error: proxy.error,
+    reconnect: () => {}, // No-op for HTTP proxy
 
-    // Chat state from SDK
-    // isLoadingHistory is managed by useAgentChat - it auto-loads message history
-    // from the server when the session connects. While loading, this flag is true.
-    messages: chat.messages,
-    isProcessing: chat.isProcessing,
-    isLoadingHistory: chat.isLoadingHistory,
-    sendMessage: chat.sendMessage,
-    // clearConversation creates a new session (new sessionId) and clears all messages
-    clearConversation: chat.clearConversation,
-    cancelProcessing: chat.cancelProcessing,
+    // Chat state
+    messages: proxy.messages,
+    isProcessing: proxy.isProcessing,
+    isLoadingHistory: false, // No history loading in proxy mode
+    sendMessage: proxy.sendMessage,
+    clearConversation,
+    cancelProcessing: proxy.cancelProcessing,
 
-    // Status from SDK
-    activeTools: status.activeTools,
-    isThinking: status.isThinking,
-    thinkingContent: status.thinkingContent,
-    todoItems: status.todoItems,
-    todoStats: status.todoStats,
-    activeSubAgents: status.activeSubAgents,
-    tokenUsage: status.tokenUsage ?? sseTokenUsage,
+    // Status
+    activeTools: proxy.activeTools,
+    isThinking: proxy.isThinking,
+    thinkingContent: proxy.thinkingContent,
+    tokenUsage: proxy.tokenUsage,
+
+    // Compatibility: ChatPanel expects these (not available via proxy)
+    todoItems: [],
+    todoStats: { completed: 0, inProgress: 0, pending: 0, total: 0 },
+    activeSubAgents: [],
 
     // Computed state
     isMainProcessing,

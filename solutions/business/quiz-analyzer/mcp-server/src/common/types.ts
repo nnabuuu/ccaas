@@ -44,7 +44,6 @@ export interface SolutionStep {
   formula?: string;
   reasoning?: string;
   commonErrors?: string[];
-  relatedKnowledgePoints?: string[];  // 该步涉及的知识点名称
 }
 
 export interface ApproachPath {
@@ -154,7 +153,6 @@ export interface AutoPlaySpec {
 export interface WriteOutputInput {
   field: SyncField;
   value: unknown;
-  preview: string;
 }
 
 export interface WriteOutputResult {
@@ -162,7 +160,6 @@ export interface WriteOutputResult {
   data?: {
     field: SyncField;
     value: unknown;
-    preview: string;
   };
   error?: string;
 }

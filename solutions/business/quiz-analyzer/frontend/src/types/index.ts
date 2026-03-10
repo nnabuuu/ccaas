@@ -61,7 +61,6 @@ export interface SolutionStep {
   formula?: string;
   reasoning?: string;
   commonErrors?: string[];
-  relatedKnowledgePoints?: string[];
   addElements?: JXGElement[];
 }
 

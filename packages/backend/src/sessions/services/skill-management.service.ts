@@ -201,6 +201,49 @@ SKILL.md files are the authoritative source for skill usage.
   }
 
   /**
+   * Generate mixed-mode skill prompt combining inline and protocol skills.
+   *
+   * Skills in the promptModeMap with 'inline' mode get their SKILL.md content
+   * inlined; 'protocol' skills get the standard "read SKILL.md" instruction.
+   * Skills not in the map fall back to defaultMode.
+   *
+   * @param workspaceDir - Path to session workspace directory
+   * @param skills - Array of skill metadata
+   * @param promptModeMap - Per-skill promptMode overrides
+   * @param defaultMode - Fallback mode for skills not in promptModeMap
+   * @returns Combined prompt string, or undefined if no content
+   */
+  async generateMixedSkillPrompt(
+    workspaceDir: string,
+    skills: SkillInfo[],
+    promptModeMap: Record<string, 'protocol' | 'inline'>,
+    defaultMode: 'protocol' | 'inline',
+  ): Promise<string | undefined> {
+    const inlineSkills = skills.filter(
+      (s) => (promptModeMap[s.slug] ?? defaultMode) === 'inline',
+    );
+    const protocolSkills = skills.filter(
+      (s) => (promptModeMap[s.slug] ?? defaultMode) === 'protocol',
+    );
+
+    this.logger.debug(
+      `Mixed prompt: ${inlineSkills.length} inline [${inlineSkills.map(s => s.slug).join(',')}], ` +
+      `${protocolSkills.length} protocol [${protocolSkills.map(s => s.slug).join(',')}]`,
+    );
+
+    const sections: string[] = [];
+    if (inlineSkills.length > 0) {
+      const p = await this.generateInlineSkillPrompt(workspaceDir, inlineSkills);
+      if (p) sections.push(p);
+    }
+    if (protocolSkills.length > 0) {
+      const p = this.generateSkillSystemPrompt(protocolSkills);
+      if (p) sections.push(p);
+    }
+    return sections.length > 0 ? sections.join('\n\n---\n\n') : undefined;
+  }
+
+  /**
    * Generate MCP tool registry prompt for system prompt injection.
    *
    * Maps short tool names to their full `select:mcp__<slug>__<tool>` queries,

@@ -287,7 +287,6 @@ export default function QuizAnalyzePage() {
               <h3 className="text-sm font-semibold text-zinc-700">解题思路</h3>
               <SolutionStepsPanel
                 steps={result.solutionSteps ?? []}
-                viewMode={viewMode}
                 baseGeometryFigure={result.geometryFigure ?? undefined}
                 analysisStrategy={result.analysisStrategy ?? undefined}
               />
