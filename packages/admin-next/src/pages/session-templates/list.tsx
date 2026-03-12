@@ -77,7 +77,7 @@ export function SessionTemplatesListPage() {
       id: 'skills',
       header: 'Skills',
       cell: ({ row }) => {
-        const skills = row.original.template.enabledSkillSlugs || []
+        const skills = row.original.template.enabledSkills || []
         return (
           <div className="flex gap-1 flex-wrap">
             {skills.slice(0, 3).map(skill => (

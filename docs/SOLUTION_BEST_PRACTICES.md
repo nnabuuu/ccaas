@@ -35,7 +35,7 @@ export class CreateCompletionDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];  // 可选参数，向后兼容
+  enabledSkills?: string[];  // 可选参数，向后兼容
 }
 ```
 
@@ -71,7 +71,7 @@ UI 状态变更必须追溯到最终执行点，确认数据真正流通：
 ```
 UI 组件 (toggle)
     → React State (enabledSkillIds)
-    → useMemo 转换 (enabledSkillSlugs)
+    → useMemo 转换 (enabledSkills)
     → Session Hook (chatPayload)
     → REST API 请求体
     → Backend Controller
@@ -117,11 +117,11 @@ if (skillSlugs && skillSlugs.length > 0) {
 // ✅ 正确顺序
 const { skills, enabledSkillIds } = useSkills(tenantId)  // 数据提供者
 
-const enabledSkillSlugs = useMemo(() => {
+const enabledSkills = useMemo(() => {
   return skills.filter(s => enabledSkillIds.has(s.id)).map(s => s.slug)
 }, [skills, enabledSkillIds])  // 依赖上面的数据
 
-const session = useLessonPlanSession({ enabledSkillSlugs })  // 使用转换后的数据
+const session = useLessonPlanSession({ enabledSkills })  // 使用转换后的数据
 ```
 
 ### 4.2 最小改动原则
@@ -161,7 +161,7 @@ Solution Backend (port 300x)     CCAAS Backend (port 3001)
 完整的 skill 集成需要：
 
 1. **useSkills hook** - 管理 skill 列表和启用状态
-2. **ID → Slug 转换** - useMemo 转换 enabledSkillIds 为 enabledSkillSlugs
+2. **ID → Slug 转换** - useMemo 转换 enabledSkillIds 为 enabledSkills
 3. **传递给 session hook** - 通过 API 传给后端
 4. **SkillsPanel UI** (可选) - 展示 skill toggle 开关
 
@@ -169,12 +169,12 @@ Solution Backend (port 300x)     CCAAS Backend (port 3001)
 // 完整集成示例
 const { skills, enabledSkillIds, toggleSkill } = useSkills(tenantId)
 
-const enabledSkillSlugs = useMemo(() =>
+const enabledSkills = useMemo(() =>
   skills.filter(s => enabledSkillIds.has(s.id)).map(s => s.slug),
   [skills, enabledSkillIds]
 )
 
-const { sendMessage } = useSession({ enabledSkillSlugs })
+const { sendMessage } = useSession({ enabledSkills })
 ```
 
 ## 6. 常见错误与教训

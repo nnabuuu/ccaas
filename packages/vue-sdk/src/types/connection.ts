@@ -160,7 +160,7 @@ export interface UseAgentConnectionReturn {
 export interface UseSseChatV2Options {
   connection: UseAgentConnectionReturn
   tenantId: string
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   onOutputUpdate?: (update: import('./chat').OutputUpdate) => void
   onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void
   /** Page context to send with every message */

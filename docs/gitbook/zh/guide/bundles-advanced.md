@@ -25,12 +25,12 @@
   "sessionTemplates": {
     "teacher": {
       "description": "教师备课模式",
-      "enabledSkillSlugs": ["lesson-plan-designer"],
+      "enabledSkills": ["lesson-plan-designer"],
       "bundles": ["structured-output"]
     },
     "export": {
       "description": "导出模式（含文件附件）",
-      "enabledSkillSlugs": ["lesson-plan-designer"],
+      "enabledSkills": ["lesson-plan-designer"],
       "bundles": ["structured-output", "file-attachments", "shared-context"]
     }
   },

@@ -128,12 +128,12 @@ SKILL.md files are the authoritative source for skill usage.
    * Queries published skills and filters for enabled ones.
    *
    * @param tenantId - Tenant UUID
-   * @param enabledSkillSlugs - Optional filter for specific skill slugs
+   * @param enabledSkills - Optional filter for specific skill slugs
    * @returns Array of enabled skill info
    */
   async loadEnabledSkills(
     tenantId: string,
-    enabledSkillSlugs?: string[],
+    enabledSkills?: string[],
   ): Promise<SkillInfo[]> {
     // Query all published skills for tenant
     const allSkills = await this.skillsService.findPublished(tenantId);
@@ -141,9 +141,9 @@ SKILL.md files are the authoritative source for skill usage.
     // Filter by enabled status and optional slug list
     let filteredSkills = allSkills.filter(skill => skill.enabled);
 
-    if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+    if (enabledSkills && enabledSkills.length > 0) {
       filteredSkills = filteredSkills.filter(skill =>
-        enabledSkillSlugs.includes(skill.slug)
+        enabledSkills.includes(skill.slug)
       );
     }
 
@@ -280,18 +280,18 @@ After loading, call tools directly — no further ToolSearch needed.`;
    * Convenience method that loads skills and generates prompt in one call.
    *
    * @param tenantId - Tenant UUID
-   * @param enabledSkillSlugs - Skill slugs to include
+   * @param enabledSkills - Skill slugs to include
    * @returns System prompt string or undefined if no skills
    */
   async generateSystemPromptForSession(
     tenantId: string,
-    enabledSkillSlugs?: string[],
+    enabledSkills?: string[],
   ): Promise<string | undefined> {
-    if (!enabledSkillSlugs || enabledSkillSlugs.length === 0) {
+    if (!enabledSkills || enabledSkills.length === 0) {
       return undefined;
     }
 
-    const skills = await this.loadEnabledSkills(tenantId, enabledSkillSlugs);
+    const skills = await this.loadEnabledSkills(tenantId, enabledSkills);
 
     if (skills.length === 0) {
       return undefined;

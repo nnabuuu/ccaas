@@ -65,7 +65,7 @@ export class JobEntity {
   mcpServers?: Record<string, unknown>;
 
   @Column({ type: 'simple-json', nullable: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @Column({ type: 'datetime', nullable: true })
   startedAt?: Date;

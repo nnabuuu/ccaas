@@ -16,7 +16,7 @@ describe('resolveSessionTemplate', () => {
     'teacher-analysis': {
       description: '教师视图 - 完整分析功能',
       appendSystemPrompt: '你是教育领域的专业分析师',
-      enabledSkillSlugs: ['knowledge-point-matching', 'complete-analysis'],
+      enabledSkills: ['knowledge-point-matching', 'complete-analysis'],
       mcpServers: {
         'quiz-analyzer-tools': {
           command: 'node',
@@ -27,7 +27,7 @@ describe('resolveSessionTemplate', () => {
     'student-practice': {
       description: '学生视图 - 学习辅导功能',
       appendSystemPrompt: '你是一位耐心的学习伙伴',
-      enabledSkillSlugs: ['analyze-student-answer'],
+      enabledSkills: ['analyze-student-answer'],
     },
   }
 
@@ -36,7 +36,7 @@ describe('resolveSessionTemplate', () => {
 
     expect(template).toBeDefined()
     expect(template.description).toBe('教师视图 - 完整分析功能')
-    expect(template.enabledSkillSlugs).toEqual(['knowledge-point-matching', 'complete-analysis'])
+    expect(template.enabledSkills).toEqual(['knowledge-point-matching', 'complete-analysis'])
   })
 
   it('should throw error for invalid template name format', () => {
@@ -101,7 +101,7 @@ describe('mergeTemplateParams', () => {
   const mockTemplate: SessionTemplate = {
     description: '教师视图',
     appendSystemPrompt: 'Template prompt',
-    enabledSkillSlugs: ['skill-a', 'skill-b'],
+    enabledSkills: ['skill-a', 'skill-b'],
     mcpServers: {
       'template-server': {
         command: 'node',
@@ -125,7 +125,7 @@ describe('mergeTemplateParams', () => {
     const result = mergeTemplateParams(
       mockTemplate,
       {
-        enabledSkillSlugs: ['explicit-skill'],
+        enabledSkills: ['explicit-skill'],
         mcpServers: {
           'explicit-server': {
             command: 'node',
@@ -137,8 +137,8 @@ describe('mergeTemplateParams', () => {
       mockSolutionDefaults
     )
 
-    // enabledSkillSlugs: REPLACE strategy
-    expect(result.enabledSkillSlugs).toEqual(['explicit-skill'])
+    // enabledSkills: REPLACE strategy
+    expect(result.enabledSkills).toEqual(['explicit-skill'])
 
     // mcpServers: MERGE strategy (all three layers)
     expect(result.mcpServers).toMatchObject({
@@ -158,7 +158,7 @@ describe('mergeTemplateParams', () => {
       mockSolutionDefaults
     )
 
-    expect(result.enabledSkillSlugs).toEqual(['skill-a', 'skill-b'])
+    expect(result.enabledSkills).toEqual(['skill-a', 'skill-b'])
     expect(result.mcpServers).toMatchObject({
       'default-server': { command: 'node', args: ['default.js'] },
       'template-server': { command: 'node', args: ['template.js'] },
@@ -173,7 +173,7 @@ describe('mergeTemplateParams', () => {
       mockSolutionDefaults
     )
 
-    expect(result.enabledSkillSlugs).toBeUndefined()
+    expect(result.enabledSkills).toBeUndefined()
     expect(result.mcpServers).toMatchObject({
       'default-server': { command: 'node', args: ['default.js'] },
     })
@@ -236,7 +236,7 @@ describe('mergeTemplateParams', () => {
       undefined
     )
 
-    expect(result.enabledSkillSlugs).toEqual(['skill-a', 'skill-b'])
+    expect(result.enabledSkills).toEqual(['skill-a', 'skill-b'])
     expect(result.mcpServers).toMatchObject({
       'template-server': { command: 'node', args: ['template.js'] },
     })
@@ -253,28 +253,28 @@ describe('mergeTemplateParams', () => {
     expect(result.skillPath).toBeUndefined()
   })
 
-  it('should replace enabledSkillSlugs, not merge', () => {
+  it('should replace enabledSkills, not merge', () => {
     const result = mergeTemplateParams(
-      { enabledSkillSlugs: ['template-skill-1', 'template-skill-2'] },
-      { enabledSkillSlugs: ['explicit-skill'] },
+      { enabledSkills: ['template-skill-1', 'template-skill-2'] },
+      { enabledSkills: ['explicit-skill'] },
       undefined
     )
 
     // REPLACE strategy: only explicit skills
-    expect(result.enabledSkillSlugs).toEqual(['explicit-skill'])
-    expect(result.enabledSkillSlugs).not.toContain('template-skill-1')
-    expect(result.enabledSkillSlugs).not.toContain('template-skill-2')
+    expect(result.enabledSkills).toEqual(['explicit-skill'])
+    expect(result.enabledSkills).not.toContain('template-skill-1')
+    expect(result.enabledSkills).not.toContain('template-skill-2')
   })
 
-  it('should handle empty enabledSkillSlugs array as fallback to template', () => {
+  it('should handle empty enabledSkills array as fallback to template', () => {
     const result = mergeTemplateParams(
-      { enabledSkillSlugs: ['template-skill'] },
-      { enabledSkillSlugs: [] }, // Empty array has no effect, falls back to template
+      { enabledSkills: ['template-skill'] },
+      { enabledSkills: [] }, // Empty array has no effect, falls back to template
       undefined
     )
 
     // Empty array is ignored, template value is used
-    expect(result.enabledSkillSlugs).toEqual(['template-skill'])
+    expect(result.enabledSkills).toEqual(['template-skill'])
   })
 
   it('should return empty object when all inputs are empty', () => {
@@ -290,7 +290,7 @@ describe('mergeTemplateParams', () => {
   it('should handle partial template', () => {
     const partialTemplate: SessionTemplate = {
       description: 'Partial template',
-      enabledSkillSlugs: ['skill-1'],
+      enabledSkills: ['skill-1'],
       // No mcpServers, no skillPath, no appendSystemPrompt
     }
 
@@ -300,7 +300,7 @@ describe('mergeTemplateParams', () => {
       mockSolutionDefaults
     )
 
-    expect(result.enabledSkillSlugs).toEqual(['skill-1'])
+    expect(result.enabledSkills).toEqual(['skill-1'])
     expect(result.mcpServers).toMatchObject({
       'default-server': { command: 'node', args: ['default.js'] },
     })
@@ -326,7 +326,7 @@ describe('mergeTemplateParams', () => {
 describe('mergeTemplateParams - Priority Rules', () => {
   it('should follow priority: explicit > template > defaults', () => {
     const template: SessionTemplate = {
-      enabledSkillSlugs: ['template-skill'],
+      enabledSkills: ['template-skill'],
       mcpServers: {
         'shared': { command: 'template', args: [] },
         'template-only': { command: 'node', args: [] },
@@ -335,7 +335,7 @@ describe('mergeTemplateParams - Priority Rules', () => {
     }
 
     const explicit = {
-      enabledSkillSlugs: ['explicit-skill'],
+      enabledSkills: ['explicit-skill'],
       mcpServers: {
         'shared': { command: 'explicit', args: [] },
         'explicit-only': { command: 'node', args: [] },
@@ -353,8 +353,8 @@ describe('mergeTemplateParams - Priority Rules', () => {
 
     const result = mergeTemplateParams(template, explicit, defaults)
 
-    // enabledSkillSlugs: explicit wins
-    expect(result.enabledSkillSlugs).toEqual(['explicit-skill'])
+    // enabledSkills: explicit wins
+    expect(result.enabledSkills).toEqual(['explicit-skill'])
 
     // mcpServers: explicit > template > defaults (all merged, explicit overwrites)
     expect(result.mcpServers?.['shared']?.command).toBe('explicit')

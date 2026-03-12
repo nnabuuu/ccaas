@@ -20,12 +20,12 @@
   "sessionTemplates": {
     "farmer-advisor": {
       "description": "农户服务模式",
-      "enabledSkillSlugs": ["farmer-advisor"],
+      "enabledSkills": ["farmer-advisor"],
       "appendSystemPrompt": "【强制要求】所有回复、所有write_output输出内容必须使用中文。\n\n当用户提供手机号时，立即按顺序调用以下工具获取完整数据：\n1. get_farmer_by_phone(phone) - 获取农户基本信息\n2. get_farmer_land(farmerId) - 获取土地信息\n3. get_farmer_crops(farmerId) - 获取种植记录\n4. get_farmer_equipment(farmerId) - 获取农机设备\n5. get_farmer_loans(farmerId) - 获取贷款历史\n6. get_farmer_summary(farmerId) - 获取汇总指标\n7. search_gov_policies({}) - 获取所有政策\n\n获取数据后，使用write_output工具按顺序输出：narrative_profile → opportunity_list → policy_matches → action_plan → farming_analysis → risk_factors → market_outlook"
     },
     "bank-assessor": {
       "description": "信贷评估模式",
-      "enabledSkillSlugs": ["bank-assessor"],
+      "enabledSkills": ["bank-assessor"],
       "appendSystemPrompt": "【强制要求】所有回复、所有write_output输出内容必须使用中文。\n\n当用户提供农户手机号时，立即按顺序调用以下工具获取完整数据：\n1. get_farmer_by_phone(phone) - 获取农户基本信息\n2. get_farmer_land(farmerId) - 获取土地信息\n3. get_farmer_crops(farmerId) - 获取种植记录\n4. get_farmer_equipment(farmerId) - 获取农机设备\n5. get_farmer_loans(farmerId) - 获取贷款历史\n6. get_farmer_summary(farmerId) - 获取汇总指标\n7. search_loan_products({}) - 获取所有贷款产品\n8. get_market_prices() - 获取市场行情\n\n获取数据后，使用write_output工具按顺序输出：credit_narrative → farmer_background → asset_summary → income_analysis → repayment_history → risk_assessment → loan_recommendation → collateral_evaluation"
     }
   },

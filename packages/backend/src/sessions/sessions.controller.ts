@@ -226,7 +226,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
       }
     }
 
-    let { enabledSkillSlugs } = data;
+    let { enabledSkills } = data;
 
     if (!data.tenantId) {
       this.streamRegistry.emit(sessionId, {
@@ -249,20 +249,20 @@ Response is \`text/event-stream\`, closed when Turn completes.
 
       // Auto-load tenant skills if not provided AND no template will resolve them
       this.logger.debug(
-        `sendMessage: templateName=${data.templateName ?? 'none'}, enabledSkillSlugs=${JSON.stringify(enabledSkillSlugs ?? null)}`,
+        `sendMessage: templateName=${data.templateName ?? 'none'}, enabledSkills=${JSON.stringify(enabledSkills ?? null)}`,
       );
-      if ((!enabledSkillSlugs || enabledSkillSlugs.length === 0) && !data.templateName) {
+      if ((!enabledSkills || enabledSkills.length === 0) && !data.templateName) {
         const allSkills = await this.skillsService.findPublished(resolvedTenantId);
-        enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
+        enabledSkills = allSkills.filter(s => s.enabled).map(s => s.slug);
       }
 
       // Generate skill system prompt (resolved at enqueue time so the worker
       // inherits exactly what the caller intended even if skills change later)
       let systemPrompt: string | undefined;
-      if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+      if (enabledSkills && enabledSkills.length > 0) {
         systemPrompt = await this.skillManagementService.generateSystemPromptForSession(
           resolvedTenantId,
-          enabledSkillSlugs,
+          enabledSkills,
         );
       }
 
@@ -283,11 +283,12 @@ Response is \`text/event-stream\`, closed when Turn completes.
         {
           message: data.message,
           context: data.context,
-          enabledSkillSlugs,
+          enabledSkills,
           systemPrompt,
           templateName: data.templateName,
           autoClose: data.autoClose,
           subscriberId,
+          attachments: data.attachments?.map(a => ({ type: a.type, path: a.path })),
         },
       );
       // Return — SSE stays open until the worker calls streamRegistry.closeSession()

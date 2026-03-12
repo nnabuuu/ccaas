@@ -88,7 +88,7 @@ function App() {
   const chat = useAgentChat({
     connection,
     tenantId: TENANT_ID,
-    enabledSkillSlugs: ['problem-explainer'],
+    enabledSkills: ['problem-explainer'],
     sessionTemplate: 'problem-analysis',
     onOutputUpdate: handleOutputUpdate,
   })

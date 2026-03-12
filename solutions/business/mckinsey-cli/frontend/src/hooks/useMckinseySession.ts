@@ -34,7 +34,7 @@ export function useMckinseySession() {
   const chat = useAgentChatSse({
     connection,
     tenantId: TENANT_ID,
-    enabledSkillSlugs: [SKILL_SLUG],
+    enabledSkills: [SKILL_SLUG],
   })
 
   // ===== Status =====

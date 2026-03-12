@@ -31,7 +31,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
   const {
     connection,
     tenantId,
-    enabledSkillSlugs,
+    enabledSkills,
     onOutputUpdate,
     onTokenUsage,
     onToolActivity,
@@ -386,8 +386,8 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     // ========================================================================
     const resolvedParams: ResolvedTemplateParams = {}
 
-    if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
-      resolvedParams.enabledSkillSlugs = enabledSkillSlugs
+    if (enabledSkills && enabledSkills.length > 0) {
+      resolvedParams.enabledSkills = enabledSkills
     }
 
     // Build shared payload (without clientId for SSE)
@@ -400,7 +400,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       // Always send sessionTemplate to backend for server-side resolution
       if (sessionTemplate) payload.templateName = sessionTemplate
 
-      if (resolvedParams.enabledSkillSlugs?.length) payload.enabledSkillSlugs = resolvedParams.enabledSkillSlugs
+      if (resolvedParams.enabledSkills?.length) payload.enabledSkills = resolvedParams.enabledSkills
       if (resolvedParams.appendSystemPrompt) payload.appendSystemPrompt = resolvedParams.appendSystemPrompt
       if (sendOptions?.attachments?.length) payload.attachments = sendOptions.attachments
 
@@ -462,7 +462,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         throw err
       }
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkillSlugs, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkills, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
 
   const clearMessages = useCallback(() => {
     setMessages([])

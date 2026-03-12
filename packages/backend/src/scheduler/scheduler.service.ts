@@ -85,7 +85,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       scheduleValue: dto.scheduleValue,
       status: 'active',
       mcpServers: dto.mcpServers,
-      enabledSkillSlugs: dto.enabledSkillSlugs,
+      enabledSkills: dto.enabledSkills,
       maxConcurrent: dto.maxConcurrent ?? 1,
       maxRetries: dto.maxRetries ?? 0,
       retryDelayMs: dto.retryDelayMs ?? 60000,

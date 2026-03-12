@@ -87,7 +87,7 @@ async function collectSSEEvents(opts: {
     body: JSON.stringify({
       message,
       tenantId: TENANT_ID,
-      enabledSkillSlugs: [SKILL_SLUG],
+      enabledSkills: [SKILL_SLUG],
       mcpServers: {
         'rehab-tools': {
           command: 'node',
@@ -288,7 +288,7 @@ describe('Group C: Full E2E with AI', () => {
           body: JSON.stringify({
             message: TEST_MESSAGE,
             tenantId: TENANT_ID,
-            enabledSkillSlugs: [SKILL_SLUG],
+            enabledSkills: [SKILL_SLUG],
             mcpServers: { 'rehab-tools': { command: 'node', args: [distPath] } },
           }),
           signal: AbortSignal.timeout(10_000),

@@ -58,7 +58,7 @@ export interface MessageProcessingInput {
   context?: Record<string, unknown>;
 
   /** Enabled skill slugs to sync */
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   /** File attachments (REST only) */
   attachments?: ResolvedAttachment[];
@@ -152,7 +152,7 @@ export class CompletionOrchestrationService {
     // These are populated from template resolution below
     let mcpServers: Record<string, McpServerConfig> | undefined;
     let skillPath: string | undefined;
-    let { enabledSkillSlugs, systemPrompt } = input;
+    let { enabledSkills, systemPrompt } = input;
 
     const sessionId = session.sessionId;
 
@@ -206,12 +206,10 @@ export class CompletionOrchestrationService {
       if (tmpl) {
         this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
         mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig> | undefined;
-        if (!enabledSkillSlugs && Array.isArray(tmpl['enabledSkills'])) {
+        if (!enabledSkills && Array.isArray(tmpl['enabledSkills'])) {
           const resolved = this.resolveEnabledSkills(tmpl['enabledSkills']);
-          enabledSkillSlugs = resolved.slugs;
+          enabledSkills = resolved.slugs;
           skillPromptModeMap = resolved.promptModeMap;
-        } else if (!enabledSkillSlugs && tmpl['enabledSkillSlugs']) {
-          enabledSkillSlugs = tmpl['enabledSkillSlugs'];
         }
         if (!systemPrompt && tmpl['appendSystemPrompt'])     systemPrompt = tmpl['appendSystemPrompt'];
         skillPath = tmpl['skillPath'] as string | undefined;
@@ -221,17 +219,17 @@ export class CompletionOrchestrationService {
           session.sessionTtlMs = Math.min(session.sessionTtlMs ?? 300000, tmpl['sessionTtlMs'] as number);
         }
         this.logger.debug(
-          `Template "${effectiveTemplateName}" resolved: enabledSkillSlugs=${JSON.stringify(enabledSkillSlugs)}, ` +
+          `Template "${effectiveTemplateName}" resolved: enabledSkills=${JSON.stringify(enabledSkills)}, ` +
           `skillPromptMode=${skillPromptMode}, skillPath=${skillPath}, ` +
           `hasSystemPrompt=${!!systemPrompt}, hasMcpServers=${!!mcpServers}`,
         );
       } else {
         this.logger.warn(`Template "${effectiveTemplateName}" not found for tenant ${resolvedTenantId}`);
         // Fallback: load all tenant skills to prevent silent no-skill degradation
-        if (!enabledSkillSlugs) {
+        if (!enabledSkills) {
           const allSkills = await this.skillsService.findPublished(resolvedTenantId);
-          enabledSkillSlugs = allSkills.filter(s => s.enabled).map(s => s.slug);
-          this.logger.warn(`Template fallback: loaded ${enabledSkillSlugs.length} tenant skills`);
+          enabledSkills = allSkills.filter(s => s.enabled).map(s => s.slug);
+          this.logger.warn(`Template fallback: loaded ${enabledSkills.length} tenant skills`);
         }
       }
     }
@@ -315,7 +313,7 @@ export class CompletionOrchestrationService {
         resolvedTenantId,
         {
           publishedOnly: true,
-          skillSlugs: enabledSkillSlugs,
+          skillSlugs: enabledSkills,
         },
       );
       session.skillSyncedAt = new Date();
@@ -341,7 +339,7 @@ export class CompletionOrchestrationService {
       try {
         const skills = await this.skillManagementService.loadEnabledSkills(
           resolvedTenantId,
-          enabledSkillSlugs,
+          enabledSkills,
         );
         let skillPromptContent: string | undefined;
 
@@ -438,9 +436,9 @@ export class CompletionOrchestrationService {
         }
 
         // Step 5b: Fallback for sibling skill directories
-        if (enabledSkillSlugs && enabledSkillSlugs.length > 0) {
+        if (enabledSkills && enabledSkills.length > 0) {
           const skillsParentDir = path.dirname(skillSourceDir);
-          for (const slug of enabledSkillSlugs) {
+          for (const slug of enabledSkills) {
             if (slug === skillName) continue;
             const siblingTarget = path.join(session.workspaceDir, '.claude', 'skills', slug);
             const siblingSkillMd = path.join(siblingTarget, 'SKILL.md');

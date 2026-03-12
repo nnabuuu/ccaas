@@ -279,11 +279,11 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
     "teacher": {
       "description": "Teacher mode",
       "appendSystemPrompt": "You are interacting with a teacher. Focus on pedagogical guidance.",
-      "enabledSkillSlugs": ["analyze-student-answer"]
+      "enabledSkills": ["analyze-student-answer"]
     },
     "student": {
       "description": "Student mode",
-      "enabledSkillSlugs": ["three-column-analysis"]
+      "enabledSkills": ["three-column-analysis"]
     }
   }
 }
@@ -296,8 +296,8 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 | `<templateName>` | object | Template name (e.g. `teacher`, `student`) |
 | `description` | string | Template description |
 | `appendSystemPrompt` | string (optional) | Text appended to the system prompt |
-| `enabledSkillSlugs` | string[] (optional) | Skill slugs enabled for this template |
-| `enabledSkills` | `Array<string \| { slug, promptMode? }>` (optional) | Enabled skills with per-skill promptMode override. Takes priority over `enabledSkillSlugs` |
+| `enabledSkills` | string[] (optional) | Skill slugs enabled for this template |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` (optional) | Enabled skills with per-skill promptMode override. Takes priority over `enabledSkills` |
 | `mcpServers` | object (optional) | MCP server configurations (same format as top-level `mcpServers`) |
 | `model` | string (optional) | Model override (e.g. `claude-opus-4-6`) |
 | `skillPromptMode` | `"protocol"` \| `"inline"` (optional) | How SKILL.md content is delivered to the agent: `protocol` = agent reads at runtime (default); `inline` = embedded in system prompt before start |
@@ -319,7 +319,7 @@ Preset AI behavior configurations for different usage scenarios. Automatically u
 }
 ```
 
-**Resolution rules:** String elements inherit the global `skillPromptMode`; object elements use their own `promptMode` override. When both `enabledSkills` and `enabledSkillSlugs` are present, `enabledSkills` takes priority. See [Per-Skill Prompt Mode](../guide/admin-session-templates.md#per-skill-prompt-mode) for details.
+**Resolution rules:** String elements inherit the global `skillPromptMode`; object elements use their own `promptMode` override. When both `enabledSkills` and `enabledSkills` are present, `enabledSkills` takes priority. See [Per-Skill Prompt Mode](../guide/admin-session-templates.md#per-skill-prompt-mode) for details.
 
 > For full details — Admin UI, API endpoints, merge rules, security, and troubleshooting — see the [Session Templates Management guide](../guide/admin-session-templates.md).
 >

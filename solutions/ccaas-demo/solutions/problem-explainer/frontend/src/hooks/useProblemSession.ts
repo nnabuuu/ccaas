@@ -6,7 +6,7 @@ import { Message, OutputUpdate, SyncField } from '../types';
 interface UseProblemSessionOptions {
   tenantId?: string;
   ccaasUrl?: string;
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 }
 
 interface UseProblemSessionReturn {
@@ -20,7 +20,7 @@ interface UseProblemSessionReturn {
 }
 
 export function useProblemSession(options: UseProblemSessionOptions = {}): UseProblemSessionReturn {
-  const { tenantId = 'problem-explainer', ccaasUrl = '', enabledSkillSlugs = ['problem-explainer'] } = options;
+  const { tenantId = 'problem-explainer', ccaasUrl = '', enabledSkills = ['problem-explainer'] } = options;
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isConnected, setIsConnected] = useState(false);
@@ -180,7 +180,7 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
               },
             },
             skillPath: 'skills/problem-explainer/SKILL.md',
-            enabledSkillSlugs,
+            enabledSkills,
           }),
         });
 
@@ -193,7 +193,7 @@ export function useProblemSession(options: UseProblemSessionOptions = {}): UsePr
         setIsThinking(false);
       }
     },
-    [tenantId, ccaasUrl, enabledSkillSlugs]
+    [tenantId, ccaasUrl, enabledSkills]
   );
 
   return {

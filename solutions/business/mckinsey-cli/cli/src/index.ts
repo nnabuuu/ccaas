@@ -195,7 +195,7 @@ function sendMessage(message: string) {
     message,
     tenantId: TENANT_ID,
     clientId,
-    enabledSkillSlugs: [SKILL_SLUG],
+    enabledSkills: [SKILL_SLUG],
     // Do NOT set resumeSession: true — that forces --resume even for new sessions,
     // and --resume requires an existing Claude CLI session (fails for fresh sessions)
   })

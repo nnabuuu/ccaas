@@ -44,7 +44,7 @@ export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Retur
   const {
     connection,
     tenantId,
-    enabledSkillSlugs,
+    enabledSkills,
     onOutputUpdate,
     onTokenUsage,
     context,
@@ -302,7 +302,7 @@ export function useAgentChatSse(options: UseSseChatV2Options): UseSseChatV2Retur
       tenantId,
     }
     if (sessionTemplate) payload.templateName = sessionTemplate
-    if (enabledSkillSlugs?.length) payload.enabledSkillSlugs = enabledSkillSlugs
+    if (enabledSkills?.length) payload.enabledSkills = enabledSkills
     if (sendOptions?.attachments?.length) payload.attachments = sendOptions.attachments
     const messageContext = sendOptions?.context || context
     if (messageContext) payload.context = messageContext

@@ -173,7 +173,7 @@ describe('SolutionLoaderService', () => {
         mcpServers: {
           'live-lesson-tools': mcpDef(['mcp-server/dist/index.js'], { description: 'tools' }),
         },
-        sessionTemplates: { teaching: { enabledSkillSlugs: ['test-skill'] } },
+        sessionTemplates: { teaching: { enabledSkills: ['test-skill'] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -192,7 +192,7 @@ describe('SolutionLoaderService', () => {
       const absolutePath = '/opt/mcp/server.js';
       const config = makeV3Config({
         mcpServers: { tools: mcpDef([absolutePath]) },
-        sessionTemplates: { default: { enabledSkillSlugs: [] } },
+        sessionTemplates: { default: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -205,7 +205,7 @@ describe('SolutionLoaderService', () => {
     it('passes through non-.js/.ts args unchanged', async () => {
       const config = makeV3Config({
         mcpServers: { tools: { type: 'stdio', command: 'python', args: ['-m', 'mymodule', '--port', '3000'] } },
-        sessionTemplates: { default: { enabledSkillSlugs: [] } },
+        sessionTemplates: { default: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -218,7 +218,7 @@ describe('SolutionLoaderService', () => {
     it('resolves .ts args as well as .js', async () => {
       const config = makeV3Config({
         mcpServers: { tools: { type: 'stdio', command: 'ts-node', args: ['src/server.ts'] } },
-        sessionTemplates: { default: { enabledSkillSlugs: [] } },
+        sessionTemplates: { default: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -233,7 +233,7 @@ describe('SolutionLoaderService', () => {
     it('injects MCP servers into a template that has no mcpServers', async () => {
       const config = makeV3Config({
         mcpServers: { tools: mcpDef(['dist/index.js']) },
-        sessionTemplates: { teaching: { enabledSkillSlugs: [] } },
+        sessionTemplates: { teaching: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -249,7 +249,7 @@ describe('SolutionLoaderService', () => {
       const config = makeV3Config({
         mcpServers: { 'solution-tools': mcpDef(['mcp-server/dist/index.js']) },
         sessionTemplates: {
-          custom: { enabledSkillSlugs: [], mcpServers: ownMcpServers } as any,
+          custom: { enabledSkills: [], mcpServers: ownMcpServers } as any,
         },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
@@ -264,7 +264,7 @@ describe('SolutionLoaderService', () => {
     it('does not inject anything when solution has no MCP servers', async () => {
       const config = makeV3Config({
         mcpServers: {},
-        sessionTemplates: { teaching: { enabledSkillSlugs: [] } },
+        sessionTemplates: { teaching: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -281,7 +281,7 @@ describe('SolutionLoaderService', () => {
             toolEventTriggers: [{ toolName: 'advance_beat', eventType: 'output_update' }],
           }),
         },
-        sessionTemplates: { teaching: { enabledSkillSlugs: [] } },
+        sessionTemplates: { teaching: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -296,7 +296,7 @@ describe('SolutionLoaderService', () => {
     it('leaves path traversal args unchanged and logs a warning', async () => {
       const config = makeV3Config({
         mcpServers: { tools: mcpDef(['../../outside/server.js']) },
-        sessionTemplates: { default: { enabledSkillSlugs: [] } },
+        sessionTemplates: { default: { enabledSkills: [] } },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
 
@@ -311,8 +311,8 @@ describe('SolutionLoaderService', () => {
       const config = makeV3Config({
         mcpServers: { tools: mcpDef(['mcp-server/dist/index.js']) },
         sessionTemplates: {
-          alpha: { enabledSkillSlugs: [] },
-          beta:  { enabledSkillSlugs: [] },
+          alpha: { enabledSkills: [] },
+          beta:  { enabledSkills: [] },
         },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
@@ -513,7 +513,7 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output', 'file-attachments'],
           },
         },
@@ -547,7 +547,7 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output', 'file-attachments'],
           },
         },
@@ -580,7 +580,7 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output'],
           },
         },
@@ -601,11 +601,11 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output'],
           },
           review: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['file-attachments'],
           },
         },
@@ -656,7 +656,7 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output'],
           },
         },
@@ -684,7 +684,7 @@ describe('SolutionLoaderService', () => {
       const config = makeV3Config({
         mode: 'advanced',
         sessionTemplates: {
-          default: { enabledSkillSlugs: [] },
+          default: { enabledSkills: [] },
         },
       });
       scanner.scanSolutions.mockResolvedValue([makeSolutionMetadata({ config })]);
@@ -726,7 +726,7 @@ describe('SolutionLoaderService', () => {
         mode: 'advanced',
         sessionTemplates: {
           lesson: {
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             bundles: ['structured-output'],
           },
         },

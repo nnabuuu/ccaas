@@ -30,7 +30,7 @@ describe('HeadlessExecutionService', () => {
     maxRetries: 0,
     retryDelayMs: 60000,
     timeoutMs: 600000,
-    enabledSkillSlugs: [],
+    enabledSkills: [],
   };
 
   const mockExecution: Partial<ScheduledTaskExecution> = {

@@ -741,14 +741,15 @@ export class SolutionLoaderService {
       );
     }
 
-    // Validate that every enabledSkillSlugs entry is registered for this tenant
+    // Validate that every enabledSkills entry is registered for this tenant
     for (const [templateName, template] of Object.entries(templates)) {
-      for (const slug of template.enabledSkillSlugs ?? []) {
+      for (const entry of template.enabledSkills ?? []) {
+        const slug = typeof entry === 'string' ? entry : entry.slug;
         const skill = await this.skills.findOne(tenantId, slug);
         if (!skill) {
           warnings.push(
             `Session template "${templateName}": skill slug "${slug}" not found in tenant — ` +
-            `template saved but enabledSkillSlugs may not work until skill is registered`,
+            `template saved but enabledSkills may not work until skill is registered`,
           );
         }
       }

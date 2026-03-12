@@ -25,12 +25,12 @@ Set `mode: "advanced"` in your `solution.json` and declare `bundles` in each ses
   "sessionTemplates": {
     "teacher": {
       "description": "Teacher lesson planning mode",
-      "enabledSkillSlugs": ["lesson-plan-designer"],
+      "enabledSkills": ["lesson-plan-designer"],
       "bundles": ["structured-output"]
     },
     "export": {
       "description": "Export mode (with file attachments)",
-      "enabledSkillSlugs": ["lesson-plan-designer"],
+      "enabledSkills": ["lesson-plan-designer"],
       "bundles": ["structured-output", "file-attachments", "shared-context"]
     }
   },

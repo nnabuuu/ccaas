@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MessageWorkerService } from './message-worker.service';
 import { MessageQueueService } from './message-queue.service';
 import { CompletionOrchestrationService } from './completion-orchestration.service';
+import { AttachmentService } from './attachment.service';
 import { SessionService } from '../session.service';
 import { StreamRegistryService } from './stream-registry.service';
 import { MessageQueue } from '../entities/message-queue.entity';
@@ -13,6 +14,7 @@ describe('MessageWorkerService — processMessage', () => {
   let service: MessageWorkerService;
   let queueService: any;
   let orchestrationService: any;
+  let attachmentService: any;
   let sessionService: any;
   let streamRegistry: any;
 
@@ -33,7 +35,7 @@ describe('MessageWorkerService — processMessage', () => {
       tenantId: 'tenant-123',
       payload: {
         message: 'test message',
-        enabledSkillSlugs: ['tutor'],
+        enabledSkills: ['tutor'],
         systemPrompt: 'You are a tutor.',
         templateName: undefined,
         autoClose: false,
@@ -84,11 +86,16 @@ describe('MessageWorkerService — processMessage', () => {
       closeSession: jest.fn(),
     };
 
+    attachmentService = {
+      resolveAttachments: jest.fn().mockReturnValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MessageWorkerService,
         { provide: MessageQueueService, useValue: queueService },
         { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: AttachmentService, useValue: attachmentService },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
       ],
@@ -241,6 +248,44 @@ describe('MessageWorkerService — processMessage', () => {
         systemPrompt: 'You are a helpful tutor.',
         templateName: 'teacher',
       }),
+    );
+  });
+
+  // ── Attachment wiring ─────────────────────────────────────────────────────
+
+  it('resolves attachments from payload and passes to orchestrateMessage', async () => {
+    const resolvedAttachments = [
+      { type: 'image', absolutePath: '/tmp/test/photo.png', mimeType: 'image/png' },
+    ];
+    attachmentService.resolveAttachments.mockReturnValue(resolvedAttachments);
+
+    await process(makeQueueItem({
+      payload: {
+        message: 'see attached',
+        attachments: [{ type: 'image', path: 'photo.png' }],
+      },
+    }));
+
+    expect(attachmentService.resolveAttachments).toHaveBeenCalledWith(
+      [{ type: 'image', path: 'photo.png' }],
+      '/tmp/test', // mockSession.workspaceDir
+    );
+    expect(orchestrationService.orchestrateMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ attachments: resolvedAttachments }),
+    );
+  });
+
+  it('does not call resolveAttachments when attachments is absent', async () => {
+    await process(makeQueueItem());
+
+    expect(attachmentService.resolveAttachments).not.toHaveBeenCalled();
+  });
+
+  it('passes attachments=undefined to orchestrateMessage when no attachments', async () => {
+    await process(makeQueueItem());
+
+    expect(orchestrationService.orchestrateMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ attachments: undefined }),
     );
   });
 
@@ -417,6 +462,7 @@ describe('MessageWorkerService — pollAndProcess', () => {
         MessageWorkerService,
         { provide: MessageQueueService, useValue: queueService },
         { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
       ],
@@ -562,6 +608,7 @@ describe('MessageWorkerService — lifecycle', () => {
         MessageWorkerService,
         { provide: MessageQueueService, useValue: queueService },
         { provide: CompletionOrchestrationService, useValue: orchestrationService },
+        { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: sessionService },
         { provide: StreamRegistryService, useValue: streamRegistry },
       ],
@@ -609,6 +656,7 @@ describe('MessageWorkerService — getStatus', () => {
         MessageWorkerService,
         { provide: MessageQueueService, useValue: { getSessionsWithPendingMessages: jest.fn().mockResolvedValue([]), resetStaleProcessingMessages: jest.fn().mockResolvedValue(0) } },
         { provide: CompletionOrchestrationService, useValue: {} },
+        { provide: AttachmentService, useValue: { resolveAttachments: jest.fn().mockReturnValue(undefined) } },
         { provide: SessionService, useValue: {} },
         { provide: StreamRegistryService, useValue: {} },
       ],

@@ -152,7 +152,7 @@ export function useLessonPlanSession(options) {
     connection,
     tenantId: 'lesson-plan-designer',
     sessionTemplate: 'lesson-plan-designer',  // MCP servers, skills resolved server-side
-    enabledSkillSlugs,
+    enabledSkills,
     context,
     onOutputUpdate: (update) => {
       // Bridge output_update to domain-specific sync logic
@@ -215,7 +215,7 @@ Manages message state, REST-based sending, and SSE event processing.
 | `connection` | `UseAgentConnectionReturn` | From `useAgentConnection` |
 | `tenantId` | `string` | Tenant identifier |
 | `sessionTemplate` | `string` | Session template name — MCP servers, skills, and prompts are resolved server-side |
-| `enabledSkillSlugs` | `string[]` | Override which skills to enable (replaces template value) |
+| `enabledSkills` | `string[]` | Override which skills to enable (replaces template value) |
 | `context` | `PageContext \| null` | Page context from `usePageContext` |
 | `onOutputUpdate` | `(update: OutputUpdate) => void` | Callback for structured field updates |
 

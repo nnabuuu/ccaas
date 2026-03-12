@@ -64,7 +64,7 @@ export class CreateCompletionDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @ApiProperty({
     description: '追加的系统提示词（由 Session Template 传递）/ Additional system prompt (passed from Session Template)',

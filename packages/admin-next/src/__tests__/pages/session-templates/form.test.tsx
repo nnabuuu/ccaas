@@ -87,7 +87,7 @@ describe('SessionTemplateFormPage – autoClose toggle', () => {
           template: {
             description: 'Test',
             appendSystemPrompt: '',
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             mcpServers: {},
             autoClose: true,
           },
@@ -108,7 +108,7 @@ describe('SessionTemplateFormPage – autoClose toggle', () => {
           template: {
             description: 'Test',
             appendSystemPrompt: '',
-            enabledSkillSlugs: [],
+            enabledSkills: [],
             mcpServers: {},
           },
         },
@@ -130,7 +130,7 @@ describe('SessionTemplateFormPage – autoClose toggle', () => {
       data: {
         data: {
           name: 'my-template',
-          template: { description: '', appendSystemPrompt: '', enabledSkillSlugs: [], mcpServers: {} },
+          template: { description: '', appendSystemPrompt: '', enabledSkills: [], mcpServers: {} },
         },
       },
     } as any)

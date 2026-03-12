@@ -15,7 +15,7 @@
   "sessionTemplates": {
     "mosaic-designer": {
       "description": "AI 乐高马赛克设计 - 从图片生成 2D 乐高拼图",
-      "enabledSkillSlugs": ["lego-mosaic-designer"]
+      "enabledSkills": ["lego-mosaic-designer"]
     }
   },
   "syncFields": [

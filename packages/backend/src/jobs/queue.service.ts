@@ -23,7 +23,7 @@ export interface JobPayload {
   prompt: string;
   tenantId: string;
   mcpServers?: Record<string, unknown>;
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
   resumeSessionId?: string;
 }
 

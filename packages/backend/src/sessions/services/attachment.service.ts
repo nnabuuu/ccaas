@@ -83,9 +83,18 @@ export class AttachmentService {
       return undefined;
     }
 
+    const normalizedWorkspace = path.resolve(workspaceDir);
+
     const resolved = attachments.map(a => {
-      const absolutePath = path.join(workspaceDir, a.path);
+      const absolutePath = path.resolve(workspaceDir, a.path);
       const mimeType = this.guessMimeType(a.path);
+
+      // Path traversal protection — ensure resolved path stays within workspace
+      if (!absolutePath.startsWith(normalizedWorkspace + path.sep) && absolutePath !== normalizedWorkspace) {
+        throw new BadRequestException(
+          `Invalid attachment path (path traversal detected): ${a.path}`,
+        );
+      }
 
       // Optionally validate file exists
       if (validateExistence && !fs.existsSync(absolutePath)) {

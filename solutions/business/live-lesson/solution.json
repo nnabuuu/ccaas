@@ -25,7 +25,7 @@
   "sessionTemplates": {
     "teaching": {
       "description": "苏格拉底式教学会话 - 动态板书引导",
-      "enabledSkillSlugs": ["socratic-teacher"],
+      "enabledSkills": ["socratic-teacher"],
       "skillPromptMode": "inline",
       "appendSystemPrompt": ""
     }

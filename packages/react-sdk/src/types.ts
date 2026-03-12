@@ -406,7 +406,7 @@ export interface PageContext {
 export interface UseAgentChatOptions {
   connection: UseAgentConnectionReturn
   tenantId: string
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   onOutputUpdate?: (update: OutputUpdate) => void
   onTokenUsage?: (usage: { inputTokens: number; outputTokens: number; cacheReadTokens?: number }) => void
   /**
@@ -625,7 +625,7 @@ export interface CompletionParams {
   clientId: string
   message: string
   tenantId: string
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   attachments?: { type: string; path: string }[]
   templateName?: string
 }

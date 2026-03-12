@@ -42,7 +42,7 @@ export interface UseSseChatOptions {
   sessionId: string
   tenantId: string
   mcpServers?: Record<string, { command: string; args: string[]; env?: Record<string, string> }>
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   skillPath?: string
   appendSystemPrompt?: string
   onEvent?: (eventType: string, data: Record<string, unknown>) => void
@@ -160,7 +160,7 @@ export function useSseChat(options: UseSseChatOptions): UseSseChatReturn {
         tenantId: options.tenantId,
       }
       if (options.mcpServers) payload.mcpServers = options.mcpServers
-      if (options.enabledSkillSlugs?.length) payload.enabledSkillSlugs = options.enabledSkillSlugs
+      if (options.enabledSkills?.length) payload.enabledSkills = options.enabledSkills
       if (options.skillPath) payload.skillPath = options.skillPath
       if (options.appendSystemPrompt) payload.appendSystemPrompt = options.appendSystemPrompt
       if (sendOptions?.context) payload.context = sendOptions.context

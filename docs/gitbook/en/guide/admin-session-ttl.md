@@ -59,7 +59,7 @@ Authorization: Bearer <admin-api-key>
   "template": {
     "description": "Short-query template with reduced timeout",
     "sessionTtlMs": 120000,
-    "enabledSkillSlugs": ["knowledge-search"]
+    "enabledSkills": ["knowledge-search"]
   }
 }
 ```

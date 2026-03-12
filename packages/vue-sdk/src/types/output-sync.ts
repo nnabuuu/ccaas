@@ -93,7 +93,7 @@ export interface CompletionParams {
   tenantId: string
   mcpServers?: Record<string, McpServerConfig>
   skillPath?: string | null
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   attachments?: { type: string; path: string }[]
 }
 

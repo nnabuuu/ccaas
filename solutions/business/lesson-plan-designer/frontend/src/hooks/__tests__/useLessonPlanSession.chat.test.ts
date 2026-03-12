@@ -154,7 +154,7 @@ describe('useLessonPlanSession - Chat (Phase 3A)', () => {
 
   it('should pass enabled skill slugs to useAgentChat', () => {
     // Just verify the hook runs without errors and onOutputUpdate is captured
-    renderHook(() => useLessonPlanSession({ enabledSkillSlugs: ['skill1'] }))
+    renderHook(() => useLessonPlanSession({ enabledSkills: ['skill1'] }))
 
     // Verify onOutputUpdate callback was registered
     expect(capturedOnOutputUpdate).toBeDefined()

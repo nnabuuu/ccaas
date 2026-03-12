@@ -60,7 +60,7 @@ if (!fs.existsSync(solutionPath)) {
 const solution = JSON.parse(fs.readFileSync(solutionPath, 'utf-8'))
 const tenantId: string = solution.tenant?.slug ?? solutionSlug
 
-let enabledSkillSlugs: string[] | undefined
+let enabledSkills: string[] | undefined
 let appendSystemPrompt: string | undefined
 let mcpServers: Record<string, { command: string; args: string[]; env?: Record<string, string> }> | undefined
 
@@ -71,10 +71,10 @@ if (solution.sessionTemplates && Object.keys(solution.sessionTemplates).length >
     console.error(col(c.red, `✗ Template "${key}" not found. Available: ${Object.keys(solution.sessionTemplates).join(', ')}`))
     process.exit(1)
   }
-  enabledSkillSlugs = tmpl.enabledSkillSlugs
+  enabledSkills = tmpl.enabledSkills
   appendSystemPrompt = tmpl.appendSystemPrompt
 } else if (Array.isArray(solution.skills)) {
-  enabledSkillSlugs = solution.skills.map((s: { slug: string }) => s.slug)
+  enabledSkills = solution.skills.map((s: { slug: string }) => s.slug)
 }
 
 // Resolve mcpServers from solution.json with absolute paths
@@ -180,7 +180,7 @@ async function sendMessage(message: string): Promise<'done' | 'error'> {
     resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, tenantId, enabledSkillSlugs, appendSystemPrompt, mcpServers }),
+      body: JSON.stringify({ message, tenantId, enabledSkills, appendSystemPrompt, mcpServers }),
     })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -248,8 +248,8 @@ async function runTestMode(message: string) {
   console.log(col(c.bold, `\n🧪 Test: ${solutionSlug}`))
   console.log(col(c.dim, `Backend: ${backendUrl} | Tenant: ${tenantId}`))
   console.log(col(c.dim, `Session: ${sessionId}`))
-  if (enabledSkillSlugs?.length) {
-    console.log(col(c.dim, `Skills: ${enabledSkillSlugs.join(', ')}`))
+  if (enabledSkills?.length) {
+    console.log(col(c.dim, `Skills: ${enabledSkills.join(', ')}`))
   }
   console.log(col(c.dim, `Timeout: ${timeoutSecs}s`))
   console.log(col(c.cyan, `\n> ${message}\n`))
@@ -280,8 +280,8 @@ async function runReplMode() {
   console.log(col(c.dim, `Backend  : ${backendUrl}`))
   console.log(col(c.dim, `Tenant   : ${tenantId}`))
   console.log(col(c.dim, `Session  : ${sessionId}`))
-  if (enabledSkillSlugs?.length) {
-    console.log(col(c.dim, `Skills   : ${enabledSkillSlugs.join(', ')}`))
+  if (enabledSkills?.length) {
+    console.log(col(c.dim, `Skills   : ${enabledSkills.join(', ')}`))
   }
   console.log(col(c.dim, 'Commands : /new  /session  /exit\n'))
 

@@ -65,7 +65,7 @@ export interface CreateJobDto {
   sessionId?: string;
   messageId?: string;
   mcpServers?: Record<string, unknown>;
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
   maxAttempts?: number;
   timeoutMs?: number;
   metadata?: Record<string, unknown>;

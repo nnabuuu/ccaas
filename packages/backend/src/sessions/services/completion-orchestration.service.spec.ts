@@ -489,74 +489,10 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
     });
 
-    it('should fall back to enabledSkillSlugs when enabledSkills is absent', async () => {
-      mockTenantsService.findOne.mockResolvedValue(makeTenant({
-        'teacher': {
-          enabledSkillSlugs: ['three-column-analysis'],
-          appendSystemPrompt: 'Be detailed.',
-        },
-      }));
-
-      await svc.orchestrateMessage({
-        ...baseInput,
-        session: makeSession(0),
-        templateName: 'teacher',
-      });
-
-      // No per-skill overrides + no skillPromptMode → protocol mode → skip Step 4b
-      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
-      expect(mockSkillMgmt.generateInlineSkillPrompt).not.toHaveBeenCalled();
-    });
-
-    it('should use inline mode for enabledSkillSlugs when skillPromptMode is inline', async () => {
-      mockTenantsService.findOne.mockResolvedValue(makeTenant({
-        'kp-search': {
-          enabledSkillSlugs: ['unified-kp-search'],
-          skillPromptMode: 'inline',
-          appendSystemPrompt: 'Follow instructions.',
-        },
-      }));
-
-      await svc.orchestrateMessage({
-        ...baseInput,
-        session: makeSession(0),
-        templateName: 'kp-search',
-      });
-
-      // enabledSkillSlugs + inline mode → generateInlineSkillPrompt (no mixed)
-      expect(mockSkillMgmt.generateInlineSkillPrompt).toHaveBeenCalled();
-      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
-    });
-
-    it('should prefer enabledSkills over enabledSkillSlugs when both present', async () => {
-      mockTenantsService.findOne.mockResolvedValue(makeTenant({
-        'test-tmpl': {
-          enabledSkillSlugs: ['old-skill'],
-          enabledSkills: [
-            'new-skill',
-            { slug: 'other-skill', promptMode: 'protocol' },
-          ],
-          skillPromptMode: 'inline',
-        },
-      }));
-
-      await svc.orchestrateMessage({
-        ...baseInput,
-        session: makeSession(0),
-        templateName: 'test-tmpl',
-      });
-
-      // Should use enabledSkills slugs, not enabledSkillSlugs
-      expect(mockSkillMgmt.loadEnabledSkills).toHaveBeenCalledWith(
-        'tenant-uuid-1',
-        ['new-skill', 'other-skill'],
-      );
-    });
-
     it('should not enter Step 4b for protocol-mode templates (backward compat)', async () => {
       mockTenantsService.findOne.mockResolvedValue(makeTenant({
         'protocol-tmpl': {
-          enabledSkillSlugs: ['some-skill'],
+          enabledSkills: ['some-skill'],
           skillPromptMode: 'protocol',
           appendSystemPrompt: 'Original prompt.',
         },
@@ -577,7 +513,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
     it('should not enter Step 4b for templates with no skillPromptMode (backward compat)', async () => {
       mockTenantsService.findOne.mockResolvedValue(makeTenant({
         'default-tmpl': {
-          enabledSkillSlugs: ['some-skill'],
+          enabledSkills: ['some-skill'],
           appendSystemPrompt: 'Default prompt.',
         },
       }));
@@ -617,7 +553,6 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
       mockTenantsService.findOne.mockResolvedValue(makeTenant({
         'bad-config': {
           enabledSkills: 'not-an-array',
-          enabledSkillSlugs: ['fallback-skill'],
           skillPromptMode: 'inline',
         },
       }));
@@ -628,11 +563,10 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
         templateName: 'bad-config',
       });
 
-      // Should fall back to enabledSkillSlugs
-      expect(mockSkillMgmt.loadEnabledSkills).toHaveBeenCalledWith(
-        'tenant-uuid-1',
-        ['fallback-skill'],
-      );
+      // Non-array enabledSkills is ignored; inline mode still enters Step 4b
+      // with undefined slugs (loads all skills)
+      expect(mockSkillMgmt.generateMixedSkillPrompt).not.toHaveBeenCalled();
+      expect(mockSkillMgmt.generateInlineSkillPrompt).toHaveBeenCalled();
     });
   });
 });

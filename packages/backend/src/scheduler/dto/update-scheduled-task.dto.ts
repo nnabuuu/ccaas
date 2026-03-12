@@ -36,7 +36,7 @@ export class UpdateScheduledTaskDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @IsOptional()
   @IsNumber()

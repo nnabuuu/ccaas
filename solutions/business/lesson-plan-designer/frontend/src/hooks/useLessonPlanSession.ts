@@ -32,7 +32,7 @@ interface UseLessonPlanSessionOptions {
   planId?: string
   tenantId?: string
   autoConnect?: boolean
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
 }
 
 /**
@@ -120,7 +120,7 @@ interface UseLessonPlanSessionReturn {
 }
 
 export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}): UseLessonPlanSessionReturn {
-  const { planId, tenantId = 'lesson-plan-designer', autoConnect = true, enabledSkillSlugs } = options
+  const { planId, tenantId = 'lesson-plan-designer', autoConnect = true, enabledSkills } = options
 
   // ===== SDK Connection =====
   const connection = useAgentConnection({
@@ -180,7 +180,7 @@ export function useLessonPlanSession(options: UseLessonPlanSessionOptions = {}):
   const chat = useAgentChat({
     connection,
     tenantId,
-    enabledSkillSlugs,
+    enabledSkills,
     sessionTemplate: 'lesson-planning',
     context,  // NEW: Pass context to send with every message
     onOutputUpdate: (update) => {

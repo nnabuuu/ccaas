@@ -35,7 +35,7 @@
 ```typescript
 // ❌ 朴素做法 —— 前端决定 Agent 能做什么
 const chat = useAgentChat({
-  enabledSkillSlugs: user.role === 'teacher' ? ['analyze', 'grade'] : ['hint'],
+  enabledSkills: user.role === 'teacher' ? ['analyze', 'grade'] : ['hint'],
   appendSystemPrompt: user.role === 'teacher' ? '你是...' : '你是...',
 })
 ```
@@ -181,10 +181,10 @@ export function TeacherView() {
 |------|------|---------|------|
 | `description` | string | 500 | 可读描述 |
 | `appendSystemPrompt` | string | 10,000 | 追加到代理指令的提示词 |
-| `enabledSkillSlugs` | string[] | — | 代理允许使用的技能列表 |
+| `enabledSkills` | string[] | — | 代理允许使用的技能列表 |
 | `mcpServers` | object | — | MCP 服务器配置（见下方格式） |
 | `model` | string | 128 | 模型 ID 覆盖（如 `claude-opus-4-6`） |
-| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | 启用的 Skill 列表，支持 per-skill promptMode 覆盖（见 [Per-Skill 提示模式](#per-skill-提示模式)）。优先于 `enabledSkillSlugs` |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | 启用的 Skill 列表，支持 per-skill promptMode 覆盖（见 [Per-Skill 提示模式](#per-skill-提示模式)）。优先于 `enabledSkills` |
 | `skillPromptMode` | `"protocol"` \| `"inline"` | — | Skill 内容到达 Agent 的方式（见 [Skill 提示模式](#skill-提示模式)） |
 
 ### MCP 服务器格式
@@ -229,13 +229,13 @@ export function TeacherView() {
   "sessionTemplates": {
     "teaching": {
       "description": "生产教学模式",
-      "enabledSkillSlugs": ["socratic-teacher"],
+      "enabledSkills": ["socratic-teacher"],
       "skillPromptMode": "inline",
       "appendSystemPrompt": "等待学生提问后再开始教学。"
     },
     "debug": {
       "description": "开发模式——Skill 加载过程在输出中可见",
-      "enabledSkillSlugs": ["socratic-teacher"]
+      "enabledSkills": ["socratic-teacher"]
     }
   }
 }
@@ -255,15 +255,15 @@ export function TeacherView() {
 
 `enabledSkills` 字段支持这种 per-skill 级别的 `promptMode` 覆盖。
 
-#### `enabledSkills` vs `enabledSkillSlugs`
+#### `enabledSkills` vs `enabledSkills`
 
-| | `enabledSkillSlugs` | `enabledSkills` |
+| | `enabledSkills` | `enabledSkills` |
 |---|---|---|
 | **类型** | `string[]` | `Array<string \| { slug, promptMode? }>` |
 | **Per-skill 模式覆盖** | 不支持 | 支持 |
 | **优先级** | 低 | **高** — 两者共存时 `enabledSkills` 生效 |
 
-两个字段可以同时存在于同一个模板中。当 `enabledSkills` 存在时，平台使用它来解析 Skill 列表和 promptMode 配置；`enabledSkillSlugs` 被忽略。
+两个字段可以同时存在于同一个模板中。当 `enabledSkills` 存在时，平台使用它来解析 Skill 列表和 promptMode 配置；`enabledSkills` 被忽略。
 
 #### 配置示例
 
@@ -319,7 +319,7 @@ Authorization: Bearer <admin-api-key>
     "teacher-assistant": {
       "description": "教师视图",
       "appendSystemPrompt": "你是一位教育分析师...",
-      "enabledSkillSlugs": ["knowledge-matching"],
+      "enabledSkills": ["knowledge-matching"],
       "model": "claude-opus-4-6"
     }
   },
@@ -357,7 +357,7 @@ Content-Type: application/json
   "template": {
     "description": "教师视图",
     "appendSystemPrompt": "你是一位教育分析师...",
-    "enabledSkillSlugs": ["knowledge-matching", "analysis"],
+    "enabledSkills": ["knowledge-matching", "analysis"],
     "model": "claude-opus-4-6"
   }
 }
@@ -378,7 +378,7 @@ Content-Type: application/json
   "template": {
     "description": "更新的描述",
     "appendSystemPrompt": "更新的提示词...",
-    "enabledSkillSlugs": ["new-skill"]
+    "enabledSkills": ["new-skill"]
   }
 }
 ```
@@ -403,7 +403,7 @@ Content-Type: application/json
 
 {
   "explicitParams": {
-    "enabledSkillSlugs": ["override-skill"],
+    "enabledSkills": ["override-skill"],
     "appendSystemPrompt": "附加上下文"
   }
 }
@@ -414,7 +414,7 @@ Content-Type: application/json
 {
   "template": { ... },
   "resolved": {
-    "enabledSkillSlugs": ["override-skill"],
+    "enabledSkills": ["override-skill"],
     "appendSystemPrompt": "模板基础提示词\n\n附加上下文",
     "mcpServers": {}
   }
@@ -427,7 +427,7 @@ Content-Type: application/json
 
 | 字段 | 前端可传递？ | 合并策略 |
 |------|------------|---------|
-| `enabledSkillSlugs` | **是** | **替换** — 显式参数完全覆盖模板值 |
+| `enabledSkills` | **是** | **替换** — 显式参数完全覆盖模板值 |
 | `context` | **是** | **透传** — 直接传递给 Agent 作为页面上下文 |
 | `appendSystemPrompt` | **是** | **追加** — 显式内容追加在模板内容之后 |
 | `mcpServers` | **否（仅服务端）** | 由会话模板和 solution.json 配置，前端无法覆盖 |
@@ -442,20 +442,20 @@ Content-Type: application/json
 // 模板配置（来自管理界面或 solution.json）：
 {
   "appendSystemPrompt": "你是一位教师助手",
-  "enabledSkillSlugs": ["knowledge-matching"],
+  "enabledSkills": ["knowledge-matching"],
   "mcpServers": { "server-a": { ... } }
 }
 
 // 前端只传递模板名称和允许的覆盖参数：
 useAgentChat({
   sessionTemplate: 'teacher-assistant',
-  enabledSkillSlugs: ['custom-skill'],      // 替换模板中的技能列表
+  enabledSkills: ['custom-skill'],      // 替换模板中的技能列表
   context,                                   // 页面上下文
 })
 
 // 服务端最终解析的参数：
 {
-  "enabledSkillSlugs": ["custom-skill"],
+  "enabledSkills": ["custom-skill"],
   "appendSystemPrompt": "你是一位教师助手",
   "mcpServers": { "server-a": { ... } }     // 来自模板，前端无法修改
 }

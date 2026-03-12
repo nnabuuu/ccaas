@@ -10,12 +10,12 @@
   "sessionTemplates": {
     "protocol": {
       "description": "Protocol mode — agent reads SKILL.md at runtime",
-      "enabledSkillSlugs": ["pirate-chat"],
+      "enabledSkills": ["pirate-chat"],
       "skillPromptMode": "protocol"
     },
     "inline": {
       "description": "Inline mode — SKILL.md embedded in system prompt",
-      "enabledSkillSlugs": ["pirate-chat"],
+      "enabledSkills": ["pirate-chat"],
       "skillPromptMode": "inline"
     }
   },

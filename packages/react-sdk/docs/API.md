@@ -106,7 +106,7 @@ interface UseAgentChatOptions {
   tenantId: string                        // Tenant identifier
   mcpServers?: string[]                   // MCP server configurations
   skillPath?: string                      // Path to skills directory
-  enabledSkillSlugs?: string[]           // List of enabled skill slugs
+  enabledSkills?: string[]           // List of enabled skill slugs
   onOutputUpdate?: (update: OutputUpdate) => void  // Output update handler
   solutionConfigEndpoint?: string        // Endpoint to load solution config
 }

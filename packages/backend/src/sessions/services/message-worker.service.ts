@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { MessageQueueService } from './message-queue.service';
 import { CompletionOrchestrationService } from './completion-orchestration.service';
+import { AttachmentService } from './attachment.service';
 import { SessionService } from '../session.service';
 import { StreamRegistryService } from './stream-registry.service';
 import { makeSseClientId } from '../session-utils';
@@ -45,6 +46,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly queueService: MessageQueueService,
     private readonly orchestrationService: CompletionOrchestrationService,
+    private readonly attachmentService: AttachmentService,
     private readonly sessionService: SessionService,
     private readonly streamRegistry: StreamRegistryService,
   ) {}
@@ -164,6 +166,12 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       const clientId = makeSseClientId(sessionId);
       const session = this.sessionService.getOrCreateSession(sessionId, clientId, null);
 
+      // Resolve attachments from queue payload
+      const attachmentInputs = queueItem.payload.attachments ?? queueItem.payload.attachmentPaths?.map(s => JSON.parse(s));
+      const attachments = attachmentInputs?.length
+        ? this.attachmentService.resolveAttachments(attachmentInputs, session.workspaceDir)
+        : undefined;
+
       // Execute orchestration — events emitted to SSE stream
       const result = await this.orchestrationService.orchestrateMessage({
         session,
@@ -171,10 +179,11 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
         tenantId: queueItem.tenantId || '',
         message: queueItem.payload.message,
         context: queueItem.payload.context,
-        enabledSkillSlugs: queueItem.payload.enabledSkillSlugs,
+        enabledSkills: queueItem.payload.enabledSkills ?? (queueItem.payload as any).enabledSkillSlugs,
         systemPrompt: queueItem.payload.systemPrompt,
         templateName: queueItem.payload.templateName,
         emitEvent: (event: any) => this.streamRegistry.emit(sessionId, event),
+        attachments,
       });
 
       // Persist success BEFORE stream teardown: a stream failure must not cause

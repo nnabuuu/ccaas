@@ -28,7 +28,7 @@ export class ChatMessageDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @IsOptional()
   @IsString()
@@ -83,7 +83,7 @@ export class SendMessageDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @IsOptional()
   @IsString()

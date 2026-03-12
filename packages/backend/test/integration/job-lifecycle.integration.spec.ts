@@ -130,7 +130,7 @@ describe('Job Lifecycle Integration Tests', () => {
       sessionId: 'test-session-1',
       messageId: 'test-msg-1',
       mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
-      enabledSkillSlugs: ['notebooklm'],
+      enabledSkills: ['notebooklm'],
       ...overrides,
     });
   }
@@ -155,7 +155,7 @@ describe('Job Lifecycle Integration Tests', () => {
           prompt: 'Create a podcast episode about AI safety research',
           tenantId: testTenantId,
           mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
-          enabledSkillSlugs: ['notebooklm'],
+          enabledSkills: ['notebooklm'],
         }),
         { numRetries: 2 },
       );
@@ -171,7 +171,7 @@ describe('Job Lifecycle Integration Tests', () => {
           tenantId: testTenantId,
           prompt: job.prompt,
           mcpServers: job.mcpServers,
-          enabledSkillSlugs: job.enabledSkillSlugs,
+          enabledSkills: job.enabledSkills,
         },
       });
 

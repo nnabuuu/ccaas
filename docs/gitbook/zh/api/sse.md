@@ -43,7 +43,7 @@ Accept: text/event-stream
 | `message` | string | ✅ | 用户消息内容 |
 | `tenantId` | string | ✅ | 租户 ID |
 | `apiKey` | string | ❌ | API Key（也可通过 `Authorization: Bearer` header 传递） |
-| `enabledSkillSlugs` | string[] | ❌ | 指定启用的 Skill slug 列表；不传时自动加载租户下所有已启用的 Skill |
+| `enabledSkills` | string[] | ❌ | 指定启用的 Skill slug 列表；不传时自动加载租户下所有已启用的 Skill |
 | `appendSystemPrompt` | string | ❌ | 追加到系统提示词末尾的额外指令 |
 | `templateName` | string | ❌ | 应用的会话模板名称（在管理后台配置） |
 | `context` | object | ❌ | 页面上下文（如当前路由、表单数据等） |

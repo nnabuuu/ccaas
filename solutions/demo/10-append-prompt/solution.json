@@ -10,17 +10,17 @@
   "sessionTemplates": {
     "concise": {
       "description": "Concise mode — answers under 50 words",
-      "enabledSkillSlugs": ["general-assistant"],
+      "enabledSkills": ["general-assistant"],
       "appendSystemPrompt": "Keep all responses under 50 words. Be extremely brief and to the point."
     },
     "detailed": {
       "description": "Detailed mode — thorough answers with examples",
-      "enabledSkillSlugs": ["general-assistant"],
+      "enabledSkills": ["general-assistant"],
       "appendSystemPrompt": "Provide detailed, thorough answers. Include examples and explanations. Be comprehensive."
     },
     "json": {
       "description": "JSON mode — answers in JSON format",
-      "enabledSkillSlugs": ["general-assistant"],
+      "enabledSkills": ["general-assistant"],
       "appendSystemPrompt": "Always respond in valid JSON format. Structure your answer as a JSON object with relevant keys."
     }
   },

@@ -75,14 +75,14 @@ export class HeadlessExecutionService {
     );
 
     // 2. Sync skills if configured
-    if (task.enabledSkillSlugs?.length) {
+    if (task.enabledSkills?.length) {
       try {
         const syncResult = await this.skillSyncService.syncToSession(
           sessionWorkspace,
           task.tenantId,
           {
             publishedOnly: true,
-            skillSlugs: task.enabledSkillSlugs,
+            skillSlugs: task.enabledSkills,
           },
         );
         this.logger.log(
@@ -229,12 +229,12 @@ export class HeadlessExecutionService {
       tenantId: string;
       prompt: string;
       mcpServers?: Record<string, unknown>;
-      enabledSkillSlugs?: string[];
+      enabledSkills?: string[];
     },
     options?: HeadlessExecuteOptions,
     onEvent?: (event: SessionEvent) => void,
   ): Promise<HeadlessResult> {
-    const { sessionId, tenantId, prompt, mcpServers, enabledSkillSlugs } = params;
+    const { sessionId, tenantId, prompt, mcpServers, enabledSkills } = params;
     const timeoutMs = options?.timeoutMs ?? 600000;
     const preserveWorkspace = options?.preserveWorkspace ?? false;
     const resumeSessionId = options?.resumeSessionId;
@@ -257,12 +257,12 @@ export class HeadlessExecutionService {
     );
 
     // 2. Sync skills if configured
-    if (enabledSkillSlugs?.length) {
+    if (enabledSkills?.length) {
       try {
         const syncResult = await this.skillSyncService.syncToSession(
           sessionWorkspace,
           tenantId,
-          { publishedOnly: true, skillSlugs: enabledSkillSlugs },
+          { publishedOnly: true, skillSlugs: enabledSkills },
         );
         this.logger.log(`Synced ${syncResult.skillCount} skills for job session ${sessionId}`);
       } catch (error) {

@@ -29,7 +29,7 @@ const App: React.FC = () => {
     pendingUpdates: sessionPendingUpdates,
   } = useProblemSession({
     tenantId: 'problem-explainer',
-    enabledSkillSlugs: ['problem-explainer'],
+    enabledSkills: ['problem-explainer'],
   });
 
   const {

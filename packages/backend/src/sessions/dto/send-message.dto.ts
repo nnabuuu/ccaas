@@ -69,7 +69,7 @@ export class SendMessageDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @ApiProperty({
     description: '追加的系统提示词 / Additional system prompt',

@@ -122,7 +122,7 @@ Send a message (full version with Skill routing support).
 | `clientId` | string | Yes | Client identifier |
 | `message` | string | Yes | User message |
 | `tenantId` | string | Yes | Tenant ID |
-| `enabledSkillSlugs` | string[] | No | List of enabled Skill slugs |
+| `enabledSkills` | string[] | No | List of enabled Skill slugs |
 | `attachments` | object[] | No | Attachment list |
 
 **Response**:
@@ -1022,7 +1022,7 @@ Create a scheduled task.
 | `message` | string | Yes | Prompt message sent to Claude |
 | `scheduleType` | string | Yes | `cron`, `interval`, or `once` |
 | `scheduleValue` | string | Yes | Cron expression, millisecond interval, or ISO date |
-| `enabledSkillSlugs` | string[] | No | Enabled Skill slugs |
+| `enabledSkills` | string[] | No | Enabled Skill slugs |
 | `maxConcurrent` | number | No | Max concurrent executions (default: 1) |
 | `maxRetries` | number | No | Retry count on failure (default: 0) |
 | `retryDelayMs` | number | No | Retry delay in ms (default: 60000) |

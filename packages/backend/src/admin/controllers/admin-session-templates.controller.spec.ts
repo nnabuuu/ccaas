@@ -315,7 +315,7 @@ describe('AdminSessionTemplatesController', () => {
   describe('previewTemplate', () => {
     it('returns template and resolved params with no explicit params', async () => {
       const template = {
-        enabledSkillSlugs: ['skill-a'],
+        enabledSkills: ['skill-a'],
         appendSystemPrompt: 'Base prompt',
         mcpServers: { 'server-1': { command: 'node', args: [] } },
       };
@@ -326,7 +326,7 @@ describe('AdminSessionTemplatesController', () => {
       const result = await controller.previewTemplate(TENANT_ID, 'my-template', {});
 
       expect(result.template).toEqual(template);
-      expect(result.resolved.enabledSkillSlugs).toEqual(['skill-a']);
+      expect(result.resolved.enabledSkills).toEqual(['skill-a']);
       expect(result.resolved.appendSystemPrompt).toBe('Base prompt');
     });
 

@@ -20,7 +20,7 @@
   "sessionTemplates": {
     "exercise-planner": {
       "description": "康复训练规划 - 从医学报告生成个性化训练方案",
-      "enabledSkillSlugs": ["exercise-planner"]
+      "enabledSkills": ["exercise-planner"]
     }
   },
   "skills": [

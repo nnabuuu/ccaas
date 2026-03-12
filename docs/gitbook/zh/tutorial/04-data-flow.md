@@ -214,7 +214,7 @@ export function useLessonPlanSession(options) {
 | `connection` | `UseAgentConnectionReturn` | 来自 `useAgentConnection` |
 | `tenantId` | `string` | 租户标识 |
 | `sessionTemplate` | `string` | 会话模板名称，服务端解析 MCP 服务器、技能等配置 |
-| `enabledSkillSlugs` | `string[]` | 覆盖模板中的技能列表（可选） |
+| `enabledSkills` | `string[]` | 覆盖模板中的技能列表（可选） |
 | `context` | `PageContext \| null` | 来自 `usePageContext` 的页面上下文 |
 | `onOutputUpdate` | `(update: OutputUpdate) => void` | 结构化字段更新回调 |
 

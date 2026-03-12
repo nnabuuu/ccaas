@@ -686,7 +686,7 @@ export interface McpServerConfig {
  *   "teacher-analysis": {
  *     "description": "教师视图 - 完整分析功能",
  *     "appendSystemPrompt": "你是教育领域的专业分析师...",
- *     "enabledSkillSlugs": ["knowledge-point-matching", "complete-analysis"],
+ *     "enabledSkills": ["knowledge-point-matching", "complete-analysis"],
  *     "mcpServers": { "quiz-analyzer-tools": { ... } }
  *   }
  * }
@@ -699,8 +699,8 @@ export interface SessionTemplate {
   /** Additional system prompt to append to skill prompts */
   appendSystemPrompt?: string;
 
-  /** Skill slugs to enable for this session */
-  enabledSkillSlugs?: string[];
+  /** Skill slugs (or per-skill config objects) to enable for this session */
+  enabledSkills?: Array<string | { slug: string; promptMode?: 'protocol' | 'inline' }>;
 
   /** MCP servers to configure for this session */
   mcpServers?: Record<string, McpServerConfig>;

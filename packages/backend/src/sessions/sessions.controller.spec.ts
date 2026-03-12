@@ -314,7 +314,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     expect(messageQueueService.enqueue).not.toHaveBeenCalled();
   });
 
-  it('filters out disabled skills from auto-loaded enabledSkillSlugs', async () => {
+  it('filters out disabled skills from auto-loaded enabledSkills', async () => {
     skillsService.findPublished.mockResolvedValue([
       { slug: 'tutor', enabled: true },
       { slug: 'disabled-skill', enabled: false },
@@ -327,7 +327,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       SESSION_ID,
       expect.any(String),
       'tenant-123',
-      expect.objectContaining({ enabledSkillSlugs: ['tutor', 'writer'] }),
+      expect.objectContaining({ enabledSkills: ['tutor', 'writer'] }),
     );
   });
 
@@ -349,7 +349,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     );
   });
 
-  it('calls findPublished when no templateName and no enabledSkillSlugs (existing behavior)', async () => {
+  it('calls findPublished when no templateName and no enabledSkills (existing behavior)', async () => {
     skillsService.findPublished.mockResolvedValue([
       { slug: 'tutor', enabled: true },
       { slug: 'writer', enabled: true },
@@ -367,7 +367,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       SESSION_ID,
       expect.any(String),
       'tenant-123',
-      expect.objectContaining({ enabledSkillSlugs: ['tutor', 'writer'] }),
+      expect.objectContaining({ enabledSkills: ['tutor', 'writer'] }),
     );
   });
 

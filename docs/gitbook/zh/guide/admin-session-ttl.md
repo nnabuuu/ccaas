@@ -59,7 +59,7 @@ Authorization: Bearer <admin-api-key>
   "template": {
     "description": "短查询模板，使用更短的超时",
     "sessionTtlMs": 120000,
-    "enabledSkillSlugs": ["knowledge-search"]
+    "enabledSkills": ["knowledge-search"]
   }
 }
 ```

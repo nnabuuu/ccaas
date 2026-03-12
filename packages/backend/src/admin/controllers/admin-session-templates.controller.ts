@@ -350,8 +350,8 @@ export class AdminSessionTemplatesController {
 
     // Simulate parameter merging logic (same as react-sdk)
     const resolved = {
-      enabledSkillSlugs:
-        dto.explicitParams?.enabledSkillSlugs || template.enabledSkillSlugs,
+      enabledSkills:
+        dto.explicitParams?.enabledSkills || template.enabledSkills,
       mcpServers: {
         ...(template.mcpServers || {}),
         ...(dto.explicitParams?.mcpServers || {}),

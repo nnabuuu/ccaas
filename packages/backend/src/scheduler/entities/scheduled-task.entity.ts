@@ -41,7 +41,7 @@ export class ScheduledTask {
   mcpServers?: Record<string, unknown>;
 
   @Column({ type: 'simple-json', nullable: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
 
   @Column({ default: 1 })
   maxConcurrent: number;

@@ -85,11 +85,7 @@ export const SetupConfigSchema = z.object({
 export const SessionTemplateSchema = z.object({
   description: z.string().optional(),
   appendSystemPrompt: z.string().optional(),
-  enabledSkillSlugs: z.array(
-    z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
-  ).optional(),
-  /** Per-skill configuration with optional promptMode override.
-   *  Takes priority over enabledSkillSlugs when both present. */
+  /** Per-skill configuration with optional promptMode override. */
   enabledSkills: z.array(z.union([
     z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
     z.object({

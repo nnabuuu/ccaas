@@ -12,6 +12,6 @@
  * they are resolved server-side from the session template.
  */
 export interface ResolvedTemplateParams {
-  enabledSkillSlugs?: string[]
+  enabledSkills?: string[]
   appendSystemPrompt?: string
 }

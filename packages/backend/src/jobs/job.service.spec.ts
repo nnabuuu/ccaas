@@ -39,7 +39,7 @@ describe('JobService', () => {
     maxAttempts: 3,
     timeoutMs: 600000,
     mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
-    enabledSkillSlugs: ['notebooklm'],
+    enabledSkills: ['notebooklm'],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -111,7 +111,7 @@ describe('JobService', () => {
       sessionId: 'session-1',
       messageId: 'msg-1',
       mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
-      enabledSkillSlugs: ['notebooklm'],
+      enabledSkills: ['notebooklm'],
     };
 
     it('creates entity with status=pending, attempts=0 and enqueues to liteque', async () => {
@@ -156,13 +156,13 @@ describe('JobService', () => {
       );
     });
 
-    it('passes mcpServers and enabledSkillSlugs in queue payload', async () => {
+    it('passes mcpServers and enabledSkills in queue payload', async () => {
       await service.create(dto);
 
       expect(queueService.enqueue).toHaveBeenCalledWith(
         expect.objectContaining({
           mcpServers: { notebooklm: { url: 'http://localhost:3002' } },
-          enabledSkillSlugs: ['notebooklm'],
+          enabledSkills: ['notebooklm'],
         }),
         expect.any(Object),
       );
@@ -358,7 +358,7 @@ describe('JobService', () => {
             tenantId: 'tenant-1',
             prompt: 'Create a podcast',
             mcpServers: { notebooklm: {} },
-            enabledSkillSlugs: ['notebooklm'],
+            enabledSkills: ['notebooklm'],
           },
         };
 
@@ -369,7 +369,7 @@ describe('JobService', () => {
             tenantId: 'tenant-1',
             prompt: 'Create a podcast',
             mcpServers: { notebooklm: {} },
-            enabledSkillSlugs: ['notebooklm'],
+            enabledSkills: ['notebooklm'],
           }),
           expect.objectContaining({
             preserveWorkspace: true,

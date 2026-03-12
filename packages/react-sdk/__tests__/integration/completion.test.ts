@@ -213,7 +213,7 @@ describe('Session Completion Endpoint Integration', () => {
     expect(response.ok).toBe(true)
   }, 15000)
 
-  it('should accept optional enabledSkillSlugs parameter', async () => {
+  it('should accept optional enabledSkills parameter', async () => {
     const { socket, clientId } = await createConnectedSocket()
     sockets.push(socket)
 
@@ -228,7 +228,7 @@ describe('Session Completion Endpoint Integration', () => {
           clientId,
           message: 'Test',
           tenantId: 'test',
-          enabledSkillSlugs: ['skill-a', 'skill-b'],
+          enabledSkills: ['skill-a', 'skill-b'],
         }),
       }
     )

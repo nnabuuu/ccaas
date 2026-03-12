@@ -38,8 +38,7 @@ export class SessionTemplateBodyDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  enabledSkillSlugs?: string[];
+  enabledSkills?: Array<string | { slug: string; promptMode?: 'protocol' | 'inline' }>;
 
   // Note: @IsObject() validates that mcpServers is an object, but class-validator
   // cannot validate Record values automatically. McpServerConfigDto serves as
@@ -80,7 +79,7 @@ export class CreateSessionTemplateDto {
     example: {
       description: 'Teacher view - full analysis features',
       appendSystemPrompt: 'You are an educational analyst...',
-      enabledSkillSlugs: ['knowledge-matching', 'analysis'],
+      enabledSkills: ['knowledge-matching', 'analysis'],
     },
   })
   @ValidateNested()
@@ -103,7 +102,7 @@ export class PreviewTemplateDto {
   @IsOptional()
   @IsObject()
   explicitParams?: {
-    enabledSkillSlugs?: string[];
+    enabledSkills?: string[];
     mcpServers?: Record<string, unknown>;
     appendSystemPrompt?: string;
   };
@@ -120,7 +119,7 @@ export class SyncSessionTemplatesBodyDto {
   @ApiProperty({
     description: 'Record of template name → template body',
     example: {
-      teacher: { description: 'Teacher view', enabledSkillSlugs: ['analysis'] },
+      teacher: { description: 'Teacher view', enabledSkills: ['analysis'] },
     },
   })
   @IsObject()

@@ -980,7 +980,7 @@ describe('SolutionConfigV3Schema', () => {
         teacher: {
           description: '教师视图',
           appendSystemPrompt: '你正在为教师提供完整的题目分析材料',
-          enabledSkillSlugs: ['three-column-analysis'],
+          enabledSkills: ['three-column-analysis'],
         },
         student: {
           description: '学生视图',
@@ -1037,7 +1037,7 @@ describe('SessionTemplateSchema', () => {
     const result = SessionTemplateSchema.safeParse({
       description: '教师视图',
       appendSystemPrompt: '你正在为教师提供完整的题目分析',
-      enabledSkillSlugs: ['three-column-analysis', 'analyze-student-answer'],
+      enabledSkills: ['three-column-analysis', 'analyze-student-answer'],
       model: 'claude-opus-4-6',
       maxTokens: 8192,
     });
@@ -1059,16 +1059,16 @@ describe('SessionTemplateSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('should reject invalid slug in enabledSkillSlugs', () => {
+  it('should reject invalid slug in enabledSkills', () => {
     const result = SessionTemplateSchema.safeParse({
-      enabledSkillSlugs: ['valid-slug', 'INVALID SLUG'],
+      enabledSkills: ['valid-slug', 'INVALID SLUG'],
     });
     expect(result.success).toBe(false);
   });
 
-  it('should reject empty string in enabledSkillSlugs', () => {
+  it('should reject empty string in enabledSkills', () => {
     const result = SessionTemplateSchema.safeParse({
-      enabledSkillSlugs: [''],
+      enabledSkills: [''],
     });
     expect(result.success).toBe(false);
   });

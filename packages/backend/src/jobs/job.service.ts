@@ -68,7 +68,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
             tenantId: job.data.tenantId,
             prompt: job.data.prompt,
             mcpServers: job.data.mcpServers,
-            enabledSkillSlugs: job.data.enabledSkillSlugs,
+            enabledSkills: job.data.enabledSkills,
           },
           {
             resumeSessionId: job.data.resumeSessionId,
@@ -164,7 +164,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
       sessionId: dto.sessionId,
       messageId: dto.messageId,
       mcpServers: dto.mcpServers,
-      enabledSkillSlugs: dto.enabledSkillSlugs,
+      enabledSkills: dto.enabledSkills,
       maxAttempts: dto.maxAttempts ?? 3,
       timeoutMs: dto.timeoutMs ?? 600000,
       metadata: dto.metadata,
@@ -183,7 +183,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
         prompt: dto.prompt,
         tenantId: dto.tenantId,
         mcpServers: dto.mcpServers,
-        enabledSkillSlugs: dto.enabledSkillSlugs,
+        enabledSkills: dto.enabledSkills,
       };
 
       await this.queueService.enqueue(payload, {
@@ -240,7 +240,7 @@ export class JobService implements OnModuleInit, OnModuleDestroy {
       prompt: entity.prompt,
       tenantId: entity.tenantId,
       mcpServers: entity.mcpServers,
-      enabledSkillSlugs: entity.enabledSkillSlugs,
+      enabledSkills: entity.enabledSkills,
       resumeSessionId: entity.bgSessionId,
     };
 

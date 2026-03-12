@@ -327,14 +327,14 @@ describe('useAgentChat', () => {
     })
   })
 
-  it('should include enabledSkillSlugs in payload', async () => {
+  it('should include enabledSkills in payload', async () => {
     mockFetch()
     const connection = createMockConnection()
     const { result } = renderHook(() =>
       useAgentChat({
         connection,
         tenantId: 'test',
-        enabledSkillSlugs: ['skill-a', 'skill-b'],
+        enabledSkills: ['skill-a', 'skill-b'],
       }),
     )
 
@@ -347,6 +347,6 @@ describe('useAgentChat', () => {
     const callArgs = findPostCall(global.fetch as ReturnType<typeof vi.fn>)
     expect(callArgs).toBeDefined()
     const body = JSON.parse((callArgs![1] as Record<string, string>).body)
-    expect(body.enabledSkillSlugs).toEqual(['skill-a', 'skill-b'])
+    expect(body.enabledSkills).toEqual(['skill-a', 'skill-b'])
   })
 })

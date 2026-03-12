@@ -43,7 +43,7 @@ Accept: text/event-stream
 | `message` | string | ✅ | User message content |
 | `tenantId` | string | ✅ | Tenant ID |
 | `apiKey` | string | ❌ | API Key (can also be passed via `Authorization: Bearer` header) |
-| `enabledSkillSlugs` | string[] | ❌ | Skill slugs to enable; omit to auto-load all enabled skills for the tenant |
+| `enabledSkills` | string[] | ❌ | Skill slugs to enable; omit to auto-load all enabled skills for the tenant |
 | `appendSystemPrompt` | string | ❌ | Additional instructions appended to the system prompt |
 | `templateName` | string | ❌ | Session template to apply (configured in the admin panel) |
 | `context` | object | ❌ | Page context (current route, form data, etc.) |

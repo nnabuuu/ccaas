@@ -12,7 +12,10 @@ export type MessageQueueStatus = 'pending' | 'processing' | 'completed' | 'faile
 export interface MessageQueuePayload {
   message: string;
   context?: Record<string, unknown>;
-  enabledSkillSlugs?: string[];
+  enabledSkills?: string[];
+  /** File attachments serialized as objects (simple-json handles nesting) */
+  attachments?: Array<{ type: string; path: string }>;
+  /** @deprecated Use `attachments` instead */
   attachmentPaths?: string[];
   /** Destroy session from pool after processing (one-shot pattern) */
   autoClose?: boolean;

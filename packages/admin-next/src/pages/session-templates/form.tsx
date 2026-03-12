@@ -19,7 +19,7 @@ const templateSchema = z.object({
   template: z.object({
     description: z.string().optional(),
     appendSystemPrompt: z.string().optional(),
-    enabledSkillSlugs: z.array(z.string()).optional(),
+    enabledSkills: z.array(z.string()).optional(),
     mcpServers: z.record(z.any()).optional(),
     model: z.string().optional(),
     sessionTtlMs: z.number().int().min(60000).optional(),
@@ -55,7 +55,7 @@ export function SessionTemplateFormPage() {
       template: {
         description: '',
         appendSystemPrompt: '',
-        enabledSkillSlugs: [],
+        enabledSkills: [],
         mcpServers: {},
       },
     },
@@ -74,7 +74,7 @@ export function SessionTemplateFormPage() {
       const { name: loadedName, template } = templateData.data
       setValue('name', loadedName)
       setValue('template', template)
-      setSkillsValue((template.enabledSkillSlugs || []).join(', '))
+      setSkillsValue((template.enabledSkills || []).join(', '))
       setMcpValue(JSON.stringify(template.mcpServers || {}, null, 2))
       if ((template as any).sessionTtlMs) {
         setTtlMinutes(String(Math.round((template as any).sessionTtlMs / 60000)))
@@ -115,7 +115,7 @@ export function SessionTemplateFormPage() {
   const handleSkillsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSkillsValue(e.target.value)
     const slugs = e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-    setValue('template.enabledSkillSlugs', slugs)
+    setValue('template.enabledSkills', slugs)
   }
 
   const handleMcpChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {

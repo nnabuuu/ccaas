@@ -35,7 +35,7 @@ The naive solution is to pass configuration directly from the frontend:
 ```typescript
 // ❌ Naive approach — frontend decides what the agent can do
 const chat = useAgentChat({
-  enabledSkillSlugs: user.role === 'teacher' ? ['analyze', 'grade'] : ['hint'],
+  enabledSkills: user.role === 'teacher' ? ['analyze', 'grade'] : ['hint'],
   appendSystemPrompt: user.role === 'teacher' ? 'You are...' : 'You are...',
 })
 ```
@@ -181,10 +181,10 @@ Deleting a template shows a confirmation dialog — click **Delete** to confirm.
 |-------|------|-----------|-------------|
 | `description` | string | 500 | Human-readable description |
 | `appendSystemPrompt` | string | 10,000 | Prompt appended to agent instructions |
-| `enabledSkillSlugs` | string[] | — | Skills the agent is allowed to use |
+| `enabledSkills` | string[] | — | Skills the agent is allowed to use |
 | `mcpServers` | object | — | MCP server configurations (see format below) |
 | `model` | string | 128 | Model ID override (e.g. `claude-opus-4-6`) |
-| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | Enabled skills with per-skill promptMode override (see [Per-Skill Prompt Mode](#per-skill-prompt-mode)). Takes priority over `enabledSkillSlugs` |
+| `enabledSkills` | `Array<string \| { slug, promptMode? }>` | — | Enabled skills with per-skill promptMode override (see [Per-Skill Prompt Mode](#per-skill-prompt-mode)). Takes priority over `enabledSkills` |
 | `skillPromptMode` | `"protocol"` \| `"inline"` | — | How skill content reaches the agent (see [Skill Prompt Mode](#skill-prompt-mode)) |
 
 ### MCP Server Format
@@ -229,13 +229,13 @@ Add `skillPromptMode` to any session template in `solution.json`:
   "sessionTemplates": {
     "teaching": {
       "description": "Production teaching mode",
-      "enabledSkillSlugs": ["socratic-teacher"],
+      "enabledSkills": ["socratic-teacher"],
       "skillPromptMode": "inline",
       "appendSystemPrompt": "Wait for the student to ask a question before starting."
     },
     "debug": {
       "description": "Development mode — skill loading visible in output",
-      "enabledSkillSlugs": ["socratic-teacher"]
+      "enabledSkills": ["socratic-teacher"]
     }
   }
 }
@@ -255,15 +255,15 @@ When a template enables multiple Skills, you may want **different Skills to use 
 
 The `enabledSkills` field supports per-skill `promptMode` overrides.
 
-#### `enabledSkills` vs `enabledSkillSlugs`
+#### `enabledSkills` vs `enabledSkills`
 
-| | `enabledSkillSlugs` | `enabledSkills` |
+| | `enabledSkills` | `enabledSkills` |
 |---|---|---|
 | **Type** | `string[]` | `Array<string \| { slug, promptMode? }>` |
 | **Per-skill mode override** | Not supported | Supported |
 | **Priority** | Lower | **Higher** — when both exist, `enabledSkills` takes effect |
 
-Both fields can coexist in the same template. When `enabledSkills` is present, the platform uses it to resolve the skill list and promptMode configuration; `enabledSkillSlugs` is ignored.
+Both fields can coexist in the same template. When `enabledSkills` is present, the platform uses it to resolve the skill list and promptMode configuration; `enabledSkills` is ignored.
 
 #### Configuration Example
 
@@ -319,7 +319,7 @@ Authorization: Bearer <admin-api-key>
     "teacher-assistant": {
       "description": "Teacher view",
       "appendSystemPrompt": "You are an educational analyst...",
-      "enabledSkillSlugs": ["knowledge-matching"],
+      "enabledSkills": ["knowledge-matching"],
       "model": "claude-opus-4-6"
     }
   },
@@ -357,7 +357,7 @@ Content-Type: application/json
   "template": {
     "description": "Teacher view",
     "appendSystemPrompt": "You are an educational analyst...",
-    "enabledSkillSlugs": ["knowledge-matching", "analysis"],
+    "enabledSkills": ["knowledge-matching", "analysis"],
     "model": "claude-opus-4-6"
   }
 }
@@ -378,7 +378,7 @@ Content-Type: application/json
   "template": {
     "description": "Updated description",
     "appendSystemPrompt": "Updated prompt...",
-    "enabledSkillSlugs": ["new-skill"]
+    "enabledSkills": ["new-skill"]
   }
 }
 ```
@@ -403,7 +403,7 @@ Content-Type: application/json
 
 {
   "explicitParams": {
-    "enabledSkillSlugs": ["override-skill"],
+    "enabledSkills": ["override-skill"],
     "appendSystemPrompt": "Additional context"
   }
 }
@@ -414,7 +414,7 @@ Content-Type: application/json
 {
   "template": { ... },
   "resolved": {
-    "enabledSkillSlugs": ["override-skill"],
+    "enabledSkills": ["override-skill"],
     "appendSystemPrompt": "Template base prompt\n\nAdditional context",
     "mcpServers": {}
   }
@@ -423,13 +423,13 @@ Content-Type: application/json
 
 ## Template Resolution Rules
 
-The frontend passes a `sessionTemplate` name and may also pass `enabledSkillSlugs` and `context`. MCP servers and skill paths are **server-side only** -- they are defined in session templates (or auto-injected from `solution.json` by the Solution Loader) and cannot be overridden from the frontend.
+The frontend passes a `sessionTemplate` name and may also pass `enabledSkills` and `context`. MCP servers and skill paths are **server-side only** -- they are defined in session templates (or auto-injected from `solution.json` by the Solution Loader) and cannot be overridden from the frontend.
 
 **What the frontend can pass:**
 
 | Field | Merge Strategy |
 |-------|---------------|
-| `enabledSkillSlugs` | **Replace** — explicit value wins entirely over template value |
+| `enabledSkills` | **Replace** — explicit value wins entirely over template value |
 | `context` | **Passed through** — page context sent with every message |
 
 **What is server-side only (not accepted from frontend):**
@@ -445,21 +445,21 @@ The frontend passes a `sessionTemplate` name and may also pass `enabledSkillSlug
 // Template (from Admin UI or solution.json):
 {
   "appendSystemPrompt": "You are a teacher assistant",
-  "enabledSkillSlugs": ["knowledge-matching"],
+  "enabledSkills": ["knowledge-matching"],
   "mcpServers": { "server-a": { ... } }
 }
 
 // Frontend:
 useAgentChat({
   sessionTemplate: 'teacher-assistant',
-  enabledSkillSlugs: ['custom-skill'],  // Replaces template skill list
+  enabledSkills: ['custom-skill'],  // Replaces template skill list
   context,                               // Page context from usePageContext
   // mcpServers and skillPath are NOT passed from frontend
 })
 
 // Final resolved params on the server:
 {
-  "enabledSkillSlugs": ["custom-skill"],
+  "enabledSkills": ["custom-skill"],
   "appendSystemPrompt": "You are a teacher assistant",
   "mcpServers": { "server-a": { ... } }  // From template only
 }
