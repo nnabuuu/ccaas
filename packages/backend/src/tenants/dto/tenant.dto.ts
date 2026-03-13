@@ -47,7 +47,7 @@ export class CreateTenantDto {
   maxSkills?: number;
 
   @IsOptional()
-  @IsEnum(['free', 'starter', 'professional', 'enterprise'])
+  @IsEnum(['free', 'paid', 'starter', 'professional', 'enterprise'])
   plan?: TenantPlan;
 
   @IsOptional()
@@ -91,7 +91,7 @@ export class UpdateTenantDto {
   maxSkills?: number;
 
   @IsOptional()
-  @IsEnum(['free', 'starter', 'professional', 'enterprise'])
+  @IsEnum(['free', 'paid', 'starter', 'professional', 'enterprise'])
   plan?: TenantPlan;
 
   @IsOptional()

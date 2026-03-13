@@ -17,7 +17,7 @@ const schema = z.object({
     .max(50)
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase letters, numbers, and hyphens only'),
   description: z.string().optional(),
-  plan: z.enum(['free', 'starter', 'professional', 'enterprise']),
+  plan: z.enum(['free', 'paid', 'starter', 'professional', 'enterprise']),
   maxSessions: z.number().min(1).default(100),
   maxSkills: z.number().min(1).default(50),
   autoCreateApiKey: z.boolean().default(true),
@@ -145,7 +145,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
           <Select
             defaultValue="free"
             onValueChange={(value) =>
-              setValue('plan', value as 'free' | 'starter' | 'professional' | 'enterprise')
+              setValue('plan', value as 'free' | 'paid' | 'starter' | 'professional' | 'enterprise')
             }
           >
             <SelectTrigger>
@@ -153,6 +153,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="free">Free</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
               <SelectItem value="starter">Starter</SelectItem>
               <SelectItem value="professional">Professional</SelectItem>
               <SelectItem value="enterprise">Enterprise</SelectItem>

@@ -28,7 +28,7 @@ import { toast } from 'sonner'
 export const editTenantSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional().default(''),
-  plan: z.enum(['free', 'starter', 'professional', 'enterprise']),
+  plan: z.enum(['free', 'paid', 'starter', 'professional', 'enterprise']),
   status: z.enum(['active', 'suspended', 'pending', 'deleted']),
   billingEmail: z.string().email('Invalid email').or(z.literal('')).optional(),
   maxSessions: z.coerce.number().int().min(1, 'Min 1'),
@@ -151,6 +151,7 @@ export function EditTenantModal({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="free">Free</SelectItem>
+                <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="starter">Starter</SelectItem>
                 <SelectItem value="professional">Professional</SelectItem>
                 <SelectItem value="enterprise">Enterprise</SelectItem>

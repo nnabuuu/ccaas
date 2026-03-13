@@ -222,7 +222,7 @@ describe('EditTenantModal schema validation', () => {
   const schema = z.object({
     name: z.string().min(1, 'Name is required'),
     description: z.string().optional().default(''),
-    plan: z.enum(['free', 'starter', 'professional', 'enterprise']),
+    plan: z.enum(['free', 'paid', 'starter', 'professional', 'enterprise']),
     status: z.enum(['active', 'suspended', 'pending', 'deleted']),
     billingEmail: z.string().email('Invalid email').or(z.literal('')).optional(),
     maxSessions: z.coerce.number().int().min(1, 'Min 1'),

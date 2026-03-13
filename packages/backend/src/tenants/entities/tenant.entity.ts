@@ -13,11 +13,12 @@ import {
 } from 'typeorm';
 import type { SessionTemplateMap } from '@kedge-agentic/common';
 
-export type TenantPlan = 'free' | 'starter' | 'professional' | 'enterprise';
+export type TenantPlan = 'free' | 'paid' | 'starter' | 'professional' | 'enterprise';
 export type TenantStatus = 'active' | 'suspended' | 'pending' | 'deleted';
 
 export const PLAN_MAX_SESSION_TTL_MS: Record<TenantPlan, number> = {
   free:           300_000,   //  5 min
+  paid:           300_000,   //  5 min
   starter:      1_800_000,   // 30 min
   professional: 1_800_000,
   enterprise:   1_800_000,
@@ -25,9 +26,19 @@ export const PLAN_MAX_SESSION_TTL_MS: Record<TenantPlan, number> = {
 
 export const PLAN_DEFAULT_SESSION_TTL_MS: Record<TenantPlan, number> = {
   free:           300_000,
+  paid:           300_000,
   starter:      1_800_000,
   professional: 1_800_000,
   enterprise:   1_800_000,
+};
+
+/** Monthly token quota per plan. -1 = unlimited (BYOK). Input + output combined. */
+export const PLAN_DEFAULT_TOKEN_QUOTA: Record<TenantPlan, number> = {
+  free:           200_000,   // 平台提供 200K/mo（input+output 合计）
+  paid:         2_000_000,   // 平台提供 2M/mo（input+output 合计）
+  starter:        -1,        // unlimited (BYOK)
+  professional:   -1,        // unlimited (BYOK)
+  enterprise:     -1,        // unlimited (custom contract)
 };
 
 @Entity('tenants')
