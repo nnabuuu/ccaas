@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { CreateTenantForm } from '@/components/tenants/create-form'
 import { ApiKeySuccessModal } from '@/components/tenants/api-key-success-modal'
+import { T } from '@/components/shared/t'
 
 interface TenantData {
   id: string
@@ -36,9 +37,9 @@ export function CreateTenantPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6 py-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Create New Tenant</h1>
+        <h1 className="text-3xl font-bold tracking-tight"><T zh="创建新租户" en="Create New Tenant" /></h1>
         <p className="text-muted-foreground">
-          Create a new tenant for a solution or organization
+          <T zh="为解决方案或组织创建新租户" en="Create a new tenant for a solution or organization" />
         </p>
       </div>
 

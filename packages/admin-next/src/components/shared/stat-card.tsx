@@ -3,9 +3,9 @@ import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
 
 interface StatCardProps {
-  title: string
-  value: string | number
-  description?: string
+  title: React.ReactNode
+  value: string | number | React.ReactNode
+  description?: React.ReactNode
   icon?: LucideIcon
   trend?: { value: number; label: string }
   className?: string

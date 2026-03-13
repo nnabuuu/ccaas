@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AlertCircle } from 'lucide-react'
+import { T } from '@/components/shared/t'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
@@ -103,7 +104,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="name">Tenant Name *</Label>
+        <Label htmlFor="name"><T zh="租户名称 *" en="Tenant Name *" /></Label>
         <Input
           id="name"
           placeholder="My Solution Company"
@@ -122,7 +123,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
           {...register('slug')}
         />
         <p className="text-sm text-muted-foreground">
-          Auto-generated from name (can be edited)
+          <T zh="从名称自动生成（可编辑）" en="Auto-generated from name (can be edited)" />
         </p>
         {errors.slug && (
           <p className="text-sm text-destructive">{errors.slug.message}</p>
@@ -130,7 +131,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+        <Label htmlFor="description"><T zh="描述" en="Description" /></Label>
         <textarea
           id="description"
           placeholder="Optional description..."
@@ -141,7 +142,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="plan">Plan</Label>
+          <Label htmlFor="plan"><T zh="计划" en="Plan" /></Label>
           <Select
             defaultValue="free"
             onValueChange={(value) =>
@@ -162,7 +163,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="maxSessions">Max Sessions</Label>
+          <Label htmlFor="maxSessions"><T zh="最大会话数" en="Max Sessions" /></Label>
           <Input
             id="maxSessions"
             type="number"
@@ -171,7 +172,7 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="maxSkills">Max Skills</Label>
+          <Label htmlFor="maxSkills"><T zh="最大技能数" en="Max Skills" /></Label>
           <Input
             id="maxSkills"
             type="number"
@@ -190,10 +191,10 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
         />
         <div>
           <Label htmlFor="autoCreateApiKey" className="font-medium">
-            Auto-create API Key
+            <T zh="自动创建 API 密钥" en="Auto-create API Key" />
           </Label>
           <p className="text-sm text-muted-foreground">
-            Recommended: Creates a default API key for immediate use
+            <T zh="推荐：创建默认 API 密钥以立即使用" en="Recommended: Creates a default API key for immediate use" />
           </p>
         </div>
       </div>
@@ -211,10 +212,10 @@ export function CreateTenantForm({ onSuccess }: CreateTenantFormProps) {
           variant="outline"
           onClick={() => window.history.back()}
         >
-          Cancel
+          <T zh="取消" en="Cancel" />
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Creating...' : 'Create Tenant'}
+          {isSubmitting ? <T zh="创建中..." en="Creating..." /> : <T zh="创建租户" en="Create Tenant" />}
         </Button>
       </div>
     </form>

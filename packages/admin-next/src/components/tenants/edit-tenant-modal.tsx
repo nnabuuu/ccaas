@@ -24,6 +24,7 @@ import {
 import { AlertCircle } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { T } from '@/components/shared/t'
 
 export const editTenantSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -101,7 +102,7 @@ export function EditTenantModal({
     setError(null)
     try {
       await apiClient.put(`/admin/tenants/${tenant.id}`, data)
-      toast.success('Tenant updated successfully')
+      toast.success(<T zh="租户更新成功" en="Tenant updated successfully" />)
       onSuccess()
       onClose()
     } catch (err) {
@@ -120,15 +121,15 @@ export function EditTenantModal({
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose() }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Tenant</DialogTitle>
+          <DialogTitle><T zh="编辑租户" en="Edit Tenant" /></DialogTitle>
           <DialogDescription>
-            Update tenant properties and resource limits.
+            <T zh="更新租户属性和资源限制" en="Update tenant properties and resource limits." />
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name"><T zh="名称" en="Name" /></Label>
             <Input id="name" {...register('name')} />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>
@@ -136,12 +137,12 @@ export function EditTenantModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description"><T zh="描述" en="Description" /></Label>
             <Input id="description" {...register('description')} />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plan">Plan</Label>
+            <Label htmlFor="plan"><T zh="计划" en="Plan" /></Label>
             <Select
               value={plan}
               onValueChange={(v) => setValue('plan', v as FormValues['plan'])}
@@ -160,7 +161,7 @@ export function EditTenantModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status"><T zh="状态" en="Status" /></Label>
             <Select
               value={status}
               onValueChange={(v) => setValue('status', v as FormValues['status'])}
@@ -169,16 +170,16 @@ export function EditTenantModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="deleted">Deleted</SelectItem>
+                <SelectItem value="active"><T zh="活跃" en="Active" /></SelectItem>
+                <SelectItem value="suspended"><T zh="已暂停" en="Suspended" /></SelectItem>
+                <SelectItem value="pending"><T zh="待处理" en="Pending" /></SelectItem>
+                <SelectItem value="deleted"><T zh="已删除" en="Deleted" /></SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="billingEmail">Billing Email</Label>
+            <Label htmlFor="billingEmail"><T zh="账单邮箱" en="Billing Email" /></Label>
             <Input id="billingEmail" type="email" {...register('billingEmail')} />
             {errors.billingEmail && (
               <p className="text-sm text-destructive">{errors.billingEmail.message}</p>
@@ -186,7 +187,7 @@ export function EditTenantModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maxSessions">Max Sessions</Label>
+            <Label htmlFor="maxSessions"><T zh="最大会话数" en="Max Sessions" /></Label>
             <Input id="maxSessions" type="number" min={1} {...register('maxSessions')} />
             {errors.maxSessions && (
               <p className="text-sm text-destructive">{errors.maxSessions.message}</p>
@@ -194,7 +195,7 @@ export function EditTenantModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maxSkills">Max Skills</Label>
+            <Label htmlFor="maxSkills"><T zh="最大技能数" en="Max Skills" /></Label>
             <Input id="maxSkills" type="number" min={1} {...register('maxSkills')} />
             {errors.maxSkills && (
               <p className="text-sm text-destructive">{errors.maxSkills.message}</p>
@@ -202,13 +203,13 @@ export function EditTenantModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sessionTtlMs">Session TTL (ms)</Label>
+            <Label htmlFor="sessionTtlMs"><T zh="会话 TTL (ms)" en="Session TTL (ms)" /></Label>
             <Input id="sessionTtlMs" type="number" min={60000} {...register('sessionTtlMs')} />
             {errors.sessionTtlMs && (
               <p className="text-sm text-destructive">{errors.sessionTtlMs.message}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              Minimum 60000 ms (60 seconds)
+              <T zh="最少 60000 毫秒（60 秒）" en="Minimum 60000 ms (60 seconds)" />
             </p>
           </div>
 
@@ -221,10 +222,10 @@ export function EditTenantModal({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              <T zh="取消" en="Cancel" />
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? <T zh="保存中..." en="Saving..." /> : <T zh="保存" en="Save" />}
             </Button>
           </DialogFooter>
         </form>

@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { KeyRound } from 'lucide-react'
+import { T } from '@/components/shared/t'
 
 export function LoginPage() {
   const [apiKey, setApiKey] = useState('')
@@ -22,7 +23,9 @@ export function LoginPage() {
             C
           </div>
           <CardTitle className="text-2xl">CCaaS Admin</CardTitle>
-          <CardDescription>Enter your API key to access the admin dashboard</CardDescription>
+          <CardDescription>
+            <T zh="输入 API 密钥以访问管理后台" en="Enter your API key to access the admin dashboard" />
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -38,7 +41,7 @@ export function LoginPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={!apiKey || isLoading}>
-              {isLoading ? 'Authenticating...' : 'Sign In'}
+              {isLoading ? <T zh="认证中..." en="Authenticating..." /> : <T zh="登录" en="Sign In" />}
             </Button>
           </form>
         </CardContent>

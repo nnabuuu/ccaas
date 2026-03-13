@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { T } from '@/components/shared/t'
 
 interface Tenant {
   id: string
@@ -31,7 +32,7 @@ export function TenantListPage() {
   const columns: ColumnDef<Tenant>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: () => <T zh="名称" en="Name" />,
       cell: ({ row }) => (
         <div>
           <span className="font-medium">{row.original.name}</span>
@@ -41,23 +42,23 @@ export function TenantListPage() {
     },
     {
       accessorKey: 'status',
-      header: 'Status',
+      header: () => <T zh="状态" en="Status" />,
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
       accessorKey: 'plan',
-      header: 'Plan',
+      header: () => <T zh="计划" en="Plan" />,
       cell: ({ row }) => <Badge variant="outline" className="capitalize">{row.original.plan}</Badge>,
     },
     {
       accessorKey: 'maxSessions',
-      header: 'Max Sessions',
+      header: () => <T zh="最大会话数" en="Max Sessions" />,
     },
     {
       id: 'actions',
       cell: ({ row }) => (
         <Button variant="ghost" size="sm" onClick={() => navigate(`/tenants/${row.original.id}`)}>
-          View
+          <T zh="查看" en="View" />
         </Button>
       ),
     },
@@ -66,9 +67,9 @@ export function TenantListPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Tenants</h1>
+        <h1 className="text-3xl font-bold tracking-tight"><T zh="租户" en="Tenants" /></h1>
         <Button onClick={() => navigate('/tenants/create')}>
-          <Plus className="mr-2 h-4 w-4" /> Create Tenant
+          <Plus className="mr-2 h-4 w-4" /> <T zh="创建租户" en="Create Tenant" />
         </Button>
       </div>
       <DataTable columns={columns} data={tenants} isLoading={isLoading} />

@@ -27,6 +27,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { Activity, CheckCircle, AlertCircle, Clock, StopCircle } from 'lucide-react'
 import { formatDuration, formatTokens, formatCost } from '@/lib/format'
 import { toast } from 'sonner'
+import { T } from '@/components/shared/t'
+import { useLang } from '@/contexts/language-context'
 
 interface SessionItem {
   sessionId: string
@@ -46,6 +48,7 @@ type TabValue = 'all' | 'active' | 'error' | 'long_running' | 'completed'
 export function SessionListPage() {
   const navigate = useNavigate()
   const { selectedTenantId } = useTenantContext()
+  const { lang } = useLang()
   const [page, setPage] = useState(0)
   const [tab, setTab] = useState<TabValue>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -62,7 +65,7 @@ export function SessionListPage() {
     method: 'get',
     config: {
       query: {
-        page: page + 1, // API uses 1-based pages, DataTable uses 0-based
+        page: page + 1,
         pageSize: PAGE_SIZE,
         ...(selectedTenantId ? { tenantId: selectedTenantId } : {}),
         ...(dateRange?.from ? { startDate: dateRange.from.toISOString() } : {}),
@@ -71,27 +74,20 @@ export function SessionListPage() {
     },
   })
 
-  // Backend returns PaginatedSessions: { data: SessionListItem[], total, page, pageSize }
   const result = data?.data as { data?: SessionItem[]; total?: number } | undefined
   const allSessions = useMemo(() => result?.data ?? [], [result?.data])
   const total = result?.total ?? allSessions.length
 
-  // Bulk kill mutation
   const { mutate: bulkKillSessions, isLoading: isKilling } = useCustomMutation()
 
-  // Time references for filtering (calculated once on mount)
-  // These remain stable for the component's lifetime, which is acceptable for filtering
   // eslint-disable-next-line react-hooks/purity
   const oneHourAgo = useMemo(() => new Date(Date.now() - 60 * 60 * 1000), [])
   // eslint-disable-next-line react-hooks/purity
   const oneDayAgo = useMemo(() => new Date(Date.now() - 24 * 60 * 60 * 1000), [])
 
-  // Filter sessions based on tab and search
-  // NOTE: Date range filtering is handled server-side
   const sessions = useMemo(() => {
     let filtered = allSessions
 
-    // Tab filtering (client-side)
     if (tab === 'active') {
       filtered = filtered.filter((s) => s.status === 'processing' || s.hasActiveProcess)
     } else if (tab === 'error') {
@@ -106,7 +102,6 @@ export function SessionListPage() {
       filtered = filtered.filter((s) => s.status === 'closed' || s.status === 'completed')
     }
 
-    // Search filtering (client-side)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -120,7 +115,6 @@ export function SessionListPage() {
     return filtered
   }, [allSessions, tab, searchQuery, oneHourAgo])
 
-  // Calculate KPIs
   const kpis = useMemo(() => {
     const activeSessions = allSessions.filter(
       (s) => s.status === 'processing' || s.hasActiveProcess
@@ -136,7 +130,6 @@ export function SessionListPage() {
         ? ((allSessions.filter((s) => s.status === 'error').length / allSessions.length) * 100).toFixed(1)
         : '0.0'
 
-    // Calculate average duration (createdAt to lastActivity)
     const durations = allSessions
       .filter((s) => s.status === 'closed' || s.status === 'completed')
       .map((s) => new Date(s.lastActivity).getTime() - new Date(s.createdAt).getTime())
@@ -153,20 +146,17 @@ export function SessionListPage() {
     }
   }, [allSessions, oneDayAgo])
 
-  // Copy session ID with error handling
   const handleCopySessionId = useCallback(async (sessionId: string) => {
     try {
       await navigator.clipboard.writeText(sessionId)
-      toast.success('Session ID copied')
+      toast.success(lang === 'zh' ? '会话 ID 已复制' : 'Session ID copied')
     } catch (error) {
-      // Only log in development
       if (import.meta.env.DEV) {
         console.warn('Failed to copy session ID:', error)
       }
     }
-  }, [])
+  }, [lang])
 
-  // Bulk selection handlers
   const handleSelectSession = useCallback((sessionId: string, checked: boolean) => {
     setSelectedSessions((prev) => {
       const next = new Set(prev)
@@ -221,7 +211,6 @@ export function SessionListPage() {
     )
   }, [selectedSessions, bulkKillSessions, refetch])
 
-  // Memoize columns to prevent re-creation on every render
   const columns = useMemo<ColumnDef<SessionItem>[]>(
     () => [
       {
@@ -253,7 +242,7 @@ export function SessionListPage() {
       },
       {
         accessorKey: 'sessionId',
-        header: 'Session ID',
+        header: () => <T zh="会话 ID" en="Session ID" />,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs">{row.original.sessionId.slice(0, 12)}...</span>
@@ -266,14 +255,14 @@ export function SessionListPage() {
               }}
               aria-label="Copy session ID"
             >
-              Copy
+              <T zh="复制" en="Copy" />
             </Button>
           </div>
         ),
       },
       {
         accessorKey: 'tenantId',
-        header: 'Tenant',
+        header: () => <T zh="租户" en="Tenant" />,
         cell: ({ row }) => (
           <span className="text-xs">
             {row.original.tenantId ? row.original.tenantId.slice(0, 12) + '...' : 'N/A'}
@@ -282,17 +271,17 @@ export function SessionListPage() {
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: () => <T zh="状态" en="Status" />,
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
       },
       {
         accessorKey: 'messageCount',
-        header: 'Messages',
+        header: () => <T zh="消息" en="Messages" />,
         cell: ({ row }) => <span>{row.original.messageCount}</span>,
       },
       {
         accessorKey: 'totalTokens',
-        header: 'Total Tokens',
+        header: () => <T zh="总 Token" en="Total Tokens" />,
         cell: ({ row }) => (
           <span className="text-xs font-mono">
             {formatTokens(row.original.totalTokens || 0)}
@@ -301,7 +290,7 @@ export function SessionListPage() {
       },
       {
         accessorKey: 'estimatedCost',
-        header: 'Cost',
+        header: () => <T zh="费用" en="Cost" />,
         cell: ({ row }) => (
           <span className="text-xs font-mono">
             {formatCost(row.original.estimatedCost || 0)}
@@ -310,7 +299,7 @@ export function SessionListPage() {
       },
       {
         accessorKey: 'duration',
-        header: 'Duration',
+        header: () => <T zh="时长" en="Duration" />,
         cell: ({ row }) => {
           const durationMs =
             new Date(row.original.lastActivity).getTime() -
@@ -320,7 +309,7 @@ export function SessionListPage() {
       },
       {
         accessorKey: 'lastActivity',
-        header: 'Last Activity',
+        header: () => <T zh="最近活动" en="Last Activity" />,
         cell: ({ row }) => (
           <span className="text-xs">
             {formatDistanceToNow(new Date(row.original.lastActivity), { addSuffix: true })}
@@ -335,7 +324,7 @@ export function SessionListPage() {
             size="sm"
             onClick={() => navigate(`/sessions/${row.original.sessionId}`)}
           >
-            View Details
+            <T zh="查看详情" en="View Details" />
           </Button>
         ),
       },
@@ -347,7 +336,7 @@ export function SessionListPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
+        <h1 className="text-3xl font-bold tracking-tight"><T zh="会话" en="Sessions" /></h1>
         {selectedSessions.size > 0 && (
           <Button
             variant="destructive"
@@ -356,37 +345,37 @@ export function SessionListPage() {
           >
             <StopCircle className="h-4 w-4 mr-2" />
             {isKilling
-              ? 'Terminating...'
-              : `Terminate Selected (${selectedSessions.size})`}
+              ? <T zh="终止中..." en="Terminating..." />
+              : <><span className="zh">终止选中 ({selectedSessions.size})</span><span className="en">Terminate Selected ({selectedSessions.size})</span></>}
           </Button>
         )}
       </div>
 
-      {/* KPI Cards - Using shared StatCard component */}
+      {/* KPI Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Active Sessions"
+          title={<T zh="活跃会话" en="Active Sessions" />}
           value={kpis.activeSessions}
           icon={Activity}
-          description="Currently running or processing"
+          description={<T zh="正在运行或处理中" en="Currently running or processing" />}
         />
         <StatCard
-          title="Completed (24h)"
+          title={<T zh="已完成 (24h)" en="Completed (24h)" />}
           value={kpis.completedLast24h}
           icon={CheckCircle}
-          description="Successfully finished"
+          description={<T zh="成功完成" en="Successfully finished" />}
         />
         <StatCard
-          title="Error Rate"
+          title={<T zh="错误率" en="Error Rate" />}
           value={`${kpis.errorRate}%`}
           icon={AlertCircle}
-          description="Sessions with errors"
+          description={<T zh="出错的会话" en="Sessions with errors" />}
         />
         <StatCard
-          title="Avg Duration"
+          title={<T zh="平均时长" en="Avg Duration" />}
           value={kpis.avgDuration}
           icon={Clock}
-          description="For completed sessions"
+          description={<T zh="已完成会话" en="For completed sessions" />}
         />
       </div>
 
@@ -400,17 +389,17 @@ export function SessionListPage() {
           }}
         >
           <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="active">Active</TabsTrigger>
-            <TabsTrigger value="error">Error</TabsTrigger>
-            <TabsTrigger value="long_running">Long Running</TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
+            <TabsTrigger value="all"><T zh="全部" en="All" /></TabsTrigger>
+            <TabsTrigger value="active"><T zh="活跃" en="Active" /></TabsTrigger>
+            <TabsTrigger value="error"><T zh="错误" en="Error" /></TabsTrigger>
+            <TabsTrigger value="long_running"><T zh="长时间运行" en="Long Running" /></TabsTrigger>
+            <TabsTrigger value="completed"><T zh="已完成" en="Completed" /></TabsTrigger>
           </TabsList>
         </Tabs>
 
         <div className="flex flex-col gap-4">
           <Input
-            placeholder="Search by Session ID, Client ID, or Tenant..."
+            placeholder={lang === 'zh' ? '按会话 ID、客户端 ID 或租户搜索...' : 'Search by Session ID, Client ID, or Tenant...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="max-w-md"
@@ -422,12 +411,12 @@ export function SessionListPage() {
               <div className="space-y-4">
                 {/* Date Range Filter */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Date Range</label>
+                  <label className="text-sm font-medium"><T zh="日期范围" en="Date Range" /></label>
                   <DateRangePicker
                     value={dateRange}
                     onChange={(range) => {
                       setDateRange(range)
-                      setPage(0) // Reset to first page when filter changes
+                      setPage(0)
                     }}
                     className="max-w-md"
                   />
@@ -437,10 +426,18 @@ export function SessionListPage() {
                 {(sessions.length < allSessions.length || searchQuery || dateRange) && (
                   <div className="pt-4 border-t">
                     <p className="text-sm text-muted-foreground">
-                      Showing {sessions.length} of {allSessions.length} sessions
-                      {searchQuery && ` matching "${searchQuery}"`}
-                      {dateRange?.from && ` from ${dateRange.from.toLocaleDateString()}`}
-                      {dateRange?.to && ` to ${dateRange.to.toLocaleDateString()}`}
+                      <span className="zh">
+                        显示 {sessions.length} / {allSessions.length} 个会话
+                        {searchQuery && ` 匹配 "${searchQuery}"`}
+                        {dateRange?.from && ` 从 ${dateRange.from.toLocaleDateString()}`}
+                        {dateRange?.to && ` 到 ${dateRange.to.toLocaleDateString()}`}
+                      </span>
+                      <span className="en">
+                        Showing {sessions.length} of {allSessions.length} sessions
+                        {searchQuery && ` matching "${searchQuery}"`}
+                        {dateRange?.from && ` from ${dateRange.from.toLocaleDateString()}`}
+                        {dateRange?.to && ` to ${dateRange.to.toLocaleDateString()}`}
+                      </span>
                     </p>
                   </div>
                 )}
@@ -456,20 +453,20 @@ export function SessionListPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 text-destructive">
               <AlertCircle className="h-5 w-5" />
-              <p>Failed to load sessions: {error.message}</p>
+              <p><span className="zh">加载会话失败: </span><span className="en">Failed to load sessions: </span>{error.message}</p>
             </div>
             <Button
               variant="outline"
               className="mt-4"
               onClick={() => refetch()}
             >
-              Retry
+              <T zh="重试" en="Retry" />
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Table - Fixed pagination to use server total */}
+      {/* Table */}
       {!error && (
         <DataTable
           columns={columns}
@@ -488,8 +485,8 @@ export function SessionListPage() {
           <CardContent className="pt-6 text-center">
             <p className="text-muted-foreground">
               {searchQuery || tab !== 'all'
-                ? 'No sessions match your filters'
-                : 'No sessions found'}
+                ? <T zh="没有匹配筛选条件的会话" en="No sessions match your filters" />
+                : <T zh="暂无会话" en="No sessions found" />}
             </p>
             {(searchQuery || tab !== 'all' || dateRange) && (
               <Button
@@ -501,7 +498,7 @@ export function SessionListPage() {
                   setDateRange(undefined)
                 }}
               >
-                Clear Filters
+                <T zh="清除筛选" en="Clear Filters" />
               </Button>
             )}
           </CardContent>
@@ -512,21 +509,29 @@ export function SessionListPage() {
       <AlertDialog open={showBulkKillDialog} onOpenChange={setShowBulkKillDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Terminate {selectedSessions.size} Sessions?</AlertDialogTitle>
+            <AlertDialogTitle>
+              <span className="zh">终止 {selectedSessions.size} 个会话？</span>
+              <span className="en">Terminate {selectedSessions.size} Sessions?</span>
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will forcefully terminate {selectedSessions.size} selected session
-              {selectedSessions.size > 1 ? 's' : ''}. Any running AgentEngine processes will be
-              killed. This action cannot be undone.
+              <span className="zh">
+                这将强制终止 {selectedSessions.size} 个选中的会话。所有运行中的 AgentEngine 进程将被终止。此操作不可撤销。
+              </span>
+              <span className="en">
+                This will forcefully terminate {selectedSessions.size} selected session
+                {selectedSessions.size > 1 ? 's' : ''}. Any running AgentEngine processes will be
+                killed. This action cannot be undone.
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isKilling}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isKilling}><T zh="取消" en="Cancel" /></AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmBulkTerminate}
               disabled={isKilling}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isKilling ? 'Terminating...' : 'Terminate'}
+              {isKilling ? <T zh="终止中..." en="Terminating..." /> : <T zh="终止" en="Terminate" />}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

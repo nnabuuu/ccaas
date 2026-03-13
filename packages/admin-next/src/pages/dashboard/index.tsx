@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { useSdkDistribution } from '@/components/shared/sdk-connections'
 import { formatNumber, formatTokens } from '@/lib/format'
 import { useTenantContext } from '@/hooks/use-tenant-context'
+import { T } from '@/components/shared/t'
 import {
   TokenAnalyticsResponseSchema,
   RecentSessionsResponseSchema,
@@ -74,7 +75,6 @@ export function DashboardPage() {
 
   const isAnyLoading = isSummaryLoading || isRecentLoading || isTokenLoading || isErrorRateLoading
 
-  // Type-safe API response parsing with Zod schemas (memoized to prevent re-computation)
   const summary = useMemo(
     () => parseApiResponseSafe(
       DashboardSummarySchema,
@@ -126,7 +126,6 @@ export function DashboardPage() {
 
   const tokenChart: TokenDataPoint[] = tokenAnalytics.dataPoints
 
-  // Calculate session status distribution
   const sessionStatusDistribution = useMemo(() => {
     const statusCounts = recentSessions.reduce(
       (acc, session) => {
@@ -142,7 +141,6 @@ export function DashboardPage() {
     }))
   }, [recentSessions])
 
-  // Calculate duration distribution
   const durationDistribution = useMemo(() => {
     const buckets = [
       { name: '0-5min', min: 0, max: 5, count: 0 },
@@ -188,29 +186,29 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <h1 className="text-3xl font-bold tracking-tight"><T zh="仪表板" en="Dashboard" /></h1>
 
       {/* Stat cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Active Sessions"
+          title={<T zh="活跃会话" en="Active Sessions" />}
           value={summary?.activeSessions ?? 0}
-          description={`${summary?.totalSessions ?? 0} total`}
+          description={<><span className="zh">{summary?.totalSessions ?? 0} 总计</span><span className="en">{summary?.totalSessions ?? 0} total</span></>}
           icon={Activity}
         />
         <StatCard
-          title="Messages (24h)"
+          title={<T zh="消息 (24h)" en="Messages (24h)" />}
           value={formatNumber(summary?.totalMessages24h ?? 0)}
           icon={MessageSquare}
         />
         <StatCard
-          title="Tokens (24h)"
+          title={<T zh="Token (24h)" en="Tokens (24h)" />}
           value={formatTokens(summary?.totalTokens24h?.total ?? 0)}
           description={`${formatTokens(summary?.totalTokens24h?.input ?? 0)} in / ${formatTokens(summary?.totalTokens24h?.output ?? 0)} out`}
           icon={Coins}
         />
         <StatCard
-          title="Error Rate (24h)"
+          title={<T zh="错误率 (24h)" en="Error Rate (24h)" />}
           value={`${((summary?.errorRate24h ?? 0) * 100).toFixed(1)}%`}
           icon={AlertTriangle}
         />
@@ -218,28 +216,28 @@ export function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="API Keys"
+          title={<T zh="API 密钥" en="API Keys" />}
           value={summary?.activeApiKeys ?? 0}
-          description="Active"
+          description={<T zh="活跃" en="Active" />}
           icon={Key}
         />
         <StatCard
-          title="Skills"
+          title={<T zh="技能" en="Skills" />}
           value={`${summary?.publishedSkills ?? 0}/${summary?.totalSkills ?? 0}`}
-          description="Published / Total"
+          description={<T zh="已发布 / 总计" en="Published / Total" />}
           icon={Zap}
         />
         <StatCard
-          title="SDK Connections"
+          title={<T zh="SDK 连接" en="SDK Connections" />}
           value={sdkTotal}
-          description={sdkDistribution.map((d) => `${d.name}: ${d.value}`).join(', ') || 'None'}
+          description={sdkDistribution.map((d) => `${d.name}: ${d.value}`).join(', ') || <T zh="无" en="None" />}
           icon={Cable}
         />
       </div>
 
       {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Token Usage (24h)" description="Input and output tokens over time">
+        <ChartCard title={<T zh="Token 使用量 (24h)" en="Token Usage (24h)" />} description={<T zh="输入和输出 Token 随时间变化" en="Input and output tokens over time" />}>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={tokenChart}>
@@ -262,8 +260,8 @@ export function DashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title="Error Rate Trend (7 days)"
-          description={`Avg: ${(errorRateTrend.summary.avgErrorRate * 100).toFixed(2)}% | Trend: ${errorRateTrend.summary.trend}`}
+          title={<T zh="错误率趋势 (7 天)" en="Error Rate Trend (7 days)" />}
+          description={<><span className="zh">平均: {(errorRateTrend.summary.avgErrorRate * 100).toFixed(2)}% | 趋势: {errorRateTrend.summary.trend}</span><span className="en">Avg: {(errorRateTrend.summary.avgErrorRate * 100).toFixed(2)}% | Trend: {errorRateTrend.summary.trend}</span></>}
         >
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -294,10 +292,10 @@ export function DashboardPage() {
                             {new Date(data.timestamp).toLocaleDateString()}
                           </p>
                           <div className="space-y-1 text-xs">
-                            <p>Error Count: {data.errorCount}</p>
-                            <p>Total Messages: {data.totalMessages}</p>
+                            <p><span className="zh">错误数: </span><span className="en">Error Count: </span>{data.errorCount}</p>
+                            <p><span className="zh">总消息: </span><span className="en">Total Messages: </span>{data.totalMessages}</p>
                             <p className="font-semibold">
-                              Error Rate: {(data.errorRate * 100).toFixed(2)}%
+                              <span className="zh">错误率: </span><span className="en">Error Rate: </span>{(data.errorRate * 100).toFixed(2)}%
                             </p>
                           </div>
                         </div>
@@ -323,7 +321,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <ChartCard title="Recent Sessions">
+        <ChartCard title={<T zh="最近会话" en="Recent Sessions" />}>
           <div className="space-y-3">
             {recentSessions.slice(0, 8).map((session) => (
               <div key={session.sessionId} className="flex items-center justify-between text-sm">
@@ -334,13 +332,13 @@ export function DashboardPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-muted-foreground">
-                  <span>{session.messageCount} msgs</span>
+                  <span>{session.messageCount} <span className="zh">条</span><span className="en">msgs</span></span>
                   <span>{new Date(session.lastActivity).toLocaleTimeString()}</span>
                 </div>
               </div>
             ))}
             {recentSessions.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No recent sessions</p>
+              <p className="text-sm text-muted-foreground text-center py-4"><T zh="暂无最近会话" en="No recent sessions" /></p>
             )}
           </div>
         </ChartCard>
@@ -350,7 +348,7 @@ export function DashboardPage() {
       {(sessionStatusDistribution.length > 0 || durationDistribution.length > 0) && (
         <div className="grid gap-4 lg:grid-cols-2">
           {sessionStatusDistribution.length > 0 && (
-            <ChartCard title="Session Status Distribution" description="Breakdown of sessions by status">
+            <ChartCard title={<T zh="会话状态分布" en="Session Status Distribution" />} description={<T zh="按状态分组的会话" en="Breakdown of sessions by status" />}>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -375,7 +373,7 @@ export function DashboardPage() {
           )}
 
           {durationDistribution.length > 0 && (
-            <ChartCard title="Session Duration Distribution" description="Sessions grouped by duration">
+            <ChartCard title={<T zh="会话时长分布" en="Session Duration Distribution" />} description={<T zh="按时长分组的会话" en="Sessions grouped by duration" />}>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={durationDistribution}>
@@ -398,7 +396,7 @@ export function DashboardPage() {
       {/* SDK Distribution */}
       {sdkDistribution.length > 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="SDK Distribution" description="Connected clients by SDK type">
+          <ChartCard title={<T zh="SDK 分布" en="SDK Distribution" />} description={<T zh="按 SDK 类型的已连接客户端" en="Connected clients by SDK type" />}>
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>

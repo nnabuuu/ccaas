@@ -7,6 +7,7 @@ import { authProvider } from '@/providers/auth-provider'
 import { devAuthProvider } from '@/providers/auth-provider.dev'
 import { liveProvider } from '@/providers/live-provider'
 import { AppLayout } from '@/components/layout/app-layout'
+import { LanguageProvider } from '@/contexts/language-context'
 import { Toaster } from 'sonner'
 
 // Use dev auth provider if VITE_DISABLE_AUTH or VITE_DEV_API_KEY is set
@@ -39,13 +40,15 @@ const QueueMonitorPage = lazy(() => import('@/pages/queue').then((m) => ({ defau
 function PageLoader() {
   return (
     <div className="flex items-center justify-center h-64 text-muted-foreground">
-      Loading...
+      <span className="zh">加载中...</span>
+      <span className="en">Loading...</span>
     </div>
   )
 }
 
 function App() {
   return (
+    <LanguageProvider>
     <BrowserRouter>
       <Refine
         routerProvider={routerProvider}
@@ -152,6 +155,7 @@ function App() {
       </Refine>
       <Toaster />
     </BrowserRouter>
+    </LanguageProvider>
   )
 }
 

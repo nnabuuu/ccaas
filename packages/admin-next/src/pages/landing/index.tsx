@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import './landing.css'
 import { LandingNav } from './components/LandingNav'
 import { HeroSection } from './components/HeroSection'
@@ -10,17 +10,10 @@ import { ArchitectureDiagram } from './components/ArchitectureDiagram'
 import { PricingSection } from './components/PricingSection'
 import { CTASection } from './components/CTASection'
 import { LandingFooter } from './components/LandingFooter'
+import { useLang } from '@/contexts/language-context'
 
 export function LandingPage() {
-  const [lang, setLang] = useState<'zh' | 'en'>(() => {
-    return (localStorage.getItem('ka-lang') as 'zh' | 'en') || 'zh'
-  })
-
-  function toggleLang() {
-    const next = lang === 'zh' ? 'en' : 'zh'
-    setLang(next)
-    localStorage.setItem('ka-lang', next)
-  }
+  const { lang, toggleLang } = useLang()
 
   // Fade-in scroll animation
   useEffect(() => {

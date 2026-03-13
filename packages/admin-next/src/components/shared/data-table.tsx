@@ -11,6 +11,7 @@ import { useState } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { T } from '@/components/shared/t'
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -68,7 +69,7 @@ export function DataTable<TData, TValue>({
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  Loading...
+                  <T zh="加载中..." en="Loading..." />
                 </TableCell>
               </TableRow>
             ) : table.getRowModel().rows?.length ? (
@@ -84,7 +85,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
+                  <T zh="无结果" en="No results." />
                 </TableCell>
               </TableRow>
             )}
@@ -100,10 +101,11 @@ export function DataTable<TData, TValue>({
             disabled={pageIndex === 0}
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous
+            <T zh="上一页" en="Previous" />
           </Button>
           <span className="text-sm text-muted-foreground">
-            Page {pageIndex + 1} of {pageCount}
+            <span className="zh">第 {pageIndex + 1} / {pageCount} 页</span>
+            <span className="en">Page {pageIndex + 1} of {pageCount}</span>
           </span>
           <Button
             variant="outline"
@@ -111,7 +113,7 @@ export function DataTable<TData, TValue>({
             onClick={() => onPaginationChange?.(pageIndex + 1)}
             disabled={pageIndex >= (pageCount ?? 1) - 1}
           >
-            Next
+            <T zh="下一页" en="Next" />
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

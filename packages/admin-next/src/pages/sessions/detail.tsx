@@ -42,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { T } from '@/components/shared/t'
 
 interface SessionQueueStatus {
   total: number
@@ -72,7 +73,6 @@ interface SessionDetail {
   workspaceDir: string
 }
 
-// Type-safe timeline events with discriminated union
 interface MessageEventData {
   role: string
   content: string
@@ -340,13 +340,11 @@ export function SessionDetailPage() {
   const [isExporting, setIsExporting] = useState(false)
   const [showKillDialog, setShowKillDialog] = useState(false)
 
-  // Fetch session detail
   const { data: sessionData, isLoading: sessionLoading } = useCustom<SessionDetail>({
     url: `/admin/sessions/${sessionId}`,
     method: 'get',
   })
 
-  // Fetch timeline
   const {
     data: timelineData,
     isLoading: timelineLoading,
@@ -367,26 +365,22 @@ export function SessionDetailPage() {
     },
   })
 
-  // Fetch turns
   const { data: turnsData } = useCustom<TurnSummary[]>({
     url: `/admin/sessions/${sessionId}/turns`,
     method: 'get',
   })
   const turns = turnsData?.data || []
 
-  // Fetch token breakdown
   const { data: tokenData } = useCustom<TokenBreakdown>({
     url: `/admin/sessions/${sessionId}/tokens`,
     method: 'get',
   })
 
-  // Fetch queue status
   const { data: queueData } = useCustom<SessionQueueStatus>({
     url: `/sessions/${sessionId}/queue`,
     method: 'get',
   })
 
-  // Kill session mutation
   const { mutate: killSession, isLoading: isKilling } = useCustomMutation()
 
   const session = sessionData?.data
@@ -396,7 +390,6 @@ export function SessionDetailPage() {
   const events = timeline?.events || []
   const totalEvents = timeline?.totalEvents || 0
 
-  // Copy session ID with error handling
   const handleCopySessionId = useCallback(async () => {
     if (!sessionId) return
     try {
@@ -468,7 +461,7 @@ export function SessionDetailPage() {
   if (sessionLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Loading session...</p>
+        <p className="text-muted-foreground"><T zh="加载会话中..." en="Loading session..." /></p>
       </div>
     )
   }
@@ -476,8 +469,8 @@ export function SessionDetailPage() {
   if (!session) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
-        <p className="text-muted-foreground">Session not found</p>
-        <Button onClick={() => navigate('/sessions')}>Back to Sessions</Button>
+        <p className="text-muted-foreground"><T zh="会话未找到" en="Session not found" /></p>
+        <Button onClick={() => navigate('/sessions')}><T zh="返回会话列表" en="Back to Sessions" /></Button>
       </div>
     )
   }
@@ -488,20 +481,20 @@ export function SessionDetailPage() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/sessions')}>
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Sessions
+          <T zh="返回会话列表" en="Back to Sessions" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Session Details</h1>
+        <h1 className="text-3xl font-bold tracking-tight"><T zh="会话详情" en="Session Details" /></h1>
       </div>
 
       {/* Session Metadata */}
       <Card>
         <CardHeader>
-          <CardTitle>Session Information</CardTitle>
+          <CardTitle><T zh="会话信息" en="Session Information" /></CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Session ID</p>
+              <p className="text-sm text-muted-foreground"><T zh="会话 ID" en="Session ID" /></p>
               <div className="flex items-center gap-2">
                 <p className="font-mono text-sm">{session.sessionId.slice(0, 16)}...</p>
                 <Button
@@ -515,44 +508,44 @@ export function SessionDetailPage() {
               </div>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Tenant</p>
+              <p className="text-sm text-muted-foreground"><T zh="租户" en="Tenant" /></p>
               <p className="font-medium">
                 {session.tenantId ? session.tenantId.slice(0, 12) + '...' : 'N/A'}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Client ID</p>
+              <p className="text-sm text-muted-foreground"><T zh="客户端 ID" en="Client ID" /></p>
               <p className="font-medium">{session.clientId}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Status</p>
+              <p className="text-sm text-muted-foreground"><T zh="状态" en="Status" /></p>
               <StatusBadge status={session.status} />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Created</p>
+              <p className="text-sm text-muted-foreground"><T zh="创建时间" en="Created" /></p>
               <p className="text-sm">
                 {formatDistanceToNow(new Date(session.createdAt), { addSuffix: true })}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Last Activity</p>
+              <p className="text-sm text-muted-foreground"><T zh="最近活动" en="Last Activity" /></p>
               <p className="text-sm">
                 {formatDistanceToNow(new Date(session.lastActivity), { addSuffix: true })}
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Workspace</p>
+              <p className="text-sm text-muted-foreground"><T zh="工作空间" en="Workspace" /></p>
               <p className="font-mono text-xs">{session.workspaceDir}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Process</p>
+              <p className="text-sm text-muted-foreground"><T zh="进程" en="Process" /></p>
               {session.hasActiveProcess ? (
                 <span className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-3 w-3" /> Active
+                  <CheckCircle className="h-3 w-3" /> <T zh="活跃" en="Active" />
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-muted-foreground">
-                  <XCircle className="h-3 w-3" /> Inactive
+                  <XCircle className="h-3 w-3" /> <T zh="未活跃" en="Inactive" />
                 </span>
               )}
             </div>
@@ -560,33 +553,33 @@ export function SessionDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Usage Metrics - Using shared StatCard component */}
+      {/* Usage Metrics */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Messages"
+          title={<T zh="消息" en="Messages" />}
           value={session.messageCount}
           icon={MessageSquare}
-          description="Total message count"
+          description={<T zh="总消息数" en="Total message count" />}
         />
         <StatCard
-          title="Duration"
+          title={<T zh="时长" en="Duration" />}
           value={formatDuration(
             new Date(session.lastActivity).getTime() - new Date(session.createdAt).getTime()
           )}
           icon={Clock}
-          description="Total session duration"
+          description={<T zh="总会话时长" en="Total session duration" />}
         />
         <StatCard
-          title="Timeline Events"
+          title={<T zh="时间线事件" en="Timeline Events" />}
           value={totalEvents}
           icon={Activity}
-          description="Total events recorded"
+          description={<T zh="已记录的事件总数" en="Total events recorded" />}
         />
         <StatCard
-          title="Errors"
+          title={<T zh="错误" en="Errors" />}
           value={events.filter((e) => e.type === 'api_error').length}
           icon={AlertTriangle}
-          description="API errors encountered"
+          description={<T zh="遇到的 API 错误" en="API errors encountered" />}
         />
       </div>
 
@@ -596,33 +589,33 @@ export function SessionDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Coins className="h-5 w-5" />
-              Token Usage & Cost
+              <T zh="Token 使用量与费用" en="Token Usage & Cost" />
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Total Tokens</p>
+                <p className="text-sm text-muted-foreground"><T zh="总 Token" en="Total Tokens" /></p>
                 <p className="text-2xl font-bold">{formatTokens(tokenBreakdown.totalTokens)}</p>
                 <p className="text-xs text-muted-foreground">
                   {tokenBreakdown.totalTokens.toLocaleString()}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Estimated Cost</p>
+                <p className="text-sm text-muted-foreground"><T zh="预估费用" en="Estimated Cost" /></p>
                 <p className="text-2xl font-bold text-green-600">
                   {formatCost(tokenBreakdown.estimatedCost)}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Input Tokens</p>
+                <p className="text-sm text-muted-foreground"><T zh="输入 Token" en="Input Tokens" /></p>
                 <p className="text-xl font-semibold">{formatTokens(tokenBreakdown.inputTokens)}</p>
                 <p className="text-xs text-muted-foreground">
                   {tokenBreakdown.inputTokens.toLocaleString()}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Output Tokens</p>
+                <p className="text-sm text-muted-foreground"><T zh="输出 Token" en="Output Tokens" /></p>
                 <p className="text-xl font-semibold">
                   {formatTokens(tokenBreakdown.outputTokens)}
                 </p>
@@ -631,7 +624,7 @@ export function SessionDetailPage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Cached Input</p>
+                <p className="text-sm text-muted-foreground"><T zh="缓存输入" en="Cached Input" /></p>
                 <p className="text-xl font-semibold">
                   {formatTokens(tokenBreakdown.cachedInputTokens)}
                 </p>
@@ -640,7 +633,7 @@ export function SessionDetailPage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Cache Read</p>
+                <p className="text-sm text-muted-foreground"><T zh="缓存读取" en="Cache Read" /></p>
                 <p className="text-xl font-semibold">
                   {formatTokens(tokenBreakdown.cacheReadTokens)}
                 </p>
@@ -649,7 +642,7 @@ export function SessionDetailPage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Cache Creation</p>
+                <p className="text-sm text-muted-foreground"><T zh="缓存创建" en="Cache Creation" /></p>
                 <p className="text-xl font-semibold">
                   {formatTokens(tokenBreakdown.cacheCreationTokens)}
                 </p>
@@ -658,7 +651,7 @@ export function SessionDetailPage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm text-muted-foreground">Reasoning Tokens</p>
+                <p className="text-sm text-muted-foreground"><T zh="推理 Token" en="Reasoning Tokens" /></p>
                 <p className="text-xl font-semibold">
                   {formatTokens(tokenBreakdown.reasoningTokens)}
                 </p>
@@ -677,23 +670,23 @@ export function SessionDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ListOrdered className="h-5 w-5" />
-              Queue Status
+              <T zh="队列状态" en="Queue Status" />
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Pending:</span>
+                <span className="text-sm text-muted-foreground"><T zh="待处理:" en="Pending:" /></span>
                 <Badge variant="secondary">{queueStatus.pending}</Badge>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Processing:</span>
+                <span className="text-sm text-muted-foreground"><T zh="处理中:" en="Processing:" /></span>
                 <Badge variant={queueStatus.processing > 0 ? 'default' : 'secondary'}>
                   {queueStatus.processing}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Total:</span>
+                <span className="text-sm text-muted-foreground"><T zh="总计:" en="Total:" /></span>
                 <Badge variant="outline">{queueStatus.total}</Badge>
               </div>
             </div>
@@ -704,38 +697,38 @@ export function SessionDetailPage() {
       {/* Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Actions</CardTitle>
+          <CardTitle><T zh="操作" en="Actions" /></CardTitle>
         </CardHeader>
         <CardContent className="flex gap-2">
           <Button variant="outline" onClick={handleExportLogs} disabled={isExporting}>
             <Download className="h-4 w-4 mr-2" />
-            {isExporting ? 'Exporting...' : 'Export Logs'}
+            {isExporting ? <T zh="导出中..." en="Exporting..." /> : <T zh="导出日志" en="Export Logs" />}
           </Button>
           {session.hasActiveProcess && (
             <Button variant="destructive" onClick={handleKillSession} disabled={isKilling}>
               <StopCircle className="h-4 w-4 mr-2" />
-              {isKilling ? 'Terminating...' : 'Terminate Process'}
+              {isKilling ? <T zh="终止中..." en="Terminating..." /> : <T zh="终止进程" en="Terminate Process" />}
             </Button>
           )}
           <AlertDialog open={showKillDialog} onOpenChange={setShowKillDialog}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Terminate Session</AlertDialogTitle>
+                <AlertDialogTitle><T zh="终止会话" en="Terminate Session" /></AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to terminate this session? The running process will be stopped immediately.
+                  <T zh="确定要终止此会话吗？运行中的进程将立即停止。" en="Are you sure you want to terminate this session? The running process will be stopped immediately." />
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel><T zh="取消" en="Cancel" /></AlertDialogCancel>
                 <AlertDialogAction onClick={confirmKillSession} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Terminate
+                  <T zh="终止" en="Terminate" />
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           <Button variant="outline" onClick={() => refetchTimeline()}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh Timeline
+            <T zh="刷新时间线" en="Refresh Timeline" />
           </Button>
         </CardContent>
       </Card>
@@ -743,11 +736,12 @@ export function SessionDetailPage() {
       {/* Timeline, Turns & Files Tabs */}
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'timeline' | 'turns' | 'files')}>
         <TabsList className="grid w-full max-w-md grid-cols-3">
-          <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          <TabsTrigger value="timeline"><T zh="时间线" en="Timeline" /></TabsTrigger>
           <TabsTrigger value="turns">
-            Turns{turns.length > 0 && ` (${turns.length})`}
+            <span className="zh">轮次{turns.length > 0 && ` (${turns.length})`}</span>
+            <span className="en">Turns{turns.length > 0 && ` (${turns.length})`}</span>
           </TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="files"><T zh="文件" en="Files" /></TabsTrigger>
         </TabsList>
 
         {/* Timeline Tab */}
@@ -755,7 +749,7 @@ export function SessionDetailPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Timeline</CardTitle>
+                <CardTitle><T zh="时间线" en="Timeline" /></CardTitle>
                 {turns.length > 0 && (
                   <div className="flex items-center gap-2">
                     <Hash className="h-4 w-4 text-muted-foreground" />
@@ -768,7 +762,7 @@ export function SessionDetailPage() {
                         setTimelineOffset(0)
                       }}
                     >
-                      <option value="">All turns</option>
+                      <option value=""><span className="zh">所有轮次</span><span className="en">All turns</span></option>
                       {turns.map((t) => (
                         <option key={t.turnNumber} value={t.turnNumber}>
                           Turn {t.turnNumber}
@@ -781,7 +775,7 @@ export function SessionDetailPage() {
                         size="sm"
                         onClick={() => { setFilterTurnNumber(undefined); setTimelineOffset(0) }}
                       >
-                        Clear
+                        <T zh="清除" en="Clear" />
                       </Button>
                     )}
                   </div>
@@ -790,16 +784,18 @@ export function SessionDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {timelineLoading && events.length === 0 ? (
-                <p className="text-center text-muted-foreground">Loading events...</p>
+                <p className="text-center text-muted-foreground"><T zh="加载事件中..." en="Loading events..." /></p>
               ) : events.length === 0 ? (
                 <p className="text-center text-muted-foreground">
-                  {filterTurnNumber !== undefined ? `No events for turn ${filterTurnNumber}` : 'No events recorded'}
+                  {filterTurnNumber !== undefined
+                    ? <><span className="zh">轮次 {filterTurnNumber} 无事件</span><span className="en">No events for turn {filterTurnNumber}</span></>
+                    : <T zh="暂无事件记录" en="No events recorded" />}
                 </p>
               ) : (
                 <>
                   {timelineOffset > 0 && (
                     <Button variant="outline" onClick={handleJumpToStart} className="w-full">
-                      Jump to Start
+                      <T zh="跳转到开头" en="Jump to Start" />
                     </Button>
                   )}
                   <div className="space-y-2">
@@ -809,7 +805,8 @@ export function SessionDetailPage() {
                   </div>
                   {timelineOffset + events.length < totalEvents && (
                     <Button variant="outline" onClick={handleLoadMore} className="w-full">
-                      Load More Events ({totalEvents - timelineOffset - events.length} remaining)
+                      <span className="zh">加载更多事件（剩余 {totalEvents - timelineOffset - events.length} 个）</span>
+                      <span className="en">Load More Events ({totalEvents - timelineOffset - events.length} remaining)</span>
                     </Button>
                   )}
                 </>
@@ -822,11 +819,11 @@ export function SessionDetailPage() {
         <TabsContent value="turns">
           <Card>
             <CardHeader>
-              <CardTitle>Turns</CardTitle>
+              <CardTitle><T zh="轮次" en="Turns" /></CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {turns.length === 0 ? (
-                <p className="text-center text-muted-foreground">No turns recorded</p>
+                <p className="text-center text-muted-foreground"><T zh="暂无轮次记录" en="No turns recorded" /></p>
               ) : (
                 turns.map((turn) => (
                   <div
@@ -851,7 +848,7 @@ export function SessionDetailPage() {
                             — {formatDuration(turn.durationMs)}
                           </span>
                         ) : (
-                          <Badge variant="outline" className="text-xs">In progress</Badge>
+                          <Badge variant="outline" className="text-xs"><T zh="进行中" en="In progress" /></Badge>
                         )}
                       </div>
                     </div>

@@ -17,17 +17,18 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
+import { T } from '@/components/shared/t'
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Sessions', href: '/sessions', icon: MessageSquare },
-  { name: 'Skills', href: '/skills', icon: Sparkles },
-  { name: 'Queue Monitor', href: '/queue', icon: ListOrdered },
-  { name: 'Tenants', href: '/tenants', icon: Building2 },
-  { name: 'API Keys', href: '/api-keys', icon: Key },
-  { name: 'Audit Log', href: '/audit', icon: ScrollText },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Scheduler', href: '/scheduler', icon: Calendar },
+  { zh: '仪表板', en: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { zh: '会话', en: 'Sessions', href: '/sessions', icon: MessageSquare },
+  { zh: '技能', en: 'Skills', href: '/skills', icon: Sparkles },
+  { zh: '队列监控', en: 'Queue Monitor', href: '/queue', icon: ListOrdered },
+  { zh: '租户', en: 'Tenants', href: '/tenants', icon: Building2 },
+  { zh: 'API 密钥', en: 'API Keys', href: '/api-keys', icon: Key },
+  { zh: '审计日志', en: 'Audit Log', href: '/audit', icon: ScrollText },
+  { zh: '数据分析', en: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { zh: '调度器', en: 'Scheduler', href: '/scheduler', icon: Calendar },
 ]
 
 interface SidebarProps {
@@ -71,7 +72,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 location.pathname === item.href || location.pathname.startsWith(item.href + '/')
               const link = (
                 <Link
-                  key={item.name}
+                  key={item.en}
                   to={item.href}
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
@@ -82,15 +83,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   )}
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {!collapsed && <span>{item.name}</span>}
+                  {!collapsed && <span><T zh={item.zh} en={item.en} /></span>}
                 </Link>
               )
 
               if (collapsed) {
                 return (
-                  <Tooltip key={item.name}>
+                  <Tooltip key={item.en}>
                     <TooltipTrigger asChild>{link}</TooltipTrigger>
-                    <TooltipContent side="right">{item.name}</TooltipContent>
+                    <TooltipContent side="right"><T zh={item.zh} en={item.en} /></TooltipContent>
                   </Tooltip>
                 )
               }
@@ -111,7 +112,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             className={cn('w-full', collapsed ? 'justify-center' : 'justify-start')}
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            {!collapsed && <span className="ml-2">Collapse</span>}
+            {!collapsed && <span className="ml-2"><T zh="收起" en="Collapse" /></span>}
           </Button>
         </div>
       </div>

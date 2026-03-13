@@ -88,3 +88,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* ─── Global i18n: show/hide by language ─── */
+[data-lang="en"] .zh { display: none !important; }
+[data-lang="zh"] .en { display: none !important; }
