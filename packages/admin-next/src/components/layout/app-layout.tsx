@@ -13,6 +13,10 @@ export function AppLayout() {
   const { data } = useCustom({
     url: '/admin/tenants',
     method: 'get',
+    queryOptions: {
+      staleTime: 0,
+      cacheTime: 0,
+    },
   })
 
   useEffect(() => {

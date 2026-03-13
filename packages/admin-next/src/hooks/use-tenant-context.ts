@@ -5,6 +5,7 @@ interface TenantState {
   tenants: Array<{ id: string; name: string; slug: string }>
   setSelectedTenantId: (id: string | null) => void
   setTenants: (tenants: Array<{ id: string; name: string; slug: string }>) => void
+  clear: () => void
 }
 
 export const useTenantContext = create<TenantState>((set) => ({
@@ -12,4 +13,5 @@ export const useTenantContext = create<TenantState>((set) => ({
   tenants: [],
   setSelectedTenantId: (id) => set({ selectedTenantId: id }),
   setTenants: (tenants) => set({ tenants }),
+  clear: () => set({ selectedTenantId: null, tenants: [] }),
 }))

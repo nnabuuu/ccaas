@@ -1,5 +1,6 @@
 import type { AuthProvider } from '@refinedev/core'
 import { apiClient } from '@/lib/api-client'
+import { useTenantContext } from '@/hooks/use-tenant-context'
 
 const API_KEY_STORAGE = 'admin_api_key'
 
@@ -21,6 +22,7 @@ export const authProvider: AuthProvider = {
 
   logout: async () => {
     localStorage.removeItem(API_KEY_STORAGE)
+    useTenantContext.getState().clear()
     return { success: true, redirectTo: '/login' }
   },
 
