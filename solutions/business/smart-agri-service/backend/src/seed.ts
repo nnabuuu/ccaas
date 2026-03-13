@@ -63,8 +63,8 @@ db.exec(`
     village TEXT,
     township TEXT,
     county TEXT,
-    province TEXT DEFAULT '河北省',
-    city TEXT DEFAULT '保定市',
+    province TEXT DEFAULT '上海市',
+    city TEXT DEFAULT '上海市',
     id_number TEXT,
     farming_years INTEGER,
     household_size INTEGER,
@@ -215,36 +215,34 @@ const youngMaleNames = [
   '嘉豪', '俊杰',
 ];
 
-const counties = ['望都县', '定兴县', '高阳县'];
+const counties = ['嘉定区'];
 const townships: Record<string, string[]> = {
-  '望都县': ['望都镇', '固店镇', '贾村镇', '寺庄镇', '赵庄镇', '黑堡乡', '高岭乡'],
-  '定兴县': ['定兴镇', '固城镇', '贤寓镇', '北河镇', '天宫寺镇', '小朱庄镇', '杨村乡'],
-  '高阳县': ['高阳镇', '庞口镇', '西演镇', '邢家南镇', '晋庄镇', '小王果庄镇'],
+  '嘉定区': ['南翔镇', '安亭镇', '马陆镇', '徐行镇', '华亭镇', '外冈镇', '江桥镇', '嘉定镇街道', '新成路街道', '菊园新区'],
 };
 const villageNames = [
-  '东庄村', '西庄村', '北庄村', '南庄村', '大王庄', '小王庄', '张庄村', '李庄村',
-  '赵庄村', '刘庄村', '前进村', '红星村', '新民村', '胜利村', '和平村',
-  '团结村', '幸福村', '富强村', '光明村', '东风村', '新华村', '永安村',
-  '青山村', '龙泉村', '凤凰村', '双河村', '三合村', '五里庄', '八里庄',
-  '马家庄', '高家庄', '孙家庄', '周家庄', '吴家庄', '田家庄',
+  '华亭村', '联华村', '双塘村', '北新村', '毛桥村', '周泾村', '葛隆村',
+  '望新村', '施晋村', '泉泾村', '劳动村', '小庙村', '红星村', '曹王村',
+  '新民村', '伏虎村', '大裕村', '马陆村', '北管村', '石冈村', '赵巷村',
+  '方泰村', '向阳村', '永翔村', '翔华村', '新丰村', '太平村', '建华村',
+  '勤丰村', '唐行村', '连浩村', '管家村', '林家村', '北虹村', '钱门塘村',
 ];
 
-const irrigationTypes = ['井灌', '渠灌', '喷灌', '滴灌', '无灌溉'];
+const irrigationTypes = ['渠灌', '渠灌', '喷灌', '滴灌', '管道灌溉'];
 const soilQualities = ['优', '良', '中', '差'];
-const landTypes = ['耕地', '耕地', '耕地', '果园', '林地']; // weighted toward 耕地
+const landTypes = ['水田', '水田', '水田', '菜地', '果园']; // weighted toward 水田
 
 const equipmentTypes = [
-  { type: '拖拉机', brands: ['东方红', '雷沃', '东风', '时风'], priceRange: [30000, 150000] },
-  { type: '收割机', brands: ['雷沃谷神', '中联重科', '久保田', '沃得'], priceRange: [80000, 350000] },
-  { type: '播种机', brands: ['德邦大为', '农哈哈', '勃农兴达'], priceRange: [5000, 30000] },
-  { type: '旋耕机', brands: ['开元王', '鑫万达', '神耕'], priceRange: [8000, 25000] },
+  { type: '拖拉机', brands: ['东方红', '雷沃', '久保田', '东风'], priceRange: [30000, 150000] },
+  { type: '收割机', brands: ['久保田', '沃得', '洋马', '雷沃谷神'], priceRange: [80000, 350000] },
+  { type: '插秧机', brands: ['久保田', '洋马', '井关', '东风井关'], priceRange: [20000, 80000] },
+  { type: '旋耕机', brands: ['开元王', '久保田', '鑫万达'], priceRange: [8000, 25000] },
   { type: '植保无人机', brands: ['大疆', '极飞', '汉和'], priceRange: [30000, 100000] },
   { type: '喷雾器', brands: ['华丰', '利农', '台州'], priceRange: [500, 3000] },
   { type: '粮食烘干机', brands: ['中联重科', '辰宇', '三久'], priceRange: [50000, 200000] },
-  { type: '深松机', brands: ['亚澳', '鑫万达', '博远'], priceRange: [10000, 40000] },
+  { type: '微耕机', brands: ['微耕', '重庆合盛', '鑫源'], priceRange: [3000, 15000] },
 ];
 
-const bankNames = ['农业银行', '建设银行', '邮储银行', '农商银行'];
+const bankNames = ['农业银行', '建设银行', '邮储银行', '上海农商银行'];
 const loanPurposes = [
   '购买农资（化肥农药）',
   '购买种子',
@@ -339,20 +337,20 @@ for (const config of farmerConfigs) {
     const county = pick(counties);
     const township = pick(townships[county]);
     const village = pick(villageNames);
-    const address = `河北省保定市${county}${township}${village}`;
+    const address = `上海市${county}${township}${village}`;
     const farmingYears = randInt(config.farmingYearsRange[0], config.farmingYearsRange[1]);
     const householdSize = randInt(config.householdRange[0], config.householdRange[1]);
     const annualIncome = randFloat(config.incomeRange[0], config.incomeRange[1], 0);
 
     // Generate ID number (simplified)
     const birthYear = 2026 - age;
-    const idNumber = `1306${randInt(21, 33)}${birthYear}${randInt(1, 12).toString().padStart(2, '0')}${randInt(1, 28).toString().padStart(2, '0')}${randInt(1000, 9999)}`;
+    const idNumber = `3101${randInt(14, 14)}${birthYear}${randInt(1, 12).toString().padStart(2, '0')}${randInt(1, 28).toString().padStart(2, '0')}${randInt(1000, 9999)}`;
 
     const createdAt = `2025-${randInt(1, 12).toString().padStart(2, '0')}-${randInt(1, 28).toString().padStart(2, '0')} ${randInt(8, 18).toString().padStart(2, '0')}:${randInt(0, 59).toString().padStart(2, '0')}:00`;
 
     insertFarmer.run(
       farmerId, name, phone, gender, age, address, village, township, county,
-      '河北省', '保定市', idNumber, farmingYears, householdSize, annualIncome,
+      '上海市', '上海市', idNumber, farmingYears, householdSize, annualIncome,
       config.type, createdAt,
     );
 
@@ -371,7 +369,7 @@ for (const config of farmerConfigs) {
 
       const parcelName = p === 0 ? '主耕地' : p === 1 ? '东边地' : '南边地';
       const isOwned = Math.random() > 0.3 ? 1 : 0;
-      const lt = config.type === '经济作物' ? pick(['果园', '耕地']) : pick(landTypes);
+      const lt = config.type === '经济作物' ? pick(['果园', '菜地']) : pick(landTypes);
 
       const contractStart = isOwned ? null : `${randInt(2018, 2023)}-01-01`;
       const contractEnd = contractStart ? `${parseInt(contractStart.slice(0, 4)) + randInt(5, 15)}-12-31` : null;
@@ -389,47 +387,47 @@ for (const config of farmerConfigs) {
     const cropYears = years.slice(0, randInt(2, 3));
 
     for (const year of cropYears) {
-      // Winter wheat (冬小麦) - primary crop
-      const wheatArea = totalArea * randFloat(0.5, 0.8, 2);
-      const wheatYieldPerMu = randFloat(380, 520, 0);
-      const wheatYield = wheatArea * wheatYieldPerMu;
-      const wheatPrice = randFloat(2.2, 2.6, 2);
-      const wheatRevenue = wheatYield * wheatPrice;
-      const wheatCost = wheatArea * randFloat(400, 600, 0);
+      // 单季稻 (single-season rice) - primary crop for Shanghai
+      const riceArea = totalArea * randFloat(0.5, 0.8, 2);
+      const riceYieldPerMu = randFloat(480, 600, 0);
+      const riceYield = riceArea * riceYieldPerMu;
+      const ricePrice = randFloat(2.6, 3.0, 2);
+      const riceRevenue = riceYield * ricePrice;
+      const riceCost = riceArea * randFloat(600, 800, 0);
 
       insertCrop.run(
-        uuid(), farmerId, pick(parcelIds), '冬小麦', year, '冬',
-        parseFloat(wheatArea.toFixed(1)),
-        parseFloat(wheatYield.toFixed(0)),
-        wheatYieldPerMu,
-        parseFloat(wheatRevenue.toFixed(0)),
-        parseFloat(wheatCost.toFixed(0)),
-        parseFloat((wheatRevenue - wheatCost).toFixed(0)),
-        wheatPrice,
+        uuid(), farmerId, pick(parcelIds), '单季稻', year, '夏秋',
+        parseFloat(riceArea.toFixed(1)),
+        parseFloat(riceYield.toFixed(0)),
+        riceYieldPerMu,
+        parseFloat(riceRevenue.toFixed(0)),
+        parseFloat(riceCost.toFixed(0)),
+        parseFloat((riceRevenue - riceCost).toFixed(0)),
+        ricePrice,
       );
 
-      // Summer corn (夏玉米) - rotated with wheat
-      const cornArea = wheatArea * randFloat(0.8, 1.0, 2);
-      const cornYieldPerMu = randFloat(450, 620, 0);
-      const cornYield = cornArea * cornYieldPerMu;
-      const cornPrice = randFloat(2.0, 2.5, 2);
-      const cornRevenue = cornYield * cornPrice;
-      const cornCost = cornArea * randFloat(350, 550, 0);
+      // 油菜 (winter rapeseed) - rotated with rice
+      const rapeArea = riceArea * randFloat(0.3, 0.6, 2);
+      const rapeYieldPerMu = randFloat(150, 200, 0);
+      const rapeYield = rapeArea * rapeYieldPerMu;
+      const rapePrice = randFloat(4.5, 5.5, 2);
+      const rapeRevenue = rapeYield * rapePrice;
+      const rapeCost = rapeArea * randFloat(300, 500, 0);
 
       insertCrop.run(
-        uuid(), farmerId, pick(parcelIds), '夏玉米', year, '夏',
-        parseFloat(cornArea.toFixed(1)),
-        parseFloat(cornYield.toFixed(0)),
-        cornYieldPerMu,
-        parseFloat(cornRevenue.toFixed(0)),
-        parseFloat(cornCost.toFixed(0)),
-        parseFloat((cornRevenue - cornCost).toFixed(0)),
-        cornPrice,
+        uuid(), farmerId, pick(parcelIds), '油菜', year, '冬春',
+        parseFloat(rapeArea.toFixed(1)),
+        parseFloat(rapeYield.toFixed(0)),
+        rapeYieldPerMu,
+        parseFloat(rapeRevenue.toFixed(0)),
+        parseFloat(rapeCost.toFixed(0)),
+        parseFloat((rapeRevenue - rapeCost).toFixed(0)),
+        rapePrice,
       );
 
       // Additional crops based on type
       if (config.type === '经济作物') {
-        const vegCrops = ['番茄', '黄瓜', '茄子', '辣椒', '大葱', '白菜', '苹果', '梨'];
+        const vegCrops = ['番茄', '黄瓜', '青菜', '草莓', '葡萄', '西瓜', '茄子', '嘉定白蒜'];
         const vegCrop = pick(vegCrops);
         const vegArea = totalArea * randFloat(0.2, 0.5, 2);
         const vegYieldPerMu = randFloat(2000, 5000, 0);
@@ -449,18 +447,18 @@ for (const config of farmerConfigs) {
           vegPrice,
         );
       } else if (Math.random() > 0.5) {
-        // Some farmers also grow soybeans or peanuts
-        const extraCrop = pick(['大豆', '花生', '红薯', '谷子']);
+        // Some farmers also grow edamame, sweet potato, or taro
+        const extraCrop = pick(['毛豆', '油菜', '红薯', '芋头']);
         const extraArea = totalArea * randFloat(0.1, 0.3, 2);
-        const extraYieldPerMu = extraCrop === '大豆' ? randFloat(120, 200, 0) :
-                                extraCrop === '花生' ? randFloat(250, 350, 0) :
+        const extraYieldPerMu = extraCrop === '毛豆' ? randFloat(300, 500, 0) :
+                                extraCrop === '油菜' ? randFloat(150, 200, 0) :
                                 extraCrop === '红薯' ? randFloat(2000, 3000, 0) :
-                                randFloat(200, 300, 0);
+                                randFloat(1500, 2500, 0); // 芋头
         const extraYield = extraArea * extraYieldPerMu;
-        const extraPrice = extraCrop === '大豆' ? randFloat(4.5, 5.5, 2) :
-                           extraCrop === '花生' ? randFloat(7.0, 10.0, 2) :
+        const extraPrice = extraCrop === '毛豆' ? randFloat(3.0, 5.0, 2) :
+                           extraCrop === '油菜' ? randFloat(4.5, 5.5, 2) :
                            extraCrop === '红薯' ? randFloat(1.0, 2.0, 2) :
-                           randFloat(4.0, 6.0, 2);
+                           randFloat(3.0, 5.0, 2); // 芋头
         const extraRevenue = extraYield * extraPrice;
         const extraCost = extraArea * randFloat(300, 600, 0);
 
@@ -533,7 +531,7 @@ for (const config of farmerConfigs) {
         '农业银行': ['惠农e贷', '粮农贷', '农机购置贷款'],
         '建设银行': ['裕农快贷', '土地经营权抵押贷', '乡村振兴贷'],
         '邮储银行': ['金穗惠农贷', '新型农业经营主体贷'],
-        '农商银行': ['助农贷', '种植业保证保险贷款'],
+        '上海农商银行': ['助农贷', '种植业保证保险贷款'],
       };
       const productName = pick(productNames[bank]);
       const amount = config.type === '合作社' ? randFloat(100000, 500000, 0) :
@@ -595,13 +593,13 @@ const insertPolicy = db.prepare(`
 // Policy full text templates for 5 key policies (realistic government document format)
 const policyFullTexts: Record<string, { docNumber: string; fullText: string; attachments: string }> = {
   '耕地地力保护补贴': {
-    docNumber: '省农办发〔2026〕3号',
-    fullText: `省农业农村厅  省财政厅
+    docNumber: '沪农委发〔2026〕3号',
+    fullText: `上海市农业农村委员会  上海市财政局
 关于做好2026年耕地地力保护补贴工作的通知
 
-省农办发〔2026〕3号
+沪农委发〔2026〕3号
 
-各市（州）农业农村局、财政局：
+各区农业农村委、财政局：
 
 为贯彻落实党中央、国务院关于稳定和完善农业补贴政策的决策部署，切实保护耕地地力，调动农民种粮积极性，根据《财政部 农业农村部关于做好2026年粮食生产相关补贴工作的通知》（财农〔2026〕8号）精神，现就做好2026年耕地地力保护补贴工作通知如下：
 
@@ -609,30 +607,30 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 补贴对象原则上为拥有耕地承包权的种地农民。对已作为畜牧养殖场使用的耕地、林地、成片粮田转为设施农业用地、非农业征（占）用耕地等已改变用途的耕地，以及长年抛荒地、占补平衡中"补"的面积和质量达不到耕种条件的耕地等不予补贴。
 
 二、补贴标准
-全省统一执行补贴标准为125元/亩。补贴资金通过"一卡（折）通"直接发放给农户。各县（市、区）不得擅自调整补贴标准。
+全市统一执行补贴标准为125元/亩。补贴资金通过"一卡（折）通"直接发放给农户。各区不得擅自调整补贴标准。
 
 三、申报程序
 （一）农户申报。符合条件的农户向所在村委会提交申请，如实申报承包耕地面积。
 （二）村级公示。村委会对申报信息进行核实汇总，在村务公开栏公示不少于5个工作日。
-（三）乡镇审核。乡镇人民政府对各村上报的补贴面积进行审核，重点核查面积真实性。
-（四）县级复核。县级农业农村部门会同财政部门对全县补贴面积进行复核汇总。
+（三）镇级审核。镇人民政府对各村上报的补贴面积进行审核，重点核查面积真实性。
+（四）区级复核。区级农业农村部门会同财政部门对全区补贴面积进行复核汇总。
 （五）资金拨付。经审核确认后，财政部门将补贴资金通过"一卡（折）通"直接发放到户。
 
 四、时间安排
 （一）2026年3月1日至4月15日：农户申报、村级公示。
-（二）2026年4月16日至5月15日：乡镇审核、县级复核。
+（二）2026年4月16日至5月15日：镇级审核、区级复核。
 （三）2026年5月16日至6月30日：资金拨付到户。
 
 五、监督管理
 （一）各级农业农村部门要严格审核补贴面积，确保数据真实准确。
 （二）各级财政部门要及时足额拨付补贴资金，不得截留、挤占、挪用。
-（三）各地要加强补贴政策宣传，确保政策家喻户晓。
+（三）各区要加强补贴政策宣传，确保政策家喻户晓。
 （四）对骗取、套取补贴资金的行为，一经查实，追回补贴资金并依法依规追究责任。
 
 附件：1. 耕地地力保护补贴申请表
       2. 补贴资金发放花名册模板
 
-省农业农村厅    省财政厅
+上海市农业农村委员会    上海市财政局
 2026年1月15日`,
     attachments: JSON.stringify([
       { name: '耕地地力保护补贴申请表', type: 'form' },
@@ -684,13 +682,13 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
   },
 
   '实际种粮农民一次性补贴': {
-    docNumber: '省财农〔2026〕15号',
-    fullText: `省财政厅  省农业农村厅
+    docNumber: '沪财农〔2026〕15号',
+    fullText: `上海市财政局  上海市农业农村委员会
 关于下达2026年实际种粮农民一次性补贴资金的通知
 
-省财农〔2026〕15号
+沪财农〔2026〕15号
 
-各市（州）财政局、农业农村局：
+各区财政局、农业农村委：
 
 为有效化解农资价格上涨对实际种粮农民增支影响，稳定农民种粮收益，保障国家粮食安全，根据《财政部关于下达2026年实际种粮农民一次性补贴资金预算的通知》（财农〔2026〕12号），现将有关事项通知如下：
 
@@ -704,24 +702,24 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 2026年度补贴标准为20元/亩，按照实际种粮面积核定。种植两季粮食作物的，按照主粮作物面积核算，不重复计算。
 
 三、补贴作物范围
-补贴作物为小麦、玉米、大豆、水稻、薯类、杂粮等粮食作物。经济作物、蔬菜、水果、苗木等非粮食作物不在补贴范围内。
+补贴作物为水稻、小麦、大豆、薯类、杂粮等粮食作物。经济作物、蔬菜、水果、苗木等非粮食作物不在补贴范围内。
 
 四、申报审核程序
 （一）面积申报。实际种粮者向所在村委会申报种粮面积，并提供相关证明材料。流转土地种粮的，需提供土地流转合同。
 （二）村级核实。村委会组织对申报面积进行实地核实，并在村务公开栏公示不少于5个工作日。
-（三）乡镇汇总。乡镇人民政府对各村核实后的面积进行汇总审核。
-（四）县级审定。县级农业农村部门会同财政部门进行最终审定。
+（三）镇级汇总。镇人民政府对各村核实后的面积进行汇总审核。
+（四）区级审定。区级农业农村部门会同财政部门进行最终审定。
 
 五、资金拨付
-经审定后，由县级财政部门通过"一卡（折）通"在2026年9月30日前将补贴资金直接发放到实际种粮者账户。
+经审定后，由区级财政部门通过"一卡（折）通"在2026年9月30日前将补贴资金直接发放到实际种粮者账户。
 
 六、监督管理
-各地要加强资金监管，严禁虚报面积、骗取补贴，确保补贴资金真正惠及实际种粮农民。
+各区要加强资金监管，严禁虚报面积、骗取补贴，确保补贴资金真正惠及实际种粮农民。
 
 附件：1. 实际种粮农民一次性补贴申报表
       2. 种粮面积核实确认书
 
-省财政厅    省农业农村厅
+上海市财政局    上海市农业农村委员会
 2026年2月20日`,
     attachments: JSON.stringify([
       { name: '实际种粮农民一次性补贴申报表', type: 'form' },
@@ -730,24 +728,24 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
   },
 
   '新型农业经营主体贷款贴息': {
-    docNumber: '省农办财〔2026〕7号',
-    fullText: `省农业农村厅办公室
+    docNumber: '沪农委办〔2026〕7号',
+    fullText: `上海市农业农村委员会办公室
 关于做好2026年新型农业经营主体贷款贴息工作的通知
 
-省农办财〔2026〕7号
+沪农委办〔2026〕7号
 
-各市（州）农业农村局：
+各区农业农村委：
 
 为进一步降低新型农业经营主体融资成本，支持家庭农场、农民合作社等适度规模经营发展，根据《关于支持新型农业经营主体高质量发展的若干措施》精神，现就做好2026年贷款贴息工作通知如下：
 
 一、贴息对象
-（一）经县级以上农业农村部门认定的家庭农场。
-（二）在县级以上市场监管部门注册登记的农民合作社。
+（一）经区级以上农业农村部门认定的家庭农场。
+（二）在区级以上市场监管部门注册登记的农民合作社。
 （三）从事农业产业化经营的农业企业（年销售收入5000万元以下）。
 
 二、贴息范围
 （一）贴息贷款须为经营性贷款，用于农业生产经营活动。
-（二）贷款银行须为在本省境内注册的银行业金融机构。
+（二）贷款银行须为在本市境内注册的银行业金融机构。
 （三）单笔贷款金额不超过300万元。
 
 三、贴息标准
@@ -756,20 +754,20 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 （三）每个经营主体年度贴息金额上限为15万元。
 
 四、申报程序
-（一）经营主体申报。符合条件的经营主体向所在县（市、区）农业农村部门提交申请，并提供以下材料：
+（一）经营主体申报。符合条件的经营主体向所在区农业农村部门提交申请，并提供以下材料：
   1. 贷款贴息申请表
   2. 营业执照或家庭农场认定证书
   3. 贷款合同复印件
   4. 银行利息结算单
   5. 贷款用途相关证明
-（二）县级初审。县级农业农村部门对申报材料进行初审，重点审核经营主体资质和贷款真实性。
-（三）市级复审。市级农业农村部门对县级上报的贴息申请进行复审汇总。
-（四）省级审定。省级农业农村部门组织专家对各市上报的贴息申请进行审定。
+（二）区级初审。区级农业农村部门对申报材料进行初审，重点审核经营主体资质和贷款真实性。
+（三）市级复审。市级农业农村部门对区级上报的贴息申请进行复审汇总。
+（四）市级审定。市级农业农村部门组织专家对各区上报的贴息申请进行审定。
 
 五、时间安排
 （一）2026年3月—10月：经营主体可随时提交申请。
-（二）2026年11月1日—15日：县级集中初审。
-（三）2026年11月16日—30日：省级审定、资金拨付。
+（二）2026年11月1日—15日：区级集中初审。
+（三）2026年11月16日—30日：市级审定、资金拨付。
 
 六、工作要求
 （一）加大政策宣传力度，确保符合条件的经营主体应知尽知。
@@ -779,7 +777,7 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 附件：1. 新型农业经营主体贷款贴息申请表
       2. 贴息资金审核汇总表
 
-省农业农村厅办公室
+上海市农业农村委员会办公室
 2026年1月20日`,
     attachments: JSON.stringify([
       { name: '新型农业经营主体贷款贴息申请表', type: 'form' },
@@ -788,15 +786,15 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
   },
 
   '高标准农田建设补贴': {
-    docNumber: '市农发〔2026〕12号',
-    fullText: `市农业农村局
+    docNumber: '沪农委发〔2026〕12号',
+    fullText: `上海市农业农村委员会
 关于做好2026年高标准农田建设项目申报工作的通知
 
-市农发〔2026〕12号
+沪农委发〔2026〕12号
 
-各县（市、区）农业农村局：
+各区农业农村委：
 
-为深入实施"藏粮于地、藏粮于技"战略，加快推进高标准农田建设，确保完成2026年度建设任务，根据《高标准农田建设规划（2021-2030年）》和省农业农村厅关于做好2026年高标准农田建设工作的通知要求，现就本市2026年高标准农田建设项目申报有关事项通知如下：
+为深入实施"藏粮于地、藏粮于技"战略，加快推进高标准农田建设，确保完成2026年度建设任务，根据《高标准农田建设规划（2021-2030年）》和农业农村部关于做好2026年高标准农田建设工作的通知要求，现就本市2026年高标准农田建设项目申报有关事项通知如下：
 
 一、建设内容
 （一）田块整治。包括土地平整、土壤改良、地力培肥等。
@@ -807,7 +805,7 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 
 二、建设标准与补贴
 （一）新建高标准农田投资标准为1500元/亩。
-（二）资金来源：中央财政补贴60%、省级配套25%、市县配套15%。
+（二）资金来源：中央财政补贴60%、市级配套25%、区级配套15%。
 （三）项目区农户不需缴纳任何费用。
 
 三、申报条件
@@ -818,28 +816,28 @@ const policyFullTexts: Record<string, { docNumber: string; fullText: string; att
 （五）优先安排粮食生产功能区和重要农产品保护区。
 
 四、申报程序
-（一）村级申请。项目区所在村委会征得三分之二以上农户同意后，向乡镇提交申请。
-（二）乡镇推荐。乡镇对项目区进行实地踏勘后，向县级农业农村部门推荐。
-（三）县级申报。县级农业农村部门组织编制项目初步设计方案，报市级审核。
-（四）市级审核。市级农业农村部门组织专家对各县申报项目进行审核排序。
-（五）省级批复。省农业农村厅对审核通过的项目进行批复立项。
+（一）村级申请。项目区所在村委会征得三分之二以上农户同意后，向镇政府提交申请。
+（二）镇级推荐。镇政府对项目区进行实地踏勘后，向区级农业农村部门推荐。
+（三）区级申报。区级农业农村部门组织编制项目初步设计方案，报市级审核。
+（四）市级审核。市级农业农村部门组织专家对各区申报项目进行审核排序。
+（五）市级批复。市农业农村委对审核通过的项目进行批复立项。
 
 五、时间安排
-（一）2026年3月1日至4月30日：村级申请、乡镇推荐。
-（二）2026年5月1日至6月30日：县级申报、编制设计方案。
+（一）2026年3月1日至4月30日：村级申请、镇级推荐。
+（二）2026年5月1日至6月30日：区级申报、编制设计方案。
 （三）2026年7月1日至8月31日：市级审核。
-（四）2026年9月—10月：省级批复、开工建设。
+（四）2026年9月—10月：市级批复、开工建设。
 
 六、质量管理
 （一）严格执行项目法人制、招标投标制、建设监理制、合同管理制。
-（二）项目竣工后须通过县级初验、市级复验、省级抽验。
+（二）项目竣工后须通过区级初验、市级复验。
 （三）建立建后管护制度，明确管护主体和管护责任。
 
 附件：1. 高标准农田建设项目申报书（模板）
       2. 项目区基本情况表
       3. 农户同意书（模板）
 
-市农业农村局
+上海市农业农村委员会
 2026年2月1日`,
     attachments: JSON.stringify([
       { name: '高标准农田建设项目申报书（模板）', type: 'template' },
@@ -858,9 +856,9 @@ const policies = [
     amount: '125元/亩',
     method: '通过村委会申报，经乡镇审核后直接发放至一卡通账户',
     deadline: '2026-06-30',
-    region: '本省',
+    region: '本市',
     crop: '通用',
-    source: '省农业农村厅',
+    source: '市农业农村委',
     date: '2026-01-15',
   },
   {
@@ -869,7 +867,7 @@ const policies = [
     description: '对购买列入补贴目录的农业机械的农户和农业经营组织，按照购买价格的一定比例给予补贴，支持农业机械化发展。',
     target: '农户、家庭农场、农民合作社、农业企业',
     amount: '购置价格的30%-50%',
-    method: '先购后补，凭购机发票和相关证明到县级农机部门申请',
+    method: '先购后补，凭购机发票和相关证明到区级农机部门申请',
     deadline: '2026-12-31',
     region: '全国',
     crop: '通用',
@@ -884,47 +882,47 @@ const policies = [
     amount: '20元/亩',
     method: '由村委会统计实际种粮面积，上报乡镇审核，直接发放',
     deadline: '2026-09-30',
-    region: '本省',
-    crop: '小麦、玉米、大豆',
-    source: '省财政厅',
+    region: '本市',
+    crop: '水稻、小麦、大豆',
+    source: '市财政局',
     date: '2026-02-20',
   },
   {
-    name: '小麦最低收购价政策',
+    name: '稻谷最低收购价政策',
     category: '种植补贴',
-    description: '国家对小麦实行最低收购价政策，当市场价格低于最低收购价时，由指定收储企业按最低收购价收购。保障种粮农民基本收益。',
-    target: '所有小麦种植户',
-    amount: '1.18元/斤（2026年）',
+    description: '国家对稻谷实行最低收购价政策，当市场价格低于最低收购价时，由指定收储企业按最低收购价收购。保障种粮农民基本收益。',
+    target: '所有水稻种植户',
+    amount: '1.31元/斤（2026年中晚籼稻）',
     method: '在收购期内到指定收储库点交售即可',
-    deadline: '2026-09-30',
+    deadline: '2026-12-31',
     region: '全国',
-    crop: '冬小麦',
+    crop: '水稻',
     source: '国家发展改革委',
     date: '2025-11-01',
   },
   {
-    name: '玉米生产者补贴',
+    name: '水稻生态种植补贴',
     category: '种植补贴',
-    description: '对玉米种植者给予生产补贴，弥补市场价格波动带来的收入损失，稳定玉米生产面积。',
-    target: '玉米种植户',
+    description: '对采用绿色生态种植方式的水稻种植户给予补贴，鼓励减少化肥农药使用，推广稻渔综合种养等生态模式。',
+    target: '水稻种植户',
     amount: '100-200元/亩',
     method: '按实际种植面积申报，经核实后发放',
     deadline: '2026-12-31',
-    region: '本省',
-    crop: '夏玉米',
-    source: '省农业农村厅',
+    region: '本市',
+    crop: '水稻',
+    source: '市农业农村委',
     date: '2026-03-01',
   },
   {
     name: '农业保险保费补贴',
     category: '保险补贴',
-    description: '中央和地方财政对种植业保险保费给予补贴，降低农民参保成本。补贴险种包括小麦、玉米、大豆等主要粮食作物。',
+    description: '中央和地方财政对种植业保险保费给予补贴，降低农民参保成本。补贴险种包括水稻、小麦、油菜等主要农作物。',
     target: '参加农业保险的种植户',
-    amount: '保费的80%（中央+省+市+县各级补贴）',
+    amount: '保费的80%（中央+市+区各级补贴）',
     method: '向当地农业保险经办机构投保即可享受补贴',
     deadline: '2026-12-31',
     region: '全国',
-    crop: '小麦、玉米、大豆',
+    crop: '水稻、小麦、油菜',
     source: '财政部、农业农村部',
     date: '2026-01-05',
   },
@@ -934,11 +932,11 @@ const policies = [
     description: '对符合条件的耕地进行高标准农田建设改造，包括土地平整、灌溉排水、田间道路、农田防护等工程建设。',
     target: '项目区内的农户和村集体',
     amount: '1500元/亩',
-    method: '由县级农业农村部门统一规划、组织实施',
+    method: '由区级农业农村部门统一规划、组织实施',
     deadline: '2026-10-31',
     region: '本市',
     crop: '通用',
-    source: '市农业农村局',
+    source: '市农业农村委',
     date: '2026-02-01',
   },
   {
@@ -947,11 +945,11 @@ const policies = [
     description: '对家庭农场、农民合作社等新型农业经营主体从金融机构获取的经营性贷款，给予利息补贴，降低融资成本。',
     target: '家庭农场、农民合作社、农业企业',
     amount: '贷款利息的50%（最高不超过同期LPR）',
-    method: '向县级农业农村部门申请，提交贷款合同和利息凭证',
+    method: '向区级农业农村部门申请，提交贷款合同和利息凭证',
     deadline: '2026-11-30',
-    region: '本省',
+    region: '本市',
     crop: '通用',
-    source: '省农业农村厅',
+    source: '市农业农村委',
     date: '2026-01-20',
   },
   {
@@ -963,8 +961,8 @@ const policies = [
     method: '通过参与社会化服务项目自动享受',
     deadline: '2026-12-31',
     region: '本市',
-    crop: '小麦、玉米',
-    source: '市农业农村局',
+    crop: '水稻、蔬菜',
+    source: '市农业农村委',
     date: '2026-02-15',
   },
   {
@@ -973,7 +971,7 @@ const policies = [
     description: '支持农村产业融合发展、农产品加工、休闲农业、乡村旅游等新业态发展，推动乡村产业振兴。',
     target: '农业企业、合作社、家庭农场',
     amount: '5-50万/项目',
-    method: '编制项目申报书，向县级乡村振兴部门申报',
+    method: '编制项目申报书，向区级乡村振兴部门申报',
     deadline: '2026-08-31',
     region: '全国',
     crop: '通用',
@@ -986,7 +984,7 @@ const policies = [
     description: '支持建设产地冷藏保鲜设施，减少农产品产后损失，提高农产品商品化处理能力和市场议价能力。',
     target: '家庭农场、农民合作社',
     amount: '建设费用的30%（最高100万元）',
-    method: '先建后补，向县级农业农村部门申报验收',
+    method: '先建后补，向区级农业农村部门申报验收',
     deadline: '2026-10-31',
     region: '全国',
     crop: '蔬菜、水果',
@@ -1001,9 +999,9 @@ const policies = [
     amount: '15元/亩',
     method: '凭良种购买凭证申报',
     deadline: '2026-06-30',
-    region: '本省',
-    crop: '小麦、玉米',
-    source: '省农业农村厅',
+    region: '本市',
+    crop: '水稻、蔬菜',
+    source: '市农业农村委',
     date: '2026-02-10',
   },
   {
@@ -1027,9 +1025,9 @@ const policies = [
     amount: '25元/亩',
     method: '由乡镇核实秸秆还田面积后统一申报',
     deadline: '2026-11-30',
-    region: '本省',
-    crop: '小麦、玉米',
-    source: '省农业农村厅',
+    region: '本市',
+    crop: '水稻、油菜',
+    source: '市农业农村委',
     date: '2026-01-25',
   },
   {
@@ -1119,9 +1117,9 @@ const loanProducts = [
     process: '1.到邮储网点提交申请材料 2.信贷员实地调查 3.审批放款 4.按约还款',
   },
   {
-    bank: '农商银行',
+    bank: '上海农商银行',
     name: '助农贷',
-    desc: '农村商业银行推出的小额农户贷款，审批门槛低，适合资金需求较小的普通农户。',
+    desc: '上海农商银行推出的小额农户贷款，审批门槛低，适合资金需求较小的普通农户。',
     min: 5000, max: 100000,
     rateMin: 4.55, rateMax: 5.25,
     termMin: 3, termMax: 24,
@@ -1167,7 +1165,7 @@ const loanProducts = [
     process: '1.提交经营主体相关证照 2.银行实地考察 3.审批委员会审批 4.签约放款',
   },
   {
-    bank: '农商银行',
+    bank: '上海农商银行',
     name: '种植业保证保险贷款',
     desc: '银行与保险公司合作，以农业保险保单作为增信手段的贷款产品，降低农户融资门槛。',
     min: 10000, max: 300000,

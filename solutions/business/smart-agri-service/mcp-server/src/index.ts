@@ -356,7 +356,7 @@ const getMarketPricesTool: Tool = {
 Get current market prices for agricultural products and inputs.
 
 Returns:
-- grains: 粮食价格 (小麦、玉米、大豆、花生)
+- grains: 粮食价格 (水稻、油菜籽、毛豆、蔬菜)
 - inputs: 农资价格 (尿素、复合肥、柴油)
 - update_date: 数据更新日期
 
@@ -975,10 +975,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (name === 'get_market_prices') {
     const marketData = {
       grains: [
-        { name: '冬小麦', price_per_kg: 2.76, unit: '元/公斤', trend: '稳中有升', note: '最低收购价2.36元/斤' },
-        { name: '夏玉米', price_per_kg: 2.48, unit: '元/公斤', trend: '小幅波动', note: '饲料需求稳定' },
-        { name: '大豆', price_per_kg: 5.20, unit: '元/公斤', trend: '略有下降', note: '进口大豆冲击' },
-        { name: '花生', price_per_kg: 9.60, unit: '元/公斤', trend: '稳定', note: '油用需求支撑' },
+        { name: '单季稻', price_per_kg: 2.86, unit: '元/公斤', trend: '稳中有升', note: '最低收购价1.31元/斤（中晚籼稻）' },
+        { name: '油菜籽', price_per_kg: 5.10, unit: '元/公斤', trend: '小幅波动', note: '菜籽油需求支撑' },
+        { name: '毛豆', price_per_kg: 4.20, unit: '元/公斤', trend: '季节性波动', note: '上海本地需求旺盛' },
+        { name: '青菜', price_per_kg: 3.50, unit: '元/公斤', trend: '稳定', note: '上海市民菜篮子工程保障' },
       ],
       inputs: [
         { name: '尿素', price: 2100, unit: '元/吨', trend: '下降' },
