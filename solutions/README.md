@@ -45,16 +45,12 @@ solutions/
 
 ### 1. 运行 Demo
 
-Demo 通过 `setup.sh` 导入到 `https://ccaas.zhushou.one`（核心后端不开源）：
+Demo 已发布到 [kedge-agentic/examples](https://github.com/kedge-agentic/examples) 仓库，提供 `setup.sh` 一键导入到 `https://ccaas.zhushou.one`：
 
 ```bash
-cd solutions/demo
-
-# 配置 API Key
-cp .env.example .env
-# 编辑 .env 设置 CCAAS_API_KEY
-
-# 导入任意 Demo
+git clone https://github.com/kedge-agentic/examples.git
+cd examples/demo
+cp .env.example .env   # 编辑 .env 设置 CCAAS_API_KEY
 ./setup.sh 01-pure-chat
 ```
 

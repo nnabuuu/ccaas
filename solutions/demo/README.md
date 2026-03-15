@@ -183,18 +183,27 @@
 
 ## 运行方式
 
-使用 `setup.sh` 一键导入 Demo 到托管后端：
+### 外部用户：通过 examples 仓库
+
+Demo 已发布到 [kedge-agentic/examples](https://github.com/kedge-agentic/examples) 仓库，提供 `setup.sh` 一键导入：
 
 ```bash
-# 1. 配置 API Key
-cp .env.example .env
-# 编辑 .env 设置 CCAAS_API_KEY
+git clone https://github.com/kedge-agentic/examples.git
+cd examples/demo
+cp .env.example .env   # 编辑 .env 设置 CCAAS_API_KEY
+./setup.sh 01-pure-chat
+```
 
-# 2. 导入 Demo（两种方式均可）
-cd 01-pure-chat && ../setup.sh    # 从子目录运行
-./setup.sh 01-pure-chat            # 从 demo/ 目录运行
+### 内部开发：通过 API 直接导入
 
-# 3. 测试
+```bash
+# 导入 solution（创建 tenant + MCP + 模板）
+curl -X POST https://ccaas.zhushou.one/api/v1/admin/solutions/import \
+  -H "Authorization: Bearer $CCAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d @01-pure-chat/solution.json
+
+# 测试
 curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
   -H "Authorization: Bearer $CCAAS_API_KEY" \
   -H "Content-Type: application/json" \
@@ -202,13 +211,11 @@ curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
   -d '{"message":"你好","tenantId":"demo-02-pure-chat"}'
 ```
 
-`setup.sh` 自动完成：导入 solution.json（创建 tenant + MCP + 模板）→ 注册 Skills。
-
-默认连接 `https://ccaas.zhushou.one`，可通过 `.env` 中的 `CCAAS_URL` 修改。
+Skills 需通过 `/api/v1/skills` 单独注册（import API 不处理 skills）。
 
 ### 有 MCP 的 Demo（04, 08, 11, 12）
 
-MCP 服务器由平台托管，`setup.sh` 会自动注册配置，无需本地构建。
+MCP 服务器由平台托管，import API 会自动注册配置，无需本地构建。
 
 ## 文件结构规范
 
