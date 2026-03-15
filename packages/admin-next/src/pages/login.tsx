@@ -8,7 +8,7 @@ import { T } from '@/components/shared/t'
 
 export function LoginPage() {
   const [apiKey, setApiKey] = useState('')
-  const { mutate: login, isLoading } = useLogin()
+  const { mutate: login, isLoading, error } = useLogin()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +43,9 @@ export function LoginPage() {
                 <T zh="支持 Admin 和 Builder API 密钥" en="Supports Admin and Builder API keys" />
               </p>
             </div>
+            {error && (
+              <p className="text-sm text-destructive">{(error as Error).message}</p>
+            )}
             <Button type="submit" className="w-full" disabled={!apiKey || isLoading}>
               {isLoading ? <T zh="认证中..." en="Authenticating..." /> : <T zh="登录" en="Sign In" />}
             </Button>

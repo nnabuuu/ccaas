@@ -4,6 +4,7 @@ import routerProvider, { NavigateToResource, CatchAllNavigate } from '@refinedev
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { dataProvider } from '@/providers/data-provider'
 import { authProvider } from '@/providers/auth-provider'
+import { notificationProvider } from '@/providers/notification-provider'
 import { liveProvider } from '@/providers/live-provider'
 import { AppLayout } from '@/components/layout/app-layout'
 import { LanguageProvider } from '@/contexts/language-context'
@@ -47,6 +48,7 @@ function App() {
         routerProvider={routerProvider}
         dataProvider={dataProvider}
         authProvider={authProvider}
+        notificationProvider={notificationProvider}
         liveProvider={liveProvider}
         resources={[
           {
