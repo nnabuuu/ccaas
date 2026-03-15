@@ -618,6 +618,92 @@ Create a tenant.
 
 Get tenant details.
 
+## Builder API
+
+API for builder-scoped developers to manage their own tenants and API keys. All endpoints require `builder` scope. Builders can only operate on tenants they own and cannot create `admin` or `builder` scoped API keys.
+
+### POST /builder/tenants
+
+Create a tenant and auto-link the current builder as its admin via UserTenant.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Tenant name |
+| `slug` | string | No | Tenant identifier (auto-generated) |
+
+**Response**: The created tenant object. The builder user is automatically linked as `admin` role via UserTenant.
+
+### GET /builder/tenants
+
+List tenants owned by the current builder (filtered via UserTenant).
+
+**Response**: Array of tenants with `active` status only.
+
+### GET /builder/tenants/:id
+
+Get details of a builder-owned tenant. Returns 403 if the tenant is not owned by the current builder.
+
+### PUT /builder/tenants/:id
+
+Update a builder-owned tenant.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | No | Update name |
+
+### POST /builder/tenants/:tenantId/api-keys
+
+Create an API key for a builder-owned tenant. Cannot create keys with `admin` or `builder` scopes.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable name |
+| `scopes` | string[] | No | Permission scopes (cannot include `admin` or `builder`) |
+| `rateLimitRpm` | number | No | Requests per minute |
+| `rateLimitRpd` | number | No | Requests per day |
+| `expiresAt` | string | No | Expiration date (ISO 8601) |
+
+**Response**:
+
+```json
+{
+  "apiKey": { "id": "key-uuid", "keyPrefix": "ccaas_live_abc123", "..." },
+  "rawKey": "ccaas_live_abc123def456...",
+  "warning": "This is the only time the raw API key will be displayed. Please save it securely."
+}
+```
+
+### GET /builder/tenants/:tenantId/api-keys
+
+List API keys for a builder-owned tenant.
+
+### PUT /builder/api-keys/:id
+
+Update an API key (verifies tenant ownership). Cannot add `admin` or `builder` scopes.
+
+### POST /builder/api-keys/:id/revoke
+
+Revoke an API key (verifies tenant ownership). Returns 400 if already revoked.
+
+### DELETE /builder/api-keys/:id
+
+Delete an API key (verifies tenant ownership).
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "message": "API key ccaas_live_abc123... deleted successfully"
+}
+```
+
 ## Admin - API Key Management
 
 Admin API for managing API keys across tenants. All endpoints require `admin` scope.
@@ -686,6 +772,7 @@ Create a new API key. The raw key is returned only once and cannot be retrieved 
 - `mcp:write` - Manage MCP servers
 - `analytics:read` - View analytics
 - `admin` - Full admin access
+- `builder` - Builder developer access (manage own tenants and API keys)
 
 **Response**:
 

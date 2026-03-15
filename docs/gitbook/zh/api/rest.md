@@ -620,6 +620,92 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 获取租户详情。
 
+## Builder API（Builder 开发者接口）
+
+Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `builder` 权限范围。Builder 只能操作自己创建的租户，不能创建 `admin` 或 `builder` 级别的 API Key。
+
+### POST /builder/tenants
+
+创建租户并自动将当前 Builder 关联为该租户的管理员。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 是 | 租户名称 |
+| `slug` | string | 否 | 租户标识（自动生成） |
+
+**响应**：返回创建的租户对象。Builder 用户自动通过 UserTenant 关联为该租户的 `admin` 角色。
+
+### GET /builder/tenants
+
+获取当前 Builder 拥有的租户列表（通过 UserTenant 过滤）。
+
+**响应**：仅返回状态为 `active` 的租户数组。
+
+### GET /builder/tenants/:id
+
+获取 Builder 拥有的单个租户详情。如果租户不属于当前 Builder，返回 403。
+
+### PUT /builder/tenants/:id
+
+更新 Builder 拥有的租户信息。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 否 | 更新名称 |
+
+### POST /builder/tenants/:tenantId/api-keys
+
+为 Builder 拥有的租户创建 API Key。不允许创建 `admin` 或 `builder` 级别的 Key。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 是 | 可读的名称 |
+| `scopes` | string[] | 否 | 权限范围（不能包含 `admin` 或 `builder`） |
+| `rateLimitRpm` | number | 否 | 每分钟请求数 |
+| `rateLimitRpd` | number | 否 | 每天请求数 |
+| `expiresAt` | string | 否 | 过期时间（ISO 8601） |
+
+**响应**：
+
+```json
+{
+  "apiKey": { "id": "key-uuid", "keyPrefix": "ccaas_live_abc123", "..." },
+  "rawKey": "ccaas_live_abc123def456...",
+  "warning": "This is the only time the raw API key will be displayed. Please save it securely."
+}
+```
+
+### GET /builder/tenants/:tenantId/api-keys
+
+获取 Builder 拥有的租户的 API Key 列表。
+
+### PUT /builder/api-keys/:id
+
+更新 API Key（验证租户所有权）。不允许添加 `admin` 或 `builder` 级别的 scope。
+
+### POST /builder/api-keys/:id/revoke
+
+吊销 API Key（验证租户所有权）。已吊销的 Key 返回 400 错误。
+
+### DELETE /builder/api-keys/:id
+
+删除 API Key（验证租户所有权）。
+
+**响应**：
+
+```json
+{
+  "success": true,
+  "message": "API key ccaas_live_abc123... deleted successfully"
+}
+```
+
 ## 管理员 - API Key 管理
 
 用于管理租户 API Key 的管理员接口。所有端点都需要 `admin` 权限范围。
@@ -688,6 +774,7 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 - `mcp:write` - 管理 MCP 服务器
 - `analytics:read` - 查看分析数据
 - `admin` - 完整管理权限
+- `builder` - Builder 开发者权限（管理自有租户和 API Key）
 
 **响应**：
 
