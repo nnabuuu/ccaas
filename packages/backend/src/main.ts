@@ -92,8 +92,8 @@ async function bootstrap() {
     .addTag('mcp', 'MCP 服务器 - MCP 服务器配置与管理')
     .addTag('auth', '认证授权 - API Key 与用户管理')
     .addTag('tenants', '租户管理 - 多租户配置')
-    .addTag('scheduler', '定时任务 - 定时执行 Agent 任务')
-    .addTag('jobs', '后台任务 - 异步任务管理')
+    .addTag('scheduler', '⚠️ [Alpha] 定时任务 - 定时执行 Agent 任务（功能尚在开发中，API 可能变更）')
+    .addTag('jobs', '⚠️ [Alpha] 后台任务 - 异步任务管理（功能尚在开发中，API 可能变更）')
     .addTag('builder', 'Builder 开发者 - 自有租户与 API Key 管理')
     .addTag('admin', '管理接口 - 系统管理功能')
     .build();
@@ -145,8 +145,8 @@ async function bootstrap() {
     .addTag('mcp', 'MCP Servers - MCP server configuration and management')
     .addTag('auth', 'Authentication - API Key and user management')
     .addTag('tenants', 'Tenant Management - Multi-tenant configuration')
-    .addTag('scheduler', 'Scheduled Tasks - Execute agent tasks on schedule')
-    .addTag('jobs', 'Background Jobs - Async job management')
+    .addTag('scheduler', '⚠️ [Alpha] Scheduled Tasks - Execute agent tasks on schedule (under development, API may change)')
+    .addTag('jobs', '⚠️ [Alpha] Background Jobs - Async job management (under development, API may change)')
     .addTag('builder', 'Builder API - Manage own tenants and API keys')
     .addTag('admin', 'Admin APIs - System administration')
     .build();
