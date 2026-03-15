@@ -13,12 +13,28 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Copy, Check, AlertCircle } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
+import { useTenantContext } from '@/hooks/use-tenant-context'
+import { T } from '@/components/shared/t'
+
+/** Scopes available for selection (admin/builder are excluded — those are managed separately) */
+const AVAILABLE_SCOPES = [
+  { value: 'chat', label: 'Chat', description: 'Send messages to sessions' },
+  { value: 'skills:read', label: 'Skills: Read', description: 'List and read skills' },
+  { value: 'skills:write', label: 'Skills: Write', description: 'Create and update skills' },
+  { value: 'skills:execute', label: 'Skills: Execute', description: 'Execute skills in sessions' },
+  { value: 'skills:delete', label: 'Skills: Delete', description: 'Delete skills' },
+  { value: 'mcp:read', label: 'MCP: Read', description: 'List MCP servers' },
+  { value: 'mcp:write', label: 'MCP: Write', description: 'Configure MCP servers' },
+  { value: 'analytics:read', label: 'Analytics: Read', description: 'View analytics data' },
+] as const
+
+const DEFAULT_SCOPES = ['chat', 'skills:read', 'skills:execute']
 
 const schema = z.object({
-  tenantId: z.string().min(1, 'Tenant ID is required'),
   name: z.string().min(1, 'Name is required'),
 })
 
@@ -29,28 +45,39 @@ interface CreateApiKeyModalProps {
 }
 
 export function CreateApiKeyModal({ open, onClose, onSuccess }: CreateApiKeyModalProps) {
+  const { selectedTenantId } = useTenantContext()
   const [rawKey, setRawKey] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [selectedScopes, setSelectedScopes] = useState<string[]>(DEFAULT_SCOPES)
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: {
-      tenantId: 'default',
-      name: '',
-    },
+    defaultValues: { name: '' },
   })
 
+  const toggleScope = (scope: string) => {
+    setSelectedScopes(prev =>
+      prev.includes(scope) ? prev.filter(s => s !== scope) : [...prev, scope]
+    )
+  }
+
   const onSubmit = async (data: z.infer<typeof schema>) => {
+    if (selectedScopes.length === 0) {
+      setError('Select at least one scope')
+      return
+    }
     setIsSubmitting(true)
     setError(null)
     try {
       const response = await apiClient.post('/admin/api-keys', {
         ...data,
-        scopes: ['chat', 'skills:read'],
+        tenantId: selectedTenantId,
+        scopes: selectedScopes,
       })
       setRawKey(response.data.rawKey)
+      window.dispatchEvent(new CustomEvent('api-key-updated'))
     } catch (err) {
       const message = err instanceof Error && 'response' in err
         ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create API key')
@@ -74,6 +101,7 @@ export function CreateApiKeyModal({ open, onClose, onSuccess }: CreateApiKeyModa
     setRawKey(null)
     setCopied(false)
     setError(null)
+    setSelectedScopes(DEFAULT_SCOPES)
     onClose()
     if (rawKey) {
       onSuccess()
@@ -109,15 +137,30 @@ export function CreateApiKeyModal({ open, onClose, onSuccess }: CreateApiKeyModa
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tenantId">Tenant ID</Label>
-              <Input
-                id="tenantId"
-                placeholder="default"
-                {...register('tenantId')}
-              />
-              {errors.tenantId && (
-                <p className="text-sm text-destructive">{errors.tenantId.message}</p>
-              )}
+              <Label>Scopes</Label>
+              <p className="text-xs text-muted-foreground">
+                <T
+                  zh="这些密钥用于 SDK/前端使用。Admin 和 Builder 密钥通过 Builder Users API 创建。"
+                  en="These keys are for SDK/frontend use. Admin and Builder keys are created via the Builder Users API."
+                />
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {AVAILABLE_SCOPES.map(scope => (
+                  <label
+                    key={scope.value}
+                    className="flex items-center gap-2 rounded-md border p-2 cursor-pointer hover:bg-accent"
+                  >
+                    <Checkbox
+                      checked={selectedScopes.includes(scope.value)}
+                      onCheckedChange={() => toggleScope(scope.value)}
+                    />
+                    <div className="text-sm leading-tight">
+                      <div className="font-medium">{scope.label}</div>
+                      <div className="text-xs text-muted-foreground">{scope.description}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
 
             {error && (
@@ -131,7 +174,7 @@ export function CreateApiKeyModal({ open, onClose, onSuccess }: CreateApiKeyModa
               <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || selectedScopes.length === 0}>
                 {isSubmitting ? 'Creating...' : 'Create Key'}
               </Button>
             </DialogFooter>

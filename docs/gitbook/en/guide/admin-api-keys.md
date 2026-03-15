@@ -11,6 +11,25 @@ API keys are the primary authentication mechanism for accessing the CCaaS platfo
 - Can optionally have an expiration date
 - Tracks usage statistics
 
+## Key Types
+
+| Type | Scope | Created By | Purpose |
+|------|-------|------------|---------|
+| Admin | `admin` | Platform bootstrap | Full platform management |
+| Builder | `builder` | Admin (via Builder Users API) | Self-serve tenant & key management |
+| Tenant | `chat`, `skills:*`, etc. | Admin or Builder | SDK/frontend integration |
+
+### Key Hierarchy
+
+```
+Admin → creates Builder keys (with userId binding)
+Builder → creates Tenant keys (no userId, no admin/builder scope)
+Tenant keys → used by end-user applications
+```
+
+Builder keys require a bound `userId` to function.
+Tenant keys created by builders intentionally have no `userId` — they cannot call Builder APIs.
+
 ## Admin Dashboard
 
 ### Accessing the API Keys Page
@@ -23,6 +42,7 @@ API keys are the primary authentication mechanism for accessing the CCaaS platfo
 
 The API keys list displays:
 - **Key Prefix**: First 20 characters of the key (e.g., `ccaas_live_abc123`)
+- **Type**: Admin, Builder, or Tenant badge (inferred from scopes)
 - **Name**: Human-readable identifier
 - **Scopes**: Permission badges (shows first 3, then +N for overflow)
 - **Status**: Active or Revoked
@@ -44,7 +64,7 @@ The API keys list displays:
 5. Click **Done** to close the modal
 
 **Default Settings** (applied automatically):
-- Scopes: `["chat", "skills:read"]`
+- Scopes: `["chat", "skills:read", "skills:execute"]`
 - Rate limit: 60 requests/minute, 1000 requests/day
 - No expiration date
 

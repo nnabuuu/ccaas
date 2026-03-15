@@ -11,6 +11,25 @@ API 密钥是访问 CCaaS 平台的主要身份验证机制。每个密钥：
 - 可选择设置过期时间
 - 跟踪使用统计信息
 
+## 密钥类型
+
+| 类型 | Scope | 创建者 | 用途 |
+|------|-------|--------|------|
+| Admin | `admin` | 平台引导 | 完整平台管理 |
+| Builder | `builder` | Admin（通过 Builder Users API） | 自助管理租户和密钥 |
+| Tenant | `chat`, `skills:*` 等 | Admin 或 Builder | SDK/前端集成 |
+
+### 密钥层级关系
+
+```
+Admin → 创建 Builder key（需绑定 userId）
+Builder → 创建 Tenant key（无 userId，不可包含 admin/builder scope）
+Tenant key → 供终端用户应用使用
+```
+
+Builder key 需要绑定 `userId` 才能正常使用。
+Builder 创建的 Tenant key 故意不含 `userId`，因此无法调用 Builder API。
+
 ## 管理控制台
 
 ### 访问 API Keys 页面
@@ -23,6 +42,7 @@ API 密钥是访问 CCaaS 平台的主要身份验证机制。每个密钥：
 
 API 密钥列表显示：
 - **密钥前缀**：密钥的前 20 个字符（例如 `ccaas_live_abc123`）
+- **类型**：Admin、Builder 或 Tenant 徽章（根据 scope 推断）
 - **名称**：可读的标识符
 - **权限范围**：权限徽章（显示前 3 个，溢出显示 +N）
 - **状态**：活动或已吊销
@@ -44,7 +64,7 @@ API 密钥列表显示：
 5. 点击 **Done** 关闭弹窗
 
 **默认设置**（自动应用）：
-- 权限范围：`["chat", "skills:read"]`
+- 权限范围：`["chat", "skills:read", "skills:execute"]`
 - 速率限制：60 次请求/分钟，1000 次请求/天
 - 无过期时间
 

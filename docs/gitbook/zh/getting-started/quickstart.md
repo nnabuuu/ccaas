@@ -23,20 +23,33 @@ curl http://localhost:3001/api/v1/chat/health
 # 返回: { "status": "ok" }
 ```
 
-## 体验 CCAAS Demo
+## 体验 Demo
 
-最快的方式是运行 CCAAS Demo：
+克隆示例仓库，通过 setup 脚本将 Demo 导入托管后端：
 
 ```bash
-cd solutions/ccaas-demo
-./setup.sh
+git clone https://github.com/kedge-agentic/examples.git
+cd examples/demo/01-pure-chat
+
+# 配置 API Key
+cp ../.env.example .env
+# 编辑 .env 设置你的 CCAAS_API_KEY
+
+# 导入 Demo
+../setup.sh
 ```
 
-启动完成后，访问 `http://localhost:5179` 即可体验：
+setup 脚本会将 Solution 导入 `https://ccaas.zhushou.one`（可通过 `.env` 配置）。导入完成后，试试发送消息：
 
-1. **聊天交互** —— 在聊天界面输入消息，观察 AI 实时响应
-2. **Skill 切换** —— 启用/禁用不同的 Skill，观察 AI 行为变化
-3. **文件生成** —— 让 AI 生成文件并下载
+```bash
+curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
+  -H "Authorization: Bearer $CCAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"message":"你好！","tenantId":"demo-02-pure-chat"}'
+```
+
+更多 Demo（02-multi-template 到 12-sync-fields）可在同一仓库中获取。
 
 ## React SDK 快速集成（推荐）
 

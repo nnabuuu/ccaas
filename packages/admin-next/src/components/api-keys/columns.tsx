@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Copy, Ban, Trash2 } from 'lucide-react'
+import { MoreVertical, Ban, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
@@ -64,23 +64,24 @@ export const columns: ColumnDef<ApiKey>[] = [
     accessorKey: 'keyPrefix',
     header: 'Key',
     cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-          {row.original.keyPrefix}***
-        </code>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
-          onClick={() => {
-            navigator.clipboard.writeText(row.original.keyPrefix)
-            toast.success('Key prefix copied to clipboard')
-          }}
-        >
-          <Copy className="h-3 w-3" />
-        </Button>
-      </div>
+      <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
+        {row.original.keyPrefix}***
+      </code>
     ),
+  },
+  {
+    id: 'type',
+    header: 'Type',
+    cell: ({ row }) => {
+      const scopes = row.original.scopes
+      if (scopes.includes('admin')) {
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-200">Admin</Badge>
+      }
+      if (scopes.includes('builder')) {
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200">Builder</Badge>
+      }
+      return <Badge variant="secondary">Tenant</Badge>
+    },
   },
   {
     accessorKey: 'name',

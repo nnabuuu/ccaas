@@ -23,20 +23,33 @@ curl http://localhost:3001/api/v1/chat/health
 # Returns: { "status": "ok" }
 ```
 
-## Try the CCAAS Demo
+## Try a Demo
 
-The quickest way to get started is to run the CCAAS Demo:
+Clone the examples repository and set up any demo against the hosted backend:
 
 ```bash
-cd solutions/ccaas-demo
-./setup.sh
+git clone https://github.com/kedge-agentic/examples.git
+cd examples/demo/01-pure-chat
+
+# Configure your API key
+cp ../.env.example .env
+# Edit .env to set your CCAAS_API_KEY
+
+# Import the demo
+../setup.sh
 ```
 
-Once the setup is complete, open `http://localhost:5179` to explore:
+The setup script imports the Solution into `https://ccaas.zhushou.one` (configurable via `.env`). After import, try sending a message:
 
-1. **Chat Interaction** -- Type a message in the chat interface and watch the AI respond in real time
-2. **Skill Switching** -- Enable or disable different Skills to see how AI behavior changes
-3. **File Generation** -- Ask the AI to generate a file and download it
+```bash
+curl -N -X POST https://ccaas.zhushou.one/api/v1/sessions/test-1/messages \
+  -H "Authorization: Bearer $CCAAS_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"message":"Hello!","tenantId":"demo-02-pure-chat"}'
+```
+
+More demos (02-multi-template through 12-sync-fields) are available in the same repository.
 
 ## REST API Quick Tour
 

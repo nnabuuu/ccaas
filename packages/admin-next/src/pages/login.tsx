@@ -39,6 +39,9 @@ export function LoginPage() {
                 className="pl-9"
                 autoFocus
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                <T zh="支持 Admin 和 Builder API 密钥" en="Supports Admin and Builder API keys" />
+              </p>
             </div>
             <Button type="submit" className="w-full" disabled={!apiKey || isLoading}>
               {isLoading ? <T zh="认证中..." en="Authenticating..." /> : <T zh="登录" en="Sign In" />}

@@ -1,24 +1,42 @@
 # Solution 案例库
 
-基于 KedgeAgentic 构建的真实 Solution，每个 Solution 展示一种独特的架构模式。每条记录链接到 Solution 概览和一个或多个聚焦子页，解释设计决策背后的**原因** — 而不仅仅是实现方式。
+本章节展示基于即见Agentic 平台构建的真实 Solution，演示不同的架构模式和设计方法。
 
----
+## 精选 Solution
 
-## Solution 列表
+| Solution | 架构模式 | 核心亮点 |
+|----------|---------|---------|
+| [智慧农服 Smart Agri Service](smart-agri-service/README.md) | MCP + 双模板 | 11 个 MCP 工具、多数据源整合、双人设设计 |
+| [麦肯锡顾问 McKinsey CLI](mckinsey-cli/README.md) | 纯 Skill、零 MCP | 单个 Skill 替代所有工具、渐进式上下文加载 |
 
-| Solution | 业务场景 | 有价值的层 | 子页 |
-|----------|---------|----------|-----|
-| [Quiz Analyzer](quiz-analyzer/README.md) | AI 将题目标注为 3.1 万节点层级树中最精确的知识点 | MCP 层：层级数据检索与叶节点优先过滤 | [MCP 层设计：层级数据](quiz-analyzer/mcp-design.md) |
-| [Lesson Plan Designer](lesson-plan-designer/README.md) | AI 辅助教师设计 14 字段教案，修改须经用户确认后才应用到表单 | Solution 协议：write_output 两步同步 | [表单协议与 SYNC\_FIELDS](lesson-plan-designer/form-protocol.md) |
-| [Rehab Motion Renderer](rehab-motion-renderer/README.md) | 医学报告 → 个性化康复方案，渲染为带 SVG 骨架动画的交互训练页面 | Output 结构：AI 决定内容，前端决定呈现 | [双 Output 设计](rehab-motion-renderer/dual-output.md) |
+## Demo 示例集
 
----
+平台还包含 **12 个渐进式 Demo 示例**，覆盖各项独立功能：
 
-## 如何阅读这些案例
+| Demo | 演示功能 |
+|------|---------|
+| 01-pure-chat | 基础 AI 聊天（无工具） |
+| 02-multi-template | 多会话模板 |
+| 03-sse-events | SSE 实时事件流 |
+| 04-write-output | 结构化输出同步到前端 |
+| 05-skill-frontmatter | Skill 元数据与触发器 |
+| 06-skill-routing | 多 Skill 路由逻辑 |
+| 07-workflow-skill | 多步骤工作流 Skill |
+| 08-output-operations | 输出字段操作 |
+| 09-skill-prompt-mode | Skill prompt 模式配置 |
+| 10-append-prompt | 系统提示词追加 |
+| 11-tool-event-triggers | 工具事件触发钩子 |
+| 12-sync-fields | SYNC_FIELDS 实时同步 |
 
-每个 Solution 页面回答两个问题：
+Demo 源码可在公开仓库 [kedge-agentic/examples](https://github.com/kedge-agentic/examples) 的 `demo/` 目录下获取。每个 Demo 都是纯后端定义（Skills + 可选 MCP），无前端代码。使用 `setup.sh` 将任意 Demo 导入 `https://ccaas.zhushou.one`（可通过 `.env` 配置），然后通过 REST API 交互。
 
-1. **它解决什么问题？** — 一句话业务场景 + 数据流图
-2. **哪个设计值得借鉴？** — 一个聚焦子页，介绍最具迁移价值的架构决策
+## 如何阅读案例
 
-目标不是记录每个文件，而是提取可应用于你自己 Solution 的模式。
+每个 Solution 案例遵循统一的结构：
+
+1. **架构概览** —— 系统图展示组件关系
+2. **关键设计决策** —— 为什么这样设计架构
+3. **可迁移模式** —— 你可以在自己的 Solution 中复用的模式
+4. **深度子页面** —— 特定设计方面的详细分析
+
+重点关注**架构模式**而非实现细节——相同的模式可以跨领域应用。
