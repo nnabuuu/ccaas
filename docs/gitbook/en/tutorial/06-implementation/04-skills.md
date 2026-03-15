@@ -9,7 +9,7 @@ By the end of this section, you will have:
 - A **Lesson Plan Designer** Skill for polishing lesson plans and generating materials
 - A **Teaching Script Generator** Skill for converting lesson plans into teacher scripts
 - A **NotebookLM** Skill for generating audio and PDF slide decks
-- All Skills registered in `solution.json` with trigger and chained-skill configuration
+- All Skills registered in `solution.json` with the v3.0 `{ slug, name }` format
 - An understanding of how Skills, MCP tools, and sync fields connect
 
 ## What Is a Skill?
@@ -326,53 +326,21 @@ Add all Skills to `solution.json`. Here is the actual configuration from the Les
 ```json
 {
   "skills": [
-    {
-      "name": "Lesson Plan Designer",
-      "slug": "lesson-plan-designer",
-      "description": "AI lesson planning assistant",
-      "skillFile": "skills/lesson-plan-designer/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "备课", "priority": 10 },
-        { "type": "keyword", "value": "教学目标", "priority": 8 },
-        { "type": "keyword", "value": "教学活动", "priority": 8 },
-        { "type": "keyword", "value": "评估", "priority": 7 },
-        { "type": "keyword", "value": "设计", "priority": 5 },
-        { "type": "keyword", "value": "生成音频", "priority": 9 },
-        { "type": "keyword", "value": "生成PPT", "priority": 9 },
-        { "type": "keyword", "value": "全套材料", "priority": 10 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write", "Skill"],
-      "relatedSkills": ["notebooklm"]
-    },
-    {
-      "name": "NotebookLM",
-      "slug": "notebooklm",
-      "description": "Generate audio, PDF slides, and other content",
-      "skillFile": "skills/notebooklm/SKILL.md",
-      "scope": "tenant"
-    },
-    {
-      "name": "Teaching Script Generator",
-      "slug": "teaching-script-generator",
-      "description": "Generate teaching scripts from lesson plans",
-      "skillFile": "skills/teaching-script-generator/SKILL.md",
-      "scope": "tenant"
-    }
-  ],
-
-  "chainedSkills": {
-    "notebooklm": {
-      "description": "Generate audio, PDF slides, and other content",
-      "triggerPhrase": "生成音频|生成PDF|生成文档",
-      "inputFrom": "lesson plan content",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
-    }
-  }
+    { "slug": "lesson-plan-designer", "name": "lesson-plan-designer" },
+    { "slug": "teaching-script-generator", "name": "teaching-script-generator" },
+    { "slug": "lesson-plan-pptx", "name": "lesson-plan-pptx" },
+    { "slug": "notebooklm", "name": "notebooklm" }
+  ]
 }
 ```
 
-### Trigger Configuration Explained
+{% hint style="info" %}
+**v3.0 schema simplification.** In the v3.0 solution.json format, Skills are registered with just `slug` and `name`. Trigger configuration, `allowedTools`, and other Skill settings are defined in the SKILL.md frontmatter or configured through the admin dashboard. This keeps `solution.json` focused on declaring *which* Skills exist, while the Skill files themselves define *how* they work.
+{% endhint %}
+
+### Trigger Configuration
+
+In the v3.0 format, triggers are configured in the SKILL.md frontmatter rather than in `solution.json`. The trigger system uses two main properties:
 
 | Field | Description |
 |-------|-------------|
@@ -383,7 +351,7 @@ Add all Skills to `solution.json`. Here is the actual configuration from the Les
 **How triggers work:**
 
 1. User sends: "帮我优化教学目标" (Help me optimize learning objectives)
-2. CCAAS scans the message against all Skill triggers
+2. CCAAS scans the message against all Skill triggers defined in their SKILL.md frontmatter
 3. "教学目标" matches the Lesson Plan Designer Skill (priority 8)
 4. CCAAS injects the Lesson Plan Designer SKILL.md into the AI Agent context
 
@@ -402,34 +370,17 @@ The Lesson Plan Designer uses two trigger types:
 
 Keyword triggers are fast and deterministic. Intent triggers are more flexible but require semantic matching, which adds latency.
 
-### allowedTools
+### Skill-to-Skill Invocation
 
-The `allowedTools` array restricts which tools the Skill can use. This follows the principle of least privilege:
+In the v3.0 format, the `chainedSkills` section in `solution.json` has been removed. Instead, Skills invoke other Skills through the `Skill` tool:
 
-- `write_output` -- Required for syncing data to the frontend form
-- `read_context` -- Read the current form state (from shared-context MCP server)
-- `attach_file` -- Attach generated files to the lesson plan
-- `Read` -- Read files from the filesystem (built-in Agent tool)
-- `Write` -- Write files to the filesystem (built-in Agent tool)
-- `Skill` -- Invoke other Skills (for chained workflows like "全套材料")
-
-Tools not listed here cannot be invoked when this Skill is active, even if the MCP Server provides them.
-
-### Chained Skills
-
-The `chainedSkills` section in `solution.json` declares Skills that can be called from other Skills:
-
-```json
-"chainedSkills": {
-  "notebooklm": {
-    "triggerPhrase": "生成音频|生成PDF|生成文档",
-    "inputFrom": "lesson plan content",
-    "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
-  }
-}
+```typescript
+// Inside a SKILL.md instruction:
+// "When the user requests full materials, invoke the NotebookLM Skill
+// using the Skill tool to generate audio and slides."
 ```
 
-This enables the orchestration pattern where the primary Lesson Plan Designer Skill calls the NotebookLM Skill to generate audio or slides as part of the "全套材料" (full materials) workflow.
+This approach is simpler and more explicit -- the orchestration logic lives in the Skill instructions rather than in configuration.
 
 ## How Skills, MCP Tools, and Frontend Connect
 
@@ -614,7 +565,7 @@ Before moving to the next section, verify:
 - [ ] All Skills are registered in `solution.json` with appropriate triggers
 - [ ] The field names in the Skill's output format match the `SYNC_FIELDS` in the MCP Server
 - [ ] `allowedTools` includes `write_output` for content Skills and `attach_file` for file-generating Skills
-- [ ] The `chainedSkills` section in `solution.json` declares the NotebookLM orchestration
+- [ ] Skills that need to invoke other Skills reference them in their SKILL.md instructions
 
 ## Exercise: Add a Curriculum Standards Lookup Skill
 
@@ -643,7 +594,7 @@ In this section you learned:
 - **Context-aware Skills**: Using `read_context` to avoid redundant questions and provide targeted suggestions
 - **Dual output pattern**: Syncing text to `extraProperties` for inline viewing and files via `attach_file` for downloads
 - **Trigger types**: `keyword` for exact matching and `intent` for semantic matching, with priority-based routing
-- **Chained Skills**: How Skills call other Skills (e.g., Lesson Plan Designer orchestrating NotebookLM for "全套材料")
+- **Skill-to-Skill invocation**: Skills call other Skills through the `Skill` tool (e.g., Lesson Plan Designer orchestrating NotebookLM for "全套材料")
 - **The three-way contract**: Skills tell the AI what to do, the MCP Server validates with `SYNC_FIELDS`, and the frontend renders -- all must use the same field names
 - **Subagent pattern**: Long-running operations (audio, PDF generation) use background subagents to keep the conversation unblocked
 

@@ -9,7 +9,7 @@
 - 一个用于打磨教案和生成材料的 **Lesson Plan Designer** Skill
 - 一个将教案转化为教师讲稿的 **Teaching Script Generator** Skill
 - 一个生成音频和 PDF 幻灯片的 **NotebookLM** Skill
-- 在 `solution.json` 中注册的所有 Skill 及其触发器和链式调用配置
+- 在 `solution.json` 中注册的所有 Skill（v3.0 `{ slug, name }` 格式）
 - 对 Skill、MCP 工具和同步字段如何关联的理解
 
 ## 什么是 Skill？
@@ -323,53 +323,21 @@ triggers:
 ```json
 {
   "skills": [
-    {
-      "name": "Lesson Plan Designer",
-      "slug": "lesson-plan-designer",
-      "description": "AI备课助手",
-      "skillFile": "skills/lesson-plan-designer/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "备课", "priority": 10 },
-        { "type": "keyword", "value": "教学目标", "priority": 8 },
-        { "type": "keyword", "value": "教学活动", "priority": 8 },
-        { "type": "keyword", "value": "评估", "priority": 7 },
-        { "type": "keyword", "value": "设计", "priority": 5 },
-        { "type": "keyword", "value": "生成音频", "priority": 9 },
-        { "type": "keyword", "value": "生成PPT", "priority": 9 },
-        { "type": "keyword", "value": "全套材料", "priority": 10 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write", "Skill"],
-      "relatedSkills": ["notebooklm"]
-    },
-    {
-      "name": "NotebookLM",
-      "slug": "notebooklm",
-      "description": "生成教案讲解音频、PDF文档等内容",
-      "skillFile": "skills/notebooklm/SKILL.md",
-      "scope": "tenant"
-    },
-    {
-      "name": "Teaching Script Generator",
-      "slug": "teaching-script-generator",
-      "description": "根据教案生成教学讲稿",
-      "skillFile": "skills/teaching-script-generator/SKILL.md",
-      "scope": "tenant"
-    }
-  ],
-
-  "chainedSkills": {
-    "notebooklm": {
-      "description": "生成教案讲解音频、PDF文档等内容",
-      "triggerPhrase": "生成音频|生成PDF|生成文档",
-      "inputFrom": "教案内容",
-      "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
-    }
-  }
+    { "slug": "lesson-plan-designer", "name": "lesson-plan-designer" },
+    { "slug": "teaching-script-generator", "name": "teaching-script-generator" },
+    { "slug": "lesson-plan-pptx", "name": "lesson-plan-pptx" },
+    { "slug": "notebooklm", "name": "notebooklm" }
+  ]
 }
 ```
 
-### 触发器配置说明
+{% hint style="info" %}
+**v3.0 schema 简化。** 在 v3.0 的 solution.json 格式中，Skill 只需注册 `slug` 和 `name`。触发器配置、`allowedTools` 和其他 Skill 设置在 SKILL.md 的 frontmatter 中定义，或通过管理后台配置。这使 `solution.json` 专注于声明 *有哪些* Skill，而 Skill 文件本身定义 *如何工作*。
+{% endhint %}
+
+### 触发器配置
+
+在 v3.0 格式中，触发器在 SKILL.md 的 frontmatter 中配置，而不是在 `solution.json` 中。触发器系统使用以下主要属性：
 
 | 字段 | 描述 |
 |------|------|
@@ -380,7 +348,7 @@ triggers:
 **触发器如何工作：**
 
 1. 用户发送："帮我优化教学目标"
-2. CCAAS 将消息与所有 Skill 触发器进行扫描匹配
+2. CCAAS 将消息与所有 Skill 的 SKILL.md frontmatter 中定义的触发器进行扫描匹配
 3. "教学目标" 匹配 Lesson Plan Designer Skill（优先级 8）
 4. CCAAS 将 Lesson Plan Designer SKILL.md 注入 AI Agent 上下文
 
@@ -399,34 +367,17 @@ triggers:
 
 关键词触发器快速且确定性强。意图触发器更灵活但需要语义匹配，会增加延迟。
 
-### allowedTools
+### Skill 间调用
 
-`allowedTools` 数组限制了 Skill 可以使用哪些工具。这遵循最小权限原则：
+在 v3.0 格式中，`solution.json` 中的 `chainedSkills` 部分已移除。现在 Skill 通过 `Skill` 工具互相调用：
 
-- `write_output` —— 将数据同步到前端表单
-- `read_context` —— 读取当前表单状态（来自 shared-context MCP 服务器）
-- `attach_file` —— 将生成的文件附加到教案
-- `Read` —— 从文件系统读取文件（内置 Agent 工具）
-- `Write` —— 写入文件到文件系统（内置 Agent 工具）
-- `Skill` —— 调用其他 Skill（用于链式工作流如"全套材料"）
-
-未列出的工具在该 Skill 激活时无法被调用，即使 MCP Server 提供了它们。
-
-### 链式 Skill
-
-`solution.json` 中的 `chainedSkills` 部分声明了可以从其他 Skill 调用的 Skill：
-
-```json
-"chainedSkills": {
-  "notebooklm": {
-    "triggerPhrase": "生成音频|生成PDF|生成文档",
-    "inputFrom": "教案内容",
-    "outputTo": ".agent-workspace/sessions/{sessionId}/outputs/"
-  }
-}
+```typescript
+// 在 SKILL.md 指令中：
+// "当用户请求全套材料时，使用 Skill 工具调用 NotebookLM Skill
+// 来生成音频和幻灯片。"
 ```
 
-这实现了编排模式，主 Lesson Plan Designer Skill 调用 NotebookLM Skill 来生成音频或幻灯片，作为"全套材料"工作流的一部分。
+这种方式更简单、更明确——编排逻辑存在于 Skill 指令中，而不是配置中。
 
 ## Skill、MCP 工具和前端如何关联
 
@@ -611,7 +562,7 @@ echo "Skills 注入成功"
 - [ ] 所有 Skill 都在 `solution.json` 中注册了合适的触发器
 - [ ] Skill 输出格式中的字段名与 MCP Server 的 `SYNC_FIELDS` 匹配
 - [ ] `allowedTools` 包含内容 Skill 需要的 `write_output` 和文件生成 Skill 需要的 `attach_file`
-- [ ] `solution.json` 中的 `chainedSkills` 部分声明了 NotebookLM 编排
+- [ ] 需要调用其他 Skill 的 Skill 在其 SKILL.md 指令中引用了目标 Skill
 
 ## 练习：添加课程标准查找 Skill
 
@@ -640,7 +591,7 @@ echo "Skills 注入成功"
 - **上下文感知 Skill**：使用 `read_context` 避免重复提问并提供有针对性的建议
 - **双重输出模式**：文本同步到 `extraProperties` 用于内联查看，文件通过 `attach_file` 用于下载
 - **触发器类型**：`keyword` 用于精确匹配，`intent` 用于语义匹配，基于优先级路由
-- **链式 Skill**：Skill 如何调用其他 Skill（如 Lesson Plan Designer 编排 NotebookLM 实现"全套材料"）
+- **Skill 间调用**：Skill 通过 `Skill` 工具调用其他 Skill（如 Lesson Plan Designer 编排 NotebookLM 实现"全套材料"）
 - **三方契约**：Skill 告诉 AI 做什么，MCP Server 用 `SYNC_FIELDS` 验证，前端渲染——三者必须使用相同的字段名
 - **Subagent 模式**：长时间操作（音频、PDF 生成）使用后台 subagent 保持对话不被阻塞
 

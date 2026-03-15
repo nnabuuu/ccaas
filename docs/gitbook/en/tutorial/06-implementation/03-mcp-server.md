@@ -2,7 +2,7 @@
 
 ## What You Will Build
 
-In this section, you will build the MCP Server for the Task Manager Solution. The MCP Server provides tools that the AI Agent can invoke during conversation -- most importantly, the `write_output` tool that syncs AI-generated data to the frontend form.
+In this section, you will build the MCP Server for the Lesson Plan Designer Solution. The MCP Server provides tools that the AI Agent can invoke during conversation -- most importantly, the `write_output` tool that syncs AI-generated data to the frontend form.
 
 By the end of this section, you will have:
 
@@ -28,7 +28,7 @@ The MCP Server does **not** directly communicate with the frontend -- CCAAS hand
 ### Directory Structure
 
 ```
-solutions/task-manager-tutorial/
+solutions/business/lesson-plan-designer/
 └── mcp-server/              # ← We are building this
     ├── package.json
     ├── tsconfig.json
@@ -40,7 +40,7 @@ solutions/task-manager-tutorial/
 ### Initialize the Package
 
 ```bash
-cd solutions/task-manager-tutorial
+cd solutions/business/lesson-plan-designer
 mkdir -p mcp-server/src
 cd mcp-server
 ```
@@ -49,7 +49,7 @@ Create `package.json`:
 
 ```json
 {
-  "name": "task-manager-mcp",
+  "name": "lesson-plan-designer-mcp",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -100,13 +100,21 @@ Create `src/types.ts` with the sync field definitions from Chapter 2:
 // src/types.ts
 
 export const SYNC_FIELDS = [
-  'taskTitle',
-  'taskDescription',
-  'priority',
+  'title',
+  'subject',
+  'gradeLevel',
+  'durationMinutes',
+  'lessonPlanCode',
+  'objectives',
+  'content',
+  'teachingMethods',
+  'materialsNeeded',
+  'assessmentMethods',
+  'curriculumRequirements',
+  'studentAnalysis',
+  'extraProperties',
   'status',
-  'projectId',
-  'dueDate',
-  'tags',
+  'attachments',
 ] as const;
 
 export type SyncField = typeof SYNC_FIELDS[number];
@@ -123,6 +131,7 @@ export interface WriteOutputResult {
     value?: unknown;
     preview?: string;
     error?: string;
+    originalValue?: unknown;
   };
   status: 'success' | 'error';
 }
@@ -144,16 +153,38 @@ import { SYNC_FIELDS, type SyncField } from './types.js';
 
 // Individual field schemas
 const fieldSchemas: Record<SyncField, z.ZodType> = {
-  taskTitle: z.string().min(1, 'Title cannot be empty').max(200),
-  taskDescription: z.string().max(5000),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  status: z.enum(['todo', 'in_progress', 'done', 'cancelled']),
-  projectId: z.string().uuid('Project ID must be a valid UUID'),
-  dueDate: z.string().regex(
-    /^\d{4}-\d{2}-\d{2}$/,
-    'Due date must be in YYYY-MM-DD format'
-  ),
-  tags: z.array(z.string().min(1).max(50)).max(20),
+  title: z.string().min(1, 'Title cannot be empty').max(200),
+  subject: z.string().max(100),
+  gradeLevel: z.number().int().min(1).max(12),
+  durationMinutes: z.number().int().min(1).max(600),
+  lessonPlanCode: z.string().max(100).nullable(),
+  objectives: z.string().max(10000),
+  content: z.string().max(50000),
+  teachingMethods: z.string().max(10000),
+  materialsNeeded: z.string().max(5000),
+  assessmentMethods: z.string().max(10000),
+  curriculumRequirements: z.array(z.object({
+    id: z.number(),
+    standardCode: z.string(),
+    title: z.string(),
+    stage: z.string(),
+    standardType: z.string(),
+    contentDomain: z.string(),
+  })),
+  studentAnalysis: z.string().max(10000),
+  extraProperties: z.record(z.string(), z.unknown()),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
+  attachments: z.array(z.object({
+    id: z.string(),
+    fileId: z.string(),
+    fileName: z.string(),
+    fileType: z.enum(['script', 'audio', 'ppt', 'pdf', 'other']),
+    mimeType: z.string(),
+    size: z.number(),
+    downloadUrl: z.string(),
+    uploadedAt: z.string(),
+    description: z.string().optional(),
+  })),
 };
 
 export interface ValidationResult {
@@ -231,7 +262,7 @@ import { validateField } from './schemas.js';
 // Create the MCP server
 const server = new Server(
   {
-    name: 'task-manager-tools',
+    name: 'lesson-plan-tools',
     version: '1.0.0',
   },
   {
@@ -244,24 +275,32 @@ const server = new Server(
 // Define the write_output tool
 const writeOutputTool: Tool = {
   name: 'write_output',
-  description: `Write task data to the frontend form. Updates one field at a time.
+  description: `Write lesson plan data to the frontend form. Updates one field at a time.
 
 Valid fields: ${SYNC_FIELDS.join(', ')}
 
 Field types:
-- taskTitle: string (task title, 1-200 characters)
-- taskDescription: string (task description, up to 5000 characters)
-- priority: "low" | "medium" | "high" | "urgent"
-- status: "todo" | "in_progress" | "done" | "cancelled"
-- projectId: string (UUID of the project)
-- dueDate: string (ISO date format, e.g. "2026-03-15")
-- tags: string[] (array of tag strings, e.g. ["frontend", "urgent"])
+- title: string (lesson title, 1-200 characters)
+- subject: string (subject name, e.g. "math", "chinese")
+- gradeLevel: number (grade level, 1-12)
+- durationMinutes: number (class duration in minutes)
+- lessonPlanCode: string | null (lesson plan identifier)
+- objectives: string (learning objectives in ABCD format)
+- content: string (teaching process / learning activities)
+- teachingMethods: string (teaching methodology)
+- materialsNeeded: string (required materials)
+- assessmentMethods: string (assessment design)
+- curriculumRequirements: object[] (curriculum standard references)
+- studentAnalysis: string (student background analysis)
+- extraProperties: object (extensible key-value store)
+- status: "DRAFT" | "PUBLISHED" | "ARCHIVED"
+- attachments: object[] (file attachments)
 
 Example:
 {
-  "field": "taskTitle",
-  "value": "Review API documentation",
-  "preview": "Set title"
+  "field": "objectives",
+  "value": "Students will understand the concept of fractions",
+  "preview": "Set learning objectives"
 }`,
   inputSchema: {
     type: 'object',
@@ -269,7 +308,7 @@ Example:
       field: {
         type: 'string',
         enum: [...SYNC_FIELDS],
-        description: 'The task field to update',
+        description: 'The lesson plan field to update',
       },
       value: {
         description: 'The value for the field',
@@ -361,7 +400,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // Use stderr for logging since stdout is reserved for MCP protocol
-  console.error('Task Manager MCP Server started');
+  console.error('Lesson Plan Designer MCP Server started');
 }
 
 main().catch((error) => {
@@ -377,10 +416,10 @@ The MCP Server must be registered in `solution.json` so CCAAS knows how to launc
 ```json
 {
   "mcpServers": {
-    "task-manager-tools": {
+    "lesson-plan-tools": {
       "command": "node",
       "args": ["mcp-server/dist/index.js"],
-      "description": "Task Manager MCP tools including write_output",
+      "description": "Lesson Plan Designer MCP tools including write_output",
       "type": "stdio",
       "env": {}
     }
@@ -406,7 +445,7 @@ The `args` path points to `dist/index.js`, not `src/index.ts`. You must build th
 ### Build the MCP Server
 
 ```bash
-cd solutions/task-manager-tutorial/mcp-server
+cd solutions/business/lesson-plan-designer/mcp-server
 npm run build
 ```
 
@@ -419,7 +458,7 @@ You can test the MCP Server locally using the MCP inspector or by piping JSON to
 echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node dist/index.js
 
 # Call write_output with a valid field
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"write_output","arguments":{"field":"taskTitle","value":"Review API docs","preview":"Set title"}}}' | node dist/index.js
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"write_output","arguments":{"field":"objectives","value":"Students will understand fractions","preview":"Set learning objectives"}}}' | node dist/index.js
 
 # Call write_output with an invalid field
 echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"write_output","arguments":{"field":"invalid","value":"test"}}}' | node dist/index.js
@@ -427,7 +466,7 @@ echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"write_outp
 
 Expected responses:
 
-- **Valid call:** `{ "data": { "field": "taskTitle", "value": "Review API docs" }, "status": "success" }`
+- **Valid call:** `{ "data": { "field": "objectives", "value": "Students will understand fractions" }, "status": "success" }`
 - **Invalid field:** `{ "data": { "error": "Invalid field: \"invalid\"..." }, "status": "error" }`
 
 ## How write_output Becomes output_update
@@ -437,7 +476,7 @@ After your MCP Server returns a successful `write_output` result, here is what h
 ```
 MCP Server returns:
 {
-  "data": { "field": "taskTitle", "value": "Review API docs" },
+  "data": { "field": "objectives", "value": "Students will understand fractions" },
   "status": "success"
 }
           │
@@ -448,8 +487,8 @@ CCAAS EventMapper wraps it into an output_update event:
   "sessionId": "abc-123",
   "payload": {
     "data": {
-      "field": "taskTitle",
-      "value": "Review API docs",
+      "field": "objectives",
+      "value": "Students will understand fractions",
       "operation": "set"
     }
   }
@@ -464,34 +503,33 @@ You do not need to implement this relay -- CCAAS handles it automatically. Your 
 
 ## Adding Custom Tools (Optional)
 
-Beyond `write_output`, you can add domain-specific tools. For the Task Manager, you might add a tool to search existing tasks:
+Beyond `write_output`, you can add domain-specific tools. For the Lesson Plan Designer, you might add a tool to look up curriculum standards:
 
 ```typescript
-const searchTasksTool: Tool = {
-  name: 'search_tasks',
-  description: 'Search existing tasks by keyword, status, or project',
+const getCurriculumStandardsTool: Tool = {
+  name: 'get_curriculum_standards',
+  description: 'Search curriculum standards by subject, grade, and keyword',
   inputSchema: {
     type: 'object',
     properties: {
-      query: {
+      subject: {
         type: 'string',
-        description: 'Search keyword',
+        description: 'Subject name (e.g., "math", "chinese")',
       },
-      status: {
+      keyword: {
         type: 'string',
-        enum: ['todo', 'in_progress', 'done'],
-        description: 'Filter by status',
+        description: 'Search keyword for standards',
       },
-      projectId: {
-        type: 'string',
-        description: 'Filter by project ID',
+      grade: {
+        type: 'number',
+        description: 'Grade level (1-12)',
       },
     },
   },
 };
 ```
 
-The AI Agent can use this tool to check for duplicate tasks before creating new ones, or to understand the current project context.
+The AI Agent can use this tool to look up relevant curriculum standards when designing a lesson plan, ensuring the objectives align with official requirements.
 
 ## Checkpoint
 
@@ -501,7 +539,7 @@ Before moving to the next section, verify:
 - [ ] `tools/list` returns the `write_output` tool with correct field descriptions
 - [ ] Valid `write_output` calls return `{ status: "success" }` with the field and value
 - [ ] Invalid field names return `{ status: "error" }` with a clear error message
-- [ ] Invalid values (e.g., `priority: "critical"`) return a validation error
+- [ ] Invalid values (e.g., `gradeLevel: 15`) return a validation error
 
 ## Common Mistakes
 
@@ -521,7 +559,7 @@ The `solution.json` points to `dist/index.js`. If you modify `src/index.ts` but 
 
 ### 3. Mismatched field names
 
-If your MCP Server validates `taskTitle` but the Skill instructions say `title`, the AI Agent will send `title` and get a validation error. Keep the `SYNC_FIELDS` array as the single source of truth and reference it in both the MCP Server and the Skill.
+If your MCP Server validates `objectives` but the Skill instructions say `learningObjectives`, the AI Agent will send `learningObjectives` and get a validation error. Keep the `SYNC_FIELDS` array as the single source of truth and reference it in both the MCP Server and the Skill.
 
 ## Summary
 

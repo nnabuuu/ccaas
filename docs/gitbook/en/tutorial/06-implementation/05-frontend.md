@@ -88,7 +88,8 @@ import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // IMPORTANT: Use absolute URL to the CCAAS backend, NOT a relative path
 // Vite proxy only works for HTML/CSS, not for SSE connections
-const SERVER_URL = 'http://localhost:3001'
+// Configure VITE_CCAAS_URL in .env for different environments
+const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
   const { tenantId = 'lesson-plan-designer', autoConnect = true } = options

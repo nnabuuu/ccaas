@@ -2,7 +2,7 @@
 
 ## What You Will Build
 
-In this section, you will add conversation persistence to the Task Manager Solution. After this, users can refresh the page or close the browser and return to find their previous conversation intact.
+In this section, you will add conversation persistence to the Lesson Plan Designer Solution. After this, users can refresh the page or close the browser and return to find their previous conversation intact.
 
 By the end of this section, you will have:
 
@@ -56,7 +56,7 @@ Each `tenantId` gets its own localStorage key:
 
 ```
 localStorage:
-  ccaas_session_task-manager-tutorial  -> conv_a1b2c3d4...
+  ccaas_session_lesson-plan-designer  -> conv_a1b2c3d4...
   ccaas_session_lesson-plan-designer   -> conv_e5f6g7h8...
 ```
 
@@ -67,7 +67,7 @@ Two Solutions running on the same origin with different `tenantId` values do not
 Open your main session hook (or the component where you initialize the connection) and replace `sessionPrefix` with `tenantId`:
 
 ```typescript
-// src/hooks/useTaskManagerSession.ts
+// src/hooks/useLessonPlanSession.ts
 
 import {
   useAgentConnection,
@@ -76,17 +76,17 @@ import {
 
 const SOCKET_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
-export function useTaskManagerSession() {
+export function useLessonPlanSession() {
   // Enable persistence by providing tenantId
   const connection = useAgentConnection({
     serverUrl: SOCKET_URL,
-    tenantId: 'task-manager-tutorial',  // ← This enables persistence
+    tenantId: 'lesson-plan-designer',  // ← This enables persistence
     autoConnect: true,
   })
 
   const chat = useAgentChat({
     connection,
-    tenantId: 'task-manager-tutorial',
+    tenantId: 'lesson-plan-designer',
   })
 
   return { connection, chat }
@@ -95,7 +95,7 @@ export function useTaskManagerSession() {
 
 When `tenantId` is provided:
 1. The SDK generates a `conv_{uuid}` session ID (instead of a random prefix-based ID)
-2. The session ID is saved to `localStorage` under the key `ccaas_session_task-manager-tutorial`
+2. The session ID is saved to `localStorage` under the key `ccaas_session_lesson-plan-designer`
 3. On the next page load, the SDK reads this key and reconnects with the same `conversationId`
 4. `useAgentChat` automatically fetches message history from the backend
 
@@ -111,7 +111,7 @@ While message history is being fetched, the `isLoadingHistory` flag is `true`. S
 // src/components/ChatPanel.tsx
 
 export function ChatPanel() {
-  const { chat } = useTaskManagerSession()
+  const { chat } = useLessonPlanSession()
 
   if (chat.isLoadingHistory) {
     return (
@@ -162,7 +162,7 @@ After calling `clearConversation()`, the chat panel is empty and ready for a new
 
 ## Step 4: Integrate with Your Solution Logic
 
-In the Task Manager, you likely want to clear the conversation when the user creates a new task project or switches contexts. Here is how the lesson-plan-designer Solution handles this pattern:
+In the Lesson Plan Designer, you likely want to clear the conversation when the user creates a new task project or switches contexts. Here is how the lesson-plan-designer Solution handles this pattern:
 
 ```typescript
 // When the user creates a new project, start a fresh conversation
@@ -188,7 +188,7 @@ If your Solution should always start with a fresh conversation (for example, a o
 ```typescript
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'task-manager-wizard',
+  tenantId: 'lesson-plan-wizard',
   forceNewConversation: true,  // Always start fresh
 })
 ```
@@ -216,7 +216,7 @@ Messages are indexed by `sessionId` and `messageIndex` for fast retrieval.
 
 When the user refreshes the page:
 
-1. `useAgentConnection` reads `ccaas_session_task-manager-tutorial` from localStorage
+1. `useAgentConnection` reads `ccaas_session_lesson-plan-designer` from localStorage
 2. Gets `conv_a1b2c3d4...` as the conversationId
 3. Establishes an SSE connection with this conversationId
 4. `useAgentChat` calls `GET /api/v1/sessions/conv_a1b2c3d4.../messages?limit=100`
@@ -277,13 +277,13 @@ Before moving to the next section, verify:
 // Wrong: no persistence
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  sessionPrefix: 'task-manager',
+  sessionPrefix: 'lesson-plan',
 })
 
 // Correct: persistence enabled
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'task-manager-tutorial',
+  tenantId: 'lesson-plan-designer',
 })
 ```
 

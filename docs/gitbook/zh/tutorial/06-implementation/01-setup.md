@@ -6,24 +6,24 @@
 
 创建一个可运行的项目骨架，包含：
 - 标准 Solution 目录布局
-- `solution.json` 配置
+- `solution.json` 配置（v3.0 schema）
 - NestJS 后端项目
 - React + Vite 前端项目
 - `setup.sh` 启动脚本
 
 ## 步骤 1：创建目录结构
 
-导航到 CCAAS monorepo 的 `solutions/` 目录，创建 Lesson Plan Designer 文件夹：
+导航到 monorepo 的 `solutions/business/` 目录，创建 Lesson Plan Designer 文件夹：
 
 ```bash
-cd solutions
+cd solutions/business
 mkdir -p lesson-plan-designer/{backend/src,frontend/src,mcp-server/src,skills}
 ```
 
 目录结构应该如下：
 
 ```
-lesson-plan-designer/
+solutions/business/lesson-plan-designer/
 ├── backend/
 │   └── src/
 ├── frontend/
@@ -33,32 +33,24 @@ lesson-plan-designer/
 └── skills/
 ```
 
+{% hint style="info" %}
+**为什么是 `solutions/business/`？** monorepo 按类别组织 Solution。业务 Solution 放在 `solutions/business/` 下，与核心平台包分开管理。
+{% endhint %}
+
 ## 步骤 2：创建 solution.json
 
-`solution.json` 是 Solution 的中央配置文件。它告诉平台你的 MCP 服务器、Skills、端口和数据库设置的信息。
+`solution.json` 是 Solution 的中央配置文件。它定义了租户身份、MCP 工具服务、会话模板和 Skill 引用。
 
 创建 `lesson-plan-designer/solution.json`：
 
 ```json
 {
-  "$schema": "https://ccaas.dev/schemas/solution.v1.json",
+  "schemaVersion": "3.0",
 
-  "name": "Lesson Plan Designer",
-  "slug": "lesson-plan-designer",
-  "version": "1.0.0",
-  "description": "AI-powered lesson plan design assistant",
-
-  "backend": {
-    "port": 3002,
-    "ccaasUrl": "http://localhost:3001",
-    "database": {
-      "type": "sqlite",
-      "path": "data/lesson-plans.db"
-    }
-  },
-
-  "frontend": {
-    "port": 5280
+  "tenant": {
+    "name": "Lesson Plan Designer",
+    "slug": "lesson-plan-designer",
+    "description": "AI-powered lesson plan design assistant"
   },
 
   "mcpServers": {
@@ -71,21 +63,16 @@ lesson-plan-designer/
     }
   },
 
-  "skills": [
-    {
-      "name": "Lesson Plan Designer",
-      "slug": "lesson-plan-designer",
-      "description": "Design lesson plans with AI assistance",
-      "skillFile": "skills/lesson-plan-designer/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "lesson plan", "priority": 10 },
-        { "type": "keyword", "value": "teaching objectives", "priority": 8 },
-        { "type": "keyword", "value": "teaching activities", "priority": 8 },
-        { "type": "keyword", "value": "assessment", "priority": 7 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write"]
+  "sessionTemplates": {
+    "lesson-planning": {
+      "description": "Lesson planning mode",
+      "enabledSkills": ["lesson-plan-designer"],
+      "bundles": ["structured-output"]
     }
+  },
+
+  "skills": [
+    { "slug": "lesson-plan-designer", "name": "lesson-plan-designer" }
   ]
 }
 ```
@@ -94,15 +81,18 @@ lesson-plan-designer/
 
 | 字段 | 用途 |
 |------|------|
-| `slug` | 唯一标识符，用于租户创建和 URL 路由 |
-| `backend.port` | Solution 后端端口（3002，与 CCAAS 的 3001 分开） |
-| `backend.ccaasUrl` | 此 Solution 连接的 CCAAS 后端 URL |
-| `frontend.port` | Vite 开发服务器端口 |
+| `schemaVersion` | 配置格式版本（始终为 `"3.0"`） |
+| `tenant` | 租户身份 — 名称、slug（唯一标识符）和描述 |
 | `mcpServers` | AI Agent 可以调用的 MCP 工具服务 |
-| `skills` | AI Skill 定义及触发器配置 |
+| `sessionTemplates` | 会话预设，定义哪些 Skill 和 bundle 处于活跃状态 |
+| `skills` | Skill 引用列表 — 每个条目是一个 `{slug, name}` 对 |
+
+{% hint style="warning" %}
+**`solution.json` 不包含端口或 URL 配置。** 端口、CCAAS URL 和其他运行时设置通过各服务目录中的环境变量（`.env`）配置。这种分离让 `solution.json` 专注于描述 Solution _提供什么_，而 `.env` 处理 _在哪里运行_。
+{% endhint %}
 
 {% hint style="info" %}
-**为什么要分开端口？** Solution 后端（3002）处理业务数据（教案、教材、课程标准）。CCAAS 后端（3001）处理 AI 会话和消息中继。它们是职责分离的独立服务。
+**什么是会话模板？** 会话模板为会话预配置特定的 Skill 和 bundle。当用户使用 `lesson-planning` 模板启动会话时，平台会自动激活 `lesson-plan-designer` Skill 和 `structured-output` bundle。
 {% endhint %}
 
 ## 步骤 3：初始化后端
@@ -223,13 +213,23 @@ lesson-plan-designer/
 
 创建 `backend/.env.example`：
 
-```
-# Lesson Plan Designer Backend
+```bash
+# Server Configuration
 PORT=3002
 HOST=0.0.0.0
-CORS_ORIGIN=http://localhost:5280
+
+# Database
 DB_PATH=./data/lesson-plans.db
+
+# CORS
+CORS_ORIGIN=http://localhost:5280
+
+# CCAAS Backend
+# 本地开发: http://localhost:3001
+# 线上环境: https://ccaas.zhushou.one/
 CCAAS_URL=http://localhost:3001
+
+# Environment
 NODE_ENV=development
 ```
 
@@ -238,6 +238,10 @@ NODE_ENV=development
 ```bash
 cp backend/.env.example backend/.env
 ```
+
+{% hint style="info" %}
+**CCAAS_URL** 告诉 Solution 后端核心平台在哪里运行。本地开发时，这是 `http://localhost:3001`（CCAAS 后端开发服务器）。生产环境使用托管实例 `https://ccaas.zhushou.one/`。
+{% endhint %}
 
 ### 3.5 创建入口文件
 
@@ -253,9 +257,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // 为前端启用 CORS
+  // 启用 CORS（开发环境允许所有来源）
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5280',
+    origin: true,
     credentials: true,
   });
 
@@ -285,7 +289,7 @@ bootstrap();
 
 **说明：**
 
-- `enableCors`：允许前端（端口 5280）调用后端 API
+- `enableCors({ origin: true })`：开发环境接受来自任何来源的请求。与硬编码单个端口不同，这避免了前端端口变更时的 CORS 错误。
 - `ValidationPipe` 配合 `whitelist: true`：剥离 DTO 中未定义的属性，防止意外数据到达服务层
 - `setGlobalPrefix('api')`：所有路由都带 `/api` 前缀（如 `/api/lesson-plans`）
 
@@ -322,6 +326,8 @@ export class AppModule {}
 
 前端使用 React 18 + Vite + Tailwind CSS。我们现在只做最小化脚手架，在第 6.5 章完整构建。
 
+### 4.1 创建 package.json
+
 创建 `frontend/package.json`：
 
 ```json
@@ -342,6 +348,7 @@ export class AppModule {}
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "socket.io-client": "^4.8.1",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
@@ -365,7 +372,81 @@ export class AppModule {}
 
 - `@kedge-agentic/react-sdk`：提供 SSE 连接、聊天和 output\_update 处理的 Hooks
 - `@kedge-agentic/common`：平台中使用的共享类型
+- `socket.io-client`：WebSocket 客户端，用于实时 AI 会话通信
 - `lucide-react`：图标库
+
+### 4.2 创建环境文件
+
+创建 `frontend/.env.example`：
+
+```bash
+# Solution 后端 URL
+VITE_API_URL=http://localhost:3002
+
+# 核心 CCAAS 后端 URL
+# 本地开发: http://localhost:3001
+# 线上环境: https://ccaas.zhushou.one/
+VITE_CCAAS_URL=http://localhost:3001
+
+# 默认租户 ID（setup.sh 创建租户后设置）
+VITE_DEFAULT_TENANT_ID=default-tenant
+```
+
+复制为 `.env`：
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+{% hint style="warning" %}
+**`VITE_CCAAS_URL` 必须是绝对 URL。** 永远不要使用空字符串（`''`）或相对路径（`'/'`）— SDK 使用 `fetch()` 和 `Socket.IO` 构造完整 URL，这会绕过 Vite 开发代理。使用空字符串会导致所有请求发送到前端端口而不是 CCAAS 后端，造成连接完全失败。
+{% endhint %}
+
+### 4.3 创建 vite.config.ts
+
+创建 `frontend/vite.config.ts`：
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5280,
+    proxy: {
+      // CCAAS sessions API（必须在 /api 之前以获得优先匹配）
+      '/api/v1/sessions': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // CCAAS health API
+      '/api/v1/health': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // CCAAS skills API
+      '/api/v1/skills': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // Solution 后端 API
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+```
+
+**代理路由说明：**
+
+Vite 代理将相对 URL 请求（`/api/...`）路由到正确的后端。更具体的路由（如 `/api/v1/sessions`）排在前面，以便在通用的 `/api` 兜底规则之前匹配。
+
+{% hint style="info" %}
+**代理 vs SDK URL：** Vite 代理只拦截浏览器发出的相对 URL 请求（如 `fetch('/api/...')`）。`@kedge-agentic/react-sdk` 使用 `VITE_CCAAS_URL` 构造完整 URL，因此完全绕过代理。两种机制都需要：代理用于简单的 `fetch()` 调用，`VITE_CCAAS_URL` 用于 SDK。
+{% endhint %}
 
 ## 步骤 5：创建启动脚本
 
@@ -386,7 +467,7 @@ TOOLS_DIR="$SCRIPT_DIR/../../tools"
 # Source shared library
 if [ ! -f "$TOOLS_DIR/solution-lib.sh" ]; then
     echo "Error: solution-lib.sh not found at $TOOLS_DIR"
-    echo "   Please run from solutions/ directory"
+    echo "   Please run from solutions/business/ directory"
     exit 1
 fi
 
@@ -394,6 +475,24 @@ source "$TOOLS_DIR/solution-lib.sh"
 
 # Load solution configuration
 load_solution_config "$SCRIPT_DIR"
+
+# Custom initialization
+custom_init() {
+    # Build MCP server
+    log_step "3.5" "Building MCP server"
+    local mcp_dir="$SCRIPT_DIR/mcp-server"
+
+    if [ -d "$mcp_dir" ]; then
+        cd "$mcp_dir"
+        npm install > /dev/null 2>&1
+        npm run build > /dev/null 2>&1
+        log_success "MCP server built"
+    else
+        log_warn "MCP server directory not found, skipping build"
+    fi
+
+    return 0
+}
 
 # Main workflow
 main() {
@@ -410,8 +509,12 @@ main() {
 
     # Step 3: Install npm dependencies
     log_step "3" "Installing dependencies"
+    run_hook "preInstall"
     install_npm_dependencies "$SCRIPT_DIR/frontend"
     install_npm_dependencies "$SCRIPT_DIR/backend"
+
+    # Step 3.5: Custom initialization (MCP build)
+    custom_init
 
     # Step 4: Setup tenant and API key
     log_step "4" "Setting up tenant and API key"
@@ -427,6 +530,8 @@ main() {
     log_step "5" "Injecting skills and MCP servers"
     inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
     inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+
+    run_hook "postInstall"
 
     # Step 6: Clear ports
     log_step "6" "Preparing ports"
@@ -477,12 +582,21 @@ chmod +x lesson-plan-designer/setup.sh
 **脚本做了什么：**
 
 1. 引入共享的 `solution-lib.sh` 库用于通用操作
-2. 从 `solution.json` 读取端口、slug 和服务配置
-3. 验证 CCAAS 后端在端口 3001 上运行
+2. 从 `solution.json` 读取租户 slug 和 MCP 服务配置
+3. 验证 CCAAS 后端可达（默认：`http://localhost:3001`）
 4. 为前端和后端安装 npm 依赖
-5. 在即见Agentic 平台中创建租户和 API Key
-6. 向 CCAAS 后端注册 Skills 和 MCP Servers
-7. 启动后端（端口 3002）和前端（端口 5280）
+5. 构建 MCP 服务器（`npm install && npm run build`）
+6. 通过 CCAAS Admin API 创建租户和 API Key
+7. 向 CCAAS 后端注册 Skills 和 MCP Servers
+8. 启动后端（端口 3002）和前端（端口 5280）
+
+{% hint style="info" %}
+**`CCAAS_URL` 环境变量：** 启动脚本读取 `CCAAS_URL` 来确定平台端点。本地开发默认为 `http://localhost:3001`。要对接线上平台，在运行前设置：`CCAAS_URL=https://ccaas.zhushou.one/ ./setup.sh`
+{% endhint %}
+
+{% hint style="info" %}
+**替代方案：Builder API。** 除了 `setup.sh`，你也可以使用 Builder API 以编程方式注册你的 Solution。详见 [Builder Flow 指南](../../guide/builder-flow.md)。
+{% endhint %}
 
 ## 步骤 6：添加 .gitignore
 
@@ -503,7 +617,7 @@ data/
 完成本节后，你的项目应该如下：
 
 ```
-lesson-plan-designer/
+solutions/business/lesson-plan-designer/
 ├── .gitignore
 ├── solution.json
 ├── setup.sh                    (可执行)
@@ -519,7 +633,10 @@ lesson-plan-designer/
 │       └── app.module.ts
 │
 ├── frontend/
-│   └── package.json
+│   ├── .env
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.ts
 │
 ├── mcp-server/
 │   └── src/                    (空，在 6.3 中构建)
@@ -533,7 +650,7 @@ lesson-plan-designer/
 
 ```bash
 # 安装后端依赖
-cd lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm install
 
 # 启动后端
@@ -559,7 +676,19 @@ npm run start:dev
 {% endhint %}
 
 {% hint style="danger" %}
+**陷阱：`VITE_CCAAS_URL` 或 `CCAAS_URL` 为空。** 永远不要留空或设置为 `''`。SDK 使用 `fetch()` 构造完整 URL，这会绕过 Vite 代理。空值会导致请求发送到前端端口而不是 CCAAS 后端。始终使用绝对 URL 如 `http://localhost:3001`。
+{% endhint %}
+
+{% hint style="danger" %}
+**陷阱：在 `solution.json` 中配置端口。** v3.0 schema 不支持 `backend.port` 或 `frontend.port` 字段。端口配置属于 `.env` 文件。如果你在 `solution.json` 中添加端口字段，它们会被静默忽略。
+{% endhint %}
+
+{% hint style="danger" %}
 **陷阱：tsconfig.json 中缺少 `emitDecoratorMetadata`。** 没有这个标志，NestJS 依赖注入会静默失败，产生关于未定义依赖的难以理解的运行时错误。
+{% endhint %}
+
+{% hint style="danger" %}
+**陷阱：`solution.json` 中缺少 `sessionTemplates`。** 没有至少一个会话模板，平台无法为你的 Solution 创建预配置会话。用户每次启动会话时都需要手动选择 Skill。
 {% endhint %}
 
 {% hint style="danger" %}

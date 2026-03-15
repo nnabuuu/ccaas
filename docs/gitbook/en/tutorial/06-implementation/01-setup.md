@@ -6,24 +6,24 @@ In this section, you will create the directory structure, configuration files, a
 
 Create a working project skeleton with:
 - Standard Solution directory layout
-- `solution.json` configuration
+- `solution.json` configuration (v3.0 schema)
 - Backend project with NestJS
 - Frontend project with React + Vite
 - `setup.sh` startup script
 
 ## Step 1: Create the Directory Structure
 
-Navigate to the `solutions/` directory in the CCAAS monorepo and create the Lesson Plan Designer folder:
+Navigate to the `solutions/business/` directory in the monorepo and create the Lesson Plan Designer folder:
 
 ```bash
-cd solutions
+cd solutions/business
 mkdir -p lesson-plan-designer/{backend/src,frontend/src,mcp-server/src,skills}
 ```
 
 Your directory should look like this:
 
 ```
-lesson-plan-designer/
+solutions/business/lesson-plan-designer/
 ├── backend/
 │   └── src/
 ├── frontend/
@@ -33,32 +33,24 @@ lesson-plan-designer/
 └── skills/
 ```
 
+{% hint style="info" %}
+**Why `solutions/business/`?** The monorepo organizes Solutions by category. Business Solutions live under `solutions/business/`, keeping them separate from core platform packages.
+{% endhint %}
+
 ## Step 2: Create solution.json
 
-The `solution.json` file is the central configuration for your Solution. It tells the platform about your MCP servers, Skills, ports, and database settings.
+The `solution.json` file is the central configuration for your Solution. It defines your tenant identity, MCP tool servers, session templates, and Skill references.
 
 Create `lesson-plan-designer/solution.json`:
 
 ```json
 {
-  "$schema": "https://ccaas.dev/schemas/solution.v1.json",
+  "schemaVersion": "3.0",
 
-  "name": "Lesson Plan Designer",
-  "slug": "lesson-plan-designer",
-  "version": "1.0.0",
-  "description": "AI-powered lesson plan design assistant",
-
-  "backend": {
-    "port": 3002,
-    "ccaasUrl": "http://localhost:3001",
-    "database": {
-      "type": "sqlite",
-      "path": "data/lesson-plans.db"
-    }
-  },
-
-  "frontend": {
-    "port": 5280
+  "tenant": {
+    "name": "Lesson Plan Designer",
+    "slug": "lesson-plan-designer",
+    "description": "AI-powered lesson plan design assistant"
   },
 
   "mcpServers": {
@@ -71,21 +63,16 @@ Create `lesson-plan-designer/solution.json`:
     }
   },
 
-  "skills": [
-    {
-      "name": "Lesson Plan Designer",
-      "slug": "lesson-plan-designer",
-      "description": "Design lesson plans with AI assistance",
-      "skillFile": "skills/lesson-plan-designer/SKILL.md",
-      "scope": "tenant",
-      "triggers": [
-        { "type": "keyword", "value": "lesson plan", "priority": 10 },
-        { "type": "keyword", "value": "teaching objectives", "priority": 8 },
-        { "type": "keyword", "value": "teaching activities", "priority": 8 },
-        { "type": "keyword", "value": "assessment", "priority": 7 }
-      ],
-      "allowedTools": ["write_output", "Read", "Write"]
+  "sessionTemplates": {
+    "lesson-planning": {
+      "description": "Lesson planning mode",
+      "enabledSkills": ["lesson-plan-designer"],
+      "bundles": ["structured-output"]
     }
+  },
+
+  "skills": [
+    { "slug": "lesson-plan-designer", "name": "lesson-plan-designer" }
   ]
 }
 ```
@@ -94,15 +81,18 @@ Create `lesson-plan-designer/solution.json`:
 
 | Field | Purpose |
 |-------|---------|
-| `slug` | Unique identifier used for tenant creation and URL routing |
-| `backend.port` | Port for the Solution backend (3002, separate from CCAAS on 3001) |
-| `backend.ccaasUrl` | URL of the CCAAS backend this Solution connects to |
-| `frontend.port` | Port for the Vite dev server |
-| `mcpServers` | MCP tool services the AI Agent can call |
-| `skills` | AI Skill definitions with trigger configuration |
+| `schemaVersion` | Configuration format version (always `"3.0"`) |
+| `tenant` | Tenant identity — name, slug (unique identifier), and description |
+| `mcpServers` | MCP tool services the AI Agent can invoke |
+| `sessionTemplates` | Session presets that define which Skills and bundles are active |
+| `skills` | Skill reference list — each entry is a `{slug, name}` pair |
+
+{% hint style="warning" %}
+**`solution.json` does NOT contain port or URL configuration.** Ports, CCAAS URLs, and other runtime settings are configured via environment variables (`.env`) in each service directory. This separation keeps `solution.json` focused on _what_ the Solution provides, while `.env` handles _where_ it runs.
+{% endhint %}
 
 {% hint style="info" %}
-**Why separate ports?** The Solution backend (3002) handles business data (lesson plans, textbooks, curriculum standards). The CCAAS backend (3001) handles AI sessions and message relay. They are separate services with separate responsibilities.
+**What is a session template?** A session template pre-configures a session with specific Skills and bundles. When a user starts a session with the `lesson-planning` template, the platform automatically activates the `lesson-plan-designer` Skill and the `structured-output` bundle.
 {% endhint %}
 
 ## Step 3: Initialize the Backend
@@ -223,13 +213,23 @@ Create `backend/nest-cli.json`:
 
 Create `backend/.env.example`:
 
-```
-# Lesson Plan Designer Backend
+```bash
+# Server Configuration
 PORT=3002
 HOST=0.0.0.0
-CORS_ORIGIN=http://localhost:5280
+
+# Database
 DB_PATH=./data/lesson-plans.db
+
+# CORS
+CORS_ORIGIN=http://localhost:5280
+
+# CCAAS Backend
+# Local development: http://localhost:3001
+# Production:        https://ccaas.zhushou.one/
 CCAAS_URL=http://localhost:3001
+
+# Environment
 NODE_ENV=development
 ```
 
@@ -238,6 +238,10 @@ Copy it to `.env`:
 ```bash
 cp backend/.env.example backend/.env
 ```
+
+{% hint style="info" %}
+**CCAAS_URL** tells the Solution backend where the core platform is running. During local development, this is `http://localhost:3001` (the CCAAS backend dev server). In production, use the hosted instance at `https://ccaas.zhushou.one/`.
+{% endhint %}
 
 ### 3.5 Create the entry point
 
@@ -253,9 +257,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend
+  // Enable CORS (allow all origins in development)
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5280',
+    origin: true,
     credentials: true,
   });
 
@@ -285,7 +289,7 @@ bootstrap();
 
 **Explanation:**
 
-- `enableCors`: Allows the frontend (port 5280) to call the backend API
+- `enableCors({ origin: true })`: Accepts requests from any origin during development. Unlike hardcoding a single port, this avoids CORS errors when the frontend port changes.
 - `ValidationPipe` with `whitelist: true`: Strips any properties not defined in the DTO, preventing unexpected data from reaching your service
 - `setGlobalPrefix('api')`: All routes are prefixed with `/api` (e.g., `/api/lesson-plans`)
 
@@ -322,6 +326,8 @@ This is the root module that ties everything together. Notice the four feature m
 
 The frontend uses React 18 with Vite and Tailwind CSS. We will scaffold it minimally now and build it out fully in Chapter 6.5.
 
+### 4.1 Create package.json
+
 Create `frontend/package.json`:
 
 ```json
@@ -342,6 +348,7 @@ Create `frontend/package.json`:
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "socket.io-client": "^4.8.1",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
@@ -365,7 +372,81 @@ Create `frontend/package.json`:
 
 - `@kedge-agentic/react-sdk`: Provides hooks for SSE connection, chat, and output\_update handling
 - `@kedge-agentic/common`: Shared types used across the platform
+- `socket.io-client`: WebSocket client for real-time AI session communication
 - `lucide-react`: Icons library
+
+### 4.2 Create the environment file
+
+Create `frontend/.env.example`:
+
+```bash
+# Solution backend URL
+VITE_API_URL=http://localhost:3002
+
+# Core CCAAS backend URL
+# Local development: http://localhost:3001
+# Production:        https://ccaas.zhushou.one/
+VITE_CCAAS_URL=http://localhost:3001
+
+# Default tenant ID (set by setup.sh after tenant creation)
+VITE_DEFAULT_TENANT_ID=default-tenant
+```
+
+Copy it to `.env`:
+
+```bash
+cp frontend/.env.example frontend/.env
+```
+
+{% hint style="warning" %}
+**`VITE_CCAAS_URL` must be an absolute URL.** Never use an empty string (`''`) or relative path (`'/'`) — the SDK constructs full URLs with `fetch()` and `Socket.IO`, which bypass the Vite dev proxy. Using an empty string causes all requests to go to the frontend port instead of the CCAAS backend, resulting in total connection failure.
+{% endhint %}
+
+### 4.3 Create vite.config.ts
+
+Create `frontend/vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5280,
+    proxy: {
+      // CCAAS sessions API (must be before /api to take precedence)
+      '/api/v1/sessions': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // CCAAS health API
+      '/api/v1/health': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // CCAAS skills API
+      '/api/v1/skills': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // Solution backend API
+      '/api': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+      },
+    },
+  },
+})
+```
+
+**Proxy routing explained:**
+
+The Vite proxy routes relative URL requests (`/api/...`) to the correct backend. More specific routes (e.g., `/api/v1/sessions`) are listed first so they match before the generic `/api` catch-all.
+
+{% hint style="info" %}
+**Proxy vs SDK URLs:** The Vite proxy only intercepts relative URLs from the browser (e.g., `fetch('/api/...')`). The `@kedge-agentic/react-sdk` constructs full URLs using `VITE_CCAAS_URL`, so it bypasses the proxy entirely. Both mechanisms are needed: the proxy for simple `fetch()` calls, and `VITE_CCAAS_URL` for the SDK.
+{% endhint %}
 
 ## Step 5: Create the Startup Script
 
@@ -386,7 +467,7 @@ TOOLS_DIR="$SCRIPT_DIR/../../tools"
 # Source shared library
 if [ ! -f "$TOOLS_DIR/solution-lib.sh" ]; then
     echo "Error: solution-lib.sh not found at $TOOLS_DIR"
-    echo "   Please run from solutions/ directory"
+    echo "   Please run from solutions/business/ directory"
     exit 1
 fi
 
@@ -394,6 +475,24 @@ source "$TOOLS_DIR/solution-lib.sh"
 
 # Load solution configuration
 load_solution_config "$SCRIPT_DIR"
+
+# Custom initialization
+custom_init() {
+    # Build MCP server
+    log_step "3.5" "Building MCP server"
+    local mcp_dir="$SCRIPT_DIR/mcp-server"
+
+    if [ -d "$mcp_dir" ]; then
+        cd "$mcp_dir"
+        npm install > /dev/null 2>&1
+        npm run build > /dev/null 2>&1
+        log_success "MCP server built"
+    else
+        log_warn "MCP server directory not found, skipping build"
+    fi
+
+    return 0
+}
 
 # Main workflow
 main() {
@@ -410,8 +509,12 @@ main() {
 
     # Step 3: Install npm dependencies
     log_step "3" "Installing dependencies"
+    run_hook "preInstall"
     install_npm_dependencies "$SCRIPT_DIR/frontend"
     install_npm_dependencies "$SCRIPT_DIR/backend"
+
+    # Step 3.5: Custom initialization (MCP build)
+    custom_init
 
     # Step 4: Setup tenant and API key
     log_step "4" "Setting up tenant and API key"
@@ -427,6 +530,8 @@ main() {
     log_step "5" "Injecting skills and MCP servers"
     inject_skills "$SCRIPT_DIR/skills" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
     inject_mcp_servers "$SCRIPT_DIR" "$CCAAS_URL" "$TENANT_ID" "$CCAAS_API_KEY"
+
+    run_hook "postInstall"
 
     # Step 6: Clear ports
     log_step "6" "Preparing ports"
@@ -477,12 +582,21 @@ chmod +x lesson-plan-designer/setup.sh
 **What the script does:**
 
 1. Sources the shared `solution-lib.sh` library for common operations
-2. Reads `solution.json` for ports, slugs, and service configuration
-3. Verifies the CCAAS backend is running on port 3001
+2. Reads `solution.json` for tenant slug and MCP server configuration
+3. Verifies the CCAAS backend is reachable (default: `http://localhost:3001`)
 4. Installs npm dependencies for frontend and backend
-5. Creates a tenant and API key in the CCAAS platform
-6. Registers Skills and MCP Servers with the CCAAS backend
-7. Starts the backend (port 3002) and frontend (port 5280)
+5. Builds the MCP server (`npm install && npm run build`)
+6. Creates a tenant and API key via the CCAAS Admin API
+7. Registers Skills and MCP Servers with the CCAAS backend
+8. Starts the backend (port 3002) and frontend (port 5280)
+
+{% hint style="info" %}
+**`CCAAS_URL` environment variable:** The setup script reads `CCAAS_URL` to determine the platform endpoint. It defaults to `http://localhost:3001` for local development. To run against the hosted platform, set it before running: `CCAAS_URL=https://ccaas.zhushou.one/ ./setup.sh`
+{% endhint %}
+
+{% hint style="info" %}
+**Alternative: Builder API.** Instead of `setup.sh`, you can also use the Builder API to register your Solution programmatically. See the [Builder Flow Guide](../../guide/builder-flow.md) for details.
+{% endhint %}
 
 ## Step 6: Add .gitignore
 
@@ -503,7 +617,7 @@ data/
 After completing this section, your project should look like this:
 
 ```
-lesson-plan-designer/
+solutions/business/lesson-plan-designer/
 ├── .gitignore
 ├── solution.json
 ├── setup.sh                    (executable)
@@ -519,7 +633,10 @@ lesson-plan-designer/
 │       └── app.module.ts
 │
 ├── frontend/
-│   └── package.json
+│   ├── .env
+│   ├── .env.example
+│   ├── package.json
+│   └── vite.config.ts
 │
 ├── mcp-server/
 │   └── src/                    (empty, built in 6.3)
@@ -533,7 +650,7 @@ Verify your setup by installing dependencies and starting the backend:
 
 ```bash
 # Install backend dependencies
-cd lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm install
 
 # Start the backend
@@ -559,7 +676,19 @@ The backend will fail to start until we create the `DatabaseModule`, `LessonPlan
 {% endhint %}
 
 {% hint style="danger" %}
+**Pitfall: Empty `VITE_CCAAS_URL` or `CCAAS_URL`.** Never leave these empty or set them to `''`. The SDK uses `fetch()` with full URLs, which bypasses the Vite proxy. An empty value causes requests to hit the frontend port, not the CCAAS backend. Always use an absolute URL like `http://localhost:3001`.
+{% endhint %}
+
+{% hint style="danger" %}
+**Pitfall: Putting ports in `solution.json`.** The v3.0 schema does not support `backend.port` or `frontend.port` fields. Port configuration belongs in `.env` files. If you add port fields to `solution.json`, they will be silently ignored.
+{% endhint %}
+
+{% hint style="danger" %}
 **Pitfall: Missing `emitDecoratorMetadata` in tsconfig.json.** Without this flag, NestJS dependency injection silently fails, producing cryptic runtime errors about undefined dependencies.
+{% endhint %}
+
+{% hint style="danger" %}
+**Pitfall: Missing `sessionTemplates` in solution.json.** Without at least one session template, the platform cannot create pre-configured sessions for your Solution. Users would need to manually select Skills each time they start a session.
 {% endhint %}
 
 {% hint style="danger" %}

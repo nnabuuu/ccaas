@@ -53,6 +53,6 @@
 
 1. **增量构建。**每个小节都建立在前一个的基础上。
 2. **运行检查点**，在进入下一小节前完成每个小节末尾的验证。
-3. **对比参考实现**，如果遇到困难可以查看 `solutions/lesson-plan-designer/`。
+3. **对比参考实现**，如果遇到困难可以查看 `solutions/business/lesson-plan-designer/`。
 
 让我们从 [6.1 项目初始化](01-setup.md) 开始。

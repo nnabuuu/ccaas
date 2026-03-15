@@ -2,7 +2,7 @@
 
 ## 本节目标
 
-在本节中，你将为任务管理器 Solution 添加会话持久化功能。完成后，用户可以刷新页面或关闭浏览器，再次访问时依然能看到之前的对话记录。
+在本节中，你将为 Lesson Plan Designer Solution 添加会话持久化功能。完成后，用户可以刷新页面或关闭浏览器，再次访问时依然能看到之前的对话记录。
 
 完成本节后，你将拥有：
 
@@ -56,7 +56,7 @@ useAgentChat({ connection, tenantId })
 
 ```
 localStorage:
-  ccaas_session_task-manager-tutorial  -> conv_a1b2c3d4...
+  ccaas_session_lesson-plan-designer  -> conv_a1b2c3d4...
   ccaas_session_lesson-plan-designer   -> conv_e5f6g7h8...
 ```
 
@@ -67,7 +67,7 @@ localStorage:
 打开你的主会话 hook（或初始化连接的组件），将 `sessionPrefix` 替换为 `tenantId`：
 
 ```typescript
-// src/hooks/useTaskManagerSession.ts
+// src/hooks/useLessonPlanSession.ts
 
 import {
   useAgentConnection,
@@ -76,17 +76,17 @@ import {
 
 const SOCKET_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
-export function useTaskManagerSession() {
+export function useLessonPlanSession() {
   // 通过提供 tenantId 启用持久化
   const connection = useAgentConnection({
     serverUrl: SOCKET_URL,
-    tenantId: 'task-manager-tutorial',  // ← 启用持久化
+    tenantId: 'lesson-plan-designer',  // ← 启用持久化
     autoConnect: true,
   })
 
   const chat = useAgentChat({
     connection,
-    tenantId: 'task-manager-tutorial',
+    tenantId: 'lesson-plan-designer',
   })
 
   return { connection, chat }
@@ -95,7 +95,7 @@ export function useTaskManagerSession() {
 
 当提供 `tenantId` 时：
 1. SDK 生成一个 `conv_{uuid}` 格式的会话 ID（而不是基于随机前缀的 ID）
-2. 会话 ID 保存到 `localStorage`，键名为 `ccaas_session_task-manager-tutorial`
+2. 会话 ID 保存到 `localStorage`，键名为 `ccaas_session_lesson-plan-designer`
 3. 下次页面加载时，SDK 读取该键并使用同一个 `conversationId` 重新连接
 4. `useAgentChat` 自动从后端获取消息历史
 
@@ -111,7 +111,7 @@ export function useTaskManagerSession() {
 // src/components/ChatPanel.tsx
 
 export function ChatPanel() {
-  const { chat } = useTaskManagerSession()
+  const { chat } = useLessonPlanSession()
 
   if (chat.isLoadingHistory) {
     return (
@@ -162,7 +162,7 @@ export function ChatPanel() {
 
 ## 第 4 步：与 Solution 逻辑集成
 
-在任务管理器中，你可能希望在用户创建新项目或切换上下文时清除会话。以下是备课方案设计器 Solution 处理此模式的方式：
+在 Lesson Plan Designer 中，你可能希望在用户创建新项目或切换上下文时清除会话。以下是备课方案设计器 Solution 处理此模式的方式：
 
 ```typescript
 // 当用户创建新项目时，开始新的对话
@@ -188,7 +188,7 @@ const createNewProject = useCallback(async (input: CreateProjectInput) => {
 ```typescript
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'task-manager-wizard',
+  tenantId: 'lesson-plan-wizard',
   forceNewConversation: true,  // 始终开始新对话
 })
 ```
@@ -216,7 +216,7 @@ messages 表:
 
 当用户刷新页面时：
 
-1. `useAgentConnection` 从 localStorage 读取 `ccaas_session_task-manager-tutorial`
+1. `useAgentConnection` 从 localStorage 读取 `ccaas_session_lesson-plan-designer`
 2. 获取 `conv_a1b2c3d4...` 作为 conversationId
 3. 使用此 conversationId 建立 SSE 连接
 4. `useAgentChat` 调用 `GET /api/v1/sessions/conv_a1b2c3d4.../messages?limit=100`
@@ -277,13 +277,13 @@ GET    /api/v1/conversations/:id/turns    # 每轮分析数据
 // 错误：没有持久化
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  sessionPrefix: 'task-manager',
+  sessionPrefix: 'lesson-plan',
 })
 
 // 正确：启用持久化
 const connection = useAgentConnection({
   serverUrl: SOCKET_URL,
-  tenantId: 'task-manager-tutorial',
+  tenantId: 'lesson-plan-designer',
 })
 ```
 

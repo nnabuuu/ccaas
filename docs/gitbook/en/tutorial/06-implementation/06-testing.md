@@ -227,7 +227,7 @@ describe('LessonPlansService', () => {
 ### Running Unit Tests
 
 ```bash
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm test
 ```
 
@@ -263,7 +263,7 @@ Integration tests verify that HTTP requests produce the correct responses. They 
 Install `supertest` for HTTP testing:
 
 ```bash
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm install --save-dev supertest @types/supertest
 ```
 
@@ -620,7 +620,7 @@ describe('ChatPanel', () => {
 ### Running Frontend Tests
 
 ```bash
-cd solutions/lesson-plan-designer/frontend
+cd solutions/business/lesson-plan-designer/frontend
 npm run test:run
 ```
 
@@ -700,11 +700,11 @@ Run the full test suite:
 
 ```bash
 # Backend tests
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm test
 
 # Frontend tests
-cd solutions/lesson-plan-designer/frontend
+cd solutions/business/lesson-plan-designer/frontend
 npm run test:run
 ```
 

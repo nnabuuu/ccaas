@@ -53,6 +53,6 @@ Before starting, ensure you have:
 
 1. **Build incrementally.** Each sub-chapter builds on the previous one.
 2. **Run the checkpoint** at the end of each sub-chapter before moving on.
-3. **Compare with the reference** at `solutions/lesson-plan-designer/` if you get stuck.
+3. **Compare with the reference** at `solutions/business/lesson-plan-designer/` if you get stuck.
 
 Let us begin with [6.1 Project Setup](01-setup.md).

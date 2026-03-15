@@ -1027,8 +1027,9 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
+  // Allow all origins in development; configure specific origins in production
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5280',
+    origin: true,
     credentials: true,
   });
 

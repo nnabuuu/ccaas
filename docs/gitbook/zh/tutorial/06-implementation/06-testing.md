@@ -225,7 +225,7 @@ describe('LessonPlansService', () => {
 ### 运行单元测试
 
 ```bash
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm test
 ```
 
@@ -261,7 +261,7 @@ PASS  src/lesson-plans/lesson-plans.service.spec.ts
 安装 `supertest` 用于 HTTP 测试：
 
 ```bash
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm install --save-dev supertest @types/supertest
 ```
 
@@ -612,7 +612,7 @@ describe('ChatPanel', () => {
 ### 运行前端测试
 
 ```bash
-cd solutions/lesson-plan-designer/frontend
+cd solutions/business/lesson-plan-designer/frontend
 npm run test:run
 ```
 
@@ -692,11 +692,11 @@ frontend/
 
 ```bash
 # 后端测试
-cd solutions/lesson-plan-designer/backend
+cd solutions/business/lesson-plan-designer/backend
 npm test
 
 # 前端测试
-cd solutions/lesson-plan-designer/frontend
+cd solutions/business/lesson-plan-designer/frontend
 npm run test:run
 ```
 

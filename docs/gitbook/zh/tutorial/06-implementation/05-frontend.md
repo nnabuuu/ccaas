@@ -88,7 +88,8 @@ import { useLessonPlanCRUD } from './useLessonPlanCRUD'
 
 // 重要：必须使用 CCAAS 后端的绝对 URL，不能使用相对路径
 // Vite 代理仅适用于 HTML/CSS，不适用于 SSE 连接
-const SERVER_URL = 'http://localhost:3001'
+// 在 .env 中配置 VITE_CCAAS_URL 用于不同环境
+const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 export function useLessonPlanSession(options = {}) {
   const { tenantId = 'lesson-plan-designer', autoConnect = true } = options
