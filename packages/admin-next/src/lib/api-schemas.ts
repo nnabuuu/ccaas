@@ -64,6 +64,7 @@ export const DashboardSummarySchema = z.object({
   activeApiKeys: z.number().int().nonnegative(),
   totalSkills: z.number().int().nonnegative(),
   publishedSkills: z.number().int().nonnegative(),
+  callerScope: z.enum(['admin', 'builder']),
 })
 
 export type DashboardSummary = z.infer<typeof DashboardSummarySchema>

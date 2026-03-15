@@ -9,7 +9,11 @@ export const authProvider: AuthProvider = {
     try {
       localStorage.setItem(API_KEY_STORAGE, apiKey)
       // Validate the key by hitting the dashboard endpoint
-      await apiClient.get('/admin/dashboard/summary')
+      const response = await apiClient.get('/admin/dashboard/summary')
+      const callerScope = response.data?.callerScope
+      if (callerScope) {
+        useTenantContext.getState().setCallerScope(callerScope)
+      }
       return { success: true, redirectTo: '/dashboard' }
     } catch {
       localStorage.removeItem(API_KEY_STORAGE)
@@ -37,9 +41,10 @@ export const authProvider: AuthProvider = {
   getIdentity: async () => {
     const apiKey = localStorage.getItem(API_KEY_STORAGE)
     if (!apiKey) return null
+    const scope = useTenantContext.getState().callerScope
     return {
-      id: 'admin',
-      name: 'Admin',
+      id: scope === 'builder' ? 'builder' : 'admin',
+      name: scope === 'builder' ? 'Builder' : 'Admin',
       avatar: undefined,
     }
   },

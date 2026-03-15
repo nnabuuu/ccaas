@@ -53,20 +53,6 @@ npm run dev
 
 The dashboard will be available at `http://localhost:5175`.
 
-### Disable Authentication (Development Only)
-
-To bypass authentication during local development:
-
-1. Create a `.env.local` file (already exists with default config):
-   ```env
-   VITE_DISABLE_AUTH=true
-   ```
-
-2. Restart the dev server
-3. You'll be automatically logged in as "Dev Admin (No Auth)"
-
-**⚠️ WARNING**: Do NOT use this in production. The `.env.local` file is already gitignored.
-
 ### Build for Production
 
 ```bash
@@ -78,12 +64,6 @@ npm run build
 ```bash
 npm run preview
 ```
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `VITE_DISABLE_AUTH` | `false` | Disable authentication (dev only) |
 
 ## Project Structure
 
@@ -105,8 +85,7 @@ src/
 │   ├── analytics/      # Analytics
 │   └── scheduler/      # Scheduled tasks
 ├── providers/          # Refine providers
-│   ├── auth-provider.ts      # Production auth provider
-│   ├── auth-provider.dev.ts  # Development auth bypass
+│   ├── auth-provider.ts      # API key auth provider
 │   ├── data-provider.ts      # Data provider
 │   └── live-provider.ts      # Real-time updates
 ├── App.tsx             # App entry point
@@ -120,8 +99,6 @@ The admin dashboard uses API key authentication:
 1. Enter your admin API key on the login page
 2. The key is stored in localStorage as `admin_api_key`
 3. All API requests include the key in the `x-api-key` header
-
-For development, you can bypass authentication by setting `VITE_DISABLE_AUTH=true` in `.env.local`.
 
 ## API Proxy
 

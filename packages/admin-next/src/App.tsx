@@ -4,17 +4,10 @@ import routerProvider, { NavigateToResource, CatchAllNavigate } from '@refinedev
 import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom'
 import { dataProvider } from '@/providers/data-provider'
 import { authProvider } from '@/providers/auth-provider'
-import { devAuthProvider } from '@/providers/auth-provider.dev'
 import { liveProvider } from '@/providers/live-provider'
 import { AppLayout } from '@/components/layout/app-layout'
 import { LanguageProvider } from '@/contexts/language-context'
 import { Toaster } from 'sonner'
-
-// Use dev auth provider if VITE_DISABLE_AUTH or VITE_DEV_API_KEY is set
-const shouldUseDevAuth =
-  import.meta.env.VITE_DISABLE_AUTH === 'true' ||
-  !!import.meta.env.VITE_DEV_API_KEY
-const activeAuthProvider = shouldUseDevAuth ? devAuthProvider : authProvider
 
 // Lazy-loaded pages
 const LandingPage = lazy(() => import('@/pages/landing').then((m) => ({ default: m.LandingPage })))
@@ -53,7 +46,7 @@ function App() {
       <Refine
         routerProvider={routerProvider}
         dataProvider={dataProvider}
-        authProvider={activeAuthProvider}
+        authProvider={authProvider}
         liveProvider={liveProvider}
         resources={[
           {

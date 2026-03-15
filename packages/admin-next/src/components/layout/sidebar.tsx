@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useTenantContext } from '@/hooks/use-tenant-context'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -23,12 +24,12 @@ const navigation = [
   { zh: '仪表板', en: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { zh: '会话', en: 'Sessions', href: '/sessions', icon: MessageSquare },
   { zh: '技能', en: 'Skills', href: '/skills', icon: Sparkles },
-  { zh: '队列监控', en: 'Queue Monitor', href: '/queue', icon: ListOrdered },
+  { zh: '队列监控', en: 'Queue Monitor', href: '/queue', icon: ListOrdered, adminOnly: true },
   { zh: '租户', en: 'Tenants', href: '/tenants', icon: Building2 },
   { zh: 'API 密钥', en: 'API Keys', href: '/api-keys', icon: Key },
-  { zh: '审计日志', en: 'Audit Log', href: '/audit', icon: ScrollText },
+  { zh: '审计日志', en: 'Audit Log', href: '/audit', icon: ScrollText, adminOnly: true },
   { zh: '数据分析', en: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { zh: '调度器', en: 'Scheduler', href: '/scheduler', icon: Calendar },
+  { zh: '调度器', en: 'Scheduler', href: '/scheduler', icon: Calendar, adminOnly: true },
 ]
 
 interface SidebarProps {
@@ -38,6 +39,10 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation()
+  const { callerScope } = useTenantContext()
+  const filteredNav = navigation.filter(item =>
+    !item.adminOnly || callerScope === 'admin'
+  )
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -67,7 +72,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Navigation */}
         <ScrollArea className="flex-1 px-2 py-4">
           <nav className="flex flex-col gap-1">
-            {navigation.map((item) => {
+            {filteredNav.map((item) => {
               const isActive =
                 location.pathname === item.href || location.pathname.startsWith(item.href + '/')
               const link = (

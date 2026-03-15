@@ -80,9 +80,10 @@ export function SessionTemplatesListPage() {
         const skills = row.original.template.enabledSkills || []
         return (
           <div className="flex gap-1 flex-wrap">
-            {skills.slice(0, 3).map(skill => (
-              <Badge key={skill} variant="secondary">{skill}</Badge>
-            ))}
+            {skills.slice(0, 3).map(skill => {
+              const label = typeof skill === 'string' ? skill : skill.slug
+              return <Badge key={label} variant="secondary">{label}</Badge>
+            })}
             {skills.length > 3 && (
               <Badge variant="outline">+{skills.length - 3}</Badge>
             )}

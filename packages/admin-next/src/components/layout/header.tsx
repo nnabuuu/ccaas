@@ -32,7 +32,9 @@ export function Header() {
             <SelectValue placeholder={<T zh="所有租户" en="All Tenants" />} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all"><T zh="所有租户" en="All Tenants" /></SelectItem>
+            {tenants.length > 1 && (
+              <SelectItem value="all"><T zh="所有租户" en="All Tenants" /></SelectItem>
+            )}
             {tenants.map((t) => (
               <SelectItem key={t.id} value={t.id}>
                 {t.name}

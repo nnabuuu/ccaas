@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { T } from '@/components/shared/t'
+import { useTenantContext } from '@/hooks/use-tenant-context'
 
 interface Tenant {
   id: string
@@ -21,6 +22,7 @@ interface Tenant {
 
 export function TenantListPage() {
   const navigate = useNavigate()
+  const { callerScope } = useTenantContext()
 
   const { data, isLoading } = useList<Tenant>({
     resource: 'tenants',
@@ -68,9 +70,11 @@ export function TenantListPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold tracking-tight"><T zh="租户" en="Tenants" /></h1>
-        <Button onClick={() => navigate('/tenants/create')}>
-          <Plus className="mr-2 h-4 w-4" /> <T zh="创建租户" en="Create Tenant" />
-        </Button>
+        {callerScope === 'admin' && (
+          <Button onClick={() => navigate('/tenants/create')}>
+            <Plus className="mr-2 h-4 w-4" /> <T zh="创建租户" en="Create Tenant" />
+          </Button>
+        )}
       </div>
       <DataTable columns={columns} data={tenants} isLoading={isLoading} />
     </div>

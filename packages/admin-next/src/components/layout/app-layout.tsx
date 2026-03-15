@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Outlet } from 'react-router-dom'
 import { useCustom } from '@refinedev/core'
 import { Sidebar } from './sidebar'
@@ -8,7 +8,9 @@ import { useTenantContext } from '@/hooks/use-tenant-context'
 
 export function AppLayout() {
   const [collapsed, setCollapsed] = useState(false)
-  const { setTenants } = useTenantContext()
+  const { setTenants, selectedTenantId, setSelectedTenantId } = useTenantContext()
+  const selectedTenantRef = useRef(selectedTenantId)
+  selectedTenantRef.current = selectedTenantId
 
   const { data } = useCustom({
     url: '/admin/tenants',
@@ -22,15 +24,18 @@ export function AppLayout() {
   useEffect(() => {
     if (data?.data) {
       const tenantList = Array.isArray(data.data) ? data.data : (data.data as { tenants?: unknown[] }).tenants ?? []
-      setTenants(
-        (tenantList as Array<{ id: string; name: string; slug: string }>).map((t) => ({
-          id: t.id,
-          name: t.name,
-          slug: t.slug,
-        })),
-      )
+      const mapped = (tenantList as Array<{ id: string; name: string; slug: string }>).map((t) => ({
+        id: t.id,
+        name: t.name,
+        slug: t.slug,
+      }))
+      setTenants(mapped)
+      // Auto-select if only one tenant (builder scenario)
+      if (mapped.length === 1 && !selectedTenantRef.current) {
+        setSelectedTenantId(mapped[0].id)
+      }
     }
-  }, [data, setTenants])
+  }, [data, setTenants, setSelectedTenantId])
 
   return (
     <div className="flex h-screen overflow-hidden">

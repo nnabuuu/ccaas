@@ -81,6 +81,7 @@ export function DashboardPage() {
       summaryData?.data,
       'DashboardSummary',
       {
+        callerScope: 'admin' as const,
         activeSessions: 0,
         totalSessions: 0,
         totalMessages24h: 0,
