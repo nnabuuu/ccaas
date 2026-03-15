@@ -13,10 +13,12 @@ import {
   Param,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
 
+@ApiTags('tenants')
 @Controller('api/v1/tenants')
 @Auth('admin')
 export class TenantsController {

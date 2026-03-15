@@ -11,7 +11,7 @@ import { Public, Auth } from '../auth/decorators';
 import { HealthService } from './health.service';
 import { SessionService } from '../sessions/session.service';
 
-@ApiTags('System Health')
+@ApiTags('sessions')
 @Controller('api/v1')
 export class HealthController {
   constructor(

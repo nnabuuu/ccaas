@@ -21,6 +21,7 @@ import {
   ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { IsString, IsNotEmpty } from 'class-validator';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
@@ -44,6 +45,7 @@ class AdminCreateMcpServerBody extends CreateMcpServerDto {
   tenantId!: string;
 }
 
+@ApiTags('admin')
 @Controller('api/v1/admin/mcp-servers')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

@@ -20,6 +20,7 @@ import {
   ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
@@ -37,6 +38,7 @@ import {
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+@ApiTags('admin')
 @Controller('api/v1/admin/api-keys')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

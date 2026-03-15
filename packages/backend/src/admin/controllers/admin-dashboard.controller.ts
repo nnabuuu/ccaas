@@ -5,6 +5,7 @@
  */
 
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
@@ -15,6 +16,7 @@ import { SkillsService } from '../../skills/skills.service';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { DashboardSummary, RecentSession } from '../dto/admin.dto';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/dashboard')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

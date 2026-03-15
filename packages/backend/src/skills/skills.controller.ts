@@ -17,6 +17,7 @@ import {
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SkillsService } from './skills.service';
 import {
   CreateSkillDto,
@@ -32,6 +33,7 @@ import { SkillPermissionGuard } from './guards/skill-permission.guard';
 import { CurrentUser, type CurrentUserData } from '../auth/decorators';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 
+@ApiTags('skills')
 @Controller('api/v1/skills')
 @UseGuards(ApiKeyGuard, TenantGuard, SkillPermissionGuard)
 export class SkillsController {

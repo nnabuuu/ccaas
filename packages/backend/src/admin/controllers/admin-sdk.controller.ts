@@ -5,11 +5,13 @@
  */
 
 import { Controller, Get, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { SessionsGateway } from '../../sessions/sessions.gateway';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/sdk-connections')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

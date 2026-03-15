@@ -5,6 +5,7 @@
  */
 
 import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
@@ -21,6 +22,7 @@ import {
   ErrorRateTrend,
 } from '../dto/admin.dto';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/analytics')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

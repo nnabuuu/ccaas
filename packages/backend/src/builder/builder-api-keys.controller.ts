@@ -18,6 +18,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../auth/decorators';
 import { RequestContext } from '../auth/types';
 import { ApiKeyService } from '../auth/api-key.service';
@@ -34,6 +35,7 @@ import { requireBuilderUserId, verifyBuilderTenantOwnership } from './builder.he
 
 const FORBIDDEN_SCOPES = ['admin', 'builder'] as const;
 
+@ApiTags('builder')
 @Controller('api/v1/builder')
 @Auth('builder')
 export class BuilderApiKeysController {

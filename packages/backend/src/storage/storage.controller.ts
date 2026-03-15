@@ -10,8 +10,10 @@ import {
   Param,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ContentStoreService } from './content-store.service';
 
+@ApiTags('files')
 @Controller('api/v1/content')
 export class StorageController {
   constructor(private readonly contentStoreService: ContentStoreService) {}

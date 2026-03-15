@@ -17,6 +17,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
@@ -36,6 +37,7 @@ import { BulkKillDto } from '../dto/bulk-kill.dto';
 import { TimelineQueryDto } from '../dto/timeline-query.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/sessions')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

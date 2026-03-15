@@ -15,10 +15,12 @@ import {
   Query,
   Logger,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { SchedulerService } from './scheduler.service';
 import { CreateScheduledTaskDto } from './dto/create-scheduled-task.dto';
 import { UpdateScheduledTaskDto } from './dto/update-scheduled-task.dto';
 
+@ApiTags('scheduler')
 @Controller('api/v1/scheduled-tasks')
 export class SchedulerController {
   private readonly logger = new Logger(SchedulerController.name);

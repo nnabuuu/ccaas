@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UserTenantService } from './user-tenant.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { RequireScopes } from '../auth/decorators';
 
+@ApiTags('auth')
 @Controller('users')
 @UseGuards(ApiKeyGuard)
 export class UsersController {

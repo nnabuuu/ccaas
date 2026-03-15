@@ -15,6 +15,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { UsersService } from '../../users/users.service';
@@ -24,6 +25,7 @@ import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
 import { CreateBuilderUserDto } from '../dto/create-builder-user.dto';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/builder-users')
 @Auth('admin')
 export class AdminBuilderUsersController {

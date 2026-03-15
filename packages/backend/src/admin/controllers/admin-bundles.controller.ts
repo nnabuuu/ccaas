@@ -15,6 +15,7 @@ import {
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
@@ -23,6 +24,7 @@ import { BundleService } from '../../bundles/bundle.service';
 import { AuditService } from '../services/audit.service';
 import { EventMapperService } from '../../sessions/event-mapper.service';
 
+@ApiTags('admin')
 @Controller('api/v1/admin')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

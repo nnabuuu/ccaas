@@ -18,6 +18,7 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
 import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
@@ -28,6 +29,7 @@ import { UpsertSkillFilesDto } from '../../skills/dto/skill-file.dto';
 import { AuditService } from '../services/audit.service';
 import { VersionDiff } from '../dto/admin.dto';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/skills')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

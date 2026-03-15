@@ -18,6 +18,7 @@ import {
   UseGuards,
   Logger,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
@@ -35,6 +36,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 // Slug pattern (alphanumeric, hyphens, underscores)
 const SLUG_REGEX = /^[a-z0-9][a-z0-9_-]*$/i;
 
+@ApiTags('admin')
 @Controller('api/v1/admin/tenants')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

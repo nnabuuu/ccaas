@@ -5,6 +5,7 @@
  */
 
 import { Controller, Get, Param, Query, NotFoundException, ForbiddenException, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
@@ -12,6 +13,7 @@ import { AuditService, PaginatedAuditLogs } from '../services/audit.service';
 import { AdminAuditLog } from '../entities/admin-audit-log.entity';
 import { AuditLogQueryDto } from '../dto/admin.dto';
 
+@ApiTags('admin')
 @Controller('api/v1/admin/audit')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)

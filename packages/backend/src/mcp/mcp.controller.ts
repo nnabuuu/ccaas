@@ -17,6 +17,7 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { McpPoolService } from './mcp-pool.service';
 import {
   CreateMcpServerDto,
@@ -30,6 +31,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { McpServer } from './entities/mcp-server.entity';
 
+@ApiTags('mcp')
 @Controller('api/v1/mcp-servers')
 @UseGuards(ApiKeyGuard, TenantGuard)
 export class McpController {

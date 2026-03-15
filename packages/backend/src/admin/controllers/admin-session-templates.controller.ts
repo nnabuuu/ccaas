@@ -38,7 +38,7 @@ import {
 const MAX_TEMPLATES_PER_TENANT = 50;
 
 @Controller('api/v1/admin/tenants/:tenantId/session-templates')
-@ApiTags('Admin - Session Templates')
+@ApiTags('admin')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)
 export class AdminSessionTemplatesController {

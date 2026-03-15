@@ -27,7 +27,7 @@ import { UserTenantService } from '../../users/user-tenant.service';
 @Controller('api/v1/admin/solutions')
 @AuthAdminOrBuilder()
 @UseGuards(AdminTenantAccessGuard)
-@ApiTags('Admin - Solutions')
+@ApiTags('admin')
 export class AdminSolutionsController {
   private readonly logger = new Logger(AdminSolutionsController.name);
 

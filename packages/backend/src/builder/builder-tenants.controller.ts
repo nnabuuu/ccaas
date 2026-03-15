@@ -14,6 +14,7 @@ import {
   Body,
   Logger,
 } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { Auth, Ctx } from '../auth/decorators';
 import { RequestContext } from '../auth/types';
 import { TenantsService } from '../tenants/tenants.service';
@@ -23,6 +24,7 @@ import { CreateTenantDto, UpdateTenantDto } from '../tenants/dto/tenant.dto';
 import type { Tenant } from '../tenants/entities/tenant.entity';
 import { requireBuilderUserId, verifyBuilderTenantOwnership } from './builder.helpers';
 
+@ApiTags('builder')
 @Controller('api/v1/builder/tenants')
 @Auth('builder')
 export class BuilderTenantsController {
