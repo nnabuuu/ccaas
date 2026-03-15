@@ -80,25 +80,26 @@ export class AdminTenantsController {
   }
 
   /**
-   * GET /api/v1/admin/tenants/:id
+   * GET /api/v1/admin/tenants/:tenantId
    *
-   * Get a tenant by ID (UUID) or slug
+   * Get a tenant by ID (UUID) or slug.
+   * Uses :tenantId param so AdminTenantAccessGuard can enforce builder isolation.
    */
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
+  @Get(':tenantId')
+  async findOne(@Param('tenantId') tenantId: string) {
     // Validate input format
-    if (!id || id.length > 100) {
+    if (!tenantId || tenantId.length > 100) {
       throw new BadRequestException('Invalid tenant identifier');
     }
 
     // Must be either a valid UUID or a valid slug
-    if (!UUID_REGEX.test(id) && !SLUG_REGEX.test(id)) {
+    if (!UUID_REGEX.test(tenantId) && !SLUG_REGEX.test(tenantId)) {
       throw new BadRequestException('Invalid tenant identifier format');
     }
 
-    const tenant = await this.tenantsService.findOne(id);
+    const tenant = await this.tenantsService.findOne(tenantId);
     if (!tenant) {
-      throw new NotFoundException(`Tenant not found: ${id}`);
+      throw new NotFoundException(`Tenant not found: ${tenantId}`);
     }
     return tenant;
   }

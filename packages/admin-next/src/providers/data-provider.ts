@@ -1,5 +1,6 @@
 import type { DataProvider } from '@refinedev/core'
 import { apiClient } from '@/lib/api-client'
+import { useTenantContext } from '@/hooks/use-tenant-context'
 
 export const dataProvider: DataProvider = {
   getList: async ({ resource, pagination, filters, sorters, meta }) => {
@@ -123,6 +124,16 @@ export const dataProvider: DataProvider = {
 }
 
 function getResourceUrl(resource: string): string {
+  const scope = useTenantContext.getState().callerScope
+
+  // Builder users use dedicated builder endpoints with strict ownership checks
+  if (scope === 'builder') {
+    const builderMap: Record<string, string> = {
+      tenants: '/builder/tenants',
+    }
+    if (builderMap[resource]) return builderMap[resource]
+  }
+
   const map: Record<string, string> = {
     dashboard: '/admin/dashboard',
     sessions: '/admin/sessions',
