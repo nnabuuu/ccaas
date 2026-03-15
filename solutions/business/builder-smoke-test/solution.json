@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "3.0",
+
+  "tenant": {
+    "name": "Builder Smoke Test",
+    "slug": "builder-smoke-test",
+    "description": "Minimal solution for verifying builder API key flow end-to-end."
+  },
+
+  "skills": [
+    { "slug": "echo-chat", "name": "echo-chat" }
+  ]
+}

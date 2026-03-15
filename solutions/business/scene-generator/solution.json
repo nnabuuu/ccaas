@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "3.0",
+  "name": "Chibi Scene Generator",
+  "slug": "chibi-scene-generator",
+  "description": "从文章文本生成一致风格的 chibi 角色场景插图",
+  "tenant": {
+    "name": "Chibi Scene Generator",
+    "slug": "chibi-scene-generator",
+    "description": "从文章文本生成一致风格的 chibi 角色场景插图"
+  },
+  "mcpServers": {
+    "nano-banana-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Chibi scene image generation via Gemini",
+      "type": "stdio",
+      "env": {
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      },
+      "tools": ["generate_image"]
+    }
+  },
+  "sessionTemplates": {
+    "chibi": {
+      "description": "Chibi 角色场景插图生成会话",
+      "enabledSkills": ["chibi-scene-generator"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": ""
+    },
+    "chibi-prompt": {
+      "description": "Chibi prompt 组装（只生成 prompt，不生成图片）",
+      "enabledSkills": ["chibi-prompt-composer"],
+      "skillPromptMode": "inline"
+    },
+    "chibi-image": {
+      "description": "Chibi 图片生成（只生成图片）",
+      "enabledSkills": ["chibi-image-generator"],
+      "skillPromptMode": "inline"
+    }
+  },
+  "skills": [
+    { "slug": "chibi-scene-generator", "name": "chibi-scene-generator" },
+    { "slug": "chibi-prompt-composer", "name": "chibi-prompt-composer" },
+    { "slug": "chibi-image-generator", "name": "chibi-image-generator" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "3.0",
+
+  "tenant": {
+    "name": "Scheduler Smoke Test",
+    "slug": "scheduler-smoke-test",
+    "description": "Minimal solution for verifying scheduled task execution end-to-end."
+  },
+
+  "skills": [
+    { "slug": "daily-summary", "name": "daily-summary" }
+  ]
+}
