@@ -2,91 +2,70 @@
 
 Solutions are vertical applications built on the KedgeAgentic platform. Each Solution includes a dedicated frontend interface, business backend, MCP tools, and AI Skills, demonstrating the platform's capabilities across different domains.
 
-## Lesson Plan Designer
+## Smart Agri Service
 
 ### Overview
 
-Teachers describe their lesson design standards once in a Skill. The AI applies them consistently across every request, connected to curriculum resources via MCP — no re-prompting required.
+An AI-powered agricultural advisory platform with dual-persona design. One dataset powers two completely different user experiences -- a warm farmer advisor and a formal credit analyst -- through separate Skills and session templates.
 
 ### Key Features
 
-- **60/40 Split Layout** -- Lesson plan editor on the left, AI chat on the right
-- **Sync Button** -- AI-generated content is applied to the form via a sync button; teachers can accept or modify
-- **AI Change Tracking** -- Fields modified by AI are highlighted for easy teacher review
-- **Textbook Cascading Selection** -- Subject > Grade > Publisher > Volume > Chapter
-- **9 MCP Tools** -- Including write\_output, curriculum standard search, textbook search, teaching resource search, and more
+- **Dual-Mode Design** -- Farmer advisor (7 output fields) and bank credit assessor (8 output fields) from the same data
+- **11 MCP Tools** -- Data fetchers, computed summaries, policy/product search, and output sync
+- **Policy Citation** -- AI cites specific policy clauses with verifiable links to original documents
+- **Progressive Output** -- `write_output` + SSE renders structured fields in real time as analysis progresses
+- **50 Demo Farmers** -- SQLite database with complete profiles, land, crops, equipment, and loan history
 
 ### Technical Highlights
 
-- React 18 + NestJS backend + SSE real-time communication
-- SQLite data persistence with lesson plan CRUD operations
-- Structured output sync across 14 fields (objectives, standards, materials, activities, assessments, differentiated instruction, etc.)
+- React 18 frontend + NestJS solution backend + SQLite (WAL mode)
+- MCP server with stdio transport, 11 tools across 3 categories
+- Session persistence enables instant resume from `output_update` events
 
 ---
 
-## Problem Explainer
+## McKinsey CLI
 
 ### Overview
 
-AI-powered intelligent problem explanation that supports text and image input, automatically generating explanation scripts, audio, and presentations.
+A structured business analysis tool following McKinsey's consulting methodology. Demonstrates the pure-Skill, zero-MCP architecture -- a single powerful Skill replaces all MCP tools by leveraging built-in capabilities (web search, file generation).
 
 ### Key Features
 
-- **Five-Stage Workflow** -- Analyze problem > Generate script > Generate audio > Generate PPT > Output files
-- **Text/Image Input** -- Supports text descriptions or photo uploads of problems
-- **Intelligent Recognition** -- Automatically identifies problem types and knowledge points
-- **Step-by-Step Explanation** -- Generates detailed explanations broken down into steps
-- **Knowledge Linking** -- Automatically links related knowledge points and practice variations
-- **Multi-Format Output** -- Markdown scripts, MP3 audio, PPTX presentations
+- **Zero MCP** -- No tool server needed; built-in WebSearch + Write + Read tools are sufficient
+- **9-Step Workflow** -- Problem definition, MECE issue tree, page design, incremental PPTX generation
+- **Progressive Disclosure** -- 300-line core SKILL.md + 7 on-demand reference files, loaded and released per phase
+- **Incremental Generation** -- One page at a time with self-check protocol, supporting 20-25 page decks
+- **Dual Client** -- Vue 3 web frontend and Node.js CLI client share the same session API
 
 ### Technical Highlights
 
-- REST API-based MCP Server (6 tool endpoints)
-- 8 sync fields (problem analysis, key knowledge, solution steps, answer, common mistakes, etc.)
-- Automated difficulty assessment formula
+- Single Skill with 1400 total lines split across navigation core + reference files
+- Page dependency management (independent, forward, backward) for generation ordering
+- 7 McKinsey page layout templates with strict design system
 
 ---
 
-## CCAAS Demo
+## Demo Examples
 
-### Overview
+The platform includes **12 progressive demo examples**, each demonstrating a single platform feature. These serve as learning resources and starting points for new Solutions.
 
-A demo application showcasing core platform capabilities including Skill management, chat interactions, and file downloads.
+| Demo | Feature |
+|------|---------|
+| 01-pure-chat | Basic AI chat |
+| 02-multi-template | Multiple session templates |
+| 03-sse-events | SSE event streaming |
+| 04-write-output | Structured output sync |
+| 05-skill-frontmatter | Skill metadata |
+| 06-skill-routing | Multi-skill routing |
+| 07-workflow-skill | Workflow Skills |
+| 08-output-operations | Output operations |
+| 09-skill-prompt-mode | Prompt mode config |
+| 10-append-prompt | System prompt appending |
+| 11-tool-event-triggers | Tool event hooks |
+| 12-sync-fields | Real-time field sync |
 
-### Key Features
-
-- **Skill Management** -- Enable/disable Skill toggles
-- **Chat Interface** -- Full AI conversation experience
-- **File Downloads** -- Download management for AI-generated files
-- **Session Restart** -- One-click session restart
-
-### Built-in Example Skills
-
-- **hello-world** -- Basic greeting Skill
-- **report-generator** -- Report generation Skill
-- **file-creator** -- File creation Skill
-
----
-
-## Rehab Motion Renderer
-
-### Overview
-
-Starting from a medical examination report, AI generates a personalized rehabilitation training plan and renders it as an interactive SVG skeleton animation page.
-
-### Key Features
-
-- **SVG Skeleton Animation** -- LyingFigure / CatFigure / SeatedFigure postures with real-time bone animations
-- **AI Plan Generation** -- Upload a medical report; AI analyzes it and outputs a structured training plan
-- **MCP Server** -- rehab-tools (`write_output` + `get_exercise_library`)
-- **Exercise Library** -- Built-in exercise-library.json; frontend auto-matches keyframes
-- **10 Sync Fields** -- title, exercises, medicalSummary, difficulty, and more
-
-### Technical Highlights
-
-- Frontend port 5283, backend reuses CCAAS core (3001)
-- `exercises` field is a JSON array; frontend matches animation keyframes from the exercise library
-- `useOutputSync` hook manages pending state with zero boilerplate
+Source code: [kedge-agentic/examples](https://github.com/kedge-agentic/examples)
 
 ---
 

@@ -2,91 +2,70 @@
 
 Solution 是基于即见Agentic 平台构建的垂直场景应用。每个 Solution 包含专属的前端界面、业务后端、MCP 工具和 AI Skill，展示了平台在不同领域的应用能力。
 
-## 教案设计助手（Lesson Plan Designer）
+## 智慧农服（Smart Agri Service）
 
 ### 场景介绍
 
-教师在 Skill 中一次描述教案设计规范，AI 在每次请求中一致应用，并通过 MCP 连接课程资源——不需要反复提示。
+AI 驱动的农业咨询平台，采用双人设设计。同一套数据通过不同的 Skill 和会话模板，驱动两种完全不同的用户体验——温暖的农户顾问和专业的信贷分析师。
 
 ### 核心功能
 
-- **60/40 分屏布局** —— 左侧教案编辑器，右侧 AI 对话
-- **同步按钮** —— AI 生成的内容通过同步按钮应用到表单，教师可选择接受或修改
-- **AI 修改追踪** —— 高亮显示 AI 修改的字段，方便教师审核
-- **教材版本级联选择** —— 学科 → 年级 → 出版社 → 上/下册 → 章节
-- **9 个 MCP 工具** —— 包括 write\_output、课标搜索、教材搜索、教学资源搜索等
+- **双模式设计** —— 农户顾问（7 个输出字段）和信贷评估师（8 个输出字段）共享同一套数据
+- **11 个 MCP 工具** —— 数据查询、计算汇总、政策/产品搜索、输出同步
+- **政策引用** —— AI 引用具体政策条款，生成可验证的链接指向原始文档
+- **渐进式输出** —— `write_output` + SSE 在分析推进时实时渲染结构化字段
+- **50 个演示农户** —— SQLite 数据库包含完整的档案、土地、作物、农机和贷款记录
 
 ### 技术亮点
 
-- React 18 + NestJS 后端 + SSE 实时通信
-- SQLite 数据持久化，支持教案 CRUD
-- 结构化输出同步（14 个字段：目标、标准、材料、活动、评估、分层教学等）
+- React 18 前端 + NestJS Solution 后端 + SQLite (WAL 模式)
+- MCP Server 使用 stdio 传输，3 类 11 个工具
+- 会话持久化支持从 `output_update` 事件即时恢复
 
 ---
 
-## 题目讲解助手（Problem Explainer）
+## 麦肯锡顾问（McKinsey CLI）
 
 ### 场景介绍
 
-AI 驱动的智能题目讲解，支持文字/图片输入，自动生成讲解脚本、音频和 PPT。
+遵循麦肯锡咨询方法论的结构化商业分析工具。展示了纯 Skill、零 MCP 架构——单个强大的 Skill 通过内置能力（网络搜索、文件生成）替代所有 MCP 工具。
 
 ### 核心功能
 
-- **五阶段工作流** —— 分析题目 → 生成脚本 → 生成音频 → 生成 PPT → 输出文件
-- **文字/图片输入** —— 支持文字描述或拍照上传题目
-- **智能识别** —— 自动识别题目类型和知识点
-- **逐步讲解** —— 生成分步骤的详细讲解
-- **知识关联** —— 自动关联相关知识点和变式练习
-- **多格式输出** —— Markdown 脚本、MP3 音频、PPTX 演示文稿
+- **零 MCP** —— 不需要工具服务器；内置 WebSearch + Write + Read 工具已足够
+- **9 步工作流** —— 问题定义、MECE Issue Tree、页面设计、逐页 PPTX 生成
+- **渐进式披露** —— 300 行核心 SKILL.md + 7 个按需参考文件，分阶段加载和释放
+- **增量生成** —— 一次一页，带自检协议，支持 20-25 页 PPT
+- **双客户端** —— Vue 3 Web 前端和 Node.js CLI 客户端共享同一套会话 API
 
 ### 技术亮点
 
-- REST API 形式的 MCP Server（6 个工具端点）
-- 8 个同步字段（题目分析、关键知识、解题步骤、答案、常见错误等）
-- 自动难度评估公式
+- 单个 Skill 共 1400 行指令，拆分为导航核心 + 参考文件
+- 页面依赖管理（独立、前向、后向）控制生成顺序
+- 7 种麦肯锡页面布局模板，配合严格的设计系统
 
 ---
 
-## CCAAS Demo
+## Demo 示例集
 
-### 场景介绍
+平台包含 **12 个渐进式 Demo 示例**，每个演示一项平台功能。它们可作为学习资源和新 Solution 的起点。
 
-平台基础能力演示应用，展示 Skill 管理、聊天交互、文件下载等核心功能。
+| Demo | 功能 |
+|------|-----|
+| 01-pure-chat | 基础 AI 聊天 |
+| 02-multi-template | 多会话模板 |
+| 03-sse-events | SSE 事件流 |
+| 04-write-output | 结构化输出同步 |
+| 05-skill-frontmatter | Skill 元数据 |
+| 06-skill-routing | 多 Skill 路由 |
+| 07-workflow-skill | 工作流 Skill |
+| 08-output-operations | 输出操作 |
+| 09-skill-prompt-mode | Prompt 模式配置 |
+| 10-append-prompt | 系统提示词追加 |
+| 11-tool-event-triggers | 工具事件钩子 |
+| 12-sync-fields | 实时字段同步 |
 
-### 核心功能
-
-- **Skill 管理** —— 技能的启用/禁用切换
-- **聊天界面** —— 完整的 AI 对话体验
-- **文件下载** —— AI 生成文件的下载管理
-- **会话重启** —— 一键重启会话
-
-### 内置示例 Skill
-
-- **hello-world** —— 基础问候 Skill
-- **report-generator** —— 报告生成 Skill
-- **file-creator** —— 文件创建 Skill
-
----
-
-## 康复训练设计器（rehab-motion-renderer）
-
-### 场景介绍
-
-从医学检查报告出发，AI 生成个性化康复训练方案，渲染为 SVG 骨架动画交互训练页面。
-
-### 核心功能
-
-- **SVG 骨架动画** —— LyingFigure / CatFigure / SeatedFigure 三种姿势骨架实时动画
-- **AI 方案生成** —— 上传检查报告，AI 分析并输出结构化训练方案
-- **MCP Server** —— rehab-tools（`write_output` + `get_exercise_library`）
-- **动作库** —— 内置 exercise-library.json，前端自动补充 keyframes
-- **10 个同步字段** —— title、exercises、medicalSummary、difficulty 等
-
-### 技术亮点
-
-- 前端端口 5283，后端复用 CCAAS 核心（3001）
-- exercises 字段为 JSON 数组，前端从 exercise-library 匹配动画 keyframes
-- `useOutputSync` hook 管理 pending state，零样板代码
+源码：[kedge-agentic/examples](https://github.com/kedge-agentic/examples)
 
 ---
 

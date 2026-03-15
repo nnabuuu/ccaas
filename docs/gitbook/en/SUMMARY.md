@@ -39,18 +39,17 @@
 ## Examples <a href="#examples" id="examples"></a>
 
 * [Solution Gallery](examples/README.md)
-* [Quiz Analyzer](examples/quiz-analyzer/README.md)
-  * [MCP Design: Hierarchical Data](examples/quiz-analyzer/mcp-design.md)
-* [Lesson Plan Designer](examples/lesson-plan-designer/README.md)
-  * [Form Protocol & SYNC\_FIELDS](examples/lesson-plan-designer/form-protocol.md)
-* [Rehab Motion Renderer](examples/rehab-motion-renderer/README.md)
-  * [Dual Output Design](examples/rehab-motion-renderer/dual-output.md)
+* [Smart Agri Service](examples/smart-agri-service/README.md)
+  * [MCP Design: Multi-Source Data Integration](examples/smart-agri-service/mcp-design.md)
+* [McKinsey CLI](examples/mckinsey-cli/README.md)
+  * [Pure Skill Design: Zero-MCP Architecture](examples/mckinsey-cli/skill-design.md)
 
 ## Developer Guide <a href="#guide" id="guide"></a>
 
 * [Guide Overview](guide/README.md)
 * [Core Concepts](guide/concepts.md)
 * [Solution Development Guide](guide/solution-dev.md)
+* [Builder Flow Tutorial](guide/builder-flow.md)
 * [Skill Writing Guide](guide/skill-writing.md)
 * [MCP Server Development](guide/mcp-server.md)
 * [write\_output Best Practices](guide/write-output.md)

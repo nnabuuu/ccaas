@@ -39,18 +39,17 @@
 ## 案例 <a href="#examples" id="examples"></a>
 
 * [Solution 案例库](examples/README.md)
-* [Quiz Analyzer](examples/quiz-analyzer/README.md)
-  * [MCP 层设计：层级数据](examples/quiz-analyzer/mcp-design.md)
-* [Lesson Plan Designer](examples/lesson-plan-designer/README.md)
-  * [表单协议与 SYNC\_FIELDS](examples/lesson-plan-designer/form-protocol.md)
-* [Rehab Motion Renderer](examples/rehab-motion-renderer/README.md)
-  * [双 Output 设计](examples/rehab-motion-renderer/dual-output.md)
+* [智慧农服 Smart Agri Service](examples/smart-agri-service/README.md)
+  * [MCP 工具设计：多数据源整合](examples/smart-agri-service/mcp-design.md)
+* [麦肯锡顾问 McKinsey CLI](examples/mckinsey-cli/README.md)
+  * [纯 Skill 方案：零 MCP 架构](examples/mckinsey-cli/skill-design.md)
 
 ## 开发指南 <a href="#guide" id="guide"></a>
 
 * [开发指南概述](guide/README.md)
 * [核心概念](guide/concepts.md)
 * [Solution 开发完整指南](guide/solution-dev.md)
+* [Builder Flow 教程](guide/builder-flow.md)
 * [Skill 编写指南](guide/skill-writing.md)
 * [MCP Server 开发](guide/mcp-server.md)
 * [write\_output 最佳实践](guide/write-output.md)
