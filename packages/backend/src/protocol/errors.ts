@@ -24,7 +24,8 @@ export type ErrorCode =
   | 'INTERNAL_ERROR' // Unexpected server error
   | 'CLI_ERROR' // Claude CLI process error
   | 'MCP_ERROR' // MCP server error
-  | 'VALIDATION_ERROR'; // Input validation failed
+  | 'VALIDATION_ERROR' // Input validation failed
+  | 'QUOTA_EXCEEDED'; // Tenant token quota exceeded
 
 // ============================================================================
 // Error Events

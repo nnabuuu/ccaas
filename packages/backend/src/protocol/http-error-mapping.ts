@@ -17,6 +17,7 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<ErrorCode, number> = {
   SKILL_NOT_FOUND: 404, // Not Found
   SESSION_EXPIRED: 401, // Unauthorized
   RATE_LIMITED: 429, // Too Many Requests
+  QUOTA_EXCEEDED: 429, // Quota Exceeded
 
   // Server errors (5xx)
   TIMEOUT: 504, // Gateway Timeout

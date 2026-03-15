@@ -16,11 +16,13 @@ import {
   ConflictException,
   BadRequestException,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { Auth, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
 import { Tenant, PLAN_MAX_SESSION_TTL_MS } from '../../tenants/entities/tenant.entity';
@@ -37,7 +39,8 @@ const MAX_TEMPLATES_PER_TENANT = 50;
 
 @Controller('api/v1/admin/tenants/:tenantId/session-templates')
 @ApiTags('Admin - Session Templates')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminSessionTemplatesController {
   private readonly logger = new Logger(AdminSessionTemplatesController.name);
 

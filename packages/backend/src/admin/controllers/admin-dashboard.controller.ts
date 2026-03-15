@@ -4,8 +4,10 @@
  * Provides aggregated metrics for the admin dashboard.
  */
 
-import { Controller, Get, Query } from '@nestjs/common';
-import { Auth } from '../../auth/decorators';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { RequestContext } from '../../auth/types';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { SessionService } from '../../sessions/session.service';
 import { AnalyticsService } from '../services/analytics.service';
 import { SessionManagerService } from '../services/session-manager.service';
@@ -14,7 +16,8 @@ import { ApiKeyService } from '../../auth/api-key.service';
 import { DashboardSummary, RecentSession } from '../dto/admin.dto';
 
 @Controller('api/v1/admin/dashboard')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminDashboardController {
   constructor(
     private readonly sessionService: SessionService,
@@ -30,14 +33,21 @@ export class AdminDashboardController {
    * Get dashboard summary metrics
    */
   @Get('summary')
-  async getSummary(@Query('tenantId') tenantId?: string): Promise<DashboardSummary> {
+  async getSummary(
+    @Query('tenantId') tenantId: string | undefined,
+    @Ctx() ctx: RequestContext,
+  ): Promise<DashboardSummary> {
+    // Builder keys: always enforce own-tenant (defense-in-depth, guard also validates)
+    if (!isAdminScope(ctx)) {
+      tenantId = ctx.tenantId;
+    }
     const [
       sessionStats,
       messages24h,
       tokens24h,
       errorRate24h,
     ] = await Promise.all([
-      this.sessionService.getStats(),
+      this.sessionService.getStats(tenantId),
       this.analyticsService.getMessagesCount24h(tenantId),
       this.analyticsService.getTotalTokens24h(tenantId),
       this.sessionManagerService.getErrorRate24h(tenantId),
@@ -69,6 +79,7 @@ export class AdminDashboardController {
       activeApiKeys,
       totalSkills,
       publishedSkills: publishedSkillsCount,
+      callerScope: isAdminScope(ctx) ? 'admin' : 'builder',
     };
   }
 
@@ -79,9 +90,14 @@ export class AdminDashboardController {
    */
   @Get('recent-sessions')
   async getRecentSessions(
-    @Query('limit') limit?: string,
-    @Query('tenantId') tenantId?: string,
+    @Query('limit') limit: string | undefined,
+    @Query('tenantId') tenantId: string | undefined,
+    @Ctx() ctx: RequestContext,
   ): Promise<RecentSession[]> {
+    // Builder keys: always enforce own-tenant (defense-in-depth, guard also validates)
+    if (!isAdminScope(ctx)) {
+      tenantId = ctx.tenantId;
+    }
     return this.sessionManagerService.getRecentSessions(
       limit ? parseInt(limit, 10) : 10,
       tenantId,

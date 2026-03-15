@@ -15,11 +15,14 @@ import {
   BadRequestException,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Auth, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
 import { SessionManagerService } from '../services/session-manager.service';
+import { isAdminScope } from '../guards/admin-tenant-access.guard';
 import {
   SessionQueryDto,
   SessionListItem,
@@ -34,7 +37,8 @@ import { TimelineQueryDto } from '../dto/timeline-query.dto';
 import { PaginatedSessions } from '../services/session-manager.service';
 
 @Controller('api/v1/admin/sessions')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminSessionsController {
   constructor(private readonly sessionManagerService: SessionManagerService) {}
 
@@ -44,7 +48,14 @@ export class AdminSessionsController {
    * List all sessions with filtering and pagination
    */
   @Get()
-  async getSessions(@Query() query: SessionQueryDto): Promise<PaginatedSessions> {
+  async getSessions(
+    @Query() query: SessionQueryDto,
+    @Ctx() ctx: RequestContext,
+  ): Promise<PaginatedSessions> {
+    // Builder keys: force tenant isolation on list endpoints
+    if (!isAdminScope(ctx)) {
+      query.tenantId = ctx.tenantId;
+    }
     return this.sessionManagerService.getSessions(query);
   }
 
@@ -54,8 +65,13 @@ export class AdminSessionsController {
    * Get currently active sessions (processing or with active AgentEngine)
    */
   @Get('active')
-  async getActiveSessions(): Promise<SessionListItem[]> {
-    return this.sessionManagerService.getActiveSessions();
+  async getActiveSessions(@Ctx() ctx: RequestContext): Promise<SessionListItem[]> {
+    const all = await this.sessionManagerService.getActiveSessions();
+    // Builder keys: filter to own tenant only
+    if (!isAdminScope(ctx)) {
+      return all.filter((s) => s.tenantId === ctx.tenantId);
+    }
+    return all;
   }
 
   /**
@@ -154,7 +170,10 @@ export class AdminSessionsController {
   @Get(':sessionId/workspace')
   async getWorkspaceTree(
     @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<WorkspaceTreeResponse> {
+    // Verify session belongs to caller's tenant before exposing workspace
+    await this.sessionManagerService.getSessionDetail(sessionId, ctx.tenantId, ctx.apiKeyScopes);
     return this.sessionManagerService.getWorkspaceTree(sessionId);
   }
 
@@ -168,10 +187,13 @@ export class AdminSessionsController {
   async getWorkspaceFileContent(
     @Param('sessionId') sessionId: string,
     @Query('path') filePath: string,
+    @Ctx() ctx: RequestContext,
   ): Promise<{ content: string | null; mimeType: string; size: number; filename: string; isBinary: boolean }> {
     if (!filePath) {
       throw new BadRequestException('path query parameter is required');
     }
+    // Verify session belongs to caller's tenant before exposing file content
+    await this.sessionManagerService.getSessionDetail(sessionId, ctx.tenantId, ctx.apiKeyScopes);
     return this.sessionManagerService.getWorkspaceFileContent(sessionId, filePath);
   }
 
@@ -212,6 +234,7 @@ export class AdminSessionsController {
   @HttpCode(HttpStatus.OK)
   async restartSession(
     @Param('sessionId') sessionId: string,
+    @Ctx() _ctx: RequestContext,
   ): Promise<{ success: boolean; message: string }> {
     return {
       success: false,

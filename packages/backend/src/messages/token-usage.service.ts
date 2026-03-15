@@ -4,10 +4,11 @@
  * Tracks token usage per API call for cost analysis and optimization.
  */
 
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TokenUsageEvent, ContextWindowUsage } from './entities/token-usage-event.entity';
+import { QuotaService } from '../admin/quota.service';
 
 // Model pricing per 1M tokens (as of 2025)
 const MODEL_PRICING: Record<string, { input: number; output: number; cached: number }> = {
@@ -42,6 +43,8 @@ export class TokenUsageService {
   constructor(
     @InjectRepository(TokenUsageEvent)
     private readonly usageRepository: Repository<TokenUsageEvent>,
+    @Optional() @Inject(QuotaService)
+    private readonly quotaService?: QuotaService,
   ) {}
 
   /**
@@ -77,6 +80,15 @@ export class TokenUsageService {
       `Recorded token usage for message ${dto.messageId}: ` +
         `in=${dto.inputTokens}, out=${dto.outputTokens}, cached=${dto.cachedInputTokens || 0}`,
     );
+
+    // Update tenant quota (fire-and-forget, non-critical path)
+    if (dto.tenantId && this.quotaService) {
+      const totalTokens = dto.inputTokens + dto.outputTokens;
+      this.quotaService.incrementTokenUsage(dto.tenantId, totalTokens).catch((err) =>
+        this.logger.warn(`Failed to update quota for tenant ${dto.tenantId}: ${err}`),
+      );
+    }
+
     return saved;
   }
 

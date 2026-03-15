@@ -82,11 +82,14 @@ export class WorkspaceService {
   /**
    * Resolve MCP server paths from tenant-relative to session-relative symlink paths
    *
-   * Transforms: tenants/{tenantId}/mcp-servers/{server}/dist/index.js
+   * Transforms args: tenants/{tenantId}/mcp-servers/{server}/dist/index.js
    * To: .claude/mcp-servers/{server}/dist/index.js
    *
+   * Transforms env vars: tenants/{tenantId}/solution-backend/agri.db
+   * To: /absolute/path/to/workspace/tenants/{tenantId}/solution-backend/agri.db
+   *
    * @param mcpServers - MCP server configuration
-   * @returns Resolved configuration with session-relative paths
+   * @returns Resolved configuration with session-relative args and absolute env paths
    */
   resolveSessionMcpPaths(
     mcpServers: Record<string, {
@@ -101,6 +104,7 @@ export class WorkspaceService {
     description?: string;
     env?: Record<string, string>;
   }> {
+    const workspaceRoot = path.resolve(this.workspaceDir);
     const resolved: Record<string, any> = {};
 
     for (const [name, config] of Object.entries(mcpServers)) {
@@ -119,6 +123,22 @@ export class WorkspaceService {
           }
           return arg;
         }),
+        // Resolve env vars with tenant-relative paths to absolute paths
+        env: config.env
+          ? Object.fromEntries(
+              Object.entries(config.env).map(([k, v]) => {
+                if (v.startsWith('tenants/')) {
+                  const resolved = path.resolve(workspaceRoot, v);
+                  if (!resolved.startsWith(workspaceRoot + path.sep)) {
+                    this.logger.warn(`[Security] Env path traversal blocked: ${k}=${v}`);
+                    return [k, v]; // Return unresolved
+                  }
+                  return [k, resolved];
+                }
+                return [k, v];
+              }),
+            )
+          : undefined,
       };
     }
 

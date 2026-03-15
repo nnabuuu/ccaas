@@ -20,7 +20,6 @@
     "test:architecture": "jest --config ./test/jest-architecture.json",
     "typecheck": "tsc --noEmit",
     "create-dev-key": "ts-node -r tsconfig-paths/register scripts/create-dev-api-key.ts",
-    "skill:import": "ts-node -r tsconfig-paths/register src/scripts/import-solution-skills.ts",
     "solution:migrate": "ts-node -r tsconfig-paths/register src/scripts/migrate-solution.ts"
   },
   "dependencies": {

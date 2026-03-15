@@ -352,19 +352,22 @@ export class SessionService implements OnModuleDestroy {
   }
 
   /**
-   * Get session statistics
+   * Get session statistics, optionally filtered by tenant
    */
-  getStats(): SessionStats {
+  getStats(tenantId?: string): SessionStats {
     let idle = 0;
     let processing = 0;
+    let total = 0;
 
     for (const session of this.sessions.values()) {
+      if (tenantId && session.tenantId !== tenantId) continue;
+      total++;
       if (session.status === 'idle') idle++;
       if (session.status === 'processing') processing++;
     }
 
     return {
-      totalSessions: this.sessions.size,
+      totalSessions: total,
       idleSessions: idle,
       processingSessions: processing,
       maxSessions: this.maxSessions,

@@ -12,8 +12,10 @@ import { TenantsService } from '../../tenants/tenants.service';
 import { SkillsService } from '../../skills/skills.service';
 import { AuditService } from '../services/audit.service';
 import { TenantQuota } from '../entities/tenant-quota.entity';
+import { UserTenantService } from '../../users/user-tenant.service';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
+import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 
 describe('AdminTenantsController', () => {
   let controller: AdminTenantsController;
@@ -46,6 +48,13 @@ describe('AdminTenantsController', () => {
           },
         },
         {
+          provide: UserTenantService,
+          useValue: {
+            findByUser: jest.fn().mockResolvedValue([]),
+            findUserInTenant: jest.fn(),
+          },
+        },
+        {
           provide: getRepositoryToken(TenantQuota),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
@@ -60,6 +69,8 @@ describe('AdminTenantsController', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard)
       .useValue({ canActivate: () => true })
+      .overrideGuard(AdminTenantAccessGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     controller = module.get<AdminTenantsController>(AdminTenantsController);
@@ -67,7 +78,7 @@ describe('AdminTenantsController', () => {
   });
 
   describe('findAll', () => {
-    it('should return all tenants', async () => {
+    it('should return all tenants for admin', async () => {
       const mockTenants = [
         { id: 'tenant-1', name: 'Tenant One', slug: 'tenant-one' },
         { id: 'tenant-2', name: 'Tenant Two', slug: 'tenant-two' },
@@ -75,7 +86,12 @@ describe('AdminTenantsController', () => {
 
       tenantsService.findAll = jest.fn().mockResolvedValue(mockTenants);
 
-      const result = await controller.findAll();
+      const ctx = {
+        apiKeyScopes: ['admin'],
+        tenantId: 'tenant-1',
+      } as any;
+
+      const result = await controller.findAll(ctx);
 
       expect(result).toEqual(mockTenants);
       expect(tenantsService.findAll).toHaveBeenCalled();

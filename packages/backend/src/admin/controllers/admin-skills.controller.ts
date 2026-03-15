@@ -16,8 +16,10 @@ import {
   NotFoundException,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
-import { Auth, TenantId, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
+import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
 import { SkillsService } from '../../skills/skills.service';
 import { SkillVersion } from '../../skills/entities/skill-version.entity';
@@ -27,7 +29,8 @@ import { AuditService } from '../services/audit.service';
 import { VersionDiff } from '../dto/admin.dto';
 
 @Controller('api/v1/admin/skills')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminSkillsController {
   constructor(
     private readonly skillsService: SkillsService,

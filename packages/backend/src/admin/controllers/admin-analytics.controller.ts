@@ -4,8 +4,10 @@
  * Analytics endpoints for token usage, costs, and API key stats.
  */
 
-import { Controller, Get, Query, Param } from '@nestjs/common';
-import { Auth } from '../../auth/decorators';
+import { Controller, Get, Query, Param, UseGuards } from '@nestjs/common';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { RequestContext } from '../../auth/types';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { AnalyticsService } from '../services/analytics.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
@@ -20,7 +22,8 @@ import {
 } from '../dto/admin.dto';
 
 @Controller('api/v1/admin/analytics')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminAnalyticsController {
   constructor(
     private readonly analyticsService: AnalyticsService,
@@ -38,7 +41,9 @@ export class AdminAnalyticsController {
   @Get('tokens')
   async getTokenUsage(
     @Query() query: AnalyticsQueryDto,
+    @Ctx() ctx: RequestContext,
   ): Promise<TokenUsageAnalytics> {
+    if (!isAdminScope(ctx)) query.tenantId = ctx.tenantId;
     return this.analyticsService.getTokenUsage(query);
   }
 
@@ -50,7 +55,9 @@ export class AdminAnalyticsController {
   @Get('costs')
   async getCostBreakdown(
     @Query() query: AnalyticsQueryDto,
+    @Ctx() ctx: RequestContext,
   ): Promise<CostAnalytics> {
+    if (!isAdminScope(ctx)) query.tenantId = ctx.tenantId;
     return this.analyticsService.getCostBreakdown(query);
   }
 
@@ -61,8 +68,10 @@ export class AdminAnalyticsController {
    */
   @Get('api-keys')
   async getApiKeyUsage(
-    @Query('tenantId') tenantId?: string,
+    @Query('tenantId') tenantId: string | undefined,
+    @Ctx() ctx: RequestContext,
   ): Promise<ApiKeyUsageStats[]> {
+    if (!isAdminScope(ctx)) tenantId = ctx.tenantId;
     return this.analyticsService.getApiKeyUsage(tenantId);
   }
 
@@ -74,12 +83,15 @@ export class AdminAnalyticsController {
   @Get('summary')
   async getSummary(
     @Query('days') days?: string,
+    @Query('tenantId') tenantId?: string,
+    @Ctx() ctx?: RequestContext,
   ): Promise<{
     totalTokens: { input: number; output: number; total: number };
     messagesCount: number;
     estimatedCost: number;
   }> {
-    const query: AnalyticsQueryDto = { days: days ? parseInt(days, 10) : 7 };
+    if (ctx && !isAdminScope(ctx)) tenantId = ctx.tenantId;
+    const query: AnalyticsQueryDto = { days: days ? parseInt(days, 10) : 7, tenantId };
 
     const [tokens, costs] = await Promise.all([
       this.analyticsService.getTokenUsage(query),
@@ -104,9 +116,11 @@ export class AdminAnalyticsController {
    */
   @Get('skills')
   async getSkillUsage(
-    @Query('tenantId') tenantId?: string,
+    @Query('tenantId') tenantId: string | undefined,
     @Query('days') days?: string,
+    @Ctx() ctx?: RequestContext,
   ) {
+    if (ctx && !isAdminScope(ctx)) tenantId = ctx.tenantId;
     const daysNum = days ? parseInt(days, 10) : 30;
     const since = new Date();
     since.setDate(since.getDate() - daysNum);
@@ -163,7 +177,9 @@ export class AdminAnalyticsController {
   @Get('error-rate-trend')
   async getErrorRateTrend(
     @Query() query: AnalyticsQueryDto,
+    @Ctx() ctx: RequestContext,
   ): Promise<ErrorRateTrend> {
+    if (!isAdminScope(ctx)) query.tenantId = ctx.tenantId;
     return this.analyticsService.getErrorRateTrend(query);
   }
 }

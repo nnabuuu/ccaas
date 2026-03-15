@@ -151,6 +151,7 @@ export class CompletionOrchestrationService {
 
     // These are populated from template resolution below
     let mcpServers: Record<string, McpServerConfig> | undefined;
+    let mcpServerSlugs: string[] | undefined;
     let skillPath: string | undefined;
     let { enabledSkills, systemPrompt } = input;
 
@@ -206,6 +207,11 @@ export class CompletionOrchestrationService {
       if (tmpl) {
         this.logger.log(`Applying template "${effectiveTemplateName}" for session ${sessionId}`);
         mcpServers = tmpl['mcpServers'] as Record<string, McpServerConfig> | undefined;
+        if (Array.isArray(tmpl['mcpServerSlugs'])) {
+          mcpServerSlugs = tmpl['mcpServerSlugs'].filter(
+            (s): s is string => typeof s === 'string' && s.length > 0,
+          );
+        }
         if (!enabledSkills && Array.isArray(tmpl['enabledSkills'])) {
           const resolved = this.resolveEnabledSkills(tmpl['enabledSkills']);
           enabledSkills = resolved.slugs;
@@ -289,6 +295,52 @@ export class CompletionOrchestrationService {
           bundleResolution.toolEventTriggers,
         );
       }
+    }
+
+    // Step 2c: Auto-load tenant-registered MCP servers and merge with template/bundle servers
+    // Priority: mcpServerSlugs (selective) > load all active (fallback)
+    try {
+      const tenantMcpServers = await this.mcpPoolService.findAllByTenantId(resolvedTenantId);
+      let activeServers = tenantMcpServers.filter(s => s.status === 'active');
+
+      // If template specifies mcpServerSlugs, only load those named servers
+      if (mcpServerSlugs && mcpServerSlugs.length > 0) {
+        const slugSet = new Set(mcpServerSlugs);
+        activeServers = activeServers.filter(s => slugSet.has(s.slug));
+        const foundSlugs = new Set(activeServers.map(s => s.slug));
+        const missing = mcpServerSlugs.filter(s => !foundSlugs.has(s));
+        if (missing.length > 0) {
+          this.logger.warn(`MCP server slugs not found: [${missing.join(',')}]`);
+        }
+        this.logger.debug(
+          `Selective MCP loading: requested=[${mcpServerSlugs.join(',')}], found=[${activeServers.map(s => s.slug).join(',')}]`,
+        );
+      }
+
+      if (activeServers.length > 0) {
+        const tenantMcpConfigs: Record<string, McpServerConfig> = {};
+        for (const server of activeServers) {
+          // Skip servers with incomplete config
+          if (!server.config?.command) {
+            this.logger.warn(`Skipping MCP server "${server.slug}": missing command`);
+            continue;
+          }
+          tenantMcpConfigs[server.slug] = {
+            command: server.config.command,
+            args: server.config?.args ?? [],
+            env: server.config?.env as Record<string, string> | undefined,
+          };
+        }
+        // Merge: tenant servers first, then template/bundle overrides on top
+        if (Object.keys(tenantMcpConfigs).length > 0) {
+          mcpServers = { ...tenantMcpConfigs, ...(mcpServers ?? {}) };
+          this.logger.log(
+            `Session ${sessionId} merged ${Object.keys(tenantMcpConfigs).length} tenant MCP server(s): ${Object.keys(tenantMcpConfigs).join(', ')}`,
+          );
+        }
+      }
+    } catch (error: any) {
+      this.logger.warn(`Failed to auto-load tenant MCP servers: ${error.message}`);
     }
 
     // Step 3: Store MCP servers configuration from solution backend (if provided)

@@ -14,6 +14,9 @@ import { TenantQuota } from './entities/tenant-quota.entity';
 import { Session } from './entities/session.entity';
 import { Turn } from './entities/turn.entity';
 
+// Guards
+import { AdminTenantAccessGuard } from './guards/admin-tenant-access.guard';
+
 // Services
 import { AuditService } from './services/audit.service';
 import { AnalyticsService } from './services/analytics.service';
@@ -31,6 +34,8 @@ import { AdminApiKeysController } from './controllers/admin-api-keys.controller'
 import { AdminSessionTemplatesController } from './controllers/admin-session-templates.controller';
 import { AdminMcpServersController } from './controllers/admin-mcp-servers.controller';
 import { AdminBundlesController } from './controllers/admin-bundles.controller';
+import { AdminBuilderUsersController } from './controllers/admin-builder-users.controller';
+import { AdminSolutionsController } from './controllers/admin-solutions.controller';
 
 // Dependent modules
 import { SessionsModule } from '../sessions/sessions.module';
@@ -39,6 +44,7 @@ import { AuthModule } from '../auth/auth.module';
 import { MessagesModule } from '../messages/messages.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { BundleModule } from '../bundles/bundle.module';
+import { SolutionsModule } from '../solutions/solutions.module';
 import { TurnsModule } from './turns.module';
 
 // Entities from other modules (for analytics queries)
@@ -79,6 +85,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     MessagesModule,
     TenantsModule,
     BundleModule,
+    SolutionsModule,
   ],
   controllers: [
     AdminDashboardController,
@@ -92,8 +99,11 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminSessionTemplatesController,
     AdminMcpServersController,
     AdminBundlesController,
+    AdminBuilderUsersController,
+    AdminSolutionsController,
   ],
   providers: [
+    AdminTenantAccessGuard,
     AuditService,
     AnalyticsService,
     SessionManagerService,

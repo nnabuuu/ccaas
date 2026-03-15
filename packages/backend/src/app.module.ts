@@ -20,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProtocolModule } from './protocol/protocol.module';
 import { McpModule } from './mcp/mcp.module';
 import { AdminModule } from './admin/admin.module';
+import { QuotaModule } from './admin/quota.module';
 import { HealthModule } from './health/health.module';
 import { Skill } from './skills/entities/skill.entity';
 import { SkillVersion } from './skills/entities/skill-version.entity';
@@ -53,6 +54,7 @@ import { UserTenant } from './users/entities/user-tenant.entity';
 import { MessageQueue } from './sessions/entities/message-queue.entity';
 import { SolutionsModule } from './solutions/solutions.module';
 import { BundleModule } from './bundles/bundle.module';
+import { BuilderModule } from './builder/builder.module';
 
 @Module({
   imports: [
@@ -137,6 +139,9 @@ import { BundleModule } from './bundles/bundle.module';
     FilesModule,
     UsersModule,
 
+    // Quota enforcement (global — used by Sessions + Messages + Admin)
+    QuotaModule,
+
     // Admin module
     AdminModule,
 
@@ -151,6 +156,9 @@ import { BundleModule } from './bundles/bundle.module';
 
     // Bundle system (platform capability packages)
     BundleModule,
+
+    // Builder module (external developer self-service)
+    BuilderModule,
   ],
   providers: [
     {

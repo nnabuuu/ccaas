@@ -15,6 +15,8 @@ import { ConversationContextService } from '../messages/conversation-context.ser
 import { StreamRegistryService } from './services/stream-registry.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { makeSseClientId } from './session-utils';
+import { QuotaService } from '../admin/quota.service';
+import { QuotaGuard } from '../admin/guards/quota.guard';
 
 // ── sendMessage (queue-routed) ────────────────────────────────────────────────
 
@@ -78,6 +80,8 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: streamRegistry },
+        { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
+        { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
       ],
     }).compile();
 
@@ -263,6 +267,8 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: streamRegistry },
+        { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
+        { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
       ],
     }).compile();
 
@@ -448,6 +454,8 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: MessagesService, useValue: {} },
         { provide: ConversationContextService, useValue: {} },
         { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]), getSubscriberCount: jest.fn().mockReturnValue(0) }) },
+        { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
+        { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
       ],
     }).compile();
 

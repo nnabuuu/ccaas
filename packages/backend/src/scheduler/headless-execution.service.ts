@@ -174,7 +174,7 @@ export class HeadlessExecutionService {
         }
       }, task.timeoutMs);
 
-      // Send user message on spawn
+      // Send user message on spawn, then close stdin so CLI knows no more messages
       cli.on('spawn', () => {
         const jsonMessage = JSON.stringify({
           type: 'user',
@@ -184,6 +184,7 @@ export class HeadlessExecutionService {
           },
         });
         cli.stdin.write(jsonMessage + '\n');
+        cli.stdin.end();
         this.logger.debug(`Sent message to headless CLI: ${jsonMessage.slice(0, 200)}...`);
       });
 

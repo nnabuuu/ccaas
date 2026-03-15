@@ -26,6 +26,7 @@ import {
 import { CreateTenantDto, UpdateTenantDto, CreateTenantResponse } from './dto/tenant.dto';
 import { ApiKeyService } from '../auth/api-key.service';
 import { DEFAULT_SCOPES } from '../auth/types';
+import { QuotaService } from '../admin/quota.service';
 
 @Injectable()
 export class TenantsService implements OnModuleInit {
@@ -38,6 +39,8 @@ export class TenantsService implements OnModuleInit {
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => ApiKeyService))
     private readonly apiKeyService: ApiKeyService,
+    @Inject(forwardRef(() => QuotaService))
+    private readonly quotaService: QuotaService,
   ) {
     this.defaultTenantId = this.configService.get('skills.defaultTenantId', 'default');
   }
@@ -90,6 +93,11 @@ export class TenantsService implements OnModuleInit {
 
     const saved = await this.tenantRepository.save(tenant);
     this.logger.log(`Created tenant ${saved.name} (${saved.slug})`);
+
+    // Auto-create monthly quota based on plan
+    await this.quotaService.createDefaultQuota(saved.id, saved.plan).catch((err) =>
+      this.logger.warn(`Failed to create default quota for tenant ${saved.slug}: ${err}`),
+    );
 
     // Build response
     const response: CreateTenantResponse = {

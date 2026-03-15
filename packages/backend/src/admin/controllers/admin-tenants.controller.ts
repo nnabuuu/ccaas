@@ -15,13 +15,17 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  UseGuards,
+  Logger,
 } from '@nestjs/common';
-import { Auth, TenantId, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, TenantId, Ctx } from '../../auth/decorators';
 import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
 import { UpdateTenantDto } from '../../tenants/dto/tenant.dto';
 import { SkillsService } from '../../skills/skills.service';
 import { AuditService } from '../services/audit.service';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
+import { UserTenantService } from '../../users/user-tenant.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TenantQuota } from '../entities/tenant-quota.entity';
@@ -32,12 +36,16 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const SLUG_REGEX = /^[a-z0-9][a-z0-9_-]*$/i;
 
 @Controller('api/v1/admin/tenants')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminTenantsController {
+  private readonly logger = new Logger(AdminTenantsController.name);
+
   constructor(
     private readonly tenantsService: TenantsService,
     private readonly skillsService: SkillsService,
     private readonly auditService: AuditService,
+    private readonly userTenantService: UserTenantService,
     @InjectRepository(TenantQuota)
     private readonly tenantQuotaRepository: Repository<TenantQuota>,
   ) {}
@@ -45,11 +53,30 @@ export class AdminTenantsController {
   /**
    * GET /api/v1/admin/tenants
    *
-   * List all tenants
+   * List tenants. Admin sees all; builder sees only owned tenants.
    */
   @Get()
-  async findAll() {
-    return this.tenantsService.findAll();
+  async findAll(@Ctx() ctx: RequestContext) {
+    // Admin: unrestricted
+    if (isAdminScope(ctx)) {
+      return this.tenantsService.findAll();
+    }
+
+    // Non-admin (builder): only tenants they own via user-tenant relationship
+    if (ctx.userId) {
+      const userTenants = await this.userTenantService.findByUser(ctx.userId);
+      const owned = userTenants.filter((ut) => ut.tenant).map((ut) => ut.tenant);
+      this.logger.debug(
+        `Builder tenant list: userId=${ctx.userId} found=${owned.length} tenants`,
+      );
+      return owned;
+    }
+
+    // Fallback: return own tenant only (from API key)
+    this.logger.warn(
+      `Tenant list fallback: no userId in context, returning home tenant only`,
+    );
+    return ctx.tenant ? [ctx.tenant] : [];
   }
 
   /**

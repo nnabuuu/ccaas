@@ -13,7 +13,9 @@ import { Tenant } from './entities/tenant.entity';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([Tenant])],
+  imports: [
+    TypeOrmModule.forFeature([Tenant]),
+  ],
   controllers: [TenantsController],
   providers: [TenantsService, TenantGuard],
   exports: [TenantsService, TenantGuard],

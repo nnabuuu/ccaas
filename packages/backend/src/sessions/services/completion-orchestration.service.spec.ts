@@ -104,6 +104,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
 
     const mockMcpPoolService = {
       findOne: jest.fn().mockResolvedValue(null),
+      findAllByTenantId: jest.fn().mockResolvedValue([]),
     };
 
     mockSessionEventsService = {
@@ -451,7 +452,7 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
           { provide: ConversationMetadataService, useValue: { autoGenerateTitle: jest.fn().mockResolvedValue(undefined) } },
           { provide: SkillManagementService, useValue: mockSkillMgmt },
           { provide: TurnsService, useValue: { createNextTurn: jest.fn().mockResolvedValue({ id: 't1', turnNumber: 1 }), completeTurnWithRetry: jest.fn().mockResolvedValue({}) } },
-          { provide: McpPoolService, useValue: { findOne: jest.fn().mockResolvedValue(null) } },
+          { provide: McpPoolService, useValue: { findOne: jest.fn().mockResolvedValue(null), findAllByTenantId: jest.fn().mockResolvedValue([]) } },
           { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
           { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
           { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },

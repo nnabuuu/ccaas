@@ -13,6 +13,7 @@ import { TenantsService } from '../../tenants/tenants.service';
 import { AuditService } from '../services/audit.service';
 import { ApiKeyGuard } from '../../auth/guards/api-key.guard';
 import { ScopesGuard } from '../../auth/guards/scopes.guard';
+import { AdminTenantAccessGuard } from '../guards/admin-tenant-access.guard';
 import type { RequestContext } from '../../auth/types';
 
 const TENANT_ID = 'tenant-uuid-1234';
@@ -56,6 +57,8 @@ describe('AdminSessionTemplatesController', () => {
       .overrideGuard(ApiKeyGuard)
       .useValue({ canActivate: () => true })
       .overrideGuard(ScopesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AdminTenantAccessGuard)
       .useValue({ canActivate: () => true })
       .compile();
 

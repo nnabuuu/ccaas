@@ -8,6 +8,7 @@ import { AdminApiKeysController } from './admin-api-keys.controller';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { TenantsService } from '../../tenants/tenants.service';
 import { AuditService } from '../services/audit.service';
+import { UserTenantService } from '../../users/user-tenant.service';
 import type { RequestContext, ApiKeyScope } from '../../auth/types';
 import type {
   ApiKeyResponse,
@@ -95,6 +96,7 @@ describe('AdminApiKeysController', () => {
         { provide: ApiKeyService, useValue: mockApiKeyService },
         { provide: TenantsService, useValue: mockTenantsService },
         { provide: AuditService, useValue: mockAuditService },
+        { provide: UserTenantService, useValue: { findUserInTenant: jest.fn() } },
       ],
     }).compile();
 
@@ -170,7 +172,7 @@ describe('AdminApiKeysController', () => {
     it('should return a single API key', async () => {
       apiKeyService.findById.mockResolvedValue(mockApiKeyResponse);
 
-      const result = await controller.findOne('550e8400-e29b-41d4-a716-446655440000');
+      const result = await controller.findOne('550e8400-e29b-41d4-a716-446655440000', mockContext);
 
       expect(apiKeyService.findById).toHaveBeenCalledWith(
         '550e8400-e29b-41d4-a716-446655440000',
@@ -179,7 +181,7 @@ describe('AdminApiKeysController', () => {
     });
 
     it('should throw BadRequestException for invalid UUID', async () => {
-      await expect(controller.findOne('invalid-uuid')).rejects.toThrow(
+      await expect(controller.findOne('invalid-uuid', mockContext)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -188,7 +190,7 @@ describe('AdminApiKeysController', () => {
       apiKeyService.findById.mockResolvedValue(null);
 
       await expect(
-        controller.findOne('550e8400-e29b-41d4-a716-446655440000'),
+        controller.findOne('550e8400-e29b-41d4-a716-446655440000', mockContext),
       ).rejects.toThrow(NotFoundException);
     });
   });

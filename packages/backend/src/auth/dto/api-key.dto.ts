@@ -46,6 +46,10 @@ export class CreateApiKeyDto {
 
   @IsOptional()
   metadata?: ApiKeyMetadata;
+
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 export class UpdateApiKeyDto {

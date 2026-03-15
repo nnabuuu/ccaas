@@ -18,13 +18,17 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
+import { UserTenantService } from '../users/user-tenant.service';
 import type { RequestContext } from '../auth/types';
 
 @Injectable()
 export class TenantGuard implements CanActivate {
   private readonly logger = new Logger(TenantGuard.name);
 
-  constructor(private readonly tenantsService: TenantsService) {}
+  constructor(
+    private readonly tenantsService: TenantsService,
+    private readonly userTenantService: UserTenantService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -73,17 +77,33 @@ export class TenantGuard implements CanActivate {
     // request.tenantId and request.tenant (operation target) are already set above.
     const requestContext: RequestContext | undefined = request.context;
     if (requestContext && requestContext.tenantId !== tenant.id) {
-      if (!requestContext.apiKeyScopes?.includes('admin')) {
-        this.logger.warn(
-          `API key tenant ${requestContext.tenantId} does not match X-Tenant-Id ${tenant.id} and key lacks admin scope`,
+      // Admin: unrestricted cross-tenant
+      if (requestContext.apiKeyScopes?.includes('admin')) {
+        this.logger.log(
+          `Admin cross-tenant: key=${requestContext.apiKeyId} from=${requestContext.tenantId} to=${tenant.id}`,
         );
-        throw new ForbiddenException(
-          'API key does not have permission to access this tenant',
+        return true;
+      }
+
+      // Builder: cross-tenant to owned tenants only
+      if (requestContext.apiKeyScopes?.includes('builder') && requestContext.userId) {
+        const userTenant = await this.userTenantService.findUserInTenant(
+          requestContext.userId,
+          tenant.id,
         );
+        if (userTenant && userTenant.isActive) {
+          this.logger.log(
+            `Builder cross-tenant: user=${requestContext.userId} to=${tenant.id}`,
+          );
+          return true;
+        }
       }
 
       this.logger.warn(
-        `Admin cross-tenant: key=${requestContext.apiKeyId} from=${requestContext.tenantId} to=${tenant.id}`,
+        `API key tenant ${requestContext.tenantId} does not match X-Tenant-Id ${tenant.id} and key lacks permission`,
+      );
+      throw new ForbiddenException(
+        'API key does not have permission to access this tenant',
       );
     }
 

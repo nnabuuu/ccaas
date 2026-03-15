@@ -12,6 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { TenantsService } from './tenants.service';
 import { Tenant, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/tenant.entity';
 import { ApiKeyService } from '../auth/api-key.service';
+import { QuotaService } from '../admin/quota.service';
 
 describe('TenantsService', () => {
   let service: TenantsService;
@@ -35,6 +36,12 @@ describe('TenantsService', () => {
       get: jest.fn().mockReturnValue('default'),
     };
 
+    const mockQuotaService = {
+      createDefaultQuota: jest.fn().mockResolvedValue({}),
+      checkQuota: jest.fn(),
+      incrementTokenUsage: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TenantsService,
@@ -49,6 +56,10 @@ describe('TenantsService', () => {
         {
           provide: ConfigService,
           useValue: mockConfigService,
+        },
+        {
+          provide: QuotaService,
+          useValue: mockQuotaService,
         },
       ],
     }).compile();

@@ -12,10 +12,12 @@ import {
 } from '@nestjs/common';
 import { TenantGuard } from './tenant.guard';
 import { TenantsService } from './tenants.service';
+import { UserTenantService } from '../users/user-tenant.service';
 
 describe('TenantGuard', () => {
   let guard: TenantGuard;
   let tenantsService: jest.Mocked<Pick<TenantsService, 'findOne' | 'getDefaultTenantId'>>;
+  let userTenantService: jest.Mocked<Pick<UserTenantService, 'findUserInTenant'>>;
 
   beforeEach(() => {
     tenantsService = {
@@ -23,7 +25,11 @@ describe('TenantGuard', () => {
       getDefaultTenantId: jest.fn().mockReturnValue('default-tenant'),
     };
 
-    guard = new TenantGuard(tenantsService as any);
+    userTenantService = {
+      findUserInTenant: jest.fn(),
+    };
+
+    guard = new TenantGuard(tenantsService as any, userTenantService as any);
   });
 
   afterEach(() => {
@@ -185,6 +191,68 @@ describe('TenantGuard', () => {
     const result = await guard.canActivate(ctx);
 
     expect(result).toBe(true);
+  });
+
+  // ── Builder cross-tenant access ──────────────────────────────────────
+
+  it('should allow builder key cross-tenant access to owned tenant', async () => {
+    const targetTenant = { id: 'tenant-target', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(targetTenant as any);
+    userTenantService.findUserInTenant.mockResolvedValue({
+      userId: 'user-1',
+      tenantId: 'tenant-target',
+      isActive: true,
+    } as any);
+
+    const request: Record<string, any> = {
+      headers: { 'x-tenant-id': 'tenant-target' },
+      context: {
+        tenantId: 'tenant-caller',
+        apiKeyId: 'key-builder',
+        apiKeyScopes: ['builder'],
+        userId: 'user-1',
+      },
+    };
+    const ctx = createMockContext(request);
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(userTenantService.findUserInTenant).toHaveBeenCalledWith('user-1', 'tenant-target');
+  });
+
+  it('should deny builder key cross-tenant access to non-owned tenant', async () => {
+    const targetTenant = { id: 'tenant-target', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(targetTenant as any);
+    userTenantService.findUserInTenant.mockResolvedValue(null);
+
+    const ctx = createMockContext({
+      headers: { 'x-tenant-id': 'tenant-target' },
+      context: {
+        tenantId: 'tenant-caller',
+        apiKeyId: 'key-builder',
+        apiKeyScopes: ['builder'],
+        userId: 'user-1',
+      },
+    });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('should deny builder key cross-tenant access when no userId', async () => {
+    const targetTenant = { id: 'tenant-target', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(targetTenant as any);
+
+    const ctx = createMockContext({
+      headers: { 'x-tenant-id': 'tenant-target' },
+      context: {
+        tenantId: 'tenant-caller',
+        apiKeyId: 'key-builder',
+        apiKeyScopes: ['builder'],
+        // no userId
+      },
+    });
+
+    await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
   });
 
   // ── Edge cases ────────────────────────────────────────────────────────

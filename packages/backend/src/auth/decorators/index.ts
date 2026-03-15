@@ -94,6 +94,21 @@ export const Auth = (...scopes: ApiKeyScope[]) => {
   );
 };
 
+/**
+ * Combined decorator for admin endpoints that also accept builder keys.
+ * Applies ApiKeyGuard + ScopesGuard with OR logic: admin OR builder scope.
+ *
+ * @example
+ * @AuthAdminOrBuilder()
+ * @Controller('api/v1/admin/tenants')
+ * export class AdminTenantsController { ... }
+ */
+export const AuthAdminOrBuilder = () =>
+  applyDecorators(
+    UseGuards(ApiKeyGuard, ScopesGuard),
+    RequireAnyScope('admin', 'builder'),
+  );
+
 // ============================================================================
 // PARAMETER DECORATORS
 // ============================================================================

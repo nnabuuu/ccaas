@@ -17,8 +17,11 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
-import { Auth, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
 import { ApiKeyService } from '../../auth/api-key.service';
 import { TenantsService } from '../../tenants/tenants.service';
@@ -35,7 +38,8 @@ const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 @Controller('api/v1/admin/api-keys')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminApiKeysController {
   constructor(
     private readonly apiKeyService: ApiKeyService,
@@ -96,7 +100,10 @@ export class AdminApiKeysController {
    * Get a single API key by ID
    */
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<ApiKeyResponse> {
+  async findOne(
+    @Param('id') id: string,
+    @Ctx() ctx: RequestContext,
+  ): Promise<ApiKeyResponse> {
     // Validate UUID format
     if (!UUID_REGEX.test(id)) {
       throw new BadRequestException('Invalid API key ID format');
@@ -105,6 +112,11 @@ export class AdminApiKeysController {
     const apiKey = await this.apiKeyService.findById(id);
     if (!apiKey) {
       throw new NotFoundException(`API key not found: ${id}`);
+    }
+
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && apiKey.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this API key');
     }
 
     return apiKey;
@@ -176,6 +188,11 @@ export class AdminApiKeysController {
       throw new NotFoundException(`API key not found: ${id}`);
     }
 
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && previous.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this API key');
+    }
+
     // Update the API key
     const updated = await this.apiKeyService.update(id, dto);
 
@@ -230,6 +247,11 @@ export class AdminApiKeysController {
       throw new NotFoundException(`API key not found: ${id}`);
     }
 
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this API key');
+    }
+
     if (existing.status === 'revoked') {
       throw new BadRequestException('API key is already revoked');
     }
@@ -273,6 +295,11 @@ export class AdminApiKeysController {
     const existing = await this.apiKeyService.findById(id);
     if (!existing) {
       throw new NotFoundException(`API key not found: ${id}`);
+    }
+
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this API key');
     }
 
     // Audit log BEFORE deletion

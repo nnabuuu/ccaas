@@ -350,8 +350,13 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Create execution record
+    // Use insert() + findOne() instead of create() + save() to avoid a TypeORM
+    // issue where dual @Column() / @JoinColumn({ name: 'taskId' }) on the
+    // execution entity causes the FK column to be null during save.
     const sessionId = `scheduled_${task.id}_${uuidv4().slice(0, 8)}`;
-    const execution = this.executionRepo.create({
+    const execId = uuidv4();
+    await this.executionRepo.insert({
+      id: execId,
       taskId: task.id,
       tenantId: task.tenantId,
       sessionId,
@@ -359,12 +364,17 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       startedAt: new Date(),
       attemptNumber: 1,
     });
-    const savedExec = await this.executionRepo.save(execution);
+    const savedExec = await this.executionRepo.findOneOrFail({ where: { id: execId } });
 
-    // Update task timestamps
-    task.lastRunAt = new Date();
-    task.nextRunAt = this.calculateNextRun(task.scheduleType, task.scheduleValue);
-    await this.taskRepo.save(task);
+    // Update task timestamps via update() instead of save() to avoid
+    // TypeORM cascading through the loaded `executions` relation, which
+    // triggers NOT NULL constraint failures on the dual-mapped taskId column.
+    const now = new Date();
+    await this.taskRepo.update(task.id, {
+      lastRunAt: now,
+      nextRunAt: this.calculateNextRun(task.scheduleType, task.scheduleValue),
+    });
+    task.lastRunAt = now;
 
     // Emit start event
     this.emitToRoom(task.tenantId, 'scheduled_task_started', {
@@ -390,7 +400,8 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
 
     while (attempt <= task.maxRetries + 1) {
       execution.attemptNumber = attempt;
-      await this.executionRepo.save(execution);
+      // Use update() instead of save() to avoid TypeORM dual-mapped taskId column issue
+      await this.executionRepo.update(execution.id, { attemptNumber: attempt });
 
       try {
         // Create user message record for persistence
@@ -423,18 +434,29 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
               ? 'timeout'
               : 'failed';
 
-        // Update execution
+        // Update execution — use update() to avoid TypeORM dual-mapped taskId issue
+        const completedAt = new Date();
+        const durationMs = Date.now() - execution.startedAt.getTime();
+        const errorMessage = status !== 'success'
+          ? `CLI exited with code ${result.exitCode}`
+          : undefined;
+
+        await this.executionRepo.update(execution.id, {
+          status,
+          completedAt,
+          durationMs,
+          resultText: result.resultText,
+          tokenUsage: result.tokenUsage,
+          ...(errorMessage && { errorMessage }),
+        });
+
+        // Keep local object in sync
         execution.status = status;
-        execution.completedAt = new Date();
-        execution.durationMs = Date.now() - execution.startedAt.getTime();
+        execution.completedAt = completedAt;
+        execution.durationMs = durationMs;
         execution.resultText = result.resultText;
         execution.tokenUsage = result.tokenUsage;
-
-        if (status !== 'success') {
-          execution.errorMessage = `CLI exited with code ${result.exitCode}`;
-        }
-
-        await this.executionRepo.save(execution);
+        if (errorMessage) execution.errorMessage = errorMessage;
 
         // Emit completion event
         this.emitToRoom(task.tenantId, 'scheduled_task_complete', {
@@ -469,12 +491,20 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       }
     }
 
-    // All retries exhausted
+    // All retries exhausted — use update() to avoid TypeORM dual-mapped taskId issue
+    const failedAt = new Date();
+    const failDurationMs = Date.now() - execution.startedAt.getTime();
+    const failErrorMessage = lastError || 'All retry attempts exhausted';
+    await this.executionRepo.update(execution.id, {
+      status: 'failed' as ExecutionStatus,
+      completedAt: failedAt,
+      durationMs: failDurationMs,
+      errorMessage: failErrorMessage,
+    });
     execution.status = 'failed';
-    execution.completedAt = new Date();
-    execution.durationMs = Date.now() - execution.startedAt.getTime();
-    execution.errorMessage = lastError || 'All retry attempts exhausted';
-    await this.executionRepo.save(execution);
+    execution.completedAt = failedAt;
+    execution.durationMs = failDurationMs;
+    execution.errorMessage = failErrorMessage;
 
     this.emitToRoom(task.tenantId, 'scheduled_task_complete', {
       taskId: task.id,

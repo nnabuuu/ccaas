@@ -142,6 +142,36 @@ export class RateLimitedException extends ProtocolHttpException {
 }
 
 /**
+ * Quota exceeded error (429)
+ */
+export class QuotaExceededException extends ProtocolHttpException {
+  public readonly quota: {
+    limit: number;
+    used: number;
+    period: string;
+    resetsAt: string;
+  };
+
+  constructor(quota: { limit: number; used: number; period: string; resetsAt: string }) {
+    super(
+      'QUOTA_EXCEEDED',
+      `Monthly token quota exceeded (${quota.limit.toLocaleString()} tokens)`,
+      false,
+      false,
+    );
+    this.name = 'QuotaExceededException';
+    this.quota = quota;
+  }
+
+  override toResponse(path?: string, requestId?: string) {
+    return {
+      ...super.toResponse(path, requestId),
+      quota: this.quota,
+    };
+  }
+}
+
+/**
  * Timeout error (504)
  */
 export class TimeoutException extends ProtocolHttpException {

@@ -36,7 +36,8 @@ export type AdminAction =
   | 'sessionTemplate.sync'
   | 'mcp.create'
   | 'mcp.update'
-  | 'mcp.delete';
+  | 'mcp.delete'
+  | 'builderUser.create';
 
 export type TargetType =
   | 'skill'
@@ -44,7 +45,8 @@ export type TargetType =
   | 'apikey'
   | 'tenant'
   | 'alert'
-  | 'mcp-server';
+  | 'mcp-server'
+  | 'user';
 
 export interface AuditMetadata {
   previousValue?: unknown;

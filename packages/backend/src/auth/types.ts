@@ -21,6 +21,7 @@ export type ApiKeyScope =
   | 'mcp:write'
   | 'chat'
   | 'analytics:read'
+  | 'builder'
   | 'admin';
 
 export type ApiKeyStatus = 'active' | 'revoked' | 'expired';
@@ -95,5 +96,10 @@ export const ALL_SCOPES: ApiKeyScope[] = [
   'mcp:write',
   'chat',
   'analytics:read',
+  'builder',
   'admin',
 ];
+
+export const BUILDER_IMPLIED_SCOPES: ApiKeyScope[] = ALL_SCOPES.filter(
+  (s) => s !== 'admin' && s !== 'builder',
+);

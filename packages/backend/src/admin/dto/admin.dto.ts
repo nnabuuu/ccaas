@@ -25,6 +25,7 @@ export interface DashboardSummary {
   activeApiKeys: number;
   totalSkills: number;
   publishedSkills: number;
+  callerScope: 'admin' | 'builder';
 }
 
 export interface RecentSession {

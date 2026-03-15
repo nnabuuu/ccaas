@@ -18,9 +18,12 @@ import {
   HttpStatus,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
 import { IsString, IsNotEmpty } from 'class-validator';
-import { Auth, Ctx } from '../../auth/decorators';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { RequestContext } from '../../auth/types';
 import { McpPoolService } from '../../mcp/mcp-pool.service';
 import type { CreateMcpServerDto as ServiceCreateDto } from '../../mcp/mcp-pool.service';
@@ -42,7 +45,8 @@ class AdminCreateMcpServerBody extends CreateMcpServerDto {
 }
 
 @Controller('api/v1/admin/mcp-servers')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminMcpServersController {
   constructor(
     private readonly mcpPool: McpPoolService,
@@ -124,7 +128,10 @@ export class AdminMcpServersController {
    * Falls back to DB for disabled/inactive servers.
    */
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<McpServer> {
+  async findOne(
+    @Param('id') id: string,
+    @Ctx() ctx: RequestContext,
+  ): Promise<McpServer> {
     if (!UUID_REGEX.test(id)) {
       throw new BadRequestException('Invalid MCP server ID format');
     }
@@ -133,6 +140,12 @@ export class AdminMcpServersController {
     if (!server) {
       throw new NotFoundException(`MCP server not found: ${id}`);
     }
+
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && server.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this MCP server');
+    }
+
     return server;
   }
 
@@ -157,6 +170,11 @@ export class AdminMcpServersController {
     const existing = await this.mcpPool.findById(id);
     if (!existing) {
       throw new NotFoundException(`MCP server not found: ${id}`);
+    }
+
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && existing.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this MCP server');
     }
 
     const updated = await this.mcpPool.update(existing.tenantId, id, dto);
@@ -201,6 +219,11 @@ export class AdminMcpServersController {
     const server = await this.mcpPool.findById(id);
     if (!server) {
       throw new NotFoundException(`MCP server not found: ${id}`);
+    }
+
+    // Builder keys: verify tenant ownership
+    if (!isAdminScope(ctx) && server.tenantId !== ctx.tenantId) {
+      throw new ForbiddenException('Access denied to this MCP server');
     }
 
     const { tenantId, name } = server;

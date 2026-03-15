@@ -21,6 +21,7 @@ import { ApiKey } from './entities/api-key.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { TenantsService } from '../tenants/tenants.service';
 import { UserTenantService } from '../users/user-tenant.service';
+import { UsersService } from '../users/users.service';
 import type {
   ApiKeyScope,
   RateLimitEntry,
@@ -29,6 +30,7 @@ import type {
 import {
   API_KEY_PREFIX,
   DEFAULT_SCOPES,
+  BUILDER_IMPLIED_SCOPES,
 } from './types';
 import {
   SessionExpiredException,
@@ -54,6 +56,7 @@ export class ApiKeyService implements OnModuleInit {
     @Inject(forwardRef(() => TenantsService))
     private readonly tenantsService: TenantsService,
     private readonly userTenantService: UserTenantService,
+    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
     this.enableRateLimiting = this.configService.get('auth.enableRateLimiting', true);
@@ -146,6 +149,15 @@ export class ApiKeyService implements OnModuleInit {
     const rawKey = isValidOverride ? rawKeyOverride! : this.generateRawKey(tenant.slug);
     const keyHash = this.hashKey(rawKey);
 
+    // Validate userId references an existing user
+    if (dto.userId) {
+      try {
+        await this.usersService.findOne(dto.userId);
+      } catch {
+        throw new NotFoundException(`User not found: ${dto.userId}`);
+      }
+    }
+
     const apiKey = this.apiKeyRepository.create({
       tenantId: tenant.id,
       name: dto.name,
@@ -157,6 +169,7 @@ export class ApiKeyService implements OnModuleInit {
       status: 'active',
       expiresAt: dto.expiresAt || null,
       metadata: dto.metadata || null,
+      userId: dto.userId || null,
     });
 
     const saved = await this.apiKeyRepository.save(apiKey);
@@ -304,8 +317,11 @@ export class ApiKeyService implements OnModuleInit {
       if (apiKey.userId && user) {
         userTenant = await this.userTenantService.findUserInTenant(apiKey.userId, tenant.id);
 
-        // Check if user is active in this tenant
+        // Builder must be active in home tenant; cross-tenant checked per-request in TenantGuard
         if (!userTenant || !userTenant.isActive) {
+          if (apiKey.scopes?.includes('builder')) {
+            throw new SessionExpiredException('Builder user is not active in the key\'s home tenant');
+          }
           throw new SessionExpiredException('User is not active in this tenant');
         }
       }
@@ -397,6 +413,8 @@ export class ApiKeyService implements OnModuleInit {
     if (!scopes) return false;
     // Admin has all permissions
     if (scopes.includes('admin')) return true;
+    // Builder implies common operational scopes
+    if (scopes.includes('builder') && BUILDER_IMPLIED_SCOPES.includes(requiredScope)) return true;
     return scopes.includes(requiredScope);
   }
 
@@ -407,7 +425,7 @@ export class ApiKeyService implements OnModuleInit {
     if (!scopes) return false;
     // Admin has all permissions
     if (scopes.includes('admin')) return true;
-    return requiredScopes.every((s) => scopes.includes(s));
+    return requiredScopes.every((s) => this.hasScope(scopes, s));
   }
 
   /**
@@ -417,7 +435,7 @@ export class ApiKeyService implements OnModuleInit {
     if (!scopes) return false;
     // Admin has all permissions
     if (scopes.includes('admin')) return true;
-    return requiredScopes.some((s) => scopes.includes(s));
+    return requiredScopes.some((s) => this.hasScope(scopes, s));
   }
 
   // ==========================================================================

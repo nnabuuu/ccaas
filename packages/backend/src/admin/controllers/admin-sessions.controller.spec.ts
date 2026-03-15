@@ -11,8 +11,17 @@ import { AdminSessionsController } from './admin-sessions.controller';
 import { SessionManagerService, PaginatedSessions } from '../services/session-manager.service';
 import { SessionQueryDto, SessionListItem } from '../dto/admin.dto';
 import { ApiKeyService } from '../../auth/api-key.service';
+import { UserTenantService } from '../../users/user-tenant.service';
+import type { RequestContext } from '../../auth/types';
 
 describe('AdminSessionsController', () => {
+  const adminCtx = {
+    tenantId: 'tenant-a',
+    apiKeyScopes: ['admin'],
+    requestId: 'req-1',
+    timestamp: new Date(),
+  } as unknown as RequestContext;
+
   let controller: AdminSessionsController;
   let sessionManagerService: jest.Mocked<SessionManagerService>;
 
@@ -57,6 +66,12 @@ describe('AdminSessionsController', () => {
             validateApiKey: jest.fn(),
           },
         },
+        {
+          provide: UserTenantService,
+          useValue: {
+            findUserInTenant: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -75,7 +90,7 @@ describe('AdminSessionsController', () => {
       sessionManagerService.getSessions = jest.fn().mockResolvedValue(mockResult);
 
       const query: SessionQueryDto = { page: 1, pageSize: 50 };
-      const result = await controller.getSessions(query);
+      const result = await controller.getSessions(query, adminCtx);
 
       expect(result).toEqual(mockResult);
       expect(result.data).toHaveLength(2);
@@ -98,7 +113,7 @@ describe('AdminSessionsController', () => {
         page: 2,
         pageSize: 25,
       };
-      await controller.getSessions(query);
+      await controller.getSessions(query, adminCtx);
 
       expect(sessionManagerService.getSessions).toHaveBeenCalledWith(query);
     });
@@ -112,7 +127,7 @@ describe('AdminSessionsController', () => {
       });
 
       const query: SessionQueryDto = { offset: 0, limit: 20 };
-      await controller.getSessions(query);
+      await controller.getSessions(query, adminCtx);
 
       expect(sessionManagerService.getSessions).toHaveBeenCalledWith(query);
     });

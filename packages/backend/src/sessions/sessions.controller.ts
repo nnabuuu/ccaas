@@ -21,6 +21,7 @@ import {
   StreamableFile,
   Header,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -51,6 +52,7 @@ import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
 import type { SessionEvent } from '../common/interfaces';
 import { v4 as uuidv4 } from 'uuid';
+import { QuotaGuard } from '../admin/guards/quota.guard';
 
 @ApiTags('sessions')
 @Controller('api/v1/sessions')
@@ -180,6 +182,7 @@ POST /api/v1/sessions/:sessionId/cancel
    * buffered events since sequence N.
    */
   @Post(':sessionId/messages')
+  @UseGuards(QuotaGuard)
   @Header('Content-Type', 'text/event-stream')
   @Header('Cache-Control', 'no-cache')
   @Header('Connection', 'keep-alive')

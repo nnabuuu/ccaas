@@ -4,12 +4,15 @@
  * Provides REST endpoints for monitoring SDK connections.
  */
 
-import { Controller, Get } from '@nestjs/common';
-import { Auth } from '../../auth/decorators';
+import { Controller, Get, UseGuards } from '@nestjs/common';
+import { AuthAdminOrBuilder, Ctx } from '../../auth/decorators';
+import { RequestContext } from '../../auth/types';
+import { AdminTenantAccessGuard, isAdminScope } from '../guards/admin-tenant-access.guard';
 import { SessionsGateway } from '../../sessions/sessions.gateway';
 
 @Controller('api/v1/admin/sdk-connections')
-@Auth('admin')
+@AuthAdminOrBuilder()
+@UseGuards(AdminTenantAccessGuard)
 export class AdminSdkController {
   constructor(private readonly sessionsGateway: SessionsGateway) {}
 
@@ -19,8 +22,13 @@ export class AdminSdkController {
    * Return all currently active SDK connections with metadata
    */
   @Get()
-  async getConnections() {
-    const connections = this.sessionsGateway.getSdkConnections();
+  async getConnections(@Ctx() ctx: RequestContext) {
+    let connections = this.sessionsGateway.getSdkConnections();
+
+    // Builder keys: filter to own tenant only
+    if (!isAdminScope(ctx)) {
+      connections = connections.filter((c) => c.tenantId === ctx.tenantId);
+    }
 
     return {
       total: connections.length,
