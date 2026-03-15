@@ -117,13 +117,6 @@ curl -X POST http://localhost:3001/api/v1/skills \
 | `triggers` | 否 | 触发条件数组 |
 | `allowedTools` | 否 | 允许使用的 MCP 工具列表 |
 
-### 方式 B：通过 CLI 导入
-
-```bash
-cd packages/backend
-npm run skill:import -- my-solution
-```
-
 ## Step 3: 创建 API Key
 
 为 tenant 创建供终端用户或前端应用使用的 API key。
@@ -243,6 +236,15 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | POST | `/api/v1/sessions/:id/messages` | 发送消息（SSE） |
 | GET | `/api/v1/sessions/:id` | 获取状态 |
 | POST | `/api/v1/sessions/:id/cancel` | 取消 turn |
+
+### Solutions API（Admin/Builder）
+
+> 这些端点位于 admin 路径下，需要 `admin` 或 `builder` scope。
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| GET | `/api/v1/admin/solutions/status` | 获取 loader 状态 |
+| POST | `/api/v1/admin/solutions/import` | 从 config body 导入 solution |
 
 ## 常见问题
 

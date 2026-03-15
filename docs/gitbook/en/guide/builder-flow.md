@@ -117,13 +117,6 @@ curl -X POST http://localhost:3001/api/v1/skills \
 | `triggers` | No | Trigger condition array |
 | `allowedTools` | No | Allowed MCP tools |
 
-### Option B: Import via CLI
-
-```bash
-cd packages/backend
-npm run skill:import -- my-solution
-```
-
 ## Step 3: Create API Key
 
 Create API keys for end users or frontend applications.
@@ -243,6 +236,15 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 | POST | `/api/v1/sessions/:id/messages` | Send message (SSE) |
 | GET | `/api/v1/sessions/:id` | Get status |
 | POST | `/api/v1/sessions/:id/cancel` | Cancel turn |
+
+### Solutions API (Admin/Builder)
+
+> These endpoints are under the admin path and require `admin` or `builder` scope.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/v1/admin/solutions/status` | Get loader status |
+| POST | `/api/v1/admin/solutions/import` | Import solution from config body |
 
 ## Troubleshooting
 
