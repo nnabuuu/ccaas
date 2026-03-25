@@ -1,13 +1,23 @@
 import { useState, useMemo, useCallback } from 'react'
 import { ChatInterface } from '@/components/ChatInterface'
 import { ChatSidebar } from '@/components/ChatSidebar'
+import { ApiKeyLogin } from '@/components/ApiKeyLogin'
 import { useSessionList } from '@/hooks/useSessionList'
+import { useAuth } from '@/hooks/useAuth'
 import type { SessionContextChip } from '@/types/session-context'
 import type { QuickSuggestion } from '@/types/chat'
+import { getUrlParam } from '@/utils/url'
 
-function getUrlParam(key: string): string | null {
-  const params = new URLSearchParams(window.location.search)
-  return params.get(key)
+// Delay before refreshing session list after creation/message
+const SESSION_REFRESH_DELAY_MS = 1000
+const FIRST_MESSAGE_REFRESH_DELAY_MS = 2000
+
+function isValidChip(v: unknown): v is SessionContextChip {
+  return typeof v === 'object' && v !== null && typeof (v as Record<string, unknown>).key === 'string' && typeof (v as Record<string, unknown>).label === 'string'
+}
+
+function isValidSuggestion(v: unknown): v is QuickSuggestion {
+  return typeof v === 'object' && v !== null && typeof (v as Record<string, unknown>).label === 'string' && typeof (v as Record<string, unknown>).prompt === 'string'
 }
 
 export default function App() {
@@ -15,55 +25,63 @@ export default function App() {
   const template = getUrlParam('template') ?? undefined
   const serverUrl = getUrlParam('server') ?? 'http://localhost:3001'
   const userId = getUrlParam('userId') ?? undefined
-  const apiKey = getUrlParam('apiKey') ?? undefined
+  const chipsParam = getUrlParam('chips')
+  const suggestionsParam = getUrlParam('suggestions')
+
+  const { apiKey, login, logout } = useAuth()
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sessionId, setSessionId] = useState<string | undefined>(undefined)
 
-  const { sessions, refresh } = useSessionList(serverUrl, tenantId, userId, apiKey)
+  const { sessions, refresh } = useSessionList(serverUrl, apiKey)
+
+  // Hint for sidebar: show last 4 chars of key
+  const apiKeyHint = useMemo(() => {
+    if (!apiKey) return undefined
+    if (apiKey.length <= 6) return `sk-...${apiKey.slice(-2)}`
+    return `sk-...${apiKey.slice(-4)}`
+  }, [apiKey])
 
   // Demo context chips — in production these come from session template
   const contextChips = useMemo<SessionContextChip[]>(() => {
-    const chips = getUrlParam('chips')
-    if (chips) {
+    if (chipsParam) {
       try {
-        return JSON.parse(chips) as SessionContextChip[]
+        const parsed: unknown = JSON.parse(chipsParam)
+        if (Array.isArray(parsed) && parsed.every(isValidChip)) return parsed
       } catch {
         // fall through to defaults
       }
     }
     return [
-      { key: 'class', label: '一班', active: true },
-      { key: 'subject', label: '数学' },
-      { key: 'school', label: '示范学校' },
+      { key: 'tenant', label: tenantId, active: true },
     ]
-  }, [])
+  }, [tenantId, chipsParam])
 
   // Demo suggestions — in production these come from session template
   const quickSuggestions = useMemo<QuickSuggestion[]>(() => {
-    const suggestions = getUrlParam('suggestions')
-    if (suggestions) {
+    if (suggestionsParam) {
       try {
-        return JSON.parse(suggestions) as QuickSuggestion[]
+        const parsed: unknown = JSON.parse(suggestionsParam)
+        if (Array.isArray(parsed) && parsed.every(isValidSuggestion)) return parsed
       } catch {
         // fall through to defaults
       }
     }
     return [
-      { label: '周报', prompt: '生成本周报告', category: 'daily', score: 10 },
-      { label: '分析', prompt: '分析当前状态', category: 'daily', score: 8 },
-      { label: '规划', prompt: '帮我做计划', category: 'teaching', score: 6 },
-      { label: '回顾', prompt: '回顾近期活动', category: 'admin', score: 4 },
+      { label: '总结', prompt: '总结当前进展', category: 'general', score: 10 },
+      { label: '分析', prompt: '分析当前状态', category: 'general', score: 8 },
+      { label: '规划', prompt: '帮我做计划', category: 'general', score: 6 },
+      { label: '帮助', prompt: '有哪些功能可以用？', category: 'general', score: 4 },
     ]
-  }, [])
+  }, [suggestionsParam])
 
   const handleNewChat = useCallback(() => {
     // Generate fresh session ID to avoid localStorage fallback to old session
     const freshId = `conv_${crypto.randomUUID()}`
     setSessionId(freshId)
     setMobileSidebarOpen(false)
-    setTimeout(() => refresh(), 1000)
+    setTimeout(() => refresh(), SESSION_REFRESH_DELAY_MS)
   }, [refresh])
 
   const handleSelectSession = useCallback((sid: string) => {
@@ -77,26 +95,31 @@ export default function App() {
 
   // After first message is sent, refresh session list
   const handleFirstMessage = useCallback(() => {
-    setTimeout(() => refresh(), 2000)
+    setTimeout(() => refresh(), FIRST_MESSAGE_REFRESH_DELAY_MS)
   }, [refresh])
+
+  // No API key → show login
+  if (!apiKey) {
+    return <ApiKeyLogin onLogin={login} serverUrl={serverUrl} />
+  }
 
   // Key forces full remount on session switch
   const chatKey = sessionId ?? 'new'
 
   return (
     <div className="h-screen flex">
-      {userId && (
-        <ChatSidebar
-          sessions={sessions}
-          currentSessionId={sessionId}
-          onNewChat={handleNewChat}
-          onSelectSession={handleSelectSession}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-        />
-      )}
+      <ChatSidebar
+        sessions={sessions}
+        currentSessionId={sessionId}
+        onNewChat={handleNewChat}
+        onSelectSession={handleSelectSession}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+        onLogout={logout}
+        apiKeyHint={apiKeyHint}
+      />
       <div className="flex-1 flex flex-col min-w-0">
         <ChatInterface
           key={chatKey}
@@ -108,7 +131,7 @@ export default function App() {
           userId={userId}
           sessionId={sessionId}
           apiKey={apiKey}
-          onMenuClick={userId ? handleMenuClick : undefined}
+          onMenuClick={handleMenuClick}
           onMessageSent={handleFirstMessage}
         />
       </div>

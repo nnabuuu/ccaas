@@ -534,7 +534,7 @@ Solution 可以通过 `customBlockRenderers` 处理自定义 ContentBlock 类型
 
 ### 9.3 Sidebar 布局
 
-当 URL 传入 `?userId=xxx` 时，App.tsx 启用 Sidebar 模式：
+App.tsx 登录后始终显示 Sidebar（API key 认证通过后进入主界面）：
 
 ```
 ┌──────────────────────────────────────────────┐

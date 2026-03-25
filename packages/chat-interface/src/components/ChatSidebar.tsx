@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 
 export interface SidebarSession {
   sessionId: string
@@ -17,6 +17,8 @@ export interface ChatSidebarProps {
   onToggleCollapse?: () => void
   mobileOpen?: boolean
   onMobileClose?: () => void
+  onLogout?: () => void
+  apiKeyHint?: string
 }
 
 /** Group sessions by relative date */
@@ -65,8 +67,31 @@ export function ChatSidebar({
   onToggleCollapse,
   mobileOpen = false,
   onMobileClose,
+  onLogout,
+  apiKeyHint,
 }: ChatSidebarProps) {
   const grouped = useMemo(() => groupByDate(sessions), [sessions])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Close popover on outside click or Escape
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', handleClick)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [menuOpen])
 
   // Sidebar content (shared between desktop and mobile)
   const sidebarContent = (
@@ -156,6 +181,52 @@ export function ChatSidebar({
               &#9776;
             </button>
           ))}
+        </div>
+      )}
+
+      {/* User menu */}
+      {onLogout && (
+        <div className="relative border-t border-ck-b1" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="用户菜单"
+            aria-expanded={menuOpen}
+            aria-haspopup="true"
+            className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-ck-bg2 transition-colors ${
+              collapsed ? 'justify-center' : ''
+            }`}
+            title={apiKeyHint ?? 'API Key'}
+          >
+            {/* Avatar circle */}
+            <span className="shrink-0 w-7 h-7 rounded-full bg-ck-bg3 flex items-center justify-center text-xs text-ck-t2">
+              K
+            </span>
+            {!collapsed && (
+              <span className="truncate text-[13px] text-ck-t2">
+                {apiKeyHint ?? 'API Key'}
+              </span>
+            )}
+          </button>
+
+          {/* Popover menu */}
+          {menuOpen && (
+            <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border border-ck-b1 shadow-lg z-50">
+              {apiKeyHint && !collapsed && (
+                <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
+                  {apiKeyHint}
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setMenuOpen(false)
+                  onLogout()
+                }}
+                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg2 transition-colors"
+              >
+                断开连接
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

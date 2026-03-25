@@ -14,8 +14,6 @@ interface UseSessionListReturn {
  */
 export function useSessionList(
   serverUrl: string,
-  tenantId: string,
-  userId?: string,
   apiKey?: string,
 ): UseSessionListReturn {
   const [sessions, setSessions] = useState<SidebarSession[]>([])
@@ -23,7 +21,7 @@ export function useSessionList(
   const abortRef = useRef<AbortController | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!userId) {
+    if (!apiKey) {
       setSessions([])
       return
     }
@@ -34,7 +32,7 @@ export function useSessionList(
 
     setIsLoading(true)
     try {
-      const url = `${serverUrl}/api/v1/user-sessions?userId=${encodeURIComponent(userId)}&tenantId=${encodeURIComponent(tenantId)}&pageSize=30`
+      const url = `${serverUrl}/api/v1/conversations?limit=30`
       const res = await fetch(url, {
         signal: controller.signal,
         headers: { ...buildAuthHeaders(apiKey) },
@@ -44,14 +42,14 @@ export function useSessionList(
         return
       }
       const json = await res.json()
-      setSessions(json.data ?? [])
+      setSessions(json.conversations ?? [])
     } catch (err: unknown) {
       if (err instanceof DOMException && err.name === 'AbortError') return
       setSessions([])
     } finally {
       setIsLoading(false)
     }
-  }, [serverUrl, tenantId, userId, apiKey])
+  }, [serverUrl, apiKey])
 
   // Initial load
   useEffect(() => {

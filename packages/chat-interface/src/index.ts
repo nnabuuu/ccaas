@@ -26,6 +26,8 @@ export { ChatInterfaceProvider, useChatInterfaceContext } from './context/ChatIn
 export type { ChatInterfaceProviderProps, ChatInterfaceContextValue } from './context/ChatInterfaceContext'
 
 // === Hooks ===
+export { useAuth } from './hooks/useAuth'
+export type { UseAuthReturn } from './hooks/useAuth'
 export { useSessionList } from './hooks/useSessionList'
 export { useSessionContext } from './hooks/useSessionContext'
 export { useQuickSuggestions } from './hooks/useQuickSuggestions'
