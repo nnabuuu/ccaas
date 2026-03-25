@@ -37,6 +37,7 @@ describe('SchedulerService', () => {
     taskRepo = {
       create: jest.fn().mockImplementation((data) => ({ ...data, id: 'new-task-id' })),
       save: jest.fn().mockImplementation((data) => Promise.resolve(data)),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn().mockResolvedValue(null),
       findAndCount: jest.fn().mockResolvedValue([[], 0]),
@@ -45,6 +46,19 @@ describe('SchedulerService', () => {
     executionRepo = {
       create: jest.fn().mockImplementation((data) => ({ ...data, id: 'exec-1' })),
       save: jest.fn().mockImplementation((data) => Promise.resolve(data)),
+      insert: jest.fn().mockResolvedValue({ generatedMaps: [], identifiers: [] }),
+      findOneOrFail: jest.fn().mockImplementation((opts) =>
+        Promise.resolve({
+          id: opts?.where?.id || 'exec-1',
+          taskId: 'task-1',
+          tenantId: 'tenant-1',
+          sessionId: 'scheduled_task-1_test',
+          status: 'running',
+          startedAt: new Date(),
+          attemptNumber: 1,
+        }),
+      ),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
       count: jest.fn().mockResolvedValue(0),
       findOne: jest.fn().mockResolvedValue(null),
       findAndCount: jest.fn().mockResolvedValue([[], 0]),
@@ -233,12 +247,12 @@ describe('SchedulerService', () => {
 
       const result = await service.trigger('task-1');
 
-      expect(executionRepo.create).toHaveBeenCalledWith(expect.objectContaining({
+      expect(executionRepo.insert).toHaveBeenCalledWith(expect.objectContaining({
         taskId: 'task-1',
         tenantId: 'tenant-1',
         status: 'running',
       }));
-      expect(executionRepo.save).toHaveBeenCalled();
+      expect(executionRepo.findOneOrFail).toHaveBeenCalled();
     });
 
     it('should reject when max concurrency reached', async () => {

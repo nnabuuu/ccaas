@@ -239,12 +239,13 @@ describe('useAgentConnection - tenant-scoped session storage', () => {
       )
 
       expect(result.current.sessionId).toMatch(/^lpd_/)
-      expect(result.current.connected).toBe(false)
+      // Default transport is 'sse', which is always connected
+      expect(result.current.connected).toBe(true)
     })
 
-    it('should still auto-connect by default', () => {
+    it('should still auto-connect by default with socket transport', () => {
       renderHook(() =>
-        useAgentConnection({ tenantId: 'tenant-1' }),
+        useAgentConnection({ tenantId: 'tenant-1', transport: 'socket' }),
       )
 
       expect(mockIo).toHaveBeenCalledWith('/', {

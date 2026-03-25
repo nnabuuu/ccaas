@@ -102,9 +102,19 @@ export function useTaskTracking(options: UseTaskTrackingOptions): UseTaskTrackin
   // Track completed/failed tasks in history
   useEffect(() => {
     setTaskHistory(prev => {
-      const updated = new Map(prev)
       const now = Date.now()
+      let hasNew = false
 
+      for (const task of currentTasks) {
+        if ((task.status === 'completed' || task.status === 'failed') && !prev.has(task.id)) {
+          hasNew = true
+          break
+        }
+      }
+
+      if (!hasNew) return prev // Same reference → no re-render
+
+      const updated = new Map(prev)
       currentTasks.forEach(task => {
         if (task.status === 'completed' || task.status === 'failed') {
           if (!updated.has(task.id)) {

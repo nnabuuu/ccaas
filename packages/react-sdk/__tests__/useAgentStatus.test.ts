@@ -24,6 +24,9 @@ function createMockConnection(): UseAgentConnectionReturn {
     connect: vi.fn(),
     disconnect: vi.fn(),
     startNewConversation: vi.fn(),
+    switchSession: vi.fn(),
+    sessionReady: false,
+    markSessionReady: vi.fn(),
   }
 }
 
@@ -38,6 +41,9 @@ function createSSEConnection(): UseAgentConnectionReturn {
     connect: vi.fn(),
     disconnect: vi.fn(),
     startNewConversation: vi.fn(),
+    switchSession: vi.fn(),
+    sessionReady: true,
+    markSessionReady: vi.fn(),
   }
 }
 

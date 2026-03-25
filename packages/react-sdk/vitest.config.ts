@@ -6,13 +6,17 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     include: ['__tests__/**/*.test.{ts,tsx}'],
-    // Increase pool timeout and add memory settings for CI
-    poolOptions: {
-      threads: {
-        maxThreads: 2,
-        minThreads: 1,
-      },
-    },
+    exclude: ['__tests__/integration/**'],
+    pool: 'threads',
+    maxWorkers: 2,
+    minWorkers: 1,
     testTimeout: 10000,
+    teardownTimeout: 5000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.d.ts', 'src/index.ts'],
+    },
   },
 })

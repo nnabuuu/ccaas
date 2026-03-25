@@ -208,7 +208,7 @@ describe('useAgentChat', () => {
       expect.objectContaining({
         field: 'title',
         value: 'New Title',
-        preview: 'Title updated',
+        preview: 'Update title',
       }),
     )
   })

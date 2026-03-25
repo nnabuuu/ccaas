@@ -107,9 +107,9 @@ describe('useAgentConnection - startNewConversation', () => {
     expect(lastCall[1]).toBe(result.current.sessionId)
   })
 
-  it('should disconnect the existing socket', () => {
+  it('should disconnect the existing socket (socket transport)', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ tenantId: 'tenant-1', transport: 'socket' }),
     )
 
     act(() => {
@@ -119,9 +119,9 @@ describe('useAgentConnection - startNewConversation', () => {
     expect(mockSocket.disconnect).toHaveBeenCalled()
   })
 
-  it('should reconnect with a new socket', () => {
+  it('should reconnect with a new socket (socket transport)', () => {
     const { result } = renderHook(() =>
-      useAgentConnection({ tenantId: 'tenant-1' }),
+      useAgentConnection({ tenantId: 'tenant-1', transport: 'socket' }),
     )
 
     // Initial connect call

@@ -27,6 +27,9 @@ function createMockConnection(overrides: Partial<UseAgentConnectionReturn> = {})
     connect: vi.fn(),
     disconnect: vi.fn(),
     startNewConversation: vi.fn(),
+    switchSession: vi.fn(),
+    sessionReady: false,
+    markSessionReady: vi.fn(),
     ...overrides,
   }
 }
@@ -254,6 +257,13 @@ describe('useAgentChat - message history auto-loading', () => {
         { id: 'msg-2', role: 'assistant', content: 'Old reply', createdAt: '2026-01-01T00:00:01Z' },
       ]
 
+      // Create an empty SSE stream for the POST /messages response
+      const emptySseStream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.close()
+        },
+      })
+
       fetchMock.mockImplementation((url: string, options?: RequestInit) => {
         if (typeof url === 'string' && url.includes('/messages') && (!options || options.method !== 'POST')) {
           return Promise.resolve({
@@ -261,7 +271,8 @@ describe('useAgentChat - message history auto-loading', () => {
             json: () => Promise.resolve({ messages: historyMessages }),
           })
         }
-        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+        // POST /messages needs a body (SSE stream)
+        return Promise.resolve({ ok: true, body: emptySseStream })
       })
 
       const connection = createMockConnection()

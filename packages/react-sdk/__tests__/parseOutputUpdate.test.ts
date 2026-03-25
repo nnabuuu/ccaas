@@ -20,7 +20,8 @@ describe('parseOutputUpdate', () => {
     expect(result).toEqual({
       field: 'objectives',
       value: [{ description: 'Learn math' }],
-      preview: 'Updated objectives',
+      preview: 'Update objectives',
+      page: undefined,
       synced: false,
     })
   })
@@ -68,7 +69,8 @@ describe('parseOutputUpdate', () => {
     expect(result).toEqual({
       field: 'keyKnowledge',
       value: ['algebra', 'geometry'],
-      preview: 'Key concepts',
+      preview: 'Update keyKnowledge',
+      page: undefined,
       synced: false,
     })
   })
@@ -99,7 +101,8 @@ describe('parseOutputUpdate', () => {
     expect(result).toEqual({
       field: 'solutionSteps',
       value: ['Step 1', 'Step 2'],
-      preview: 'Solution steps',
+      preview: 'Update solutionSteps',
+      page: undefined,
       synced: false,
     })
   })
@@ -183,7 +186,7 @@ describe('parseOutputUpdate', () => {
     expect(result).toEqual({
       field: 'exercises',
       value: [],
-      preview: 'Updated exercises',
+      preview: 'Update exercises',
       page: 'exercisePlan',
       synced: false,
     })

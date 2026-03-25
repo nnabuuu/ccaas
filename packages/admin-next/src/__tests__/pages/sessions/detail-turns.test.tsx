@@ -145,7 +145,7 @@ describe('SessionDetailPage – turns tab', () => {
   it('shows "Turns" tab without count when no turns', () => {
     setupMocks({ turns: [] })
     render(<SessionDetailPage />)
-    expect(screen.getByRole('tab', { name: 'Turns' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Turns/ })).toBeInTheDocument()
   })
 
   it('renders turn summaries when Turns tab is clicked', async () => {

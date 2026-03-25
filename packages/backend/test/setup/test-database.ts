@@ -24,6 +24,9 @@ import { SessionAlert } from '../../src/admin/entities/session-alert.entity';
 import { AdminAuditLog } from '../../src/admin/entities/admin-audit-log.entity';
 import { Skill } from '../../src/skills/entities/skill.entity';
 import { SkillVersion } from '../../src/skills/entities/skill-version.entity';
+import { SkillFile } from '../../src/skills/entities/skill-file.entity';
+import { SkillVersionFile } from '../../src/skills/entities/skill-version-file.entity';
+import { TenantQuota } from '../../src/admin/entities/tenant-quota.entity';
 import { Tenant } from '../../src/tenants/entities/tenant.entity';
 import { ApiKey } from '../../src/auth/entities/api-key.entity';
 import { McpServer } from '../../src/mcp/entities/mcp-server.entity';
@@ -48,7 +51,10 @@ export const TEST_ENTITIES = [
   FileVersion,
   Skill,
   SkillVersion,
+  SkillFile,
+  SkillVersionFile,
   Tenant,
+  TenantQuota,
   ApiKey,
   McpServer,
   SessionAlert,

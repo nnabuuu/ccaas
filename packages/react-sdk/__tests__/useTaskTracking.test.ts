@@ -376,11 +376,13 @@ describe('useTaskTracking', () => {
         status: 'completed',
       }
 
-      const { result } = renderHook(() =>
-        useTaskTracking({
-          activeSubAgents: [completedAgent],
-          todoItems: [],
-        })
+      const { result, rerender } = renderHook(
+        ({ agents }: { agents: ActiveSubAgent[] }) =>
+          useTaskTracking({
+            activeSubAgents: agents,
+            todoItems: [],
+          }),
+        { initialProps: { agents: [completedAgent] } }
       )
 
       // Wait for history to populate
@@ -388,7 +390,9 @@ describe('useTaskTracking', () => {
         expect(result.current.groups.recentCompleted.length).toBeGreaterThan(0)
       })
 
-      // Clear history
+      // Remove the completed agent from props, then clear history
+      rerender({ agents: [] })
+
       act(() => {
         result.current.clearHistory()
       })
@@ -398,7 +402,7 @@ describe('useTaskTracking', () => {
     })
 
     it('should respect maxHistorySize limit', async () => {
-      const agents: ActiveSubAgent[] = Array.from({ length: 60 }, (_, i) => ({
+      const agents: ActiveSubAgent[] = Array.from({ length: 8 }, (_, i) => ({
         ...mockSubAgent,
         subAgentId: `sub-${i}`,
         status: 'completed' as const,
@@ -408,13 +412,13 @@ describe('useTaskTracking', () => {
         useTaskTracking({
           activeSubAgents: agents,
           todoItems: [],
-          maxHistorySize: 50,
+          maxHistorySize: 5,
         })
       )
 
       // allTasks includes current + history
       await waitFor(() => {
-        expect(result.current.allTasks.length).toBeLessThanOrEqual(60)
+        expect(result.current.allTasks.length).toBeLessThanOrEqual(8)
       })
     })
   })

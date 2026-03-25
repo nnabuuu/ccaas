@@ -13,6 +13,8 @@ import { User } from '../users/entities/user.entity';
 import { UserTenant } from '../users/entities/user-tenant.entity';
 import { Tenant } from '../tenants/entities/tenant.entity';
 import { ApiKey } from './entities/api-key.entity';
+import { TenantQuota } from '../admin/entities/tenant-quota.entity';
+import { QuotaService } from '../admin/quota.service';
 import { createTestDatabaseModule } from '../../test/setup/test-database';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -38,9 +40,9 @@ describe('ApiKeyService - User Resolution Integration', () => {
           ],
         }),
         createTestDatabaseModule(),
-        TypeOrmModule.forFeature([ApiKey, User, UserTenant, Tenant]),
+        TypeOrmModule.forFeature([ApiKey, User, UserTenant, Tenant, TenantQuota]),
       ],
-      providers: [ApiKeyService, TenantsService, UserTenantService, UsersService],
+      providers: [ApiKeyService, TenantsService, UserTenantService, UsersService, QuotaService],
     }).compile();
 
     service = module.get<ApiKeyService>(ApiKeyService);
