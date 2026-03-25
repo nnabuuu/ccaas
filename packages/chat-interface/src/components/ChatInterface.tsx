@@ -25,6 +25,12 @@ export interface ChatInterfaceProps {
   customCatalog?: WidgetCatalogEntry[]
   customBlockRenderers?: BlockRendererMap
   mcpBridge?: McpBridge
+  userId?: string
+  sessionId?: string
+  /** API key for X-API-Key header authentication */
+  apiKey?: string
+  onMenuClick?: () => void
+  onMessageSent?: () => void
 }
 
 export function ChatInterface({
@@ -39,6 +45,11 @@ export function ChatInterface({
   customCatalog,
   customBlockRenderers,
   mcpBridge,
+  userId,
+  sessionId: externalSessionId,
+  apiKey,
+  onMenuClick,
+  onMessageSent,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('')
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
@@ -53,6 +64,9 @@ export function ChatInterface({
     tenantId,
     autoConnect: true,
     transport: 'sse',
+    sessionId: externalSessionId,
+    userId,
+    apiKey,
   })
 
   const chat = useAgentChat({
@@ -60,6 +74,7 @@ export function ChatInterface({
     tenantId,
     sessionTemplate,
     transport: 'sse',
+    userId,
   })
 
   const status = useAgentStatus({ connection })
@@ -110,12 +125,16 @@ export function ChatInterface({
     }, 50)
   }, [chatMessages, currentStreamContent])
 
+  const onMessageSentRef = useRef(onMessageSent)
+  onMessageSentRef.current = onMessageSent
+
   const handleSend = useCallback(async () => {
     const text = input.trim()
     if (!text || isProcessing) return
     setInput('')
     try {
       await sendMessage(text)
+      onMessageSentRef.current?.()
     } catch (err) {
       setInput(text)
       console.error('Failed to send message:', err)
@@ -172,18 +191,27 @@ export function ChatInterface({
       customBlockRenderers={customBlockRenderers}
       mcpBridge={mcpBridge}
     >
-    <div className="w-full max-w-[720px] mx-auto">
-      <div className="bg-ck-bg2 rounded-ck-lg overflow-hidden border border-ck-b1">
+    <div className="w-full h-full flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden bg-ck-bg2">
         {/* Context bar */}
         <SessionContextBar
           chips={contextChips}
           onChipClick={onChipClick}
+          leading={onMenuClick && (
+            <button
+              onClick={onMenuClick}
+              className="md:hidden w-8 h-8 flex items-center justify-center rounded text-ck-t2 hover:text-ck-t1 hover:bg-ck-bg3 text-base"
+              title="会话列表"
+            >
+              &#9776;
+            </button>
+          )}
           trailing={
             <button
               onClick={() => setSkillPanelOpen(prev => !prev)}
               className="text-[11px] px-[10px] py-[3px] rounded-xl border bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg2/80"
             >
-              Skills
+              技能
             </button>
           }
         />
@@ -197,66 +225,72 @@ export function ChatInterface({
         />
 
         {/* Messages */}
-        <div className="p-4 flex flex-col gap-[14px] min-h-[460px] max-h-[600px] overflow-y-auto">
-          {chatMessages.length === 0 && !isLoadingHistory && (
-            <div className="flex-1 flex items-center justify-center text-ck-t3 text-sm">
-              Start a conversation...
-            </div>
-          )}
-
-          {isLoadingHistory && (
-            <div className="flex-1 flex items-center justify-center text-ck-t3 text-xs">
-              Loading history...
-            </div>
-          )}
-
-          {chatMessages.map((msg) => (
-            <MessageRenderer
-              key={msg.id}
-              message={msg}
-              widgetState={widgetStates[msg.id] ?? {}}
-              onWidgetStateChange={(key, value) => handleWidgetStateChange(msg.id, key, value)}
-              onAction={handleAction}
-              onWidgetSubmit={(params) => handleWidgetSubmit(msg.id, params)}
-            />
-          ))}
-
-          {/* Thinking indicator */}
-          {isProcessing && status.isThinking && (
-            <div className="self-start max-w-[88%]">
-              <div className="text-xs text-ck-t3 mb-1 animate-pulse">
-                {status.thinkingVerb}...
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto p-4 flex flex-col gap-[14px] min-h-full">
+            {chatMessages.length === 0 && !isLoadingHistory && (
+              <div className="flex-1 flex items-center justify-center text-ck-t3 text-sm">
+                开始对话...
               </div>
-            </div>
-          )}
+            )}
 
-          <div ref={messagesEndRef} />
+            {isLoadingHistory && (
+              <div className="flex-1 flex items-center justify-center text-ck-t3 text-xs">
+                加载历史记录...
+              </div>
+            )}
+
+            {chatMessages.map((msg) => (
+              <MessageRenderer
+                key={msg.id}
+                message={msg}
+                widgetState={widgetStates[msg.id] ?? {}}
+                onWidgetStateChange={(key, value) => handleWidgetStateChange(msg.id, key, value)}
+                onAction={handleAction}
+                onWidgetSubmit={(params) => handleWidgetSubmit(msg.id, params)}
+              />
+            ))}
+
+            {/* Thinking indicator */}
+            {isProcessing && status.isThinking && (
+              <div className="self-start max-w-[88%]">
+                <div className="text-xs text-ck-t3 mb-1 animate-pulse">
+                  {status.thinkingVerb}...
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Quick suggestions */}
-        <QuickSuggestions
-          suggestions={quickSuggestions}
-          onSelect={handleSuggestionSelect}
-        />
+        <div className="max-w-3xl mx-auto w-full">
+          <QuickSuggestions
+            suggestions={quickSuggestions}
+            onSelect={handleSuggestionSelect}
+          />
+        </div>
 
         {/* Input bar */}
-        <div className="flex items-center gap-2 px-4 py-[10px] border-t border-ck-b1 bg-ck-bg1">
-          <input
-            ref={inputRef}
-            className="flex-1 px-3 py-2 border border-ck-b1 rounded-[20px] text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus:border-ck-info-t"
-            placeholder="Type your message..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={!connection.sessionReady}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
-            className="w-8 h-8 rounded-full border-none bg-ck-t1 text-ck-bg1 cursor-pointer flex items-center justify-center text-sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            &#8593;
-          </button>
+        <div className="border-t border-ck-b1 bg-ck-bg1">
+          <div className="max-w-3xl mx-auto flex items-center gap-2 px-4 py-[10px]">
+            <input
+              ref={inputRef}
+              className="flex-1 px-3 py-2 border border-ck-b1 rounded-[20px] text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus:border-ck-info-t"
+              placeholder="输入消息..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={!connection.sessionReady}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isProcessing}
+              className="w-8 h-8 rounded-full border-none bg-ck-t1 text-ck-bg1 cursor-pointer flex items-center justify-center text-sm shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              &#8593;
+            </button>
+          </div>
         </div>
       </div>
     </div>

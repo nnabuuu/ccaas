@@ -16,10 +16,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { AuthAdminOrBuilder } from '../auth/decorators';
 import { SchedulerService } from './scheduler.service';
 import { CreateScheduledTaskDto } from './dto/create-scheduled-task.dto';
 import { UpdateScheduledTaskDto } from './dto/update-scheduled-task.dto';
 
+@AuthAdminOrBuilder()
 @ApiTags('scheduler')
 @Controller('api/v1/scheduled-tasks')
 export class SchedulerController {

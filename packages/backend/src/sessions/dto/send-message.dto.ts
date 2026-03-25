@@ -124,4 +124,14 @@ export class SendMessageDto {
   @IsOptional()
   @IsBoolean()
   autoClose?: boolean;
+
+  @ApiProperty({
+    description: '用户 ID（用于会话归属）/ User ID for session ownership',
+    required: false,
+    example: 'teacher-1',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  userId?: string;
 }

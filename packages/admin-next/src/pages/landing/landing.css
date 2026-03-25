@@ -1,14 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,600;1,400&display=swap');
 
 .landing-page {
-  --ink: #0f1419;
-  --ink-secondary: #536471;
-  --ink-muted: #8899a6;
-  --surface: #fafbfc;
+  --ink: #1a1a1a;
+  --ink-secondary: #666663;
+  --ink-muted: #97968f;
+  --surface: #f8f8f6;
   --surface-elevated: #ffffff;
-  --surface-subtle: #f0f2f4;
-  --border: #e1e4e8;
-  --border-subtle: #eef0f2;
+  --surface-subtle: #f1f1ee;
+  --border: rgba(0,0,0,0.12);
+  --border-subtle: rgba(0,0,0,0.06);
   --accent: #4a7c6f;
   --accent-light: #e8f0ed;
   --accent-dark: #3a6359;
@@ -43,7 +43,7 @@
 
 .landing-page .lang-toggle {
   padding: 5px 14px;
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: var(--ink-secondary);
@@ -65,13 +65,13 @@
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 50;
-  background: rgba(250, 251, 252, 0.85);
+  background: rgba(248, 248, 246, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 0.5px solid var(--border-subtle);
   transition: box-shadow 0.3s ease;
 }
-.landing-page nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.04); }
+.landing-page nav.scrolled { }
 .landing-page .nav-inner {
   max-width: 1200px;
   margin: 0 auto;
@@ -189,7 +189,7 @@
   width: 44px; height: 44px;
   border-radius: 12px;
   background: var(--surface-elevated);
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,8 +230,8 @@
   gap: 32px;
   margin: 0 auto 40px;
   padding: 14px 24px;
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
+  border-top: 0.5px solid var(--border-subtle);
+  border-bottom: 0.5px solid var(--border-subtle);
   max-width: 560px;
 }
 .landing-page .hero-proof-item {
@@ -276,13 +276,12 @@
 .landing-page .btn-primary:hover {
   background: var(--navy-light);
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(26,35,50,0.2);
 }
 .landing-page .btn-secondary {
   padding: 14px 32px;
   background: transparent;
   color: var(--ink);
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   border-radius: 10px;
   font-size: 16px;
   font-weight: 500;
@@ -342,13 +341,12 @@
 .landing-page .narrative-card {
   padding: 28px;
   background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
+  border: 0.5px solid var(--border-subtle);
   border-radius: 12px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .landing-page .narrative-card:hover {
   border-color: var(--border);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 .landing-page .narrative-card h3 {
   font-size: 16px;
@@ -386,7 +384,7 @@
 .landing-page .feature-card {
   padding: 32px;
   background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 0.5px solid rgba(255,255,255,0.08);
   border-radius: 12px;
   transition: background 0.2s, border-color 0.2s;
 }
@@ -421,7 +419,7 @@
 .landing-page .arch-diagram {
   margin-top: 56px;
   background: var(--surface-elevated);
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   border-radius: 16px;
   padding: 48px;
   overflow-x: auto;
@@ -436,7 +434,7 @@
 .landing-page .arch-node {
   padding: 20px 28px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   border-radius: 12px;
   text-align: center;
   min-width: 140px;
@@ -444,7 +442,6 @@
 }
 .landing-page .arch-node:hover {
   border-color: var(--accent);
-  box-shadow: 0 2px 12px rgba(74,124,111,0.1);
 }
 .landing-page .arch-node-label {
   font-size: 11px;
@@ -488,7 +485,7 @@
 .landing-page .arch-output {
   padding: 12px 20px;
   background: var(--warm-light);
-  border: 1px solid rgba(184,160,136,0.2);
+  border: 0.5px solid rgba(184,160,136,0.2);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
@@ -506,14 +503,13 @@
 .landing-page .usecase-card {
   padding: 36px;
   background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
+  border: 0.5px solid var(--border-subtle);
   border-radius: 14px;
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
   cursor: pointer;
 }
 .landing-page .usecase-card:hover {
   border-color: var(--border);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
   transform: translateY(-2px);
 }
 .landing-page .usecase-tag {
@@ -540,7 +536,7 @@
 .landing-page .usecase-detail {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid var(--border-subtle);
+  border-top: 0.5px solid var(--border-subtle);
   font-size: 13px;
   color: var(--ink-muted);
   display: flex;
@@ -620,7 +616,7 @@
 .landing-page .pricing { background: var(--surface-subtle); }
 .landing-page .demo-banner {
   background: var(--accent-light);
-  border: 1px solid rgba(74,124,111,0.2);
+  border: 0.5px solid rgba(74,124,111,0.2);
   border-radius: 12px;
   padding: 20px 28px;
   margin-top: 40px;
@@ -674,7 +670,7 @@
 }
 .landing-page .plan-card {
   background: var(--surface-elevated);
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   border-radius: 16px;
   padding: 32px;
   display: flex;
@@ -682,7 +678,7 @@
   position: relative;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
-.landing-page .plan-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+.landing-page .plan-card:hover { }
 .landing-page .plan-card.recommended {
   background: var(--navy);
   border-color: var(--navy);
@@ -759,7 +755,7 @@
   text-align: center;
   cursor: pointer;
   text-decoration: none;
-  border: 1px solid var(--border);
+  border: 0.5px solid var(--border);
   background: transparent;
   color: var(--ink);
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
@@ -798,7 +794,7 @@
 .landing-page .enterprise-strip-cta {
   padding: 11px 28px;
   background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 0.5px solid rgba(255,255,255,0.2);
   color: #fff;
   border-radius: 10px;
   font-size: 14px;
@@ -894,7 +890,7 @@
 /* Right: after card */
 .landing-page .skip-after {
   background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
+  border: 0.5px solid var(--border-subtle);
   border-radius: 16px;
   padding: 32px 36px;
 }

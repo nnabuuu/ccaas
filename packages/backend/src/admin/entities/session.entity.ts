@@ -37,6 +37,13 @@ export class Session {
   tenantId!: string | null;
 
   /**
+   * User ID for user-scoped session history
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  @Index('IDX_sessions_user_id')
+  userId!: string | null;
+
+  /**
    * Client ID (browser/app identifier)
    */
   @Column({ type: 'varchar', length: 255 })

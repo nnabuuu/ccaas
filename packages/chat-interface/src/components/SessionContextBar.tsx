@@ -4,15 +4,17 @@ import { cn } from '@/lib/utils'
 interface SessionContextBarProps {
   chips: SessionContextChip[]
   onChipClick?: (chip: SessionContextChip) => void
+  leading?: React.ReactNode
   trailing?: React.ReactNode
 }
 
-export function SessionContextBar({ chips, onChipClick, trailing }: SessionContextBarProps) {
-  if (chips.length === 0) return null
+export function SessionContextBar({ chips, onChipClick, leading, trailing }: SessionContextBarProps) {
+  if (chips.length === 0 && !leading) return null
 
   return (
     <div className="flex items-center justify-between px-4 py-[10px] border-b border-ck-b1 bg-ck-bg1">
       <div className="flex gap-[6px] items-center">
+        {leading}
         {chips.map((chip) => (
           <button
             key={chip.key}

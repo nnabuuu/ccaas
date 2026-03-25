@@ -36,6 +36,7 @@ import { AdminMcpServersController } from './controllers/admin-mcp-servers.contr
 import { AdminBundlesController } from './controllers/admin-bundles.controller';
 import { AdminBuilderUsersController } from './controllers/admin-builder-users.controller';
 import { AdminSolutionsController } from './controllers/admin-solutions.controller';
+import { AdminUsersController } from './controllers/admin-users.controller';
 
 // Dependent modules
 import { SessionsModule } from '../sessions/sessions.module';
@@ -101,6 +102,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
     AdminBundlesController,
     AdminBuilderUsersController,
     AdminSolutionsController,
+    AdminUsersController,
   ],
   providers: [
     AdminTenantAccessGuard,

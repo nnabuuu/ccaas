@@ -16,6 +16,7 @@ import type {
   SessionEvent,
 } from '@kedge-agentic/common'
 import { parseOutputUpdate } from '../utils/parseOutputUpdate'
+import { buildAuthHeaders } from '../utils/authHeaders'
 import { ApiError } from '../utils/apiClient'
 import type { ResolvedTemplateParams } from '../utils/templateResolver'
 import { generateId } from '../utils/generateId'
@@ -39,6 +40,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
     context,
     sessionTemplate,
     transport = 'sse',
+    userId,
   } = options
 
   if (transport === 'socket') {
@@ -282,7 +284,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         setIsLoadingHistory(true)
         const response = await fetch(
           `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/messages?limit=100`,
-          { method: 'GET' },
+          { method: 'GET', headers: { ...buildAuthHeaders(connection.apiKey) } },
         )
         if (!response.ok) {
           if (!currentMessageRef.current) setMessages([])
@@ -399,6 +401,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
 
       // Always send sessionTemplate to backend for server-side resolution
       if (sessionTemplate) payload.templateName = sessionTemplate
+      if (userId) payload.userId = userId
 
       if (resolvedParams.enabledSkills?.length) payload.enabledSkills = resolvedParams.enabledSkills
       if (resolvedParams.appendSystemPrompt) payload.appendSystemPrompt = resolvedParams.appendSystemPrompt
@@ -416,6 +419,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         {
           serverUrl: connection.serverUrl,
           sessionId: connection.sessionId!,
+          apiKey: connection.apiKey,
           onEvent: (event) => dispatchEvent(event.type, event),
           onError: (err) => {
             setIsProcessing(false)
@@ -438,7 +442,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
 
         const response = await fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/completion`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders(connection.apiKey) },
           body: JSON.stringify(chatPayload),
         })
 
@@ -462,7 +466,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
         throw err
       }
     }
-  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkills, context, sessionTemplate, waitForReconnection, transport, startStream, dispatchEvent])
+  }, [connection.connected, connection.clientId, connection.sessionId, connection.serverUrl, isProcessing, tenantId, enabledSkills, context, sessionTemplate, userId, waitForReconnection, transport, startStream, dispatchEvent])
 
   const clearMessages = useCallback(() => {
     setMessages([])
@@ -481,7 +485,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       if (connection.sessionId) {
         fetch(`${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/cancel`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders(connection.apiKey) },
         }).catch(() => {
           // Ignore cancel errors
         })

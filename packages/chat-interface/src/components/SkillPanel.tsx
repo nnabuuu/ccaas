@@ -26,7 +26,7 @@ export function SkillPanel({ serverUrl, tenantId, open, onClose }: SkillPanelPro
     <div className="border-t border-ck-b1 bg-ck-bg1 max-h-[280px] overflow-y-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-ck-b2">
-        <span className="text-xs font-medium text-ck-t1">Skills</span>
+        <span className="text-xs font-medium text-ck-t1">技能</span>
         <button
           onClick={onClose}
           className="text-xs text-ck-t3 hover:text-ck-t1 px-1"
@@ -39,7 +39,7 @@ export function SkillPanel({ serverUrl, tenantId, open, onClose }: SkillPanelPro
       <div className="px-4 py-2">
         <input
           type="text"
-          placeholder="Search skills..."
+          placeholder="搜索技能..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full text-xs px-2 py-1.5 border border-ck-b1 rounded-ck bg-ck-bg1 text-ck-t1 outline-none focus:border-ck-info-t"
@@ -49,7 +49,7 @@ export function SkillPanel({ serverUrl, tenantId, open, onClose }: SkillPanelPro
       {/* List */}
       <div className="px-4 pb-3">
         {loading && (
-          <div className="text-xs text-ck-t3 py-2">Loading skills...</div>
+          <div className="text-xs text-ck-t3 py-2">加载技能...</div>
         )}
 
         {error && (
@@ -57,7 +57,7 @@ export function SkillPanel({ serverUrl, tenantId, open, onClose }: SkillPanelPro
         )}
 
         {!loading && !error && filteredSkills.length === 0 && (
-          <div className="text-xs text-ck-t3 py-2">No skills found</div>
+          <div className="text-xs text-ck-t3 py-2">未找到技能</div>
         )}
 
         {filteredSkills.map((skill: Skill) => (

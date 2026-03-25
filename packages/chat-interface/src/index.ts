@@ -10,6 +10,8 @@
 // === Components ===
 export { ChatInterface } from './components/ChatInterface'
 export type { ChatInterfaceProps } from './components/ChatInterface'
+export { ChatSidebar } from './components/ChatSidebar'
+export type { ChatSidebarProps, SidebarSession } from './components/ChatSidebar'
 export { MessageRenderer } from './components/MessageRenderer'
 export { WidgetRenderer } from './components/WidgetRenderer'
 export { SessionContextBar } from './components/SessionContextBar'
@@ -24,6 +26,7 @@ export { ChatInterfaceProvider, useChatInterfaceContext } from './context/ChatIn
 export type { ChatInterfaceProviderProps, ChatInterfaceContextValue } from './context/ChatInterfaceContext'
 
 // === Hooks ===
+export { useSessionList } from './hooks/useSessionList'
 export { useSessionContext } from './hooks/useSessionContext'
 export { useQuickSuggestions } from './hooks/useQuickSuggestions'
 export { useWidgetState } from './hooks/useWidgetState'

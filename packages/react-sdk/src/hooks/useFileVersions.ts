@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { UseFileVersionsOptions, UseFileVersionsReturn, FileVersion } from '../types'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * Manages version history for a file.
@@ -32,8 +33,9 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
-  // Use explicit serverUrl from connection
+  // Use explicit serverUrl and apiKey from connection
   const serverUrl = connection.serverUrl || ''
+  const apiKey = connection.apiKey
 
   // Fetch versions from API
   const fetchVersions = useCallback(async () => {
@@ -43,7 +45,9 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch(`${serverUrl}/api/v1/files/${fileId}/versions`)
+      const response = await fetch(`${serverUrl}/api/v1/files/${fileId}/versions`, {
+        headers: { ...buildAuthHeaders(apiKey) },
+      })
       if (!response.ok) {
         throw new Error(`Failed to fetch versions: ${response.statusText}`)
       }
@@ -71,7 +75,7 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
     } finally {
       setIsLoading(false)
     }
-  }, [serverUrl, fileId, enabled])
+  }, [serverUrl, fileId, enabled, apiKey])
 
   // Create version
   const createVersion = useCallback(async (changelog?: string): Promise<FileVersion> => {
@@ -79,6 +83,7 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...buildAuthHeaders(apiKey),
       },
       body: JSON.stringify({
         bumpType: 'patch',
@@ -108,7 +113,7 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
     setVersions(prev => [newVersion, ...prev])
 
     return newVersion
-  }, [serverUrl, fileId])
+  }, [serverUrl, fileId, apiKey])
 
   // Rollback to version
   const rollbackToVersion = useCallback(async (version: string): Promise<void> => {
@@ -116,6 +121,7 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...buildAuthHeaders(apiKey),
       },
       body: JSON.stringify({
         targetVersion: version,
@@ -128,12 +134,13 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
 
     // Refetch versions to get the new rollback version
     await fetchVersions()
-  }, [serverUrl, fileId, fetchVersions])
+  }, [serverUrl, fileId, fetchVersions, apiKey])
 
   // Compare versions
   const compareVersions = useCallback(async (from: string, to: string) => {
     const response = await fetch(
-      `${serverUrl}/api/v1/files/${fileId}/versions/compare?from=${from}&to=${to}`
+      `${serverUrl}/api/v1/files/${fileId}/versions/compare?from=${from}&to=${to}`,
+      { headers: { ...buildAuthHeaders(apiKey) } }
     )
 
     if (!response.ok) {
@@ -168,12 +175,13 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
       sizeDiff: data.sizeDiff,
       hashChanged: data.hashChanged,
     }
-  }, [serverUrl, fileId])
+  }, [serverUrl, fileId, apiKey])
 
   // Download version
   const downloadVersion = useCallback(async (version: string): Promise<void> => {
     const response = await fetch(
-      `${serverUrl}/api/v1/files/${fileId}/versions/${version}/download`
+      `${serverUrl}/api/v1/files/${fileId}/versions/${version}/download`,
+      { headers: { ...buildAuthHeaders(apiKey) } }
     )
 
     if (!response.ok) {
@@ -196,7 +204,7 @@ export function useFileVersions(options: UseFileVersionsOptions): UseFileVersion
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
-  }, [serverUrl, fileId])
+  }, [serverUrl, fileId, apiKey])
 
   // Fetch versions on mount
   useEffect(() => {

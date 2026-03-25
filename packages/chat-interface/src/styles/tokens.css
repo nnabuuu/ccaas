@@ -7,13 +7,13 @@
 
 :root {
   --bg1: #fff;
-  --bg2: #f5f5f0;
-  --bg3: #eeeee8;
+  --bg2: #f8f8f6;
+  --bg3: #f1f1ee;
   --t1: #1a1a1a;
-  --t2: #6b6b65;
-  --t3: #9c9a92;
-  --b1: rgba(0, 0, 0, 0.15);
-  --b2: rgba(0, 0, 0, 0.08);
+  --t2: #666663;
+  --t3: #97968f;
+  --b1: rgba(0, 0, 0, 0.12);
+  --b2: rgba(0, 0, 0, 0.06);
   --info-bg: #e6f1fb;
   --info-t: #0c447c;
   --success-bg: #eaf3de;

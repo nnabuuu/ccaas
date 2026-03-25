@@ -17,11 +17,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Auth } from '../auth/decorators';
 import { Response } from 'express';
 import { JobService } from './job.service';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 
+@Auth('chat')
 @ApiTags('jobs')
 @Controller('api/v1/jobs')
 export class JobController {

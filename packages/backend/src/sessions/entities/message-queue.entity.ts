@@ -25,6 +25,8 @@ export interface MessageQueuePayload {
   templateName?: string;
   /** SSE subscriber ID for turn-scoped stream closure */
   subscriberId?: string;
+  /** User ID for session ownership */
+  userId?: string;
 }
 
 /**

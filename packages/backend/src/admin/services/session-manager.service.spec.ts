@@ -87,6 +87,7 @@ describe('SessionManagerService', () => {
     id: `uuid-${sessionId}`,
     sessionId,
     tenantId,
+    userId: null,
     clientId: `client-${sessionId}`,
     status: status as any,
     messageCount: 5,

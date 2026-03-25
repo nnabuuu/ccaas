@@ -30,6 +30,7 @@ const ApiKeysListPage = lazy(() => import('@/pages/api-keys/list').then((m) => (
 const SessionTemplatesListPage = lazy(() => import('@/pages/session-templates/list').then((m) => ({ default: m.SessionTemplatesListPage })))
 const SessionTemplateFormPage = lazy(() => import('@/pages/session-templates/form').then((m) => ({ default: m.SessionTemplateFormPage })))
 const QueueMonitorPage = lazy(() => import('@/pages/queue').then((m) => ({ default: m.QueueMonitorPage })))
+const UsersListPage = lazy(() => import('@/pages/users/list').then((m) => ({ default: m.UsersListPage })))
 
 function PageLoader() {
   return (
@@ -103,6 +104,11 @@ function App() {
             meta: { label: 'Session Templates' },
           },
           {
+            name: 'users',
+            list: '/users',
+            meta: { label: 'Users' },
+          },
+          {
             name: 'queue',
             list: '/queue',
             meta: { label: 'Queue Monitor' },
@@ -139,6 +145,7 @@ function App() {
               <Route path="/scheduler" element={<SchedulerListPage />} />
               <Route path="/scheduler/:id" element={<SchedulerDetailPage />} />
               <Route path="/api-keys" element={<ApiKeysListPage />} />
+              <Route path="/users" element={<UsersListPage />} />
               <Route path="/session-templates" element={<SessionTemplatesListPage />} />
               <Route path="/session-templates/create" element={<SessionTemplateFormPage />} />
               <Route path="/session-templates/:name/edit" element={<SessionTemplateFormPage />} />

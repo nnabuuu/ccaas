@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ListOrdered,
   Sparkles,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTenantContext } from '@/hooks/use-tenant-context'
@@ -27,6 +28,7 @@ const navigation = [
   { zh: '队列监控', en: 'Queue Monitor', href: '/queue', icon: ListOrdered, adminOnly: true },
   { zh: '租户', en: 'Tenants', href: '/tenants', icon: Building2 },
   { zh: 'API 密钥', en: 'API Keys', href: '/api-keys', icon: Key },
+  { zh: '用户', en: 'Users', href: '/users', icon: Users },
   { zh: '审计日志', en: 'Audit Log', href: '/audit', icon: ScrollText, adminOnly: true },
   { zh: '数据分析', en: 'Analytics', href: '/analytics', icon: BarChart3 },
   { zh: '调度器', en: 'Scheduler', href: '/scheduler', icon: Calendar, adminOnly: true },

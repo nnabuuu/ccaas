@@ -243,6 +243,26 @@ export class ApiKeyService implements OnModuleInit {
   }
 
   /**
+   * Revoke all active API keys for a user
+   */
+  async revokeByUserId(userId: string): Promise<number> {
+    const keys = await this.apiKeyRepository.find({
+      where: { userId, status: 'active' },
+    });
+
+    for (const key of keys) {
+      key.status = 'revoked';
+      await this.apiKeyRepository.save(key);
+    }
+
+    if (keys.length > 0) {
+      this.logger.log(`Revoked ${keys.length} API key(s) for user ${userId}`);
+    }
+
+    return keys.length;
+  }
+
+  /**
    * Delete an API key
    */
   async delete(id: string): Promise<void> {

@@ -1,7 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { AuthAdminOrBuilder } from '../auth/decorators';
 import { MessageQueueService } from './services/message-queue.service';
 
+@AuthAdminOrBuilder()
 @ApiTags('queue')
 @Controller('api/v1/queue')
 export class QueueController {

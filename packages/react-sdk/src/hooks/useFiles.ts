@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { UseFilesOptions, UseFilesReturn, FileMetadata } from '../types'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * Manages files for a session with real-time updates and badge state.
@@ -26,7 +27,7 @@ import type { UseFilesOptions, UseFilesReturn, FileMetadata } from '../types'
  */
 export function useFiles(options: UseFilesOptions): UseFilesReturn {
   const { connection, sessionId, enabled = true } = options
-  const { socket, serverUrl } = connection
+  const { socket, serverUrl, apiKey } = connection
 
   const [files, setFiles] = useState<FileMetadata[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -41,7 +42,9 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
       setIsLoading(true)
       setError(null)
 
-      const response = await fetch(`${serverUrl}/api/v1/files/session/${sessionId}/tree`)
+      const response = await fetch(`${serverUrl}/api/v1/files/session/${sessionId}/tree`, {
+        headers: { ...buildAuthHeaders(apiKey) },
+      })
       if (!response.ok) {
         throw new Error(`Failed to fetch files: ${response.statusText}`)
       }
@@ -93,7 +96,7 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
     } finally {
       setIsLoading(false)
     }
-  }, [serverUrl, sessionId, enabled])
+  }, [serverUrl, sessionId, enabled, apiKey])
 
   // Upload file
   const uploadFile = useCallback(async (file: File, targetPath?: string): Promise<FileMetadata> => {
@@ -106,6 +109,7 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
 
     const response = await fetch(`${serverUrl}/api/v1/files/upload`, {
       method: 'POST',
+      headers: { ...buildAuthHeaders(apiKey) },
       body: formData,
     })
 
@@ -134,11 +138,13 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
     setNewFilesCount(prev => prev + 1)
 
     return metadata
-  }, [serverUrl, sessionId])
+  }, [serverUrl, sessionId, apiKey])
 
   // Download file
   const downloadFile = useCallback(async (fileId: string): Promise<void> => {
-    const response = await fetch(`${serverUrl}/api/v1/files/${fileId}/download`)
+    const response = await fetch(`${serverUrl}/api/v1/files/${fileId}/download`, {
+      headers: { ...buildAuthHeaders(apiKey) },
+    })
     if (!response.ok) {
       throw new Error(`Download failed: ${response.statusText}`)
     }
@@ -159,12 +165,13 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
 
     // Mark as synced after download
     await markAsSynced(fileId)
-  }, [serverUrl, files])
+  }, [serverUrl, files, apiKey])
 
   // Delete file
   const deleteFile = useCallback(async (fileId: string): Promise<void> => {
     const response = await fetch(`${serverUrl}/api/v1/files/${fileId}`, {
       method: 'DELETE',
+      headers: { ...buildAuthHeaders(apiKey) },
     })
 
     if (!response.ok) {
@@ -177,12 +184,13 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
       const file = files.find(f => f.id === fileId)
       return file?.status === 'new' ? prev - 1 : prev
     })
-  }, [serverUrl, files])
+  }, [serverUrl, files, apiKey])
 
   // Mark file as synced
   const markAsSynced = useCallback(async (fileId: string): Promise<void> => {
     const response = await fetch(`${serverUrl}/api/v1/files/${fileId}/sync`, {
       method: 'POST',
+      headers: { ...buildAuthHeaders(apiKey) },
     })
 
     if (!response.ok) {
@@ -194,12 +202,13 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
       f.id === fileId ? { ...f, status: 'synced' as const } : f
     ))
     setNewFilesCount(prev => Math.max(0, prev - 1))
-  }, [serverUrl])
+  }, [serverUrl, apiKey])
 
   // Mark all files as seen (clear badge)
   const markAllSeen = useCallback(async (): Promise<void> => {
     const response = await fetch(`${serverUrl}/api/v1/files/session/${sessionId}/mark-seen`, {
       method: 'POST',
+      headers: { ...buildAuthHeaders(apiKey) },
     })
 
     if (!response.ok) {
@@ -209,7 +218,7 @@ export function useFiles(options: UseFilesOptions): UseFilesReturn {
     // Update local state
     setFiles(prev => prev.map(f => ({ ...f, status: 'synced' as const })))
     setNewFilesCount(0)
-  }, [serverUrl, sessionId])
+  }, [serverUrl, sessionId, apiKey])
 
   // Fetch files on mount
   useEffect(() => {

@@ -20,6 +20,7 @@ import type {
   JobUpdateEvent,
 } from '@kedge-agentic/common'
 import { getThinkingVerb, THINKING_VERBS } from '../utils/thinkingVerbs'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * Tracks agent status, tool activity, thinking state, and token usage.
@@ -309,7 +310,7 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
       try {
         const response = await fetch(
           `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/events`,
-          { signal: controller.signal, headers: { Accept: 'text/event-stream' } }
+          { signal: controller.signal, headers: { Accept: 'text/event-stream', ...buildAuthHeaders(connection.apiKey) } }
         )
         if (response.status === 404) {
           // Session is created lazily on first chat message.
@@ -362,7 +363,9 @@ export function useAgentStatus(options: UseAgentStatusOptions): UseAgentStatusRe
   useEffect(() => {
     if (!connection.serverUrl || !connection.sessionId || !connection.sessionReady) return
 
-    fetch(`${connection.serverUrl}/api/v1/jobs?sessionId=${connection.sessionId}`)
+    fetch(`${connection.serverUrl}/api/v1/jobs?sessionId=${connection.sessionId}`, {
+      headers: { ...buildAuthHeaders(connection.apiKey) },
+    })
       .then(res => res.json())
       .then(result => {
         if (result.data?.length) {

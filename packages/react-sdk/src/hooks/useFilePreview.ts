@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { UseFilePreviewOptions, UseFilePreviewReturn, FilePreviewData } from '../types'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * Manages file preview with caching.
@@ -34,7 +35,7 @@ const previewCache = new Map<string, CacheEntry>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 export function useFilePreview(options: UseFilePreviewOptions): UseFilePreviewReturn {
-  const { fileId, maxBytes = 100 * 1024, enabled = true } = options
+  const { fileId, maxBytes = 100 * 1024, enabled = true, apiKey } = options
 
   const [preview, setPreview] = useState<FilePreviewData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -68,7 +69,8 @@ export function useFilePreview(options: UseFilePreviewOptions): UseFilePreviewRe
       setError(null)
 
       const response = await fetch(
-        `${serverUrl}/api/v1/files/${fileId}/preview?maxBytes=${maxBytes}`
+        `${serverUrl}/api/v1/files/${fileId}/preview?maxBytes=${maxBytes}`,
+        { headers: { ...buildAuthHeaders(apiKey) } }
       )
 
       if (!response.ok) {
@@ -104,7 +106,7 @@ export function useFilePreview(options: UseFilePreviewOptions): UseFilePreviewRe
         setIsLoading(false)
       }
     }
-  }, [serverUrl, fileId, maxBytes, enabled])
+  }, [serverUrl, fileId, maxBytes, enabled, apiKey])
 
   // Fetch preview on mount
   useEffect(() => {

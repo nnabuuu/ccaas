@@ -58,6 +58,7 @@ export { UnifiedTaskCard } from './components/UnifiedTaskCard'
 export { QueueStatusIndicator } from './components/QueueStatusIndicator'
 
 // Utilities
+export { buildAuthHeaders } from './utils/authHeaders'
 export { parseOutputUpdate } from './utils/parseOutputUpdate'
 export { createApiClient, ApiError } from './utils/apiClient'
 export { getFileIcon, formatFileSize, formatFileDate } from './utils/fileIcons'

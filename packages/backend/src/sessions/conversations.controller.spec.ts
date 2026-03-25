@@ -46,6 +46,7 @@ describe('ConversationsController', () => {
     id: `uuid-${sessionId}`,
     sessionId,
     tenantId: 'tenant-a',
+    userId: null,
     clientId: `client-${sessionId}`,
     status: 'idle' as any,
     messageCount: 5,

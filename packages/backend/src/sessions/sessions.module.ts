@@ -17,6 +17,7 @@ import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
 import { ConversationsController } from './conversations.controller';
 import { QueueController } from './queue.controller';
+import { UserSessionsController } from './user-sessions.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -52,7 +53,7 @@ import { BundleModule } from '../bundles/bundle.module';
     FilesModule,
     BundleModule,
   ],
-  controllers: [SessionsController, ConversationsController, QueueController],
+  controllers: [SessionsController, ConversationsController, QueueController, UserSessionsController],
   providers: [
     SessionsGateway,
     SessionService,

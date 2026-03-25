@@ -90,7 +90,8 @@ describe('useFileVersions', () => {
 
       expect(result.current.versions).toEqual(mockVersions);
       expect(global.fetch).toHaveBeenCalledWith(
-        `http://localhost:3001/api/v1/files/${fileId}/versions`
+        `http://localhost:3001/api/v1/files/${fileId}/versions`,
+        expect.objectContaining({ headers: expect.any(Object) })
       );
     });
 
@@ -382,7 +383,8 @@ describe('useFileVersions', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining(
           `/api/v1/files/${fileId}/versions/compare?from=1.0.0&to=1.0.1`
-        )
+        ),
+        expect.objectContaining({ headers: expect.any(Object) })
       );
     });
 
@@ -476,7 +478,8 @@ describe('useFileVersions', () => {
 
       expect(mockLink.click).toHaveBeenCalled();
       expect(global.fetch).toHaveBeenCalledWith(
-        `http://localhost:3001/api/v1/files/${fileId}/versions/1.0.0/download`
+        `http://localhost:3001/api/v1/files/${fileId}/versions/1.0.0/download`,
+        expect.objectContaining({ headers: expect.any(Object) })
       );
     });
   });

@@ -799,6 +799,7 @@ export class SessionService implements OnModuleDestroy {
       await this.sessionRepository.save({
         sessionId: session.sessionId,
         tenantId: session.tenantId || null,
+        userId: session.userId || null,
         clientId: session.clientId,
         status: session.status,
         messageCount: session.messageCount,

@@ -12,6 +12,7 @@
 
 import { useRef, useCallback } from 'react'
 import type { SessionEvent } from '@kedge-agentic/common'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * SSE envelope wrapping a frontend event (matches StreamRegistryService format)
@@ -29,6 +30,7 @@ export interface SseStreamOptions {
   onEvent: (event: SessionEvent) => void
   onError?: (error: Error) => void
   onDone?: () => void
+  apiKey?: string
 }
 
 /**
@@ -75,7 +77,7 @@ export function useSseStream() {
     payload: Record<string, unknown>,
     retryCount = 0,
   ): Promise<void> => {
-    const { serverUrl, sessionId, onEvent, onError, onDone } = options
+    const { serverUrl, sessionId, onEvent, onError, onDone, apiKey } = options
 
     // Abort any existing stream
     if (abortControllerRef.current) {
@@ -101,7 +103,7 @@ export function useSseStream() {
         `${serverUrl}/api/v1/sessions/${sessionId}/messages`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders(apiKey) },
           body: JSON.stringify(requestBody),
           signal: controller.signal,
         },

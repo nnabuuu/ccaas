@@ -89,6 +89,14 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
+    "coverageThreshold": {
+      "global": {
+        "statements": 50,
+        "branches": 30,
+        "functions": 35,
+        "lines": 50
+      }
+    },
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/$1"

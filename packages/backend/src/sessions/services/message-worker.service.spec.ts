@@ -123,6 +123,7 @@ describe('MessageWorkerService — processMessage', () => {
       SESSION_ID,
       makeSseClientId(SESSION_ID),
       null,
+      undefined,
     );
   });
 

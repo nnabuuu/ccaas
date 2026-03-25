@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerController } from './scheduler.controller';
 import { SchedulerService } from './scheduler.service';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { ScopesGuard } from '../auth/guards/scopes.guard';
 
 describe('SchedulerController', () => {
   let controller: SchedulerController;
@@ -35,7 +37,12 @@ describe('SchedulerController', () => {
       providers: [
         { provide: SchedulerService, useValue: service },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SchedulerController>(SchedulerController);
   });

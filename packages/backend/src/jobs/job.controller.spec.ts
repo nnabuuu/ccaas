@@ -9,6 +9,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { JobController } from './job.controller';
 import { JobService } from './job.service';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { ScopesGuard } from '../auth/guards/scopes.guard';
 
 describe('JobController', () => {
   let controller: JobController;
@@ -41,7 +43,12 @@ describe('JobController', () => {
       providers: [
         { provide: JobService, useValue: service },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<JobController>(JobController);
   });

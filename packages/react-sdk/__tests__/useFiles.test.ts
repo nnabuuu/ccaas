@@ -108,7 +108,8 @@ describe('useFiles', () => {
       });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/api/v1/files/session/${sessionId}/tree`)
+        expect.stringContaining(`/api/v1/files/session/${sessionId}/tree`),
+        expect.objectContaining({ headers: expect.any(Object) })
       );
     });
   });

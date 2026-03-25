@@ -37,7 +37,10 @@ export type AdminAction =
   | 'mcp.create'
   | 'mcp.update'
   | 'mcp.delete'
-  | 'builderUser.create';
+  | 'builderUser.create'
+  | 'user.create'
+  | 'user.update'
+  | 'user.delete';
 
 export type TargetType =
   | 'skill'

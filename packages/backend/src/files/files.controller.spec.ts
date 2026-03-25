@@ -14,6 +14,7 @@ import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
 import { SessionService } from '../sessions/session.service';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import type { FileTreeNode, FilePreviewResponse } from './dto/file.dto';
 
 describe('FilesController', () => {
@@ -80,7 +81,10 @@ describe('FilesController', () => {
           useValue: mockConfigService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<FilesController>(FilesController);
     service = module.get(FilesService);

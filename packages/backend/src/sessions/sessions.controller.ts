@@ -292,6 +292,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
           autoClose: data.autoClose,
           subscriberId,
           attachments: data.attachments?.map(a => ({ type: a.type, path: a.path })),
+          userId: data.userId,
         },
       );
       // Return — SSE stays open until the worker calls streamRegistry.closeSession()

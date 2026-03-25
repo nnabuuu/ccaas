@@ -23,6 +23,7 @@ import {
 } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { OptionalAuth } from '../auth/decorators';
 import { Response } from 'express';
 import { FilesService } from './files.service';
 import { SessionService } from '../sessions/session.service';
@@ -39,6 +40,7 @@ import type {
   NewFilesCountResponse,
 } from './dto/file.dto';
 
+@OptionalAuth()
 @ApiTags('files')
 @Controller('api/v1/files')
 export class FilesController {

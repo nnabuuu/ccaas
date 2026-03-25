@@ -33,7 +33,7 @@ export function FileCard({ file }: FileCardProps) {
           className="text-xs px-2 py-1 rounded-ck border border-ck-b1 text-ck-t2 hover:bg-ck-bg2 no-underline"
           download
         >
-          Download
+          下载
         </a>
       )}
     </div>

@@ -94,6 +94,8 @@ export interface UseFilePreviewOptions {
   fileId: string
   maxBytes?: number
   enabled?: boolean
+  /** API key for X-API-Key header authentication */
+  apiKey?: string
 }
 
 export interface UseFilePreviewReturn {
@@ -369,12 +371,16 @@ export interface UseAgentConnectionOptions {
   forceNewConversation?: boolean
   /** Explicit session ID. When provided, skips localStorage resolution. */
   sessionId?: string
+  /** User ID for user-scoped session history */
+  userId?: string
   /**
    * Transport to use for chat messages. Defaults to 'sse'.
    * - 'sse' (default): HTTP streaming via POST /messages. No WebSocket required.
    * - 'socket' (deprecated): Socket.IO transport. The backend /completion endpoint returns 410 Gone.
    */
   transport?: 'sse' | 'socket'
+  /** API key for X-API-Key header authentication. When provided, all fetch calls include this key. */
+  apiKey?: string
 }
 
 export interface UseAgentConnectionReturn {
@@ -388,10 +394,14 @@ export interface UseAgentConnectionReturn {
   disconnect: () => void
   /** Clear current session storage and start a new conversation with a fresh sessionId */
   startNewConversation: () => void
+  /** Switch to an existing session by ID */
+  switchSession: (sessionId: string) => void
   /** Whether the backend session is known to exist (true after first sendMessage call) */
   sessionReady: boolean
   /** Called by useAgentChat when a message is about to be sent, marking the session as ready */
   markSessionReady: () => void
+  /** API key for X-API-Key header authentication */
+  apiKey?: string
 }
 
 export interface PageContext {
@@ -425,6 +435,8 @@ export interface UseAgentChatOptions {
   context?: PageContext | null
   /** Session template name to use (resolved from solution config) */
   sessionTemplate?: string
+  /** User ID for session ownership (passed to backend on each message) */
+  userId?: string
   /**
    * Transport mode for receiving events.
    * - 'socket': Use Socket.IO (default, backward compatible)

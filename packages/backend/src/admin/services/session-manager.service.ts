@@ -899,6 +899,7 @@ export class SessionManagerService {
       await this.sessionRepository.save({
         sessionId: managedSession.sessionId,
         tenantId: managedSession.tenantId || null,
+        userId: managedSession.userId || null,
         clientId: managedSession.clientId,
         status: managedSession.status,
         messageCount: managedSession.messageCount,
