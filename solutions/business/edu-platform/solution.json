@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "Edu Platform",
+    "slug": "edu-platform",
+    "description": "精准教学平台"
+  },
+  "mcpServers": {
+    "edu-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Education platform MCP tools",
+      "type": "stdio",
+      "env": {}
+    }
+  },
+  "sessionTemplates": {
+    "lesson-planning": {
+      "description": "备课助手模式",
+      "enabledSkills": ["lesson-plan-generator"],
+      "appendSystemPrompt": "【强制要求】所有回复必须使用中文。当教师请求备课时，先调用 curriculum_tree 获取知识点树，然后输出 StepWizard 引导参数收集，最后用 write_output 输出教案各部分。"
+    }
+  },
+  "skills": [
+    { "slug": "lesson-plan-generator", "name": "lesson-plan-generator" }
+  ]
+}
