@@ -1,0 +1,84 @@
+/**
+ * @kedge-agentic/chat-interface
+ *
+ * Extensible chat UI component library.
+ * Use as a standalone app or embed in solution projects.
+ *
+ * @packageDocumentation
+ */
+
+// === Components ===
+export { ChatInterface } from './components/ChatInterface'
+export type { ChatInterfaceProps } from './components/ChatInterface'
+export { MessageRenderer } from './components/MessageRenderer'
+export { WidgetRenderer } from './components/WidgetRenderer'
+export { SessionContextBar } from './components/SessionContextBar'
+export { SkillBadge } from './components/SkillBadge'
+export { FileCard } from './components/FileCard'
+export { NextActions } from './components/NextActions'
+export { QuickSuggestions } from './components/QuickSuggestions'
+export { SkillPanel } from './components/SkillPanel'
+
+// === Context ===
+export { ChatInterfaceProvider, useChatInterfaceContext } from './context/ChatInterfaceContext'
+export type { ChatInterfaceProviderProps, ChatInterfaceContextValue } from './context/ChatInterfaceContext'
+
+// === Hooks ===
+export { useSessionContext } from './hooks/useSessionContext'
+export { useQuickSuggestions } from './hooks/useQuickSuggestions'
+export { useWidgetState } from './hooks/useWidgetState'
+export { useMcpBridge } from './hooks/useMcpBridge'
+
+// === Widget System ===
+export { builtinRegistry, getWidgetComponent, getRegisteredWidgetTypes } from './widgets/registry'
+export { builtinCatalog, widgetCatalog, getWidgetCatalogPrompt } from './widgets/catalog'
+export type { WidgetCatalogEntry, PropSchema } from './widgets/catalog'
+export { mergeRegistries, mergeCatalogs } from './widgets/merge'
+export { createMockMcpBridge, createMcpBridge } from './widgets/mcp-bridge'
+export type { McpBridge } from './widgets/mcp-bridge'
+
+// === Widget Components ===
+export { StepWizard } from './widgets/components/StepWizard'
+export { FormCollect } from './widgets/components/FormCollect'
+export { TreeSelector } from './widgets/components/TreeSelector'
+export { BarList } from './widgets/components/BarList'
+export { ReviewPanel } from './widgets/components/ReviewPanel'
+export { MetricDashboard } from './widgets/components/MetricDashboard'
+export { Summary } from './widgets/components/Summary'
+
+// === Harness ===
+export { parseAssistantContent, parseLlmResponse, extractNextActions } from './harness/postprocessor'
+export { submitToEngine, buildSubmissionPayload } from './harness/submit-engine'
+export type { SubmitToEngineOptions } from './harness/submit-engine'
+export { assembleSystemPrompt, sessionContextToPrompt } from './harness/preprocessor'
+export type { SystemPromptParts } from './harness/preprocessor'
+
+// === Types ===
+export type {
+  JsonRenderSpec,
+  JsonRenderElement,
+  McpSourceDeclaration,
+  WidgetComponentProps,
+  WidgetComponent,
+  WidgetRegistry,
+  BlockRenderer,
+  BlockRendererMap,
+} from './types/widget'
+
+export type {
+  ChatMessage,
+  ContentBlock,
+  CustomBlock,
+  TextBlock,
+  WidgetBlock,
+  FileBlock,
+  McpResultBlock,
+  NextAction,
+  QuickSuggestion,
+  EngineSubmission,
+} from './types/chat'
+
+export type {
+  SessionContext,
+  SessionContextChip,
+} from './types/session-context'
