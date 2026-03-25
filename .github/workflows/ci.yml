@@ -76,6 +76,15 @@ jobs:
       - name: Run architecture tests
         run: npm run test:architecture
 
+  # Harness checks（教训驱动的机械化约束）
+  harness-checks:
+    name: Harness Checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run harness checks
+        run: bash scripts/harness-checks.sh
+
   # 构建
   build:
     name: Build

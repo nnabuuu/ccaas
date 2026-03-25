@@ -12,6 +12,7 @@
     "build": "npm run build:common && npm run build --workspaces --if-present --workspace=@kedge-agentic/backend --workspace=@kedge-agentic/admin-next --workspace=@kedge-agentic/vue-sdk --workspace=@kedge-agentic/react-sdk",
     "test": "npm run test --workspaces --if-present",
     "test:architecture": "npm run test:architecture -w @kedge-agentic/backend",
+    "harness-check": "bash scripts/harness-checks.sh",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
