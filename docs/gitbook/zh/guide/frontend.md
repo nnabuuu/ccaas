@@ -4,6 +4,62 @@
 
 即见Agentic 提供 Vue SDK（`@kedge-agentic/vue-sdk`）和 React SDK（`@kedge-agentic/react-sdk`），默认使用 SSE（Server-Sent Events）实时通信，支持 Vue 和 React 前端框架。
 
+## 认证
+
+### API Key 认证
+
+所有 API 请求需要 API Key，通过以下两种方式之一传递：
+
+- `Authorization: Bearer sk-...`
+- `X-API-Key: sk-...`
+
+### useAuth Hook（chat-interface）
+
+`@kedge-agentic/chat-interface` 包提供 `useAuth` hook 用于管理 API Key 认证：
+
+```typescript
+import { useAuth } from '@kedge-agentic/chat-interface'
+
+const { apiKey, isAuthenticated, login, logout } = useAuth()
+
+// 使用 API Key 登录
+login('sk-my-api-key')
+
+// 检查认证状态
+if (isAuthenticated) {
+  // API Key 存储在 localStorage 中，自动附加到请求
+}
+
+// 登出清除存储的 Key
+logout()
+```
+
+### ApiKeyLogin 组件
+
+提供即用型登录组件，包含两个标签页：
+
+1. **账号登录** — 用户名/密码表单（调用 `POST /auth/login`，仅开发环境）
+2. **API Key** — 直接输入 API Key
+
+```typescript
+import { ApiKeyLogin } from '@kedge-agentic/chat-interface'
+
+<ApiKeyLogin
+  serverUrl="http://localhost:3001"
+  onLoginSuccess={(apiKey) => console.log('已登录')}
+/>
+```
+
+### 嵌入模式
+
+在嵌入场景中，通过 URL 参数传入 API Key：
+
+```
+https://your-app.com/chat?apiKey=sk-your-key
+```
+
+Key 会自动从 URL 中提取并存储到 localStorage，同时从地址栏中移除以保证安全。
+
 ## Vue SDK 集成
 
 ### 安装

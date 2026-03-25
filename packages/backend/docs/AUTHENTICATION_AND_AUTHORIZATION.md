@@ -204,6 +204,127 @@ await apiKeyRepository.save({
 
 ---
 
+## Dev Login（开发环境登录）
+
+为开发和测试环境提供基于用户名/密码的快速登录机制。
+
+### 端点
+
+```
+POST /api/v1/auth/login
+```
+
+### 启用条件
+
+仅在以下条件下可用：
+- `NODE_ENV !== 'production'`
+- `NODE_ENV !== 'staging'`
+
+在生产和预发布环境中，此端点完全禁用（不注册路由）。
+
+### 认证流程
+
+1. 用户提交 `{ username, password }`
+2. 系统查询 User 实体，获取 `passwordHash`（默认不查询）
+3. 使用 scrypt 算法验证密码（N:16384, r:8, p:1, keylen:64）
+4. 验证成功后创建 24 小时有效期的 session API key（`admin` scope）
+5. 返回 `{ apiKey, user: { id, username, name } }`
+
+### 密码哈希
+
+- **算法**：scrypt
+- **参数**：N=16384, r=8, p=1, maxmem=64MB
+- **输出格式**：`scrypt:{salt_hex}:{hash_hex}`（keylen=64 bytes）
+- **验证**：使用 `crypto.timingSafeEqual()` 进行常量时间比较
+
+### 预置用户
+
+系统在 `onModuleInit` 时自动创建/更新以下开发用户：
+
+| 用户名 | 密码 | 邮箱 | 名称 | 来源 |
+|--------|------|------|------|------|
+| `admin` | `dev123` | `admin@localhost` | Dev Admin | 环境变量可覆盖 |
+| `demo` | `Demo123` | `demo@localhost` | Demo User | 硬编码 |
+
+### 环境变量
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `DEV_LOGIN_USERNAME` | `admin` | 管理员用户名 |
+| `DEV_LOGIN_PASSWORD` | `dev123` | 管理员密码 |
+| `ADMIN_EMAIL` | `admin@localhost` | 管理员邮箱 |
+
+### 速率限制
+
+`@Throttle({ default: { ttl: 60000, limit: 5 } })` — 每分钟最多 5 次请求。
+
+### 安全注意事项
+
+- 预置密码仅用于开发环境，**绝不应在生产环境中使用**
+- Session API Key 24 小时后自动过期
+- 登录失败不会泄露用户是否存在（统一返回 `UnauthorizedException`）
+
+---
+
+## User 管理 API
+
+### User CRUD 端点
+
+所有端点需要 `admin` scope。
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| `POST /users` | 创建用户（email, name） |
+| `GET /users` | 列出所有活跃用户 |
+| `GET /users/:id` | 获取用户详情 |
+| `PATCH /users/:id` | 更新用户（name, status） |
+| `DELETE /users/:id` | 软删除用户（status → deleted） |
+
+### UserTenant CRUD 端点
+
+| 方法 | 端点 | 说明 |
+|------|------|------|
+| `POST /users/tenants` | 将用户添加到租户（userId, tenantId, role） |
+| `GET /users/tenants/by-tenant/:tenantId` | 列出租户下用户 |
+| `GET /users/tenants/by-user/:userId` | 列出用户所属租户 |
+| `PATCH /users/tenants/:id` | 更新角色/权限 |
+| `DELETE /users/tenants/:id` | 软移除（isActive → false） |
+
+### canCreateSkills 自动推导
+
+当 `canCreateSkills` 参数未提供时，根据角色自动设置：
+
+```typescript
+if (canCreateSkills === undefined) {
+  canCreateSkills = (role === 'admin' || role === 'developer')
+}
+```
+
+- `admin` → `canCreateSkills = true`
+- `developer` → `canCreateSkills = true`
+- `viewer` → `canCreateSkills = false`
+
+显式传入 `canCreateSkills` 时覆盖自动推导。
+
+### 软删除策略
+
+- **User 软删除**：设置 `User.status = 'deleted'`，用户数据保留
+- **UserTenant 软移除**：设置 `UserTenant.isActive = false`，关联记录保留
+- **级联**：删除用户时，关联的 UserTenant 记录同步设为不活跃，相关 API Key 被吊销
+
+### 角色层级
+
+```
+admin (3) > developer (2) > viewer (1)
+```
+
+角色决定权限边界：
+- **admin**：可管理所有用户、Skills 和资源
+- **developer**：可创建 Skills、编辑自己的资源
+- **viewer**：只读访问，不能创建或编辑资源
+
+---
+
 ## 权限控制架构
 
 ### Guard 链

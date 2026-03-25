@@ -4,6 +4,62 @@
 
 CCAAS provides official SDKs for both Vue (`@kedge-agentic/vue-sdk`) and React (`@kedge-agentic/react-sdk`), using SSE (Server-Sent Events) as the default real-time transport.
 
+## Authentication
+
+### API Key Authentication
+
+All API requests require an API key, passed via one of two headers:
+
+- `Authorization: Bearer sk-...`
+- `X-API-Key: sk-...`
+
+### useAuth Hook (chat-interface)
+
+The `@kedge-agentic/chat-interface` package provides a `useAuth` hook for managing API key authentication:
+
+```typescript
+import { useAuth } from '@kedge-agentic/chat-interface'
+
+const { apiKey, isAuthenticated, login, logout } = useAuth()
+
+// Login with API key
+login('sk-my-api-key')
+
+// Check auth state
+if (isAuthenticated) {
+  // API key is stored in localStorage and attached to requests
+}
+
+// Logout clears the stored key
+logout()
+```
+
+### ApiKeyLogin Component
+
+A ready-to-use login component with two tabs:
+
+1. **Account Login** -- Username/password form (calls `POST /auth/login`, development only)
+2. **API Key** -- Direct API key input
+
+```typescript
+import { ApiKeyLogin } from '@kedge-agentic/chat-interface'
+
+<ApiKeyLogin
+  serverUrl="http://localhost:3001"
+  onLoginSuccess={(apiKey) => console.log('Logged in')}
+/>
+```
+
+### Embed Mode
+
+For embedded scenarios, pass the API key via URL parameter:
+
+```
+https://your-app.com/chat?apiKey=sk-your-key
+```
+
+The key is automatically extracted from the URL, stored in localStorage, and removed from the URL bar for security.
+
 ## Vue SDK Integration
 
 ### Installation

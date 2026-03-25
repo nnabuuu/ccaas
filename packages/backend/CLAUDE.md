@@ -33,7 +33,7 @@ src/
 ## Key Modules
 
 - **ChatModule** — SSE endpoints for session messages, events, cancellation. Socket.IO gateway is deprecated. See [gitbook SSE docs](../../docs/designs/).
-- **AuthModule** — API key + 9 scopes (`chat`, `skills:*`, `mcp:*`, `admin`, `analytics:read`). Decorators: `@Public()`, `@Auth('scope')`, `@TenantId()`. See [docs/AUTHENTICATION_AND_AUTHORIZATION.md](./docs/AUTHENTICATION_AND_AUTHORIZATION.md).
+- **AuthModule** — API key + 10 scopes (`chat`, `skills:*`, `mcp:*`, `admin`, `builder`, `analytics:read`). Decorators: `@Public()`, `@Auth('scope')`, `@TenantId()`. Includes Dev Login (`POST /auth/login`, non-production only) and User Management (`/users`, `/users/tenants`). See [docs/AUTHENTICATION_AND_AUTHORIZATION.md](./docs/AUTHENTICATION_AND_AUTHORIZATION.md).
 - **SkillsModule** — CRUD, versioning, trigger-based routing. Register skills: `npm run skill:import -- <solution-name>`. See [docs/SKILL_REGISTRATION.md](./docs/SKILL_REGISTRATION.md).
 - **McpModule** — Server pool lifecycle, health checks, REST-to-MCP adapter. See [docs/MCP_SETUP_AND_TESTING.md](./docs/MCP_SETUP_AND_TESTING.md).
 - **SchedulerModule** — Cron/interval/once tasks, headless AgentEngine execution, retry logic, missed-run detection.
@@ -52,10 +52,13 @@ src/
 | `AUTH_ENABLE_RATE_LIMITING` | true | Enable rate limiting |
 | `MCP_HEALTH_CHECK_INTERVAL_MS` | 60000 | Health check interval |
 | `DEBUG` | false | Debug logging |
+| `DEV_LOGIN_USERNAME` | admin | Dev login admin username |
+| `DEV_LOGIN_PASSWORD` | dev123 | Dev login admin password |
+| `ADMIN_EMAIL` | admin@localhost | Dev login admin email |
 
 ## Database Schema
 
-TypeORM + SQLite (upgradeable to PostgreSQL): `tenants`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`.
+TypeORM + SQLite (upgradeable to PostgreSQL): `tenants`, `users`, `user_tenants`, `api_keys` (SHA-256 hashed), `skills`, `skill_versions`, `mcp_servers`, `messages`, `agent_files`, `scheduled_tasks`, `scheduled_task_executions`.
 
 ## Development Commands
 

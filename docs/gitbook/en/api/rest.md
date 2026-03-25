@@ -704,6 +704,152 @@ Delete an API key (verifies tenant ownership).
 }
 ```
 
+## Authentication
+
+### POST /auth/login
+
+Dev Login endpoint for non-production environments. Returns a session API key.
+
+**Authentication**: No authentication required
+
+**Availability**: Development and test environments only (`NODE_ENV !== 'production' && NODE_ENV !== 'staging'`)
+
+**Rate Limit**: 5 requests per minute
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `username` | string | Yes | Username (1-64 chars) |
+| `password` | string | Yes | Password (1-128 chars) |
+
+**Response**:
+
+```json
+{
+  "apiKey": "sk-session_abc123...",
+  "user": {
+    "id": "user-uuid",
+    "username": "admin",
+    "name": "Dev Admin"
+  }
+}
+```
+
+**Default Accounts** (development only):
+
+| Username | Password | Role |
+|----------|----------|------|
+| `admin` | `dev123` | Admin |
+| `demo` | `Demo123` | Admin |
+
+> **Warning**: This endpoint is disabled in production and staging environments. The returned API key expires after 24 hours and has `admin` scope.
+
+## User Management
+
+Endpoints for managing platform users. All endpoints require `admin` scope.
+
+**Authentication**: Requires API Key (`admin` scope)
+
+### POST /users
+
+Create a new user.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | User email (unique) |
+| `name` | string | Yes | Display name |
+
+**Response**: Created `User` object.
+
+### GET /users
+
+List all active users.
+
+**Response**: Array of `User` objects.
+
+### GET /users/:id
+
+Get user details by ID.
+
+**Response**: `User` object. Returns `404` if not found.
+
+### PATCH /users/:id
+
+Update a user.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | No | Update display name |
+| `status` | string | No | Update status (`active`, `suspended`, `deleted`) |
+
+**Response**: Updated `User` object.
+
+### DELETE /users/:id
+
+Soft delete a user (sets status to `deleted`).
+
+**Response**: `204 No Content`
+
+## User-Tenant Association
+
+Endpoints for managing user-tenant relationships. Each user can have one role per tenant. All endpoints require `admin` scope.
+
+**Authentication**: Requires API Key (`admin` scope)
+
+### POST /users/tenants
+
+Add a user to a tenant with a specific role.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `userId` | string | Yes | User UUID |
+| `tenantId` | string | Yes | Tenant UUID |
+| `role` | string | Yes | `admin`, `developer`, or `viewer` |
+| `canCreateSkills` | boolean | No | Override skill creation permission (auto-derived from role if omitted) |
+
+**canCreateSkills auto-derivation**: `admin` and `developer` -> `true`, `viewer` -> `false`.
+
+**Response**: Created `UserTenant` object. Returns `409` if the user-tenant association already exists.
+
+### GET /users/tenants/by-tenant/:tenantId
+
+List all users in a tenant.
+
+**Response**: Array of `UserTenant` objects (with user details).
+
+### GET /users/tenants/by-user/:userId
+
+List all tenants a user belongs to.
+
+**Response**: Array of `UserTenant` objects (with tenant details).
+
+### PATCH /users/tenants/:id
+
+Update a user-tenant association.
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `role` | string | No | Update role (`admin`, `developer`, `viewer`) |
+| `canCreateSkills` | boolean | No | Update skill creation permission |
+| `isActive` | boolean | No | Activate or deactivate |
+
+**Response**: Updated `UserTenant` object.
+
+### DELETE /users/tenants/:id
+
+Soft remove a user from a tenant (sets `isActive` to `false`).
+
+**Response**: `204 No Content`
+
 ## Admin - API Key Management
 
 Admin API for managing API keys across tenants. All endpoints require `admin` scope.

@@ -128,6 +128,38 @@ interface TenantSettings {
 }
 ```
 
+### User
+
+```typescript
+type UserStatus = 'active' | 'suspended' | 'deleted'
+
+interface User {
+  id: string
+  email: string
+  name: string
+  username?: string
+  status: UserStatus
+  createdAt: string
+  updatedAt: string
+}
+```
+
+### UserTenant
+
+```typescript
+type UserRole = 'admin' | 'developer' | 'viewer'
+
+interface UserTenant {
+  id: string
+  userId: string
+  tenantId: string
+  role: UserRole
+  canCreateSkills: boolean
+  isActive: boolean
+  joinedAt: string
+}
+```
+
 ### API Key
 
 ```typescript
@@ -137,10 +169,12 @@ type ApiKeyScope =
   | 'chat'
   | 'analytics:read'
   | 'admin'
+  | 'builder'
 
 interface ApiKey {
   id: string
   tenantId: string
+  userId?: string
   name: string
   prefix: string
   scopes: ApiKeyScope[]

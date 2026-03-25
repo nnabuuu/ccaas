@@ -706,6 +706,152 @@ Builder 开发者管理自有租户和 API Key 的接口。所有端点需要 `b
 }
 ```
 
+## 认证
+
+### POST /auth/login
+
+开发环境登录端点。返回会话 API Key。
+
+**认证**: 🔓 无需认证
+
+**可用环境**: 仅开发和测试环境（`NODE_ENV !== 'production' && NODE_ENV !== 'staging'`）
+
+**速率限制**: 每分钟 5 次请求
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `username` | string | 是 | 用户名（1-64 字符） |
+| `password` | string | 是 | 密码（1-128 字符） |
+
+**响应**：
+
+```json
+{
+  "apiKey": "sk-session_abc123...",
+  "user": {
+    "id": "user-uuid",
+    "username": "admin",
+    "name": "Dev Admin"
+  }
+}
+```
+
+**预置账号**（仅开发环境）：
+
+| 用户名 | 密码 | 角色 |
+|--------|------|------|
+| `admin` | `dev123` | 管理员 |
+| `demo` | `Demo123` | 管理员 |
+
+> **⚠️ 安全提示**：此端点在生产和预发布环境中禁用。返回的 API Key 24 小时后过期，具有 `admin` 权限范围。
+
+## 用户管理
+
+平台用户管理端点。所有端点需要 `admin` 权限范围。
+
+**认证**: 🔐 需要 API Key（`admin` 权限范围）
+
+### POST /users
+
+创建新用户。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `email` | string | 是 | 用户邮箱（唯一） |
+| `name` | string | 是 | 显示名称 |
+
+**响应**：创建的 `User` 对象。
+
+### GET /users
+
+获取所有活跃用户列表。
+
+**响应**：`User` 对象数组。
+
+### GET /users/:id
+
+根据 ID 获取用户详情。
+
+**响应**：`User` 对象。不存在时返回 `404`。
+
+### PATCH /users/:id
+
+更新用户信息。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | string | 否 | 更新显示名称 |
+| `status` | string | 否 | 更新状态（`active`、`suspended`、`deleted`） |
+
+**响应**：更新后的 `User` 对象。
+
+### DELETE /users/:id
+
+软删除用户（状态设为 `deleted`）。
+
+**响应**：`204 No Content`
+
+## 用户-租户关联
+
+用户与租户关联关系管理端点。每个用户在每个租户中只能有一个角色。所有端点需要 `admin` 权限范围。
+
+**认证**: 🔐 需要 API Key（`admin` 权限范围）
+
+### POST /users/tenants
+
+将用户添加到租户并分配角色。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `userId` | string | 是 | 用户 UUID |
+| `tenantId` | string | 是 | 租户 UUID |
+| `role` | string | 是 | `admin`、`developer` 或 `viewer` |
+| `canCreateSkills` | boolean | 否 | 覆盖 Skill 创建权限（未设置时根据角色自动推导） |
+
+**canCreateSkills 自动推导**：`admin` 和 `developer` → `true`，`viewer` → `false`。
+
+**响应**：创建的 `UserTenant` 对象。用户-租户关联已存在时返回 `409`。
+
+### GET /users/tenants/by-tenant/:tenantId
+
+获取租户下的所有用户。
+
+**响应**：`UserTenant` 对象数组（包含用户详情）。
+
+### GET /users/tenants/by-user/:userId
+
+获取用户所属的所有租户。
+
+**响应**：`UserTenant` 对象数组（包含租户详情）。
+
+### PATCH /users/tenants/:id
+
+更新用户-租户关联。
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `role` | string | 否 | 更新角色（`admin`、`developer`、`viewer`） |
+| `canCreateSkills` | boolean | 否 | 更新 Skill 创建权限 |
+| `isActive` | boolean | 否 | 启用或停用 |
+
+**响应**：更新后的 `UserTenant` 对象。
+
+### DELETE /users/tenants/:id
+
+软移除用户与租户的关联（设置 `isActive` 为 `false`）。
+
+**响应**：`204 No Content`
+
 ## 管理员 - API Key 管理
 
 用于管理租户 API Key 的管理员接口。所有端点都需要 `admin` 权限范围。
