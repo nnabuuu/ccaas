@@ -186,59 +186,9 @@ gh pr create --fill
 
 GitHub 会自动填充 PR template，包含 **Code Review Checklist**。
 
-### 请 Claude Code Review (使用两个 agents)
+### 请 Claude Code Review
 
-在 Claude Code 中执行：
-
-```
-请用 code-reviewer 和 code-simplifier 两个 agent review 这个 PR:
-https://github.com/your-org/ccaas/pull/123
-
-code-reviewer 重点检查：
-1. 架构合规性
-2. 测试覆盖
-3. API 契约
-4. 安全性
-
-code-simplifier 重点检查：
-1. 是否存在 over-engineering
-2. 是否有不必要的抽象
-3. 是否有更简单的实现方式
-4. 是否添加了未被要求的功能
-```
-
-### Review Checklist
-
-Claude Code 会逐项检查：
-
-#### 1️⃣ 架构合规性
-- [ ] 核心后端不包含领域实体
-- [ ] 代码放在正确的 package
-- [ ] 没有违反架构分层
-
-#### 2️⃣ 测试覆盖
-- [ ] 单元测试已添加/更新
-- [ ] 测试质量（不是空测试）
-- [ ] 集成测试（如适用）
-
-#### 3️⃣ 代码质量
-- [ ] 遵循 TDD 原则
-- [ ] 代码可读性
-- [ ] 错误处理
-
-#### 4️⃣ API 契约
-- [ ] API 格式一致
-- [ ] 向后兼容
-- [ ] 文档更新
-
-#### 5️⃣ 安全性
-- [ ] 输入验证
-- [ ] 认证授权
-- [ ] 敏感数据处理
-
-#### 6️⃣ 性能
-- [ ] 数据库查询优化
-- [ ] 前端性能
+Review 流程和检查清单详见 [DEVELOPMENT_PRINCIPLES.md - Code Review Best Practices](./DEVELOPMENT_PRINCIPLES.md#code-review-best-practices)。
 
 ### 讨论与修改
 
@@ -395,6 +345,55 @@ npm run test:architecture
 # ✅ 没有从 solutions 导入
 # ✅ 实体放在正确位置
 ```
+
+---
+
+## Commit Message Convention
+
+Format: `<type>(<scope>): <subject>`
+
+**Types**: feat, fix, refactor, docs, test, chore, perf
+**Scopes**: backend, frontend, react-sdk, vue-sdk, admin, docs, common, ci, deps
+
+**Examples**:
+```
+feat(backend): add JWT authentication
+fix(react-sdk): fix API response parsing
+docs(readme): update installation guide
+```
+
+**Reference Linear**: Include `Related: NIE-XX` in commit body.
+
+Git hooks automatically validate format.
+
+---
+
+## Task Tracking with Linear
+
+All tasks are tracked in Linear using the `linear-task-workflow` skill:
+
+- **New tasks**: Linear issue auto-created when you describe a task
+- **Progress updates**: Milestones recorded in Linear comments
+- **Final summary**: Complete deliverables summary in Linear
+- **No `*_COMPLETE.md` files**: All tracking in Linear, not code repo
+
+For details, see: [`.claude/skills/linear-task-workflow/SKILL.md`](../.claude/skills/linear-task-workflow/SKILL.md)
+
+---
+
+## Documentation Rules
+
+**Don't create**:
+- `PHASE_*_COMPLETE.md` - Use Linear comments
+- `*_IMPLEMENTATION.md` - Use Linear summary
+- `*_PROGRESS.md` - Use Linear status
+
+**Do create** (only when necessary):
+- ADR (`docs/adr/`) - For architectural decisions
+- Implementation guides (`docs/implementation/`) - For complex mechanisms
+- API docs - For new endpoints
+
+**Decision tree**: See [PROJECT_MANAGEMENT_GUIDE.md](./PROJECT_MANAGEMENT_GUIDE.md)
 
 ---
 

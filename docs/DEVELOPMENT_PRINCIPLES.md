@@ -286,6 +286,36 @@ return (
 
 ---
 
+## Architecture Testing
+
+```bash
+npm run test:architecture
+
+# Checks:
+# - Core backend has no domain entities
+# - No imports from solutions/
+# - Entities in correct locations
+```
+
+Run before merging any PR that touches backend entities.
+
+---
+
+## Refactoring Guidelines
+
+### Terminology and Field Name Changes
+
+When refactoring terminology or field names across the codebase:
+
+1. **Search First**: Use `Grep` to find ALL usages before making changes
+2. **Document Scope**: List all affected files and usage contexts
+3. **Make Changes**: Edit all affected files
+4. **Verify Coverage**: After changes, grep again to ensure no instances were missed
+5. **Update Tests**: Check that tests reflect the new terminology
+6. **Update Documentation**: Ensure all docs use consistent terminology
+
+---
+
 ## Summary
 
 **Three Core Principles**:
