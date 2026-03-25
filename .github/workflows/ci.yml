@@ -53,11 +53,32 @@ jobs:
         run: npm ci
       - name: Build shared packages (required for tests)
         run: npm run build:common
-      - name: Run tests
-        run: npm test
-      - name: Upload coverage (optional)
-        if: always()
-        run: echo "Coverage reporting can be added later"
+      - name: Run backend tests with coverage
+        run: |
+          cd packages/backend && npm run test:cov
+          # Extract coverage percentage and enforce minimum
+          if [ -f coverage/coverage-summary.json ]; then
+            COVERAGE=$(python3 -c "
+          import json, sys
+          d = json.load(open('coverage/coverage-summary.json'))
+          print(int(d['total']['statements']['pct']))
+          ")
+            echo "Backend statement coverage: ${COVERAGE}%"
+            if [ "$COVERAGE" -lt 60 ]; then
+              echo "ERROR: Backend coverage ${COVERAGE}% is below 60% threshold"
+              exit 1
+            fi
+          else
+            echo "WARNING: coverage-summary.json not found, skipping threshold check"
+          fi
+      - name: Run react-sdk tests with coverage
+        run: cd packages/react-sdk && npx vitest run --coverage
+      - name: Run chat-interface tests
+        # 新增测试步骤，先用 || true 验证是否能跑通
+        run: cd packages/chat-interface && npx vitest run || true
+      - name: Run vue-sdk tests
+        # 新增测试步骤，先用 || true 验证是否能跑通
+        run: cd packages/vue-sdk && npx vitest run || true
 
   # 架构测试（防止违反架构原则）
   architecture:
@@ -82,8 +103,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Build shared packages (required for tests)
+        run: npm run build:common
       - name: Run harness checks
-        run: bash scripts/harness-checks.sh
+        run: bash scripts/harness-checks.sh --full
 
   # 构建
   build:
@@ -104,3 +133,23 @@ jobs:
           echo "Verifying build artifacts..."
           test -d packages/backend/dist || (echo "Backend build failed" && exit 1)
           echo "✓ Build completed successfully"
+
+  # Gate — 所有 job 的汇聚点，branch protection 只需标记此 job 为 required
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test, architecture, harness-checks, build]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          results=("${{ needs.lint.result }}" "${{ needs.typecheck.result }}" \
+                   "${{ needs.test.result }}" "${{ needs.architecture.result }}" \
+                   "${{ needs.harness-checks.result }}" "${{ needs.build.result }}")
+          for r in "${results[@]}"; do
+            if [ "$r" != "success" ]; then
+              echo "FAILED: One or more required jobs did not succeed."
+              exit 1
+            fi
+          done
+          echo "All required jobs passed."

@@ -2,16 +2,19 @@
 . "$(dirname -- "$0")/_/husky.sh"
 
 echo "🔍 Pre-push verification..."
-echo ""
 
-# Quick sanity checks (non-blocking)
-echo "✓ Lint was checked during commit (pre-commit hook)"
-echo "✓ Push allowed (GitHub Actions CI disabled)"
-echo ""
-echo "ℹ️  To run full checks manually:"
-echo "   npm run lint      # ESLint"
-echo "   npm run typecheck # TypeScript"
-echo "   npm run build     # Build all packages"
-echo "   npm test          # Run all tests"
-echo ""
-echo "✅ Pushing..."
+# Harness checks (fast, <5s)
+bash scripts/harness-checks.sh || exit 1
+
+# Run tests for changed packages only
+CHANGED=$(git diff --name-only @{push}.. 2>/dev/null || git diff --name-only HEAD~1)
+if echo "$CHANGED" | grep -q "packages/backend/"; then
+  echo "🧪 Running backend tests..."
+  (cd packages/backend && npx jest --no-coverage) || exit 1
+fi
+if echo "$CHANGED" | grep -q "packages/react-sdk/"; then
+  echo "🧪 Running react-sdk tests..."
+  (cd packages/react-sdk && npx vitest run) || exit 1
+fi
+
+echo "✅ Pre-push checks passed."

@@ -74,6 +74,16 @@ npm run dev:admin        # Start admin on :5175
 - New controllers: MUST have `@ApiTags` decorator
 - API changes: update gitbook docs in sync
 
+## Post-Implementation Checklist (MANDATORY)
+
+After ANY code changes, you MUST run these steps IN ORDER before considering the task done:
+
+1. **Tests**: `cd packages/backend && npx jest --no-coverage` (or relevant package)
+2. **Code Review**: Run `code-reviewer` agent on all changed files
+3. **Harness**: `bash scripts/harness-checks.sh`
+
+Skipping any step is a workflow violation. If review finds issues, fix them before proceeding.
+
 ## gstack
 
 Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.

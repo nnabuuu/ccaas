@@ -59,8 +59,11 @@
     "lint-staged": "^15.0.0"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "echo 'Staged files will be checked by CI'"
+    "packages/backend/src/**/*.ts": [
+      "bash -c 'cd packages/backend && npx tsc --noEmit'"
+    ],
+    "packages/admin-next/src/**/*.{ts,tsx}": [
+      "bash -c 'cd packages/admin-next && npx tsc --noEmit'"
     ]
   },
   "overrides": {

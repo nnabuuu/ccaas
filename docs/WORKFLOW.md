@@ -175,6 +175,22 @@ Linear-Issue: CCaas-123"
 
 ---
 
+## 阶段 3.5: Harness 验证
+
+开发完成后、PR review 前，运行 harness 检查：
+
+```bash
+# 本地运行完整 harness
+bash scripts/harness-checks.sh
+
+# 检查 test coverage
+cd packages/backend && npm run test:cov
+```
+
+确保所有 harness check 通过再进入 review 阶段。
+
+---
+
 ## 阶段 4: Code Review (code-reviewer + code-simplifier)
 
 ### 创建 PR
@@ -230,7 +246,9 @@ GitHub Actions 自动运行：
 ✅ Lint          - ESLint 检查
 ✅ Type Check    - TypeScript 类型检查
 ✅ Tests         - 所有测试通过
+✅ Coverage      - 测试覆盖率达标
 ✅ Architecture  - 架构规则验证
+✅ Harness       - 机械化约束检查
 ✅ Build         - 构建成功
 ```
 

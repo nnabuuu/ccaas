@@ -1,6 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Pre-commit checks are handled by CI
-# This hook is a placeholder for future checks if needed
-echo "✓ Pre-commit check passed (full checks will run in CI)"
+npx lint-staged

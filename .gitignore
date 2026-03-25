@@ -34,3 +34,4 @@ coverage/
 
 # Package lock (use root lock file)
 packages/*/package-lock.json
+.gstack/
