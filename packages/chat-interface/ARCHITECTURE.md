@@ -98,15 +98,21 @@ json-render Renderer (组件匹配 + 渲染)
 
 ### 3.1 消息处理管线
 
+System prompt 由**服务端**组装（见 ADR-0012），前端只通过 `appendSystemPrompt` 字段补充服务端无法得知的信息。
+
 ```
+服务端 system prompt 组装:
+  ├── Skill prompt (SkillManagementService)
+  ├── Template appendSystemPrompt (租户配置)
+  ├── MCP tool descriptions (自动生成)
+  └── 前端 appendSystemPrompt (widget catalog + static context)
+
+前端职责 (buildAppendPrompt):
+  ├── Widget catalog description (服务端不知前端注册了哪些 widget)
+  └── 少量 static context (角色/学校等不变信息)
+  注: domain-specific dynamic data 通过 MCP server 提供, 不注入 system prompt
+
 用户输入
-  ↓
-Harness 预处理:
-  ├── Session 注入 (角色/学校/班级 → system_prompt)
-  ├── Skill 候选匹配 (trigger 关键词扫描)
-  └── 历史上下文 (最近 N 轮摘要)
-  ↓
-system_prompt = base + skill_prompt + catalog.prompt() + session + history
   ↓
 Agentic 引擎 completion (LLM 推理 + tool_use)
   ↓
@@ -480,7 +486,8 @@ Solution 可以通过 `customBlockRenderers` 处理自定义 ContentBlock 类型
 ├── builtinRegistry, builtinCatalog         # Widget 系统
 ├── mergeRegistries, mergeCatalogs          # 合并工具
 ├── createMcpBridge, createMockMcpBridge    # MCP Bridge
-├── parseAssistantContent, submitToEngine   # Harness
+├── parseAssistantContent, submitToEngine   # Harness (postprocessor + submit)
+├── buildAppendPrompt, sessionContextToPrompt  # Harness (preprocessor)
 ├── useSessionContext, useQuickSuggestions  # Hooks
 └── types (all exported)                    # 完整类型
 ```
@@ -508,7 +515,7 @@ src/
 │   │   └── FormCollect.tsx
 │   └── mcp-bridge.ts        # MCP 数据源桥接层
 ├── harness/
-│   ├── preprocessor.ts      # 消息预处理 (session注入/skill匹配/历史摘要)
+│   ├── preprocessor.ts      # buildAppendPrompt + sessionContextToPrompt (see ADR-0012)
 │   ├── postprocessor.ts     # 响应后处理 (widget路由/MCP执行)
 │   └── submit-engine.ts     # submitToEngine 实现
 └── skills/

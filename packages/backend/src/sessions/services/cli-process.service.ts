@@ -111,6 +111,11 @@ export class CliProcessService {
     session.lastActivity = new Date();
     session.currentOnEvent = onEvent;
 
+    // Persist appendSystemPrompt so sendFollowUp (--resume) can restore it
+    if (appendSystemPrompt) {
+      session.appendSystemPrompt = appendSystemPrompt;
+    }
+
     this.logger.log(`AgentEngine spawned with PID ${cli.pid} for session ${session.sessionId}`);
 
     cli.on('spawn', () => {

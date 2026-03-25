@@ -50,8 +50,7 @@ export { Summary } from './widgets/components/Summary'
 export { parseAssistantContent, parseLlmResponse, extractNextActions } from './harness/postprocessor'
 export { submitToEngine, buildSubmissionPayload } from './harness/submit-engine'
 export type { SubmitToEngineOptions } from './harness/submit-engine'
-export { assembleSystemPrompt, sessionContextToPrompt } from './harness/preprocessor'
-export type { SystemPromptParts } from './harness/preprocessor'
+export { buildAppendPrompt, sessionContextToPrompt } from './harness/preprocessor'
 
 // === Types ===
 export type {
