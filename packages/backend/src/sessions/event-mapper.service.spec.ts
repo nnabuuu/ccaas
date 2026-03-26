@@ -1408,6 +1408,43 @@ describe('EventMapperService', () => {
       expect((events.find((e) => e.type === 'output_update') as any).payload.progress).toBe(75);
     });
 
+    it('wraps raw tool result with trigger.field when configured', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'parse_quiz_content', eventType: 'output_update', field: 'parsedQuiz' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_parse', 'mcp__quiz-analyzer-tools__parse_quiz_content',
+        { stem: 'What is 1+1?', options: ['A. 1', 'B. 2'], quizType: 'choice' },
+      );
+
+      const outputUpdate = events.find((e) => e.type === 'output_update');
+      expect(outputUpdate).toBeDefined();
+      // Raw result should be wrapped as { field, value }
+      expect((outputUpdate as any).payload.data).toEqual({
+        field: 'parsedQuiz',
+        value: { stem: 'What is 1+1?', options: ['A. 1', 'B. 2'], quizType: 'choice' },
+      });
+    });
+
+    it('does not wrap when result already has a field property (write_output)', () => {
+      service.registerTenantToolTriggers(tenantId, [
+        { toolName: 'write_output', eventType: 'output_update', field: 'fallback' },
+      ]);
+
+      const events = emitMcpToolCycle(
+        'toolu_wo', 'mcp__server__write_output',
+        { field: 'parsedQuiz', value: { stem: 'Hi' }, success: true },
+      );
+
+      const outputUpdate = events.find((e) => e.type === 'output_update');
+      expect(outputUpdate).toBeDefined();
+      // Should NOT be double-wrapped — existing field is preserved
+      expect((outputUpdate as any).payload.data).toEqual({
+        field: 'parsedQuiz', value: { stem: 'Hi' }, success: true,
+      });
+    });
+
     it('clearAllTenantToolTriggers removes all registered triggers', () => {
       service.registerTenantToolTriggers(tenantId, [
         { toolName: 'advance_beat', eventType: 'output_update' },

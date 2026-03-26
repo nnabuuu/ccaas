@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import type { Skill } from '@kedge-agentic/common'
 import type { UseSkillsOptions, UseSkillsReturn } from '../types'
+import { buildAuthHeaders } from '../utils/authHeaders'
 
 /**
  * Skills management hook.
@@ -11,7 +12,7 @@ import type { UseSkillsOptions, UseSkillsReturn } from '../types'
  * Extracted from both solutions' useSkills hooks (nearly identical).
  */
 export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
-  const { serverUrl = '', tenantId } = options
+  const { serverUrl = '', tenantId, apiKey } = options
 
   const [skills, setSkills] = useState<Skill[]>([])
   const [loading, setLoading] = useState(true)
@@ -24,7 +25,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
 
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills`, {
-        headers: { 'X-Tenant-Id': tenantId },
+        headers: { 'X-Tenant-Id': tenantId, ...buildAuthHeaders(apiKey) },
       })
 
       if (!response.ok) {
@@ -39,7 +40,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     } finally {
       setLoading(false)
     }
-  }, [serverUrl, tenantId])
+  }, [serverUrl, tenantId, apiKey])
 
   useEffect(() => {
     fetchSkills()
@@ -69,7 +70,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     try {
       const response = await fetch(`${serverUrl}/api/v1/skills/${skillId}/toggle`, {
         method: 'PATCH',
-        headers: { 'X-Tenant-Id': tenantId },
+        headers: { 'X-Tenant-Id': tenantId, ...buildAuthHeaders(apiKey) },
       })
 
       if (!response.ok) {
@@ -81,7 +82,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle skill')
     }
-  }, [serverUrl, tenantId])
+  }, [serverUrl, tenantId, apiKey])
 
   const isSkillEnabled = useCallback(
     (skillId: string): boolean => enabledSkillIds.has(skillId),

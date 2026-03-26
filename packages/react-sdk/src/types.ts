@@ -525,6 +525,7 @@ export interface UseOutputSyncReturn<T extends Record<string, unknown>> {
 export interface UseSkillsOptions {
   serverUrl?: string
   tenantId: string
+  apiKey?: string
 }
 
 export interface UseSkillsReturn {

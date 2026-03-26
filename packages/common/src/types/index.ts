@@ -739,6 +739,8 @@ export interface ToolEventTrigger {
   toolName: string;
   /** Frontend event type to emit */
   eventType: 'output_update';
+  /** Optional field name — when set, wraps the raw tool result as { field, value: result } in the output_update payload so the frontend can route it. Required for non-write_output tools (e.g. parse_quiz_content) whose results don't include a field property. */
+  field?: string;
 }
 
 /**

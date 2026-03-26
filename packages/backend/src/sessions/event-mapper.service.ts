@@ -1120,17 +1120,25 @@ export class EventMapperService {
       parsedResult = result as Record<string, unknown>;
     }
 
-    const buildOutputUpdate = (): SessionEvent => ({
-      type: 'output_update',
-      sessionId,
-      clientId,
-      payload: {
-        data: parsedResult.data || parsedResult,
-        status: (parsedResult.status as string) || 'unknown',
-        progress: parsedResult.progress as number | undefined,
-        timestamp,
-      },
-    });
+    const buildOutputUpdate = (triggerField?: string): SessionEvent => {
+      let data: unknown = parsedResult.data ?? parsedResult;
+      // When a trigger specifies a field and the raw result doesn't already
+      // include one, wrap it so the frontend can route the output_update.
+      if (triggerField && typeof data === 'object' && data !== null && !Object.prototype.hasOwnProperty.call(data, 'field')) {
+        data = { field: triggerField, value: data };
+      }
+      return {
+        type: 'output_update',
+        sessionId,
+        clientId,
+        payload: {
+          data,
+          status: (parsedResult.status as string) || 'unknown',
+          progress: parsedResult.progress as number | undefined,
+          timestamp,
+        },
+      };
+    };
 
     // Handle todo_write specially (not a trigger-based tool)
     if (normalizedName === 'todo_write' || normalizedName === 'TodoWrite') {
@@ -1162,11 +1170,11 @@ export class EventMapperService {
     // solution-specific triggers (from solution.json mcpServers).
     const session = this.sessionGetter?.(sessionId);
     if (session?.tenantId) {
-      const triggers = this.tenantToolTriggers.get(session.tenantId) ?? [];
+      const triggers = this.getTenantToolTriggers(session.tenantId);
       for (const trigger of triggers) {
         if (trigger.toolName !== normalizedName) continue;
         if (trigger.eventType === 'output_update') {
-          events.push(buildOutputUpdate());
+          events.push(buildOutputUpdate(trigger.field));
         }
       }
     }

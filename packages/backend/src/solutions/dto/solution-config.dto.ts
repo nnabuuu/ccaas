@@ -47,6 +47,8 @@ export const ToolEventTriggerSchema = z.object({
   toolName: z.string().min(1),
   /** Frontend event type to emit. Only 'output_update' is supported. */
   eventType: z.enum(['output_update']),
+  /** Optional field name — wraps raw tool result as { field, value } in the output_update payload. Required for tools whose results don't include a field property (e.g. parse_quiz_content). */
+  field: z.string().min(1).optional(),
 });
 
 /** Inferred type — single source of truth; re-exported from mcp/types.ts */

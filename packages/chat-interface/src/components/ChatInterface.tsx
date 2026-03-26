@@ -31,6 +31,8 @@ export interface ChatInterfaceProps {
   apiKey?: string
   onMenuClick?: () => void
   onMessageSent?: () => void
+  /** Extra trailing content inserted before the "技能" button in the context bar */
+  contextBarTrailing?: React.ReactNode
 }
 
 export function ChatInterface({
@@ -50,6 +52,7 @@ export function ChatInterface({
   apiKey,
   onMenuClick,
   onMessageSent,
+  contextBarTrailing,
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('')
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
@@ -207,12 +210,15 @@ export function ChatInterface({
             </button>
           )}
           trailing={
-            <button
-              onClick={() => setSkillPanelOpen(prev => !prev)}
-              className="text-[11px] px-[10px] py-[3px] rounded-xl border bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg2/80"
-            >
-              技能
-            </button>
+            <>
+              {contextBarTrailing}
+              <button
+                onClick={() => setSkillPanelOpen(prev => !prev)}
+                className="text-[11px] px-[10px] py-[3px] rounded-xl border bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg2/80"
+              >
+                技能
+              </button>
+            </>
           }
         />
 
@@ -220,6 +226,7 @@ export function ChatInterface({
         <SkillPanel
           serverUrl={serverUrl}
           tenantId={tenantId}
+          apiKey={apiKey}
           open={skillPanelOpen}
           onClose={() => setSkillPanelOpen(false)}
         />

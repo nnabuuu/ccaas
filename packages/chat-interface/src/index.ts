@@ -20,6 +20,7 @@ export { FileCard } from './components/FileCard'
 export { NextActions } from './components/NextActions'
 export { QuickSuggestions } from './components/QuickSuggestions'
 export { SkillPanel } from './components/SkillPanel'
+export type { SkillPanelProps } from './components/SkillPanel'
 
 // === Context ===
 export { ChatInterfaceProvider, useChatInterfaceContext } from './context/ChatInterfaceContext'
