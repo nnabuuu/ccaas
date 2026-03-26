@@ -5,6 +5,7 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   timestamp: string
   content: ContentBlock[]
+  isStreaming?: boolean
   activeSkill?: string
   nextActions?: NextAction[]
 }
