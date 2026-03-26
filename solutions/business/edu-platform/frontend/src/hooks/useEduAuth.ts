@@ -80,8 +80,8 @@ export function useEduAuth(): EduAuth {
         body: JSON.stringify({ username, password }),
       })
       await handleAuthResponse(res)
-    } catch (err: any) {
-      setError(err.message || '登录失败')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '登录失败')
     } finally {
       setIsLoading(false)
     }
@@ -97,8 +97,8 @@ export function useEduAuth(): EduAuth {
         body: JSON.stringify(data),
       })
       await handleAuthResponse(res)
-    } catch (err: any) {
-      setError(err.message || '注册失败')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : '注册失败')
     } finally {
       setIsLoading(false)
     }

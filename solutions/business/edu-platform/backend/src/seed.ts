@@ -450,12 +450,9 @@ insertAll();
 const total = (db.prepare('SELECT COUNT(*) as count FROM curriculum_nodes').get() as { count: number }).count;
 const byLevel = db.prepare('SELECT level, COUNT(*) as count FROM curriculum_nodes GROUP BY level ORDER BY level').all() as { level: number; count: number }[];
 
-console.log('\n✅ Curriculum seeded successfully');
-console.log(`   Total nodes: ${total}`);
-for (const row of byLevel) {
-  const labels = ['', '领域', '主题', '单元', '知识点'];
-  console.log(`   Level ${row.level} (${labels[row.level]}): ${row.count}`);
-}
+const labels = ['', '领域', '主题', '单元', '知识点'];
+const breakdown = byLevel.map(row => `Level ${row.level} (${labels[row.level]}): ${row.count}`).join(', ');
+console.log(`✅ Curriculum seeded: ${total} nodes — ${breakdown}`);
 
 // ─── Seed default users ─────────────────────────────────
 
@@ -480,8 +477,6 @@ db.prepare(
   'INSERT INTO users (id, username, password_hash, name, school) VALUES (?, ?, ?, ?, ?)',
 ).run(randomUUID(), 'teacher', seedPassword, '张老师', '树人中学');
 
-console.log('\n✅ Default user seeded:');
-console.log('   username: teacher / password: teacher123 (张老师, 树人中学)');
-console.log('');
+console.log('✅ Default user seeded: teacher / teacher123 (张老师, 树人中学)');
 
 db.close();
