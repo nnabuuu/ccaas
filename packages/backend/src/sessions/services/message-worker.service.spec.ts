@@ -124,6 +124,7 @@ describe('MessageWorkerService — processMessage', () => {
       makeSseClientId(SESSION_ID),
       null,
       undefined,
+      'tenant-123',
     );
   });
 

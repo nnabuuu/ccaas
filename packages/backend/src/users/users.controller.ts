@@ -20,7 +20,7 @@ import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { RequireScopes } from '../auth/decorators';
 
-@ApiTags('auth')
+@ApiTags('users')
 @Controller('users')
 @UseGuards(ApiKeyGuard)
 export class UsersController {

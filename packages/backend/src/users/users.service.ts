@@ -55,7 +55,8 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
-    Object.assign(user, updateUserDto);
+    if (updateUserDto.name !== undefined) user.name = updateUserDto.name;
+    if (updateUserDto.status !== undefined) user.status = updateUserDto.status;
     return this.usersRepository.save(user);
   }
 

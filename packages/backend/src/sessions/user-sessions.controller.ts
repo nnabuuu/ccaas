@@ -11,6 +11,7 @@ import {
   Get,
   Query,
   Logger,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -20,7 +21,8 @@ import {
 } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Auth } from '../auth/decorators';
+import { Auth, Ctx } from '../auth/decorators';
+import { RequestContext } from '../auth/types';
 import { Session } from '../admin/entities/session.entity';
 
 interface UserSessionListItem {
@@ -61,9 +63,23 @@ export class UserSessionsController {
   async listUserSessions(
     @Query('userId') userId: string,
     @Query('tenantId') tenantId: string,
+    @Ctx() ctx: RequestContext,
     @Query('page') pageStr?: string,
     @Query('pageSize') pageSizeStr?: string,
   ): Promise<PaginatedUserSessions> {
+    // Non-admin keys: enforce tenant isolation and user ownership
+    if (!ctx?.apiKeyScopes?.includes('admin')) {
+      if (!ctx?.userId) {
+        throw new ForbiddenException('API key must be bound to a user to access user sessions');
+      }
+      if (ctx.userId !== userId) {
+        throw new ForbiddenException('Cannot access sessions of another user');
+      }
+      if (ctx.tenantId !== tenantId) {
+        throw new ForbiddenException('Cannot access sessions of another tenant');
+      }
+    }
+
     const page = Math.max(1, parseInt(pageStr || '1', 10) || 1);
     const pageSize = Math.max(1, Math.min(100, parseInt(pageSizeStr || '30', 10) || 30));
     const offset = (page - 1) * pageSize;

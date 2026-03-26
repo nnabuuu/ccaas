@@ -12,18 +12,26 @@ import { ApiKeyGuard } from './guards/api-key.guard';
 import { ScopesGuard } from './guards/scopes.guard';
 import { TenantsModule } from '../tenants/tenants.module';
 import { UsersModule } from '../users/users.module';
+import { User } from '../users/entities/user.entity';
+import { DevLoginService } from './dev-login.service';
+import { DevLoginController } from './dev-login.controller';
+
+const enableDevLogin = process.env.NODE_ENV !== 'production'
+  && process.env.NODE_ENV !== 'staging';
 
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ApiKey]),
+    TypeOrmModule.forFeature([ApiKey, User]),
     TenantsModule,
     forwardRef(() => UsersModule),
   ],
+  controllers: [...(enableDevLogin ? [DevLoginController] : [])],
   providers: [
     ApiKeyService,
     ApiKeyGuard,
     ScopesGuard,
+    ...(enableDevLogin ? [DevLoginService] : []),
   ],
   exports: [
     ApiKeyService,

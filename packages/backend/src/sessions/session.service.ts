@@ -115,6 +115,7 @@ export class SessionService implements OnModuleDestroy {
     clientId: string,
     socket: Socket | null,
     userId?: string,
+    tenantId?: string,
   ): ManagedSession {
     let session = this.sessions.get(sessionId);
 
@@ -124,6 +125,10 @@ export class SessionService implements OnModuleDestroy {
       // Preserve userId if it was set before
       if (!session.userId && userId) {
         session.userId = userId;
+      }
+      // Backfill tenantId if it was missing
+      if (!session.tenantId && tenantId) {
+        session.tenantId = tenantId;
       }
       this.logger.log(`Reusing existing session ${sessionId}`);
       return session;
@@ -180,6 +185,7 @@ export class SessionService implements OnModuleDestroy {
       buffer: '',
       workspaceDir,
       userId, // Week 3: Track user
+      tenantId, // Persist tenantId from queue
       syncedSkillIds: new Set(), // Week 3: Track synced skills
     };
 
@@ -872,7 +878,13 @@ export class SessionService implements OnModuleDestroy {
       estimatedCost?: number;
     },
   ): Promise<void> {
-    await this.updateSessionInDatabase(sessionId, stats);
+    // Backfill tenantId for sessions that were created before the fix
+    const session = this.sessions.get(sessionId);
+    const updates: Partial<SessionEntity> = { ...stats };
+    if (session?.tenantId) {
+      updates.tenantId = session.tenantId;
+    }
+    await this.updateSessionInDatabase(sessionId, updates);
   }
 
   /**

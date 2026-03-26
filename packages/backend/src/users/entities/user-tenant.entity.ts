@@ -3,6 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
   Index,
@@ -43,4 +44,7 @@ export class UserTenant {
 
   @CreateDateColumn()
   joinedAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

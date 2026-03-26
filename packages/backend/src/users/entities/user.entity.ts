@@ -21,6 +21,12 @@ export class User {
   @Column()
   name: string;
 
+  @Column({ type: 'varchar', nullable: true, unique: true })
+  username?: string | null;
+
+  @Column({ type: 'varchar', nullable: true, select: false })
+  passwordHash?: string | null;
+
   @Column({ type: 'varchar', default: 'active' })
   status: UserStatus;
 

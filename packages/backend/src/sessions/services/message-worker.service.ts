@@ -165,7 +165,7 @@ export class MessageWorkerService implements OnModuleInit, OnModuleDestroy {
       // getOrCreateSession recreates the session if a prior autoClose destroyed it
       const clientId = makeSseClientId(sessionId);
       const userId = queueItem.payload.userId;
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, null, userId);
+      const session = this.sessionService.getOrCreateSession(sessionId, clientId, null, userId, queueItem.tenantId ?? undefined);
 
       // Resolve attachments from queue payload
       const attachmentInputs = queueItem.payload.attachments ?? queueItem.payload.attachmentPaths?.map(s => JSON.parse(s));
