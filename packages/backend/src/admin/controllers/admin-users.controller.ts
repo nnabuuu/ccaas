@@ -33,6 +33,9 @@ import { ApiKeyService } from '../../auth/api-key.service';
 import { AuditService } from '../services/audit.service';
 import { CreateTenantUserDto } from '../dto/create-tenant-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
+import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
+import type { UserRole } from '../../users/entities/user-tenant.entity';
+import type { UserTenantFilter } from '../../users/user-tenant.service';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -63,6 +66,9 @@ export class AdminUsersController {
     @Query('tenantId') tenantId: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '50',
+    @Query('search') search: string | undefined,
+    @Query('role') role: string | undefined,
+    @Query('status') status: string | undefined,
     @Ctx() ctx: RequestContext,
   ) {
     // Builder scope isolation: force tenantId to own tenant
@@ -84,15 +90,24 @@ export class AdminUsersController {
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
 
-    // Get users for tenant
-    const allUserTenants = await this.userTenantService.findByTenant(tenantId);
+    // Build filter
+    const filter: UserTenantFilter = {};
+    if (search) filter.search = search.slice(0, 200);
+    if (role && ['admin', 'developer', 'viewer'].includes(role)) {
+      filter.role = role as UserRole;
+    }
+    if (status && ['active', 'suspended', 'deleted'].includes(status)) {
+      filter.status = status;
+    }
 
-    // Apply pagination
-    const startIndex = (pageNum - 1) * limitNum;
-    const endIndex = startIndex + limitNum;
-    const paged = allUserTenants.slice(startIndex, endIndex);
+    // Get total count and paginated results from DB
+    const skip = (pageNum - 1) * limitNum;
+    const [total, userTenants] = await Promise.all([
+      this.userTenantService.countByTenant(tenantId, filter),
+      this.userTenantService.findByTenant(tenantId, { skip, take: limitNum, filter }),
+    ]);
 
-    const items = paged.map((ut) => ({
+    const items = userTenants.map((ut) => ({
       id: ut.user.id,
       email: ut.user.email,
       name: ut.user.name,
@@ -107,7 +122,7 @@ export class AdminUsersController {
 
     return {
       items,
-      total: allUserTenants.length,
+      total,
       page: pageNum,
       limit: limitNum,
     };
@@ -300,6 +315,72 @@ export class AdminUsersController {
       name: updated.name,
       status: updated.status,
       updatedAt: updated.updatedAt,
+    };
+  }
+
+  /**
+   * PATCH /api/v1/admin/users/:id/role
+   *
+   * Update a user's role and permissions within their tenant.
+   */
+  @Patch(':id/role')
+  async updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Ctx() ctx: RequestContext,
+  ) {
+    if (!UUID_REGEX.test(id)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+
+    // Verify user exists and check access
+    const existing = await this.usersService.findOne(id);
+
+    if (!isAdminScope(ctx)) {
+      const belongsToTenant = existing.tenants?.some(
+        (ut) => ut.tenantId === ctx.tenantId && ut.isActive,
+      );
+      if (!belongsToTenant) {
+        throw new ForbiddenException('Access denied to this user');
+      }
+    }
+
+    // Find the user-tenant association for the relevant tenant
+    const targetTenantId = isAdminScope(ctx)
+      ? existing.tenants?.find((ut) => ut.isActive)?.tenantId || ctx.tenantId
+      : ctx.tenantId;
+
+    const userTenant = await this.userTenantService.findUserInTenant(id, targetTenantId);
+    if (!userTenant) {
+      throw new NotFoundException('User is not a member of this tenant');
+    }
+
+    const previousRole = userTenant.role;
+    const previousCanCreate = userTenant.canCreateSkills;
+
+    const updated = await this.userTenantService.update(userTenant.id, {
+      role: dto.role,
+      canCreateSkills: dto.canCreateSkills,
+    });
+
+    // Audit log
+    await this.auditService.log({
+      adminId: ctx?.apiKeyId || 'system',
+      action: 'user.role_update',
+      targetType: 'user',
+      targetId: id,
+      tenantId: targetTenantId,
+      metadata: {
+        previousValue: { role: previousRole, canCreateSkills: previousCanCreate },
+        newValue: { role: updated.role, canCreateSkills: updated.canCreateSkills },
+      },
+    });
+
+    return {
+      id: existing.id,
+      role: updated.role,
+      canCreateSkills: updated.canCreateSkills,
+      userTenantId: updated.id,
     };
   }
 

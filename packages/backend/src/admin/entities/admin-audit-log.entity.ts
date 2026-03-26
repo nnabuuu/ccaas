@@ -40,6 +40,7 @@ export type AdminAction =
   | 'builderUser.create'
   | 'user.create'
   | 'user.update'
+  | 'user.role_update'
   | 'user.delete';
 
 export type TargetType =

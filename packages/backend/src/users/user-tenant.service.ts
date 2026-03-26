@@ -1,10 +1,15 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { UserTenant, UserRole } from './entities/user-tenant.entity';
 import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
 import { UpdateUserTenantDto } from './dto/update-user-tenant.dto';
-import { User } from './entities/user.entity';
+
+export interface UserTenantFilter {
+  search?: string;
+  role?: UserRole;
+  status?: string;
+}
 
 @Injectable()
 export class UserTenantService {
@@ -36,11 +41,55 @@ export class UserTenantService {
     return this.userTenantRepository.save(userTenant);
   }
 
-  async findByTenant(tenantId: string): Promise<UserTenant[]> {
-    return this.userTenantRepository.find({
-      where: { tenantId, isActive: true },
-      relations: ['user'],
-    });
+  private applyFilters(
+    qb: SelectQueryBuilder<UserTenant>,
+    filter?: UserTenantFilter,
+  ): void {
+    if (filter?.search) {
+      qb.andWhere('(user.name LIKE :search OR user.email LIKE :search)', {
+        search: `%${filter.search}%`,
+      });
+    }
+    if (filter?.role) {
+      qb.andWhere('ut.role = :role', { role: filter.role });
+    }
+    if (filter?.status) {
+      qb.andWhere('user.status = :status', { status: filter.status });
+    }
+  }
+
+  async findByTenant(
+    tenantId: string,
+    options?: { skip?: number; take?: number; filter?: UserTenantFilter },
+  ): Promise<UserTenant[]> {
+    const qb = this.userTenantRepository
+      .createQueryBuilder('ut')
+      .leftJoinAndSelect('ut.user', 'user')
+      .where('ut.tenantId = :tenantId', { tenantId })
+      .andWhere('ut.isActive = :isActive', { isActive: true });
+
+    this.applyFilters(qb, options?.filter);
+
+    qb.orderBy('ut.joinedAt', 'DESC');
+    if (options?.skip !== undefined) qb.skip(options.skip);
+    if (options?.take !== undefined) qb.take(options.take);
+
+    return qb.getMany();
+  }
+
+  async countByTenant(
+    tenantId: string,
+    filter?: UserTenantFilter,
+  ): Promise<number> {
+    const qb = this.userTenantRepository
+      .createQueryBuilder('ut')
+      .leftJoin('ut.user', 'user')
+      .where('ut.tenantId = :tenantId', { tenantId })
+      .andWhere('ut.isActive = :isActive', { isActive: true });
+
+    this.applyFilters(qb, filter);
+
+    return qb.getCount();
   }
 
   async findByUser(userId: string): Promise<UserTenant[]> {
@@ -70,7 +119,9 @@ export class UserTenantService {
         updateUserTenantDto.role === 'admin' || updateUserTenantDto.role === 'developer';
     }
 
-    Object.assign(userTenant, updateUserTenantDto);
+    if (updateUserTenantDto.role !== undefined) userTenant.role = updateUserTenantDto.role;
+    if (updateUserTenantDto.canCreateSkills !== undefined) userTenant.canCreateSkills = updateUserTenantDto.canCreateSkills;
+    if (updateUserTenantDto.isActive !== undefined) userTenant.isActive = updateUserTenantDto.isActive;
     return this.userTenantRepository.save(userTenant);
   }
 

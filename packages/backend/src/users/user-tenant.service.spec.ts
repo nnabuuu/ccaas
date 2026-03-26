@@ -25,12 +25,29 @@ describe('UserTenantService', () => {
     joinedAt: new Date(),
   };
 
+  // Shared mock query builder
+  let mockQb: Record<string, jest.Mock>;
+
   beforeEach(async () => {
+    mockQb = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+      getCount: jest.fn().mockResolvedValue(0),
+    };
+
     const mockRepository = {
       create: jest.fn(),
       save: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
+      count: jest.fn(),
+      createQueryBuilder: jest.fn().mockReturnValue(mockQb),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -146,15 +163,82 @@ describe('UserTenantService', () => {
   describe('findByTenant', () => {
     it('should return all active users in a tenant', async () => {
       const userTenants = [mockUserTenant, { ...mockUserTenant, id: 'ut-456' }];
-      repository.find.mockResolvedValue(userTenants as any);
+      mockQb.getMany.mockResolvedValue(userTenants as any);
 
       const result = await service.findByTenant('tenant-123');
 
-      expect(repository.find).toHaveBeenCalledWith({
-        where: { tenantId: 'tenant-123', isActive: true },
-        relations: ['user'],
-      });
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('ut');
+      expect(mockQb.leftJoinAndSelect).toHaveBeenCalledWith('ut.user', 'user');
+      expect(mockQb.where).toHaveBeenCalledWith('ut.tenantId = :tenantId', { tenantId: 'tenant-123' });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('ut.isActive = :isActive', { isActive: true });
+      expect(mockQb.orderBy).toHaveBeenCalledWith('ut.joinedAt', 'DESC');
       expect(result).toEqual(userTenants);
+    });
+
+    it('should apply search filter', async () => {
+      mockQb.getMany.mockResolvedValue([]);
+
+      await service.findByTenant('tenant-123', {
+        filter: { search: 'john' },
+      });
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        '(user.name LIKE :search OR user.email LIKE :search)',
+        { search: '%john%' },
+      );
+    });
+
+    it('should apply role filter', async () => {
+      mockQb.getMany.mockResolvedValue([]);
+
+      await service.findByTenant('tenant-123', {
+        filter: { role: 'developer' },
+      });
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith('ut.role = :role', { role: 'developer' });
+    });
+
+    it('should apply status filter', async () => {
+      mockQb.getMany.mockResolvedValue([]);
+
+      await service.findByTenant('tenant-123', {
+        filter: { status: 'active' },
+      });
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith('user.status = :status', { status: 'active' });
+    });
+
+    it('should apply pagination', async () => {
+      mockQb.getMany.mockResolvedValue([]);
+
+      await service.findByTenant('tenant-123', { skip: 10, take: 20 });
+
+      expect(mockQb.skip).toHaveBeenCalledWith(10);
+      expect(mockQb.take).toHaveBeenCalledWith(20);
+    });
+  });
+
+  describe('countByTenant', () => {
+    it('should count active users in a tenant', async () => {
+      mockQb.getCount.mockResolvedValue(5);
+
+      const result = await service.countByTenant('tenant-123');
+
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('ut');
+      expect(mockQb.leftJoin).toHaveBeenCalledWith('ut.user', 'user');
+      expect(result).toBe(5);
+    });
+
+    it('should apply search filter when counting', async () => {
+      mockQb.getCount.mockResolvedValue(2);
+
+      const result = await service.countByTenant('tenant-123', { search: 'john' });
+
+      expect(mockQb.andWhere).toHaveBeenCalledWith(
+        '(user.name LIKE :search OR user.email LIKE :search)',
+        { search: '%john%' },
+      );
+      expect(result).toBe(2);
     });
   });
 

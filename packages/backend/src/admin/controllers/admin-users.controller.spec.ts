@@ -118,6 +118,9 @@ describe('AdminUsersController', () => {
           useValue: {
             create: jest.fn(),
             findByTenant: jest.fn(),
+            countByTenant: jest.fn(),
+            findUserInTenant: jest.fn(),
+            update: jest.fn(),
             remove: jest.fn(),
           },
         },
@@ -154,19 +157,21 @@ describe('AdminUsersController', () => {
   describe('findAll', () => {
     it('should list users for a tenant', async () => {
       tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(1);
       userTenantService.findByTenant.mockResolvedValue([mockUserTenant as any]);
 
-      const result = await controller.findAll(TENANT_ID, '1', '50', adminCtx);
+      const result = await controller.findAll(TENANT_ID, '1', '50', undefined, undefined, undefined, adminCtx);
 
       expect(result.items).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.items[0].email).toBe('test@example.com');
       expect(result.items[0].role).toBe('viewer');
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, { skip: 0, take: 50, filter: {} });
     });
 
     it('should throw if tenantId missing (admin scope)', async () => {
       await expect(
-        controller.findAll('', '1', '50', adminCtx),
+        controller.findAll('', '1', '50', undefined, undefined, undefined, adminCtx),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -174,18 +179,76 @@ describe('AdminUsersController', () => {
       tenantsService.findOne.mockResolvedValue(null);
 
       await expect(
-        controller.findAll('nonexistent', '1', '50', adminCtx),
+        controller.findAll('nonexistent', '1', '50', undefined, undefined, undefined, adminCtx),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('should force builder to own tenant', async () => {
       tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(0);
       userTenantService.findByTenant.mockResolvedValue([]);
 
-      await controller.findAll(OTHER_TENANT_ID, '1', '50', builderCtx);
+      await controller.findAll(OTHER_TENANT_ID, '1', '50', undefined, undefined, undefined, builderCtx);
 
       // Should have called findByTenant with builder's own tenantId, not OTHER_TENANT_ID
-      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID);
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, { skip: 0, take: 50, filter: {} });
+    });
+
+    it('should pass search filter to service', async () => {
+      tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(0);
+      userTenantService.findByTenant.mockResolvedValue([]);
+
+      await controller.findAll(TENANT_ID, '1', '20', 'john', undefined, undefined, adminCtx);
+
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, {
+        skip: 0,
+        take: 20,
+        filter: { search: 'john' },
+      });
+      expect(userTenantService.countByTenant).toHaveBeenCalledWith(TENANT_ID, { search: 'john' });
+    });
+
+    it('should pass role filter to service', async () => {
+      tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(0);
+      userTenantService.findByTenant.mockResolvedValue([]);
+
+      await controller.findAll(TENANT_ID, '1', '20', undefined, 'developer', undefined, adminCtx);
+
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, {
+        skip: 0,
+        take: 20,
+        filter: { role: 'developer' },
+      });
+    });
+
+    it('should pass status filter to service', async () => {
+      tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(0);
+      userTenantService.findByTenant.mockResolvedValue([]);
+
+      await controller.findAll(TENANT_ID, '1', '20', undefined, undefined, 'active', adminCtx);
+
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, {
+        skip: 0,
+        take: 20,
+        filter: { status: 'active' },
+      });
+    });
+
+    it('should ignore invalid role values', async () => {
+      tenantsService.findOne.mockResolvedValue(mockTenant as any);
+      userTenantService.countByTenant.mockResolvedValue(0);
+      userTenantService.findByTenant.mockResolvedValue([]);
+
+      await controller.findAll(TENANT_ID, '1', '20', undefined, 'invalid-role', undefined, adminCtx);
+
+      expect(userTenantService.findByTenant).toHaveBeenCalledWith(TENANT_ID, {
+        skip: 0,
+        take: 20,
+        filter: {},
+      });
     });
   });
 
@@ -368,6 +431,60 @@ describe('AdminUsersController', () => {
       await expect(
         controller.update(USER_ID, { name: 'Hacked' }, builderCtx),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateRole', () => {
+    it('should update user role in tenant', async () => {
+      const existing = { ...mockUser, tenants: [mockUserTenant] };
+      usersService.findOne.mockResolvedValue(existing as any);
+      userTenantService.findUserInTenant.mockResolvedValue(mockUserTenant as any);
+      userTenantService.update.mockResolvedValue({
+        ...mockUserTenant,
+        role: 'admin',
+        canCreateSkills: true,
+      } as any);
+
+      const result = await controller.updateRole(
+        USER_ID,
+        { role: 'admin' },
+        adminCtx,
+      );
+
+      expect(result.role).toBe('admin');
+      expect(result.canCreateSkills).toBe(true);
+      expect(userTenantService.update).toHaveBeenCalledWith(UT_ID, { role: 'admin' });
+      expect(auditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'user.role_update' }),
+      );
+    });
+
+    it('should throw on invalid UUID', async () => {
+      await expect(
+        controller.updateRole('not-a-uuid', { role: 'admin' }, adminCtx),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should deny builder access to other tenant user', async () => {
+      const otherTenantUser = {
+        ...mockUser,
+        tenants: [{ ...mockUserTenant, tenantId: OTHER_TENANT_ID, isActive: true }],
+      };
+      usersService.findOne.mockResolvedValue(otherTenantUser as any);
+
+      await expect(
+        controller.updateRole(USER_ID, { role: 'admin' }, builderCtx),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw if user not in tenant', async () => {
+      const existing = { ...mockUser, tenants: [mockUserTenant] };
+      usersService.findOne.mockResolvedValue(existing as any);
+      userTenantService.findUserInTenant.mockResolvedValue(null);
+
+      await expect(
+        controller.updateRole(USER_ID, { role: 'admin' }, adminCtx),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
