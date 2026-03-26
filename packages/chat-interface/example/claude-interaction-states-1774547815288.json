@@ -1,0 +1,251 @@
+{
+  "_section": "interactionStates",
+  "pseudoClassRules": {
+    "hoverCount": 454,
+    "focusCount": 43,
+    "activeCount": 38,
+    "focusWithinCount": 39,
+    "focusVisibleCount": 35,
+    "hoverSamples": [
+      {
+        "selector": ".inline-link:not(:is(:hover, :focus))",
+        "css": ".inline-link:not(:is(:hover, :focus)) { text-decoration-color: color-mix(in srgb, currentcolor 40%, transparent); }"
+      },
+      {
+        "selector": "div.ProseMirror a:hover",
+        "css": "div.ProseMirror a:hover { color: hsl(var(--accent-100)); }"
+      },
+      {
+        "selector": ".ReactMarkdown a:hover",
+        "css": ".ReactMarkdown a:hover { color: hsl(var(--accent-100)); }"
+      },
+      {
+        "selector": ".hover\\:-my-px:hover",
+        "css": ".hover\\:-my-px:hover { margin-top: -1px; margin-bottom: -1px; }"
+      },
+      {
+        "selector": ".hover\\:h-4:hover",
+        "css": ".hover\\:h-4:hover { height: 1rem; }"
+      },
+      {
+        "selector": ".hover\\:h-6:hover",
+        "css": ".hover\\:h-6:hover { height: 1.5rem; }"
+      },
+      {
+        "selector": ".hover\\:w-\\[180px\\]:hover",
+        "css": ".hover\\:w-\\[180px\\]:hover { width: 180px; }"
+      },
+      {
+        "selector": ".hover\\:translate-y-6:hover",
+        "css": ".hover\\:translate-y-6:hover { --tw-translate-y: 1.5rem; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".hover\\:-rotate-3:hover",
+        "css": ".hover\\:-rotate-3:hover { --tw-rotate: -3deg; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".hover\\:rotate-2:hover",
+        "css": ".hover\\:rotate-2:hover { --tw-rotate: 2deg; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      }
+    ],
+    "focusSamples": [
+      {
+        "selector": ".inline-link:not(:is(:hover, :focus))",
+        "css": ".inline-link:not(:is(:hover, :focus)) { text-decoration-color: color-mix(in srgb, currentcolor 40%, transparent); }"
+      },
+      {
+        "selector": ".ProseMirror:focus",
+        "css": ".ProseMirror:focus { outline: none; }"
+      },
+      {
+        "selector": ".focus\\:border-0:focus",
+        "css": ".focus\\:border-0:focus { border-width: 0px; }"
+      },
+      {
+        "selector": ".focus\\:\\!border-danger-200:focus",
+        "css": ".focus\\:\\!border-danger-200:focus { --tw-border-opacity: 1 !important; border-color: hsl(var(--danger-200) / var(--tw-border-opacity)) !important; }"
+      },
+      {
+        "selector": ".focus\\:border-accent-100:focus",
+        "css": ".focus\\:border-accent-100:focus { --tw-border-opacity: 1; border-color: hsl(var(--accent-100) / var(--tw-border-opacity)); }"
+      },
+      {
+        "selector": ".focus\\:border-accent-200:focus",
+        "css": ".focus\\:border-accent-200:focus { --tw-border-opacity: 1; border-color: hsl(var(--accent-200) / var(--tw-border-opacity)); }"
+      },
+      {
+        "selector": ".focus\\:border-border-100:focus",
+        "css": ".focus\\:border-border-100:focus { border-color: hsl(var(--border-100) / .4); }"
+      },
+      {
+        "selector": ".focus\\:border-border-200:focus",
+        "css": ".focus\\:border-border-200:focus { border-color: hsl(var(--border-200) / .3); }"
+      },
+      {
+        "selector": ".focus\\:border-border-300:focus",
+        "css": ".focus\\:border-border-300:focus { border-color: hsl(var(--border-300) / .15); }"
+      },
+      {
+        "selector": ".focus\\:border-brand-100:focus",
+        "css": ".focus\\:border-brand-100:focus { --tw-border-opacity: 1; border-color: hsl(var(--brand-100) / var(--tw-border-opacity)); }"
+      }
+    ],
+    "activeSamples": [
+      {
+        "selector": ".active\\:rotate-6:active",
+        "css": ".active\\:rotate-6:active { --tw-rotate: 6deg; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:\\!scale-100:active",
+        "css": ".active\\:\\!scale-100:active { --tw-scale-x: 1 !important; --tw-scale-y: 1 !important; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)) !important; }"
+      },
+      {
+        "selector": ".active\\:scale-95:active",
+        "css": ".active\\:scale-95:active { --tw-scale-x: .95; --tw-scale-y: .95; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[0\\.97\\]:active",
+        "css": ".active\\:scale-\\[0\\.97\\]:active { --tw-scale-x: .97; --tw-scale-y: .97; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[0\\.98\\]:active",
+        "css": ".active\\:scale-\\[0\\.98\\]:active { --tw-scale-x: .98; --tw-scale-y: .98; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[0\\.995\\]:active",
+        "css": ".active\\:scale-\\[0\\.995\\]:active { --tw-scale-x: .995; --tw-scale-y: .995; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[0\\.99\\]:active",
+        "css": ".active\\:scale-\\[0\\.99\\]:active { --tw-scale-x: .99; --tw-scale-y: .99; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[1\\.015\\]:active",
+        "css": ".active\\:scale-\\[1\\.015\\]:active { --tw-scale-x: 1.015; --tw-scale-y: 1.015; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-\\[1\\.0\\]:active",
+        "css": ".active\\:scale-\\[1\\.0\\]:active { --tw-scale-x: 1; --tw-scale-y: 1; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      },
+      {
+        "selector": ".active\\:scale-x-\\[0\\.985\\]:active",
+        "css": ".active\\:scale-x-\\[0\\.985\\]:active { --tw-scale-x: .985; transform: translate(var(--tw-translate-x),var(--tw-translate-y)) rotate(var(--tw-rotate)) skew(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }"
+      }
+    ],
+    "focusWithinSamples": [
+      {
+        "selector": ".can-focus:focus-visible, .can-focus-within:focus-within, a:not([role=\"menuitem\"]):not(.hide-focus-ring):focus-visible, button:not([role=\"menuitem\"]):not(.hide-focus-ring):focus-visible, input:not(.hide-focus-ring):focus-visible, textarea:not(.hide-focus-ring):focus-visible, .peer:focus-visible ~ .peer\\:can-focus",
+        "css": ".can-focus:focus-visible, .can-focus-within:focus-within, a:not([role=\"menuitem\"]):not(.hide-focus-ring):focus-visible, button:not([role=\"menuitem\"]):not(.hide-focus-ring):focus-visible, input:not(.hide-focus-ring):focus-visible, textarea:not(.hide-focus-ring):focus-visible, .peer:focus-visible ~ .p"
+      },
+      {
+        "selector": ".focus-within\\:pointer-events-auto:focus-within",
+        "css": ".focus-within\\:pointer-events-auto:focus-within { pointer-events: auto; }"
+      },
+      {
+        "selector": ".focus-within\\:border-accent-100:focus-within",
+        "css": ".focus-within\\:border-accent-100:focus-within { --tw-border-opacity: 1; border-color: hsl(var(--accent-100) / var(--tw-border-opacity)); }"
+      },
+      {
+        "selector": ".focus-within\\:border-accent-200\\/50:focus-within",
+        "css": ".focus-within\\:border-accent-200\\/50:focus-within { border-color: hsl(var(--accent-200) / .5); }"
+      },
+      {
+        "selector": ".focus-within\\:border-border-100:focus-within",
+        "css": ".focus-within\\:border-border-100:focus-within { border-color: hsl(var(--border-100) / .4); }"
+      }
+    ]
+  },
+  "composerInput": {
+    "label": "composerInput",
+    "rest": {
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-color": "rgb(222, 220, 209)",
+      "box-shadow": "none",
+      "transform": "none",
+      "opacity": "1",
+      "outline": "rgb(44, 132, 219) none 0px",
+      "text-decoration": "none",
+      "transition": "all"
+    },
+    "focused": {
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-color": "rgb(222, 220, 209)",
+      "box-shadow": "none",
+      "transform": "none",
+      "opacity": "1",
+      "outline": "rgb(44, 132, 219) none 0px",
+      "text-decoration": "none",
+      "transition": "all"
+    },
+    "_tag": "DIV",
+    "_classes": "tiptap ProseMirror"
+  },
+  "composerCardShadow": {
+    "rest": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.035) 0px 4px 20px 0px, rgba(222, 220, 209, 0.15) 0px 0px 0px 0.5px",
+    "focusWithin": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.035) 0px 4px 20px 0px, rgba(222, 220, 209, 0.15) 0px 0px 0px 0.5px",
+    "changed": false
+  },
+  "sendButton": {
+    "label": "sendButton",
+    "rest": {
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(48, 48, 46, 0.8)",
+      "border": "0.5px solid rgba(222, 220, 209, 0.15)",
+      "border-color": "rgba(222, 220, 209, 0.15)",
+      "box-shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+      "transform": "matrix(1, 0, 0, 1, -18, 0)",
+      "opacity": "1",
+      "outline": "rgba(44, 132, 219, 0) solid 2px",
+      "text-decoration": "none",
+      "transition": "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "focused": {
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(48, 48, 46, 0.8)",
+      "border": "0.5px solid rgba(222, 220, 209, 0.15)",
+      "border-color": "rgba(222, 220, 209, 0.15)",
+      "box-shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+      "transform": "matrix(1, 0, 0, 1, -18, 0)",
+      "opacity": "1",
+      "outline": "rgba(44, 132, 219, 0) solid 2px",
+      "text-decoration": "none",
+      "transition": "opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "_tag": "BUTTON",
+    "_classes": "z-[1] size-9 inline-flex items-center justify-center absolute -top-8 left-1/2 -t"
+  },
+  "sidebarItem": {
+    "label": "sidebarItem",
+    "rest": {
+      "color": "rgb(194, 192, 182)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border": "0px solid rgba(0, 0, 0, 0)",
+      "border-color": "rgba(0, 0, 0, 0)",
+      "box-shadow": "none",
+      "transform": "none",
+      "opacity": "1",
+      "outline": "rgba(44, 132, 219, 0) solid 2px",
+      "text-decoration": "none",
+      "transition": "color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), background-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), border-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), text-decoration-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), fill 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), stroke 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), opacity 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), box-shadow 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), transform 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), backdrop-filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1)"
+    },
+    "focused": {
+      "color": "rgb(194, 192, 182)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border": "0px solid rgba(0, 0, 0, 0)",
+      "border-color": "rgba(0, 0, 0, 0)",
+      "box-shadow": "none",
+      "transform": "none",
+      "opacity": "1",
+      "outline": "rgba(44, 132, 219, 0) solid 2px",
+      "text-decoration": "none",
+      "transition": "color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), background-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), border-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), text-decoration-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), fill 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), stroke 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), opacity 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), box-shadow 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), transform 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), backdrop-filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1)"
+    },
+    "_tag": "A",
+    "_classes": "inline-flex\n  items-center\n  justify-center\n  relative\n  isolate\n  shrink-0\n  ca"
+  },
+  "link": null
+}

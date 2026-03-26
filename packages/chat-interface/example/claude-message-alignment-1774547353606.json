@@ -1,0 +1,16 @@
+{
+  "_section": "messageAlignment",
+  "_pageWidth": 1087,
+  "_pageHeight": 1080,
+  "turns": [],
+  "summary": {
+    "totalTurns": 0,
+    "userCount": 0,
+    "assistantCount": 0,
+    "userAlignments": [],
+    "assistantAlignments": [],
+    "userRects": [],
+    "assistantRects": []
+  },
+  "_fallbackNote": "No [data-message-role] or [data-role] found. Paste the tag/class of a user message bubble so I can refine."
+}

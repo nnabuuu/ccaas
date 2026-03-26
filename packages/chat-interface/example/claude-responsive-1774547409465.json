@@ -1,0 +1,37 @@
+{
+  "_section": "responsive",
+  "breakpoints": [
+    "350px",
+    "500px",
+    "640px",
+    "768px",
+    "840px",
+    "1000px",
+    "1024px",
+    "1200px",
+    "1280px",
+    "1400px",
+    "1536px",
+    "1562px"
+  ],
+  "mediaQueries": [
+    "(prefers-color-scheme: dark)",
+    "(min-width: 640px)",
+    "(min-width: 768px)",
+    "(min-width: 1024px)",
+    "(min-width: 1280px)",
+    "(min-width: 1536px)",
+    "(prefers-reduced-motion: reduce)",
+    "(prefers-reduced-motion: no-preference)",
+    "not all and (min-width: 768px)",
+    "not all and (min-width: 640px)",
+    "(min-width: 350px)",
+    "(min-width: 500px)",
+    "(min-width: 840px)",
+    "(min-width: 1000px)",
+    "(min-width: 1200px)",
+    "(min-width: 1400px)",
+    "(min-width: 1562px)",
+    "print"
+  ]
+}

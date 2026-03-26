@@ -1,0 +1,175 @@
+{
+  "_section": "pseudoElements",
+  "cssRules": {
+    "selection": [
+      {
+        "selector": ".code-block__code::selection, .code-block__code span::selection",
+        "css": ".code-block__code::selection, .code-block__code span::selection { background-color: hsl(var(--accent-100)); color: hsl(var(--oncolor-100)) !important; }"
+      },
+      {
+        "selector": ".\\[\\&\\:\\:selection\\]\\:bg-transparent::selection",
+        "css": ".\\[\\&\\:\\:selection\\]\\:bg-transparent::selection { background-color: transparent; }"
+      },
+      {
+        "selector": ".ProseMirror-hideselection ::selection",
+        "css": ".ProseMirror-hideselection ::selection { background: transparent; }"
+      }
+    ],
+    "placeholder": [
+      {
+        "selector": "input::placeholder, textarea::placeholder",
+        "css": "input::placeholder, textarea::placeholder { opacity: 1; color: rgb(156, 163, 175); }"
+      },
+      {
+        "selector": ".placeholder-bg-100\\/40::placeholder",
+        "css": ".placeholder-bg-100\\/40::placeholder { color: hsl(var(--bg-100) / .4); }"
+      },
+      {
+        "selector": ".placeholder-text-300::placeholder",
+        "css": ".placeholder-text-300::placeholder { --tw-placeholder-opacity: 1; color: hsl(var(--text-300) / var(--tw-placeholder-opacity)); }"
+      },
+      {
+        "selector": ".placeholder-text-400::placeholder",
+        "css": ".placeholder-text-400::placeholder { --tw-placeholder-opacity: 1; color: hsl(var(--text-400) / var(--tw-placeholder-opacity)); }"
+      },
+      {
+        "selector": ".placeholder-text-500::placeholder",
+        "css": ".placeholder-text-500::placeholder { --tw-placeholder-opacity: 1; color: hsl(var(--text-500) / var(--tw-placeholder-opacity)); }"
+      },
+      {
+        "selector": ".placeholder-text-500\\/80::placeholder",
+        "css": ".placeholder-text-500\\/80::placeholder { color: hsl(var(--text-500) / .8); }"
+      },
+      {
+        "selector": ".placeholder\\:text-sm::placeholder",
+        "css": ".placeholder\\:text-sm::placeholder { font-size: 0.875rem; line-height: 1.25rem; }"
+      },
+      {
+        "selector": ".placeholder\\:text-text-300::placeholder",
+        "css": ".placeholder\\:text-text-300::placeholder { --tw-text-opacity: 1; color: hsl(var(--text-300) / var(--tw-text-opacity)); }"
+      },
+      {
+        "selector": ".placeholder\\:text-text-400::placeholder",
+        "css": ".placeholder\\:text-text-400::placeholder { --tw-text-opacity: 1; color: hsl(var(--text-400) / var(--tw-text-opacity)); }"
+      },
+      {
+        "selector": ".placeholder\\:text-text-500::placeholder",
+        "css": ".placeholder\\:text-text-500::placeholder { --tw-text-opacity: 1; color: hsl(var(--text-500) / var(--tw-text-opacity)); }"
+      },
+      {
+        "selector": ".placeholder\\:text-text-500\\/70::placeholder",
+        "css": ".placeholder\\:text-text-500\\/70::placeholder { color: hsl(var(--text-500) / .7); }"
+      },
+      {
+        "selector": ".placeholder\\:opacity-60::placeholder",
+        "css": ".placeholder\\:opacity-60::placeholder { opacity: 0.6; }"
+      },
+      {
+        "selector": ".placeholder\\:opacity-75::placeholder",
+        "css": ".placeholder\\:opacity-75::placeholder { opacity: 0.75; }"
+      },
+      {
+        "selector": ".placeholder\\:font-base::placeholder",
+        "css": ".placeholder\\:font-base::placeholder { font-family: var(--font-ui); font-size: 0.875rem; font-weight: 430; line-height: 1.4; }"
+      }
+    ],
+    "before": [
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { box-sizing: border-box; border-width: 0px; border-style: solid; border-color: currentcolor; }"
+      },
+      {
+        "selector": "::before, ::after",
+        "css": "::before, ::after { --tw-content: \"\"; }"
+      },
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-"
+      },
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { border-color: hsl(var(--border-100)); }"
+      },
+      {
+        "selector": ".ProseMirror p.is-editor-empty:first-child::before",
+        "css": ".ProseMirror p.is-editor-empty:first-child::before { color: rgb(173, 181, 189); content: attr(data-placeholder); float: left; height: 0px; pointer-events: none; }"
+      },
+      {
+        "selector": ".before\\:absolute::before",
+        "css": ".before\\:absolute::before { content: var(--tw-content); position: absolute; }"
+      },
+      {
+        "selector": ".before\\:inset-y-0::before",
+        "css": ".before\\:inset-y-0::before { content: var(--tw-content); top: 0px; bottom: 0px; }"
+      },
+      {
+        "selector": ".before\\:left-\\[6px\\]::before",
+        "css": ".before\\:left-\\[6px\\]::before { content: var(--tw-content); left: 6px; }"
+      },
+      {
+        "selector": ".before\\:right-\\[6px\\]::before",
+        "css": ".before\\:right-\\[6px\\]::before { content: var(--tw-content); right: 6px; }"
+      },
+      {
+        "selector": ".before\\:-z-\\[1\\]::before",
+        "css": ".before\\:-z-\\[1\\]::before { content: var(--tw-content); z-index: -1; }"
+      }
+    ],
+    "after": [
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { box-sizing: border-box; border-width: 0px; border-style: solid; border-color: currentcolor; }"
+      },
+      {
+        "selector": "::before, ::after",
+        "css": "::before, ::after { --tw-content: \"\"; }"
+      },
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { --tw-border-spacing-x: 0; --tw-border-spacing-y: 0; --tw-translate-x: 0; --tw-translate-y: 0; --tw-rotate: 0; --tw-skew-x: 0; --tw-skew-y: 0; --tw-scale-x: 1; --tw-scale-y: 1; --tw-pan-x: ; --tw-pan-y: ; --tw-pinch-zoom: ; --tw-scroll-snap-strictness: proximity; --tw-gradient-"
+      },
+      {
+        "selector": "*, ::before, ::after",
+        "css": "*, ::before, ::after { border-color: hsl(var(--border-100)); }"
+      },
+      {
+        "selector": ".code-block__code .linenumber::after",
+        "css": ".code-block__code .linenumber::after { content: attr(data-line-number); user-select: none !important; pointer-events: none !important; }"
+      },
+      {
+        "selector": ".after\\:pointer-events-none::after",
+        "css": ".after\\:pointer-events-none::after { content: var(--tw-content); pointer-events: none; }"
+      },
+      {
+        "selector": ".after\\:absolute::after",
+        "css": ".after\\:absolute::after { content: var(--tw-content); position: absolute; }"
+      },
+      {
+        "selector": ".after\\:inset-0::after",
+        "css": ".after\\:inset-0::after { content: var(--tw-content); inset: 0px; }"
+      },
+      {
+        "selector": ".after\\:-bottom-6::after",
+        "css": ".after\\:-bottom-6::after { content: var(--tw-content); bottom: -1.5rem; }"
+      },
+      {
+        "selector": ".after\\:left-0::after",
+        "css": ".after\\:left-0::after { content: var(--tw-content); left: 0px; }"
+      }
+    ],
+    "marker": []
+  },
+  "inputPlaceholder": {
+    "placeholderText": "",
+    "inputColor": "rgb(250, 249, 245)",
+    "inputFontFamily": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "inputFontSize": "16px"
+  },
+  "_summary": {
+    "selectionRules": 3,
+    "placeholderRules": 14,
+    "beforeRules": 10,
+    "afterRules": 10,
+    "markerRules": 0
+  }
+}

@@ -1,0 +1,176 @@
+{
+  "_section": "specialComponents",
+  "thinkingBlock": {
+    "tag": "TABLE",
+    "classes": "min-w-full border-collapse text-sm leading-[1.7] whitespace-normal",
+    "isOpen": null,
+    "rect": {
+      "x": 81,
+      "y": -2595,
+      "w": 453,
+      "h": 818
+    },
+    "styles": {
+      "display": "table",
+      "flex-direction": "row",
+      "align-items": "normal",
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+      "font-size": "14px",
+      "font-weight": "360",
+      "line-height": "23.8px",
+      "padding": "0px",
+      "margin": "0px",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-radius": "0px",
+      "box-shadow": "none",
+      "width": "453.102px",
+      "height": "817.578px",
+      "max-width": "none",
+      "position": "static",
+      "top": "auto",
+      "right": "auto",
+      "bottom": "auto",
+      "left": "auto",
+      "opacity": "1",
+      "transition": "all",
+      "animation": "none",
+      "gap": "normal",
+      "backdrop-filter": "none",
+      "cursor": "auto",
+      "overflow": "visible"
+    },
+    "summary": {
+      "tag": "THEAD",
+      "styles": {
+        "color": "rgb(250, 249, 245)",
+        "font-size": "14px",
+        "font-weight": "360",
+        "cursor": "auto",
+        "padding": "0px"
+      },
+      "text": "#文件抓什么"
+    }
+  },
+  "artifactPanel": null,
+  "actionBars": [
+    {
+      "tag": "DIV",
+      "classes": "flex w-full items-center justify-between gap-4 pl-11 lg:px-8 gap-6 p-3 lg:pl-4 lg:pr-3 pr-3",
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 517,
+        "h": 48
+      },
+      "styles": {
+        "display": "flex",
+        "flex-direction": "row",
+        "gap": "24px",
+        "align-items": "center",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "padding": "12px 12px 12px 16px",
+        "opacity": "1",
+        "backdrop-filter": "none"
+      },
+      "buttons": [
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Replicating Claude's",
+          "styles": {
+            "width": "264.289px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border-radius": "8px 0px 0px 8px",
+            "opacity": "1",
+            "cursor": "pointer"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "",
+          "styles": {
+            "width": "28px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border-radius": "0px 6px 6px 0px",
+            "opacity": "1",
+            "cursor": "pointer"
+          }
+        }
+      ]
+    },
+    {
+      "tag": "DIV",
+      "classes": "flex min-w-0 flex-1 shrink md:items-center font-base-bold pr-[100px]",
+      "rect": {
+        "x": 65,
+        "y": 10,
+        "w": 465,
+        "h": 28
+      },
+      "styles": {
+        "display": "flex",
+        "flex-direction": "row",
+        "gap": "normal",
+        "align-items": "center",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "padding": "0px 100px 0px 0px",
+        "opacity": "1",
+        "backdrop-filter": "none"
+      },
+      "buttons": [
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Replicating Claude's",
+          "styles": {
+            "width": "264.289px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border-radius": "8px 0px 0px 8px",
+            "opacity": "1",
+            "cursor": "pointer"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "",
+          "styles": {
+            "width": "28px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border-radius": "0px 6px 6px 0px",
+            "opacity": "1",
+            "cursor": "pointer"
+          }
+        }
+      ]
+    }
+  ],
+  "citations": [],
+  "streamingIndicator": {
+    "tag": "H2",
+    "classes": "text-text-500 pb-2 mt-1 text-xs select-none pl-2 pr-2 pointer-events-none group/",
+    "styles": {
+      "width": "96.9219px",
+      "height": "24px",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "animation": "none",
+      "border-radius": "0px",
+      "opacity": "1"
+    }
+  }
+}

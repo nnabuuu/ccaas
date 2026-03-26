@@ -1,0 +1,196 @@
+{
+  "_section": "markdownStyles",
+  "_scope": "longest assistant message",
+  "h1": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "h2": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "h3": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "paragraph": {
+    "found": true,
+    "tag": "P",
+    "styles": {
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+      "font-size": "16px",
+      "font-weight": "360",
+      "font-style": "normal",
+      "line-height": "24px",
+      "letter-spacing": "normal",
+      "text-align": "start",
+      "text-decoration": "none",
+      "padding": "0px 32px 0px 8px",
+      "margin": "0px",
+      "margin-top": "0px",
+      "margin-bottom": "0px",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-left": "0px solid rgb(222, 220, 209)",
+      "border-radius": "0px",
+      "box-shadow": "none",
+      "max-width": "none",
+      "width": "469.102px",
+      "display": "block",
+      "white-space": "normal",
+      "overflow-x": "visible",
+      "word-break": "normal"
+    },
+    "sampleText": "说明 claude.ai 没有用 data-message-role 或 data-role 这种 "
+  },
+  "strong": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "emphasis": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "inlineCode": {
+    "found": true,
+    "tag": "CODE",
+    "styles": {
+      "color": "rgb(254, 129, 129)",
+      "background-color": "rgba(194, 192, 182, 0.05)",
+      "font-family": "\"Anthropic Mono\", ui-monospace, monospace",
+      "font-size": "14.4px",
+      "font-weight": "360",
+      "font-style": "normal",
+      "line-height": "21.6px",
+      "letter-spacing": "normal",
+      "text-align": "start",
+      "text-decoration": "none",
+      "padding": "1px 4px",
+      "margin": "0px",
+      "margin-top": "0px",
+      "margin-bottom": "0px",
+      "border": "0.5px solid rgba(222, 220, 209, 0.15)",
+      "border-left": "0.5px solid rgba(222, 220, 209, 0.15)",
+      "border-radius": "6.4px",
+      "box-shadow": "none",
+      "max-width": "none",
+      "width": "auto",
+      "display": "inline",
+      "white-space": "pre-wrap",
+      "overflow-x": "visible",
+      "word-break": "normal"
+    },
+    "sampleText": "data-message-role"
+  },
+  "codeBlock": {
+    "found": true,
+    "tag": "PRE",
+    "styles": {
+      "color": "rgb(234, 236, 240)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "font-family": "\"Anthropic Mono\", ui-monospace, monospace",
+      "font-size": "14px",
+      "font-weight": "360",
+      "font-style": "normal",
+      "line-height": "22.75px",
+      "letter-spacing": "normal",
+      "text-align": "start",
+      "text-decoration": "none",
+      "padding": "14px",
+      "margin": "0px",
+      "margin-top": "0px",
+      "margin-bottom": "0px",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-left": "0px solid rgb(222, 220, 209)",
+      "border-radius": "8px",
+      "box-shadow": "none",
+      "max-width": "none",
+      "width": "468.102px",
+      "display": "block",
+      "white-space": "pre",
+      "overflow-x": "visible",
+      "word-break": "normal"
+    },
+    "sampleText": "// 诊断：扫描 chat 区域的 DOM 结构\n(() => {\n  // 找到 scroll 容"
+  },
+  "codeBlockCode": {
+    "found": true,
+    "tag": "CODE",
+    "styles": {
+      "color": "rgb(234, 236, 240)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "font-family": "\"Anthropic Mono\", ui-monospace, monospace",
+      "font-size": "14px",
+      "font-weight": "360",
+      "font-style": "normal",
+      "line-height": "22.75px",
+      "letter-spacing": "normal",
+      "text-align": "start",
+      "text-decoration": "none",
+      "padding": "0px",
+      "margin": "0px",
+      "margin-top": "0px",
+      "margin-bottom": "0px",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-left": "0px solid rgb(222, 220, 209)",
+      "border-radius": "0px",
+      "box-shadow": "none",
+      "max-width": "none",
+      "width": "auto",
+      "display": "inline",
+      "white-space": "pre",
+      "overflow-x": "visible",
+      "word-break": "normal"
+    },
+    "sampleText": "// 诊断：扫描 chat 区域的 DOM 结构\n(() => {\n  // 找到 scroll 容"
+  },
+  "blockquote": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "ul": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "ol": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "li": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "link": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "table": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "th": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "td": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "hr": {
+    "found": false,
+    "_hint": "Send a message containing this element to capture"
+  },
+  "codeBlockWrapper": {
+    "tag": "DIV",
+    "styles": {
+      "background-color": "rgba(0, 0, 0, 0)",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-radius": "0px",
+      "padding": "0px",
+      "margin": "0px",
+      "overflow": "auto",
+      "position": "static"
+    }
+  }
+}

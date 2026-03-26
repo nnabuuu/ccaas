@@ -1,0 +1,359 @@
+{
+  "_section": "animations",
+  "keyframes": [
+    {
+      "name": "shimmer",
+      "frameCount": 3,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { transform: translate(-100%); }"
+        },
+        {
+          "key": "60%",
+          "css": "60% { transform: translate(100%); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { transform: translate(100%); }"
+        }
+      ]
+    },
+    {
+      "name": "shimmertext",
+      "frameCount": 3,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { background-position: right top; }"
+        },
+        {
+          "key": "65%",
+          "css": "65% { background-position: left top; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { background-position: left top; }"
+        }
+      ]
+    },
+    {
+      "name": "outline-pulse",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { box-shadow: 0 0 0 1px rgb(from var(--tw-ring-color) r g b / .5); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { box-shadow: 0 0 0 3px rgb(from var(--tw-ring-color) r g b / .5); }"
+        }
+      ]
+    },
+    {
+      "name": "ping",
+      "frameCount": 1,
+      "frames": [
+        {
+          "key": "75%, 100%",
+          "css": "75%, 100% { transform: scale(2); opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "pulse",
+      "frameCount": 1,
+      "frames": [
+        {
+          "key": "50%",
+          "css": "50% { opacity: 0.5; }"
+        }
+      ]
+    },
+    {
+      "name": "pulse-dot",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { transform: scale(0.75); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { transform: scale(1); }"
+        }
+      ]
+    },
+    {
+      "name": "spin",
+      "frameCount": 1,
+      "frames": [
+        {
+          "key": "100%",
+          "css": "100% { transform: rotate(360deg); }"
+        }
+      ]
+    },
+    {
+      "name": "loading-background",
+      "frameCount": 4,
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { background-position: 0% 0%; }"
+        },
+        {
+          "key": "25%",
+          "css": "25% { background-position: 100% 0%; }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { background-position: 100% 100%; }"
+        },
+        {
+          "key": "75%",
+          "css": "75% { background-position: 0% 100%; }"
+        }
+      ]
+    },
+    {
+      "name": "shimmer",
+      "frameCount": 3,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { content: var(--tw-content); transform: translate(-100%); }"
+        },
+        {
+          "key": "60%",
+          "css": "60% { content: var(--tw-content); transform: translate(100%); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { content: var(--tw-content); transform: translate(100%); }"
+        }
+      ]
+    },
+    {
+      "name": "blink",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { opacity: 1; }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "accordion-close",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { height: var(--radix-accordion-content-height); opacity: 1; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { height: 0px; opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "accordion-open",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { height: 0px; opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { height: var(--radix-accordion-content-height); opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "fade",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "zoom",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { transform: scale(0.95); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { transform: scale(1); }"
+        }
+      ]
+    },
+    {
+      "name": "timeline-fade-in",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "timeline-collapse",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { grid-template-rows: 1fr; opacity: 1; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { grid-template-rows: 0fr; opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "timeline-fade-out",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 1; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "_voice-pulse_1h3xj_1",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { height: var(--pulse-min, 8px); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { height: var(--pulse-max, 32px); }"
+        }
+      ]
+    },
+    {
+      "name": "_fade_14na3_1",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "_translateX_14na3_1",
+      "frameCount": 1,
+      "frames": [
+        {
+          "key": "100%",
+          "css": "100% { transform: translate(calc(100% + var(--launch-drawer-width, 0px))); }"
+        }
+      ]
+    },
+    {
+      "name": "ProseMirror-cursor-blink",
+      "frameCount": 1,
+      "frames": [
+        {
+          "key": "100%",
+          "css": "100% { visibility: hidden; }"
+        }
+      ]
+    },
+    {
+      "name": "intercom-lightweight-app-launcher",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; transform: scale(0.5); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; transform: scale(1); }"
+        }
+      ]
+    },
+    {
+      "name": "intercom-lightweight-app-gradient",
+      "frameCount": 2,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "intercom-lightweight-app-messenger",
+      "frameCount": 3,
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; transform: scale(0); }"
+        },
+        {
+          "key": "40%",
+          "css": "40% { opacity: 1; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { transform: scale(1); }"
+        }
+      ]
+    }
+  ],
+  "transitions": [
+    "all",
+    "grid-template-rows 0.15s ease-out",
+    "background-color 0.035s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.035s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.035s cubic-bezier(0.4, 0, 0.2, 1)",
+    "opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    "color 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), background-color 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), border-color 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), text-decoration-color 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), fill 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), stroke 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), opacity 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), box-shadow 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), transform 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), filter 0.3s cubic-bezier(0.165, 0.85, 0.45, 1), backdrop-filter 0.3s cubic-bezier(0.165, 0.85, 0.45, 1)",
+    "color 0.15s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), text-decoration-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), fill 0.15s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), filter 0.15s cubic-bezier(0.4, 0, 0.2, 1), backdrop-filter 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    "0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    "color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), background-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), border-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), text-decoration-color 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), fill 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), stroke 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), opacity 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), box-shadow 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), transform 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1), backdrop-filter 0.075s cubic-bezier(0.165, 0.85, 0.45, 1)",
+    "opacity 0.15s cubic-bezier(0, 0, 0.2, 1)",
+    "border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
+    "transform 0.2s cubic-bezier(0.19, 1, 0.22, 1)"
+  ],
+  "animationsInUse": []
+}

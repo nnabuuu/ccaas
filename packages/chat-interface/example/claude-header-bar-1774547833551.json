@@ -1,0 +1,730 @@
+{
+  "_section": "headerBar",
+  "headers": [
+    {
+      "tag": "DIV",
+      "classes": "flex flex-1 h-full w-full overflow-hidden max-md:relative md:-mt-[var(--df-header-h,0px)] md:h-[calc(100%+var(--df-header-h,0px))]",
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 1038,
+        "h": 1080
+      },
+      "styles": {
+        "display": "flex",
+        "flex-direction": "row",
+        "justify-content": "normal",
+        "align-items": "normal",
+        "color": "rgb(250, 249, 245)",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "16px",
+        "font-weight": "400",
+        "line-height": "24px",
+        "padding": "0px",
+        "margin": "0px",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-bottom": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "box-shadow": "none",
+        "width": "1038.2px",
+        "height": "1080px",
+        "min-height": "0px",
+        "max-width": "none",
+        "gap": "normal",
+        "position": "static",
+        "top": "auto",
+        "left": "auto",
+        "right": "auto",
+        "z-index": "auto",
+        "backdrop-filter": "none"
+      },
+      "buttons": [
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Replicating Claude's UI design",
+          "hasSvg": false,
+          "rect": {
+            "x": 65,
+            "y": 10,
+            "w": 264,
+            "h": 28
+          },
+          "styles": {
+            "width": "264.289px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "8px 0px 0px 8px",
+            "padding": "0px 8px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 331,
+            "y": 10,
+            "w": 28,
+            "h": 28
+          },
+          "styles": {
+            "width": "28px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "0px 6px 6px 0px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Retry",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 446,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Edit",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 478,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Copy",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 510,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12686,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Synthesized design tokens from",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12582,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Assembled comprehensive design",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12455,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        }
+      ],
+      "links": [
+        {
+          "text": "Assistant-ui",
+          "href": "https://www.assistant-ui.com/examples/claude",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-size": "16px",
+            "font-weight": "360",
+            "text-decoration": "none"
+          }
+        },
+        {
+          "text": "Shadcn",
+          "href": "https://www.shadcn.io/theme/claude",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-size": "16px",
+            "font-weight": "360",
+            "text-decoration": "none"
+          }
+        },
+        {
+          "text": "Claude is AI and can make mist",
+          "href": "https://support.anthropic.com/en/articles/8525154-claude-is-",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-size": "12px",
+            "font-weight": "400",
+            "text-decoration": "none"
+          }
+        }
+      ],
+      "textSpans": [
+        {
+          "tag": "P",
+          "text": "I am trying to copy claude web's UI UX i",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "16px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "00:45",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "12px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "14px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+            "font-size": "16px",
+            "font-weight": "360"
+          }
+        },
+        {
+          "tag": "P",
+          "text": "Let me grab the actual Claude.ai fronten",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+            "font-size": "16px",
+            "font-weight": "360"
+          }
+        }
+      ]
+    },
+    {
+      "tag": "DIV",
+      "classes": "h-full flex flex-col overflow-hidden md:pt-[var(--df-header-h,0px)]",
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 517,
+        "h": 1080
+      },
+      "styles": {
+        "display": "flex",
+        "flex-direction": "column",
+        "justify-content": "normal",
+        "align-items": "normal",
+        "color": "rgb(250, 249, 245)",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "16px",
+        "font-weight": "400",
+        "line-height": "24px",
+        "padding": "0px",
+        "margin": "0px",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-bottom": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "box-shadow": "none",
+        "width": "517.102px",
+        "height": "1080px",
+        "min-height": "auto",
+        "max-width": "none",
+        "gap": "normal",
+        "position": "static",
+        "top": "auto",
+        "left": "auto",
+        "right": "auto",
+        "z-index": "auto",
+        "backdrop-filter": "none"
+      },
+      "buttons": [
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Replicating Claude's UI design",
+          "hasSvg": false,
+          "rect": {
+            "x": 65,
+            "y": 10,
+            "w": 264,
+            "h": 28
+          },
+          "styles": {
+            "width": "264.289px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "8px 0px 0px 8px",
+            "padding": "0px 8px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 331,
+            "y": 10,
+            "w": 28,
+            "h": 28
+          },
+          "styles": {
+            "width": "28px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "0px 6px 6px 0px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Retry",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 446,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Edit",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 478,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": "Copy",
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 510,
+            "y": -12728,
+            "w": 32,
+            "h": 32
+          },
+          "styles": {
+            "width": "32px",
+            "height": "32px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "6px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12686,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Synthesized design tokens from",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12582,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Assembled comprehensive design",
+          "hasSvg": true,
+          "rect": {
+            "x": 81,
+            "y": -12455,
+            "w": 461,
+            "h": 28
+          },
+          "styles": {
+            "width": "461.102px",
+            "height": "27.5938px",
+            "color": "rgb(156, 154, 146)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgb(222, 220, 209)",
+            "border-radius": "0px",
+            "padding": "4px 0px",
+            "font-size": "14px",
+            "font-weight": "360",
+            "gap": "8px"
+          }
+        }
+      ],
+      "links": [
+        {
+          "text": "Assistant-ui",
+          "href": "https://www.assistant-ui.com/examples/claude",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-size": "16px",
+            "font-weight": "360",
+            "text-decoration": "none"
+          }
+        },
+        {
+          "text": "Shadcn",
+          "href": "https://www.shadcn.io/theme/claude",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-size": "16px",
+            "font-weight": "360",
+            "text-decoration": "none"
+          }
+        },
+        {
+          "text": "Claude is AI and can make mist",
+          "href": "https://support.anthropic.com/en/articles/8525154-claude-is-",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-size": "12px",
+            "font-weight": "400",
+            "text-decoration": "none"
+          }
+        }
+      ],
+      "textSpans": [
+        {
+          "tag": "P",
+          "text": "I am trying to copy claude web's UI UX i",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "16px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "00:45",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "12px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "styles": {
+            "color": "rgb(156, 154, 146)",
+            "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+            "font-size": "14px",
+            "font-weight": "400"
+          }
+        },
+        {
+          "tag": "SPAN",
+          "text": "提取关键设计令牌和CSS值以复制界面。",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+            "font-size": "16px",
+            "font-weight": "360"
+          }
+        },
+        {
+          "tag": "P",
+          "text": "Let me grab the actual Claude.ai fronten",
+          "styles": {
+            "color": "rgb(250, 249, 245)",
+            "font-family": "\"Anthropic Serif\", Georgia, \"Times New Roman\", serif",
+            "font-size": "16px",
+            "font-weight": "360"
+          }
+        }
+      ]
+    },
+    {
+      "tag": "HEADER",
+      "classes": "flex w-full bg-bg-100 sticky top-0 z-header h-12 -mb-3",
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 517,
+        "h": 48
+      },
+      "styles": {
+        "display": "flex",
+        "flex-direction": "row",
+        "justify-content": "normal",
+        "align-items": "normal",
+        "color": "rgb(250, 249, 245)",
+        "background-color": "rgb(38, 38, 36)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "16px",
+        "font-weight": "400",
+        "line-height": "24px",
+        "padding": "0px",
+        "margin": "0px 0px -12px",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-bottom": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "box-shadow": "none",
+        "width": "517.102px",
+        "height": "48px",
+        "min-height": "auto",
+        "max-width": "none",
+        "gap": "normal",
+        "position": "sticky",
+        "top": "0px",
+        "left": "auto",
+        "right": "auto",
+        "z-index": "20",
+        "backdrop-filter": "none"
+      },
+      "buttons": [
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "Replicating Claude's UI design",
+          "hasSvg": false,
+          "rect": {
+            "x": 65,
+            "y": 10,
+            "w": 264,
+            "h": 28
+          },
+          "styles": {
+            "width": "264.289px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "8px 0px 0px 8px",
+            "padding": "0px 8px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        },
+        {
+          "ariaLabel": null,
+          "title": "",
+          "text": "",
+          "hasSvg": true,
+          "rect": {
+            "x": 331,
+            "y": 10,
+            "w": 28,
+            "h": 28
+          },
+          "styles": {
+            "width": "28px",
+            "height": "28px",
+            "color": "rgb(194, 192, 182)",
+            "background-color": "rgba(0, 0, 0, 0)",
+            "border": "0px solid rgba(0, 0, 0, 0)",
+            "border-radius": "0px 6px 6px 0px",
+            "padding": "0px",
+            "font-size": "14px",
+            "font-weight": "400",
+            "gap": "normal"
+          }
+        }
+      ],
+      "links": [],
+      "textSpans": []
+    }
+  ]
+}

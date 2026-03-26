@@ -1,0 +1,130 @@
+{
+  "_section": "scrollbar",
+  "cssRules": [
+    {
+      "selector": ".\\[scrollbar-color\\:hsl\\(var\\(--border-400\\)\\)_transparent\\]",
+      "css": ".\\[scrollbar-color\\:hsl\\(var\\(--border-400\\)\\)_transparent\\] { scrollbar-color: hsl(var(--border-400)) transparent; }"
+    },
+    {
+      "selector": ".\\[scrollbar-color\\:hsl\\(var\\(--text-500\\)\\)\\]",
+      "css": ".\\[scrollbar-color\\:hsl\\(var\\(--text-500\\)\\)\\] { scrollbar-color: hsl(var(--text-500)); }"
+    },
+    {
+      "selector": ".\\[scrollbar-color\\:transparent_transparent\\]",
+      "css": ".\\[scrollbar-color\\:transparent_transparent\\] { scrollbar-color: transparent transparent; }"
+    },
+    {
+      "selector": ".\\[scrollbar-gutter\\:stable\\]",
+      "css": ".\\[scrollbar-gutter\\:stable\\] { scrollbar-gutter: stable; }"
+    },
+    {
+      "selector": ".\\[scrollbar-width\\:none\\]",
+      "css": ".\\[scrollbar-width\\:none\\] { scrollbar-width: none; }"
+    },
+    {
+      "selector": ".\\[scrollbar-width\\:thin\\]",
+      "css": ".\\[scrollbar-width\\:thin\\] { scrollbar-width: thin; }"
+    },
+    {
+      "selector": ".u-hidden-scrollbar",
+      "css": ".u-hidden-scrollbar { scrollbar-width: none; }"
+    },
+    {
+      "selector": ".u-hidden-scrollbar::-webkit-scrollbar",
+      "css": ".u-hidden-scrollbar::-webkit-scrollbar { width: 0px; opacity: 0; }"
+    },
+    {
+      "selector": ".hover\\:\\[scrollbar-color\\:hsl\\(var\\(--border-300\\)\\)_transparent\\]:hover",
+      "css": ".hover\\:\\[scrollbar-color\\:hsl\\(var\\(--border-300\\)\\)_transparent\\]:hover { scrollbar-color: hsl(var(--border-300)) transparent; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\:hover\\]\\:bg-text-500::-webkit-scrollbar-thumb:hover",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\:hover\\]\\:bg-text-500::-webkit-scrollbar-thumb:hover { --tw-bg-opacity: 1; background-color: hsl(var(--text-500) / var(--tw-bg-opacity)); }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:rounded-\\[1em\\]::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:rounded-\\[1em\\]::-webkit-scrollbar-thumb { border-radius: 1em; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:rounded-full::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:rounded-full::-webkit-scrollbar-thumb { border-radius: 9999px; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:border-\\[0\\.25rem\\]::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:border-\\[0\\.25rem\\]::-webkit-scrollbar-thumb { border-width: 0.25rem; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:border-transparent::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:border-transparent::-webkit-scrollbar-thumb { border-color: transparent; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-border-400::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-border-400::-webkit-scrollbar-thumb { background-color: hsl(var(--border-400) / .15); }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-text-500\\/80::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-text-500\\/80::-webkit-scrollbar-thumb { background-color: hsl(var(--text-500) / .8); }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-transparent::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-transparent::-webkit-scrollbar-thumb { background-color: transparent; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-clip-padding::-webkit-scrollbar-thumb",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-clip-padding::-webkit-scrollbar-thumb { background-clip: padding-box; }"
+    },
+    {
+      "selector": ".hover\\:\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-border-300::-webkit-scrollbar-thumb:hover",
+      "css": ".hover\\:\\[\\&\\:\\:-webkit-scrollbar-thumb\\]\\:bg-border-300::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--border-300) / .15); }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-track\\]\\:my-1::-webkit-scrollbar-track",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-track\\]\\:my-1::-webkit-scrollbar-track { margin-top: 0.25rem; margin-bottom: 0.25rem; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar-track\\]\\:bg-transparent::-webkit-scrollbar-track",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar-track\\]\\:bg-transparent::-webkit-scrollbar-track { background-color: transparent; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:mt-4::-webkit-scrollbar",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:mt-4::-webkit-scrollbar { margin-top: 1rem; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:hidden::-webkit-scrollbar",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:hidden::-webkit-scrollbar { display: none; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:w-1\\.5::-webkit-scrollbar",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:w-1\\.5::-webkit-scrollbar { width: 0.375rem; }"
+    },
+    {
+      "selector": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:w-\\[0\\.25rem\\]::-webkit-scrollbar",
+      "css": ".\\[\\&\\:\\:-webkit-scrollbar\\]\\:w-\\[0\\.25rem\\]::-webkit-scrollbar { width: 0.25rem; }"
+    }
+  ],
+  "scrollableElements": [
+    {
+      "tag": "DIV",
+      "classes": "overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] pt-6 flex-1",
+      "scrollHeight": 15737,
+      "clientHeight": 1044,
+      "scrollbarWidth": "thin",
+      "scrollbarColor": "rgba(222, 220, 209, 0.35) rgba(0, 0, 0, 0)",
+      "scrollbarGutter": "stable",
+      "overflowY": "auto",
+      "actualScrollbarWidth": 0
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute inset-0 overflow-auto",
+      "scrollHeight": 1562,
+      "clientHeight": 1028,
+      "scrollbarWidth": "thin",
+      "scrollbarColor": "rgba(222, 220, 209, 0.35) rgba(0, 0, 0, 0)",
+      "scrollbarGutter": "auto",
+      "overflowY": "auto",
+      "actualScrollbarWidth": 0
+    }
+  ],
+  "isOverlayScrollbar": true
+}

@@ -1,0 +1,7 @@
+{
+  "_section": "modalDialog",
+  "nativeDialogs": [],
+  "modals": [],
+  "overlays": [],
+  "_hint": "No modals currently open. Try opening Settings or a confirmation dialog, then re-run."
+}

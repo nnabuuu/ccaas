@@ -1,0 +1,574 @@
+{
+  "_section": "zIndexMap",
+  "layers": [
+    {
+      "zIndex": 60,
+      "position": "fixed",
+      "tag": "OL",
+      "classes": "fixed top-0 z-toast flex flex-col gap-3 p-4 draggable-none",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 1055,
+        "y": 0,
+        "w": 32,
+        "h": 32
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": 30,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "group w-2 relative h-full cursor-col-resize -mr-1 z-30 grid place-items-center max-md:hidden",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 566,
+        "y": 0,
+        "w": 8,
+        "h": 1080
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": 20,
+      "position": "sticky",
+      "tag": "HEADER",
+      "classes": "flex w-full bg-bg-100 sticky top-0 z-header h-12 -mb-3",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 517,
+        "h": 48
+      },
+      "bgColor": "rgb(38, 38, 36)",
+      "_hint": "Replicating Claude's UI design"
+    },
+    {
+      "zIndex": 20,
+      "position": "absolute",
+      "tag": "DIV",
+      "classes": "md:absolute md:right-0 md:top-0 z-20 max-md:w-fit max-md:self-end max-md:pointer-events-auto flex ju",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 975,
+        "y": 0,
+        "w": 112,
+        "h": 48
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Share"
+    },
+    {
+      "zIndex": 10,
+      "position": "absolute",
+      "tag": "DIV",
+      "classes": "absolute right-0 h-8 px-2 items-center inline-flex z-10",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 493,
+        "y": -11438,
+        "w": 48,
+        "h": 32
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": 10,
+      "position": "absolute",
+      "tag": "DIV",
+      "classes": "absolute right-0 h-8 px-2 items-center inline-flex z-10",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 493,
+        "y": -11193,
+        "w": 48,
+        "h": 32
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": 5,
+      "position": "sticky",
+      "tag": "DIV",
+      "classes": "sticky bottom-0 mx-auto w-full pt-6 z-[5]",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 57,
+        "y": 922,
+        "w": 501,
+        "h": 158
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Opus 4.6ExtendedClaude is AI a"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -13310,
+        "w": 469,
+        "h": 48
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Let me grab the actual Claude."
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -13207,
+        "w": 469,
+        "h": 72
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Now I have very solid data fro"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -13079,
+        "w": 469,
+        "h": 48
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Now let me create the comprehe"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -12976,
+        "w": 469,
+        "h": 1137
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Here's everything extracted an"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -11645,
+        "w": 469,
+        "h": 708
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "是的，都是左对齐。从我拉到的源码可以确认：\nUser mes"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -10720,
+        "w": 469,
+        "h": 633
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "你说得对，你现在就在用，你看到的才是 ground trut"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -9870,
+        "w": 469,
+        "h": 48
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "好思路！我给你写一个 console 脚本，你在 claud"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -9767,
+        "w": 469,
+        "h": 769
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "使用方法：\n\n在当前 claude.ai 页面按 F12 →"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -8782,
+        "w": 469,
+        "h": 72
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "好问题。CSS 值只是\"皮肤\"，真正决定\"像不像 Claud"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -8654,
+        "w": 469,
+        "h": 1155
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "v2 比 v1 多抓了大量结构性信息。具体新增的 11 个维"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -7283,
+        "w": 469,
+        "h": 48
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "好，拆成独立的小脚本，每个只 dump 一个维度，输出小 J"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -7179,
+        "w": 469,
+        "h": 1956
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "12 个独立脚本，每个在 Console 里跑一次，输出一小"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -5029,
+        "w": 469,
+        "h": 216
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "对，拆分版我故意去掉了自动下载，只做了 console.lo"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -4620,
+        "w": 469,
+        "h": 1241
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "搞定。现在每个脚本跑完会同时做三件事：\n\nConsole 打"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -3185,
+        "w": 469,
+        "h": 965
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "好问题，让我想想还有哪些维度是\"复刻 Claude UI\"必"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -2004,
+        "w": 469,
+        "h": 24
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "全要，那就一口气补齐。"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": -1924,
+        "w": 469,
+        "h": 2765
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "25 个脚本全齐了。完整清单：\n#文件抓什么备注01page"
+    },
+    {
+      "zIndex": 2,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "row-start-1 col-start-1 relative z-[2] min-w-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 73,
+        "y": 1034,
+        "w": 469,
+        "h": 826
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "操作都很简单，我按顺序说：\n17 — Modal/Dialo"
+    },
+    {
+      "zIndex": 1,
+      "position": "absolute",
+      "tag": "BUTTON",
+      "classes": "z-[1] size-9 inline-flex items-center justify-center absolute -top-8 left-1/2 -translate-x-1/2 borde",
+      "role": null,
+      "ariaLabel": "Scroll to bottom",
+      "rect": {
+        "x": 289,
+        "y": 890,
+        "w": 36,
+        "h": 36
+      },
+      "bgColor": "rgba(48, 48, 46, 0.8)"
+    },
+    {
+      "zIndex": 1,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "!box-content flex flex-col bg-bg-000 mx-2 md:mx-0 items-stretch transition-all duration-200 relative",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 57,
+        "y": 946,
+        "w": 503,
+        "h": 102
+      },
+      "bgColor": "rgb(48, 48, 46)",
+      "_hint": "Opus 4.6Extended"
+    },
+    {
+      "zIndex": 0,
+      "position": "absolute",
+      "tag": "DIV",
+      "classes": "absolute bottom-0 left-1/2 -translate-x-1/2 z-0 pointer-events-none transition-opacity duration-500",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": -68,
+        "y": 860,
+        "w": 752,
+        "h": 188
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": 0,
+      "position": "relative",
+      "tag": "DIV",
+      "classes": "flex flex-col relative max-md:absolute max-md:inset-x-0 max-md:top-0 max-md:hidden md:z-0",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 1087,
+        "y": 0,
+        "w": 0,
+        "h": 1080
+      },
+      "bgColor": "rgba(0, 0, 0, 0)",
+      "_hint": "Share"
+    },
+    {
+      "zIndex": -1,
+      "position": "absolute",
+      "tag": "DIV",
+      "classes": "from-bg-100 via-bg-100 via-65% to-bg-100/0 pointer-events-none absolute inset-0 -bottom-5 z-[-1] bg-",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 49,
+        "y": 0,
+        "w": 517,
+        "h": 68
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    },
+    {
+      "zIndex": -1,
+      "position": "absolute",
+      "tag": "IFRAME",
+      "classes": "",
+      "role": null,
+      "ariaLabel": null,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 1,
+        "h": 1
+      },
+      "bgColor": "rgba(0, 0, 0, 0)"
+    }
+  ],
+  "_summary": {
+    "uniqueZValues": [
+      -1,
+      0,
+      1,
+      2,
+      5,
+      10,
+      20,
+      30,
+      60
+    ],
+    "layerMap": {
+      "0": [
+        "DIV",
+        "DIV \"Share\""
+      ],
+      "1": [
+        "BUTTON",
+        "DIV \"Opus 4.6Extended\""
+      ],
+      "2": [
+        "DIV \"Let me grab the actual Claude.\"",
+        "DIV \"Now I have very solid data fro\"",
+        "DIV \"Now let me create the comprehe\"",
+        "DIV \"Here's everything extracted an\"",
+        "DIV \"是的，都是左对齐。从我拉到的源码可以确认：\nUser mes\"",
+        "DIV \"你说得对，你现在就在用，你看到的才是 ground trut\"",
+        "DIV \"好思路！我给你写一个 console 脚本，你在 claud\"",
+        "DIV \"使用方法：\n\n在当前 claude.ai 页面按 F12 →\"",
+        "DIV \"好问题。CSS 值只是\"皮肤\"，真正决定\"像不像 Claud\"",
+        "DIV \"v2 比 v1 多抓了大量结构性信息。具体新增的 11 个维\"",
+        "DIV \"好，拆成独立的小脚本，每个只 dump 一个维度，输出小 J\"",
+        "DIV \"12 个独立脚本，每个在 Console 里跑一次，输出一小\"",
+        "DIV \"对，拆分版我故意去掉了自动下载，只做了 console.lo\"",
+        "DIV \"搞定。现在每个脚本跑完会同时做三件事：\n\nConsole 打\"",
+        "DIV \"好问题，让我想想还有哪些维度是\"复刻 Claude UI\"必\"",
+        "DIV \"全要，那就一口气补齐。\"",
+        "DIV \"25 个脚本全齐了。完整清单：\n#文件抓什么备注01page\"",
+        "DIV \"操作都很简单，我按顺序说：\n17 — Modal/Dialo\""
+      ],
+      "5": [
+        "DIV \"Opus 4.6ExtendedClaude is AI a\""
+      ],
+      "10": [
+        "DIV",
+        "DIV"
+      ],
+      "20": [
+        "HEADER \"Replicating Claude's UI design\"",
+        "DIV \"Share\""
+      ],
+      "30": [
+        "DIV"
+      ],
+      "60": [
+        "OL"
+      ],
+      "-1": [
+        "DIV",
+        "IFRAME"
+      ]
+    }
+  },
+  "stackingContexts": [
+    {
+      "tag": "DIV",
+      "classes": "root",
+      "reason": "isolation"
+    },
+    {
+      "tag": "DIV",
+      "classes": "pointer-events-none absolute inset-0 bg-bg-100 [background-image:linear-gradient",
+      "reason": "opacity:0"
+    },
+    {
+      "tag": "DIV",
+      "classes": "opacity-0 transition-opacity ease-out duration-150",
+      "reason": "opacity:0"
+    }
+  ]
+}

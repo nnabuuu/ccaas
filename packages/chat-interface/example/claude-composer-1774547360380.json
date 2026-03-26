@@ -1,0 +1,156 @@
+{
+  "_section": "composer",
+  "input": {
+    "tag": "DIV",
+    "classes": "tiptap ProseMirror",
+    "placeholder": "",
+    "rect": {
+      "x": 78,
+      "y": 967,
+      "w": 467,
+      "h": 22
+    },
+    "styles": {
+      "display": "block",
+      "flex-direction": "row",
+      "justify-content": "normal",
+      "align-items": "normal",
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgba(0, 0, 0, 0)",
+      "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "font-size": "16px",
+      "font-weight": "400",
+      "line-height": "22.4px",
+      "padding": "0px",
+      "margin": "0px",
+      "border": "0px solid rgb(222, 220, 209)",
+      "border-color": "rgb(222, 220, 209)",
+      "border-radius": "0px",
+      "box-shadow": "none",
+      "width": "467.102px",
+      "height": "22.3984px",
+      "min-height": "0px",
+      "max-width": "none",
+      "max-height": "none",
+      "gap": "normal",
+      "transition": "all",
+      "opacity": "1",
+      "cursor": "text"
+    }
+  },
+  "card": {
+    "_depthFromInput": 3,
+    "tag": "DIV",
+    "classes": "!box-content flex flex-col bg-bg-000 mx-2 md:mx-0 items-stretch transition-all duration-200 relative z-10 rounded-[20px] cursor-text relative z-[1] bo",
+    "rect": {
+      "x": 57,
+      "y": 946,
+      "w": 503,
+      "h": 102
+    },
+    "styles": {
+      "display": "flex",
+      "flex-direction": "column",
+      "justify-content": "normal",
+      "align-items": "stretch",
+      "color": "rgb(250, 249, 245)",
+      "background-color": "rgb(48, 48, 46)",
+      "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+      "font-size": "16px",
+      "font-weight": "400",
+      "line-height": "24px",
+      "padding": "0px",
+      "margin": "0px",
+      "border": "1px solid rgba(0, 0, 0, 0)",
+      "border-color": "rgba(0, 0, 0, 0)",
+      "border-radius": "20px",
+      "box-shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.035) 0px 4px 20px 0px, rgba(222, 220, 209, 0.15) 0px 0px 0px 0.5px",
+      "width": "501.102px",
+      "height": "100.398px",
+      "min-height": "0px",
+      "max-width": "none",
+      "max-height": "none",
+      "gap": "normal",
+      "transition": "0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+      "opacity": "1",
+      "cursor": "text"
+    }
+  },
+  "buttons": [
+    {
+      "ariaLabel": "Toggle menu",
+      "title": "",
+      "text": "",
+      "hasSvg": true,
+      "rect": {
+        "x": 74,
+        "y": 1001,
+        "w": 32,
+        "h": 32
+      },
+      "styles": {
+        "width": "32px",
+        "height": "32px",
+        "min-width": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "color": "rgb(194, 192, 182)",
+        "border": "0px solid rgba(0, 0, 0, 0)",
+        "border-radius": "8px",
+        "padding": "0px",
+        "gap": "normal",
+        "cursor": "pointer",
+        "opacity": "1"
+      }
+    },
+    {
+      "ariaLabel": null,
+      "title": "",
+      "text": "Opus 4.6Extended",
+      "hasSvg": true,
+      "rect": {
+        "x": 342,
+        "y": 1001,
+        "w": 163,
+        "h": 32
+      },
+      "styles": {
+        "width": "162.68px",
+        "height": "32px",
+        "min-width": "64px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "color": "rgb(194, 192, 182)",
+        "border": "0px solid rgba(0, 0, 0, 0)",
+        "border-radius": "6px",
+        "padding": "0px 8px 0px 10px",
+        "gap": "4px",
+        "cursor": "pointer",
+        "opacity": "1"
+      }
+    },
+    {
+      "ariaLabel": null,
+      "title": "",
+      "text": "",
+      "hasSvg": true,
+      "rect": {
+        "x": 513,
+        "y": 1001,
+        "w": 32,
+        "h": 32
+      },
+      "styles": {
+        "width": "32px",
+        "height": "32px",
+        "min-width": "auto",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "color": "rgb(250, 249, 245)",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-radius": "8px",
+        "padding": "0px 6px",
+        "gap": "normal",
+        "cursor": "pointer",
+        "opacity": "1"
+      }
+    }
+  ]
+}

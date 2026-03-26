@@ -1,0 +1,511 @@
+{
+  "_section": "loadingStates",
+  "skeletonElements": [
+    {
+      "tag": "DIV",
+      "classes": "from-bg-100 via-bg-100 via-65% to-bg-100/0 pointer-events-none absolute inset-0 -bottom-5 z-[-1] bg-gradient-to-b blur-s",
+      "rect": {
+        "w": 517,
+        "h": 68
+      },
+      "styles": {
+        "display": "block",
+        "width": "517.102px",
+        "height": "68px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(38, 38, 36), rgb(38, 38, 36) 65%, rgba(38, 38, 36, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "visible",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "SPAN",
+      "classes": "transition-all opacity-[0%] h-[17px] absolute right-[0.5px] inline rounded-r-full flex items-center px-1.5 bg-gradient-t",
+      "rect": {
+        "w": 24,
+        "h": 17
+      },
+      "styles": {
+        "display": "flex",
+        "width": "24px",
+        "height": "17px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(to right, rgba(28, 63, 98, 0), rgb(28, 63, 98) 30%, rgb(28, 63, 98)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "0px 9999px 9999px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "0",
+        "overflow": "visible",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "SPAN",
+      "classes": "transition-all opacity-[0%] h-[17px] absolute right-[0.5px] inline rounded-r-full flex items-center px-1.5 bg-gradient-t",
+      "rect": {
+        "w": 24,
+        "h": 17
+      },
+      "styles": {
+        "display": "flex",
+        "width": "24px",
+        "height": "17px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(to right, rgba(28, 63, 98, 0), rgb(28, 63, 98) 30%, rgb(28, 63, 98)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "0px 9999px 9999px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "0",
+        "overflow": "visible",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute right-2 flex flex-1 overflow-hidden w-[52px] h-[71px] rounded-t-lg border-0.5 border-border-200 select-none sca",
+      "rect": {
+        "w": 52,
+        "h": 70
+      },
+      "styles": {
+        "display": "flex",
+        "width": "52px",
+        "height": "69.5px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(48, 48, 46), rgba(48, 48, 46, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "8px 8px 0px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "hidden",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute right-2 flex flex-1 overflow-hidden w-[52px] h-[71px] rounded-t-lg border-0.5 border-border-200 select-none sca",
+      "rect": {
+        "w": 52,
+        "h": 70
+      },
+      "styles": {
+        "display": "flex",
+        "width": "52px",
+        "height": "69.5px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(48, 48, 46), rgba(48, 48, 46, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "8px 8px 0px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "hidden",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute right-2 flex flex-1 overflow-hidden w-[52px] h-[71px] rounded-t-lg border-0.5 border-border-200 select-none sca",
+      "rect": {
+        "w": 52,
+        "h": 70
+      },
+      "styles": {
+        "display": "flex",
+        "width": "52px",
+        "height": "69.5px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(48, 48, 46), rgba(48, 48, 46, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "8px 8px 0px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "hidden",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute right-2 flex flex-1 overflow-hidden w-[52px] h-[71px] rounded-t-lg border-0.5 border-border-200 select-none sca",
+      "rect": {
+        "w": 52,
+        "h": 70
+      },
+      "styles": {
+        "display": "flex",
+        "width": "52px",
+        "height": "69.5px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(48, 48, 46), rgba(48, 48, 46, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "8px 8px 0px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "hidden",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute right-2 flex flex-1 overflow-hidden w-[52px] h-[71px] rounded-t-lg border-0.5 border-border-200 select-none sca",
+      "rect": {
+        "w": 52,
+        "h": 70
+      },
+      "styles": {
+        "display": "flex",
+        "width": "52px",
+        "height": "69.5px",
+        "min-height": "0px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "background": "rgba(0, 0, 0, 0) linear-gradient(rgb(48, 48, 46), rgba(48, 48, 46, 0)) repeat scroll 0% 0% / auto padding-box border-box",
+        "border-radius": "8px 8px 0px 0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "animation-timing-function": "ease",
+        "animation-iteration-count": "1",
+        "opacity": "1",
+        "overflow": "hidden",
+        "position": "absolute"
+      }
+    }
+  ],
+  "streamingCursor": [
+    {
+      "tag": "H2",
+      "classes": "text-text-500 pb-2 mt-1 text-xs select-none pl-2 pr-2 pointer-events-none group/header cursor-pointe",
+      "rect": {
+        "w": 97,
+        "h": 24
+      },
+      "styles": {
+        "width": "96.9219px",
+        "height": "24px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "opacity": "1",
+        "display": "flex",
+        "position": "static"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute inset-0 cursor-pointer",
+      "rect": {
+        "w": 48,
+        "h": 683
+      },
+      "styles": {
+        "width": "48.2969px",
+        "height": "683px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "opacity": "1",
+        "display": "block",
+        "position": "absolute"
+      }
+    },
+    {
+      "tag": "BUTTON",
+      "classes": "group/status flex items-center gap-2 py-1 text-sm transition-colors cursor-pointer text-left text-te",
+      "rect": {
+        "w": 461,
+        "h": 28
+      },
+      "styles": {
+        "width": "461.102px",
+        "height": "27.5938px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "animation": "none",
+        "animation-name": "none",
+        "animation-duration": "0s",
+        "opacity": "1",
+        "display": "flex",
+        "position": "static"
+      }
+    }
+  ],
+  "progressBars": [
+    {
+      "tag": "DIV",
+      "classes": "font-claude-response relative leading-[1.65rem] [&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_p",
+      "styles": {
+        "width": "469.102px",
+        "height": "1511.23px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "overflow": "visible",
+        "animation": "none"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "font-claude-response relative leading-[1.65rem] [&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_p",
+      "styles": {
+        "width": "469.102px",
+        "height": "747.938px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "overflow": "visible",
+        "animation": "none"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "font-claude-response relative leading-[1.65rem] [&_pre>div]:bg-bg-000/50 [&_pre>div]:border-0.5 [&_p",
+      "styles": {
+        "width": "469.102px",
+        "height": "672.781px",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "border-radius": "0px",
+        "overflow": "visible",
+        "animation": "none"
+      }
+    }
+  ],
+  "spinners": [],
+  "loadingKeyframes": [
+    {
+      "name": "shimmer",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { transform: translate(-100%); }"
+        },
+        {
+          "key": "60%",
+          "css": "60% { transform: translate(100%); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { transform: translate(100%); }"
+        }
+      ]
+    },
+    {
+      "name": "shimmertext",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { background-position: right top; }"
+        },
+        {
+          "key": "65%",
+          "css": "65% { background-position: left top; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { background-position: left top; }"
+        }
+      ]
+    },
+    {
+      "name": "outline-pulse",
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { box-shadow: 0 0 0 1px rgb(from var(--tw-ring-color) r g b / .5); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { box-shadow: 0 0 0 3px rgb(from var(--tw-ring-color) r g b / .5); }"
+        }
+      ]
+    },
+    {
+      "name": "pulse",
+      "frames": [
+        {
+          "key": "50%",
+          "css": "50% { opacity: 0.5; }"
+        }
+      ]
+    },
+    {
+      "name": "pulse-dot",
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { transform: scale(0.75); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { transform: scale(1); }"
+        }
+      ]
+    },
+    {
+      "name": "spin",
+      "frames": [
+        {
+          "key": "100%",
+          "css": "100% { transform: rotate(360deg); }"
+        }
+      ]
+    },
+    {
+      "name": "loading-background",
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { background-position: 0% 0%; }"
+        },
+        {
+          "key": "25%",
+          "css": "25% { background-position: 100% 0%; }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { background-position: 100% 100%; }"
+        },
+        {
+          "key": "75%",
+          "css": "75% { background-position: 0% 100%; }"
+        }
+      ]
+    },
+    {
+      "name": "shimmer",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { content: var(--tw-content); transform: translate(-100%); }"
+        },
+        {
+          "key": "60%",
+          "css": "60% { content: var(--tw-content); transform: translate(100%); }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { content: var(--tw-content); transform: translate(100%); }"
+        }
+      ]
+    },
+    {
+      "name": "blink",
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { opacity: 1; }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "fade",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "timeline-fade-in",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "timeline-fade-out",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 1; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 0; }"
+        }
+      ]
+    },
+    {
+      "name": "_voice-pulse_1h3xj_1",
+      "frames": [
+        {
+          "key": "0%, 100%",
+          "css": "0%, 100% { height: var(--pulse-min, 8px); }"
+        },
+        {
+          "key": "50%",
+          "css": "50% { height: var(--pulse-max, 32px); }"
+        }
+      ]
+    },
+    {
+      "name": "_fade_14na3_1",
+      "frames": [
+        {
+          "key": "0%",
+          "css": "0% { opacity: 0; }"
+        },
+        {
+          "key": "100%",
+          "css": "100% { opacity: 1; }"
+        }
+      ]
+    },
+    {
+      "name": "ProseMirror-cursor-blink",
+      "frames": [
+        {
+          "key": "100%",
+          "css": "100% { visibility: hidden; }"
+        }
+      ]
+    }
+  ]
+}

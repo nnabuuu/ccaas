@@ -1,0 +1,44 @@
+{
+  "_section": "uniqueValues",
+  "textColors": [
+    "rgb(156, 154, 146)",
+    "rgb(194, 192, 182)",
+    "rgb(250, 249, 245)",
+    "rgb(255, 255, 255)"
+  ],
+  "bgColors": [
+    "rgb(20, 20, 19)",
+    "rgb(38, 38, 36)",
+    "rgba(156, 154, 146, 0.15)"
+  ],
+  "fonts": [
+    "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif"
+  ],
+  "shadows": [],
+  "radii": [
+    "6px",
+    "9999px"
+  ],
+  "fontSizes": [
+    "12px",
+    "14px",
+    "16px"
+  ],
+  "lineHeights": [
+    "16px",
+    "19.6px",
+    "20px",
+    "24px"
+  ],
+  "letterSpacings": [],
+  "gaps": [
+    "12px",
+    "1px",
+    "6px",
+    "8px"
+  ],
+  "borderColors": [
+    "rgb(222, 220, 209)",
+    "rgba(222, 220, 209, 0.15)"
+  ]
+}

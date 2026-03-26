@@ -1,0 +1,82 @@
+{
+  "_section": "page",
+  "_timestamp": "2026-03-26T17:49:06.105Z",
+  "_viewport": {
+    "w": 1087,
+    "h": 1080,
+    "dpr": 2
+  },
+  "_colorScheme": "dark",
+  "_docClasses": "h-screen antialiased scroll-smooth",
+  "_bodyClasses": "bg-bg-100 text-text-100 font-ui min-h-screen chat-ui-core",
+  "html": {
+    "display": "block",
+    "flex-direction": "row",
+    "background-color": "rgba(0, 0, 0, 0)",
+    "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+    "color": "rgb(255, 255, 255)",
+    "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "line-height": "24px",
+    "width": "1087px",
+    "max-width": "none",
+    "min-height": "0px",
+    "height": "1080px",
+    "padding": "0px",
+    "margin": "0px",
+    "overflow": "visible",
+    "overflow-y": "visible",
+    "position": "static",
+    "gap": "normal"
+  },
+  "body": {
+    "display": "block",
+    "flex-direction": "row",
+    "background-color": "rgb(38, 38, 36)",
+    "background": "rgb(38, 38, 36) none repeat scroll 0% 0% / auto padding-box border-box",
+    "color": "rgb(250, 249, 245)",
+    "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+    "font-size": "16px",
+    "font-weight": "400",
+    "line-height": "24px",
+    "width": "1087px",
+    "max-width": "none",
+    "min-height": "1080px",
+    "height": "1080px",
+    "padding": "0px",
+    "margin": "0px",
+    "overflow": "visible",
+    "overflow-y": "visible",
+    "position": "static",
+    "gap": "normal"
+  },
+  "scrollContainers": [
+    {
+      "tag": "DIV",
+      "classes": "overflow-y-auto overflow-x-hidden [scrollbar-gutter:stable] pt-6 flex-1",
+      "scrollH": 10498,
+      "clientH": 1044,
+      "styles": {
+        "overflow-y": "auto",
+        "scroll-behavior": "auto",
+        "max-height": "none",
+        "height": "1044px",
+        "background-color": "rgba(0, 0, 0, 0)"
+      }
+    },
+    {
+      "tag": "DIV",
+      "classes": "absolute inset-0 overflow-auto",
+      "scrollH": 1342,
+      "clientH": 1028,
+      "styles": {
+        "overflow-y": "auto",
+        "scroll-behavior": "auto",
+        "max-height": "none",
+        "height": "1028px",
+        "background-color": "rgba(0, 0, 0, 0)"
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "_section": "tooltip",
+  "tooltips": [
+    {
+      "tag": "SPAN",
+      "role": "tooltip",
+      "classes": "",
+      "text": "Give positive feedback",
+      "rect": {
+        "w": 1,
+        "h": 1
+      },
+      "styles": {
+        "color": "rgb(255, 255, 255)",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "12px",
+        "font-weight": "400",
+        "line-height": "15px",
+        "letter-spacing": "normal",
+        "padding": "0px",
+        "border": "0px none rgb(255, 255, 255)",
+        "border-radius": "0px",
+        "box-shadow": "none",
+        "max-width": "none",
+        "z-index": "auto",
+        "position": "absolute",
+        "animation": "none",
+        "transform": "none",
+        "opacity": "1",
+        "white-space": "nowrap",
+        "pointer-events": "auto"
+      },
+      "arrow": null
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "classes": "",
+      "text": "Give positive feedbackGive positive feedback",
+      "rect": {
+        "w": 145,
+        "h": 23
+      },
+      "styles": {
+        "color": "rgb(250, 249, 245)",
+        "background-color": "rgba(0, 0, 0, 0)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "16px",
+        "font-weight": "400",
+        "line-height": "24px",
+        "letter-spacing": "normal",
+        "padding": "0px",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-radius": "0px",
+        "box-shadow": "none",
+        "max-width": "none",
+        "z-index": "50",
+        "position": "fixed",
+        "animation": "none",
+        "transform": "matrix(1, 0, 0, 1, 48, 879.5)",
+        "opacity": "1",
+        "white-space": "normal",
+        "pointer-events": "auto"
+      },
+      "arrow": null
+    },
+    {
+      "tag": "DIV",
+      "role": null,
+      "classes": "px-2 py-1 text-xs font-normal font-ui leading-tight rounded-md shadow-md text-always-white bg-always-black/80 backdrop-b",
+      "text": "Give positive feedbackGive positive feedback",
+      "rect": {
+        "w": 145,
+        "h": 23
+      },
+      "styles": {
+        "color": "rgb(255, 255, 255)",
+        "background-color": "rgba(0, 0, 0, 0.8)",
+        "font-family": "\"Anthropic Sans\", system-ui, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif",
+        "font-size": "12px",
+        "font-weight": "400",
+        "line-height": "15px",
+        "letter-spacing": "normal",
+        "padding": "4px 8px",
+        "border": "0px solid rgb(222, 220, 209)",
+        "border-radius": "6px",
+        "box-shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 4px 6px -1px, rgba(0, 0, 0, 0.1) 0px 2px 4px -2px",
+        "max-width": "208px",
+        "z-index": "50",
+        "position": "static",
+        "animation": "none",
+        "transform": "none",
+        "opacity": "1",
+        "white-space": "normal",
+        "pointer-events": "auto"
+      },
+      "arrow": null
+    }
+  ],
+  "tooltipCssRules": [
+    {
+      "selector": ".z-tooltip",
+      "css": ".z-tooltip { z-index: 50; }"
+    },
+    {
+      "selector": ".bg-\\[var\\(--ui-tooltip-fill\\)\\]",
+      "css": ".bg-\\[var\\(--ui-tooltip-fill\\)\\] { background-color: var(--ui-tooltip-fill); }"
+    },
+    {
+      "selector": ".text-\\[var\\(--ui-tooltip-text\\)\\]",
+      "css": ".text-\\[var\\(--ui-tooltip-text\\)\\] { color: var(--ui-tooltip-text); }"
+    }
+  ]
+}
