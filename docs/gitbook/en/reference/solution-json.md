@@ -246,7 +246,8 @@ Defines MCP tool servers available to skills.
       "args": ["mcp-server/dist/index.js"],
       "toolEventTriggers": [
         { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "quizData" }
       ]
     }
   }
@@ -259,6 +260,7 @@ When the AI Agent calls a listed tool and receives a result, the platform immedi
 |-------|------|-------------|
 | `toolName` | string | MCP tool name (matches the `name` in the tool definition) |
 | `eventType` | `"output_update"` | Frontend event type to emit (currently only `output_update` is supported) |
+| `field` | string (optional) | When set, wraps the raw tool result as `{ field, value: result }` in the `output_update` payload, so the frontend can route it to the correct field handler |
 
 {% hint style="info" %}
 `toolEventTriggers` are declared in `solution.json` and registered automatically at startup. Admins can also update triggers in real time via `PUT /api/v1/admin/mcp-servers/:id` without restarting the backend.

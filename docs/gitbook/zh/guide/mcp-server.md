@@ -388,7 +388,8 @@ interface McpEndpoint {
       "args": ["mcp-server/dist/index.js"],
       "toolEventTriggers": [
         { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "quizData" }
       ]
     }
   }
@@ -403,13 +404,14 @@ interface McpEndpoint {
 |------|------|------|
 | `toolName` | string | 要监听的 MCP 工具名称 |
 | `eventType` | `"output_update"` | 触发的前端事件（当前仅支持 `output_update`） |
+| `field` | string（可选） | 设置后，将工具原始结果包装为 `{ field, value: result }` 放入 `output_update` 的 payload，便于前端按字段路由处理 |
 
 ### 与 write\_output 的区别
 
 | | `write_output` | `toolEventTriggers` |
 |---|---|---|
 | **触发方式** | MCP Server 主动调用 | 平台自动监听工具结果 |
-| **携带数据** | 携带字段值（field/value） | 通知前端重新拉取数据 |
+| **携带数据** | 携带字段值（field/value） | 工具原始结果；配置 `field` 时自动包装为 `{ field, value }` |
 | **适用场景** | AI 生成内容填入表单 | 状态变更、动作执行后刷新 |
 | **修改位置** | MCP Server 代码 | solution.json（无需重启） |
 

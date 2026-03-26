@@ -246,7 +246,8 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
       "args": ["mcp-server/dist/index.js"],
       "toolEventTriggers": [
         { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "quizData" }
       ]
     }
   }
@@ -259,6 +260,7 @@ KedgeAgentic 平台 solution.json 配置文件完整参考。
 |------|------|------|
 | `toolName` | string | MCP 工具名称（与工具定义中的 `name` 一致） |
 | `eventType` | `"output_update"` | 触发的前端事件类型（当前仅支持 `output_update`） |
+| `field` | string（可选） | 设置后，将工具原始结果包装为 `{ field, value: result }` 放入 `output_update` 的 payload，便于前端按字段路由处理 |
 
 {% hint style="info" %}
 `toolEventTriggers` 声明在 `solution.json` 中，平台启动时自动注册，无需修改核心后端代码。Admin 管理员也可通过 `/api/v1/admin/mcp-servers/:id` 实时更新触发器配置（无需重启）。

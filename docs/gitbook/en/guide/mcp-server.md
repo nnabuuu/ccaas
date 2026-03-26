@@ -429,7 +429,8 @@ Add `toolEventTriggers` under the relevant MCP Server in `solution.json`:
       "args": ["mcp-server/dist/index.js"],
       "toolEventTriggers": [
         { "toolName": "advance_beat", "eventType": "output_update" },
-        { "toolName": "execute_dynamic_board", "eventType": "output_update" }
+        { "toolName": "execute_dynamic_board", "eventType": "output_update" },
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "quizData" }
       ]
     }
   }
@@ -444,13 +445,14 @@ Whenever the AI Agent calls `advance_beat` or `execute_dynamic_board` and receiv
 |-------|------|-------------|
 | `toolName` | string | Name of the MCP tool to watch |
 | `eventType` | `"output_update"` | Frontend event to emit (currently only `output_update` is supported) |
+| `field` | string (optional) | When set, wraps the raw tool result as `{ field, value: result }` in the `output_update` payload, so the frontend can route it to the correct field handler |
 
 ### vs. write\_output
 
 | | `write_output` | `toolEventTriggers` |
 |---|---|---|
 | **How triggered** | MCP Server calls explicitly | Platform watches tool results automatically |
-| **Data payload** | Carries field/value to update | Signals frontend to re-fetch data |
+| **Data payload** | Carries field/value to update | Raw tool result; optionally wrapped as `{ field, value }` when `field` is configured |
 | **Best for** | AI-generated content into forms | State changes, action completion notifications |
 | **Where configured** | MCP Server code | `solution.json` (no restart needed) |
 
