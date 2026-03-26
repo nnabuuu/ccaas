@@ -17,7 +17,7 @@
         "MCP_PORT": "3006"
       },
       "toolEventTriggers": [
-        { "toolName": "parse_quiz_content", "eventType": "output_update" }
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "parsedQuiz" }
       ]
     }
   },
