@@ -38,6 +38,29 @@ const curriculumTreeTool: Tool = {
   },
 };
 
+const studentProficiencyTool: Tool = {
+  name: 'student_proficiency',
+  description: '查询班级学情数据。返回班级整体平均分和各知识点掌握率（含趋势），可用于 MetricDashboard 和 BarList 组件。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      class_id: {
+        type: 'string',
+        description: '班级ID，如 c-8-2-math',
+      },
+      subject: {
+        type: 'string',
+        description: '学科，如 math, physics',
+      },
+      grade: {
+        type: 'string',
+        description: '年级，如 7, 8, 9',
+      },
+    },
+    required: ['class_id'],
+  },
+};
+
 const writeOutputTool: Tool = {
   name: 'write_output',
   description: `将教案内容同步到前端显示面板。支持的字段: ${SYNC_FIELDS.join(', ')}`,
@@ -64,7 +87,7 @@ const writeOutputTool: Tool = {
 // ─── List Tools Handler ─────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [curriculumTreeTool, writeOutputTool],
+  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool],
 }));
 
 // ─── Call Tool Handler ──────────────────────────────────────
@@ -207,6 +230,68 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     };
     return {
       content: [{ type: 'text', text: JSON.stringify(result) }],
+    };
+  }
+
+  // ── student_proficiency ─────────────────────────────────
+  if (name === 'student_proficiency') {
+    const classId = (args as Record<string, string>).class_id;
+
+    const mockData: Record<string, object> = {
+      'c-8-2-math': {
+        className: '八(2)班',
+        subject: '数学',
+        grade: '8',
+        overallAvg: 78.5,
+        totalStudents: 45,
+        passRate: 0.89,
+        excellentRate: 0.31,
+        topics: [
+          { name: '一次函数', mastery: 0.82, trend: 'up' },
+          { name: '全等三角形', mastery: 0.75, trend: 'stable' },
+          { name: '轴对称', mastery: 0.88, trend: 'up' },
+          { name: '整式乘除', mastery: 0.71, trend: 'down' },
+          { name: '分式', mastery: 0.65, trend: 'down' },
+          { name: '二次根式', mastery: 0.58, trend: 'stable' },
+        ],
+      },
+      'c-8-1-math': {
+        className: '八(1)班',
+        subject: '数学',
+        grade: '8',
+        overallAvg: 82.3,
+        totalStudents: 43,
+        passRate: 0.93,
+        excellentRate: 0.38,
+        topics: [
+          { name: '一次函数', mastery: 0.88, trend: 'up' },
+          { name: '全等三角形', mastery: 0.80, trend: 'up' },
+          { name: '轴对称', mastery: 0.91, trend: 'stable' },
+          { name: '整式乘除', mastery: 0.79, trend: 'stable' },
+          { name: '分式', mastery: 0.72, trend: 'up' },
+          { name: '二次根式', mastery: 0.64, trend: 'down' },
+        ],
+      },
+    };
+
+    const data = mockData[classId] ?? {
+      className: classId,
+      subject: 'unknown',
+      grade: 'unknown',
+      overallAvg: 75.0,
+      totalStudents: 40,
+      passRate: 0.85,
+      excellentRate: 0.25,
+      topics: [
+        { name: '综合', mastery: 0.75, trend: 'stable' },
+      ],
+    };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({ data, status: 'success' }),
+      }],
     };
   }
 

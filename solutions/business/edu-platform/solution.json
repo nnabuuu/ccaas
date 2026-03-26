@@ -17,11 +17,13 @@
   "sessionTemplates": {
     "lesson-planning": {
       "description": "备课助手模式",
-      "enabledSkills": ["lesson-plan-generator"],
-      "appendSystemPrompt": "【强制要求】所有回复必须使用中文。当教师请求备课时，先调用 curriculum_tree 获取知识点树，然后输出 StepWizard 引导参数收集，最后用 write_output 输出教案各部分。"
+      "enabledSkills": ["lesson-plan-generator", "quiz-generator", "student-analysis"],
+      "appendSystemPrompt": "【强制要求】所有回复必须使用中文。当教师请求备课时，先调用 curriculum_tree 获取知识点树，然后输出 StepWizard 引导参数收集，最后用 write_output 输出教案各部分。当教师请求出题时，使用 quiz-generator 技能流程。当教师请求学情分析时，调用 student_proficiency 获取数据并用 MetricDashboard 和 BarList 展示。"
     }
   },
   "skills": [
-    { "slug": "lesson-plan-generator", "name": "lesson-plan-generator" }
+    { "slug": "lesson-plan-generator", "name": "lesson-plan-generator" },
+    { "slug": "quiz-generator", "name": "quiz-generator" },
+    { "slug": "student-analysis", "name": "student-analysis" }
   ]
 }

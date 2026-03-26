@@ -1,11 +1,14 @@
 /**
  * Seed script for edu-platform curriculum database.
- * Populates ~150 curriculum nodes for junior high math (初中数学).
+ * Populates ~150 curriculum nodes for junior high math (初中数学)
+ * and a default teacher user account.
  *
  * Usage: npm run seed
  */
 import Database from 'better-sqlite3';
 import * as path from 'path';
+import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 
 const DB_PATH = path.resolve(__dirname, '../data/edu.db');
 const db = new Database(DB_PATH);
@@ -447,12 +450,38 @@ insertAll();
 const total = (db.prepare('SELECT COUNT(*) as count FROM curriculum_nodes').get() as { count: number }).count;
 const byLevel = db.prepare('SELECT level, COUNT(*) as count FROM curriculum_nodes GROUP BY level ORDER BY level').all() as { level: number; count: number }[];
 
-console.log('\n✅ Edu Platform database seeded successfully');
+console.log('\n✅ Curriculum seeded successfully');
 console.log(`   Total nodes: ${total}`);
 for (const row of byLevel) {
   const labels = ['', '领域', '主题', '单元', '知识点'];
   console.log(`   Level ${row.level} (${labels[row.level]}): ${row.count}`);
 }
+
+// ─── Seed default users ─────────────────────────────────
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    name TEXT NOT NULL,
+    school TEXT DEFAULT '树人中学',
+    ccaas_user_id TEXT,
+    ccaas_api_key TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
+// Clear existing seed users and re-insert
+db.exec("DELETE FROM users WHERE username = 'teacher'");
+
+const seedPassword = bcrypt.hashSync('teacher123', 10);
+db.prepare(
+  'INSERT INTO users (id, username, password_hash, name, school) VALUES (?, ?, ?, ?, ?)',
+).run(randomUUID(), 'teacher', seedPassword, '张老师', '树人中学');
+
+console.log('\n✅ Default user seeded:');
+console.log('   username: teacher / password: teacher123 (张老师, 树人中学)');
 console.log('');
 
 db.close();

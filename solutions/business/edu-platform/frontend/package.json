@@ -9,14 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@kedge-agentic/chat-interface": "file:../../../../packages/chat-interface",
     "@kedge-agentic/common": "file:../../../../packages/common",
     "@kedge-agentic/react-sdk": "file:../../../../packages/react-sdk",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-markdown": "^9.0.0",
-    "remark-gfm": "^4.0.1"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/typography": "^0.5.16",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
