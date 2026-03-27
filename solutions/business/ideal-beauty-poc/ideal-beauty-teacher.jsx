@@ -1,0 +1,256 @@
+import { useState, useMemo } from "react";
+
+/* ═══════ DATA ═══════ */
+const SCENES=[
+  {id:"L1",type:"lecture",label:"Reading",zh:"阅读导入"},
+  {id:"T1",type:"task",label:"Highlight P-E-E",zh:"标注结构"},
+  {id:"L2",type:"lecture",label:"Structure & Transitions",zh:"结构与过渡"},
+  {id:"T2",type:"task",label:"Pick transitions",zh:"采集过渡词"},
+  {id:"L3",type:"lecture",label:"Writing task",zh:"写作任务"},
+  {id:"T3",type:"task",label:"Write & evaluate",zh:"写作工坊"},
+  {id:"T4",type:"task",label:"Final submit",zh:"最终提交"},
+];
+
+const RUBRIC=[{key:"hasTopicSentence",label:"Topic sentence",short:"TS"},{key:"hasSpecificExample",label:"Specific example",short:"Ex"},{key:"usesTransitions",label:"Transitions",short:"Tr"}];
+const SC=["#ede9fe","#c4b5fd","#a78bfa","#34d399","#fbbf24","#34d399","#fbbf24"];
+function mE(ts,ex,tr,sug,imp){return{hasTopicSentence:{score:ts,comment:ts?"Clear.":"Missing."},hasSpecificExample:{score:ex,comment:ex?"Good example.":"Needs detail."},usesTransitions:{score:tr,comment:tr?"Good.":"Add transitions."},overallSuggestion:sug,improvementNote:imp};}
+
+const S2W={s01:{topic:"Ideas about beauty change over time...",point:"Beauty ideals change",evidence:"Egyptian, Venus, Rubens, Elizabethan",elaboration:"Tied to cultural values",score:3},s03:{topic:"People think different things",point:"(vague)",evidence:"(none)",elaboration:"(missing)",score:0},s09:{topic:"(working)",point:"",evidence:"",elaboration:"",score:null}};
+const S3W={s01:{found:["However","while","for instance","because","also","over time"],missed:["So","Today"],score:6},s04:{found:["However","for instance","because","while","over time","also","Today"],missed:["So"],score:7},s06:{found:["However","but"],missed:["while","for instance","because"],score:2}};
+
+const STUDENTS=[
+  {id:"s01",name:"陈思远",step:5,sceneIdx:6,versions:[{id:1,text:"Beauty standards are different. In Africa people like fat. But Western thin.",time:"14:12",eval:mE(1,0,1,"Add detail.",null)},{id:2,text:"Beauty standards vary. For example, in Mauritania, women attend 'fattening rooms' because fuller = wealth. However, Western media promotes thin.",time:"14:24",eval:mE(1,1,1,"All met!","Added detail.")}]},
+  {id:"s02",name:"林嘉怡",step:5,sceneIdx:6,versions:[{id:1,text:"Tang Dynasty women were fat. Now Chinese want thin.",time:"14:10",eval:mE(0,1,0,"Add topic sentence.",null)},{id:2,text:"Beauty shaped by culture. Take Tang Dynasty — fuller body beautiful. In contrast, modern China promotes 白幼瘦.",time:"14:22",eval:mE(1,1,1,"Great!","Added topic sentence.")}]},
+  {id:"s03",name:"王浩然",step:4,sceneIdx:5,versions:[{id:1,text:"People think different things beautiful. Some fat some thin.",time:"14:18",eval:mE(0,0,0,"Needs example.",null)},{id:2,text:"Different cultures have different standards. In Africa, being fat shows wealth.",time:"14:28",eval:mE(1,0,0,"Add specific detail.",null)},{id:3,text:"Different cultures have different standards. For example, in Mauritania, women attend fattening rooms because fuller = wealth. This is different from Western ideals.",time:"14:36",eval:mE(1,1,0,"Add transition like 'In contrast'.","Added Mauritania.")}]},
+  {id:"s04",name:"张雨桐",step:4,sceneIdx:5,versions:[{id:1,text:"Beauty standards change over time. For example, in Elizabethan England, pale skin was fashionable because it showed wealth. However, today people prefer tan.",time:"14:15",eval:mE(1,1,1,"Excellent!",null)}]},
+  {id:"s05",name:"刘子轩",step:4,sceneIdx:5,versions:[]},
+  {id:"s06",name:"赵欣然",step:3,sceneIdx:3,versions:[]},
+  {id:"s07",name:"黄梓涵",step:4,sceneIdx:5,versions:[{id:1,text:"In Myanmar, long necks beautiful. Women wear rings.",time:"14:20",eval:mE(0,1,0,"Needs topic sentence.",null)},{id:2,text:"Beauty differs across cultures. In Myanmar, women wear metal rings. In contrast, Western societies find this unusual.",time:"14:31",eval:mE(1,1,1,"Great!","Added topic sentence.")}]},
+  {id:"s08",name:"吴佳琪",step:5,sceneIdx:6,versions:[{id:1,text:"Tattoos mean different things. In Borneo, diary. For Maoris, social position.",time:"14:14",eval:mE(1,1,1,"Solid!",null)}]},
+  {id:"s09",name:"孙睿",step:2,sceneIdx:1,versions:[]},
+  {id:"s10",name:"周雨涵",step:4,sceneIdx:5,versions:[{id:1,text:"Beauty subjective. Everyone own idea. Culture affects.",time:"14:22",eval:mE(0,0,0,"Needs example.",null)}]},
+  {id:"s11",name:"徐晨曦",step:3,sceneIdx:3,versions:[]},
+  {id:"s12",name:"杨子墨",step:4,sceneIdx:5,versions:[{id:1,text:"Beauty influenced by media. Western slim models, while Africa fuller = wealth.",time:"14:16",eval:mE(1,1,1,"Strong!",null)}]},
+  {id:"s13",name:"马思琪",step:1,sceneIdx:0,versions:[]},
+  {id:"s14",name:"郑浩宇",step:4,sceneIdx:5,versions:[{id:1,text:"Rubens painted fat women. Now thin. Beauty changes.",time:"14:25",eval:mE(0,1,0,"Needs topic sentence.",null)}]},
+  {id:"s15",name:"何雅婷",step:5,sceneIdx:6,versions:[{id:1,text:"Different cultures different beauty. Mauritania fat. Western thin.",time:"14:11",eval:mE(0,0,1,"Add topic sentence.",null)},{id:2,text:"Beauty shaped by cultural values. In Mauritania, fattening rooms. However, Western media promotes slim.",time:"14:23",eval:mE(1,1,1,"All met!","Added topic sentence.")}]},
+  {id:"s16",name:"唐嘉豪",step:3,sceneIdx:3,versions:[]},
+  {id:"s17",name:"邓雨萱",step:4,sceneIdx:5,versions:[]},
+  {id:"s18",name:"曹子涵",step:2,sceneIdx:1,versions:[]},
+];
+
+function getScore(s){const l=[...s.versions].reverse().find(v=>v.eval);return l?RUBRIC.reduce((a,c)=>a+(l.eval[c.key]?.score||0),0):null;}
+
+/* ═══════ TEACHING CONTENT + HINTS ═══════ */
+const BEAUTY_EX=[{c:"Nigeria",s:"Fattening room",p:"Contemporary"},{c:"Western media",s:"Slim ideal",p:"Contemporary"},{c:"Ancient Egypt",s:"Slim, dark-haired",p:"Ancient"},{c:"Venus of Hohle Fels",s:"Overweight figure",p:"35k yrs"},{c:"Rubens era",s:"Plump, pale",p:"1600s"},{c:"Elizabethan",s:"Pale=wealth",p:"16th c."},{c:"Borneo",s:"Tattoo diary",p:"Trad."},{c:"NZ Māori",s:"Tattoo=rank",p:"Trad."},{c:"Myanmar",s:"Neck rings",p:"Trad."},{c:"Indonesia",s:"Sharp teeth",p:"Trad."}];
+
+function Hint({children}){return <div style={{margin:"12px 0",padding:"10px 14px",borderRadius:8,background:"#FAEEDA",border:"1px solid #EF9F27",fontSize:12,color:"#633806",lineHeight:1.6}}><strong style={{color:"#854F0B"}}>Teacher hint:</strong> {children}</div>;}
+
+function TeachContent({sceneId}){
+  const Card=({children,style:s})=><div style={{padding:"14px 16px",background:"#fff",borderRadius:10,border:"1px solid #ebe8e2",...s}}>{children}</div>;
+  const H=({children})=><div style={{fontSize:15,fontWeight:700,color:"#7c3aed",marginBottom:10,fontFamily:"'DM Sans',system-ui,sans-serif"}}>{children}</div>;
+
+  switch(sceneId){
+    case"L1":return <div><H>L1: Reading overview</H>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:8}}>Beauty standards table</div><table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}><tbody>{BEAUTY_EX.map((e,i)=><tr key={i} style={{borderBottom:"1px solid #f0eee8"}}><td style={{padding:"6px 8px",fontWeight:500,color:"#1a1a18"}}>{e.c}</td><td style={{padding:"6px 8px",color:"#3d3b36"}}>{e.s}</td><td style={{padding:"6px 8px",color:"#9e9c96"}}>{e.p}</td></tr>)}</tbody></table></Card>
+      <Hint>Draw attention to paragraph 3 (historical beauty) — it has the clearest P-E-E structure. Give students 3-4 min to read, then move on.</Hint>
+    </div>;
+
+    case"T1":return <div><H>T1: Structure analysis task</H>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Reference answer</div><div style={{padding:"8px 12px",background:"#f5f3ff",borderRadius:6,border:"1px solid #a78bfa",fontSize:13,lineHeight:1.7,fontStyle:"italic"}}>"Ideas about physical beauty change over time and different periods of history reveal different views of beauty, particularly of women."</div>
+      <div style={{marginTop:10}}>{[{l:"Point",c:"#3b82f6",t:"Beauty ideals change across periods"},{l:"Evidence",c:"#10b981",t:"Egyptian, Venus, Rubens, Elizabethan pale skin"},{l:"Elaboration",c:"#f59e0b",t:"Each standard tied to cultural values"}].map(x=><div key={x.l} style={{padding:"6px 10px",borderLeft:`3px solid ${x.c}`,marginBottom:4,fontSize:12,color:"#3d3b36"}}><strong style={{color:x.c}}>{x.l}:</strong> {x.t}</div>)}</div></Card>
+      <Hint>Common mistake: students pick "Is one idea of beauty really more attractive?" — this is a rhetorical question, not the topic sentence. The real one is in paragraph 3. If many students get this wrong, broadcast the reference answer.</Hint>
+    </div>;
+
+    case"L2":return <div><H>L2: Structure & transitions explained</H>
+      <Card style={{marginBottom:12}}><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>P-E-E structure demo</div>{[{l:"Point",c:"#3b82f6",t:"Beauty ideals change across periods"},{l:"Evidence",c:"#10b981",t:"Egyptian · Venus · Rubens · Elizabethan"},{l:"Elaboration",c:"#f59e0b",t:"Each tied to cultural values"}].map(x=><div key={x.l} style={{padding:"6px 10px",borderLeft:`3px solid ${x.c}`,marginBottom:3,fontSize:12,color:"#3d3b36"}}><strong style={{color:x.c}}>{x.l}:</strong> {x.t}</div>)}</Card>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Transition categories</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:11}}>{[{l:"Example",c:"#a78bfa",w:"for instance, like"},{l:"Contrast",c:"#f472b6",w:"However, while, but"},{l:"Time",c:"#34d399",w:"over time, Today, In the 1600s"},{l:"Cause",c:"#fbbf24",w:"because, So, also"}].map(g=><div key={g.l} style={{padding:"6px 8px",borderTop:`2px solid ${g.c}`,background:"#fafaf8",borderRadius:"0 0 6px 6px"}}><strong style={{color:g.c}}>{g.l}:</strong> {g.w}</div>)}</div></Card>
+      <Hint>Students commonly miss "because" as a transition — they think of it as just a grammar word. Emphasize that it signals CAUSE, a structural role. Also "Today" as a time-shift marker.</Hint>
+    </div>;
+
+    case"T2":return <div><H>T2: Transition collection task</H>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>All transitions in text (17 total)</div><div style={{fontSize:12,color:"#3d3b36",lineHeight:1.8}}>However · while (×3) · but (×2) · So · because · also · for instance · like · Today · In the early 1600s · In Elizabethan England · Within different cultures · through the ages · Whether · over time</div></Card>
+      <Hint>赵欣然 only found 2 so far — she may need a nudge. 张雨桐 found 7/8, strong candidate for broadcast to show the class what "done" looks like.</Hint>
+    </div>;
+
+    case"L3":return <div><H>L3: Writing task setup</H>
+      <Card style={{marginBottom:12}}><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Task</div><div style={{fontSize:14,color:"#1a1a18",lineHeight:1.7}}>Write 50-80 words about a specific beauty standard. Use topic sentence + example + transitions.</div></Card>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Rubric (3 criteria)</div>{RUBRIC.map((c,i)=><div key={c.key} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<2?"1px solid #f0eee8":"none",fontSize:12}}><span>{["📝","🌍","🔗"][i]}</span><div><strong style={{color:"#1a1a18"}}>{c.label}</strong></div></div>)}</Card>
+      <Hint>Expect the first wave of 3/3 scores within 5 min from 张雨桐 type students. Use their work to broadcast and motivate. Students scoring 0/3 usually lack a topic sentence — the AI will tell them, but a quick verbal reminder helps.</Hint>
+    </div>;
+
+    case"T3":return <div><H>T3: Writing workshop monitoring</H>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Key things to watch</div><div style={{fontSize:12,color:"#3d3b36",lineHeight:1.7}}>• Students who get 0/3 on first try — they need verbal encouragement<br/>• Students with 2+ revisions showing improvement — good broadcast candidates<br/>• Class-wide weakness in any single dimension</div></Card>
+      <Hint>王浩然 is on revision 3 (0→1→2) — excellent example for teaching revision strategy. Consider broadcasting his v1 vs v3 side-by-side to show the class how feedback drives improvement.</Hint>
+    </div>;
+
+    case"T4":return <div><H>T4: Final submission monitoring</H>
+      <Card><div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Final prompt</div><div style={{fontSize:13,color:"#1a1a18",lineHeight:1.7,fontStyle:"italic"}}>What does "ideal beauty" mean to you? 80-100 words, 2+ examples.</div></Card>
+      <Hint>Good broadcast candidates for final review: 陈思远 (Mauritania+Western contrast), 林嘉怡 (白幼瘦 local perspective), 吴佳琪 (tattoos across cultures — different angle).</Hint>
+    </div>;
+
+    default:return null;
+  }
+}
+
+/* ═══════ AI INSIGHTS ═══════ */
+function getInsight(sceneId,students){
+  switch(sceneId){
+    case"L1":return "马思琪 is still at reading stage. Most students are progressing well. Allow 3-4 min for reading before advancing.";
+    case"T1":{const w=Object.entries(S2W);const good=w.filter(([,v])=>v.score>=2).length;return `${w.length} students have submitted analyses. ${good} got the structure right. Common error: picking the rhetorical question as topic sentence instead of the thesis in paragraph 3. 王浩然 picked a vague statement — consider showing the reference answer.`;}
+    case"L2":return "Transition between structure analysis and the explanation. Students who struggled in T1 will benefit most from seeing the P-E-E breakdown clearly.";
+    case"T2":{const w=Object.entries(S3W);const avg=w.reduce((s,[,v])=>s+v.score,0)/w.length;return `${w.length} students collecting transitions. Average: ${avg.toFixed(1)} found. Most missed: "because" and "Today" — students don't recognize causal/temporal markers as transitions. 赵欣然 only found 2, needs guidance.`;}
+    case"L3":return "Set expectations before the workshop: first draft doesn't need to be perfect. The AI eval cycle IS the learning process. Mention that you'll broadcast good examples.";
+    case"T3":{const ev=students.filter(s=>s.versions.some(v=>v.eval));const perfect=ev.filter(s=>getScore(s)===3).length;const zero=ev.filter(s=>getScore(s)===0).length;const multiRev=ev.filter(s=>s.versions.filter(v=>v.eval).length>1);return `${ev.length} evaluated, ${perfect} at 3/3, ${zero} at 0/3. ${multiRev.length} students revised after feedback. Weakest dimension: transitions (lowest pass rate). Top broadcast: 张雨桐 (perfect first try), 王浩然 (0→1→2 progression — great for teaching revision).`;}
+    case"T4":{const sub=students.filter(s=>s.sceneIdx>=6);return `${sub.length} students reached final submission. All achieved 3/3 before submitting. For review: 陈思远 (Mauritania+West contrast), 林嘉怡 (白幼瘦 — local angle), 吴佳琪 (tattoos — different approach).`;}
+    default:return "";
+  }
+}
+
+/* ═══════ STUDENT PANEL ═══════ */
+function StudentPanel({sceneId,students,onBroadcast}){
+  const [expandedId,setExpandedId]=useState(null);
+  const [focusedId,setFocusedId]=useState(null);
+
+  const relevant=useMemo(()=>{
+    const si=SCENES.findIndex(s=>s.id===sceneId);
+    if(sceneId.startsWith("L"))return students.filter(s=>s.sceneIdx>=si).sort((a,b)=>b.sceneIdx-a.sceneIdx);
+    if(sceneId==="T1"||sceneId==="T2")return students.filter(s=>s.sceneIdx>=SCENES.findIndex(s2=>s2.id===sceneId));
+    return students.filter(s=>s.sceneIdx>=4).sort((a,b)=>(getScore(b)??-1)-(getScore(a)??-1));
+  },[sceneId,students]);
+
+  const focused=focusedId?students.find(s=>s.id===focusedId):null;
+
+  if(focused)return <FullDetail student={focused} onClose={()=>setFocusedId(null)} onBroadcast={onBroadcast}/>;
+
+  return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    {/* AI Insight */}
+    <div style={{padding:"10px 14px",borderBottom:"1px solid #ebe8e2",flexShrink:0,background:"#faf8ff"}}>
+      <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:4}}>
+        <div style={{width:16,height:16,borderRadius:5,background:"linear-gradient(135deg,#7c3aed,#a78bfa)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:8,color:"#fff",fontWeight:700}}>AI</span></div>
+        <span style={{fontSize:11,fontWeight:600,color:"#7c3aed"}}>Insight</span>
+      </div>
+      <div style={{fontSize:11,color:"#3d3b36",lineHeight:1.6}}>{getInsight(sceneId,students)}</div>
+    </div>
+    {/* Metrics */}
+    <div style={{padding:"8px 14px",borderBottom:"1px solid #ebe8e2",flexShrink:0,display:"flex",gap:6}}>
+      {[{l:"At step",v:relevant.length,c:"#a78bfa"},{l:"Evaluated",v:students.filter(s=>s.versions.some(v=>v.eval)).length,c:"#34d399"}].map(m=><div key={m.l} style={{flex:1,padding:"5px 6px",borderRadius:5,background:"#fff",border:"1px solid #ebe8e2",textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:m.c}}>{m.v}</div><div style={{fontSize:9,color:"#9e9c96"}}>{m.l}</div></div>)}
+    </div>
+    {/* Student list */}
+    <div style={{flex:1,overflowY:"auto"}}>
+      <div style={{padding:"6px 14px 3px",fontSize:10,fontWeight:600,color:"#9e9c96",textTransform:"uppercase",letterSpacing:.5}}>Students ({relevant.length})</div>
+      {relevant.map(s=>{
+        const score=getScore(s);const exp=expandedId===s.id;const evCount=s.versions.filter(v=>v.eval).length;
+        return <div key={s.id}>
+          <div onClick={()=>setExpandedId(exp?null:s.id)} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 14px",cursor:"pointer",background:exp?"#f5f3ff":"transparent",borderLeft:exp?"3px solid #a78bfa":"3px solid transparent"}}>
+            <span style={{flex:1,fontSize:12,fontWeight:exp?600:400,color:"#1a1a18"}}>{s.name}</span>
+            {score!==null&&<div style={{display:"flex",gap:2}}>{RUBRIC.map(c=>{const l=[...s.versions].reverse().find(v=>v.eval);return <span key={c.key} style={{width:14,height:14,borderRadius:3,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,background:l?.eval[c.key]?.score?"rgba(52,211,153,.1)":"rgba(239,68,68,.06)",color:l?.eval[c.key]?.score?"#059669":"#ef4444"}}>{l?.eval[c.key]?.score?"✓":"✗"}</span>})}</div>}
+            {evCount>1&&<span style={{fontSize:9,color:"#7c3aed",fontWeight:600}}>{evCount}v</span>}
+            {s.versions.length>0&&<button onClick={e=>{e.stopPropagation();setFocusedId(s.id);}} style={{width:18,height:18,borderRadius:3,border:"1px solid #ede9fe",background:"#faf5ff",color:"#7c3aed",fontSize:9,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>⤢</button>}
+            <span style={{fontSize:10,color:"#b8b5ae",transform:exp?"rotate(90deg)":"none",transition:"transform .12s"}}>▸</span>
+          </div>
+          {exp&&<div style={{padding:"6px 14px 10px 28px",background:"#fafaf8",borderBottom:"1px solid #f0eee8"}}>
+            {/* Scene-specific work */}
+            {(sceneId==="T1"||sceneId==="L2")&&S2W[s.id]&&<div style={{marginBottom:6}}>
+              <div style={{fontSize:10,color:"#7c3aed",fontWeight:600,marginBottom:3}}>Structure analysis</div>
+              {[{l:"Topic",k:"topic"},{l:"Point",k:"point"},{l:"Evidence",k:"evidence"},{l:"Elaboration",k:"elaboration"}].map(x=><div key={x.l} style={{fontSize:10,color:"#6b6963",marginBottom:1}}><strong>{x.l}:</strong> {S2W[s.id][x.k]||"(empty)"}</div>)}
+            </div>}
+            {(sceneId==="T2"||sceneId==="L3")&&S3W[s.id]&&<div style={{marginBottom:6}}>
+              <div style={{fontSize:10,color:"#7c3aed",fontWeight:600,marginBottom:3}}>Transitions: {S3W[s.id].score}/{S3W[s.id].score+S3W[s.id].missed.length}</div>
+              <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{S3W[s.id].found.map(w=><span key={w} style={{padding:"1px 6px",borderRadius:6,background:"rgba(52,211,153,.08)",color:"#059669",fontSize:9}}>{w}✓</span>)}</div>
+              {S3W[s.id].missed.length>0&&<div style={{fontSize:9,color:"#d97706",marginTop:3}}>Missed: {S3W[s.id].missed.join(", ")}</div>}
+            </div>}
+            {/* Writing versions (T3/T4) */}
+            {(sceneId==="T3"||sceneId==="T4")&&s.versions.length>0&&<div>
+              {s.versions.filter(v=>v.eval).map((v,i)=>{const t=RUBRIC.reduce((a,c)=>a+(v.eval[c.key]?.score||0),0);return <div key={v.id} style={{marginBottom:6,padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #f0eee8"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:10,fontWeight:600,color:"#7c3aed"}}>v{i+1} <span style={{fontWeight:400,color:"#9e9c96"}}>{v.time}</span></span><span style={{fontSize:10,fontWeight:700,color:t>=2?"#059669":t>=1?"#d97706":"#ef4444"}}>{t}/3</span></div>
+                <div style={{fontSize:11,color:"#3d3b36",lineHeight:1.5,maxHeight:40,overflow:"hidden"}}>{v.text}</div>
+                <button onClick={()=>onBroadcast(s,v)} style={{marginTop:4,padding:"3px 8px",borderRadius:4,border:"1px solid #ede9fe",background:"#faf5ff",color:"#7c3aed",fontSize:9,fontWeight:600,cursor:"pointer",width:"100%"}}>Broadcast</button>
+              </div>})}
+            </div>}
+            {s.versions.length===0&&<div style={{fontSize:10,color:"#b8b5ae"}}>No work submitted yet.</div>}
+          </div>}
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
+/* ═══════ FULLSCREEN STUDENT DETAIL ═══════ */
+function FullDetail({student,onClose,onBroadcast}){
+  const evs=student.versions.filter(v=>v.eval);
+  return <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div style={{padding:"10px 14px",borderBottom:"1px solid #ebe8e2",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+      <div><div style={{fontSize:15,fontWeight:700,color:"#1a1a18"}}>{student.name}</div><div style={{fontSize:11,color:"#9e9c96"}}>{evs.length} evaluation(s)</div></div>
+      <button onClick={onClose} style={{padding:"5px 14px",borderRadius:6,border:"1px solid #ebe8e2",background:"#fff",fontSize:12,cursor:"pointer",color:"#6b6963"}}>← Back</button>
+    </div>
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px"}}>
+      {/* Score chart */}
+      {evs.length>0&&<div style={{marginBottom:16}}><div style={{fontSize:11,fontWeight:600,color:"#9e9c96",marginBottom:6}}>Score progression</div><div style={{display:"flex",gap:6,alignItems:"flex-end",height:50}}>{evs.map((v,i)=>{const t=RUBRIC.reduce((a,c)=>a+(v.eval[c.key]?.score||0),0);const h=(t/3)*36+12;const col=t>=2?"#34d399":t>=1?"#fbbf24":"#ef4444";return <div key={v.id} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:10,fontWeight:700,color:col}}>{t}/3</span><div style={{width:"100%",maxWidth:32,height:h,background:`${col}18`,borderRadius:4,border:`1px solid ${col}44`}}/><span style={{fontSize:9,color:"#9e9c96"}}>v{i+1}</span></div>})}</div></div>}
+      {/* Full version timeline */}
+      {student.versions.map((v,i)=>{const ev=v.eval;const t=ev?RUBRIC.reduce((a,c)=>a+(ev[c.key]?.score||0),0):null;const isLast=i===student.versions.length-1;return <div key={v.id} style={{marginBottom:14,padding:"14px 16px",background:isLast?"#f5f3ff":"#fff",borderRadius:10,border:`1px solid ${isLast?"#ede9fe":"#ebe8e2"}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:13,fontWeight:700,color:"#7c3aed"}}>v{i+1}</span><span style={{fontSize:11,color:"#9e9c96"}}>{v.time}</span>{t!==null&&<span style={{fontSize:12,fontWeight:700,color:t>=2?"#059669":t>=1?"#d97706":"#ef4444"}}>{t}/3</span>}</div>
+          <button onClick={()=>onBroadcast(student,v)} style={{padding:"4px 12px",borderRadius:5,border:"1px solid #ede9fe",background:"#faf5ff",color:"#7c3aed",fontSize:11,fontWeight:600,cursor:"pointer"}}>Broadcast</button>
+        </div>
+        <div style={{fontSize:14,color:"#1a1a18",lineHeight:1.8,padding:"10px 14px",background:"#fafaf8",borderRadius:8,fontFamily:"'Source Serif 4',Georgia,serif"}}>{v.text}</div>
+        {ev&&<div style={{marginTop:10,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>{RUBRIC.map(c=>{const d=ev[c.key];return <div key={c.key} style={{padding:"8px 10px",borderRadius:6,background:d.score?"rgba(52,211,153,.04)":"rgba(239,68,68,.03)",border:`1px solid ${d.score?"rgba(52,211,153,.12)":"rgba(239,68,68,.08)"}`}}><div style={{fontSize:10,fontWeight:700,color:d.score?"#059669":"#ef4444"}}>{d.score?"✅":"⚠️"} {c.short}</div><div style={{fontSize:10,color:"#6b6963",marginTop:2}}>{d.comment}</div></div>})}</div>}
+        {ev?.overallSuggestion&&<div style={{marginTop:6,padding:"8px 10px",background:"#faf5ff",borderRadius:6,fontSize:11,color:"#3d3b36"}}><strong style={{color:"#7c3aed"}}>Suggestion:</strong> {ev.overallSuggestion}</div>}
+        {ev?.improvementNote&&<div style={{marginTop:4,padding:"8px 10px",background:"rgba(52,211,153,.04)",borderRadius:6,fontSize:11,color:"#059669"}}>{ev.improvementNote}</div>}
+      </div>})}
+    </div>
+  </div>;
+}
+
+/* ═══════ BROADCAST ═══════ */
+function BroadcastOverlay({student,version,onClose}){
+  const ev=version.eval;
+  return <div style={{minHeight:400,background:"rgba(0,0,0,.6)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,borderRadius:12}}>
+    <div style={{width:"100%",maxWidth:620,background:"#fff",borderRadius:14,overflow:"hidden"}}>
+      <div style={{padding:"12px 20px",background:"#1e1d1b",display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:13,fontWeight:700,color:"#e2e0d8"}}>{student.name} · v{version.id}</span><button onClick={onClose} style={{padding:"4px 12px",borderRadius:5,border:"1px solid rgba(255,255,255,.12)",background:"transparent",color:"#8a8780",fontSize:11,cursor:"pointer"}}>Close</button></div>
+      <div style={{padding:"22px 24px",fontSize:16,lineHeight:2,color:"#1a1a18",fontFamily:"'Source Serif 4',Georgia,serif"}}>{version.text}</div>
+      {ev&&<div style={{padding:"0 24px 18px"}}><div style={{borderTop:"1px solid #ebe8e2",paddingTop:12,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>{RUBRIC.map(c=>{const d=ev[c.key];return <div key={c.key} style={{padding:8,borderRadius:6,background:d.score?"rgba(52,211,153,.04)":"rgba(239,68,68,.03)"}}><div style={{fontSize:10,fontWeight:700,color:d.score?"#059669":"#ef4444"}}>{d.score?"✅":"⚠️"} {c.label}</div><div style={{fontSize:10,color:"#6b6963"}}>{d.comment}</div></div>})}</div></div>}
+    </div>
+  </div>;
+}
+
+/* ═══════ MAIN ═══════ */
+export default function TeacherDashboard(){
+  const [si,setSi]=useState(0);
+  const [broadcast,setBroadcast]=useState(null);
+  const scene=SCENES[si];
+
+  // Pulse bar distribution
+  const dist=Array(7).fill(0);
+  STUDENTS.forEach(s=>dist[Math.min(s.sceneIdx,6)]++);
+
+  return <div style={{height:"100vh",display:"flex",flexDirection:"column",fontFamily:"'Source Serif 4',Georgia,serif",overflow:"hidden"}}>
+    {/* PULSE BAR */}
+    <div style={{background:"#1e1d1b",flexShrink:0}}>
+      <div style={{padding:"8px 20px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}><div style={{width:7,height:7,borderRadius:"50%",background:"#34d399",animation:"pulse 2s infinite"}}/><span style={{fontSize:13,fontWeight:600,color:"#e2e0d8",fontFamily:"'DM Sans',system-ui,sans-serif"}}>Ideal Beauty</span><span style={{fontSize:10,background:"#fef3c7",color:"#92400e",padding:"2px 6px",borderRadius:4,fontWeight:600}}>Teacher</span></div>
+        <div style={{flex:1,display:"flex",gap:2,height:12,borderRadius:3,overflow:"hidden"}}>{dist.map((c,i)=>c>0?<div key={i} style={{width:`${(c/STUDENTS.length)*100}%`,background:SC[i],fontSize:7,fontWeight:700,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",minWidth:14}}>{c}</div>:null)}</div>
+        <span style={{fontSize:11,color:"#6b6963"}}>{STUDENTS.length} students</span>
+        <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+      </div>
+      {/* Scene nav */}
+      <div style={{padding:"0 20px 8px",display:"flex",gap:3}}>
+        {SCENES.map((s,i)=>{const a=si===i;return <button key={s.id} onClick={()=>setSi(i)} style={{flex:1,padding:"6px 4px",borderRadius:6,border:"none",background:a?(s.type==="lecture"?"#d97706":"#a78bfa"):"rgba(255,255,255,.06)",cursor:"pointer",textAlign:"center"}}><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4}}><span style={{width:6,height:6,borderRadius:"50%",background:s.type==="lecture"?"#fb923c":"#c4b5fd"}}/><span style={{fontSize:11,fontWeight:a?600:400,color:a?"#fff":"#8a8780"}}>{s.label}</span></div></button>})}
+      </div>
+    </div>
+
+    {/* BODY */}
+    <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+      {/* Left: teaching content */}
+      <div style={{flex:1,overflowY:"auto",padding:"16px 22px",background:"#f8f7f4",minWidth:0}}>
+        <TeachContent sceneId={scene.id}/>
+      </div>
+      {/* Right: student panel */}
+      <div style={{width:340,borderLeft:"1px solid #ebe8e2",background:"#fdfcfa",flexShrink:0,overflow:"hidden"}}>
+        <StudentPanel sceneId={scene.id} students={STUDENTS} onBroadcast={(s,v)=>setBroadcast({student:s,version:v})}/>
+      </div>
+    </div>
+
+    {broadcast&&<BroadcastOverlay student={broadcast.student} version={broadcast.version} onClose={()=>setBroadcast(null)}/>}
+  </div>;
+}

@@ -1,0 +1,353 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ideal Beauty — Student</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}#root{width:100%;height:100vh}</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head><body><div id="root"></div><script type="text/babel">
+const{useState,useRef,useCallback,useEffect,useMemo}=React;
+
+
+/* ═══════ DATA ═══════ */
+const FULL_TEXT_PARAS = [
+  `Nigerian teenager Happiness Edem had just one aim in life: to put on weight. So she spent six months in a "fattening room" where her daily routine was to sleep, eat and grow fat. She went in weighing 60 kg, but came out weighing twice that. In some parts of Africa, being fat is desirable because it is a sign of attractiveness in women and power and wealth in men.`,
+  `However, in magazines and in the media we are bombarded with images of slim women with a fair complexion and handsome, broad-shouldered young men. It is fairly rare to see short-sighted, middle-aged models. Some people question these shallow beauty ideals. Is one idea of physical beauty really more attractive than another?`,
+  `Ideas about physical beauty change over time and different periods of history reveal different views of beauty, particularly of women. Egyptian paintings often show slim dark-haired women as the normal practice, while one of the earliest representations of women in art in Europe is an overweight female. This is the Venus of Hohle Fels and it is more than 35,000 years old. In the early 1600s, artists like Peter Paul Rubens also painted plump, pale-skinned women who were thought to be the most stunning examples of female beauty at that time. In Elizabethan England, pale skin was still fashionable because it was a sign of wealth: the make-up used to achieve this look was expensive, so only rich people could afford it.`,
+  `Within different cultures around the world, there is a huge difference in what is considered beautiful. Traditional customs, like tattooing, head-shaving, piercing or other kinds of bodily changes can express social position, identity or values. In Borneo, for instance, tattoos are like a diary because they are a written record of all the important events and places a man has experienced in his life. For New Zealand's Maoris they reflect the person's position in society. Western society used to have a very low opinion of tattoos. Today they are considered a popular form of body art among the new generation.`,
+  `For Europeans, the tradition of using metal rings to stretch a girl's neck may be shocking, but the Myanmar people consider women with long and thin necks more elegant. In Indonesia, the custom of sharpening girls' teeth to points might seem very odd while it is perfectly acceptable in other places to straighten children's teeth with braces. Wearing rings in the nose or plastic surgery might be seen as ugly and unattractive by some cultures, but it is commonplace in many others.`,
+  `It appears that through the ages and across different cultures, people have always changed their bodies and faces for a wide variety of reasons: sometimes to help them look more beautiful, and sometimes to enable them to show social position or display group identity. Whether it is wearing make-up or decorating the body with tattoos, rings and piercings, different cultures view these things with different eyes. Does this mean that we are all beautiful in our own way?`,
+];
+
+function splitSents(t) { return (t.match(/[^.!?]+[.!?]+[\s]*/g)||[t]).map(s => s.trim()).filter(Boolean); }
+const SENTS = FULL_TEXT_PARAS.flatMap((p,pi) => splitSents(p).map((s,si) => ({pi,si,text:s,id:`${pi}-${si}`})));
+
+const TRANS = ["So","because","but","However,","while","also","In the early 1600s,","In Elizabethan England,","Within different cultures around the world,","like","for instance,","Today","but the Myanmar people","while it is perfectly acceptable","through the ages and across different cultures,","Whether","over time"];
+const TCAT = {example:["like","for instance,"],contrast:["However,","while","but","but the Myanmar people","while it is perfectly acceptable"],temporal:["So","In the early 1600s,","In Elizabethan England,","Today","over time","through the ages and across different cultures,"],causal:["because"],cultural:["Within different cultures around the world,","Whether"],addition:["also"]};
+function catOf(p){for(const[c,ps]of Object.entries(TCAT))if(ps.includes(p))return c;return"other";}
+const CAT_C={example:"#a78bfa",contrast:"#f472b6",temporal:"#34d399",causal:"#fbbf24",cultural:"#60a5fa",addition:"#fb923c"};
+const CAT_L={example:"Example",contrast:"Contrast",temporal:"Time/Culture",causal:"Cause",cultural:"Cultural",addition:"Addition"};
+
+const BEAUTY_EX=[{c:"Nigeria",s:"Fattening room",p:"Contemporary"},{c:"Western media",s:"Slim ideal",p:"Contemporary"},{c:"Ancient Egypt",s:"Slim, dark-haired",p:"Ancient"},{c:"Venus of Hohle Fels",s:"Overweight figure",p:"35,000+ yrs"},{c:"Rubens era",s:"Plump, pale-skinned",p:"1600s"},{c:"Elizabethan England",s:"Pale skin = wealth",p:"16th c."},{c:"Borneo",s:"Tattoo diary",p:"Traditional"},{c:"NZ Māori",s:"Tattoos = rank",p:"Traditional"},{c:"Myanmar",s:"Long neck rings",p:"Traditional"},{c:"Indonesia",s:"Sharpened teeth",p:"Traditional"}];
+
+const RUBRIC=[{key:"hasTopicSentence",label:"Topic sentence",short:"TS"},{key:"hasSpecificExample",label:"Specific example",short:"Ex"},{key:"usesTransitions",label:"Transitions",short:"Tr"}];
+
+const SCENES=[
+  {id:"L1",type:"lecture",label:"Reading",zh:"阅读导入"},
+  {id:"T1",type:"task",label:"Highlight P-E-E",zh:"标注结构"},
+  {id:"L2",type:"lecture",label:"Structure & Transitions",zh:"结构与过渡"},
+  {id:"T2",type:"task",label:"Pick transitions",zh:"采集过渡词"},
+  {id:"L3",type:"lecture",label:"Writing task",zh:"写作任务"},
+  {id:"T3",type:"task",label:"Write & evaluate",zh:"写作工坊"},
+  {id:"T4",type:"task",label:"Final submit",zh:"最终提交"},
+];
+
+/* ═══════ AGENTIC ═══════ */
+const PROMPTS={
+  t1:`You are an English reading teacher for Chinese high school students. The student highlighted sentences in "Ideal Beauty" as topic sentence and P-E-E structure. Reference topic sentence: "Ideas about physical beauty change over time and different periods of history reveal different views of beauty, particularly of women." Be encouraging. Respond ONLY JSON: {"topicSentence":{"found":true,"feedback":"1-2 sentences"},"paragraphStructure":{"point":{"identified":true,"feedback":"brief"},"evidence":{"identified":true,"feedback":"brief"},"elaboration":{"identified":true,"feedback":"brief"}},"overallTip":"one sentence"}`,
+  t2:`You are an English teacher. The student picked transitional expressions from "Ideal Beauty". Key transitions: However, while, but, So, because, also, for instance, like, Today, over time, In the early 1600s, In Elizabethan England, Within different cultures, through the ages. Respond ONLY JSON: {"found":["list"],"missed":["list"],"feedback":"2-3 sentences","encouragement":"one sentence"}`,
+  t3:`You are a writing coach for Chinese high school students. Evaluate a 50-80 word paragraph about a beauty standard. If revision, note improvements. Respond ONLY JSON: {"hasTopicSentence":{"score":0,"comment":"brief"},"hasSpecificExample":{"score":0,"comment":"brief"},"usesTransitions":{"score":0,"comment":"brief"},"overallSuggestion":"2-3 sentences","wordCount":0,"improvementNote":null}`
+};
+
+async function callAgent(sys,msg){
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:sys,messages:[{role:"user",content:msg}]})});
+  const d=await r.json();const t=(d.content||[]).map(b=>b.text||"").join("");return JSON.parse(t.replace(/```json|```/g,"").trim());
+}
+
+async function callChat(sys,msgs){
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,system:sys,messages:msgs})});
+  const d=await r.json();return(d.content||[]).map(b=>b.text||"").join("");
+}
+
+/* ═══════ HIGHLIGHT TOOLS ═══════ */
+const HL=[
+  {key:"topic",label:"Topic sentence",color:"#a78bfa",bg:"rgba(167,139,250,.18)"},
+  {key:"point",label:"Point",color:"#60a5fa",bg:"rgba(96,165,250,.18)"},
+  {key:"evidence",label:"Evidence",color:"#34d399",bg:"rgba(52,211,153,.18)"},
+  {key:"elaboration",label:"Elaboration",color:"#fbbf24",bg:"rgba(251,191,36,.18)"},
+];
+function hlFor(k){return HL.find(t=>t.key===k);}
+
+/* ═══════ LECTURE SCENES ═══════ */
+function LectureL1(){
+  return <div style={{maxWidth:800,margin:"0 auto",padding:"40px 32px"}}>
+    <h1 style={{fontSize:28,fontWeight:700,color:"#1a1a18",marginBottom:8,fontFamily:"'DM Sans',system-ui,sans-serif"}}>Ideal Beauty</h1>
+    <p style={{fontSize:15,color:"#6b6963",marginBottom:24}}>Read the passage below. How many different beauty standards can you find?</p>
+    <div style={{fontSize:15,lineHeight:2,color:"#3d3b36",marginBottom:28}}>{FULL_TEXT_PARAS.map((p,i)=><p key={i} style={{marginBottom:16}}>{p}</p>)}</div>
+    <div style={{padding:"20px 24px",background:"#f5f3ff",borderRadius:12}}>
+      <div style={{fontSize:14,fontWeight:600,color:"#7c3aed",marginBottom:12}}>Beauty standards across cultures</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{BEAUTY_EX.map((e,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 12px",background:"#fff",borderRadius:8,border:"1px solid #ede9fe"}}><div><div style={{fontSize:13,fontWeight:500,color:"#1a1a18"}}>{e.c}</div><div style={{fontSize:11,color:"#9e9c96"}}>{e.s}</div></div><div style={{fontSize:10,color:"#b8b5ae",alignSelf:"center"}}>{e.p}</div></div>)}</div>
+    </div>
+  </div>;
+}
+
+function LectureL2(){
+  return <div style={{maxWidth:800,margin:"0 auto",padding:"40px 32px"}}>
+    <h1 style={{fontSize:28,fontWeight:700,color:"#1a1a18",marginBottom:8,fontFamily:"'DM Sans',system-ui,sans-serif"}}>How the author organizes ideas</h1>
+    <p style={{fontSize:15,color:"#6b6963",marginBottom:24}}>Two key skills: finding the structure (P-E-E) and spotting transitions.</p>
+    {/* Topic sentence */}
+    <div style={{padding:"16px 20px",background:"#f5f3ff",borderRadius:12,border:"2px solid #a78bfa",marginBottom:24}}>
+      <div style={{fontSize:12,fontWeight:600,color:"#7c3aed",marginBottom:6}}>Topic sentence 主题句</div>
+      <div style={{fontSize:18,color:"#1a1a18",lineHeight:1.8,fontStyle:"italic",fontFamily:"'Source Serif 4',Georgia,serif"}}>"Ideas about physical beauty change over time and different periods of history reveal different views of beauty, particularly of women."</div>
+    </div>
+    {/* P-E-E */}
+    <div style={{fontSize:14,fontWeight:600,color:"#3d3b36",marginBottom:12}}>P-E-E structure 段落结构</div>
+    {[{l:"Point 观点",c:"#3b82f6",bg:"#eff6ff",t:"Beauty ideals change across historical periods."},{l:"Evidence 论据",c:"#10b981",bg:"#ecfdf5",t:"Egyptian slim women · Venus of Hohle Fels · Rubens' plump pale women · Elizabethan pale skin = wealth"},{l:"Elaboration 阐释",c:"#f59e0b",bg:"#fffbeb",t:"Each era's standard tied to cultural values — wealth, health, status."}].map(x=><div key={x.l} style={{padding:"14px 18px",borderLeft:`4px solid ${x.c}`,background:x.bg,borderRadius:"0 10px 10px 0",marginBottom:10}}><div style={{fontSize:12,fontWeight:700,color:x.c,marginBottom:3}}>{x.l}</div><div style={{fontSize:15,color:"#1a1a18",lineHeight:1.8}}>{x.t}</div></div>)}
+    {/* Transitions */}
+    <div style={{fontSize:14,fontWeight:600,color:"#3d3b36",margin:"24px 0 12px"}}>Transition expressions 过渡词</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      {[{l:"Example 举例",c:"#a78bfa",w:["for instance","like"]},{l:"Contrast 对比",c:"#f472b6",w:["However","while","but"]},{l:"Time/Culture 时间文化",c:"#34d399",w:["over time","In the early 1600s","Today","Within different cultures..."]},{l:"Cause 因果",c:"#fbbf24",w:["because","So","also"]}].map(g=><div key={g.l} style={{padding:"12px 14px",borderTop:`3px solid ${g.c}`,background:"#fff",borderRadius:"0 0 8px 8px",border:"1px solid #ebe8e2"}}><div style={{fontSize:11,fontWeight:700,color:g.c,marginBottom:6}}>{g.l}</div>{g.w.map((w,i)=><div key={i} style={{padding:"4px 10px",background:`${g.c}0a`,borderRadius:5,marginBottom:3,fontSize:13,color:"#1a1a18"}}>{w}</div>)}</div>)}
+    </div>
+  </div>;
+}
+
+function LectureL3(){
+  return <div style={{maxWidth:800,margin:"0 auto",padding:"40px 32px"}}>
+    <h1 style={{fontSize:28,fontWeight:700,color:"#1a1a18",marginBottom:8,fontFamily:"'DM Sans',system-ui,sans-serif"}}>Your writing task</h1>
+    <p style={{fontSize:15,color:"#6b6963",marginBottom:24}}>Now it's your turn to write using everything you've learned.</p>
+    <div style={{padding:"20px 24px",background:"#f5f3ff",borderRadius:12,marginBottom:20}}>
+      <div style={{fontSize:18,color:"#1a1a18",lineHeight:1.8}}>Write a <strong>50–80 word paragraph</strong> about a specific beauty standard from any culture or historical period. Explain how it shows that beauty is culturally influenced.</div>
+    </div>
+    <div style={{fontSize:14,fontWeight:600,color:"#3d3b36",marginBottom:10}}>Sentence patterns 句型支架</div>
+    {["[Practice] reflects the idea that beauty is shaped by [factor].","In [culture/period], [standard] was considered ideal because...","For example, in [place], [specific detail about the practice]...","In contrast, [different culture] values [different standard]..."].map((p,i)=><div key={i} style={{padding:"10px 16px",background:"#fff",borderRadius:8,marginBottom:6,fontSize:15,color:"#3d3b36",borderLeft:"3px solid #a78bfa",border:"1px solid #ebe8e2",lineHeight:1.7}}>{p}</div>)}
+    <div style={{fontSize:14,fontWeight:600,color:"#3d3b36",margin:"20px 0 10px"}}>Your paragraph must include 必须包含</div>
+    <div style={{display:"flex",gap:10}}>{[{n:"Topic sentence",d:"Clear main idea"},{n:"1+ specific example",d:"Cultural/historical detail"},{n:"Transition words",d:"For example, However..."}].map((x,i)=><div key={i} style={{flex:1,padding:"14px",background:"#fff",borderRadius:10,border:"1px solid #ebe8e2",textAlign:"center"}}><div style={{fontSize:20,marginBottom:4}}>{["📝","🌍","🔗"][i]}</div><div style={{fontSize:13,fontWeight:500,color:"#1a1a18"}}>{x.n}</div><div style={{fontSize:11,color:"#9e9c96",marginTop:2}}>{x.d}</div></div>)}</div>
+  </div>;
+}
+
+/* ═══════ TASK SCENES ═══════ */
+
+function TaskT1({highlights,activeTool,setActiveTool,onSubmit,result}){
+  const [loading,setLoading]=useState(false);
+  const tagged=HL.map(t=>({...t,sents:Object.entries(highlights).filter(([,v])=>v===t.key).map(([id])=>{const s=SENTS.find(x=>x.id===id);return s?.text||"";})}));
+  const doSubmit=async()=>{setLoading(true);try{const inp=tagged.map(t=>`${t.label}: ${t.sents.length?t.sents.join(" "):"(none)"}`).join("\n");const r=await callAgent(PROMPTS.t1,inp);onSubmit(r);}catch(e){alert(e.message);}setLoading(false);};
+  return <div>
+    <div style={B.title}>Highlight P-E-E structure</div>
+    <p style={B.inst}>Select a tool, then click sentences in the passage on the right.</p>
+    <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"12px 0"}}>
+      {HL.map(t=><button key={t.key} onClick={()=>setActiveTool(activeTool===t.key?null:t.key)} style={{padding:"6px 12px",borderRadius:16,border:`2px solid ${activeTool===t.key?t.color:"rgba(255,255,255,.08)"}`,background:activeTool===t.key?t.bg:"transparent",color:activeTool===t.key?t.color:"#8a8780",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}><span style={{width:8,height:8,borderRadius:"50%",background:t.color,opacity:activeTool===t.key?1:.4}}/>{t.label}</button>)}
+    </div>
+    {activeTool&&<div style={{padding:"6px 10px",background:hlFor(activeTool).bg,borderRadius:6,fontSize:11,color:hlFor(activeTool).color,marginBottom:10}}>Click sentences on the right to mark as <strong>{hlFor(activeTool).label}</strong></div>}
+    {tagged.map(t=>t.sents.length>0&&<div key={t.key} style={{marginBottom:8,padding:"6px 10px",borderLeft:`3px solid ${t.color}`,background:"rgba(255,255,255,.02)",borderRadius:"0 6px 6px 0"}}><div style={{fontSize:10,fontWeight:600,color:t.color,marginBottom:2}}>{t.label}</div>{t.sents.map((s,i)=><div key={i} style={{fontSize:11,color:"#d4d0c8",lineHeight:1.5}}>"{s}"</div>)}</div>)}
+    {Object.keys(highlights).length>0&&<button onClick={doSubmit} disabled={loading} style={B.btn}>{loading?"Analyzing...":"Check my analysis ✦"}</button>}
+    {result&&<div style={B.fb}><div style={{fontSize:12,fontWeight:600,color:"#c4b5fd",marginBottom:6}}>AI Feedback</div>{[["Topic sentence",result.topicSentence?.found,result.topicSentence?.feedback],["Point",result.paragraphStructure?.point?.identified,result.paragraphStructure?.point?.feedback],["Evidence",result.paragraphStructure?.evidence?.identified,result.paragraphStructure?.evidence?.feedback],["Elaboration",result.paragraphStructure?.elaboration?.identified,result.paragraphStructure?.elaboration?.feedback]].map(([l,ok,fb])=><p key={l} style={{fontSize:11,color:"#8a8780",margin:"3px 0"}}>{ok?"✅":"⚠️"} <strong style={{color:"#d4d0c8"}}>{l}:</strong> {fb}</p>)}<p style={{fontSize:11,color:"#a78bfa",fontStyle:"italic",marginTop:6}}>{result.overallTip}</p></div>}
+  </div>;
+}
+
+function TaskT2({picked,result,onSubmit}){
+  const [loading,setLoading]=useState(false);
+  const grouped=useMemo(()=>{const g={};picked.forEach(p=>{const c=catOf(p);if(!g[c])g[c]=[];g[c].push(p);});return g;},[picked]);
+  const doSubmit=async()=>{setLoading(true);try{const r=await callAgent(PROMPTS.t2,`Found: ${picked.join(", ")}`);onSubmit(r);}catch(e){alert(e.message);}setLoading(false);};
+  return <div>
+    <div style={B.title}>Collect transition words</div>
+    <p style={B.inst}>Click the highlighted words in the passage on the right.</p>
+    {picked.length>0?<div style={{marginTop:12}}>
+      <div style={{fontSize:12,fontWeight:600,color:"#c4b5fd",marginBottom:8}}>Collected: {picked.length}/{TRANS.length}</div>
+      {Object.entries(grouped).map(([c,ps])=><div key={c} style={{marginBottom:8}}><span style={{fontSize:10,fontWeight:600,color:CAT_C[c],textTransform:"uppercase"}}>{CAT_L[c]}</span><div style={{display:"flex",gap:4,flexWrap:"wrap",marginTop:3}}>{ps.map(p=><span key={p} style={{padding:"2px 8px",borderRadius:10,background:`${CAT_C[c]}22`,color:CAT_C[c],fontSize:11,fontWeight:500}}>{p.replace(/,$/,"")}</span>)}</div></div>)}
+      <button onClick={doSubmit} disabled={loading} style={B.btn}>{loading?"Checking...":"Check my collection ✦"}</button>
+    </div>:<div style={{marginTop:14,padding:16,background:"rgba(167,139,250,.05)",borderRadius:8,textAlign:"center"}}><div style={{fontSize:24,marginBottom:6}}>👆</div><p style={{fontSize:12,color:"#8a8780"}}>Click transitions in the passage to collect them.</p></div>}
+    {result&&<div style={B.fb}><div style={{fontSize:12,fontWeight:600,color:"#c4b5fd",marginBottom:6}}>AI Feedback</div><p style={{fontSize:11,color:"#8a8780",lineHeight:1.6}}>{result.feedback}</p>{result.missed?.length>0&&<div style={{padding:6,background:"rgba(251,191,36,.06)",borderRadius:4,marginTop:6,fontSize:10,color:"#fbbf24"}}>Missed: {result.missed.join(", ")}</div>}<p style={{fontSize:11,color:"#a78bfa",fontStyle:"italic",marginTop:6}}>{result.encouragement}</p></div>}
+  </div>;
+}
+
+function TaskT3({draft,setDraft,versions,addVersion}){
+  const [loading,setLoading]=useState(false);
+  const feedEnd=useRef(null);
+  const wc=draft.trim().split(/\s+/).filter(Boolean).length;
+  const evs=versions.filter(v=>v.eval);
+  const doEval=async()=>{if(!draft.trim())return;setLoading(true);try{const prev=evs.length>0?`\nPrevious: ${evs[evs.length-1].text}\nPrev score: ${RUBRIC.map(c=>`${c.short}:${evs[evs.length-1].eval[c.key]?.score}`).join(",")}\nRevision #${evs.length+1}.`:"";const r=await callAgent(PROMPTS.t3,`Paragraph:\n${draft}${prev}`);addVersion(draft,r);setTimeout(()=>feedEnd.current?.scrollIntoView({behavior:"smooth"}),100);}catch(e){alert(e.message);}setLoading(false);};
+  return <div>
+    <div style={B.title}>Write, evaluate, revise</div>
+    <p style={B.inst}>Write your paragraph, submit for AI feedback, then revise and resubmit.</p>
+    <div style={{margin:"8px 0 10px",padding:8,background:"rgba(167,139,250,.04)",borderRadius:6,fontSize:11,lineHeight:1.6,color:"#8a8780"}}><strong style={{color:"#c4b5fd"}}>Scaffolds:</strong> [Practice] reflects... · In [culture], [standard] was ideal because... · For example · However · In contrast</div>
+    <div style={{position:"relative"}}><textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Write your paragraph (50-80 words)..." style={B.area}/><span style={{position:"absolute",bottom:8,right:10,fontSize:10,fontWeight:700,color:wc>=50&&wc<=80?"#6ee7b7":wc>80?"#fbbf24":"#ef4444",background:"rgba(30,29,27,.85)",padding:"2px 6px",borderRadius:4}}>{wc}w</span></div>
+    <button onClick={doEval} disabled={loading||!draft.trim()} style={{...B.btn,width:"100%",textAlign:"center"}}>{loading?"Evaluating...":evs.length===0?"Submit for evaluation ✦":`Re-evaluate (v${evs.length+1}) ✦`}</button>
+    {evs.length>0&&<div style={{marginTop:16}}><div style={{fontSize:12,fontWeight:600,color:"#c4b5fd",marginBottom:10}}>Revision history ({evs.length})</div><div style={{position:"relative",paddingLeft:16}}><div style={{position:"absolute",left:5,top:6,bottom:6,width:2,background:"rgba(167,139,250,.12)",borderRadius:1}}/>{evs.map((v,i)=>{const t=RUBRIC.reduce((s,c)=>s+(v.eval[c.key]?.score||0),0);const isLast=i===evs.length-1;return <div key={v.id} style={{marginBottom:12,position:"relative"}}><div style={{position:"absolute",left:-13,top:4,width:8,height:8,borderRadius:"50%",background:isLast?"#a78bfa":"rgba(167,139,250,.3)",border:"2px solid #1e1d1b"}}/><div style={{padding:10,background:isLast?"rgba(167,139,250,.06)":"rgba(255,255,255,.02)",borderRadius:8,border:`1px solid ${isLast?"rgba(167,139,250,.12)":"rgba(255,255,255,.04)"}`}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:10,fontWeight:700,color:"#c4b5fd"}}>v{i+1} <span style={{fontWeight:400,color:"#5c5a56"}}>{v.time}</span></span><div style={{display:"flex",gap:2}}>{RUBRIC.map(c=><span key={c.key} style={{width:14,height:14,borderRadius:3,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,background:v.eval[c.key]?.score?"rgba(110,231,183,.12)":"rgba(239,68,68,.08)",color:v.eval[c.key]?.score?"#6ee7b7":"#ef4444"}}>{v.eval[c.key]?.score?"✓":"✗"}</span>)}<span style={{fontSize:10,fontWeight:700,color:t>=2?"#6ee7b7":t>=1?"#fbbf24":"#ef4444",marginLeft:3}}>{t}/3</span></div></div><div style={{fontSize:11,color:"#8a8780",lineHeight:1.5,maxHeight:isLast?"none":40,overflow:"hidden"}}>{v.text}</div>{isLast&&<div style={{marginTop:6}}>{RUBRIC.map(c=><div key={c.key} style={{fontSize:10,padding:"2px 6px",borderLeft:`2px solid ${v.eval[c.key]?.score?"#34d399":"#ef4444"}`,color:"#8a8780",marginBottom:2}}>{v.eval[c.key]?.score?"✅":"⚠️"} <strong>{c.short}</strong> {v.eval[c.key]?.comment}</div>)}{v.eval.overallSuggestion&&<div style={{fontSize:10,color:"#a78bfa",marginTop:4,fontStyle:"italic"}}>{v.eval.overallSuggestion}</div>}</div>}</div></div>})}</div><div ref={feedEnd}/></div>}
+    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+  </div>;
+}
+
+function TaskT4({draft,setDraft,versions}){
+  const wc=draft.trim().split(/\s+/).filter(Boolean).length;
+  const evs=versions.filter(v=>v.eval);
+  return <div>
+    <div style={B.title}>Final submission</div>
+    <p style={B.inst}>Expand to 80-100 words with 2+ examples.</p>
+    <div style={{margin:"8px 0 10px",padding:8,background:"rgba(167,139,250,.04)",borderRadius:6,fontSize:12,color:"#d4d0c8",lineHeight:1.5,fontStyle:"italic"}}><strong style={{fontStyle:"normal",color:"#c4b5fd"}}>Prompt:</strong> What does "ideal beauty" mean to you? Should there be one standard or diverse forms?</div>
+    <div style={{position:"relative"}}><textarea value={draft} onChange={e=>setDraft(e.target.value)} style={{...B.area,minHeight:200}}/><span style={{position:"absolute",bottom:8,right:10,fontSize:10,fontWeight:700,color:wc>=80&&wc<=100?"#6ee7b7":"#fbbf24",background:"rgba(30,29,27,.85)",padding:"2px 6px",borderRadius:4}}>{wc}/80-100</span></div>
+    {evs.length>0&&<div style={{marginTop:12,padding:10,background:"rgba(167,139,250,.04)",borderRadius:8}}><div style={{fontSize:11,fontWeight:600,color:"#c4b5fd",marginBottom:6}}>Journey: {evs.length} evaluation(s)</div><div style={{display:"flex",gap:4,alignItems:"flex-end",height:40}}>{evs.map((v,i)=>{const t=RUBRIC.reduce((s,c)=>s+(v.eval[c.key]?.score||0),0);const h=(t/3)*28+10;const col=t>=2?"#6ee7b7":t>=1?"#fbbf24":"#ef4444";return <div key={v.id} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:9,fontWeight:700,color:col}}>{t}/3</span><div style={{width:"100%",maxWidth:24,height:h,background:`${col}18`,borderRadius:3,border:`1px solid ${col}44`}}/></div>;})}</div></div>}
+  </div>;
+}
+
+/* ═══════ REFERENCE PANEL ═══════ */
+function RefPanel({sceneId,highlights,activeTool,onSentClick,picked,onPickTrans}){
+  const isT1=sceneId==="T1",isT2=sceneId==="T2";
+  const renderPara=(p,pi)=>{
+    if(isT1){const ss=SENTS.filter(s=>s.pi===pi);return <div key={pi} style={{marginBottom:12,lineHeight:1.85,fontSize:13.5,color:"#3d3b36"}}>{ss.map(s=>{const h=highlights[s.id];const tool=h?hlFor(h):null;return <span key={s.id} onClick={()=>activeTool&&onSentClick(s.id)} style={{background:tool?tool.bg:activeTool?"rgba(167,139,250,.04)":"transparent",borderBottom:tool?`2px solid ${tool.color}`:"none",padding:tool?"2px 1px":"0",borderRadius:tool?3:0,cursor:activeTool?"pointer":"default",transition:"background .12s"}} onMouseEnter={e=>{if(activeTool&&!tool)e.target.style.background=hlFor(activeTool).bg}} onMouseLeave={e=>{if(activeTool&&!tool)e.target.style.background="rgba(167,139,250,.04)"}}>{s.text}{" "}</span>})}</div>;}
+    if(isT2){let parts=[{type:"t",content:p}];TRANS.forEach(ph=>{const np=[];parts.forEach(pt=>{if(pt.type!=="t"){np.push(pt);return;}const idx=pt.content.indexOf(ph);if(idx===-1){np.push(pt);return;}if(idx>0)np.push({type:"t",content:pt.content.slice(0,idx)});np.push({type:"tr",content:ph});const rest=pt.content.slice(idx+ph.length);if(rest)np.push({type:"t",content:rest});});parts=np;});return <div key={pi} style={{marginBottom:12,lineHeight:2.1,fontSize:13.5,color:"#3d3b36"}}>{parts.map((pt,i)=>{if(pt.type==="tr"){const pk=picked.includes(pt.content);const col=CAT_C[catOf(pt.content)];return <span key={i} onClick={()=>onPickTrans(pt.content)} style={{background:pk?`${col}25`:"rgba(167,139,250,.08)",color:pk?col:"#6d28d9",padding:"1px 4px",borderRadius:3,cursor:"pointer",border:pk?`1.5px solid ${col}66`:"1.5px solid rgba(167,139,250,.2)",fontWeight:pk?600:400}}>{pt.content}{pk&&" ✓"}</span>;}return <span key={i}>{pt.content}</span>;})}</div>;}
+    return <div key={pi} style={{marginBottom:12,lineHeight:1.85,fontSize:13.5,color:"#3d3b36"}}>{p}</div>;
+  };
+  return <div style={{flex:1,overflowY:"auto",padding:"14px 18px"}}>
+    <div style={{fontSize:16,fontWeight:700,color:"#1a1a18",marginBottom:14,fontFamily:"'DM Sans',system-ui,sans-serif"}}>Ideal Beauty</div>
+    {isT1&&activeTool&&<div style={{marginBottom:8,fontSize:11,color:hlFor(activeTool).color,fontWeight:600,padding:"5px 8px",background:hlFor(activeTool).bg,borderRadius:5}}>Active: {hlFor(activeTool).label} — click sentences</div>}
+    {FULL_TEXT_PARAS.map((p,i)=>renderPara(p,i))}
+  </div>;
+}
+
+/* ═══════ HELP CENTER ═══════ */
+const HELP_SYS=`You are a friendly bilingual AI tutor for a Chinese high school English lesson on "Ideal Beauty" (beauty standards across cultures). Answer in 2-3 sentences, mix English and Chinese when helpful. Be encouraging and give hints rather than full answers for task questions.`;
+
+const STARTERS={L1:["What does 'fattening room' mean?","这篇文章主要讲什么？"],T1:["What is a topic sentence?","P-E-E 结构是什么？"],L2:["Why is P-E-E important?","过渡词有什么用？"],T2:["\"while\" 和 \"but\" 有什么区别？","What counts as a transition?"],L3:["How should I start my paragraph?","50 词够写什么内容？"],T3:["Can you check my topic sentence?","How do I add more detail?"],T4:["How do I expand to 100 words?","Can you suggest another example?"]};
+
+const DUMMY={
+  "What does 'fattening room' mean?":"A <b>fattening room</b> is a traditional practice in West Africa. Young women stay in a special room to gain weight before marriage — a fuller body means wealth and beauty. 增肥房 = 西非传统，出嫁前增重。",
+  "What is a topic sentence?":"A <b>topic sentence</b> states the main idea of the whole passage. Look for a sentence that covers beauty across both time AND cultures. 主题句 = 概括全文核心观点的句子。",
+  "P-E-E 结构是什么？":"P-E-E = <b>Point</b>（观点）→ <b>Evidence</b>（论据）→ <b>Elaboration</b>（阐释）。先说观点，再给例子，再解释为什么。",
+  "这篇文章主要讲什么？":"文章主要说<b>不同文化和历史时期对美的定义不同</b>——没有统一标准，美是被文化塑造的。",
+  "\"while\" 和 \"but\" 有什么区别？":"<b>while</b> 对比并列 (While A..., B...); <b>but</b> 是转折矛盾 (A, but B). while 更温和，but 更强烈。",
+  "What counts as a transition?":"Look for words that <b>connect</b> ideas: contrast (However, but), examples (for instance), time (Today), cause (because). 过渡词 = 逻辑连接词。",
+  "How should I start my paragraph?":"Start with a <b>topic sentence</b>: \"Beauty standards are shaped by cultural values.\" Then add your example. 先写主题句，再跟例子。",
+};
+
+function HelpCenter({sceneId}){
+  const [open,setOpen]=useState(false);
+  const [msgs,setMsgs]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [lastScene,setLastScene]=useState(sceneId);
+  const endRef=useRef(null);
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+
+  const addDivider=(id)=>{const sc=SCENES.find(s=>s.id===id);setMsgs(prev=>[...prev,{type:"divider",label:`${sc?.id} ${sc?.label}`}]);setLastScene(id);};
+
+  const send=(text)=>{
+    if(!text.trim()||loading)return;
+    if(sceneId!==lastScene)addDivider(sceneId);
+    const userMsg={type:"msg",role:"user",content:text.trim()};
+    setMsgs(prev=>[...prev,userMsg]);setInput("");setLoading(true);
+    const reply=DUMMY[text.trim()];
+    if(reply){setTimeout(()=>{setMsgs(prev=>[...prev,{type:"msg",role:"assistant",content:reply}]);setLoading(false);},400);return;}
+    // Real API call for non-dummy questions
+    const apiMsgs=msgs.filter(m=>m.type==="msg").map(m=>({role:m.role,content:m.content}));apiMsgs.push({role:"user",content:text.trim()});
+    callChat(HELP_SYS,apiMsgs).then(r=>{setMsgs(prev=>[...prev,{type:"msg",role:"assistant",content:r}]);}).catch(()=>{setMsgs(prev=>[...prev,{type:"msg",role:"assistant",content:"Sorry, please try again."}]);}).finally(()=>setLoading(false));
+  };
+
+  if(!open)return <button onClick={()=>setOpen(true)} style={{position:"fixed",bottom:20,right:20,width:52,height:52,borderRadius:"50%",background:"#7c3aed",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",zIndex:100,transition:"transform .15s"}} onMouseEnter={e=>e.target.style.transform="scale(1.08)"} onMouseLeave={e=>e.target.style.transform="scale(1)"}><svg width="24" height="24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 9V3a1 1 0 0 0-2 0v6"/><path d="M14 4a1 1 0 0 0-2 0v7"/><path d="M10 4.5a1 1 0 0 0-2 0V12"/><path d="M7 9a1 1 0 0 0-2 0v5a8 8 0 0 0 16 0v-3a1 1 0 0 0-2 0"/></svg></button>;
+
+  return <div style={{position:"fixed",bottom:20,right:20,width:360,height:460,borderRadius:16,background:"#fff",border:"1px solid #ebe8e2",display:"flex",flexDirection:"column",zIndex:100,overflow:"hidden"}}>
+    <div style={{padding:"12px 16px",borderBottom:"1px solid #ebe8e2",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+      <span style={{fontSize:14,fontWeight:500,color:"#1a1a18"}}>Ask a question</span>
+      <button onClick={()=>setOpen(false)} style={{width:26,height:26,borderRadius:6,border:"1px solid #ebe8e2",background:"#fff",color:"#9e9c96",fontSize:13,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+    </div>
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px"}} id="hc-chat">
+      {msgs.length===0&&<div style={{textAlign:"center",padding:"20px 8px"}}><div style={{width:36,height:36,borderRadius:10,background:"#EEEDFE",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#534AB7",fontWeight:500,marginBottom:8}}>AI</div><p style={{fontSize:13,color:"#9e9c96",lineHeight:1.6,margin:0}}><strong style={{color:"#1a1a18"}}>Hi! I'm your AI tutor.</strong><br/>Ask me anything about this lesson.</p></div>}
+      {msgs.map((m,i)=>{
+        if(m.type==="divider")return <div key={i} style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 8px"}}><div style={{flex:1,height:1,background:"#ebe8e2"}}/><span style={{fontSize:10,fontWeight:500,color:"#9e9c96",padding:"2px 8px",background:"#f5f3ee",borderRadius:4,whiteSpace:"nowrap"}}>{m.label}</span><div style={{flex:1,height:1,background:"#ebe8e2"}}/></div>;
+        return <div key={i} style={{marginBottom:8,display:"flex",flexDirection:"column",alignItems:m.role==="user"?"flex-end":"flex-start"}}><div style={{maxWidth:"85%",padding:"9px 13px",borderRadius:14,fontSize:13,lineHeight:1.7,background:m.role==="user"?"#EEEDFE":"#f5f3ee",color:m.role==="user"?"#26215C":"#1a1a18",borderBottomRightRadius:m.role==="user"?4:14,borderBottomLeftRadius:m.role==="user"?14:4}} dangerouslySetInnerHTML={{__html:m.content}}/></div>;
+      })}
+      {loading&&<div style={{fontSize:12,color:"#9e9c96",fontStyle:"italic"}}>Thinking...</div>}
+      <div ref={endRef}/>
+    </div>
+    {/* Starter pills */}
+    <div style={{padding:"4px 12px 6px",borderTop:"1px solid #ebe8e2",display:"flex",gap:4,overflowX:"auto",flexShrink:0}}>
+      {(STARTERS[sceneId]||[]).map(q=><button key={q} onClick={()=>send(q)} style={{padding:"5px 10px",borderRadius:12,border:"1px solid #ebe8e2",background:"#fff",fontSize:10,color:"#3d3b36",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{q}</button>)}
+    </div>
+    <div style={{padding:"8px 12px",borderTop:"1px solid #ebe8e2",display:"flex",gap:6,flexShrink:0}}>
+      <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send(input)} placeholder="Type your question..." style={{flex:1,padding:"8px 12px",borderRadius:10,border:"1px solid #ebe8e2",fontSize:13,outline:"none",color:"#1a1a18"}}/>
+      <button onClick={()=>send(input)} disabled={loading||!input.trim()} style={{padding:"8px 14px",borderRadius:10,border:"none",background:loading?"#e8e5de":"#7c3aed",color:"#fff",fontSize:13,fontWeight:500,cursor:"pointer"}}>Send</button>
+    </div>
+  </div>;
+}
+
+/* ═══════ STYLES ═══════ */
+const B={
+  title:{fontSize:18,fontWeight:700,color:"#e8e6e0",marginBottom:6,fontFamily:"'DM Sans',system-ui,sans-serif"},
+  inst:{fontSize:13,color:"#8a8780",lineHeight:1.6,margin:"0 0 4px"},
+  area:{width:"100%",padding:12,borderRadius:8,border:"1px solid rgba(255,255,255,.08)",background:"rgba(255,255,255,.03)",color:"#e2e0d8",fontSize:15,lineHeight:"1.9",resize:"vertical",boxSizing:"border-box",fontFamily:"inherit",outline:"none",minHeight:160},
+  btn:{marginTop:12,padding:"10px 20px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#7c3aed,#a78bfa)",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"},
+  fb:{marginTop:14,padding:12,background:"rgba(255,255,255,.025)",borderRadius:8,border:"1px solid rgba(167,139,250,.12)"},
+};
+
+/* ═══════ MAIN ═══════ */
+function App(){
+  const [si,setSi]=useState(0); // scene index
+  const [highlights,setHighlights]=useState({});
+  const [activeTool,setActiveTool]=useState(null);
+  const [picked,setPicked]=useState([]);
+  const [draft,setDraft]=useState("");
+  const [versions,setVersions]=useState([]);
+  const [t1Result,setT1Result]=useState(null);
+  const [t2Result,setT2Result]=useState(null);
+  const [fullPanel,setFullPanel]=useState("none");
+  const vc=useRef(0);
+  const maxSi=useRef(0);
+  useEffect(()=>{if(si>maxSi.current)maxSi.current=si;},[si]);
+  const addVersion=useCallback((text,ev)=>{vc.current+=1;setVersions(p=>[...p,{id:vc.current,text,time:new Date().toLocaleTimeString(),eval:ev}]);},[]);
+  const scene=SCENES[si];
+  const isLecture=scene.type==="lecture";
+  const showLeft=fullPanel!=="right";
+  const showRight=fullPanel!=="left"&&!isLecture;
+
+  const taskContent=()=>{
+    switch(scene.id){
+      case"T1":return <TaskT1 highlights={highlights} activeTool={activeTool} setActiveTool={setActiveTool} onSubmit={setT1Result} result={t1Result}/>;
+      case"T2":return <TaskT2 picked={picked} result={t2Result} onSubmit={setT2Result}/>;
+      case"T3":return <TaskT3 draft={draft} setDraft={setDraft} versions={versions} addVersion={addVersion}/>;
+      case"T4":return <TaskT4 draft={draft} setDraft={setDraft} versions={versions}/>;
+      default:return null;
+    }
+  };
+
+  return <div style={{width:"100%",height:"100vh",display:"flex",flexDirection:"column",fontFamily:"'Source Serif 4',Georgia,serif",overflow:"hidden"}}>
+    {/* NAV BAR */}
+    <div style={{padding:"8px 20px",borderBottom:"1px solid #ebe8e2",flexShrink:0,display:"flex",alignItems:"center",gap:12,background:"#fdfcfa"}}>
+      <span style={{fontSize:16,fontWeight:700,color:"#1a1a18",fontFamily:"'DM Sans',system-ui,sans-serif"}}>Ideal Beauty</span>
+      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto"}}>
+        {SCENES.map((s,i)=>{const active=si===i;const done=i<si;return <button key={s.id} onClick={()=>i<=maxSi.current+1&&setSi(i)} style={{display:"flex",alignItems:"center",gap:4,padding:"5px 10px",borderRadius:7,border:"none",background:active?"#1e1d1b":done?"#f0eee8":"transparent",color:active?"#fff":done?"#3d3b36":"#b8b5ae",fontSize:11,fontWeight:active?600:400,cursor:i<=maxSi.current+1?"pointer":"default",whiteSpace:"nowrap",flexShrink:0}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:s.type==="lecture"?(active?"#fb923c":"#fbbf24"):(active?"#a78bfa":"#c4b5fd")}}/>
+          {s.label}
+        </button>})}
+      </div>
+      <span style={{fontSize:11,color:"#9e9c96",flexShrink:0}}>{si+1}/{SCENES.length}</span>
+    </div>
+
+    {/* BODY */}
+    <div style={{flex:1,display:"flex",overflow:"hidden"}}>
+      {isLecture?(
+        /* LECTURE: full-width slide */
+        <div style={{flex:1,overflowY:"auto",background:"#fdfcfa"}}>
+          {scene.id==="L1"&&<LectureL1/>}{scene.id==="L2"&&<LectureL2/>}{scene.id==="L3"&&<LectureL3/>}
+          {/* Bottom nav */}
+          <div style={{padding:"16px 32px",display:"flex",justifyContent:"space-between",maxWidth:800,margin:"0 auto"}}>
+            <button onClick={()=>setSi(s=>Math.max(0,s-1))} disabled={si===0} style={{padding:"8px 20px",borderRadius:8,border:"1px solid #ebe8e2",background:"#fff",color:si===0?"#d4d1c7":"#3d3b36",fontSize:13,cursor:si===0?"default":"pointer"}}>← Previous</button>
+            <button onClick={()=>setSi(s=>Math.min(SCENES.length-1,s+1))} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#7c3aed",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Next →</button>
+          </div>
+        </div>
+      ):(
+        /* TASK: workspace + reference */
+        <>
+          {showLeft&&<div style={{flex:1,background:"#1e1d1b",display:"flex",flexDirection:"column",minWidth:0}}>
+            <div style={{padding:"10px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
+              <span style={{fontSize:10,color:"#5c5a56",fontWeight:600,textTransform:"uppercase",letterSpacing:.4}}>{scene.zh}</span>
+              <button onClick={()=>setFullPanel(fullPanel==="left"?"none":"left")} style={{width:22,height:22,borderRadius:4,border:"1px solid rgba(255,255,255,.1)",background:fullPanel==="left"?"rgba(167,139,250,.15)":"transparent",color:fullPanel==="left"?"#a78bfa":"#5c5a56",fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>{fullPanel==="left"?"⤡":"⤢"}</button>
+            </div>
+            <div style={{flex:1,padding:"8px 20px 20px",overflowY:"auto"}}>{taskContent()}</div>
+            <div style={{padding:"8px 20px",borderTop:"1px solid rgba(255,255,255,.05)",display:"flex",justifyContent:"space-between",flexShrink:0}}>
+              <button onClick={()=>setSi(s=>Math.max(0,s-1))} style={{padding:"6px 16px",borderRadius:6,border:"1px solid rgba(255,255,255,.08)",background:"transparent",color:"#8a8780",fontSize:12,cursor:"pointer"}}>← Back</button>
+              <button onClick={()=>setSi(s=>Math.min(SCENES.length-1,s+1))} disabled={si===SCENES.length-1} style={{padding:"6px 16px",borderRadius:6,border:"none",background:si===SCENES.length-1?"#333":"#a78bfa",color:"#fff",fontSize:12,fontWeight:600,cursor:si===SCENES.length-1?"default":"pointer"}}>Next →</button>
+            </div>
+          </div>}
+          {showRight&&<div style={{width:fullPanel==="right"?"100%":380,flex:fullPanel==="right"?1:"none",borderLeft:showLeft?"1px solid #ebe8e2":"none",background:"#fdfcfa",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+            <div style={{padding:"6px 14px",display:"flex",justifyContent:"flex-end",flexShrink:0}}>
+              <button onClick={()=>setFullPanel(fullPanel==="right"?"none":"right")} style={{width:22,height:22,borderRadius:4,border:"1px solid #ebe8e2",background:fullPanel==="right"?"#f5f3ff":"#fff",color:fullPanel==="right"?"#7c3aed":"#9e9c96",fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",padding:0}}>{fullPanel==="right"?"⤡":"⤢"}</button>
+            </div>
+            <RefPanel sceneId={scene.id} highlights={highlights} activeTool={activeTool} onSentClick={id=>{if(!activeTool)return;setHighlights(p=>{const n={...p};if(n[id]===activeTool)delete n[id];else n[id]=activeTool;return n;});}} picked={picked} onPickTrans={p=>setPicked(prev=>prev.includes(p)?prev.filter(x=>x!==p):[...prev,p])}/>
+          </div>}
+        </>
+      )}
+    </div>
+
+    {/* HELP CENTER */}
+    <HelpCenter sceneId={scene.id}/>
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script></body></html>

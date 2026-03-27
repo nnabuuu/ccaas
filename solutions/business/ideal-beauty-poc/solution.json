@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "Ideal Beauty",
+    "slug": "ideal-beauty",
+    "description": "Ideal Beauty 读写结合课 PoC"
+  },
+  "mcpServers": {},
+  "sessionTemplates": {
+    "evaluation": {
+      "description": "Structured evaluation (T1/T2/T3)",
+      "enabledSkills": ["t1-structure-eval", "t2-transition-eval", "writing-eval"],
+      "appendSystemPrompt": "Respond ONLY with valid JSON matching the requested schema. No explanatory text."
+    },
+    "help-chat": {
+      "description": "Help Center bilingual tutor",
+      "enabledSkills": ["help-tutor"],
+      "appendSystemPrompt": "You are a friendly bilingual AI tutor for 'Ideal Beauty' lesson. 2-3 sentences, hints not answers."
+    }
+  },
+  "skills": [
+    { "slug": "t1-structure-eval", "name": "t1-structure-eval" },
+    { "slug": "t2-transition-eval", "name": "t2-transition-eval" },
+    { "slug": "writing-eval", "name": "writing-eval" },
+    { "slug": "help-tutor", "name": "help-tutor" }
+  ]
+}
