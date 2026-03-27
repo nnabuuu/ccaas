@@ -21,10 +21,36 @@ export { NextActions } from './components/NextActions'
 export { QuickSuggestions } from './components/QuickSuggestions'
 export { SkillPanel } from './components/SkillPanel'
 export type { SkillPanelProps } from './components/SkillPanel'
+export { Tooltip } from './components/Tooltip'
+export { ScrollToBottom } from './components/ScrollToBottom'
+export { MermaidBlock } from './components/MermaidBlock'
+
+// === Compound Sub-components ===
+export {
+  ChatInterfaceRoot,
+  ChatInterfaceContextBar,
+  ChatInterfaceSkillPanel,
+  ChatInterfaceMessages,
+  ChatInterfaceEmptyState,
+  ChatInterfaceQuickSuggestions,
+  ChatInterfaceComposer,
+  ChatInterfaceToaster,
+} from './components/chat'
+export type {
+  ChatInterfaceRootProps,
+  ChatInterfaceContextBarProps,
+  ChatInterfaceMessagesProps,
+  ChatInterfaceEmptyStateProps,
+  ChatInterfaceQuickSuggestionsProps,
+  ChatInterfaceComposerProps,
+  ChatInterfaceToasterProps,
+} from './components/chat'
 
 // === Context ===
 export { ChatInterfaceProvider, useChatInterfaceContext } from './context/ChatInterfaceContext'
 export type { ChatInterfaceProviderProps, ChatInterfaceContextValue } from './context/ChatInterfaceContext'
+export { ChatCoreProvider, useChatCore } from './context/ChatCoreContext'
+export type { ChatCoreProviderProps, ChatCoreContextValue } from './context/ChatCoreContext'
 
 // === Hooks ===
 export { useAuth } from './hooks/useAuth'

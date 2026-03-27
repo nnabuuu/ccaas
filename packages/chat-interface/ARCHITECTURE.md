@@ -22,17 +22,31 @@
 ```
 src/
 ├── components/
-│   ├── ChatInterface.tsx      # 主组件 (composer, 消息区, 空状态)
+│   ├── ChatInterface.tsx      # 主组件 (thin wrapper composing compound sub-components)
+│   ├── chat/                  # Compound sub-components (可独立使用)
+│   │   ├── ChatInterfaceRoot.tsx         # Provider wrapper + 布局容器
+│   │   ├── ChatInterfaceContextBar.tsx   # 顶部上下文栏 + 技能切换
+│   │   ├── ChatInterfaceSkillPanel.tsx   # 技能面板 (reads context)
+│   │   ├── ChatInterfaceMessages.tsx     # 消息区 (scroll + 空状态 + 加载 + 思考)
+│   │   ├── ChatInterfaceEmptyState.tsx   # 空状态 (标题 + 建议卡片)
+│   │   ├── ChatInterfaceQuickSuggestions.tsx  # 快捷建议
+│   │   ├── ChatInterfaceComposer.tsx     # 输入区 (textarea + 发送/停止 + 免责声明)
+│   │   ├── ChatInterfaceToaster.tsx      # Toast 通知
+│   │   └── index.ts                     # barrel export
 │   ├── MessageRenderer.tsx    # 消息渲染 (用户/助手布局)
 │   ├── CodeBlock.tsx          # 代码块 (语言标签 + 复制)
 │   ├── ThinkingDots.tsx       # 思考动画指示器
-│   ├── SessionContextBar.tsx  # 顶部上下文栏
-│   ├── QuickSuggestions.tsx   # 快捷建议
-│   ├── SkillPanel.tsx         # 技能面板
+│   ├── SessionContextBar.tsx  # 底层上下文栏组件
+│   ├── QuickSuggestions.tsx   # 底层快捷建议组件
+│   ├── SkillPanel.tsx         # 底层技能面板组件
 │   ├── SkillBadge.tsx         # Skill 标签
 │   ├── WidgetRenderer.tsx     # Widget 渲染入口
+│   ├── ActionToolbar.tsx      # 消息操作栏 (复制 + 时间戳)
 │   ├── NextActions.tsx        # 后续操作按钮
 │   └── FileCard.tsx           # 文件卡片
+├── utils/
+│   ├── relative-time.ts       # 相对时间格式化
+│   └── url.ts                 # URL utilities
 ├── styles/
 │   └── globals.css            # CSS 变量 (Claude 色板 + 滚动条)
 ├── types/
@@ -44,8 +58,34 @@ src/
 │   ├── postprocessor.ts       # 响应后处理 (widget 路由/MCP 执行)
 │   └── submit-engine.ts       # submitToEngine 实现
 ├── context/
-│   └── ChatInterfaceContext.tsx
+│   ├── ChatInterfaceContext.tsx  # Widget/block 注册 (config concern)
+│   └── ChatCoreContext.tsx      # 连接/消息/输入/动作 (runtime concern)
 └── widgets/
     ├── catalog.ts             # Widget catalog 定义
     └── mcp-bridge.ts          # MCP 数据源桥接
 ```
+
+## Compound Component 模式
+
+`ChatInterface` 支持两种使用方式：
+
+**默认（零改动兼容）：**
+```tsx
+<ChatInterface serverUrl="..." tenantId="..." />
+```
+
+**自定义组合：**
+```tsx
+<ChatInterface.Root serverUrl="..." tenantId="...">
+  <ChatInterface.Toaster />
+  <ChatInterface.ContextBar chips={chips} />
+  <ChatInterface.Messages emptyState={<WelcomeScreen />} />
+  <FileAttachmentBar />          {/* 自定义注入 */}
+  <ChatInterface.Composer disclaimer={null} />
+</ChatInterface.Root>
+```
+
+**Context 分层：**
+- `ChatInterfaceContext` — widget/block 注册表 + MCP bridge (config concern)
+- `ChatCoreContext` — 连接状态、消息、输入、动作 (runtime concern)
+- `useChatCore()` — 在自定义组件中访问 chat 状态

@@ -4,11 +4,12 @@
 
 ## 设计原则
 
-1. **Container-filling**: `ChatInterface` 组件用 `w-full h-full flex flex-col` 填充父容器，不在组件内部设 max-width 约束外壳
+1. **Container-filling**: `ChatInterface.Root` 用 `w-full h-full flex flex-col` 填充父容器，不在组件内部设 max-width 约束外壳
 2. **Content centering**: 消息和输入内容通过 `max-w-3xl mx-auto` (48rem/768px) 居中，保持可读性
-3. **Flex column layout**: 上下结构 Header → Messages(`flex-1 overflow-y-auto`) → Suggestions → Input(`flex-shrink-0`)
+3. **Flex column layout**: 上下结构 ContextBar → SkillPanel → Messages(`flex-1 overflow-y-auto`) → QuickSuggestions → Composer(`flex-shrink-0`)
 4. **Empty state**: 空状态使用 `min-h-full flex items-center justify-center` 垂直居中
 5. **Dual-mode compatible**: App.tsx 提供全屏容器 (`h-screen`)；嵌入场景由父容器决定尺寸
+6. **Compound composable**: 各区域为独立组件，可自由组合、替换、插入自定义内容
 
 ## 布局结构
 
@@ -16,16 +17,21 @@
 ┌──────────────────────────────────────────────┐
 │  App.tsx: h-screen flex flex-col              │
 │  ┌──────────────────────────────────────────┐│
-│  │ ChatInterface: w-full h-full flex flex-col││
+│  │ ChatInterface.Root                        ││
+│  │  (w-full h-full flex flex-col)            ││
 │  │ ┌──────────────────────────────────────┐ ││
-│  │ │ Header (flex-shrink: 0)              │ ││
+│  │ │ ContextBar (flex-shrink: 0)          │ ││
+│  │ ├──────────────────────────────────────┤ ││
+│  │ │ SkillPanel (collapsible)             │ ││
 │  │ ├──────────────────────────────────────┤ ││
 │  │ │ Messages (flex-1, overflow-y: auto)  │ ││
 │  │ │   ┌────────────────────┐             │ ││
 │  │ │   │ max-w-3xl mx-auto  │             │ ││
 │  │ │   └────────────────────┘             │ ││
 │  │ ├──────────────────────────────────────┤ ││
-│  │ │ Input (flex-shrink: 0)               │ ││
+│  │ │ QuickSuggestions (flex-shrink: 0)    │ ││
+│  │ ├──────────────────────────────────────┤ ││
+│  │ │ Composer (flex-shrink: 0)            │ ││
 │  │ │   ┌────────────────────┐             │ ││
 │  │ │   │ max-w-3xl mx-auto  │             │ ││
 │  │ │   └────────────────────┘             │ ││
@@ -35,6 +41,17 @@
 ```
 
 背景色全宽延伸，内容区居中。消息区 `flex-1` 自动占满剩余高度。
+
+Solution 可在任意区域间插入自定义组件：
+```tsx
+<ChatInterface.Root serverUrl="..." tenantId="...">
+  <ChatInterface.ContextBar />
+  <ChatInterface.Messages />
+  <FileAttachmentBar />          {/* 自定义插入 */}
+  <ChatInterface.QuickSuggestions />
+  <ChatInterface.Composer />
+</ChatInterface.Root>
+```
 
 ## Sidebar 布局
 

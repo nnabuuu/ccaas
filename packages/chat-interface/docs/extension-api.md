@@ -17,7 +17,31 @@ import { QuizResultCard } from './widgets/QuizResultCard'
 />
 ```
 
-**高级用法：自定义组合**
+**Compound 组合用法：自定义布局**
+```tsx
+import { ChatInterface } from '@kedge-agentic/chat-interface'
+
+<ChatInterface.Root serverUrl={...} tenantId={...} customWidgets={myWidgets}>
+  <ChatInterface.Toaster />
+  <ChatInterface.ContextBar chips={chips} />
+  <ChatInterface.Messages emptyState={<WelcomeScreen />} />
+  <FileAttachmentBar />          {/* 自定义注入 */}
+  <ChatInterface.QuickSuggestions />
+  <ChatInterface.Composer placeholder="Ask anything..." disclaimer={null} />
+</ChatInterface.Root>
+```
+
+**访问 Chat 状态（自定义组件中）：**
+```tsx
+import { useChatCore } from '@kedge-agentic/chat-interface'
+
+function StatusIndicator() {
+  const { isProcessing, messages } = useChatCore()
+  return <div>{messages.length} messages</div>
+}
+```
+
+**低层组合用法（仅用 Provider + 独立组件）：**
 ```tsx
 import { ChatInterfaceProvider, MessageRenderer, SessionContextBar } from '@kedge-agentic/chat-interface'
 
@@ -57,9 +81,15 @@ Solution 可以通过 `customBlockRenderers` 处理自定义 ContentBlock 类型
 
 ```
 @kedge-agentic/chat-interface
-├── ChatInterface, ChatInterfaceProvider    # 核心组件 + Context
+├── ChatInterface                           # 主组件 (thin wrapper, 全兼容)
+│   ├── .Root, .ContextBar, .SkillPanel     # Compound sub-components
+│   ├── .Messages, .EmptyState              #   (可单独组合)
+│   ├── .QuickSuggestions, .Composer        #
+│   └── .Toaster                            #
+├── ChatInterfaceProvider                   # Widget/block 注册 Context
+├── ChatCoreProvider, useChatCore           # 运行时 Context (连接/消息/输入)
 ├── MessageRenderer, WidgetRenderer         # 渲染器
-├── SessionContextBar, SkillPanel, SkillBadge  # UI 组件
+├── SessionContextBar, SkillPanel, SkillBadge  # 底层 UI 组件
 ├── builtinRegistry, builtinCatalog         # Widget 系统
 ├── mergeRegistries, mergeCatalogs          # 合并工具
 ├── createMcpBridge, createMockMcpBridge    # MCP Bridge
