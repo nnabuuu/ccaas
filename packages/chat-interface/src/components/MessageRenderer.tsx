@@ -6,7 +6,15 @@ import { FileCard } from './FileCard'
 import { NextActions } from './NextActions'
 import { ActionToolbar } from './ActionToolbar'
 import ReactMarkdown from 'react-markdown'
+import remarkMath from 'remark-math'
+import rehypeHighlight from 'rehype-highlight'
+import rehypeKatex from 'rehype-katex'
 import { CodeBlock } from './CodeBlock'
+import type { PluggableList } from 'unified'
+
+const REMARK_PLUGINS = [remarkMath]
+const REHYPE_PLUGINS: PluggableList = [[rehypeHighlight, { detect: false }], rehypeKatex]
+const MD_COMPONENTS = { code: CodeBlock }
 
 interface MessageRendererProps {
   message: ChatMessage
@@ -14,9 +22,10 @@ interface MessageRendererProps {
   onWidgetStateChange: (key: string, value: unknown) => void
   onAction?: (action: NextAction) => void
   onWidgetSubmit?: (params: Record<string, unknown>) => void
+  onRetry?: () => void
 }
 
-export function MessageRenderer({ message, widgetState, onWidgetStateChange, onAction, onWidgetSubmit }: MessageRendererProps) {
+export function MessageRenderer({ message, widgetState, onWidgetStateChange, onAction, onWidgetSubmit, onRetry }: MessageRendererProps) {
   const isUser = message.role === 'user'
 
   return isUser ? (
@@ -59,7 +68,7 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
       {/* Action toolbar: visible on mobile, hover-only on desktop, hidden during streaming */}
       {!message.isStreaming && (
         <div className="opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-          <ActionToolbar timestamp={message.timestamp} content={message.content} />
+          <ActionToolbar timestamp={message.timestamp} content={message.content} onRetry={onRetry} />
         </div>
       )}
     </div>
@@ -79,8 +88,8 @@ function ContentBlockView({ block, widgetState, onWidgetStateChange, onWidgetSub
   switch (block.type) {
     case 'text':
       return (
-        <div className="prose prose-sm max-w-none [&_p]:my-0 [&_p]:whitespace-pre-wrap [&_p]:leading-normal [&_ul]:my-0 [&_ol]:my-0 [&_ol]:font-serif [&_ol]:leading-[1.65rem] [&_ol]:pl-8 [&_ol]:mb-3 [&_li]:my-0 [&_strong]:font-medium [&_code]:text-[0.9em] [&_code]:text-[var(--inline-code-color)] [&_code]:bg-[var(--inline-code-bg)] [&_code]:border [&_code]:border-[var(--inline-code-border)] [&_code]:px-1 [&_code]:py-px [&_code]:rounded-[6.4px] [&_code]:inline-flex [&_pre]:bg-ck-bg3 [&_pre]:p-0 [&_pre]:rounded-ck-lg [&_pre]:text-sm [&_pre]:overflow-x-auto [&_table]:text-sm [&_table]:font-serif [&_th]:font-medium [&_th]:text-left [&_th]:py-2 [&_th]:pr-4 [&_td]:py-2 [&_td]:pr-4 [&_a]:text-ck-info-t [&_a]:no-underline [&_a:hover]:text-ck-accent [&_a:hover]:underline">
-          <ReactMarkdown components={{ code: CodeBlock }}>{block.content}</ReactMarkdown>
+        <div className="prose prose-sm max-w-none [&_p]:my-0 [&_p]:whitespace-pre-wrap [&_p]:leading-normal [&_ul]:my-0 [&_ul]:font-serif [&_ul]:leading-[1.65rem] [&_ol]:my-0 [&_ol]:font-serif [&_ol]:leading-[1.65rem] [&_ol]:pl-8 [&_ol]:mb-3 [&_li]:my-0 [&_strong]:font-medium [&_code]:text-[0.9em] [&_code]:text-[var(--inline-code-color)] [&_code]:bg-[var(--inline-code-bg)] [&_code]:border [&_code]:border-[var(--inline-code-border)] [&_code]:px-1 [&_code]:py-px [&_code]:rounded-[6.4px] [&_code]:inline-flex [&_pre]:bg-ck-bg3 [&_pre]:p-0 [&_pre]:rounded-ck-lg [&_pre]:text-sm [&_pre]:overflow-x-auto [&_table]:text-sm [&_table]:font-serif [&_th]:font-medium [&_th]:text-left [&_th]:py-2 [&_th]:pr-4 [&_td]:py-2 [&_td]:pr-4 [&_a]:text-ck-info-t [&_a]:underline [&_a]:[text-decoration-color:color-mix(in_srgb,currentcolor_40%,transparent)] [&_a:hover]:text-ck-accent [&_a:hover]:[text-decoration-color:currentcolor] [&_.katex-display]:my-3 [&_.katex-display]:overflow-x-auto">
+          <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MD_COMPONENTS}>{block.content}</ReactMarkdown>
         </div>
       )
 

@@ -116,14 +116,14 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setUsername(e.target.value); if (credError) setCredError('') }}
               placeholder="用户名"
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus:outline-none focus:ring-2 focus:ring-[var(--t3)]/30"
+              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
             />
             <input
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); if (credError) setCredError('') }}
               placeholder="密码"
-              className="w-full mt-3 px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus:outline-none focus:ring-2 focus:ring-[var(--t3)]/30"
+              className="w-full mt-3 px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
             />
             {credError && (
               <p className="mt-2 text-xs text-[var(--danger-t)]">{credError}</p>
@@ -144,7 +144,7 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setApiKeyValue(e.target.value); if (apiKeyError) setApiKeyError('') }}
               placeholder="sk-..."
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus:outline-none focus:ring-2 focus:ring-[var(--t3)]/30"
+              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
             />
             {apiKeyError && (
               <p className="mt-2 text-xs text-[var(--danger-t)]">{apiKeyError}</p>

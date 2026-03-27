@@ -1,4 +1,6 @@
-import { useState, type ComponentPropsWithoutRef } from 'react'
+import { useState, useRef, useEffect, type ComponentPropsWithoutRef } from 'react'
+import { Copy, Check } from 'lucide-react'
+import { MermaidBlock } from './MermaidBlock'
 
 type CodeProps = ComponentPropsWithoutRef<'code'>
 
@@ -14,18 +16,27 @@ export function CodeBlock({ children, className, ...rest }: CodeProps) {
     )
   }
 
-  return <CodeBlockInner language={match![1]}>{children}</CodeBlockInner>
+  const lang = match![1]
+  if (lang === 'mermaid') {
+    return <MermaidBlock>{children}</MermaidBlock>
+  }
+
+  return <CodeBlockInner language={lang}>{children}</CodeBlockInner>
 }
 
 function CodeBlockInner({ language, children }: { language: string; children: React.ReactNode }) {
   const [copied, setCopied] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
 
   const handleCopy = async () => {
     const text = extractText(children)
     try {
       await navigator.clipboard.writeText(text)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // Clipboard access denied in restricted contexts
     }
@@ -37,15 +48,16 @@ function CodeBlockInner({ language, children }: { language: string; children: Re
         <span className="font-sans">{language}</span>
         <button
           onClick={handleCopy}
+          aria-label={copied ? '已复制' : '复制代码'}
           className="flex items-center gap-1 text-xs text-ck-t2 hover:text-ck-t1 bg-transparent border-none cursor-pointer font-sans transition-colors ease-claude active:scale-[0.98]"
         >
           {copied ? (
             <>
-              <CheckIcon /> 已复制
+              <Check size={14} /> 已复制
             </>
           ) : (
             <>
-              <CopyIcon /> 复制
+              <Copy size={14} /> 复制
             </>
           )}
         </button>
@@ -57,7 +69,7 @@ function CodeBlockInner({ language, children }: { language: string; children: Re
   )
 }
 
-function extractText(node: React.ReactNode): string {
+export function extractText(node: React.ReactNode): string {
   if (typeof node === 'string') return node
   if (Array.isArray(node)) return node.map(extractText).join('')
   if (node && typeof node === 'object' && 'props' in node) {
@@ -66,19 +78,3 @@ function extractText(node: React.ReactNode): string {
   return ''
 }
 
-function CopyIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  )
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  )
-}

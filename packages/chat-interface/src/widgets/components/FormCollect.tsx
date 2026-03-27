@@ -53,7 +53,7 @@ export function FormCollect({
             ) : (
               <input
                 type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                className="w-full px-[10px] py-[7px] border border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus:border-ck-info-t"
+                className="w-full px-[10px] py-[7px] border border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus-visible:border-ck-info-t"
                 value={getValue(field.key, field.default) as string}
                 onChange={(e) => {
                   const val = field.type === 'number' ? Number(e.target.value) : e.target.value

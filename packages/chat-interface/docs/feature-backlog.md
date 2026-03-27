@@ -14,7 +14,7 @@
 |------|-----|
 | **Dump 来源** | `claude-interaction-states`, `claude-assistant-message` |
 | **Claude.ai 行为** | 助手消息 hover 时在底部显示 action toolbar: timestamp + Copy + Retry + Edit 按钮。按钮 32x32, rounded(4px), 透明背景, hover 时显示 bg |
-| **当前状态** | 未实现。`design-system.md` Future Features 已记录规格 |
+| **当前状态** | 已实现 (ActionToolbar.tsx)。当前仅包含 Copy + 时间戳，Retry/Edit 尚未实现 |
 | **复杂度** | M — 需要 hover state 管理、clipboard API、消息级 action 回调 |
 
 ### #2 消息时间戳
@@ -23,7 +23,7 @@
 |------|-----|
 | **Dump 来源** | `claude-assistant-message`, `claude-interaction-states` |
 | **Claude.ai 行为** | 消息 hover 时在 action toolbar 中显示相对时间戳 (如 "2 分钟前")。text-xs, text-t2, font-sans |
-| **当前状态** | ChatMessage 已有 `timestamp` 字段但未渲染 |
+| **当前状态** | 已实现。ActionToolbar 使用 utils/relative-time.ts 渲染中文相对时间 |
 | **复杂度** | S — 格式化 + 条件显示 |
 
 ### #3 Toast 通知系统
@@ -32,7 +32,7 @@
 |------|-----|
 | **Dump 来源** | `claude-error-toast` |
 | **Claude.ai 行为** | 页面右上角 fixed 定位 toast 容器, z-index 60, flex-col gap-12px, aria-live="polite"。用于错误提示、操作反馈 |
-| **当前状态** | 未实现。错误仅在 console.error 输出 |
+| **当前状态** | 已实现。sonner 库 Toaster 组件 + toast.error/success |
 | **复杂度** | M — 需要 toast context/provider、动画进出、自动消失 |
 
 ### #4 Streaming 光标动画
@@ -41,7 +41,7 @@
 |------|-----|
 | **Dump 来源** | `claude-loading-states`, `claude-animations` |
 | **Claude.ai 行为** | 流式响应时末尾显示闪烁光标 (blink 动画: opacity 0↔1)。Claude 使用 `animation: blink` keyframe |
-| **当前状态** | 已用 Unicode block `▌` 字符追加，但无闪烁动画 |
+| **当前状态** | 已实现。MessageRenderer.tsx span + animate-ck-blink CSS keyframe |
 | **复杂度** | S — 添加 CSS `@keyframes blink` + 光标 span |
 
 ---
@@ -236,7 +236,10 @@
 | Dark mode CSS variables | `.dark` + `prefers-color-scheme` | `claude-css-variables` |
 | Easing curves (ease-claude) | `tailwind.config.js` | `claude-animations` |
 | 响应式 max-w-3xl 约束 | ChatInterface `max-w-3xl mx-auto` | `claude-responsive` |
-| Streaming cursor (▌ 字符) | ChatInterface useEffect | `claude-loading-states` |
+| Action Toolbar (#1) | ActionToolbar.tsx (Copy + 时间戳) | `claude-interaction-states`, `claude-assistant-message` |
+| 消息时间戳 (#2) | ActionToolbar + utils/relative-time.ts | `claude-assistant-message` |
+| Toast 通知 (#3) | sonner Toaster + toast.error/success | `claude-error-toast` |
+| Streaming cursor (▌ blink) | MessageRenderer.tsx span + animate-ck-blink | `claude-loading-states` |
 | Link hover → accent color | `[&_a:hover]:text-ck-accent` | `claude-interaction-states` |
 | Z-index 层级 (composer z-5) | design-system.md 参考 | `claude-zindex` |
 | scrollbar-gutter: stable (#5) | `globals.css` `.ck-scrollbar` | `claude-scrollbar`, `claude-page` |

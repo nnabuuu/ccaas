@@ -42,7 +42,7 @@ export function SkillPanel({ serverUrl, tenantId, apiKey, open, onClose }: Skill
           placeholder="搜索技能..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full text-xs px-2 py-1.5 border border-ck-b1 rounded-ck bg-ck-bg1 text-ck-t1 outline-none focus:border-ck-info-t"
+          className="w-full text-xs px-2 py-1.5 border border-ck-b1 rounded-ck bg-ck-bg1 text-ck-t1 outline-none focus-visible:border-ck-info-t"
         />
       </div>
 

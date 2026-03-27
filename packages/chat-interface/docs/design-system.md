@@ -228,14 +228,10 @@ color: var(--t2) — rgb(156, 154, 146)
 ```
 来源: claude-interaction-states, claude-markdown-styles
 
-Markdown 内容链接:
-  base:  text-ck-info-t (蓝色，保证可访问性)
-  hover: text-ck-accent (terracotta) + underline
-  Claude 原始: .ReactMarkdown a:hover { color: hsl(var(--accent-100)); }
-
-Inline-link 模式 (Claude 原始):
-  非 hover 时: text-decoration-color: color-mix(in srgb, currentcolor 40%, transparent)
-  hover 时: 全色下划线
+Markdown 内容链接 (已实现):
+  base:  text-ck-info-t + underline, text-decoration-color: color-mix(in srgb, currentcolor 40%, transparent)
+  hover: text-ck-accent + text-decoration-color: currentcolor (全色下划线)
+  实现: MessageRenderer.tsx prose 覆盖
 ```
 
 ## 文本选择 (Selection)
@@ -253,7 +249,7 @@ Claude 原始 (code-block):
   color: hsl(var(--oncolor-100))
 ```
 
-## Tooltip (未实现，供参考)
+## Tooltip (已实现 — Tooltip.tsx)
 
 ```
 来源: claude-tooltip
@@ -267,7 +263,7 @@ z-index: 50
 shadow: subtle
 ```
 
-## Toast (未实现，供参考)
+## Toast (已实现 — sonner Toaster)
 
 ```
 来源: claude-error-toast
@@ -317,14 +313,15 @@ z-index: 60
 
 ## Future Features (待实现)
 
-完整 feature gap backlog 见 → [feature-backlog.md](./feature-backlog.md) (23 项，含优先级和复杂度评估)
+完整 feature gap backlog 见 → [feature-backlog.md](./feature-backlog.md)
 
-### Action Toolbar (hover 显示)
+### Action Toolbar (已实现 — ActionToolbar.tsx)
 ```
 来源: claude-interaction-states, claude-assistant-message
 
 助手消息 hover 时显示 action toolbar:
   位置: 消息底部
-  内容: timestamp + Copy 按钮 + Edit 按钮
-  交互: 仅 hover 时可见
+  内容: timestamp + Copy 按钮 (Tooltip 提示)
+  交互: 移动端常驻，桌面端 hover 可见
+  待实现: Retry + Edit 按钮
 ```

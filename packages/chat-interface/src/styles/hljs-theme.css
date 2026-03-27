@@ -1,0 +1,87 @@
+/* Syntax highlighting — warm neutrals aligned with Claude design tokens */
+
+:root {
+  --hljs-keyword: #AE5630;
+  --hljs-string: #2e7d32;
+  --hljs-number: #6f42c1;
+  --hljs-comment: #9A9893;
+  --hljs-function: #0c447c;
+  --hljs-class: #854f0b;
+  --hljs-variable: #1A1A18;
+  --hljs-attr: #6f42c1;
+  --hljs-tag: #AE5630;
+  --hljs-built-in: #854f0b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hljs-keyword: #e8886a;
+    --hljs-string: #a5d6a7;
+    --hljs-number: #ce93d8;
+    --hljs-comment: #9C9A92;
+    --hljs-function: #85b7eb;
+    --hljs-class: #fac775;
+    --hljs-variable: #FAF9F5;
+    --hljs-attr: #ce93d8;
+    --hljs-tag: #e8886a;
+    --hljs-built-in: #fac775;
+  }
+}
+
+.dark {
+  --hljs-keyword: #e8886a;
+  --hljs-string: #a5d6a7;
+  --hljs-number: #ce93d8;
+  --hljs-comment: #9C9A92;
+  --hljs-function: #85b7eb;
+  --hljs-class: #fac775;
+  --hljs-variable: #FAF9F5;
+  --hljs-attr: #ce93d8;
+  --hljs-tag: #e8886a;
+  --hljs-built-in: #fac775;
+}
+
+/* highlight.js class mapping */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-deletion { color: var(--hljs-keyword); }
+
+.hljs-string,
+.hljs-doctag,
+.hljs-regexp,
+.hljs-addition { color: var(--hljs-string); }
+
+.hljs-number,
+.hljs-literal { color: var(--hljs-number); }
+
+.hljs-comment,
+.hljs-quote { color: var(--hljs-comment); font-style: italic; }
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section { color: var(--hljs-function); }
+
+.hljs-title.class_,
+.hljs-type { color: var(--hljs-class); }
+
+.hljs-variable,
+.hljs-template-variable { color: var(--hljs-variable); }
+
+.hljs-attr,
+.hljs-attribute { color: var(--hljs-attr); }
+
+.hljs-tag,
+.hljs-name { color: var(--hljs-tag); }
+
+.hljs-built_in,
+.hljs-selector-class,
+.hljs-selector-id { color: var(--hljs-built-in); }
+
+.hljs-meta,
+.hljs-meta .hljs-keyword { color: var(--hljs-keyword); opacity: 0.8; }
+
+.hljs-symbol,
+.hljs-bullet { color: var(--hljs-number); }
+
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 600; }

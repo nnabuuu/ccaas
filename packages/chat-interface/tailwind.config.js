@@ -20,6 +20,7 @@ export default {
           'success-t': 'var(--success-t)',
           'warn-bg': 'var(--warn-bg)',
           'warn-t': 'var(--warn-t)',
+          'danger-bg': 'var(--danger-bg)',
           'danger-t': 'var(--danger-t)',
           'user-bubble': 'var(--user-bubble-bg)',
           accent: 'var(--accent)',
@@ -43,9 +44,14 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0' },
         },
+        'ck-shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
       },
       animation: {
         'ck-blink': 'ck-blink 1s steps(1) infinite',
+        'ck-shimmer': 'ck-shimmer 1.5s ease-in-out infinite',
       },
       transitionTimingFunction: {
         'claude': 'cubic-bezier(0.4, 0, 0.2, 1)',
