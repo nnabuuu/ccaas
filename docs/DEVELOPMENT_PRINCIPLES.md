@@ -316,12 +316,55 @@ When refactoring terminology or field names across the codebase:
 
 ---
 
+## Chat UI Visual Design — Claude Web 对标 (2026-03 确立)
+
+### Background
+
+chat-interface 初版实现了功能，但视觉品质与 Claude Web 有显著差距。通过逆向分析 claude.ai 的设计 token，确立了以下设计标准。
+
+### Design Identity (Non-Negotiable)
+
+> **chat-interface 的视觉标准对标 claude.ai。**
+> 设计 token 参考: `packages/chat-interface/example/claude-web-design.text`
+> 完整设计系统: `packages/chat-interface/ARCHITECTURE.md` Section 10
+
+### Key Rules
+
+1. **Warm neutrals only** — light `#F5F5F0` / dark `#262624`。禁止纯黑 `#000` / 纯白 `#FFF` / 冷灰
+2. **Sans + Serif 双字体** — 用户消息/Composer: sans-serif; 助手消息: serif (`Georgia, "Times New Roman"`)
+3. **User messages right-aligned** — `flex justify-end` + `inline-flex` + `max-width: 75ch`，无头像时右对齐区分角色
+4. **Assistant messages have NO bubble** — 裸 serif 文本, `leading-[1.65rem]`, `pb-3`
+5. **Composer** — `rounded-[20px]` + shadow (非 border), Send: `w-8 h-8 rounded-lg` (32px, 8px radius)
+6. **Terracotta accent** — `#AE5630`, 用于 Send 按钮和链接, 暗色模式不变
+7. **Press feedback** — 所有按钮 `active:scale-[0.98]`, Send 按钮 `active:scale-95`
+8. **Material easing** — `ease-claude` + `ease-claude-spring` 用于过渡动画
+9. **Inline code** — coral 颜色 (`--inline-code-color`), subtle bg/border, `0.9em`, `rounded-[6.4px]`
+10. **Markdown** — paragraph `my-0`, strong `font-medium` (530), OL serif `leading-[1.65rem]`
+
+### Checklist (Before Modifying Chat UI)
+
+```
+□ 颜色是否 warm neutrals？(查 CSS variables)
+□ 助手消息 serif + 无气泡？用户消息 sans-serif？
+□ 用户消息右对齐？
+□ Composer rounded-[20px] + shadow (非 border)？
+□ Send 32px rounded-lg？
+□ 按钮 active:scale 反馈？
+□ dark mode 变量同步？
+□ easing: ease-claude / ease-claude-spring？
+□ Inline code coral 颜色 + subtle border？
+□ Paragraph margin 0？Strong font-medium？
+```
+
+---
+
 ## Summary
 
-**Three Core Principles**:
+**Four Core Principles**:
 
 1. **Tests are contracts** - Trust tests over plans
 2. **Architecture separation** - Core = infrastructure, Solutions = domain
 3. **Simplicity first** - Don't over-engineer
+4. **Claude Web visual standard** - Chat UI design tokens align with claude.ai
 
-**When in doubt**: Run tests, check architecture, keep it simple.
+**When in doubt**: Run tests, check architecture, keep it simple, match Claude's design.

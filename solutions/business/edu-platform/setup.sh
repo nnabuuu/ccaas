@@ -48,12 +48,6 @@ custom_init() {
     npm run build > /dev/null 2>&1
     log_success "Backend built"
 
-    # Seed database
-    log_step "3.7" "Seeding database"
-    cd "$SCRIPT_DIR/backend"
-    npm run seed > /dev/null 2>&1
-    log_success "Database seeded"
-
     return 0
 }
 
@@ -107,6 +101,12 @@ main() {
 
     CCAAS_API_KEY="$API_KEY"
     export CCAAS_API_KEY
+
+    # Step 4.5: Seed database (after API key is available)
+    log_step "4.5" "Seeding database"
+    cd "$SCRIPT_DIR/backend"
+    CCAAS_API_KEY="$CCAAS_API_KEY" npm run seed > /dev/null 2>&1
+    log_success "Database seeded (API key injected)"
 
     # Step 5: Inject skills and MCP servers
     log_step "5" "Injecting skills and MCP servers"

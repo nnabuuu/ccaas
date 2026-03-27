@@ -9,6 +9,7 @@ import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import { encrypt } from './auth/crypto.util';
 
 const DB_PATH = path.resolve(__dirname, '../data/edu.db');
 const db = new Database(DB_PATH);
@@ -473,9 +474,12 @@ db.exec(`
 db.exec("DELETE FROM users WHERE username = 'teacher'");
 
 const seedPassword = bcrypt.hashSync('teacher123', 10);
+const jwtSecret = process.env.JWT_SECRET || 'edu-platform-dev-secret';
+const rawApiKey = process.env.CCAAS_API_KEY || null;
+const encryptedApiKey = rawApiKey ? encrypt(rawApiKey, jwtSecret) : null;
 db.prepare(
-  'INSERT INTO users (id, username, password_hash, name, school) VALUES (?, ?, ?, ?, ?)',
-).run(randomUUID(), 'teacher', seedPassword, '张老师', '树人中学');
+  'INSERT INTO users (id, username, password_hash, name, school, ccaas_api_key) VALUES (?, ?, ?, ?, ?, ?)',
+).run(randomUUID(), 'teacher', seedPassword, '张老师', '树人中学', encryptedApiKey);
 
 console.log('✅ Default user seeded: teacher / teacher123 (张老师, 树人中学)');
 

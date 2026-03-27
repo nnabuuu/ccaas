@@ -38,7 +38,9 @@ function App() {
   const [selectedClass, setSelectedClass] = useState<ClassInfo>(DEFAULT_CLASS)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined)
+  const [sessionId, setSessionId] = useState<string | undefined>(
+    () => `conv_${crypto.randomUUID()}`
+  )
 
   const { sessions, refresh } = useSessionList(SERVER_URL, auth.ccaasApiKey ?? undefined)
 

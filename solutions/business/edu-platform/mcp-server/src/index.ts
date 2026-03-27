@@ -213,7 +213,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const input = args as unknown as WriteOutputInput;
     const { field, value, preview } = input;
 
-    if (!SYNC_FIELDS.includes(field as any)) {
+    if (!(SYNC_FIELDS as ReadonlyArray<string>).includes(field)) {
       const result: WriteOutputResult = {
         data: { error: `无效字段 "${field}"。有效字段: ${SYNC_FIELDS.join(', ')}` },
         status: 'error',
