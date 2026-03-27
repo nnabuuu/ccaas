@@ -6,13 +6,14 @@ import { FileCard } from './FileCard'
 import { NextActions } from './NextActions'
 import { ActionToolbar } from './ActionToolbar'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import { CodeBlock } from './CodeBlock'
 import type { PluggableList } from 'unified'
 
-const REMARK_PLUGINS = [remarkMath]
+const REMARK_PLUGINS = [remarkGfm, remarkMath]
 const REHYPE_PLUGINS: PluggableList = [[rehypeHighlight, { detect: false }], rehypeKatex]
 const MD_COMPONENTS = { code: CodeBlock }
 
@@ -39,7 +40,7 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
     </div>
   ) : (
     // Assistant message: no bubble, serif font, generous bottom margin
-    <div className="pb-3 pl-2 pr-8 group">
+    <div className="pb-3 pl-2 pr-4 md:pr-8 group">
       {message.activeSkill && (
         <SkillBadge name={message.activeSkill} />
       )}
@@ -88,7 +89,7 @@ function ContentBlockView({ block, widgetState, onWidgetStateChange, onWidgetSub
   switch (block.type) {
     case 'text':
       return (
-        <div className="prose prose-sm max-w-none [&_p]:my-0 [&_p]:whitespace-pre-wrap [&_p]:leading-normal [&_ul]:my-0 [&_ul]:font-serif [&_ul]:leading-[1.65rem] [&_ol]:my-0 [&_ol]:font-serif [&_ol]:leading-[1.65rem] [&_ol]:pl-8 [&_ol]:mb-3 [&_li]:my-0 [&_strong]:font-medium [&_code]:text-[0.9em] [&_code]:text-[var(--inline-code-color)] [&_code]:bg-[var(--inline-code-bg)] [&_code]:border [&_code]:border-[var(--inline-code-border)] [&_code]:px-1 [&_code]:py-px [&_code]:rounded-[6.4px] [&_code]:inline-flex [&_pre]:bg-ck-bg3 [&_pre]:p-0 [&_pre]:rounded-ck-lg [&_pre]:text-sm [&_pre]:overflow-x-auto [&_table]:text-sm [&_table]:font-serif [&_th]:font-medium [&_th]:text-left [&_th]:py-2 [&_th]:pr-4 [&_td]:py-2 [&_td]:pr-4 [&_a]:text-ck-info-t [&_a]:underline [&_a]:[text-decoration-color:color-mix(in_srgb,currentcolor_40%,transparent)] [&_a:hover]:text-ck-accent [&_a:hover]:[text-decoration-color:currentcolor] [&_.katex-display]:my-3 [&_.katex-display]:overflow-x-auto">
+        <div className="prose max-w-none ck-prose">
           <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MD_COMPONENTS}>{block.content}</ReactMarkdown>
         </div>
       )

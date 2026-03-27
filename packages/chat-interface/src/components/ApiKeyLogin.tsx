@@ -82,24 +82,24 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
   )
 
   const tabClass = (t: Tab) =>
-    `flex-1 py-2 text-sm font-medium text-center rounded-lg transition-colors ${
+    `flex-1 py-2 text-sm font-medium text-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent ${
       tab === t
-        ? 'bg-[var(--bg1)] text-[var(--t1)] shadow-sm'
-        : 'text-[var(--t3)] hover:text-[var(--t2)]'
+        ? 'bg-ck-bg1 text-ck-t1'
+        : 'text-ck-t3 hover:text-ck-t2'
     }`
 
   return (
-    <div className="h-screen flex items-center justify-center bg-[var(--bg2)]">
-      <div className="w-full max-w-sm mx-4 p-6 rounded-xl bg-[var(--bg1)] border border-[var(--b1)] shadow-sm">
-        <h1 className="text-lg font-semibold text-[var(--t1)] mb-1">
+    <div className="min-h-dvh flex items-center justify-center bg-ck-bg2">
+      <div className="w-full max-w-sm mx-4 p-6 rounded-xl bg-ck-bg1 border border-ck-b1">
+        <h1 className="text-lg font-medium text-ck-t1 mb-1">
           开发调试
         </h1>
-        <p className="text-sm text-[var(--t3)] mb-4">
+        <p className="text-sm text-ck-t3 mb-4">
           登录连接后端
         </p>
 
         {/* Tabs */}
-        <div className="flex gap-1 p-1 mb-4 rounded-lg bg-[var(--bg2)]">
+        <div className="flex gap-1 p-1 mb-4 rounded-lg bg-ck-bg2">
           <button type="button" className={tabClass('credentials')} onClick={() => setTab('credentials')}>
             账号登录
           </button>
@@ -116,22 +116,22 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setUsername(e.target.value); if (credError) setCredError('') }}
               placeholder="用户名"
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
+              className="w-full px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             <input
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); if (credError) setCredError('') }}
               placeholder="密码"
-              className="w-full mt-3 px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
+              className="w-full mt-3 px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             {credError && (
-              <p className="mt-2 text-xs text-[var(--danger-t)]">{credError}</p>
+              <p className="mt-2 text-xs text-ck-danger-t">{credError}</p>
             )}
             <button
               type="submit"
               disabled={loading}
-              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-[var(--t1)] text-[var(--bg1)] hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               {loading ? '登录中...' : '登录'}
             </button>
@@ -144,14 +144,15 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setApiKeyValue(e.target.value); if (apiKeyError) setApiKeyError('') }}
               placeholder="sk-..."
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-[var(--b1)] bg-[var(--bg1)] text-[var(--t1)] text-sm placeholder:text-[var(--t3)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--t3)]/30"
+              className="w-full px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             {apiKeyError && (
-              <p className="mt-2 text-xs text-[var(--danger-t)]">{apiKeyError}</p>
+              <p className="mt-2 text-xs text-ck-danger-t">{apiKeyError}</p>
             )}
             <button
               type="submit"
-              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-[var(--t1)] text-[var(--bg1)] hover:opacity-90 transition-opacity"
+              disabled={!apiKeyValue.trim()}
+              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               连接
             </button>

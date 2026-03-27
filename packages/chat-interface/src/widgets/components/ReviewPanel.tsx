@@ -65,7 +65,7 @@ export function ReviewPanel({
       {/* Progress bar */}
       <div className="h-1 bg-ck-bg2 rounded mb-4 overflow-hidden">
         <div
-          className="h-full bg-ck-success-t rounded transition-all"
+          className="h-full bg-ck-success-t rounded transition-[width]"
           style={{ width: `${(reviewedCount / items.length) * 100}%` }}
         />
       </div>
@@ -78,7 +78,7 @@ export function ReviewPanel({
         {currentItem.metadata && (
           <div className="flex gap-2 mt-2 flex-wrap">
             {Object.entries(currentItem.metadata).map(([k, v]) => (
-              <span key={k} className="text-[11px] px-2 py-[2px] rounded-full bg-ck-info-bg text-ck-info-t">
+              <span key={k} className="text-[11px] px-2 py-0.5 rounded-full bg-ck-info-bg text-ck-info-t">
                 {k}: {v}
               </span>
             ))}
@@ -93,7 +93,7 @@ export function ReviewPanel({
             key={item.id}
             onClick={() => setCurrentIndex(i)}
             className={cn(
-              'w-7 h-7 rounded text-[11px] border transition-all',
+              'w-7 h-7 rounded text-[11px] border transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent',
               i === currentIndex
                 ? 'bg-ck-t1 text-ck-bg1 border-ck-t1'
                 : decisions[item.id]
@@ -115,7 +115,7 @@ export function ReviewPanel({
               key={action.key}
               onClick={() => handleAction(currentItem.id, action.key)}
               className={cn(
-                'text-xs px-3 py-[5px] rounded-ck border transition-all',
+                'text-xs px-3 py-[5px] rounded-ck border transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent',
                 isSelected
                   ? 'bg-ck-t1 text-ck-bg1 border-ck-t1'
                   : action.style === 'danger'
@@ -133,7 +133,7 @@ export function ReviewPanel({
       {allReviewed && (
         <button
           onClick={handleSubmit}
-          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1"
+          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
         >
           Submit Review
         </button>

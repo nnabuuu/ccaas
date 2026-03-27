@@ -54,8 +54,8 @@ export function ChatInterfaceMessages({
   } = useChatCore()
 
   return (
-    <div ref={scrollContainerRef} className={className ?? 'relative flex-1 overflow-y-auto overflow-x-hidden ck-scrollbar'}>
-      <div className="max-w-3xl mx-auto px-4 pt-6 pb-4 flex flex-col min-h-full">
+    <div ref={scrollContainerRef} className={className ?? 'relative flex-1 overflow-y-auto overflow-x-hidden ck-scrollbar'} role="log" aria-live="polite" aria-relevant="additions">
+      <div className="max-w-3xl mx-auto px-3 md:px-4 pt-6 pb-4 flex flex-col min-h-full">
         {messages.length === 0 && !isLoadingHistory && (
           emptyState ?? <ChatInterfaceEmptyState />
         )}

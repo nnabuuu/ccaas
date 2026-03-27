@@ -1,4 +1,5 @@
 @import '../../../../../packages/chat-interface/src/styles/tokens.css';
+@import '../../../../../packages/chat-interface/src/styles/prose.css';
 
 @tailwind base;
 @tailwind components;

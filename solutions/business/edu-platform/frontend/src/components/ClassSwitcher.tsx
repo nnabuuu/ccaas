@@ -33,7 +33,7 @@ export function ClassSwitcher({ classes, selected, onSelect }: ClassSwitcherProp
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="text-[11px] px-[10px] py-[3px] rounded-xl border border-ck-b1 bg-ck-bg2 text-ck-t2 hover:bg-ck-bg2/80"
+        className="text-[11px] px-2.5 py-[3px] rounded-xl border border-ck-b1 bg-ck-bg2 text-ck-t2 hover:bg-ck-bg2/80"
       >
         切换班级
       </button>
@@ -47,7 +47,7 @@ export function ClassSwitcher({ classes, selected, onSelect }: ClassSwitcherProp
                 onSelect(cls)
                 setOpen(false)
               }}
-              className={`w-full text-left text-[12px] px-3 py-[6px] ${
+              className={`w-full text-left text-[12px] px-3 py-1.5 ${
                 cls.id === selected.id
                   ? 'bg-ck-info-bg text-ck-info-t'
                   : 'text-ck-t1 hover:bg-ck-bg2'

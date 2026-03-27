@@ -39,11 +39,11 @@ export function MetricDashboard({
       {/* Metric cards */}
       <div className="grid grid-cols-2 gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${Math.min(metrics.length, 4)}, 1fr)` }}>
         {metrics.map((m, i) => (
-          <div key={i} className="bg-ck-bg2 rounded-ck px-3 py-[10px]">
+          <div key={i} className="bg-ck-bg2 rounded-ck px-3 py-2.5">
             <div className="text-[11px] text-ck-t2 mb-1">{m.label}</div>
             <div className="text-[20px] font-medium">{m.value}</div>
             {m.delta && (
-              <div className={`text-[11px] mt-[2px] ${
+              <div className={`text-[11px] mt-0.5 ${
                 m.trend === 'up' ? 'text-ck-success-t' :
                 m.trend === 'down' ? 'text-ck-danger-t' : 'text-ck-t3'
               }`}>
@@ -65,7 +65,7 @@ export function MetricDashboard({
                 <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
                   <span className="text-[10px] text-ck-t3">{d.value}</span>
                   <div
-                    className="w-full rounded-t-[2px] bg-ck-info-t/60 transition-all"
+                    className="w-full rounded-t-sm bg-ck-info-t/60 transition-[height]"
                     style={{ height: `${height}%`, minHeight: d.value > 0 ? 4 : 0 }}
                   />
                   <span className="text-[10px] text-ck-t3 truncate max-w-full">{d.label}</span>
@@ -78,7 +78,7 @@ export function MetricDashboard({
 
       {/* Distribution list */}
       {items && items.length > 0 && (
-        <div className="space-y-[6px]">
+        <div className="space-y-1.5">
           {items.map((item, i) => {
             const max = item.max_value ?? Math.max(...items.map(it => it.value))
             const pct = max > 0 ? (item.value / max) * 100 : 0

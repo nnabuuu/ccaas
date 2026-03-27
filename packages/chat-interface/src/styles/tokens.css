@@ -24,6 +24,17 @@
   --danger-t: #a32d2d;
   --r: 8px;
   --rl: 12px;
+
+  /* Claude-specific tokens */
+  --user-bubble-bg: #DDD9CE;
+  --accent: #AE5630;
+  --accent-hover: #C4633A;
+  --inline-code-color: #C0392B;
+  --inline-code-bg: rgba(0, 0, 0, 0.04);
+  --inline-code-border: rgba(0, 0, 0, 0.08);
+  --composer-shadow: 0 0.25rem 1.25rem rgba(0,0,0,0.035), 0 0 0 0.5px rgba(0,0,0,0.08);
+  --composer-shadow-hover: 0 0.25rem 1.25rem rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.12);
+  --composer-shadow-focus: 0 0.25rem 1.25rem rgba(0,0,0,0.075), 0 0 0 0.5px rgba(0,0,0,0.15);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,6 +55,15 @@
     --warn-t: #fac775;
     --danger-bg: #3d0c0c;
     --danger-t: #f09595;
+
+    --user-bubble-bg: #141413;
+    --accent-hover: #D07040;
+    --inline-code-color: #FE8181;
+    --inline-code-bg: rgba(194, 192, 182, 0.05);
+    --inline-code-border: rgba(222, 220, 209, 0.15);
+    --composer-shadow: 0 4px 20px rgba(0,0,0,0.035), 0 0 0 0.5px rgba(222,220,209,0.15);
+    --composer-shadow-hover: 0 4px 20px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(222,220,209,0.25);
+    --composer-shadow-focus: 0 4px 20px rgba(0,0,0,0.075), 0 0 0 0.5px rgba(222,220,209,0.3);
   }
 }
 
@@ -64,4 +84,13 @@
   --warn-t: #fac775;
   --danger-bg: #3d0c0c;
   --danger-t: #f09595;
+
+  --user-bubble-bg: #141413;
+  --accent-hover: #D07040;
+  --inline-code-color: #FE8181;
+  --inline-code-bg: rgba(194, 192, 182, 0.05);
+  --inline-code-border: rgba(222, 220, 209, 0.15);
+  --composer-shadow: 0 4px 20px rgba(0,0,0,0.035), 0 0 0 0.5px rgba(222,220,209,0.15);
+  --composer-shadow-hover: 0 4px 20px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(222,220,209,0.25);
+  --composer-shadow-focus: 0 4px 20px rgba(0,0,0,0.075), 0 0 0 0.5px rgba(222,220,209,0.3);
 }

@@ -22,7 +22,7 @@ export function Tooltip({ content, placement = 'top', children }: TooltipProps) 
       <span
         id={id}
         role="tooltip"
-        className={`absolute ${placementClasses[placement]} pointer-events-none z-50 max-w-[208px] whitespace-nowrap bg-[rgba(0,0,0,0.8)] text-white text-xs rounded-[6px] px-2 py-1 opacity-0 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity`}
+        className={`absolute ${placementClasses[placement]} pointer-events-none z-50 max-w-[208px] bg-ck-t1 text-ck-bg1 text-xs rounded-md px-2 py-1 opacity-0 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 transition-opacity`}
       >
         {content}
       </span>

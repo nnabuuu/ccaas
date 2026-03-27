@@ -92,7 +92,7 @@ function App() {
   const chatKey = `${selectedClass.id}-${sessionId ?? 'new'}`
 
   return (
-    <div className="h-screen flex">
+    <div className="h-dvh flex">
       <ChatSidebar
         sessions={sessions}
         currentSessionId={sessionId}

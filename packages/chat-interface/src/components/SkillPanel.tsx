@@ -28,7 +28,7 @@ export function SkillPanel({ serverUrl, tenantId, apiKey, open, onClose }: Skill
         <span className="text-xs font-medium text-ck-t1">技能</span>
         <button
           onClick={onClose}
-          className="text-xs text-ck-t3 hover:text-ck-t1 px-1"
+          className="text-xs text-ck-t3 hover:text-ck-t1 px-1 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
           aria-label="关闭技能面板"
         >
           &times;
@@ -83,7 +83,7 @@ function SkillRow({ skill, enabled }: SkillRowProps) {
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-ck-t1 truncate">{skill.name}</div>
         {skill.description && (
-          <div className="text-[10px] text-ck-t3 truncate">{skill.description}</div>
+          <div className="text-[11px] text-ck-t3 truncate">{skill.description}</div>
         )}
       </div>
       <span

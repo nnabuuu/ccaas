@@ -41,9 +41,9 @@ export function LoginPage({ onLogin, onRegister, isLoading, error }: LoginPagePr
           color: var(--t3);
         }
       `}</style>
-      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg2)' }}>
+      <div className="min-h-dvh flex items-center justify-center px-4" style={{ background: 'var(--bg2)' }}>
         <div
-          className="w-[340px] p-6"
+          className="w-full max-w-[340px] p-6"
           style={{
             background: 'var(--bg1)',
             border: '0.5px solid var(--b1)',

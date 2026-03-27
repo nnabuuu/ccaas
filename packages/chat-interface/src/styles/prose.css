@@ -1,0 +1,14 @@
+/* Prose overrides for claude.ai-style markdown rendering */
+.ck-prose p { margin-top: 0; margin-bottom: 0; white-space: pre-wrap; line-height: 1.5; }
+.ck-prose ul, .ck-prose ol { margin-top: 0; margin-bottom: 0; font-family: Georgia, "Times New Roman", serif; line-height: 1.65rem; }
+.ck-prose ol { padding-left: 2rem; margin-bottom: 0.75rem; }
+.ck-prose li { margin-top: 0; margin-bottom: 0; }
+.ck-prose strong { font-weight: 500; }
+.ck-prose code { font-size: 0.9em; color: var(--inline-code-color, #C0392B); background: var(--inline-code-bg, rgba(0, 0, 0, 0.04)); border: 1px solid var(--inline-code-border, rgba(0, 0, 0, 0.08)); padding: 1px 4px; border-radius: 6.4px; display: inline-flex; }
+.ck-prose pre { background: var(--bg3, #f1f1ee); padding: 0; border-radius: var(--rl, 12px); font-size: 0.875rem; overflow-x: auto; }
+.ck-prose table { font-size: 0.875rem; font-family: Georgia, "Times New Roman", serif; }
+.ck-prose th { font-weight: 500; text-align: left; padding: 0.5rem 1rem 0.5rem 0; }
+.ck-prose td { padding: 0.5rem 1rem 0.5rem 0; }
+.ck-prose a { color: var(--info-t, #0c447c); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentcolor 40%, transparent); }
+.ck-prose a:hover { color: var(--accent, #AE5630); text-decoration-color: currentcolor; }
+.ck-prose .katex-display { margin: 0.75rem 0; overflow-x: auto; }

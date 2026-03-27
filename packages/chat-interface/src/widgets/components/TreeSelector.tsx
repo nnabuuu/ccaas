@@ -56,7 +56,7 @@ export function TreeSelector({
     return (
       <div key={item.id} className="text-[13px]">
         <div
-          className="flex items-center gap-[6px] px-1 py-[3px] rounded cursor-pointer hover:bg-ck-bg2"
+          className="flex items-center gap-1.5 px-1 py-[3px] rounded cursor-pointer hover:bg-ck-bg2"
           style={{ paddingLeft: depth * 20 + 4 }}
           onClick={() => hasChildren ? toggleExpand(item.id) : toggleSelect(item.id)}
         >
@@ -73,7 +73,7 @@ export function TreeSelector({
           {isLeaf && (
             <span
               className={cn(
-                'w-[14px] h-[14px] rounded-[3px] border shrink-0 flex items-center justify-center transition-all',
+                'w-[14px] h-[14px] rounded-[3px] border shrink-0 flex items-center justify-center transition-colors',
                 isSelected
                   ? 'bg-ck-t1 border-ck-t1'
                   : 'border-ck-b1',
@@ -101,14 +101,14 @@ export function TreeSelector({
   return (
     <div>
       <div className="text-xs text-ck-t2 mb-2">{props.label}</div>
-      <div className="border border-ck-b1 rounded-ck-lg px-[14px] py-[10px] max-h-[240px] overflow-y-auto">
+      <div className="border border-ck-b1 rounded-ck-lg px-3.5 py-2.5 max-h-[240px] overflow-y-auto">
         {items.map(item => renderNode(item))}
         {items.length === 0 && (
           <div className="text-xs text-ck-t3 py-4 text-center">No items available</div>
         )}
       </div>
       {selected.length > 0 && (
-        <div className="text-xs text-ck-t3 mt-[6px]">
+        <div className="text-xs text-ck-t3 mt-1.5">
           Selected: {selected.length} item{selected.length > 1 ? 's' : ''}
         </div>
       )}

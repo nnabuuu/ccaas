@@ -101,7 +101,7 @@ export function ChatSidebar({
         {!collapsed && (
           <button
             onClick={onNewChat}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity"
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             <span className="text-base leading-none">+</span>
             新对话
@@ -110,7 +110,7 @@ export function ChatSidebar({
         {collapsed && (
           <button
             onClick={onNewChat}
-            className="w-full flex items-center justify-center py-2 rounded-lg text-base bg-ck-t1 text-ck-bg1 hover:opacity-90"
+            className="w-full flex items-center justify-center py-2 rounded-lg text-base bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-ck-accent"
             title="新对话"
           >
             +
@@ -119,7 +119,7 @@ export function ChatSidebar({
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors text-xs"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors text-xs focus-visible:ring-2 focus-visible:ring-ck-accent"
             title={collapsed ? '展开' : '收起'}
           >
             {collapsed ? '»' : '«'}
@@ -145,7 +145,7 @@ export function ChatSidebar({
                 <button
                   key={s.sessionId}
                   onClick={() => onSelectSession(s.sessionId)}
-                  className={`w-full text-left px-3 py-2 text-[13px] transition-colors truncate block ${
+                  className={`w-full text-left px-3 py-2 text-[13px] transition-colors block min-w-0 focus-visible:ring-2 focus-visible:ring-ck-accent ${
                     s.sessionId === currentSessionId
                       ? 'bg-ck-bg3 text-ck-t1 font-medium'
                       : 'text-ck-t2 hover:bg-ck-bg2'
@@ -171,7 +171,7 @@ export function ChatSidebar({
             <button
               key={s.sessionId}
               onClick={() => onSelectSession(s.sessionId)}
-              className={`w-full flex items-center justify-center py-2 text-sm transition-colors ${
+              className={`w-full flex items-center justify-center py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent ${
                 s.sessionId === currentSessionId
                   ? 'bg-ck-bg3 text-ck-t1'
                   : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg2'
@@ -192,7 +192,7 @@ export function ChatSidebar({
             aria-label="用户菜单"
             aria-expanded={menuOpen}
             aria-haspopup="true"
-            className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-ck-bg2 transition-colors ${
+            className={`w-full flex items-center gap-2 px-3 py-2.5 text-left hover:bg-ck-bg2 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent ${
               collapsed ? 'justify-center' : ''
             }`}
             title={apiKeyHint ?? 'API Key'}
@@ -202,7 +202,7 @@ export function ChatSidebar({
               K
             </span>
             {!collapsed && (
-              <span className="truncate text-[13px] text-ck-t2">
+              <span className="truncate text-[13px] text-ck-t2 min-w-0">
                 {apiKeyHint ?? 'API Key'}
               </span>
             )}
@@ -210,7 +210,7 @@ export function ChatSidebar({
 
           {/* Popover menu */}
           {menuOpen && (
-            <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border border-ck-b1 shadow-lg z-50">
+            <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-ck-lg bg-ck-bg1 border border-ck-b1 z-50">
               {apiKeyHint && !collapsed && (
                 <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
                   {apiKeyHint}
@@ -221,7 +221,7 @@ export function ChatSidebar({
                   setMenuOpen(false)
                   onLogout()
                 }}
-                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg2 transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg2 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
               >
                 断开连接
               </button>

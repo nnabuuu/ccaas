@@ -49,7 +49,7 @@ function CodeBlockInner({ language, children }: { language: string; children: Re
         <button
           onClick={handleCopy}
           aria-label={copied ? '已复制' : '复制代码'}
-          className="flex items-center gap-1 text-xs text-ck-t2 hover:text-ck-t1 bg-transparent border-none cursor-pointer font-sans transition-colors ease-claude active:scale-[0.98]"
+          className="flex items-center gap-1 text-xs text-ck-t2 hover:text-ck-t1 bg-transparent border-none cursor-pointer font-sans transition-colors ease-claude active:scale-[0.98] focus-visible:text-ck-t1"
         >
           {copied ? (
             <>
