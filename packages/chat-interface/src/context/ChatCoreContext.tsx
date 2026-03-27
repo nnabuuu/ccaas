@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useAgentConnection, useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 import type { ChatMessage, ContentBlock, NextAction, QuickSuggestion } from '@/types/chat'
-import { parseAssistantContent } from '@/harness/postprocessor'
+import { parseAssistantContent, buildContentBlocksFromSdkBlocks, isWidgetTool } from '@/harness/postprocessor'
 import { submitToEngine } from '@/harness/submit-engine'
 import { toast } from 'sonner'
 
@@ -117,7 +117,28 @@ export function ChatCoreProvider({
       const isStreaming = msg.isStreaming ?? false
 
       let contentBlocks: ContentBlock[]
-      if (msg.role === 'assistant' && contentText) {
+      let nextActions: NextAction[] | undefined
+
+      // Check for react-sdk contentBlocks containing widget tool calls
+      // react-sdk Message exposes contentBlocks (TextBlock | ToolBlock) — access via
+      // property check since chat-interface doesn't depend on the exact SDK Message type
+      const rawBlocks = 'contentBlocks' in msg ? (msg as Record<string, unknown>).contentBlocks : undefined
+      const sdkBlocks = Array.isArray(rawBlocks) && rawBlocks.every(
+        (b: unknown) => typeof b === 'object' && b !== null && 'type' in b,
+      )
+        ? (rawBlocks as Array<{ type: string; text?: string; tool?: { toolName: string; toolInput?: unknown; phase: string } }>)
+        : undefined
+      const hasWidgetTools = sdkBlocks?.some(
+        b => b.type === 'tool' && isWidgetTool(b.tool?.toolName),
+      )
+
+      if (msg.role === 'assistant' && sdkBlocks && hasWidgetTools) {
+        // Tool-as-Widget path: build interleaved text + widget blocks from SDK contentBlocks
+        const result = buildContentBlocksFromSdkBlocks(sdkBlocks, isStreaming)
+        contentBlocks = result.contentBlocks
+        nextActions = result.nextActions
+      } else if (msg.role === 'assistant' && contentText) {
+        // Phase 1 path: parse text for ```widget/```file fenced blocks
         contentBlocks = parseAssistantContent(contentText, isStreaming)
       } else if (contentText) {
         contentBlocks = [{ type: 'text', content: contentText }]
@@ -131,6 +152,7 @@ export function ChatCoreProvider({
         timestamp: msg.createdAt ?? new Date().toISOString(),
         content: contentBlocks,
         isStreaming: isStreaming && msg.role === 'assistant',
+        nextActions,
       }
     })
     setChatMessages(converted)
@@ -216,6 +238,12 @@ export function ChatCoreProvider({
 
   const handleWidgetSubmit = useCallback(async (messageId: string, params: Record<string, unknown>) => {
     try {
+      // ActionRow shortcut: send prompt as a chat message directly
+      if (params._action === 'send_message' && typeof params.prompt === 'string') {
+        await sendMessage(params.prompt)
+        return
+      }
+
       await submitToEngine({
         submission: {
           sourceWidgetType: (params._widgetType as string) ?? 'unknown',
