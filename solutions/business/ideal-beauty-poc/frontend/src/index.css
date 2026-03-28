@@ -1,0 +1,258 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Keyframes ─── */
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ─── Loading skeleton ─── */
+
+.skeleton {
+  background: linear-gradient(90deg, #eee 25%, #e0ded8 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: 4px;
+}
+.skeleton-dark {
+  background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.08) 50%, rgba(255,255,255,.04) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite ease-in-out;
+  border-radius: 4px;
+}
+
+/* ─── Base ─── */
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Focus styles ─── */
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 0;
+}
+
+/* ─── Animation utility classes ─── */
+
+.anim-fade-in {
+  animation: fadeIn .2s cubic-bezier(.25, 1, .5, 1) both;
+}
+
+
+/* ─── Reduced motion ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Utilities ─── */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ─── Responsive layout helpers ─── */
+
+/* Modal containers — fluid on mobile */
+.modal-card {
+  width: calc(100% - 32px);
+  max-width: 380px;
+  box-sizing: border-box;
+}
+.modal-card-wide {
+  width: calc(100% - 32px);
+  max-width: 520px;
+  box-sizing: border-box;
+}
+
+/* Two-panel split: side-by-side on desktop, stacked on mobile */
+.split-panels {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+.split-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+.split-side {
+  width: 380px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.split-side-narrow {
+  width: 340px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Teacher panel tabs — hidden on desktop, shown on mobile */
+.panel-tab-bar {
+  display: none;
+}
+
+/* Help center — floating (lecture) */
+.help-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 360px;
+  height: 460px;
+}
+
+/* Help center — inline (task) */
+.help-panel-inline {
+  display: flex;
+  flex-direction: column;
+  max-height: 40%;
+  min-height: 120px;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+
+/* Grids that collapse on mobile */
+.grid-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Broadcast overlay */
+.broadcast-modal {
+  width: calc(100% - 32px);
+  max-width: 480px;
+  box-sizing: border-box;
+}
+.broadcast-modal-teacher {
+  width: calc(100% - 40px);
+  max-width: 620px;
+  box-sizing: border-box;
+}
+
+/* Lecture container */
+.lecture-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+/* ─── Mobile: < 768px ─── */
+@media (max-width: 767px) {
+  .lecture-container {
+    padding: 24px 16px;
+  }
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+  .grid-3col {
+    grid-template-columns: 1fr;
+  }
+  .split-panels {
+    flex-direction: column;
+  }
+  .split-side,
+  .split-side-narrow {
+    width: 100%;
+    border-left: none !important;
+    border-top: 1px solid #ebe8e2;
+  }
+  .split-panels[data-active-panel="main"] .split-side,
+  .split-panels[data-active-panel="main"] .split-side-narrow {
+    display: none;
+  }
+  .split-panels[data-active-panel="side"] .split-main {
+    display: none;
+  }
+  .panel-tab-bar {
+    display: flex;
+    border-bottom: 1px solid #ebe8e2;
+    flex-shrink: 0;
+  }
+  .panel-tab-bar button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 600;
+    color: #9e9c96;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .panel-tab-bar button[data-active="true"] {
+    color: #7c3aed;
+    border-bottom-color: #7c3aed;
+  }
+  .help-panel {
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 75dvh;
+    border-radius: 16px 16px 0 0;
+  }
+  .help-panel-inline {
+    max-height: 50dvh;
+  }
+  .broadcast-modal,
+  .broadcast-modal-teacher {
+    width: calc(100% - 24px);
+    max-height: 90dvh;
+  }
+}
+
+/* ─── Tablet: 768px - 1023px ─── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .split-side {
+    width: 300px;
+  }
+  .split-side-narrow {
+    width: 280px;
+  }
+  .help-panel {
+    width: 340px;
+    height: 420px;
+  }
+}
