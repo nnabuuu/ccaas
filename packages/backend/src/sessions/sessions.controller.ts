@@ -282,7 +282,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
       await this.messageQueueService.enqueue(
         sessionId,
         clientId,
-        data.tenantId,
+        resolvedTenantId,
         {
           message: data.message,
           context: data.context,
