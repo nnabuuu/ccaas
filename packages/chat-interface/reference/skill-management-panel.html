@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即见教育 · Skill 管理面板原型</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.15);--b2:rgba(0,0,0,.08);--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--info-bg:#E6F1FB;--info-t:#0C447C;--r:8px;--rl:12px}
+@media(prefers-color-scheme:dark){:root{--bg1:#1a1a18;--bg2:#242422;--t1:#e8e6dc;--t2:#9c9a92;--t3:#73726c;--b1:rgba(255,255,255,.12);--b2:rgba(255,255,255,.06);--success-bg:#173404;--success-t:#C0DD97;--warn-bg:#412402;--warn-t:#FAC775;--info-bg:#042C53;--info-t:#85B7EB}}
+*{box-sizing:border-box;margin:0}body{font-family:-apple-system,system-ui,"Segoe UI",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:20px;min-height:100vh}
+.sp{width:100%;max-width:760px}
+.sp-frame{background:var(--bg1);border-radius:var(--rl);padding:20px;border:.5px solid var(--b1)}
+.sp-bar{display:flex;align-items:center;justify-content:space-between;padding:0 0 12px;margin-bottom:16px;border-bottom:.5px solid var(--b1)}
+.sp-tabs{display:flex;gap:4px;flex-wrap:wrap}
+.sp-tab{padding:6px 14px;border-radius:var(--r);font-size:13px;cursor:pointer;border:.5px solid transparent;background:transparent;color:var(--t2);font-family:inherit}
+.sp-tab.act{background:var(--bg2);color:var(--t1);font-weight:500;border-color:var(--b1)}
+.sp-role{display:flex;gap:4px}
+.sp-role button{padding:4px 10px;border-radius:14px;font-size:12px;cursor:pointer;border:.5px solid var(--b1);background:transparent;color:var(--t2);font-family:inherit}
+.sp-role button.act{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.sp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.sp-stat{background:var(--bg2);border-radius:var(--r);padding:10px 12px}
+.sp-stat-label{font-size:12px;color:var(--t2)}.sp-stat-val{font-size:20px;font-weight:500;margin-top:2px}
+.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sp-card{background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);padding:14px 16px}
+.sp-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sp-card-title{font-size:14px;font-weight:500}
+.sp-badge{font-size:11px;padding:2px 8px;border-radius:10px}
+.sp-badge-pub{background:var(--success-bg);color:var(--success-t)}
+.sp-badge-rev{background:var(--warn-bg);color:var(--warn-t)}
+.sp-badge-dra{background:var(--bg2);color:var(--t2)}
+.sp-badge-fork{background:var(--info-bg);color:var(--info-t)}
+.sp-card-desc{font-size:12px;color:var(--t2);line-height:1.5;margin-bottom:10px}
+.sp-card-meta{display:flex;gap:12px;font-size:11px;color:var(--t3);margin-bottom:10px}
+.sp-card-actions{display:flex;gap:6px}
+.sp-card-actions button{font-size:12px;padding:4px 10px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:transparent;color:var(--t2);font-family:inherit}
+.sp-card-actions button.primary{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.sp-empty{grid-column:1/-1;text-align:center;padding:32px;color:var(--t3);font-size:13px}
+.sp-label{font-size:10px;text-align:center;color:var(--t3);padding:12px 0 4px}
+</style>
+</head>
+<body>
+<div class="sp">
+<div class="sp-label">即见教育 · Skill 管理面板原型 · 右上角切换角色视图</div>
+<div class="sp-frame">
+  <div class="sp-bar"><div class="sp-tabs" id="tabs"></div><div class="sp-role" id="roles"></div></div>
+  <div class="sp-stats" id="stats"></div>
+  <div class="sp-grid" id="grid"></div>
+</div>
+</div>
+<script>
+const roles=['district','school','teacher'];
+const roleLabels={district:'区教育局',school:'学校管理员',teacher:'教师'};
+const tabsByRole={district:['全部 Skill','待审核','使用分析'],school:['已启用','区级市场','校级定制','待审核'],teacher:['我的 Skill','Skill 市场','我的创作']};
+const statsByRole={district:[{l:'区级模板',v:'23'},{l:'已发布',v:'18'},{l:'待审核',v:'3'},{l:'本月使用',v:'4,271'}],school:[{l:'已启用',v:'14'},{l:'校级定制',v:'6'},{l:'待审核',v:'1'},{l:'本月使用',v:'892'}],teacher:[{l:'我的 Skill',v:'8'},{l:'本周使用',v:'37'},{l:'我的创作',v:'2'},{l:'收藏',v:'5'}]};
+const cards={district:{'全部 Skill':[{t:'出题组卷助手',s:'pub',d:'根据课标知识点树和学情数据，智能生成试卷',m:['v2.1','数学·英语·物理','3,201次/月'],a:['编辑','查看分析']},{t:'备课方案生成器',s:'pub',d:'一键生成符合课标要求的单元/课时教学设计',m:['v1.8','全学科','2,847次/月'],a:['编辑','查看分析']},{t:'学情周报生成',s:'pub',d:'自动汇总班级学情数据，生成可读的分析报告',m:['v1.2','全学科','1,106次/月'],a:['编辑','查看分析']},{t:'AI素养实验：对话机器人',s:'rev',d:'学生通过搭建简易聊天机器人理解NLP基础概念',m:['v0.9','AI教学平台','待审核'],a:['审核','预览']}],'待审核':[{t:'AI素养实验：对话机器人',s:'rev',d:'学生通过搭建简易聊天机器人理解NLP基础概念',m:['树人中学提交','2025-03-20'],a:['通过','退回','预览']},{t:'古诗词鉴赏助手',s:'rev',d:'辅助教师设计古诗词教学中的赏析与背诵训练环节',m:['锦江实验学校','2025-03-18'],a:['通过','退回','预览']},{t:'体育课运动处方',s:'rev',d:'根据学生体测数据生成个性化运动建议',m:['成华小学提交','2025-03-15'],a:['通过','退回','预览']}],'使用分析':[]},school:{'已启用':[{t:'出题组卷助手',s:'fork',d:'已定制：默认加入校本教材章节映射',m:['Fork自区级v2.1','本月287次'],a:['配置','停用']},{t:'备课方案生成器',s:'fork',d:'已定制：嵌入学校教研组模板',m:['Fork自区级v1.8','本月203次'],a:['配置','停用']},{t:'错题本生成器',s:'pub',d:'校级自建：从作业数据自动整理学生个人错题集',m:['校级原创v1.0','本月156次'],a:['编辑','查看']}],'区级市场':[{t:'学情周报生成',s:'pub',d:'自动汇总班级学情数据，生成可读的分析报告',m:['区级v1.2','全区1,106次/月'],a:['Fork启用','预览']},{t:'课堂观察记录',s:'pub',d:'辅助听课评课，结构化记录课堂教学行为',m:['区级v1.0','全区445次/月'],a:['Fork启用','预览']}],'校级定制':[{t:'出题组卷助手 — 校级配置',s:'fork',d:'默认题型分布、校本教材映射、试卷模板样式',m:['基于区级v2.1'],a:['编辑参数','重置默认']},{t:'备课方案生成器 — 校级配置',s:'fork',d:'教研组模板、校本课程目标补充、输出格式',m:['基于区级v1.8'],a:['编辑参数','重置默认']}],'待审核':[{t:'物理实验预习助手',s:'rev',d:'张老师提交：引导学生在实验课前完成预习和假设设计',m:['张明·物理组','2025-03-21'],a:['通过','退回','预览']}]},teacher:{'我的 Skill':[{t:'出题组卷助手',s:'pub',d:'快速生成符合课标的试卷，支持难度和知识点定制',m:['学校已启用','本周用了12次'],a:['使用']},{t:'备课方案生成器',s:'pub',d:'一键生成单元教学设计，对齐课标要求',m:['学校已启用','本周用了8次'],a:['使用']},{t:'错题本生成器',s:'pub',d:'从作业数据自动整理学生个人错题集',m:['学校已启用','本周用了6次'],a:['使用']}],'Skill 市场':[{t:'课堂观察记录',s:'pub',d:'辅助听课评课，结构化记录课堂教学行为',m:['区级推荐','全区445次/月'],a:['申请启用']},{t:'学情周报生成',s:'pub',d:'自动汇总班级学情数据，生成可读的分析报告',m:['区级推荐','全区1,106次/月'],a:['申请启用']}],'我的创作':[{t:'物理实验预习助手',s:'rev',d:'引导学生在实验课前完成预习和假设设计',m:['已提交校级审核','2025-03-21'],a:['编辑','撤回']},{t:'单元测试快评',s:'dra',d:'批量评阅主观题并生成评语建议（草稿中）',m:['草稿','未提交'],a:['继续编辑','提交审核']}]}};
+let curRole='district',curTab=0;
+function render(){
+  const ts=tabsByRole[curRole];document.getElementById('tabs').innerHTML=ts.map((t,i)=>`<button class="sp-tab${i===curTab?' act':''}" onclick="setTab(${i})">${t}</button>`).join('');
+  document.getElementById('roles').innerHTML=roles.map(r=>`<button class="${r===curRole?'act':''}" onclick="setRole('${r}')">${roleLabels[r]}</button>`).join('');
+  document.getElementById('stats').innerHTML=statsByRole[curRole].map(s=>`<div class="sp-stat"><div class="sp-stat-label">${s.l}</div><div class="sp-stat-val">${s.v}</div></div>`).join('');
+  const tab=ts[curTab],cc=cards[curRole][tab]||[];
+  if(tab==='使用分析'){document.getElementById('grid').innerHTML='<div class="sp-empty">使用分析仪表盘（按学科/学校/时间维度的Skill调用趋势）</div>';return}
+  if(!cc.length){document.getElementById('grid').innerHTML='<div class="sp-empty">暂无内容</div>';return}
+  document.getElementById('grid').innerHTML=cc.map(c=>{
+    const badge={pub:'sp-badge-pub',rev:'sp-badge-rev',dra:'sp-badge-dra',fork:'sp-badge-fork'}[c.s];
+    const label={pub:'已发布',rev:'审核中',dra:'草稿',fork:'Fork'}[c.s];
+    return `<div class="sp-card"><div class="sp-card-head"><span class="sp-card-title">${c.t}</span><span class="sp-badge ${badge}">${label}</span></div><div class="sp-card-desc">${c.d}</div><div class="sp-card-meta">${c.m.map(m=>`<span>${m}</span>`).join('')}</div><div class="sp-card-actions">${c.a.map((a,i)=>`<button class="${i===0?'primary':''}">${a}</button>`).join('')}</div></div>`}).join('')}
+function setRole(r){curRole=r;curTab=0;render()}
+function setTab(i){curTab=i;render()}
+render();
+</script>
+</body>
+</html>

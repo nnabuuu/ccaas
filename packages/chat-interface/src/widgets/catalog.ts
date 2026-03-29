@@ -78,6 +78,37 @@ export const builtinCatalog: WidgetCatalogEntry[] = [
       chart: { type: 'object', description: 'Optional chart configuration' },
     },
   },
+  {
+    type: 'InfoCard',
+    description: 'Generic info card container. Children are rendered vertically inside the card.',
+    hasChildren: true,
+    propsSchema: {
+      title: { type: 'string', description: 'Card title', required: true },
+      badge: { type: 'string', description: 'Optional badge text shown as info pill' },
+    },
+  },
+  {
+    type: 'MiniOutline',
+    description: 'Read-only indented outline / tree display. No interaction.',
+    propsSchema: {
+      items: { type: 'array', description: 'Tree items with { id, label/name, children? }', required: true },
+      selected_id: { type: 'string', description: 'ID of the highlighted item' },
+    },
+  },
+  {
+    type: 'ActionRow',
+    description: 'Row of action buttons inside a widget. Click sends a chat message.',
+    propsSchema: {
+      actions: { type: 'array', description: 'Action items with { label, prompt, primary?, skill_hint? }', required: true },
+    },
+  },
+  {
+    type: 'TextSection',
+    description: 'Simple read-only text block inside a card.',
+    propsSchema: {
+      content: { type: 'string', description: 'Text content to display', required: true },
+    },
+  },
 ]
 
 /** @deprecated Use `builtinCatalog` directly */

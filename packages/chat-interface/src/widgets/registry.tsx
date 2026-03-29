@@ -6,6 +6,10 @@ import { BarList } from './components/BarList'
 import { ReviewPanel } from './components/ReviewPanel'
 import { MetricDashboard } from './components/MetricDashboard'
 import { Summary } from './components/Summary'
+import { InfoCard } from './components/InfoCard'
+import { MiniOutline } from './components/MiniOutline'
+import { ActionRow } from './components/ActionRow'
+import { TextSection } from './components/TextSection'
 
 export const builtinRegistry: WidgetRegistry = {
   StepWizard,
@@ -15,6 +19,10 @@ export const builtinRegistry: WidgetRegistry = {
   ReviewPanel,
   MetricDashboard,
   Summary,
+  InfoCard,
+  MiniOutline,
+  ActionRow,
+  TextSection,
 }
 
 /** @deprecated Use `builtinRegistry` directly or get from ChatInterfaceContext */

@@ -97,11 +97,11 @@ export function ChatSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-3 border-b border-ck-b1">
+      <div className="flex items-center gap-2 px-3 py-3">
         {!collapsed && (
           <button
             onClick={onNewChat}
-            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-medium text-ck-t2 hover:bg-ck-bg3 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             <span className="text-base leading-none">+</span>
             新对话
@@ -110,7 +110,7 @@ export function ChatSidebar({
         {collapsed && (
           <button
             onClick={onNewChat}
-            className="w-full flex items-center justify-center py-2 rounded-lg text-base bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="w-full flex items-center justify-center py-2 rounded-lg text-base border border-ck-b1 text-ck-t1 hover:bg-ck-bg3 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
             title="新对话"
           >
             +
@@ -122,7 +122,11 @@ export function ChatSidebar({
             className="shrink-0 w-7 h-7 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors text-xs focus-visible:ring-2 focus-visible:ring-ck-accent"
             title={collapsed ? '展开' : '收起'}
           >
-            {collapsed ? '»' : '«'}
+            {collapsed ? (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+            ) : (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            )}
           </button>
         )}
       </div>
@@ -138,17 +142,17 @@ export function ChatSidebar({
 
           {grouped.map((group) => (
             <div key={group.label}>
-              <div className="px-3 pt-3 pb-1 text-[11px] font-medium text-ck-t3 uppercase tracking-wider">
+              <div className="px-4 pt-3 pb-1 text-[11px] font-medium text-ck-t3 uppercase tracking-wider">
                 {group.label}
               </div>
               {group.sessions.map((s) => (
                 <button
                   key={s.sessionId}
                   onClick={() => onSelectSession(s.sessionId)}
-                  className={`w-full text-left px-3 py-2 text-[13px] transition-colors block min-w-0 focus-visible:ring-2 focus-visible:ring-ck-accent ${
+                  className={`w-full text-left px-3 py-2 mx-1 rounded-lg text-[13px] transition-colors block min-w-0 focus-visible:ring-2 focus-visible:ring-ck-accent ${
                     s.sessionId === currentSessionId
                       ? 'bg-ck-bg3 text-ck-t1 font-medium'
-                      : 'text-ck-t2 hover:bg-ck-bg2'
+                      : 'text-ck-t2 hover:bg-ck-bg3'
                   }`}
                   title={sessionTitle(s)}
                 >
@@ -186,7 +190,7 @@ export function ChatSidebar({
 
       {/* User menu */}
       {onLogout && (
-        <div className="relative border-t border-ck-b1" ref={menuRef}>
+        <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((v) => !v)}
             aria-label="用户菜单"
