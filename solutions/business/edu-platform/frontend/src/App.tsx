@@ -114,7 +114,7 @@ function App() {
           contextChips={contextChips}
           quickSuggestions={quickSuggestions}
           sessionContext={{ classId: selectedClass.id, grade: selectedClass.grade, subject: selectedClass.subject }}
-          apiKey={auth.ccaasApiKey}
+          apiKey={auth.ccaasApiKey ?? undefined}
           sessionId={sessionId}
           onMenuClick={() => setMobileSidebarOpen(true)}
           onMessageSent={handleMessageSent}

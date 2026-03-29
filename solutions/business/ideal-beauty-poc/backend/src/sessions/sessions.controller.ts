@@ -26,6 +26,11 @@ export class SessionsController {
     return this.sessionsService.createSession(body.teacherId);
   }
 
+  @Get('code/:code')
+  getSessionByCode(@Param('code') code: string) {
+    return this.sessionsService.getSessionByCode(code);
+  }
+
   @Get(':id')
   getSession(@Param('id') id: string) {
     return this.sessionsService.getSession(id);
