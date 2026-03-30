@@ -44,7 +44,10 @@ export function ChatInterfaceComposer({
     messages,
     quickSuggestions,
     handleSuggestionSelect,
+    skillPanelOpen,
   } = useChatCore()
+
+  if (skillPanelOpen) return null
 
   // Auto-resize textarea
   const resizeTextarea = useCallback(() => {
@@ -69,8 +72,8 @@ export function ChatInterfaceComposer({
   const showDisclaimer = disclaimer !== null
 
   return (
-    <div className={className ?? `${messages.length === 0 ? 'bg-transparent' : 'bg-ck-bg2'} px-4 pb-4 pt-2`}>
-      <div className="max-w-3xl mx-auto relative rounded-[20px] bg-ck-bg1 shadow-composer hover:shadow-composer-hover focus-within:shadow-composer-focus transition-shadow duration-200">
+    <div className={className ?? `${messages.length === 0 ? 'bg-transparent' : 'bg-ck-bg2'} px-3 sm:px-4 pb-3 sm:pb-4 pt-2`}>
+      <div className="max-w-3xl mx-auto relative rounded-[20px] bg-ck-bg1 shadow-composer hover:shadow-composer-hover focus-within:shadow-composer-focus transition-shadow duration-200 ease-claude">
         <textarea
           ref={inputRef}
           rows={1}
@@ -114,12 +117,12 @@ export function ChatInterfaceComposer({
         </div>
       </div>
       {messages.length === 0 && quickSuggestions.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2.5 mt-5 max-w-3xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-4 sm:mt-5 max-w-3xl mx-auto px-1">
           {quickSuggestions.slice(0, 5).map((s, i) => (
             <button
               key={i}
               onClick={() => handleSuggestionSelect(s)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-ck-b1 text-[14px] text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1 transition-colors ease-claude cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-ck-b1 text-[13px] sm:text-[14px] text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1 transition-colors ease-claude cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               <SuggestionIcon index={i} />
               {s.label}

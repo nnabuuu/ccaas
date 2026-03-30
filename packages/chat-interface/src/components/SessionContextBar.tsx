@@ -12,8 +12,8 @@ export function SessionContextBar({ chips, onChipClick, leading, trailing }: Ses
   if (chips.length === 0 && !leading) return null
 
   return (
-    <div className="flex items-center justify-between px-4 py-1.5 border-b border-ck-b2/50 bg-ck-bg2">
-      <div className="flex gap-1.5 items-center">
+    <div className="flex items-center justify-between px-3 sm:px-4 py-1.5 border-b border-ck-b2/30 bg-ck-bg2">
+      <div className="flex gap-1.5 items-center min-w-0">
         {leading}
         {chips.map((chip) => (
           <button
@@ -21,10 +21,10 @@ export function SessionContextBar({ chips, onChipClick, leading, trailing }: Ses
             onClick={() => onChipClick?.(chip)}
             title={chip.label}
             className={cn(
-              'text-[11px] px-2.5 py-[3px] rounded-xl border max-w-[200px] truncate transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+              'text-[11px] px-2.5 py-[3px] rounded-full border max-w-[200px] truncate transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
               chip.active
-                ? 'bg-ck-bg3 text-ck-t1 border-ck-b2'
-                : 'bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg3',
+                ? 'bg-ck-bg3 text-ck-t2 border-ck-b2/50'
+                : 'bg-transparent text-ck-t3 border-ck-b2/50 hover:bg-ck-bg3 hover:text-ck-t2',
             )}
           >
             {chip.label}

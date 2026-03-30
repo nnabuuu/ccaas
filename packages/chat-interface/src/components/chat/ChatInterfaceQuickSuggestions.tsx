@@ -10,7 +10,9 @@ export interface ChatInterfaceQuickSuggestionsProps {
 export function ChatInterfaceQuickSuggestions({
   suggestions,
 }: ChatInterfaceQuickSuggestionsProps) {
-  const { messages, quickSuggestions, handleSuggestionSelect } = useChatCore()
+  const { messages, quickSuggestions, handleSuggestionSelect, skillPanelOpen } = useChatCore()
+
+  if (skillPanelOpen) return null
 
   // Only show after first message (empty state shows card-style suggestions instead)
   if (messages.length === 0) return null

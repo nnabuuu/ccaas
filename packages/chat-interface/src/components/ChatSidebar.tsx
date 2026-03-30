@@ -155,197 +155,189 @@ export function ChatSidebar({
     }
   }, [menuOpen])
 
-  // Sidebar content (shared between desktop and mobile)
-  const sidebarContent = (
-    <div className="flex flex-col h-full">
-      {/* Top section: New chat + toggle */}
-      <div className="px-2.5 pt-3 pb-1 flex flex-col gap-0.5">
-        {!collapsed ? (
-          <>
-            {/* New chat row with toggle */}
-            <div className="flex items-center justify-between">
+  // Sidebar content renderer — accepts isCollapsed to allow mobile drawer to force expanded
+  function renderSidebarContent(isCollapsed: boolean) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Top section: New chat + toggle */}
+        <div className="px-2.5 pt-3 pb-1 flex flex-col gap-0.5">
+          {!isCollapsed ? (
+            <>
+              {/* New chat row with toggle */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={onNewChat}
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+                >
+                  <IconPlus size={16} />
+                  <span>New chat</span>
+                </button>
+                {onToggleCollapse && (
+                  <button
+                    onClick={onToggleCollapse}
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
+                    title="收起侧栏"
+                  >
+                    <IconPanelLeft size={16} />
+                  </button>
+                )}
+              </div>
+              {/* Search */}
+              <div className="relative mt-0.5">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ck-t3 pointer-events-none">
+                  <IconSearch size={14} />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-transparent text-[13px] text-ck-t1 placeholder:text-ck-t3 outline-none pl-8 pr-2.5 py-1.5 rounded-lg hover:bg-ck-bg3 focus:bg-ck-bg3 transition-colors ease-claude"
+                />
+              </div>
+            </>
+          ) : (
+            <>
               <button
                 onClick={onNewChat}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+                className="w-full flex items-center justify-center py-2 rounded-lg text-ck-t2 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
+                title="New chat"
               >
-                <IconPlus size={16} />
-                <span>New chat</span>
+                <IconPlus size={18} />
               </button>
               {onToggleCollapse && (
                 <button
                   onClick={onToggleCollapse}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
-                  title="收起侧栏"
+                  className="w-full flex items-center justify-center py-2 rounded-lg text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
+                  title="展开侧栏"
                 >
                   <IconPanelLeft size={16} />
                 </button>
               )}
-            </div>
-            {/* Search */}
-            <div className="relative mt-0.5">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ck-t3 pointer-events-none">
-                <IconSearch size={14} />
-              </span>
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-[13px] text-ck-t1 placeholder:text-ck-t3 outline-none pl-8 pr-2.5 py-1.5 rounded-lg hover:bg-ck-bg3 focus:bg-ck-bg3 transition-colors ease-claude"
-              />
-            </div>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={onNewChat}
-              className="w-full flex items-center justify-center py-2 rounded-lg text-ck-t2 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
-              title="New chat"
-            >
-              <IconPlus size={18} />
-            </button>
-            {onToggleCollapse && (
-              <button
-                onClick={onToggleCollapse}
-                className="w-full flex items-center justify-center py-2 rounded-lg text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent"
-                title="展开侧栏"
-              >
-                <IconPanelLeft size={16} />
-              </button>
+            </>
+          )}
+        </div>
+
+        {/* Session list */}
+        {!isCollapsed && (
+          <div className="flex-1 overflow-y-auto ck-scrollbar px-1.5 pt-1">
+            {filteredSessions.length === 0 && (
+              <div className="px-3 py-8 text-center text-ck-t3 text-[13px]">
+                {searchQuery ? 'No matching chats' : 'No chat history yet'}
+              </div>
             )}
-          </>
+
+            {grouped.map((group) => (
+              <div key={group.label} className="mb-0.5">
+                <div className="px-2.5 pt-3 pb-1 text-[11px] font-medium text-ck-t3 tracking-wide select-none">
+                  {group.label}
+                </div>
+                {group.sessions.map((s) => {
+                  const isActive = s.sessionId === currentSessionId
+                  return (
+                    <button
+                      key={s.sessionId}
+                      onClick={() => onSelectSession(s.sessionId)}
+                      className={cn(
+                        'w-full text-left px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude block min-w-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                        isActive ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t2 hover:bg-ck-bg3',
+                      )}
+                      title={sessionTitle(s)}
+                    >
+                      <div className="truncate leading-snug">{sessionTitle(s)}</div>
+                    </button>
+                  )
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Collapsed: show icon list */}
+        {isCollapsed && (
+          <div className="flex-1 overflow-y-auto ck-scrollbar py-1">
+            {sessions.slice(0, 20).map((s) => (
+              <button
+                key={s.sessionId}
+                onClick={() => onSelectSession(s.sessionId)}
+                className={cn(
+                  'w-full flex items-center justify-center py-2 text-sm transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                  s.sessionId === currentSessionId ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3',
+                )}
+                title={sessionTitle(s)}
+              >
+                <IconChat size={16} />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* User menu */}
+        {onLogout && (
+          <div className="relative border-t border-ck-b2/30" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="User menu"
+              aria-expanded={menuOpen}
+              aria-haspopup="true"
+              className={cn(
+                'w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                isCollapsed && 'justify-center',
+              )}
+              title={apiKeyHint ?? 'API Key'}
+            >
+              {/* Avatar circle — matching Claude Web style */}
+              <span className="shrink-0 w-7 h-7 rounded-full bg-ck-accent/20 flex items-center justify-center text-[11px] font-medium text-ck-accent">
+                {(apiKeyHint ?? 'K').charAt(0).toUpperCase()}
+              </span>
+              {!isCollapsed && (
+                <span className="flex-1 min-w-0 flex items-center justify-between">
+                  <span className="truncate text-[13px] text-ck-t1">
+                    {apiKeyHint ?? 'API Key'}
+                  </span>
+                  <IconChevron direction={menuOpen ? 'down' : 'up'} size={12} />
+                </span>
+              )}
+            </button>
+
+            {/* Popover menu */}
+            {menuOpen && (
+              <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border border-ck-b1 shadow-lg z-50">
+                {apiKeyHint && !isCollapsed && (
+                  <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
+                    {apiKeyHint}
+                  </div>
+                )}
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    onLogout()
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg3 rounded-lg transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+                >
+                  Log out
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
-
-      {/* Navigation section (visible when expanded) — only Chats nav */}
-      {!collapsed && (
-        <div className="px-2.5 py-1 border-b border-ck-b2/50 flex flex-col gap-0.5">
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t1 bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent">
-            <IconChat size={16} />
-            <span>Chats</span>
-          </button>
-        </div>
-      )}
-
-      {/* Session list */}
-      {!collapsed && (
-        <div className="flex-1 overflow-y-auto ck-scrollbar px-1.5 pt-1">
-          {filteredSessions.length === 0 && (
-            <div className="px-3 py-8 text-center text-ck-t3 text-[13px]">
-              {searchQuery ? 'No matching chats' : 'No chat history yet'}
-            </div>
-          )}
-
-          {grouped.map((group) => (
-            <div key={group.label} className="mb-0.5">
-              <div className="px-2.5 pt-3 pb-1 text-[11px] font-medium text-ck-t3 tracking-wide select-none">
-                {group.label}
-              </div>
-              {group.sessions.map((s) => {
-                const isActive = s.sessionId === currentSessionId
-                return (
-                  <button
-                    key={s.sessionId}
-                    onClick={() => onSelectSession(s.sessionId)}
-                    className={cn(
-                      'w-full text-left px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude block min-w-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
-                      isActive ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t2 hover:bg-ck-bg3',
-                    )}
-                    title={sessionTitle(s)}
-                  >
-                    <div className="truncate leading-snug">{sessionTitle(s)}</div>
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Collapsed: show icon list */}
-      {collapsed && (
-        <div className="flex-1 overflow-y-auto ck-scrollbar py-1">
-          {sessions.slice(0, 20).map((s) => (
-            <button
-              key={s.sessionId}
-              onClick={() => onSelectSession(s.sessionId)}
-              className={cn(
-                'w-full flex items-center justify-center py-2 text-sm transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
-                s.sessionId === currentSessionId ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3',
-              )}
-              title={sessionTitle(s)}
-            >
-              <IconChat size={16} />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* User menu */}
-      {onLogout && (
-        <div className="relative border-t border-ck-b2/50" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="User menu"
-            aria-expanded={menuOpen}
-            aria-haspopup="true"
-            className={cn(
-              'w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
-              collapsed && 'justify-center',
-            )}
-            title={apiKeyHint ?? 'API Key'}
-          >
-            {/* Avatar circle — matching Claude Web style */}
-            <span className="shrink-0 w-7 h-7 rounded-full bg-ck-accent/20 flex items-center justify-center text-[11px] font-medium text-ck-accent">
-              {(apiKeyHint ?? 'K').charAt(0).toUpperCase()}
-            </span>
-            {!collapsed && (
-              <span className="flex-1 min-w-0 flex items-center justify-between">
-                <span className="truncate text-[13px] text-ck-t1">
-                  {apiKeyHint ?? 'API Key'}
-                </span>
-                <IconChevron direction={menuOpen ? 'down' : 'up'} size={12} />
-              </span>
-            )}
-          </button>
-
-          {/* Popover menu */}
-          {menuOpen && (
-            <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border border-ck-b1 shadow-lg z-50">
-              {apiKeyHint && !collapsed && (
-                <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
-                  {apiKeyHint}
-                </div>
-              )}
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  onLogout()
-                }}
-                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg3 rounded-lg transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
-              >
-                Log out
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  )
+    )
+  }
 
   return (
     <>
       {/* Desktop sidebar */}
       <div
         className={cn(
-          'hidden lg:flex flex-col bg-ck-bg2 border-r border-ck-b2/50 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
+          'hidden lg:flex flex-col bg-ck-bg2 border-r border-ck-b2/30 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
           collapsed ? 'w-[52px]' : 'w-[260px]',
         )}
       >
-        {sidebarContent}
+        {renderSidebarContent(collapsed)}
       </div>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — always expanded */}
       {mobileOpen && (
         <>
           {/* Backdrop */}
@@ -355,7 +347,7 @@ export function ChatSidebar({
           />
           {/* Drawer */}
           <div className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-ck-bg2 z-50 shadow-xl">
-            {sidebarContent}
+            {renderSidebarContent(false)}
           </div>
         </>
       )}

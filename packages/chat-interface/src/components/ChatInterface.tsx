@@ -34,6 +34,8 @@ export interface ChatInterfaceProps {
   onMessageSent?: () => void
   /** Extra trailing content inserted before the "技能" button in the context bar */
   contextBarTrailing?: React.ReactNode
+  /** Hide the built-in skill toggle button in the context bar */
+  hideSkillToggle?: boolean
 }
 
 export function ChatInterface({
@@ -54,6 +56,7 @@ export function ChatInterface({
   onMenuClick,
   onMessageSent,
   contextBarTrailing,
+  hideSkillToggle,
 }: ChatInterfaceProps) {
   return (
     <ChatInterfaceRoot
@@ -77,6 +80,7 @@ export function ChatInterface({
         onChipClick={onChipClick}
         onMenuClick={onMenuClick}
         trailing={contextBarTrailing}
+        hideSkillToggle={hideSkillToggle}
       />
       <ChatInterfaceSkillPanel />
       <ChatInterfaceMessages />

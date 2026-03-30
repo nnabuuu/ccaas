@@ -27,6 +27,12 @@
     --r: 8px;
     --rl: 12px;
 
+    /* Skill panel badge tokens */
+    --coral-bg: #FAECE7;
+    --coral-t: #712B13;
+    --purple-bg: #EEEDFE;
+    --purple-t: #3C3489;
+
     /* Claude-specific tokens */
     --user-bubble-bg: #DDD9CE;
     --accent: #AE5630;
@@ -57,6 +63,10 @@
       --warn-t: #fac775;
       --danger-bg: #3d0c0c;
       --danger-t: #f09595;
+      --coral-bg: #3d1a0c;
+      --coral-t: #f5a882;
+      --purple-bg: #2a2660;
+      --purple-t: #b5b0f0;
 
       --user-bubble-bg: #141413;
       --inline-code-color: #FE8181;
@@ -85,6 +95,10 @@
     --warn-t: #fac775;
     --danger-bg: #3d0c0c;
     --danger-t: #f09595;
+    --coral-bg: #3d1a0c;
+    --coral-t: #f5a882;
+    --purple-bg: #2a2660;
+    --purple-t: #b5b0f0;
 
     --user-bubble-bg: #141413;
     --inline-code-color: #FE8181;
