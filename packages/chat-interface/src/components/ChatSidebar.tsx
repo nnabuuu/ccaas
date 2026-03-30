@@ -108,6 +108,34 @@ function IconChevron({ direction = 'up', size = 12 }: { direction?: 'up' | 'down
   )
 }
 
+function IconProjects({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  )
+}
+
+function IconArtifacts({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <rect x="14" y="14" width="7" height="7" />
+    </svg>
+  )
+}
+
+function IconCode({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="16 18 22 12 16 6" />
+      <polyline points="8 6 2 12 8 18" />
+    </svg>
+  )
+}
+
 export function ChatSidebar({
   sessions,
   currentSessionId,
@@ -189,7 +217,7 @@ export function ChatSidebar({
                 placeholder="Search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-[13px] text-ck-t1 placeholder:text-ck-t3 outline-none pl-8 pr-2.5 py-1.5 rounded-lg hover:bg-ck-bg3 focus:bg-ck-bg3 transition-colors"
+                className="w-full bg-transparent text-[13px] text-ck-t1 placeholder:text-ck-t3 outline-none pl-8 pr-2.5 py-1.5 rounded-lg hover:bg-ck-bg3 focus:bg-ck-bg3 transition-colors ease-claude"
               />
             </div>
           </>
@@ -215,12 +243,24 @@ export function ChatSidebar({
         )}
       </div>
 
-      {/* Navigation section (visible when expanded) */}
+      {/* Navigation section (visible when expanded) — matches Claude Web sidebar */}
       {!collapsed && (
-        <div className="px-2.5 py-1 border-b border-ck-b2/50">
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+        <div className="px-2.5 py-1 border-b border-ck-b2/50 flex flex-col gap-0.5">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t1 bg-ck-bg3 transition-colors ease-claude">
             <IconChat size={16} />
             <span>Chats</span>
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+            <IconProjects size={16} />
+            <span>Projects</span>
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+            <IconArtifacts size={16} />
+            <span>Artifacts</span>
+          </button>
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+            <IconCode size={16} />
+            <span>Code</span>
           </button>
         </div>
       )}

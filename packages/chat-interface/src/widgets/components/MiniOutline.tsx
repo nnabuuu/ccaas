@@ -21,8 +21,8 @@ function OutlineNode({ item, selectedId, depth }: { item: TreeItem; selectedId?:
   return (
     <>
       <div
-        className={isSelected ? 'text-ck-t1 font-medium' : ''}
-        style={{ paddingLeft: depth > 0 ? `${depth * 14}px` : undefined, paddingTop: '3px', paddingBottom: '3px' }}
+        className={`py-[3px] ${isSelected ? 'text-ck-t1 font-medium' : ''}`}
+        style={depth > 0 ? { paddingLeft: `${depth * 14}px` } : undefined}
       >
         {getLabel(item)}{isSelected ? ' (已选)' : ''}
       </div>
