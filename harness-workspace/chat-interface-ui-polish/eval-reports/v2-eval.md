@@ -1,171 +1,238 @@
 # Evaluation Report — v2
 
+## Authentication Status
+✅ 认证成功 — Backend reachable at localhost:3001, login successful, apiKey: `sk-defaultx-LwqrIjOI1n3tp2X5yGx4rUrsNyTJ-i9j`
+
 ## 截图对比摘要
 
-**Desktop 1440x900**: warm neutral 色调（#F5F5F0 背景）与 Claude Web 一致。Composer 浮卡设计（rounded-[20px] + shadow + "+" 附件按钮 + send 按钮）现在更接近 Claude Web 的底栏布局。Quick Suggestions 从 v1 的 2x2 大卡片网格改为 icon+text 内联按钮，显著缩小了与 Claude Web 的视觉差距。Empty State sparkle SVG icon 带 4s 脉冲动画，替代了 v1 的 ✺ 文字字符，更精致。顶部 Context Bar（"default" badge + "技能"按钮）仍为本产品特有 UI。Sidebar 结构仍然简化（仅 "新对话" + 会话列表）。
+所有截图均为**认证后状态**（有真实会话数据）。参考截图目录 `packages/chat-interface/reference/` 为空，无法进行像素级对比，评估基于 `design-system.md` 逐项校验 + 实际浏览器验证。
 
-**Mobile 375x812**: Sidebar 正确折叠，hamburger 菜单可见。Quick Suggestions 4 个按钮在 375px 宽度内单行排列，无溢出。Sparkle icon 使用 `w-7 h-7 sm:w-8 sm:h-8` 响应式尺寸。Composer 浮卡适配良好。整体可用。
+### Desktop (1440x900) — `screenshots/v2/eval-desktop-1440x900.png`
+- **Sidebar**: 完整结构 — New chat 按钮 + panel toggle、Search 输入框、Navigation tabs (Chats/Projects/Artifacts/Code，Chats 为 active 高亮)、"Recents" 分组标题、3 条会话（truncated title）、底部用户菜单（圆形头像 + API key hint + chevron）
+- **Messages**: 用户消息右对齐 warm taupe 气泡，助手消息无气泡 serif 字体
+- **Composer**: 圆角 20px 浮卡，双层阴影，无可见 border，左侧 "+" attach 按钮 + 右侧 terracotta send 按钮 (32px)
+- **Code block**: TypeScript syntax highlighting，language label + "复制" 按钮，rounded-lg + border-ck-b1
+- **Empty state**: serif 标题 "What shall we think through?" + animated sparkle icon，居中 composer + 带独特 icon 的 quick suggestions（总结/分析/规划/帮助）
 
-**Tablet 768x1024**: Sidebar 可见（md 断点），宽 260px，主内容区约 508px。Quick suggestions 单行显示。布局正确但 sidebar 在此宽度下仍占比偏大（约 34%）。
+### Mobile (375x812) — `screenshots/v2/eval-mobile-375x812.png`
+- Sidebar 隐藏，hamburger ("Chat list") 菜单可见
+- 消息区域无溢出，用户消息右对齐
+- Action toolbar (copy/retry) 在移动端常驻可见
+- Composer 贴底，send 按钮可见，disclaimer 文字正确换行
 
-**无法验证项**: 后端仍返回 401 Unauthorized，无法发送消息验证对话状态下的消息渲染（用户消息右对齐气泡、助手消息 serif 无背景、ActionToolbar 等），仅能通过代码分析确认实现。
+### Tablet (768x1024) — `screenshots/v2/eval-tablet-768x1024.png`
+- Sidebar 展开 (260px)，chat 区域占剩余空间 (508px)
+- 布局完整，所有元素正常显示，sidebar 占比偏大 (34%)
+
+### Mobile Sidebar — `screenshots/v2/eval-mobile-sidebar-open.png`
+- Overlay drawer 正确打开 (280px, z-50)
+- Backdrop bg-black/40 遮罩可见
+- 完整 sidebar 内容：search、navigation、session 列表、user menu
+
+### 与 Claude Web 的主要差异
+1. 顶部 Session context bar（"default" model badge + "Skills" 按钮）是产品定制功能，Claude Web 无此元素
+2. Quick suggestions 仅在空状态显示（匹配 Claude Web 行为）
+3. Sidebar 导航项 (Projects/Artifacts/Code) 为装饰性占位，无实际导航功能
 
 ## 代码分析指标
-| Metric | v1 Count | v2 Count | Change |
-|--------|----------|----------|--------|
-| 硬编码颜色值 (.tsx) | 0 | 0 | — |
-| rgb() 硬编码 (.tsx) | 0 | 0 | — |
-| !important (排除 reduced-motion) | 0 | 0 | — |
-| inline style={{}} (总计) | 10 | 10 | — |
-| inline style={{}} (非动态值) | 0 | 0 | — |
-| hover:/focus:/active: classes | 51 | 53 | +2 |
-| transition properties | 43 | 44 | +1 |
-| ease-claude / ease-claude-spring | 11 | 13 | +2 |
-| active:scale 按钮反馈 | 10 | 11 | +1 |
-| focus-visible: 无障碍状态 | 27 | 41 | +14 |
-| responsive classes (sm:/md:/lg:) | 13 | 13 | — |
-| cn() className 合并 | 2 | 9 | +7 |
-| typecheck (tsc --noEmit) | PASS | PASS | — |
-| tests (vitest) | 76/76 PASS | 76/76 PASS | — |
+| Metric | Count |
+|--------|-------|
+| 硬编码颜色值 (.tsx) | 0 (2 matches 为 HTML entities &#9612;/&#9654;) |
+| RGB 硬编码 (.tsx) | 0 |
+| !important (排除 reduced-motion) | 0 (4 found 全在 `@media (prefers-reduced-motion)`) |
+| inline style={{}} | 9 (全部动态值：width%, height%, paddingLeft, color, gridTemplateColumns) |
+| hover:/focus:/active: classes | 58 |
+| transition properties | 51 |
+| ease-claude / ease-claude-spring | 25 |
+| active:scale press feedback | 10+ buttons |
+| focus-visible:ring | 广泛覆盖 (所有主要按钮) |
+| responsive classes (sm:/md:/lg:/xl:) | 16 |
+| cn()/twMerge usage | 11 |
+| Tests | 76/76 passed, 11 files |
+| Typecheck | Pass (no errors) |
 
 ## 逐维度评分
 
-### 1. Claude Web Visual Alignment (30/100)
+### 1. Claude Web Visual Alignment (35/100)
 **Score: 4/5**
-**加权分: 24/30**
+**加权分: 28/35**
 
 - 观察:
-  - **Quick Suggestions (v2 修复)**: 从 `rounded-full` 纯文字 pills 改为 `rounded-ck-lg` (12px) 的 icon+text bordered 按钮（`ChatInterfaceComposer.tsx:100-110`），带 sparkle SVG icon + `border-ck-b1`。视觉上显著接近 Claude Web 的 Write/Learn/Code 按钮样式
-  - **Empty State sparkle (v2 修复)**: ✺ 字符替换为 24px SVG 4-pointed sparkle icon（`ChatInterfaceEmptyState.tsx:15-22`），使用 `text-ck-accent` + `animate-ck-sparkle`（4s 缓慢脉冲），比纯文字字符更精致
-  - **Composer "+" 按钮 (v2 修复)**: 左下角新增 `w-8 h-8` 附件按钮占位（`ChatInterfaceComposer.tsx:68-77`），匹配 Claude Web 的 Composer bottom-bar 布局
-  - **配色**: warm neutral 背景 (#F5F5F0)、warm near-black 文字 (#1A1A18)、terracotta 强调色 (#AE5630) 全部正确
-  - **Composer 浮卡**: `rounded-[20px]` + 三态 shadow + `transition-shadow duration-200` 高度还原
-  - **Send 按钮**: `w-8 h-8 rounded-lg bg-ck-accent` (32px, 8px radius, terracotta) 完全匹配
-  - **双字体系统**: Empty State `font-serif`，Composer `sans-serif` 正确
-  - **Antialiased / ::selection**: 均正确配置
+  - **Warm neutrals**: ✅ bg2=#F5F5F0, t1=#1A1A18, user-bubble=#DDD9CE, 零纯黑/纯白
+  - **Sans + Serif 双字体**: ✅ 用户消息/Composer sans-serif, 助手消息 `font-serif` (Georgia), 空状态标题 serif, ThinkingDots serif
+  - **用户消息右对齐**: ✅ `flex flex-col items-end` + `inline-flex max-w-[min(75ch,85%)]` + `bg-ck-user-bubble rounded-xl py-2.5 px-4 leading-[1.4]`
+  - **助手消息无气泡**: ✅ 裸 serif `leading-[1.65rem]` + `pb-3 pl-2 pr-8`, paragraph 覆盖 `leading-normal`
+  - **Composer 浮卡**: ✅ `rounded-[20px]` + `shadow-composer` 三态 (rest/hover/focus-within) + `transition-shadow duration-200`, 无 border
+  - **Terracotta 强调色**: ✅ `--accent: #AE5630`, send 按钮 `bg-ck-accent`, hover `bg-ck-accent-hover`
+  - **Antialiased + smooth scroll**: ✅ globals.css:102-105
+  - **::selection**: ✅ `background-color: var(--accent); color: #fff`
+  - **Inline code**: ✅ coral 色 `var(--inline-code-color)` + subtle border + 6.4px radius + `display: inline-flex` + `0.9em`
+  - **Prose overrides**: ✅ p margin 0 + white-space pre-wrap, strong font-weight 500, UL/OL serif + line-height 1.65rem, table serif 14px, link hover accent
+  - **Action toolbar**: ✅ `md:opacity-0 md:group-hover:opacity-100` (desktop hover-only, mobile 常驻)
+  - **Send button**: ✅ `w-8 h-8 rounded-lg bg-ck-accent` (32px, 8px radius, terracotta)
+  - **Quick suggestion icons**: ✅ 差异化 — Pencil(总结), Book(分析), Code(规划), Compass(帮助), Sparkle(备用)
+  - **Scrollbar**: ✅ `ck-scrollbar` thin + rounded thumb + stable gutter
+
+- Sidebar 结构检查:
+  - 搜索框: ✅ (ChatSidebar.tsx:211-222)
+  - 分组标题: ✅ Starred/Recents/Yesterday/Previous 7 Days/Earlier (groupByDate function)
+  - 新建按钮: ✅ (ChatSidebar.tsx:193-199)
+  - 导航分区: ✅ Chats/Projects/Artifacts/Code (ChatSidebar.tsx:248-265)
+  - 用户菜单: ✅ avatar + key hint + popover with logout
+  - 折叠模式: ✅ 52px icon-only mode
+- Hard cap 触发: **否** — 搜索框、分组标题、新建按钮全部齐全
+
 - 扣分原因:
-  1. **Quick Suggestion icons 不够差异化**: 4 个按钮（总结/分析/规划/帮助）全部使用相同的 sparkle SVG icon，而 Claude Web 每个按钮有独特 icon（✎ Write, ✧ Learn, </> Code, 🏠 Life stuff）。视觉识别性不如 Claude
-  2. **Context Bar**: "default" badge 仍增加了 Claude 不存在的视觉噪声（但这是产品功能需要，非 bug）
-  3. **Sidebar 简化**: 缺少 Search、Customize、Projects、Artifacts 等项目（产品差异）
-  4. **Composer 缺 model selector**: Claude Web 右下角有 "Opus 4.6 Extended ▾" 下拉框和语音按钮
-  5. **无法实际验证消息渲染**（后端 401）
+  1. 无参考截图进行像素级对比，仅能基于 spec 校验
+  2. Session context bar (model badge + Skills) 增加了 Claude Web 不存在的视觉层
+  3. Sidebar 导航项 (Projects/Artifacts/Code) 为装饰性占位，无实际功能
+
 - 改进建议:
-  1. 为每个 Quick Suggestion 按钮设计独特 icon（如 📝 总结用文档 icon、📊 分析用图表 icon、📋 规划用清单 icon、❓ 帮助用问号 icon），在 `ChatInterfaceComposer.tsx:105-107` 替换统一的 sparkle SVG
-  2. Empty State 的 sparkle icon 可以更大（如 `w-10 h-10`），并考虑将其与标题分开成两行（上图下文），更接近 Claude Web 的居中 hero 布局
-  3. 考虑在 Composer 右下角 send 按钮左侧增加 model selector 占位 UI
+  1. 添加 Claude Web 参考截图到 `packages/chat-interface/reference/` 以支持逐像素对比
+  2. Session context bar 的 "default" pill 可考虑更低调处理（如去掉蓝色高亮背景，改为纯文字）
+  3. 导航占位项可添加 disabled/coming-soon 视觉提示，避免用户误以为功能可用
 
 ---
 
-### 2. Cross-Component Consistency (25/100)
+### 2. Cross-Component Consistency (15/100)
 **Score: 5/5**
-**加权分: 25/25**
+**加权分: 15/15**
 
 - 观察:
-  - **零硬编码颜色值**: 所有 `.tsx` 文件中未发现 `#xxx` 或 `rgb()` 颜色硬编码（grep 匹配的 5 项均为 HTML entities &#xxxx; 非颜色值）
-  - **v2 新增元素全部走 design token**: sparkle icon 使用 `text-ck-accent`，suggestion 按钮使用 `border-ck-b1 text-ck-t2 hover:bg-ck-bg3`，attachment 按钮使用 `text-ck-t3 hover:text-ck-t2`
-  - **CSS Variable 体系完备**: `globals.css` light/dark 全套变量，Tailwind config `ck-*` 映射
-  - **Shadow tokens**: Composer shadow 通过 CSS variable 管理（rest/hover/focus 三态）
-  - **Easing tokens**: `ease-claude` 13 处使用，`ease-claude-spring` 在 Tailwind config 定义
-  - **Typography**: prose 颜色全部映射到 CSS variables
-  - **Animation**: 新增 `ck-sparkle` keyframe 通过 Tailwind config 定义，非 inline style
-  - **cn() 使用增加**: v2 中 cn() 使用从 2 处增至 9 处（NextActions, SessionContextBar 等），提高了条件 className 的可读性
+  - **零硬编码颜色**: TSX 文件 grep `#hex` 和 `rgb()` = 0 实际颜色值
+  - **100% ck- 前缀**: `grep '(bg|text|border)-(?!ck-)' components/ widgets/` = 0 matches — 所有颜色类走 design token
+  - **CSS Variable 体系**: globals.css 定义 light + dark (media query + .dark class) 完整色板 (bg1-3, t1-3, b1-2, accent, user-bubble, inline-code, composer-shadow)
+  - **Tailwind config 映射**: `ck.*` 颜色 + `rounded-ck`/`rounded-ck-lg` + `shadow-composer*` + `ease-claude`/`ease-claude-spring` + custom keyframes
+  - **Typography prose**: `ck-prose` class + `@tailwindcss/typography` plugin，prose 变量全部映射到 CSS variables
+  - **Spacing scale**: 统一使用 Tailwind scale (px-2.5, py-1.5, gap-2, etc.)
+  - **Shadow tokens**: composer shadow 通过 CSS variable 3 态管理
+  - **Animation tokens**: `ck-blink`, `ck-shimmer`, `ck-sparkle` 全在 tailwind.config.js
+  - **Dark mode**: 双覆盖策略 (prefers-color-scheme + .dark class)
+
 - 扣分原因: 无
-- 改进建议:
-  - SessionContextBar chip 按钮（`SessionContextBar.tsx:23-28`）缺少 `transition-colors` 和 `active:scale-[0.98]`，虽然不影响一致性评分但可提升整体统一感
+- 改进建议: 已达最高标准。可选: 将 `cn()` 推广到所有使用 template literal 条件拼接的组件
 
 ---
 
-### 3. Responsive & Mobile (20/100)
-**Score: 4/5**
-**加权分: 16/20**
-
-- 观察:
-  - **Desktop 1440px**: 布局正确，Sidebar 260px + 主内容区居中 max-w-3xl
-  - **Tablet 768px**: Sidebar 可见（md 断点），主内容区约 508px，Quick Suggestions 单行显示
-  - **Mobile 375px**: Sidebar 折叠为 hamburger 菜单，overlay 遮罩正确，Quick Suggestions 单行 4 个按钮无溢出
-  - **v2 新增响应式**: sparkle icon `w-7 h-7 sm:w-8 sm:h-8`，Empty State 标题 `text-2xl sm:text-3xl`
-  - **触摸目标**: ScrollToBottom `w-11 h-11` (44px) on mobile ✓, ActionToolbar `min-w-[44px] min-h-[44px]` on mobile ✓
-  - **Sidebar overlay**: `bg-black/40 z-40` 遮罩 + `md:hidden` 正确处理
-  - **可见性适配**: 快捷键提示 `hidden md:inline`，ActionToolbar `opacity-100 md:opacity-0 md:group-hover:opacity-100`
-- 扣分原因:
-  1. **Tablet 768px sidebar 占比大**: Sidebar 260px 占 34% 宽度，主内容仅 66%，对 tablet 阅读体验不理想
-  2. **Responsive class 密度仍偏低** (13 处 sm:/md:/lg:)，可能在极端窄屏（320px）有边缘问题
-  3. **Quick Suggestion 按钮在 320px 可能溢出**: 4 个 icon+text 按钮在 320px viewport 下可能需要 2 行
-- 改进建议:
-  1. 考虑将 Sidebar 默认折叠断点从 `md` (768px) 提升到 `lg` (1024px)，在 768px-1023px 默认折叠
-  2. 在 320px viewport 测试 Quick Suggestions 是否溢出，必要时使用 `grid grid-cols-2` 或减少到 3 个按钮
-  3. Composer 在极窄屏（< 360px）下的 padding 可适当缩小
-
----
-
-### 4. Interaction Polish (15/100)
+### 3. Responsive & Mobile (15/100)
 **Score: 4/5**
 **加权分: 12/15**
 
 - 观察:
-  - **Quick Suggestion focus-visible (v2 修复)**: `ChatInterfaceComposer.tsx:103` 新增 `focus-visible:ring-2 focus-visible:ring-ck-accent`，修复了 v1 的键盘无障碍漏洞
-  - **Sidebar 会话项 easing (v2 修复)**: `ChatSidebar.tsx:152` 新增 `ease-claude` + `active:scale-[0.98]`，修复了 v1 的交互反馈缺失
-  - **Focus-visible 覆盖率大幅提升**: 从 27 处增至 41 处（+14），几乎所有可交互元素都有键盘焦点指示
-  - **Hover 状态**: 所有按钮均有 `hover:bg-ck-bg3` 或 `hover:text-ck-t1` 覆盖
-  - **Active 反馈**: 11 处 `active:scale-[0.98]` 或 `active:scale-95`，所有主要按钮均有按压反馈
-  - **Transition**: 44 处 transition 属性，`transition-colors ease-claude` 是标准模式
-  - **Composer 阴影过渡**: rest → hover → focus 三态 + `transition-shadow duration-200` 完整
-  - **ActionToolbar**: desktop hover-only + mobile always visible — 良好的平台适配
-  - **Sparkle 动画**: `animate-ck-sparkle` (4s ease-in-out infinite) 缓慢脉冲，不干扰但增加视觉趣味
+  - **Desktop 1440px**: ✅ Sidebar 260px + 主区域 max-w-3xl 居中，布局宽敞
+  - **Tablet 768px**: ✅ Sidebar 可见 (md breakpoint)，主区域约 508px，可用但偏紧
+  - **Mobile 375px**: ✅ Sidebar 隐藏，hamburger → overlay drawer (280px, z-50, backdrop bg-black/40)
+  - **Touch targets**: ✅ 移动端 `min-w-[44px] min-h-[44px]` → 桌面端 `md:min-w-0 md:min-h-0 w-8 h-8`
+  - **Overflow**: ✅ 消息区 `overflow-y-auto overflow-x-hidden scrollbar-gutter:stable`, 代码块 `overflow-x-auto`
+  - **Sidebar 折叠**: ✅ Desktop 支持 52px icon-only mode，`transition-[width] duration-200 ease-claude`
+  - **Action toolbar 适配**: ✅ mobile 常驻 (`opacity-100`) → desktop hover-only (`md:opacity-0 md:group-hover:opacity-100`)
+  - **Composer 响应式**: ✅ 移动端和桌面端均贴底，textarea auto-resize
+  - **Empty state 响应式**: sparkle icon `w-7 h-7 sm:w-8 sm:h-8`, 标题 `text-[28px] sm:text-[32px]`
+  - **Keyboard hint**: `hidden md:inline` 在移动端隐藏
+
 - 扣分原因:
-  1. **SessionContextBar chip 按钮缺少交互过渡**: `SessionContextBar.tsx:23-28` 无 `transition-colors`、`active:scale`，点击无视觉反馈
-  2. **Attachment "+" 按钮功能未实现**: 有 UI 占位但点击无效果，也无 disabled 状态暗示
-  3. 无法在浏览器中实际验证动画流畅度和 hover 状态（仅代码分析）
+  1. 768px tablet 下 sidebar 固定 260px 占 34%，主聊天区仅 66% (508px)
+  2. Responsive class 密度 16 处，中间断点细调有限
 - 改进建议:
-  1. `SessionContextBar.tsx:23` chip 按钮添加 `transition-colors ease-claude active:scale-[0.98]`
-  2. Attachment 按钮如果暂未实现功能，应添加 `cursor-not-allowed opacity-50` 或 tooltip 提示 "即将推出"
-  3. "技能" 按钮（trailing slot）确认是否有完整的 hover/active/focus 状态
+  1. 768-1024px 范围可默认折叠 sidebar 或缩窄至 200px: `ChatSidebar.tsx:379` 改 `md:flex` → `lg:flex`, 或添加 `md:w-[200px] lg:w-[260px]`
+  2. 在 320px viewport 测试 quick suggestions 是否溢出 (4 个 icon+text 按钮)
+
+---
+
+### 4a. CSS & Interaction Polish (10/100)
+**Score: 4/5**
+**加权分: 8/10**
+
+- 观察:
+  - **hover/focus/active**: 58 处使用 — 所有主要按钮、输入框、sidebar items 全覆盖
+  - **transition**: 51 处 — `transition-colors ease-claude` 是标准模式
+  - **ease-claude**: 25 处使用 Material easing `cubic-bezier(0.4, 0, 0.2, 1)`
+  - **ease-claude-spring**: 在 tailwind.config 中定义
+  - **active:scale**: Send `active:scale-95`, 其他按钮 `active:scale-[0.98]` — 10+ 处
+  - **focus-visible:ring**: `focus-visible:ring-2 focus-visible:ring-ck-accent` 覆盖所有主要交互元素
+  - **Composer shadow 过渡**: `shadow-composer` → `hover:shadow-composer-hover` → `focus-within:shadow-composer-focus` + `transition-shadow duration-200`
+  - **Action toolbar 过渡**: `transition-opacity duration-150 ease-claude`
+  - **Loading states**: blink cursor (`animate-ck-blink`), shimmer skeleton, sparkle icon (`animate-ck-sparkle` 4s), "Stop generating" 按钮切换
+  - **Scrollbar**: thin custom scrollbar (`ck-scrollbar`)
+  - **Tooltip**: fade-in via `opacity-0 group-hover/tooltip:opacity-100 transition-opacity`
+
+- 扣分原因:
+  1. SessionContextBar chip 按钮 (SessionContextBar.tsx:23-28) 缺少 `transition-colors` 和 `active:scale-[0.98]`
+  2. Sidebar 导航按钮 (ChatSidebar.tsx:249-264, Chats/Projects/Artifacts/Code) 缺少 `focus-visible:ring` 和 `active:scale`
+- 改进建议:
+  1. `SessionContextBar.tsx:24` 添加 `transition-colors ease-claude active:scale-[0.98]`
+  2. `ChatSidebar.tsx:249-261` 4 个 nav 按钮添加 `active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent`
+
+---
+
+### 4b. Functional Verification (15/100)
+**Score: 5/5**
+**加权分: 15/15**
+
+- Authentication: ✅ 成功登录，apiKey 注入 localStorage，刷新后保持认证态
+- 消息发送: ✅ 输入 "Evaluator test: Please respond with a greeting and a short code block example." → Enter → 成功发送
+- 消息渲染:
+  - 用户消息: ✅ 右对齐 warm taupe 气泡，sans-serif 字体，截图证据 `eval-desktop-chat-response.png`
+  - 助手回复: ✅ "Hello! Here's a quick example:" (serif font) + TypeScript 代码块 (syntax highlighting + language label + copy button)
+  - Action toolbar: ✅ 时间戳 "刚刚" + 复制按钮 (tooltip "复制") + 重试按钮 (tooltip "重试")
+- Sidebar 更新: ✅ 新会话 "Evaluator test: Please respond wi..." 立即出现在 Recents 组顶部
+- 会话切换: ✅ 点击 "Hello from v2 iteration test" → 加载该会话消息，sidebar active 状态 (`bg-ck-bg3 text-ck-t1`) 正确切换
+- Mobile sidebar: ✅ 点击 hamburger → overlay drawer 打开，backdrop 遮罩可见，完整 sidebar 内容
+- Empty state: ✅ New chat 显示 serif "What shall we think through?" + animated sparkle + centered composer + quick suggestions with unique icons
+- Streaming: ✅ 发送后显示 blinking cursor + "Stop generating" 按钮，完成后切换回 disabled "Send"
+- 扣分原因: 无
+- 改进建议: 可增加 edge case 测试 — 长消息换行、markdown 表格渲染、多轮对话自动滚动
 
 ---
 
 ### 5. Code Quality & Maintainability (10/100)
-**Score: 5/5**
-**加权分: 10/10**
+**Score: 4/5**
+**加权分: 8/10**
 
 - 观察:
-  - **零 !important**: 4 处均在 `@media (prefers-reduced-motion: reduce)` 内，是无障碍标准实践
-  - **零非动态 inline style**: 10 处 `style={{}}` 均在 widgets 中用于动态计算值（百分比宽度、深度缩进），无静态样式滥用，核心 components 目录零 inline style
-  - **Animation 定义规范**: `ck-sparkle` keyframe 通过 Tailwind config 定义（`tailwind.config.js:51-54`），非 inline CSS 动画
-  - **SVG icon 内联**: sparkle SVG 直接在组件中，无额外依赖
-  - **cn() 使用增长**: 从 2 处增至 9 处，条件 className 更可读
-  - **Tailwind config 架构清晰**: colors/borderRadius/boxShadow/keyframes/animation/transitionTimingFunction 全部通过 CSS variable 和 config 管理
-  - **prose.css 分离**: Markdown 样式独立管理
-  - **globals.css 结构**: light → dark media query → .dark class override 三层覆盖逻辑清晰
-- 扣分原因: 无
+  - **!important**: 0 处需扣分 — 4 处全在 `@media (prefers-reduced-motion: reduce)` block (globals.css:156-162)
+  - **Inline style**: 9 处全为动态值 — BarList (width%, color), TreeSelector (paddingLeft: depth*20), MetricDashboard (gridTemplateColumns, height%), ReviewPanel (width%). 核心 components 目录零 inline style
+  - **CSS 变量体系**: 完备 — globals.css light + dark 双模式，tailwind.config 完整映射
+  - **cn() usage**: 11 处 (SessionContextBar, NextActions 等)
+  - **Tests**: 76/76 pass, 11 test files
+  - **Typecheck**: 通过
+  - **组件架构**: 清晰单文件组件 — MessageRenderer, ChatSidebar, ActionToolbar, CodeBlock, Tooltip, etc.
+  - **Icons**: lucide-react (Copy, Check, RotateCcw) + 自定义 SVG (sidebar, suggestions)
+  - **Prose**: 独立 `prose.css` 管理 markdown 样式覆盖
+
+- 扣分原因:
+  1. 部分组件用 template literal 拼接 conditional className (ChatSidebar.tsx:288, 311, 332, 379), 而非 cn()
+  2. Composer textarea auto-resize 使用 inline style (ChatInterfaceComposer.tsx:53-55) — 虽为动态值但可优化
 - 改进建议:
-  - `ChatInterfaceComposer.tsx:54` 中的 template string className 可提取为 cn() 调用，使条件逻辑更清晰
-  - 考虑将 Quick Suggestion 的 sparkle SVG icon 提取为独立小组件（如 `SparkleIcon`），避免与 EmptyState 中的 sparkle 重复定义
+  1. ChatSidebar.tsx 中 4 处 conditional className 改用 `cn()`: line 288, 311, 332, 379
+  2. textarea auto-resize 可考虑使用 CSS `field-sizing: content` (现代浏览器支持) 替代 JS height manipulation
 
 ## Penalty 扣分明细
 | Rule | Count | Deduction |
 |------|-------|-----------|
 | 硬编码颜色 (.tsx) | 0 | 0 |
 | !important (排除 reduced-motion) | 0 | 0 |
-| inline style (非动态值) | 0 | 0 |
-| typecheck 失败 | 0 (PASS) | 0 |
-| test 失败 | 0 (76/76 PASS) | 0 |
+| inline style (非动态值) | 0 (9 处全为动态值) | 0 |
+| typecheck 失败 | No (通过) | 0 |
+| test 失败 | No (76/76 通过) | 0 |
 | 功能删除 | 0 | 0 |
 | **Penalty 小计** | | **0** |
 
 ## Top 3 优先改进项
-1. **Quick Suggestion 独特 icon** — 为每个按钮设计差异化 icon（总结=文档、分析=图表、规划=清单、帮助=问号），提升视觉识别性。当前 4 个按钮使用同一 sparkle icon，与 Claude Web 的 Write(✎)/Learn(✧)/Code(</>)/Life stuff(🏠) 各不相同形成明显差距。修改位置: `ChatInterfaceComposer.tsx:105-107`（影响 Dimension 1，潜在 +6 分 → 5/5）
-2. **Tablet 断点优化** — 将 Sidebar 默认折叠断点从 `md`(768px) 提升到 `lg`(1024px)，让 768px-1023px 范围默认折叠 sidebar，释放主内容区空间。修改位置: `ChatSidebar.tsx:243` 的 `md:flex` → `lg:flex`，以及 `ChatInterfaceShell.tsx` 中对应的 mobile 判断逻辑（影响 Dimension 3，潜在提升至 5/5）
-3. **SessionContextBar 交互完善** — chip 按钮添加 `transition-colors ease-claude active:scale-[0.98]`，确保所有可交互元素交互一致。修改位置: `SessionContextBar.tsx:23`（影响 Dimension 4，潜在提升至 5/5）
+1. **Tablet 断点优化 (D3 → 5/5)** — 768-1024px 范围默认折叠 sidebar 或缩窄宽度。修改: `ChatSidebar.tsx:379` 将 `md:flex` → `lg:flex` (让 sidebar 在 1024px+ 才展开)，同时调整 `ChatInterfaceRoot.tsx` 中的 mobile/desktop 判断逻辑。当前 tablet 下 sidebar 占 34% 影响阅读体验
+2. **补全交互状态 (D4a → 5/5)** — SessionContextBar chip 添加 `transition-colors ease-claude active:scale-[0.98]` (SessionContextBar.tsx:24), sidebar 导航按钮添加 `focus-visible:ring-2 focus-visible:ring-ck-accent active:scale-[0.98]` (ChatSidebar.tsx:249-261). 影响: 6 个按钮的键盘无障碍和交互一致性
+3. **统一 className 工具 (D5 → 5/5)** — ChatSidebar.tsx 中 4 处 conditional className 从 template literal 改为 `cn()` 调用 (line 288, 311, 332, 379)。当前与其他已使用 cn() 的组件风格不一致
 
 ## 分数汇总
 | Dimension | Score | Weighted |
 |-----------|-------|----------|
-| Claude Web Alignment | 4/5 | 24 |
-| Consistency | 5/5 | 25 |
-| Responsive | 4/5 | 16 |
-| Interaction | 4/5 | 12 |
-| Code Quality | 5/5 | 10 |
-| **维度小计** | | **87** |
+| Claude Web Alignment (35) | 4/5 | 28 |
+| Consistency (15) | 5/5 | 15 |
+| Responsive (15) | 4/5 | 12 |
+| CSS & Interaction (10) | 4/5 | 8 |
+| Functional Verification (15) | 5/5 | 15 |
+| Code Quality (10) | 4/5 | 8 |
+| **维度小计** | | **86** |
 | Penalties | | **0** |
 
-总分: 87/100
+总分: 86/100
