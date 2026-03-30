@@ -1,0 +1,21 @@
+All v5 tasks complete. Summary of changes:
+
+**v5 Iteration — Two main improvements:**
+
+1. **Fixed sidebar session list not populating (D4b blocker)**
+   - Added periodic polling to `useSessionList.ts` (5s empty / 30s active)
+   - Added tab visibility auto-refresh
+   - Reduced post-message refresh delays in `App.tsx` (1000→500ms, 2000→800ms) with 3s backup
+   - Verified: sidebar now shows "Recents" group with sessions after sending messages
+
+2. **Unified border widths to 0.5px (D2 consistency)**
+   - Fixed 20+ files across Core and Edu-Platform layers
+   - All decorative borders now use `border-[0.5px]` instead of `border` (1px)
+   - Covers: ChatSidebar menu, QuickSuggestions, SessionContextBar, CodeBlock, FileCard, MermaidBlock, ScrollToBottom, ApiKeyLogin, ChatInterfaceComposer, WidgetRenderer, 8 widget components, ClassSwitcher
+
+**Verification:** TypeScript ✅ | Vitest (81 tests) ✅ | Desktop screenshot ✅ | Mobile screenshot ✅ | Edu-Platform screenshot ✅
+
+**Deliverables:**
+- Screenshots: `harness-workspace/chat-interface-ui-polish/screenshots/v5/`
+- Changelog: `harness-workspace/chat-interface-ui-polish/changelogs/v5-changelog.md`
+- Progress: `harness-workspace/chat-interface-ui-polish/progress.md` updated
