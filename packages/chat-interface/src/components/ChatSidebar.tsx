@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 export interface SidebarSession {
   sessionId: string
@@ -246,19 +247,19 @@ export function ChatSidebar({
       {/* Navigation section (visible when expanded) — matches Claude Web sidebar */}
       {!collapsed && (
         <div className="px-2.5 py-1 border-b border-ck-b2/50 flex flex-col gap-0.5">
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t1 bg-ck-bg3 transition-colors ease-claude">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t1 bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent">
             <IconChat size={16} />
             <span>Chats</span>
           </button>
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t3 hover:bg-ck-bg3 hover:text-ck-t2 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent cursor-default" aria-disabled="true">
             <IconProjects size={16} />
             <span>Projects</span>
           </button>
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t3 hover:bg-ck-bg3 hover:text-ck-t2 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent cursor-default" aria-disabled="true">
             <IconArtifacts size={16} />
             <span>Artifacts</span>
           </button>
-          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t2 hover:bg-ck-bg3 transition-colors ease-claude">
+          <button className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] text-ck-t3 hover:bg-ck-bg3 hover:text-ck-t2 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent cursor-default" aria-disabled="true">
             <IconCode size={16} />
             <span>Code</span>
           </button>
@@ -285,11 +286,10 @@ export function ChatSidebar({
                   <button
                     key={s.sessionId}
                     onClick={() => onSelectSession(s.sessionId)}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude block min-w-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent ${
-                      isActive
-                        ? 'bg-ck-bg3 text-ck-t1'
-                        : 'text-ck-t2 hover:bg-ck-bg3'
-                    }`}
+                    className={cn(
+                      'w-full text-left px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude block min-w-0 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                      isActive ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t2 hover:bg-ck-bg3',
+                    )}
                     title={sessionTitle(s)}
                   >
                     <div className="truncate leading-snug">{sessionTitle(s)}</div>
@@ -308,11 +308,10 @@ export function ChatSidebar({
             <button
               key={s.sessionId}
               onClick={() => onSelectSession(s.sessionId)}
-              className={`w-full flex items-center justify-center py-2 text-sm transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent ${
-                s.sessionId === currentSessionId
-                  ? 'bg-ck-bg3 text-ck-t1'
-                  : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3'
-              }`}
+              className={cn(
+                'w-full flex items-center justify-center py-2 text-sm transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                s.sessionId === currentSessionId ? 'bg-ck-bg3 text-ck-t1' : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3',
+              )}
               title={sessionTitle(s)}
             >
               <IconChat size={16} />
@@ -329,9 +328,10 @@ export function ChatSidebar({
             aria-label="User menu"
             aria-expanded={menuOpen}
             aria-haspopup="true"
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-ck-bg3 transition-colors ease-claude focus-visible:ring-2 focus-visible:ring-ck-accent ${
-              collapsed ? 'justify-center' : ''
-            }`}
+            className={cn(
+              'w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+              collapsed && 'justify-center',
+            )}
             title={apiKeyHint ?? 'API Key'}
           >
             {/* Avatar circle — matching Claude Web style */}
@@ -361,7 +361,7 @@ export function ChatSidebar({
                   setMenuOpen(false)
                   onLogout()
                 }}
-                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg3 rounded transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
+                className="w-full text-left px-3 py-1.5 text-[13px] text-ck-t2 hover:bg-ck-bg3 rounded-lg transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
               >
                 Log out
               </button>
@@ -376,9 +376,10 @@ export function ChatSidebar({
     <>
       {/* Desktop sidebar */}
       <div
-        className={`hidden md:flex flex-col bg-ck-bg2 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden ${
-          collapsed ? 'w-[52px]' : 'w-[260px]'
-        }`}
+        className={cn(
+          'hidden lg:flex flex-col bg-ck-bg2 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
+          collapsed ? 'w-[52px]' : 'w-[260px]',
+        )}
       >
         {sidebarContent}
       </div>
@@ -388,11 +389,11 @@ export function ChatSidebar({
         <>
           {/* Backdrop */}
           <div
-            className="md:hidden fixed inset-0 bg-black/40 z-40 transition-opacity"
+            className="lg:hidden fixed inset-0 bg-black/40 z-40 transition-opacity"
             onClick={onMobileClose}
           />
           {/* Drawer */}
-          <div className="md:hidden fixed inset-y-0 left-0 w-[280px] bg-ck-bg2 z-50 shadow-xl">
+          <div className="lg:hidden fixed inset-y-0 left-0 w-[280px] bg-ck-bg2 z-50 shadow-xl">
             {sidebarContent}
           </div>
         </>

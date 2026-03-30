@@ -84,7 +84,7 @@ export function ChatInterfaceComposer({
         {/* Bottom bar: attachment placeholder (left) + send/stop (right) */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
           <button
-            className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-lg text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 flex items-center justify-center transition-colors ease-claude pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-lg text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 flex items-center justify-center transition-colors ease-claude active:scale-[0.98] pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
             aria-label="Attach"
             tabIndex={-1}
           >

@@ -21,10 +21,10 @@ export function SessionContextBar({ chips, onChipClick, leading, trailing }: Ses
             onClick={() => onChipClick?.(chip)}
             title={chip.label}
             className={cn(
-              'text-[11px] px-2.5 py-[3px] rounded-xl border max-w-[200px] truncate focus-visible:ring-2 focus-visible:ring-ck-accent',
+              'text-[11px] px-2.5 py-[3px] rounded-xl border max-w-[200px] truncate transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
               chip.active
-                ? 'bg-ck-info-bg text-ck-info-t border-transparent'
-                : 'bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg2/80',
+                ? 'bg-ck-bg3 text-ck-t1 border-ck-b2'
+                : 'bg-ck-bg2 text-ck-t2 border-ck-b1 hover:bg-ck-bg3',
             )}
           >
             {chip.label}
