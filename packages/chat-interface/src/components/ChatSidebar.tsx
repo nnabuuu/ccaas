@@ -291,7 +291,7 @@ export function ChatSidebar({
           <div className="px-2.5 pb-1">
             {!isCollapsed ? (
               <button
-                onClick={onSkillsClick}
+                onClick={() => { onMobileClose?.(); onSkillsClick?.() }}
                 className={cn(
                   'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
                   skillsActive
@@ -304,7 +304,7 @@ export function ChatSidebar({
               </button>
             ) : (
               <button
-                onClick={onSkillsClick}
+                onClick={() => { onMobileClose?.(); onSkillsClick?.() }}
                 className={cn(
                   'w-full flex items-center justify-center py-2 rounded-lg transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
                   skillsActive

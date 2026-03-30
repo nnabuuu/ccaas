@@ -45,7 +45,7 @@ export function SkillPanel({ serverUrl, tenantId, apiKey, open, onClose }: Skill
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-ck-bg2 ck-scrollbar">
       <div className="max-w-[780px] mx-auto px-4 py-5">
-        <div className="bg-ck-bg1 rounded-2xl p-[22px] border border-ck-b1 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="bg-ck-bg1 rounded-2xl p-[22px] border-[0.5px] border-ck-b1 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <PanelHeader tenantId={tenantId} onClose={onClose} />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -99,7 +99,7 @@ function PanelHeader({ tenantId, onClose }: { tenantId: string; onClose: () => v
 
 function TabBar({ activeTab, onTabChange }: { activeTab: TabKey; onTabChange: (t: TabKey) => void }) {
   return (
-    <div role="tablist" className="flex gap-1 mb-[18px] border-b border-ck-b1">
+    <div role="tablist" className="flex gap-1 mb-[18px] border-b-[0.5px] border-ck-b1">
       {TABS.map(tab => (
         <button
           key={tab.key}
@@ -151,7 +151,7 @@ function CardBtn({ children, primary, onClick }: { children: React.ReactNode; pr
     <button
       type="button"
       onClick={onClick}
-      className={`text-[12px] px-3 py-[5px] rounded-ck cursor-pointer border transition-all ${
+      className={`text-[12px] px-3 py-[5px] rounded-ck cursor-pointer border-[0.5px] transition-all ${
         primary
           ? 'bg-ck-t1 text-ck-bg1 border-ck-t1 hover:opacity-90'
           : 'bg-ck-bg1 text-ck-t2 border-ck-b1 hover:bg-ck-bg2'
@@ -172,7 +172,7 @@ function SkillCard({ skill, badgeClass, badgeLabel, actions, showParams }: {
   const configEntries = Object.entries(skill.config ?? {})
 
   return (
-    <div className="bg-ck-bg1 border border-ck-b1 rounded-ck-lg p-4 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-shadow">
+    <div className="bg-ck-bg1 border-[0.5px] border-ck-b1 rounded-ck-lg p-4 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-shadow">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[14px] font-semibold text-ck-t1 truncate mr-2">{skill.name}</span>
         <span className={`text-[11px] px-2.5 py-[3px] rounded-[10px] font-medium shrink-0 ${badgeClass}`}>
@@ -240,7 +240,7 @@ function SolutionTab({ skills, onToggle }: { skills: FullSkill[]; onToggle: (id:
                 actions={
                   <>
                     <CardBtn primary onClick={() => toast.info('参数配置功能开发中')}>配置参数</CardBtn>
-                    <CardBtn onClick={() => onToggle(skill.id)}>停用</CardBtn>
+                    <CardBtn onClick={() => { onToggle(skill.id); toast.success(`已停用「${skill.name}」`) }}>停用</CardBtn>
                   </>
                 }
               />
@@ -262,7 +262,7 @@ function SolutionTab({ skills, onToggle }: { skills: FullSkill[]; onToggle: (id:
                 showParams
                 actions={
                   <>
-                    <CardBtn primary onClick={() => onToggle(skill.id)}>启用</CardBtn>
+                    <CardBtn primary onClick={() => { onToggle(skill.id); toast.success(`已启用「${skill.name}」`) }}>启用</CardBtn>
                     <CardBtn onClick={() => toast.info('预览功能开发中')}>预览</CardBtn>
                   </>
                 }
@@ -300,7 +300,7 @@ function CustomTab({ skills, onSetTab }: { skills: FullSkill[]; onSetTab: (t: Ta
           trailing={
             <button
               onClick={() => toast.info('请在 Jijian 中通过 SKILL.md 创建新 Skill')}
-              className="text-[12px] px-3.5 py-[5px] rounded-ck border border-ck-b1 bg-ck-bg1 text-ck-t1 font-medium hover:bg-ck-bg2 transition-colors"
+              className="text-[12px] px-3.5 py-[5px] rounded-ck border-[0.5px] border-ck-b1 bg-ck-bg1 text-ck-t1 font-medium hover:bg-ck-bg2 transition-colors"
             >
               + 新建 Skill
             </button>

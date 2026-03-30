@@ -11,7 +11,7 @@ vi.mock('@kedge-agentic/react-sdk', () => ({
 }))
 
 vi.mock('sonner', () => ({
-  toast: { info: vi.fn(), error: vi.fn() },
+  toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
 }))
 
 const baseProps = {
