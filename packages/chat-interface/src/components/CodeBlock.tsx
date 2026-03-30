@@ -43,8 +43,8 @@ function CodeBlockInner({ language, children }: { language: string; children: Re
   }
 
   return (
-    <div className="not-prose my-3 rounded-lg overflow-hidden border border-ck-b1 bg-ck-bg3">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-ck-b1 text-xs text-ck-t2">
+    <div className="not-prose my-3 rounded-lg overflow-hidden border-[0.5px] border-ck-b1 bg-ck-bg3">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-ck-b2 text-xs text-ck-t2">
         <span className="font-sans">{language}</span>
         <button
           onClick={handleCopy}

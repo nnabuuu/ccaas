@@ -8,9 +8,14 @@ interface UseSessionListReturn {
   refresh: () => Promise<void>
 }
 
+/** Polling interval when no sessions exist (aggressive to catch first conversation) */
+const EMPTY_POLL_MS = 5_000
+/** Polling interval when sessions exist (relaxed) */
+const ACTIVE_POLL_MS = 30_000
+
 /**
  * Fetch user's session list from the backend.
- * Auto-refreshes on visibilitychange.
+ * Auto-refreshes on visibilitychange and polls periodically.
  */
 export function useSessionList(
   serverUrl: string,
@@ -55,6 +60,17 @@ export function useSessionList(
     refresh()
     return () => abortRef.current?.abort()
   }, [refresh])
+
+  // Periodic polling — faster when sidebar is empty (to catch first conversation)
+  useEffect(() => {
+    const interval = sessions.length === 0 ? EMPTY_POLL_MS : ACTIVE_POLL_MS
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refresh()
+      }
+    }, interval)
+    return () => clearInterval(timer)
+  }, [refresh, sessions.length])
 
   // Auto-refresh on tab focus
   useEffect(() => {

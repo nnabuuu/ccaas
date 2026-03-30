@@ -28,7 +28,7 @@ export function SessionContextBar({ chips, onChipClick, leading, trailing }: Ses
             onClick={() => onChipClick?.(chip)}
             title={chip.label}
             className={cn(
-              'text-[11px] px-2.5 py-[3px] rounded-full border max-w-[200px] truncate transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+              'text-[11px] px-2.5 py-[3px] rounded-full border-[0.5px] max-w-[200px] truncate transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
               chip.active
                 ? 'bg-ck-info-bg text-ck-info-t border-transparent'
                 : 'bg-transparent text-ck-t3 border-ck-b2/50 hover:bg-ck-bg3 hover:text-ck-t2',

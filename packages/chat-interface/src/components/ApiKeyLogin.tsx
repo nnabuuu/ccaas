@@ -90,7 +90,7 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
 
   return (
     <div className="min-h-dvh flex items-center justify-center bg-ck-bg2">
-      <div className="w-full max-w-sm mx-4 p-6 rounded-xl bg-ck-bg1 border border-ck-b1">
+      <div className="w-full max-w-sm mx-4 p-6 rounded-xl bg-ck-bg1 border-[0.5px] border-ck-b1">
         <h1 className="text-lg font-medium text-ck-t1 mb-1">
           开发调试
         </h1>
@@ -116,14 +116,14 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setUsername(e.target.value); if (credError) setCredError('') }}
               placeholder="用户名"
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="w-full px-3 py-2.5 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             <input
               type="password"
               value={password}
               onChange={(e) => { setPassword(e.target.value); if (credError) setCredError('') }}
               placeholder="密码"
-              className="w-full mt-3 px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="w-full mt-3 px-3 py-2.5 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             {credError && (
               <p className="mt-2 text-xs text-ck-danger-t">{credError}</p>
@@ -144,7 +144,7 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
               onChange={(e) => { setApiKeyValue(e.target.value); if (apiKeyError) setApiKeyError('') }}
               placeholder="sk-..."
               autoFocus
-              className="w-full px-3 py-2.5 rounded-lg border border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="w-full px-3 py-2.5 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg1 text-ck-t1 text-sm placeholder:text-ck-t3 outline-none focus-visible:ring-2 focus-visible:ring-ck-accent"
             />
             {apiKeyError && (
               <p className="mt-2 text-xs text-ck-danger-t">{apiKeyError}</p>

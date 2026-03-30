@@ -19,7 +19,7 @@ export function WidgetRenderer({ spec, widgetState, onStateChange, onSubmit }: W
     const Component = widgetRegistry[element.type]
     if (!Component) {
       return (
-        <div className="text-xs text-ck-t3 p-2 border border-ck-b2 rounded-ck">
+        <div className="text-xs text-ck-t3 p-2 border-[0.5px] border-ck-b2 rounded-ck">
           Unknown widget: {element.type}
         </div>
       )

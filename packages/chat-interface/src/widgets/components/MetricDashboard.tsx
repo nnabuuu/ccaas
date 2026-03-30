@@ -35,7 +35,7 @@ export function MetricDashboard({
   const items = props.items
 
   return (
-    <div className="border border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
+    <div className="border-[0.5px] border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
       {/* Metric cards */}
       <div className="grid grid-cols-2 gap-2 mb-4" style={{ gridTemplateColumns: `repeat(${Math.min(metrics.length, 4)}, 1fr)` }}>
         {metrics.map((m, i) => (

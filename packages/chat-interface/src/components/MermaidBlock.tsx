@@ -37,7 +37,7 @@ function MermaidBlockInner({ code }: { code: string }) {
 
   if (error) {
     return (
-      <pre className="not-prose my-3 p-4 rounded-lg border border-ck-b1 bg-ck-bg3 text-sm overflow-x-auto">
+      <pre className="not-prose my-3 p-4 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg3 text-sm overflow-x-auto">
         <code>{code}</code>
       </pre>
     )
@@ -45,7 +45,7 @@ function MermaidBlockInner({ code }: { code: string }) {
 
   return (
     <div
-      className="not-prose my-3 flex justify-center p-4 rounded-lg border border-ck-b1 bg-ck-bg1 overflow-x-auto"
+      className="not-prose my-3 flex justify-center p-4 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg1 overflow-x-auto"
       dangerouslySetInnerHTML={svg ? { __html: svg } : undefined}
     />
   )
@@ -54,7 +54,7 @@ function MermaidBlockInner({ code }: { code: string }) {
 export function MermaidBlock({ children }: { children: React.ReactNode }) {
   const code = extractText(children)
   const fallback = (
-    <pre className="not-prose my-3 p-4 rounded-lg border border-ck-b1 bg-ck-bg3 text-sm overflow-x-auto">
+    <pre className="not-prose my-3 p-4 rounded-lg border-[0.5px] border-ck-b1 bg-ck-bg3 text-sm overflow-x-auto">
       <code>{code}</code>
     </pre>
   )

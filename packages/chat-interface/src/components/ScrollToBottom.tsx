@@ -34,7 +34,7 @@ export function ScrollToBottom({ scrollRef, threshold = 100 }: ScrollToBottomPro
   return (
     <button
       onClick={handleClick}
-      className="absolute bottom-4 left-1/2 -translate-x-1/2 w-11 h-11 md:w-9 md:h-9 rounded-full bg-ck-bg1/80 backdrop-blur-sm border border-ck-b1 text-ck-t2 hover:text-ck-t1 hover:bg-ck-bg1 flex items-center justify-center transition-all ease-claude active:scale-[0.98] z-10 shadow-sm focus-visible:ring-2 focus-visible:ring-ck-accent"
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 w-11 h-11 md:w-9 md:h-9 rounded-full bg-ck-bg1/80 backdrop-blur-sm border-[0.5px] border-ck-b1 text-ck-t2 hover:text-ck-t1 hover:bg-ck-bg1 flex items-center justify-center transition-all ease-claude active:scale-[0.98] z-10 shadow-sm focus-visible:ring-2 focus-visible:ring-ck-accent"
       aria-label="Scroll to bottom"
     >
       <ChevronDown size={18} />

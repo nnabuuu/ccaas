@@ -54,7 +54,7 @@ export function ReviewPanel({
   if (!currentItem) return null
 
   return (
-    <div className="border border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
+    <div className="border-[0.5px] border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
       <div className="flex items-center justify-between mb-3">
         <span className="text-[15px] font-medium">{props.title}</span>
         <span className="text-xs text-ck-t3">
@@ -133,7 +133,7 @@ export function ReviewPanel({
       {allReviewed && (
         <button
           onClick={handleSubmit}
-          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border-[0.5px] border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
         >
           Submit Review
         </button>

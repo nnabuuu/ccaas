@@ -9,8 +9,8 @@ import type { QuickSuggestion } from '@/types/chat'
 import { getUrlParam } from '@/utils/url'
 
 // Delay before refreshing session list after creation/message
-const SESSION_REFRESH_DELAY_MS = 1000
-const FIRST_MESSAGE_REFRESH_DELAY_MS = 2000
+const SESSION_REFRESH_DELAY_MS = 500
+const FIRST_MESSAGE_REFRESH_DELAY_MS = 800
 
 function isValidChip(v: unknown): v is SessionContextChip {
   return typeof v === 'object' && v !== null && typeof (v as Record<string, unknown>).key === 'string' && typeof (v as Record<string, unknown>).label === 'string'
@@ -92,9 +92,10 @@ export default function App() {
     setMobileSidebarOpen(true)
   }, [])
 
-  // After first message is sent, refresh session list
+  // After a message turn completes, refresh session list (primary + backup)
   const handleFirstMessage = useCallback(() => {
     setTimeout(() => refresh(), FIRST_MESSAGE_REFRESH_DELAY_MS)
+    setTimeout(() => refresh(), 3000) // backup refresh
   }, [refresh])
 
   // Key forces full remount on session switch

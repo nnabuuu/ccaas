@@ -302,7 +302,7 @@ export function ChatSidebar({
 
             {/* Popover menu */}
             {menuOpen && (
-              <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border border-ck-b1 shadow-lg z-50">
+              <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border-[0.5px] border-ck-b1 shadow-lg z-50">
                 {apiKeyHint && !isCollapsed && (
                   <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
                     {apiKeyHint}

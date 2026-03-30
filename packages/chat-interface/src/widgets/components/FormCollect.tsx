@@ -31,7 +31,7 @@ export function FormCollect({
             <label className="text-xs text-ck-t2 mb-1 block">{field.label}</label>
             {field.type === 'select' && field.options ? (
               <select
-                className="w-full px-2.5 py-[7px] border border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit"
+                className="w-full px-2.5 py-[7px] border-[0.5px] border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit"
                 value={getValue(field.key, field.default) as string}
                 onChange={(e) => onStateChange(field.key, e.target.value)}
               >
@@ -41,7 +41,7 @@ export function FormCollect({
               </select>
             ) : field.type === 'toggle' ? (
               <button
-                className={`px-3 py-[7px] rounded-ck text-[13px] border transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent ${
+                className={`px-3 py-[7px] rounded-ck text-[13px] border-[0.5px] transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent ${
                   getValue(field.key) === true
                     ? 'bg-ck-success-bg text-ck-success-t border-ck-success-t'
                     : 'bg-transparent text-ck-t2 border-ck-b1'
@@ -53,7 +53,7 @@ export function FormCollect({
             ) : (
               <input
                 type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                className="w-full px-2.5 py-[7px] border border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus-visible:border-ck-info-t"
+                className="w-full px-2.5 py-[7px] border-[0.5px] border-ck-b1 rounded-ck text-[13px] bg-ck-bg1 text-ck-t1 font-inherit outline-none focus-visible:border-ck-info-t"
                 value={getValue(field.key, field.default) as string}
                 onChange={(e) => {
                   const val = field.type === 'number' ? Number(e.target.value) : e.target.value

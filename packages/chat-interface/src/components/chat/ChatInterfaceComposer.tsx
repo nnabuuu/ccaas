@@ -122,7 +122,7 @@ export function ChatInterfaceComposer({
             <button
               key={i}
               onClick={() => handleSuggestionSelect(s)}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-ck-b1 text-[13px] sm:text-[14px] text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1 transition-colors ease-claude cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border-[0.5px] border-ck-b1 text-[13px] sm:text-[14px] text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1 transition-colors ease-claude cursor-pointer active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               <SuggestionIcon index={i} />
               {s.label}

@@ -33,7 +33,7 @@ export function ClassSwitcher({ classes, selected, onSelect }: ClassSwitcherProp
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(prev => !prev)}
-        className="text-[11px] px-2.5 py-[3px] rounded-xl border border-ck-b1 bg-ck-bg2 text-ck-t2 hover:bg-ck-bg2/80"
+        className="text-[11px] px-2.5 py-[3px] rounded-xl border-[0.5px] border-ck-b1 bg-ck-bg2 text-ck-t2 hover:bg-ck-bg2/80 transition-colors ease-claude active:scale-[0.98]"
       >
         切换班级
       </button>

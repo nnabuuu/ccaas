@@ -16,7 +16,7 @@ export function InfoCard({
   const childArray = Children.toArray(children).filter(isValidElement)
 
   return (
-    <div className="border border-ck-b1 rounded-ck-lg bg-ck-bg1 p-[14px] my-1.5">
+    <div className="border-[0.5px] border-ck-b1 rounded-ck-lg bg-ck-bg1 p-[14px] my-1.5">
       <div className="flex items-center justify-between mb-2.5">
         <span className="text-[13px] font-medium">{props.title}</span>
         {props.badge && (

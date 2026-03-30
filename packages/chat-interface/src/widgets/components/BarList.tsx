@@ -78,7 +78,7 @@ export function BarList({
           return (
             <div
               key={item.id}
-              className="flex items-center gap-2.5 px-3 py-2 rounded-ck border border-ck-b1 text-[13px]"
+              className="flex items-center gap-2.5 px-3 py-2 rounded-ck border-[0.5px] border-ck-b1 text-[13px]"
             >
               <span className="w-[140px] shrink-0">{item.label}</span>
               <div className="flex-1 h-[6px] bg-ck-bg2 rounded-[3px] overflow-hidden">

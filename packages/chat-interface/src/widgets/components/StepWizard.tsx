@@ -46,7 +46,7 @@ export function StepWizard({
   const isLastStep = currentStep === totalSteps - 1
 
   return (
-    <div className="border border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
+    <div className="border-[0.5px] border-ck-b1 rounded-ck-lg bg-ck-bg1 p-4">
       <div className="text-[15px] font-medium mb-4">{props.title}</div>
 
       {/* Step indicators */}
@@ -86,7 +86,7 @@ export function StepWizard({
         {currentStep > 0 && (
           <button
             onClick={handlePrev}
-            className="text-[13px] px-4 py-[7px] rounded-ck border border-ck-b1 bg-transparent text-ck-t2 hover:bg-ck-bg2 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="text-[13px] px-4 py-[7px] rounded-ck border-[0.5px] border-ck-b1 bg-transparent text-ck-t2 hover:bg-ck-bg2 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             &larr; Previous
           </button>
@@ -94,14 +94,14 @@ export function StepWizard({
         {isLastStep ? (
           <button
             onClick={handleSubmit}
-            className="text-[13px] px-4 py-[7px] rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="text-[13px] px-4 py-[7px] rounded-ck bg-ck-t1 text-ck-bg1 border-[0.5px] border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             {props.submit_label ?? 'Confirm'}
           </button>
         ) : (
           <button
             onClick={handleNext}
-            className="text-[13px] px-4 py-[7px] rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="text-[13px] px-4 py-[7px] rounded-ck bg-ck-t1 text-ck-bg1 border-[0.5px] border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             Next &rarr;
           </button>

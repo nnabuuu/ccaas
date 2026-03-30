@@ -101,7 +101,7 @@ export function TreeSelector({
   return (
     <div>
       <div className="text-xs text-ck-t2 mb-2">{props.label}</div>
-      <div className="border border-ck-b1 rounded-ck-lg px-3.5 py-2.5 max-h-[240px] overflow-y-auto">
+      <div className="border-[0.5px] border-ck-b1 rounded-ck-lg px-3.5 py-2.5 max-h-[240px] overflow-y-auto">
         {items.map(item => renderNode(item))}
         {items.length === 0 && (
           <div className="text-xs text-ck-t3 py-4 text-center">No items available</div>
