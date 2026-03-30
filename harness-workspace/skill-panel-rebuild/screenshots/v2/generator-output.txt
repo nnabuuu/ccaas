@@ -1,0 +1,25 @@
+## v2 完成总结
+
+### 修复项（针对 v1 eval 扣分点）
+
+| # | 问题 | 影响维度 | 修复 |
+|---|------|---------|------|
+| 1 | **Mobile drawer overlay 阻塞 SkillPanel** | D4 (3/5→5/5) | `ChatSidebar.tsx`: Skills onClick 先调用 `onMobileClose?.()` 关闭 drawer |
+| 2 | **Border 1px → 0.5px** | D1 (4/5→5/5) | `SkillPanel.tsx`: 5处 `border` → `border-[0.5px]` 匹配 HTML 原型 |
+| 3 | **Toggle 无反馈** | D3 (4/5→5/5) | `SkillPanel.tsx`: 启用/停用后 `toast.success()` 确认 |
+
+### 验证结果
+- **TypeScript**: PASS
+- **Tests**: 81 tests, 11 files, all PASS
+- **Core desktop**: SkillPanel 显示正确，0.5px 边框更细腻
+- **Core mobile**: 从 drawer 点击 Skills → drawer 自动关闭 → SkillPanel 完全可交互
+- **Edu-Platform**: 3 个 skills 正确显示，tenant 显示 "edu-platform"
+
+### 截图
+- `screenshots/v2/skill-panel-desktop.png`
+- `screenshots/v2/sidebar-skills-expanded.png`
+- `screenshots/v2/skill-panel-mobile.png`
+- `screenshots/v2/edu-desktop.png`
+
+### Changelog
+- `changelogs/v2-changelog.md`
