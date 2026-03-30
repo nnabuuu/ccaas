@@ -122,7 +122,7 @@ export function ChatCoreProvider({
       // Check for react-sdk contentBlocks containing widget tool calls
       // react-sdk Message exposes contentBlocks (TextBlock | ToolBlock) — access via
       // property check since chat-interface doesn't depend on the exact SDK Message type
-      const rawBlocks = 'contentBlocks' in msg ? (msg as Record<string, unknown>).contentBlocks : undefined
+      const rawBlocks = 'contentBlocks' in msg ? (msg as unknown as Record<string, unknown>).contentBlocks : undefined
       const sdkBlocks = Array.isArray(rawBlocks) && rawBlocks.every(
         (b: unknown) => typeof b === 'object' && b !== null && 'type' in b,
       )

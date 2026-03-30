@@ -27,6 +27,23 @@ export function ChatInterfaceContextBar({
 
   if (children) return <>{children}</>
 
+  const showSkillToggle = !hideSkillToggle
+  // Only pass trailing when there's actual content to render
+  const hasTrailing = !!trailing || showSkillToggle
+  const trailingContent = hasTrailing ? (
+    <>
+      {trailing}
+      {showSkillToggle && (
+        <button
+          onClick={() => setSkillPanelOpen((prev: boolean) => !prev)}
+          className="text-[11px] px-2.5 py-[3px] rounded-full border bg-transparent text-ck-t2 border-ck-b1 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
+        >
+          Skills
+        </button>
+      )}
+    </>
+  ) : undefined
+
   return (
     <SessionContextBar
       chips={chips}
@@ -40,19 +57,7 @@ export function ChatInterfaceContextBar({
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
         </button>
       )}
-      trailing={
-        <>
-          {trailing}
-          {!hideSkillToggle && (
-            <button
-              onClick={() => setSkillPanelOpen((prev: boolean) => !prev)}
-              className="text-[11px] px-2.5 py-[3px] rounded-full border bg-transparent text-ck-t2 border-ck-b1 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
-            >
-              Skills
-            </button>
-          )}
-        </>
-      }
+      trailing={trailingContent}
     />
   )
 }

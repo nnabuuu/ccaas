@@ -21,21 +21,20 @@ export function useSessionList(
   const abortRef = useRef<AbortController | null>(null)
 
   const refresh = useCallback(async () => {
-    if (!apiKey) {
-      setSessions([])
-      return
-    }
-
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
 
     setIsLoading(true)
     try {
-      const url = `${serverUrl}/api/v1/conversations?limit=30`
+      const url = `${serverUrl}/api/v1/sessions?limit=30`
+      const headers: Record<string, string> = {}
+      if (apiKey) {
+        Object.assign(headers, buildAuthHeaders(apiKey))
+      }
       const res = await fetch(url, {
         signal: controller.signal,
-        headers: { ...buildAuthHeaders(apiKey) },
+        headers,
       })
       if (!res.ok) {
         setSessions([])

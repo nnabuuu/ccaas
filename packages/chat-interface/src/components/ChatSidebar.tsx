@@ -274,7 +274,7 @@ export function ChatSidebar({
 
         {/* User menu */}
         {onLogout && (
-          <div className="relative border-t border-ck-b2/30" ref={menuRef}>
+          <div className="relative border-t border-ck-b2/50" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="User menu"
@@ -330,7 +330,7 @@ export function ChatSidebar({
       {/* Desktop sidebar */}
       <div
         className={cn(
-          'hidden lg:flex flex-col bg-ck-bg2 border-r border-ck-b2/30 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
+          'hidden lg:flex flex-col bg-ck-bg2 border-r border-ck-b2/50 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
           collapsed ? 'w-[52px]' : 'w-[260px]',
         )}
       >

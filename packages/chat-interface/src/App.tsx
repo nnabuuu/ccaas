@@ -43,20 +43,19 @@ export default function App() {
     return `sk-...${apiKey.slice(-4)}`
   }, [apiKey])
 
-  // Demo context chips — in production these come from session template
+  // Context chips — Solution layer decides what to show via ?chips= param.
+  // Core does not inject infrastructure params (tenantId) as user-facing context.
   const contextChips = useMemo<SessionContextChip[]>(() => {
     if (chipsParam) {
       try {
         const parsed: unknown = JSON.parse(chipsParam)
         if (Array.isArray(parsed) && parsed.every(isValidChip)) return parsed
       } catch {
-        // fall through to defaults
+        // ignore invalid JSON
       }
     }
-    return [
-      { key: 'tenant', label: tenantId, active: true },
-    ]
-  }, [tenantId, chipsParam])
+    return []
+  }, [chipsParam])
 
   // Demo suggestions — in production these come from session template
   const quickSuggestions = useMemo<QuickSuggestion[]>(() => {
@@ -97,11 +96,6 @@ export default function App() {
   const handleFirstMessage = useCallback(() => {
     setTimeout(() => refresh(), FIRST_MESSAGE_REFRESH_DELAY_MS)
   }, [refresh])
-
-  // No API key → show login
-  if (!apiKey) {
-    return <ApiKeyLogin onLogin={login} serverUrl={serverUrl} />
-  }
 
   // Key forces full remount on session switch
   const chatKey = sessionId ?? 'new'
