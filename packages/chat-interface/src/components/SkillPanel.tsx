@@ -56,7 +56,7 @@ export function SkillPanel({ serverUrl, tenantId, apiKey, open, onClose }: Skill
           ) : (
             <>
               {activeTab === 'solution' && (
-                <SolutionTab skills={solutionSkills} onToggle={toggleSkill} />
+                <SolutionTab skills={solutionSkills} onToggle={toggleSkill} apiKey={apiKey} />
               )}
               {activeTab === 'custom' && (
                 <CustomTab skills={customSkills} onSetTab={setActiveTab} />
@@ -213,9 +213,22 @@ function SkillCard({ skill, badgeClass, badgeLabel, actions, showParams }: {
 
 /* ── Solution Skills tab ─────────────────────────────────────── */
 
-function SolutionTab({ skills, onToggle }: { skills: FullSkill[]; onToggle: (id: string) => void }) {
+function SolutionTab({ skills, onToggle, apiKey }: { skills: FullSkill[]; onToggle: (id: string) => Promise<void>; apiKey?: string }) {
   const enabled = skills.filter(s => s.enabled !== false)
   const disabled = skills.filter(s => s.enabled === false)
+
+  const handleToggle = async (skill: FullSkill, action: '启用' | '停用') => {
+    if (!apiKey) {
+      toast.warning('请先登录才能操作 Skill')
+      return
+    }
+    try {
+      await onToggle(skill.id)
+      toast.success(`已${action}「${skill.name}」`)
+    } catch {
+      toast.error(`${action}失败，请重试`)
+    }
+  }
 
   return (
     <>
@@ -240,7 +253,7 @@ function SolutionTab({ skills, onToggle }: { skills: FullSkill[]; onToggle: (id:
                 actions={
                   <>
                     <CardBtn primary onClick={() => toast.info('参数配置功能开发中')}>配置参数</CardBtn>
-                    <CardBtn onClick={() => { onToggle(skill.id); toast.success(`已停用「${skill.name}」`) }}>停用</CardBtn>
+                    <CardBtn onClick={() => handleToggle(skill, '停用')}>停用</CardBtn>
                   </>
                 }
               />
@@ -262,7 +275,7 @@ function SolutionTab({ skills, onToggle }: { skills: FullSkill[]; onToggle: (id:
                 showParams
                 actions={
                   <>
-                    <CardBtn primary onClick={() => { onToggle(skill.id); toast.success(`已启用「${skill.name}」`) }}>启用</CardBtn>
+                    <CardBtn primary onClick={() => handleToggle(skill, '启用')}>启用</CardBtn>
                     <CardBtn onClick={() => toast.info('预览功能开发中')}>预览</CardBtn>
                   </>
                 }

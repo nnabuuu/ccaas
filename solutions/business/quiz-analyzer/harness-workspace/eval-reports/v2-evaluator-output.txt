@@ -1,0 +1,13 @@
+评估报告已写入 `eval-reports/v2-eval.md`。
+
+**v2 评估结果：92/100**（v1 为 80/100，提升 +12 分）
+
+关键变化：
+- **D3 Quiz Type**: 4→5（options 已去除 A./B./C./D. 前缀）
+- **D4 Solution Steps**: 4→5（每步新增独立 formula 字段）
+- **D5 KP Tags**: 4→5（从 1 个标签增加到 2 个，覆盖度提升）
+- **Penalty**: -6→-3（parsedContent 不再重复写入）
+
+仍需改进：
+1. `quickSummary` 和 `analysisStrategy` 核心字段缺失（D1 仍为 4/5）
+2. `quizAnalysis` 仍被重试 12 次（-3 penalty）

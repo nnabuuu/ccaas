@@ -1,0 +1,20 @@
+[19:01:31] ══════ Loading geometry benchmark ══════
+[19:01:31] Loaded 10 benchmark questions → using 1
+[19:01:31] 
+══════ Running geometry generation (version=v1) ══════
+[19:01:31] CCAAS: http://localhost:3001 | tenant: quiz-analyzer | template: geometry
+[19:01:31] Timeout: 300s per question
+
+[19:01:31] [1/1] Starting geo-001: 在直角三角形ABC中，∠C=90°，AC=3，BC=4。求斜边AB的长度。...
+[19:02:21]   ✓ geo-001 | fields=1/1 | tools=1 | 49.9s
+[19:02:21] 
+══════ Results saved ══════
+[19:02:21] File: /Users/niex/Documents/GitHub/kedge-ccaas/solutions/business/quiz-analyzer/harness-workspace/geometry-figure/results/v1-results.json
+[19:02:21] 
+══════ Summary ══════
+[19:02:21] Questions:        1
+[19:02:21] Avg geo fields:   1.0
+[19:02:21] Full coverage:    1 / 1
+[19:02:21] Errors:           0
+[19:02:21] Avg duration:     49.9s
+[19:02:21] Avg tool calls:   1.0

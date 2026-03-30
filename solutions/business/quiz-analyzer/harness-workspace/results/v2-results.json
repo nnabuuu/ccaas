@@ -1,0 +1,171 @@
+{
+  "version": "v2",
+  "timestamp": "2026-03-30T19:14:34.605Z",
+  "config": {
+    "ccaasUrl": "http://localhost:3001",
+    "tenantId": "quiz-analyzer",
+    "templateName": "complete-analysis",
+    "benchmarkSize": 1,
+    "timeoutMs": 300000
+  },
+  "summary": {
+    "totalQuestions": 1,
+    "avgCoreFieldCount": "8.0",
+    "fullFieldCount": 0,
+    "errorCount": 0,
+    "avgDurationMs": 271691,
+    "avgToolCalls": "34.0"
+  },
+  "results": [
+    {
+      "benchmarkId": "bench-001",
+      "sessionId": "harness-v2-1774897802914-0",
+      "fields": {
+        "quizAnalysis": {
+          "raw": "<tool_use_error>Sibling tool call errored</tool_use_error>"
+        },
+        "parsedContent": {
+          "stem": "判断方程 x² - 4x + 4 = 0 的根的情况",
+          "options": [
+            "两个不相等的实数根",
+            "两个相等的实数根",
+            "没有实数根",
+            "无法判断"
+          ],
+          "correctAnswer": "B",
+          "quizType": "choice"
+        },
+        "correctAnswer": "B",
+        "knowledgePointTags": [
+          {
+            "id": "1998702114322399811",
+            "name": "一元二次方程根的判别式",
+            "confidence": 0.95,
+            "verified": true,
+            "level": 6,
+            "path": [
+              "初中知识点",
+              "数与代数",
+              "方程与不等式",
+              "方程与方程组",
+              "一元二次方程",
+              "一元二次方程根的判别式"
+            ],
+            "source": "both"
+          },
+          {
+            "id": "1998702114322399825",
+            "name": "一元二次方程的根",
+            "confidence": 0.7,
+            "verified": true,
+            "level": 6,
+            "path": [
+              "初中知识点",
+              "数与代数",
+              "方程与不等式",
+              "方程与方程组",
+              "一元二次方程",
+              "一元二次方程的根"
+            ],
+            "source": "question"
+          }
+        ],
+        "thinkingProcess": "# \\u89e3\\u9898\\u601d\\u8def\\n\\n## 1. \\u5ba1\\u9898\\n- \\u8bc6\\u522b\\u9898\\u76ee\\u7c7b\\u578b\\uff1a\\u5224\\u65ad\\u4e00\\u5143\\u4e8c\\u6b21\\u65b9\\u7a0b\\u6839\\u7684\\u60c5\\u51b5\\n- \\u5173\\u952e\\u4fe1\\u606f\\uff1a\\u65b9\\u7a0b x\\u00b2 - 4x + 4 = 0\\n- \\u786e\\u8ba4\\u8fd9\\u662f\\u4e00\\u5143\\u4e8c\\u6b21\\u65b9\\u7a0b\\uff08\\u4e8c\\u6b21\\u9879\\u7cfb\\u6570 a = 1 \\u2260 0\\uff09\\n\\n## 2. \\u786e\\u5b9a\\u89e3\\u9898\\u65b9\\u6cd5\\n- \\u5224\\u65ad\\u6839\\u7684\\u60c5\\u51b5 \\u2192 \\u4f7f\\u7528**\\u5224\\u522b\\u5f0f\\u6cd5**\\n- \\u516c\\u5f0f\\uff1a\\u0394 = b\\u00b2 - 4ac\\n\\n## 3. \\u63d0\\u53d6\\u7cfb\\u6570\\n\\u5bf9\\u6bd4\\u6807\\u51c6\\u5f62\\u5f0f ax\\u00b2 + bx + c = 0\\uff1a\\n- a = 1\\uff08x\\u00b2 \\u7684\\u7cfb\\u6570\\uff09\\n- b = -4\\uff08x \\u7684\\u7cfb\\u6570\\uff0c\\u6ce8\\u610f\\u7b26\\u53f7\\uff01\\uff09\\n- c = 4\\uff08\\u5e38\\u6570\\u9879\\uff09\\n\\n## 4. \\u8ba1\\u7b97\\u5224\\u522b\\u5f0f\\n\\u0394 = b\\u00b2 - 4ac = (-4)\\u00b2 - 4 \\u00d7 1 \\u00d7 4 = 16 - 16 = 0\\n\\n## 5. \\u5224\\u65ad\\u7ed3\\u679c\\n- \\u0394 = 0 \\u2192 \\u65b9\\u7a0b\\u6709\\u4e24\\u4e2a\\u76f8\\u7b49\\u7684\\u5b9e\\u6570\\u6839\\n- \\u5bf9\\u5e94\\u9009\\u9879 B\\n\\n## 6. \\u9a8c\\u8bc1\\uff08\\u53ef\\u9009\\uff09\\n\\u56e0\\u5f0f\\u5206\\u89e3\\uff1ax\\u00b2 - 4x + 4 = (x - 2)\\u00b2 = 0\\n\\u89e3\\u5f97 x = 2\\uff08\\u91cd\\u6839\\uff09\\uff0c\\u4e0e\\u5224\\u522b\\u5f0f\\u7ed3\\u8bba\\u4e00\\u81f4 \\u2705",
+        "solutionSteps": [
+          {
+            "stepNumber": 1,
+            "title": "识别方程类型并提取系数",
+            "description": "对比标准形式 ax² + bx + c = 0，提取各项系数",
+            "formula": "x² - 4x + 4 = 0 → a = 1, b = -4, c = 4"
+          },
+          {
+            "stepNumber": 2,
+            "title": "代入判别式公式计算",
+            "description": "将 a、b、c 的值代入 Δ = b² - 4ac",
+            "formula": "Δ = (-4)² - 4 × 1 × 4 = 16 - 16 = 0"
+          },
+          {
+            "stepNumber": 3,
+            "title": "判断根的情况并选择答案",
+            "description": "根据 Δ 的值判断方程根的情况",
+            "formula": "Δ = 0 → 两个相等的实数根"
+          }
+        ],
+        "commonMistakes": [
+          {
+            "description": "将 b = -4 代入时忘记平方的负号处理，错计算为 b² = -16",
+            "frequency": "high",
+            "knowledgeGaps": [
+              "负数的幂运算"
+            ],
+            "remediation": "牢记：任何数的平方都是非负数。(-4)² = 16，先加括号再平方。"
+          },
+          {
+            "description": "混淆各系数，例如将 c 误认为 -4（把 b 的值当作 c）",
+            "frequency": "medium",
+            "knowledgeGaps": [
+              "一元二次方程的标准形式"
+            ],
+            "remediation": "先写出标准形式对照：ax² + bx + c = 0，逐项对应提取系数。"
+          },
+          {
+            "description": "知道 Δ = 0 但错选“没有实数根”，混淆判别式与根的对应关系",
+            "frequency": "medium",
+            "knowledgeGaps": [
+              "判别式与根的对应关系"
+            ],
+            "remediation": "背诵口诀：“大于零不等根，等于零等根，小于零无实根”"
+          }
+        ],
+        "knowledgeGapAnalysis": "## \\u77e5\\u8bc6\\u7f3a\\u53e3\\u5206\\u6790\\n\\n### 1. \\u5224\\u522b\\u5f0f\\u516c\\u5f0f\\u8bb0\\u5fc6\\u4e0d\\u7262\\n- \\u90e8\\u5206\\u5b66\\u751f\\u8bb0\\u4e0d\\u6e05 \\u0394 = b\\u00b2 - 4ac \\u8fd8\\u662f \\u0394 = b\\u00b2 + 4ac\\n- **\\u5efa\\u8bae**\\uff1a\\u7ed3\\u5408\\u6c42\\u6839\\u516c\\u5f0f x = (-b \\u00b1 \\u221a\\u0394) / 2a \\u4e00\\u8d77\\u7406\\u89e3\\uff0c\\u5224\\u522b\\u5f0f\\u662f\\u6839\\u53f7\\u4e0b\\u7684\\u90e8\\u5206\\n\\n### 2. \\u8d1f\\u6570\\u5e73\\u65b9\\u8fd0\\u7b97\\u9519\\u8bef\\n- \\u5c06 (-4)\\u00b2 \\u8ba1\\u7b97\\u4e3a -16 \\u800c\\u975e 16\\n- \\u8fd9\\u662f\\u4ee3\\u6570\\u8fd0\\u7b97\\u57fa\\u7840\\u95ee\\u9898\\uff0c\\u53cd\\u6620\\u6709\\u7b26\\u53f7\\u8fd0\\u7b97\\u7684\\u77e5\\u8bc6\\u7f3a\\u53e3\\n\\n### 3. \\u5224\\u522b\\u5f0f\\u4e0e\\u6839\\u7684\\u5bf9\\u5e94\\u5173\\u7cfb\\u4e0d\\u6e05\\n- \\u8bb0\\u4f4f\\u4e09\\u79cd\\u60c5\\u51b5\\u7684\\u5bf9\\u5e94\\u5173\\u7cfb\\u662f\\u6838\\u5fc3\\n- **\\u5efa\\u8bae**\\uff1a\\u901a\\u8fc7\\u56fe\\u5f62\\u7406\\u89e3\\uff0c\\u0394 \\u5bf9\\u5e94\\u629b\\u7269\\u7ebf\\u4e0e x \\u8f74\\u7684\\u4ea4\\u70b9\\u6570\\n\\n### 4. \\u7f3a\\u4e4f\\u9a8c\\u8bc1\\u610f\\u8bc6\\n- \\u8ba1\\u7b97\\u5b8c\\u5224\\u522b\\u5f0f\\u540e\\u5e94\\u517b\\u6210\\u901a\\u8fc7\\u56e0\\u5f0f\\u5206\\u89e3\\u6216\\u6c42\\u6839\\u516c\\u5f0f\\u9a8c\\u8bc1\\u7684\\u4e60\\u60ef",
+        "difficulty": 2,
+        "difficultyAssessment": {
+          "score": 2,
+          "pitfalls": [
+            "负数平方运算失误：(-4)² 计算为 -16",
+            "系数提取错误：将 b 和 c 混淆",
+            "判别式结果与根的情况对应关系记混"
+          ],
+          "reasoning": "本题仅涉及单一知识点（判别式），计算量小，且方程系数简单（均为整数），属于基础应用题。"
+        },
+        "timeEstimate": "约 1-2 分钟",
+        "timeAssessment": {
+          "estimate": "约 1-2 分钟",
+          "reasoning": "只需提取系数、代入判别式公式计算、判断结果三步，计算量很小，熟练学生 1 分钟内可完成。"
+        },
+        "relatedQuizzes": []
+      },
+      "coreFieldCount": 8,
+      "totalFieldCount": 13,
+      "duplicateFields": [
+        "quizAnalysis",
+        "parsedContent",
+        "correctAnswer",
+        "quizAnalysis",
+        "quizAnalysis",
+        "quizAnalysis",
+        "quizAnalysis",
+        "knowledgePointTags",
+        "quizAnalysis",
+        "quizAnalysis",
+        "thinkingProcess",
+        "quizAnalysis",
+        "quizAnalysis",
+        "quizAnalysis",
+        "solutionSteps",
+        "quizAnalysis",
+        "quizAnalysis",
+        "commonMistakes",
+        "knowledgeGapAnalysis",
+        "difficulty",
+        "difficultyAssessment",
+        "timeEstimate",
+        "timeAssessment",
+        "relatedQuizzes"
+      ],
+      "totalToolCalls": 34,
+      "durationMs": 271691,
+      "error": null
+    }
+  ]
+}

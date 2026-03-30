@@ -1,0 +1,27 @@
+[18:38:45] ══════ Loading geometry benchmark ══════
+[18:38:45] Loaded 10 benchmark questions → using 2
+[18:38:45] 
+══════ Running geometry generation (version=v3) ══════
+[18:38:45] CCAAS: http://localhost:3001 | tenant: quiz-analyzer | template: geometry
+[18:38:45] Timeout: 300s per question
+
+[18:38:45] [1/2] Starting geo-001: 在直角三角形ABC中，∠C=90°，AC=3，BC=4。求斜边AB的长度。...
+[18:38:45]   ⚠ geo-001: HTTP 429, retrying in 5s (attempt 1/2)...
+[18:38:50]   ⚠ geo-001: HTTP 429, retrying in 10s (attempt 2/2)...
+[18:39:00]   ✗ geo-001: HTTP 429
+[18:39:00] [2/2] Starting geo-002: 在等腰三角形ABC中，AB=AC=5，BC=6，AD⊥BC于点D。求AD的长度。...
+[18:39:00]   (waiting 3s before next request...)
+[18:39:03]   ⚠ geo-002: HTTP 429, retrying in 5s (attempt 1/2)...
+[18:39:08]   ⚠ geo-002: HTTP 429, retrying in 10s (attempt 2/2)...
+[18:39:18]   ✗ geo-002: HTTP 429
+[18:39:18] 
+══════ Results saved ══════
+[18:39:18] File: /Users/niex/Documents/GitHub/kedge-ccaas/solutions/business/quiz-analyzer/harness-workspace/geometry-figure/results/v3-results.json
+[18:39:18] 
+══════ Summary ══════
+[18:39:18] Questions:        2
+[18:39:18] Avg geo fields:   0.0
+[18:39:18] Full coverage:    0 / 2
+[18:39:18] Errors:           2
+[18:39:18] Avg duration:     16.5s
+[18:39:18] Avg tool calls:   0.0

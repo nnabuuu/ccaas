@@ -1,0 +1,19 @@
+## v3 Generator 完成
+
+### 问题诊断
+v1/v2 均因 **HTTP 429 速率限制**零产出（32/100），prompt 改进从未被实际测试。
+
+### v3 改动（6 处，均在 30% 限额内）
+
+**Problem SKILL.md** (+55 lines, 21%):
+1. **构造 vs Hardcode 对比** (D7) — ❌/✅ 对比展示 perpendicularpoint 正确用法
+2. **5 层定义顺序模型** (D2) — 细化为 base points → polygon → helpers → derived → segments/angles + "铁律"
+3. **标签偏移指南表** (D5) — 6 种位置的标准 offset 值
+4. **Example 1: 直角三角形+高** (D3, D7) — 完整 JSON 覆盖 geo-001/002，展示 perpendicularpoint + 直角标记
+
+**Solution SKILL.md** (+23 lines, 10%):
+5. **Example 2: 顺时针旋转** (D3, D6) — 覆盖 geo-010，展示 clockwise expr 公式
+6. **强化双输出清单** (D1, D6) — 分步格式明确静态图 + 动态图
+
+### 预期效果
+假设 HTTP 429 修复后：**75-85 分**（目标 85+）。

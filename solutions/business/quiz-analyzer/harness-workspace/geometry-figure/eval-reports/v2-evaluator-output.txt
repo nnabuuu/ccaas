@@ -1,0 +1,10 @@
+评估报告已写入 `eval-reports/v2-eval.md`。
+
+**v2 评估结果总结**:
+
+- **总分: 32/100**（未通过，Pass 线为 70）
+- 两道测试题均因 **HTTP 429 速率限制**完全失败，零 geometry 输出
+- 仅测试了 2/10 题（覆盖率 20%），动画题等关键类型未被覆盖
+- D6 Animation 得 15 分是因为两道非动画题自动满分，不反映真实能力
+
+**核心瓶颈**: 不是 SKILL.md 的 prompt 质量问题，而是 test-runner 的 HTTP 429 速率限制。需要先在 `test-runner.mjs` 中添加请求间隔/重试机制，并将 benchmarkSize 提升到 10，才能有效评估 figure 质量。

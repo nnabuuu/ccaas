@@ -1,0 +1,41 @@
+{
+  "version": "v3",
+  "timestamp": "2026-03-30T18:39:18.537Z",
+  "config": {
+    "ccaasUrl": "http://localhost:3001",
+    "tenantId": "quiz-analyzer",
+    "templateName": "geometry",
+    "benchmarkSize": 2,
+    "timeoutMs": 300000
+  },
+  "summary": {
+    "totalQuestions": 2,
+    "avgGeoFieldCount": "0.0",
+    "fullFieldCount": 0,
+    "errorCount": 2,
+    "avgDurationMs": 16544,
+    "avgToolCalls": "0.0"
+  },
+  "results": [
+    {
+      "benchmarkId": "geo-001",
+      "sessionId": "geo-harness-v3-1774895925450-0",
+      "fields": {},
+      "geoFieldCount": 0,
+      "duplicateFields": [],
+      "totalToolCalls": 0,
+      "durationMs": 15053,
+      "error": "HTTP 429"
+    },
+    {
+      "benchmarkId": "geo-002",
+      "sessionId": "geo-harness-v3-1774895925450-1",
+      "fields": {},
+      "geoFieldCount": 0,
+      "duplicateFields": [],
+      "totalToolCalls": 0,
+      "durationMs": 18034,
+      "error": "HTTP 429"
+    }
+  ]
+}

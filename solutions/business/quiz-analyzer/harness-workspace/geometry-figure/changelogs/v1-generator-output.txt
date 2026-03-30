@@ -1,0 +1,22 @@
+**Line count check:**
+- Problem SKILL.md: 322 → 348 (+26 lines, ~8% change) ✅ within 30%
+- Solution SKILL.md: 252 → 264 (+12 lines, ~5% change) ✅ within 30%
+
+## V1 完成总结
+
+### 修改内容
+
+**geometry-problem-figure/SKILL.md** (+26 行):
+1. **Step 4 开头新增"三条铁律"** — highlight:false、fillColor:none、borders strokeColor:none 从 checklist 提升为最显眼位置
+2. **新增 Circle/Ellipse common patterns** — 明确展示 fillColor:none 写法
+3. **ID 引用验证算法升级** — 从描述性改为逐元素遍历算法，含 polygon parent 类型检查
+4. **新增 3 条常见错误** — circle/fillColor、highlight:false、前向引用
+
+**geometry-solution-figure/SKILL.md** (+12 行):
+1. **ID 引用验证算法同步升级**
+2. **自检第二步重构为"三条铁律 + 通用规则"结构**
+3. **新增 3 条常见错误**
+
+### 预期影响
+
+主攻 D2 (Refs, 20pts) 和 D5 (Visual, 10pts)，间接提升 D1 (Schema, 15pts)。首轮基线预期 65~75 分。

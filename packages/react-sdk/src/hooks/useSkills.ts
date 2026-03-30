@@ -81,6 +81,7 @@ export function useSkills(options: UseSkillsOptions): UseSkillsReturn {
       setSkills(prev => prev.map(s => s.id === skillId ? updatedSkill : s))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to toggle skill')
+      throw err
     }
   }, [serverUrl, tenantId, apiKey])
 

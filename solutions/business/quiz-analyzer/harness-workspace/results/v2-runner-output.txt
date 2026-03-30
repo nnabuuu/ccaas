@@ -1,0 +1,22 @@
+[19:10:02] ══════ Loading benchmark ══════
+[19:10:02] Loaded 12 benchmark questions → using 1
+[19:10:02] 
+══════ Running complete-analysis (version=v2) ══════
+[19:10:02] CCAAS: http://localhost:3001 | tenant: quiz-analyzer | template: complete-analysis
+[19:10:02] Timeout: 300s per question
+
+[19:10:02] [1/1] Starting bench-001: 判断方程 x² - 4x + 4 = 0 的根的情况（  ）
+A. 两个不相等的...
+[19:14:34]   8/10 bench-001 | fields=8/10 | tools=34 | 271.7s
+[19:14:34]      missing: quickSummary, analysisStrategy
+[19:14:34] 
+══════ Results saved ══════
+[19:14:34] File: /Users/niex/Documents/GitHub/kedge-ccaas/solutions/business/quiz-analyzer/harness-workspace/results/v2-results.json
+[19:14:34] 
+══════ Summary ══════
+[19:14:34] Questions:        1
+[19:14:34] Avg core fields:  8.0 / 10
+[19:14:34] Full (10/10):     0 / 1
+[19:14:34] Errors:           0
+[19:14:34] Avg duration:     271.7s
+[19:14:34] Avg tool calls:   34.0
