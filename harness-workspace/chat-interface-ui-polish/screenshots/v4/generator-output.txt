@@ -1,0 +1,20 @@
+V4 iteration complete. Here's the summary:
+
+## V4 Changes
+
+**6 files modified** across core chat-interface and edu-platform:
+
+| File | Change | Dimension |
+|------|--------|-----------|
+| `SessionContextBar.tsx` | Fixed empty bar on desktop + info-color active chips | D1 |
+| `ChatInterfaceContextBar.tsx` | Fixed trailing prop truthiness (empty Fragment) | D1/D4b |
+| `ChatSidebar.tsx` | Border opacity 30% → 50% for better visibility | D4a |
+| `QuickSuggestions.tsx` | Full design-system compliance + mobile touch targets | D2/D3 |
+| `ChatCoreContext.tsx` | Fixed TS2352 build error | D5 |
+| `LoginPage.tsx` (edu) | Full migration from inline styles to ck- tokens | D5/Edu |
+
+**Verification**: 0 TS errors, 81 tests pass, lib build succeeds.
+
+**Screenshots** (4 total): `screenshots/v4/{desktop-main,mobile-main,edu-desktop,edu-login}.png`
+
+**Changelog**: `changelogs/v4-changelog.md`

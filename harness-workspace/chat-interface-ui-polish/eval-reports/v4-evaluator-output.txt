@@ -1,0 +1,27 @@
+## Evaluation Complete
+
+**总分: 84/100** (Target: 85)
+
+Report written to: `harness-workspace/chat-interface-ui-polish/eval-reports/v4-eval.md`
+
+### Key findings:
+
+| Dimension | Score | Weighted |
+|-----------|-------|----------|
+| Design System Alignment (35) | 4/5 | 28 |
+| Cross-Component Consistency (15) | 4/5 | 12 |
+| Responsive & Mobile (15) | 4/5 | 12 |
+| CSS & Interaction Polish (10) | 4/5 | 8 |
+| Functional Verification (15) | 4/5 | 12 |
+| Code Quality (10) | 4/5 | 8 |
+| **Subtotal** | | **80** |
+| Penalties | | **0** |
+| Edu-Platform Bonus | | **+4** |
+
+### Top 3 blockers to reaching 85+:
+
+1. **Sidebar session listing broken** — "No chat history yet" despite active messages. Fixing this unblocks D4b → 5/5 (+3 points)
+2. **Session grouping not verifiable** — needs sessions to display groups (Today/Recents). Unblocks D1 → 5/5 (+7 points)
+3. **Border width inconsistency** — some components use 1px vs design system's preferred thinner borders
+
+The codebase is technically excellent (zero penalties, zero hardcoded colors, zero !important, clean token system). The gap to target is purely functional (sidebar sessions) rather than visual/code quality.

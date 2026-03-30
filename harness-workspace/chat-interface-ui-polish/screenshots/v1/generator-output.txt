@@ -1,27 +1,21 @@
-All tasks complete. Here's a summary of what was accomplished in v1:
+## Summary
 
-## V1 Summary
+All tasks complete. Here's what was done in this v1 iteration (v4 criteria):
 
-**Key Changes:**
+### Key Changes
+1. **Removed disabled navigation items** (Projects/Artifacts/Code) from sidebar — these were Claude Web-specific features that don't belong to this product. Clears the D1 hard cap (was max 4/5).
 
-1. **ChatSidebar** — Major structural rewrite matching Claude Web:
-   - Added search input for filtering sessions
-   - Added "Chats" navigation section with icon
-   - Sessions grouped into Starred / Recents / Yesterday / Previous 7 Days / Earlier
-   - Improved user profile with accent-tinted avatar
-   - Clean SVG icons throughout (replaced HTML entities)
-   - Removed border-r for seamless sidebar-to-content transition
+2. **Improved product feature mock data** in App.tsx:
+   - Context chips: `["default"]` → `["default", "数学", "高一"]`
+   - Quick suggestions: generic labels → education-domain content `["备课助手", "出题组卷", "学情分析", "教学设计"]`
 
-2. **Empty State** — Now reads "What shall we think through?" (matching Claude Web), larger serif font (28/32px), tracking-tight
+3. **Unified interaction consistency** across all widget components — added `ease-claude` easing + `active:scale-[0.98]` press feedback to buttons in StepWizard, ReviewPanel, FormCollect, ActionRow, and ApiKeyLogin.
 
-3. **Composer** — Placeholder "How can I help you today?", proper SVG arrow for send button, pill-shaped quick suggestions (rounded-full)
+4. **Minor spacing refinements** — empty state bottom padding, sidebar border.
 
-4. **Context Bar** — Subtler borders (50% opacity), proper SVG hamburger menu, "Skills" pill button
-
-5. **Consistency** — All labels in English matching Claude Web, CSS variables throughout, ease-claude transitions
-
-**Verification:**
-- TypeScript: passes
-- Tests: 76/76 pass
-- Browser: Desktop (1440x900) and Mobile (375x812) screenshots captured
-- Functional: Message send/receive works, action toolbar appears, sidebar renders correctly
+### Verification Results
+- TypeScript: ✅ Clean
+- Tests: ✅ 76/76 pass
+- Desktop (1440×900): ✅ Screenshots saved
+- Mobile (375×812): ✅ Screenshots saved
+- Functional: ✅ Login, send message, receive response, sidebar update, collapse/expand toggle all working
