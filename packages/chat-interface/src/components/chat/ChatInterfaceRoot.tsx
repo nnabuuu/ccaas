@@ -24,6 +24,9 @@ export interface ChatInterfaceRootProps {
   mcpBridge?: McpBridge
   // Callbacks
   onMessageSent?: () => void
+  // Skill panel controlled state
+  skillPanelOpen?: boolean
+  onSkillPanelChange?: (open: boolean) => void
   // Layout
   className?: string
   children: ReactNode
@@ -43,6 +46,8 @@ export function ChatInterfaceRoot({
   customBlockRenderers,
   mcpBridge,
   onMessageSent,
+  skillPanelOpen,
+  onSkillPanelChange,
   className,
   children,
 }: ChatInterfaceRootProps) {
@@ -63,6 +68,8 @@ export function ChatInterfaceRoot({
         sessionId={sessionId}
         apiKey={apiKey}
         onMessageSent={onMessageSent}
+        skillPanelOpen={skillPanelOpen}
+        onSkillPanelChange={onSkillPanelChange}
       >
         <div className={className ?? 'w-full h-full flex flex-col'}>
           <div className="flex-1 flex flex-col overflow-hidden bg-ck-bg2">

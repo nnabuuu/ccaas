@@ -62,6 +62,10 @@ export interface ChatCoreProviderProps {
   sessionId?: string
   apiKey?: string
   onMessageSent?: () => void
+  /** External controlled skill panel open state */
+  skillPanelOpen?: boolean
+  /** External callback when skill panel open state changes */
+  onSkillPanelChange?: (open: boolean) => void
   children: ReactNode
 }
 
@@ -77,12 +81,25 @@ export function ChatCoreProvider({
   sessionId: externalSessionId,
   apiKey,
   onMessageSent,
+  skillPanelOpen: externalSkillPanelOpen,
+  onSkillPanelChange,
   children,
 }: ChatCoreProviderProps) {
   const [input, setInput] = useState('')
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [widgetStates, setWidgetStates] = useState<Record<string, Record<string, unknown>>>({})
-  const [skillPanelOpen, setSkillPanelOpen] = useState(false)
+  const [internalSkillPanelOpen, setInternalSkillPanelOpen] = useState(false)
+
+  // Controlled component pattern: external prop takes priority
+  const skillPanelOpen = externalSkillPanelOpen ?? internalSkillPanelOpen
+  const setSkillPanelOpen = useCallback((open: boolean | ((prev: boolean) => boolean)) => {
+    const newValue = typeof open === 'function' ? open(externalSkillPanelOpen ?? internalSkillPanelOpen) : open
+    if (onSkillPanelChange) {
+      onSkillPanelChange(newValue)
+    } else {
+      setInternalSkillPanelOpen(newValue)
+    }
+  }, [onSkillPanelChange, externalSkillPanelOpen, internalSkillPanelOpen])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)

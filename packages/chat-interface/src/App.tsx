@@ -33,6 +33,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sessionId, setSessionId] = useState<string | undefined>(undefined)
+  const [skillPanelOpen, setSkillPanelOpen] = useState(false)
 
   const { sessions, refresh } = useSessionList(serverUrl, apiKey)
 
@@ -114,6 +115,8 @@ export default function App() {
         onMobileClose={() => setMobileSidebarOpen(false)}
         onLogout={logout}
         apiKeyHint={apiKeyHint}
+        onSkillsClick={() => setSkillPanelOpen(true)}
+        skillsActive={skillPanelOpen}
       />
       <div className="flex-1 flex flex-col min-w-0">
         <ChatInterface
@@ -129,6 +132,8 @@ export default function App() {
           onMenuClick={handleMenuClick}
           onMessageSent={handleFirstMessage}
           hideSkillToggle
+          skillPanelOpen={skillPanelOpen}
+          onSkillPanelChange={setSkillPanelOpen}
         />
       </div>
     </div>

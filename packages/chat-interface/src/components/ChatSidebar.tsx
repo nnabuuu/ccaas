@@ -20,6 +20,10 @@ export interface ChatSidebarProps {
   onMobileClose?: () => void
   onLogout?: () => void
   apiKeyHint?: string
+  /** Callback when Skills entry is clicked */
+  onSkillsClick?: () => void
+  /** Whether Skills panel is currently active */
+  skillsActive?: boolean
 }
 
 /** Group sessions by relative date */
@@ -109,6 +113,14 @@ function IconChevron({ direction = 'up', size = 12 }: { direction?: 'up' | 'down
   )
 }
 
+function IconPuzzle({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.315 8.685a.98.98 0 0 1 .837-.276c.47.07.802.48.968.925a2.501 2.501 0 1 0 3.214-3.214c-.446-.166-.855-.497-.925-.968a.979.979 0 0 1 .276-.837l1.61-1.61a2.404 2.404 0 0 1 1.705-.707c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z" />
+    </svg>
+  )
+}
+
 
 export function ChatSidebar({
   sessions,
@@ -121,6 +133,8 @@ export function ChatSidebar({
   onMobileClose,
   onLogout,
   apiKeyHint,
+  onSkillsClick,
+  skillsActive,
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -269,6 +283,39 @@ export function ChatSidebar({
                 <IconChat size={16} />
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Skills entry */}
+        {onSkillsClick && (
+          <div className="px-2.5 pb-1">
+            {!isCollapsed ? (
+              <button
+                onClick={onSkillsClick}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[14px] transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                  skillsActive
+                    ? 'bg-ck-bg3 text-ck-t1 font-medium'
+                    : 'text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1'
+                )}
+              >
+                <IconPuzzle size={16} />
+                <span>Skills</span>
+              </button>
+            ) : (
+              <button
+                onClick={onSkillsClick}
+                className={cn(
+                  'w-full flex items-center justify-center py-2 rounded-lg transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+                  skillsActive
+                    ? 'bg-ck-bg3 text-ck-t1'
+                    : 'text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3'
+                )}
+                title="Skills"
+              >
+                <IconPuzzle size={16} />
+              </button>
+            )}
           </div>
         )}
 

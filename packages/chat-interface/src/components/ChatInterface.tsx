@@ -36,6 +36,10 @@ export interface ChatInterfaceProps {
   contextBarTrailing?: React.ReactNode
   /** Hide the built-in skill toggle button in the context bar */
   hideSkillToggle?: boolean
+  /** External controlled skill panel open state */
+  skillPanelOpen?: boolean
+  /** External callback when skill panel open state changes */
+  onSkillPanelChange?: (open: boolean) => void
 }
 
 export function ChatInterface({
@@ -57,6 +61,8 @@ export function ChatInterface({
   onMessageSent,
   contextBarTrailing,
   hideSkillToggle,
+  skillPanelOpen,
+  onSkillPanelChange,
 }: ChatInterfaceProps) {
   return (
     <ChatInterfaceRoot
@@ -73,19 +79,26 @@ export function ChatInterface({
       sessionId={sessionId}
       apiKey={apiKey}
       onMessageSent={onMessageSent}
+      skillPanelOpen={skillPanelOpen}
+      onSkillPanelChange={onSkillPanelChange}
     >
       <ChatInterfaceToaster />
-      <ChatInterfaceContextBar
-        chips={contextChips}
-        onChipClick={onChipClick}
-        onMenuClick={onMenuClick}
-        trailing={contextBarTrailing}
-        hideSkillToggle={hideSkillToggle}
-      />
-      <ChatInterfaceSkillPanel />
-      <ChatInterfaceMessages />
-      <ChatInterfaceQuickSuggestions />
-      <ChatInterfaceComposer />
+      {skillPanelOpen ? (
+        <ChatInterfaceSkillPanel />
+      ) : (
+        <>
+          <ChatInterfaceContextBar
+            chips={contextChips}
+            onChipClick={onChipClick}
+            onMenuClick={onMenuClick}
+            trailing={contextBarTrailing}
+            hideSkillToggle={hideSkillToggle}
+          />
+          <ChatInterfaceMessages />
+          <ChatInterfaceQuickSuggestions />
+          <ChatInterfaceComposer />
+        </>
+      )}
     </ChatInterfaceRoot>
   )
 }
