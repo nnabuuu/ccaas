@@ -10,8 +10,8 @@ export function ChatInterfaceEmptyState({
   children,
 }: ChatInterfaceEmptyStateProps) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-end pb-8">
-      <h1 className="text-[28px] sm:text-[32px] font-serif text-ck-t1 flex items-center gap-3 tracking-tight">
+    <div className="flex-1 flex flex-col items-center justify-end pb-10">
+      <h1 className="text-[28px] sm:text-[32px] font-serif text-ck-t1 flex items-center gap-3 tracking-tight leading-tight">
         <svg
           className="w-7 h-7 sm:w-8 sm:h-8 text-ck-accent animate-ck-sparkle shrink-0"
           viewBox="0 0 24 24"

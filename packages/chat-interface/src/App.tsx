@@ -55,6 +55,8 @@ export default function App() {
     }
     return [
       { key: 'tenant', label: tenantId, active: true },
+      { key: 'subject', label: '数学', active: false },
+      { key: 'grade', label: '高一', active: false },
     ]
   }, [tenantId, chipsParam])
 
@@ -69,10 +71,10 @@ export default function App() {
       }
     }
     return [
-      { label: '总结', prompt: '总结当前进展', category: 'general', score: 10 },
-      { label: '分析', prompt: '分析当前状态', category: 'general', score: 8 },
-      { label: '规划', prompt: '帮我做计划', category: 'general', score: 6 },
-      { label: '帮助', prompt: '有哪些功能可以用？', category: 'general', score: 4 },
+      { label: '备课助手', prompt: '帮我准备一节高一数学课', category: 'teach', score: 10 },
+      { label: '出题组卷', prompt: '生成一套数学测验题', category: 'teach', score: 8 },
+      { label: '学情分析', prompt: '分析班级最近的考试成绩', category: 'analyze', score: 6 },
+      { label: '教学设计', prompt: '设计一个互动教学活动', category: 'teach', score: 4 },
     ]
   }, [suggestionsParam])
 

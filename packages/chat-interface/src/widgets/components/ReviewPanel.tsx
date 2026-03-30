@@ -93,7 +93,7 @@ export function ReviewPanel({
             key={item.id}
             onClick={() => setCurrentIndex(i)}
             className={cn(
-              'w-7 h-7 rounded text-[11px] border transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent',
+              'w-7 h-7 rounded text-[11px] border transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
               i === currentIndex
                 ? 'bg-ck-t1 text-ck-bg1 border-ck-t1'
                 : decisions[item.id]
@@ -115,7 +115,7 @@ export function ReviewPanel({
               key={action.key}
               onClick={() => handleAction(currentItem.id, action.key)}
               className={cn(
-                'text-xs px-3 py-[5px] rounded-ck border transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent',
+                'text-xs px-3 py-[5px] rounded-ck border transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
                 isSelected
                   ? 'bg-ck-t1 text-ck-bg1 border-ck-t1'
                   : action.style === 'danger'
@@ -133,7 +133,7 @@ export function ReviewPanel({
       {allReviewed && (
         <button
           onClick={handleSubmit}
-          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
+          className="mt-4 w-full text-[13px] py-2 rounded-ck bg-ck-t1 text-ck-bg1 border border-ck-t1 transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
         >
           Submit Review
         </button>

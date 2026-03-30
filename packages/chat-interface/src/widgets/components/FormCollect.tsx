@@ -41,7 +41,7 @@ export function FormCollect({
               </select>
             ) : field.type === 'toggle' ? (
               <button
-                className={`px-3 py-[7px] rounded-ck text-[13px] border transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent ${
+                className={`px-3 py-[7px] rounded-ck text-[13px] border transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent ${
                   getValue(field.key) === true
                     ? 'bg-ck-success-bg text-ck-success-t border-ck-success-t'
                     : 'bg-transparent text-ck-t2 border-ck-b1'

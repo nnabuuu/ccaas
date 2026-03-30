@@ -131,7 +131,7 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
             <button
               type="submit"
               disabled={loading}
-              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity ease-claude disabled:opacity-50 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               {loading ? '登录中...' : '登录'}
             </button>
@@ -152,7 +152,7 @@ export function ApiKeyLogin({ onLogin, serverUrl }: ApiKeyLoginProps) {
             <button
               type="submit"
               disabled={!apiKeyValue.trim()}
-              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="mt-4 w-full py-2.5 rounded-lg text-sm font-medium bg-ck-t1 text-ck-bg1 hover:opacity-90 transition-opacity ease-claude disabled:opacity-50 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
             >
               连接
             </button>
