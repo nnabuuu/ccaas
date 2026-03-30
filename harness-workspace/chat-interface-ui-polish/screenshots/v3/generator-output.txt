@@ -1,0 +1,17 @@
+## v3 Summary
+
+All tasks complete. Changes made targeting the 3 dimensions that lost points in v2 eval:
+
+| Change | Files | Target Dimension | Expected Impact |
+|--------|-------|-----------------|-----------------|
+| Sidebar `md:flex` → `lg:flex` | ChatSidebar, ContextBar | D3 (Responsive) | 12→15 (+3) |
+| `active:scale-[0.98]` + `focus-visible:ring` on 10+ buttons | ChatSidebar, SessionContextBar, ContextBar, Composer | D4a (Polish) | 8→10 (+2) |
+| 4x template literal → `cn()` + import | ChatSidebar | D5 (Code Quality) | 8→10 (+2) |
+| Active chip `bg-ck-info-bg` → `bg-ck-bg3` + nav `text-ck-t3`/`aria-disabled` | SessionContextBar, ChatSidebar | D1 (Alignment) | 28→29+ |
+
+Verification:
+- TypeScript: 0 errors
+- Tests: 76/76 passed
+- Desktop 1440x900: sidebar visible, warm neutral chip, muted nav placeholders
+- Tablet 768x1024: sidebar hidden, hamburger opens overlay drawer
+- Mobile 375x812: full-width chat, hamburger visible
