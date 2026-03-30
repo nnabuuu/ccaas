@@ -14,7 +14,7 @@ export function QuickSuggestions({ suggestions, onSelect }: QuickSuggestionsProp
         <button
           key={i}
           onClick={() => onSelect(s)}
-          className="text-[11px] px-2.5 py-2 rounded-xl border border-ck-b1 bg-transparent text-ck-t2 hover:bg-ck-bg2 font-inherit cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-ck-accent"
+          className="text-[12px] px-3 py-1.5 rounded-full border border-ck-b1 bg-transparent text-ck-t2 hover:bg-ck-bg3 hover:text-ck-t1 font-inherit cursor-pointer transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent"
         >
           {s.label}
         </button>

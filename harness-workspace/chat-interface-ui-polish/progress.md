@@ -8,3 +8,6 @@
 | Version | Timestamp | Score | D1 Align | D2 Consist | D3 Mobile | D4 Interact | D5 Code | Penalties | Top Issue |
 |---------|-----------|-------|----------|------------|-----------|-------------|---------|-----------|-----------|
 | v0 | (init) | - | - | - | - | - | - | - | Baseline not yet evaluated |
+| v1 | 2026-03-30 03:26 | 81 | 3/5 (18) | 5/5 (25) | 4/5 (16) | 4/5 (12) | 5/5 (10) | 0 | Quick Suggestions 样式对齐 Claude Web |
+| v2 | 2026-03-30 03:47 | (pending eval) | ? | ? | ? | ? | ? | ? | Quick Suggestions icon+text 按钮 + SVG sparkle + Composer 附件按钮 |
+| v2 | 2026-03-30 03:40 | 87 | ? | ? | ? | ? | ? | 0 |  **Quick Suggestion 独特 icon** — 为每个按钮设计差异化 icon（总� |

@@ -12,7 +12,7 @@ export function SessionContextBar({ chips, onChipClick, leading, trailing }: Ses
   if (chips.length === 0 && !leading) return null
 
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 border-b border-ck-b1 bg-ck-bg1">
+    <div className="flex items-center justify-between px-4 py-1.5 border-b border-ck-b2/50 bg-ck-bg2">
       <div className="flex gap-1.5 items-center">
         {leading}
         {chips.map((chip) => (

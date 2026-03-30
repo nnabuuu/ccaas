@@ -1,0 +1,24 @@
+## v1 Summary
+
+All tasks complete. Here's what was done in this first iteration:
+
+**Key changes (10 files modified):**
+
+| Change | Before | After |
+|--------|--------|-------|
+| User bubble bg | `bg-ck-bg3` (gray) | `bg-ck-user-bubble` (warm taupe #DDD9CE) |
+| User bubble radius | `rounded-[16px_16px_4px_16px]` | `rounded-xl` (uniform 12px) |
+| User bubble text | `text-sm leading-[1.5]` | `text-base leading-[1.4]` |
+| Send button | `rounded-full bg-ck-t1` | `rounded-lg bg-ck-accent` (terracotta) |
+| Empty state icon | `text-orange-400/90` (hardcoded) | `text-ck-accent` (CSS variable) |
+| Context bar | `bg-ck-bg1 border-ck-b1` | `bg-ck-bg2 border-ck-b2` (subtle) |
+| Sidebar bg | `bg-ck-bg1` | `bg-ck-bg2` (blends with page) |
+| Prose paragraph | `line-height: 1.5` | `line-height: normal` (24px) |
+| Inline code border | `1px` | `0.5px` |
+| Button feedback | Missing on most | `active:scale-[0.98] ease-claude` everywhere |
+
+**Verification:**
+- TypeScript: 0 errors
+- Tests: 76/76 passed
+- Screenshots saved: `screenshots/v1/desktop-main.png`, `screenshots/v1/mobile-main.png`
+- Changelog written: `changelogs/v1-changelog.md`

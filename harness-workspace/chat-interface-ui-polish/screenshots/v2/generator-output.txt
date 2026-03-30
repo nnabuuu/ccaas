@@ -1,0 +1,20 @@
+## v2 完成总结
+
+所有改动已完成并验证。以下是本轮的关键改进：
+
+### 修改的文件 (4 files)
+1. **`ChatInterfaceComposer.tsx`** — Quick Suggestions 从 `rounded-full` 纯文字 pills 改为 `rounded-ck-lg` icon+text 按钮；新增 "+" 附件按钮占位；新增 `focus-visible` 焦点环
+2. **`ChatInterfaceEmptyState.tsx`** — ✺ 文字字符替换为 SVG 4-pointed sparkle icon + 脉冲动画
+3. **`ChatSidebar.tsx`** — 会话列表项增加 `ease-claude` easing + `active:scale-[0.98]`
+4. **`tailwind.config.js`** — 新增 `ck-sparkle` keyframe 和 animation
+
+### 预期分数提升
+- **D1 (Claude Web Alignment)**: 3→4/5 (+6 分) — 修复了最大视觉差距（Quick Suggestions 样式 + SVG sparkle + 附件按钮）
+- **D4 (Interaction)**: 4→5/5 (+3 分) — 修复了 Quick Suggestion focus-visible 缺失 + Sidebar ease-claude
+
+### 验证结果
+- TypeScript: PASS
+- Tests: 76/76 PASS
+- Desktop 1440x900: 截图保存 `screenshots/v2/desktop-main.png`
+- Mobile 375x812: 截图保存 `screenshots/v2/mobile-main.png`
+- Props 接口: 无变更

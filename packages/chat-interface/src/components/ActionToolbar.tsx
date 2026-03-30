@@ -50,7 +50,7 @@ export function ActionToolbar({ timestamp, content, onRetry }: ActionToolbarProp
         <button
           onClick={handleCopy}
           aria-label={copied ? '已复制' : '复制'}
-          className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors focus-visible:text-ck-t1 focus-visible:bg-ck-bg3 focus-visible:ring-2 focus-visible:ring-ck-accent"
+          className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:text-ck-t1 focus-visible:bg-ck-bg3 focus-visible:ring-2 focus-visible:ring-ck-accent"
         >
           {copied ? <Check size={16} /> : <Copy size={16} />}
         </button>
@@ -60,7 +60,7 @@ export function ActionToolbar({ timestamp, content, onRetry }: ActionToolbarProp
           <button
             onClick={onRetry}
             aria-label="重试"
-            className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors focus-visible:text-ck-t1 focus-visible:bg-ck-bg3 focus-visible:ring-2 focus-visible:ring-ck-accent"
+            className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 flex items-center justify-center rounded text-ck-t3 hover:text-ck-t1 hover:bg-ck-bg3 transition-colors ease-claude active:scale-[0.98] focus-visible:text-ck-t1 focus-visible:bg-ck-bg3 focus-visible:ring-2 focus-visible:ring-ck-accent"
           >
             <RotateCcw size={16} />
           </button>

@@ -30,7 +30,7 @@ describe('ScrollToBottom', () => {
     render(<ScrollToBottom scrollRef={ref} />)
     // Trigger scroll event
     fireEvent.scroll(ref.current!)
-    expect(screen.getByLabelText('滚动到底部')).toBeTruthy()
+    expect(screen.getByLabelText('Scroll to bottom')).toBeTruthy()
   })
 
   it('calls scrollTo on click', () => {
@@ -38,7 +38,7 @@ describe('ScrollToBottom', () => {
     ref.current!.scrollTo = vi.fn()
     render(<ScrollToBottom scrollRef={ref} />)
     fireEvent.scroll(ref.current!)
-    fireEvent.click(screen.getByLabelText('滚动到底部'))
+    fireEvent.click(screen.getByLabelText('Scroll to bottom'))
     expect(ref.current!.scrollTo).toHaveBeenCalledWith({ top: 2000, behavior: 'smooth' })
   })
 })
