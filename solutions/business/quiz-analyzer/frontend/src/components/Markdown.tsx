@@ -28,16 +28,16 @@ export default function Markdown({ children, className, compact }: MarkdownProps
         rehypePlugins={rehypePlugins}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-xl font-bold text-zinc-900 mt-3 mb-1">{children}</h1>
+            <h1 className="text-xl font-bold text-ck-t1 mt-3 mb-1">{children}</h1>
           ),
           h2: ({ children }) => (
-            <h2 className="text-lg font-bold text-zinc-900 mt-3 mb-1">{children}</h2>
+            <h2 className="text-lg font-bold text-ck-t1 mt-3 mb-1">{children}</h2>
           ),
           h3: ({ children }) => (
-            <h3 className="text-base font-semibold text-zinc-800 mt-2 mb-1">{children}</h3>
+            <h3 className="text-base font-semibold text-ck-t1 mt-2 mb-1">{children}</h3>
           ),
           h4: ({ children }) => (
-            <h4 className="text-sm font-semibold text-zinc-800 mt-2 mb-0.5">{children}</h4>
+            <h4 className="text-sm font-semibold text-ck-t1 mt-2 mb-0.5">{children}</h4>
           ),
           p: ({ children }) => (
             <p className={`${compact ? 'text-sm' : 'text-sm'} leading-relaxed`}>{children}</p>
@@ -54,7 +54,7 @@ export default function Markdown({ children, className, compact }: MarkdownProps
           code: ({ className, children, ...props }) => {
             const isInline = !className
             return isInline ? (
-              <code className="px-1 py-0.5 bg-zinc-100 border border-zinc-200 rounded text-xs font-mono text-zinc-800" {...props}>
+              <code className="px-1 py-0.5 bg-ck-bg2 border border-ck-b1 rounded text-xs font-mono text-ck-t1" {...props}>
                 {children}
               </code>
             ) : (
@@ -64,12 +64,12 @@ export default function Markdown({ children, className, compact }: MarkdownProps
             )
           },
           pre: ({ children }) => (
-            <pre className="text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 overflow-x-auto">
+            <pre className="text-xs bg-ck-bg2 border border-ck-b1 rounded-ck px-3 py-2 overflow-x-auto">
               {children}
             </pre>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-3 border-zinc-300 pl-3 text-sm text-zinc-600 italic">
+            <blockquote className="border-l-3 border-ck-b1 pl-3 text-sm text-ck-t2 italic">
               {children}
             </blockquote>
           ),
@@ -80,20 +80,20 @@ export default function Markdown({ children, className, compact }: MarkdownProps
             <em className="italic">{children}</em>
           ),
           a: ({ href, children }) => (
-            <a href={href} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">
+            <a href={href} className="text-ck-accent hover:underline" target="_blank" rel="noopener noreferrer">
               {children}
             </a>
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto">
-              <table className="text-sm border-collapse border border-zinc-200 w-full">{children}</table>
+              <table className="text-sm border-collapse border border-ck-b1 w-full">{children}</table>
             </div>
           ),
           th: ({ children }) => (
-            <th className="border border-zinc-200 bg-zinc-50 px-2 py-1 text-left text-xs font-semibold">{children}</th>
+            <th className="border border-ck-b1 bg-ck-bg2 px-2 py-1 text-left text-xs font-semibold">{children}</th>
           ),
           td: ({ children }) => (
-            <td className="border border-zinc-200 px-2 py-1 text-xs">{children}</td>
+            <td className="border border-ck-b1 px-2 py-1 text-xs">{children}</td>
           ),
         }}
       >

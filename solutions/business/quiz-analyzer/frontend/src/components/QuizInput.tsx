@@ -64,9 +64,9 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
     <div className="space-y-4">
       {/* Quiz Content */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
+        <label className="block text-sm font-medium text-ck-t2 mb-2">
           <FileText weight="regular" className="w-4 h-4 inline mr-1" />
-          题目内容 <span className="text-red-500">*</span>
+          题目内容 <span className="text-ck-danger-t">*</span>
         </label>
         <textarea
           ref={contentRef}
@@ -74,27 +74,27 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
           onChange={e => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="粘贴或输入题目内容..."
-          className="w-full px-4 py-3 border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-ck-b1 rounded-ck resize-none focus:outline-none focus:ring-2 focus:ring-ck-accent focus:border-transparent"
           rows={12}
           disabled={disabled}
         />
-        <p className="mt-1 text-xs text-slate-500">
-          提示：支持 <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs">Ctrl</kbd> +{' '}
-          <kbd className="px-1 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs">Enter</kbd> 快速分析
+        <p className="mt-1 text-xs text-ck-t3">
+          提示：支持 <kbd className="px-1 py-0.5 bg-ck-bg2 border border-ck-b1 rounded text-xs">Ctrl</kbd> +{' '}
+          <kbd className="px-1 py-0.5 bg-ck-bg2 border border-ck-b1 rounded text-xs">Enter</kbd> 快速分析
         </p>
       </div>
 
       {/* Optional Answer */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          参考答案 <span className="text-slate-400 text-xs">(可选)</span>
+        <label className="block text-sm font-medium text-ck-t2 mb-2">
+          参考答案 <span className="text-ck-t3 text-xs">(可选)</span>
         </label>
         <textarea
           value={answer}
           onChange={e => setAnswer(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="如果有参考答案，可以在此输入..."
-          className="w-full px-4 py-3 border border-slate-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 border border-ck-b1 rounded-ck resize-none focus:outline-none focus:ring-2 focus:ring-ck-accent focus:border-transparent"
           rows={4}
           disabled={disabled}
         />
@@ -105,10 +105,10 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
         <button
           onClick={handleAnalyze}
           disabled={disabled || !content.trim()}
-          className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+          className="flex-1 bg-ck-accent hover:bg-ck-accent-hover disabled:bg-ck-bg3 disabled:cursor-not-allowed text-white font-medium py-3 px-6 rounded-ck transition-colors duration-200 flex items-center justify-center gap-2"
         >
           分析题目
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-blue-700 bg-opacity-50 rounded text-xs">
+          <kbd className="hidden sm:inline-block px-1.5 py-0.5 bg-ck-accent-hover bg-opacity-50 rounded text-xs">
             Ctrl+Enter
           </kbd>
         </button>
@@ -116,19 +116,19 @@ export default function QuizInput({ onAnalyze, disabled = false }: QuizInputProp
         <button
           onClick={handleClear}
           disabled={disabled || (!content && !answer)}
-          className="px-4 py-3 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:cursor-not-allowed rounded-lg transition-colors duration-200"
+          className="px-4 py-3 border border-ck-b1 hover:bg-ck-bg2 disabled:bg-ck-bg2 disabled:cursor-not-allowed rounded-ck transition-colors duration-200"
           title="清空输入"
         >
-          <X weight="regular" className="w-5 h-5 text-slate-600" />
+          <X weight="regular" className="w-5 h-5 text-ck-t2" />
         </button>
 
         <button
           onClick={handleLoadExample}
           disabled={disabled}
-          className="px-4 py-3 border border-slate-300 hover:bg-slate-50 disabled:bg-slate-100 disabled:cursor-not-allowed rounded-lg transition-colors duration-200"
+          className="px-4 py-3 border border-ck-b1 hover:bg-ck-bg2 disabled:bg-ck-bg2 disabled:cursor-not-allowed rounded-ck transition-colors duration-200"
           title="加载示例题目"
         >
-          <Flask weight="regular" className="w-5 h-5 text-slate-600" />
+          <Flask weight="regular" className="w-5 h-5 text-ck-t2" />
         </button>
       </div>
     </div>

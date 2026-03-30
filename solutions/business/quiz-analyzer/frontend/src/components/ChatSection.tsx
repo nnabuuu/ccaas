@@ -19,7 +19,7 @@ export default function ChatSection({
   session,
 }: ChatSectionProps) {
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-ck-bg1">
       {/* Layout controls */}
       <ChatLayoutControls
         mode={mode}
@@ -49,7 +49,7 @@ export default function ChatSection({
 
       {/* Token statistics bar */}
       {session.tokenUsage && (
-        <div className="px-4 py-1.5 bg-slate-100 border-t border-slate-200 text-xs text-slate-600 flex-shrink-0">
+        <div className="px-4 py-1.5 bg-ck-bg2 border-t border-ck-b1 text-xs text-ck-t2 flex-shrink-0">
           <span className="font-medium">Tokens:</span>{' '}
           {session.tokenUsage.inputTokens.toLocaleString()} in /{' '}
           {session.tokenUsage.outputTokens.toLocaleString()} out

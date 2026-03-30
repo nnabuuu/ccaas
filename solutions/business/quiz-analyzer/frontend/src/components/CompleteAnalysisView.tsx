@@ -14,12 +14,12 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
     <div className="space-y-6">
       {/* 1. Overall Analysis - 整体分析 (Most Important) */}
       {analysis.quiz_analysis && (
-        <div className="bento-card">
+        <div className="ck-card">
           <div className="flex items-center gap-2 mb-4">
-            <ChartBar weight="regular" className="w-5 h-5 text-primary-600" />
-            <h3 className="text-lg font-bold text-slate-900">整体分析</h3>
+            <ChartBar weight="regular" className="w-5 h-5 text-ck-accent" />
+            <h3 className="text-lg font-bold text-ck-t1">整体分析</h3>
           </div>
-          <div className="prose prose-slate max-w-none">
+          <div className="prose prose-neutral max-w-none">
             <Markdown>{analysis.quiz_analysis}</Markdown>
           </div>
         </div>
@@ -27,21 +27,21 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
 
       {/* 2. Knowledge Point Tags - 知识点标签 */}
       {analysis.knowledge_point_tags && analysis.knowledge_point_tags.length > 0 && (
-        <div className="bento-card">
+        <div className="ck-card">
           <div className="flex items-center gap-2 mb-4">
-            <Tag weight="regular" className="w-5 h-5 text-primary-600" />
-            <h3 className="text-lg font-bold text-slate-900">知识点标签</h3>
+            <Tag weight="regular" className="w-5 h-5 text-ck-accent" />
+            <h3 className="text-lg font-bold text-ck-t1">知识点标签</h3>
           </div>
           <div className="flex flex-wrap gap-3">
             {analysis.knowledge_point_tags.map((tag) => (
               <div
                 key={tag.id}
-                className={`px-4 py-2 rounded-xl border-2 ${
+                className={`px-4 py-2 rounded-ck-lg border-2 ${
                   tag.verified
-                    ? 'bg-green-50 border-green-300 text-green-800'
+                    ? 'bg-ck-success-bg border-ck-success-t/30 text-ck-success-t'
                     : tag.confidence > 0.8
-                    ? 'bg-blue-50 border-blue-300 text-blue-800'
-                    : 'bg-slate-50 border-slate-300 text-slate-700'
+                    ? 'bg-ck-info-bg border-ck-info-t/30 text-ck-info-t'
+                    : 'bg-ck-bg2 border-ck-b1 text-ck-t2'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -69,12 +69,12 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
 
       {/* 3. Thinking Process - 解题思路 */}
       {analysis.thinking_process && (
-        <div className="bento-card">
+        <div className="ck-card">
           <div className="flex items-center gap-2 mb-4">
-            <Lightbulb weight="regular" className="w-5 h-5 text-cta-600" />
-            <h3 className="text-lg font-bold text-slate-900">解题思路</h3>
+            <Lightbulb weight="regular" className="w-5 h-5 text-ck-accent" />
+            <h3 className="text-lg font-bold text-ck-t1">解题思路</h3>
           </div>
-          <div className="bg-slate-50 rounded-xl p-4">
+          <div className="bg-ck-bg2 rounded-ck-lg p-4">
             <Markdown>{analysis.thinking_process}</Markdown>
           </div>
         </div>
@@ -82,56 +82,56 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
 
       {/* 4. Solution Steps - 解题步骤 */}
       {analysis.solution_steps && analysis.solution_steps.length > 0 && (
-        <div className="bento-card">
+        <div className="ck-card">
           <div className="flex items-center gap-2 mb-4">
-            <ListBullets weight="regular" className="w-5 h-5 text-primary-600" />
-            <h3 className="text-lg font-bold text-slate-900">解题步骤</h3>
+            <ListBullets weight="regular" className="w-5 h-5 text-ck-accent" />
+            <h3 className="text-lg font-bold text-ck-t1">解题步骤</h3>
           </div>
           <div className="space-y-4">
             {analysis.solution_steps.map((step, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl border border-slate-200 p-4 hover:border-primary-300 transition-colors"
+                className="bg-ck-bg1 rounded-ck-lg border border-ck-b1 p-4 hover:border-ck-accent/30 transition-colors duration-200 ease-claude"
               >
                 <div className="flex items-start gap-3 mb-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm">
+                  <span className="flex-shrink-0 w-8 h-8 rounded-ck bg-ck-accent/10 text-ck-accent flex items-center justify-center font-bold text-sm">
                     {step.stepNumber}
                   </span>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-slate-900 mb-2">
+                    <h4 className="font-semibold text-ck-t1 mb-2">
                       {step.title}
                     </h4>
-                    <Markdown compact className="text-slate-700">
+                    <Markdown compact className="text-ck-t2">
                       {step.description}
                     </Markdown>
                   </div>
                 </div>
 
                 {step.formula && (
-                  <div className="mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                    <Markdown compact className="text-sm text-slate-800">
+                  <div className="mt-3 p-3 bg-ck-bg2 rounded-ck border border-ck-b1">
+                    <Markdown compact className="text-sm text-ck-t1">
                       {step.formula}
                     </Markdown>
                   </div>
                 )}
 
                 {step.reasoning && (
-                  <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <span className="font-semibold text-blue-900">推理：</span>
-                    <span className="text-blue-800 ml-2">{step.reasoning}</span>
+                  <div className="mt-3 p-3 bg-ck-info-bg rounded-ck">
+                    <span className="font-semibold text-ck-info-t">推理：</span>
+                    <span className="text-ck-info-t ml-2">{step.reasoning}</span>
                   </div>
                 )}
 
                 {step.commonErrors && step.commonErrors.length > 0 && (
-                  <div className="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
-                    <div className="font-semibold text-red-900 mb-2">
+                  <div className="mt-3 p-3 bg-ck-danger-bg rounded-ck border border-ck-b1">
+                    <div className="font-semibold text-ck-danger-t mb-2">
                       常见错误：
                     </div>
                     <ul className="space-y-1">
                       {step.commonErrors.map((error, i) => (
                         <li
                           key={i}
-                          className="text-red-800 text-sm ml-4 list-disc"
+                          className="text-ck-danger-t text-sm ml-4 list-disc"
                         >
                           {error}
                         </li>
@@ -149,25 +149,25 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
         {/* 5. Common Mistakes - 常见错误 */}
         {analysis.common_mistakes && analysis.common_mistakes.length > 0 && (
-          <div className="bento-card">
+          <div className="ck-card">
             <div className="flex items-center gap-2 mb-4">
-              <Warning weight="regular" className="w-5 h-5 text-orange-600" />
-              <h3 className="text-lg font-bold text-slate-900">常见错误</h3>
+              <Warning weight="regular" className="w-5 h-5 text-ck-warn-t" />
+              <h3 className="text-lg font-bold text-ck-t1">常见错误</h3>
             </div>
             <div className="space-y-3">
               {analysis.common_mistakes.map((mistake, index) => (
                 <div
                   key={index}
-                  className="bg-orange-50 rounded-xl border border-orange-200 p-4"
+                  className="bg-ck-warn-bg rounded-ck-lg border border-ck-b1 p-4"
                 >
                   <div className="flex items-start gap-3 mb-2">
                     <span
-                      className={`px-2 py-1 rounded-lg text-xs font-semibold ${
+                      className={`px-2 py-1 rounded-ck text-xs font-semibold ${
                         mistake.frequency === 'high'
-                          ? 'bg-red-100 text-red-700'
+                          ? 'bg-ck-danger-bg text-ck-danger-t'
                           : mistake.frequency === 'medium'
-                          ? 'bg-orange-100 text-orange-700'
-                          : 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-ck-warn-bg text-ck-warn-t'
+                          : 'bg-ck-warn-bg text-ck-warn-t'
                       }`}
                     >
                       {mistake.frequency === 'high' && '高频'}
@@ -175,25 +175,25 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
                       {mistake.frequency === 'low' && '低频'}
                     </span>
                   </div>
-                  <p className="text-orange-900 mb-3">{mistake.description}</p>
+                  <p className="text-ck-warn-t mb-3">{mistake.description}</p>
 
                   {mistake.remediation && (
-                    <div className="bg-white rounded-lg p-3 mb-2">
-                      <span className="font-semibold text-green-900">
+                    <div className="bg-ck-bg1 rounded-ck p-3 mb-2">
+                      <span className="font-semibold text-ck-success-t">
                         补救措施：
                       </span>
-                      <span className="text-green-800 ml-2">
+                      <span className="text-ck-success-t ml-2">
                         {mistake.remediation}
                       </span>
                     </div>
                   )}
 
                   {mistake.knowledgeGaps && mistake.knowledgeGaps.length > 0 && (
-                    <div className="bg-white rounded-lg p-3">
-                      <span className="font-semibold text-slate-900">
+                    <div className="bg-ck-bg1 rounded-ck p-3">
+                      <span className="font-semibold text-ck-t1">
                         知识缺口：
                       </span>
-                      <span className="text-slate-700 ml-2">
+                      <span className="text-ck-t2 ml-2">
                         {mistake.knowledgeGaps.join(', ')}
                       </span>
                     </div>
@@ -206,12 +206,12 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
 
         {/* 6. Knowledge Gap Analysis - 知识缺口分析 */}
         {analysis.knowledge_gap_analysis && (
-          <div className="bento-card">
+          <div className="ck-card">
             <div className="flex items-center gap-2 mb-4">
-              <ChartBar weight="regular" className="w-5 h-5 text-secondary-600" />
-              <h3 className="text-lg font-bold text-slate-900">知识缺口分析</h3>
+              <ChartBar weight="regular" className="w-5 h-5 text-ck-t2" />
+              <h3 className="text-lg font-bold text-ck-t1">知识缺口分析</h3>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4">
+            <div className="bg-ck-bg2 rounded-ck-lg p-4">
               <Markdown>{analysis.knowledge_gap_analysis}</Markdown>
             </div>
           </div>
@@ -225,10 +225,10 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
        analysis.related_quizzes.length > 0 &&
        quiz &&
        analysis.related_quizzes.filter(r => r.id !== quiz.id).length > 0 && (
-        <div className="bento-card">
+        <div className="ck-card">
           <div className="flex items-center gap-2 mb-4">
-            <LinkIcon weight="regular" className="w-5 h-5 text-primary-600" />
-            <h3 className="text-lg font-bold text-slate-900">相关题目推荐</h3>
+            <LinkIcon weight="regular" className="w-5 h-5 text-ck-accent" />
+            <h3 className="text-lg font-bold text-ck-t1">相关题目推荐</h3>
           </div>
           <div className="space-y-3">
             {analysis.related_quizzes
@@ -237,19 +237,19 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
                 <Link
                   key={related.id}
                   to={`/quizzes/${related.id}`}
-                  className="block p-4 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors"
+                  className="block p-4 rounded-ck-lg bg-ck-bg2 hover:bg-ck-bg3 transition-colors duration-200 ease-claude"
                 >
                   <div className="flex items-start justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-900 flex-1">
+                    <span className="text-sm font-medium text-ck-t1 flex-1">
                       {related.content.length > 80
                         ? related.content.substring(0, 80) + '...'
                         : related.content}
                     </span>
-                    <span className="px-2 py-1 bg-primary-100 text-primary-700 rounded-lg text-xs font-medium ml-3 flex-shrink-0">
+                    <span className="px-2 py-1 bg-ck-accent/10 text-ck-accent rounded-ck text-xs font-medium ml-3 flex-shrink-0">
                       {(related.similarity * 100).toFixed(0)}% 相似
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 mb-2">
+                  <p className="text-xs text-ck-t2 mb-2">
                     {related.similarityReason}
                   </p>
                   {related.matchedKnowledgePoints && related.matchedKnowledgePoints.length > 0 && (
@@ -257,7 +257,7 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
                       {related.matchedKnowledgePoints.map((kp, i) => (
                         <span
                           key={i}
-                          className="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-xs"
+                          className="px-2 py-0.5 bg-ck-bg3 text-ck-t2 rounded text-xs"
                         >
                           {kp}
                         </span>
@@ -272,19 +272,19 @@ export default function CompleteAnalysisView({ analysis, quiz }: CompleteAnalysi
 
       {/* Analysis Metadata */}
       {analysis.analyzed_at && (
-        <div className="bento-card bg-slate-50">
+        <div className="ck-card bg-ck-bg2">
           <div className="flex items-center gap-3 text-sm">
-            <Calendar weight="regular" className="w-4 h-4 text-slate-500" />
+            <Calendar weight="regular" className="w-4 h-4 text-ck-t3" />
             <div>
-              <span className="font-medium text-slate-700">分析时间：</span>
-              <span className="text-slate-600 ml-2">
+              <span className="font-medium text-ck-t2">分析时间：</span>
+              <span className="text-ck-t2 ml-2">
                 {new Date(analysis.analyzed_at).toLocaleString('zh-CN')}
               </span>
             </div>
             {analysis.analyzer_version && (
               <div className="ml-4">
-                <span className="font-medium text-slate-700">版本：</span>
-                <span className="text-slate-600 ml-2">
+                <span className="font-medium text-ck-t2">版本：</span>
+                <span className="text-ck-t2 ml-2">
                   {analysis.analyzer_version}
                 </span>
               </div>

@@ -19,9 +19,9 @@ export default function LoadingSpinner({ message, size = 'md' }: LoadingSpinnerP
   return (
     <div className="text-center py-12">
       <div
-        className={`inline-block animate-spin rounded-full border-blue-500 border-t-transparent ${sizeClasses[size]}`}
+        className={`inline-block animate-spin rounded-full border-ck-accent border-t-transparent ${sizeClasses[size]}`}
       />
-      {message && <p className="mt-4 text-slate-600">{message}</p>}
+      {message && <p className="mt-4 text-ck-t2">{message}</p>}
     </div>
   )
 }

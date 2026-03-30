@@ -71,22 +71,22 @@ export function ProcessEventRow({
   const isFailed = tool.phase === 'end' && tool.success === false
 
   return (
-    <div className="border-b border-zinc-100 last:border-b-0">
+    <div className="border-b border-ck-b2 last:border-b-0">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-zinc-50/50 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:bg-ck-bg3 transition-colors text-left"
       >
         {isRunning ? (
           <span className="spinner !w-3.5 !h-3.5 !border-2 flex-shrink-0" />
         ) : isFailed ? (
-          <XCircle weight="fill" className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <XCircle weight="fill" className="w-4 h-4 text-ck-danger-t flex-shrink-0" />
         ) : (
-          <CheckCircle weight="fill" className="w-4 h-4 text-green-500 flex-shrink-0" />
+          <CheckCircle weight="fill" className="w-4 h-4 text-ck-success-t flex-shrink-0" />
         )}
 
-        <span className="flex-1 text-zinc-700 truncate">{label}</span>
+        <span className="flex-1 text-ck-t1 truncate">{label}</span>
 
-        <span className="text-xs text-zinc-400 flex-shrink-0">
+        <span className="text-xs text-ck-t3 flex-shrink-0">
           {isRunning ? (
             '运行中'
           ) : tool.duration != null ? (
@@ -95,9 +95,9 @@ export function ProcessEventRow({
         </span>
 
         {expanded ? (
-          <CaretDown weight="bold" className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+          <CaretDown weight="bold" className="w-3.5 h-3.5 text-ck-t3 flex-shrink-0" />
         ) : (
-          <CaretRight weight="bold" className="w-3.5 h-3.5 text-zinc-400 flex-shrink-0" />
+          <CaretRight weight="bold" className="w-3.5 h-3.5 text-ck-t3 flex-shrink-0" />
         )}
       </button>
 
@@ -105,24 +105,24 @@ export function ProcessEventRow({
         <div className="px-4 pb-3 space-y-2">
           {tool.toolInput != null && (
             <div>
-              <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">输入</div>
-              <pre className="text-[11px] text-zinc-600 bg-zinc-50 rounded-lg p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
+              <div className="text-[10px] font-semibold text-ck-t3 uppercase tracking-wider mb-1">输入</div>
+              <pre className="text-[11px] text-ck-t2 bg-ck-bg2 rounded-ck p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
                 {JSON.stringify(tool.toolInput, null, 2)}
               </pre>
             </div>
           )}
           {tool.phase === 'end' && tool.toolOutput != null && (
             <div>
-              <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">输出</div>
-              <pre className="text-[11px] text-zinc-600 bg-zinc-50 rounded-lg p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
+              <div className="text-[10px] font-semibold text-ck-t3 uppercase tracking-wider mb-1">输出</div>
+              <pre className="text-[11px] text-ck-t2 bg-ck-bg2 rounded-ck p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
                 {JSON.stringify(tool.toolOutput, null, 2)}
               </pre>
             </div>
           )}
           {tool.phase === 'end' && tool.toolError && (
             <div>
-              <div className="text-[10px] font-semibold text-red-400 uppercase tracking-wider mb-1">错误</div>
-              <pre className="text-[11px] text-red-600 bg-red-50 rounded-lg p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
+              <div className="text-[10px] font-semibold text-ck-danger-t uppercase tracking-wider mb-1">错误</div>
+              <pre className="text-[11px] text-ck-danger-t bg-ck-danger-bg rounded-ck p-2.5 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
                 {tool.toolError}
               </pre>
             </div>
@@ -164,23 +164,23 @@ export default function ProcessPanel({
       {/* Trigger bar — always inline */}
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full border border-zinc-200 rounded-xl bg-white hover:bg-zinc-50 transition-colors px-4 py-2.5 flex items-center gap-2 text-sm text-left animate-fade-in"
+        className="w-full border border-ck-b1 rounded-ck-lg bg-ck-bg1 hover:bg-ck-bg3 transition-colors px-4 py-2.5 flex items-center gap-2 text-sm text-left animate-fade-in"
       >
         {isProcessing ? (
           <span className="spinner !w-4 !h-4 !border-2 flex-shrink-0" />
         ) : (
-          <CheckCircle weight="fill" className="w-4 h-4 text-green-500 flex-shrink-0" />
+          <CheckCircle weight="fill" className="w-4 h-4 text-ck-success-t flex-shrink-0" />
         )}
-        <span className="font-medium text-zinc-700 truncate">
+        <span className="font-medium text-ck-t1 truncate">
           {isProcessing ? (statusText || '分析中…') : '分析完成'}
         </span>
-        <span className="text-zinc-400 text-xs flex-shrink-0">
+        <span className="text-ck-t3 text-xs flex-shrink-0">
           {isProcessing
             ? `${toolBlocks.length} 次调用`
             : `${completedCount} 步 · 耗时 ${formatSec(elapsed)}`}
         </span>
         {isProcessing && thinkingContent && (
-          <span className="text-xs text-zinc-400 truncate ml-1">{thinkingContent}</span>
+          <span className="text-xs text-ck-t3 truncate ml-1">{thinkingContent}</span>
         )}
       </button>
 
@@ -193,14 +193,14 @@ export default function ProcessPanel({
             onClick={() => setIsOpen(false)}
           />
           {/* Panel */}
-          <div className="relative w-full max-w-[420px] bg-white shadow-xl flex flex-col animate-slide-in-right">
+          <div className="relative w-full max-w-[420px] bg-ck-bg1 shadow-composer-hover flex flex-col animate-slide-in-right">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 bg-zinc-50">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-ck-b1 bg-ck-bg2">
               <div>
-                <h2 className="text-sm font-semibold text-zinc-700">
+                <h2 className="text-sm font-semibold text-ck-t1">
                   {isProcessing ? '分析中…' : '分析完成'}
                 </h2>
-                <p className="text-xs text-zinc-400 mt-0.5">
+                <p className="text-xs text-ck-t3 mt-0.5">
                   {isProcessing
                     ? `已运行 ${formatSec(elapsed)} · ${runningCount} 运行中 · ${completedCount} 完成`
                     : `${completedCount} 步完成 · 耗时 ${formatSec(elapsed)}`}
@@ -210,14 +210,14 @@ export default function ProcessPanel({
                 {toolBlocks.length > 0 && (
                   <button
                     onClick={toggleAll}
-                    className="text-[11px] text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                    className="text-[11px] text-ck-accent hover:text-ck-accent-hover font-medium transition-colors duration-200 ease-claude"
                   >
                     {expandOverride === true ? '全部收缩' : '全部展开'}
                   </button>
                 )}
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 transition-colors"
+                  className="p-1 rounded-md text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 transition-colors duration-200 ease-claude"
                 >
                   <X weight="bold" className="w-4 h-4" />
                 </button>
@@ -230,7 +230,7 @@ export default function ProcessPanel({
                 <div className="divide-y divide-zinc-100">
                   {blocks.map((block, i) =>
                     block.type === 'text' ? (
-                      <div key={`text-${i}`} className="px-4 py-1.5 text-xs text-zinc-500">
+                      <div key={`text-${i}`} className="px-4 py-1.5 text-xs text-ck-t2">
                         {block.text}
                       </div>
                     ) : (
@@ -244,7 +244,7 @@ export default function ProcessPanel({
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-2 px-4 py-3 text-sm text-zinc-400">
+                <div className="flex items-center gap-2 px-4 py-3 text-sm text-ck-t3">
                   <span className="spinner !w-3.5 !h-3.5 !border-2" />
                   等待工具调用…
                 </div>

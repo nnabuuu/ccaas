@@ -10,9 +10,9 @@ import type { KpRefinementResult, KpRefinementTag } from '../types'
 
 function TagCard({ tag }: { tag: KpRefinementTag }) {
   const roleBadge = {
-    primary: { bg: 'bg-blue-100', text: 'text-blue-700', label: '主' },
-    secondary: { bg: 'bg-slate-100', text: 'text-slate-600', label: '次' },
-    tertiary: { bg: 'bg-zinc-100', text: 'text-zinc-500', label: '辅' },
+    primary: { bg: 'bg-ck-info-bg', text: 'text-ck-info-t', label: '主' },
+    secondary: { bg: 'bg-ck-bg2', text: 'text-ck-t2', label: '次' },
+    tertiary: { bg: 'bg-ck-bg2', text: 'text-ck-t2', label: '辅' },
   }[tag.role]
 
   const confidenceColor =
@@ -22,25 +22,25 @@ function TagCard({ tag }: { tag: KpRefinementTag }) {
     'bg-red-500'
 
   const confidenceTextColor =
-    tag.confidence >= 0.9 ? 'text-green-700' :
-    tag.confidence >= 0.8 ? 'text-blue-700' :
-    tag.confidence >= 0.75 ? 'text-amber-700' :
-    'text-red-700'
+    tag.confidence >= 0.9 ? 'text-ck-success-t' :
+    tag.confidence >= 0.8 ? 'text-ck-info-t' :
+    tag.confidence >= 0.75 ? 'text-ck-warn-t' :
+    'text-ck-danger-t'
 
   return (
-    <div className="bento-card !p-4 !cursor-default hover:!scale-100">
+    <div className="ck-card !p-4 !cursor-default hover:!scale-100">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Tag weight="fill" className="w-4 h-4 text-primary-500" />
-          <span className="font-medium text-sm text-zinc-800">{tag.name}</span>
+          <Tag weight="fill" className="w-4 h-4 text-ck-accent" />
+          <span className="font-medium text-sm text-ck-t1">{tag.name}</span>
         </div>
         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${roleBadge.bg} ${roleBadge.text}`}>
           {roleBadge.label}
         </span>
       </div>
-      <div className="text-[11px] text-zinc-400 mb-2 font-mono">{tag.id}</div>
+      <div className="text-[11px] text-ck-t3 mb-2 font-mono">{tag.id}</div>
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-ck-bg2 rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full ${confidenceColor}`}
             style={{ width: `${tag.confidence * 100}%` }}
@@ -59,13 +59,13 @@ function TraversalTypeBadge({ type }: { type: string }) {
   const hasMulti = type.includes('+multi_tag')
 
   const colorMap: Record<string, { bg: string; text: string }> = {
-    sibling_validated: { bg: 'bg-green-100', text: 'text-green-700' },
-    sibling_replaced: { bg: 'bg-amber-100', text: 'text-amber-700' },
-    ascend_confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
-    branch_switched: { bg: 'bg-red-100', text: 'text-red-700' },
+    sibling_validated: { bg: 'bg-ck-success-bg', text: 'text-ck-success-t' },
+    sibling_replaced: { bg: 'bg-ck-warn-bg', text: 'text-ck-warn-t' },
+    ascend_confirmed: { bg: 'bg-ck-info-bg', text: 'text-ck-info-t' },
+    branch_switched: { bg: 'bg-ck-danger-bg', text: 'text-ck-danger-t' },
   }
 
-  const style = colorMap[base] || { bg: 'bg-zinc-100', text: 'text-zinc-600' }
+  const style = colorMap[base] || { bg: 'bg-ck-bg2', text: 'text-ck-t2' }
 
   return (
     <div className="flex items-center gap-1.5">
@@ -129,10 +129,10 @@ function ConfidenceBar({ value }: { value: number }) {
     value >= 0.75 ? 'bg-amber-500' :
     'bg-red-500'
   const textColor =
-    value >= 0.9 ? 'text-green-700' :
-    value >= 0.8 ? 'text-blue-700' :
-    value >= 0.75 ? 'text-amber-700' :
-    'text-red-700'
+    value >= 0.9 ? 'text-ck-success-t' :
+    value >= 0.8 ? 'text-ck-info-t' :
+    value >= 0.75 ? 'text-ck-warn-t' :
+    'text-ck-danger-t'
 
   const confidenceLabel =
     value >= 0.95 ? '明确匹配' :
@@ -142,25 +142,25 @@ function ConfidenceBar({ value }: { value: number }) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[11px] text-zinc-500 shrink-0">置信度</span>
-      <div className="flex-1 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+      <span className="text-[11px] text-ck-t2 shrink-0">置信度</span>
+      <div className="flex-1 h-1.5 bg-ck-bg2 rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${value * 100}%` }} />
       </div>
       <span className={`text-xs font-semibold ${textColor}`}>{(value * 100).toFixed(0)}%</span>
-      <span className="text-[10px] text-zinc-400 ml-1">{confidenceLabel}</span>
+      <span className="text-[10px] text-ck-t3 ml-1">{confidenceLabel}</span>
     </div>
   )
 }
 
 function DecisionBadge({ decision }: { decision: string }) {
   const styles: Record<string, { bg: string; text: string }> = {
-    accept: { bg: 'bg-green-100', text: 'text-green-700' },
-    escalate: { bg: 'bg-amber-100', text: 'text-amber-700' },
-    switch: { bg: 'bg-red-100', text: 'text-red-700' },
-    single_tag: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    accept: { bg: 'bg-ck-success-bg', text: 'text-ck-success-t' },
+    escalate: { bg: 'bg-ck-warn-bg', text: 'text-ck-warn-t' },
+    switch: { bg: 'bg-ck-danger-bg', text: 'text-ck-danger-t' },
+    single_tag: { bg: 'bg-ck-info-bg', text: 'text-ck-info-t' },
     multi_tag: { bg: 'bg-purple-100', text: 'text-purple-700' },
   }
-  const s = styles[decision] || { bg: 'bg-zinc-100', text: 'text-zinc-600' }
+  const s = styles[decision] || { bg: 'bg-ck-bg2', text: 'text-ck-t2' }
   const meta = DECISION_META[decision]
   return (
     <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ function DecisionBadge({ decision }: { decision: string }) {
         {meta?.label || decision}
       </span>
       {meta?.tip && (
-        <span className="text-[11px] text-zinc-400">{meta.tip}</span>
+        <span className="text-[11px] text-ck-t3">{meta.tip}</span>
       )}
     </div>
   )
@@ -178,7 +178,7 @@ function Pills({ items }: { items: string[] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {items.map((item, i) => (
-        <span key={i} className="text-[11px] px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded-full">
+        <span key={i} className="text-[11px] px-2 py-0.5 bg-ck-bg2 text-ck-t2 rounded-full">
           {item}
         </span>
       ))}
@@ -197,7 +197,7 @@ function toLabel(val: unknown): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
   if (!data || typeof data !== 'object') {
-    return <pre className="text-[11px] text-zinc-500 bg-zinc-50 rounded-lg p-3 whitespace-pre-wrap break-words">{JSON.stringify(data, null, 2)}</pre>
+    return <pre className="text-[11px] text-ck-t2 bg-ck-bg2 rounded-ck p-3 whitespace-pre-wrap break-words">{JSON.stringify(data, null, 2)}</pre>
   }
 
   switch (stepKey) {
@@ -205,15 +205,15 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
       return (
         <div className="space-y-2">
           {data.coreSkill && (
-            <div className="text-sm"><span className="font-semibold text-zinc-700">核心技能：</span>{toLabel(data.coreSkill)}</div>
+            <div className="text-sm"><span className="font-semibold text-ck-t1">核心技能：</span>{toLabel(data.coreSkill)}</div>
           )}
-          {data.summary && <div className="text-[13px] text-zinc-600">{toLabel(data.summary)}</div>}
+          {data.summary && <div className="text-[13px] text-ck-t2">{toLabel(data.summary)}</div>}
           {data.keyOperation && (
-            <div className="text-[12px] text-zinc-500"><span className="font-medium">关键操作：</span>{toLabel(data.keyOperation)}</div>
+            <div className="text-[12px] text-ck-t2"><span className="font-medium">关键操作：</span>{toLabel(data.keyOperation)}</div>
           )}
           {Array.isArray(data.requiredSkills) && data.requiredSkills.length > 0 && (
             <div>
-              <span className="text-[11px] text-zinc-400 block mb-1">所需技能</span>
+              <span className="text-[11px] text-ck-t3 block mb-1">所需技能</span>
               <Pills items={data.requiredSkills.map((s: unknown) => typeof s === 'string' ? s : JSON.stringify(s))} />
             </div>
           )}
@@ -224,23 +224,23 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
       return (
         <div className="space-y-2">
           {data.parentNode && (
-            <div className="text-sm"><span className="font-medium text-zinc-500">父节点：</span><span className="text-zinc-700">{toLabel(data.parentNode)}</span></div>
+            <div className="text-sm"><span className="font-medium text-ck-t2">父节点：</span><span className="text-ck-t1">{toLabel(data.parentNode)}</span></div>
           )}
           {Array.isArray(data.siblings) && data.siblings.length > 0 && (
             <div>
-              <span className="text-[11px] text-zinc-400 block mb-1">兄弟节点</span>
+              <span className="text-[11px] text-ck-t3 block mb-1">兄弟节点</span>
               <Pills items={data.siblings.map((s: unknown) => typeof s === 'string' ? s : JSON.stringify(s))} />
             </div>
           )}
           {data.confidence != null && <ConfidenceBar value={data.confidence} />}
           {data.decision && (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-zinc-500">决策</span>
+              <span className="text-[11px] text-ck-t2">决策</span>
               <DecisionBadge decision={toLabel(data.decision)} />
             </div>
           )}
           {data.drillDown && typeof data.drillDown === 'object' && (
-            <div className="bg-zinc-50 rounded-lg p-2.5 text-[11px] text-zinc-500">
+            <div className="bg-ck-bg2 rounded-ck p-2.5 text-[11px] text-ck-t2">
               <span className="font-medium block mb-1">钻探详情</span>
               <pre className="whitespace-pre-wrap break-words">{JSON.stringify(data.drillDown, null, 2)}</pre>
             </div>
@@ -252,15 +252,15 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
       return (
         <div className="space-y-2">
           {data.grandparentNode && (
-            <div className="text-sm"><span className="font-medium text-zinc-500">祖父节点：</span><span className="text-zinc-700">{toLabel(data.grandparentNode)}</span></div>
+            <div className="text-sm"><span className="font-medium text-ck-t2">祖父节点：</span><span className="text-ck-t1">{toLabel(data.grandparentNode)}</span></div>
           )}
           {data.selectedBranch && (
-            <div className="text-sm"><span className="font-medium text-zinc-500">选中分支：</span><span className="text-zinc-700">{toLabel(data.selectedBranch)}</span></div>
+            <div className="text-sm"><span className="font-medium text-ck-t2">选中分支：</span><span className="text-ck-t1">{toLabel(data.selectedBranch)}</span></div>
           )}
           {data.confidence != null && <ConfidenceBar value={data.confidence} />}
           {data.decision && (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-zinc-500">决策</span>
+              <span className="text-[11px] text-ck-t2">决策</span>
               <DecisionBadge decision={toLabel(data.decision)} />
             </div>
           )}
@@ -272,13 +272,13 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
         <div className="space-y-2">
           {data.decision && (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-zinc-500">决策</span>
+              <span className="text-[11px] text-ck-t2">决策</span>
               <DecisionBadge decision={toLabel(data.decision)} />
             </div>
           )}
           {Array.isArray(data.supplementaryTags) && data.supplementaryTags.length > 0 && (
             <div>
-              <span className="text-[11px] text-zinc-400 block mb-1">补充标签</span>
+              <span className="text-[11px] text-ck-t3 block mb-1">补充标签</span>
               <Pills items={data.supplementaryTags.map((t: unknown) =>
                 typeof t === 'string' ? t : JSON.stringify(t)
               )} />
@@ -286,7 +286,7 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
           )}
           {Array.isArray(data.skillCoverage) && data.skillCoverage.length > 0 && (
             <div>
-              <span className="text-[11px] text-zinc-400 block mb-1">技能覆盖</span>
+              <span className="text-[11px] text-ck-t3 block mb-1">技能覆盖</span>
               <Pills items={data.skillCoverage.map((sc: unknown) =>
                 typeof sc === 'string' ? sc :
                 sc && typeof sc === 'object' && 'skill' in sc ? String((sc as Record<string, unknown>).skill) :
@@ -302,11 +302,11 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
         <div className="space-y-2">
           {data.traversalType && <TraversalTypeBadge type={data.traversalType} />}
           {data.tagCount != null && (
-            <div className="text-sm text-zinc-600">共 <span className="font-semibold">{data.tagCount}</span> 个标签</div>
+            <div className="text-sm text-ck-t2">共 <span className="font-semibold">{data.tagCount}</span> 个标签</div>
           )}
           {Array.isArray(data.tags) && data.tags.length > 0 && (
             <div>
-              <span className="text-[11px] text-zinc-400 block mb-1">匹配标签</span>
+              <span className="text-[11px] text-ck-t3 block mb-1">匹配标签</span>
               <Pills items={data.tags.map((t: string | { name?: string; id?: string }) => typeof t === 'string' ? t : (t.name || t.id || JSON.stringify(t)))} />
             </div>
           )}
@@ -315,7 +315,7 @@ function StepContent({ stepKey, data }: { stepKey: string; data: any }) {
 
     default:
       return (
-        <pre className="text-[11px] text-zinc-500 bg-zinc-50 rounded-lg p-3 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
+        <pre className="text-[11px] text-ck-t2 bg-ck-bg2 rounded-ck p-3 overflow-x-auto max-h-48 whitespace-pre-wrap break-words">
           {JSON.stringify(data, null, 2)}
         </pre>
       )
@@ -333,10 +333,10 @@ function TracePanel({ trace }: { trace: Record<string, unknown> }) {
   })
 
   return (
-    <div className="border border-zinc-200 rounded-xl overflow-hidden">
+    <div className="border border-ck-b1 rounded-ck-lg overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-ck-t1 hover:bg-ck-bg2 transition-colors duration-200 ease-claude"
       >
         {expanded ? (
           <CaretDown weight="bold" className="w-4 h-4" />
@@ -347,16 +347,16 @@ function TracePanel({ trace }: { trace: Record<string, unknown> }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-zinc-200 px-4 py-3">
+        <div className="border-t border-ck-b1 px-4 py-3">
           <div className="relative pl-4">
             {/* Timeline line */}
-            <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-zinc-200" />
+            <div className="absolute left-[7px] top-2 bottom-2 w-0.5 bg-ck-b1" />
 
             {keys.map((key, i) => (
               <div key={key} className="relative mb-4 last:mb-0">
                 {/* Timeline dot */}
                 <div className={`absolute -left-[1px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                  key === 'result' ? 'bg-green-500' : 'bg-primary-400'
+                  key === 'result' ? 'bg-green-500' : 'bg-ck-accent'
                 }`} />
 
                 <div className="ml-5">
@@ -364,11 +364,11 @@ function TracePanel({ trace }: { trace: Record<string, unknown> }) {
                     const meta = STEP_META[key]
                     return (
                       <div className="mb-1.5">
-                        <div className="text-xs font-semibold text-zinc-600">
+                        <div className="text-xs font-semibold text-ck-t2">
                           {key === 'result' ? '最终结果' : `第 ${i} 步 — ${meta?.title || key}`}
                         </div>
                         {meta?.desc && (
-                          <div className="text-[11px] text-zinc-400 mt-0.5">{meta.desc}</div>
+                          <div className="text-[11px] text-ck-t3 mt-0.5">{meta.desc}</div>
                         )}
                       </div>
                     )
@@ -410,12 +410,12 @@ export default function KpResultPanel({ result }: KpResultPanelProps) {
         <div className="flex items-center gap-3">
           <button
             onClick={handleCopyTags}
-            className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-primary-600 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-ck-t2 hover:text-ck-accent transition-colors duration-200 ease-claude"
           >
             {copied ? (
               <>
-                <Check weight="bold" className="w-3.5 h-3.5 text-green-600" />
-                <span className="text-green-600">已复制</span>
+                <Check weight="bold" className="w-3.5 h-3.5 text-ck-success-t" />
+                <span className="text-ck-success-t">已复制</span>
               </>
             ) : (
               <>
@@ -424,7 +424,7 @@ export default function KpResultPanel({ result }: KpResultPanelProps) {
               </>
             )}
           </button>
-          <span className="text-xs text-zinc-400">
+          <span className="text-xs text-ck-t3">
             {result.tagCount} 个知识点标签
           </span>
         </div>

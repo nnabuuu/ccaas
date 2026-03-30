@@ -41,7 +41,7 @@ export default function ExportButton({
       <button
         onClick={() => setShowMenu(!showMenu)}
         disabled={disabled}
-        className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors duration-200"
+        className="flex items-center gap-2 px-4 py-2 bg-ck-accent hover:bg-ck-accent-hover disabled:bg-ck-bg3 disabled:cursor-not-allowed text-white font-medium rounded-ck transition-colors duration-200"
       >
         <DownloadSimple weight="regular" className="w-5 h-5" />
         导出分析
@@ -57,18 +57,18 @@ export default function ExportButton({
           />
 
           {/* Menu */}
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 z-20 overflow-hidden">
+          <div className="absolute right-0 mt-2 w-48 bg-ck-bg1 rounded-ck shadow-composer-hover border border-ck-b1 z-20 overflow-hidden">
             <button
               onClick={() => {
                 onExportJSON()
                 setShowMenu(false)
               }}
-              className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3"
+              className="w-full px-4 py-3 text-left hover:bg-ck-bg2 transition-colors duration-150 flex items-center gap-3"
             >
-              <DownloadSimple weight="regular" className="w-5 h-5 text-slate-600" />
+              <DownloadSimple weight="regular" className="w-5 h-5 text-ck-t2" />
               <div>
-                <div className="text-sm font-medium text-slate-800">导出 JSON</div>
-                <div className="text-xs text-slate-500">机器可读格式</div>
+                <div className="text-sm font-medium text-ck-t1">导出 JSON</div>
+                <div className="text-xs text-ck-t3">机器可读格式</div>
               </div>
             </button>
 
@@ -77,29 +77,29 @@ export default function ExportButton({
                 onExportMarkdown()
                 setShowMenu(false)
               }}
-              className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3 border-t border-slate-100"
+              className="w-full px-4 py-3 text-left hover:bg-ck-bg2 transition-colors duration-150 flex items-center gap-3 border-t border-ck-b2"
             >
-              <DownloadSimple weight="regular" className="w-5 h-5 text-slate-600" />
+              <DownloadSimple weight="regular" className="w-5 h-5 text-ck-t2" />
               <div>
-                <div className="text-sm font-medium text-slate-800">导出 Markdown</div>
-                <div className="text-xs text-slate-500">人类可读格式</div>
+                <div className="text-sm font-medium text-ck-t1">导出 Markdown</div>
+                <div className="text-xs text-ck-t3">人类可读格式</div>
               </div>
             </button>
 
             <button
               onClick={handleCopy}
-              className="w-full px-4 py-3 text-left hover:bg-slate-50 transition-colors duration-150 flex items-center gap-3 border-t border-slate-100"
+              className="w-full px-4 py-3 text-left hover:bg-ck-bg2 transition-colors duration-150 flex items-center gap-3 border-t border-ck-b2"
             >
               {copied ? (
-                <Check weight="regular" className="w-5 h-5 text-green-600" />
+                <Check weight="regular" className="w-5 h-5 text-ck-success-t" />
               ) : (
-                <ClipboardText weight="regular" className="w-5 h-5 text-slate-600" />
+                <ClipboardText weight="regular" className="w-5 h-5 text-ck-t2" />
               )}
               <div>
-                <div className="text-sm font-medium text-slate-800">
+                <div className="text-sm font-medium text-ck-t1">
                   {copied ? '已复制！' : '复制到剪贴板'}
                 </div>
-                <div className="text-xs text-slate-500">Markdown 格式</div>
+                <div className="text-xs text-ck-t3">Markdown 格式</div>
               </div>
             </button>
           </div>

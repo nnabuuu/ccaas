@@ -6,7 +6,7 @@ export default function CollapsedChatTab({ onClick }: CollapsedChatTabProps) {
   return (
     <button
       onClick={onClick}
-      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-24 rounded-l-lg shadow-md bg-white border border-r-0 border-gray-200 flex flex-col items-center justify-center gap-2 text-gray-500 hover:text-primary-600 hover:bg-gray-50 transition-colors"
+      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-10 h-24 rounded-l-lg shadow-composer bg-ck-bg1 border border-r-0 border-ck-b1 flex flex-col items-center justify-center gap-2 text-ck-t3 hover:text-ck-accent hover:bg-ck-bg2 transition-colors duration-200 ease-claude"
       title="展开聊天"
     >
       {/* Chat bubble icon */}

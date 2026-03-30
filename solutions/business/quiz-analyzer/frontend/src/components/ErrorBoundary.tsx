@@ -38,20 +38,20 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-            <Warning weight="regular" className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-zinc-900 mb-2">出错了</h1>
-            <p className="text-zinc-600 mb-6">
+        <div className="min-h-screen bg-ck-bg2 flex items-center justify-center p-6">
+          <div className="max-w-md w-full bg-ck-bg1 rounded-ck-lg shadow-composer-hover p-8 text-center">
+            <Warning weight="regular" className="w-16 h-16 text-ck-danger-t mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-ck-t1 mb-2">出错了</h1>
+            <p className="text-ck-t2 mb-6">
               应用遇到了一个意外错误。请尝试刷新页面。
             </p>
 
             {this.state.error && (
               <details className="mb-6 text-left">
-                <summary className="cursor-pointer text-sm text-slate-500 hover:text-slate-700">
+                <summary className="cursor-pointer text-sm text-ck-t3 hover:text-ck-t2">
                   查看错误详情
                 </summary>
-                <pre className="mt-2 p-3 bg-slate-100 rounded text-xs overflow-auto max-h-40">
+                <pre className="mt-2 p-3 bg-ck-bg2 rounded text-xs overflow-auto max-h-40">
                   {this.state.error.toString()}
                 </pre>
               </details>
@@ -59,7 +59,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
             <button
               onClick={this.handleReset}
-              className="flex items-center gap-2 justify-center w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              className="flex items-center gap-2 justify-center w-full bg-ck-accent text-white py-3 rounded-ck font-medium hover:bg-ck-accent-hover transition-colors duration-200 ease-claude"
             >
               <ArrowCounterClockwise weight="regular" className="w-5 h-5" />
               刷新页面

@@ -31,7 +31,7 @@ export default function ParsedContentPanel({
     <div className="space-y-4">
       {/* Header row: quiz type + metadata */}
       <div className="flex items-center gap-2 flex-wrap">
-        <span className="px-2.5 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs font-medium">
+        <span className="px-2.5 py-0.5 bg-ck-accent/10 text-ck-accent rounded-full text-xs font-medium">
           {QUIZ_TYPE_LABELS[parsedContent.quizType] || parsedContent.quizType}
         </span>
 
@@ -42,12 +42,12 @@ export default function ParsedContentPanel({
                 <div
                   key={level}
                   className={`w-4 h-1.5 rounded-full ${
-                    level <= difficulty ? DIFFICULTY_COLORS[difficulty] : 'bg-zinc-200'
+                    level <= difficulty ? DIFFICULTY_COLORS[difficulty] : 'bg-ck-b1'
                   }`}
                 />
               ))}
             </div>
-            <span className="text-xs text-zinc-500">{DIFFICULTY_LABELS[difficulty]}</span>
+            <span className="text-xs text-ck-t3">{DIFFICULTY_LABELS[difficulty]}</span>
           </div>
         )}
 
@@ -55,21 +55,21 @@ export default function ParsedContentPanel({
 
       {/* Stem */}
       <div>
-        <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">题干</div>
-        <Markdown className="text-sm text-zinc-800 leading-relaxed">{parsedContent.stem}</Markdown>
+        <div className="text-[10px] font-semibold text-ck-t3 uppercase tracking-wider mb-1">题干</div>
+        <Markdown className="text-sm text-ck-t1 leading-relaxed">{parsedContent.stem}</Markdown>
       </div>
 
       {/* Options */}
       {parsedContent.options.length > 0 && (
         <div>
-          <div className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">选项</div>
+          <div className="text-[10px] font-semibold text-ck-t3 uppercase tracking-wider mb-1">选项</div>
           <div className="space-y-1">
             {parsedContent.options.map((opt, i) => (
               <div
                 key={i}
-                className="flex items-start gap-2 text-sm text-zinc-700 px-3 py-1.5 bg-zinc-50 rounded-lg"
+                className="flex items-start gap-2 text-sm text-ck-t2 px-3 py-1.5 bg-ck-bg2 rounded-ck"
               >
-                <span className="font-medium text-zinc-400 flex-shrink-0">
+                <span className="font-medium text-ck-t3 flex-shrink-0">
                   {String.fromCharCode(65 + i)}.
                 </span>
                 <Markdown compact>{opt}</Markdown>
@@ -81,10 +81,10 @@ export default function ParsedContentPanel({
 
       {/* Correct answer */}
       {correctAnswer && (
-        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-          <CheckCircle weight="fill" className="w-4 h-4 text-green-600 flex-shrink-0" />
-          <span className="text-xs font-semibold text-green-600">正确答案</span>
-          <Markdown compact className="text-sm font-semibold text-green-900">{correctAnswer}</Markdown>
+        <div className="flex items-center gap-2 bg-ck-success-bg border border-ck-b1 rounded-ck px-3 py-2">
+          <CheckCircle weight="fill" className="w-4 h-4 text-ck-success-t flex-shrink-0" />
+          <span className="text-xs font-semibold text-ck-success-t">正确答案</span>
+          <Markdown compact className="text-sm font-semibold text-ck-success-t">{correctAnswer}</Markdown>
         </div>
       )}
     </div>

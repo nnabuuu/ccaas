@@ -97,19 +97,19 @@ export default function KpMatchPage() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen flex flex-col bg-slate-50">
+      <div className="min-h-screen flex flex-col bg-ck-bg2">
         {/* Header */}
-        <header className="bg-white border-b border-zinc-200">
+        <header className="bg-ck-bg1 border-b border-ck-b2">
           <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 to="/"
-                className="flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+                className="flex items-center gap-1 text-sm text-ck-t2 hover:text-ck-t1 transition-colors duration-200 ease-claude"
               >
                 <ArrowLeft weight="bold" className="w-4 h-4" />
                 返回
               </Link>
-              <h1 className="text-xl font-bold text-zinc-900">知识点匹配</h1>
+              <h1 className="text-xl font-bold text-ck-t1">知识点匹配</h1>
             </div>
             <button onClick={handleReset} className="btn-secondary flex items-center gap-2 text-sm">
               <ArrowCounterClockwise weight="regular" className="w-4 h-4" />
@@ -121,8 +121,8 @@ export default function KpMatchPage() {
         {/* Main */}
         <main className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 space-y-6">
           {/* Input section */}
-          <div className="bento-card !cursor-default hover:!scale-100 space-y-4">
-            <label className="text-sm font-medium text-zinc-700">粘贴题目内容</label>
+          <div className="ck-card p-5 space-y-4">
+            <label className="text-sm font-medium text-ck-t2">粘贴题目内容</label>
             <textarea
               ref={textareaRef}
               value={quizText}
@@ -130,11 +130,11 @@ export default function KpMatchPage() {
               onKeyDown={handleKeyDown}
               placeholder="在此粘贴数学题、物理题或其他学科题目..."
               rows={5}
-              className="input resize-y !rounded-xl"
+              className="input resize-y !rounded-ck-lg"
               disabled={session.isProcessing}
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-zinc-400">Ctrl + Enter 发送</span>
+              <span className="text-xs text-ck-t3">Ctrl + Enter 发送</span>
               <button
                 onClick={handleSubmit}
                 disabled={!quizText.trim() || session.isProcessing}
@@ -161,9 +161,9 @@ export default function KpMatchPage() {
               {activeToolLabels.map((label) => (
                 <div
                   key={label}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-full text-xs font-medium text-primary-700"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-ck-accent/10 border border-ck-accent/20 rounded-full text-xs font-medium text-ck-accent"
                 >
-                  <span className="w-1.5 h-1.5 bg-primary-500 rounded-full animate-pulse" />
+                  <span className="w-1.5 h-1.5 bg-ck-accent rounded-full animate-pulse" />
                   {label}
                 </div>
               ))}
@@ -179,13 +179,13 @@ export default function KpMatchPage() {
 
           {/* Thinking indicator */}
           {session.isThinking && (
-            <div className="bento-card !cursor-default hover:!scale-100 !p-4">
-              <div className="flex items-center gap-2 text-sm text-zinc-500">
+            <div className="ck-card p-4">
+              <div className="flex items-center gap-2 text-sm text-ck-t2">
                 <span className="spinner !w-4 !h-4 !border-2" />
                 正在思考…
               </div>
               {session.thinkingContent && (
-                <p className="mt-2 text-xs text-zinc-400 line-clamp-3">{session.thinkingContent}</p>
+                <p className="mt-2 text-xs text-ck-t3 line-clamp-3">{session.thinkingContent}</p>
               )}
             </div>
           )}
@@ -193,7 +193,7 @@ export default function KpMatchPage() {
           {/* Result section */}
           {session.kpResult && (
             <div ref={resultRef} className="space-y-4">
-              <div className="bento-card !cursor-default hover:!scale-100">
+              <div className="ck-card p-5">
                 <KpResultPanel result={session.kpResult} />
               </div>
               <div className="flex justify-center">
@@ -207,10 +207,10 @@ export default function KpMatchPage() {
 
           {/* Chat transcript (collapsed by default) */}
           {assistantMessages.length > 0 && (
-            <div className="border border-zinc-200 rounded-xl overflow-hidden bg-white">
+            <div className="border border-ck-b2 rounded-ck-lg overflow-hidden bg-ck-bg1">
               <button
                 onClick={() => setShowChat(!showChat)}
-                className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-3 text-sm font-medium text-ck-t2 hover:bg-ck-bg3 transition-colors duration-200 ease-claude"
               >
                 {showChat ? (
                   <CaretDown weight="bold" className="w-4 h-4" />
@@ -220,9 +220,9 @@ export default function KpMatchPage() {
                 AI 对话记录 ({assistantMessages.length} 条)
               </button>
               {showChat && (
-                <div className="border-t border-zinc-200 divide-y divide-zinc-100 max-h-96 overflow-y-auto">
+                <div className="border-t border-ck-b1 divide-y divide-ck-b2 max-h-96 overflow-y-auto ck-scrollbar">
                   {assistantMessages.map((msg, i) => (
-                    <div key={i} className="px-4 py-3 text-sm text-zinc-600 whitespace-pre-wrap">
+                    <div key={i} className="px-4 py-3 text-sm text-ck-t2 whitespace-pre-wrap">
                       {msg.content}
                     </div>
                   ))}
@@ -233,14 +233,14 @@ export default function KpMatchPage() {
         </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-zinc-200">
+        <footer className="bg-ck-bg1 border-t border-ck-b2">
           <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between text-xs">
             <ConnectionStatus
               connected={session.connected}
               error={session.error}
               onReconnect={session.reconnect}
             />
-            <div className="text-zinc-500">
+            <div className="text-ck-t2">
               {session.sessionId && (
                 <span>会话 ID: {session.sessionId.substring(0, 8)}</span>
               )}

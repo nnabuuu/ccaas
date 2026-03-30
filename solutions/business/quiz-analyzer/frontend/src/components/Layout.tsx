@@ -44,20 +44,20 @@ export default function Layout() {
   ]
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-ck-bg2">
       {/* Sidebar Navigation */}
-      <nav className="w-64 bg-white border-r border-slate-200 flex flex-col flex-shrink-0">
+      <nav className="w-64 bg-ck-bg1 border-r border-ck-b1 flex flex-col flex-shrink-0">
         {/* Logo */}
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-6 border-b border-ck-b1">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-ck-lg bg-ck-t1 flex items-center justify-center">
               <GraduationCap weight="regular" className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-primary-900">Quiz Analyzer</h2>
+              <h2 className="text-lg font-bold text-ck-t1">Quiz Analyzer</h2>
             </div>
           </div>
-          <p className="text-sm text-slate-500 ml-13">教育题目智能分析</p>
+          <p className="text-sm text-ck-t3 ml-13">教育题目智能分析</p>
         </div>
 
         {/* Navigation */}
@@ -70,12 +70,12 @@ export default function Layout() {
                   <Link
                     to={path}
                     className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl font-medium
-                      transition-all duration-200 cursor-pointer
+                      flex items-center gap-3 px-4 py-3 rounded-ck-lg font-medium
+                      transition-all duration-200 ease-claude cursor-pointer
                       ${
                         active
-                          ? 'bg-primary-50 text-primary-700 shadow-sm'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          ? 'bg-ck-accent/10 text-ck-accent shadow-composer'
+                          : 'text-ck-t2 hover:bg-ck-bg2 hover:text-ck-t1'
                       }
                     `}
                   >
@@ -89,10 +89,10 @@ export default function Layout() {
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-200">
-          <div className="px-4 py-2 bg-slate-50 rounded-lg">
-            <p className="text-xs text-slate-500">Version 1.0.0</p>
-            <p className="text-xs text-slate-400 mt-1">Built with React + Vite</p>
+        <div className="p-4 border-t border-ck-b1">
+          <div className="px-4 py-2 bg-ck-bg2 rounded-ck">
+            <p className="text-xs text-ck-t3">Version 1.0.0</p>
+            <p className="text-xs text-ck-t3 mt-1">Built with React + Vite</p>
           </div>
         </div>
       </nav>
@@ -107,7 +107,7 @@ export default function Layout() {
           </main>
 
           {!isCollapsed && (
-            <aside className="w-[400px] border-l border-slate-200 bg-white flex-shrink-0">
+            <aside className="w-[400px] border-l border-ck-b1 bg-ck-bg1 flex-shrink-0">
               <ChatSection
                 mode={mode}
                 isCollapsed={isCollapsed}
@@ -134,7 +134,7 @@ export default function Layout() {
             </main>
           </Panel>
 
-          <Separator className="w-1 bg-slate-200 hover:bg-primary-500 transition-colors" />
+          <Separator className="w-1 bg-ck-b1 hover:bg-ck-accent transition-colors duration-200 ease-claude" />
 
           <Panel
             defaultSize={35}
@@ -167,7 +167,7 @@ export default function Layout() {
 
           {!isCollapsed && (
             <div
-              className="absolute right-0 top-0 bottom-0 shadow-2xl bg-white z-10"
+              className="absolute right-0 top-0 bottom-0 shadow-composer-hover bg-ck-bg1 z-10"
               style={{ width: `${overlayWidth}px` }}
             >
               <ChatSection
@@ -179,8 +179,8 @@ export default function Layout() {
               />
               {/* Resize handle */}
               <div
-                className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-500 transition-colors ${
-                  isResizing ? 'bg-primary-500' : 'bg-slate-300'
+                className={`absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-ck-accent transition-colors duration-200 ease-claude ${
+                  isResizing ? 'bg-ck-accent' : 'bg-ck-b1'
                 }`}
                 {...overlayResizeProps}
               />

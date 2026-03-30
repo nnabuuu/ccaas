@@ -47,17 +47,17 @@ export default function ChatLayoutControls({
   onToggleCollapse,
 }: ChatLayoutControlsProps) {
   return (
-    <div className="px-3 py-1.5 bg-white border-b border-gray-200 flex items-center justify-between text-xs flex-shrink-0">
+    <div className="px-3 py-1.5 bg-ck-bg1 border-b border-ck-b1 flex items-center justify-between text-xs flex-shrink-0">
       {/* Mode switcher */}
-      <div className="flex items-center gap-0.5 bg-gray-100 rounded-md p-0.5">
+      <div className="flex items-center gap-0.5 bg-ck-bg2 rounded-md p-0.5">
         {modes.map((m) => (
           <button
             key={m.value}
             onClick={() => onModeChange(m.value)}
-            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors ${
+            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors duration-200 ease-claude ${
               mode === m.value
-                ? 'bg-white text-primary-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-ck-bg1 text-ck-accent shadow-composer'
+                : 'text-ck-t3 hover:text-ck-t2'
             }`}
             title={m.label}
           >
@@ -71,7 +71,7 @@ export default function ChatLayoutControls({
       {mode !== 'default' && (
         <button
           onClick={onToggleCollapse}
-          className="flex items-center gap-1 px-2 py-1 text-gray-500 hover:text-gray-700 rounded hover:bg-gray-100 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-ck-t3 hover:text-ck-t2 rounded hover:bg-ck-bg2 transition-colors duration-200 ease-claude"
           title="收起聊天"
         >
           <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
