@@ -4,87 +4,70 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: ['class'],
   theme: {
     extend: {
       colors: {
-        // Primary: Analytics Blue
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6', // Secondary from design system
-          600: '#2563eb',
-          700: '#1e40af', // Primary from design system
-          800: '#1e3a8a', // Text color
-          900: '#1e293b',
+        // ck design system — mapped to CSS custom properties
+        ck: {
+          bg1: 'var(--bg1)',
+          bg2: 'var(--bg2)',
+          bg3: 'var(--bg3)',
+          t1: 'var(--t1)',
+          t2: 'var(--t2)',
+          t3: 'var(--t3)',
+          b1: 'var(--b1)',
+          b2: 'var(--b2)',
+          'info-bg': 'var(--info-bg)',
+          'info-t': 'var(--info-t)',
+          'success-bg': 'var(--success-bg)',
+          'success-t': 'var(--success-t)',
+          'warn-bg': 'var(--warn-bg)',
+          'warn-t': 'var(--warn-t)',
+          'danger-bg': 'var(--danger-bg)',
+          'danger-t': 'var(--danger-t)',
+          accent: 'var(--accent)',
+          'accent-hover': 'var(--accent-hover)',
         },
-        // Secondary: Teal for progress/success
-        secondary: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488', // Primary from e-learning palette
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a', // Text from e-learning palette
-        },
-        // CTA: Amber/Orange for actions
-        cta: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b', // CTA from analytics palette
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-        },
-        // Knowledge point source colors
+        // Knowledge point source colors (business semantic — preserved)
         question: {
-          light: '#dbeafe', // blue-100
-          DEFAULT: '#3b82f6', // blue-500
-          dark: '#1e40af', // blue-700
+          light: '#dbeafe',
+          DEFAULT: '#3b82f6',
+          dark: '#1e40af',
         },
         solution: {
-          light: '#d1fae5', // green-100
-          DEFAULT: '#10b981', // green-500
-          dark: '#047857', // green-700
+          light: '#d1fae5',
+          DEFAULT: '#10b981',
+          dark: '#047857',
         },
         both: {
-          light: '#e9d5ff', // purple-100
-          DEFAULT: '#a855f7', // purple-500
-          dark: '#7e22ce', // purple-700
+          light: '#e9d5ff',
+          DEFAULT: '#a855f7',
+          dark: '#7e22ce',
         },
       },
       fontFamily: {
-        sans: ['Satoshi', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['system-ui', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
         mono: ['Fira Code', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
       },
       borderRadius: {
-        '4xl': '2rem',
+        'ck': 'var(--r)',
+        'ck-lg': 'var(--rl)',
       },
       boxShadow: {
-        'soft': '0 2px 8px rgba(0, 0, 0, 0.04)',
-        'soft-lg': '0 4px 16px rgba(0, 0, 0, 0.06)',
-        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+        'composer': 'var(--composer-shadow)',
+        'composer-hover': 'var(--composer-shadow-hover)',
+        'composer-focus': 'var(--composer-shadow-focus)',
       },
-      backdropBlur: {
-        xs: '2px',
-      },
-      animation: {
-        'fade-in': 'fadeIn 200ms ease-in',
-        'slide-up': 'slideUp 300ms ease-out',
-        'scale-in': 'scaleIn 200ms ease-out',
-        'slide-in-right': 'slideInRight 250ms ease-out',
+      transitionTimingFunction: {
+        'claude': 'cubic-bezier(0.4, 0, 0.2, 1)',
+        'claude-spring': 'cubic-bezier(0.165, 0.85, 0.45, 1)',
       },
       keyframes: {
+        'ck-shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
         fadeIn: {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
@@ -97,13 +80,14 @@ export default {
           '0%': { transform: 'scale(0.95)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
         },
-        slideInRight: {
-          '0%': { transform: 'translateX(100%)' },
-          '100%': { transform: 'translateX(0)' },
-        },
+      },
+      animation: {
+        'ck-shimmer': 'ck-shimmer 1.5s ease-in-out infinite',
+        'fade-in': 'fadeIn 200ms ease-in',
+        'slide-up': 'slideUp 300ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
       },
     },
   },
   plugins: [],
 }
-

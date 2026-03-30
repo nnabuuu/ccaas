@@ -217,16 +217,16 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 
   return (
     <ErrorBoundary>
-      <div className="h-screen flex flex-col bg-zinc-50">
+      <div className="h-screen flex flex-col bg-ck-bg2">
         {/* Header */}
-        <header className="bg-white border-b border-zinc-200">
+        <header className="bg-ck-bg1 border-b border-ck-b2">
           <div className="max-w-[1920px] mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Sparkle weight="regular" className="w-8 h-8 text-zinc-700" />
+                <Sparkle weight="regular" className="w-8 h-8 text-ck-t2" />
                 <div>
-                  <h1 className="text-2xl font-bold text-zinc-900">题目分析器</h1>
-                  <p className="text-sm text-zinc-500">AI 驱动的智能题目分析工具</p>
+                  <h1 className="text-2xl font-bold text-ck-t1">题目分析器</h1>
+                  <p className="text-sm text-ck-t2">AI 驱动的智能题目分析工具</p>
                 </div>
               </div>
 
@@ -236,7 +236,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
 
                 <button
                   onClick={handleClearConversation}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-lg hover:bg-zinc-50"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-ck-t1 bg-ck-bg1 border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
                 >
                   <ArrowCounterClockwise weight="regular" className="w-4 h-4" />
                   新对话
@@ -250,7 +250,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
       <main id="main-container" className="flex-1 relative overflow-hidden max-w-[1920px] mx-auto w-full">
         <div id="grid-container" className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1.2fr] gap-4 h-full p-4">
           {/* Left Column - Input Form */}
-          <div id="left-column" className="flex flex-col bg-white rounded-lg shadow-sm border border-zinc-200 p-6 overflow-y-auto">
+          <div id="left-column" className="flex flex-col bg-ck-bg1 rounded-ck-lg shadow-composer border border-ck-b2 p-6 overflow-y-auto ck-scrollbar">
             <QuizInputForm
               key={viewMode}
               onSubmit={handleQuizSubmit}
@@ -260,7 +260,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
           </div>
 
           {/* Middle Column - Standardized Display */}
-          <div id="middle-column" className="flex flex-col bg-white rounded-lg shadow-sm border border-zinc-200 p-6 overflow-y-auto">
+          <div id="middle-column" className="flex flex-col bg-ck-bg1 rounded-ck-lg shadow-composer border border-ck-b2 p-6 overflow-y-auto ck-scrollbar">
             <StandardizedQuizDisplay
               data={standardizedQuiz}
               isLoading={isAnalyzing && !standardizedQuiz.parsed}
@@ -269,14 +269,14 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
           </div>
 
           {/* Right Column - AI Chat */}
-          <div id="right-column" className="flex flex-col overflow-hidden bg-white rounded-lg shadow-sm border border-zinc-200 p-4">
+          <div id="right-column" className="flex flex-col overflow-hidden bg-ck-bg1 rounded-ck-lg shadow-composer border border-ck-b2 p-4">
             {/* Default/side-by-side mode: use shared chatContent */}
             {(layout.mode === 'default' || layout.mode === 'side-by-side') &&
              !layout.isCollapsed && chatContent}
 
             {/* Overlay mode: show placeholder */}
             {layout.mode === 'overlay' && (
-              <div className="text-gray-400 text-center py-8">
+              <div className="text-ck-t3 text-center py-8">
                 聊天面板已浮动到右侧
               </div>
             )}
@@ -287,7 +287,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
         {layout.mode === 'overlay' && !layout.isCollapsed && (
           <div
             id="overlay-panel"
-            className={`absolute top-0 right-0 bottom-0 flex flex-col overflow-hidden bg-white border-l border-gray-200 shadow-xl z-10 ${
+            className={`absolute top-0 right-0 bottom-0 flex flex-col overflow-hidden bg-ck-bg1 border-l border-ck-b1 shadow-composer-hover z-10 ${
               layout.isResizing ? 'select-none' : ''
             }`}
             style={{
@@ -296,7 +296,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
             }}
           >
             <div
-              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-400 transition-colors z-20"
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-ck-accent/30 transition-colors z-20"
               {...layout.overlayResizeProps}
             />
             {chatContent}
@@ -310,7 +310,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
       </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-zinc-200">
+        <footer className="bg-ck-bg1 border-t border-ck-b2">
           <div className="max-w-[1920px] mx-auto px-6 py-3">
             <div className="flex items-center justify-between text-xs">
               <ConnectionStatus
@@ -318,7 +318,7 @@ ${input.studentAnswer ? '4. 分析学生答案的错误原因和知识盲点\n5.
                 error={session.error}
                 onReconnect={session.reconnect}
               />
-              <div className="text-zinc-500">
+              <div className="text-ck-t2">
                 {session.messages.length > 0 && (
                   <span>{session.messages.length} 条消息</span>
                 )}

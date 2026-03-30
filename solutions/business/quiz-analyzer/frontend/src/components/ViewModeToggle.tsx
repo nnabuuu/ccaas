@@ -14,23 +14,23 @@ interface ViewModeToggleProps {
   onChange: (mode: ViewMode) => void
 }
 
-const modes: { key: ViewMode; icon: string; label: string; activeColor: string }[] = [
-  { key: 'prep', icon: '📋', label: '备课', activeColor: 'text-blue-700' },
-  { key: 'classroom', icon: '🏫', label: '课堂', activeColor: 'text-violet-700' },
-  { key: 'student', icon: '👨‍🎓', label: '学生', activeColor: 'text-green-700' },
+const modes: { key: ViewMode; icon: string; label: string }[] = [
+  { key: 'prep', icon: '📋', label: '备课' },
+  { key: 'classroom', icon: '🏫', label: '课堂' },
+  { key: 'student', icon: '👨‍🎓', label: '学生' },
 ]
 
 export default function ViewModeToggle({ value, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex items-center bg-slate-100 rounded-lg p-1 gap-1">
+    <div className="flex items-center bg-ck-bg2 rounded-lg p-1 gap-1">
       {modes.map(mode => (
         <button
           key={mode.key}
           onClick={() => onChange(mode.key)}
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-all ${
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ease-claude ${
             value === mode.key
-              ? `bg-white ${mode.activeColor} shadow-sm`
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-ck-bg1 text-ck-t1 shadow-composer'
+              : 'text-ck-t2 hover:text-ck-t1'
           }`}
         >
           <span className="text-xs">{mode.icon}</span>

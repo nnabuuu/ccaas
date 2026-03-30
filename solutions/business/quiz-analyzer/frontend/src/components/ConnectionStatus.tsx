@@ -19,8 +19,8 @@ export default function ConnectionStatus({
 }: ConnectionStatusProps) {
   if (connected && !error) {
     return (
-      <div className="flex items-center gap-2 text-xs text-green-600">
-        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+      <div className="flex items-center gap-2 text-xs text-ck-success-t">
+        <span className="w-2 h-2 bg-ck-success-t rounded-full animate-pulse" />
         已连接
       </div>
     )
@@ -28,22 +28,22 @@ export default function ConnectionStatus({
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex items-center gap-2 text-xs text-red-600">
-        <span className="w-2 h-2 bg-red-500 rounded-full" />
+      <div className="flex items-center gap-2 text-xs text-ck-danger-t">
+        <span className="w-2 h-2 bg-ck-danger-t rounded-full" />
         连接断开
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 px-3 py-1 bg-red-50 border border-red-200 rounded-lg">
-          <Warning weight="regular" className="w-4 h-4 text-red-500" />
-          <span className="text-xs text-red-700">{error}</span>
+        <div className="flex items-center gap-2 px-3 py-1 bg-ck-danger-bg border border-ck-b1 rounded-lg">
+          <Warning weight="regular" className="w-4 h-4 text-ck-danger-t" />
+          <span className="text-xs text-ck-danger-t">{error}</span>
         </div>
       )}
 
       {onReconnect && (
         <button
           onClick={onReconnect}
-          className="flex items-center gap-1 px-3 py-1 text-xs text-blue-600 hover:text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors"
+          className="flex items-center gap-1 px-3 py-1 text-xs text-ck-accent hover:text-ck-accent-hover border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
         >
           <WifiHigh weight="regular" className="w-4 h-4" />
           重新连接

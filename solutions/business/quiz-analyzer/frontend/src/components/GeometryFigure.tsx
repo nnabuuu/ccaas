@@ -18,11 +18,19 @@ const JXG = (window as any).JXG
 let _seq = 0
 const uid = () => `jxg-${++_seq}`
 
+/** Prefix bare math function names with Math. so `sin(x)` works without explicit `Math.sin(x)`. */
+const MATH_NAMES = 'sin|cos|tan|asin|acos|atan|atan2|sqrt|abs|pow|log|ceil|floor|round|min|max|PI|E'
+const MATH_RE = new RegExp(`(?<![.\\w])(${MATH_NAMES})(?=\\s*[(]|(?=[^(a-zA-Z]))`, 'g')
+function prefixMath(expr: string): string {
+  return expr.replace(MATH_RE, 'Math.$1')
+}
+
 /** Evaluate a { expr } parent string with the current param value in scope. */
 function evalExpr(expr: string, paramName: string, paramValue: number): number {
   try {
+    const safe = prefixMath(expr)
     // eslint-disable-next-line no-new-func
-    return new Function('Math', paramName, `return ${expr}`)(Math, paramValue)
+    return new Function('Math', paramName, `return ${safe}`)(Math, paramValue)
   } catch {
     return 0
   }
@@ -43,8 +51,9 @@ function resolveParent(
   if (typeof p === 'string') {
     const el = registry.get(p)
     if (el) return el
-    // Not in registry → treat as literal value (text content / expression)
-    return p
+    // Not in registry — likely a broken reference; return undefined so caller can skip
+    console.warn(`GeometryFigure: parent "${p}" not found in registry`)
+    return undefined
   }
   if (typeof p === 'number') return p
   if (Array.isArray(p))      return p
@@ -122,7 +131,9 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
 
   const startAnimation = useCallback(() => {
     if (!anim) return
-    const { range, autoPlay } = anim
+    const { autoPlay } = anim
+    const rawRange = anim.range
+    const range: [number, number] = rawRange[0] < rawRange[1] ? rawRange : [rawRange[1], rawRange[0]]
     const fps      = autoPlay?.fps      ?? 30
     const duration = autoPlay?.duration ?? 4
     const mode     = autoPlay?.mode     ?? 'bounce'
@@ -163,7 +174,7 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
   return (
     <div
       className={`geometry-figure ${className ?? ''}`}
-      style={{ display: 'inline-flex', flexDirection: 'column', gap: 8, fontFamily: 'system-ui, sans-serif' }}
+      style={{ display: 'inline-flex', flexDirection: 'column', gap: 8, fontFamily: 'system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}
     >
       {/* Canvas */}
       <div
@@ -172,9 +183,9 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
         style={{
           width:  size,
           height: size,
-          background:   '#fafaf8',
-          border:       '1px solid #e0dbd4',
-          borderRadius: 3,
+          background:   'var(--bg2)',
+          border:       '1px solid var(--b1)',
+          borderRadius: 'var(--r)',
         }}
       />
 
@@ -183,7 +194,7 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
         <div style={{ width: size }}>
 
           {/* Label + value */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#1a1a2e', marginBottom: 3 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--t1)', marginBottom: 3 }}>
             <span>{anim.label ?? anim.param}</span>
             <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>
               {paramVal.toFixed(1)}{anim.label?.includes('°') ? '°' : ''}
@@ -194,20 +205,20 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <input
               type="range"
-              min={anim.range[0]}
-              max={anim.range[1]}
+              min={Math.min(anim.range[0], anim.range[1])}
+              max={Math.max(anim.range[0], anim.range[1])}
               step={0.5}
               value={paramVal}
               onChange={e => { stopAnimation(); setParam(parseFloat(e.target.value)) }}
-              style={{ flex: 1, accentColor: '#2c5f8a' }}
+              style={{ flex: 1, accentColor: 'var(--accent)' }}
             />
             {anim.autoPlay && (
               <button
                 onClick={togglePlay}
                 style={{
-                  width: 28, height: 28, borderRadius: '50%', border: '1px solid #2c5f8a',
-                  background: playing ? '#2c5f8a' : 'white',
-                  color:      playing ? 'white'   : '#2c5f8a',
+                  width: 28, height: 28, borderRadius: '50%', border: '1px solid var(--accent)',
+                  background: playing ? 'var(--accent)' : 'var(--bg1)',
+                  color:      playing ? 'white'   : 'var(--accent)',
                   cursor: 'pointer', fontSize: 12, flexShrink: 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
@@ -228,10 +239,10 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
                     key={sv.value}
                     onClick={() => { stopAnimation(); setParam(sv.value) }}
                     style={{
-                      padding: '2px 9px', fontSize: 12, borderRadius: 3,
-                      border:      `1px solid ${active ? '#27ae60' : '#ccc'}`,
-                      background:  active ? '#27ae60' : 'white',
-                      color:       active ? 'white'   : '#1a1a2e',
+                      padding: '2px 9px', fontSize: 12, borderRadius: 'var(--r)',
+                      border:      `1px solid ${active ? 'var(--success-t)' : 'var(--b1)'}`,
+                      background:  active ? 'var(--success-bg)' : 'var(--bg1)',
+                      color:       active ? 'var(--success-t)' : 'var(--t1)',
                       cursor:      'pointer', fontFamily: 'monospace',
                     }}
                   >
@@ -245,9 +256,9 @@ export function GeometryFigure({ spec, size = 400, className }: GeometryFigurePr
           {/* Active snap note */}
           {activeSnap?.note && (
             <div style={{
-              marginTop: 6, padding: '5px 8px', borderRadius: 3,
-              border: '1px solid #27ae60', background: '#f0faf4',
-              fontSize: 12, color: '#27ae60', fontWeight: 600,
+              marginTop: 6, padding: '5px 8px', borderRadius: 'var(--r)',
+              border: '1px solid var(--success-t)', background: 'var(--success-bg)',
+              fontSize: 12, color: 'var(--success-t)', fontWeight: 600,
             }}>
               ✓ {activeSnap.note}
             </div>
@@ -319,6 +330,10 @@ function expandElement(el: JXGElement): JXGElement[] {
 
   switch (el.type) {
     case 'incenter': {
+      if (el.parents.length !== 3) {
+        console.warn(`GeometryFigure: ${el.type} expects 3 parents, got ${el.parents.length}, passing through`)
+        return [el]
+      }
       // Incenter = intersection of two angle bisectors
       const [A, B, C] = el.parents as string[]
       return [
@@ -328,6 +343,10 @@ function expandElement(el: JXGElement): JXGElement[] {
       ]
     }
     case 'circumcenter': {
+      if (el.parents.length !== 3) {
+        console.warn(`GeometryFigure: ${el.type} expects 3 parents, got ${el.parents.length}, passing through`)
+        return [el]
+      }
       // Circumcenter = intersection of two perpendicular bisectors
       const [A, B, C] = el.parents as string[]
       return [
@@ -341,6 +360,10 @@ function expandElement(el: JXGElement): JXGElement[] {
       ]
     }
     case 'orthocenter': {
+      if (el.parents.length !== 3) {
+        console.warn(`GeometryFigure: ${el.type} expects 3 parents, got ${el.parents.length}, passing through`)
+        return [el]
+      }
       // Orthocenter = intersection of two altitudes
       const [A, B, C] = el.parents as string[]
       return [
@@ -352,6 +375,10 @@ function expandElement(el: JXGElement): JXGElement[] {
       ]
     }
     case 'centroid': {
+      if (el.parents.length !== 3) {
+        console.warn(`GeometryFigure: ${el.type} expects 3 parents, got ${el.parents.length}, passing through`)
+        return [el]
+      }
       // Centroid = intersection of two medians
       const [A, B, C] = el.parents as string[]
       return [
@@ -383,6 +410,11 @@ function replayElements(
     for (const exp of expanded) {
       try {
         let parents = exp.parents.map(p => resolveParent(p, registry, paramName, paramRef))
+        // Skip element if any parent reference is broken (undefined)
+        if (parents.some(p => p === undefined)) {
+          console.warn(`GeometryFigure: skipping element type="${exp.type}" id="${exp.id ?? '(none)'}" due to unresolved parent`)
+          continue
+        }
         // Flatten single coordinate pair: [[x,y]] → [x,y] for point creation
         // Spec format uses "parents": [[0, 0]], JSXGraph expects flat [0, 0]
         if (parents.length === 1 && Array.isArray(parents[0]) &&

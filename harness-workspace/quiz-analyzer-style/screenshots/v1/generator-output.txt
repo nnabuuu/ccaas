@@ -1,0 +1,21 @@
+v1 迁移完成。所有 13 项任务已完成：
+
+**已修改的文件（11个）：**
+
+| 文件 | 关键改动 |
+|------|---------|
+| `tailwind.config.js` | 完整 `ck` 色彩命名空间、`rounded-ck`/`rounded-ck-lg`、`shadow-composer`、`ease-claude`、系统字体、`darkMode: ['class']` |
+| `index.html` | 移除 Satoshi 字体加载 |
+| `src/index.css` | CSS 变量定义（light + dark）、`@layer base/components` 重写、`.ck-scrollbar`、`::selection`、`prefers-reduced-motion` |
+| `src/App.tsx` | header/footer/卡片/overlay 全部迁移到 ck 体系 |
+| `QuizInputForm.tsx` | 输入框/按钮/label 迁移到 ck tokens |
+| `StandardizedQuizDisplay.tsx` | 内容区/答案区/badge/难度指示器迁移 |
+| `ChatWithQuickActions.tsx` | 快捷按钮/状态指示器统一为 ck accent |
+| `ViewModeToggle.tsx` | 去除 per-mode 色彩，统一 ck 体系 |
+| `ConnectionStatus.tsx` | 用 ck 语义色（success/danger/accent） |
+| `SkeletonLoader.tsx` | `bg-ck-bg2`、`rounded-ck`/`rounded-ck-lg` |
+| `GeometryFigure.tsx` | 内联样式硬编码色值全部替换为 CSS 变量 |
+
+**验证结果：** `npx tsc --noEmit` 通过，零错误。
+
+**Changelog：** 已写入 `harness-workspace/quiz-analyzer-style/changelogs/v1-changelog.md`

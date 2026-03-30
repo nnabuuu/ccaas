@@ -86,48 +86,48 @@ export default function QuizInputForm({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+      <h2 className="text-lg font-semibold text-ck-t1 mb-4 flex items-center gap-2">
         <FileText weight="regular" className="w-5 h-5" />
         {viewMode === 'student' ? '提交解答' : '输入题目'}
       </h2>
 
       {/* Quiz Content */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">
-          题目内容 <span className="text-red-500">*</span>
+        <label className="block text-sm font-medium text-ck-t2 mb-2">
+          题目内容 <span className="text-[var(--danger-t)]">*</span>
         </label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="请输入题目内容（包括题干和选项）&#10;&#10;示例：&#10;已知函数 f(x) = x² - 2x + 1，求 f(x) 的最小值。&#10;A. -1&#10;B. 0&#10;C. 1&#10;D. 2"
-          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[200px] resize-y font-mono text-sm ${
-            errors.content ? 'border-red-300' : 'border-slate-300'
+          className={`w-full px-3 py-2 bg-ck-bg1 border rounded-ck text-ck-t1 placeholder:text-ck-t3 focus:outline-none focus:shadow-composer-focus focus:border-ck-accent min-h-[200px] resize-y font-mono text-sm transition-all duration-200 ease-claude ${
+            errors.content ? 'border-[var(--danger-t)]' : 'border-ck-b1'
           }`}
           disabled={disabled}
         />
-        {errors.content && <p className="mt-1 text-sm text-red-600">{errors.content}</p>}
+        {errors.content && <p className="mt-1 text-sm text-[var(--danger-t)]">{errors.content}</p>}
       </div>
 
       {/* Teacher mode: Correct Answer (required) */}
       {viewMode === 'prep' && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+          <label className="block text-sm font-medium text-ck-t2 mb-2 flex items-center gap-2">
             <CheckCircle weight="regular" className="w-4 h-4" />
-            参考答案 <span className="text-red-500">*</span>
+            参考答案 <span className="text-[var(--danger-t)]">*</span>
           </label>
           <input
             type="text"
             value={correctAnswer}
             onChange={(e) => setCorrectAnswer(e.target.value)}
             placeholder="例如：B 或 2x+3 或 详细文字答案"
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.correctAnswer ? 'border-red-300' : 'border-slate-300'
+            className={`w-full px-3 py-2 bg-ck-bg1 border rounded-ck text-ck-t1 placeholder:text-ck-t3 focus:outline-none focus:shadow-composer-focus focus:border-ck-accent transition-all duration-200 ease-claude ${
+              errors.correctAnswer ? 'border-[var(--danger-t)]' : 'border-ck-b1'
             }`}
             disabled={disabled}
           />
           {errors.correctAnswer && (
-            <p className="mt-1 text-sm text-red-600">{errors.correctAnswer}</p>
+            <p className="mt-1 text-sm text-[var(--danger-t)]">{errors.correctAnswer}</p>
           )}
         </div>
       )}
@@ -135,23 +135,23 @@ export default function QuizInputForm({
       {/* Student mode: Student Answer (required) */}
       {viewMode === 'student' && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-2">
+          <label className="block text-sm font-medium text-ck-t2 mb-2 flex items-center gap-2">
             <User weight="regular" className="w-4 h-4" />
-            我的解答 <span className="text-red-500">*</span>
+            我的解答 <span className="text-[var(--danger-t)]">*</span>
           </label>
           <textarea
             value={studentAnswer}
             onChange={(e) => setStudentAnswer(e.target.value)}
             placeholder="请输入你的解答过程或答案..."
-            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 min-h-[100px] resize-y text-sm ${
-              errors.studentAnswer ? 'border-red-300' : 'border-slate-300'
+            className={`w-full px-3 py-2 bg-ck-bg1 border rounded-ck text-ck-t1 placeholder:text-ck-t3 focus:outline-none focus:shadow-composer-focus focus:border-ck-accent min-h-[100px] resize-y text-sm transition-all duration-200 ease-claude ${
+              errors.studentAnswer ? 'border-[var(--danger-t)]' : 'border-ck-b1'
             }`}
             disabled={disabled}
           />
           {errors.studentAnswer && (
-            <p className="mt-1 text-sm text-red-600">{errors.studentAnswer}</p>
+            <p className="mt-1 text-sm text-[var(--danger-t)]">{errors.studentAnswer}</p>
           )}
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-ck-t3">
             AI 会检查你的解答，指出错误并给出引导提示
           </p>
         </div>
@@ -161,11 +161,7 @@ export default function QuizInputForm({
       <button
         onClick={handleSubmit}
         disabled={isSubmitDisabled}
-        className={`w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
-          viewMode === 'student'
-            ? 'bg-green-600 hover:bg-green-700 disabled:bg-slate-300'
-            : 'bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300'
-        }`}
+        className="w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ease-claude flex items-center justify-center gap-2 bg-ck-accent hover:bg-ck-accent-hover active:scale-[0.98]"
       >
         {disabled ? (
           <>
@@ -180,7 +176,7 @@ export default function QuizInputForm({
       </button>
 
       {/* Keyboard shortcut hint */}
-      <p className="text-xs text-slate-400 text-center">
+      <p className="text-xs text-ck-t3 text-center">
         提示：Ctrl+Enter 快速提交
       </p>
     </div>

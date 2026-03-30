@@ -56,11 +56,7 @@ export default function ChatWithQuickActions({
         <button
           onClick={onStartAnalysis}
           disabled={!canAnalyze || isProcessing}
-          className={`w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl disabled:shadow-none ${
-            isStudent
-              ? 'bg-green-600 hover:bg-green-700 disabled:bg-zinc-300'
-              : 'bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300'
-          }`}
+          className="w-full text-white py-3 rounded-lg font-medium disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2 bg-ck-accent hover:bg-ck-accent-hover shadow-composer hover:shadow-composer-hover disabled:shadow-none active:scale-[0.98] transition-all duration-200 ease-claude"
         >
           {isProcessing ? (
             <>
@@ -82,7 +78,7 @@ export default function ChatWithQuickActions({
 
         {/* Help text */}
         {!canAnalyze && !isProcessing && (
-          <p className="mt-2 text-xs text-slate-500 text-center">
+          <p className="mt-2 text-xs text-ck-t3 text-center">
             {isStudent ? '请先填写题目内容和你的解答' : '请先填写题目内容和参考答案'}
           </p>
         )}
@@ -95,13 +91,13 @@ export default function ChatWithQuickActions({
             <>
               <button
                 onClick={() => onSendMessage('给我一个提示，不要直接告诉我答案')}
-                className="flex-1 text-xs px-2 py-1.5 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition-colors"
+                className="flex-1 text-xs px-2 py-1.5 bg-ck-bg1 text-ck-t2 border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
               >
                 给我提示
               </button>
               <button
                 onClick={() => onSendMessage('我哪里理解错了？')}
-                className="flex-1 text-xs px-2 py-1.5 bg-orange-50 text-orange-700 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors"
+                className="flex-1 text-xs px-2 py-1.5 bg-ck-bg1 text-ck-t2 border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
               >
                 哪里错了
               </button>
@@ -110,13 +106,13 @@ export default function ChatWithQuickActions({
             <>
               <button
                 onClick={() => onSendMessage('帮我生成几道举一反三的练习题')}
-                className="flex-1 text-xs px-2 py-1.5 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition-colors"
+                className="flex-1 text-xs px-2 py-1.5 bg-ck-bg1 text-ck-t2 border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
               >
                 举一反三
               </button>
               <button
                 onClick={() => onSendMessage('总结学生常见错误类型')}
-                className="flex-1 text-xs px-2 py-1.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                className="flex-1 text-xs px-2 py-1.5 bg-ck-bg1 text-ck-t2 border border-ck-b1 rounded-lg hover:bg-ck-bg3 transition-all duration-200 ease-claude"
               >
                 常见错误
               </button>
@@ -146,8 +142,8 @@ export default function ChatWithQuickActions({
 
       {/* Status indicator */}
       {isProcessing && (
-        <div className="mt-2 flex-shrink-0 text-xs text-slate-500 flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full animate-pulse ${isStudent ? 'bg-green-500' : 'bg-blue-500'}`} />
+        <div className="mt-2 flex-shrink-0 text-xs text-ck-t2 flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full animate-pulse bg-ck-accent" />
           {isStudent ? 'AI 正在检查你的解答...' : 'AI 正在分析...'}
         </div>
       )}

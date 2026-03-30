@@ -1,4 +1,69 @@
-/* Satoshi font loaded via index.html link tag */
+/* ── CSS Custom Properties (ck design system) ──────────────────────────────── */
+
+:root {
+  /* 背景 */
+  --bg1: #ffffff;
+  --bg2: #F5F5F0;
+  --bg3: #F5F5F0;
+
+  /* 文字 */
+  --t1: #1A1A18;
+  --t2: #6B6A68;
+  --t3: #9A9893;
+
+  /* 边框 */
+  --b1: rgba(0, 0, 0, 0.08);
+  --b2: rgba(0, 0, 0, 0.06);
+
+  /* 语义色 */
+  --info-bg: #e6f1fb;    --info-t: #0c447c;
+  --success-bg: #eaf3de; --success-t: #27500a;
+  --warn-bg: #faeeda;    --warn-t: #854f0b;
+  --danger-bg: #fde8e8;  --danger-t: #a32d2d;
+
+  /* 圆角 */
+  --r: 8px;
+  --rl: 12px;
+
+  /* 强调色 */
+  --accent: #AE5630;
+  --accent-hover: #C4633A;
+
+  /* Composer 阴影 */
+  --composer-shadow: 0 0.25rem 1.25rem rgba(0,0,0,0.035), 0 0 0 0.5px rgba(0,0,0,0.08);
+  --composer-shadow-hover: 0 0.25rem 1.25rem rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.12);
+  --composer-shadow-focus: 0 0.25rem 1.25rem rgba(0,0,0,0.075), 0 0 0 0.5px rgba(0,0,0,0.15);
+
+  /* 内联代码 */
+  --inline-code-color: #C0392B;
+  --inline-code-bg: rgba(0, 0, 0, 0.04);
+  --inline-code-border: rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --bg1: #30302E;
+  --bg2: #262624;
+  --bg3: #393937;
+  --t1: #FAF9F5;
+  --t2: #9C9A92;
+  --t3: #9C9A92;
+  --b1: rgba(222, 220, 209, 0.2);
+  --b2: rgba(222, 220, 209, 0.15);
+  --info-bg: #042c53;  --info-t: #85b7eb;
+  --success-bg: #173404; --success-t: #c0dd97;
+  --warn-bg: #412402;  --warn-t: #fac775;
+  --danger-bg: #3d0c0c; --danger-t: #f09595;
+
+  --accent-hover: #D07040;
+  --inline-code-color: #FE8181;
+  --inline-code-bg: rgba(194, 192, 182, 0.05);
+  --inline-code-border: rgba(222, 220, 209, 0.15);
+  --composer-shadow: 0 4px 20px rgba(0,0,0,0.035), 0 0 0 0.5px rgba(222,220,209,0.15);
+  --composer-shadow-hover: 0 4px 20px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(222,220,209,0.25);
+  --composer-shadow-focus: 0 4px 20px rgba(0,0,0,0.075), 0 0 0 0.5px rgba(222,220,209,0.3);
+}
+
+/* ── Tailwind layers ───────────────────────────────────────────────────────── */
 
 @tailwind base;
 @tailwind components;
@@ -10,7 +75,12 @@
   }
 
   body {
-    @apply m-0 min-h-screen bg-slate-50 text-primary-800 font-sans antialiased;
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg2);
+    color: var(--t1);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    @apply m-0 min-h-screen;
   }
 
   #root {
@@ -18,7 +88,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold text-primary-900;
+    @apply font-semibold text-ck-t1;
   }
 
   h1 {
@@ -33,42 +103,41 @@
     @apply text-xl md:text-2xl;
   }
 
-  /* Ensure minimum contrast for accessibility */
   a {
-    @apply text-primary-600 hover:text-primary-700 transition-colors duration-200;
+    color: var(--accent);
+    @apply hover:opacity-80 transition-colors duration-200;
   }
 
   button, a, [role="button"] {
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
   }
 
   button:active, [role="button"]:active {
-    transform: translateY(1px) scale(0.98);
+    transform: scale(0.98);
   }
 
-  /* Focus states for accessibility */
   *:focus-visible {
-    @apply outline-none ring-2 ring-primary-500 ring-offset-2;
+    @apply outline-none ring-2 ring-ck-accent ring-offset-2;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: #fff;
   }
 }
 
 @layer components {
-  /* Bento Grid Card */
-  .bento-card {
-    @apply bg-white rounded-3xl p-6 shadow-soft hover:shadow-soft-lg transition-all duration-200 cursor-pointer;
+  /* ck Card */
+  .ck-card {
+    @apply bg-ck-bg1 rounded-ck-lg shadow-composer border border-ck-b2;
   }
 
-  .bento-card:hover {
-    @apply scale-[1.02];
+  .ck-card:hover {
+    @apply shadow-composer-hover;
   }
 
-  /* Glass effect for modals/overlays */
-  .glass {
-    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-glass;
-  }
-
-  /* Knowledge Point Badge */
+  /* Knowledge Point Badges (business semantic — preserved) */
   .badge-question {
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-question-light text-question-dark border border-question/20;
   }
@@ -81,42 +150,48 @@
     @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-both-light text-both-dark border border-both/20;
   }
 
-  /* Button variants */
+  /* ck Button variants */
   .btn-primary {
-    @apply px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium shadow-sm hover:shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-4 py-2 bg-ck-accent text-white rounded-lg font-medium
+           hover:bg-ck-accent-hover active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed
+           transition-all duration-200 ease-claude;
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-white hover:bg-slate-50 text-primary-700 border border-slate-200 rounded-xl font-medium shadow-sm hover:shadow-md active:scale-[0.98];
+    @apply px-4 py-2 bg-ck-bg1 text-ck-t1 border border-ck-b1 rounded-lg font-medium
+           hover:bg-ck-bg3 active:scale-[0.98]
+           transition-all duration-200 ease-claude;
   }
 
-  .btn-cta {
-    @apply px-4 py-2 bg-cta-500 hover:bg-cta-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md active:scale-[0.98];
-  }
-
-  /* Input styles */
+  /* ck Input */
   .input {
-    @apply w-full px-4 py-2 bg-white border border-slate-200 rounded-xl focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors;
-  }
-
-  /* Card hover effect */
-  .card-hover {
-    @apply transition-all duration-200 hover:scale-[1.02] hover:shadow-soft-lg;
+    @apply w-full px-4 py-2 bg-ck-bg1 border border-ck-b1 rounded-ck text-ck-t1
+           placeholder:text-ck-t3
+           focus:shadow-composer-focus focus:border-ck-accent
+           transition-all duration-200 ease-claude;
   }
 
   /* Loading spinner */
   .spinner {
-    @apply inline-block w-5 h-5 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin;
+    @apply inline-block w-5 h-5 border-4 rounded-full animate-spin;
+    border-color: var(--b1);
+    border-top-color: var(--accent);
   }
+
+  /* ck Scrollbar */
+  .ck-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--b1) transparent;
+    scrollbar-gutter: stable;
+  }
+  .ck-scrollbar::-webkit-scrollbar { width: 6px; }
+  .ck-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .ck-scrollbar::-webkit-scrollbar-thumb { background: var(--b1); border-radius: 9999px; }
+  .ck-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--t3); }
 }
 
 @layer utilities {
-  /* Custom utilities */
-  .text-gradient {
-    @apply bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent;
-  }
-
-  /* Animation utilities */
   .animate-delay-100 {
     animation-delay: 100ms;
   }
@@ -132,9 +207,10 @@
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
