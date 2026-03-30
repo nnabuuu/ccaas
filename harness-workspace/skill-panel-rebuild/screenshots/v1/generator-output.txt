@@ -1,0 +1,23 @@
+## V1 Complete - Summary
+
+### What was done
+Implemented the **Controlled Component Pattern** for SkillPanel integration:
+
+1. **ChatCoreContext** — External `skillPanelOpen`/`onSkillPanelChange` props with controlled pattern (external takes priority over internal state)
+2. **Prop threading** — `ChatInterface → ChatInterfaceRoot → ChatCoreProvider` (4-layer chain)
+3. **Conditional rendering** — `ChatInterface` shows SkillPanel when open, chat UI when closed
+4. **ChatSidebar Skills entry** — Puzzle icon in both expanded ("Skills" text) and collapsed (icon-only) states with active highlight
+5. **App.tsx wiring** — Both core and edu-platform hold `skillPanelOpen` state
+
+### Verification
+- TypeScript: 0 errors
+- Tests: 81/81 pass
+- Core (5190): Sidebar → Panel → Close → Chat restored
+- Edu-Platform (5290): Same flow, shows tenant-specific skills
+- Mobile (375x812): Responsive verified
+
+### Screenshots
+- `screenshots/v1/skill-panel-desktop.png`
+- `screenshots/v1/sidebar-skills-expanded.png`
+- `screenshots/v1/skill-panel-mobile.png`
+- `screenshots/v1/edu-desktop.png`

@@ -1,0 +1,20 @@
+评估完成。报告已写入 `/harness-workspace/skill-panel-rebuild/eval-reports/v1-eval.md`
+
+## 评估摘要
+
+| Dimension | Score | Weighted |
+|-----------|-------|----------|
+| D1: 原型视觉对齐 (30) | 4/5 | 24 |
+| D2: Sidebar 集成 (25) | 5/5 | 25 |
+| D3: 功能验证 (20) | 4/5 | 16 |
+| D4: 响应式 (10) | 3/5 | 6 |
+| D5: 代码质量 (10) | 5/5 | 10 |
+| Penalties | | 0 |
+| D6 Bonus | | +5 |
+
+**总分: 86/100** (超过 80 分 target)
+
+**Top 3 改进项**:
+1. **[Critical]** Mobile drawer overlay 阻塞 SkillPanel 交互 — drawer 打开 Skills 后 overlay 未关闭
+2. **[Minor]** Card/button border 应为 0.5px 而非默认 1px
+3. **[Minor]** "本月调用" stat cards 显示 "—"，需后端 API 支持或隐藏
