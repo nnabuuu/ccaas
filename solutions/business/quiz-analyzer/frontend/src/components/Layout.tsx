@@ -100,7 +100,7 @@ export default function Layout() {
       {/* Main Content + Chatbox */}
       {mode === 'default' && (
         <>
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto ck-scrollbar">
             <div className="p-8">
               <Outlet />
             </div>
@@ -127,7 +127,7 @@ export default function Layout() {
       {mode === 'side-by-side' && (
         <Group orientation="horizontal">
           <Panel defaultSize={65} minSize={40}>
-            <main className="h-full overflow-auto">
+            <main className="h-full overflow-auto ck-scrollbar">
               <div className="p-8">
                 <Outlet />
               </div>
@@ -160,7 +160,7 @@ export default function Layout() {
       )}
 
       {mode === 'overlay' && (
-        <main className="flex-1 relative overflow-auto">
+        <main className="flex-1 relative overflow-auto ck-scrollbar">
           <div className="p-8">
             <Outlet />
           </div>

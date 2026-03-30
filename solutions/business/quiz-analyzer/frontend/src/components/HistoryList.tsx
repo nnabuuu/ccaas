@@ -76,7 +76,7 @@ export default function HistoryList({ history, current, onSelect, onDelete }: Hi
         <span className="text-xs text-ck-t3">{history.length} 条记录</span>
       </div>
 
-      <motion.div variants={container} initial="hidden" animate="show" className="space-y-2 max-h-[600px] overflow-y-auto">
+      <motion.div variants={container} initial="hidden" animate="show" className="space-y-2 max-h-[600px] overflow-y-auto ck-scrollbar">
         {history.map(record => {
           const isActive = current?.id === record.id
           const preview = truncate(record.quiz.content, 60)

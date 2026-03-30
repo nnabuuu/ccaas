@@ -224,10 +224,10 @@ export default function QuizAnalyzePage() {
           {!hasAnyResult && session.isProcessing && (
             <div className="bg-ck-bg1 border border-ck-b2 rounded-ck-lg p-8">
               <div className="space-y-3">
-                <div className="h-4 bg-ck-bg2 rounded-lg w-1/3 animate-pulse" />
-                <div className="h-3 bg-ck-bg2 rounded-lg w-full animate-pulse" />
-                <div className="h-3 bg-ck-bg2 rounded-lg w-2/3 animate-pulse" />
-                <div className="h-20 bg-ck-bg2 rounded-lg animate-pulse mt-4" />
+                <div className="h-4 bg-ck-bg2 rounded-ck w-1/3 animate-pulse" />
+                <div className="h-3 bg-ck-bg2 rounded-ck w-full animate-pulse" />
+                <div className="h-3 bg-ck-bg2 rounded-ck w-2/3 animate-pulse" />
+                <div className="h-20 bg-ck-bg2 rounded-ck animate-pulse mt-4" />
               </div>
             </div>
           )}

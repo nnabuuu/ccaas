@@ -225,9 +225,9 @@ export default function ProcessPanel({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto ck-scrollbar">
               {blocks.length > 0 ? (
-                <div className="divide-y divide-zinc-100">
+                <div className="divide-y divide-ck-b2">
                   {blocks.map((block, i) =>
                     block.type === 'text' ? (
                       <div key={`text-${i}`} className="px-4 py-1.5 text-xs text-ck-t2">

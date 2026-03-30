@@ -74,7 +74,7 @@ function TraversalTypeBadge({ type }: { type: string }) {
         {TRAVERSAL_LABELS[base] || base.replace(/_/g, ' ')}
       </span>
       {hasMulti && (
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700">
+        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-ck-accent/10 text-ck-accent">
           +multi_tag
         </span>
       )}
@@ -158,7 +158,7 @@ function DecisionBadge({ decision }: { decision: string }) {
     escalate: { bg: 'bg-ck-warn-bg', text: 'text-ck-warn-t' },
     switch: { bg: 'bg-ck-danger-bg', text: 'text-ck-danger-t' },
     single_tag: { bg: 'bg-ck-info-bg', text: 'text-ck-info-t' },
-    multi_tag: { bg: 'bg-purple-100', text: 'text-purple-700' },
+    multi_tag: { bg: 'bg-ck-accent/10', text: 'text-ck-accent' },
   }
   const s = styles[decision] || { bg: 'bg-ck-bg2', text: 'text-ck-t2' }
   const meta = DECISION_META[decision]
@@ -356,7 +356,7 @@ function TracePanel({ trace }: { trace: Record<string, unknown> }) {
               <div key={key} className="relative mb-4 last:mb-0">
                 {/* Timeline dot */}
                 <div className={`absolute -left-[1px] top-1.5 w-2.5 h-2.5 rounded-full border-2 border-white ${
-                  key === 'result' ? 'bg-green-500' : 'bg-ck-accent'
+                  key === 'result' ? 'bg-ck-success-t' : 'bg-ck-accent'
                 }`} />
 
                 <div className="ml-5">

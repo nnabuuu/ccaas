@@ -46,7 +46,7 @@
   color: var(--t2);
   text-decoration: none;
   border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-menu a:hover {
@@ -78,4 +78,6 @@
   flex: 1;
   overflow-y: auto;
   background-color: var(--bg2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--b1) transparent;
 }

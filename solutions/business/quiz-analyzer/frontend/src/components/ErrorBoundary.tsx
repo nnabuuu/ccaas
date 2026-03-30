@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                 <summary className="cursor-pointer text-sm text-ck-t3 hover:text-ck-t2">
                   查看错误详情
                 </summary>
-                <pre className="mt-2 p-3 bg-ck-bg2 rounded text-xs overflow-auto max-h-40">
+                <pre className="mt-2 p-3 bg-ck-bg2 rounded-ck text-xs overflow-auto max-h-40">
                   {this.state.error.toString()}
                 </pre>
               </details>
