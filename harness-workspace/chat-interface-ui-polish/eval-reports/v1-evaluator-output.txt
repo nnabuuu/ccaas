@@ -1,18 +1,20 @@
-评估报告已写入 `eval-reports/v1-eval.md`。
+Evaluation complete. Here's the summary:
 
-**总结:**
+**总分: 70/100** (minimum pass threshold)
 
 | Dimension | Score | Weighted |
 |-----------|-------|----------|
-| Claude Web Visual Alignment | 3/5 | 18/30 |
-| Cross-Component Consistency | 5/5 | 25/25 |
-| Responsive & Mobile | 4/5 | 16/20 |
-| Interaction Polish | 4/5 | 12/15 |
-| Code Quality & Maintainability | 5/5 | 10/10 |
+| Claude Web Alignment (35) | 3/5 | 21 |
+| Consistency (15) | 4/5 | 12 |
+| Responsive (15) | 4/5 | 12 |
+| CSS & Interaction (10) | 4/5 | 8 |
+| Functional Verification (15) | 3/5 | 9 |
+| Code Quality (10) | 4/5 | 8 |
 | Penalties | | 0 |
-| **总分** | | **81/100** |
 
-**主要发现:**
-- **强项**: 设计 token 系统非常干净（零硬编码颜色、零 !important、全 CSS variable 体系），交互状态覆盖全面（hover/active/focus-visible），所有测试通过
-- **最大差距**: Quick Suggestions 样式与 Claude Web 明显不同（纯文字 pills vs icon+text 按钮）、Empty State 缺少精致的 SVG icon 装饰
-- **Top 3 改进项**: Quick Suggestions 样式重构、Empty State 精修（SVG icon + attachment placeholder）、Quick Suggestion pills 增加 focus-visible 键盘可访问性
+**Top 3 priority fixes for v2:**
+1. **[P0] Code block line breaks broken** — multi-line code compressed into continuous flow
+2. **[P1] Sidebar navigation too sparse** — only "Chats" nav vs Claude's full Chats/Projects/Artifacts/Code
+3. **[P2] Mobile touch targets + Quick suggestion style** — Send button 32px below 44px standard; suggestion pills should match Claude's icon+text cards
+
+Report written to `eval-reports/v1-eval.md`.
