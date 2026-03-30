@@ -1,0 +1,17 @@
+Evaluation complete. Report written to `eval-reports/v1-eval.md`.
+
+**Results Summary:**
+
+| Dimension | Score |
+|-----------|-------|
+| D1: Auth-Gated Operations | 20/20 |
+| D2: Toggle E2E Flow | 25/25 |
+| D3: Error Handling | 20/20 |
+| D4: Data Integrity | 15/15 |
+| D5: Code Quality | 20/20 |
+| **Total** | **100/100** |
+
+All 3 bugs from the SPEC have been properly fixed:
+- **Bug 1** (premature toast): Fixed — `handleToggle` is async with `await` before `toast.success`
+- **Bug 2** (silent anonymous failure): Fixed — explicit `if (!apiKey)` check with `toast.warning('请先登录才能操作 Skill')`
+- **Bug 3** (error display position): Fixed — errors show as `toast.error` instead of panel-level error state, plus `throw err` re-propagation in `useSkills.ts`

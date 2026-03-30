@@ -1,0 +1,15 @@
+## v1 完成总结
+
+修复了 Skill toggle 链路的 3 个 bug：
+
+| Bug | 修复 |
+|-----|------|
+| **Bug 1** (Toast 在 API 返回前弹出) | `handleToggle` 使用 `await onToggle()` + try/catch，成功后才 `toast.success`，失败时 `toast.error` |
+| **Bug 2** (未登录静默失败) | `handleToggle` 开头检查 `apiKey`，缺失时 `toast.warning('请先登录才能操作 Skill')` 并 return |
+| **Bug 3** (Error 显示位置不佳) | `useSkills.ts` toggleSkill 加 `throw err` re-throw，SkillPanel catch 中用 `toast.error` 就近反馈 |
+
+**改动文件**：
+- `packages/react-sdk/src/hooks/useSkills.ts` — 1 行 (re-throw)
+- `packages/chat-interface/src/components/SkillPanel.tsx` — SolutionTab 重构 toggle handler
+
+**验证全部通过**: TypeScript 编译、grep 无同步 toast 模式、re-throw 存在。
