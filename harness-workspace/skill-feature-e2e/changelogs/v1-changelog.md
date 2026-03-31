@@ -16,6 +16,12 @@
 - [SkillPanel.tsx]: Already had async handleToggle + auth pre-check from baseline; only fix was error detail in catch block (see Code Review Fixes above)
 - [useSkills.ts]: Already had `throw err` re-throw from baseline — no change needed
 
+## Documentation Updates
+- [docs/gitbook/en/api/rest.md]: Added `PATCH /skills/:id/toggle` endpoint documentation with auth, path params, response, and error codes
+- [docs/gitbook/zh/api/rest.md]: Added same toggle endpoint documentation in Chinese
+- [packages/chat-interface/ARCHITECTURE.md]: Added SkillPanel Props table (serverUrl, tenantId, open, onClose, apiKey) with apiKey behavior note
+- [packages/backend/src/sessions/services/skill-management.service.ts]: Updated `loadEnabledSkills` JSDoc to match SPEC — describes enabled filtering, slug allowlist, and return type
+
 ## Verification
 - backend typecheck: PASS
 - chat-interface typecheck: PASS
@@ -23,3 +29,4 @@
 - react-sdk tests: PASS (4 passed — useSkills)
 - chat-interface tests: PASS (18 passed — SkillPanel)
 - grep checks: PASS (guard order correct, isOptionalAuth removed, throw err present)
+- doc checks: PASS (toggle in EN/ZH gitbook, SkillPanel Props in ARCHITECTURE.md, loadEnabledSkills JSDoc updated)

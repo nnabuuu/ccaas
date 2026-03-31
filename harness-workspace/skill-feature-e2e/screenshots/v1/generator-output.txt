@@ -1,22 +1,29 @@
-## Summary
+All tasks complete. Here's the summary:
 
-All 10 tasks completed. Here's what was done:
+## v1 Iteration Summary
 
-### Layer 1: Code Review Fixes (4 items)
-1. **Guard decorator order** — Fixed 6 endpoints across `sessions.controller.ts` (3) and `conversations-alias.controller.ts` (3). `@UseGuards(TenantGuard)` now correctly placed above `@OptionalAuth()` so auth runs first.
-2. **Dead code** — Removed unused `isOptionalAuth` variable and `IS_OPTIONAL_AUTH_KEY` import from `skill-permission.guard.ts`
-3. **Toast error detail** — `SkillPanel.tsx` catch block now shows `err.message` instead of generic "请重试"
+### What was already in place (from baseline/v0):
+- **Code Review Fixes**: Guard decorator order, dead code removal, toast error details — all 3 findings fixed
+- **Unit Tests**: All 4 test files created/extended (17 backend tests, 4 react-sdk tests, 18 chat-interface tests)
+- **UI Bug Fixes**: `throw err` re-throw in useSkills, async handleToggle with auth pre-check in SkillPanel
 
-### Layer 2: Tests (4 files, 13 new tests)
-- `skills.service.toggle.spec.ts` — **NEW**: 3 tests (toggle on→off, off→on, NotFoundException)
-- `skill-management.service.spec.ts` — **EXTENDED**: 3 `loadEnabledSkills` tests (filter enabled, all disabled, slug filter)
-- `useSkills.test.ts` — **NEW**: 4 tests (fetch on mount, PATCH toggle, error re-throw, search filter)
-- `SkillPanel.test.tsx` — **EXTENDED**: 3 toast tests + fixed 1 existing test for auth pre-check
+### What this iteration added (D8 Documentation — was 0 points):
+1. **Gitbook EN** (`docs/gitbook/en/api/rest.md`): Added `PATCH /skills/:id/toggle` endpoint docs
+2. **Gitbook ZH** (`docs/gitbook/zh/api/rest.md`): Same in Chinese
+3. **ARCHITECTURE.md**: Added SkillPanel Props table with all 5 props
+4. **loadEnabledSkills JSDoc**: Updated to match SPEC (describes enabled filtering, slug allowlist, return type)
 
-### Verification Results
-- Backend typecheck: PASS
-- Chat-interface typecheck: PASS  
-- Backend tests: 17 passed
-- React SDK tests: 4 passed
-- Chat-interface tests: 18 passed
-- Grep checks: All 3 PASS
+### Verification Results:
+| Check | Status |
+|-------|--------|
+| Backend typecheck | PASS |
+| Chat-interface typecheck | PASS |
+| Backend tests (toggle + skill-management) | PASS (17/17) |
+| React SDK tests (useSkills) | PASS (4/4) |
+| Chat-interface tests (SkillPanel) | PASS (18/18) |
+| Guard order grep | PASS |
+| Dead code grep | PASS (no matches) |
+| Re-throw grep | PASS (line 84) |
+| Gitbook toggle docs | PASS (EN + ZH) |
+| SkillPanel Props | PASS |
+| JSDoc | PASS |
