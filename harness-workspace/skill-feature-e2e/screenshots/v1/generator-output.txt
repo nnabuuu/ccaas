@@ -1,15 +1,22 @@
-## v1 完成总结
+## Summary
 
-修复了 Skill toggle 链路的 3 个 bug：
+All 10 tasks completed. Here's what was done:
 
-| Bug | 修复 |
-|-----|------|
-| **Bug 1** (Toast 在 API 返回前弹出) | `handleToggle` 使用 `await onToggle()` + try/catch，成功后才 `toast.success`，失败时 `toast.error` |
-| **Bug 2** (未登录静默失败) | `handleToggle` 开头检查 `apiKey`，缺失时 `toast.warning('请先登录才能操作 Skill')` 并 return |
-| **Bug 3** (Error 显示位置不佳) | `useSkills.ts` toggleSkill 加 `throw err` re-throw，SkillPanel catch 中用 `toast.error` 就近反馈 |
+### Layer 1: Code Review Fixes (4 items)
+1. **Guard decorator order** — Fixed 6 endpoints across `sessions.controller.ts` (3) and `conversations-alias.controller.ts` (3). `@UseGuards(TenantGuard)` now correctly placed above `@OptionalAuth()` so auth runs first.
+2. **Dead code** — Removed unused `isOptionalAuth` variable and `IS_OPTIONAL_AUTH_KEY` import from `skill-permission.guard.ts`
+3. **Toast error detail** — `SkillPanel.tsx` catch block now shows `err.message` instead of generic "请重试"
 
-**改动文件**：
-- `packages/react-sdk/src/hooks/useSkills.ts` — 1 行 (re-throw)
-- `packages/chat-interface/src/components/SkillPanel.tsx` — SolutionTab 重构 toggle handler
+### Layer 2: Tests (4 files, 13 new tests)
+- `skills.service.toggle.spec.ts` — **NEW**: 3 tests (toggle on→off, off→on, NotFoundException)
+- `skill-management.service.spec.ts` — **EXTENDED**: 3 `loadEnabledSkills` tests (filter enabled, all disabled, slug filter)
+- `useSkills.test.ts` — **NEW**: 4 tests (fetch on mount, PATCH toggle, error re-throw, search filter)
+- `SkillPanel.test.tsx` — **EXTENDED**: 3 toast tests + fixed 1 existing test for auth pre-check
 
-**验证全部通过**: TypeScript 编译、grep 无同步 toast 模式、re-throw 存在。
+### Verification Results
+- Backend typecheck: PASS
+- Chat-interface typecheck: PASS  
+- Backend tests: 17 passed
+- React SDK tests: 4 passed
+- Chat-interface tests: 18 passed
+- Grep checks: All 3 PASS

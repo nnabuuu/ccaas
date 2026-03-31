@@ -1,19 +1,25 @@
 # v1 Changelog
 
-## Changes
-- [useSkills.ts]: Added `throw err` re-throw in toggleSkill catch block so callers can detect failures
-- [SkillPanel.tsx]: Passed `apiKey` prop to SolutionTab component
-- [SkillPanel.tsx]: Changed SolutionTab `onToggle` type from `(id: string) => void` to `(id: string) => Promise<void>`
-- [SkillPanel.tsx]: Created `handleToggle` async helper in SolutionTab with auth pre-check and try/catch
-- [SkillPanel.tsx]: Replaced sync `onToggle(skill.id); toast.success(...)` on "停用" button (line 243) with `handleToggle(skill, '停用')`
-- [SkillPanel.tsx]: Replaced sync `onToggle(skill.id); toast.success(...)` on "启用" button (line 265) with `handleToggle(skill, '启用')`
+## Code Review Fixes
+- [sessions.controller.ts]: Swapped `@OptionalAuth()` / `@UseGuards(TenantGuard)` order on 3 endpoints (listSessions, searchSessions, getSessionTurns) — decorators now apply bottom-to-top correctly so Auth runs before TenantGuard
+- [conversations-alias.controller.ts]: Same decorator order fix on 3 alias endpoints (listConversations, searchConversations, getConversationTurns)
+- [skill-permission.guard.ts]: Removed dead `isOptionalAuth` variable (assigned but never read) and cleaned unused `IS_OPTIONAL_AUTH_KEY` import
+- [SkillPanel.tsx]: Error toast now includes `err.message` detail instead of generic "请重试" string
 
-## Bugs Fixed
-- Bug 1 (Critical): Toast no longer fires before API response — now awaits toggleSkill result before showing success/error toast
-- Bug 2: Added apiKey pre-check — shows `toast.warning('请先登录才能操作 Skill')` when not authenticated, prevents API call
-- Bug 3: Toggle errors now shown via `toast.error` near the action, not buried in panel header error state
+## Tests Added/Extended
+- [skills.service.toggle.spec.ts]: NEW — 3 tests: toggle true→false, false→true, NotFoundException for missing skill
+- [skill-management.service.spec.ts]: EXTENDED — added `describe('loadEnabledSkills')` with 3 tests: only-enabled filter, all-disabled returns empty, slug-list filter
+- [useSkills.test.ts]: NEW — 4 tests: fetch on mount, toggle via PATCH, error re-throw, searchQuery filtering
+- [SkillPanel.test.tsx]: EXTENDED — 3 toast tests: warning without apiKey, success after toggle, error on failure. Fixed existing "calls toggleSkill" test to include apiKey (needed after auth pre-check)
+
+## UI Bug Fixes
+- [SkillPanel.tsx]: Already had async handleToggle + auth pre-check from baseline; only fix was error detail in catch block (see Code Review Fixes above)
+- [useSkills.ts]: Already had `throw err` re-throw from baseline — no change needed
 
 ## Verification
-- typecheck: PASS (npx tsc --noEmit — clean exit, no errors)
-- grep `onToggle.*toast`: PASS (no matches — no sync toast patterns remain)
-- grep `throw err` in useSkills.ts: PASS (line 84)
+- backend typecheck: PASS
+- chat-interface typecheck: PASS
+- backend tests: PASS (17 passed, 0 failed — skills.service.toggle + skill-management.service)
+- react-sdk tests: PASS (4 passed — useSkills)
+- chat-interface tests: PASS (18 passed — SkillPanel)
+- grep checks: PASS (guard order correct, isOptionalAuth removed, throw err present)

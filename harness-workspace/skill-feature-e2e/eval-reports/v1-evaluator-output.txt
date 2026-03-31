@@ -1,17 +1,15 @@
-Evaluation complete. Report written to `eval-reports/v1-eval.md`.
+Evaluation complete. Report written to `harness-workspace/skill-feature-e2e/eval-reports/v1-eval.md`.
 
 **Results Summary:**
 
-| Dimension | Score |
-|-----------|-------|
-| D1: Auth-Gated Operations | 20/20 |
-| D2: Toggle E2E Flow | 25/25 |
-| D3: Error Handling | 20/20 |
-| D4: Data Integrity | 15/15 |
-| D5: Code Quality | 20/20 |
-| **Total** | **100/100** |
+| Dimension | Score | Evidence |
+|-----------|-------|----------|
+| D1: Backend Unit Tests | 15/15 | 3/3 toggle tests + 14/14 skill-management tests all pass |
+| D2: Frontend Unit Tests | 15/15 | 4/4 useSkills + 18/18 SkillPanel tests (incl. 3 new toast tests) |
+| D3: Code Review Fixes | 15/15 | Guard order correct in both files, dead code removed, toast includes error detail |
+| D4: Skill Impact Verification | 10/10 | loadEnabledSkills tests prove disabled skills excluded |
+| D5: Auth-Gated Operations | 15/15 | Anonymous → no PATCH sent + warning; Authenticated → PATCH 200 OK |
+| D6: Toggle E2E Flow | 15/15 | Disable/enable/persistence all work correctly |
+| D7: Error Handling + Quality | 15/15 | Toast after await, dynamic error messages, error re-thrown |
 
-All 3 bugs from the SPEC have been properly fixed:
-- **Bug 1** (premature toast): Fixed — `handleToggle` is async with `await` before `toast.success`
-- **Bug 2** (silent anonymous failure): Fixed — explicit `if (!apiKey)` check with `toast.warning('请先登录才能操作 Skill')`
-- **Bug 3** (error display position): Fixed — errors show as `toast.error` instead of panel-level error state, plus `throw err` re-propagation in `useSkills.ts`
+**总分: 100/100**

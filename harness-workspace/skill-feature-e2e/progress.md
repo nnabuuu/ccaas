@@ -1,16 +1,20 @@
-# Progress Log — Skill Toggle E2E
+# Progress Log — Skill Feature E2E v2
 
 ## Task
-修复 Skill toggle 完整链路：toast 时序、auth 前置检查、error 反馈、状态持久
+Skill toggle 完整链路修复 + 代码审查修复 + 单元测试覆盖 (7 dimensions)
 
-## Known Bugs at Start
-1. Toast fires before API response (sync instead of await)
-2. No auth pre-check (silent 403 when not logged in)
-3. Error only in panel header, not near action
+## Dimensions
+- D1: Backend Unit Tests (15)
+- D2: Frontend Unit Tests (15)
+- D3: Code Review Fixes (15)
+- D4: Skill Impact Verification (10)
+- D5: Auth-Gated Operations (15)
+- D6: Toggle E2E Flow (15)
+- D7: Error Handling + Quality (15)
 
 ## Iterations
 
-| Version | Timestamp | Score | D1 Auth(20) | D2 Toggle(25) | D3 Error(20) | D4 Data(15) | D5 Code(20) | Top Issue |
-|---------|-----------|-------|-------------|---------------|--------------|-------------|-------------|-----------|
-| v0 | (baseline) | ~20 | 0 | ~10 | 0 | ~10 | 0 | All 3 bugs present |
-| v1 | 2026-03-31 03:50 | 100 | 20/20 | 25/25 | 20/20 | 15/15 | 20/20 | see eval report |
+| Version | Timestamp | Score | D1(15) | D2(15) | D3(15) | D4(10) | D5(15) | D6(15) | D7(15) | Top Issue |
+|---------|-----------|-------|--------|--------|--------|--------|--------|--------|--------|-----------|
+| v0 | (baseline) | ~20 | 0 | 0 | 0 | 0 | ~10 | ~10 | 0 | No tests, no code review fixes |
+| v1 | 2026-03-31 11:43 | 100 | 15/15 | 15/15 | 15/15 | 10/10 | 15/15 | 15/15 | 15/15 | see eval report |

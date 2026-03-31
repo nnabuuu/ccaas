@@ -1,30 +1,40 @@
 ## Eval Report v1
 
 ### Pre-Scoring Gates
-- [x] Gate 1: Backend auth — PASS (POST /api/v1/auth/login returned 200 with apiKey `sk-defaultx-...l5Gi`)
+- [x] Gate 1: Backend auth — PASS (200 with `apiKey: "sk-defaultx-JSo8wnSuQt4NRGv7z07Fi0kLEwKFz3xE"`)
 - [x] Gate 2: Frontend loads — PASS (http://localhost:5190 renders Chat Interface)
-- [x] Gate 3: SkillPanel accessible — PASS (Skills button in sidebar opens panel showing 3 skills)
+- [x] Gate 3: SkillPanel accessible — PASS (Skills button → panel opens with 3 skills: 1 enabled, 2 disabled)
 
-### D1: Auth-Gated Operations (20/20)
-- Test 1.1 Anonymous toggle: 10/10 — Cleared localStorage `ck-api-key`, refreshed, opened SkillPanel, clicked "停用". Warning toast appeared: "请先登录才能操作 Skill". No success toast. Network tab confirmed zero PATCH requests sent. UI state unchanged (3 enabled, 0 disabled).
-- Test 1.2 Authenticated toggle: 10/10 — Set API key in localStorage, refreshed, opened SkillPanel, clicked "停用" on echo-chat. Network shows `PATCH /api/v1/skills/ec61d0bb-.../toggle => 200 OK`. Success toast "已停用「echo-chat」" appeared after response. UI updated: echo-chat moved to 未启用 section, counts changed to 2 enabled / 1 disabled.
+### D1: Backend Unit Tests (15/15)
+- Test 1.1 skills.service.toggle: 8/8 — All 3 tests pass: `toggle enabled:true→false`, `toggle enabled:false→true`, `NotFoundException for non-existent skill`. Output: `PASS src/skills/skills.service.toggle.spec.ts — Tests: 3 passed, 3 total`
+- Test 1.2 skill-management.service: 7/7 — All 14 tests pass including 3 new loadEnabledSkills tests: `return only enabled skills`, `empty array when all disabled`, `filter by slug list when provided`. Output: `PASS src/sessions/services/skill-management.service.spec.ts — Tests: 14 passed, 14 total`
 
-### D2: Toggle E2E Flow (25/25)
-- Test 2.1 Toggle disable: 8/8 — Clicked "停用" on echo-chat. Badge changed from "已启用" to "未启用". Skill moved from 已启用 section to 未启用 section. Toast showed correct skill name: "已停用「echo-chat」". Stat cards updated (已启用: 3→2, 未启用: 0→1).
-- Test 2.2 Toggle enable: 8/8 — Clicked "启用" on disabled echo-chat. Badge changed from "未启用" to "已启用". Skill moved back to 已启用 section. Toast: "已启用「echo-chat」". Stat cards updated (已启用: 2→3, 未启用: 1→0).
-- Test 2.3 State persistence: 9/9 — Disabled echo-chat, then navigated to http://localhost:5190 (full page refresh). API key persisted in localStorage (no re-login needed). Opened SkillPanel: echo-chat still in 未启用 section with badge "未启用", counts 已启用=2 / 未启用=1. State persisted correctly.
+### D2: Frontend Unit Tests (15/15)
+- Test 2.1 useSkills: 8/8 — All 4 tests pass: `fetchSkills populates skills`, `toggleSkill sends PATCH`, `toggleSkill re-throws on error`, `searchQuery filters skills`. Output: `Test Files: 1 passed (1), Tests: 4 passed (4)`
+- Test 2.2 SkillPanel: 7/7 — All 18 tests pass including 3 new toast tests: `shows warning toast when toggling without apiKey`, `shows success toast after successful toggle`, `shows error toast when toggle fails`. Output: `Test Files: 1 passed (1), Tests: 18 passed (18)`
 
-### D3: Error Handling (20/20)
-- Test 3.1 Toast timing: 10/10 — Code review of SkillPanel.tsx lines 220-231: `handleToggle` is async, calls `await onToggle(skill.id)` on line 226, then `toast.success(...)` on line 227 inside try block. Error path uses `toast.error(...)` on line 229 inside catch block. Browser behavior confirmed: toast appeared only after PATCH 200 response (no premature toast). All toggle handlers (both 停用 and 启用) route through the same `handleToggle` function.
-- Test 3.2 Error feedback: 10/10 — Code review confirms: (1) Auth pre-check on line 221 shows `toast.warning('请先登录才能操作 Skill')` for unauthenticated users. (2) Catch block on line 228-229 shows `toast.error('${action}失败，请重试')` for API failures. (3) useSkills.ts line 82-84 re-throws errors after setting error state, ensuring SkillPanel's catch block is reached. Error messages are meaningful and actionable ("停用失败，请重试" / "启用失败，请重试"). UI remains in consistent state after errors.
+### D3: Code Review Fixes (15/15)
+- Test 3.1 Guard order: 8/8 — Both files correct. `@UseGuards(TenantGuard)` appears ABOVE `@OptionalAuth()`:
+  - `sessions.controller.ts`: lines 98-99, 149-150, 243-244
+  - `conversations-alias.controller.ts`: lines 38-39, 49-50, 83-84
+- Test 3.2 Dead code: 4/4 — `grep 'isOptionalAuth' skill-permission.guard.ts` returns 0 matches — completely removed
+- Test 3.3 Error detail: 3/3 — `toast.error(\`${action}失败: ${message}\`)` where `message = err instanceof Error ? err.message : '未知错误'` (SkillPanel.tsx lines 229-230)
 
-### D4: Data Integrity (15/15)
-- Test 4.1 API-UI match: 8/8 — UI showed 已启用=2, 未启用=1. curl API response: `enabled=2, disabled=1, total=3`. Skills: Lesson Plan Generator x2 enabled, echo-chat disabled. Counts match exactly.
-- Test 4.2 Multiple toggles: 7/7 — Toggled echo-chat 3 times: disable → enable → disable. Each toggle waited for toast/response before next. Final UI state: echo-chat in 未启用 section with badge "未启用". curl API confirmed: `echo-chat: enabled=False`. Both UI and API agree on final disabled state.
+### D4: Skill Impact Verification (10/10)
+- Test 4.1 Filter logic: 10/10 — D1.2 loadEnabledSkills tests prove `enabled:false` skills are excluded: test "should return only enabled skills" verifies mixed-enabled input returns only enabled=true; test "should return empty array when all disabled" verifies empty result; test "should filter by slug list when provided" verifies slug filtering. All 3 tests pass.
 
-### D5: Code Quality (20/20)
-- Test 5.1 Toggle handler pattern: 10/10 — SkillPanel.tsx line 220: `handleToggle` is `async`. Line 226: `await onToggle(skill.id)`. Line 227: `toast.success(...)` inside try block after await. Line 228-229: `catch { toast.error(...) }`. Both 停用 (line 256) and 启用 (line 278) buttons call `handleToggle` — single unified handler. No synchronous toast pattern anywhere.
-- Test 5.2 Auth pre-check: 5/5 — SkillPanel.tsx line 221-224: `if (!apiKey) { toast.warning('请先登录才能操作 Skill'); return }`. Explicit apiKey check before any toggle attempt. Early return prevents API call. Warning message clearly mentions login.
-- Test 5.3 Error propagation: 5/5 — useSkills.ts line 69-86: `toggleSkill` catch block sets error state on line 83, then `throw err` on line 84 re-throws to caller. SkillPanel's `handleToggle` catches re-thrown error in its own try/catch (line 228-229) and shows `toast.error`. Full error propagation chain works: API error → useSkills catch (state + re-throw) → SkillPanel catch (toast.error).
+### D5: Auth-Gated Operations (15/15)
+- Test 5.1 Anonymous toggle: 8/8 — After `localStorage.removeItem('ck-api-key')` + reload, clicked "停用": no PATCH request sent (network log shows only GET /skills), skill remained 已启用. Code confirms `toast.warning('请先登录才能操作 Skill')` fires when `!apiKey` (line 221-223), early return prevents API call.
+- Test 5.2 Authenticated toggle: 7/7 — After injecting API key, clicked "停用": PATCH `/api/v1/skills/d63409f0-.../toggle` sent with `X-API-Key: sk-defaultx-JSo8wnSuQt4NRGv7z07Fi0kLEwKFz3xE` header, returned 200 OK. Skill moved to 未启用 section. toast.success fires after await (line 226-227).
+
+### D6: Toggle E2E Flow (15/15)
+- Test 6.1 Toggle disable: 5/5 — Clicked "停用" on enabled Lesson Plan Generator: badge changed 已启用→未启用, stats updated 已启用:1→0 / 未启用:2→3. Screenshot: d6-toggle-disable.png
+- Test 6.2 Toggle enable: 5/5 — Clicked "启用" on disabled Lesson Plan Generator: badge changed 未启用→已启用, stats updated 已启用:0→1 / 未启用:3→2
+- Test 6.3 State persistence: 5/5 — After full page refresh, SkillPanel shows 已启用:1 / 未启用:2 (persisted, no re-login required). API curl confirms: `Lesson Plan Generator: enabled=True`, `Lesson Plan Generator: enabled=False`, `echo-chat: enabled=False`
+
+### D7: Error Handling + Quality (15/15)
+- Test 7.1 Toast timing: 6/6 — `handleToggle` is async (line 220). `toast.success` (line 227) appears after `await onToggle(skill.id)` (line 226) inside try block. `toast.error` (line 230) is in catch block. No synchronous toast patterns exist.
+- Test 7.2 Error feedback: 5/5 — `toast.error(\`${action}失败: ${message}\`)` includes dynamic error detail extracted via `err instanceof Error ? err.message : '未知错误'` — meaningful and actionable
+- Test 7.3 Error propagation: 4/4 — `useSkills.ts` line 82-84: catch block has `throw err` after setting error state, ensuring caller (SkillPanel) can catch and display toast.error
 
 总分: 100/100
