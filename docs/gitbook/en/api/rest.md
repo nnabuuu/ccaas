@@ -561,6 +561,29 @@ Publish a Skill version.
 
 Deprecate a Skill.
 
+### PATCH /skills/:id/toggle
+
+Toggle skill enabled/disabled state. Flips the `enabled` boolean.
+
+**Auth**: Required — `X-API-Key` header with `skills:write` scope.
+
+**Path Parameters**: `id` — Skill ID or slug
+
+**Response** (200):
+
+```json
+{
+  "id": "uuid",
+  "name": "My Skill",
+  "slug": "my-skill",
+  "enabled": false,
+  "status": "published",
+  ...
+}
+```
+
+**Errors**: `404` if skill not found, `403` if unauthorized.
+
 ## MCP Server Management
 
 ### GET /mcp-servers

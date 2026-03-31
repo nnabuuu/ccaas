@@ -563,6 +563,29 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 废弃 Skill。
 
+### PATCH /skills/:id/toggle
+
+切换 Skill 的启用/停用状态。翻转 `enabled` 布尔值。
+
+**认证**: 需要 — `X-API-Key` header，需 `skills:write` 权限。
+
+**路径参数**: `id` — Skill ID 或 slug
+
+**响应** (200):
+
+```json
+{
+  "id": "uuid",
+  "name": "My Skill",
+  "slug": "my-skill",
+  "enabled": false,
+  "status": "published",
+  ...
+}
+```
+
+**错误**: `404` Skill 不存在，`403` 未授权。
+
 ## MCP Server 管理
 
 ### GET /mcp-servers

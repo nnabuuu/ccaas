@@ -123,13 +123,14 @@ SKILL.md files are the authoritative source for skill usage.
   }
 
   /**
-   * Load enabled skills for a tenant
+   * Load skills available for agent sessions.
    *
-   * Queries published skills and filters for enabled ones.
+   * Filters published skills to only include those with `enabled: true`.
+   * Optionally further filters by a slug allowlist (from session config).
    *
-   * @param tenantId - Tenant UUID
-   * @param enabledSkills - Optional filter for specific skill slugs
-   * @returns Array of enabled skill info
+   * @param tenantId - Tenant to load skills for
+   * @param enabledSkills - Optional slug allowlist; if provided, only matching slugs are returned
+   * @returns Array of SkillInfo objects (slug, name, description)
    */
   async loadEnabledSkills(
     tenantId: string,

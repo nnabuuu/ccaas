@@ -38,7 +38,7 @@ src/
 │   ├── ThinkingDots.tsx       # 思考动画指示器
 │   ├── SessionContextBar.tsx  # 底层上下文栏组件
 │   ├── QuickSuggestions.tsx   # 底层快捷建议组件
-│   ├── SkillPanel.tsx         # 底层技能面板组件
+│   ├── SkillPanel.tsx         # 底层技能面板组件 (see SkillPanel Props below)
 │   ├── SkillBadge.tsx         # Skill 标签
 │   ├── WidgetRenderer.tsx     # Widget 渲染入口
 │   ├── ActionToolbar.tsx      # 消息操作栏 (复制 + 时间戳)
@@ -64,6 +64,18 @@ src/
     ├── catalog.ts             # Widget catalog 定义
     └── mcp-bridge.ts          # MCP 数据源桥接
 ```
+
+#### SkillPanel Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `serverUrl` | `string` | Yes | Backend API base URL (e.g., `http://localhost:3001`) |
+| `tenantId` | `string` | Yes | Tenant identifier for multi-tenancy |
+| `open` | `boolean` | Yes | Controls panel visibility |
+| `onClose` | `() => void` | Yes | Called when user closes the panel |
+| `apiKey` | `string` | No | API key for authenticated operations (toggle requires this) |
+
+When `apiKey` is not provided, toggle buttons will show a "请先登录" warning instead of making API calls.
 
 ## Compound Component 模式
 
