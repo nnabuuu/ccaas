@@ -1,21 +1,21 @@
-v1 迁移完成。所有 13 项任务已完成：
+The v1 iteration is complete. Here's a summary of what was accomplished:
 
-**已修改的文件（11个）：**
+**13 edits across 7 files:**
 
-| 文件 | 关键改动 |
+| File | Changes |
 |------|---------|
-| `tailwind.config.js` | 完整 `ck` 色彩命名空间、`rounded-ck`/`rounded-ck-lg`、`shadow-composer`、`ease-claude`、系统字体、`darkMode: ['class']` |
-| `index.html` | 移除 Satoshi 字体加载 |
-| `src/index.css` | CSS 变量定义（light + dark）、`@layer base/components` 重写、`.ck-scrollbar`、`::selection`、`prefers-reduced-motion` |
-| `src/App.tsx` | header/footer/卡片/overlay 全部迁移到 ck 体系 |
-| `QuizInputForm.tsx` | 输入框/按钮/label 迁移到 ck tokens |
-| `StandardizedQuizDisplay.tsx` | 内容区/答案区/badge/难度指示器迁移 |
-| `ChatWithQuickActions.tsx` | 快捷按钮/状态指示器统一为 ck accent |
-| `ViewModeToggle.tsx` | 去除 per-mode 色彩，统一 ck 体系 |
-| `ConnectionStatus.tsx` | 用 ck 语义色（success/danger/accent） |
-| `SkeletonLoader.tsx` | `bg-ck-bg2`、`rounded-ck`/`rounded-ck-lg` |
-| `GeometryFigure.tsx` | 内联样式硬编码色值全部替换为 CSS 变量 |
+| `ProcessPanel.tsx` | `divide-zinc-100` → `divide-ck-b2`, added `ck-scrollbar` |
+| `KpResultPanel.tsx` | 2x `bg-purple-100 text-purple-700` → `bg-ck-accent/10 text-ck-accent`, timeline dot `bg-green-500` → `bg-ck-success-t` |
+| `Layout.tsx` | Added `ck-scrollbar` to 3 overflow-auto containers |
+| `HistoryList.tsx` | Added `ck-scrollbar` to scrollable container |
+| `ErrorBoundary.tsx` | `rounded` → `rounded-ck` |
+| `Layout.css` | Old cubic-bezier → ease-claude timing, added scrollbar styling |
+| `QuizAnalyzePage.tsx` | Skeleton `rounded-lg` → `rounded-ck` (4 instances) |
 
-**验证结果：** `npx tsc --noEmit` 通过，零错误。
+**Verification:** `npx tsc --noEmit` passes with zero errors.
 
-**Changelog：** 已写入 `harness-workspace/quiz-analyzer-style/changelogs/v1-changelog.md`
+**Preserved (intentionally not migrated):** Difficulty bar gradient colors, confidence bar colors, and KP badge semantic colors — all data-visualization or business-semantic.
+
+**Changelog written to:** `harness-workspace/quiz-analyzer-style/changelogs/v1-changelog.md`
+
+The Generator v1 iteration is done. Ready for the Evaluator phase whenever you'd like to proceed.

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Allow nested claude -p invocations from within a Claude Code session
+export CLAUDECODE=""
 unset CLAUDECODE 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────
@@ -193,12 +194,12 @@ while true; do
 
   GENERATOR_TOOLS="Read,Edit,Write,Glob,Grep,Bash,${PLAYWRIGHT_TOOLS}"
 
-  if ! echo "$GENERATOR_PROMPT" | claude -p \
+  if ! echo "$GENERATOR_PROMPT" | env -u CLAUDECODE claude -p \
     --allowedTools "$GENERATOR_TOOLS" \
     > "$HARNESS_DIR/screenshots/v$VERSION/generator-output.txt" 2>&1; then
 
     err "[v$VERSION] Generator failed. Retrying once..."
-    if ! echo "$GENERATOR_PROMPT" | claude -p \
+    if ! echo "$GENERATOR_PROMPT" | env -u CLAUDECODE claude -p \
       --allowedTools "$GENERATOR_TOOLS" \
       > "$HARNESS_DIR/screenshots/v$VERSION/generator-output-retry.txt" 2>&1; then
 
@@ -237,7 +238,7 @@ while true; do
   log "[v$VERSION] Creating git snapshot..."
   (cd "$PROJECT_ROOT" && \
     git add solutions/business/quiz-analyzer/frontend/ 2>/dev/null && \
-    git commit -m "style(quiz-analyzer): harness v$VERSION iteration" -q 2>/dev/null) || \
+    git commit -m "style(frontend): quiz-analyzer harness v$VERSION iteration" -q 2>/dev/null) || \
     log "[v$VERSION] WARNING: git commit failed (no changes or git issue)"
 
   # ─── Step 3: Evaluator ───
@@ -266,7 +267,7 @@ while true; do
 
   EVALUATOR_TOOLS="Read,Write,Glob,Grep,Bash,${PLAYWRIGHT_TOOLS}"
 
-  if ! echo "$EVALUATOR_PROMPT" | claude -p \
+  if ! echo "$EVALUATOR_PROMPT" | env -u CLAUDECODE claude -p \
     --allowedTools "$EVALUATOR_TOOLS" \
     > "$HARNESS_DIR/eval-reports/v${VERSION}-evaluator-output.txt" 2>&1; then
 
@@ -307,7 +308,7 @@ while true; do
   # ─── Step 4b: Commit eval results ───
   (cd "$HARNESS_DIR" && \
     git add -A eval-reports/ changelogs/ screenshots/ progress.md 2>/dev/null && \
-    git commit -m "docs(quiz-analyzer): harness v$VERSION eval score $SCORE" -q 2>/dev/null) || true
+    git commit -m "docs(frontend): quiz-analyzer harness v$VERSION eval score $SCORE" -q 2>/dev/null) || true
 
   # ─── Step 5: Check exit conditions ───
 
