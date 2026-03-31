@@ -151,6 +151,52 @@ describe('SkillManagementService', () => {
     });
   });
 
+  describe('loadEnabledSkills', () => {
+    let mockFindPublished: jest.Mock;
+
+    beforeEach(() => {
+      mockFindPublished = jest.fn();
+      (service as any).skillsService = { findPublished: mockFindPublished };
+    });
+
+    it('should return only enabled skills', async () => {
+      mockFindPublished.mockResolvedValue([
+        { slug: 'a', name: 'A', description: 'desc-a', enabled: true },
+        { slug: 'b', name: 'B', description: 'desc-b', enabled: false },
+        { slug: 'c', name: 'C', description: '', enabled: true },
+      ]);
+
+      const result = await service.loadEnabledSkills('tenant-1');
+
+      expect(result).toHaveLength(2);
+      expect(result.map(s => s.slug)).toEqual(['a', 'c']);
+    });
+
+    it('should return empty array when all disabled', async () => {
+      mockFindPublished.mockResolvedValue([
+        { slug: 'x', name: 'X', description: '', enabled: false },
+        { slug: 'y', name: 'Y', description: '', enabled: false },
+      ]);
+
+      const result = await service.loadEnabledSkills('tenant-1');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should filter by slug list when provided', async () => {
+      mockFindPublished.mockResolvedValue([
+        { slug: 'a', name: 'A', description: 'desc-a', enabled: true },
+        { slug: 'b', name: 'B', description: 'desc-b', enabled: true },
+        { slug: 'c', name: 'C', description: '', enabled: true },
+      ]);
+
+      const result = await service.loadEnabledSkills('tenant-1', ['a', 'c']);
+
+      expect(result).toHaveLength(2);
+      expect(result.map(s => s.slug)).toEqual(['a', 'c']);
+    });
+  });
+
   describe('generateSkillSystemPrompt', () => {
     it('should return empty string for empty skills', () => {
       expect(service.generateSkillSystemPrompt([])).toBe('');

@@ -225,8 +225,9 @@ function SolutionTab({ skills, onToggle, apiKey }: { skills: FullSkill[]; onTogg
     try {
       await onToggle(skill.id)
       toast.success(`已${action}「${skill.name}」`)
-    } catch {
-      toast.error(`${action}失败，请重试`)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '未知错误'
+      toast.error(`${action}失败: ${message}`)
     }
   }
 

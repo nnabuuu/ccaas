@@ -1,20 +1,20 @@
 /**
  * Sessions Controller
  *
- * RESTful API for session management and message completion.
- * WebSocket is used only for server-to-client streaming events.
+ * Unified RESTful API for session/conversation management, message completion,
+ * and real-time streaming. "Session" and "Conversation" refer to the same
+ * database entity — see ADR-0007 and docs/gitbook/en/guide/concepts.md.
  */
 
 import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Param,
   Body,
   Query,
-  GoneException,
   NotFoundException,
   Logger,
   Res,
@@ -29,12 +29,12 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
-  ApiSecurity,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Response } from 'express';
-import { createReadStream } from 'fs';
-import * as fs from 'fs';
-import * as path from 'path';
+import { createReadStream } from 'node:fs';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionService } from './session.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -46,13 +46,22 @@ import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
-import { CreateCompletionDto, CancelCompletionDto } from './dto/create-completion.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
-import type { SessionEvent } from '../common/interfaces';
 import { v4 as uuidv4 } from 'uuid';
 import { QuotaGuard } from '../admin/guards/quota.guard';
+import { TenantGuard } from '../tenants/tenant.guard';
+import { OptionalAuth, Auth, Ctx } from '../auth/decorators';
+import type { RequestContext } from '../auth/types';
+import { Session } from '../admin/entities/session.entity';
+import { TurnsService } from '../admin/services/turns.service';
+import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import {
+  ListConversationsQuery,
+  SearchConversationsQuery,
+  UpdateConversationDto,
+} from './dto/session-query.dto';
 
 @ApiTags('sessions')
 @Controller('api/v1/sessions')
@@ -72,99 +81,184 @@ export class SessionsController {
     private readonly messagesService: MessagesService,
     private readonly conversationContextService: ConversationContextService,
     private readonly streamRegistry: StreamRegistryService,
+    @InjectRepository(Session)
+    private readonly sessionRepository: Repository<Session>,
+    private readonly turnsService: TurnsService,
   ) {}
 
+  // ============================================================================
+  // Session List / Search / Update / Delete (migrated from ConversationsController)
+  // ============================================================================
 
   /**
-   * Create completion via Socket.IO (DEPRECATED)
-   * POST /api/v1/sessions/:sessionId/completion
-   *
-   * @deprecated Socket.IO chat transport is deprecated. Use POST /api/v1/sessions/:sessionId/messages instead.
-   * This endpoint now returns 410 Gone to enforce migration to SSE transport.
+   * List sessions with pagination
+   * GET /api/v1/sessions
    */
-  @Post(':sessionId/completion')
+  @Get()
+  @UseGuards(TenantGuard)
+  @OptionalAuth()
   @ApiOperation({
-    summary: '[DEPRECATED] 发送消息 (Socket.IO) / Send Message (Socket.IO) - DEPRECATED',
-    description: `
-**⚠️ 已弃用 / DEPRECATED**
-
-此端点已弃用，返回 410 Gone。请迁移到 SSE 传输：
-
-\`\`\`
-POST /api/v1/sessions/:sessionId/messages
-Content-Type: application/json
-\`\`\`
-
-响应为 \`text/event-stream\`，无需 WebSocket 连接。
-
-**This endpoint is deprecated and returns 410 Gone. Migrate to SSE transport:**
-
-\`POST /api/v1/sessions/:sessionId/messages\` with SSE streaming response.
-    `,
+    summary: '列出会话 / List sessions',
+    description: 'Retrieve a paginated list of sessions for the tenant.',
   })
-  @ApiParam({
-    name: 'sessionId',
-    description: '会话 ID / Session ID',
-    example: 'session-123',
-  })
-  @ApiBody({ type: CreateCompletionDto })
-  @ApiResponse({
-    status: 410,
-    description: '[DEPRECATED] Socket.IO chat transport has been removed. Use SSE endpoint instead.',
-  })
-  async createCompletion(
-    @Param('sessionId') sessionId: string,
-    @Body() _data: CreateCompletionDto,
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'isPinned', required: false, type: Boolean })
+  @ApiQuery({ name: 'templateName', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Session list' })
+  async listSessions(
+    @Query() query: ListConversationsQuery,
+    @CurrentTenant() tenantId: string | undefined,
   ) {
-    this.logger.warn(`[DEPRECATED] Socket.IO completion endpoint called for session ${sessionId}. Returning 410 Gone.`);
-    throw new GoneException(
-      'Socket.IO chat transport is deprecated. ' +
-      'Migrate to SSE: POST /api/v1/sessions/:sessionId/messages with Content-Type: application/json. ' +
-      'Response will be text/event-stream.',
-    );
+    const page = Math.max(1, query.page ?? 1);
+    const limit = Math.max(1, Math.min(100, query.limit ?? 20));
+    const offset = (page - 1) * limit;
+
+    const qb = this.sessionRepository.createQueryBuilder('session');
+
+    // Tenant isolation — tenantId set by TenantGuard
+    if (tenantId) {
+      qb.andWhere('session.tenantId = :tenantId', { tenantId });
+    }
+
+    qb.andWhere('session.status != :closed', { closed: 'closed' });
+
+    if (query.isPinned !== undefined) {
+      qb.andWhere('session.isPinned = :isPinned', { isPinned: query.isPinned });
+    }
+    if (query.templateName) {
+      qb.andWhere('session.templateName = :templateName', { templateName: query.templateName });
+    }
+
+    const total = await qb.getCount();
+    const conversations = await qb
+      .orderBy('session.lastActivity', 'DESC')
+      .skip(offset)
+      .take(limit)
+      .getMany();
+
+    const hasMore = offset + conversations.length < total;
+    return { conversations, total, hasMore };
   }
 
+  /**
+   * Search sessions by title
+   * GET /api/v1/sessions/search
+   */
+  @Get('search')
+  @UseGuards(TenantGuard)
+  @OptionalAuth()
+  @ApiOperation({ summary: '搜索会话 / Search sessions by title' })
+  @ApiQuery({ name: 'q', required: true, type: String })
+  @ApiQuery({ name: 'dateFrom', required: false, type: String })
+  @ApiQuery({ name: 'dateTo', required: false, type: String })
+  @ApiResponse({ status: 200, description: 'Search results' })
+  async searchSessions(
+    @Query() query: SearchConversationsQuery,
+    @CurrentTenant() tenantId: string | undefined,
+  ) {
+    const qb = this.sessionRepository.createQueryBuilder('session');
+
+    if (tenantId) {
+      qb.andWhere('session.tenantId = :tenantId', { tenantId });
+    }
+
+    qb.andWhere('session.status != :closed', { closed: 'closed' });
+
+    if (query.q) {
+      qb.andWhere('session.title LIKE :query', { query: `%${query.q}%` });
+    }
+    if (query.dateFrom) {
+      qb.andWhere('session.createdAt >= :dateFrom', { dateFrom: new Date(query.dateFrom) });
+    }
+    if (query.dateTo) {
+      qb.andWhere('session.createdAt <= :dateTo', { dateTo: new Date(query.dateTo) });
+    }
+
+    return qb.orderBy('session.lastActivity', 'DESC').take(50).getMany();
+  }
 
   /**
-   * Cancel completion via Socket.IO (DEPRECATED)
-   * DELETE /api/v1/sessions/:sessionId/completion
-   *
-   * @deprecated Socket.IO transport is deprecated. Use POST /api/v1/sessions/:sessionId/cancel instead.
-   * This endpoint requires a Socket.IO clientId and will never work for SSE-only sessions.
+   * Update session metadata (title, isPinned)
+   * PATCH /api/v1/sessions/:sessionId
    */
-  @Delete(':sessionId/completion')
-  @ApiOperation({
-    summary: '[DEPRECATED] 取消操作 (Socket.IO) / Cancel Operation (Socket.IO) - DEPRECATED',
-    description: `
-**⚠️ 已弃用 / DEPRECATED**
-
-此端点依赖 Socket.IO clientId，对 SSE 会话无效，返回 410 Gone。请迁移到 SSE 取消端点：
-
-\`\`\`
-POST /api/v1/sessions/:sessionId/cancel
-\`\`\`
-
-**This endpoint requires a Socket.IO clientId and returns 410 Gone for SSE sessions. Migrate to:**
-
-\`POST /api/v1/sessions/:sessionId/cancel\` — works for both Socket.IO and SSE transport.
-    `,
-  })
-  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
-  @ApiBody({ type: CancelCompletionDto })
-  @ApiResponse({
-    status: 410,
-    description: '[DEPRECATED] Socket.IO cancel transport has been removed. Use POST /cancel instead.',
-  })
-  cancelCompletion(
+  @Patch(':sessionId')
+  @UseGuards(TenantGuard)
+  @Auth('chat')
+  @ApiOperation({ summary: '更新会话 / Update session metadata' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiResponse({ status: 200, description: 'Session updated' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  async updateSession(
     @Param('sessionId') sessionId: string,
-    @Body() _data: CancelCompletionDto,
+    @Body() dto: UpdateConversationDto,
+    @Ctx() ctx: RequestContext,
   ) {
-    this.logger.warn(`[DEPRECATED] Socket.IO cancel endpoint called for session ${sessionId}. Returning 410 Gone.`);
-    throw new GoneException(
-      'Socket.IO cancel transport is deprecated. ' +
-      'Migrate to SSE: POST /api/v1/sessions/:sessionId/cancel. ' +
-      'Works for both Socket.IO and SSE transport.',
-    );
+    const session = await this.sessionRepository.findOne({
+      where: { sessionId, tenantId: ctx.tenantId },
+    });
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    if (dto.title !== undefined) session.title = dto.title;
+    if (dto.isPinned !== undefined) session.isPinned = dto.isPinned;
+
+    return this.sessionRepository.save(session);
+  }
+
+  /**
+   * Soft delete a session
+   * DELETE /api/v1/sessions/:sessionId
+   */
+  @Delete(':sessionId')
+  @UseGuards(TenantGuard)
+  @Auth('chat')
+  @ApiOperation({ summary: '删除会话 / Soft delete a session' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiResponse({ status: 200, description: 'Session deleted' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  async deleteSession(
+    @Param('sessionId') sessionId: string,
+    @Ctx() ctx: RequestContext,
+  ) {
+    const session = await this.sessionRepository.findOne({
+      where: { sessionId, tenantId: ctx.tenantId },
+    });
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    session.closedAt = new Date();
+    session.status = 'closed';
+    await this.sessionRepository.save(session);
+    return { success: true };
+  }
+
+  /**
+   * Get turns for a session (analytics)
+   * GET /api/v1/sessions/:sessionId/turns
+   */
+  @Get(':sessionId/turns')
+  @UseGuards(TenantGuard)
+  @OptionalAuth()
+  @ApiOperation({ summary: '获取会话 Turn 列表 / Get session turns' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiResponse({ status: 200, description: 'Turns list' })
+  @ApiResponse({ status: 404, description: 'Session not found' })
+  async getSessionTurns(
+    @Param('sessionId') sessionId: string,
+    @CurrentTenant() tenantId: string | undefined,
+  ) {
+    const where: Record<string, string> = { sessionId };
+    if (tenantId) where.tenantId = tenantId;
+
+    const session = await this.sessionRepository.findOne({ where });
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    return this.turnsService.getTurnsBySession(sessionId);
   }
 
   // ============================================================================

@@ -55,7 +55,8 @@ export class SkillPermissionGuard implements CanActivate {
       return this.checkWritePermission(method, skillId, tenantId, requestContext);
     }
 
-    // Default: allow (for LIST operations without ID)
+    // LIST operations (GET without ID) — allow for OptionalAuth routes
+    // even if anonymous (tenantId still required via TenantGuard)
     return true;
   }
 

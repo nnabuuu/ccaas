@@ -11,7 +11,7 @@ vi.mock('@kedge-agentic/react-sdk', () => ({
 }))
 
 vi.mock('sonner', () => ({
-  toast: { info: vi.fn(), error: vi.fn(), success: vi.fn() },
+  toast: { info: vi.fn(), error: vi.fn(), success: vi.fn(), warning: vi.fn() },
 }))
 
 const baseProps = {
@@ -124,7 +124,8 @@ describe('SkillPanel', () => {
   })
 
   it('calls toggleSkill when disable button is clicked', async () => {
-    render(<SkillPanel {...baseProps} />)
+    mockToggleSkill.mockResolvedValue(undefined)
+    render(<SkillPanel {...baseProps} apiKey="test-key" />)
     await userEvent.click(screen.getByText('停用'))
     expect(mockToggleSkill).toHaveBeenCalledWith('s1')
   })
@@ -181,5 +182,32 @@ describe('SkillPanel', () => {
     // Stat card values: 1 solution skill total, 1 enabled, 0 disabled
     const statVals = screen.getAllByText('1')
     expect(statVals.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows warning toast when toggling without apiKey', async () => {
+    const { toast } = await import('sonner')
+    mockToggleSkill.mockResolvedValue(undefined)
+    render(<SkillPanel {...baseProps} />)
+    await userEvent.click(screen.getByText('停用'))
+    expect(toast.warning).toHaveBeenCalledWith('请先登录才能操作 Skill')
+    expect(mockToggleSkill).not.toHaveBeenCalled()
+  })
+
+  it('shows success toast after successful toggle', async () => {
+    const { toast } = await import('sonner')
+    mockToggleSkill.mockResolvedValue(undefined)
+    render(<SkillPanel {...baseProps} apiKey="test-key" />)
+    await userEvent.click(screen.getByText('停用'))
+    expect(mockToggleSkill).toHaveBeenCalledWith('s1')
+    expect(toast.success).toHaveBeenCalledWith('已停用「Greeting」')
+  })
+
+  it('shows error toast when toggle fails', async () => {
+    const { toast } = await import('sonner')
+    mockToggleSkill.mockRejectedValue(new Error('Server error'))
+    render(<SkillPanel {...baseProps} apiKey="test-key" />)
+    await userEvent.click(screen.getByText('停用'))
+    expect(mockToggleSkill).toHaveBeenCalledWith('s1')
+    expect(toast.error).toHaveBeenCalledWith('停用失败: Server error')
   })
 })
