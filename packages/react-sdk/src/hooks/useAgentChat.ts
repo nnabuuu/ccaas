@@ -197,7 +197,39 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       })
       onToolActivityRef.current?.(toolActivity)
     } else if (eventType === 'agent_thinking') {
-      const payload = (data as any).payload as { phase: 'start' | 'delta' | 'end'; content?: string }
+      const payload = (data as any).payload as { phase: 'start' | 'delta' | 'end'; content?: string; thinkingId?: string }
+      const thinkingId = payload.thinkingId || 'thinking-default'
+      const blocks = contentBlocksRef.current
+
+      if (payload.phase === 'start') {
+        blocks.push({ type: 'thinking', thinkingId, content: '' })
+      } else if (payload.phase === 'delta' && payload.content) {
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const b = blocks[i]
+          if (b.type === 'thinking' && (b as any).thinkingId === thinkingId) {
+            ;(b as any).content += payload.content
+            break
+          }
+        }
+      } else if (payload.phase === 'end') {
+        for (let i = blocks.length - 1; i >= 0; i--) {
+          const b = blocks[i]
+          if (b.type === 'thinking' && (b as any).thinkingId === thinkingId) {
+            ;(b as any).isComplete = true
+            break
+          }
+        }
+      }
+
+      setMessages(prev => {
+        const updated = [...prev]
+        const lastMsg = updated[updated.length - 1]
+        if (lastMsg && lastMsg.role === 'assistant') {
+          lastMsg.contentBlocks = [...blocks]
+        }
+        return updated
+      })
+
       onThinkingUpdateRef.current?.(payload.phase, payload.content)
     } else if (eventType === 'token_usage') {
       const payload = (data as any).payload

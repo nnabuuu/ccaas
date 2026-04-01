@@ -26,15 +26,7 @@ export interface UseTurnsReturn {
 
 /**
  * Hook to fetch and display per-turn metrics (token usage, duration)
- * for a given conversation.
- *
- * TODO: This hook is scaffolded but the backend endpoint is not yet implemented.
- * Current status:
- * - Frontend hook ready ✅
- * - Backend GET /api/v1/conversations/:id/turns endpoint NOT implemented ❌
- * - This hook will return 404 until the backend endpoint is added
- *
- * To complete: Add the endpoint in ConversationsController
+ * for a given conversation/session.
  */
 export function useTurns(options: UseTurnsOptions): UseTurnsReturn {
   const { serverUrl, conversationId } = options
@@ -50,7 +42,7 @@ export function useTurns(options: UseTurnsOptions): UseTurnsReturn {
     setError(null)
     try {
       const response = await fetch(
-        `${serverUrl}/api/v1/conversations/${conversationId}/turns`,
+        `${serverUrl}/api/v1/sessions/${conversationId}/turns`,
         { method: 'GET' },
       )
       if (!response.ok) {

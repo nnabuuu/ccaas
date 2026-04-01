@@ -52,9 +52,9 @@ export function MessageBubble({ message, colorScheme = 'blue', renderContent, ch
                       ) : (
                         <span key={i} className="whitespace-pre-wrap">{block.text}</span>
                       )
-                    ) : (
+                    ) : block.type === 'tool' ? (
                       <InlineToolCard key={block.tool.toolId || i} tool={block.tool} />
-                    )
+                    ) : null
                   )}
                 </div>
               ) : message.content ? (

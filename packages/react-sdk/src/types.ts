@@ -255,7 +255,14 @@ export interface ToolBlock {
   tool: ToolActivity
 }
 
-export type ContentBlock = TextBlock | ToolBlock
+export interface ThinkingBlock {
+  type: 'thinking'
+  thinkingId: string
+  content: string
+  isComplete?: boolean
+}
+
+export type ContentBlock = TextBlock | ToolBlock | ThinkingBlock
 
 // ============================================================================
 // Message Types

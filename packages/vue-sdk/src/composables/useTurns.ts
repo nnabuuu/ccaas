@@ -1,18 +1,10 @@
 /**
  * useTurns Composable
  *
- * Per-turn metrics (scaffolded, backend endpoint TBD).
- * Fetches GET /api/v1/conversations/:id/turns for a given conversation.
+ * Per-turn metrics for a given conversation/session.
+ * Fetches GET /api/v1/sessions/:id/turns.
  *
  * Ported from @kedge-agentic/react-sdk useTurns hook.
- *
- * TODO: This composable is scaffolded but the backend endpoint is not yet implemented.
- * Current status:
- * - Frontend composable ready
- * - Backend GET /api/v1/conversations/:id/turns endpoint NOT implemented
- * - This composable will return 404 until the backend endpoint is added
- *
- * To complete: Add the endpoint in ConversationsController
  */
 
 import { ref, watch } from 'vue'
@@ -107,7 +99,7 @@ export function useTurns(options: UseTurnsOptions): UseTurnsReturn {
 
     try {
       const response = await fetch(
-        `${serverUrl}/api/v1/conversations/${conversationId.value}/turns`,
+        `${serverUrl}/api/v1/sessions/${conversationId.value}/turns`,
         { method: 'GET' },
       )
 

@@ -166,7 +166,8 @@ function splitIntoSegments(
 
   for (let i = 0; i < blocks.length; i++) {
     const block = blocks[i]
-    const blockType = block.type // 'text' or 'tool'
+    // Map thinking blocks to 'tool' segment type for grouping purposes
+    const blockType: 'text' | 'tool' = block.type === 'text' ? 'text' : 'tool'
 
     if (currentType === null) {
       // Start first segment
