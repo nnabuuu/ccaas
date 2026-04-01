@@ -1,0 +1,137 @@
+[
+  {
+    "id": "bench-001",
+    "content": "判断方程 x² - 4x + 4 = 0 的根的情况（  ）\nA. 两个不相等的实数根\nB. 两个相等的实数根\nC. 没有实数根\nD. 无法判断",
+    "quizType": "choice",
+    "expectedAnswer": "B",
+    "expectedKpNames": ["一元二次方程的判别式", "一元二次方程"],
+    "hasGeometry": false,
+    "difficulty": 2,
+    "subject": "数学",
+    "grade": "初中",
+    "optionCount": 4
+  },
+  {
+    "id": "bench-002",
+    "content": "不等式 2x - 3 > 5 的解集是（  ）\nA. x > 4\nB. x > 1\nC. x < 4\nD. x < 1",
+    "quizType": "choice",
+    "expectedAnswer": "A",
+    "expectedKpNames": ["一元一次不等式"],
+    "hasGeometry": false,
+    "difficulty": 1,
+    "subject": "数学",
+    "grade": "初中",
+    "optionCount": 4
+  },
+  {
+    "id": "bench-003",
+    "content": "二次函数 y = x² - 2x - 3 的图像开口方向和顶点坐标分别是（  ）\nA. 开口向上，顶点 (1, -4)\nB. 开口向下，顶点 (1, -4)\nC. 开口向上，顶点 (-1, -4)\nD. 开口向下，顶点 (-1, -4)",
+    "quizType": "choice",
+    "expectedAnswer": "A",
+    "expectedKpNames": ["二次函数的图像与性质", "二次函数"],
+    "hasGeometry": false,
+    "difficulty": 2,
+    "subject": "数学",
+    "grade": "初中",
+    "optionCount": 4
+  },
+  {
+    "id": "bench-004",
+    "content": "分解因式：x² - 9 = ______",
+    "quizType": "fill",
+    "expectedAnswer": "(x+3)(x-3)",
+    "expectedKpNames": ["因式分解", "平方差公式"],
+    "hasGeometry": false,
+    "difficulty": 1,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-005",
+    "content": "已知等差数列 {aₙ} 的首项 a₁ = 2，公差 d = 3，则前 5 项的和 S₅ = ______",
+    "quizType": "fill",
+    "expectedAnswer": "40",
+    "expectedKpNames": ["等差数列的前n项和", "等差数列"],
+    "hasGeometry": false,
+    "difficulty": 2,
+    "subject": "数学",
+    "grade": "高中"
+  },
+  {
+    "id": "bench-006",
+    "content": "求解方程 x² - 5x + 6 = 0",
+    "quizType": "subjective",
+    "expectedAnswer": "x₁ = 2, x₂ = 3",
+    "expectedKpNames": ["一元二次方程", "因式分解法"],
+    "hasGeometry": false,
+    "difficulty": 3,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-007",
+    "content": "若方程 x² + px + q = 0 的两根为 2 和 3，求 p 和 q 的值",
+    "quizType": "subjective",
+    "expectedAnswer": "p = -5, q = 6",
+    "expectedKpNames": ["韦达定理", "根与系数的关系"],
+    "hasGeometry": false,
+    "difficulty": 4,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-008",
+    "content": "在直角三角形ABC中，∠C=90°，AC=3，BC=4，求斜边AB的长度",
+    "quizType": "subjective",
+    "expectedAnswer": "AB = 5",
+    "expectedKpNames": ["勾股定理"],
+    "hasGeometry": true,
+    "difficulty": 2,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-009",
+    "content": "如图，在等腰三角形ABC中，AB=AC=5，BC=6，AD⊥BC于点D。求AD的长度。",
+    "quizType": "subjective",
+    "expectedAnswer": "AD = 4",
+    "expectedKpNames": ["等腰三角形的性质", "勾股定理"],
+    "hasGeometry": true,
+    "difficulty": 3,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-010",
+    "content": "某商场将一种商品按进价提高40%标价，然后打八折出售，每件仍获利15元。求这种商品的进价。",
+    "quizType": "subjective",
+    "expectedAnswer": "进价为125元",
+    "expectedKpNames": ["一元一次方程的应用"],
+    "hasGeometry": false,
+    "difficulty": 3,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-011",
+    "content": "解方程：2x + 5 = 11",
+    "quizType": "subjective",
+    "expectedAnswer": "x = 3",
+    "expectedKpNames": ["一元一次方程"],
+    "hasGeometry": false,
+    "difficulty": 1,
+    "subject": "数学",
+    "grade": "初中"
+  },
+  {
+    "id": "bench-012",
+    "content": "解方程组：\n2x + y = 7\nx - y = 2",
+    "quizType": "subjective",
+    "expectedAnswer": "x = 3, y = 1",
+    "expectedKpNames": ["二元一次方程组", "加减消元法"],
+    "hasGeometry": false,
+    "difficulty": 2,
+    "subject": "数学",
+    "grade": "初中"
+  }
+]

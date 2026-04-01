@@ -11,6 +11,8 @@ export class AgentProxyService {
   private readonly ccaasUrl: string;
   private readonly tenantId = 'quiz-analyzer';
   private jobsService: JobsService | null = null;
+  /** Buffer for incomplete SSE lines split across TCP chunks */
+  private sseBuffer = '';
 
   constructor(
     @Optional() @Inject('JOBS_SERVICE') jobsServiceRef?: JobsService,
@@ -131,6 +133,7 @@ export class AgentProxyService {
       // Find active job for this session (if JobsService is available)
       let activeJobId: string | null = null;
       if (this.jobsService) {
+        this.resetSseBuffer();
         try {
           const activeJob =
             await this.jobsService.findActiveJobForSession(sessionId);
@@ -192,13 +195,21 @@ export class AgentProxyService {
 
   /**
    * Parse SSE chunk text for output_update events and update job steps.
+   * Handles lines split across TCP chunks via sseBuffer.
    * Non-throwing — errors are logged but never propagate to the stream.
    */
-  private async interceptOutputUpdates(
+  async interceptOutputUpdates(
     jobId: string,
     chunk: string,
   ): Promise<void> {
-    for (const line of chunk.split('\n')) {
+    // Prepend any leftover from previous chunk
+    const text = this.sseBuffer + chunk;
+    const lines = text.split('\n');
+
+    // Last element may be incomplete — save it for next chunk
+    this.sseBuffer = lines.pop() ?? '';
+
+    for (const line of lines) {
       if (!line.startsWith('data: ')) continue;
       try {
         const payload = JSON.parse(line.slice(6));
@@ -218,5 +229,10 @@ export class AgentProxyService {
         // Non-JSON data line — safe to ignore
       }
     }
+  }
+
+  /** Reset the SSE buffer (call at stream start/end) */
+  resetSseBuffer(): void {
+    this.sseBuffer = '';
   }
 }

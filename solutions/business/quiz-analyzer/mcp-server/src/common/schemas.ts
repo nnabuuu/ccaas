@@ -94,7 +94,10 @@ const AutoPlaySchema = z.object({
 
 const AnimationSpecSchema = z.object({
   param: z.string().min(1),
-  range: z.tuple([z.number(), z.number()]),
+  range: z.tuple([z.number(), z.number()]).refine(
+    ([a, b]) => a < b,
+    { message: 'animation range[0] must be less than range[1]' },
+  ),
   default: z.number(),
   label: z.string().optional(),
   snapValues: z.array(SnapValueSchema).optional(),
@@ -119,7 +122,7 @@ export const FieldSchemas: Record<SyncField, z.ZodTypeAny> = {
   knowledgePointTags: z.array(KnowledgePointTagSchema),
   thinkingProcess: z.string().min(1),
   solutionSteps: z.array(SolutionStepSchema),
-  correctAnswer: z.string().min(1),
+  correctAnswer: z.union([z.string(), z.number()]).transform(v => String(v)).pipe(z.string().min(1)),
   analysisStrategy: AnalysisStrategySchema,
   commonMistakes: z.array(MistakeSchema),
   knowledgeGapAnalysis: z.string().min(1),

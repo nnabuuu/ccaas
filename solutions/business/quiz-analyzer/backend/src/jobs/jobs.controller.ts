@@ -1,8 +1,10 @@
 import { Controller, Get, Param } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import type { JobProgressDto } from './dto/job-progress.dto';
 import type { AnalysisJob } from './entities/analysis-job.entity';
 
+@ApiTags('jobs')
 @Controller('api/v1/jobs')
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}

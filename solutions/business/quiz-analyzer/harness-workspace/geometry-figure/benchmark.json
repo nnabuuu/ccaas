@@ -1,0 +1,112 @@
+[
+  {
+    "id": "geo-001",
+    "content": "在直角三角形ABC中，∠C=90°，AC=3，BC=4。求斜边AB的长度。",
+    "category": "basic-triangle",
+    "difficulty": 1,
+    "hasAnimation": false,
+    "expectedElements": ["point A", "point B", "point C", "segment AB", "segment BC", "segment AC", "right-angle mark at C"],
+    "expectedAnswer": "AB = 5",
+    "notes": "最基础的直角三角形，勾股定理"
+  },
+  {
+    "id": "geo-002",
+    "content": "在等腰三角形ABC中，AB=AC=5，BC=6，AD⊥BC于点D。求AD的长度。",
+    "category": "basic-triangle",
+    "difficulty": 2,
+    "hasAnimation": false,
+    "expectedElements": ["point A", "point B", "point C", "point D (foot of altitude)", "segment AD (altitude)", "right-angle mark at D"],
+    "expectedAnswer": "AD = 4",
+    "notes": "等腰三角形+高。D 应该用 perpendicularpoint 构造，不能 hardcode"
+  },
+  {
+    "id": "geo-003",
+    "content": "在△ABC中，∠BAC=80°，∠ABC=60°，∠ACB=40°。AE平分∠BAC交BC于点E。求∠AEB的度数。",
+    "category": "basic-triangle",
+    "difficulty": 3,
+    "hasAnimation": false,
+    "expectedElements": ["point A", "point B", "point C", "point E (bisector foot)", "bisector AE", "angle marks"],
+    "expectedAnswer": "∠AEB = 100°",
+    "notes": "角平分线。E 应该用 bisector + intersection 构造"
+  },
+  {
+    "id": "geo-004",
+    "content": "如图，在矩形ABCD中，AB=8，BC=6。将矩形沿对角线BD折叠，使点C落在C'处。求CC'的长度。",
+    "category": "fold-reflection",
+    "difficulty": 4,
+    "hasAnimation": false,
+    "expectedElements": ["point A", "point B", "point C", "point D", "point C' (reflection)", "fold line BD", "dashed segment CC'"],
+    "expectedAnswer": "CC' = 10",
+    "notes": "矩形翻折。C' 应该用 reflection 构造。需要参考 fold-reflection.md"
+  },
+  {
+    "id": "geo-005",
+    "content": "如图，Rt△ABC中，∠ACB=90°，∠ABC=28°，O是AB中点。将OA绕O点旋转θ角到OP。当△BCP为等腰三角形时，求θ的值。",
+    "category": "rotation",
+    "difficulty": 4,
+    "hasAnimation": true,
+    "animationExpected": {
+      "param": "theta",
+      "snapCount": 3,
+      "snapLabels": ["56°", "62°", "68°"]
+    },
+    "expectedElements": ["point O (midpoint)", "point A", "point B", "point C", "point P (animated)", "circle", "angle θ"],
+    "expectedAnswer": "θ = 56° 或 62° 或 68°",
+    "notes": "经典旋转等腰三角形。P 用 expr 动态点。需要参考 rotation.md"
+  },
+  {
+    "id": "geo-006",
+    "content": "已知圆O的半径为5，点P在圆O外，OP=13。过点P作圆O的切线PA，切点为A。求PA的长度。",
+    "category": "circles-tangents",
+    "difficulty": 3,
+    "hasAnimation": false,
+    "expectedElements": ["point O (center)", "circle O", "point P (external)", "point A (tangent point)", "tangent line PA", "segment OP", "right-angle mark"],
+    "expectedAnswer": "PA = 12",
+    "notes": "圆的切线。需要参考 circles-tangents.md"
+  },
+  {
+    "id": "geo-007",
+    "content": "已知椭圆 x²/25 + y²/9 = 1，求焦点坐标和离心率。",
+    "category": "analytic-geometry",
+    "difficulty": 3,
+    "hasAnimation": false,
+    "expectedElements": ["ellipse", "point F1 (-4,0)", "point F2 (4,0)", "axes"],
+    "expectedAnswer": "焦点 (±4, 0)，离心率 e = 4/5",
+    "notes": "椭圆+焦点。需要用 ellipse 类型。需要参考 analytic-geometry.md"
+  },
+  {
+    "id": "geo-008",
+    "content": "在菱形ABCD中，对角线AC=6，BD=8。求菱形的面积和边长。",
+    "category": "quadrilaterals",
+    "difficulty": 2,
+    "hasAnimation": false,
+    "expectedElements": ["point A", "point B", "point C", "point D", "diagonals AC and BD", "polygon ABCD"],
+    "expectedAnswer": "面积 = 24，边长 = 5",
+    "notes": "菱形+对角线。需要参考 quadrilaterals.md"
+  },
+  {
+    "id": "geo-009",
+    "content": "在单位圆中，角θ的终边与单位圆交于点P。当θ=60°时，求P点坐标，以及sinθ、cosθ的值。",
+    "category": "vectors-trig",
+    "difficulty": 2,
+    "hasAnimation": false,
+    "expectedElements": ["unit circle", "point O (origin)", "point P on circle", "angle θ", "projections to axes"],
+    "expectedAnswer": "P = (1/2, √3/2)，sinθ = √3/2，cosθ = 1/2",
+    "notes": "单位圆三角函数。需要参考 vectors-trig.md"
+  },
+  {
+    "id": "geo-010",
+    "content": "将△ABC绕点A顺时针旋转β角，得到△AB'C'。已知AB=3，AC=4，∠BAC=90°。当β为何值时AB'⊥BC？",
+    "category": "rotation",
+    "difficulty": 4,
+    "hasAnimation": true,
+    "animationExpected": {
+      "param": "beta",
+      "snapCount": 1,
+      "snapLabels": ["相关角度值"]
+    },
+    "expectedElements": ["point A (center)", "point B", "point C", "point B' (animated)", "point C' (animated)", "triangles", "angle β"],
+    "expectedAnswer": "需要根据具体计算确定",
+    "notes": "绕点旋转。B' 和 C' 用 expr 动态点。需要参考 rotation.md"
+  }
+]

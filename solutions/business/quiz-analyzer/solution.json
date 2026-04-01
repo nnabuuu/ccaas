@@ -17,7 +17,7 @@
         "MCP_PORT": "3006"
       },
       "toolEventTriggers": [
-        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "parsedQuiz" }
+        { "toolName": "parse_quiz_content", "eventType": "output_update", "field": "parsedContent" }
       ]
     }
   },
@@ -68,6 +68,14 @@
       "enabledSkills": ["geometry-problem-figure", "geometry-solution-figure"],
       "bundles": ["structured-output"],
       "appendSystemPrompt": "你是几何图形可视化专家。分析题目中的几何元素并生成 JXGConstruction JSON。所有结果通过 write_output 输出，不要输出对话文本。"
+    },
+    "complete-analysis": {
+      "description": "完整分析模式 - 10 维度全面分析",
+      "enabledSkills": ["complete-analysis"],
+      "bundles": ["structured-output"],
+      "skillPath": "skills/complete-analysis/SKILL.md",
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "你是专业的数学题目分析助手。严格按照 SKILL.md 中的标准工作流进行完整的 10 维度分析。每完成一个步骤后立即使用 write_output 输出结果，不要等到全部完成。所有分析内容必须使用中文。"
     }
   },
   "setup": {
@@ -87,6 +95,7 @@
     { "slug": "unified-kp-search", "name": "unified-kp-search" },
     { "slug": "quiz-analyze-explain", "name": "quiz-analyze-explain" },
     { "slug": "geometry-problem-figure", "name": "geometry-problem-figure" },
-    { "slug": "geometry-solution-figure", "name": "geometry-solution-figure" }
+    { "slug": "geometry-solution-figure", "name": "geometry-solution-figure" },
+    { "slug": "complete-analysis", "name": "complete-analysis" }
   ]
 }
