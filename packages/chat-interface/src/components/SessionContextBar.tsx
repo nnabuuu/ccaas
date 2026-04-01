@@ -24,8 +24,8 @@ function getChipVariant(chip: SessionContextChip): ChipVariant {
 
 const CHIP_STYLES: Record<ChipVariant, string> = {
   active: 'bg-ck-info-bg text-ck-info-t border-transparent',
-  tenant: 'bg-[var(--ck-purple-bg,#EEEDFE)] text-[var(--ck-purple-t,#3C3489)] border-transparent',
-  clickable: 'bg-transparent text-ck-t2 border-ck-b1 cursor-pointer hover:bg-[#e8e7e0]',
+  tenant: 'bg-ck-purple-bg text-ck-purple-t border-transparent',
+  clickable: 'bg-transparent text-ck-t2 border-ck-b1 cursor-pointer hover:bg-ck-bg3',
   default: 'bg-transparent text-ck-t3 border-ck-b2/50 hover:bg-ck-bg3 hover:text-ck-t2',
 }
 

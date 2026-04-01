@@ -98,7 +98,14 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
         })}
 
         {message.isStreaming && (
-          <span className="animate-ck-blink inline-block ml-0.5 text-ck-t2" aria-hidden="true">&#9612;</span>
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-ck-t3 py-2" aria-label="思考中">
+            <span className="flex gap-[3px]">
+              <span className="w-[5px] h-[5px] rounded-full bg-ck-t3 animate-ck-dot1" />
+              <span className="w-[5px] h-[5px] rounded-full bg-ck-t3 animate-ck-dot2" />
+              <span className="w-[5px] h-[5px] rounded-full bg-ck-t3 animate-ck-dot3" />
+            </span>
+            正在处理...
+          </span>
         )}
 
         {/* Next actions */}

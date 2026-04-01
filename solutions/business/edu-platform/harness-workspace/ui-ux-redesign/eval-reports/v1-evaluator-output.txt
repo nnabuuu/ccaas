@@ -1,0 +1,13 @@
+Evaluation complete. Report written to `eval-reports/v1-eval.md`.
+
+**总分: 77.5/100** (Pass threshold: 65, Target: 85)
+
+Score breakdown:
+- **D1 Layout+Sidebar: 20/20** — All 4 zones, time grouping, status dots, skills colors, user menu
+- **D2 Landing+Composer: 16/20** — Solid implementation, deducted for greeting bug ("张老师老师") and send button shape
+- **D3 Messages+Tool Activity: 15/25** — Hard cap at 3/5 due to missing three-layer tool folding (no Table/JSON toggle)
+- **D4 Widget Visual: 20/25** — 3/4 widgets excellent, FileCard lacks type-based color differentiation
+- **D5 Design System+Dark Mode: 8/10** — Good CSS variable usage, 3 hardcoded hex in components
+- **Penalties: -1.5** (3 hardcoded hex × -0.5)
+
+**Biggest opportunity for v2**: Implementing three-layer tool folding (D3 hard cap removal) + FileCard type colors could add ~10 points, reaching the 85+ target.

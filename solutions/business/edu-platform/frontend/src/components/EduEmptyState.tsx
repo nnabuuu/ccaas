@@ -62,7 +62,7 @@ export function EduEmptyState({
 
   return (
     <div className="edu-landing">
-      <div className="edu-landing__greet">{greeting}，{teacherName}老师</div>
+      <div className="edu-landing__greet">{greeting}，{teacherName}</div>
       <div className="edu-landing__sub">我是你的教学助手</div>
       <div className="edu-landing__time">{weekInfo} · {selectedClass.name} · {selectedClass.subject}</div>
 

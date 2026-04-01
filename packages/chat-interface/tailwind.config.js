@@ -26,6 +26,8 @@ export default {
           'coral-t': 'var(--coral-t)',
           'purple-bg': 'var(--purple-bg)',
           'purple-t': 'var(--purple-t)',
+          'teal-bg': 'var(--teal-bg)',
+          'teal-t': 'var(--teal-t)',
           'user-bubble': 'var(--user-bubble-bg)',
           accent: 'var(--accent)',
           'accent-hover': 'var(--accent-hover)',
@@ -56,11 +58,18 @@ export default {
           '0%, 100%': { transform: 'scale(1)', opacity: '1' },
           '50%': { transform: 'scale(1.1)', opacity: '0.7' },
         },
+        'ck-dot-blink': {
+          '0%, 80%, 100%': { opacity: '0.3' },
+          '40%': { opacity: '1' },
+        },
       },
       animation: {
         'ck-blink': 'ck-blink 1s steps(1) infinite',
         'ck-shimmer': 'ck-shimmer 1.5s ease-in-out infinite',
         'ck-sparkle': 'ck-sparkle 4s ease-in-out infinite',
+        'ck-dot1': 'ck-dot-blink 1.2s infinite',
+        'ck-dot2': 'ck-dot-blink 1.2s infinite 0.2s',
+        'ck-dot3': 'ck-dot-blink 1.2s infinite 0.4s',
       },
       transitionTimingFunction: {
         'claude': 'cubic-bezier(0.4, 0, 0.2, 1)',

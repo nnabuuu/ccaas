@@ -70,29 +70,22 @@ const INTERNAL_LABELS: Record<string, string> = {
 
 /** Clean up backend-provided descriptions — NEVER return raw English */
 function cleanDescription(desc: string): string {
-  // Strip "Completed: " / "Running: " / "Error: " prefixes
   let cleaned = desc.replace(/^(Completed|Running|Error):\s*/i, '')
-  // Check known internal labels (exact match)
   const internal = INTERNAL_LABELS[cleaned.trim()]
   if (internal) return internal
-  // Catch-all for "Executing XXX" pattern → generic Chinese label
   if (/^Executing\s/i.test(cleaned)) return '正在处理'
-  // Strip action verb prefixes
   cleaned = cleaned.replace(/^(Reading|Writing|Editing|Searching files|Searching content|Running):\s*/i, '')
-  // Shorten any absolute file paths in the description
   cleaned = cleaned.replace(/\/[^\s]+/g, (path) => shortenPath(path))
-  // Final safety: if result is still all-ASCII (likely technical), return generic label
   if (/^[\x20-\x7E]+$/.test(cleaned) && cleaned.length > 20) return '处理数据'
   return truncate(cleaned, 80)
 }
 
-/** Get display text for a tool row — natural language for MCP, contextual for generic */
+/** Get display text for a tool row */
 function getDisplayText(block: ToolUseBlock): string {
   const stripped = stripMcpPrefix(block.toolName)
   const isRunning = block.phase === 'start' || block.phase === 'progress'
   const inp = block.toolInput as Record<string, unknown> | null | undefined
 
-  // 1. MCP tool labels always take priority (human-readable for teachers)
   const labels = TOOL_LABELS[stripped]
   if (labels) {
     const base = isRunning ? labels.active : labels.done
@@ -111,11 +104,9 @@ function getDisplayText(block: ToolUseBlock): string {
     return base
   }
 
-  // 2. Generate contextual descriptions from input for known generic tools
   switch (stripped) {
     case 'Bash': {
       if (!inp?.command) return '执行命令'
-      // Shorten absolute paths in bash command display
       const cmd = String(inp.command).replace(/\/[^\s"']+/g, (p) => {
         const parts = p.split('/')
         return parts.length > 4 ? '\u2026/' + parts.slice(-3).join('/') : p
@@ -131,7 +122,6 @@ function getDisplayText(block: ToolUseBlock): string {
     case 'Glob': {
       if (!inp?.pattern) return '搜索文件'
       const p = String(inp.pattern)
-      // Strip absolute path prefix, keep last 3-4 meaningful segments
       const parts = p.split('/')
       if (parts.length > 4) return `搜索文件: \u2026/${parts.slice(-4).join('/')}`
       return `搜索文件: ${p}`
@@ -139,12 +129,9 @@ function getDisplayText(block: ToolUseBlock): string {
     case 'Grep': {
       if (!inp?.pattern) return '搜索内容'
       const p = String(inp.pattern)
-      // If pattern is a path, shorten it
       const parts = p.split('/')
       if (parts.length > 4) return `搜索内容: \u2026/${parts.slice(-4).join('/')}`
-      // If pattern contains regex syntax, simplify for display
       if (/[|.*+?\\[\]{}^$()]/.test(p) && p.length > 30) {
-        // Extract human-readable words (Chinese or meaningful English)
         const words = p.replace(/[.*+?\\[\]{}^$|()]/g, ' ').split(/\s+/).filter(w => w.length > 1)
         if (words.length > 0) return `搜索内容: ${truncate(words.join(' '), 50)}`
       }
@@ -157,9 +144,7 @@ function getDisplayText(block: ToolUseBlock): string {
       return inp?.description ? truncate(String(inp.description), 60) : '子任务'
   }
 
-  // 3. Fall back to cleaned backend description
   if (block.description) return cleanDescription(block.description)
-
   return stripped
 }
 
@@ -177,7 +162,6 @@ function formatOutput(name: string, output: unknown): string {
   const stripped = stripMcpPrefix(name)
   if (stripped === 'write_output') return '\u2713 已同步'
 
-  // For arrays of content blocks (common Agent/Task output), extract text
   if (Array.isArray(output)) {
     const textParts = output
       .filter((item): item is { type: string; text: string } =>
@@ -199,182 +183,198 @@ function formatOutput(name: string, output: unknown): string {
   return shortenPathsInText(text)
 }
 
-/** Get the label for the input section (matches Claude Web style) */
-function getInputLabel(name: string): string {
-  const stripped = stripMcpPrefix(name)
-  switch (stripped) {
-    case 'Bash': return 'bash'
-    case 'Read': case 'Write': case 'Edit': return '文件'
-    case 'Glob': return '搜索模式'
-    case 'Grep': return '搜索'
-    default: return '输入'
-  }
-}
+// ===== Step Icon (semantic colored circle with SVG — matches prototype) =====
 
-/** Get contextual output label by tool type */
-function getOutputLabel(name: string): string {
-  const stripped = stripMcpPrefix(name)
-  switch (stripped) {
-    case 'Bash': return '命令输出'
-    case 'Read': return '文件内容'
-    case 'Write': case 'Edit': return '操作结果'
-    case 'Glob': return '匹配文件'
-    case 'Grep': return '搜索结果'
-    case 'WebFetch': case 'WebSearch': return '搜索结果'
-    default: {
-      // MCP tools
-      if (TOOL_LABELS[stripped]) return '查询结果'
-      return '输出'
-    }
-  }
-}
+type StepCategory = 'mcp' | 'ai' | 'file' | 'done'
 
-function formatInput(name: string, input: unknown): string {
-  if (input == null) return ''
-  if (typeof input !== 'object') return String(input)
-  const stripped = stripMcpPrefix(name)
-  const inp = input as Record<string, unknown>
-  switch (stripped) {
-    case 'Bash':
-      return String(inp.command ?? '')
-    case 'Read':
-    case 'Write':
-    case 'Edit':
-      return String(inp.file_path ?? '')
-    case 'Glob':
-      return `${inp.pattern ?? '*'}${inp.path ? `  (in ${shortenPath(String(inp.path))})` : ''}`
-    case 'Grep':
-      return `${inp.pattern ?? ''}${inp.path ? `  (in ${shortenPath(String(inp.path))})` : ''}`
-    default: {
-      // For skill/agent tools, show simplified format
-      if (inp.skill || inp.args) {
-        const parts: string[] = []
-        if (inp.skill) parts.push(`技能: ${inp.skill}`)
-        if (inp.args) parts.push(`参数: ${inp.args}`)
-        return parts.join('\n')
-      }
-      // For Agent/subagent tools, simplify the display
-      if (inp.subagent_type || inp.prompt) {
-        const parts: string[] = []
-        if (inp.description) parts.push(`描述: ${truncate(String(inp.description), 80)}`)
-        if (inp.subagent_type) parts.push(`类型: ${inp.subagent_type}`)
-        if (inp.prompt && !inp.description) parts.push(`指令: ${truncate(String(inp.prompt), 120)}`)
-        return parts.join('\n')
-      }
-      // For MCP tools, show key-value pairs in Chinese-friendly format
-      const entries = Object.entries(inp).filter(([, v]) => v != null)
-      if (entries.length <= 5) {
-        return entries.map(([k, v]) => {
-          const val = typeof v === 'string' ? v : JSON.stringify(v)
-          return `${k}: ${truncate(val, 80)}`
-        }).join('\n')
-      }
-      return JSON.stringify(input, null, 2)
-    }
-  }
-}
-
-// ===== Category Badges (colored letter badges per design doc) =====
-// 紫色 M = MCP 调用, 蓝色 AI = Agent/LLM 工具, 绿色 F = 文件操作
-
-type ToolCategory = 'mcp' | 'ai' | 'file'
-
-function getToolCategory(name: string): ToolCategory {
-  const stripped = stripMcpPrefix(name)
-  // MCP tools (domain-specific)
-  if (name.startsWith('mcp__')) return 'mcp'
-  if (['curriculum_tree', 'student_proficiency', 'teaching_progress', 'write_output'].includes(stripped)) return 'mcp'
-  // File operations
-  if (['Read', 'Write', 'Edit', 'generate_docx'].includes(stripped)) return 'file'
-  // Everything else = AI/agent activity
+function getStepCategory(block: ToolUseBlock): StepCategory {
+  if (block.phase === 'end' && block.success !== false) return 'done'
+  const stripped = stripMcpPrefix(block.toolName)
+  if (block.toolName.startsWith('mcp__')) return 'mcp'
+  if (['curriculum_tree', 'student_proficiency', 'teaching_progress', 'write_output', 'generate_docx'].includes(stripped)) return 'mcp'
+  if (['Read', 'Write', 'Edit', 'Glob', 'Grep'].includes(stripped)) return 'file'
   return 'ai'
 }
 
-const BADGE_STYLES: Record<ToolCategory, { bg: string; text: string; letter: string }> = {
-  mcp:  { bg: 'bg-purple-100', text: 'text-purple-600', letter: 'M' },
-  ai:   { bg: 'bg-blue-100',   text: 'text-blue-600',   letter: 'AI' },
-  file: { bg: 'bg-emerald-100', text: 'text-emerald-600', letter: 'F' },
+const STEP_ICON_STYLES: Record<StepCategory, { bg: string; color: string }> = {
+  mcp:  { bg: 'bg-ck-purple-bg', color: 'text-ck-purple-t' },
+  file: { bg: 'bg-ck-purple-bg', color: 'text-ck-purple-t' },
+  ai:   { bg: 'bg-ck-info-bg',   color: 'text-ck-info-t'   },
+  done: { bg: 'bg-ck-success-bg', color: 'text-ck-success-t' },
 }
 
-function CategoryBadge({ name }: { name: string }) {
-  const cat = getToolCategory(name)
-  const style = BADGE_STYLES[cat]
-  return (
-    <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold leading-none flex-shrink-0 ${style.bg} ${style.text}`}>
-      {style.letter}
-    </span>
-  )
-}
-
-function StatusIndicator({ block }: { block: ToolUseBlock }) {
+function StepIcon({ block }: { block: ToolUseBlock }) {
   const isRunning = block.phase === 'start' || block.phase === 'progress'
-
   if (isRunning) {
     return (
-      <span className="inline-block w-3.5 h-3.5 border-[1.5px] border-ck-t3 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+      <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-ck-info-bg flex-shrink-0">
+        <span className="inline-block w-[11px] h-[11px] border-[1.5px] border-ck-info-t border-t-transparent rounded-full animate-spin" />
+      </span>
     )
   }
 
   if (block.success === false) {
     return (
-      <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-      </svg>
+      <span className="inline-flex items-center justify-center w-[18px] h-[18px] rounded-full bg-ck-danger-bg flex-shrink-0">
+        <svg className="w-[11px] h-[11px] text-ck-danger-t" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <line x1="4" y1="4" x2="12" y2="12" /><line x1="12" y1="4" x2="4" y2="12" />
+        </svg>
+      </span>
     )
   }
 
-  if (block.phase === 'end') {
-    return (
-      <svg className="w-3.5 h-3.5 text-ck-success-t flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
-      </svg>
-    )
-  }
-
-  return null
-}
-
-/** Expanded detail area — gray bg block with labeled sections (matches Claude Web) */
-function ExpandedDetail({ block }: { block: ToolUseBlock }) {
-  const stripped = stripMcpPrefix(block.toolName)
-  const isBash = stripped === 'Bash'
-  const inputLabel = getInputLabel(block.toolName)
-  const inputText = formatInput(block.toolName, block.toolInput)
-  const outputText = formatOutput(block.toolName, block.toolOutput)
-  const outputLabel = getOutputLabel(block.toolName)
-  const hasInput = inputText.length > 0
-  const hasOutput = outputText.length > 0
+  const cat = getStepCategory(block)
+  const style = STEP_ICON_STYLES[cat]
 
   return (
-    <div className="mt-1.5 rounded-lg bg-ck-bg3 overflow-hidden text-xs">
-      {hasInput && (
-        <div className="px-3 py-2">
-          <div className="text-ck-t3 text-[11px] font-medium mb-1">
-            {inputLabel}
-          </div>
-          <pre className={`whitespace-pre-wrap break-all font-mono text-[12px] leading-relaxed ${
-            isBash ? 'text-ck-t1' : 'text-ck-t2'
-          }`}>
-            {inputText}
-          </pre>
+    <span className={`inline-flex items-center justify-center w-[18px] h-[18px] rounded-full flex-shrink-0 ${style.bg}`}>
+      {cat === 'done' ? (
+        <svg className={`w-[11px] h-[11px] ${style.color}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <path d="M13.5 4.5l-7 7L3 8" />
+        </svg>
+      ) : cat === 'ai' ? (
+        <svg className={`w-[11px] h-[11px] ${style.color}`} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+          <circle cx="8" cy="8" r="6" /><path d="M8 4v4l3 2" />
+        </svg>
+      ) : (
+        <svg className={`w-[11px] h-[11px] ${style.color}`} viewBox="0 0 16 16" fill="currentColor" stroke="none">
+          <path d="M4 1h5.5L14 5.5V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1z" /><path d="M9 1v4h4" fill="none" stroke="currentColor" strokeWidth="1" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
+// ===== Table/JSON Tabbed Detail (Layer 3) =====
+
+/** Parse input/output into key-value pairs for table view */
+function toKeyValuePairs(data: unknown): Array<{ key: string; value: string }> {
+  if (data == null) return []
+  if (typeof data === 'string') return [{ key: 'value', value: data.length > 200 ? data.slice(0, 200) + '\u2026' : data }]
+  if (Array.isArray(data)) {
+    const textParts = data
+      .filter((item): item is { type: string; text: string } =>
+        typeof item === 'object' && item !== null && 'text' in item)
+      .map(item => String(item.text))
+    if (textParts.length > 0) return [{ key: 'text', value: truncate(textParts.join('\n'), 300) }]
+    return [{ key: 'items', value: truncate(JSON.stringify(data), 300) }]
+  }
+  if (typeof data === 'object') {
+    return Object.entries(data as Record<string, unknown>)
+      .filter(([, v]) => v != null)
+      .slice(0, 15)
+      .map(([k, v]) => ({
+        key: k,
+        value: typeof v === 'string' ? truncate(v, 200) : truncate(JSON.stringify(v), 200),
+      }))
+  }
+  return [{ key: 'value', value: String(data) }]
+}
+
+function formatJsonBlock(name: string, input: unknown, output: unknown): string {
+  const parts: string[] = []
+  if (input != null) {
+    parts.push('// Request')
+    parts.push(typeof input === 'string' ? input : JSON.stringify(input, null, 2))
+  }
+  if (output != null) {
+    if (parts.length > 0) parts.push('')
+    parts.push('// Response')
+    if (typeof output === 'string') {
+      parts.push(shortenPathsInText(output.length > 600 ? output.slice(0, 600) + '\u2026' : output))
+    } else if (Array.isArray(output)) {
+      const textParts = output
+        .filter((item): item is { type: string; text: string } =>
+          typeof item === 'object' && item !== null && 'text' in item)
+        .map(item => String(item.text))
+      if (textParts.length > 0) {
+        parts.push(shortenPathsInText(truncate(textParts.join('\n'), 600)))
+      } else {
+        const json = JSON.stringify(output, null, 2)
+        parts.push(shortenPathsInText(json.length > 600 ? json.slice(0, 600) + '\u2026' : json))
+      }
+    } else {
+      const json = JSON.stringify(output, null, 2)
+      parts.push(shortenPathsInText(json.length > 600 ? json.slice(0, 600) + '\u2026' : json))
+    }
+  }
+  return parts.join('\n')
+}
+
+function KVTable({ pairs, label }: { pairs: Array<{ key: string; value: string }>; label: string }) {
+  if (pairs.length === 0) return null
+  return (
+    <>
+      <div className="text-[10px] font-medium text-ck-t3 py-1.5 uppercase tracking-wider">{label}</div>
+      <table className="w-full border-collapse text-[10px] my-0.5">
+        <thead>
+          <tr>
+            <th className="text-left px-2 py-1 bg-ck-bg2 text-ck-t2 font-medium border-b-[0.5px] border-ck-b1">Key</th>
+            <th className="text-left px-2 py-1 bg-ck-bg2 text-ck-t2 font-medium border-b-[0.5px] border-ck-b1">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pairs.map((p, i) => (
+            <tr key={i}>
+              <td className="px-2 py-1 border-b-[0.5px] border-ck-b2 text-ck-t2 w-[110px] align-top">{p.key}</td>
+              <td className="px-2 py-1 border-b-[0.5px] border-ck-b2 font-mono text-[10px] text-ck-t1 break-all">{p.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  )
+}
+
+function TabbedDetail({ block }: { block: ToolUseBlock }) {
+  const [activeTab, setActiveTab] = useState<'table' | 'json'>('table')
+
+  const inputPairs = toKeyValuePairs(block.toolInput)
+  const outputPairs = toKeyValuePairs(block.toolOutput)
+  const jsonText = formatJsonBlock(block.toolName, block.toolInput, block.toolOutput)
+
+  return (
+    <div className="mt-1.5" onClick={e => e.stopPropagation()}>
+      {/* Tab bar */}
+      <div className="inline-flex gap-0.5 bg-ck-bg2 rounded-md p-0.5 mb-1">
+        <button
+          className={`px-2.5 py-[3px] text-[10px] font-medium rounded cursor-pointer border-none transition-all duration-100 ${
+            activeTab === 'table'
+              ? 'bg-ck-bg1 text-ck-t1 shadow-[0_0.5px_2px_rgba(0,0,0,0.08)]'
+              : 'bg-transparent text-ck-t3 hover:text-ck-t2'
+          }`}
+          onClick={() => setActiveTab('table')}
+        >
+          Table
+        </button>
+        <button
+          className={`px-2.5 py-[3px] text-[10px] font-medium rounded cursor-pointer border-none transition-all duration-100 ${
+            activeTab === 'json'
+              ? 'bg-ck-bg1 text-ck-t1 shadow-[0_0.5px_2px_rgba(0,0,0,0.08)]'
+              : 'bg-transparent text-ck-t3 hover:text-ck-t2'
+          }`}
+          onClick={() => setActiveTab('json')}
+        >
+          JSON
+        </button>
+      </div>
+
+      {/* Table pane */}
+      {activeTab === 'table' && (
+        <div>
+          {inputPairs.length > 0 && <KVTable pairs={inputPairs} label="Request" />}
+          {outputPairs.length > 0 && <KVTable pairs={outputPairs} label="Response" />}
+          {block.toolError && (
+            <div className="text-[10px] text-ck-danger-t py-1">{block.toolError}</div>
+          )}
         </div>
       )}
-      {block.toolError && (
-        <div className={`px-3 py-2 ${hasInput ? 'border-t border-ck-b2' : ''}`}>
-          <div className="text-red-500 text-[11px] font-medium mb-1">错误</div>
-          <pre className="whitespace-pre-wrap break-all font-mono text-[12px] text-red-600 leading-relaxed">
-            {block.toolError}
-          </pre>
-        </div>
-      )}
-      {hasOutput && !block.toolError && (
-        <div className={`px-3 py-2 ${hasInput ? 'border-t border-ck-b2' : ''}`}>
-          <div className="text-ck-t3 text-[11px] font-medium mb-1">{outputLabel}</div>
-          <pre className="whitespace-pre-wrap break-all font-mono text-[12px] text-ck-t2 leading-relaxed max-h-[200px] overflow-y-auto">
-            {outputText}
-          </pre>
-        </div>
+
+      {/* JSON pane */}
+      {activeTab === 'json' && (
+        <pre className="bg-ck-bg2 px-2.5 py-2 rounded-md font-mono text-[10px] overflow-x-auto whitespace-pre-wrap text-ck-t1 leading-relaxed my-1 max-h-[300px] overflow-y-auto">
+          {block.toolError ? `// Error\n${block.toolError}` : jsonText}
+        </pre>
       )}
     </div>
   )
@@ -401,50 +401,38 @@ export function ToolActivityBlock({ block }: ToolActivityBlockProps) {
 
   const displayText = getDisplayText(block)
   const hasDetails = block.toolInput != null || block.toolOutput != null || block.toolError
+  const durationMs = block.duration
 
   return (
-    <div className="py-0.5">
-      {/* Inline row — no border, no background, matching text rhythm */}
-      <div
-        className={`flex items-center gap-2 py-0.5 ${
-          hasDetails ? 'cursor-pointer' : ''
-        }`}
-        onClick={() => hasDetails && setExpanded(!expanded)}
-      >
-        {/* Expand chevron */}
-        {hasDetails && (
-          <svg
-            className={`w-3 h-3 text-ck-t3 transition-transform duration-150 flex-shrink-0 ${expanded ? 'rotate-90' : ''}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+    <div className="flex gap-2.5 py-1.5" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.04)' }}>
+      {/* Step icon */}
+      <StepIcon block={block} />
+
+      {/* Step content */}
+      <div className="flex-1 min-w-0">
+        <div
+          className={`text-[12px] text-ck-t1 leading-relaxed rounded px-1 -mx-1 transition-colors duration-100 ${
+            hasDetails ? 'cursor-pointer hover:bg-ck-bg2' : ''
+          }`}
+          onClick={(e) => { e.stopPropagation(); hasDetails && setExpanded(!expanded) }}
+        >
+          {displayText}
+          {stripped && (
+            <span className="text-ck-t3 font-mono text-[10px] ml-1">{stripped}</span>
+          )}
+        </div>
+
+        {/* Layer 3: Table/JSON detail */}
+        {expanded && hasDetails && (
+          <TabbedDetail block={block} />
         )}
-        {!hasDetails && <span className="w-3 flex-shrink-0" />}
-
-        {/* Category badge */}
-        <CategoryBadge name={block.toolName} />
-
-        {/* Description text — same size as AI text (14px) for visual rhythm */}
-        <span className="text-ck-t2 text-[14px] leading-[1.6] truncate">{displayText}</span>
-
-        {/* Spacer */}
-        <span className="flex-1" />
-
-        {/* Status indicator */}
-        <StatusIndicator block={block} />
       </div>
 
-      {/* Expanded detail area */}
-      {expanded && hasDetails && (
-        <div className="ml-[38px]">
-          <ExpandedDetail block={block} />
-        </div>
+      {/* Duration */}
+      {durationMs != null && durationMs > 0 && (
+        <span className="text-[10px] text-ck-t3 flex-shrink-0 mt-0.5">
+          {durationMs >= 1000 ? `${(durationMs / 1000).toFixed(1)}s` : `${durationMs}ms`}
+        </span>
       )}
     </div>
   )

@@ -1,0 +1,13 @@
+**v1 iteration complete.** Here's a summary of what was done:
+
+**D1 — Layout + Sidebar (20pts target):**
+- ChatSidebar fully rewritten: product name header, bordered search, date-grouped sessions with status dots and timestamps, individual skill items with colored badges, user footer with role and upward popover menu
+- Chinese locale support (ZH_LABELS)
+
+**D2 — Landing Page + Composer (20pts target):**
+- New `EduEmptyState` component: dynamic greeting, subtitle, context line, 2×2 starter cards with colored icons, "试试这样说" prompt examples with hover arrows
+- Floating composer: 16px border-radius card with shadow, borderless textarea inside, 32px rounded send button
+
+**Verification:**
+- `chat-interface` — tsc + build: PASS
+- `edu-platform/frontend` — tsc: PASS

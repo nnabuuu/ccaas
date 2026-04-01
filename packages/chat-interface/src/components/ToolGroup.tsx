@@ -57,24 +57,25 @@ export function ToolGroup({ group }: ToolGroupProps) {
       : '\u601D\u8003\u8FC7\u7A0B')
 
   return (
-    <div className="py-0.5">
-      {/* Group summary header — inline, no border */}
+    <div className="my-2 rounded-ck-lg overflow-hidden">
+      {/* Layer 1: Summary header — card style with border */}
       <div
-        className="flex items-center gap-2 py-0.5 cursor-pointer"
+        className={`flex items-center gap-2 px-3.5 py-2.5 cursor-pointer select-none text-[13px] text-ck-t2 bg-ck-bg1 border-[0.5px] border-ck-b1 transition-[border-radius] duration-150 ${
+          expanded
+            ? 'rounded-t-ck-lg rounded-b-none border-b-transparent'
+            : 'rounded-ck-lg hover:bg-ck-bg2'
+        }`}
         onClick={() => setExpanded(!expanded)}
       >
         {/* Chevron */}
-        <svg
-          className={`w-3 h-3 text-ck-t3 transition-transform duration-150 flex-shrink-0 ${expanded ? 'rotate-90' : ''}`}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
+        <span className={`text-[9px] text-ck-t3 transition-transform duration-200 flex-shrink-0 w-3.5 text-center ${expanded ? 'rotate-90' : ''}`}>
+          &#9654;
+        </span>
+
+        {/* Summary text */}
+        <span className={`flex-1 font-medium ${thinkingPreview ? 'text-ck-t3' : 'text-ck-t2'}`}>
+          {summaryText}
+        </span>
 
         {/* Status icon */}
         {shouldAutoExpand ? (
@@ -84,16 +85,11 @@ export function ToolGroup({ group }: ToolGroupProps) {
             <polyline points="20 6 9 17 4 12" />
           </svg>
         )}
-
-        {/* Summary text — same size as AI text for visual rhythm */}
-        <span className={`text-[14px] leading-[1.6] ${thinkingPreview ? 'text-ck-t3' : 'text-ck-t2'}`}>
-          {summaryText}
-        </span>
       </div>
 
-      {/* Expanded: render each block inline */}
+      {/* Layer 2: Expanded step list — card bottom with border */}
       {expanded && (
-        <div className="ml-5">
+        <div className="border-[0.5px] border-ck-b1 border-t-0 rounded-b-ck-lg bg-ck-bg1 px-3.5 pt-1 pb-2.5">
           {group.blocks.map((block, i) =>
             block.type === 'tool_use'
               ? <ToolActivityBlock key={block.toolId || i} block={block} />
