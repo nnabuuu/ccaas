@@ -1,0 +1,21 @@
+All verifications pass. Here's the v2 summary:
+
+## v2 Changes Summary
+
+**Files modified (4):**
+
+| File | Change | Impact |
+|------|--------|--------|
+| `WidgetRenderer.tsx` | Reverted frozen file null guard | Penalty -5 → 0 |
+| `App.tsx` | Added `groupTitle` to suggestions; removed unused import | D4: 4/5 → 5/5 |
+| `EduMetricDashboard.tsx` | `#eeede8` → `var(--ck-bg3)` | Penalty fix |
+| `EduStepWizard.tsx` | 3 hex → CSS vars (`--ck-b2`, `--ck-bg3`, `--ck-b1`) | Penalty fix |
+
+**Verification:**
+- `frontend tsc --noEmit`: PASS (zero errors)
+- `mcp-server tsc --noEmit`: PASS (zero errors)
+- No hardcoded hex in widget files: confirmed
+- WidgetRenderer.tsx clean (no diff): confirmed
+- groupTitle present in buildSuggestions: confirmed
+
+**Expected score: 86 → 95** (+5 penalty revert, +2 D4 groupTitle, +2 hex penalty removal)

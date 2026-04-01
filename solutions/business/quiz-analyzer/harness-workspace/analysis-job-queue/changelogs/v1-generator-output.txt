@@ -1,0 +1,26 @@
+## V1 完成总结
+
+**所有 11 个任务已完成。** 以下是本轮实现的完整清单：
+
+### 新增文件 (9)
+| 文件 | 说明 |
+|------|------|
+| `jobs/entities/analysis-job.entity.ts` | AnalysisJob TypeORM entity |
+| `jobs/entities/job-step.entity.ts` | JobStep entity，`field: SyncField` 类型安全 |
+| `jobs/dto/create-job.dto.ts` | CreateJobDto |
+| `jobs/dto/job-progress.dto.ts` | JobProgressDto + StepProgress |
+| `jobs/jobs.service.ts` | 核心服务（createJob/startJob/completeStep/failStep/retry） |
+| `jobs/jobs.controller.ts` | REST: GET /jobs/:id, GET /jobs/:id/progress |
+| `jobs/jobs.module.ts` | NestJS 模块 |
+| `jobs/jobs.service.spec.ts` | **27 个单元测试** |
+| `scripts/migrations/004-analysis-jobs.sql` | DDL migration |
+
+### 修改文件 (3)
+- `app.module.ts` — 导入 JobsModule
+- `database.module.ts` — 注册 AnalysisJob + JobStep entities
+- `agent-proxy.service.ts` — SSE 流 output_update 事件拦截
+
+### 验证结果
+- `tsc --noEmit` — 0 errors
+- `jest jobs` — **27 passed**
+- `jest` (全量) — **61 passed, 0 regressions**

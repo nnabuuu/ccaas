@@ -1,0 +1,17 @@
+评估报告已写入 `eval-reports/v2-eval.md`。
+
+**评估摘要：**
+
+| 维度 | 权重 | 得分 | 加权分 |
+|------|------|------|--------|
+| D1 MetricDashboard | 20 | 5/5 | 20 |
+| D2 StepWizard | 25 | 5/5 | 25 |
+| D3 ReviewPanel | 20 | 5/5 | 20 |
+| D4 Session-Input | 10 | 5/5 | 10 |
+| D5 E2E 集成 | 15 | 5/5 | 15 |
+| D6 代码质量 | 10 | 5/5 | 10 |
+| Penalty | | | -1 |
+
+**扣分原因**: EduReviewPanel.tsx 中 2 处 hardcoded `rgba()` 颜色值（-0.5 × 2 = -1）
+
+**总分: 99/100** — 从 v1 大幅提升。三个 widget 完整匹配参考设计，W4 组件 polish 到位，tsc 零错误，类型安全。仅剩 1 分的 rgba hardcoded 颜色 penalty。

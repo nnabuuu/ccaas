@@ -22,6 +22,10 @@ export default {
           'warn-t': 'var(--warn-t)',
           'danger-bg': 'var(--danger-bg)',
           'danger-t': 'var(--danger-t)',
+          'coral-bg': 'var(--coral-bg)',
+          'coral-t': 'var(--coral-t)',
+          'purple-bg': 'var(--purple-bg)',
+          'purple-t': 'var(--purple-t)',
           'user-bubble': 'var(--user-bubble-bg)',
           accent: 'var(--accent)',
           'accent-hover': 'var(--accent-hover)',
@@ -48,10 +52,15 @@ export default {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        'ck-sparkle': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.1)', opacity: '0.7' },
+        },
       },
       animation: {
         'ck-blink': 'ck-blink 1s steps(1) infinite',
         'ck-shimmer': 'ck-shimmer 1.5s ease-in-out infinite',
+        'ck-sparkle': 'ck-sparkle 4s ease-in-out infinite',
       },
       transitionTimingFunction: {
         'claude': 'cubic-bezier(0.4, 0, 0.2, 1)',

@@ -1,0 +1,21 @@
+评估报告已完成，写入 `eval-reports/v1-eval.md`。
+
+## 评分摘要
+
+| 维度 | 权重 | 得分 | 加权 |
+|------|------|------|------|
+| D1 MetricDashboard | 20 | 5/5 | 20 |
+| D2 StepWizard | 25 | 5/5 | 25 |
+| D3 ReviewPanel | 20 | 5/5 | 20 |
+| D4 Session-Input | 10 | 4/5 | 8 |
+| D5 E2E 集成 | 15 | 4/5 | 12 |
+| D6 代码质量 | 10 | 4/5 | 8 |
+| **维度小计** | | | **93** |
+| Penalties (WidgetRenderer -5, hardcoded colors -2) | | | **-7** |
+
+**总分: 86/100** (Pass threshold: 65, Target: 80)
+
+关键扣分点:
+1. **WidgetRenderer.tsx 被修改** (-5) — frozen 基础设施文件
+2. **4 处 hardcoded hex 颜色** (-2) — `#eeede8`, `#e0dfda`, `#c8c7c0`
+3. **QuickSuggestions groupTitle 未在实际数据中填充** — D4 降至 4/5

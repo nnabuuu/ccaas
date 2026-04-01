@@ -1,17 +1,29 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional, Inject } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { v4 as uuid } from 'uuid';
+import type { SyncField } from '../../../mcp-server/src/common/types';
+import { SYNC_FIELDS } from '../../../mcp-server/src/common/types';
+import type { JobsService } from '../jobs/jobs.service';
 
 @Injectable()
 export class AgentProxyService {
   private readonly logger = new Logger(AgentProxyService.name);
   private readonly ccaasUrl: string;
   private readonly tenantId = 'quiz-analyzer';
+  private jobsService: JobsService | null = null;
 
-  constructor() {
+  constructor(
+    @Optional() @Inject('JOBS_SERVICE') jobsServiceRef?: JobsService,
+  ) {
+    this.jobsService = jobsServiceRef ?? null;
     this.ccaasUrl =
       process.env.CCAAS_CORE_URL || 'http://localhost:3001';
     this.logger.log(`CCAAS Core configured (${this.ccaasUrl.replace(/\/\/.*@/, '//***@')})`);
+  }
+
+  /** Allow late-binding of JobsService to avoid circular dependency */
+  setJobsService(service: JobsService): void {
+    this.jobsService = service;
   }
 
   /**
@@ -112,15 +124,34 @@ export class AgentProxyService {
         return;
       }
 
-      // Pipe SSE stream transparently
+      // Pipe SSE stream transparently, intercepting output_update events
       const reader = coreResponse.body.getReader();
       const decoder = new TextDecoder();
+
+      // Find active job for this session (if JobsService is available)
+      let activeJobId: string | null = null;
+      if (this.jobsService) {
+        try {
+          const activeJob =
+            await this.jobsService.findActiveJobForSession(sessionId);
+          activeJobId = activeJob?.id ?? null;
+        } catch {
+          // Non-critical — proceed without job tracking
+        }
+      }
 
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
+
+          // Intercept SSE lines to detect output_update events
+          if (activeJobId && this.jobsService) {
+            await this.interceptOutputUpdates(activeJobId, chunk);
+          }
+
+          // Always write original chunk to response (backward compatible)
           res.write(chunk);
         }
       } catch (err) {
@@ -155,6 +186,36 @@ export class AgentProxyService {
       clearTimeout(timeout);
       if (!res.writableEnded) {
         res.end();
+      }
+    }
+  }
+
+  /**
+   * Parse SSE chunk text for output_update events and update job steps.
+   * Non-throwing — errors are logged but never propagate to the stream.
+   */
+  private async interceptOutputUpdates(
+    jobId: string,
+    chunk: string,
+  ): Promise<void> {
+    for (const line of chunk.split('\n')) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const payload = JSON.parse(line.slice(6));
+        // Handle both flat and nested event shapes
+        const event = payload.event ?? payload;
+        if (event.type === 'output_update' && event.field) {
+          const field = event.field as string;
+          if ((SYNC_FIELDS as readonly string[]).includes(field)) {
+            await this.jobsService!.completeStep(
+              jobId,
+              field as SyncField,
+              event.value,
+            );
+          }
+        }
+      } catch {
+        // Non-JSON data line — safe to ignore
       }
     }
   }

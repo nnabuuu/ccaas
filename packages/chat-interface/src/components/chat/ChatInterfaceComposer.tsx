@@ -72,8 +72,8 @@ export function ChatInterfaceComposer({
   const showDisclaimer = disclaimer !== null
 
   return (
-    <div className={className ?? `${messages.length === 0 ? 'bg-transparent' : 'bg-ck-bg2'} px-3 sm:px-4 pb-3 sm:pb-4 pt-2`}>
-      <div className="max-w-3xl mx-auto relative rounded-[20px] bg-ck-bg1 shadow-composer hover:shadow-composer-hover focus-within:shadow-composer-focus transition-shadow duration-200 ease-claude">
+    <div data-ck="composer" className={className ?? `${messages.length === 0 ? 'bg-transparent' : 'bg-ck-bg2'} px-3 sm:px-4 pb-3 sm:pb-4 pt-2`}>
+      <div data-ck="composer-card" className="max-w-3xl mx-auto relative rounded-[20px] bg-ck-bg1 shadow-composer hover:shadow-composer-hover focus-within:shadow-composer-focus transition-shadow duration-200 ease-claude">
         <textarea
           ref={inputRef}
           rows={1}
@@ -84,22 +84,38 @@ export function ChatInterfaceComposer({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-        {/* Bottom bar: attachment placeholder (left) + send/stop (right) */}
+        {/* Bottom bar: tool buttons (left) + send/stop (right) */}
         <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-          <button
-            className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-lg text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 flex items-center justify-center transition-colors ease-claude active:scale-[0.98] pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
-            aria-label="Attach"
-            tabIndex={-1}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-          </button>
+          <div className="flex gap-1 items-center">
+            <button
+              data-ck="composer-attach"
+              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-7 h-7 rounded-md text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 flex items-center justify-center transition-colors ease-claude active:scale-[0.98] pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
+              aria-label="Upload file"
+              title="上传文件"
+              tabIndex={-1}
+            >
+              {/* Paperclip icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </button>
+            <button
+              data-ck="composer-skill"
+              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-7 h-7 rounded-md text-ck-t3 hover:text-ck-t2 hover:bg-ck-bg3 flex items-center justify-center transition-colors ease-claude active:scale-[0.98] pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
+              aria-label="Select skill"
+              title="选择 Skill"
+              tabIndex={-1}
+            >
+              {/* Gear icon */}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          </div>
           {isProcessing ? (
             <button
               onClick={cancelProcessing}
-              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-lg bg-ck-bg3 text-ck-t2 cursor-pointer flex items-center justify-center shrink-0 hover:bg-ck-b1 transition-colors ease-claude active:scale-95 pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-full bg-ck-bg3 text-ck-t2 cursor-pointer flex items-center justify-center shrink-0 hover:bg-ck-b1 transition-colors ease-claude active:scale-95 pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
               aria-label="Stop generating"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect width="14" height="14" rx="2" /></svg>
@@ -108,7 +124,7 @@ export function ChatInterfaceComposer({
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-lg bg-ck-accent text-white cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-ck-accent-hover transition-colors ease-claude active:scale-95 pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
+              className="min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 w-8 h-8 rounded-full bg-ck-accent text-ck-bg1 cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-ck-accent-hover transition-colors ease-claude active:scale-95 pointer-events-auto focus-visible:ring-2 focus-visible:ring-ck-accent"
               aria-label="Send"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>
@@ -117,7 +133,7 @@ export function ChatInterfaceComposer({
         </div>
       </div>
       {messages.length === 0 && quickSuggestions.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-4 sm:mt-5 max-w-3xl mx-auto px-1">
+        <div data-ck="composer-suggestions" className="flex flex-wrap justify-center gap-2 sm:gap-2.5 mt-4 sm:mt-5 max-w-3xl mx-auto px-1">
           {quickSuggestions.slice(0, 5).map((s, i) => (
             <button
               key={i}
@@ -131,7 +147,7 @@ export function ChatInterfaceComposer({
         </div>
       )}
       {showDisclaimer && (
-        <p className="text-center text-xs text-ck-t3 mt-2">
+        <p data-ck="composer-disclaimer" className="text-center text-xs text-ck-t3 mt-2">
           {disclaimer ?? (
             <>
               Claude is AI and can make mistakes. Please double-check responses.

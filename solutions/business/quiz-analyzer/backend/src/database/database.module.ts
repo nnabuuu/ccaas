@@ -9,6 +9,8 @@ import {
   ConversationContext,
   Turn,
 } from './entities';
+import { AnalysisJob } from '../jobs/entities/analysis-job.entity';
+import { JobStep } from '../jobs/entities/job-step.entity';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import {
         Message,
         ConversationContext,
         Turn,
+        AnalysisJob,
+        JobStep,
       ],
       synchronize: false, // Use existing database schema
       logging: process.env.NODE_ENV === 'development',

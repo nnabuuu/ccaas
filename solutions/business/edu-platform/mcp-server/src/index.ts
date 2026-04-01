@@ -20,7 +20,7 @@ const server = new Server(
 
 const curriculumTreeTool: Tool = {
   name: 'curriculum_tree',
-  description: '查询课标知识点树。可按学科、年级、父节点过滤。返回嵌套树结构，可用于 TreeSelector 组件。',
+  description: '查询课标知识点树。可按学科、年级、父节点过滤。返回嵌套树结构，可用于 show_info_card 的 outline section。',
   inputSchema: {
     type: 'object' as const,
     properties: {
@@ -43,7 +43,7 @@ const curriculumTreeTool: Tool = {
 
 const studentProficiencyTool: Tool = {
   name: 'student_proficiency',
-  description: '查询班级学情数据。返回班级整体平均分和各知识点掌握率（含趋势），可用于 MetricDashboard 和 BarList 组件。',
+  description: '查询班级学情数据。返回班级整体平均分和各知识点掌握率（含趋势），可用于 show_info_card 的 metrics 和 bar_list section。',
   inputSchema: {
     type: 'object' as const,
     properties: {

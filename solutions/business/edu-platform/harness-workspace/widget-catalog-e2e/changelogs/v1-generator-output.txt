@@ -1,0 +1,11 @@
+All files are in place. Both tsc checks pass. The v1 implementation is complete:
+
+**v1 Deliverables Summary:**
+- **W1** EduMetricDashboard.tsx - metrics grid, delta arrows, bar_list with color thresholds, actions
+- **W2** EduStepWizard.tsx - 4-step wizard (Form/Tree/Gap/Summary panels)
+- **W3** EduReviewPanel.tsx - all-items display, 4 action types, progress counter, batch ops
+- **W4** SessionContextBar (chip variants), QuickSuggestions (grouping), Composer (tool buttons)
+- **D5** widget-registry.ts + App.tsx integration
+- **D6** TypeScript clean (both `tsc --noEmit` exit 0), ck-* tokens throughout
+
+Changelog written to `changelogs/v1-changelog.md`. Ready for evaluator scoring.
