@@ -67,7 +67,7 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
   return isUser ? (
     // User message: right-aligned, inline-flex bubble
     <div data-ck="user-msg" className="mt-3 mb-2 flex flex-col items-end gap-1">
-      <div className="inline-flex max-w-[88%] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 rounded-[16px_16px_4px_16px] text-[14px] leading-[1.6]">
+      <div className="inline-flex max-w-[88%] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 rounded-[18px_18px_4px_18px] text-[14px] leading-[1.6]">
         {message.content.map((block, i) => (
           <ContentBlockView key={i} block={block} />
         ))}

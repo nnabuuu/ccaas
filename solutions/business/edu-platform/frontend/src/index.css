@@ -19,6 +19,11 @@
 
   /* User bubble = inverted (dark bg, light text) */
   --user-bubble-bg: var(--t1);
+
+  /* Floating composer card shadow (light) */
+  --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  /* Portal menu shadow */
+  --menu-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -29,7 +34,14 @@
     --accent: var(--t1);
     --accent-hover: var(--t1);
     --user-bubble-bg: var(--t1);
+    --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    --menu-shadow: 0 4px 16px rgba(0,0,0,0.25);
   }
+}
+
+.dark {
+  --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  --menu-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
 
 @tailwind base;
@@ -64,17 +76,48 @@ body {
 }
 
 /* ============================================================
-   Composer: Floating card (matches chat-full-layout.html .input-box-float)
+   Composer: Floating card (absolute over messages scroll area)
+   Parent `:has()` creates positioning context without React changes.
+   Composer is a sibling of the messages container, so sticky won't
+   work — absolute takes it out of flex flow entirely.
    ============================================================ */
+
+/* Position context on parent (the inner div with overflow-hidden) */
+div:has(> [data-ck="composer"]) {
+  position: relative;
+}
+
+/* Messages area: extra bottom padding so content isn't hidden behind composer */
+div:has(> [data-ck="composer"]) > .ck-scrollbar {
+  padding-bottom: 100px !important;
+}
+
 [data-ck="composer"] {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
   padding: 0 20px 16px !important;
   background: transparent !important;
   border-top: none !important;
 }
 
+/* Gradient fade above composer for smooth scroll-behind effect */
+[data-ck="composer"]::before {
+  content: '';
+  position: absolute;
+  top: -32px;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(to bottom, transparent, var(--bg2));
+  pointer-events: none;
+}
+
 [data-ck="composer-card"] {
-  border-radius: 16px !important;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+  border-radius: 24px !important;
+  box-shadow: var(--composer-float-shadow) !important;
   max-width: none !important;
   margin: 0 !important;
   background: var(--bg1) !important;
@@ -82,9 +125,10 @@ body {
   padding: 10px 12px !important;
 }
 
-/* Textarea: borderless inside the floating card */
+/* Textarea: borderless inside the floating card.
+   Bottom padding reserves space for the absolute-positioned button bar (32px tall at bottom:10px). */
 [data-ck="composer-card"] > textarea {
-  padding: 6px 8px !important;
+  padding: 6px 8px 40px 8px !important;
   border: none !important;
   border-radius: 0 !important;
   font-size: 14px !important;
@@ -123,9 +167,16 @@ body {
   display: none !important;
 }
 
-/* --- Quick Suggestions: small pills (reference: .ck-sug) --- */
+/* Dark mode: shadow already handled via --composer-float-shadow variable */
+
+/* --- Quick Suggestions: float above composer --- */
 [data-ck="quick-suggestions"] {
-  padding: 0 16px 10px !important;
+  position: absolute;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  z-index: 19;
+  padding: 0 20px 0 !important;
 }
 
 [data-ck="quick-suggestions"] button {
@@ -144,7 +195,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 32px 20px;
+  padding: 40px 32px 100px;
 }
 
 .edu-landing__greet {

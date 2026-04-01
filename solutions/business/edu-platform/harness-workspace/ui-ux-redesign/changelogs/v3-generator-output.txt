@@ -1,0 +1,26 @@
+## v3 Iteration Complete
+
+### Changes Summary
+
+**D1 Fix (User Menu Portal)** — `ChatSidebar.tsx`
+- Replaced inline absolute-positioned menu with `createPortal` to `document.body`
+- Menu now uses `position: fixed` with coordinates calculated from trigger button's `getBoundingClientRect()`
+- Escapes sidebar's `overflow: hidden` clipping
+
+**D5 Fix (Hardcoded rgba → CSS vars)** — 4 non-shadow instances fixed:
+- `ToolActivityBlock.tsx`: border rgba → `var(--b2)`
+- `FileCard.tsx`: hover border rgba → `var(--b1-hover)`
+- `EduReviewPanel.tsx`: status backgrounds rgba → `var(--success-bg-muted)` / `var(--warn-bg-muted)`
+
+**New tokens** in `tokens.css`: `--success-bg-muted`, `--warn-bg-muted`, `--b1-hover` (light + dark)
+
+**Bonus fix**: All edu-platform widgets had broken `var(--ck-*)` references in Tailwind arbitrary values — fixed across `EduReviewPanel`, `EduMetricDashboard`, `EduStepWizard`, and `index.css`.
+
+### Verification
+- Both `tsc --noEmit` checks: **PASS**
+- chat-interface rebuild: **PASS**
+- Browser verification: blocked by pre-existing backend JWT auth bug (unrelated to UI changes)
+
+### Output
+- Changelog: `changelogs/v3-changelog.md`
+- Progress: `progress.md` updated

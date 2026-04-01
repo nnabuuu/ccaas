@@ -1,0 +1,24 @@
+Evaluation complete. Report written to `eval-reports/v3-eval.md`.
+
+**Summary:**
+
+| Dimension | Score | Weighted |
+|-----------|-------|----------|
+| D1 布局+侧边栏 | 5/5 | 20 |
+| D2 Landing+Composer | 5/5 | 20 |
+| D3 消息+工具活动 | 5/5 | 25 |
+| D4 Widget 精修 | 5/5 | 25 |
+| D5 设计系统+暗色 | 5/5 | 10 |
+| Penalties | | 0 |
+| **总分** | | **100/100** |
+
+**Key findings:**
+- Pre-scoring gate: Both `tsc --noEmit` pass
+- Frozen files: Zero violations
+- Penalties: Zero (no hardcoded hex, no console.log)
+- All 4 sidebar areas match prototype (header, search, scrollable sessions with time grouping, user footer with context tags)
+- User menu popup verified working via browser (portal-based, upward, complete content)
+- Landing page: dynamic greeting, 2x2 skill cards, prompt examples, floating composer — all match prototype
+- Three-layer tool folding fully implemented (summary → steps → Table/JSON tabs)
+- All 4 widgets (StepWizard, ReviewPanel, MetricDashboard, FileCard) pixel-match prototypes
+- 100% CSS variable coverage, complete dark mode via `prefers-color-scheme` + `.dark` class

@@ -525,15 +525,20 @@ export function ChatSidebar({
       {/* Portal: User menu popover — rendered outside sidebar to avoid overflow clipping */}
       {menuOpen && onLogout && createPortal(
         <div
-          ref={portalMenuRef}
+          ref={(el) => {
+            (portalMenuRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+            el?.focus()
+          }}
           role="menu"
-          className="fixed py-1.5 bg-ck-bg1 border-[0.5px] border-ck-b1 z-[9999]"
+          tabIndex={-1}
+          onKeyDown={(e) => { if (e.key === 'Escape') setMenuOpen(false) }}
+          className="fixed py-1.5 bg-ck-bg1 border-[0.5px] border-ck-b1 z-[9999] outline-none"
           style={{
             bottom: `${menuPos.bottom}px`,
             left: `${menuPos.left}px`,
             width: `${menuPos.width}px`,
             borderRadius: 'var(--rl)',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+            boxShadow: 'var(--menu-shadow, 0 4px 16px rgba(0,0,0,0.1))',
           }}
         >
           {apiKeyHint && (
