@@ -1,0 +1,11 @@
+Evaluation complete. The v4 iteration scores **86/100**, which exceeds the 85-point target threshold.
+
+**Score breakdown:**
+- D1 (Layout + Sidebar): 20/20 — all regions complete, time-grouped sessions, portal menu
+- D2 (Landing + Composer): 16/20 — polished landing, minor shadow three-state gap
+- D3 (Messages + Tool Activity): 20/25 — code confirms three-layer folding, 2px radius delta
+- D4 (Widgets): 20/25 — 3/4 widgets excellent, File Card not implemented
+- D5 (Design System + Dark Mode): 10/10 — zero hardcoded colors, full dark mode
+- Penalties: 0
+
+**Top gaps for v5:** File Card widget missing, composer shadow hover/focus lost, user bubble radius 16px→18px.

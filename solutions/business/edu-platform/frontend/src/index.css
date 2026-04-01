@@ -8,10 +8,10 @@
    ============================================================ */
 
 :root {
-  /* Zero shadows — elevation via borders only */
-  --composer-shadow: none;
-  --composer-shadow-hover: none;
-  --composer-shadow-focus: none;
+  /* Floating composer: three-state shadow progression (default → hover → focus) */
+  --composer-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --composer-shadow-hover: 0 2px 16px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.08);
+  --composer-shadow-focus: 0 2px 16px rgba(0,0,0,0.15), 0 0 0 0.5px rgba(0,0,0,0.12);
 
   /* No accent color — primary = t1/bg1 inversion */
   --accent: var(--t1);
@@ -20,27 +20,26 @@
   /* User bubble = inverted (dark bg, light text) */
   --user-bubble-bg: var(--t1);
 
-  /* Floating composer card shadow (light) */
-  --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.08);
   /* Portal menu shadow */
   --menu-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --composer-shadow: none;
-    --composer-shadow-hover: none;
-    --composer-shadow-focus: none;
+    --composer-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    --composer-shadow-hover: 0 2px 16px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08);
+    --composer-shadow-focus: 0 2px 16px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.12);
     --accent: var(--t1);
     --accent-hover: var(--t1);
     --user-bubble-bg: var(--t1);
-    --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.2);
     --menu-shadow: 0 4px 16px rgba(0,0,0,0.25);
   }
 }
 
 .dark {
-  --composer-float-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  --composer-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  --composer-shadow-hover: 0 2px 16px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08);
+  --composer-shadow-focus: 0 2px 16px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.12);
   --menu-shadow: 0 4px 16px rgba(0,0,0,0.25);
 }
 
@@ -70,9 +69,18 @@ body {
   color: var(--bg1) !important;
 }
 
-/* --- Context bar: hidden — session info moved to sidebar user area --- */
-[data-ck="context-bar"] {
-  display: none !important;
+/* --- User bubble: 18px radius per message-bubbles.html prototype --- */
+[data-ck="user-msg"] > div:first-child {
+  border-radius: 18px 18px 4px 18px !important;
+}
+
+/* --- Context bar: hidden on desktop (session info in sidebar).
+   On mobile (<1024px) it's shown by the component's own lg:hidden class,
+   providing the hamburger menu button for sidebar access. --- */
+@media (min-width: 1024px) {
+  [data-ck="context-bar"] {
+    display: none !important;
+  }
 }
 
 /* ============================================================
@@ -117,7 +125,6 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
 
 [data-ck="composer-card"] {
   border-radius: 24px !important;
-  box-shadow: var(--composer-float-shadow) !important;
   max-width: none !important;
   margin: 0 !important;
   background: var(--bg1) !important;
@@ -166,8 +173,6 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
 [data-ck="composer-disclaimer"] {
   display: none !important;
 }
-
-/* Dark mode: shadow already handled via --composer-float-shadow variable */
 
 /* --- Quick Suggestions: float above composer --- */
 [data-ck="quick-suggestions"] {

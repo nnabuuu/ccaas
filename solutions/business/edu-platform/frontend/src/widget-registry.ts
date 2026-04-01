@@ -2,6 +2,7 @@ import type { WidgetRegistry, WidgetCatalogEntry } from '@kedge-agentic/chat-int
 import { EduMetricDashboard } from './widgets/EduMetricDashboard'
 import { EduStepWizard } from './widgets/EduStepWizard'
 import { EduReviewPanel } from './widgets/EduReviewPanel'
+import { EduFileCardActions } from './widgets/EduFileCardActions'
 
 /**
  * Edu-platform custom widget registry.
@@ -11,6 +12,7 @@ export const customWidgets: WidgetRegistry = {
   MetricDashboard: EduMetricDashboard,
   StepWizard: EduStepWizard,
   ReviewPanel: EduReviewPanel,
+  FileCardActions: EduFileCardActions,
 }
 
 /**
@@ -50,6 +52,15 @@ export const customCatalog: WidgetCatalogEntry[] = [
       title: { type: 'string', description: 'Panel title', required: true },
       items: { type: 'array', description: 'Review items with id, content, knowledge_point, difficulty, source', required: true },
       submit_action: { type: 'string', description: 'Action name on submit', required: true },
+    },
+  },
+  {
+    type: 'FileCardActions',
+    description: 'File cards with type-based icon coloring (.docx=blue, .pdf=coral, .pptx=teal, .xlsx=purple) + next action buttons.',
+    propsSchema: {
+      files: { type: 'array', description: 'File items with name, meta, size, type (.docx/.pdf/.pptx/.xlsx)', required: true },
+      actions: { type: 'array', description: 'Action buttons with label, prompt, primary, skill_hint' },
+      title: { type: 'string', description: 'Optional title above files' },
     },
   },
 ]

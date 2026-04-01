@@ -1,0 +1,8 @@
+v4 iteration complete. All tasks done:
+
+1. **Composer textarea padding** — Fixed `6px 8px` → `6px 8px 40px 8px` to prevent text overlapping the button bar
+2. **User bubble radius** — `16px` → `18px` to match prototype exactly
+3. **Escape key on portal menu** — Added `tabIndex={-1}`, auto-focus, and direct `onKeyDown` handler
+4. **Shadow CSS variables** — `--composer-float-shadow` and `--menu-shadow` replace hardcoded `rgba()` values
+
+All verified: tsc passes, browser confirms textarea padding = 40px bottom, Escape closes menu via document dispatch, shadows use CSS variables. Changelog written to `changelogs/v4-changelog.md`, progress.md updated.
