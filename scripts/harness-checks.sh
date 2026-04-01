@@ -3,9 +3,13 @@ set -e
 
 # Parse arguments
 FULL_MODE=false
-if [ "$1" = "--full" ]; then
-  FULL_MODE=true
-fi
+E2E_MODE=false
+for arg in "$@"; do
+  case "$arg" in
+    --full) FULL_MODE=true ;;
+    --e2e)  E2E_MODE=true ;;
+  esac
+done
 
 echo "Running harness checks..."
 
@@ -61,7 +65,7 @@ ratchet_check() {
 }
 
 # Check 1: No empty serverUrl in production code
-echo "  [1/8] Checking serverUrl patterns..."
+echo "  [1/9] Checking serverUrl patterns..."
 if grep -rn "serverUrl:\s*['\"]['\"]" --include="*.ts" --include="*.tsx" solutions/ packages/ 2>/dev/null | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules"; then
   echo "  ERROR: Empty serverUrl detected. Must use absolute URL (e.g. http://localhost:3001)."
   ERRORS=$((ERRORS + 1))
@@ -70,7 +74,7 @@ else
 fi
 
 # Check 2: All core backend controllers must have @ApiTags
-echo "  [2/8] Checking @ApiTags coverage (core backend)..."
+echo "  [2/9] Checking @ApiTags coverage (core backend)..."
 for f in $(find packages/backend/src -name "*.controller.ts" -not -path "*/node_modules/*" 2>/dev/null); do
   if ! grep -q "@ApiTags" "$f"; then
     echo "  ERROR: $f missing @ApiTags decorator"
@@ -90,7 +94,7 @@ if [ $WARNINGS -gt 0 ]; then
 fi
 
 # Check 3: No console.log in production code (ratchet — cannot increase)
-echo "  [3/8] Checking console.log in production code..."
+echo "  [3/9] Checking console.log in production code..."
 CONSOLE_LOG_COUNT=$(grep -rn "console\.log" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
   | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | wc -l | tr -d ' ')
 if [ "$CONSOLE_LOG_COUNT" -eq 0 ]; then
@@ -104,7 +108,7 @@ else
 fi
 
 # Check 4: No @ts-ignore / @ts-nocheck (ERROR — zero tolerance)
-echo "  [4/8] Checking @ts-ignore / @ts-nocheck..."
+echo "  [4/9] Checking @ts-ignore / @ts-nocheck..."
 if grep -rn "@ts-ignore\|@ts-nocheck" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null | grep -v "node_modules"; then
   echo "  ERROR: @ts-ignore or @ts-nocheck detected. Fix the type error instead of suppressing it."
   ERRORS=$((ERRORS + 1))
@@ -113,7 +117,7 @@ else
 fi
 
 # Check 5: any type escape (ratchet — cannot increase)
-echo "  [5/8] Checking 'any' type usage in production code..."
+echo "  [5/9] Checking 'any' type usage in production code..."
 ANY_COUNT=$(grep -rn ": any\b\|as any\b" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
   | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | grep -v "node_modules" | wc -l | tr -d ' ')
 if [ "$ANY_COUNT" -eq 0 ]; then
@@ -127,7 +131,7 @@ else
 fi
 
 # Check 6: TODO/FIXME without issue reference (ratchet — cannot increase)
-echo "  [6/8] Checking TODO/FIXME without issue reference..."
+echo "  [6/9] Checking TODO/FIXME without issue reference..."
 UNLINKED_TODO_COUNT=$(grep -rn "TODO\|FIXME" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
   | grep -v "node_modules" | grep -v -E "(NIE-|CCaas-|Linear)" | wc -l | tr -d ' ')
 if [ "$UNLINKED_TODO_COUNT" -eq 0 ]; then
@@ -141,7 +145,7 @@ else
 fi
 
 # Check 7: eslint-disable comments (ratchet — cannot increase)
-echo "  [7/8] Checking eslint-disable comments..."
+echo "  [7/9] Checking eslint-disable comments..."
 ESLINT_DISABLE_COUNT=$(grep -rn "eslint-disable" --include="*.ts" --include="*.tsx" packages/ solutions/ 2>/dev/null \
   | grep -v node_modules | grep -v "\.test\." | grep -v "\.spec\." | grep -v "__tests__" | wc -l | tr -d ' ')
 if [ "$ESLINT_DISABLE_COUNT" -eq 0 ]; then
@@ -156,7 +160,7 @@ fi
 
 # Check 8: Test coverage (backend) — only in --full mode
 if [ "$FULL_MODE" = true ]; then
-  echo "  [8/8] Checking backend test coverage..."
+  echo "  [8/9] Checking backend test coverage..."
   (cd packages/backend && npx jest --coverage --coverageReporters=json-summary --silent 2>/dev/null) || true
   if [ -f packages/backend/coverage/coverage-summary.json ]; then
     STMT_PCT=$(python3 -c "import json; print(int(json.load(open('packages/backend/coverage/coverage-summary.json'))['total']['statements']['pct']))" 2>/dev/null || echo "")
@@ -171,7 +175,25 @@ if [ "$FULL_MODE" = true ]; then
     echo "  WARNING: coverage-summary.json not found, skipping coverage check"
   fi
 else
-  echo "  [8/8] Skipping coverage check (use --full to enable)"
+  echo "  [8/9] Skipping coverage check (use --full to enable)"
+fi
+
+# Check 9: E2E smoke tests (ideal-beauty-poc) — only with --e2e
+if [ "$E2E_MODE" = true ]; then
+  echo "  [9/9] Running E2E smoke tests (ideal-beauty-poc)..."
+  E2E_SCRIPT="$(dirname "$0")/../solutions/business/ideal-beauty-poc/scripts/run-e2e.sh"
+  if [ -x "$E2E_SCRIPT" ]; then
+    if bash "$E2E_SCRIPT"; then
+      echo "  OK"
+    else
+      echo "  ERROR: E2E smoke tests failed"
+      ERRORS=$((ERRORS + 1))
+    fi
+  else
+    echo "  WARNING: run-e2e.sh not found or not executable, skipping"
+  fi
+else
+  echo "  [9/9] Skipping E2E (use --e2e to enable)"
 fi
 
 # Summary
