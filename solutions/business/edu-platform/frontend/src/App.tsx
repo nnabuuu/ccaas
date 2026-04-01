@@ -3,9 +3,12 @@ import {
   ChatInterface,
   ChatSidebar,
   useSessionList,
+  useChatCore,
 } from '@kedge-agentic/chat-interface'
+import type { SidebarSkillItem } from '@kedge-agentic/chat-interface'
 import { customWidgets, customCatalog } from './widget-registry'
 import { LoginPage } from './components/LoginPage'
+import { EduEmptyState } from './components/EduEmptyState'
 import { DEFAULT_CLASS } from './data/mock-classes'
 import type { ClassInfo } from './data/mock-classes'
 import { SERVER_URL, TENANT_ID } from './config'
@@ -15,6 +18,13 @@ import type { EduAuth } from './hooks/useEduAuth'
 const SESSION_REFRESH_DELAY_MS = 1000
 const FIRST_MESSAGE_REFRESH_DELAY_MS = 2000
 
+const SIDEBAR_SKILLS: SidebarSkillItem[] = [
+  { name: '备课助手', iconText: '备', type: 'solution' },
+  { name: '出题组卷', iconText: '题', type: 'solution' },
+  { name: '学情分析', iconText: '情', type: 'solution' },
+  { name: '错题本生成器', iconText: '错', type: 'custom' },
+]
+
 function buildSuggestions(cls: ClassInfo) {
   const grade = cls.grade === '7' ? '七' : cls.grade === '8' ? '八' : '九'
   return [
@@ -23,6 +33,22 @@ function buildSuggestions(cls: ClassInfo) {
     { label: '学情分析', prompt: `分析${cls.name}${cls.subject}学情`, category: 'analysis', score: 6, groupTitle: '学情分析' },
     { label: '本周学情', prompt: `查看${cls.name}本周${cls.subject}学习情况`, category: 'analysis', score: 4 },
   ]
+}
+
+/** Wrapper that hooks into ChatCoreContext to provide sendMessage to EduEmptyState */
+function EduEmptyStateConnected({ teacherName, selectedClass }: { teacherName: string; selectedClass: ClassInfo }) {
+  const { handleAction } = useChatCore()
+  const handleSend = useCallback((prompt: string) => {
+    handleAction({ label: prompt, prompt })
+  }, [handleAction])
+
+  return (
+    <EduEmptyState
+      teacherName={teacherName}
+      selectedClass={selectedClass}
+      onSend={handleSend}
+    />
+  )
 }
 
 function App() {
@@ -81,6 +107,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
   }, [refresh])
 
   const chatKey = `${selectedClass.id}-${sessionId ?? 'new'}`
+  const teacherName = auth.user?.name ?? '老师'
 
   return (
     <div className="h-dvh flex">
@@ -94,8 +121,12 @@ function AppShell({ auth }: { auth: EduAuth }) {
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
         onLogout={auth.logout}
-        apiKeyHint={auth.user?.name ?? apiKeyHint}
+        apiKeyHint={teacherName}
         onSkillsClick={() => setSkillPanelOpen(true)}
+        productName="即见教育"
+        locale="zh"
+        skills={SIDEBAR_SKILLS}
+        userRole={`${selectedClass.subject}教师 · ${selectedClass.school}`}
         userContext={
           <div className="flex flex-wrap gap-1 px-3 pb-2">
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--info-bg)] text-[var(--info-t)]">
@@ -126,9 +157,9 @@ function AppShell({ auth }: { auth: EduAuth }) {
           skillPanelOpen={skillPanelOpen}
           onSkillPanelChange={setSkillPanelOpen}
           hideSkillToggle
-          emptyState={null}
+          emptyState={<EduEmptyStateConnected teacherName={teacherName} selectedClass={selectedClass} />}
           disclaimer={null}
-          composerPlaceholder="输入你的需求，或点击上方快捷操作..."
+          composerPlaceholder="描述你的需求..."
           customWidgets={customWidgets}
           customCatalog={customCatalog}
         />

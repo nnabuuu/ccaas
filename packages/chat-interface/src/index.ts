@@ -11,7 +11,7 @@
 export { ChatInterface } from './components/ChatInterface'
 export type { ChatInterfaceProps } from './components/ChatInterface'
 export { ChatSidebar } from './components/ChatSidebar'
-export type { ChatSidebarProps, SidebarSession } from './components/ChatSidebar'
+export type { ChatSidebarProps, SidebarSession, SidebarSkillItem } from './components/ChatSidebar'
 export { MessageRenderer } from './components/MessageRenderer'
 export { WidgetRenderer } from './components/WidgetRenderer'
 export { SessionContextBar } from './components/SessionContextBar'
