@@ -1410,7 +1410,7 @@ describe('EventMapperService', () => {
 
     it('wraps raw tool result with trigger.field when configured', () => {
       service.registerTenantToolTriggers(tenantId, [
-        { toolName: 'parse_quiz_content', eventType: 'output_update', field: 'parsedQuiz' },
+        { toolName: 'parse_quiz_content', eventType: 'output_update', field: 'parsedContent' },
       ]);
 
       const events = emitMcpToolCycle(
@@ -1422,7 +1422,7 @@ describe('EventMapperService', () => {
       expect(outputUpdate).toBeDefined();
       // Raw result should be wrapped as { field, value }
       expect((outputUpdate as any).payload.data).toEqual({
-        field: 'parsedQuiz',
+        field: 'parsedContent',
         value: { stem: 'What is 1+1?', options: ['A. 1', 'B. 2'], quizType: 'choice' },
       });
     });

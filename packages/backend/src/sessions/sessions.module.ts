@@ -15,9 +15,8 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SessionsGateway } from './sessions.gateway';
 import { SessionsController } from './sessions.controller';
-import { ConversationsController } from './conversations.controller';
+import { ConversationsAliasController } from './conversations-alias.controller';
 import { QueueController } from './queue.controller';
-import { UserSessionsController } from './user-sessions.controller';
 import { SessionService } from './session.service';
 import { EventMapperService } from './event-mapper.service';
 import { CompletionOrchestrationService } from './services/completion-orchestration.service';
@@ -53,8 +52,9 @@ import { BundleModule } from '../bundles/bundle.module';
     FilesModule,
     BundleModule,
   ],
-  controllers: [SessionsController, ConversationsController, QueueController, UserSessionsController],
+  controllers: [SessionsController, ConversationsAliasController, QueueController],
   providers: [
+    SessionsController,
     SessionsGateway,
     SessionService,
     EventMapperService,

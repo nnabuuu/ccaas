@@ -17,6 +17,12 @@ import { SendMessageDto } from './dto/send-message.dto';
 import { makeSseClientId } from './session-utils';
 import { QuotaService } from '../admin/quota.service';
 import { QuotaGuard } from '../admin/guards/quota.guard';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Session } from '../admin/entities/session.entity';
+import { TurnsService } from '../admin/services/turns.service';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { ScopesGuard } from '../auth/guards/scopes.guard';
+import { TenantGuard } from '../tenants/tenant.guard';
 
 // ── sendMessage (queue-routed) ────────────────────────────────────────────────
 
@@ -82,8 +88,15 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
         { provide: StreamRegistryService, useValue: streamRegistry },
         { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
+        { provide: getRepositoryToken(Session), useValue: {} },
+        { provide: TurnsService, useValue: {} },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
+      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SessionsController>(SessionsController);
   });
@@ -269,8 +282,15 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
         { provide: StreamRegistryService, useValue: streamRegistry },
         { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
+        { provide: getRepositoryToken(Session), useValue: {} },
+        { provide: TurnsService, useValue: {} },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
+      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SessionsController>(SessionsController);
   });
@@ -456,8 +476,15 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: StreamRegistryService, useValue: (streamRegistry = { subscribe: jest.fn(), emit: jest.fn(), closeSession: jest.fn(), getEventsSince: jest.fn().mockReturnValue([]), getSubscriberCount: jest.fn().mockReturnValue(0) }) },
         { provide: QuotaService, useValue: { checkQuota: jest.fn().mockResolvedValue({ allowed: true }), getOrCreateQuota: jest.fn() } },
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
+        { provide: getRepositoryToken(Session), useValue: {} },
+        { provide: TurnsService, useValue: {} },
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard).useValue({ canActivate: () => true })
+      .overrideGuard(TenantGuard).useValue({ canActivate: () => true })
+      .overrideGuard(QuotaGuard).useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SessionsController>(SessionsController);
   });

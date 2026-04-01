@@ -1,25 +1,39 @@
 /**
- * Conversations Controller Tests
+ * Session List/Search/Update/Delete Tests
  *
- * Tests for the conversation management REST API endpoints.
- * ConversationsController handles metadata management (list, search, update title, pin, delete).
- * Distinct from SessionsController (runtime operations) and MessagesController (message queries).
+ * Tests for the session management endpoints that were migrated from
+ * ConversationsController into SessionsController.
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { ConversationsController } from './conversations.controller';
+import { SessionsController } from './sessions.controller';
 import { Session } from '../admin/entities/session.entity';
 import { Turn } from '../admin/entities/turn.entity';
-import { ApiKeyService } from '../auth/api-key.service';
 import { TurnsService } from '../admin/services/turns.service';
+import { SessionsGateway } from './sessions.gateway';
+import { SessionService } from './session.service';
+import { CompletionOrchestrationService } from './services/completion-orchestration.service';
+import { MessageQueueService } from './services/message-queue.service';
+import { SkillManagementService } from './services/skill-management.service';
+import { AttachmentService } from './services/attachment.service';
+import { SkillSyncService } from '../skills/skill-sync.service';
+import { SkillsService } from '../skills/skills.service';
+import { TenantsService } from '../tenants/tenants.service';
+import { TenantGuard } from '../tenants/tenant.guard';
+import { UserTenantService } from '../users/user-tenant.service';
+import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { ScopesGuard } from '../auth/guards/scopes.guard';
+import { QuotaGuard } from '../admin/guards/quota.guard';
+import { MessagesService } from '../messages/messages.service';
+import { ConversationContextService } from '../messages/conversation-context.service';
+import { StreamRegistryService } from './services/stream-registry.service';
 
-describe('ConversationsController', () => {
-  let controller: ConversationsController;
+describe('SessionsController (list/search/update/delete)', () => {
+  let controller: SessionsController;
   let sessionRepository: jest.Mocked<Repository<Session>>;
-  let turnRepository: jest.Mocked<Repository<Turn>>;
   let turnsService: jest.Mocked<TurnsService>;
 
   const createMockQueryBuilder = (overrides: Partial<SelectQueryBuilder<any>> = {}) => {
@@ -63,9 +77,12 @@ describe('ConversationsController', () => {
     ...overrides,
   });
 
+  // Minimal mock for unused dependencies
+  const noopProvider = (token: any) => ({ provide: token, useValue: {} });
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [ConversationsController],
+      controllers: [SessionsController],
       providers: [
         {
           provide: getRepositoryToken(Session),
@@ -76,42 +93,47 @@ describe('ConversationsController', () => {
           },
         },
         {
-          provide: getRepositoryToken(Turn),
-          useValue: {
-            createQueryBuilder: jest.fn(),
-            find: jest.fn(),
-          },
-        },
-        {
-          provide: ApiKeyService,
-          useValue: {
-            validateApiKey: jest.fn(),
-          },
-        },
-        {
           provide: TurnsService,
           useValue: {
             getTurnsBySession: jest.fn(),
-            createTurn: jest.fn(),
-            completeTurn: jest.fn(),
-            getNextTurnNumber: jest.fn(),
           },
         },
+        noopProvider(SessionsGateway),
+        noopProvider(SessionService),
+        noopProvider(CompletionOrchestrationService),
+        noopProvider(MessageQueueService),
+        noopProvider(SkillManagementService),
+        noopProvider(AttachmentService),
+        noopProvider(SkillSyncService),
+        noopProvider(SkillsService),
+        noopProvider(TenantsService),
+        noopProvider(UserTenantService),
+        noopProvider(MessagesService),
+        noopProvider(ConversationContextService),
+        noopProvider(StreamRegistryService),
       ],
-    }).compile();
+    })
+      .overrideGuard(ApiKeyGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ScopesGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(TenantGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(QuotaGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    controller = module.get<ConversationsController>(ConversationsController);
+    controller = module.get<SessionsController>(SessionsController);
     sessionRepository = module.get(getRepositoryToken(Session));
-    turnRepository = module.get(getRepositoryToken(Turn));
     turnsService = module.get(TurnsService);
   });
 
   // ===========================================================================
-  // GET /api/v1/conversations - List Conversations
+  // GET /api/v1/sessions - List Sessions
   // ===========================================================================
 
-  describe('GET /api/v1/conversations', () => {
-    it('should return paginated conversations', async () => {
+  describe('GET /api/v1/sessions', () => {
+    it('should return paginated sessions', async () => {
       const sessions = [
         createMockSession('s1', { title: 'Chat 1' }),
         createMockSession('s2', { title: 'Chat 2' }),
@@ -122,9 +144,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const result = await controller.listConversations(
+      const result = await controller.listSessions(
         { page: 1, limit: 20 },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(result.conversations).toHaveLength(2);
@@ -139,9 +161,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.listConversations(
+      await controller.listSessions(
         { page: 1, limit: 20 },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -157,9 +179,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.listConversations(
+      await controller.listSessions(
         { page: 1, limit: 20, isPinned: true },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -175,9 +197,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.listConversations(
+      await controller.listSessions(
         { page: 1, limit: 20, templateName: 'farmer-advisor' },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -196,9 +218,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const result = await controller.listConversations(
+      const result = await controller.listSessions(
         { page: 1, limit: 20 },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(result.hasMore).toBe(true);
@@ -212,10 +234,7 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.listConversations(
-        {},
-        { tenantId: 'tenant-a' } as any,
-      );
+      await controller.listSessions({}, 'tenant-a');
 
       expect(mockQb.skip).toHaveBeenCalledWith(0);
       expect(mockQb.take).toHaveBeenCalledWith(20);
@@ -223,11 +242,11 @@ describe('ConversationsController', () => {
   });
 
   // ===========================================================================
-  // GET /api/v1/conversations/search - Search Conversations
+  // GET /api/v1/sessions/search
   // ===========================================================================
 
-  describe('GET /api/v1/conversations/search', () => {
-    it('should search conversations by title', async () => {
+  describe('GET /api/v1/sessions/search', () => {
+    it('should search sessions by title', async () => {
       const sessions = [
         createMockSession('s1', { title: 'Math Lesson Plan' }),
       ];
@@ -236,9 +255,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      const result = await controller.searchConversations(
+      const result = await controller.searchSessions(
         { q: 'Math' },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(result).toHaveLength(1);
@@ -254,10 +273,7 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.searchConversations(
-        { q: 'test' },
-        { tenantId: 'tenant-b' } as any,
-      );
+      await controller.searchSessions({ q: 'test' }, 'tenant-b');
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
         'session.tenantId = :tenantId',
@@ -271,9 +287,9 @@ describe('ConversationsController', () => {
       });
       sessionRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQb);
 
-      await controller.searchConversations(
+      await controller.searchSessions(
         { q: 'test', dateFrom: '2026-01-01', dateTo: '2026-12-31' },
-        { tenantId: 'tenant-a' } as any,
+        'tenant-a',
       );
 
       expect(mockQb.andWhere).toHaveBeenCalledWith(
@@ -288,11 +304,11 @@ describe('ConversationsController', () => {
   });
 
   // ===========================================================================
-  // PATCH /api/v1/conversations/:id - Update Metadata
+  // PATCH /api/v1/sessions/:sessionId
   // ===========================================================================
 
-  describe('PATCH /api/v1/conversations/:id', () => {
-    it('should update conversation title', async () => {
+  describe('PATCH /api/v1/sessions/:sessionId', () => {
+    it('should update session title', async () => {
       const session = createMockSession('s1');
       sessionRepository.findOne = jest.fn().mockResolvedValue(session);
       sessionRepository.save = jest.fn().mockResolvedValue({
@@ -300,7 +316,7 @@ describe('ConversationsController', () => {
         title: 'New Title',
       });
 
-      const result = await controller.updateConversation(
+      const result = await controller.updateSession(
         's1',
         { title: 'New Title' },
         { tenantId: 'tenant-a' } as any,
@@ -320,7 +336,7 @@ describe('ConversationsController', () => {
         isPinned: true,
       });
 
-      const result = await controller.updateConversation(
+      const result = await controller.updateSession(
         's1',
         { isPinned: true },
         { tenantId: 'tenant-a' } as any,
@@ -329,11 +345,11 @@ describe('ConversationsController', () => {
       expect(result.isPinned).toBe(true);
     });
 
-    it('should throw NotFoundException for non-existent conversation', async () => {
+    it('should throw NotFoundException for non-existent session', async () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.updateConversation(
+        controller.updateSession(
           'nonexistent',
           { title: 'New Title' },
           { tenantId: 'tenant-a' } as any,
@@ -345,14 +361,13 @@ describe('ConversationsController', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.updateConversation(
+        controller.updateSession(
           's1',
           { title: 'New Title' },
           { tenantId: 'tenant-a' } as any,
         ),
       ).rejects.toThrow(NotFoundException);
 
-      // findOne should be called with both sessionId AND tenantId
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
         where: { sessionId: 's1', tenantId: 'tenant-a' },
       });
@@ -360,10 +375,10 @@ describe('ConversationsController', () => {
   });
 
   // ===========================================================================
-  // DELETE /api/v1/conversations/:id - Soft Delete
+  // DELETE /api/v1/sessions/:sessionId
   // ===========================================================================
 
-  describe('DELETE /api/v1/conversations/:id', () => {
+  describe('DELETE /api/v1/sessions/:sessionId', () => {
     it('should soft delete by setting closedAt', async () => {
       const session = createMockSession('s1', { closedAt: null });
       sessionRepository.findOne = jest.fn().mockResolvedValue(session);
@@ -373,7 +388,7 @@ describe('ConversationsController', () => {
         status: 'closed',
       });
 
-      const result = await controller.deleteConversation(
+      const result = await controller.deleteSession(
         's1',
         { tenantId: 'tenant-a' } as any,
       );
@@ -387,11 +402,11 @@ describe('ConversationsController', () => {
       );
     });
 
-    it('should throw NotFoundException for non-existent conversation', async () => {
+    it('should throw NotFoundException for non-existent session', async () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.deleteConversation('nonexistent', { tenantId: 'tenant-a' } as any),
+        controller.deleteSession('nonexistent', { tenantId: 'tenant-a' } as any),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -399,7 +414,7 @@ describe('ConversationsController', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.deleteConversation('s1', { tenantId: 'tenant-a' } as any),
+        controller.deleteSession('s1', { tenantId: 'tenant-a' } as any),
       ).rejects.toThrow(NotFoundException);
 
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
@@ -409,11 +424,11 @@ describe('ConversationsController', () => {
   });
 
   // ===========================================================================
-  // GET /api/v1/conversations/:id/turns - Get Conversation Turns
+  // GET /api/v1/sessions/:sessionId/turns
   // ===========================================================================
 
-  describe('GET /api/v1/conversations/:id/turns', () => {
-    it('should return all turns for a conversation', async () => {
+  describe('GET /api/v1/sessions/:sessionId/turns', () => {
+    it('should return all turns for a session', async () => {
       const session = createMockSession('s1');
       const turns = [
         {
@@ -443,20 +458,17 @@ describe('ConversationsController', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(session);
       turnsService.getTurnsBySession = jest.fn().mockResolvedValue(turns);
 
-      const result = await controller.getConversationTurns(
-        's1',
-        { tenantId: 'tenant-a' } as any,
-      );
+      const result = await controller.getSessionTurns('s1', 'tenant-a');
 
       expect(result).toEqual(turns);
       expect(turnsService.getTurnsBySession).toHaveBeenCalledWith('s1');
     });
 
-    it('should throw NotFoundException for non-existent conversation', async () => {
+    it('should throw NotFoundException for non-existent session', async () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.getConversationTurns('nonexistent', { tenantId: 'tenant-a' } as any),
+        controller.getSessionTurns('nonexistent', 'tenant-a'),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -464,7 +476,7 @@ describe('ConversationsController', () => {
       sessionRepository.findOne = jest.fn().mockResolvedValue(null);
 
       await expect(
-        controller.getConversationTurns('s1', { tenantId: 'tenant-a' } as any),
+        controller.getSessionTurns('s1', 'tenant-a'),
       ).rejects.toThrow(NotFoundException);
 
       expect(sessionRepository.findOne).toHaveBeenCalledWith({
