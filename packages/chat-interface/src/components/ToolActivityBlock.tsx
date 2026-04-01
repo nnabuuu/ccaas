@@ -404,7 +404,7 @@ export function ToolActivityBlock({ block }: ToolActivityBlockProps) {
   const durationMs = block.duration
 
   return (
-    <div className="flex gap-2.5 py-1.5" style={{ borderBottom: '0.5px solid rgba(0,0,0,0.04)' }}>
+    <div className="flex gap-2.5 py-1.5" style={{ borderBottom: '0.5px solid var(--b2)' }}>
       {/* Step icon */}
       <StepIcon block={block} />
 

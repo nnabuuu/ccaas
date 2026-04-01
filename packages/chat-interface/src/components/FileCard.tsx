@@ -29,7 +29,7 @@ export function FileCard({ file }: FileCardProps) {
   const colors = getFileColors(ext)
 
   return (
-    <div className="flex items-center gap-3 px-3.5 py-3 border-[0.5px] border-ck-b1 rounded-ck my-1.5 text-[13px] bg-ck-bg1 cursor-pointer transition-all duration-150 hover:bg-ck-bg2 hover:border-[rgba(0,0,0,0.18)]">
+    <div className="flex items-center gap-3 px-3.5 py-3 border-[0.5px] border-ck-b1 rounded-ck my-1.5 text-[13px] bg-ck-bg1 cursor-pointer transition-all duration-150 hover:bg-ck-bg2 hover:border-[var(--b1-hover)]">
       <div className={`w-[38px] h-[38px] rounded-lg flex items-center justify-center text-[11px] font-semibold shrink-0 ${colors.bg} ${colors.text}`}>
         {ext}
       </div>

@@ -1,0 +1,15 @@
+Evaluation complete. Report written to `eval-reports/v2-eval.md`.
+
+**Summary: 94/100**
+
+| Dimension | Score | Weighted |
+|-----------|-------|----------|
+| D1: 布局 + 侧边栏 | 4/5 | 16/20 |
+| D2: Landing + Composer | 5/5 | 20/20 |
+| D3: 消息 + 工具活动 | 5/5 | 25/25 |
+| D4: Widget 精修 | 5/5 | 25/25 |
+| D5: 设计系统 + 暗色 | 4/5 | 8/10 |
+
+**2 issues found:**
+1. **用户菜单被裁剪** (-4pts) — sidebar `overflow: hidden` clips the upward popover menu
+2. **少量 hardcoded rgba** (-2pts) — ReviewPanel status backgrounds + 2 border effects use raw rgba instead of CSS variables

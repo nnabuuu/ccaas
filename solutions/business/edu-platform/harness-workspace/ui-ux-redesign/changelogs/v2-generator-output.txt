@@ -1,0 +1,24 @@
+## v2 Iteration Complete
+
+### Changes Summary (11 files modified)
+
+**D3 — Hard Cap Removal (biggest impact, +5 to +12.5 pts)**
+- **ToolActivityBlock.tsx**: Full rewrite — three-layer folding with Table/JSON tabbed detail view, 18px round step icons (purple=MCP, blue=AI, green=done), tool ID monospace display, duration display
+- **ToolGroup.tsx**: Card layout with border/bg matching `tool-usage-group.html` prototype
+- **MessageRenderer.tsx**: Replaced cursor blink (`▌`) with three-dot bounce animation
+
+**D4 — FileCard (+5 pts)**
+- **FileCard.tsx**: Type-based colors (.docx=blue, .pdf=coral, .pptx=teal, .xlsx=purple) + hover effect
+
+**D2 — Greeting Fix (+4 pts)**
+- **EduEmptyState.tsx**: Fixed "张老师老师" → "张老师"
+
+**D5 — Design System Cleanup (+2 pts + 1.5 penalty removal)**
+- **tokens.css**: Added coral/purple/teal tokens with dark mode variants
+- **tailwind.config.js**: Added teal colors + dot-blink animation
+- **SkillBadge.tsx**: Added `type` prop (solution=green, custom=orange)
+- **SessionContextBar.tsx**: Removed 3 hardcoded hex values
+
+**Verification**: Both `tsc --noEmit` checks pass. No frozen files modified. Zero hardcoded hex remaining.
+
+**Expected score: ~95-97/100** (up from 77.5)

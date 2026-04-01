@@ -1,4 +1,5 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 export interface SidebarSession {
@@ -210,7 +211,9 @@ export function ChatSidebar({
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuPos, setMenuPos] = useState<{ bottom: number; left: number; width: number }>({ bottom: 0, left: 0, width: 0 })
+  const triggerAreaRef = useRef<HTMLDivElement>(null)
+  const portalMenuRef = useRef<HTMLDivElement>(null)
   const labels = locale === 'zh' ? ZH_LABELS : EN_LABELS
   const isZh = locale === 'zh'
 
@@ -224,13 +227,27 @@ export function ChatSidebar({
 
   const grouped = useMemo(() => groupByDate(filteredSessions, labels), [filteredSessions, labels])
 
+  // Toggle menu and calculate position from trigger button
+  const handleMenuToggle = useCallback(() => {
+    if (!menuOpen && triggerAreaRef.current) {
+      const rect = triggerAreaRef.current.getBoundingClientRect()
+      setMenuPos({
+        bottom: window.innerHeight - rect.top + 4,
+        left: rect.left + 8,
+        width: rect.width - 16,
+      })
+    }
+    setMenuOpen((v) => !v)
+  }, [menuOpen])
+
   // Close popover on outside click or Escape
   useEffect(() => {
     if (!menuOpen) return
     function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
+      const target = e.target as Node
+      if (triggerAreaRef.current?.contains(target)) return
+      if (portalMenuRef.current?.contains(target)) return
+      setMenuOpen(false)
     }
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') setMenuOpen(false)
@@ -438,11 +455,11 @@ export function ChatSidebar({
         {/* User context — session info chips */}
         {userContext && !isCollapsed && userContext}
 
-        {/* User footer with menu */}
+        {/* User footer — trigger only (menu rendered via Portal) */}
         {onLogout && (
-          <div className="relative border-t-[0.5px] border-ck-b1 shrink-0" ref={menuRef}>
+          <div className="border-t-[0.5px] border-ck-b1 shrink-0" ref={triggerAreaRef}>
             <button
-              onClick={() => setMenuOpen((v) => !v)}
+              onClick={handleMenuToggle}
               aria-label="User menu"
               aria-expanded={menuOpen}
               aria-haspopup="true"
@@ -472,54 +489,6 @@ export function ChatSidebar({
                 </>
               )}
             </button>
-
-            {/* Popover menu — upward */}
-            {menuOpen && (
-              <div
-                role="menu"
-                className="absolute bottom-full left-2 right-2 mb-1 py-1.5 rounded-[var(--rl)] bg-ck-bg1 border-[0.5px] border-ck-b1 z-50"
-                style={{ boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
-              >
-                {apiKeyHint && !isCollapsed && (
-                  <div className="px-3.5 py-2 text-[12px] text-ck-t2 truncate">
-                    {apiKeyHint}
-                  </div>
-                )}
-                <div className="border-t-[0.5px] border-ck-b1 my-1" />
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/><path d="M13.3 6.8l-.8-.5.1-.9a6 6 0 00-1-1.7l-.7.4-.8-.5V2.8a6 6 0 00-2-.4v.9l-.8.5-.8-.5a6 6 0 00-1.7 1l.4.7-.5.8H3.8a6 6 0 00-.3 1h.8l.5.8-.5.8a6 6 0 001 1.7l.7-.4.8.5v.8a6 6 0 002 .3v-.8l.8-.5.8.5a6 6 0 001.7-1l-.4-.7.5-.8h.8a6 6 0 00.3-1h-.8l-.5-.8z" fill="none" stroke="currentColor" strokeWidth=".8"/></svg>
-                  {labels.settings}
-                </button>
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M8 2v8m-3-3l3 3 3-3M3 12h10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {labels.export}
-                </button>
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="M6.5 6a1.5 1.5 0 012.8.8c0 1-1.3 1-1.3 2" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="8" cy="11.5" r=".6" fill="currentColor"/></svg>
-                  {labels.help}
-                </button>
-                <div className="border-t-[0.5px] border-ck-b1 my-1" />
-                <button
-                  onClick={() => {
-                    setMenuOpen(false)
-                    onLogout()
-                  }}
-                  className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
-                >
-                  <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M6 2H4a1 1 0 00-1 1v10a1 1 0 001 1h2M10.5 12l3.5-4-3.5-4M14 8H7" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {labels.logout}
-                </button>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -551,6 +520,62 @@ export function ChatSidebar({
             {renderSidebarContent(false)}
           </div>
         </>
+      )}
+
+      {/* Portal: User menu popover — rendered outside sidebar to avoid overflow clipping */}
+      {menuOpen && onLogout && createPortal(
+        <div
+          ref={portalMenuRef}
+          role="menu"
+          className="fixed py-1.5 bg-ck-bg1 border-[0.5px] border-ck-b1 z-[9999]"
+          style={{
+            bottom: `${menuPos.bottom}px`,
+            left: `${menuPos.left}px`,
+            width: `${menuPos.width}px`,
+            borderRadius: 'var(--rl)',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+          }}
+        >
+          {apiKeyHint && (
+            <div className="px-3.5 py-2 text-[12px] text-ck-t2 truncate">
+              {apiKeyHint}
+            </div>
+          )}
+          <div className="border-t-[0.5px] border-ck-b1 my-1" />
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/><path d="M13.3 6.8l-.8-.5.1-.9a6 6 0 00-1-1.7l-.7.4-.8-.5V2.8a6 6 0 00-2-.4v.9l-.8.5-.8-.5a6 6 0 00-1.7 1l.4.7-.5.8H3.8a6 6 0 00-.3 1h.8l.5.8-.5.8a6 6 0 001 1.7l.7-.4.8.5v.8a6 6 0 002 .3v-.8l.8-.5.8.5a6 6 0 001.7-1l-.4-.7.5-.8h.8a6 6 0 00.3-1h-.8l-.5-.8z" fill="none" stroke="currentColor" strokeWidth=".8"/></svg>
+            {labels.settings}
+          </button>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M8 2v8m-3-3l3 3 3-3M3 12h10" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {labels.export}
+          </button>
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="1.2"/><path d="M6.5 6a1.5 1.5 0 012.8.8c0 1-1.3 1-1.3 2" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><circle cx="8" cy="11.5" r=".6" fill="currentColor"/></svg>
+            {labels.help}
+          </button>
+          <div className="border-t-[0.5px] border-ck-b1 my-1" />
+          <button
+            onClick={() => {
+              setMenuOpen(false)
+              onLogout()
+            }}
+            className="w-full text-left flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-ck-t1 hover:bg-ck-bg2 transition-colors duration-100 cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-ck-t2 shrink-0" viewBox="0 0 16 16"><path d="M6 2H4a1 1 0 00-1 1v10a1 1 0 001 1h2M10.5 12l3.5-4-3.5-4M14 8H7" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            {labels.logout}
+          </button>
+        </div>,
+        document.body
       )}
     </>
   )

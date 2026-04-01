@@ -31,17 +31,17 @@ interface EduMetricDashboardProps {
 }
 
 function getBarColor(value: number, thresholds?: { danger: number; warn: number }): string {
-  if (!thresholds) return 'bg-[var(--ck-info-t)]'
-  if (value >= thresholds.danger) return 'bg-[var(--ck-danger-t)]'
-  if (value >= thresholds.warn) return 'bg-[var(--ck-warn-t)]'
-  return 'bg-[var(--ck-success-t)]'
+  if (!thresholds) return 'bg-[var(--info-t)]'
+  if (value >= thresholds.danger) return 'bg-[var(--danger-t)]'
+  if (value >= thresholds.warn) return 'bg-[var(--warn-t)]'
+  return 'bg-[var(--success-t)]'
 }
 
 function getBarTextColor(value: number, thresholds?: { danger: number; warn: number }): string {
-  if (!thresholds) return 'text-[var(--ck-info-t)]'
-  if (value >= thresholds.danger) return 'text-[var(--ck-danger-t)]'
-  if (value >= thresholds.warn) return 'text-[var(--ck-warn-t)]'
-  return 'text-[var(--ck-success-t)]'
+  if (!thresholds) return 'text-[var(--info-t)]'
+  if (value >= thresholds.danger) return 'text-[var(--danger-t)]'
+  if (value >= thresholds.warn) return 'text-[var(--warn-t)]'
+  return 'text-[var(--success-t)]'
 }
 
 export function EduMetricDashboard({
@@ -55,13 +55,13 @@ export function EduMetricDashboard({
   const colCount = Math.min(metrics.length, 4)
 
   return (
-    <div className="border-[0.5px] border-[var(--ck-b1)] rounded-[var(--ck-rl)] bg-[var(--ck-bg1)] overflow-hidden">
+    <div className="border-[0.5px] border-[var(--b1)] rounded-[var(--rl)] bg-[var(--bg1)] overflow-hidden">
       {/* Header */}
       {(props.title || props.badge) && (
-        <div className="flex items-center justify-between px-3.5 py-3 border-b-[0.5px] border-[var(--ck-b1)]">
+        <div className="flex items-center justify-between px-3.5 py-3 border-b-[0.5px] border-[var(--b1)]">
           {props.title && <span className="text-[13px] font-semibold">{props.title}</span>}
           {props.badge && (
-            <span className="text-[10px] px-2 py-0.5 rounded-lg bg-[var(--ck-info-bg)] text-[var(--ck-info-t)]">
+            <span className="text-[10px] px-2 py-0.5 rounded-lg bg-[var(--info-bg)] text-[var(--info-t)]">
               {props.badge}
             </span>
           )}
@@ -76,18 +76,18 @@ export function EduMetricDashboard({
             style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}
           >
             {metrics.map((m, i) => (
-              <div key={i} className="bg-[var(--ck-bg2)] rounded-lg px-3 py-3">
-                <div className="text-[11px] text-[var(--ck-t2)]">{m.label}</div>
+              <div key={i} className="bg-[var(--bg2)] rounded-lg px-3 py-3">
+                <div className="text-[11px] text-[var(--t2)]">{m.label}</div>
                 <div className="text-[22px] font-semibold mt-0.5">
                   {m.value}
                   {m.delta && (
                     <span
                       className={`text-[11px] ml-1 font-normal ${
                         m.trend === 'up'
-                          ? 'text-[var(--ck-success-t)]'
+                          ? 'text-[var(--success-t)]'
                           : m.trend === 'down'
-                            ? 'text-[var(--ck-danger-t)]'
-                            : 'text-[var(--ck-t3)]'
+                            ? 'text-[var(--danger-t)]'
+                            : 'text-[var(--t3)]'
                       }`}
                     >
                       {m.trend === 'up' ? '\u2191' : m.trend === 'down' ? '\u2193' : ''}
@@ -102,7 +102,7 @@ export function EduMetricDashboard({
 
         {/* Section title */}
         {props.section_title && (
-          <div className="text-[12px] font-medium text-[var(--ck-t2)] mb-2.5">
+          <div className="text-[12px] font-medium text-[var(--t2)] mb-2.5">
             {props.section_title}
           </div>
         )}
@@ -120,11 +120,11 @@ export function EduMetricDashboard({
                 <div
                   key={i}
                   className={`flex items-center gap-2 py-[7px] text-[12px] ${
-                    i < barList.length - 1 ? 'border-b-[0.5px] border-black/[0.04]' : ''
+                    i < barList.length - 1 ? 'border-b-[0.5px] border-[var(--b2)]' : ''
                   }`}
                 >
                   <span className="w-[120px] shrink-0 truncate">{item.label}</span>
-                  <div className="flex-1 h-[7px] bg-[var(--ck-bg3)] rounded overflow-hidden">
+                  <div className="flex-1 h-[7px] bg-[var(--bg3)] rounded overflow-hidden">
                     <div
                       className={`h-full rounded transition-[width] duration-300 ${barColor}`}
                       style={{ width: `${pct}%` }}
@@ -141,12 +141,12 @@ export function EduMetricDashboard({
 
         {/* Actions */}
         {actions && actions.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mt-3.5 pt-3 border-t-[0.5px] border-[var(--ck-b1)]">
+          <div className="flex gap-1.5 flex-wrap mt-3.5 pt-3 border-t-[0.5px] border-[var(--b1)]">
             {actions.map((action, i) => (
               <button
                 key={i}
                 onClick={() => onSubmit?.({ _action: 'suggest', prompt: action.prompt, skill_hint: action.skill_hint })}
-                className="text-[12px] px-3.5 py-1.5 rounded-[var(--ck-r)] cursor-pointer border-[0.5px] border-[var(--ck-b1)] bg-[var(--ck-bg1)] text-[var(--ck-t2)] hover:bg-[var(--ck-bg2)] transition-colors"
+                className="text-[12px] px-3.5 py-1.5 rounded-[var(--r)] cursor-pointer border-[0.5px] border-[var(--b1)] bg-[var(--bg1)] text-[var(--t2)] hover:bg-[var(--bg2)] transition-colors"
               >
                 {action.label}
               </button>
