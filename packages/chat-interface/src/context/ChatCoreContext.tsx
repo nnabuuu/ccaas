@@ -11,7 +11,7 @@ import {
 } from 'react'
 import { useAgentConnection, useAgentChat, useAgentStatus } from '@kedge-agentic/react-sdk'
 import type { ChatMessage, ContentBlock, NextAction, QuickSuggestion } from '@/types/chat'
-import { parseAssistantContent, buildContentBlocksFromSdkBlocks, isWidgetTool } from '@/harness/postprocessor'
+import { parseAssistantContent, buildContentBlocksFromSdkBlocks } from '@/harness/postprocessor'
 import { submitToEngine } from '@/harness/submit-engine'
 import { toast } from 'sonner'
 
@@ -143,13 +143,9 @@ export function ChatCoreProvider({
       const sdkBlocks = Array.isArray(rawBlocks) && rawBlocks.every(
         (b: unknown) => typeof b === 'object' && b !== null && 'type' in b,
       )
-        ? (rawBlocks as Array<{ type: string; text?: string; tool?: { toolName: string; toolInput?: unknown; phase: string } }>)
+        ? (rawBlocks as Array<{ type: string; text?: string; content?: string; thinkingId?: string; isComplete?: boolean; tool?: { toolName: string; toolId: string; toolInput?: unknown; toolOutput?: unknown; toolError?: string; description?: string; success?: boolean; duration?: number; phase: string } }>)
         : undefined
-      const hasWidgetTools = sdkBlocks?.some(
-        b => b.type === 'tool' && isWidgetTool(b.tool?.toolName),
-      )
-
-      if (msg.role === 'assistant' && sdkBlocks && hasWidgetTools) {
+      if (msg.role === 'assistant' && sdkBlocks && sdkBlocks.length > 0) {
         // Tool-as-Widget path: build interleaved text + widget blocks from SDK contentBlocks
         const result = buildContentBlocksFromSdkBlocks(sdkBlocks, isStreaming)
         contentBlocks = result.contentBlocks

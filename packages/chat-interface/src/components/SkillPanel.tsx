@@ -45,7 +45,7 @@ export function SkillPanel({ serverUrl, tenantId, apiKey, open, onClose }: Skill
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-ck-bg2 ck-scrollbar">
       <div className="max-w-[780px] mx-auto px-4 py-5">
-        <div className="bg-ck-bg1 rounded-2xl p-[22px] border-[0.5px] border-ck-b1 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="bg-ck-bg1 rounded-ck-lg p-[22px] border-[0.5px] border-ck-b1">
           <PanelHeader tenantId={tenantId} onClose={onClose} />
           <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
 
@@ -172,7 +172,7 @@ function SkillCard({ skill, badgeClass, badgeLabel, actions, showParams }: {
   const configEntries = Object.entries(skill.config ?? {})
 
   return (
-    <div className="bg-ck-bg1 border-[0.5px] border-ck-b1 rounded-ck-lg p-4 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)] transition-shadow">
+    <div className="bg-ck-bg1 border-[0.5px] border-ck-b1 rounded-ck-lg p-4 hover:bg-ck-bg2 transition-colors">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-[14px] font-semibold text-ck-t1 truncate mr-2">{skill.name}</span>
         <span className={`text-[11px] px-2.5 py-[3px] rounded-[10px] font-medium shrink-0 ${badgeClass}`}>

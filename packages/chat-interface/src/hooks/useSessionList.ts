@@ -20,12 +20,18 @@ const ACTIVE_POLL_MS = 30_000
 export function useSessionList(
   serverUrl: string,
   apiKey?: string,
+  tenantId?: string,
 ): UseSessionListReturn {
   const [sessions, setSessions] = useState<SidebarSession[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const refresh = useCallback(async () => {
+    if (!apiKey) {
+      setSessions([])
+      return
+    }
+
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -36,6 +42,9 @@ export function useSessionList(
       const headers: Record<string, string> = {}
       if (apiKey) {
         Object.assign(headers, buildAuthHeaders(apiKey))
+      }
+      if (tenantId) {
+        headers['X-Tenant-Id'] = tenantId
       }
       const res = await fetch(url, {
         signal: controller.signal,
@@ -53,7 +62,7 @@ export function useSessionList(
     } finally {
       setIsLoading(false)
     }
-  }, [serverUrl, apiKey])
+  }, [serverUrl, apiKey, tenantId])
 
   // Initial load
   useEffect(() => {

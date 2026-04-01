@@ -32,3 +32,7 @@ export type WidgetRegistry = Record<string, WidgetComponent>
 export type BlockRenderer = (block: { type: string; data: Record<string, unknown> }) => React.ReactNode | null
 
 export type BlockRendererMap = Record<string, BlockRenderer>
+
+export type ToolRenderer = (tool: import('./chat').ToolUseBlock) => React.ReactNode | null
+
+export type ToolRendererMap = Record<string, ToolRenderer>

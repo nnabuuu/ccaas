@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from 'react'
-import type { WidgetRegistry, BlockRendererMap } from '@/types/widget'
+import type { WidgetRegistry, BlockRendererMap, ToolRendererMap } from '@/types/widget'
 import type { WidgetCatalogEntry } from '@/widgets/catalog'
 import type { McpBridge } from '@/widgets/mcp-bridge'
 import { mergeRegistries, mergeCatalogs } from '@/widgets/merge'
@@ -8,6 +8,7 @@ export interface ChatInterfaceContextValue {
   widgetRegistry: WidgetRegistry
   widgetCatalog: WidgetCatalogEntry[]
   blockRenderers: BlockRendererMap
+  toolRenderers: ToolRendererMap
   mcpBridge: McpBridge | null
 }
 
@@ -17,6 +18,7 @@ export interface ChatInterfaceProviderProps {
   customWidgets?: WidgetRegistry
   customCatalog?: WidgetCatalogEntry[]
   customBlockRenderers?: BlockRendererMap
+  customToolRenderers?: ToolRendererMap
   mcpBridge?: McpBridge
   children: React.ReactNode
 }
@@ -25,6 +27,7 @@ export function ChatInterfaceProvider({
   customWidgets,
   customCatalog,
   customBlockRenderers,
+  customToolRenderers,
   mcpBridge,
   children,
 }: ChatInterfaceProviderProps) {
@@ -32,8 +35,9 @@ export function ChatInterfaceProvider({
     widgetRegistry: mergeRegistries(customWidgets),
     widgetCatalog: mergeCatalogs(customCatalog),
     blockRenderers: customBlockRenderers ?? {},
+    toolRenderers: customToolRenderers ?? {},
     mcpBridge: mcpBridge ?? null,
-  }), [customWidgets, customCatalog, customBlockRenderers, mcpBridge])
+  }), [customWidgets, customCatalog, customBlockRenderers, customToolRenderers, mcpBridge])
 
   return (
     <ChatInterfaceCtx.Provider value={value}>

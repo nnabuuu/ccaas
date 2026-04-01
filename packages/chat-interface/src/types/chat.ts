@@ -30,6 +30,8 @@ export type ContentBlock =
   | WidgetBlock
   | FileBlock
   | McpResultBlock
+  | ToolUseBlock
+  | ThinkingBlock
 
 export interface TextBlock {
   type: 'text'
@@ -54,6 +56,25 @@ export interface McpResultBlock {
   toolName: string
   result: unknown
   visible: boolean
+}
+
+export interface ToolUseBlock {
+  type: 'tool_use'
+  toolName: string
+  toolId: string
+  description?: string
+  toolInput?: unknown
+  toolOutput?: unknown
+  toolError?: string
+  success?: boolean
+  duration?: number
+  phase: 'start' | 'progress' | 'end'
+}
+
+export interface ThinkingBlock {
+  type: 'thinking'
+  content: string
+  isStreaming?: boolean
 }
 
 export interface NextAction {

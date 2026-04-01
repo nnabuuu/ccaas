@@ -1,4 +1,4 @@
-import type { ContentBlock, TextBlock, WidgetBlock, FileBlock, NextAction } from '@/types/chat'
+import type { ContentBlock, TextBlock, WidgetBlock, FileBlock, NextAction, ToolUseBlock, ThinkingBlock } from '@/types/chat'
 import type { JsonRenderSpec } from '@/types/widget'
 
 // ===== LLM Content Block (Anthropic API format) =====
@@ -95,8 +95,17 @@ export function extractNextActions(
 
 // ===== Tool-as-Widget conversion =====
 
+/** Standalone widget tools that map directly to a registered widget component */
+const STANDALONE_WIDGET_TOOLS: Record<string, string> = {
+  show_step_wizard: 'StepWizard',
+  show_review_panel: 'ReviewPanel',
+}
+
 /** Widget tool names that the frontend intercepts and renders as UI components */
-const WIDGET_TOOLS = new Set(['show_info_card', 'suggest_actions'])
+const WIDGET_TOOLS = new Set([
+  'show_info_card', 'suggest_actions',
+  ...Object.keys(STANDALONE_WIDGET_TOOLS),
+])
 
 export function isWidgetTool(name: string | undefined): boolean {
   return !!name && WIDGET_TOOLS.has(name)
@@ -108,9 +117,19 @@ interface SdkBlock {
   text?: string
   tool?: {
     toolName: string
+    toolId: string
     toolInput?: unknown
+    toolOutput?: unknown
+    toolError?: string
+    description?: string
+    success?: boolean
+    duration?: number
     phase: string
   }
+  // Thinking block fields
+  thinkingId?: string
+  content?: string
+  isComplete?: boolean
 }
 
 interface SdkProcessResult {
@@ -148,16 +167,39 @@ export function buildContentBlocksFromSdkBlocks(
     } else if (block.type === 'tool' && block.tool) {
       const { toolName, toolInput, phase } = block.tool
 
-      // Only process completed tool calls
-      if (phase !== 'end') continue
-
-      if (toolName === 'show_info_card' && toolInput) {
+      if (toolName === 'show_info_card' && toolInput && phase === 'end') {
         const spec = convertInfoCardToSpec(toolInput as Record<string, unknown>)
         contentBlocks.push({ type: 'widget', spec })
-      } else if (toolName === 'suggest_actions' && toolInput) {
+      } else if (toolName === 'suggest_actions' && toolInput && phase === 'end') {
         nextActions = extractActionsFromToolInput(toolInput as Record<string, unknown>)
+      } else if (toolName in STANDALONE_WIDGET_TOOLS && toolInput && phase === 'end') {
+        const widgetType = STANDALONE_WIDGET_TOOLS[toolName]
+        const input = toolInput as Record<string, unknown>
+        contentBlocks.push({
+          type: 'widget',
+          spec: { root: 'w', elements: { w: { type: widgetType, props: input } } },
+        })
+      } else {
+        // Pass through all other tools as ToolUseBlock
+        contentBlocks.push({
+          type: 'tool_use',
+          toolName: block.tool.toolName,
+          toolId: block.tool.toolId || `tool-${i}`,
+          description: block.tool.description,
+          toolInput: block.tool.toolInput,
+          toolOutput: block.tool.toolOutput,
+          toolError: block.tool.toolError,
+          success: block.tool.success,
+          duration: block.tool.duration,
+          phase: phase as 'start' | 'progress' | 'end',
+        } satisfies ToolUseBlock)
       }
-      // Other tools: skip (already shown via status/thinking indicators)
+    } else if (block.type === 'thinking') {
+      contentBlocks.push({
+        type: 'thinking',
+        content: block.content || '',
+        isStreaming: !block.isComplete,
+      } satisfies ThinkingBlock)
     }
   }
 
@@ -264,7 +306,10 @@ export function parseAssistantContent(text: string, isStreaming = false): Conten
     try {
       const parsed = JSON.parse(blockBody)
       if (blockType === 'widget') {
-        blocks.push({ type: 'widget', spec: parsed as JsonRenderSpec })
+        const widgetSpec = parsed as JsonRenderSpec
+        if (widgetSpec.root && widgetSpec.elements) {
+          blocks.push({ type: 'widget', spec: widgetSpec })
+        }
       } else {
         // file block → FileBlock
         blocks.push({

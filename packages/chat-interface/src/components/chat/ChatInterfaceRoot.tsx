@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { WidgetRegistry, BlockRendererMap } from '@/types/widget'
+import type { WidgetRegistry, BlockRendererMap, ToolRendererMap } from '@/types/widget'
 import type { WidgetCatalogEntry } from '@/widgets/catalog'
 import type { McpBridge } from '@/widgets/mcp-bridge'
 import type { QuickSuggestion } from '@/types/chat'
@@ -21,6 +21,7 @@ export interface ChatInterfaceRootProps {
   customWidgets?: WidgetRegistry
   customCatalog?: WidgetCatalogEntry[]
   customBlockRenderers?: BlockRendererMap
+  customToolRenderers?: ToolRendererMap
   mcpBridge?: McpBridge
   // Callbacks
   onMessageSent?: () => void
@@ -44,6 +45,7 @@ export function ChatInterfaceRoot({
   customWidgets,
   customCatalog,
   customBlockRenderers,
+  customToolRenderers,
   mcpBridge,
   onMessageSent,
   skillPanelOpen,
@@ -56,6 +58,7 @@ export function ChatInterfaceRoot({
       customWidgets={customWidgets}
       customCatalog={customCatalog}
       customBlockRenderers={customBlockRenderers}
+      customToolRenderers={customToolRenderers}
       mcpBridge={mcpBridge}
     >
       <ChatCoreProvider

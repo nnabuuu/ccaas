@@ -30,7 +30,7 @@ export function NextActions({ actions, onAction }: NextActionsProps) {
           disabled={pending}
           onClick={() => handleClick(action)}
           className={cn(
-            'text-xs px-3 py-[5px] rounded-ck border font-inherit cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
+            'text-xs px-3 py-[5px] rounded-ck border-[0.5px] font-inherit cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors ease-claude active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ck-accent',
             i === 0
               ? 'bg-ck-t1 text-ck-bg1 border-ck-t1'
               : 'bg-transparent text-ck-t2 border-ck-b1 hover:bg-ck-bg2',

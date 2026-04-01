@@ -24,6 +24,8 @@ export interface ChatSidebarProps {
   onSkillsClick?: () => void
   /** Whether Skills panel is currently active */
   skillsActive?: boolean
+  /** Optional content rendered above the user menu (e.g. session context chips) */
+  userContext?: React.ReactNode
 }
 
 /** Group sessions by relative date */
@@ -135,6 +137,7 @@ export function ChatSidebar({
   apiKeyHint,
   onSkillsClick,
   skillsActive,
+  userContext,
 }: ChatSidebarProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -319,9 +322,12 @@ export function ChatSidebar({
           </div>
         )}
 
+        {/* User context — session info chips */}
+        {userContext && !isCollapsed && userContext}
+
         {/* User menu */}
         {onLogout && (
-          <div className="relative border-t border-ck-b2/50" ref={menuRef}>
+          <div className="relative border-t-[0.5px] border-ck-b1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="User menu"
@@ -349,7 +355,7 @@ export function ChatSidebar({
 
             {/* Popover menu */}
             {menuOpen && (
-              <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border-[0.5px] border-ck-b1 shadow-lg z-50">
+              <div role="menu" className="absolute bottom-full left-2 right-2 mb-1 py-1 rounded-lg bg-ck-bg1 border-[0.5px] border-ck-b1 z-50">
                 {apiKeyHint && !isCollapsed && (
                   <div className="px-3 py-1.5 text-[11px] text-ck-t3 truncate">
                     {apiKeyHint}
@@ -377,7 +383,7 @@ export function ChatSidebar({
       {/* Desktop sidebar */}
       <div
         className={cn(
-          'hidden lg:flex flex-col bg-ck-bg2 border-r border-ck-b2/50 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
+          'hidden lg:flex flex-col bg-ck-bg2 border-r-[0.5px] border-ck-b1 shrink-0 transition-[width] duration-200 ease-claude overflow-hidden',
           collapsed ? 'w-[52px]' : 'w-[260px]',
         )}
       >

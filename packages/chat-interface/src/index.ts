@@ -18,6 +18,10 @@ export { SessionContextBar } from './components/SessionContextBar'
 export { SkillBadge } from './components/SkillBadge'
 export { FileCard } from './components/FileCard'
 export { NextActions } from './components/NextActions'
+export { ToolActivityBlock } from './components/ToolActivityBlock'
+export { ThinkingBlockView } from './components/ThinkingBlockView'
+export { ToolGroup } from './components/ToolGroup'
+export type { ToolGroupData } from './components/ToolGroup'
 export { QuickSuggestions } from './components/QuickSuggestions'
 export { SkillPanel } from './components/SkillPanel'
 export type { SkillPanelProps } from './components/SkillPanel'
@@ -79,7 +83,8 @@ export { MetricDashboard } from './widgets/components/MetricDashboard'
 export { Summary } from './widgets/components/Summary'
 
 // === Harness ===
-export { parseAssistantContent, parseLlmResponse, extractNextActions } from './harness/postprocessor'
+export { parseAssistantContent, parseLlmResponse, extractNextActions, buildContentBlocksFromSdkBlocks } from './harness/postprocessor'
+export { stripMcpPrefix, getToolSummary } from './components/ToolActivityBlock'
 export { submitToEngine, buildSubmissionPayload } from './harness/submit-engine'
 export type { SubmitToEngineOptions } from './harness/submit-engine'
 export { buildAppendPrompt, sessionContextToPrompt } from './harness/preprocessor'
@@ -94,6 +99,8 @@ export type {
   WidgetRegistry,
   BlockRenderer,
   BlockRendererMap,
+  ToolRenderer,
+  ToolRendererMap,
 } from './types/widget'
 
 export type {
@@ -104,6 +111,8 @@ export type {
   WidgetBlock,
   FileBlock,
   McpResultBlock,
+  ToolUseBlock,
+  ThinkingBlock,
   NextAction,
   QuickSuggestion,
   EngineSubmission,

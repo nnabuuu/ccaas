@@ -5,7 +5,7 @@ set -euo pipefail
 unset CLAUDECODE 2>/dev/null || true
 
 # ─────────────────────────────────────────────────────────
-# Chat Interface UI Polish — Overnight Harness Orchestrator
+# SkillPanel Rebuild — Harness Orchestrator
 # ─────────────────────────────────────────────────────────
 # Usage:
 #   ./harness.sh              # Run from v0
@@ -21,14 +21,14 @@ EDU_PKG="$PROJECT_ROOT/solutions/business/edu-platform/frontend"
 EDU_BACKEND_PKG="$PROJECT_ROOT/solutions/business/edu-platform/backend"
 
 # Config
-MAX_ITERATIONS=15
-TARGET_SCORE=85
+MAX_ITERATIONS=10
+TARGET_SCORE=90
 DIMINISHING_THRESHOLD=3  # stop if improvement < this for 2 consecutive rounds
 DEV_SERVER_PORT=5190
 EDU_SERVER_PORT=5290
 BACKEND_PORT=3001
 EDU_BACKEND_PORT=3011
-COST_PER_ITERATION=0.75  # rough estimate in USD
+COST_PER_ITERATION=0.75
 
 # Auth credentials
 AUTH_USERNAME="admin"
@@ -57,26 +57,18 @@ err() { echo "[$(date '+%H:%M:%S')] ERROR: $*" >&2; }
 
 extract_score() {
   local report="$1"
-  # Match "总分: XX/100" or "Total: XX/100" at end of file
   local score
   score=$(grep -oE '(总分|Total): [0-9]+/100' "$report" | tail -1 | grep -oE '[0-9]+' | head -1)
   echo "${score:-0}"
 }
 
 get_last_version() {
-  # Parse progress.md to find last version number
   local last
   last=$(grep -oE '\| v[0-9]+' "$HARNESS_DIR/progress.md" | tail -1 | grep -oE '[0-9]+')
   echo "${last:-0}"
 }
 
-get_last_scores() {
-  # Return last N scores from progress.md (for diminishing returns check)
-  grep -oE '\| [0-9]+(\.[0-9]+)? +\|' "$HARNESS_DIR/progress.md" | grep -oE '[0-9]+(\.[0-9]*)?' | tail -"${1:-2}"
-}
-
 check_dev_server() {
-  # Vite may auto-increment port if preferred port is busy; check TCP connection
   for port in $(seq $DEV_SERVER_PORT $((DEV_SERVER_PORT + 10))); do
     if nc -z localhost "$port" 2>/dev/null; then
       DEV_SERVER_PORT=$port
@@ -102,15 +94,12 @@ check_edu_backend() {
 
 start_edu_backend() {
   log "Starting edu-platform backend on port $EDU_BACKEND_PORT..."
-
-  # Ensure built and seeded
   if [[ ! -d "$EDU_BACKEND_PKG/dist" ]]; then
     log "Building edu-platform backend..."
     (cd "$EDU_BACKEND_PKG" && npm run build) || { err "Edu-platform backend build failed"; return 1; }
   fi
   if [[ ! -f "$EDU_BACKEND_PKG/data/edu.db" ]]; then
     log "Seeding edu-platform database..."
-    # Get core backend apiKey for edu-platform to use
     local ccaas_key=""
     if $BACKEND_AUTH_OK; then
       ccaas_key=$(curl -sf -X POST "$AUTH_ENDPOINT" \
@@ -147,7 +136,6 @@ start_dev_server() {
   cd "$CHAT_PKG" && npm run dev &
   DEV_PID=$!
 
-  # Wait for server to be ready (max 30s, checks port range for Vite auto-increment)
   for i in $(seq 1 30); do
     if check_dev_server; then
       log "Chat-interface dev server ready on port $DEV_SERVER_PORT (PID: $DEV_PID)"
@@ -176,7 +164,6 @@ start_edu_server() {
 
   err "Edu-platform dev server failed to start within 30s"
   kill $EDU_PID 2>/dev/null || true
-  # Non-fatal: continue with core only
   EDU_PID=""
   return 1
 }
@@ -186,7 +173,6 @@ start_backend() {
   cd "$BACKEND_PKG" && npm run start:dev &
   BACKEND_PID=$!
 
-  # Wait for backend to be ready (max 60s — backend may need DB migrations)
   for i in $(seq 1 60); do
     if check_backend; then
       log "Backend ready on port $BACKEND_PORT (PID: $BACKEND_PID)"
@@ -209,8 +195,6 @@ verify_login() {
     err "Login verification failed — curl returned non-zero"
     return 1
   }
-
-  # Check response contains apiKey
   if echo "$response" | grep -q '"apiKey"'; then
     log "Login verified — credentials work (admin/dev123)"
     return 0
@@ -244,7 +228,7 @@ trap cleanup EXIT
 # Pre-flight checks
 # ─────────────────────────────────────────────────────────
 
-log "=== Chat Interface UI Polish Harness ==="
+log "=== SkillPanel Rebuild Harness ==="
 log "Project root: $PROJECT_ROOT"
 log "Max iterations: $MAX_ITERATIONS"
 log "Target score: $TARGET_SCORE/100"
@@ -283,9 +267,10 @@ if $DRY_RUN; then
   log "[DRY RUN] Edu-platform: localhost:$EDU_SERVER_PORT (start if available)"
   log "[DRY RUN] Auth: POST $AUTH_ENDPOINT with $AUTH_USERNAME/$AUTH_PASSWORD"
   log "[DRY RUN] Generator: claude -p with Edit/Write/Bash/Playwright tools"
-  log "[DRY RUN] Evaluator: claude -p with Read/Grep/Bash/Playwright tools (incl. click, type, fill_form)"
+  log "[DRY RUN] Evaluator: claude -p with Read/Grep/Bash/Playwright tools"
   log "[DRY RUN] Exit when: score >= $TARGET_SCORE OR iterations >= $MAX_ITERATIONS OR diminishing returns"
   log "[DRY RUN] Estimated cost: ~\$$(echo "$MAX_ITERATIONS * $COST_PER_ITERATION" | bc)"
+  log "[DRY RUN] Revert scope: SkillPanel, ChatSidebar, ChatInterface, ChatInterfaceRoot, ChatCoreContext, App.tsx"
   exit 0
 fi
 
@@ -310,7 +295,7 @@ if verify_login; then
   log "Backend auth pre-check: PASS"
 else
   log "WARNING: Backend auth pre-check FAILED — functional verification will score 0"
-  log "Continuing with CSS/code-only evaluation..."
+  log "Continuing with code-only evaluation..."
 fi
 
 # ─────────────────────────────────────────────────────────
@@ -325,11 +310,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────
-# Start edu-platform dev server (if not already running)
-# ─────────────────────────────────────────────────────────
-
-# ─────────────────────────────────────────────────────────
-# Start edu-platform solution backend (if not already running)
+# Start edu-platform backend (if not already running)
 # ─────────────────────────────────────────────────────────
 
 EDU_BACKEND_PID=""
@@ -388,8 +369,8 @@ else
   AUTH_CONTEXT="
 ## 后端认证信息
 - ⚠️ 认证预检失败 — 后端可能未启动或凭据无效
-- 跳过交互验证，仅做 CSS/代码分析
-- D4b (Functional Verification) 将得 0 分"
+- 跳过交互验证，仅做代码分析
+- D1 和 D3 将得 0 分"
 fi
 
 if $EDU_AVAILABLE && $EDU_BACKEND_OK; then
@@ -397,12 +378,9 @@ if $EDU_AVAILABLE && $EDU_BACKEND_OK; then
 ## Edu-Platform（Solution 层验证）
 - Frontend: http://localhost:$EDU_SERVER_PORT
 - Solution Backend: http://localhost:$EDU_BACKEND_PORT
-- 设计系统: $EDU_PKG/DESIGN_SYSTEM.md（与 core 不同：零阴影、0.5px 边框、无 accent 色）
 - 代码目录: $EDU_PKG/src/
-- 登录: 通过 edu-platform LoginPage UI 登录，或在浏览器 console 中调用:
+- 登录: 在浏览器 console 中调用:
   \`\`\`javascript
-  // 方式 1: 通过 UI 登录（测试 LoginPage 交互）
-  // 方式 2: 直接注入 localStorage 跳过登录:
   const res = await fetch('http://localhost:$EDU_BACKEND_PORT/api/auth/login', {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({username:'teacher',password:'teacher123'})
@@ -412,24 +390,40 @@ if $EDU_AVAILABLE && $EDU_BACKEND_OK; then
   localStorage.setItem('edu-ccaas-key', data.ccaasApiKey);
   localStorage.setItem('edu-user', JSON.stringify(data.user));
   location.reload();
-  \`\`\`
-- Solution backend 已预启动，可直接使用"
+  \`\`\`"
 elif $EDU_AVAILABLE; then
   EDU_CONTEXT="
-## Edu-Platform（Solution 层验证 — 部分可用）
+## Edu-Platform（部分可用）
 - Frontend: http://localhost:$EDU_SERVER_PORT
-- ⚠️ Solution backend 未启动 — 只能评估 LoginPage（未登录视图）
-- 认证绕过: 在浏览器 console 中注入 localStorage:
-  - edu-jwt = 'harness-bypass-token'
-  - edu-ccaas-key = '<从核心 backend 获取的 apiKey>'
-  - edu-user = '{\"id\":\"harness\",\"name\":\"张老师\",\"username\":\"teacher\",\"school\":\"树人中学\"}'
-- 设计系统: $EDU_PKG/DESIGN_SYSTEM.md
-- 代码目录: $EDU_PKG/src/"
+- ⚠️ Solution backend 未启动 — 只能检查 UI 层接入"
 else
   EDU_CONTEXT="
 ## Edu-Platform
 - ⚠️ Edu-platform 不可用，仅评估 core chat-interface"
 fi
+
+# ─────────────────────────────────────────────────────────
+# Revert scope — files the generator may modify
+# ─────────────────────────────────────────────────────────
+
+REVERT_FILES=(
+  "packages/chat-interface/src/components/SkillPanel.tsx"
+  "packages/chat-interface/src/components/chat/ChatInterfaceSkillPanel.tsx"
+  "packages/chat-interface/src/components/ChatSidebar.tsx"
+  "packages/chat-interface/src/components/ChatInterface.tsx"
+  "packages/chat-interface/src/components/chat/ChatInterfaceRoot.tsx"
+  "packages/chat-interface/src/context/ChatCoreContext.tsx"
+  "packages/chat-interface/src/App.tsx"
+  "packages/chat-interface/src/styles/globals.css"
+  "solutions/business/edu-platform/frontend/src/App.tsx"
+)
+
+revert_changes() {
+  log "Reverting generator changes..."
+  for f in "${REVERT_FILES[@]}"; do
+    (cd "$PROJECT_ROOT" && git checkout -- "$f" 2>/dev/null) || true
+  done
+}
 
 # ─────────────────────────────────────────────────────────
 # Main loop
@@ -481,7 +475,7 @@ while true; do
   # ─── Step 1: Generator ───
   log "[v$VERSION] Running Generator agent..."
 
-  GENERATOR_PROMPT="你是 chat-interface UI 优化的 Generator agent。这是第 $VERSION 轮迭代。
+  GENERATOR_PROMPT="你是 SkillPanel 重建的 Generator agent。这是第 $VERSION 轮迭代。
 
 **关键**: 你运行在 fresh context 中，没有前几轮的记忆。磁盘上的文件是你的唯一上下文。
 ${AUTH_CONTEXT}
@@ -491,31 +485,33 @@ ${EDU_CONTEXT}
 
 1. 读任务规范: $HARNESS_DIR/SPEC.md
 2. 读历史记录: $HARNESS_DIR/progress.md${LAST_EVAL_CONTEXT}
-4. 读设计系统:
-   - Core: $CHAT_PKG/docs/design-system.md
-   - Edu-Platform: $EDU_PKG/DESIGN_SYSTEM.md（Solution 层的设计规范，与 core 有差异）
-5. 浏览当前源码:
-   - Core: $CHAT_PKG/src/ — 这些文件已被前几轮修改过，是你的**起点**
-   - Edu-Platform: $EDU_PKG/src/ — Solution 层自定义组件（ClassSwitcher, LoginPage, App.tsx）
-6. 看参考截图: $CHAT_PKG/reference/
+4. 读 HTML 原型: $CHAT_PKG/reference/skill-management-ccaas-light.html — 视觉标准
+5. 读设计系统: $CHAT_PKG/docs/design-system.md
+6. 浏览需修改的源码:
+   - $CHAT_PKG/src/components/SkillPanel.tsx
+   - $CHAT_PKG/src/components/ChatSidebar.tsx
+   - $CHAT_PKG/src/components/ChatInterface.tsx
+   - $CHAT_PKG/src/components/chat/ChatInterfaceRoot.tsx
+   - $CHAT_PKG/src/context/ChatCoreContext.tsx
+   - $CHAT_PKG/src/App.tsx
+   - $EDU_PKG/src/App.tsx
 
 然后：
 7. 制定本轮改进计划（优先修复 eval 中扣分最多的项）
-8. 修改代码（原地修改）:
-   - Core 组件: $CHAT_PKG/src/
-   - Edu-Platform 组件: $EDU_PKG/src/（如有需要）
+8. 修改代码（原地修改，按 SPEC.md 的架构方案）
 9. 运行验证:
    cd $CHAT_PKG && npx tsc --noEmit
    cd $CHAT_PKG && npx vitest run
 10. 打开浏览器验证效果:
     - Core (http://localhost:$DEV_SERVER_PORT/):
-      - 截图 desktop (1440x900) → $HARNESS_DIR/screenshots/v$VERSION/desktop-main.png
-      - 截图 mobile (375x812) → $HARNESS_DIR/screenshots/v$VERSION/mobile-main.png
+      - 认证后点击 sidebar Skills 入口
+      - 截图 SkillPanel desktop → $HARNESS_DIR/screenshots/v$VERSION/skill-panel-desktop.png
+      - 截图 sidebar 展开态 → $HARNESS_DIR/screenshots/v$VERSION/sidebar-skills-expanded.png
+      - 截图 mobile (375x812) → $HARNESS_DIR/screenshots/v$VERSION/skill-panel-mobile.png
+      - 关闭 panel，验证 chat 恢复
     - Edu-Platform (http://localhost:$EDU_SERVER_PORT/) — 如果可用:
-      - 登录页截图 → $HARNESS_DIR/screenshots/v$VERSION/edu-login.png
-      - 注入 auth 后截图 → $HARNESS_DIR/screenshots/v$VERSION/edu-desktop.png
-      - 验证 context chips 显示领域数据（班级/学科/学校）
-11. **必须**将 changelog 写入: ${CHANGELOG_PATH} （格式见 prompts/generator.md 第 5 节）
+      - 登录后截图 → $HARNESS_DIR/screenshots/v$VERSION/edu-desktop.png
+11. **必须**将 changelog 写入: ${CHANGELOG_PATH}
 
 完整指南: $HARNESS_DIR/prompts/generator.md"
 
@@ -559,9 +555,7 @@ ${EDU_CONTEXT}
 
   if ! $TOOL_PASS; then
     log "[v$VERSION] Build/test failed — scoring as 0, reverting changes."
-    # Revert changes to chat-interface and edu-platform
-    (cd "$PROJECT_ROOT" && git checkout -- packages/chat-interface/src/ 2>/dev/null || true)
-    (cd "$PROJECT_ROOT" && git checkout -- solutions/business/edu-platform/frontend/src/ 2>/dev/null || true)
+    revert_changes
     echo "| v$VERSION | $TIMESTAMP | 0 | - | - | - | - | - | - | -100 | typecheck/test failure — reverted |" >> "$HARNESS_DIR/progress.md"
     continue
   fi
@@ -571,9 +565,9 @@ ${EDU_CONTEXT}
   # ─── Step 2b: Git snapshot ───
   log "[v$VERSION] Creating git snapshot..."
   (cd "$PROJECT_ROOT" && \
-    git add packages/chat-interface/src/ packages/chat-interface/src/styles/ \
+    git add packages/chat-interface/src/ \
            solutions/business/edu-platform/frontend/src/ 2>/dev/null && \
-    git commit -m "style(frontend): harness v$VERSION iteration" -q 2>/dev/null) || \
+    git commit -m "feat(frontend): skill-panel harness v$VERSION iteration" -q 2>/dev/null) || \
     log "[v$VERSION] WARNING: git commit failed (no changes or git issue)"
 
   # ─── Step 3: Evaluator ───
@@ -582,7 +576,7 @@ ${EDU_CONTEXT}
   EVAL_REPORT="$HARNESS_DIR/eval-reports/v${VERSION}-eval.md"
   mkdir -p "$HARNESS_DIR/eval-reports"
 
-  EVALUATOR_PROMPT="你是 chat-interface UI 质量的独立 Evaluator agent。这是第 $VERSION 轮迭代的评估。
+  EVALUATOR_PROMPT="你是 SkillPanel 重建质量的独立 Evaluator agent。这是第 $VERSION 轮迭代的评估。
 ${AUTH_CONTEXT}
 ${EDU_CONTEXT}
 
@@ -590,44 +584,37 @@ ${EDU_CONTEXT}
 
 1. 先阅读评分标准: $HARNESS_DIR/EVAL_CRITERIA.md
 
-2. 阅读设计参考:
-   - Core: $CHAT_PKG/docs/design-system.md
-   - Edu-Platform: $EDU_PKG/DESIGN_SYSTEM.md（Solution 层标准：零阴影、0.5px 边框、无 accent）
-   - $CHAT_PKG/reference/ 中的参考截图
+2. 阅读参考文档:
+   - HTML 原型: $CHAT_PKG/reference/skill-management-ccaas-light.html
+   - 设计系统: $CHAT_PKG/docs/design-system.md
 
 3. **后端认证**（Pre-Scoring Gate — MANDATORY）:
    - 执行 curl 登录获取 apiKey
-   - 如果失败，D1 和 D4b 直接 0 分
+   - 如果失败，D1 和 D3 直接 0 分
 
 4. 运行代码分析命令（见 EVAL_CRITERIA.md 中的 detection method）
-   - 包括 core 组件和 edu-platform 组件
 
-5. 打开浏览器 http://localhost:$DEV_SERVER_PORT/ 进行 core 认证后截图：
-   - 登录后在 console 注入 apiKey: localStorage.setItem('apiKey', key)
+5. 打开浏览器 http://localhost:$DEV_SERVER_PORT/ 进行认证后验证:
+   - 登录后在 console 注入 apiKey
    - 刷新页面
-   - Desktop 1440x900 / Mobile 375x812 / Tablet 768x1024 截图
-   与参考截图逐一对比
+   - 点击 sidebar Skills 入口 → 验证 panel 打开
+   - 截图 SkillPanel，与 HTML 原型对比
+   - 切换 tabs，截图
+   - 关闭 panel → 验证 chat 恢复
+   - 发送消息验证无回归
+   - Mobile 375x812 截图
 
 5b. 如果 edu-platform 可用 (http://localhost:$EDU_SERVER_PORT/):
-    - 先截图 LoginPage（未登录状态）
-    - 注入 edu auth tokens 到 localStorage（见上方认证绕过说明）
-    - 刷新页面，截图认证后的 chat 界面
-    - 对比 edu-platform DESIGN_SYSTEM.md 标准
-    - 验证 context chips 显示领域数据（班级/学科/学校），不显示基础设施参数
+    - 登录后检查 sidebar Skills 入口
+    - 验证 chat 发消息无回归
 
-6. 交互审计（D4b — 认证后）:
-   - 发送测试消息，验证渲染
-   - 检查 sidebar 会话列表
-   - 检查 sidebar 搜索框和分组
-   - 截图保存证据
-
-7. 按 EVAL_CRITERIA.md 的格式输出完整的 eval report
+6. 按 EVAL_CRITERIA.md 的格式输出完整的 eval report
 
 **关键**：报告最后一行必须是 \`总分: XX/100\`
 
 将完整报告写入: $EVAL_REPORT
 
-完整的 Evaluator 指南在: $HARNESS_DIR/prompts/evaluator.md"
+完整 Evaluator 指南: $HARNESS_DIR/prompts/evaluator.md"
 
   EVALUATOR_TOOLS="Read,Write,Glob,Grep,Bash,${PLAYWRIGHT_TOOLS}"
 
@@ -652,35 +639,33 @@ ${EDU_CONTEXT}
   SCORE=$(extract_score "$EVAL_REPORT")
   log "[v$VERSION] Score: $SCORE/100"
 
-  # Extract per-dimension scores from eval report (updated for 6 dimensions)
-  D1=$(grep -oE 'Alignment.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
-  D2=$(grep -oE 'Consistency.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
-  D3=$(grep -oE 'Mobile.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
-  D4A=$(grep -oE 'Interaction.*Score: [0-9]/5\|CSS.*Interaction.*Score: [0-9]/5\|Polish.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
-  D4B=$(grep -oE 'Functional.*Score: [0-9]/5\|Verification.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
-  D5=$(grep -oE 'Code Quality.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  # Extract per-dimension scores
+  D1=$(grep -oE 'D1.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  D2=$(grep -oE 'D2.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  D3=$(grep -oE 'D3.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  D4=$(grep -oE 'D4.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  D5=$(grep -oE 'D5.*Score: [0-9]/5' "$EVAL_REPORT" | grep -oE '[0-9]/5' | head -1 || echo "?")
+  D6=$(grep -oE 'D6.*Bonus: \+[0-9]\|Bonus: \+[0-9]' "$EVAL_REPORT" | grep -oE '\+[0-9]' | head -1 || echo "+0")
   PENALTIES=$(grep -oE 'Penalty 小计.*-[0-9]+' "$EVAL_REPORT" | grep -oE '-[0-9]+' | head -1 || echo "0")
 
-  # Extract top issue from eval report "Top 3 Priority Fixes" section
-  TOP_ISSUE=$(grep -A2 'Top 3\|Priority Fix' "$EVAL_REPORT" | grep '^\s*1\.' | sed 's/^\s*1\.\s*//' | head -c 80 || echo "see eval report")
+  TOP_ISSUE=$(grep -A2 'Top 3\|Priority' "$EVAL_REPORT" | grep '^\s*1\.' | sed 's/^\s*1\.\s*//' | head -c 80 || echo "see eval report")
   if [[ -z "$TOP_ISSUE" ]]; then
     TOP_ISSUE="see eval-reports/v${VERSION}-eval.md"
   fi
 
-  # Update progress.md
-  echo "| v$VERSION | $TIMESTAMP | $SCORE | $D1 | $D2 | $D3 | $D4A | $D4B | $D5 | $PENALTIES | $TOP_ISSUE |" >> "$HARNESS_DIR/progress.md"
+  echo "| v$VERSION | $TIMESTAMP | $SCORE | $D1 | $D2 | $D3 | $D4 | $D5 | $D6 | $PENALTIES | $TOP_ISSUE |" >> "$HARNESS_DIR/progress.md"
 
   # ─── Step 4b: Commit eval results ───
   (cd "$HARNESS_DIR" && \
     git add -A eval-reports/ changelogs/ screenshots/ progress.md 2>/dev/null && \
-    git commit -m "docs(frontend): harness v$VERSION eval score $SCORE" -q 2>/dev/null) || true
+    git commit -m "docs(frontend): skill-panel harness v$VERSION eval score $SCORE" -q 2>/dev/null) || true
 
   # ─── Step 5: Check exit conditions ───
 
   # 5a. Target score reached
   if [[ $SCORE -ge $TARGET_SCORE ]]; then
     log ""
-    log "🎯 Target score reached! ($SCORE >= $TARGET_SCORE)"
+    log "Target score reached! ($SCORE >= $TARGET_SCORE)"
     log "Harness complete after $VERSION iterations."
     break
   fi
@@ -693,7 +678,7 @@ ${EDU_CONTEXT}
       log "[v$VERSION] Low improvement: +$IMPROVEMENT (stall count: $STALL_COUNT/2)"
       if [[ $STALL_COUNT -ge 2 ]]; then
         log ""
-        log "📉 Diminishing returns (2 consecutive rounds < +$DIMINISHING_THRESHOLD). Stopping."
+        log "Diminishing returns (2 consecutive rounds < +$DIMINISHING_THRESHOLD). Stopping."
         log "Final score: $SCORE/100 after $VERSION iterations."
         break
       fi
@@ -725,7 +710,4 @@ log "  changelogs/      — what changed each iteration"
 log "  screenshots/     — visual snapshots per iteration"
 log ""
 log "Git history (each iteration is a commit):"
-log "  git log --oneline --grep='harness:'"
-log ""
-log "Compare first and last:"
-log "  git diff HEAD~$VERSION -- packages/chat-interface/src/"
+log "  git log --oneline --grep='skill-panel harness'"

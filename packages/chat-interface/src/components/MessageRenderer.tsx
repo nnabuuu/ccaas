@@ -1,10 +1,14 @@
-import type { ChatMessage, ContentBlock, NextAction } from '@/types/chat'
+import { useMemo } from 'react'
+import type { ChatMessage, ContentBlock, NextAction, ToolUseBlock, ThinkingBlock } from '@/types/chat'
 import { useChatInterfaceContext } from '@/context/ChatInterfaceContext'
 import { WidgetRenderer } from './WidgetRenderer'
 import { SkillBadge } from './SkillBadge'
 import { FileCard } from './FileCard'
 import { NextActions } from './NextActions'
 import { ActionToolbar } from './ActionToolbar'
+import { ToolActivityBlock } from './ToolActivityBlock'
+import { ThinkingBlockView } from './ThinkingBlockView'
+import { ToolGroup, type ToolGroupData } from './ToolGroup'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -26,35 +30,72 @@ interface MessageRendererProps {
   onRetry?: () => void
 }
 
+/** Group adjacent tool_use/thinking blocks into ToolGroupData for collapsed rendering */
+function groupBlocks(blocks: ContentBlock[]): (ContentBlock | ToolGroupData)[] {
+  const result: (ContentBlock | ToolGroupData)[] = []
+  let currentGroup: (ToolUseBlock | ThinkingBlock)[] = []
+
+  const flushGroup = () => {
+    if (currentGroup.length > 0) {
+      result.push({ type: 'tool_group', blocks: [...currentGroup] })
+      currentGroup = []
+    }
+  }
+
+  for (const block of blocks) {
+    if (block.type === 'tool_use' || block.type === 'thinking') {
+      currentGroup.push(block)
+    } else {
+      flushGroup()
+      result.push(block)
+    }
+  }
+  flushGroup()
+
+  return result
+}
+
 export function MessageRenderer({ message, widgetState, onWidgetStateChange, onAction, onWidgetSubmit, onRetry }: MessageRendererProps) {
   const isUser = message.role === 'user'
 
+  // Group adjacent tool/thinking blocks for assistant messages
+  const groupedBlocks = useMemo(() => {
+    if (isUser) return null
+    return groupBlocks(message.content)
+  }, [message.content, isUser])
+
   return isUser ? (
-    // User message: right-aligned, inline-flex bubble (Claude Web: mb-1 mt-6, bg-bg-300, !px-4)
-    <div className="mt-6 mb-1 flex flex-col items-end gap-1">
-      <div className="inline-flex max-w-[min(75ch,90%)] sm:max-w-[min(75ch,85%)] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 sm:px-4 rounded-xl text-base leading-[1.4]">
+    // User message: right-aligned, inline-flex bubble
+    <div data-ck="user-msg" className="mt-3 mb-2 flex flex-col items-end gap-1">
+      <div className="inline-flex max-w-[88%] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 rounded-[16px_16px_4px_16px] text-[14px] leading-[1.6]">
         {message.content.map((block, i) => (
           <ContentBlockView key={i} block={block} />
         ))}
       </div>
     </div>
   ) : (
-    // Assistant message: no bubble, serif font, generous bottom margin
-    <div className="pb-3 pl-2 pr-4 md:pr-8 group">
+    // Assistant message: no bubble, plain text
+    <div data-ck="ai-msg" className="pb-2 group">
       {message.activeSkill && (
         <SkillBadge name={message.activeSkill} />
       )}
 
-      <div className="font-serif text-base text-ck-t1 leading-[1.65rem]">
-        {message.content.map((block, i) => (
-          <ContentBlockView
-            key={i}
-            block={block}
-            widgetState={widgetState}
-            onWidgetStateChange={onWidgetStateChange}
-            onWidgetSubmit={onWidgetSubmit}
-          />
-        ))}
+      <div className="text-[14px] text-ck-t1 leading-[1.6]">
+        {groupedBlocks!.map((item, i) => {
+          if ('type' in item && item.type === 'tool_group') {
+            return <ToolGroup key={`tg-${i}`} group={item as ToolGroupData} />
+          }
+          const block = item as ContentBlock
+          return (
+            <ContentBlockView
+              key={i}
+              block={block}
+              widgetState={widgetState}
+              onWidgetStateChange={onWidgetStateChange}
+              onWidgetSubmit={onWidgetSubmit}
+            />
+          )
+        })}
 
         {message.isStreaming && (
           <span className="animate-ck-blink inline-block ml-0.5 text-ck-t2" aria-hidden="true">&#9612;</span>
@@ -119,6 +160,12 @@ function ContentBlockView({ block, widgetState, onWidgetStateChange, onWidgetSub
           </pre>
         </details>
       )
+
+    case 'tool_use':
+      return <ToolActivityBlock block={block} />
+
+    case 'thinking':
+      return <ThinkingBlockView block={block} />
 
     default: {
       const customBlock = block as import('@/types/chat').CustomBlock

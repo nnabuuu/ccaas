@@ -10,7 +10,7 @@ import {
 } from './chat'
 import type { SessionContextChip } from '@/types/session-context'
 import type { QuickSuggestion } from '@/types/chat'
-import type { WidgetRegistry, BlockRendererMap } from '@/types/widget'
+import type { WidgetRegistry, BlockRendererMap, ToolRendererMap } from '@/types/widget'
 import type { WidgetCatalogEntry } from '@/widgets/catalog'
 import type { McpBridge } from '@/widgets/mcp-bridge'
 
@@ -25,6 +25,7 @@ export interface ChatInterfaceProps {
   customWidgets?: WidgetRegistry
   customCatalog?: WidgetCatalogEntry[]
   customBlockRenderers?: BlockRendererMap
+  customToolRenderers?: ToolRendererMap
   mcpBridge?: McpBridge
   userId?: string
   sessionId?: string
@@ -40,6 +41,12 @@ export interface ChatInterfaceProps {
   skillPanelOpen?: boolean
   /** External callback when skill panel open state changes */
   onSkillPanelChange?: (open: boolean) => void
+  /** Custom empty state for messages area. Pass null to hide. */
+  emptyState?: React.ReactNode | null
+  /** Disclaimer text below the composer. Pass null to hide. */
+  disclaimer?: React.ReactNode | null
+  /** Placeholder text for the composer input */
+  composerPlaceholder?: string
 }
 
 export function ChatInterface({
@@ -53,6 +60,7 @@ export function ChatInterface({
   customWidgets,
   customCatalog,
   customBlockRenderers,
+  customToolRenderers,
   mcpBridge,
   userId,
   sessionId,
@@ -63,6 +71,9 @@ export function ChatInterface({
   hideSkillToggle,
   skillPanelOpen,
   onSkillPanelChange,
+  emptyState,
+  disclaimer,
+  composerPlaceholder,
 }: ChatInterfaceProps) {
   return (
     <ChatInterfaceRoot
@@ -74,6 +85,7 @@ export function ChatInterface({
       customWidgets={customWidgets}
       customCatalog={customCatalog}
       customBlockRenderers={customBlockRenderers}
+      customToolRenderers={customToolRenderers}
       mcpBridge={mcpBridge}
       userId={userId}
       sessionId={sessionId}
@@ -94,9 +106,9 @@ export function ChatInterface({
             trailing={contextBarTrailing}
             hideSkillToggle={hideSkillToggle}
           />
-          <ChatInterfaceMessages />
+          <ChatInterfaceMessages emptyState={emptyState === null ? <></> : emptyState} />
           <ChatInterfaceQuickSuggestions />
-          <ChatInterfaceComposer />
+          <ChatInterfaceComposer disclaimer={disclaimer} placeholder={composerPlaceholder} />
         </>
       )}
     </ChatInterfaceRoot>
