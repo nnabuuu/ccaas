@@ -1,0 +1,38 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]:
+        - button "New chat" [ref=e18] [cursor=pointer]:
+          - img [ref=e19]
+          - generic [ref=e20]: New chat
+        - button "收起侧栏" [ref=e21] [cursor=pointer]:
+          - img [ref=e22]
+      - generic [ref=e24]:
+        - generic:
+          - img
+        - textbox "Search" [ref=e25]
+    - generic [ref=e27]: No chat history yet
+    - button "Skills" [ref=e29] [cursor=pointer]:
+      - img [ref=e30]
+      - generic [ref=e32]: Skills
+    - generic [ref=e33]:
+      - generic [ref=e34]: 八(2)班
+      - generic [ref=e35]: 数学
+      - generic [ref=e36]: 树人中学
+    - button "User menu" [ref=e38] [cursor=pointer]:
+      - generic [ref=e39]: 张
+      - generic [ref=e40]:
+        - generic [ref=e41]: 张老师
+        - img [ref=e42]
+  - generic [ref=e46]:
+    - region "Notifications alt+T"
+    - log [ref=e47]
+    - generic [ref=e50]:
+      - textbox "Message input" [active] [ref=e51]:
+        - /placeholder: 输入你的需求，或点击上方快捷操作...
+        - text: 分析八(2)班数学学情
+      - generic:
+        - button "Select skill" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+        - button "Send" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]

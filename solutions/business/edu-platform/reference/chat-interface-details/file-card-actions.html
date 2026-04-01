@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: File Card + Next Actions</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--coral-bg:#FAECE7;--coral-t:#712B13;--teal-bg:#E1F5EE;--teal-t:#085041;--purple-bg:#EEEDFE;--purple-t:#3C3489;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+.section{margin-bottom:24px}
+.section-title{font-size:12px;font-weight:500;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.3px}
+
+/* File Card */
+.file-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border:.5px solid var(--b1);border-radius:var(--r);margin-bottom:8px;background:var(--bg1);cursor:pointer;transition:all .15s}
+.file-card:hover{background:var(--bg2);border-color:rgba(0,0,0,.18)}
+.file-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.file-icon.docx{background:var(--info-bg);color:var(--info-t)}
+.file-icon.pdf{background:var(--coral-bg);color:var(--coral-t)}
+.file-icon.pptx{background:var(--teal-bg);color:var(--teal-t)}
+.file-icon.xlsx{background:var(--purple-bg);color:var(--purple-t)}
+.file-info{flex:1;min-width:0}
+.file-name{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-meta{font-size:11px;color:var(--t2);margin-top:2px}
+.file-size{font-size:11px;color:var(--t3);flex-shrink:0}
+
+/* Next Actions */
+.next-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.action-btn{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.action-btn:hover{background:var(--bg2)}
+.action-btn.primary{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.action-btn.primary:hover{opacity:.9}
+
+/* Skill Tag */
+.skill-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:10px;margin-bottom:8px}
+.skill-tag.green{background:#EAF3DE;color:#27500A}
+.skill-tag.blue{background:var(--info-bg);color:var(--info-t)}
+.skill-tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>File Card + Next Actions + Skill Tag 组件</h3>
+<p>文件输出卡片（不同类型不同颜色）、后续操作按钮、Skill 激活标签。<br>这些是 Chat 消息流中最常出现的小组件。</p>
+
+<div class="section">
+  <div class="section-title">Skill Tag (激活标签)</div>
+  <div class="skill-tag green"><span class="dot"></span>备课助手</div>
+  <div class="skill-tag green" style="margin-left:6px"><span class="dot"></span>出题组卷</div>
+  <div class="skill-tag blue" style="margin-left:6px"><span class="dot"></span>学情分析</div>
+</div>
+
+<div class="section">
+  <div class="section-title">File Cards (不同类型)</div>
+  <div class="file-card">
+    <div class="file-icon docx">.docx</div>
+    <div class="file-info">
+      <div class="file-name">12.2 三角形全等的判定 — 教案</div>
+      <div class="file-meta">新授课 · 45 分钟 · 含课件建议</div>
+    </div>
+    <span class="file-size">24 KB</span>
+  </div>
+  <div class="file-card">
+    <div class="file-icon pdf">.pdf</div>
+    <div class="file-info">
+      <div class="file-name">全等三角形判定 — 随堂检测 (参考答案)</div>
+      <div class="file-meta">5 题 · 含逐题解析和易错点提示</div>
+    </div>
+    <span class="file-size">18 KB</span>
+  </div>
+  <div class="file-card">
+    <div class="file-icon pptx">.pptx</div>
+    <div class="file-info">
+      <div class="file-name">12.2 三角形全等的判定 — 教学课件</div>
+      <div class="file-meta">14 页 · 含动画演示</div>
+    </div>
+    <span class="file-size">1.2 MB</span>
+  </div>
+  <div class="file-card">
+    <div class="file-icon xlsx">.xlsx</div>
+    <div class="file-info">
+      <div class="file-name">八(2)班 第14周 学情数据</div>
+      <div class="file-meta">43 名学生 · 5 次作业 · 含知识点分析</div>
+    </div>
+    <span class="file-size">36 KB</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Next Actions (后续操作)</div>
+  <p style="font-size:13px;color:var(--t1);margin-bottom:10px">已生成教案，SSS 判定部分安排了 15 分钟专项练习。</p>
+  <div class="next-actions">
+    <button class="action-btn">配套练习题</button>
+    <button class="action-btn">调整教案</button>
+    <button class="action-btn">生成课件</button>
+  </div>
+  <div style="height:16px"></div>
+  <p style="font-size:13px;color:var(--t1);margin-bottom:10px">已导出试卷，5 道选择题，总分 20 分。</p>
+  <div class="next-actions">
+    <button class="action-btn">生成答题卡</button>
+    <button class="action-btn">调整难度重新出题</button>
+    <button class="action-btn primary">加入期中试卷</button>
+  </div>
+</div>
+</div>
+</body>
+</html>

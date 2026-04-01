@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: ReviewPanel</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--danger-bg:#FCEBEB;--danger-t:#A32D2D;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+.widget{border:.5px solid var(--b1);border-radius:var(--rl);background:var(--bg1);overflow:hidden}
+.wh{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:.5px solid var(--b1)}
+.wt{font-size:13px;font-weight:600}
+.wb{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--info-bg);color:var(--info-t)}
+.wd{padding:14px}
+.item{border:.5px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:10px;background:var(--bg1);transition:border-color .15s}
+.item.kept{border-color:var(--success-t);background:rgba(234,243,222,.3)}
+.item.replaced{border-color:var(--warn-t);background:rgba(250,238,218,.3)}
+.item.removed{opacity:.4;text-decoration:line-through}
+.q{font-size:13px;line-height:1.7;margin-bottom:10px}
+.q .num{font-weight:600;margin-right:4px}
+.meta{display:flex;gap:6px;font-size:11px;color:var(--t3);margin-bottom:10px;flex-wrap:wrap}
+.meta span{padding:2px 8px;background:var(--bg2);border-radius:4px}
+.meta .src-bank{background:var(--info-bg);color:var(--info-t)}
+.meta .src-ai{background:var(--warn-bg);color:var(--warn-t)}
+.acts{display:flex;gap:6px}
+.acts button{font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.acts button:hover{background:var(--bg2)}
+.acts button.keep{background:var(--success-bg);color:var(--success-t);border-color:transparent}
+.acts button.replace{background:var(--warn-bg);color:var(--warn-t);border-color:transparent}
+.acts button.remove{background:var(--danger-bg);color:var(--danger-t);border-color:transparent}
+.acts button.active{outline:2px solid currentColor;outline-offset:1px}
+.footer{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:.5px solid var(--b1)}
+.counter{font-size:12px;color:var(--t2)}
+.counter b{font-weight:600;color:var(--t1)}
+.footer-actions{display:flex;gap:6px}
+.btn{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit}
+.btn.pri{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>ReviewPanel 组件</h3>
+<p>逐项审核面板。用于试卷审核（逐题保留/替换/微调/删除）或教案审核。<br>每项独立操作，底部统计审核进度。标注题目来源（题库 vs AI 原创）。</p>
+
+<div class="widget">
+  <div class="wh"><span class="wt">试题审核</span><span class="wb">ReviewPanel</span></div>
+  <div class="wd" id="items"></div>
+</div>
+</div>
+
+<script>
+const questions=[
+  {id:1,q:'在 △ABC 和 △DEF 中，AB=DE, BC=EF, AC=DF，则 △ABC ≌ △DEF 的判定依据是（　）\nA. SAS　B. SSS　C. ASA　D. AAS',kp:'SSS 判定',diff:0.45,src:'bank',status:null},
+  {id:2,q:'已知 △ABC 中，∠A=50°, AB=6cm, BC=8cm。要使 △DEF ≌ △ABC，下列条件中不充分的是（　）\nA. ∠D=50°, DE=6, EF=8　B. DF=AC, DE=6, ∠D=50°　C. EF=8, ∠E=∠B, DE=6　D. ∠D=50°, ∠E=∠B, DE=6',kp:'SAS 综合',diff:0.62,src:'ai',status:null},
+  {id:3,q:'如图，AB=CD, AD=CB，则 △ABD ≌ △CDB 的依据是（　）\nA. SSS　B. SAS　C. ASA　D. 无法判断',kp:'SSS 判定',diff:0.48,src:'bank',status:null},
+  {id:4,q:'在 △ABC 中，D 是 BC 的中点，且 AD⊥BC。若 BD=3, AD=4，则 △ABD ≌ △ACD 的依据是（　）\nA. SSS　B. SAS　C. HL　D. ASA',kp:'SAS 判定',diff:0.55,src:'bank',status:null},
+  {id:5,q:'下列条件中，不能判定两个三角形全等的是（　）\nA. 三边对应相等　B. 三角对应相等　C. 两边及夹角对应相等　D. 两角及其夹边对应相等',kp:'综合判断',diff:0.58,src:'ai',status:null},
+];
+
+function render(){
+  const kept=questions.filter(q=>q.status==='keep').length;
+  const total=questions.length;
+  let h='';
+  questions.forEach((q,i)=>{
+    const cls=q.status==='keep'?'kept':q.status==='replace'?'replaced':q.status==='remove'?'removed':'';
+    h+=`<div class="item ${cls}">
+      <div class="q"><span class="num">${q.id}.</span>${q.q.replace(/\n/g,'<br>')}</div>
+      <div class="meta">
+        <span>${q.kp}</span>
+        <span>难度 ${q.diff}</span>
+        <span class="${q.src==='bank'?'src-bank':'src-ai'}">${q.src==='bank'?'题库':'AI 原创'}</span>
+      </div>
+      <div class="acts">
+        <button class="keep${q.status==='keep'?' active':''}" onclick="setStatus(${i},'keep')">保留</button>
+        <button class="replace${q.status==='replace'?' active':''}" onclick="setStatus(${i},'replace')">替换</button>
+        <button onclick="alert('微调: 弹出编辑框修改题目文本')">微调</button>
+        <button class="remove${q.status==='remove'?' active':''}" onclick="setStatus(${i},'remove')">删除</button>
+      </div>
+    </div>`;
+  });
+  h+=`<div class="footer">
+    <div class="counter"><b>${kept}</b> / ${total} 题已确认</div>
+    <div class="footer-actions">
+      <button class="btn" onclick="questions.forEach(q=>q.status='keep');render()">全部保留</button>
+      <button class="btn pri" onclick="alert('submitToEngine: 提交审核结果')">确认组卷 &#8599;</button>
+    </div>
+  </div>`;
+  document.getElementById('items').innerHTML=h;
+}
+function setStatus(i,s){questions[i].status=questions[i].status===s?null:s;render()}
+render();
+</script>
+</body>
+</html>

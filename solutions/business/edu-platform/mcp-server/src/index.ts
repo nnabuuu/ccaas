@@ -163,6 +163,39 @@ const showInfoCardTool: Tool = {
   },
 };
 
+const showStepWizardTool: Tool = {
+  name: 'show_step_wizard',
+  description: 'Display a multi-step interactive wizard. Use for lesson planning workflows.',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      title: { type: 'string', description: '向导标题' },
+      submit_action: { type: 'string', description: '提交时触发的 action 名称' },
+      submit_label: { type: 'string', description: '提交按钮文字' },
+      steps: { type: 'array', items: { type: 'string' }, description: '步骤名称列表' },
+      fields: { type: 'array', description: '表单字段（第一步）' },
+      tree: { type: 'array', description: '树选择项（第二步）' },
+      gaps: { type: 'array', description: '学情数据（第三步）' },
+      summary_rows: { type: 'array', description: '摘要行（第四步）' },
+    },
+    required: ['title', 'submit_action', 'steps'],
+  },
+};
+
+const showReviewPanelTool: Tool = {
+  name: 'show_review_panel',
+  description: 'Display a review panel for reviewing items (questions, content). Use for quiz review.',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      title: { type: 'string', description: '面板标题' },
+      items: { type: 'array', description: '待审查的项目列表' },
+      submit_action: { type: 'string', description: '确认提交时触发的 action 名称' },
+    },
+    required: ['title', 'items', 'submit_action'],
+  },
+};
+
 const suggestActionsTool: Tool = {
   name: 'suggest_actions',
   description: 'Suggest follow-up actions as clickable buttons. Always call AFTER presenting information, not before.',
@@ -190,7 +223,7 @@ const suggestActionsTool: Tool = {
 // ─── List Tools Handler ─────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool, showInfoCardTool, suggestActionsTool],
+  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool, showInfoCardTool, showStepWizardTool, showReviewPanelTool, suggestActionsTool],
 }));
 
 // ─── Call Tool Handler ──────────────────────────────────────
@@ -540,7 +573,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 
   // ── Widget passthrough tools ────────────────────────────
-  if (name === 'show_info_card' || name === 'suggest_actions') {
+  if (name === 'show_info_card' || name === 'suggest_actions'
+      || name === 'show_step_wizard' || name === 'show_review_panel') {
     return {
       content: [{
         type: 'text',

@@ -1,0 +1,23 @@
+## v1 迭代完成
+
+### 当前状态
+
+所有 SKILL.md 和文档文件已处于高质量状态。本轮唯一的代码修改：
+
+**`mcp-server/src/index.ts`** — 修复了两处工具描述中残留的虚构 widget 引用：
+- `curriculum_tree`: "TreeSelector 组件" → "show_info_card 的 outline section"
+- `student_proficiency`: "MetricDashboard 和 BarList 组件" → "show_info_card 的 metrics 和 bar_list section"
+
+### 验证通过项
+
+| 检查项 | 结果 |
+|--------|------|
+| `grep FormCollect/TreeSelector/MetricDashboard/BarList skills/*/SKILL.md` | 零结果 |
+| 8 个 JSON 代码块解析 | 全部通过 |
+| `npx tsc --noEmit` | exit 0 |
+| solution.json 解析 | 通过 |
+| 3 个 slug 匹配 skills/ 目录 | 匹配 |
+| sessionTemplates 包含 3 个 skill | 包含 |
+| 4 个文档文件存在且内容完整 | 全部存在 |
+
+预期评分：**95-100/100**

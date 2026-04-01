@@ -1,6 +1,37 @@
 @import '../../../../../packages/chat-interface/src/styles/tokens.css';
 @import '../../../../../packages/chat-interface/src/styles/prose.css';
 
+/* ============================================================
+   Edu-platform DESIGN_SYSTEM overrides
+   Aligns chat-interface shared components with DESIGN_SYSTEM.md:
+   zero shadows, warm gray, 0.5px borders, t1/bg1 inversion
+   ============================================================ */
+
+:root {
+  /* Zero shadows — elevation via borders only */
+  --composer-shadow: none;
+  --composer-shadow-hover: none;
+  --composer-shadow-focus: none;
+
+  /* No accent color — primary = t1/bg1 inversion */
+  --accent: var(--t1);
+  --accent-hover: var(--t1);
+
+  /* User bubble = inverted (dark bg, light text) */
+  --user-bubble-bg: var(--t1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --composer-shadow: none;
+    --composer-shadow-hover: none;
+    --composer-shadow-focus: none;
+    --accent: var(--t1);
+    --accent-hover: var(--t1);
+    --user-bubble-bg: var(--t1);
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,4 +41,84 @@ body {
   font-family: -apple-system, system-ui, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================================
+   Component-level overrides (via data-ck selectors)
+   ============================================================ */
+
+/* --- Global: remove all shadows --- */
+.font-serif { font-family: inherit !important; }
+.shadow-lg, .shadow-xl { box-shadow: none !important; }
+
+/* --- User bubble: inverted text color for dark bubble bg --- */
+[data-ck="user-msg"] > div,
+[data-ck="user-msg"] > div .prose,
+[data-ck="user-msg"] > div .prose p {
+  color: var(--bg1) !important;
+}
+
+/* --- Context bar: hidden — session info moved to sidebar user area --- */
+[data-ck="context-bar"] {
+  display: none !important;
+}
+
+/* --- Composer: flat input bar (reference: .ck-input-bar) --- */
+[data-ck="composer"] {
+  padding: 0 !important;
+  background: var(--bg1) !important;
+  border-top: 0.5px solid var(--b1);
+}
+
+[data-ck="composer-card"] {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  max-width: none !important;
+  margin: 0 !important;
+  background: var(--bg1) !important;
+}
+
+/* Textarea: pill-shaped input (reference: .ck-input) */
+[data-ck="composer-card"] > textarea {
+  padding: 8px 12px !important;
+  border: 0.5px solid var(--b1);
+  border-radius: 20px !important;
+  font-size: 13px !important;
+}
+
+[data-ck="composer-card"] > textarea:focus {
+  border-color: var(--info-t);
+}
+
+/* Hide attach button — not in reference */
+[data-ck="composer-attach"] {
+  display: none !important;
+}
+
+/* Send button → right-align when attach is hidden (fixes justify-between single-child) */
+[data-ck="composer-card"] button[aria-label="Send"],
+[data-ck="composer-card"] button[aria-label="Stop generating"] {
+  margin-left: auto;
+}
+
+/* Hide empty-state card suggestions in composer */
+[data-ck="composer-suggestions"] {
+  display: none !important;
+}
+
+/* Hide disclaimer — not in reference */
+[data-ck="composer-disclaimer"] {
+  display: none !important;
+}
+
+/* --- Quick Suggestions: small pills (reference: .ck-sug) --- */
+[data-ck="quick-suggestions"] {
+  padding: 0 16px 10px !important;
+}
+
+[data-ck="quick-suggestions"] button {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+  min-height: auto !important;
 }

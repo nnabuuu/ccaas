@@ -22,6 +22,7 @@ export interface EduAuth {
   register: (data: { username: string; password: string; name: string; school?: string }) => Promise<void>
   logout: () => void
   isLoading: boolean
+  validating: boolean
   error: string | null
 }
 
@@ -41,6 +42,36 @@ export function useEduAuth(): EduAuth {
   const [user, setUser] = useState<EduUser | null>(() => loadFromStorage<EduUser>(STORAGE_KEY_USER))
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [validating, setValidating] = useState(() => !!localStorage.getItem(STORAGE_KEY_JWT))
+
+  // Validate stored token on mount
+  useEffect(() => {
+    const storedToken = localStorage.getItem(STORAGE_KEY_JWT)
+    if (!storedToken) {
+      setValidating(false)
+      return
+    }
+    fetch(`${SOLUTION_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${storedToken}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('invalid')
+        return res.json()
+      })
+      .then(data => {
+        setUser(data.user)
+        setValidating(false)
+      })
+      .catch(() => {
+        setToken(null)
+        setCcaasApiKey(null)
+        setUser(null)
+        localStorage.removeItem(STORAGE_KEY_JWT)
+        localStorage.removeItem(STORAGE_KEY_CCAAS)
+        localStorage.removeItem(STORAGE_KEY_USER)
+        setValidating(false)
+      })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync state → localStorage
   useEffect(() => {
@@ -114,5 +145,5 @@ export function useEduAuth(): EduAuth {
     localStorage.removeItem(STORAGE_KEY_USER)
   }, [])
 
-  return { token, ccaasApiKey, user, login, register, logout, isLoading, error }
+  return { token, ccaasApiKey, user, login, register, logout, isLoading, validating, error }
 }

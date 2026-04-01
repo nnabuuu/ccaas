@@ -4,6 +4,7 @@ import { DatabaseModule } from './database/database.module';
 import { CurriculumModule } from './curriculum/curriculum.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { SolutionRegisterService } from './solution-register.service';
 
 @Module({
   imports: [
@@ -16,5 +17,6 @@ import { AuthModule } from './auth/auth.module';
     UsersModule,
     AuthModule,
   ],
+  providers: [SolutionRegisterService],
 })
 export class AppModule {}

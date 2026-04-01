@@ -99,6 +99,16 @@ export class AuthService {
     };
   }
 
+  async getProfile(userId: string) {
+    const user = this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return {
+      user: { id: user.id, name: user.name, username: user.username, school: user.school },
+    };
+  }
+
   private signToken(userId: string, username: string): string {
     return this.jwtService.sign({ sub: userId, username });
   }

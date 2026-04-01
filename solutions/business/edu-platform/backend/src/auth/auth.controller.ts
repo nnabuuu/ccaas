@@ -1,6 +1,7 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { IsString, MinLength, MaxLength, Matches, IsOptional } from 'class-validator';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 class LoginDto {
   @IsString()
@@ -52,5 +53,11 @@ export class AuthController {
       name: dto.name,
       school: dto.school,
     });
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async me(@Request() req: { user: { sub: string; username: string } }) {
+    return this.authService.getProfile(req.user.sub);
   }
 }
