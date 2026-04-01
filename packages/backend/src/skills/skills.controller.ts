@@ -30,31 +30,33 @@ import { TenantGuard } from '../tenants/tenant.guard';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { ParseIdOrSlugPipe } from '../common/pipes/parse-id-or-slug.pipe';
 import { SkillPermissionGuard } from './guards/skill-permission.guard';
-import { CurrentUser, type CurrentUserData } from '../auth/decorators';
-import { ApiKeyGuard } from '../auth/guards/api-key.guard';
+import { OptionalAuth, Auth, CurrentUser, type CurrentUserData } from '../auth/decorators';
 
 @ApiTags('skills')
 @Controller('api/v1/skills')
-@UseGuards(ApiKeyGuard, TenantGuard, SkillPermissionGuard)
 export class SkillsController {
   constructor(private readonly skillsService: SkillsService) {}
 
   /**
-   * List all skills for the tenant
+   * List all skills for the tenant (anonymous read allowed)
    */
   @Get()
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @OptionalAuth()
   async findAll(
     @CurrentTenant() tenantId: string,
     @Query() query: ListSkillsDto,
     @CurrentUser() currentUser: CurrentUserData,
   ) {
-    return this.skillsService.findAll(tenantId, query, currentUser.userId);
+    return this.skillsService.findAll(tenantId, query, currentUser?.userId);
   }
 
   /**
-   * Create a new skill
+   * Create a new skill (requires auth)
    */
   @Post()
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async create(
     @CurrentTenant() tenantId: string,
     @Body() dto: CreateSkillDto,
@@ -64,9 +66,11 @@ export class SkillsController {
   }
 
   /**
-   * Get a skill by ID or slug (includes files metadata)
+   * Get a skill by ID or slug (anonymous read allowed)
    */
   @Get(':id')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @OptionalAuth()
   async findOne(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -92,6 +96,8 @@ export class SkillsController {
    * Update a skill
    */
   @Put(':id')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async update(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -104,6 +110,8 @@ export class SkillsController {
    * Archive (soft delete) a skill
    */
   @Delete(':id')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async remove(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -116,6 +124,8 @@ export class SkillsController {
    * Publish a skill
    */
   @Post(':id/publish')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async publish(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -127,6 +137,8 @@ export class SkillsController {
    * Unpublish a skill (set status back to draft)
    */
   @Post(':id/unpublish')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async unpublish(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -138,6 +150,8 @@ export class SkillsController {
    * List versions of a skill
    */
   @Get(':id/versions')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @OptionalAuth()
   async listVersions(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -153,6 +167,8 @@ export class SkillsController {
    * Create a new version
    */
   @Post(':id/versions')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async createVersion(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -169,6 +185,8 @@ export class SkillsController {
    * Rollback to a specific version
    */
   @Post(':id/rollback/:version')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async rollback(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -181,6 +199,8 @@ export class SkillsController {
    * Toggle skill enabled/disabled state
    */
   @Patch(':id/toggle')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async toggle(
     @CurrentTenant() tenantId: string,
     @Param('id', ParseIdOrSlugPipe) id: string,
@@ -196,6 +216,8 @@ export class SkillsController {
    * List all files for a skill (metadata only, no content)
    */
   @Get(':id/files')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @OptionalAuth()
   async listFiles(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -218,6 +240,8 @@ export class SkillsController {
    * Get a single file with content
    */
   @Get(':id/files/:fileId')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @OptionalAuth()
   async getFile(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -238,6 +262,8 @@ export class SkillsController {
    * Batch upsert files for a skill
    */
   @Put(':id/files')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async upsertFiles(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,
@@ -254,6 +280,8 @@ export class SkillsController {
    * Delete a single file by relativePath
    */
   @Delete(':id/files/:relativePath(*)')
+  @UseGuards(TenantGuard, SkillPermissionGuard)
+  @Auth('skills:write')
   async deleteFile(
     @CurrentTenant() tenantId: string,
     @Param('id') id: string,

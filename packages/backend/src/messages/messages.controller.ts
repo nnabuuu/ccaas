@@ -586,12 +586,15 @@ export class MessagesController {
 
   /**
    * Get persisted session events (output_update, agent_status, etc.)
-   * GET /api/v1/sessions/:sessionId/events
+   * GET /api/v1/sessions/:sessionId/event-log
+   *
+   * Renamed from /events to /event-log to avoid route conflict with
+   * SessionsController GET /sessions/:id/events (SSE push stream).
    */
-  @Get('sessions/:sessionId/events')
+  @Get('sessions/:sessionId/event-log')
   @OptionalAuth()
   @ApiOperation({
-    summary: '获取会话事件 / Get Session Events',
+    summary: '获取会话事件日志 / Get Session Event Log',
     description: '获取持久化的会话事件（如 output_update、agent_status 等），用于恢复历史会话的结构化数据 / Get persisted session events for historical session reconstruction',
   })
   @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
