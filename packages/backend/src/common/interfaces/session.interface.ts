@@ -87,6 +87,17 @@ export interface SessionStats {
 }
 
 /**
+ * Pending control_request from CLI (e.g. AskUserQuestion awaiting user input)
+ */
+export interface PendingControlRequest {
+  requestId: string;
+  toolName: string;
+  toolInput: Record<string, unknown>;
+  createdAt: number;
+  sessionId: string;
+}
+
+/**
  * Token accumulator for session metrics
  */
 export interface TokenAccumulator {

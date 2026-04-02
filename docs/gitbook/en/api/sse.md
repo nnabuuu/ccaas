@@ -222,6 +222,41 @@ chat.sendMessage('Analyze this data', { autoClose: true })
 
 ---
 
+## POST /control-response — Submit Wizard Answer
+
+When the AI uses `AskUserQuestion`, the CLI pauses and the frontend receives a `tool_activity(start)` event with the question payload. After the user completes the wizard or answers the question, submit the response via this endpoint.
+
+### Request
+
+```
+POST /api/v1/sessions/:sessionId/control-response
+Content-Type: application/json
+```
+
+```json
+{
+  "requestId": "ctrl_req_abc123",
+  "answers": {
+    "question_key": "selected_answer"
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requestId` | string | ✅ | The request ID from the `tool_activity` event's `toolInput.requestId` |
+| `answers` | Record\<string, string\> | ✅ | Key-value map of user answers (values must be strings, max 10KB each) |
+
+### Response
+
+```json
+{ "success": true, "sessionId": "my-session", "requestId": "ctrl_req_abc123" }
+```
+
+After submission, the CLI resumes and the LLM receives the structured answers as JSON.
+
+---
+
 ## Event Reference
 
 All events share the same base structure:

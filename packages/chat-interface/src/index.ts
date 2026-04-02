@@ -73,6 +73,10 @@ export { mergeRegistries, mergeCatalogs } from './widgets/merge'
 export { createMockMcpBridge, createMcpBridge } from './widgets/mcp-bridge'
 export type { McpBridge } from './widgets/mcp-bridge'
 
+// === Wizard Framework ===
+export { WizardRenderer, registerWizard, getWizardConfig, hasWizard, findWizardByHeaders } from './components/wizard'
+export type { WizardConfig, WizardStep, FormFieldConfig, WizardAnswers, StepProps, RegisterWizardOptions } from './components/wizard'
+
 // === Widget Components ===
 export { StepWizard } from './widgets/components/StepWizard'
 export { FormCollect } from './widgets/components/FormCollect'

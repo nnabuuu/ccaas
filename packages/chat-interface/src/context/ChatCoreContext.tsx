@@ -49,7 +49,9 @@ export interface ChatCoreContextValue {
   quickSuggestions: QuickSuggestion[]
   serverUrl: string
   tenantId: string
+  sessionId?: string
   apiKey?: string
+  sessionContext?: Record<string, unknown>
 }
 
 export interface ChatCoreProviderProps {
@@ -129,7 +131,7 @@ export function ChatCoreProvider({
 
   // Convert react-sdk messages to ChatMessage format
   useEffect(() => {
-    const converted: ChatMessage[] = messages.map((msg) => {
+    const converted: ChatMessage[] = messages.map((msg, msgIdx) => {
       const contentText = msg.content || ''
       const isStreaming = msg.isStreaming ?? false
 
@@ -145,9 +147,91 @@ export function ChatCoreProvider({
       )
         ? (rawBlocks as Array<{ type: string; text?: string; content?: string; thinkingId?: string; isComplete?: boolean; tool?: { toolName: string; toolId: string; toolInput?: unknown; toolOutput?: unknown; toolError?: string; description?: string; success?: boolean; duration?: number; phase: string } }>)
         : undefined
+      // Extract tool events from historical messages (when includeToolEvents=true)
+      const rawToolEvents = 'toolEvents' in msg ? (msg as unknown as Record<string, unknown>).toolEvents : undefined
+      const toolEventsArr = Array.isArray(rawToolEvents) ? rawToolEvents : undefined
+
       if (msg.role === 'assistant' && sdkBlocks && sdkBlocks.length > 0) {
         // Tool-as-Widget path: build interleaved text + widget blocks from SDK contentBlocks
         const result = buildContentBlocksFromSdkBlocks(sdkBlocks, isStreaming)
+        contentBlocks = result.contentBlocks
+        nextActions = result.nextActions
+      } else if (msg.role === 'assistant' && toolEventsArr && toolEventsArr.length > 0) {
+        // Historical message path: reconstruct contentBlocks from persisted toolEvents
+        const reconstructed: Array<{
+          type: string
+          text?: string
+          tool?: {
+            toolName: string; toolId: string; toolInput?: unknown; toolOutput?: unknown
+            toolError?: string; description?: string; success?: boolean; duration?: number; phase: string
+          }
+        }> = []
+        if (contentText) {
+          reconstructed.push({ type: 'text', text: contentText })
+        }
+        // Deduplicate by toolUseId, preferring 'end' events over 'start'.
+        // Some interactive tools (e.g. AskUserQuestion) may only have a 'start' event
+        // if the backend doesn't emit an explicit 'end'. Including them ensures the
+        // widget renders in historical messages instead of disappearing.
+        const toolEventMap = new Map<string, Record<string, unknown>>()
+        for (const te of toolEventsArr) {
+          const evt = te as Record<string, unknown>
+          const id = (evt.toolUseId ?? evt.id ?? '') as string
+          const phase = evt.phase as string
+          const existing = toolEventMap.get(id)
+          if (!existing || phase === 'end') {
+            toolEventMap.set(id, evt)
+          }
+        }
+
+        // Look ahead: if next message is a user response, use it to synthesize
+        // toolOutput for interactive tools that lack an explicit 'end' event
+        const nextMsg = messages[msgIdx + 1]
+        const nextUserContent = (nextMsg && (nextMsg as unknown as Record<string, unknown>).role === 'user')
+          ? ((nextMsg as unknown as Record<string, unknown>).content as string || '')
+          : ''
+
+        for (const evt of toolEventMap.values()) {
+          const toolName = evt.toolName as string
+          let toolOutput = evt.toolOutput as unknown
+
+          // For AskUserQuestion without proper toolOutput, derive answers from user's reply.
+          // Backend sets toolOutput to a string like "Answer questions?" which isn't usable;
+          // we need an { answers: {...} } object. Synthesize from next user message.
+          const needsAnswerSynthesis = toolName === 'AskUserQuestion'
+            && (!toolOutput || typeof toolOutput === 'string')
+            && nextUserContent && nextUserContent.includes('·')
+          if (needsAnswerSynthesis) {
+            const input = evt.toolInput as Record<string, unknown> | undefined
+            const questions = Array.isArray(input?.questions) ? input.questions as Array<Record<string, unknown>> : []
+            if (questions.length > 0) {
+              const parts = nextUserContent.split(/\s*·\s*/)
+              const answers: Record<string, string> = {}
+              questions.forEach((q, i) => {
+                if (parts[i] && typeof q.question === 'string') {
+                  answers[q.question] = parts[i].trim()
+                }
+              })
+              if (Object.keys(answers).length > 0) {
+                toolOutput = { answers }
+              }
+            }
+          }
+
+          reconstructed.push({
+            type: 'tool',
+            tool: {
+              toolName,
+              toolId: (evt.toolUseId ?? evt.id ?? '') as string,
+              phase: 'end', // Historical: always treat as completed
+              toolInput: evt.toolInput as unknown,
+              toolOutput,
+              success: (evt.success as boolean | undefined) ?? undefined,
+              duration: (evt.durationMs as number | undefined) ?? undefined,
+            },
+          })
+        }
+        const result = buildContentBlocksFromSdkBlocks(reconstructed, false)
         contentBlocks = result.contentBlocks
         nextActions = result.nextActions
       } else if (msg.role === 'assistant' && contentText) {
@@ -304,7 +388,9 @@ export function ChatCoreProvider({
     quickSuggestions,
     serverUrl,
     tenantId,
+    sessionId: externalSessionId,
     apiKey,
+    sessionContext,
   }), [
     connection.sessionReady,
     chatMessages,
@@ -326,7 +412,9 @@ export function ChatCoreProvider({
     quickSuggestions,
     serverUrl,
     tenantId,
+    externalSessionId,
     apiKey,
+    sessionContext,
   ])
 
   return (

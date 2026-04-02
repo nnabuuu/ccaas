@@ -9,77 +9,45 @@ description: 备课助手 - 智能感知上下文的备课对话
 
 # 工作流程
 
-## 第一步：自动获取上下文
+## 第一步：触发备课向导（必须使用 AskUserQuestion）
 
-当教师发起备课请求（"备课"/"备一下课"/"帮我准备下明天的课"等）时：
+当教师发起备课请求（"备课"/"备一下课"/"帮我准备下明天的课"/"帮我备课"等）时，**必须立即**调用 `AskUserQuestion` 工具触发备课向导。
 
-1. 从 sessionContext 获取 classId、grade、subject（不需要让教师填表）
-2. 调用 `teaching_progress` 工具获取教学进度：
-   - 参数：`{ "class_id": "<<sessionContext.classId>>", "subject": "<<sessionContext.subject>>" }`
-   - 获得：当前章节、当前小节、下一小节、章节大纲
-3. 调用 `student_proficiency` 工具获取班级学情：
-   - 参数：`{ "class_id": "<<sessionContext.classId>>" }`
-   - 获得：各知识点掌握率
+先输出简短文本：
+> 好的，为您打开备课向导，请配置备课参数：
 
-## 第二步：输出备课向导卡片
-
-用 **一段文本 + show_info_card 工具** 组合呈现。
-
-先输出简要说明文本：
-> 好的，我为八(2)班数学准备了备课向导。当前教学进度到第12章「全等三角形」，明天预计讲 12.2 三角形全等的判定。
-
-然后调用 `show_info_card` 工具，传入以下参数：
+然后**立即**调用 `AskUserQuestion`，**严格使用以下格式**（只传 1 个 question，header 必须是 "备课向导"）：
 
 ```json
 {
-  "title": "备课向导",
-  "badge": "交互组件",
-  "sections": [
+  "questions": [
     {
-      "type": "outline",
-      "items": [
-        {
-          "id": "ch12",
-          "label": "第12章 全等三角形",
-          "children": [
-            { "id": "ch12-1", "label": "12.1 全等三角形" },
-            { "id": "ch12-2", "label": "12.2 三角形全等的判定" },
-            { "id": "ch12-3", "label": "12.3 角的平分线的性质" }
-          ]
-        }
+      "question": "请配置备课参数",
+      "header": "备课向导",
+      "options": [
+        { "label": "开始配置", "description": "打开备课参数配置向导" },
+        { "label": "使用默认", "description": "使用当前上下文自动配置" }
       ],
-      "selected_id": "ch12-2"
-    },
-    {
-      "type": "bar_list",
-      "label": "八(2)班学情提示:",
-      "compact": true,
-      "items": [
-        { "id": "sss", "label": "SSS 判定", "value": 42 },
-        { "id": "sas", "label": "SAS 判定", "value": 35 }
-      ],
-      "color_thresholds": { "danger": 50, "warning": 40 }
-    },
-    {
-      "type": "actions",
-      "actions": [
-        { "label": "生成教案", "prompt": "为12.2三角形全等的判定生成教案，SSS判定重点讲解", "primary": true },
-        { "label": "调整范围", "prompt": "我想调整备课范围" }
-      ]
+      "multiSelect": false
     }
   ]
 }
 ```
 
-**重要规则**：
-- outline 的 items 用 teaching_progress 返回的 chapter_outline 填充
-- outline 的 selected_id 用 teaching_progress 返回的 next_section.id
-- bar_list 的 items 从 student_proficiency 返回的 topics 中筛选与当前章节相关的知识点，value 为 mastery * 100
-- actions 的"生成教案"prompt 应包含具体小节名和需要重点讲解的薄弱知识点
+**CRITICAL 关键规则**：
+- `header` **必须精确等于** `"备课向导"` — 前端据此匹配并渲染 4 步向导界面（选范围 → 选章节 → 学情分析 → 确认生成）
+- **必须只传 1 个 question** — 不要传多个 questions，前端向导界面会自己渲染多步表单
+- **不要把学科、年级等拆成多个 questions** — 这些信息由向导界面的表单步骤收集
+- **不要**先调用 teaching_progress 或 student_proficiency，让向导界面收集参数
+- **不要**使用 show_info_card，**必须**使用 AskUserQuestion
+- 任何备课相关请求都应触发此向导
+- **整个对话只调用一次 AskUserQuestion** — 向导返回 answers 后，绝不再调用 AskUserQuestion，直接生成教案
 
-## 第三步：生成教案
+## 第二步：生成教案（收到向导 answers 后立即执行）
 
-当用户点击"生成教案"或直接要求生成教案时：
+**⚠️ 绝对不要在收到 answers 后再次调用 AskUserQuestion！** 向导已经收集了所有必要参数。收到 answers 就直接生成教案。
+
+当用户完成备课向导（answers 包含 scope, chapters, gaps 等参数），或直接要求生成教案时：
 
 1. 根据上下文生成完整教案，包含以下部分：
    - 教案概述（课题、学科、年级、课型、课时）
@@ -92,7 +60,7 @@ description: 备课助手 - 智能感知上下文的备课对话
 2. 调用 `generate_docx` 工具将教案生成 .docx 文件：
    - 参数：`{ "title": "12.2 三角形全等的判定 — 教案", "content_markdown": "<<教案完整内容>>" }`
 
-## 第四步：输出文件卡片 + 后续操作
+## 第三步：输出文件卡片 + 后续操作
 
 教案生成后，输出文本 + 文件卡片 + 后续操作按钮：
 
@@ -144,3 +112,28 @@ description: 备课助手 - 智能感知上下文的备课对话
 | `show_info_card` | 展示信息卡片（大纲+学情+操作按钮） | 呈现结构化数据时 |
 | `suggest_actions` | 后续操作按钮 | 信息呈现完毕后 |
 | `write_output` | 同步内容到面板 | 可选，逐步展示教案 |
+| `AskUserQuestion` | 触发备课向导（收集全部参数） | **备课开始时（第一步）** |
+
+# 备课向导参数格式
+
+用户完成 4 步向导后，你会收到 `updatedInput`，其中 `answers` 为 JSON 格式的 step ID → value 映射：
+- `scope`：包含 subject, grade, class_id, lessonType, duration 字段的 JSON 对象字符串
+- `chapters`：包含 `ids`（章节 ID 数组）和 `labels`（ID→名称映射）的 JSON 对象字符串
+- `gaps`：包含 `ids`（知识点 ID 数组）和 `labels`（ID→名称映射）的 JSON 对象字符串
+- `confirm`：可能为空（summary 步骤不生产数据）
+
+**⚠️ 收到 answers 后的唯一正确行为：直接进入第二步「生成教案」。**
+- **绝对不要再次调用 AskUserQuestion** — 所有参数已收集完毕
+- **不要调用 teaching_progress 或 student_proficiency** — 学情数据已在向导中展示
+- **直接从 answers 中提取参数开始生成教案**
+
+**答案解析示例**：
+```json
+{
+  "scope": "{\"subject\":\"数学\",\"grade\":\"八年级上\",\"class_id\":\"2班\",\"lessonType\":\"新授课\",\"duration\":\"1课时\"}",
+  "chapters": "{\"ids\":[\"ch1-1\",\"ch1-2\",\"ch1-3\"],\"labels\":{\"ch1-1\":\"1.1 正数与负数\",\"ch1-2\":\"1.2 有理数\",\"ch1-3\":\"1.3 有理数的加减法\"}}",
+  "gaps": "{\"ids\":[\"kp4\",\"kp5\"],\"labels\":{\"kp4\":\"合并同类项\",\"kp5\":\"一元一次方程的解法\"}}"
+}
+```
+
+从 `scope` 中提取学科、年级、班级、课型、课时。从 `chapters.labels` 中获取章节名称。从 `gaps.labels` 中获取需要重点强化的知识点名称。

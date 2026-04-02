@@ -57,9 +57,19 @@ src/
 │   ├── preprocessor.ts        # buildAppendPrompt (see ADR-0012)
 │   ├── postprocessor.ts       # 响应后处理 (widget 路由/MCP 执行)
 │   └── submit-engine.ts       # submitToEngine 实现
+├── components/wizard/
+│   ├── WizardRenderer.tsx       # 通用多步向导渲染器
+│   ├── types.ts                 # WizardConfig/WizardStep 类型
+│   ├── registry.ts              # Wizard 配置注册表 (按 skill slug 查找)
+│   ├── index.ts                 # barrel export
+│   └── steps/
+│       ├── FormStep.tsx         # 表单步骤 (select/text/number)
+│       ├── TreeSelectStep.tsx   # 树形多选步骤
+│       ├── DataReviewStep.tsx   # 数据表格 + emphasis toggle
+│       └── SummaryStep.tsx      # 只读摘要确认
 ├── context/
 │   ├── ChatInterfaceContext.tsx  # Widget/block 注册 (config concern)
-│   └── ChatCoreContext.tsx      # 连接/消息/输入/动作 (runtime concern)
+│   └── ChatCoreContext.tsx      # 连接/消息/输入/动作 (runtime concern, 暴露 sessionId + sessionContext)
 └── widgets/
     ├── catalog.ts             # Widget catalog 定义
     └── mcp-bridge.ts          # MCP 数据源桥接

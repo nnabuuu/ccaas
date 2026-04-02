@@ -72,6 +72,35 @@ interface SkillResponse {
 }
 ```
 
+## AskUserQuestion → Wizard 交互
+
+当 LLM 调用 `AskUserQuestion` 工具时，CLI 暂停并通过 `control_request` 协议发送请求。前端收到 `tool_activity(start)` 事件后渲染交互 UI：
+
+```
+tool_activity(start, toolName='AskUserQuestion', toolInput={questions, requestId})
+  ↓
+前端检查 wizardRegistry 是否有匹配的 Wizard 配置
+  ├── 有 → 渲染 WizardRenderer（多步向导：form / tree-select / data-review / summary）
+  └── 无 → 渲染默认 AskUserQuestion 问答 UI（单选/多选）
+  ↓
+用户完成交互 → POST /sessions/:id/control-response { requestId, answers }
+  ↓
+CLI 恢复，LLM 收到结构化 JSON answers
+```
+
+### Wizard 组件
+
+通用 Wizard 框架位于 `src/components/wizard/`：
+- `WizardRenderer.tsx` — 通用多步向导渲染器（step indicator + navigation）
+- `steps/FormStep.tsx` — 表单步骤（select / text / number）
+- `steps/TreeSelectStep.tsx` — 树形多选步骤
+- `steps/DataReviewStep.tsx` — 数据表格 + emphasis toggle
+- `steps/SummaryStep.tsx` — 只读摘要确认
+- `registry.ts` — Wizard 配置注册表（按 skill slug 查找）
+- `types.ts` — WizardConfig / WizardStep / FormFieldConfig 类型
+
+Solution 通过 `registerWizard(skillSlug, config)` 注册自定义向导配置。
+
 ## 快捷建议
 
 输入框上方快捷按钮由规则引擎动态生成 (不走 LLM):

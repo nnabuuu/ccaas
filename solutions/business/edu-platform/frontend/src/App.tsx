@@ -7,6 +7,9 @@ import {
 } from '@kedge-agentic/chat-interface'
 import type { SidebarSkillItem } from '@kedge-agentic/chat-interface'
 import { customWidgets, customCatalog } from './widget-registry'
+import type { ToolRendererMap } from '@kedge-agentic/chat-interface'
+import { askUserQuestionRenderer, AuqTestHarness } from './components/AskUserQuestionRenderer'
+import './wizards/lesson-plan.wizard'
 import { LoginPage } from './components/LoginPage'
 import { EduEmptyState } from './components/EduEmptyState'
 import { DEFAULT_CLASS } from './data/mock-classes'
@@ -14,6 +17,10 @@ import type { ClassInfo } from './data/mock-classes'
 import { SERVER_URL, TENANT_ID } from './config'
 import { useEduAuth } from './hooks/useEduAuth'
 import type { EduAuth } from './hooks/useEduAuth'
+
+const customToolRenderers: ToolRendererMap = {
+  AskUserQuestion: askUserQuestionRenderer,
+}
 
 const SESSION_REFRESH_DELAY_MS = 1000
 const FIRST_MESSAGE_REFRESH_DELAY_MS = 2000
@@ -24,16 +31,6 @@ const SIDEBAR_SKILLS: SidebarSkillItem[] = [
   { name: '学情分析', iconText: '情', type: 'solution' },
   { name: '错题本生成器', iconText: '错', type: 'custom' },
 ]
-
-function buildSuggestions(cls: ClassInfo) {
-  const grade = cls.grade === '7' ? '七' : cls.grade === '8' ? '八' : '九'
-  return [
-    { label: '备课', prompt: `帮我为${cls.name}备一节${grade}年级${cls.subject}新授课`, category: 'teach', score: 10, groupTitle: '常用操作' },
-    { label: '出题', prompt: `为${cls.name}出一套${cls.subject}随堂测试题`, category: 'quiz', score: 8 },
-    { label: '学情分析', prompt: `分析${cls.name}${cls.subject}学情`, category: 'analysis', score: 6, groupTitle: '学情分析' },
-    { label: '本周学情', prompt: `查看${cls.name}本周${cls.subject}学习情况`, category: 'analysis', score: 4 },
-  ]
-}
 
 /** Wrapper that hooks into ChatCoreContext to provide sendMessage to EduEmptyState */
 function EduEmptyStateConnected({ teacherName, selectedClass }: { teacherName: string; selectedClass: ClassInfo }) {
@@ -53,6 +50,11 @@ function EduEmptyStateConnected({ teacherName, selectedClass }: { teacherName: s
 
 function App() {
   const auth = useEduAuth()
+
+  // Test mode: render AskUserQuestion component standalone (no backend needed)
+  if (import.meta.env.DEV && window.location.search.includes('test=auq')) {
+    return <AuqTestHarness />
+  }
 
   if (auth.validating) return null
 
@@ -87,8 +89,6 @@ function AppShell({ auth }: { auth: EduAuth }) {
     if (key.length <= 6) return `sk-...${key.slice(-2)}`
     return `sk-...${key.slice(-4)}`
   }, [auth.ccaasApiKey])
-
-  const quickSuggestions = useMemo(() => buildSuggestions(selectedClass), [selectedClass])
 
   const handleNewChat = useCallback(() => {
     const freshId = `conv_${crypto.randomUUID()}`
@@ -148,7 +148,6 @@ function AppShell({ auth }: { auth: EduAuth }) {
           serverUrl={SERVER_URL}
           tenantId={TENANT_ID}
           sessionTemplate="lesson-planning"
-          quickSuggestions={quickSuggestions}
           sessionContext={{ classId: selectedClass.id, grade: selectedClass.grade, subject: selectedClass.subject }}
           apiKey={auth.ccaasApiKey ?? undefined}
           sessionId={sessionId}
@@ -162,6 +161,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
           composerPlaceholder="描述你的需求..."
           customWidgets={customWidgets}
           customCatalog={customCatalog}
+          customToolRenderers={customToolRenderers}
         />
       </div>
     </div>

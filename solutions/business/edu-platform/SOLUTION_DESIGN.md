@@ -93,6 +93,14 @@ show_info_card(sections: [metrics(指标), bar_list(掌握率)]) → suggest_act
 当前 Skill 分析完毕 → suggest_actions(skill_hint: "other-skill") → 用户点击 → 切换到目标 Skill
 ```
 
+### Pattern 5: Wizard 多步向导（AskUserQuestion + control_request）
+```
+LLM 调用 AskUserQuestion → CLI 暂停 → 前端渲染 WizardRenderer（多步向导）
+  → 用户完成向导 → POST /control-response → CLI 恢复 → LLM 收到结构化 JSON
+```
+
+备课向导使用此模式：4 步流程（选范围 → 选章节 → 学情分析 → 确认生成），配置注册在 `frontend/src/wizards/lesson-plan.wizard.ts`。
+
 ## 4. 关键文件索引
 
 ### 定义层

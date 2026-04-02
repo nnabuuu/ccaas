@@ -107,6 +107,16 @@ const WIDGET_TOOLS = new Set([
   ...Object.keys(STANDALONE_WIDGET_TOOLS),
 ])
 
+/**
+ * Tools registered via customToolRenderers that must always render inline
+ * (never collapsed inside a ToolGroup).  The postprocessor inserts empty
+ * text separators around these tools' 'end' blocks so that
+ * MessageRenderer.groupBlocks() places them in their own small group.
+ */
+const ALWAYS_VISIBLE_TOOLS = new Set([
+  'AskUserQuestion',
+])
+
 export function isWidgetTool(name: string | undefined): boolean {
   return !!name && WIDGET_TOOLS.has(name)
 }
@@ -180,7 +190,17 @@ export function buildContentBlocksFromSdkBlocks(
           spec: { root: 'w', elements: { w: { type: widgetType, props: input } } },
         })
       } else {
-        // Pass through all other tools as ToolUseBlock
+        // Tools registered via customToolRenderers (e.g. AskUserQuestion) must
+        // render inline — not collapsed inside a ToolGroup.  Insert empty text
+        // separators around their block so MessageRenderer.groupBlocks()
+        // places them in their own 1-block group (≤2 → inline rendering).
+        // Both 'start' (interactive wizard) and 'end' (submitted view) need this.
+        const isAlwaysVisibleTool = ALWAYS_VISIBLE_TOOLS.has(toolName)
+        if (isAlwaysVisibleTool && (phase === 'start' || phase === 'end')) {
+          contentBlocks.push({ type: 'text', content: '' })
+        }
+
+        // Pass through as ToolUseBlock
         contentBlocks.push({
           type: 'tool_use',
           toolName: block.tool.toolName,
@@ -193,6 +213,10 @@ export function buildContentBlocksFromSdkBlocks(
           duration: block.tool.duration,
           phase: phase as 'start' | 'progress' | 'end',
         } satisfies ToolUseBlock)
+
+        if (isAlwaysVisibleTool && (phase === 'start' || phase === 'end')) {
+          contentBlocks.push({ type: 'text', content: '' })
+        }
       }
     } else if (block.type === 'thinking') {
       contentBlocks.push({

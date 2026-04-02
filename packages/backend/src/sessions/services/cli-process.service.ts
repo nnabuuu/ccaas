@@ -70,6 +70,7 @@ export class CliProcessService {
       '--input-format', 'stream-json',
       '--verbose',
       '--permission-mode', 'bypassPermissions',
+      '--permission-prompt-tool', 'stdio',
     ];
 
     // Add MCP servers if configured (passed from solution backends)
@@ -181,6 +182,7 @@ export class CliProcessService {
       '--input-format', 'stream-json',
       '--verbose',
       '--permission-mode', 'bypassPermissions',
+      '--permission-prompt-tool', 'stdio',
       '--resume', session.sessionId,
     ];
 
@@ -305,6 +307,114 @@ export class CliProcessService {
   }
 
   /**
+   * Send a control_response to the CLI stdin (for AskUserQuestion answers).
+   * Retrieves original toolInput from pending request, merges answers, and writes to stdin.
+   */
+  sendControlResponse(
+    session: ManagedSession,
+    requestId: string,
+    answers: Record<string, string>,
+  ): void {
+    if (!session.stdin || session.stdin.destroyed) {
+      throw new Error(`Cannot send control_response: stdin not available for session ${session.sessionId}`);
+    }
+
+    // Validate answer values are bounded strings before writing to CLI stdin
+    const MAX_ANSWER_LENGTH = 10_000;
+    for (const [key, val] of Object.entries(answers)) {
+      if (typeof val !== 'string') {
+        throw new Error(`Answer value for key "${key}" must be a string, got ${typeof val}`);
+      }
+      if (val.length > MAX_ANSWER_LENGTH) {
+        throw new Error(`Answer value for key "${key}" exceeds ${MAX_ANSWER_LENGTH} characters`);
+      }
+    }
+
+    // Retrieve original request to include full input
+    const pending = this.eventMapperService.getPendingControlRequest(session.sessionId, requestId);
+    if (!pending) {
+      throw new Error(`No pending control_request found for session=${session.sessionId} requestId=${requestId}`);
+    }
+
+    // Build updated input with answers merged in
+    const updatedInput = {
+      ...pending.toolInput,
+      answers,
+    };
+
+    // Use the original control_request's requestId for the CLI response,
+    // which may differ from the frontend's requestId (tool_use block ID).
+    const cliRequestId = pending.requestId;
+
+    const response = JSON.stringify({
+      type: 'control_response',
+      response: {
+        subtype: 'success',
+        request_id: cliRequestId,
+        response: {
+          behavior: 'allow',
+          updatedInput,
+        },
+      },
+    });
+
+    this.logger.log(`[ControlResponse] Sending response for requestId=${cliRequestId} (lookup=${requestId}) session=${session.sessionId}`);
+
+    try {
+      session.stdin.write(response + '\n');
+      session.lastActivity = new Date();
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to write control_response: ${msg}`);
+      throw error;
+    }
+
+    // Store answers for dedup (prevents LLM from re-asking the same AskUserQuestion)
+    this.eventMapperService.storeCompletedAskUserAnswers(session.sessionId, answers, pending.toolInput);
+
+    // Clean up pending request (remove both the original and lookup keys)
+    this.eventMapperService.removePendingControlRequest(session.sessionId, cliRequestId);
+    if (requestId !== cliRequestId) {
+      this.eventMapperService.removePendingControlRequest(session.sessionId, requestId);
+    }
+  }
+
+  /**
+   * Auto-approve a control_request (for non-AskUserQuestion tools).
+   * Optionally includes updatedInput for dedup AskUserQuestion responses.
+   */
+  private sendAutoApprove(
+    session: ManagedSession,
+    requestId: string,
+    dedupToolInput?: Record<string, unknown>,
+  ): void {
+    if (!session.stdin || session.stdin.destroyed) return;
+
+    const responsePayload = dedupToolInput
+      ? { behavior: 'allow', updatedInput: dedupToolInput }
+      : { behavior: 'allow' };
+
+    const response = JSON.stringify({
+      type: 'control_response',
+      response: {
+        subtype: 'success',
+        request_id: requestId,
+        response: responsePayload,
+      },
+    });
+
+    try {
+      session.stdin.write(response + '\n');
+      if (dedupToolInput) {
+        this.logger.log(`[Dedup] Auto-responded to duplicate AskUserQuestion requestId=${requestId}`);
+      }
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to auto-approve control_request ${requestId}: ${msg}`);
+    }
+  }
+
+  /**
    * Handle AgentEngine stdout data
    * Parses stream-json and maps to frontend events
    */
@@ -337,6 +447,13 @@ export class CliProcessService {
         for (const event of frontendEvents) {
           this.logger.debug(`Emitting event: ${event.type}`);
           onEvent(event);
+        }
+
+        // Drain auto-approve queue: non-AskUserQuestion control_requests get approved immediately
+        // (also handles dedup AskUserQuestion auto-responses with cached answers)
+        const autoApprovals = this.eventMapperService.drainAutoApproveQueue(session.sessionId);
+        for (const approval of autoApprovals) {
+          this.sendAutoApprove(session, approval.requestId, approval.dedupToolInput);
         }
       } catch (parseError) {
         this.logger.warn(`Failed to parse AgentEngine output: ${line.slice(0, 100)}...`);

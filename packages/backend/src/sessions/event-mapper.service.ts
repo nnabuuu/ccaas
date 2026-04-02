@@ -15,6 +15,7 @@ import type {
   TrackedToolCall,
   TokenAccumulator,
   DecisionLogic,
+  PendingControlRequest,
 } from '../common/interfaces';
 import { TokenUsageService } from '../messages/token-usage.service';
 import type { ToolHook, ToolResult, ToolHookContext, ToolStartInfo } from '../hooks';
@@ -75,6 +76,30 @@ export class EventMapperService {
   // Bundle-sourced tool event triggers (separate from solution triggers to avoid
   // merge/dedup ambiguity when bundles are enabled/disabled at runtime)
   private bundleTriggers = new Map<string, ToolEventTrigger[]>();
+
+  // Pending control_request from CLI (keyed by "sessionId:requestId")
+  private pendingControlRequests = new Map<string, PendingControlRequest>();
+
+  // Maps sessionId → most recent AskUserQuestion tool_use block ID (from assistant message).
+  // Used to bridge the gap between tool_use block ID and control_request request_id.
+  private lastAskUserQuestionToolId = new Map<string, string>();
+
+  // Track completed AskUserQuestion answers per session for dedup.
+  // If LLM calls AskUserQuestion again in the same turn, auto-respond with cached answers.
+  private lastAskUserQuestionAnswers = new Map<string, {
+    answers: Record<string, string>;
+    toolInput: Record<string, unknown>;
+    timestamp: number;
+  }>();
+
+  // Queue of non-AskUserQuestion control requests that need auto-approval
+  // (consumed by CliProcessService after mapToSessionEvents returns)
+  private pendingAutoApproveRequests: Array<{
+    sessionId: string;
+    requestId: string;
+    toolName: string;
+    dedupToolInput?: Record<string, unknown>;
+  }> = [];
 
   constructor(
     private readonly configService: ConfigService,
@@ -352,6 +377,12 @@ export class EventMapperService {
                 startTime: Date.now(),
                 input: block.input || {},
               });
+
+              // Track AskUserQuestion tool_use block ID so the control_request
+              // handler can bridge it to the control_request's request_id.
+              if (toolName === 'AskUserQuestion') {
+                this.lastAskUserQuestionToolId.set(sessionId, toolId);
+              }
 
               const agentType = this.toolAnalysis.extractAgentType(sessionId, toolName);
               const decisionLogic = this.toolAnalysis.extractDecisionLogic(toolName, block.input);
@@ -1039,6 +1070,119 @@ export class EventMapperService {
         break;
       }
 
+      // =========================================================================
+      // Control Request (AskUserQuestion via --permission-prompt-tool stdio)
+      // =========================================================================
+
+      case 'control_request': {
+        const req = cliEvent as any;
+        const requestId = req.request_id;
+        const toolName = req.request?.tool_name;
+        const toolInput = req.request?.input || {};
+
+        if (!requestId) {
+          this.logger.warn('control_request missing request_id, ignoring');
+          break;
+        }
+
+        if (toolName === 'AskUserQuestion') {
+          // Dedup: if we already have answers from a recently completed AskUserQuestion
+          // in this session, auto-respond instead of prompting the user again.
+          this.logger.log(
+            `[ControlRequest] AskUserQuestion received for session=${sessionId}, checking dedup cache...`,
+          );
+          const cached = this.consumeLastAskUserAnswers(sessionId);
+          this.logger.log(
+            `[ControlRequest] Dedup cache result: ${cached ? 'HIT (answers=' + JSON.stringify(cached.answers).slice(0, 100) + ')' : 'MISS'}`,
+          );
+          if (cached) {
+            this.logger.log(
+              `[ControlRequest] Dedup: AskUserQuestion already answered for session=${sessionId}, auto-responding`,
+            );
+
+            // Read the tool_use block ID so we can emit tool_activity(end)
+            const dedupToolUseBlockId = this.lastAskUserQuestionToolId.get(sessionId);
+            this.lastAskUserQuestionToolId.delete(sessionId);
+            const endToolId = dedupToolUseBlockId || requestId;
+
+            this.pendingAutoApproveRequests.push({
+              sessionId,
+              requestId,
+              toolName,
+              dedupToolInput: { ...toolInput, answers: cached.answers },
+            });
+
+            // Emit tool_activity(end) so frontend dismisses the AskUserQuestion widget
+            // that was rendered from the preceding assistant message's tool_use block.
+            events.push({
+              type: 'tool_activity',
+              sessionId,
+              clientId,
+              timestamp,
+              tool: toolName,
+              toolId: endToolId,
+              phase: 'end',
+              toolInput: { ...toolInput, answers: cached.answers },
+              toolOutput: JSON.stringify({ answers: cached.answers }),
+            });
+            break;
+          }
+
+          // Store pending request so control-response can retrieve original input
+          const pending: PendingControlRequest = {
+            requestId,
+            toolName,
+            toolInput,
+            createdAt: Date.now(),
+            sessionId,
+          };
+          this.pendingControlRequests.set(`${sessionId}:${requestId}`, pending);
+
+          // Also store under the tool_use block ID so the frontend can
+          // submit using the toolId from tool_activity(start).
+          const toolUseBlockId = this.lastAskUserQuestionToolId.get(sessionId);
+          if (toolUseBlockId && toolUseBlockId !== requestId) {
+            this.pendingControlRequests.set(`${sessionId}:${toolUseBlockId}`, pending);
+            this.logger.log(
+              `[ControlRequest] Also keyed under toolUseBlockId=${toolUseBlockId}`,
+            );
+          }
+          this.lastAskUserQuestionToolId.delete(sessionId);
+
+          this.logger.log(
+            `[ControlRequest] AskUserQuestion pending: session=${sessionId} requestId=${requestId}`,
+          );
+
+          // NOTE: tool_activity(start) is already emitted by the assistant message
+          // handler when it processes the tool_use content block. We skip emitting
+          // it again here to avoid duplicate widget rendering on the frontend.
+
+          // Emit wizard_request so frontend can render the wizard/question UI
+          events.push({
+            type: 'wizard_request',
+            sessionId,
+            clientId,
+            timestamp,
+            payload: {
+              requestId,
+              questions: toolInput.questions || [],
+              toolInput,
+            },
+          });
+        } else {
+          // Non-AskUserQuestion control requests: auto-approve
+          this.logger.debug(
+            `[ControlRequest] Auto-approving tool=${toolName} requestId=${requestId}`,
+          );
+          this.pendingAutoApproveRequests.push({
+            sessionId,
+            requestId,
+            toolName: toolName || 'unknown',
+          });
+        }
+        break;
+      }
+
       default:
         // Log unhandled events at debug level to avoid log spam in production
         this.logger.debug(`Unhandled CLI event type: ${cliEvent.type} | keys: ${Object.keys(cliEvent).join(',')}`);
@@ -1059,6 +1203,8 @@ export class EventMapperService {
     this.sessionTokenAccumulators.delete(sessionId);
     this.activeThinkingBlocks.delete(sessionId);
     this.sessionExecutionCounters.delete(sessionId);
+    this.lastAskUserQuestionToolId.delete(sessionId);
+    this.lastAskUserQuestionAnswers.delete(sessionId);
 
     // Clean up background task tracking for this session
     // Remove all entries with this sessionId prefix
@@ -1078,6 +1224,88 @@ export class EventMapperService {
         `Cleaned up ${keysToDelete.length} background task tracking entries for session ${sessionId}`,
       );
     }
+
+    // Clean up pending control requests for this session
+    const controlKeysToDelete: string[] = [];
+    for (const key of this.pendingControlRequests.keys()) {
+      if (key.startsWith(`${sessionId}:`)) {
+        controlKeysToDelete.push(key);
+      }
+    }
+    for (const key of controlKeysToDelete) {
+      this.pendingControlRequests.delete(key);
+    }
+
+    // Clean up auto-approve queue for this session
+    this.pendingAutoApproveRequests = this.pendingAutoApproveRequests.filter(
+      r => r.sessionId !== sessionId,
+    );
+  }
+
+  /**
+   * Get a pending control request by sessionId and requestId.
+   * Used by CliProcessService to retrieve original toolInput when sending control_response.
+   */
+  getPendingControlRequest(sessionId: string, requestId: string): PendingControlRequest | undefined {
+    return this.pendingControlRequests.get(`${sessionId}:${requestId}`);
+  }
+
+  /**
+   * Remove a pending control request (after response is sent).
+   */
+  removePendingControlRequest(sessionId: string, requestId: string): void {
+    this.pendingControlRequests.delete(`${sessionId}:${requestId}`);
+  }
+
+  /**
+   * Store completed AskUserQuestion answers for dedup.
+   * Called by CliProcessService after sending control_response.
+   */
+  storeCompletedAskUserAnswers(
+    sessionId: string,
+    answers: Record<string, string>,
+    toolInput: Record<string, unknown>,
+  ): void {
+    this.logger.log(
+      `[Dedup] storeCompletedAskUserAnswers: session=${sessionId}, answerKeys=${Object.keys(answers).join(',')}`,
+    );
+    this.lastAskUserQuestionAnswers.set(sessionId, {
+      answers,
+      toolInput,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Read cached AskUserQuestion answers (persistent within 5-minute TTL).
+   * Kept across multiple dedup calls so repeated LLM retries are all auto-responded.
+   */
+  private consumeLastAskUserAnswers(
+    sessionId: string,
+  ): { answers: Record<string, string>; toolInput: Record<string, unknown> } | undefined {
+    const cached = this.lastAskUserQuestionAnswers.get(sessionId);
+    if (!cached) return undefined;
+    if (Date.now() - cached.timestamp > 5 * 60 * 1000) {
+      this.lastAskUserQuestionAnswers.delete(sessionId);
+      return undefined;
+    }
+    // Don't delete — keep for future dedup calls within the same session
+    return { answers: cached.answers, toolInput: cached.toolInput };
+  }
+
+  /**
+   * Drain auto-approve queue. Called by CliProcessService after processing events.
+   * Returns and clears all queued auto-approve requests.
+   */
+  drainAutoApproveQueue(forSessionId?: string): Array<{ sessionId: string; requestId: string; toolName: string; dedupToolInput?: Record<string, unknown> }> {
+    if (!forSessionId) {
+      const queue = [...this.pendingAutoApproveRequests];
+      this.pendingAutoApproveRequests = [];
+      return queue;
+    }
+    const matched = this.pendingAutoApproveRequests.filter(r => r.sessionId === forSessionId);
+    this.pendingAutoApproveRequests = this.pendingAutoApproveRequests.filter(r => r.sessionId !== forSessionId);
+    return matched;
   }
 
   // =========================================================================

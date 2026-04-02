@@ -177,7 +177,11 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       }
       const blocks = contentBlocksRef.current
       if (payload.phase === 'start') {
-        blocks.push({ type: 'tool', tool: toolActivity })
+        // Deduplicate: skip if a block with the same toolId already exists
+        const exists = blocks.some(b => b.type === 'tool' && b.tool.toolId === toolActivity.toolId)
+        if (!exists) {
+          blocks.push({ type: 'tool', tool: toolActivity })
+        }
       } else if (payload.phase === 'end') {
         for (let i = blocks.length - 1; i >= 0; i--) {
           const block = blocks[i]
@@ -315,7 +319,7 @@ export function useAgentChat(options: UseAgentChatOptions): UseAgentChatReturn {
       try {
         setIsLoadingHistory(true)
         const response = await fetch(
-          `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/messages?limit=100`,
+          `${connection.serverUrl}/api/v1/sessions/${connection.sessionId}/messages?limit=100&includeToolEvents=true`,
           { method: 'GET', headers: { ...buildAuthHeaders(connection.apiKey) } },
         )
         if (!response.ok) {

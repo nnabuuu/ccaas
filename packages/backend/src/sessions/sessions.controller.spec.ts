@@ -20,6 +20,7 @@ import { QuotaGuard } from '../admin/guards/quota.guard';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Session } from '../admin/entities/session.entity';
 import { TurnsService } from '../admin/services/turns.service';
+import { CliProcessService } from './services/cli-process.service';
 import { ApiKeyGuard } from '../auth/guards/api-key.guard';
 import { ScopesGuard } from '../auth/guards/scopes.guard';
 import { TenantGuard } from '../tenants/tenant.guard';
@@ -90,6 +91,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
         { provide: getRepositoryToken(Session), useValue: {} },
         { provide: TurnsService, useValue: {} },
+        { provide: CliProcessService, useValue: { sendControlResponse: jest.fn() } },
       ],
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
@@ -284,6 +286,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
         { provide: getRepositoryToken(Session), useValue: {} },
         { provide: TurnsService, useValue: {} },
+        { provide: CliProcessService, useValue: { sendControlResponse: jest.fn() } },
       ],
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })
@@ -478,6 +481,7 @@ describe('SessionsController - Sub-Agents Endpoint', () => {
         { provide: QuotaGuard, useValue: { canActivate: jest.fn().mockReturnValue(true) } },
         { provide: getRepositoryToken(Session), useValue: {} },
         { provide: TurnsService, useValue: {} },
+        { provide: CliProcessService, useValue: { sendControlResponse: jest.fn() } },
       ],
     })
       .overrideGuard(ApiKeyGuard).useValue({ canActivate: () => true })

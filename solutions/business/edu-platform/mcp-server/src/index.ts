@@ -223,7 +223,7 @@ const suggestActionsTool: Tool = {
 // ─── List Tools Handler ─────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool, showInfoCardTool, showStepWizardTool, showReviewPanelTool, suggestActionsTool],
+  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool, showInfoCardTool, showReviewPanelTool, suggestActionsTool],
 }));
 
 // ─── Call Tool Handler ──────────────────────────────────────

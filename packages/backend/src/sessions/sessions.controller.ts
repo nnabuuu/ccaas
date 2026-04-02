@@ -41,12 +41,14 @@ import { CompletionOrchestrationService } from './services/completion-orchestrat
 import { MessageQueueService } from './services/message-queue.service';
 import { SkillManagementService } from './services/skill-management.service';
 import { AttachmentService } from './services/attachment.service';
+import { CliProcessService } from './services/cli-process.service';
 import { SkillSyncService } from '../skills/skill-sync.service';
 import { SkillsService } from '../skills/skills.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { SendMessageDto } from './dto/send-message.dto';
+import { ControlResponseDto } from './dto/control-response.dto';
 import { StreamRegistryService } from './services/stream-registry.service';
 import { makeSseClientId } from './session-utils';
 import { v4 as uuidv4 } from 'uuid';
@@ -75,6 +77,7 @@ export class SessionsController {
     private readonly messageQueueService: MessageQueueService,
     private readonly skillManagementService: SkillManagementService,
     private readonly attachmentService: AttachmentService,
+    private readonly cliProcessService: CliProcessService,
     private readonly skillSyncService: SkillSyncService,
     private readonly skillsService: SkillsService,
     private readonly tenantsService: TenantsService,
@@ -490,6 +493,46 @@ Does NOT close when a turn ends — use this instead of per-turn POST /messages 
     this.streamRegistry.closeSession(sessionId);
 
     return { success: true, sessionId };
+  }
+
+  /**
+   * Submit control response (for AskUserQuestion wizard answers)
+   * POST /api/v1/sessions/:sessionId/control-response
+   *
+   * Frontend calls this after the user completes a wizard / answers questions.
+   * Backend writes the response to CLI stdin, resuming the paused LLM.
+   */
+  @Post(':sessionId/control-response')
+  @UseGuards(TenantGuard)
+  @OptionalAuth()
+  @ApiOperation({
+    summary: '提交控制响应 / Submit Control Response',
+    description: `
+前端在用户完成向导或回答问题后调用此端点。
+Backend 将用户答案写入 CLI stdin，恢复被暂停的 LLM 执行。
+
+Called by frontend after the user completes a wizard or answers questions.
+Backend writes the answers to CLI stdin, resuming the paused LLM execution.
+    `,
+  })
+  @ApiParam({ name: 'sessionId', description: '会话 ID / Session ID' })
+  @ApiResponse({ status: 200, description: '响应已发送 / Response sent' })
+  @ApiResponse({ status: 404, description: '会话不存在 / Session not found' })
+  @ApiResponse({ status: 400, description: '请求无效 / Invalid request' })
+  submitControlResponse(
+    @Param('sessionId') sessionId: string,
+    @Body() body: ControlResponseDto,
+  ) {
+    this.logger.log(`Control response: session=${sessionId} requestId=${body.requestId}`);
+
+    const session = this.sessionService.getSession(sessionId);
+    if (!session) {
+      throw new NotFoundException(`Session not found: ${sessionId}`);
+    }
+
+    this.cliProcessService.sendControlResponse(session, body.requestId, body.answers);
+
+    return { success: true, sessionId, requestId: body.requestId };
   }
 
   /**

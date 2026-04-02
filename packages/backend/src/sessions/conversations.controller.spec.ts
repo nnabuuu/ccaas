@@ -30,6 +30,7 @@ import { QuotaGuard } from '../admin/guards/quota.guard';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationContextService } from '../messages/conversation-context.service';
 import { StreamRegistryService } from './services/stream-registry.service';
+import { CliProcessService } from './services/cli-process.service';
 
 describe('SessionsController (list/search/update/delete)', () => {
   let controller: SessionsController;
@@ -111,6 +112,7 @@ describe('SessionsController (list/search/update/delete)', () => {
         noopProvider(MessagesService),
         noopProvider(ConversationContextService),
         noopProvider(StreamRegistryService),
+        noopProvider(CliProcessService),
       ],
     })
       .overrideGuard(ApiKeyGuard)

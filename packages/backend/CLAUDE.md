@@ -83,6 +83,25 @@ npm run skill:import -- <name> # Register solution skills
 4. **API Key Auth** — SHA-256 hashed, scope-based permissions
 5. **MCP Pool** — Centralized MCP server management
 6. **Skill Router** — Trigger-based skill matching and routing
+7. **control_request Protocol** — AskUserQuestion pauses CLI, frontend renders Wizard, structured answers resume CLI
+
+## control_request / control_response Protocol
+
+When the CLI flag `--permission-prompt-tool stdio` is set, `AskUserQuestion` tool calls emit a `control_request` on stdout instead of failing. The backend intercepts this, sends a `tool_activity(start)` SSE event to the frontend, and waits for user input via `POST /sessions/:id/control-response`.
+
+```
+LLM calls AskUserQuestion → CLI emits control_request (stdout)
+  → EventMapper stores pending request + emits tool_activity SSE
+  → Frontend renders Wizard UI
+  → User submits answers → POST /control-response
+  → Backend writes control_response to CLI stdin
+  → CLI resumes, LLM receives structured JSON answers
+```
+
+Key files:
+- `cli-process.service.ts` — `--permission-prompt-tool stdio` flag, `sendControlResponse()` method
+- `event-mapper.service.ts` — `case 'control_request'` handler, `pendingControlRequests` Map
+- `sessions.controller.ts` — `POST /sessions/:id/control-response` endpoint
 
 ## Detailed Documentation
 
