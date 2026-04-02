@@ -72,7 +72,7 @@ export function ReviewPanel({
 
       {/* Current item */}
       <div className="bg-ck-bg2 rounded-ck p-3 mb-3">
-        <div className="text-[13px] leading-relaxed whitespace-pre-wrap">
+        <div className="text-[13px] leading-[1.5] whitespace-pre-wrap">
           {currentItem.content}
         </div>
         {currentItem.metadata && (

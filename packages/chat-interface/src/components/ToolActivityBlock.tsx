@@ -372,7 +372,7 @@ function TabbedDetail({ block }: { block: ToolUseBlock }) {
 
       {/* JSON pane */}
       {activeTab === 'json' && (
-        <pre className="bg-ck-bg2 px-2.5 py-2 rounded-md font-mono text-[10px] overflow-x-auto whitespace-pre-wrap text-ck-t1 leading-relaxed my-1 max-h-[300px] overflow-y-auto">
+        <pre className="bg-ck-bg2 px-2.5 py-2 rounded-md font-mono text-[10px] overflow-x-auto whitespace-pre-wrap text-ck-t1 leading-[1.5] my-1 max-h-[300px] overflow-y-auto">
           {block.toolError ? `// Error\n${block.toolError}` : jsonText}
         </pre>
       )}
@@ -411,7 +411,7 @@ export function ToolActivityBlock({ block }: ToolActivityBlockProps) {
       {/* Step content */}
       <div className="flex-1 min-w-0">
         <div
-          className={`text-[12px] text-ck-t1 leading-relaxed rounded px-1 -mx-1 transition-colors duration-100 ${
+          className={`text-[12px] text-ck-t1 leading-[1.5] rounded px-1 -mx-1 transition-colors duration-100 ${
             hasDetails ? 'cursor-pointer hover:bg-ck-bg2' : ''
           }`}
           onClick={(e) => { e.stopPropagation(); hasDetails && setExpanded(!expanded) }}

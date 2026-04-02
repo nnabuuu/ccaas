@@ -296,7 +296,7 @@ export function ChatSidebar({
               placeholder={labels.search}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-2.5 py-[7px] border-[0.5px] border-ck-b1 rounded-lg text-[12px] bg-ck-bg1 text-ck-t1 placeholder:text-ck-t3 outline-none focus:border-[var(--info-t)] transition-colors"
+              className="w-full px-2.5 py-[7px] border-[0.5px] border-ck-b1 rounded-lg text-[13px] bg-ck-bg1 text-ck-t1 placeholder:text-ck-t3 outline-none focus:border-[var(--info-t)] transition-colors"
             />
           </div>
         )}
@@ -325,7 +325,7 @@ export function ChatSidebar({
 
             {grouped.map((group) => (
               <div key={group.label}>
-                <div className="px-3 pt-2.5 pb-1 text-[10px] font-medium text-ck-t3 uppercase tracking-[0.3px] select-none">
+                <div className="px-3 pt-2.5 pb-1 text-[11px] font-medium text-ck-t3 tracking-[0.3px] select-none">
                   {group.label}
                 </div>
                 {group.sessions.map((s) => {
@@ -336,7 +336,7 @@ export function ChatSidebar({
                       key={s.sessionId}
                       onClick={() => onSelectSession(s.sessionId)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 mx-2 rounded-lg text-[12px] transition-colors duration-100 cursor-pointer min-w-0',
+                        'w-full flex items-center gap-2 px-3 py-2 mx-2 rounded-lg text-[14px] transition-colors duration-100 cursor-pointer min-w-0',
                         isActive ? 'bg-ck-bg1 font-medium' : 'hover:bg-ck-bg1',
                       )}
                       style={{ width: 'calc(100% - 16px)' }}
@@ -385,7 +385,7 @@ export function ChatSidebar({
         {/* Skills list — individual items with colored icons */}
         {!isCollapsed && skills && skills.length > 0 && (
           <div className="border-t-[0.5px] border-ck-b1 py-2 shrink-0">
-            <div className="px-3 pt-1 pb-1 text-[10px] font-medium text-ck-t3 uppercase tracking-[0.3px] select-none">
+            <div className="px-3 pt-1 pb-1 text-[11px] font-medium text-ck-t3 tracking-[0.3px] select-none">
               {labels.skills}
             </div>
             {skills.map((skill) => (
@@ -476,7 +476,7 @@ export function ChatSidebar({
               {!isCollapsed && (
                 <>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-[12px] font-medium text-ck-t1 truncate">
+                    <span className="block text-[13px] font-medium text-ck-t1 truncate">
                       {apiKeyHint ?? 'User'}
                     </span>
                     {userRole && (

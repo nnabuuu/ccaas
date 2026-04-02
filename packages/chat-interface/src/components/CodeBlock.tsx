@@ -62,7 +62,7 @@ function CodeBlockInner({ language, children }: { language: string; children: Re
           )}
         </button>
       </div>
-      <pre className="m-0 p-4 overflow-x-auto text-sm leading-relaxed font-mono whitespace-pre">
+      <pre className="m-0 p-4 overflow-x-auto text-sm leading-[1.5] font-mono whitespace-pre">
         <code className="block whitespace-pre">{children}</code>
       </pre>
     </div>

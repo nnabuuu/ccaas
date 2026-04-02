@@ -67,7 +67,7 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
   return isUser ? (
     // User message: right-aligned, inline-flex bubble
     <div data-ck="user-msg" className="mt-3 mb-2 flex flex-col items-end gap-1">
-      <div className="inline-flex max-w-[88%] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 rounded-[18px_18px_4px_18px] text-[14px] leading-[1.6]">
+      <div className="inline-flex max-w-[88%] bg-ck-user-bubble text-ck-t1 py-2.5 px-3.5 rounded-[18px_18px_4px_18px] text-[14px] leading-[1.5]">
         {message.content.map((block, i) => (
           <ContentBlockView key={i} block={block} />
         ))}
@@ -80,7 +80,7 @@ export function MessageRenderer({ message, widgetState, onWidgetStateChange, onA
         <SkillBadge name={message.activeSkill} />
       )}
 
-      <div className="text-[14px] text-ck-t1 leading-[1.6]">
+      <div className="text-[14px] text-ck-t1 leading-[1.5]">
         {groupedBlocks!.map((item, i) => {
           if ('type' in item && item.type === 'tool_group') {
             return <ToolGroup key={`tg-${i}`} group={item as ToolGroupData} />
@@ -137,7 +137,7 @@ function ContentBlockView({ block, widgetState, onWidgetStateChange, onWidgetSub
   switch (block.type) {
     case 'text':
       return (
-        <div className="prose max-w-none ck-prose">
+        <div className="prose max-w-[680px] ck-prose">
           <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MD_COMPONENTS}>{block.content}</ReactMarkdown>
         </div>
       )

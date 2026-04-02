@@ -128,8 +128,10 @@ No custom fonts. System stack only.
 | `12px` | Form labels, card descriptions, tree nodes, secondary actions, step names, stat labels |
 | `13px` | Tab buttons, form selects, summary rows, card titles (small), gap names |
 | `14px` | Chat bubbles (user + AI), card titles (skill panel) |
+| `16px` | Login page title (special case) |
 | `18px` | Page titles (wizard) |
 | `20px` | Stat values (large numeric display) |
+| `22px` | Landing greeting (emotional/welcome text) |
 
 ### 2.3 Font Weight
 
@@ -141,9 +143,9 @@ No custom fonts. System stack only.
 
 ### 2.4 Line Height
 
-- Chat bubbles: `1.6`
+- Chat bubbles: `1.5`
 - Card descriptions: `1.5`
-- Code blocks: `1.6`
+- Code blocks: `1.5`
 - Default: browser default (no explicit `line-height` on most elements)
 
 ---

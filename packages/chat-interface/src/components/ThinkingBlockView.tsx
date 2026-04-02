@@ -48,7 +48,7 @@ export function ThinkingBlockView({ block }: ThinkingBlockViewProps) {
         </svg>
 
         {/* Text — same size as AI text for visual rhythm */}
-        <span className="text-ck-t3 text-[14px] leading-[1.6]">
+        <span className="text-ck-t3 text-[14px] leading-[1.5]">
           {block.isStreaming ? '思考中\u2026' : (preview || '思考过程')}
         </span>
 
@@ -64,7 +64,7 @@ export function ThinkingBlockView({ block }: ThinkingBlockViewProps) {
       {/* Expanded thinking content */}
       {expanded && hasContent && (
         <div className="ml-[38px] mt-1.5 rounded-lg bg-ck-bg3 px-3 py-2 max-h-[300px] overflow-y-auto">
-          <pre className="whitespace-pre-wrap break-words font-mono text-[12px] text-ck-t3 leading-relaxed italic">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[12px] text-ck-t3 leading-[1.5] italic">
             {block.content}
           </pre>
         </div>

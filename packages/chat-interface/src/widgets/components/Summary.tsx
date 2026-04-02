@@ -43,7 +43,7 @@ export function Summary({
         <summary className="text-[11px] text-ck-t3 cursor-pointer hover:text-ck-t2">
           View raw data
         </summary>
-        <pre className="mt-1 bg-ck-bg2 rounded-ck p-3 text-[11px] text-ck-t2 font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap">
+        <pre className="mt-1 bg-ck-bg2 rounded-ck p-3 text-[11px] text-ck-t2 font-mono leading-[1.5] overflow-x-auto whitespace-pre-wrap">
           {JSON.stringify(widgetState, null, 2)}
         </pre>
       </details>
