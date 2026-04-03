@@ -15,6 +15,7 @@
 | `POST` | `/api/v1/sessions/:sessionId/messages` | 发送消息，接收 SSE 事件流（每轮对话） |
 | `GET` | `/api/v1/sessions/:sessionId/events` | 订阅推送频道（跨轮次，持续连接） |
 | `POST` | `/api/v1/sessions/:sessionId/cancel` | 取消当前正在执行的任务 |
+| `POST` | `/api/v1/sessions/:sessionId/control-response` | 提交用户对交互式提示的回答 |
 
 ---
 
@@ -226,7 +227,7 @@ AI 文本流式输出片段。拼接所有 `delta` 即为完整回复。
 
 ### tool\_activity
 
-工具调用活动（读文件、写文件、搜索等）。
+工具调用活动（读文件、写文件、搜索等）。当 `toolName` 为 `AskUserQuestion` 且 `phase` 为 `start` 时，`toolInput` 中包含问题 payload 和 `requestId`，前端应渲染问题 UI 并在用户回答后调用 `POST /control-response`。
 
 ```typescript
 {
@@ -332,6 +333,41 @@ Token 使用统计，每轮结束时发送。
   suggestion?: string
 }
 ```
+
+---
+
+## POST /control-response — 提交向导答案
+
+当 AI 使用 `AskUserQuestion` 时，Agent Engine 暂停执行，前端收到包含问题 payload 的 `tool_activity(start)` 事件。用户完成向导或回答问题后，通过此端点提交响应。
+
+### 请求
+
+```
+POST /api/v1/sessions/:sessionId/control-response
+Content-Type: application/json
+```
+
+```json
+{
+  "requestId": "ctrl_req_abc123",
+  "answers": {
+    "question_key": "selected_answer"
+  }
+}
+```
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `requestId` | string | ✅ | `tool_activity` 事件中 `toolInput.requestId` 的请求 ID |
+| `answers` | Record\<string, string\> | ✅ | 用户答案的键值映射（值必须为字符串，每个最大 10KB） |
+
+### 响应
+
+```json
+{ "success": true, "sessionId": "my-session", "requestId": "ctrl_req_abc123" }
+```
+
+提交后，Agent Engine 恢复执行，LLM 收到结构化的 JSON 答案。
 
 ---
 

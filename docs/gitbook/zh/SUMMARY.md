@@ -56,6 +56,7 @@
 * [Bundle 能力包](guide/bundles.md)
 * [前端集成指南](guide/frontend.md)
 * [React SDK 聊天集成](guide/chat-integration.md)
+* [交互式提示](guide/interactive-prompting.md)
 * [布局系统快速入门](guide/solution-layout-quickstart.md)
 * [File Explorer 组件](guide/file-explorer.md)
 * [会话持久化](guide/conversation-persistence.md)

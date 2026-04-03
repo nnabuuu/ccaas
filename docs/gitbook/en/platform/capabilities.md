@@ -8,6 +8,7 @@ The KedgeAgentic Agent Engine provides natural-language-driven task execution:
 - **Real-Time Streaming** -- AI thinking processes, tool usage, and output results are pushed to the frontend in real time
 - **Visual Execution Status** -- Live display of the AI's current action (thinking, searching, executing, generating)
 - **Task Cancellation** -- Interrupt running tasks at any time
+- **Interactive Prompting** -- Agent can pause and ask structured questions; user answers via UI cards or custom wizards
 - **Session Recovery** -- Automatically restore session state after reconnection
 
 ## Skill System
@@ -73,7 +74,7 @@ The platform pushes a rich set of real-time events via SSE:
 | `text_delta` | AI text streaming output |
 | `output_update` | Structured data update |
 | `agent_status` | Agent status change (idle, thinking, executing, completed) |
-| `tool_activity` | Tool usage activity (start, in-progress, end) |
+| `tool_activity` | Tool usage activity (start, in-progress, end); also carries AskUserQuestion payloads for interactive prompting |
 | `todo_update` | Task list update |
 | `token_usage` | Token usage statistics |
 

@@ -214,6 +214,24 @@ model: claude-3-5-sonnet
 - 使用 write_output 工具输出结构化数据
 ```
 
+### 5. 交互式提示（可选）
+
+当 Skill 需要在工作流中途获取用户输入（如选择选项、确认参数）时，指示 Agent 使用 `AskUserQuestion`。平台会渲染结构化问题卡片，用户回答以 JSON 格式返回。
+
+```markdown
+## 步骤 1：收集偏好
+使用 AskUserQuestion 向用户提问：
+- "请选择学科"，选项：数学、科学、语文
+- "请选择年级段"，选项：1-3年级、4-6年级、7-9年级
+
+每个问题需包含：`question`（完整问题文本）、`header`（短标签）、
+`options`（2-4 个选项，含 label + description）、`multiSelect`（true/false）。
+
+等待用户回答后再继续。
+```
+
+对于复杂的多步骤输入流程，开发者可通过 `registerWizard()` 注册自定义向导。详见[交互式提示指南](interactive-prompting.md)。
+
 ### 4. 输出格式
 
 明确指定使用 write\_output 的格式：

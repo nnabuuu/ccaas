@@ -56,6 +56,7 @@ Standard entry point for all business logic, including:
 - Canceling running operations
 - Managing session state and context
 - Retrieving message history and files
+- Submitting user answers for interactive prompts
 
 ### MessagesController - Messages & Session Data
 
@@ -197,6 +198,27 @@ Update session context (frontend form state).
   }
 }
 ```
+
+### POST /sessions/:sessionId/control-response
+
+Submit user answers for an interactive prompt (AskUserQuestion). When the Agent Engine pauses to ask the user a question, the frontend collects the answer and submits it via this endpoint.
+
+**Authentication**: 🔐 Requires API Key
+
+**Request Body**:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `requestId` | string | Yes | The request ID from the `tool_activity` event's `toolInput.requestId` |
+| `answers` | Record\<string, string\> | Yes | Key-value map of user answers (values must be strings, max 10KB each) |
+
+**Response**:
+
+```json
+{ "success": true, "sessionId": "session-uuid", "requestId": "ctrl_req_abc123" }
+```
+
+After submission, the Agent Engine resumes execution with the structured answers.
 
 ### GET /sessions/:sessionId/queue-position
 

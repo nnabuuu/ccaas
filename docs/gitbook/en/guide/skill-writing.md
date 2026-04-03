@@ -214,6 +214,24 @@ Define clear execution steps:
 - Use the write_output tool to output structured data
 ```
 
+### 5. Interactive Prompting (Optional)
+
+When a Skill needs user input mid-workflow (e.g., selecting options, confirming parameters), instruct the Agent to use `AskUserQuestion`. The platform renders a structured question card; user answers are returned as JSON.
+
+```markdown
+## Step 1: Gather Preferences
+Use AskUserQuestion to ask the user:
+- "Which subject?" with options: Math, Science, Language Arts
+- "Which grade level?" with options: Grade 1-3, Grade 4-6, Grade 7-9
+
+Each question needs: `question` (full text), `header` (short label),
+`options` (2-4 choices with label + description), `multiSelect` (true/false).
+
+Wait for answers before continuing.
+```
+
+For complex multi-step input flows, developers can register a custom wizard via `registerWizard()`. See the [Interactive Prompting guide](interactive-prompting.md) for details.
+
 ### 4. Output Format
 
 Explicitly specify the format for write\_output:

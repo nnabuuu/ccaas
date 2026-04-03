@@ -56,6 +56,7 @@
 - 取消正在执行的操作
 - 管理会话状态和上下文
 - 获取消息历史和文件
+- 提交用户对交互式提示的回答
 
 ### MessagesController - 消息与会话数据查询
 
@@ -198,6 +199,27 @@
   }
 }
 ```
+
+### POST /sessions/:sessionId/control-response
+
+提交用户对交互式提示（AskUserQuestion）的回答。当 Agent Engine 暂停并向用户提问时，前端收集用户回答后通过此端点提交。
+
+**认证**: 🔐 需要 API Key
+
+**请求体**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `requestId` | string | 是 | `tool_activity` 事件中 `toolInput.requestId` 的请求 ID |
+| `answers` | Record\<string, string\> | 是 | 用户答案的键值映射（值必须为字符串，每个最大 10KB） |
+
+**响应**：
+
+```json
+{ "success": true, "sessionId": "session-uuid", "requestId": "ctrl_req_abc123" }
+```
+
+提交后，Agent Engine 带着结构化答案恢复执行。
 
 ### GET /sessions/:sessionId/queue-position
 

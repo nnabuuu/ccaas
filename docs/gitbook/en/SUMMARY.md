@@ -56,6 +56,7 @@
 * [Bundles (Capability Packages)](guide/bundles.md)
 * [Frontend Integration Guide](guide/frontend.md)
 * [Chat Integration with React SDK](guide/chat-integration.md)
+* [Interactive Prompting](guide/interactive-prompting.md)
 * [Layout System Quick Start](guide/solution-layout-quickstart.md)
 * [File Explorer Component](guide/file-explorer.md)
 * [Conversation Persistence](guide/conversation-persistence.md)

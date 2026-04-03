@@ -15,6 +15,7 @@ KedgeAgentic uses **SSE (Server-Sent Events)** as its default transport. All rea
 | `POST` | `/api/v1/sessions/:sessionId/messages` | Send a message; receive SSE event stream (per turn) |
 | `GET` | `/api/v1/sessions/:sessionId/events` | Subscribe to push channel (persistent, cross-turn) |
 | `POST` | `/api/v1/sessions/:sessionId/cancel` | Cancel the currently running task |
+| `POST` | `/api/v1/sessions/:sessionId/control-response` | Submit user answers for interactive prompts |
 
 ---
 
@@ -224,7 +225,7 @@ chat.sendMessage('Analyze this data', { autoClose: true })
 
 ## POST /control-response — Submit Wizard Answer
 
-When the AI uses `AskUserQuestion`, the CLI pauses and the frontend receives a `tool_activity(start)` event with the question payload. After the user completes the wizard or answers the question, submit the response via this endpoint.
+When the AI uses `AskUserQuestion`, the Agent Engine pauses and the frontend receives a `tool_activity(start)` event with the question payload. After the user completes the wizard or answers the question, submit the response via this endpoint.
 
 ### Request
 
@@ -253,7 +254,7 @@ Content-Type: application/json
 { "success": true, "sessionId": "my-session", "requestId": "ctrl_req_abc123" }
 ```
 
-After submission, the CLI resumes and the LLM receives the structured answers as JSON.
+After submission, the Agent Engine resumes and the LLM receives the structured answers as JSON.
 
 ---
 
@@ -325,7 +326,7 @@ Note: field data is in `event.payload.data`, not at the top level of `event`.
 
 ### tool\_activity
 
-Tool call activity (read file, write file, search, etc.).
+Tool call activity (read file, write file, search, etc.). When `toolName` is `AskUserQuestion` and `phase` is `start`, the `toolInput` contains the question payload and a `requestId`. The frontend should render the question UI and call `POST /control-response` after the user answers.
 
 ```typescript
 {
