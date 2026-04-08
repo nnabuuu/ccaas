@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Context Layer Demo</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding-top: 40vh; }
+    .chat-container { width: 600px; background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 16px; }
+    @keyframes atPickerSlideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+    const API_BASE = 'http://localhost:3021/context';
+
+    // Parse URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionTemplate = urlParams.get('sessionTemplate') || 'lesson-prep';
+    const autoInject = urlParams.get('autoInject'); // format: "entity_type:entity_id"
+
+    function App() {
+      const [refs, setRefs] = useState([]);
+      const [pickerOpen, setPickerOpen] = useState(false);
+      const [initialDrillType, setInitialDrillType] = useState(null);
+      const [inputValue, setInputValue] = useState('');
+      const [shortcuts, setShortcuts] = useState([]);
+      const [entityTypes, setEntityTypes] = useState([]);
+      const [tree, setTree] = useState(null);
+
+      // Auto-inject from URL param (only after entity types are loaded)
+      useEffect(() => {
+        if (!autoInject || entityTypes.length === 0) return;
+        const [type, id] = autoInject.split(':');
+        if (!type || !id) return;
+        fetch(`${API_BASE}/resolve?entity_type=${type}&entity_id=${id}`)
+          .then(r => r.json())
+          .then(data => {
+            const typeInfo = entityTypes.find(t => t.type === type);
+            setRefs(prev => {
+              if (prev.some(r => r.entityType === type && r.entityId === id)) return prev;
+              return [...prev, {
+                entityType: type,
+                entityId: id,
+                displayName: data.displayName,
+                icon: typeInfo?.icon || '📄',
+              }];
+            });
+          });
+      }, [autoInject, entityTypes]);
+
+      // Load entity types and shortcuts
+      useEffect(() => {
+        fetch(`${API_BASE}/entity-types`)
+          .then(r => r.json())
+          .then(data => { setEntityTypes(data.types); setTree(data.tree); });
+        fetch(`${API_BASE}/shortcuts?session_template=${sessionTemplate}`)
+          .then(r => r.json())
+          .then(data => setShortcuts(data.pinned));
+      }, [sessionTemplate]);
+
+      const handleKeyDown = (e) => {
+        if (e.key === '@') {
+          e.preventDefault();
+          setInitialDrillType(null);
+          setPickerOpen(true);
+        }
+      };
+
+      const handleSelect = (entity) => {
+        setRefs(prev => {
+          if (prev.some(r => r.entityType === entity.entityType && r.entityId === entity.entityId)) return prev;
+          return [...prev, entity];
+        });
+        setPickerOpen(false);
+        setInitialDrillType(null);
+      };
+
+      const handleShortcutClick = (type) => {
+        setInitialDrillType(type);
+        setPickerOpen(true);
+      };
+
+      const handleRemoveRef = (index) => {
+        setRefs(prev => prev.filter((_, i) => i !== index));
+      };
+
+      return (
+        <div className="chat-container">
+          {/* Reference pills */}
+          {refs.length > 0 && (
+            <div data-testid="mention-refs" style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+              {refs.map((ref, i) => (
+                <span key={`${ref.entityType}:${ref.entityId}`} data-testid="ref-pill" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                  padding: '2px 8px', background: '#e8f0fe', borderRadius: '12px',
+                  fontSize: '13px', color: '#1a73e8', border: '1px solid #c5d9f7',
+                }}>
+                  <span>{ref.icon}</span>
+                  <span data-testid="ref-pill-name">{ref.displayName}</span>
+                  <button data-testid="ref-pill-remove" onClick={() => handleRemoveRef(i)} style={{
+                    background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '14px', padding: '0 2px',
+                  }}>×</button>
+                </span>
+              ))}
+              <div style={{ fontSize: '11px', color: '#888', width: '100%', marginTop: '2px' }}>
+                {refs.length} 个实体已引用 · 发送时注入上下文
+              </div>
+            </div>
+          )}
+
+          {/* Input area with picker */}
+          <div style={{ position: 'relative' }}>
+            {pickerOpen && tree && (
+              <AtPicker
+                entityTypes={entityTypes}
+                tree={tree}
+                onSelect={handleSelect}
+                onClose={() => { setPickerOpen(false); setInitialDrillType(null); }}
+                sessionTemplate={sessionTemplate}
+                initialDrillType={initialDrillType}
+              />
+            )}
+            <input
+              data-testid="chat-input"
+              type="text"
+              placeholder="输入消息... 按 @ 引用实体"
+              value={inputValue}
+              onChange={e => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{
+                width: '100%', padding: '10px 12px', border: '1px solid #ddd',
+                borderRadius: '8px', fontSize: '14px', outline: 'none',
+              }}
+            />
+          </div>
+
+          {/* Toolbar shortcuts */}
+          <div data-testid="shortcuts-toolbar" style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+            {shortcuts.map(type => {
+              const typeInfo = entityTypes.find(t => t.type === type);
+              if (!typeInfo) return null;
+              return (
+                <button
+                  key={type}
+                  data-testid={`shortcut-${type}`}
+                  onClick={() => handleShortcutClick(type)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    padding: '4px 10px', background: '#f0f0f0', border: '1px solid #e0e0e0',
+                    borderRadius: '16px', cursor: 'pointer', fontSize: '12px',
+                  }}
+                >
+                  <span>{typeInfo.icon}</span>
+                  <span>{typeInfo.displayName}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // AtPicker component (inline for demo page)
+    function AtPicker({ entityTypes, tree, onSelect, onClose, sessionTemplate, initialDrillType }) {
+      const [view, setView] = useState('home'); // 'home' | 'browse' | 'search'
+      const [recents, setRecents] = useState([]);
+      const [browseItems, setBrowseItems] = useState([]);
+      const [searchResults, setSearchResults] = useState([]);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [trail, setTrail] = useState([]); // breadcrumb trail
+      const [currentEntityType, setCurrentEntityType] = useState(null);
+      const [currentParentType, setCurrentParentType] = useState(null);
+      const [currentParentId, setCurrentParentId] = useState(null);
+      const [focusedIndex, setFocusedIndex] = useState(-1);
+      const searchTimerRef = useRef(null);
+      const searchInputRef = useRef(null);
+      const listRef = useRef(null);
+
+      // Load recents on mount
+      useEffect(() => {
+        fetch(`${API_BASE}/suggest?session_id=demo`)
+          .then(r => r.json())
+          .then(data => setRecents(data.recents));
+      }, []);
+
+      // Handle initialDrillType
+      useEffect(() => {
+        if (initialDrillType && tree) {
+          const typeInfo = entityTypes.find(t => t.type === initialDrillType);
+          if (typeInfo) {
+            setView('browse');
+            setCurrentEntityType(initialDrillType);
+            setCurrentParentType(null);
+            setCurrentParentId(null);
+            setTrail([{ entityType: initialDrillType, displayName: typeInfo.displayName, icon: typeInfo.icon }]);
+            fetch(`${API_BASE}/browse?entity_type=${initialDrillType}`)
+              .then(r => r.json())
+              .then(data => setBrowseItems(data.items));
+          }
+        }
+      }, [initialDrillType, tree, entityTypes]);
+
+      const hasChildren = (entityType) => tree.relations.some(r => r.parent === entityType);
+
+      const handleTypeBrowse = async (type) => {
+        const typeInfo = entityTypes.find(t => t.type === type);
+        setView('browse');
+        setCurrentEntityType(type);
+        setCurrentParentType(null);
+        setCurrentParentId(null);
+        setTrail([{ entityType: type, displayName: typeInfo.displayName, icon: typeInfo.icon }]);
+        const resp = await fetch(`${API_BASE}/browse?entity_type=${type}`);
+        const data = await resp.json();
+        setBrowseItems(data.items);
+      };
+
+      const handleDrillDown = async (item) => {
+        const childRel = tree.relations.find(r => r.parent === item.entityType);
+        if (!childRel) return;
+        const childTypeInfo = entityTypes.find(t => t.type === childRel.child);
+
+        setCurrentEntityType(childRel.child);
+        setCurrentParentType(item.entityType);
+        setCurrentParentId(item.entityId);
+        setTrail(prev => [...prev, {
+          entityType: childRel.child,
+          parentType: item.entityType,
+          parentId: item.entityId,
+          displayName: item.displayName,
+          icon: childTypeInfo?.icon || '📄',
+        }]);
+
+        const params = new URLSearchParams({
+          entity_type: childRel.child,
+          parent_type: item.entityType,
+          parent_id: item.entityId,
+        });
+        const resp = await fetch(`${API_BASE}/browse?${params}`);
+        const data = await resp.json();
+        setBrowseItems(data.items);
+      };
+
+      const handleBack = async () => {
+        if (trail.length <= 1) {
+          setView('home');
+          setTrail([]);
+          return;
+        }
+        const newTrail = trail.slice(0, -1);
+        const prev = newTrail[newTrail.length - 1];
+        const parentTrail = newTrail.length > 1 ? newTrail[newTrail.length - 2] : null;
+
+        setTrail(newTrail);
+        setCurrentEntityType(prev.entityType);
+        setCurrentParentType(parentTrail?.entityType || null);
+        setCurrentParentId(prev.parentId || null);
+
+        const params = new URLSearchParams({ entity_type: prev.entityType });
+        if (parentTrail?.entityType) params.set('parent_type', parentTrail.entityType);
+        if (prev.parentId) params.set('parent_id', prev.parentId);
+        const resp = await fetch(`${API_BASE}/browse?${params}`);
+        const data = await resp.json();
+        setBrowseItems(data.items);
+      };
+
+      const handleSelect = async (entityType, entityId, displayName) => {
+        const typeInfo = entityTypes.find(t => t.type === entityType);
+        // Record activity
+        await fetch(`${API_BASE}/activity`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entityType, entityId, entityDisplayName: displayName,
+            sessionId: 'demo', action: 'referenced',
+          }),
+        });
+        onSelect({ entityType, entityId, displayName, icon: typeInfo?.icon || '📄' });
+      };
+
+      const handleSearchInput = (query) => {
+        setSearchQuery(query);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        if (!query.trim()) {
+          setView('home');
+          setSearchResults([]);
+          return;
+        }
+        searchTimerRef.current = setTimeout(async () => {
+          setView('search');
+          const resp = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+          const data = await resp.json();
+          setSearchResults(data.results);
+        }, 200);
+      };
+
+      // Reset focused index when view or items change
+      useEffect(() => { setFocusedIndex(-1); }, [view, recents, browseItems, searchResults]);
+
+      const getNavigableCount = () => {
+        if (view === 'home') return recents.length + tree.roots.length;
+        if (view === 'browse') return browseItems.length;
+        if (view === 'search') return searchResults.length;
+        return 0;
+      };
+
+      const handleKeyDown = (e) => {
+        const count = getNavigableCount();
+        if (e.key === 'Escape') { e.preventDefault(); onClose(); return; }
+        if (e.key === 'ArrowDown') { e.preventDefault(); setFocusedIndex(prev => (prev + 1) % count); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); setFocusedIndex(prev => (prev <= 0 ? count - 1 : prev - 1)); return; }
+        if (e.key === 'Enter' && focusedIndex >= 0) {
+          e.preventDefault();
+          if (view === 'home') {
+            if (focusedIndex < recents.length) {
+              const item = recents[focusedIndex];
+              handleSelect(item.entityType, item.entityId, item.displayName);
+            } else {
+              const rootType = tree.roots[focusedIndex - recents.length];
+              if (rootType) handleTypeBrowse(rootType);
+            }
+          } else if (view === 'browse') {
+            const item = browseItems[focusedIndex];
+            if (item) handleSelect(item.entityType, item.entityId, item.displayName);
+          } else if (view === 'search') {
+            const item = searchResults[focusedIndex];
+            if (item) handleSelect(item.entityType, item.entityId, item.displayName);
+          }
+          return;
+        }
+        if (e.key === 'ArrowRight' && focusedIndex >= 0 && view === 'browse') {
+          e.preventDefault();
+          const item = browseItems[focusedIndex];
+          if (item && hasChildren(item.entityType) && item.hasChildren) handleDrillDown(item);
+          return;
+        }
+        if (e.key === 'ArrowLeft' && view === 'browse') {
+          e.preventDefault(); handleBack(); return;
+        }
+      };
+
+      // Scroll focused item into view
+      useEffect(() => {
+        if (focusedIndex < 0 || !listRef.current) return;
+        const items = listRef.current.querySelectorAll('[data-nav-item]');
+        if (items[focusedIndex]) items[focusedIndex].scrollIntoView({ block: 'nearest' });
+      }, [focusedIndex]);
+
+      const focusStyle = (index) => index === focusedIndex ? { background: '#e8f0fe' } : {};
+
+      return (
+        <div data-testid="at-picker" style={{
+          position: 'absolute', bottom: '100%', left: 0, right: 0,
+          maxHeight: '400px', background: 'white', border: '1px solid #e0e0e0',
+          borderRadius: '8px', boxShadow: '0 -4px 12px rgba(0,0,0,0.1)',
+          zIndex: 1000, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          animation: 'atPickerSlideUp 0.15s ease-out', marginBottom: '4px',
+        }}>
+          {/* Search input */}
+          <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
+            <input
+              ref={searchInputRef}
+              data-testid="at-picker-search"
+              type="text"
+              placeholder="🔍 搜索实体..."
+              value={searchQuery}
+              onChange={e => handleSearchInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', padding: '4px 0', background: 'transparent' }}
+              autoFocus
+            />
+          </div>
+
+          <div ref={listRef} style={{ overflowY: 'auto', flex: 1 }}>
+            {/* Home view */}
+            {view === 'home' && (
+              <>
+                {recents.length > 0 && (
+                  <div data-testid="recents-section">
+                    <div style={{ padding: '8px 12px', fontSize: '12px', color: '#888', fontWeight: 600 }}>最近使用</div>
+                    {recents.map((item, idx) => (
+                      <div key={`${item.entityType}:${item.entityId}`} data-testid={`recent-item-${item.entityId}`}
+                        data-nav-item
+                        onClick={() => handleSelect(item.entityType, item.entityId, item.displayName)}
+                        style={{ padding: '6px 12px', cursor: 'pointer', ...focusStyle(idx) }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(idx); }}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{item.icon}</span>
+                          <span style={{ fontSize: '14px' }}>{item.displayName}</span>
+                        </div>
+                        {item.breadcrumb && (
+                          <div data-testid={`breadcrumb-${item.entityId}`} style={{ fontSize: '11px', color: '#999', paddingLeft: '22px' }}>
+                            └ {item.breadcrumb.map((b, i) => (
+                              <span key={i}>{i > 0 && ' › '}{b.icon} {b.displayName}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div data-testid="type-browse-section">
+                  <div style={{ padding: '8px 12px', fontSize: '12px', color: '#888', fontWeight: 600, borderTop: '1px solid #f0f0f0' }}>按类型浏览</div>
+                  {tree.roots.map((rootType, idx) => {
+                    const typeInfo = entityTypes.find(t => t.type === rootType);
+                    if (!typeInfo) return null;
+                    const navIdx = recents.length + idx;
+                    return (
+                      <div key={rootType} data-testid={`type-browse-${rootType}`}
+                        data-nav-item
+                        onClick={() => handleTypeBrowse(rootType)}
+                        style={{ padding: '8px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', ...focusStyle(navIdx) }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(navIdx); }}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span>{typeInfo.icon}</span>
+                          <span style={{ fontSize: '14px' }}>{typeInfo.displayName}</span>
+                        </span>
+                        <span style={{ color: '#ccc' }}>›</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Browse view */}
+            {view === 'browse' && (
+              <div data-testid="browse-view">
+                <div data-testid="browse-breadcrumb" style={{
+                  padding: '8px 12px', fontSize: '12px', color: '#666',
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  borderBottom: '1px solid #f0f0f0', flexWrap: 'wrap',
+                }}>
+                  <span data-testid="browse-back" onClick={handleBack}
+                    style={{ cursor: 'pointer', color: '#1a73e8' }}>
+                    ← {trail.length > 1 ? (entityTypes.find(t => t.type === trail[trail.length - 2].entityType)?.displayName || trail[trail.length - 2].displayName) : '返回'}
+                  </span>
+                  {trail.length > 1 && (
+                    <>
+                      <span>›</span>
+                      <span>{trail[trail.length - 1].displayName}</span>
+                    </>
+                  )}
+                  <span style={{ marginLeft: 'auto', fontWeight: 600 }}>
+                    {(() => {
+                      const ct = entityTypes.find(t => t.type === currentEntityType);
+                      return ct ? `${ct.icon} ${ct.displayName}` : '';
+                    })()}
+                  </span>
+                </div>
+
+                {browseItems.map((item, idx) => (
+                  <div key={`${item.entityType}:${item.entityId}`} data-testid={`browse-item-${item.entityId}`}
+                    data-nav-item
+                    style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', ...focusStyle(idx) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(idx); }}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                      <span>{entityTypes.find(t => t.type === item.entityType)?.icon}</span>
+                      <span style={{ fontSize: '14px' }}>{item.displayName}</span>
+                      {item.subtitle && <span style={{ fontSize: '12px', color: '#999' }}>· {item.subtitle}</span>}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {hasChildren(item.entityType) && item.hasChildren && (
+                        <button data-testid={`drill-${item.entityId}`}
+                          onClick={() => handleDrillDown(item)}
+                          style={{ background: 'none', border: '1px solid #ddd', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '14px' }}>
+                          ▶
+                        </button>
+                      )}
+                      <button data-testid={`select-${item.entityId}`}
+                        onClick={() => handleSelect(item.entityType, item.entityId, item.displayName)}
+                        style={{ background: '#1a73e8', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 10px', cursor: 'pointer', fontSize: '12px' }}>
+                        选择
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search view */}
+            {view === 'search' && (
+              <div data-testid="search-results">
+                {searchResults.length === 0 && (
+                  <div style={{ padding: '16px', textAlign: 'center', color: '#999' }}>无结果</div>
+                )}
+                {searchResults.map((item, idx) => (
+                  <div key={`${item.entityType}:${item.entityId}`} data-testid={`search-item-${item.entityId}`}
+                    data-nav-item
+                    onClick={() => handleSelect(item.entityType, item.entityId, item.displayName)}
+                    style={{ padding: '8px 12px', cursor: 'pointer', ...focusStyle(idx) }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(idx); }}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{item.icon}</span>
+                      <span style={{ fontSize: '14px' }}>{item.displayName}</span>
+                    </div>
+                    {item.breadcrumb && (
+                      <div data-testid={`search-breadcrumb-${item.entityId}`} style={{ fontSize: '11px', color: '#999', paddingLeft: '22px' }}>
+                        └ {item.breadcrumb.map((b, i) => (
+                          <span key={i}>{i > 0 && ' › '}{b.icon} {b.displayName}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
