@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { SCENES } from '../data/content';
 import { STARTERS, DUMMY } from '../data/help';
 import { sendHelpMessage } from '../api/client';
+import { FS } from '../ui/tokens';
 
 interface ChatMsg {
   type: 'msg' | 'divider';
@@ -112,7 +113,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
             borderRadius: 12,
             border: mode === 'inline' ? '1px solid rgba(255,255,255,.1)' : '1px solid #ebe8e2',
             background: mode === 'inline' ? 'rgba(255,255,255,.04)' : '#fff',
-            fontSize: 11,
+            fontSize: FS.xs,
             color: mode === 'inline' ? '#c4c2bc' : '#3d3b36',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
@@ -139,7 +140,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 13,
+              fontSize: FS.base,
               color: mode === 'inline' ? '#a78bfa' : '#534AB7',
               fontWeight: 500,
               marginBottom: 8,
@@ -149,7 +150,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
           </div>
           <p
             style={{
-              fontSize: 13,
+              fontSize: FS.base,
               color: mode === 'inline' ? '#8a8780' : '#9e9c96',
               lineHeight: 1.6,
               margin: 0,
@@ -181,7 +182,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
               <div style={{ flex: 1, height: 1, background: mode === 'inline' ? 'rgba(255,255,255,.08)' : '#ebe8e2' }} />
               <span
                 style={{
-                  fontSize: 11,
+                  fontSize: FS.xs,
                   fontWeight: 500,
                   color: mode === 'inline' ? '#5c5a56' : '#9e9c96',
                   padding: '2px 8px',
@@ -212,7 +213,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
                 maxWidth: '85%',
                 padding: '9px 13px',
                 borderRadius: 14,
-                fontSize: 13,
+                fontSize: FS.base,
                 lineHeight: 1.7,
                 background: m.role === 'user'
                   ? '#EEEDFE'
@@ -256,7 +257,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
       <input
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && send(input)}
+        onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && send(input)}
         placeholder="Type your question..."
         aria-label="Type your question"
         style={{
@@ -265,7 +266,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
           borderRadius: 10,
           border: mode === 'inline' ? '1px solid rgba(255,255,255,.1)' : '1px solid #ebe8e2',
           background: mode === 'inline' ? 'rgba(255,255,255,.04)' : '#fff',
-          fontSize: 13,
+          fontSize: FS.base,
           color: mode === 'inline' ? '#e8e5de' : '#1a1a18',
         }}
       />
@@ -278,7 +279,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
           border: 'none',
           background: loading ? (mode === 'inline' ? '#333' : '#e8e5de') : '#7c3aed',
           color: '#fff',
-          fontSize: 13,
+          fontSize: FS.base,
           fontWeight: 500,
           cursor: 'pointer',
         }}
@@ -314,10 +315,10 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#a78bfa' }}>
+          <span style={{ fontSize: FS.sm, fontWeight: 600, color: '#a78bfa' }}>
             Ask AI 问一问
           </span>
-          <span style={{ fontSize: 11, color: '#5c5a56' }}>▸</span>
+          <span style={{ fontSize: FS.xs, color: '#5c5a56' }}>▸</span>
         </button>
       );
     }
@@ -341,7 +342,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
             flexShrink: 0,
           }}
         >
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#a78bfa' }}>
+          <span style={{ fontSize: FS.sm, fontWeight: 600, color: '#a78bfa' }}>
             Ask AI 问一问
           </span>
           <button
@@ -354,7 +355,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
               border: '1px solid rgba(255,255,255,.1)',
               background: 'transparent',
               color: '#5c5a56',
-              fontSize: 11,
+              fontSize: FS.xs,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -430,7 +431,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
           <path d="M10 4.5a1 1 0 0 0-2 0V12" />
           <path d="M7 9a1 1 0 0 0-2 0v5a8 8 0 0 0 16 0v-3a1 1 0 0 0-2 0" />
         </svg>
-        <span style={{ color: '#fff', fontSize: 13, fontWeight: 500 }}>Ask AI</span>
+        <span style={{ color: '#fff', fontSize: FS.base, fontWeight: 500 }}>Ask AI</span>
       </button>
     );
   }
@@ -463,7 +464,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: 14, fontWeight: 500, color: '#1a1a18' }}>
+        <span style={{ fontSize: FS.base, fontWeight: 500, color: '#1a1a18' }}>
           Ask a question
         </span>
         <button
@@ -476,7 +477,7 @@ export default function HelpCenter({ sceneId, studentSessionId, mode }: HelpCent
             border: '1px solid #ebe8e2',
             background: '#fff',
             color: '#9e9c96',
-            fontSize: 13,
+            fontSize: FS.base,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',

@@ -751,7 +751,7 @@ async function sendMessage() {
  * Handle Enter key to send
  */
 function handleKeydown(event) {
-  if (event.key === 'Enter' && !event.shiftKey) {
+  if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
     event.preventDefault()
     sendMessage()
   }
