@@ -1410,3 +1410,25 @@ Phase 4: Session template 配置
   - 备课/批改/课堂三个 template 的 shortcuts + autoInject
   - 验证 Scenario 10, 13
 ```
+
+---
+
+## Appendix: Architecture Decisions (Post-v9)
+
+### ADR-1: Tool-Based Context Architecture
+
+- **Decision**: Agent 按需 fetch 实体数据（通过 MCP tools），不 pre-inject 所有引用实体到 prompt
+- **Rationale**: 避免发送冗余数据。Agent 有判断力决定需要什么——一个被 @ 引用的教案可能只需要标题，也可能需要完整内容块。让 Agent 决定比前端预判更准确
+- **Impact**: 发送 payload 只含 lightweight references `{ entityType, entityId, displayName }`。Agent 通过 3 个 MCP tools（`resolve_entity`、`browse_children`、`search_entities`）按需获取完整数据
+
+### ADR-2: Extensible Activity Actions
+
+- **Decision**: `ActivityAction = CoreActivityAction | (string & {})`，配合 `ActivityActionConfig` 注册自定义动作的分数增量
+- **Rationale**: 5 个内置动作（referenced/viewed/created/updated/deleted）覆盖通用场景，但 Solution 需要自定义动作（如教育场景的 `graded`、`submitted`、`shared`）。TypeScript 的 `(string & {})` 模式既保留核心动作的自动补全，又允许任意字符串扩展
+- **Impact**: `RecommendEngine` 构造函数接受 `customActionDeltas?: ActivityActionConfig`，与 `DEFAULT_ACTION_DELTAS` 合并。未注册的自定义动作默认增量为 1
+
+### ADR-3: Inline Ref Pills
+
+- **Decision**: Pills 在 composer 输入框内部（flex-wrap），不是输入框上方的独立区域
+- **Rationale**: 与 Slack、Discord 的 @ mention UX 模式一致——用户在同一个输入容器内看到文本和引用混排。这减少视觉跳跃，输入体验更流畅
+- **Impact**: Composer 容器需要 `display: flex; flex-wrap: wrap` + click-to-focus 行为。Pills 和文本输入共享同一行，换行时自然流动。移除 pill 时焦点自动回到文本输入

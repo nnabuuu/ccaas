@@ -60,6 +60,7 @@
 * [Layout System Quick Start](guide/solution-layout-quickstart.md)
 * [File Explorer Component](guide/file-explorer.md)
 * [Conversation Persistence](guide/conversation-persistence.md)
+* [Context Layer](guide/context-layer.md)
 
 ## Advanced Configuration <a href="#advanced" id="advanced"></a>
 
@@ -76,6 +77,7 @@
 * [WebSocket Events (Deprecated)](api/websocket.md)
 * [Error Handling](api/error-handling.md)
 * [@kedge-agentic/common Types](api/shared-types.md)
+* [Context Layer API](api/context-layer.md)
 
 ## Reference <a href="#reference" id="reference"></a>
 

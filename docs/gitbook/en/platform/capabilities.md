@@ -101,6 +101,17 @@ KedgeAgentic supports background task scheduling for automated, unattended AI op
 | One-time report generation | Once | Specific date/time |
 | Automated email summaries | Cron | `0 9 * * 1` (Monday 9 AM) |
 
+## Context Layer
+
+@ reference system that lets chat users mention business entities inline.
+
+- **Decorator-driven** — `@Referenceable` on controllers + `@Tracked` on service methods
+- **7 REST endpoints** — Entity types, suggest, browse, search, resolve, activity, shortcuts
+- **Tool-based architecture** — Agent fetches entity data on-demand via MCP tools, not pre-injected
+- **Redis-backed recommend engine** — Activity tracking with 5 core actions + extensible custom actions via `ActivityActionConfig`
+- **Relation tree** — Auto-inferred from ORM `@ManyToOne` metadata; supports drill-down navigation
+- **Frontend** — `<AtPicker />` component with recents, search, drill-down, breadcrumb, and keyboard navigation
+
 ## Multi-Tenant Management
 
 - **Tenant Isolation** -- Each tenant has independent configuration, Skills, and data

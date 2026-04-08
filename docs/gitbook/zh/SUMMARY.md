@@ -60,6 +60,7 @@
 * [布局系统快速入门](guide/solution-layout-quickstart.md)
 * [File Explorer 组件](guide/file-explorer.md)
 * [会话持久化](guide/conversation-persistence.md)
+* [Context Layer](guide/context-layer.md)
 
 ## 高级配置 <a href="#advanced" id="advanced"></a>
 
@@ -76,6 +77,7 @@
 * [WebSocket 事件（已弃用）](api/websocket.md)
 * [错误处理](api/error-handling.md)
 * [@kedge-agentic/common 类型](api/shared-types.md)
+* [Context Layer API](api/context-layer.md)
 
 ## 参考资料 <a href="#reference" id="reference"></a>
 
