@@ -1,41 +1,214 @@
 ---
 name: task-harness-definer
-description: "Help users define well-structured tasks for long-running AI agent harnesses. Interviews users through structured phases to extract acceptance criteria, optimization goals, eval rubrics, and agent role descriptions — producing a HARNESS_SPEC.md that the overnight-harness-builder skill consumes. Use when users want to set up autonomous overnight AI tasks, define eval criteria for iterative improvement, prepare acceptance conditions for agent loops, or convert vague improvement goals into measurable specs. Triggers include '定义验收条件', '优化目标', '搭harness', 'overnight task', 'eval criteria', 'agent loop setup', '自动优化', '迭代改进', 'define acceptance', or when users describe tasks like 'I want AI to keep improving X while I sleep'. Also use when users have a task but aren't sure if it's suitable for autonomous iteration."
+description: "Help users define well-structured tasks for long-running AI agent harnesses. Two modes: (1) Iterative Improvement — interviews users to extract eval rubrics, optimization goals, and agent roles, producing a HARNESS_SPEC.md for overnight iteration loops. (2) Investigation/Diagnostic — interviews users to structure bug analysis or root cause investigation, producing a HARNESS_SPEC.md with hypotheses, evidence collection plans, and investigator agent architecture. Triggers include '定义验收条件', '优化目标', '搭harness', 'overnight task', 'eval criteria', 'agent loop setup', '自动优化', '迭代改进', 'define acceptance', '调查bug', '根因分析', 'root cause', 'investigate', 'debug', 'why does X happen', or when users describe tasks like 'I want AI to keep improving X while I sleep' or 'figure out why X is broken'. Also use when users have a task but aren't sure if it's suitable for autonomous iteration or investigation."
 ---
 
 # Task Harness Definer
 
-Turn vague improvement goals into structured, measurable specs that autonomous agent loops can execute overnight.
+Turn vague goals into structured, measurable specs that autonomous agent loops can execute — either iterative improvement ("make X better") or systematic investigation ("find out why X is broken").
 
 ## Core Principle
 
-Most people know *what* they want improved but can't articulate *when it's good enough*. This skill bridges that gap through structured interviewing — acting as the "Inversion" pattern where the agent refuses to produce any output until it has gathered enough information to define a task that an autonomous loop can actually execute.
+Most people know *what* they want but can't articulate the structure needed for autonomous execution. For improvement tasks, they can't articulate *when it's good enough*. For investigation tasks, they can't articulate *which hypotheses to test and how*. This skill bridges that gap through structured interviewing.
 
 **DO NOT generate any HARNESS_SPEC.md or output artifacts until all interview phases are complete.** This is the critical gate. Premature output leads to poorly-defined tasks that waste compute and produce mediocre results.
 
 ## Workflow
 
-### Phase 0: Task Qualification Gate
+### Phase 0: Task Qualification & Routing Gate
 
-Before interviewing, determine whether the task is suitable for autonomous iteration. Not all tasks are.
+Before interviewing, determine **which mode** the task needs, then whether it's suitable.
 
-**Suitable tasks have:**
-- A measurable or semi-measurable quality dimension (score, pass/fail, coverage %)
-- A stable target that won't shift during the run ("improve this article" ✅, "figure out what article to write" ❌)
+**Route A → Iterative Improvement** (Phases 1-5):
+- Task is "make X better" / "optimize X" / "X should reach Y score"
+- Has a measurable quality dimension (score, pass/fail, coverage %)
+- A stable target that won't shift during the run
 - Diminishing returns from human attention (human did 80%, the last 20% is grindable)
 - A clear "done" condition or iteration cap
 
-**Unsuitable tasks:**
+**Route B → Investigation/Diagnostic** (Phases 1D-4D):
+- Task is "why does X happen?" / "X 的根因是什么?" / "investigate X bug"
+- Has an observable symptom that can be described precisely
+- Has a codebase or system that can be inspected for evidence
+- Root cause is unknown but can be narrowed via hypothesis testing
+- "Done" = root cause confirmed with evidence, not a score threshold
+
+**Unsuitable for either mode:**
 - Require creative direction changes mid-process (the *what* isn't settled yet)
-- Have no evaluable output (pure exploration, brainstorming)
+- Have no evaluable output and no observable symptom (pure brainstorming)
 - Depend on external input not available to the agent (waiting on data, approvals)
-- Risk compounding errors that are expensive to undo
 
-**If the task is borderline**, explain why and let the user decide. Frame it as: "This task has X measurable dimension but Y requires judgment. You could run it overnight with a human review gate at iteration 3."
+**If the task is borderline**, explain the routing choice and let the user confirm. Some tasks are hybrid: "investigate why X is slow, then iterate to make it fast" — in this case, recommend running Investigation first, then feeding the root-cause report into an Iterative Improvement harness.
 
-If unsuitable, suggest how to restructure the task into a suitable form. Many unsuitable tasks contain a suitable subtask.
+If unsuitable for both modes, suggest how to restructure.
 
 ---
+
+> **If Route A (Iterative Improvement):** proceed to Phase 1 below.
+> **If Route B (Investigation/Diagnostic):** skip to Phase 1D.
+
+---
+
+## Route B: Investigation/Diagnostic Mode (Phases 1D-4D)
+
+### Phase 1D: Symptom Description
+
+Precisely describe the observable bug behavior. Ask:
+
+1. **What is the symptom?** What does the user see/experience that's wrong?
+   - Get the exact user-visible behavior, not an interpretation
+   - "Widget shows 3 times" ✅, "Widget has a rendering bug" ❌
+
+2. **What is the expected behavior?** What *should* happen instead?
+
+3. **Is it reproducible?** What exact steps trigger it? Every time, or intermittent?
+
+4. **What is the blast radius?** Does this affect one feature or many? One user or all?
+
+5. **What has already been tried?** Any debugging already done? What was ruled out?
+
+**Output:** A precise symptom statement that any developer could verify independently.
+
+---
+
+### Phase 2D: Hypothesis Generation
+
+Based on the symptom and the code architecture, generate 3-5 ranked hypotheses.
+
+**Technique: The "Call Chain" Method**
+
+Trace the data/control flow from user action to bug manifestation:
+1. Map the complete call chain (user → frontend → backend → service → response → render)
+2. At each boundary crossing, ask: "Could the bug originate here?"
+3. Each potential origin point becomes a hypothesis
+
+**For each hypothesis, define:**
+
+```
+### H{N}: [Hypothesis Name] (Likelihood: high/medium/low)
+- **Claim**: [What would need to be true for this to be the cause]
+- **Verification method**: [Concrete steps to confirm or eliminate]
+- **Expected evidence if TRUE**: [What you'd observe]
+- **Expected evidence if FALSE**: [What you'd observe]
+- **Files to inspect**: [Specific file paths]
+```
+
+**Ranking criteria:**
+- How many observed symptoms does this hypothesis explain?
+- Is this the simplest explanation (Occam's razor)?
+- Is this at a boundary crossing (where bugs are most common)?
+
+**Common pitfalls to catch:**
+- All hypotheses at the same layer → push to consider different layers
+- No hypothesis explains ALL symptoms → may be a combination
+- Hypothesis requires "magic" (unexplained mechanism) → too vague, refine it
+
+---
+
+### Phase 3D: Evidence Collection Plan
+
+For each hypothesis, define 1-2 executable verification steps.
+
+**Good verification steps are:**
+- **Deterministic**: The result either confirms or eliminates the hypothesis
+- **Non-destructive**: Reading code, adding logs, inspecting events — not modifying behavior
+- **Ordered by information value**: The step that eliminates the most hypotheses goes first
+
+**For each step:**
+```
+### Verification Step V{N}.{M}
+- **Target hypothesis**: H{N}
+- **Action**: [Read file X lines Y-Z / Run command / Check SSE event stream / ...]
+- **Look for**: [Specific pattern, value, or absence]
+- **If found**: H{N} is CONFIRMED → stop investigating, document root cause
+- **If not found**: H{N} is ELIMINATED → proceed to next hypothesis
+- **If ambiguous**: [What additional step to take]
+```
+
+**Step ordering strategy:**
+1. Start with the cheapest steps (file reads) before expensive ones (running services, capturing events)
+2. Start with steps that can eliminate multiple hypotheses at once
+3. If H1 has a quick file-read verification, do that before H2's runtime verification
+
+---
+
+### Phase 4D: Generate Investigation HARNESS_SPEC.md
+
+Only after Phases 1D-3D are complete, generate the spec:
+
+```markdown
+# Investigation Harness Specification
+
+## Symptom
+[Precise, verifiable description of the bug]
+
+## Expected Behavior
+[What should happen instead]
+
+## Reproduction Steps
+[Exact steps to trigger the bug]
+
+## Code Path
+[Complete call chain from user action to bug manifestation]
+```
+[user action]
+  → [layer 1]: [file/function]
+    → [layer 2]: [file/function]
+      → ... → [bug manifests here]
+```
+
+## Hypotheses (ranked by likelihood)
+
+### H1: [Name] (Likelihood: high)
+- **Claim**: ...
+- **Verification method**: ...
+- **Expected evidence if TRUE**: ...
+- **Expected evidence if FALSE**: ...
+- **Files to inspect**: ...
+
+### H2: [Name] (Likelihood: high)
+...
+
+### H3: [Name] (Likelihood: medium)
+...
+
+## Evidence Collection Plan
+[Ordered list of verification steps, referencing hypotheses]
+
+## Agent Architecture
+
+### Investigator
+- **Role**: Systematically verify hypotheses by collecting code evidence
+- **Perspective**: You are a debugger who tests hypotheses against evidence. You do NOT fix bugs — you find root causes.
+- **Input**: SPEC.md (symptoms + hypotheses), source code files
+- **Output**: `evidence/h{N}-{name}.md` per hypothesis + `root-cause-report.md`
+- **Isolation**: Fresh context per round (mandatory)
+- **Key constraint**: One hypothesis per round. Do not skip to fixing.
+
+### Fix Verifier (optional, if fix is in scope)
+- **Role**: Verify that a proposed fix resolves the original symptom
+- **Perspective**: Skeptical tester who tries to reproduce the original bug after fix
+- **Input**: Root cause report + fix patch
+- **Output**: Pass/fail with evidence
+
+## Exit Conditions
+- **Root cause confirmed**: At least 1 hypothesis has CONFIRMED status with code evidence
+- **Max rounds**: N (typically 3-5 for investigation tasks)
+- **Dead end**: All hypotheses ELIMINATED → generate new hypotheses or escalate to human
+- **Combination root cause**: Multiple hypotheses confirmed → document the interaction
+
+## Modifiable Files
+[Files the investigator may add debug logs to — clearly separated from source files]
+
+## Frozen Files
+[Files that must NOT be modified, even for debug logging]
+```
+
+After generating, review the spec with the user. Confirm each hypothesis makes sense.
+
+---
+
+## Route A: Iterative Improvement Mode (Phases 1-5)
 
 ### Phase 1: Task Understanding
 

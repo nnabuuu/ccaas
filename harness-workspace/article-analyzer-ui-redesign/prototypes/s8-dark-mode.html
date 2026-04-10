@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Editorial Intelligence | Run Progress</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#ffdcc6",
+                        "tertiary": "#ffb786",
+                        "on-secondary-container": "#9fb5e7",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#00285d",
+                        "secondary-fixed-dim": "#b1c6f9",
+                        "surface": "#0b1326",
+                        "background": "#0b1326",
+                        "on-tertiary": "#502400",
+                        "on-primary-fixed-variant": "#004395",
+                        "surface-container-lowest": "#060e20",
+                        "surface-container": "#171f33",
+                        "surface-container-low": "#131b2e",
+                        "surface-container-high": "#222a3d",
+                        "surface-dim": "#0b1326",
+                        "on-secondary": "#182f59",
+                        "on-primary": "#002e6a",
+                        "inverse-primary": "#005ac2",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-secondary-fixed-variant": "#304671",
+                        "secondary-fixed": "#d8e2ff",
+                        "outline-variant": "#424754",
+                        "primary-fixed-dim": "#adc6ff",
+                        "on-background": "#dae2fd",
+                        "error": "#ffb4ab",
+                        "inverse-on-surface": "#283044",
+                        "on-error": "#690005",
+                        "primary-container": "#4d8eff",
+                        "primary": "#adc6ff",
+                        "on-tertiary-fixed": "#311400",
+                        "surface-variant": "#2d3449",
+                        "outline": "#8c909f",
+                        "surface-tint": "#adc6ff",
+                        "surface-bright": "#31394d",
+                        "primary-fixed": "#d8e2ff",
+                        "secondary": "#b1c6f9",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-tertiary-container": "#461f00",
+                        "on-primary-fixed": "#001a42",
+                        "tertiary-container": "#df7412",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "inverse-surface": "#dae2fd",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-fixed": "#001a42",
+                        "surface-container-highest": "#2d3449",
+                        "secondary-container": "#304671"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { background-color: #0b1326; color: #dae2fd; font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="antialiased overflow-x-hidden">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-slate-950/60 backdrop-blur-3xl shadow-[0px_20px_40px_rgba(6,14,32,0.4)] flex justify-between items-center px-6 h-16 w-full font-['Inter'] tracking-tight antialiased">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-blue-200">Editorial Intelligence</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-blue-200 font-semibold border-b-2 border-blue-400 py-5 transition-all" href="#">Overview</a>
+<a class="text-slate-400 font-medium hover:bg-slate-800/50 transition-colors duration-200 px-3 py-1 rounded-lg" href="#">Article Feed</a>
+<a class="text-slate-400 font-medium hover:bg-slate-800/50 transition-colors duration-200 px-3 py-1 rounded-lg" href="#">Sentiment Map</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">search</span>
+<input class="bg-slate-900 border-none rounded-full pl-10 pr-4 py-1.5 text-sm focus:ring-1 focus:ring-blue-400 w-64 transition-all" placeholder="Search signals..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-blue-400 p-2 hover:bg-slate-800/50 rounded-full transition-transform active:scale-95">dark_mode</button>
+<button class="material-symbols-outlined text-slate-400 p-2 hover:bg-slate-800/50 rounded-full transition-transform active:scale-95">notifications</button>
+<div class="h-8 w-8 rounded-full bg-slate-800 overflow-hidden border border-slate-700">
+<img alt="User Profile" data-alt="Portrait of a professional analyst with a neutral background, soft studio lighting, sharp focus on facial features" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkmM7zlhHO8w6TUZgO7wDfjcjcYhOFOGNf0fShwkzBQ2f2kD3wVaXo6zsFS1CqBrPB_HMvhWM6x7AIFdSj1e_4IUYFEg570gI5ndMoYGOKNiwtVkkXvUYyScJXQ5FpgWPM7I1--ngjLHrbSD9IdibSkF-U3GAqjKAjU3tJwgkAoVFosf2mNP5IFu58VOMWV35__h03M6XNGr3sV4yBC6i8WMtEY1PqmAER5krO91ixeWjPFPoB_IrlzuZBj6HE1RuczK0K-cjsxWow"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 z-40 bg-slate-900 flex flex-col pt-20 pb-6 px-4 font-['Inter'] text-sm leading-6">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="h-10 w-10 bg-gradient-to-br from-primary to-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<div>
+<p class="text-lg font-bold text-slate-100 leading-none">Curator</p>
+<p class="text-xs text-slate-500">Editorial Intel</p>
+</div>
+</div>
+<nav class="space-y-1 flex-grow">
+<a class="flex items-center gap-3 px-3 py-2 text-blue-200 bg-slate-800/50 font-bold border-r-2 border-blue-400 hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">dashboard</span> Overview
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-all hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">article</span> Article Feed
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-all hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">analytics</span> Sentiment Map
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-all hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">queue_play_next</span> Editorial Queue
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 transition-all hover:translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined">settings</span> Settings
+            </a>
+</nav>
+<button class="mt-auto w-full py-3 px-4 bg-gradient-to-br from-primary to-primary-container text-on-primary-container font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">add_circle</span>
+            New Analysis
+        </button>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-24 px-8 pb-12">
+<div class="max-w-6xl mx-auto space-y-8">
+<!-- Header Section with Asymmetry -->
+<header class="flex justify-between items-end">
+<div>
+<span class="text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400 font-bold mb-2 block">System Pulse</span>
+<h1 class="text-3xl font-extrabold tracking-tight text-on-surface">Run Progress Dashboard</h1>
+<p class="text-on-surface-variant mt-1">Real-time inference and editorial pipeline metrics.</p>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-2 rounded-full border border-outline-variant/15">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+</span>
+<span class="text-xs font-bold text-emerald-400 tracking-wide uppercase">System Online</span>
+</div>
+</header>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Main Score Card -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-low p-8 rounded-xl relative overflow-hidden group">
+<div class="relative z-10">
+<p class="text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400 font-bold mb-8">Aggregation Score</p>
+<div class="flex items-baseline gap-2">
+<span class="text-7xl font-extrabold text-white tracking-tighter">72.5</span>
+<span class="text-blue-400 font-bold text-xl">/100</span>
+</div>
+<div class="mt-8 space-y-3">
+<div class="flex justify-between text-xs font-bold text-slate-400 uppercase">
+<span>Optimization Level</span>
+<span class="text-blue-400">High</span>
+</div>
+<!-- Segmented Progress Bar -->
+<div class="flex gap-1 h-3">
+<div class="flex-1 bg-blue-400 rounded-sm"></div>
+<div class="flex-1 bg-blue-400 rounded-sm"></div>
+<div class="flex-1 bg-blue-400 rounded-sm"></div>
+<div class="flex-1 bg-blue-400 rounded-sm"></div>
+<div class="flex-1 bg-slate-800 rounded-sm"></div>
+<div class="flex-1 bg-slate-800 rounded-sm"></div>
+<div class="flex-1 bg-slate-800 rounded-sm"></div>
+</div>
+</div>
+</div>
+<!-- Decorative element -->
+<div class="absolute -right-12 -bottom-12 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl transition-all group-hover:bg-blue-500/20"></div>
+</div>
+<!-- Pipeline Steps (Asymmetric Cards) -->
+<div class="col-span-12 lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-blue-400 mb-4" style="font-variation-settings: 'FILL' 1;">dataset</span>
+<h3 class="font-bold text-white mb-1">Ingestion</h3>
+<p class="text-xs text-slate-400 mb-4">4.2k items processed</p>
+<div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-blue-400 h-full w-full"></div>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-blue-400 mb-4" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h3 class="font-bold text-white mb-1">Curation</h3>
+<p class="text-xs text-slate-400 mb-4">84% confidence match</p>
+<div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-blue-400 h-full w-2/3"></div>
+</div>
+</div>
+<div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/10 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-blue-400 mb-4" style="font-variation-settings: 'FILL' 1;">publish</span>
+<h3 class="font-bold text-white mb-1">Deployment</h3>
+<p class="text-xs text-slate-400 mb-4">Active queue: 12</p>
+<div class="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+<div class="bg-slate-700 h-full w-1/4"></div>
+</div>
+</div>
+</div>
+<!-- Main Chart Area -->
+<div class="col-span-12 bg-surface-container-low rounded-xl p-8 border border-outline-variant/5">
+<div class="flex justify-between items-start mb-10">
+<div>
+<p class="text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400 font-bold mb-1">Inference Latency</p>
+<h2 class="text-xl font-bold text-white">Stability Over Time</h2>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-bold bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors">1H</button>
+<button class="px-3 py-1 text-xs font-bold bg-blue-400/20 text-blue-400 rounded transition-colors">24H</button>
+<button class="px-3 py-1 text-xs font-bold bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition-colors">7D</button>
+</div>
+</div>
+<!-- SVG Chart Visualization -->
+<div class="relative h-64 w-full">
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between">
+<div class="border-t border-slate-700/50 w-full h-px"></div>
+<div class="border-t border-slate-700/50 w-full h-px"></div>
+<div class="border-t border-slate-700/50 w-full h-px"></div>
+<div class="border-t border-slate-700/50 w-full h-px"></div>
+<div class="border-t border-slate-700/50 w-full h-px"></div>
+</div>
+<!-- Line Chart -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 200">
+<defs>
+<lineargradient id="gradient-blue" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4d8eff" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#4d8eff" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Area -->
+<path d="M0,200 L0,150 L100,140 L200,160 L300,120 L400,130 L500,80 L600,100 L700,70 L800,90 L900,60 L1000,75 L1000,200 Z" fill="url(#gradient-blue)"></path>
+<!-- Line -->
+<path d="M0,150 L100,140 L200,160 L300,120 L400,130 L500,80 L600,100 L700,70 L800,90 L900,60 L1000,75" fill="none" stroke="#adc6ff" stroke-width="2"></path>
+<!-- Dots -->
+<circle cx="500" cy="80" fill="#adc6ff" r="4"></circle>
+<circle cx="500" cy="80" fill="#adc6ff" fill-opacity="0.2" r="8"></circle>
+</svg>
+<!-- Labels -->
+<div class="absolute bottom-[-24px] w-full flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+<span>00:00</span>
+<span>04:00</span>
+</div>
+</div>
+</div>
+<!-- Analytical Feed -->
+<div class="col-span-12 lg:col-span-7 space-y-4">
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Latest Operations</h3>
+<div class="bg-surface-container-low rounded-xl divide-y divide-slate-800/50">
+<div class="p-4 flex items-center gap-4 hover:bg-slate-800/20 transition-colors cursor-pointer group">
+<div class="h-10 w-10 rounded bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-500 text-sm">terminal</span>
+</div>
+<div class="flex-grow">
+<p class="text-sm font-bold text-white">Sentiment batch 0x2A deployed</p>
+<p class="text-xs text-slate-500">14 minutes ago • High Accuracy</p>
+</div>
+<span class="material-symbols-outlined text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</div>
+<div class="p-4 flex items-center gap-4 hover:bg-slate-800/20 transition-colors cursor-pointer group">
+<div class="h-10 w-10 rounded bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-500 text-sm">auto_awesome</span>
+</div>
+<div class="flex-grow">
+<p class="text-sm font-bold text-white">New editorial pattern detected</p>
+<p class="text-xs text-slate-500">2 hours ago • Action required</p>
+</div>
+<span class="material-symbols-outlined text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</div>
+<div class="p-4 flex items-center gap-4 hover:bg-slate-800/20 transition-colors cursor-pointer group">
+<div class="h-10 w-10 rounded bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-slate-500 text-sm">cloud_sync</span>
+</div>
+<div class="flex-grow">
+<p class="text-sm font-bold text-white">Sync complete with Tier-1 sources</p>
+<p class="text-xs text-slate-500">4 hours ago • Latency 12ms</p>
+</div>
+<span class="material-symbols-outlined text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Side Highlight Card -->
+<div class="col-span-12 lg:col-span-5">
+<div class="bg-surface-container-highest rounded-xl p-8 h-full flex flex-col justify-between border border-blue-400/10">
+<div>
+<div class="w-12 h-12 bg-blue-400/20 rounded-lg flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-blue-400">auto_graph</span>
+</div>
+<h3 class="text-xl font-bold text-white mb-4">Optimized Curator Engine</h3>
+<p class="text-slate-400 leading-relaxed text-sm">The current run is utilizing 84% of allocated compute. Latency spikes have been reduced by 12% following the 02:00 batch optimization.</p>
+</div>
+<div class="mt-8 pt-6 border-t border-slate-700/50 flex items-center gap-4">
+<div class="flex -space-x-2">
+<img alt="Team member" class="w-8 h-8 rounded-full border-2 border-slate-900" data-alt="Portrait of a male data scientist with glasses, soft natural lighting, professional office blurred background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDYHPH35vUkDmQybivK1pkrnxFIcyKaBb_VZhrp7CtKACiiwJa-WskX1O9qEqgHmEjyWfxb2Wok4dKXCTeU9jMLCNREFa6L0f1dZkR9CqXBQ7pwU9NcXL744omKdGJkLW-rEL7K8z3FbgPEXXak6-QDLezfb4Q2eeZN5GHfPQg1F9VJP_eE5QRSvwgXXVmIrlltS82lZrD5jUBhj6u8Z3lyPoxfQSQ1237Tahum2q35aPNJVpcbYBZALhLqXYzsN97L38zJpFG9ak1"/>
+<img alt="Team member" class="w-8 h-8 rounded-full border-2 border-slate-900" data-alt="Portrait of a woman smiling, bright outdoor daylight, high quality professional photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCl7xudlvZT59TG4fu8udKhTknUDkUa2mMcqiabtatRgxwXG3OmLX-BDwFHnH-Mj9xINBhHgrRU-LSZeiuIMiPjgDn-pWM6baMhAKfezlS9oUFNjfdKNEgkPOVjx8rlm7zqA8yVIkLSPp0wAye1GKmp1DDLSFrTyxatFafBNt5Wq1SzAIqb4ziqy4xQWg48wKU3pw4U8kKCghk2GCC7pg33GYEu1xjSMbUVUpQH76-4nUgDuXAi625m7rB6z07A4H6s5jH2HYiRgZPu"/>
+<div class="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">+4</div>
+</div>
+<span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Active Stakeholders</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

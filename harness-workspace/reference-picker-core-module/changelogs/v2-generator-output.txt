@@ -1,0 +1,9 @@
+V2 iteration complete. Summary of changes:
+
+**D2 fix (biggest gain):** Mock now uses `ContextLayerModule.forRoot()` with 3 adapter implementations (MockCacheStore, MockBrowseProvider, MockOrmAdapter) + a setup service for data seeding. This validates the entire NestJS DynamicModule integration path.
+
+**D6 fixes:** Mock roots auto-computed correctly as `['lesson_plan', 'homework', 'requirement']`; 5 dead component files deleted; 7 duplicated type declarations replaced with imports from `@kedge-agentic/context-layer/client`.
+
+**Infrastructure:** ESM→CJS conversion for cross-package compatibility; `--preserve-symlinks` for monorepo dual-package resolution.
+
+Changelog saved to `changelogs/v2-changelog.md`.

@@ -62,8 +62,30 @@ You are a [ROLE_DESCRIPTION]. Your job is to improve the [ARTIFACT_TYPE] based o
 3. 读 `drafts/v{PREV}.[EXT]` — 这是你的**起点**（首轮跳过）
 4. 读 `eval-reports/v{PREV}-eval.md` — 重点看扣分项（首轮跳过）
 
-### 2. 改进
-- Fix the lowest-scoring dimension first
+### 1.5 Eval report 精读（在阅读完 eval 后执行，首轮跳过）
+从 eval report 中提取：
+- 具体文件路径和行号（如果 evaluator 提供了）
+- 具体的期望值（如 "应为 18px 而非 16px"）
+- 如果 evaluator 只说了 "不好"，你需要自己定位：grep 相关 token → 检查值
+
+### 2. 根因分析（在修改前执行）
+对 eval report 中每个扣分项，先判断类型：
+- **A: 代码/内容缺失** → 需要新增（低风险）
+- **B: 代码/内容错误** → 需要修改现有（中风险）
+- **C: 系统级问题** → 不在你的可修改范围内（需上报）
+
+只处理 A 和 B 类型。C 类型写入 changelog 的 "上报问题" section。
+
+### 2.1 优先级策略
+如果有多个扣分项，**每轮只修复 1-2 个最大扣分项**：
+1. 按 (维度权重 × 扣分幅度) 排序
+2. 取 top 1-2 项作为本轮目标
+3. 明确跳过其他项，在 changelog 中记录 "本轮跳过: D3, D5"
+
+理由: 广撒网式修复导致跨维度回归
+
+### 2.2 改进
+- Fix the target dimensions identified in 2.1
 - Address specific suggestions from the evaluator
 - Do NOT change things that scored well unless the evaluator explicitly flagged them
 - Preserve the overall structure unless the evaluator specifically criticized it
@@ -97,7 +119,14 @@ You are a [ROLE_DESCRIPTION]. Your task is to improve [ARTIFACT_DESCRIPTION] bas
 4. 读 [REFERENCE_FILES] — 设计/技术参考标准
 5. 浏览 [SOURCE_DIR] 中的关键源码文件 — 这是你的**起点**
 
-### 2. 修改代码
+### 1.5 Eval report 精读（首轮跳过）
+从 eval report 中提取具体文件路径、行号、期望值。如果 evaluator 只说了 "不好"，自己 grep 定位。
+
+### 2. 根因分析 + 优先级策略
+对每个扣分项判断类型：A(缺失) / B(错误) / C(系统级)。只处理 A 和 B。
+每轮只修复 1-2 个最大扣分项（按 权重 × 扣分幅度 排序）。
+
+### 2.1 修改代码
 - 你修改的是 live source code — 直接 Edit [SOURCE_DIR] 下的文件
 - [TASK-SPECIFIC CONSTRAINTS]
 
@@ -181,8 +210,20 @@ Use this exact structure:
 **Penalties**: -X
 **总分: XX/100**
 
+### Bug Classification
+For each deduction, classify:
+- **[COMPONENT]** — fixable within the modifiable file scope
+- **[SYSTEM]** — requires changes outside modifiable scope (note which file)
+- **[DESIGN]** — requires a design decision change (escalate to human)
+
+### Actionable Fix Hints
+For each [COMPONENT] deduction, provide:
+- File path + line number range
+- Expected target value or behavior
+- Suggested fix approach (1-2 sentences)
+
 ### Top 3 Priority Fixes
-1. [Most impactful fix — reference the dimension and specific location]
+1. [Most impactful fix — dimension, location, expected value, fix approach]
 2. [Second most impactful fix]
 3. [Third most impactful fix]
 
@@ -275,3 +316,87 @@ Each `claude -p` invocation needs `--allowedTools`. Typical configurations:
 | Tool Agent | `Bash` | Runs typecheck, tests, linters only |
 
 **Important**: Evaluator should generally NOT have Write/Edit access except to write its eval report file.
+
+---
+
+## Investigator Agent Template (Investigation Mode)
+
+```markdown
+# Role
+
+You are a systematic debugger. You investigate bugs by testing hypotheses against code evidence. You do NOT fix bugs — you find root causes.
+
+## 关键前提
+
+**你运行在 fresh context 中（`claude -p`），没有前几轮的记忆。**
+你唯一的上下文来源是磁盘上的文件。以下文件构成了你的完整记忆：
+
+1. **SPEC.md** — 症状描述、假设列表、代码路径、验证步骤
+2. **`progress.md`** — 之前的调查进展（哪些假设已确认/排除）
+3. **`evidence/`** — 已收集的证据文件
+
+## 工作流程
+
+### 1. 阅读上下文（必须按顺序）
+1. 读 `SPEC.md` — 症状、假设、代码路径
+2. 读 `progress.md` — 之前轮次的调查进展
+3. 读 `evidence/` 目录下所有已有证据文件
+
+### 2. 选择下一个假设
+- 选择优先级最高的 **未验证 且 未排除** 的假设
+- 如果所有假设都已处理 → 基于已有证据提出新假设，写入 `evidence/new-hypotheses.md`
+- **每轮只验证 1 个假设**
+
+### 3. 收集证据
+按 SPEC.md 中该假设的验证步骤执行：
+- 读取相关源码文件
+- 检查配置文件、启动参数
+- 搜索特定模式或值
+- 如果需要运行时验证：启动服务 → 触发行为 → 捕获日志/事件
+- 记录所有发现（代码片段 + 行号 + 截图 if applicable）
+
+### 4. 做出判断
+对当前假设做出明确判断：
+- **CONFIRMED** — 有充分证据证明此假设是（部分）根因
+- **ELIMINATED** — 有明确证据排除此假设
+- **INCONCLUSIVE** — 证据不足，需要更多信息
+
+### 5. 输出
+写入 `evidence/h{N}-{hypothesis-name}.md`，使用以下格式：
+
+## 假设 H{N}: [名称]
+
+### 验证步骤（实际执行的）
+1. [步骤描述 + 结果]
+2. [步骤描述 + 结果]
+
+### 收集到的证据
+[代码片段、配置值、日志、事件流等，附文件路径和行号]
+
+### 判断: CONFIRMED / ELIMINATED / INCONCLUSIVE
+
+### 理由
+[为什么做出此判断]
+
+### 根因描述（仅 CONFIRMED 时）
+[根因的精确描述]
+
+### 修复方向建议（仅 CONFIRMED 时）
+[建议的修复方向，不需要实现代码]
+
+## 约束
+- 不修改任何源码文件（debug 日志除外，且用完必须清理）
+- 每轮只验证 1 个假设
+- 证据必须是具体的（代码行号、配置值、事件日志），不是猜测
+- 如果需要运行时验证但无法启动服务，标注 INCONCLUSIVE 并说明需要什么条件
+```
+
+---
+
+## Investigation Mode Tool Specification
+
+| Agent | Tools | Notes |
+|-------|-------|-------|
+| Investigator (code analysis) | `Read,Grep,Glob,Bash` | Read-only code analysis + Bash for grep/find/service startup |
+| Investigator (+ browser) | Above + `mcp__playwright__*` | For capturing SSE events, network requests |
+| Fix Verifier | `Read,Write,Edit,Grep,Glob,Bash` | Can apply and verify fixes |

@@ -1,0 +1,21 @@
+## Evaluation Complete
+
+**总分: 100/100**
+
+Report written to `eval-reports/v6-eval.md`.
+
+### Summary of findings:
+
+| Dimension | Score | Key Evidence |
+|-----------|-------|-------------|
+| D1 场景通过率 | 5/5 (35/35) | 13/13 Playwright E2E tests pass |
+| D2 架构合规性 | 5/5 (30/30) | All P1-P5 penalty checks pass; clean 4-layer separation |
+| D3 TS正确性 | 5/5 (15/15) | Zero tsc errors; all interfaces match design doc Section 7.1 |
+| D4 性能SLA | 5/5 (8/8) | suggest 3.4ms, browse 3.8ms, search 4.2ms; 200ms debounce present |
+| D5 前端交互 | 5/5 (8/8) | Animation, breadcrumbs, pills, keyboard nav, dedup all verified |
+| D6 代码规范 | 5/5 (4/4) | @ApiTags, kebab-case, no TODO/FIXME |
+
+### Latent issues found (not affecting score):
+1. **context-injector.ts:29** — `cacheParent()` stores child's displayName instead of parent's. Masked by mock seed data; would produce wrong breadcrumbs in production.
+2. **MentionPicker.tsx** duplicates RefPill rendering (~30 lines of identical JSX/styles).
+3. **SPEC.md** contract table has 3 discrepancies with the authoritative design doc Section 7.1.

@@ -1,0 +1,15 @@
+Evaluation complete. Report written to `eval-reports/v3-eval.md`.
+
+**总分: 67/100** (up from 59 in v2, +8 pts)
+
+Key findings:
+- **All penalties PASS** — no frozen constraint violations
+- **TSC: 0 errors** across all 3 packages
+- **D2 (Architecture): 5/5** — v3 cleaned up all dead code from v2, layering is textbook clean
+- **D3 (TypeScript): 5/5** — all 8 response interfaces align exactly with design doc Section 7.1
+- **D4 (Performance): 4/5** — v3 fixed the N+1 hget with hmget batch, debounce present
+- **D6 (Code conventions): 5/5** — all dead code removed, types imported properly
+- **D1 (Scenarios): 1/5** — capped because services not running; all 13 scenarios look correct via static analysis
+- **D5 (Frontend): 3/5** — MentionPicker now renders AtPicker (v2 fix), but no visual verification possible
+
+**Biggest opportunity**: Starting services and running E2E could unlock +28 pts (D1) + +3.2 pts (D5) = **+31.2 pts potential**, bringing the score to ~98/100.

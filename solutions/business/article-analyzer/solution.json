@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "Article Analyzer",
+    "slug": "article-analyzer",
+    "description": "Iterative article improvement through writing and analysis cycles"
+  },
+  "sessionTemplates": {
+    "article-writer": {
+      "description": "Article writing agent",
+      "enabledSkills": ["article-writer"]
+    },
+    "article-analyzer": {
+      "description": "Article analysis and scoring agent",
+      "enabledSkills": ["article-analyzer"]
+    }
+  },
+  "skills": [
+    { "slug": "article-writer", "name": "article-writer" },
+    { "slug": "article-analyzer", "name": "article-analyzer" }
+  ]
+}

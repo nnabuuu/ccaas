@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Trends 2025 - Editorial Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "inverse-primary": "#b4c5ff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "secondary": "#495c95",
+                        "on-secondary-fixed-variant": "#31447b",
+                        "on-secondary": "#ffffff",
+                        "background": "#f7f9fb",
+                        "surface": "#f7f9fb",
+                        "on-surface-variant": "#434655",
+                        "on-surface": "#191c1e",
+                        "on-primary-container": "#eeefff",
+                        "tertiary-container": "#bc4800",
+                        "on-background": "#191c1e",
+                        "surface-dim": "#d8dadc",
+                        "surface-container": "#eceef0",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#2563eb",
+                        "on-secondary-container": "#394c84",
+                        "error-container": "#ffdad6",
+                        "outline": "#737686",
+                        "inverse-surface": "#2d3133",
+                        "primary": "#004ac6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-secondary-fixed": "#00174b",
+                        "secondary-fixed": "#dbe1ff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c3c6d7",
+                        "surface-tint": "#0053db",
+                        "error": "#ba1a1a",
+                        "tertiary": "#943700",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-container": "#ffede6",
+                        "surface-bright": "#f7f9fb",
+                        "secondary-container": "#acbfff",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#e0e3e5",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#00174b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-[#ffffff] dark:bg-slate-950 flex justify-between items-center w-full px-8 py-4 docked full-width top-0 sticky z-50 shadow-[0_12px_40px_rgba(0,74,198,0.06)] font-['Inter'] tracking-[-0.02em] text-slate-700 dark:text-slate-300">
+<div class="flex items-center gap-12">
+<span class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Editorial Intelligence</span>
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-slate-500 dark:text-slate-400 font-medium pb-1 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Dashboard</a>
+<a class="text-blue-600 dark:text-blue-400 font-semibold border-b-2 border-blue-600 dark:border-blue-400 pb-1" href="#">Articles</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium pb-1 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Analytics</a>
+<a class="text-slate-500 dark:text-slate-400 font-medium pb-1 hover:text-blue-500 dark:hover:text-blue-300 transition-colors" href="#">Insights</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 w-64" placeholder="Search articles..." type="text"/>
+</div>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden ml-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="professional portrait of a male editor in a clean studio setting with soft natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc7buf0WP521JsXWj3_uEH631NkY1qAk7P7GknNOwO3W25C-81YWMHUQoaSLqMXU_FZc_yvxWsFnB_zHu9YF7s5j_Q3BsaYYzU0-ZisRdqAIJzxY0XAsxzsR82TU_V4P6pGxyborTZ2-L3NdC7WRwP12kNrh8Op5VdApQIjzUArtkg6D8YExeX7jE-dNhJLMk5cq2NWPYGRLRBPwU8BxdF5KtLCeei_POsji1PbOL2PszKxc3rQTUb5v68HQ-K-6ojatieAynviOFe"/>
+</div>
+</div>
+</header>
+<div class="flex min-h-screen">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-screen w-64 bg-[#f2f4f6] dark:bg-slate-900/50 p-6 space-y-8 sticky top-[72px] font-['Inter'] text-sm tracking-tight">
+<div class="flex items-center gap-3 px-2">
+<div class="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center overflow-hidden">
+<img alt="Editorial Team" class="w-full h-full object-cover" data-alt="abstract geometric blue pattern representing a professional news desk brand" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkoj00--x0-fh2lwwjOHrKvV23mrF13YNcpQsdIuQe7vJwriHq8YIH4WTVDUqXevaathVjnff1hDKjYkMAVuigTRjCCPA-K1hhzNfeGloWx1PrifLUUGUuWGHp-izZPd-3kGCsL40lm66-PqkvUekPO8qLSm_q3hE2rRBIr31fsRq0EqTf9xGMfBMTF3Hay4a29YTGHafV6AkrehiMlAdno1Zj9SOngv4Tg-isWrYb5YQzhiWv291cI2ibnQpF8W8w0H13VpVhoZRv"/>
+</div>
+<div>
+<p class="font-bold text-on-surface">Global News Desk</p>
+<p class="text-xs text-on-surface-variant">Premium Tier</p>
+</div>
+</div>
+<button class="w-full py-3 px-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-semibold shadow-lg hover:shadow-primary/20 transition-all active:scale-95">
+                Create New Article
+            </button>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-blue-600 dark:text-blue-400 font-bold bg-white/50 dark:bg-slate-800/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="article">article</span>
+<span>Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+<span>Trends</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+<span>Distribution</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="archive">archive</span>
+<span>Archive</span>
+</a>
+</nav>
+<div class="pt-6 border-t border-outline-variant/20 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+<span>Support</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 dark:text-slate-400 hover:bg-white/50 rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span>Account</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-8 py-8 overflow-y-auto bg-background">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 text-sm text-on-surface-variant mb-8 font-medium">
+<a class="hover:text-primary transition-colors" href="#">Articles</a>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-on-surface font-semibold">AI Trends 2025</span>
+</nav>
+<div class="grid grid-cols-12 gap-8">
+<!-- Left Column: Article Info & Main Details -->
+<div class="col-span-12 lg:col-span-8 space-y-8">
+<!-- Article Detail Bento Grid Header -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Hero Info Card -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,74,198,0.06)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<span class="px-3 py-1 bg-secondary-container/30 text-on-secondary-container text-[10px] font-bold tracking-wider uppercase rounded-full">Artificial Intelligence</span>
+<div class="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold tracking-wider uppercase rounded-full">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                        Completed
+                                    </div>
+</div>
+<h1 class="text-4xl font-extrabold tracking-tight text-on-surface mb-3">AI Trends 2025</h1>
+<p class="text-on-surface-variant text-lg leading-relaxed max-w-2xl mb-8">
+                                    A comprehensive analysis of the projected shifts in generative AI, agentic workflows, and ethical governance frameworks for the upcoming fiscal year.
+                                </p>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-outline-variant/10">
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-1">Created Date</p>
+<p class="font-semibold text-on-surface">Oct 12, 2024</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-1">Reading Time</p>
+<p class="font-semibold text-on-surface">12m</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-1">Total Keywords</p>
+<p class="font-semibold text-on-surface">142</p>
+</div>
+<div>
+<p class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-1">Authored By</p>
+<p class="font-semibold text-on-surface underline decoration-primary/30 cursor-pointer">Global Desk</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Reliability Score Gauge (Visual Polish) -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-[0_12px_40px_rgba(0,74,198,0.06)] flex flex-col items-center justify-center text-center">
+<div class="relative mb-4">
+<svg class="w-32 h-32 transform -rotate-90">
+<circle class="text-surface-container-high" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="64" cy="64" fill="transparent" r="58" stroke="currentColor" stroke-dasharray="364.4" stroke-dashoffset="5.8" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-2xl font-extrabold text-on-surface">98.4%</span>
+</div>
+</div>
+<p class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-1">Reliability Score</p>
+<p class="text-xs text-on-surface-variant/80">Based on cross-reference validation</p>
+</div>
+</div>
+<!-- Run History Table Section -->
+<section class="bg-surface-container-lowest rounded-xl shadow-[0_12px_40px_rgba(0,74,198,0.06)] overflow-hidden">
+<div class="px-8 py-6 flex justify-between items-center border-b border-outline-variant/10">
+<h2 class="text-xl font-bold tracking-tight">Run History</h2>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-surface-container-low rounded-lg transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">filter_list</span>
+</button>
+<button class="p-2 hover:bg-surface-container-low rounded-lg transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">download</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Run ID</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Status</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Final Score</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Iterations</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Duration</th>
+<th class="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 text-right">Started At</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-container-low/30 transition-colors cursor-pointer group">
+<td class="px-8 py-5 font-mono text-xs text-primary font-bold">#RH-9982</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">SUCCESS</span>
+</td>
+<td class="px-8 py-5 font-bold">98.4%</td>
+<td class="px-8 py-5 text-on-surface-variant">12</td>
+<td class="px-8 py-5 text-on-surface-variant">4m 22s</td>
+<td class="px-8 py-5 text-on-surface-variant text-right">Oct 12, 14:20</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors cursor-pointer">
+<td class="px-8 py-5 font-mono text-xs text-primary font-bold">#RH-9945</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">SUCCESS</span>
+</td>
+<td class="px-8 py-5 font-bold">96.1%</td>
+<td class="px-8 py-5 text-on-surface-variant">8</td>
+<td class="px-8 py-5 text-on-surface-variant">3m 15s</td>
+<td class="px-8 py-5 text-on-surface-variant text-right">Oct 11, 09:12</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors cursor-pointer">
+<td class="px-8 py-5 font-mono text-xs text-primary font-bold">#RH-9902</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-error-container text-on-error-container">FAILED</span>
+</td>
+<td class="px-8 py-5 font-bold text-on-surface-variant/40">—</td>
+<td class="px-8 py-5 text-on-surface-variant">4</td>
+<td class="px-8 py-5 text-on-surface-variant">1m 02s</td>
+<td class="px-8 py-5 text-on-surface-variant text-right">Oct 10, 18:45</td>
+</tr>
+<tr class="hover:bg-surface-container-low/30 transition-colors cursor-pointer">
+<td class="px-8 py-5 font-mono text-xs text-primary font-bold">#RH-9887</td>
+<td class="px-8 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-800">SUCCESS</span>
+</td>
+<td class="px-8 py-5 font-bold">94.8%</td>
+<td class="px-8 py-5 text-on-surface-variant">10</td>
+<td class="px-8 py-5 text-on-surface-variant">4m 45s</td>
+<td class="px-8 py-5 text-on-surface-variant text-right">Oct 10, 11:30</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="px-8 py-4 bg-surface-container-low/20 flex justify-center">
+<button class="text-xs font-bold text-primary hover:underline transition-all">View All 14 Historical Runs</button>
+</div>
+</section>
+</div>
+<!-- Right Column: Sidebar Actions -->
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<!-- Quick Actions Card -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_40px_rgba(0,74,198,0.06)] border border-outline-variant/5">
+<h3 class="text-xs font-bold tracking-widest text-on-surface-variant uppercase mb-6">Workflow Actions</h3>
+<div class="space-y-3">
+<button class="w-full group flex items-center justify-between px-5 py-4 bg-gradient-to-br from-primary to-primary-container text-white rounded-xl font-bold transition-all hover:shadow-lg hover:shadow-primary/25 active:scale-95">
+<span class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]" data-icon="play_arrow">play_arrow</span>
+                                    Start New Analysis
+                                </span>
+<span class="material-symbols-outlined text-[18px] opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">arrow_forward</span>
+</button>
+<button class="w-full flex items-center gap-3 px-5 py-4 bg-surface-container-low text-on-surface rounded-xl font-bold hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px] text-primary" data-icon="add_circle">add_circle</span>
+                                Analyze New Topic
+                            </button>
+</div>
+</div>
+<!-- Article Health & Integrity -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_40px_rgba(0,74,198,0.06)]">
+<h3 class="text-xs font-bold tracking-widest text-on-surface-variant uppercase mb-4">Content Metadata</h3>
+<div class="space-y-4">
+<div class="p-3 bg-surface-container-low rounded-lg">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-medium">Source Diversity</span>
+<span class="text-[10px] font-bold text-primary">HIGH</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[85%]"></div>
+</div>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-medium">Verification Bias</span>
+<span class="text-[10px] font-bold text-green-600">LOW</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-green-500 w-[12%]"></div>
+</div>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-medium">Engagement Potential</span>
+<span class="text-[10px] font-bold text-primary">OPTIMAL</span>
+</div>
+<div class="w-full h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[92%]"></div>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+<div class="flex -space-x-2">
+<img alt="collaborator" class="w-7 h-7 rounded-full border-2 border-surface-container-lowest" data-alt="portrait of a professional female editor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCs4b1ZBbUaMugJ9rguE-2uEpPr7gtDQK2LwB4K0UtYocPPRCJi1VUOgoAC6rYJcSBg0VGpViAqoJIFcrne3oWF43hF0yaTBWRaRsXod828ue8DM-6idmH9hnn7kAworwWt6ixHCbx3zRWC9Ql-cMhET-zx-RzK5MrjpNhPsXFkK0JoXvUwL0MdJhGdD4svOUzlu8RPp97vPOod5wr4XXFAc7iVCi4flXs2pETlmIvFyTMq3PDXmxXirLYV4m8cAaWQpscPGx0utRZ3"/>
+<img alt="collaborator" class="w-7 h-7 rounded-full border-2 border-surface-container-lowest" data-alt="portrait of a creative director" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAugJWBHi3PKXNkNbarwzPv2o1_Qpxr-YtirBnYugfCbWY1WtO0GUp9sjz-MMWUjwTt1YAa6kGYWwEXHIx1ONZft9BLktlWb5z1M7s4OBFALvdY7WYIzByUp9yNFFyv9SXusdXgkcGBzFDedSFL0OyuQwDSDuRA-FoMkzLUSN42-wpqdz9WvBhsnBvyU50mAXad_QM9pRjZxV7Rp4I7cG6pTyx_MEMHPwvn2hxRtwGlzt4LDYkTeELYUfeBekLb8lQTjz7Z2aepoTxo"/>
+<div class="w-7 h-7 rounded-full border-2 border-surface-container-lowest bg-surface-container-highest flex items-center justify-center text-[10px] font-bold">+4</div>
+</div>
+<button class="text-[10px] font-bold text-on-surface-variant flex items-center gap-1 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[14px]">settings</span> Manage Access
+                            </button>
+</div>
+</div>
+<!-- Promotion/Upsell Card -->
+<div class="bg-primary/5 rounded-xl p-6 border border-primary/10 relative overflow-hidden">
+<div class="relative z-10">
+<p class="text-primary font-bold text-sm mb-2">Editor Pro Tip</p>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                                Use the "Iterative Refinement" mode to increase the reliability score by 15% for complex analytical topics like AI forecasting.
+                            </p>
+<a class="inline-block mt-4 text-[11px] font-bold text-primary uppercase tracking-wider hover:underline" href="#">Learn more about runs</a>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-7xl text-primary/5 select-none" data-icon="lightbulb">lightbulb</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

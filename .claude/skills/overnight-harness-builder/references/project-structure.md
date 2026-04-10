@@ -68,7 +68,28 @@ Artifacts are live source files in the project. Git commits serve as version sna
 
 Note: In Code Mode, the artifact lives in the project source tree (e.g., `packages/foo/src/`), not in this directory.
 
-**Choose mode based on HARNESS_SPEC.md's artifact type.** When in doubt, ask the user.
+### Investigation Mode (bug analysis, root cause diagnosis)
+
+No artifact to iterate on. The "output" is evidence and a root cause report.
+
+```
+{task-name}/
+├── SPEC.md                     # [FROZEN] Symptoms, hypotheses, code path, verification steps
+├── prompts/
+│   └── investigator.md         # Investigator agent instructions
+├── harness.sh                  # Investigation loop script
+├── progress.md                 # Investigation progress (hypothesis → status per round)
+├── evidence/                   # One file per hypothesis
+│   ├── h1-{name}.md            # Evidence for hypothesis 1
+│   ├── h2-{name}.md            # Evidence for hypothesis 2
+│   ├── h3-{name}.md
+│   └── new-hypotheses.md       # (Optional) New hypotheses if all original ones eliminated
+└── root-cause-report.md        # Final report (generated when root cause confirmed)
+```
+
+Note: Investigation Mode has no `drafts/`, `changelogs/`, or `eval-reports/` directories.
+
+**Choose mode based on HARNESS_SPEC.md.** When in doubt, ask the user.
 
 ## File Roles
 

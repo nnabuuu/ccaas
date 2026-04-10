@@ -1,0 +1,20 @@
+Evaluation report written to `eval-reports/v2-eval.md`.
+
+## Summary
+
+**总分: 59/100** (below 65 threshold)
+
+Key findings:
+
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| D1 场景通过率 | 1/5 (7/35) | Services not running — capped. Static analysis suggests all 13 would pass. |
+| D2 架构合规性 | 4/5 (24/30) | Clean 4-layer separation. Dead code in mock (old controller, unused methods). |
+| D3 TS正确性 | 5/5 (15/15) | Zero tsc errors. All interfaces match design doc Section 7.1. |
+| D4 性能SLA | 3/5 (4.8/8) | Debounce correct (200ms). N+1 hget in RecommendEngine. |
+| D5 前端交互 | 3/5 (4.8/8) | Animation + breadcrumbs + pills work. MentionPicker.tsx incomplete (no AtPicker mount). |
+| D6 代码规范 | 4/5 (3.2/4) | @ApiTags present. Dead file + dead code in mock. |
+
+**v2 improvements over v1**: The core architectural change — mock solution now uses `ContextLayerModule.forRoot()` with adapter pattern instead of a standalone controller — is the correct approach and validates the entire DynamicModule chain. TypeScript went from errors to zero. All penalties pass.
+
+**Biggest blocker**: D1 accounts for 35% of the score but is capped at 1/5 because services weren't started. Static analysis of all 13 scenarios shows they should pass. Starting the services and running Playwright would likely push the score to ~87/100.

@@ -1,0 +1,22 @@
+All tasks complete. Summary of v3 changes:
+
+**D2/D6 — Dead code cleanup:**
+- Deleted `context-demo.controller.ts` (dead v1 controller)
+- Removed 4 unused methods + 3 dead fields from MockDataService
+- Replaced 6 inline type declarations with imports from `@kedge-agentic/context-layer`
+- Removed dead `MockDataService` DI provider from app.module.ts
+
+**D5 — MentionPicker integration:**
+- MentionPicker now renders `<AtPicker>` from context-layer-react when `pickerOpen=true`
+- Added Escape key handler to close picker
+- Added `@kedge-agentic/context-layer-react` as peer/dev dep of chat-interface
+
+**D4 — Performance (hmget batch):**
+- Added `hmget(key, fields[])` to CacheStore interface
+- Implemented in MockCacheStore
+- RecommendEngine.getTopN() now uses 1 batch hmget instead of N sequential hget calls
+
+**D2 — Client SDK:**
+- ContextLayerClient.getShortcuts() now accepts optional `sessionTemplate` param
+
+**Verification:** All 3 packages pass tsc with 0 errors. All frozen constraints verified (P1-P5).

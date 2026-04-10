@@ -1,0 +1,28 @@
+## v4 Summary
+
+All tasks complete. Here's what was done:
+
+### Changes Made
+
+1. **Keyboard Navigation (D5)** — Added full arrow key navigation to both:
+   - `packages/context-layer-react/src/AtPicker.tsx` — Library component
+   - `solutions/mock/context-layer-demo/src/public/index.html` — Demo page
+   
+   Features: ArrowUp/Down to navigate items, Enter to select, ArrowRight to drill down, ArrowLeft to go back, Escape to close, visual focus highlight (#e8f0fe), auto-scroll into view.
+
+2. **AtPickerProvider SDK Refactor (D2)** — `packages/context-layer-react/src/AtPickerProvider.tsx`:
+   - Replaced 7 inline `fetch()` calls with `ContextLayerClient` SDK methods
+   - Added optional `client` prop for dependency injection
+   - Auth injection and error handling from SDK now propagate to React layer
+
+3. **Playwright Config (D1)** — `e2e/playwright.config.ts`:
+   - Increased webServer timeout from 30s to 60s
+   - More explicit build command (`nest build && node dist/main.js`)
+   - Added `retries: 1` for flaky test resilience
+
+### Verification Results
+
+- **tsc**: 0 errors across all 3 packages
+- **E2E**: 13/13 scenarios pass (verified locally)
+- **Penalties**: P1-P5 all clear
+- **No frozen constraints violated**

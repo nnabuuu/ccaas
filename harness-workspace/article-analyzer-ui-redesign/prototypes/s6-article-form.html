@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Create New Article | Editorial Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#0053db",
+                        "surface-container-high": "#e7e7f3",
+                        "primary-fixed": "#dbe1ff",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "outline": "#737686",
+                        "error": "#ba1a1a",
+                        "surface-variant": "#e1e2ed",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary": "#ffffff",
+                        "tertiary-container": "#bc4800",
+                        "primary-container": "#2563eb",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-surface": "#191b23",
+                        "surface-container-highest": "#e1e2ed",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#faf8ff",
+                        "primary": "#004ac6",
+                        "on-secondary-fixed-variant": "#31447b",
+                        "inverse-primary": "#b4c5ff",
+                        "on-surface-variant": "#434655",
+                        "surface": "#faf8ff",
+                        "on-primary-fixed": "#00174b",
+                        "outline-variant": "#c3c6d7",
+                        "inverse-on-surface": "#f0f0fb",
+                        "surface-container-low": "#f3f3fe",
+                        "surface-container": "#ededf9",
+                        "on-primary": "#ffffff",
+                        "tertiary": "#943700",
+                        "secondary": "#495c95",
+                        "surface-dim": "#d9d9e5",
+                        "on-tertiary-container": "#ffede6",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#360f00",
+                        "on-secondary-fixed": "#00174b",
+                        "inverse-surface": "#2e3039",
+                        "background": "#faf8ff",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-error": "#ffffff",
+                        "on-background": "#191b23",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-secondary-container": "#394c84",
+                        "secondary-container": "#acbfff",
+                        "on-primary-fixed-variant": "#003ea8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- SideNavBar (Shared) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-[#f3f3fe] dark:bg-slate-950 flex flex-col p-6 space-y-8 z-40 hidden md:flex">
+<div class="flex flex-col space-y-1">
+<div class="flex items-center space-x-3 mb-6">
+<img alt="Editorial Intel" class="w-8 h-8" data-alt="Abstract geometric logo with blue tones representing intelligence and editorial structure" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdWQfcOUUs5wl92SE4TjntiqbbiU6m0KmaE4y42eqjjWju-5s79AwDDH4P4Mw5m990J3THOdZIHE98vrLxar6b9QbLXk65Ov6zk8oRybtVuJImY-XroO6U8BlaFsmnmv4YeCp7S8lcTTNi6HV6hMqn_b2HbAobnakjFLuOVkHQu9HSPOfLH0z-IMjJItFEn7Eq9h2KNRW_d7D2i4cr_s-AkUZro_DbrEJNJbzd-Z7SRto3wz_bPIzD9o_xjIHfsiY3aMDMi47gzFN0"/>
+<div>
+<h1 class="text-lg font-black uppercase text-[#004ac6] dark:text-blue-500 leading-none">Editorial Intel</h1>
+<p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Data-Rich Curation</p>
+</div>
+</div>
+<nav class="space-y-2">
+<a class="text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all flex items-center gap-3 font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span> Dashboard
+                </a>
+<a class="text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all flex items-center gap-3 font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span> Article List
+                </a>
+<a class="bg-white dark:bg-slate-800 text-[#004ac6] dark:text-blue-400 rounded-lg shadow-sm px-4 py-3 flex items-center gap-3 font-medium text-sm active:scale-[0.98] transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="add_box">add_box</span> New Article
+                </a>
+<a class="text-slate-600 dark:text-slate-400 px-4 py-3 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all flex items-center gap-3 font-medium text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span> Analytics
+                </a>
+</nav>
+</div>
+<div class="mt-auto pt-6 space-y-2 border-t border-slate-200 dark:border-slate-800">
+<button class="w-full bg-[#004ac6] text-white py-3 rounded-lg font-semibold text-sm mb-4 shadow-md hover:bg-[#2563eb] transition-all">
+                Quick Scan
+            </button>
+<a class="text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all flex items-center gap-3 text-sm" href="#">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span> Support
+            </a>
+<a class="text-slate-600 dark:text-slate-400 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-all flex items-center gap-3 text-sm text-error" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span> Sign Out
+            </a>
+</div>
+</aside>
+<!-- Main Wrapper -->
+<div class="md:ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Shared) -->
+<header class="w-full sticky top-0 z-30 bg-[#ffffff] dark:bg-slate-900 shadow-sm flex items-center justify-between px-8 py-3">
+<div class="flex items-center flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Search analytics or articles..." type="text"/>
+</div>
+</div>
+<div class="flex items-center space-x-6">
+<nav class="hidden lg:flex items-center space-x-8">
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#2563eb] transition-colors text-sm font-medium" href="#">Insights</a>
+<a class="text-[#004ac6] dark:text-blue-400 font-semibold border-b-2 border-[#004ac6] text-sm py-1" href="#">Editor</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-[#2563eb] transition-colors text-sm font-medium" href="#">Archive</a>
+</nav>
+<div class="flex items-center space-x-3 pl-6 border-l border-slate-200 dark:border-slate-800">
+<button class="material-symbols-outlined text-slate-500 hover:text-primary transition-all p-2">notifications</button>
+<button class="material-symbols-outlined text-slate-500 hover:text-primary transition-all p-2">settings</button>
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center overflow-hidden cursor-pointer">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="Professional corporate headshot of a business executive for user profile icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBaOjP_g6JmEuJEHo0Dpp9ge0ULeJjmOjKjdPM3TEAoxKPUSwz4At55O3THJIoIWRPHdNOGqJ8lc4aUF_QF50c7B04EWnR4VCBlPXQXUODbZZdQdI1FyO5AwSF7gQ7hrxqTqwxDYcCR1wm8o9zG5L4jmVth1dVua2bNlBUHXxrLjWMag20XReLWQXil2eNeaJnihuL-pIcZtqonLTIJ6_cmVvsO4fZuyW6CRcBS5fqUfJE9FbA23YymtkhNdwqaOmOioxO83usOsyQH"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 p-8 md:p-12 max-w-5xl mx-auto w-full">
+<!-- Breadcrumb -->
+<nav aria-label="Breadcrumb" class="flex items-center space-x-2 text-sm text-on-surface-variant mb-10">
+<a class="hover:text-primary transition-colors" href="#">Articles</a>
+<span class="material-symbols-outlined text-sm opacity-50">chevron_right</span>
+<span class="font-semibold text-on-surface">Create New Article</span>
+</nav>
+<!-- Page Title Area -->
+<div class="mb-12">
+<h2 class="text-4xl font-extrabold tracking-tight text-on-surface mb-2">Draft a Narrative</h2>
+<p class="text-on-surface-variant max-w-2xl leading-relaxed">Transform raw data and initial concepts into sophisticated editorial pieces using our AI-driven intelligence framework.</p>
+</div>
+<!-- Central Form Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_24px_40px_-4px_rgba(25,27,35,0.04)] p-8 md:p-12 relative overflow-hidden border border-outline-variant/10">
+<form class="space-y-10">
+<!-- Title Input Section -->
+<div class="space-y-3">
+<div class="flex justify-between items-end">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant" for="title">Title *</label>
+<span class="text-[11px] font-medium text-on-surface-variant/60">0/200</span>
+</div>
+<input class="w-full px-5 py-4 bg-surface-container-highest border border-error rounded-lg focus:ring-2 focus:ring-primary focus:outline-none transition-all placeholder:text-on-surface-variant/40" id="title" placeholder="Enter article title..." type="text"/>
+<p class="text-xs font-semibold text-error flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">error</span> Title is required
+                        </p>
+</div>
+<!-- Input Type Selector -->
+<div class="space-y-4">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Input Method</label>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Selected Card -->
+<div class="relative group cursor-pointer">
+<div class="absolute -inset-0.5 bg-primary rounded-xl opacity-100 transition duration-200"></div>
+<div class="relative bg-white p-6 rounded-[calc(0.75rem-1px)] flex items-start gap-4">
+<div class="w-12 h-12 bg-primary-fixed rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface mb-1">Topic</h4>
+<p class="text-sm text-on-surface-variant leading-tight">Start from a topic idea</p>
+</div>
+<div class="text-primary">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+</div>
+</div>
+<!-- Unselected Card -->
+<div class="relative group cursor-pointer hover:bg-surface-container-low transition-all">
+<div class="relative bg-surface-container-low p-6 rounded-xl flex items-start gap-4 border border-outline-variant/20">
+<div class="w-12 h-12 bg-surface-container-highest rounded-lg flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-2xl">description</span>
+</div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface mb-1 text-on-surface/60">Draft</h4>
+<p class="text-sm text-on-surface-variant leading-tight">Improve existing text</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Initial Input Section -->
+<div class="space-y-3">
+<div class="flex justify-between items-end">
+<label class="text-sm font-bold uppercase tracking-wider text-on-surface-variant" for="content">Initial Input *</label>
+</div>
+<div class="relative">
+<textarea class="w-full px-5 py-5 bg-surface-container-highest border border-transparent rounded-xl focus:ring-2 focus:ring-primary focus:outline-none transition-all placeholder:text-on-surface-variant/40 resize-none text-on-surface leading-relaxed" id="content" placeholder="Enter your topic or paste your draft here..." rows="8"></textarea>
+</div>
+<div class="flex justify-between text-[11px] font-bold uppercase tracking-widest text-on-surface-variant/60 pt-1">
+<span>0 words</span>
+<span>0/5000 characters</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex flex-col sm:flex-row items-center justify-end gap-6 pt-8 border-t border-outline-variant/10">
+<button class="text-primary font-bold text-sm tracking-wide hover:underline transition-all" type="button">
+                            Cancel
+                        </button>
+<button class="w-full sm:w-auto bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-lg font-bold text-sm tracking-wide shadow-xl shadow-primary/10 hover:scale-[1.02] active:scale-[0.98] transition-all" type="submit">
+                            Create Article
+                        </button>
+</div>
+</form>
+<!-- Decorative Subtle Background Glow -->
+<div class="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-24 -left-24 w-64 h-64 bg-tertiary/5 rounded-full blur-3xl pointer-events-none"></div>
+</div>
+<!-- AI Insight Rail (Custom Component) -->
+<div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+<div class="p-6 rounded-xl bg-surface-container-low space-y-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h5 class="font-bold text-sm text-on-surface">Smart Contextualizing</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Our AI analyzes your initial input to suggest the most authoritative angle for your editorial piece.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container-low space-y-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<h5 class="font-bold text-sm text-on-surface">Style Synthesis</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Maintain a consistent brand voice by selecting from your pre-defined editorial templates after creation.</p>
+</div>
+<div class="p-6 rounded-xl bg-surface-container-low space-y-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+<h5 class="font-bold text-sm text-on-surface">Real-time Validation</h5>
+<p class="text-xs text-on-surface-variant leading-relaxed">Automatic checks for citations and factual consistency as your article starts to take shape.</p>
+</div>
+</div>
+</main>
+<!-- Footer Branding -->
+<footer class="p-8 text-center text-on-surface-variant/40 text-[10px] font-bold uppercase tracking-[0.2em] mt-auto">
+            © 2024 Editorial Intelligence Framework • The Digital Curator
+        </footer>
+</div>
+<!-- Mobile Bottom Navigation (Shared) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t border-outline-variant/10 flex justify-around items-center py-4 px-2 z-50">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">DASH</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">description</span>
+<span class="text-[10px] font-bold">ARTICLES</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<span class="text-[10px] font-bold">NEW</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-bold">DATA</span>
+</button>
+</nav>
+</body></html>

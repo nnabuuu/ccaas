@@ -1,0 +1,21 @@
+The evaluation report is in place (156 lines). Here's a summary of the completed evaluation:
+
+**v1 Evaluation: 56/100**
+
+| Dimension | Score | Notes |
+|-----------|-------|-------|
+| D1 Scenarios | 1/5 | Services not running (cap), static analysis predicts 13/13 pass |
+| D2 Architecture | 4/5 | Clean layering; mock skips `forRoot()` |
+| D3 TypeScript | 5/5 | Zero tsc errors across all 3 packages |
+| D4 Performance | 3/5 | Debounce correct; can't measure latency |
+| D5 Frontend | 2/5 | Features present; can't verify visually |
+| D6 Conventions | 3/5 | Good conventions; dead code + incorrect roots |
+| Penalties | 0 | All P1-P5 checks pass |
+
+**Projected score with services running: ~84/100**
+
+Key issues identified:
+1. Mock doesn't use `ContextLayerModule.forRoot()` (SPEC requirement)
+2. `context-layer-react` duplicates types instead of importing from client
+3. 5 unused component files in `context-layer-react/components/`
+4. Mock data roots incorrectly include child entity types

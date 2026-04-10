@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#5f5f62",
+                    "primary-fixed-dim": "#c7d3ff",
+                    "on-primary": "#f8f7ff",
+                    "on-tertiary": "#fdf7ff",
+                    "primary-container": "#dbe1ff",
+                    "outline": "#717c82",
+                    "error-dim": "#4e0309",
+                    "on-tertiary-container": "#4f4964",
+                    "secondary-fixed-dim": "#d5d3d8",
+                    "surface-container-highest": "#d9e4ea",
+                    "surface-container": "#e8eff3",
+                    "surface-tint": "#0053db",
+                    "surface-container-high": "#e1e9ee",
+                    "on-tertiary-fixed-variant": "#59526e",
+                    "on-primary-fixed-variant": "#0050d4",
+                    "primary": "#0053db",
+                    "on-secondary": "#faf8fc",
+                    "surface-bright": "#f7f9fb",
+                    "tertiary-dim": "#564f6b",
+                    "tertiary-container": "#dfd5f7",
+                    "inverse-surface": "#0b0f10",
+                    "on-surface": "#2a3439",
+                    "on-surface-variant": "#566166",
+                    "on-tertiary-fixed": "#3c3650",
+                    "surface-variant": "#d9e4ea",
+                    "inverse-primary": "#618bff",
+                    "primary-fixed": "#dbe1ff",
+                    "surface": "#f7f9fb",
+                    "tertiary-fixed": "#dfd5f7",
+                    "tertiary": "#625b77",
+                    "secondary-dim": "#535356",
+                    "error": "#9f403d",
+                    "error-container": "#fe8983",
+                    "surface-dim": "#cfdce3",
+                    "outline-variant": "#a9b4b9",
+                    "background": "#f7f9fb",
+                    "on-primary-fixed": "#003798",
+                    "on-error": "#fff7f6",
+                    "secondary-container": "#e4e2e6",
+                    "surface-container-lowest": "#ffffff",
+                    "on-background": "#2a3439",
+                    "primary-dim": "#0048c1",
+                    "tertiary-fixed-dim": "#d0c7e8",
+                    "surface-container-low": "#f0f4f7",
+                    "on-secondary-fixed": "#3f3f43",
+                    "on-secondary-fixed-variant": "#5b5b5f"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-[#f7f9fb] dark:bg-slate-950 flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-11 h-11 text-[#2a3439] dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="text-lg font-semibold text-[#2a3439] dark:text-slate-100 font-['Inter'] font-semibold tracking-[-0.02em]">Article Analyzer</h1>
+</div>
+<button class="flex items-center justify-center w-11 h-11 text-[#2a3439] dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-full active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="dark_mode">dark_mode</span>
+</button>
+</header>
+<main class="pb-24">
+<!-- Filter Row -->
+<div class="sticky top-16 z-40 bg-surface/80 backdrop-blur-md pt-4 pb-4">
+<div class="flex gap-2 px-6 overflow-x-auto hide-scrollbar">
+<!-- Active Chip -->
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-medium tracking-wide shadow-sm active:scale-95 transition-all">
+                    All
+                </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-fixed text-xs font-medium tracking-wide hover:bg-surface-container-highest active:scale-95 transition-all">
+                    Draft
+                </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-fixed text-xs font-medium tracking-wide hover:bg-surface-container-highest active:scale-95 transition-all">
+                    Running
+                </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-fixed text-xs font-medium tracking-wide hover:bg-surface-container-highest active:scale-95 transition-all">
+                    Completed
+                </button>
+<button class="whitespace-nowrap px-4 py-2 rounded-full bg-secondary-container text-on-secondary-fixed text-xs font-medium tracking-wide hover:bg-surface-container-highest active:scale-95 transition-all">
+                    Failed
+                </button>
+</div>
+</div>
+<!-- Article List -->
+<section class="px-6 space-y-4 mt-2">
+<!-- Card 1 -->
+<div class="group bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4 shadow-[0_8px_24px_-4px_rgba(42,52,57,0.04)] active:scale-[0.98] transition-all duration-200 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-primary-container text-on-primary-container">
+                            Running
+                        </span>
+<h3 class="text-on-surface font-semibold text-lg leading-tight group-hover:text-primary transition-colors">Market Trends 2024</h3>
+</div>
+<div class="text-right">
+<div class="text-primary font-extrabold text-xl tracking-tighter">83.2</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-widest">Score</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/15">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="text-xs font-medium">3 min ago</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4 shadow-[0_8px_24px_-4px_rgba(42,52,57,0.04)] active:scale-[0.98] transition-all duration-200 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-surface-container-highest text-on-surface-variant">
+                            Draft
+                        </span>
+<h3 class="text-on-surface font-semibold text-lg leading-tight group-hover:text-primary transition-colors">AI Content Strategy</h3>
+</div>
+<div class="text-right">
+<div class="text-on-surface-variant font-extrabold text-xl tracking-tighter">--</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-widest">Score</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/15">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="text-xs font-medium">12 min ago</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4 shadow-[0_8px_24px_-4px_rgba(42,52,57,0.04)] active:scale-[0.98] transition-all duration-200 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-green-100 text-green-700">
+                            Completed
+                        </span>
+<h3 class="text-on-surface font-semibold text-lg leading-tight group-hover:text-primary transition-colors">The Future of SaaS</h3>
+</div>
+<div class="text-right">
+<div class="text-primary font-extrabold text-xl tracking-tighter">94.8</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-widest">Score</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/15">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="text-xs font-medium">1 hour ago</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="group bg-surface-container-lowest rounded-xl p-5 flex flex-col gap-4 shadow-[0_8px_24px_-4px_rgba(42,52,57,0.04)] active:scale-[0.98] transition-all duration-200 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-error-container text-on-error-container">
+                            Failed
+                        </span>
+<h3 class="text-on-surface font-semibold text-lg leading-tight group-hover:text-primary transition-colors">User Experience 2.0</h3>
+</div>
+<div class="text-right">
+<div class="text-error font-extrabold text-xl tracking-tighter">12.0</div>
+<div class="text-[10px] text-on-surface-variant font-medium uppercase tracking-widest">Score</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant/15">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="text-xs font-medium">4 hours ago</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-24 right-6 w-14 h-14 rounded-full bg-gradient-to-br from-primary to-primary-dim text-white shadow-lg flex items-center justify-center active:scale-90 transition-transform z-50">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-[#ffffffcc] dark:bg-slate-900/80 backdrop-blur-md rounded-t-[0.75rem] shadow-[0_-4px_12px_rgba(0,0,0,0.02)] border-t border-[#a9b4b9]/15">
+<button class="flex flex-col items-center justify-center bg-[#f0f4f7] dark:bg-slate-800 text-[#0053db] dark:text-blue-400 rounded-2xl p-2 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#2a3439] dark:text-slate-500 p-2 hover:text-[#0053db] dark:hover:text-blue-300 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Stats</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#2a3439] dark:text-slate-500 p-2 hover:text-[#0053db] dark:hover:text-blue-300 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Magic</span>
+</button>
+<button class="flex flex-col items-center justify-center text-[#2a3439] dark:text-slate-500 p-2 hover:text-[#0053db] dark:hover:text-blue-300 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-['Inter'] text-[10px] uppercase tracking-widest mt-1">Me</span>
+</button>
+</nav>
+</body></html>

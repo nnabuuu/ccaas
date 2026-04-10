@@ -1,0 +1,12 @@
+Evaluation complete. Report written to `eval-reports/v4-eval.md`.
+
+**总分: 69/100** (+2 from v3's 67)
+
+Key findings:
+- **All pre-gates pass** — zero penalties triggered (P1-P5 clean)
+- **All tsc checks pass** — 0 errors across 3 packages
+- **D5 improved** 3/5→4/5: Comprehensive keyboard navigation added (ArrowUp/Down/Left/Right + Enter + Escape)
+- **D2 quality improvement**: AtPickerProvider refactored to use ContextLayerClient SDK (was inline fetch in v3)
+- **D1 remains at 1/5**: Services not running caps this at max 1/5. Static analysis suggests all 13 scenarios would pass — starting services would add **+28 points** to reach 97/100
+
+The primary blocker is still D1 (no runtime verification). The code itself is architecturally clean, type-correct, and feature-complete.
