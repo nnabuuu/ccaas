@@ -360,10 +360,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     type: 'swap',
     teacherId: 't-zhang',
     teacherName: '张老师',
-    changes: [
-      { originalDay: 3, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 3, targetTeacherId: 't-zhang', classId: 'c-8-2' },
-      { originalDay: 4, originalPeriod: 3, originalTeacherId: 't-wang', targetDay: 3, targetPeriod: 5, targetTeacherId: 't-wang', classId: 'c-8-1' },
-    ],
+    changes: [{ originalDay: 3, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 3, targetTeacherId: 't-wang', classId: 'c-8-2' }],
     reason: '周三下午有教研活动',
     status: 'pending',
     createdAt: '2025-04-18T10:30:00Z',
@@ -491,13 +488,14 @@ const timetableSubmitRequestTool: Tool = {
 
 const timetableListMyRequestsTool: Tool = {
   name: 'timetable_list_my_requests',
-  description: '查询当前教师的调课申请列表。可按状态过滤。',
+  description: '查询当前教师的调课申请列表。teacherId 必须从 sessionContext 获取。可按状态过滤。',
   inputSchema: {
     type: 'object' as const,
     properties: {
-      teacherId: { type: 'string', description: '教师ID' },
+      teacherId: { type: 'string', description: '教师ID（必须从 sessionContext.teacherId 获取）' },
       status: { type: 'string', description: '过滤状态: pending/approved/rejected' },
     },
+    required: ['teacherId'],
   },
 };
 
@@ -1044,43 +1042,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       classId: string;
     }>;
 
-    // Swap-aware: vacated original slots should not count as conflicts.
-    // When A↔B swap, both original entries are released before targets are occupied.
-    const vacatedKeys = new Set(
-      changes.map(c => `${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`)
-    );
-    const virtualSchedule = SCHEDULE.filter(entry =>
-      !vacatedKeys.has(`${entry.teacherId}:${entry.day}:${entry.period}`)
-    );
-
     const conflicts: Array<{ type: string; severity: 'soft' | 'hard'; description: string }> = [];
 
+    // Swap-aware: collect slots vacated by all changes in this batch.
+    // In a swap, teacher A leaves slot X and teacher B leaves slot Y,
+    // so X is available for B and Y is available for A.
+    const vacatedTeacherKeys = new Set<string>();
+    const vacatedClassKeys = new Set<string>();
+    for (const c of changes) {
+      vacatedTeacherKeys.add(`${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`);
+      vacatedClassKeys.add(`${c.classId}:${c.originalDay}:${c.originalPeriod}`);
+    }
+
     for (const change of changes) {
-      // Hard: target teacher already has a class at target time (excluding vacated slots)
-      const targetTeacherBusy = virtualSchedule.find(
+      // Hard: target teacher already has a class at target time
+      const targetTeacherBusy = SCHEDULE.find(
         e => e.teacherId === change.targetTeacherId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (targetTeacherBusy) {
-        conflicts.push({
-          type: 'teacher_busy',
-          severity: 'hard',
-          description: `${targetTeacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${targetTeacherBusy.subject}·${targetTeacherBusy.className}）`,
-        });
+        // Skip if that teacher's slot is being vacated by another change in this batch
+        const vacKey = `${change.targetTeacherId}:${change.targetDay}:${change.targetPeriod}`;
+        if (!vacatedTeacherKeys.has(vacKey)) {
+          conflicts.push({
+            type: 'teacher_busy',
+            severity: 'hard',
+            description: `${targetTeacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${targetTeacherBusy.subject}·${targetTeacherBusy.className}）`,
+          });
+        }
       }
 
-      // Hard: target class already has a class at target time (excluding vacated slots)
-      const classBusy = virtualSchedule.find(
+      // Hard: target class already has a class at target time
+      const classBusy = SCHEDULE.find(
         e => e.classId === change.classId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (classBusy) {
-        conflicts.push({
-          type: 'class_busy',
-          severity: 'hard',
-          description: `${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${classBusy.subject}·${classBusy.teacherName}）`,
-        });
+        // Skip if that class's slot is being vacated by another change in this batch
+        const vacKey = `${change.classId}:${change.targetDay}:${change.targetPeriod}`;
+        if (!vacatedClassKeys.has(vacKey)) {
+          conflicts.push({
+            type: 'class_busy',
+            severity: 'hard',
+            description: `${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${classBusy.subject}·${classBusy.teacherName}）`,
+          });
+        }
       }
 
-      // Hard: room event at target time (external events, unaffected by schedule changes)
+      // Hard: room event at target time
       const roomEvent = ROOM_EVENTS.find(
         re => re.day === change.targetDay && re.period === change.targetPeriod
       );
@@ -1092,14 +1099,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
       }
 
-      // Soft: same subject count in class for target day (using virtual schedule)
+      // Soft: same subject count in class for target day
       const originalEntry = SCHEDULE.find(
         e => e.teacherId === change.originalTeacherId && e.day === change.originalDay && e.period === change.originalPeriod
       );
       if (originalEntry) {
-        const sameSubjectCount = virtualSchedule.filter(
+        // Count existing same-subject classes on target day, but subtract any
+        // that are being vacated (moved away) by other changes in this batch
+        let sameSubjectCount = SCHEDULE.filter(
           e => e.classId === change.classId && e.day === change.targetDay && e.subject === originalEntry.subject
         ).length;
+        // Subtract vacated entries: if another change moves the same class's same-subject
+        // class away from the target day, it no longer counts
+        for (const other of changes) {
+          if (other === change) continue;
+          const otherEntry = SCHEDULE.find(
+            e => e.teacherId === other.originalTeacherId && e.day === other.originalDay && e.period === other.originalPeriod
+          );
+          if (otherEntry && otherEntry.classId === change.classId && otherEntry.day === change.targetDay && otherEntry.subject === originalEntry.subject) {
+            sameSubjectCount--;
+          }
+        }
         if (sameSubjectCount >= 2) {
           conflicts.push({
             type: 'subject_overload',
@@ -1141,6 +1161,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     requestCounter++;
     const now = new Date();
+    // Format: YYYY-MMDD (e.g., "2025-0418"), matches pre-seeded requestId format
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 
