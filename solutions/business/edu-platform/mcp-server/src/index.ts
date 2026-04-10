@@ -389,9 +389,32 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     approver: '李主任',
     rejectReason: '目标时段教室已被占用',
   },
+  // Historical substitute records for dynamic historyCount
+  {
+    requestId: '#2025-0320-001',
+    type: 'substitute',
+    teacherId: 't-wang',
+    teacherName: '王老师',
+    changes: [{ originalDay: 4, originalPeriod: 5, originalTeacherId: 't-wang', targetDay: 4, targetPeriod: 5, targetTeacherId: 't-liu', classId: 'c-8-2' }],
+    reason: '外出培训',
+    status: 'approved',
+    createdAt: '2025-03-20T09:00:00Z',
+    approver: '李主任',
+  },
+  {
+    requestId: '#2025-0305-002',
+    type: 'substitute',
+    teacherId: 't-li',
+    teacherName: '李老师',
+    changes: [{ originalDay: 2, originalPeriod: 1, originalTeacherId: 't-li', targetDay: 2, targetPeriod: 1, targetTeacherId: 't-liu', classId: 'c-8-1' }],
+    reason: '体检',
+    status: 'approved',
+    createdAt: '2025-03-05T08:30:00Z',
+    approver: '李主任',
+  },
 ];
 
-let requestCounter = 4;
+let requestCounter = 6;
 
 // Helper: day number to Chinese name
 const DAY_NAMES = ['', '周一', '周二', '周三', '周四', '周五'];
@@ -928,25 +951,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const week = (params.week as number) || 1;
     const classIds = (params.classIds as string[] | undefined) || [];
     const excludeTeacherId = params.excludeTeacherId as string | undefined;
-    const rawPreferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
-    // Filter to valid school days (Mon-Fri = 1-5)
-    const preferredDays = rawPreferredDays.filter(d => d >= 1 && d <= 5);
-    if (preferredDays.length === 0) {
-      return {
-        content: [{
-          type: 'text',
-          text: JSON.stringify({
-            data: {
-              week,
-              totalSlots: 0,
-              slots: [],
-              note: '指定日期不在正常教学日范围内（周一至周五），无法安排调课',
-            },
-            status: 'success',
-          }),
-        }],
-      };
-    }
+    const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
 
     // Weeks >= 50 simulate exam/event weeks where all slots are occupied
     if (week >= 50) {
@@ -1039,7 +1044,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           data: {
             week,
             totalSlots: slots.length,
-            slots: slots.slice(0, 10),
+            slots: slots.slice(0, 20),
           },
           status: 'success',
         }),
@@ -1300,8 +1305,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const taughtThisClass = classId ? teacher.classIds.includes(classId) : false;
       const subjectMatch = teacher.subject === subject;
 
-      // Mock history count based on teacher data
-      const historyCount = taughtThisClass ? 3 : (subjectMatch ? 1 : 0);
+      // Dynamic history count: count approved substitute requests where this teacher was the target
+      const historyCount = SUBMITTED_REQUESTS.filter(
+        r => r.type === 'substitute' && r.status === 'approved' &&
+          r.changes.some(c => c.targetTeacherId === teacher.teacherId)
+      ).length;
 
       // matchScore formula:
       // subjectMatch: 40 points

@@ -130,15 +130,75 @@ run_pregate() {
   fi
 }
 
+update_mcp_tools_config() {
+  # Extract tool names from MCP source and update DB config.tools
+  local ccaas_url="$1" tenant_id="$2" api_key="$3"
+  echo "  [E2E Setup] Updating MCP config.tools in DB..."
+
+  # Get MCP server ID
+  local mcp_info
+  mcp_info=$(curl -s "${ccaas_url}/api/v1/mcp-servers/edu-tools" \
+    -H "X-Tenant-Id: ${tenant_id}" -H "X-Api-Key: ${api_key}" 2>/dev/null)
+  local mcp_id
+  mcp_id=$(echo "$mcp_info" | jq -r '.id // empty')
+  if [[ -z "$mcp_id" ]]; then
+    echo "  [E2E Setup] WARNING: Could not find MCP server edu-tools"
+    return 1
+  fi
+
+  # Extract tool names from source
+  local tool_names
+  tool_names=$(grep "name: '" "${SOLUTION_DIR}/mcp-server/src/index.ts" \
+    | grep -v '//' \
+    | sed "s/.*name: '//;s/'.*//" \
+    | grep -E '^[a-z_]+$' \
+    | sort -u \
+    | jq -R -s -c 'split("\n") | map(select(length > 0))')
+
+  # Get current config and merge tools into it
+  local current_config
+  current_config=$(echo "$mcp_info" | jq -c '.config')
+  local updated_config
+  updated_config=$(echo "$current_config" | jq -c --argjson tools "$tool_names" '. + {tools: $tools}')
+
+  # Update MCP server via API
+  curl -s -X PUT "${ccaas_url}/api/v1/mcp-servers/${mcp_id}" \
+    -H "Content-Type: application/json" \
+    -H "X-Tenant-Id: ${tenant_id}" \
+    -H "X-Api-Key: ${api_key}" \
+    -d "{\"name\":\"edu-tools\",\"config\":${updated_config},\"status\":\"active\"}" > /dev/null 2>&1
+
+  local tool_count
+  tool_count=$(echo "$tool_names" | jq 'length')
+  echo "  [E2E Setup] Updated config.tools with ${tool_count} tools"
+}
+
+verify_mcp_workspace() {
+  # Verify MCP server files exist at workspace path (including node_modules)
+  local tenant_id="$1"
+  local workspace_dir="${REPO_ROOT}/packages/backend/.agent-workspace"
+  local mcp_dir="${workspace_dir}/tenants/${tenant_id}/mcp-servers/edu-tools"
+
+  if [[ ! -f "${mcp_dir}/dist/index.js" ]] || [[ ! -d "${mcp_dir}/node_modules" ]]; then
+    echo "  [E2E Setup] MCP workspace files missing, redeploying..."
+    mkdir -p "${mcp_dir}"
+    cp -r "${SOLUTION_DIR}/mcp-server/"* "${mcp_dir}/"
+    echo "  [E2E Setup] MCP files redeployed to workspace"
+    return 1  # signal that we needed to redeploy
+  fi
+  return 0
+}
+
 setup_e2e() {
   echo "  [E2E Setup] Registering tenant and configuring services..."
 
   E2E_CONFIG="${HARNESS_DIR}/.e2e-config"
 
-  # Reuse existing config if CCAAS is still running
+  # Reuse existing config if CCAAS is still running AND MCP files exist
   if [[ -f "$E2E_CONFIG" ]]; then
     source "$E2E_CONFIG"
     if curl -s "${CCAAS_URL}/api/v1/health" > /dev/null 2>&1; then
+      verify_mcp_workspace "$TENANT_ID"
       echo "  [E2E Setup] Reusing existing config (TENANT_ID=${TENANT_ID:0:8}...)"
       return 0
     fi
@@ -184,6 +244,23 @@ setup_e2e() {
   inject_skills "${SOLUTION_DIR}/skills" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1
   inject_mcp_servers "${SOLUTION_DIR}" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1
 
+  # Ensure MCP workspace has node_modules (inject_mcp_servers copies files but may miss deps)
+  verify_mcp_workspace "$TENANT_ID"
+
+  # Update config.tools so tool registry prompt is injected into sessions
+  update_mcp_tools_config "$CCAAS_URL" "$TENANT_ID" "$API_KEY"
+
+  # Sync session templates (maps templateName → enabledSkills)
+  echo "  [E2E Setup] Syncing session templates..."
+  local templates_body
+  templates_body=$(jq -c '{ templates: .sessionTemplates }' "${SOLUTION_DIR}/solution.json")
+  local sync_result
+  sync_result=$(curl -s -X POST "${CCAAS_URL}/api/v1/admin/tenants/${TENANT_ID}/session-templates/sync" \
+    -H "Content-Type: application/json" \
+    -H "X-Api-Key: ${API_KEY}" \
+    -d "$templates_body")
+  echo "  [E2E Setup] Session templates synced: $sync_result"
+
   # Save config for evaluator
   cat > "$E2E_CONFIG" <<EOFCONFIG
 export CCAAS_URL="${CCAAS_URL}"
@@ -204,9 +281,14 @@ rebuild_mcp() {
     # Re-inject so new sessions use updated code
     if [[ -f "${HARNESS_DIR}/.e2e-config" ]]; then
       source "${HARNESS_DIR}/.e2e-config"
+      local saved_sd="${SOLUTION_DIR}"
       set +u; source "${REPO_ROOT}/tools/solution-lib.sh" 2>/dev/null || true; set -u
+      SOLUTION_DIR="${saved_sd}"
       inject_mcp_servers "${SOLUTION_DIR}" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1 || true
       inject_skills "${SOLUTION_DIR}/skills" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1 || true
+      # Ensure workspace has node_modules and config.tools is updated
+      verify_mcp_workspace "$TENANT_ID"
+      update_mcp_tools_config "$CCAAS_URL" "$TENANT_ID" "$API_KEY"
     fi
     return 0
   else
