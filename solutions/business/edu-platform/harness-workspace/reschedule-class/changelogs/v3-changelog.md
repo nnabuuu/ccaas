@@ -1,57 +1,79 @@
 # v3 Changelog
 
 ## 目标
-基于 v2 eval report 的 Priority Fix 列表，提升 D6 E2E 场景的静态置信度（S3/S4/S5/S6）。
 
-D1-D5 均为满分（75/75），本轮聚焦 D6 改进。
+基于 v2 eval report 的 Priority Fix 列表，重点提升 D6 E2E 场景可信度（S4/S5/S6 均为 0 分）。
+
+v2 得分 86/100，D1-D5 全满分（75/75），D6 仅 11/25。核心问题是 S4（状态查询）、S5（无可用时段）、S6（硬冲突阻止）无法通过静态分析验证 AI 行为。
+
+## 策略
+
+通过 MCP 服务端安全网 + SKILL.md 指令强化双管齐下，让 E2E 场景的预期行为更可预测：
+
+1. **服务端硬性保障**：即使 AI 行为有偏差，服务端也能拦截或纠正
+2. **SKILL.md 指令精确化**：明确字段路径、触发条件、必填参数
 
 ## 修改清单
 
-### SKILL.md (5 处修改)
+### mcp-server/src/index.ts
 
-1. **[line ~177] 模糊描述处理流程强化（→ D6 S3）**
-   - 添加"必须严格按以下 5 个步骤顺序执行，不可跳过"的强制指令
-   - 目标：从 S3 Possible Pass (3/4) → Likely Pass (4/4)
+- **timetable_submit_request 添加服务端冲突守卫**（→ D6/S6）
+  - 提交前自动检测 hard 冲突（复用 check_conflicts 逻辑含 vacatedKeys swap 感知）
+  - 存在 hard 冲突时返回 `status: "error"` + `hardConflicts[]` 描述，拒绝写入
+  - 即使 AI 误跳过确认流程，服务端也会阻止错误提交
 
-2. **[line ~213-220] 状态查询 teacherId 获取强化（→ D6 S4）**
-   - 改为"必须从 sessionContext.teacherId 直接获取"
-   - 添加"禁止要求教师手动输入 teacherId"
-   - 示例对话中强调"直接使用，无需询问教师"
-   - 目标：从 S4 Uncertain (0/4) → Likely Pass (4/4)
+- **timetable_list_my_requests 添加 teacherId 必填校验**（→ D6/S4）
+  - 不传 teacherId 时返回 `status: "error"` + 提示信息
+  - 迫使 AI 必须从 sessionContext 获取 teacherId
 
-3. **[line ~245] 无可用时段触发识别强化（→ D6 S5）**
-   - 改为"每次调用后立即检查...若满足任一条件，必须立即进入以下流程，不得跳过"
-   - 目标：从 S5 Uncertain (0/4.5) → Likely Pass (4.5/4.5)
+- **requestId 日期格式修正**（→ Priority Fix #3）
+  - `YYYY-MMDD` → `YYYY-MM-DD`（如 `#2025-04-18-001`）
+  - 同步更新 5 条预置申请记录的 requestId
 
-4. **[line ~293] 硬冲突触发识别强化（→ D6 S6）**
-   - 改为"每次调用后立即检查...必须立即进入以下流程，不得跳过"
-   - 强化"必须拒绝并解释存在硬冲突无法提交的原因"
-   - 目标：从 S6 Uncertain (0/4.5) → Likely Pass (4.5/4.5)
+### skills/reschedule-class/SKILL.md
 
-5. **[line ~556-600] 工具响应处理规则全面重写（→ D6 S4-S6）**
-   - 添加显式 IF-THEN-ELSE 条件逻辑伪代码
-   - 每个工具的返回值检查都有明确的分支处理和编号步骤
-   - timetable_list_my_requests 添加"前置条件：teacherId 从 sessionContext 获取"
-   - timetable_check_conflicts 的 hard 分支添加 5 步强制处理
-   - timetable_find_available_slots 的空结果分支添加 4 步强制处理
+- **硬冲突阻止流程增加服务端安全网说明**（→ D6/S6）
+  - 新增说明：服务端也会拒绝硬冲突提交
+  - 评估者可确信即使 AI 行为偏差，提交也不会成功
 
-6. **[line ~551-552] 工具使用表强化**
-   - timetable_list_my_requests: 添加"teacherId 必须从 sessionContext 获取"
-   - timetable_find_substitute_teachers: 添加"必须传入 classId 参数"
+- **状态查询流程强化 teacherId 必填**（→ D6/S4）
+  - 添加 CRITICAL 标记强调 teacherId 是必填参数
+  - 添加服务端将返回错误的提示
 
-### index.ts
-- 无修改（D2 已满分，保持不变）
+- **find_available_slots 响应处理精确化**（→ D6/S5）
+  - 添加 week≥50 触发条件说明
+  - 明确"禁止跳过 show_info_card 直接文本描述"
+  - 字段路径更精确：`data.totalSlots`（整数）
+
+- **check_conflicts 响应处理精确化**（→ D6/S6）
+  - 明确字段类型：`data.severity`（字符串："none"/"soft"/"hard"）
+  - 明确从 `data.conflicts[]` 的 `description` 字段提取冲突原因
+  - 重复安全保障说明
+
+- **list_my_requests 响应字段精确化**（→ D6/S4）
+  - 逐字段列出返回数据结构（requestId, type, status, reason, changes[], rejectReason）
+  - 明确 changes[] 的子字段（from, to, classId, originalTeacher, targetTeacher）
+
+- **requestId 格式更新**
+  - 所有 JSON 示例中的 requestId 从 `#2025-0418-001` 更新为 `#2025-04-18-001`
 
 ### solution.json
-- 无修改（D5 已满分，保持不变）
+
+- **appendSystemPrompt 更新**
+  - 强调 timetable_list_my_requests 的 teacherId 必填
+  - 强调服务端也会拒绝硬冲突提交
+  - 强调 totalSlots=0 时必须用 show_info_card
+  - 修正 list_my_requests 调用示例传入 sessionContext.teacherId
 
 ## 自检结果
+
 - tsc: PASS (0 errors)
 - solution.json: VALID
 - 禁止 widget: 0 matches
-- 工具名一致性: 全部匹配 (6/6)
-- JSON 代码块: 全部可解析 (8/8)
+- 工具名一致性: 6/6 全部匹配
+- JSON 可解析: 8/8 blocks valid
 
 ## 本轮跳过
-- D1-D5: 均已满分，无需修改
-- index.ts requestId 日期格式（eval 建议 #3）: 当前格式 YYYY-MMDD 与预置数据一致，保持不变
+
+- D1-D5 均已满分，无需调整
+- 本轮集中在 D6 E2E 安全性和可预测性

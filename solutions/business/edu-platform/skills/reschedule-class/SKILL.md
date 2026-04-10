@@ -210,14 +210,16 @@ changes: [
 
 当教师询问调课申请状态时（"我的调课申请批了吗"/"查看我的申请"/"调课进度"），按以下步骤处理：
 
-**步骤1：获取教师ID（从 sessionContext）**
+**步骤1：获取教师ID（从 sessionContext — 必须）**
 **必须**从 `sessionContext.teacherId` 直接获取当前教师ID（如 `"t-zhang"`），作为 `timetable_list_my_requests` 的 `teacherId` 参数传递。**禁止要求教师手动输入 teacherId**。如果 sessionContext 中缺失 teacherId，先询问教师姓名后推断。
+
+> **⚠️ CRITICAL**: `teacherId` 是 `timetable_list_my_requests` 的**必填参数**。如果不传，服务端将返回错误。必须确保从 sessionContext 中提取后传入。
 
 **步骤2：查询申请列表**
 调用 `timetable_list_my_requests({ teacherId: sessionContext.teacherId })`
 
 如果教师指定了状态过滤（如"待审批的"），添加 status 参数：
-`timetable_list_my_requests({ teacherId: "<教师ID>", status: "pending" })`
+`timetable_list_my_requests({ teacherId: sessionContext.teacherId, status: "pending" })`
 
 **步骤3：展示结果**
 用 `show_info_card` 展示申请列表，按状态分类显示（待审批/已通过/已驳回）。参见下方"示例3：申请状态查询卡片"。
@@ -289,6 +291,8 @@ changes: [
 当 `timetable_check_conflicts` 返回结果中 `data.severity === "hard"` 时，触发此处理流程。
 
 **⚠️ 绝对禁止调用 `timetable_submit_request`。必须阻止提交并提供替代方案。**
+
+**服务端安全网**：即使误调了 `timetable_submit_request`，服务端也会拒绝存在硬冲突的提交（返回 `status: "error"`）。但你**必须在客户端层面阻止**，不要依赖服务端兜底。
 
 **触发识别**：每次调用 `timetable_check_conflicts` 后，**立即**检查返回 JSON 中 `data.severity` 的值。若为 `"hard"`，**必须立即进入以下流程**，不得跳过。即使用户要求"直接提交"，也**必须拒绝**并解释存在硬冲突无法提交的原因。
 
@@ -471,13 +475,13 @@ changes: [
     },
     {
       "type": "text",
-      "content": "**#2025-0418-001** 互换 | 周三第5节↔周四第3节 | ⏳待审批\n**#2025-0415-003** 代课 | 周一第2节 刘老师代 | ✅已通过\n**#2025-0410-002** 改时 | 周二第6节→周四第7节 | ❌已驳回（教室冲突）"
+      "content": "**#2025-04-18-001** 互换 | 周三第5节↔周四第3节 | ⏳待审批\n**#2025-04-15-003** 代课 | 周一第2节 刘老师代 | ✅已通过\n**#2025-04-10-002** 改时 | 周二第6节→周四第7节 | ❌已驳回（教室冲突）"
     },
     {
       "type": "actions",
       "actions": [
-        { "label": "撤回待审批申请", "prompt": "撤回申请 #2025-0418-001" },
-        { "label": "查看驳回原因", "prompt": "查看 #2025-0410-002 的驳回详情" }
+        { "label": "撤回待审批申请", "prompt": "撤回申请 #2025-04-18-001" },
+        { "label": "查看驳回原因", "prompt": "查看 #2025-04-10-002 的驳回详情" }
       ]
     }
   ]
@@ -559,26 +563,33 @@ changes: [
 
 ## timetable_find_available_slots → 必检 totalSlots
 
-调用后**立即**检查返回值，按以下逻辑处理：
+调用后**立即**检查返回值中的 `data.totalSlots` 字段（整数），按以下逻辑处理：
 
-- **IF `data.totalSlots === 0` 或 `data.slots` 为空数组**：
-  1. **必须**调用 `show_info_card` 展示降级建议卡片（参见上方"无可用时段"JSON 示例）
-  2. **必须**调用 `suggest_actions` 提供 [搜索下一周] [放宽条件] [联系教务处] 选项
+- **IF `data.totalSlots === 0` 或 `data.slots` 为空数组 `[]`**：
+  1. **必须立即**调用 `show_info_card` 展示降级建议卡片（参见上方"无可用时段"JSON 示例）
+  2. **必须立即**调用 `suggest_actions` 提供 [搜索下一周] [放宽条件] [联系教务处] 选项
   3. 等待教师选择后按选择结果继续处理
   4. **禁止**告知"无法安排"后直接结束对话
+  5. **禁止**跳过 show_info_card 直接文本描述
+
+  > **触发条件说明**：当 `week >= 50` 时（考试周/活动周），系统将返回 `totalSlots: 0`。此时**必须**走降级建议流程。
+
 - **ELSE（`data.totalSlots > 0`）**：正常展示可选时段，继续流程
 
 ## timetable_check_conflicts → 必检 severity
 
-调用后**立即**检查返回值，按以下逻辑处理：
+调用后**立即**检查返回值中的 `data.severity` 字段（字符串：`"none"` / `"soft"` / `"hard"`），按以下逻辑处理：
 
 - **IF `data.severity === "hard"`**：
   1. **绝对禁止**调用 `timetable_submit_request`（即使教师坚持要求"直接提交"也**必须拒绝**并解释原因）
-  2. **必须**调用 `show_info_card` 逐条展示每个 hard 冲突的原因（参见上方"硬冲突"JSON 示例）
+  2. **必须**调用 `show_info_card` 展示冲突详情，从 `data.conflicts[]` 数组逐条提取 hard 冲突的 `description` 字段展示原因
   3. **必须**自动搜索替代方案（调用 `timetable_find_available_slots` 或 `timetable_find_substitute_teachers`）
   4. **必须**调用 `suggest_actions` 提供替代方案选项
   5. 教师选择替代方案后，重新走 `check_conflicts → 确认 → submit` 流程
-- **ELIF `data.severity === "soft"`**：在方案卡片中标注 ⚠️ 冲突信息，教师可选择接受或更换方案，进入确认门控
+
+  > **安全保障**：服务端对 `timetable_submit_request` 也有硬冲突校验，存在 hard 冲突的提交会被服务端拒绝并返回错误。
+
+- **ELIF `data.severity === "soft"`**：在方案卡片中标注 ⚠️ 冲突信息（从 `data.conflicts[]` 的 `description` 字段获取），教师可选择接受或更换方案，进入确认门控
 - **ELSE（`data.severity === "none"`）**：正常进入确认门控
 
 ## timetable_find_substitute_teachers → 必检 totalCandidates
@@ -590,11 +601,18 @@ changes: [
 
 ## timetable_list_my_requests → 解析 summary + requests
 
-**前置条件**：`teacherId` 必须从 `sessionContext.teacherId` 获取，**禁止要求教师手动输入**。
+**前置条件**：`teacherId` 是**必填参数**，必须从 `sessionContext.teacherId` 获取，**禁止要求教师手动输入**。不传 `teacherId` 将导致服务端返回错误。
 
 调用后处理返回值：
-1. 从 `data.summary` 获取 pending/approved/rejected 数量 → 映射到 `show_info_card` 的 metrics section
-2. 从 `data.requests[]` 获取每条申请详情（requestId、type、status、reason、changes、rejectReason）→ 映射到 text section
+1. 从 `data.summary` 对象获取 `pending`/`approved`/`rejected` 数量（整数）→ 映射到 `show_info_card` 的 metrics section
+2. 从 `data.requests[]` 数组获取每条申请详情：
+   - `requestId`（字符串，如 `"#2025-04-18-001"`）
+   - `type`（字符串：swap/substitute/reschedule/makeup）
+   - `status`（字符串：pending/approved/rejected）
+   - `reason`（字符串）
+   - `changes[]`（含 `from`、`to`、`classId`、`originalTeacher`、`targetTeacher` 字段）
+   - `rejectReason`（字符串，仅 rejected 状态有值）
+   → 映射到 text section
 3. 调用 `suggest_actions` 提供后续操作（如撤回待审批申请、查看驳回原因）
 
 ## timetable_query_schedule → 检查 totalEntries

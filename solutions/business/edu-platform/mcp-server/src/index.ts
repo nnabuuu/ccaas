@@ -356,7 +356,7 @@ const ROOM_EVENTS: Array<{ day: number; period: number; room: string; event: str
 // Mutable store for submitted requests
 const SUBMITTED_REQUESTS: RescheduleRequest[] = [
   {
-    requestId: '#2025-0418-001',
+    requestId: '#2025-04-18-001',
     type: 'swap',
     teacherId: 't-zhang',
     teacherName: '张老师',
@@ -367,7 +367,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     approver: '李主任',
   },
   {
-    requestId: '#2025-0415-003',
+    requestId: '#2025-04-15-003',
     type: 'substitute',
     teacherId: 't-zhang',
     teacherName: '张老师',
@@ -378,7 +378,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     approver: '李主任',
   },
   {
-    requestId: '#2025-0410-002',
+    requestId: '#2025-04-10-002',
     type: 'reschedule',
     teacherId: 't-zhang',
     teacherName: '张老师',
@@ -391,7 +391,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
   },
   // Historical substitute records for dynamic historyCount
   {
-    requestId: '#2025-0320-001',
+    requestId: '#2025-03-20-001',
     type: 'substitute',
     teacherId: 't-wang',
     teacherName: '王老师',
@@ -402,7 +402,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     approver: '李主任',
   },
   {
-    requestId: '#2025-0305-002',
+    requestId: '#2025-03-05-002',
     type: 'substitute',
     teacherId: 't-li',
     teacherName: '李老师',
@@ -964,6 +964,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               totalSlots: 0,
               slots: [],
               note: '该周为考试周/活动周，所有时段已被占用',
+              hint: '⚠️ totalSlots=0：请用 show_info_card 展示降级建议（扩大搜索范围/放宽条件/联系教务处），并用 suggest_actions 提供选项。禁止直接结束对话。',
             },
             status: 'success',
           }),
@@ -1037,6 +1038,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
     }
 
+    const slotHint = slots.length === 0
+      ? '⚠️ totalSlots=0：请用 show_info_card 展示降级建议（扩大搜索范围/放宽条件/联系教务处），并用 suggest_actions 提供选项。禁止直接结束对话。'
+      : undefined;
+
     return {
       content: [{
         type: 'text',
@@ -1045,6 +1050,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             week,
             totalSlots: slots.length,
             slots: slots.slice(0, 20),
+            ...(slotHint ? { hint: slotHint } : {}),
           },
           status: 'success',
         }),
@@ -1159,6 +1165,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ? 'soft'
         : 'none';
 
+    const conflictHint = overallSeverity === 'hard'
+      ? '⚠️ severity=hard：绝对禁止调用 timetable_submit_request。必须用 show_info_card 展示冲突详情，然后搜索替代方案（find_available_slots 或 find_substitute_teachers），用 suggest_actions 提供替代选项。'
+      : undefined;
+
     return {
       content: [{
         type: 'text',
@@ -1167,6 +1177,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             severity: overallSeverity,
             totalConflicts: conflicts.length,
             conflicts,
+            ...(conflictHint ? { hint: conflictHint } : {}),
           },
           status: 'success',
         }),
@@ -1182,10 +1193,59 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const reason = params.reason as string;
     const note = params.note as string | undefined;
 
+    // Server-side conflict guard: reject submission if hard conflicts exist
+    const vacatedTeacherKeysGuard = new Set<string>();
+    const vacatedClassKeysGuard = new Set<string>();
+    for (const c of changes) {
+      vacatedTeacherKeysGuard.add(`${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`);
+      vacatedClassKeysGuard.add(`${c.classId}:${c.originalDay}:${c.originalPeriod}`);
+    }
+    const hardConflicts: string[] = [];
+    for (const change of changes) {
+      const teacherBusy = SCHEDULE.find(
+        e => e.teacherId === change.targetTeacherId && e.day === change.targetDay && e.period === change.targetPeriod
+      );
+      if (teacherBusy) {
+        const vk = `${change.targetTeacherId}:${change.targetDay}:${change.targetPeriod}`;
+        if (!vacatedTeacherKeysGuard.has(vk)) {
+          hardConflicts.push(`${teacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课`);
+        }
+      }
+      const classBusy = SCHEDULE.find(
+        e => e.classId === change.classId && e.day === change.targetDay && e.period === change.targetPeriod
+      );
+      if (classBusy) {
+        const vk = `${change.classId}:${change.targetDay}:${change.targetPeriod}`;
+        if (!vacatedClassKeysGuard.has(vk)) {
+          hardConflicts.push(`${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课`);
+        }
+      }
+      const roomEvent = ROOM_EVENTS.find(
+        re => re.day === change.targetDay && re.period === change.targetPeriod
+      );
+      if (roomEvent) {
+        hardConflicts.push(`${roomEvent.room}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节被占用（${roomEvent.event}）`);
+      }
+    }
+    if (hardConflicts.length > 0) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: {
+              error: '提交被拒绝：存在硬冲突，请先调用 timetable_check_conflicts 检测并解决冲突后重试',
+              hardConflicts,
+            },
+            status: 'error',
+          }),
+        }],
+        isError: true,
+      };
+    }
+
     requestCounter++;
     const now = new Date();
-    // Format: YYYY-MMDD (e.g., "2025-0418"), matches pre-seeded requestId format
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 
     const newRequest: RescheduleRequest = {
@@ -1224,6 +1284,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const params = args as Record<string, unknown>;
     const teacherId = params.teacherId as string | undefined;
     const statusFilter = params.status as string | undefined;
+
+    if (!teacherId) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: {
+              error: '缺少必填参数 teacherId。请从 sessionContext.teacherId 获取当前教师ID后传入。',
+            },
+            status: 'error',
+          }),
+        }],
+        isError: true,
+      };
+    }
 
     let results = [...SUBMITTED_REQUESTS];
     if (teacherId) {
