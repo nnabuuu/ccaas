@@ -2,7 +2,7 @@
 
 ## Overview
 
-基于 MCP（Model Context Protocol）的 stdio 服务器，为 Edu Platform 的 3 个 Skill 提供 7 个工具。由 CCAAS 后端通过 stdio 自动启动，无需手动运行。
+基于 MCP（Model Context Protocol）的 stdio 服务器，为 Edu Platform 的 4 个 Skill 提供 15 个工具。由 CCAAS 后端通过 stdio 自动启动，无需手动运行。
 
 **Transport**: stdio MCP（非 HTTP）
 **数据存储**: SQLite（课标知识点）+ Mock 数据（学情、教学进度）
@@ -307,3 +307,139 @@ npx tsc --noEmit   # 类型检查（不输出文件）
 2. 在 `CallToolRequestSchema` handler 中添加 `if (name === 'new_tool')` 分支
 3. 在 `ListToolsRequestSchema` 的 tools 数组中注册
 4. 更新本文档的 Tool Catalog 章节
+
+### Group 3b: 交互增强工具
+
+#### show_step_wizard
+
+展示多步向导交互界面。用于备课等需要多步收集参数的场景。
+
+**输入 schema**:
+```json
+{
+  "steps": [],           // 必填，向导步骤定义
+  "title": "向导标题"     // 可选
+}
+```
+
+#### show_review_panel
+
+展示审阅面板。用于内容审阅和确认场景。
+
+**输入 schema**:
+```json
+{
+  "content": "...",      // 必填，待审阅内容
+  "title": "审阅标题"    // 可选
+}
+```
+
+### Group 4: 调课工具（timetable）
+
+调课助手（reschedule-class）专用的 6 个工具，基于共享的 SCHEDULE/TEACHERS 数据模型动态推算。
+
+#### timetable_query_schedule
+
+按教师/班级/周次查询课表。从共享 SCHEDULE 数据中过滤，按 day/period 排序。
+
+**输入 schema**:
+```json
+{
+  "teacherId": "teacher-wang",   // 可选，教师 ID
+  "classId": "class-701",       // 可选，班级 ID
+  "week": 1                      // 可选，周次（默认 1）
+}
+```
+
+**输出**: `{ data: { schedule: [...], totalEntries: N }, status: "success" }`
+
+#### timetable_find_available_slots
+
+查找指定周次的空闲时段。遍历 day×period 排除已占用时段，含周末过滤、考试周检测。
+
+**输入 schema**:
+```json
+{
+  "week": 1,                          // 必填，周次
+  "excludeTeacherId": "teacher-wang", // 可选，排除该教师已有课时
+  "classIds": ["class-701"],          // 可选，排除这些班级已有课时
+  "preferredDays": [1, 2, 3]          // 可选，偏好的星期
+}
+```
+
+**输出**: `{ data: { slots: [...], totalSlots: N }, status: "success" }`
+
+#### timetable_check_conflicts
+
+5 层冲突检测：教师忙、班级忙、教室事件、同科超载、批内冲突。支持 vacatedKeys 互换配对识别。
+
+**输入 schema**:
+```json
+{
+  "changes": [
+    {
+      "teacherId": "teacher-wang",
+      "classId": "class-701",
+      "fromSlot": { "day": 1, "period": 1 },
+      "toSlot": { "day": 1, "period": 3 }
+    }
+  ]
+}
+```
+
+**输出**: `{ data: { conflicts: [...], severity: "none|soft|hard" }, status: "success" }`
+
+#### timetable_submit_request
+
+提交调课申请。写入 SUBMITTED_REQUESTS 并返回 requestId。含批内冲突安全网。
+
+**输入 schema**:
+```json
+{
+  "type": "swap|substitute|reschedule|makeup",
+  "changes": [...],
+  "reason": "调课原因"
+}
+```
+
+**输出**: `{ data: { requestId: "#2025-...", status: "pending" }, status: "success" }`
+
+#### timetable_list_my_requests
+
+按教师 ID 查询历史调课申请（含 pending/approved/rejected 状态）。
+
+**输入 schema**:
+```json
+{
+  "teacherId": "teacher-wang"   // 必填，教师 ID（从 sessionContext 获取）
+}
+```
+
+**输出**: `{ data: { requests: [...], total: N }, status: "success" }`
+
+#### timetable_find_substitute_teachers
+
+推荐代课教师。matchScore = 学科匹配(40) + 教过该班(30) + 空闲率(20) + 历史代课(10)。
+
+**输入 schema**:
+```json
+{
+  "subject": "数学",
+  "slot": { "day": 1, "periods": [1, 2] },
+  "excludeTeacherId": "teacher-wang",
+  "classId": "class-701"
+}
+```
+
+**输出**: `{ data: { candidates: [...], totalCandidates: N }, status: "success" }`
+
+### 共享数据模型
+
+调课工具基于以下共享数据：
+
+| 数据 | 说明 |
+|------|------|
+| `TEACHERS` | 8 位教师信息（ID、姓名、学科、班级列表） |
+| `SCHEDULE` | ~80 条周课表（teacherId、classId、day、period、subject、room） |
+| `ROOM_EVENTS` | 教室占用事件（考试、活动等） |
+| `SUBMITTED_REQUESTS` | 历史调课申请记录 |

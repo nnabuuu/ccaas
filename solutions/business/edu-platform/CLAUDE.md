@@ -2,7 +2,7 @@
 
 ## Overview
 
-精准教学平台 Solution，包含 3 个 Skill（备课助手、出题专家、学情分析）和 7 个 MCP 工具，为中小学教师提供一体化教学辅助。
+精准教学平台 Solution，包含 4 个 Skill（备课助手、出题专家、学情分析、调课助手）和 15 个 MCP 工具，为中小学教师提供一体化教学辅助。
 
 ## Quick Links
 
@@ -35,17 +35,18 @@
 
 ### Skill 修改规则
 
-1. **session context 优先**：从 sessionContext 获取 classId、grade、subject，不要让教师填表
+1. **session context 优先**：从 sessionContext 获取 classId、grade、subject、teacherId，不要让教师填表
 2. **工具调用序列**：获取数据 → show_info_card 展示 → suggest_actions 后续操作
 3. **lesson-plan-generator 是标杆**：其他 Skill 应遵循相同的交互模式
 4. **JSON 示例必须可解析**：SKILL.md 中的 JSON 代码块必须是合法 JSON
 5. **中文输出**：所有 SKILL.md 指令和示例用中文
+6. **确认门控**：reschedule-class 等涉及提交操作的 Skill，必须先 show_info_card 展示变更摘要 + suggest_actions 确认按钮，禁止未经确认直接提交
 
 ### solution.json 配置规则
 
 - `skills[].slug` 必须与 `skills/` 目录名完全匹配
 - `mcpServers.edu-tools.args` 指向编译后的 `mcp-server/dist/index.js`
-- `sessionTemplates.lesson-planning.enabledSkills` 必须包含全部 3 个 Skill
+- `sessionTemplates.lesson-planning.enabledSkills` 必须包含全部 4 个 Skill
 
 ## Common Tasks
 
