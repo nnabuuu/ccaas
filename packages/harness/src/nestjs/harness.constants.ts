@@ -1,0 +1,2 @@
+export const HARNESS_MODULE_OPTIONS = Symbol('HARNESS_MODULE_OPTIONS');
+export const HARNESS_RUN_STORE = Symbol('HARNESS_RUN_STORE');
