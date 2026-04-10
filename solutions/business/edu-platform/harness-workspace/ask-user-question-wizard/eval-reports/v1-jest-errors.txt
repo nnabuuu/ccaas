@@ -1,0 +1,867 @@
+PASS src/tenants/tenants.service.spec.ts (6.497 s)
+PASS src/files/files.controller.spec.ts (6.825 s)
+PASS src/jobs/job.controller.spec.ts (6.862 s)
+PASS src/sessions/sessions.gateway.websocket.spec.ts (6.954 s)
+PASS src/auth/api-key.service.integration.spec.ts (6.924 s)
+PASS src/scheduler/scheduler.controller.spec.ts (7.031 s)
+PASS src/admin/controllers/admin-users.controller.spec.ts (7.018 s)
+PASS src/admin/controllers/admin-sessions.controller.spec.ts
+[31m[Nest] 83087  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionsController] [39m[31mSSE sendMessage error: Error: db error[39m
+[31m[Nest] 83087  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionsController] [39m[31mSSE sendMessage error: Error: tenant db error[39m
+PASS src/sessions/conversations.controller.spec.ts (7.193 s)
+PASS src/sessions/sessions.controller.spec.ts (7.188 s)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-restart-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+PASS src/admin/controllers/admin-dashboard.controller.spec.ts
+[31m[Nest] 83089  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-no-process in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-preserve in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:09 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-status in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+PASS src/scheduler/scheduler.service.spec.ts
+PASS src/solutions/solutions.module.spec.ts (7.578 s)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:198:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:213:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83095  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[CompletionOrchestrationService] [39m[31mFailed to spawn CLI for session test-session-id: Error: CLI spawn failed[39m
+[31m[Nest] 83095  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[CompletionOrchestrationService] [39m[31mFailed to start follow-up for session test-session-id: Error: Follow-up failed[39m
+[31m[Nest] 83089  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-clear-process in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-timestamp in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:221:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+PASS src/admin/services/session-manager.service.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:229:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+PASS src/messages/tool-events.service.spec.ts
+PASS src/sessions/services/completion-orchestration.service.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:10 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:307:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-sigkill in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-details in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-anon in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-can in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-cannot in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-proc in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-ttl-test in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-stuck-test in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+[31m[Nest] 83089  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-only-processing in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+PASS src/sessions/session.service.restart.spec.ts (8.568 s)
+PASS src/solutions/solution-loader.service.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:328:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:339:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mCRITICAL: Failed to mark message queue-item-1 as failed: DB unavailable. Message may be stuck in processing state — will be recovered by stale message sweep.[39m
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:347:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mCRITICAL: Failed to mark message queue-item-1 as failed: DB unavailable. Message may be stuck in processing state — will be recovered by stale message sweep.[39m
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:361:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mMessage queue-item-1 failed: boom[39m
+Error: boom
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/services/message-worker.service.spec.ts:394:63)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[MessageWorkerService] [39m[31mStale sweep failed: DB error[39m
+PASS src/sessions/services/message-worker.service.spec.ts
+[31m[Nest] 83093  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[EventMapperService] [39m[31mToken recording failed[39m
+Error: DB connection lost
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/event-mapper.service.spec.ts:1076:61)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)
+PASS src/sessions/event-mapper.service.spec.ts
+PASS src/skills/skills.service.toggle.spec.ts
+PASS src/skills/skills.service.websocket.spec.ts
+PASS src/skills/skills.service.files.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83088  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[AdminSessionTemplatesController] [39m[31mFailed to log audit event: sessionTemplate.create[39m
+[31m[Nest] 83088  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[AdminSessionTemplatesController] [39m[31mError: audit DB down[39m
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+PASS src/admin/controllers/admin-session-templates.controller.spec.ts
+PASS src/builder/builder-tenants.controller.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session test-session-7 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-empty in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83096  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session session-cleanup in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+PASS src/sessions/session.service.skill-tracking.spec.ts
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-recent in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-expired in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-high-target in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-high-keep in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-critical-target in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad7 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad7 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-processing in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-stuck in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session s-per-tenant in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pad6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre7 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session new-session in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session new-session in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre0 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre1 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre2 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre3 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre4 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre5 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre6 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre7 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session pre8 in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+[31m[Nest] 83092  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[SessionService] [39m[31m[Phase 2] Failed to update session new-session in database: Cannot read properties of undefined (reading 'affected')[39m
+TypeError: Cannot read properties of undefined (reading 'affected')
+    at SessionService.updateSessionInDatabase (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/sessions/session.service.ts:850:18)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+PASS src/sessions/session.service.pressure.spec.ts
+PASS src/skills/guards/skill-permission.guard.spec.ts
+[31m[Nest] 83091  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[DevLoginService] [39m[31mFailed to seed dev login user — dev login will not work[39m
+[31m[Nest] 83091  - [39m2026/04/02 15:50:11 [31m  ERROR[39m [38;5;3m[DevLoginService] [39m[31mError: No default tenant[39m
+PASS src/auth/dev-login.service.spec.ts
+PASS src/jobs/job.service.spec.ts
+PASS src/skills/skills.service.user-attribution.spec.ts
+PASS src/admin/controllers/admin-tenants.controller.spec.ts
+PASS src/builder/builder-api-keys.controller.spec.ts
+[31m[Nest] 83090  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[HeadlessExecutionService] [39m[31mHeadless CLI error for scheduled_task-1_abc12345: spawn failed[39m
+PASS src/scheduler/headless-execution.service.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[FilesService] [39m[31mFailed to copy file: Permission denied[39m
+PASS src/auth/guards/api-key.guard.spec.ts
+[31m[Nest] 83096  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[FilesService] [39m[31mFailed to store file version: Disk full[39m
+[31m[Nest] 83088  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[MessageQueueService] [39m[31mMessage queue-1 permanently failed after 3 attempts: Test error[39m
+PASS src/files/files.service.spec.ts
+PASS src/admin/controllers/admin-builder-users.controller.spec.ts
+[31m[Nest] 83088  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[MessageQueueService] [39m[31mMessage queue-1 permanently failed after 3 attempts: Stale processing message reset[39m
+PASS src/sessions/services/message-queue.service.spec.ts
+PASS src/sessions/services/cli-process.service.spec.ts
+PASS src/tenants/tenants.controller.spec.ts
+PASS src/admin/services/analytics.service.spec.ts
+PASS src/admin/services/turns.service.spec.ts
+PASS src/sessions/session.service.template-name.spec.ts
+PASS src/sessions/services/background-task-monitor.service.spec.ts
+PASS src/sessions/services/skill-management.service.spec.ts
+PASS src/admin/controllers/admin-api-keys.controller.spec.ts
+PASS src/admin/guards/admin-tenant-access.guard.spec.ts
+PASS src/sessions/conversations-metadata.spec.ts
+PASS src/tenants/tenant.guard.spec.ts
+PASS src/messages/session-events.service.spec.ts
+[31m[Nest] 83089  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ProcessLifecycleTrackerHook] [39m[31mFailed to record spawn: Database error[39m
+[31m[Nest] 83089  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ProcessLifecycleTrackerHook] [39m[31mFailed to record exit: Database error[39m
+[31m[Nest] 83089  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ProcessLifecycleTrackerHook] [39m[31mFailed to record crash: Database error[39m
+[31m[Nest] 83089  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ProcessLifecycleTrackerHook] [39m[31mFailed to record kill: Database error[39m
+PASS src/solutions/dto/solution-config.dto.spec.ts
+PASS src/hooks/process-lifecycle-tracker.hook.spec.ts
+PASS src/admin/guards/quota.guard.spec.ts
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mHTTP 500 - Unexpected error[39m
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mError: Unexpected error
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/common/filters/http-exception.filter.spec.ts:137:31)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)[39m
+{"requestId":"req_1775116212574_biojjg2","path":"/api/test","method":"GET","code":"INTERNAL_ERROR","statusCode":500,"ip":"127.0.0.1"}
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mHTTP 500 - An unexpected error occurred[39m
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mundefined[39m
+{"requestId":"req_1775116212575_2a3tvny","path":"/api/test","method":"GET","code":"INTERNAL_ERROR","statusCode":500,"ip":"127.0.0.1"}
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mHTTP 500 - Server error[39m
+[31m[Nest] 83091  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[GlobalHttpExceptionFilter] [39m[31mHttpException: Server error
+    at Object.<anonymous> (/Users/niex/Documents/GitHub/kedge-ccaas/packages/backend/src/common/filters/http-exception.filter.spec.ts:194:31)
+    at Promise.then.completed (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:298:28)
+    at new Promise (<anonymous>)
+    at callAsyncCircusFn (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/utils.js:231:10)
+    at _callCircusTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:316:40)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at _runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:252:3)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:126:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at _runTestsForDescribeBlock (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:121:9)
+    at run (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/run.js:71:3)
+    at runAndTransformResultsToJestFormat (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+    at jestAdapter (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+    at runTestInternal (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:367:16)
+    at runTest (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/runTest.js:444:34)
+    at Object.worker (/Users/niex/Documents/GitHub/kedge-ccaas/node_modules/jest-runner/build/testWorker.js:106:12)[39m
+{"requestId":"req_1775116212575_4l612i9","path":"/api/test","method":"GET","code":"INTERNAL_ERROR","statusCode":500,"ip":"127.0.0.1"}
+PASS src/common/filters/http-exception.filter.spec.ts
+PASS src/jobs/queue.service.spec.ts
+PASS src/messages/entities/multi-tenancy.spec.ts
+PASS src/users/user-tenant.service.spec.ts
+[31m[Nest] 83088  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[WriteFileTrackerHook] [39m[31mFailed to track file /workspace/docs/test.md: Database error[39m
+PASS src/users/users.service.spec.ts
+[31m[Nest] 83088  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[WriteFileTrackerHook] [39m[31mFailed to track file /workspace/docs/test.md: File not found[39m
+PASS src/solutions/dto/skill-frontmatter.dto.spec.ts
+PASS src/admin/quota.service.spec.ts
+PASS src/hooks/write-file-tracker.hook.spec.ts
+[31m[Nest] 83092  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ThinkingTrackerHook] [39m[31mFailed to cleanup thinking blocks for session session-123: Cleanup error[39m
+[31m[Nest] 83092  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ThinkingTrackerHook] [39m[31mFailed to track thinking event: Database error[39m
+[31m[Nest] 83092  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ThinkingTrackerHook] [39m[31mFailed to track thinking event: Database error[39m
+[31m[Nest] 83092  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ThinkingTrackerHook] [39m[31mFailed to track thinking event: Database error[39m
+PASS src/protocol/http-error-mapping.spec.ts
+[31m[Nest] 83093  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ToolEventTrackerHook] [39m[31mFailed to track tool start Read: Database error[39m
+PASS src/hooks/thinking-tracker.hook.spec.ts
+[31m[Nest] 83093  - [39m2026/04/02 15:50:12 [31m  ERROR[39m [38;5;3m[ToolEventTrackerHook] [39m[31mFailed to track tool end Read: Database error[39m
+PASS src/hooks/tool-event-tracker.hook.spec.ts
+PASS src/hooks/error-classifier.spec.ts
+PASS src/common/find-monorepo-root.spec.ts
+PASS src/bundles/bundle.service.spec.ts
+PASS src/admin/entities/turn.entity.spec.ts
+PASS src/sessions/services/attachment.service.spec.ts
+PASS src/protocol/http-exceptions.spec.ts
+A worker process has failed to exit gracefully and has been force exited. This is likely caused by tests leaking due to improper teardown. Try running with --detectOpenHandles to find leaks. Active timers can also cause this, ensure that .unref() was called on them.
+
+Test Suites: 70 passed, 70 total
+Tests:       1287 passed, 1287 total
+Snapshots:   0 total
+Time:        11.107 s, estimated 21 s
+Ran all test suites.

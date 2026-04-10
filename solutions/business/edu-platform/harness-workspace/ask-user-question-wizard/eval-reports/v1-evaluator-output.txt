@@ -1,0 +1,23 @@
+## v1 Evaluation Complete
+
+**总分: 69/100** (up from generator's estimate of ~45)
+
+### Score Summary
+
+| Dimension | Score | Weighted |
+|-----------|-------|----------|
+| D1: control_request E2E | 3/5 | 12/20 |
+| D2: Default UI | 3/5 | 9/15 |
+| D3: WizardRenderer | 4/5 | 16/20 |
+| D4: TreeSelect + DataReview | 4/5 | 12/15 |
+| D5: SummaryStep | 4/5 | 8/10 |
+| D6: 备课向导流程 | 3/5 | 12/20 |
+| **Penalties** | | **0** |
+
+### Key Findings
+
+The generator's estimate was conservative. The screenshots show the wizard components (D3-D5) are significantly more polished than expected — step indicator, navigation, contextKey auto-fill, error handling, and submit animation all work well.
+
+The main blocker to higher scores: **D1 and D6 are both capped at 3/5** because no screenshot confirms LLM actually generated content after receiving the wizard answers. This is the #1 priority for v2.
+
+Report written to `eval-reports/v1-eval.md`. Progress updated in `progress.md`.

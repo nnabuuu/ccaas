@@ -1,0 +1,104 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [active] [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 18:19" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 18:19
+        - button "帮我备课 18:09" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 18:09
+        - button "帮我备课 17:48" [ref=e33] [cursor=pointer]:
+          - generic [ref=e35]: 帮我备课
+          - generic [ref=e36]: 17:48
+        - button "帮我备课 16:29" [ref=e37] [cursor=pointer]:
+          - generic [ref=e39]: 帮我备课
+          - generic [ref=e40]: 16:29
+      - generic [ref=e41]:
+        - generic [ref=e42]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 分析八(2)班数学学情
+          - generic [ref=e46]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e47] [cursor=pointer]:
+          - generic [ref=e49]: 帮我备一下明天的课
+          - generic [ref=e50]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: 帮我备一下明天的课
+          - generic [ref=e54]: 10:21
+    - generic [ref=e55]:
+      - generic [ref=e56]: 已启用 Skills
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: 备
+        - text: 备课助手
+      - generic [ref=e59] [cursor=pointer]:
+        - generic [ref=e60]: 题
+        - text: 出题组卷
+      - generic [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: 情
+        - text: 学情分析
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 错
+        - text: 错题本生成器
+      - generic [ref=e65] [cursor=pointer]:
+        - generic [ref=e66]: +
+        - text: 管理 Skills
+    - generic [ref=e67]:
+      - generic [ref=e68]: 八(2)班
+      - generic [ref=e69]: 数学
+      - generic [ref=e70]: 树人中学
+    - button "User menu" [ref=e72] [cursor=pointer]:
+      - generic [ref=e73]: 张
+      - generic [ref=e74]:
+        - generic [ref=e75]: 张老师
+        - generic [ref=e76]: 数学教师 · 树人中学
+      - img [ref=e77]
+  - generic [ref=e126]:
+    - region "Notifications alt+T"
+    - log [ref=e127]:
+      - generic [ref=e129]:
+        - generic [ref=e130]: 晚上好，张老师
+        - generic [ref=e131]: 我是你的教学助手
+        - generic [ref=e132]: 第14周 · 八(2)班 · 数学
+        - generic [ref=e133]:
+          - button "备 备课 生成教案和课件，对齐学情" [ref=e134] [cursor=pointer]:
+            - generic [ref=e135]:
+              - generic [ref=e136]: 备
+              - generic [ref=e137]: 备课
+            - generic [ref=e138]: 生成教案和课件，对齐学情
+          - button "题 出题 题库 + AI 原创混合组卷" [ref=e139] [cursor=pointer]:
+            - generic [ref=e140]:
+              - generic [ref=e141]: 题
+              - generic [ref=e142]: 出题
+            - generic [ref=e143]: 题库 + AI 原创混合组卷
+          - button "情 学情 薄弱点分析、趋势对比" [ref=e144] [cursor=pointer]:
+            - generic [ref=e145]:
+              - generic [ref=e146]: 情
+              - generic [ref=e147]: 学情
+            - generic [ref=e148]: 薄弱点分析、趋势对比
+          - button "错 错题本 自动归类学生个人错题" [ref=e149] [cursor=pointer]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: 错
+              - generic [ref=e152]: 错题本
+            - generic [ref=e153]: 自动归类学生个人错题
+        - generic [ref=e154]:
+          - generic [ref=e155]: 试试这样说
+          - button "三角形全等的判定，设计15分钟课堂小测 →" [ref=e156] [cursor=pointer]:
+            - text: 三角形全等的判定，设计15分钟课堂小测
+            - generic [ref=e157]: →
+          - button "对比两个班上周的数学学情 →" [ref=e158] [cursor=pointer]:
+            - text: 对比两个班上周的数学学情
+            - generic [ref=e159]: →
+    - generic [ref=e161]:
+      - textbox "Message input" [ref=e162]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e163] [cursor=pointer]:
+          - img [ref=e164]
+        - button "Send" [disabled] [ref=e167]:
+          - img [ref=e168]

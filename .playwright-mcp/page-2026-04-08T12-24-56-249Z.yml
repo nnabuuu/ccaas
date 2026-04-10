@@ -1,0 +1,56 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e16]:
+      - textbox "🔍 搜索实体..." [active] [ref=e18]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - generic [ref=e21]: 最近使用
+          - generic [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]: 📝
+            - generic [ref=e25]: SSS/SAS 新授课教案
+          - generic [ref=e27] [cursor=pointer]:
+            - generic [ref=e28]: 📋
+            - generic [ref=e29]: SAS 判定专项练习 · 八(2)班
+          - generic [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: 📎
+              - generic [ref=e33]: SAS判定条件图.png
+            - generic [ref=e34]:
+              - text: └
+              - generic [ref=e35]: 📝 SSS/SAS 新授课教案
+              - generic [ref=e36]: › 📦 SAS 概念讲解
+          - generic [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]:
+              - generic [ref=e39]: 📅
+              - generic [ref=e40]: 周三第1节 · SSS/SAS · 八(2)班
+            - generic [ref=e41]:
+              - text: └
+              - generic [ref=e42]: 📝 SSS/SAS 新授课教案
+        - generic [ref=e43]:
+          - generic [ref=e44]: 按类型浏览
+          - generic [ref=e45] [cursor=pointer]:
+            - generic [ref=e46]:
+              - generic [ref=e47]: 📝
+              - generic [ref=e48]: 教案
+            - generic [ref=e49]: ›
+          - generic [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]:
+              - generic [ref=e52]: 📋
+              - generic [ref=e53]: 作业
+            - generic [ref=e54]: ›
+          - generic [ref=e55] [cursor=pointer]:
+            - generic [ref=e56]:
+              - generic [ref=e57]: 📖
+              - generic [ref=e58]: 课标
+            - generic [ref=e59]: ›
+    - textbox "输入消息... 按 @ 引用实体" [ref=e5]
+  - generic [ref=e6]:
+    - button "📝 教案" [ref=e7] [cursor=pointer]:
+      - generic [ref=e8]: 📝
+      - generic [ref=e9]: 教案
+    - button "📖 课标" [ref=e10] [cursor=pointer]:
+      - generic [ref=e11]: 📖
+      - generic [ref=e12]: 课标
+    - button "❓ 题目" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: ❓
+      - generic [ref=e15]: 题目

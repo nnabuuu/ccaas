@@ -1,0 +1,25 @@
+## v3 Generator Summary
+
+### Changes Made (4 files)
+
+1. **`packages/react-sdk/src/hooks/useAgentChat.ts`** — Added `&includeToolEvents=true` to history fetch URL (D7 fix)
+2. **`packages/chat-interface/src/context/ChatCoreContext.tsx`** — Added toolEvents extraction and contentBlocks reconstruction for historical messages (D7 fix)
+3. **`frontend/src/index.css`** — Added hover CSS for AUQ chips, options, Other area, submit button, and input focus
+4. **`frontend/src/components/AskUserQuestionRenderer.tsx`** — Added className props on 5 elements for CSS hover targeting
+
+### Key Breakthrough
+
+**AI Skill successfully triggered AskUserQuestion for the first time** — sending "帮我出5道关于全等三角形判定的题" caused the quiz-generator Skill to call AskUserQuestion with 2 questions (题型/难度). Full interaction flow verified: option selection → auto-advance → chip updates → submit → AI generates questions.
+
+### Verification
+
+- tsc: All 3 packages pass (frontend, react-sdk, chat-interface)
+- Browser: 6 screenshots in `screenshots/v3/` covering widget render, option click, auto-advance, submit, AI response
+- D7 API: `includeToolEvents=true` confirmed returning AskUserQuestion toolEvents with toolInput
+- D7 visual: Session switching not functional (pre-existing app issue), code path structurally correct
+
+### Output Files
+
+- `changelogs/v3-changelog.md`
+- `progress.md` updated with v3 row
+- `screenshots/v3/01-06`

@@ -1,0 +1,234 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 01:37" [ref=e214] [cursor=pointer]:
+          - generic [ref=e216]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e217]: 01:37
+        - button "帮我出5道关于全等三角形判定的题 01:18" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 01:18
+      - generic [ref=e29]:
+        - generic [ref=e30]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 分析八(2)班数学学情
+          - generic [ref=e34]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备一下明天的课
+          - generic [ref=e38]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:21
+    - generic [ref=e43]:
+      - generic [ref=e44]: 已启用 Skills
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 备
+        - text: 备课助手
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 题
+        - text: 出题组卷
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 情
+        - text: 学情分析
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 错
+        - text: 错题本生成器
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: +
+        - text: 管理 Skills
+    - generic [ref=e55]:
+      - generic [ref=e56]: 八(2)班
+      - generic [ref=e57]: 数学
+      - generic [ref=e58]: 树人中学
+    - button "User menu" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 张
+      - generic [ref=e62]:
+        - generic [ref=e63]: 张老师
+        - generic [ref=e64]: 数学教师 · 树人中学
+      - img [ref=e65]
+  - generic [ref=e157]:
+    - region "Notifications alt+T"
+    - log [ref=e158]:
+      - generic [ref=e159]:
+        - paragraph [ref=e204]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e205]:
+          - generic [ref=e206]:
+            - generic [ref=e218]:
+              - img [ref=e220]
+              - generic [ref=e223] [cursor=pointer]: 执行技能Skill
+              - generic [ref=e224]: 75ms
+            - generic [ref=e225]:
+              - generic [ref=e226]:
+                - generic [ref=e227] [cursor=pointer]:
+                  - generic [ref=e229]: 题型
+                  - generic [ref=e366]: 选择题
+                - generic [ref=e232] [cursor=pointer]: 难度
+              - generic [ref=e233]:
+                - generic [ref=e234]:
+                  - generic [ref=e235]: 请选择题型
+                  - generic [ref=e236]:
+                    - generic [ref=e239] [cursor=pointer]:
+                      - generic [ref=e240]: 选择题
+                      - generic [ref=e241]: 单项选择题，适合快速检测
+                    - generic [ref=e244] [cursor=pointer]:
+                      - generic [ref=e245]: 填空题
+                      - generic [ref=e246]: 填写关键结果，考查计算和推理
+                    - generic [ref=e249] [cursor=pointer]:
+                      - generic [ref=e250]: 解答题
+                      - generic [ref=e251]: 需要写出完整证明过程
+                    - generic [ref=e254] [cursor=pointer]:
+                      - generic [ref=e255]: 混合出题
+                      - generic [ref=e256]: 包含多种题型，综合考查
+                  - generic [ref=e259] [cursor=pointer]:
+                    - generic [ref=e260]: 或者自定义
+                    - textbox "输入自定义内容..." [ref=e261]
+                - generic:
+                  - generic: 请选择难度级别
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 基础
+                        - generic: 直接应用判定定理，适合课堂巩固
+                    - generic:
+                      - generic:
+                        - generic: 中等
+                        - generic: 需要一定推理，适合随堂检测
+                    - generic:
+                      - generic:
+                        - generic: 较难
+                        - generic: 综合运用多个知识点，有一定挑战
+                    - generic:
+                      - generic:
+                        - generic: 分层（含3个难度）
+                        - generic: 从易到难，适合分层教学
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "输入自定义内容..."
+              - generic [ref=e262]:
+                - generic [ref=e263]: 1 / 2 已回答
+                - button "确认选择" [disabled] [ref=e264]
+            - generic [ref=e265]:
+              - paragraph [ref=e266]:
+                - text: 好的，根据您的选择（混合出题 + 分层难度），以下是5道关于
+                - strong [ref=e267]: 全等三角形判定
+                - text: 的随堂测试题：
+              - separator [ref=e268]
+              - heading "全等三角形判定 · 随堂测试" [level=2] [ref=e269]
+              - paragraph [ref=e270]:
+                - strong [ref=e271]: 知识点范围
+                - text: ：SSS、SAS、ASA、AAS、HL ｜
+                - strong [ref=e272]: 建议用时
+                - text: ：15分钟
+              - separator [ref=e273]
+              - heading "【基础】" [level=3] [ref=e274]
+              - paragraph [ref=e275]:
+                - strong [ref=e276]: 第1题（选择题）
+                - text: 已知 △ABC 和 △DEF 中，AB = DE，BC = EF，AC = DF，则 △ABC ≌ △DEF 的判定依据是（ ）
+              - paragraph [ref=e277]: A. SAS B. ASA C. SSS D. AAS
+              - blockquote [ref=e278]:
+                - paragraph [ref=e279]: 考查知识点：SSS判定 ｜ 难度：⭐
+              - separator [ref=e280]
+              - paragraph [ref=e281]:
+                - strong [ref=e282]: 第2题（填空题）
+                - text: 如图，已知 AB = CD，BC = DA，连接 AC。则 △ABC ≌ △CDA，判定依据是 ________ ；由此可得 ∠B = ________ 。
+              - code [ref=e284]: A ———————— D | / | | / | | / | | / | | / | B ———————— C
+              - blockquote [ref=e285]:
+                - paragraph [ref=e286]: 考查知识点：SSS判定及其应用 ｜ 难度：⭐
+              - separator [ref=e287]
+              - heading "【中等】" [level=3] [ref=e288]
+              - paragraph [ref=e289]:
+                - strong [ref=e290]: 第3题（选择题）
+                - text: 已知 △ABC 和 △DEF 中，∠A = ∠D，AB = DE，下列条件中，
+                - strong [ref=e291]: 不能
+                - text: 判定 △ABC ≌ △DEF 的是（ ）
+              - paragraph [ref=e292]: A. BC = EF B. ∠B = ∠E C. AC = DF D. ∠C = ∠F
+              - blockquote [ref=e293]:
+                - paragraph [ref=e294]: 考查知识点：SAS、ASA、AAS的区分与"SSA不能判定" ｜ 难度：⭐⭐
+              - separator [ref=e295]
+              - paragraph [ref=e296]:
+                - strong [ref=e297]: 第4题（填空题）
+                - text: 如图，点 E、F 在线段 BC 上，BE = CF，AB = DC，∠B = ∠C。
+              - code [ref=e299]: A D / \ / \ / \ / \ / \ / \ B——E————F——C
+              - paragraph [ref=e300]: (1) △ABE ≌ △DCF 的判定依据是 ________ ；
+              - paragraph [ref=e301]: (2) 由全等可进一步得出 AE = ________ 。
+              - blockquote [ref=e302]:
+                - paragraph [ref=e303]: 考查知识点：SAS判定及全等性质应用 ｜ 难度：⭐⭐
+              - separator [ref=e304]
+              - heading "【较难】" [level=3] [ref=e305]
+              - paragraph [ref=e306]:
+                - strong [ref=e307]: 第5题（解答题）
+                - text: 如图，已知 ∠1 = ∠2，∠3 = ∠4，求证：AB = CD。
+              - code [ref=e309]: A /|\ / | \ / | \ / 1 | 2 \ B————O————D \ 3 | 4 / \ | / \ | / \|/ C
+              - paragraph [ref=e310]: （其中 ∠1 = ∠BAO，∠2 = ∠DAO，∠3 = ∠BCO，∠4 = ∠DCO，O 为 AC 与 BD 的交点）
+              - blockquote [ref=e311]:
+                - paragraph [ref=e312]: 考查知识点：ASA/AAS 判定 + 两步证明全等 ｜ 难度：⭐⭐⭐
+              - separator [ref=e313]
+              - heading "参考答案与解析" [level=2] [ref=e314]
+              - paragraph [ref=e315]:
+                - strong [ref=e316]: 第1题
+                - strong [ref=e317]: C
+                - text: 三组对应边分别相等，直接由 SSS 判定全等。
+              - paragraph [ref=e318]:
+                - strong [ref=e319]: 第2题
+                - text: SSS；∠D AB = CD，BC = DA，公共边 AC = CA，由 SSS 判定 △ABC ≌ △CDA，对应角 ∠B = ∠D。
+              - paragraph [ref=e320]:
+                - strong [ref=e321]: 第3题
+                - strong [ref=e322]: A
+              - list [ref=e323]:
+                - listitem [ref=e324]: B 项：∠A=∠D, ∠B=∠E, AB=DE → ASA ✔
+                - listitem [ref=e325]: C 项：∠A=∠D, AB=DE, AC=DF → SAS ✔
+                - listitem [ref=e326]: D 项：∠A=∠D, ∠C=∠F, AB=DE → AAS ✔
+                - listitem [ref=e327]:
+                  - strong [ref=e328]: A 项
+                  - text: ：∠A=∠D, AB=DE, BC=EF → 这是"边边角"(SSA)，
+                  - strong [ref=e329]: 不能
+                  - text: 判定全等。
+              - paragraph [ref=e330]:
+                - strong [ref=e331]: 第4题
+                - text: (1)
+                - strong [ref=e332]: SAS
+                - text: （∠B = ∠C，AB = DC，BE = CF） (2) AE =
+                - strong [ref=e333]: DF
+                - text: （全等三角形对应边相等）
+              - paragraph [ref=e334]:
+                - strong [ref=e335]: 第5题 证明思路
+                - text: ：
+              - paragraph [ref=e336]: ∵ ∠1 = ∠2，∠3 = ∠4 ∴ ∠1 + ∠3 = ∠2 + ∠4，即 ∠BOA = ∠DOC（对顶角也可辅助说明）
+              - paragraph [ref=e337]: 在 △ABO 和 △CDO 中：
+              - list [ref=e338]:
+                - listitem [ref=e339]: ∠1 = ∠2（已知）
+                - listitem [ref=e340]: OA = OC 或利用 ∠3 = ∠4 + 公共边 OB = OD 等条件
+                - listitem [ref=e341]: 先证 △AOB ≌ △COD（ASA），得 AB = CD。
+              - paragraph [ref=e342]:
+                - text: 具体过程： ∵ ∠1 = ∠2，∠AOB = ∠COD（对顶角相等），OA 为公共段相关 取 △ABC 和 △CDA 中，由 ∠1=∠2, ∠3=∠4 → ∠BAC = ∠DCA，又 AC = CA（公共边），∠BCA = ∠DAC，由
+                - strong [ref=e343]: ASA
+                - text: 得 △ABC ≌ △CDA，∴ AB = CD。 ∎
+              - separator [ref=e344]
+              - paragraph [ref=e345]: 共5题，基础2题 + 中等2题 + 较难1题，覆盖 SSS、SAS、ASA、AAS 四种判定方法及"SSA不能判定"这一易错点。
+          - generic [ref=e347]:
+            - generic [ref=e348]: 1 分钟前
+            - generic [ref=e349]:
+              - button "复制" [ref=e351] [cursor=pointer]:
+                - img [ref=e352]
+              - tooltip "复制"
+            - generic [ref=e355]:
+              - button "重试" [ref=e357] [cursor=pointer]:
+                - img [ref=e358]
+              - tooltip "重试"
+      - button "Scroll to bottom" [ref=e363] [cursor=pointer]:
+        - img [ref=e364]
+    - generic [ref=e192]:
+      - textbox "Message input" [ref=e193]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e194] [cursor=pointer]:
+          - img [ref=e195]
+        - button "Send" [disabled] [ref=e361]:
+          - img [ref=e199]

@@ -1,0 +1,18 @@
+- generic [ref=e3]:
+  - generic [ref=e127]:
+    - generic [ref=e128]:
+      - generic [ref=e129]: 📦
+      - generic [ref=e130]: SAS 概念讲解
+      - button "×" [ref=e131] [cursor=pointer]
+    - generic [ref=e132]: 1 个实体已引用 · 发送时注入上下文
+  - textbox "输入消息... 按 @ 引用实体" [active] [ref=e5]
+  - generic [ref=e6]:
+    - button "📝 教案" [ref=e7] [cursor=pointer]:
+      - generic [ref=e8]: 📝
+      - generic [ref=e9]: 教案
+    - button "📖 课标" [ref=e10] [cursor=pointer]:
+      - generic [ref=e11]: 📖
+      - generic [ref=e12]: 课标
+    - button "❓ 题目" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: ❓
+      - generic [ref=e15]: 题目

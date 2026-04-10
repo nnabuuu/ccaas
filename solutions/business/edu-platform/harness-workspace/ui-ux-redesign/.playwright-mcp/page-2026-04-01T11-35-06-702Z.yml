@@ -1,0 +1,162 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e23]:
+      - generic [ref=e24]: 今天
+      - button "帮我备一下明天的课 19:34" [ref=e126] [cursor=pointer]:
+        - generic [ref=e128]: 帮我备一下明天的课
+        - generic [ref=e129]: 19:34
+      - button "分析八(2)班数学学情 11:15" [active] [ref=e25] [cursor=pointer]:
+        - generic [ref=e27]: 分析八(2)班数学学情
+        - generic [ref=e28]: 11:15
+      - button "帮我备一下明天的课 10:32" [ref=e29] [cursor=pointer]:
+        - generic [ref=e31]: 帮我备一下明天的课
+        - generic [ref=e32]: 10:32
+      - button "帮我备一下明天的课 10:21" [ref=e33] [cursor=pointer]:
+        - generic [ref=e35]: 帮我备一下明天的课
+        - generic [ref=e36]: 10:21
+    - generic [ref=e37]:
+      - generic [ref=e38]: 已启用 Skills
+      - generic [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: 备
+        - text: 备课助手
+      - generic [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: 题
+        - text: 出题组卷
+      - generic [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 情
+        - text: 学情分析
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 错
+        - text: 错题本生成器
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: +
+        - text: 管理 Skills
+    - generic [ref=e49]:
+      - generic [ref=e50]: 八(2)班
+      - generic [ref=e51]: 数学
+      - generic [ref=e52]: 树人中学
+    - button "User menu" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 张
+      - generic [ref=e56]:
+        - generic [ref=e57]: 张老师
+        - generic [ref=e58]: 数学教师 · 树人中学
+      - img [ref=e59]
+  - generic [ref=e192]:
+    - region "Notifications alt+T"
+    - log [ref=e193]:
+      - generic [ref=e194]:
+        - paragraph [ref=e198]: 分析八(2)班数学学情
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - paragraph [ref=e202]:
+                - text: 当前会话未连接教育平台 MCP 服务器，无法调用
+                - code [ref=e203]: "` student_proficiency `"
+                - text: 获取真实数据。我用模拟数据演示完整的学情分析输出：
+              - separator [ref=e204]
+              - heading "八(2)班 数学学情分析" [level=2] [ref=e205]
+            - generic [ref=e206]:
+              - separator [ref=e207]
+              - heading "薄弱环节识别" [level=3] [ref=e208]
+              - paragraph [ref=e209]:
+                - text: 掌握率低于 70% 的知识点有
+                - strong [ref=e210]: 3 个
+                - text: ，需重点关注：
+              - table [ref=e211]:
+                - rowgroup [ref=e212]:
+                  - row "知识点 掌握率 趋势 紧急程度" [ref=e213]:
+                    - columnheader "知识点" [ref=e214]
+                    - columnheader "掌握率" [ref=e215]
+                    - columnheader "趋势" [ref=e216]
+                    - columnheader "紧急程度" [ref=e217]
+                - rowgroup [ref=e218]:
+                  - row "因式分解（十字相乘） 68% 下降 高" [ref=e219]:
+                    - cell "因式分解（十字相乘）" [ref=e220]
+                    - cell "68%" [ref=e221]
+                    - cell "下降" [ref=e222]
+                    - cell "高" [ref=e223]
+                  - row "分式方程 62% 下降 高" [ref=e224]:
+                    - cell "分式方程" [ref=e225]
+                    - cell "62%" [ref=e226]
+                    - cell "下降" [ref=e227]
+                    - cell "高" [ref=e228]
+                  - row "二次根式化简 55% 下降 紧急" [ref=e229]:
+                    - cell "二次根式化简" [ref=e230]
+                    - cell "55%" [ref=e231]
+                    - cell "下降" [ref=e232]
+                    - cell "紧急" [ref=e233]
+              - paragraph [ref=e234]:
+                - text: 三个薄弱知识点均呈
+                - strong [ref=e235]: 下降趋势
+                - text: ，说明不是历史遗留问题，而是
+                - strong [ref=e236]: 近期新出现的下滑
+                - text: ，需要立即干预。
+              - heading "原因推断" [level=3] [ref=e237]
+              - list [ref=e238]:
+                - listitem [ref=e239]:
+                  - strong [ref=e240]: 二次根式化简
+                  - text: （55%）是最近新授内容，学生对"最简根式"判定标准和分母有理化操作不熟练
+                - listitem [ref=e241]:
+                  - strong [ref=e242]: 分式方程
+                  - text: （62%）常见错误集中在增根检验遗漏和通分计算失误
+                - listitem [ref=e243]:
+                  - strong [ref=e244]: 因式分解十字相乘
+                  - text: （68%）下降可能是因为近期练习减少，记忆衰退
+              - heading "教学建议" [level=3] [ref=e245]
+              - list [ref=e246]:
+                - listitem [ref=e247]:
+                  - strong [ref=e248]: 二次根式化简
+                  - text: （紧急）：安排 1 节专题课，重点练习"根号下提取公因式 → 合并 → 有理化"三步流程，配合 5 道分层练习
+                - listitem [ref=e249]:
+                  - strong [ref=e250]: 分式方程
+                  - text: ：在课前 5 分钟设置"增根陷阱"小练，强化检验意识；每周 2 道易错题巩固
+                - listitem [ref=e251]:
+                  - strong [ref=e252]: 因式分解
+                  - text: ：融入每日计算训练（3 道/天），保持手感
+              - heading "分层建议" [level=3] [ref=e253]
+              - list [ref=e254]:
+                - listitem [ref=e255]:
+                  - strong [ref=e256]: 优秀层（24%）
+                  - text: ：可提供二次根式与分式方程的综合题，拓展思维
+                - listitem [ref=e257]:
+                  - strong [ref=e258]: 中等层（58%）
+                  - text: ：聚焦典型题型的规范解题步骤，减少计算失误
+                - listitem [ref=e259]:
+                  - strong [ref=e260]: 待提升层（18%）
+                  - text: ：回归基础，先确保简单根式化简和一元一次方程过关，再衔接新内容
+              - separator [ref=e261]
+              - blockquote [ref=e262]:
+                - paragraph [ref=e263]: 以上为模拟数据演示。如需真实数据分析，请确保教育平台 MCP 服务器已启动并连接到当前会话。
+          - generic [ref=e265]:
+            - generic [ref=e266]: 8 小时前
+            - generic [ref=e267]:
+              - button "复制" [ref=e269] [cursor=pointer]:
+                - img [ref=e270]
+              - tooltip "复制"
+            - generic [ref=e273]:
+              - button "重试" [ref=e275] [cursor=pointer]:
+                - img [ref=e276]
+              - tooltip "重试"
+    - generic [ref=e279]:
+      - generic [ref=e280]:
+        - generic [ref=e281]: 常用操作
+        - button "备课" [ref=e283] [cursor=pointer]
+      - button "出题" [ref=e286] [cursor=pointer]
+      - generic [ref=e287]:
+        - generic [ref=e288]: 学情分析
+        - generic [ref=e289]:
+          - button "学情分析" [ref=e290] [cursor=pointer]
+          - button "本周学情" [ref=e291] [cursor=pointer]
+    - generic [ref=e293]:
+      - textbox "Message input" [ref=e294]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e295] [cursor=pointer]:
+          - img [ref=e296]
+        - button "Send" [disabled] [ref=e299]:
+          - img [ref=e300]

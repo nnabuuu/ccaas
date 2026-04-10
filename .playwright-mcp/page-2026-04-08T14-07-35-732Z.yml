@@ -1,0 +1,63 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e68]:
+      - textbox "🔍 搜索实体..." [active] [ref=e70]
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - generic [ref=e73]: 最近使用
+          - generic [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]: 📝
+            - generic [ref=e77]: SSS/SAS 新授课教案
+          - generic [ref=e79] [cursor=pointer]:
+            - generic [ref=e80]: 📋
+            - generic [ref=e81]: SAS 判定专项练习 · 八(2)班
+          - generic [ref=e82] [cursor=pointer]:
+            - generic [ref=e83]:
+              - generic [ref=e84]: 📎
+              - generic [ref=e85]: SAS判定条件图.png
+            - generic [ref=e86]:
+              - text: └
+              - generic [ref=e87]: 📝 SSS/SAS 新授课教案
+              - generic [ref=e88]: › 📦 SAS 概念讲解
+          - generic [ref=e89] [cursor=pointer]:
+            - generic [ref=e90]:
+              - generic [ref=e91]: 📅
+              - generic [ref=e92]: 周三第1节 · SSS/SAS · 八(2)班
+            - generic [ref=e93]:
+              - text: └
+              - generic [ref=e94]: 📝 SSS/SAS 新授课教案
+        - generic [ref=e95]:
+          - generic [ref=e96]: 按类型浏览
+          - generic [ref=e97] [cursor=pointer]:
+            - generic [ref=e98]:
+              - generic [ref=e99]: 📝
+              - generic [ref=e100]: 教案
+            - generic [ref=e101]: ›
+          - generic [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]:
+              - generic [ref=e104]: 📋
+              - generic [ref=e105]: 作业
+            - generic [ref=e106]: ›
+          - generic [ref=e107] [cursor=pointer]:
+            - generic [ref=e108]:
+              - generic [ref=e109]: 📖
+              - generic [ref=e110]: 课标
+            - generic [ref=e111]: ›
+    - generic [ref=e5]:
+      - generic [ref=e62]:
+        - generic [ref=e63]: 📝
+        - generic [ref=e64]: SSS/SAS 新授课教案
+        - button "×" [ref=e65] [cursor=pointer]
+      - textbox "继续输入..." [ref=e66]
+      - button "发送" [ref=e7] [cursor=pointer]
+    - generic [ref=e67]: 1 个实体已引用 · 发送时注入上下文
+  - generic [ref=e8]:
+    - button "📝 教案" [ref=e9] [cursor=pointer]:
+      - generic [ref=e10]: 📝
+      - generic [ref=e11]: 教案
+    - button "📖 课标" [ref=e12] [cursor=pointer]:
+      - generic [ref=e13]: 📖
+      - generic [ref=e14]: 课标
+    - button "❓ 题目" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ❓
+      - generic [ref=e17]: 题目

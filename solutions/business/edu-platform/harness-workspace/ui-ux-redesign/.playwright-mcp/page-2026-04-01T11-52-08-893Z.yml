@@ -1,0 +1,47 @@
+- generic [ref=e67]:
+  - region "Notifications alt+T"
+  - button "Chat list" [ref=e113] [cursor=pointer]:
+    - img [ref=e114]
+  - log [ref=e68]:
+    - generic [ref=e70]:
+      - generic [ref=e71]: 晚上好，张老师
+      - generic [ref=e72]: 我是你的教学助手
+      - generic [ref=e73]: 第14周 · 八(2)班 · 数学
+      - generic [ref=e74]:
+        - button "备 备课 生成教案和课件，对齐学情" [ref=e75] [cursor=pointer]:
+          - generic [ref=e76]:
+            - generic [ref=e77]: 备
+            - generic [ref=e78]: 备课
+          - generic [ref=e79]: 生成教案和课件，对齐学情
+        - button "题 出题 题库 + AI 原创混合组卷" [ref=e80] [cursor=pointer]:
+          - generic [ref=e81]:
+            - generic [ref=e82]: 题
+            - generic [ref=e83]: 出题
+          - generic [ref=e84]: 题库 + AI 原创混合组卷
+        - button "情 学情 薄弱点分析、趋势对比" [ref=e85] [cursor=pointer]:
+          - generic [ref=e86]:
+            - generic [ref=e87]: 情
+            - generic [ref=e88]: 学情
+          - generic [ref=e89]: 薄弱点分析、趋势对比
+        - button "错 错题本 自动归类学生个人错题" [ref=e90] [cursor=pointer]:
+          - generic [ref=e91]:
+            - generic [ref=e92]: 错
+            - generic [ref=e93]: 错题本
+          - generic [ref=e94]: 自动归类学生个人错题
+      - generic [ref=e95]:
+        - generic [ref=e96]: 试试这样说
+        - button "三角形全等的判定，设计15分钟课堂小测 →" [ref=e97] [cursor=pointer]:
+          - text: 三角形全等的判定，设计15分钟课堂小测
+          - generic [ref=e98]: →
+        - button "对比两个班上周的数学学情 →" [ref=e99] [cursor=pointer]:
+          - text: 对比两个班上周的数学学情
+          - generic [ref=e100]: →
+  - generic [ref=e102]:
+    - textbox "Message input" [active] [ref=e103]:
+      - /placeholder: 描述你的需求...
+      - text: 帮我备一下明天的课
+    - generic:
+      - button "Select skill" [ref=e104] [cursor=pointer]:
+        - img [ref=e105]
+      - button "Send" [ref=e108] [cursor=pointer]:
+        - img [ref=e109]

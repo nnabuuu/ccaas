@@ -1,0 +1,23 @@
+Evaluation complete. Report written to `eval-reports/v5-eval.md`.
+
+**V5 Results:**
+
+| Dimension | Score |
+|-----------|-------|
+| D1: Layout + Sidebar | 5/5 (20pts) |
+| D2: Landing + Composer | 5/5 (20pts) |
+| D3: Messages + Tools | 5/5 (25pts) |
+| D4: Widgets | 5/5 (25pts) |
+| D5: Design System | 5/5 (10pts) |
+| Penalties | 0 |
+| **Total** | **100/100** |
+
+Key findings:
+- Pre-gate passed (both tsc clean), zero penalties
+- All 4 sidebar areas present with time grouping, skill colors, portal user menu
+- Landing has dynamic greeting, 2x2 cards, floating composer with shadow 3-state
+- Tool activity 3-layer folding fully implemented with semantic step icons
+- All 4 widgets match prototypes (StepWizard, ReviewPanel, MetricDashboard, FileCardActions)
+- CSS variable system complete, dark mode verified via screenshot, zero hardcoded hex values
+
+Note: Message sending/session loading couldn't be verified in browser (backend connectivity issue), but D3 scoring is based on thorough code review confirming full implementation match against prototypes.

@@ -1,0 +1,76 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 18:09" [ref=e175] [cursor=pointer]:
+          - generic [ref=e177]: 帮我备课
+          - generic [ref=e178]: 18:09
+        - button "帮我备课 17:48" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 17:48
+        - button "帮我备课 16:29" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 16:29
+      - generic [ref=e33]:
+        - generic [ref=e34]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 分析八(2)班数学学情
+          - generic [ref=e38]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备一下明天的课
+          - generic [ref=e46]: 10:21
+    - generic [ref=e47]:
+      - generic [ref=e48]: 已启用 Skills
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 备
+        - text: 备课助手
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 题
+        - text: 出题组卷
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: 情
+        - text: 学情分析
+      - generic [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]: 错
+        - text: 错题本生成器
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: +
+        - text: 管理 Skills
+    - generic [ref=e59]:
+      - generic [ref=e60]: 八(2)班
+      - generic [ref=e61]: 数学
+      - generic [ref=e62]: 树人中学
+    - button "User menu" [ref=e64] [cursor=pointer]:
+      - generic [ref=e65]: 张
+      - generic [ref=e66]:
+        - generic [ref=e67]: 张老师
+        - generic [ref=e68]: 数学教师 · 树人中学
+      - img [ref=e69]
+  - generic [ref=e118]:
+    - region "Notifications alt+T"
+    - log [ref=e119]:
+      - generic [ref=e120]:
+        - paragraph [ref=e165]: 帮我备课
+        - generic [ref=e167]:
+          - generic [ref=e179]:
+            - img [ref=e181]
+            - generic [ref=e184] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e185]: 78ms
+          - generic "思考中" [ref=e168]: 正在处理...
+    - generic [ref=e153]:
+      - textbox "Message input" [active] [ref=e154]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e155] [cursor=pointer]:
+          - img [ref=e156]
+        - button "Stop generating" [ref=e173] [cursor=pointer]:
+          - img [ref=e160]

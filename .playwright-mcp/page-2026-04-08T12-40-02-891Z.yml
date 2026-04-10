@@ -1,0 +1,17 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - textbox "输入消息... 按 @ 引用实体" [active] [ref=e116]
+    - button "发送" [ref=e7] [cursor=pointer]
+  - generic [ref=e8]:
+    - button "📝 教案" [ref=e9] [cursor=pointer]:
+      - generic [ref=e10]: 📝
+      - generic [ref=e11]: 教案
+    - button "📖 课标" [ref=e12] [cursor=pointer]:
+      - generic [ref=e13]: 📖
+      - generic [ref=e14]: 课标
+    - button "❓ 题目" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ❓
+      - generic [ref=e17]: 题目
+  - generic [ref=e117]:
+    - generic [ref=e118]: 发送的 Payload（实际发给 Agent Engine 的内容）
+    - generic [ref=e119]: "{ \"message\": \"请帮我分析这个教案和作业的知识点覆盖情况\", \"references\": [ { \"entityType\": \"lesson_plan\", \"entityId\": \"lp_1\", \"displayName\": \"SSS/SAS 新授课教案\" }, { \"entityType\": \"homework\", \"entityId\": \"hw_1\", \"displayName\": \"SAS 判定专项练习 · 八(2)班\" } ], \"injectedContext\": [ { \"entityType\": \"lesson_plan\", \"entityId\": \"lp_1\", \"displayName\": \"SSS/SAS 新授课教案\", \"data\": { \"entityType\": \"lesson_plan\", \"entityId\": \"lp_1\", \"displayName\": \"SSS/SAS 新授课教案\", \"subtitle\": \"八年级 · 数学 · 几何\", \"timestamp\": \"2025-03-14T10:00:00Z\", \"hasChildren\": true, \"resolvedData\": true }, \"dataHash\": \"65bc85fa\", \"resolvedAt\": \"2026-04-08T12:40:00.888Z\", \"breadcrumb\": null }, { \"entityType\": \"homework\", \"entityId\": \"hw_1\", \"displayName\": \"SAS 判定专项练习 · 八(2)班\", \"data\": { \"entityType\": \"homework\", \"entityId\": \"hw_1\", \"displayName\": \"SAS 判定专项练习 · 八(2)班\", \"subtitle\": \"38/43 已提交\", \"timestamp\": \"2025-03-14T16:00:00Z\", \"hasChildren\": true, \"resolvedData\": true }, \"dataHash\": \"33b68d71\", \"resolvedAt\": \"2026-04-08T12:40:00.890Z\", \"breadcrumb\": null } ] }"

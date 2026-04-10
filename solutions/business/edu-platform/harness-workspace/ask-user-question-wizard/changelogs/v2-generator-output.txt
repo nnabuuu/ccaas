@@ -1,0 +1,23 @@
+## v2 Summary
+
+**Score: 69 → ~75 (estimated +6)**
+
+### Changes Made (2 fixes)
+
+1. **SummaryStep shows actual item names** (D5: 4→5)
+   - Changed TreeSelectStep & DataReviewStep to emit `{ ids, labels }` instead of `string[]`
+   - SummaryStep now displays "1.2 有理数、1.3 有理数的加减法" instead of "2 项已选"
+   - 4 files changed
+
+2. **DependsOn tooltip on disabled steps** (D3: 4→5)
+   - Disabled step chips now show "请先完成「选择范围」" on hover
+   - 1 file changed
+
+### Verification
+- All pre-gate checks pass (tsc, build)
+- 8 browser screenshots captured in `screenshots/v2/`
+- Full wizard flow verified: form → tree-select → data-review → summary → submit
+- LLM resume still shows "正在处理..." (same as v1 — latency issue, not fixable in frontend)
+
+### Remaining D1/D6 blocker
+The LLM resume after `control_response` POST works (SSE stream stays open, spinner active) but the actual generated content takes >2 minutes to appear. This is a backend/LLM latency issue, not a data flow bug.

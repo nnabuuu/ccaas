@@ -1,0 +1,22 @@
+The v3 evaluation is complete. The report has been written to `eval-reports/v3-eval.md` with a final score of **81/100**.
+
+Here's the score summary:
+
+| Dimension | Weight | Score | Weighted |
+|-----------|--------|-------|----------|
+| D1 Chips 行 | 12 | 5/5 | 12.0 |
+| D2 选项+交互 | 22 | 4/5 | 17.6 |
+| D3 Footer+提交 | 12 | 5/5 | 12.0 |
+| D4 Preview 分栏 | 12 | 3/5 | 7.2 |
+| D5 面板+状态 | 17 | 4/5 | 13.6 |
+| D6 设计系统 | 10 | 5/5 | 10.0 |
+| D7 持久化链路 | 15 | 3/5 | 9.0 |
+| **Total** | | | **81.4 → 81** |
+
+**Top 3 blockers to reaching 95+:**
+
+1. **D4 Preview (3/5)** — Code is complete but backend doesn't send `preview: true` questions, so it couldn't be browser-verified.
+2. **D7 Persistence (3/5)** — SDK param + reconstruction code exists, but session history doesn't load after page refresh.
+3. **D2/D5 Recommended (-1 each)** — Backend embeds "(推荐)" in label text instead of setting `recommended: true` property.
+
+13 screenshots saved to `screenshots/v3/`. No pending work remaining.

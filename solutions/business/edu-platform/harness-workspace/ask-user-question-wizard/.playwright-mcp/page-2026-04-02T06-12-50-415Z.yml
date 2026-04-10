@@ -1,0 +1,77 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 14:12" [ref=e273] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 14:12
+        - button "帮我备课 14:08" [ref=e113] [cursor=pointer]:
+          - generic [ref=e115]: 帮我备课
+          - generic [ref=e116]: 14:08
+      - generic [ref=e29]:
+        - generic [ref=e30]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 分析八(2)班数学学情
+          - generic [ref=e34]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备一下明天的课
+          - generic [ref=e38]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:21
+    - generic [ref=e43]:
+      - generic [ref=e44]: 已启用 Skills
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 备
+        - text: 备课助手
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 题
+        - text: 出题组卷
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 情
+        - text: 学情分析
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 错
+        - text: 错题本生成器
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: +
+        - text: 管理 Skills
+    - generic [ref=e55]:
+      - generic [ref=e56]: 八(2)班
+      - generic [ref=e57]: 数学
+      - generic [ref=e58]: 树人中学
+    - button "User menu" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 张
+      - generic [ref=e62]:
+        - generic [ref=e63]: 张老师
+        - generic [ref=e64]: 数学教师 · 树人中学
+      - img [ref=e65]
+  - generic [ref=e69]:
+    - region "Notifications alt+T"
+    - log [ref=e70]:
+      - generic [ref=e71]:
+        - paragraph [ref=e120]: 帮我备课
+        - generic [ref=e122]:
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - generic [ref=e135] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e136]: 83ms
+          - paragraph [ref=e138]: 好的，让我来帮您备课！请先提供以下基本信息：
+          - generic [ref=e270]:
+            - generic [ref=e271]: "提交失败: HTTP 500"
+            - button "重试" [ref=e272] [cursor=pointer]
+          - generic "思考中" [ref=e123]: 正在处理...
+    - generic [ref=e104]:
+      - textbox "Message input" [active] [ref=e105]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e106] [cursor=pointer]:
+          - img [ref=e107]
+        - button "Stop generating" [ref=e128] [cursor=pointer]:
+          - img [ref=e111]

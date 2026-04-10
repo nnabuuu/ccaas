@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: Message Bubbles</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--success-bg:#EAF3DE;--success-t:#27500A;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+.section{margin-bottom:24px}
+.section-title{font-size:12px;font-weight:500;color:var(--t3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.3px}
+.chat-area{background:var(--bg2);border-radius:var(--rl);padding:18px;display:flex;flex-direction:column;gap:14px;border:.5px solid var(--b1)}
+.msg{max-width:85%;line-height:1.65}
+.msg.user{align-self:flex-end}
+.msg.ai{align-self:flex-start;max-width:100%}
+
+/* User bubble */
+.bubble-user{background:var(--t1);color:var(--bg1);padding:10px 16px;border-radius:18px 18px 4px 18px;font-size:14px}
+
+/* AI bubble */
+.bubble-ai{font-size:14px;color:var(--t1)}
+
+/* Skill tag */
+.skill-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:10px;background:var(--success-bg);color:var(--success-t);margin-bottom:6px}
+.skill-dot{width:6px;height:6px;border-radius:50%;background:var(--success-t)}
+
+/* Timestamp */
+.timestamp{font-size:10px;color:var(--t3);margin-top:4px}
+.timestamp.right{text-align:right}
+
+/* Thinking indicator */
+.thinking{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);padding:8px 0}
+.thinking-dots{display:flex;gap:3px}
+.thinking-dots span{width:5px;height:5px;border-radius:50%;background:var(--t3);animation:blink 1.2s infinite}
+.thinking-dots span:nth-child(2){animation-delay:.2s}
+.thinking-dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3}40%{opacity:1}}
+
+/* Error */
+.error-msg{font-size:12px;color:#A32D2D;background:#FCEBEB;padding:8px 12px;border-radius:var(--r);margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>Message Bubbles 组件</h3>
+<p>Chat 消息流中的基础消息类型：用户气泡、AI 回复（带 Skill 标签）、思考状态、错误提示。<br>用户消息靠右深色背景，AI 消息靠左无背景。</p>
+
+<div class="section">
+  <div class="section-title">完整对话流示例</div>
+  <div class="chat-area">
+    <div class="msg user">
+      <div class="bubble-user">帮我备一下明天的课</div>
+      <div class="timestamp right">14:23</div>
+    </div>
+
+    <div class="msg ai">
+      <div class="skill-tag"><span class="skill-dot"></span>备课助手</div>
+      <div class="bubble-ai">
+        好的，我为八(2)班数学准备了备课向导。当前教学进度到第12章「全等三角形」，明天预计讲 12.2 三角形全等的判定。
+      </div>
+      <div class="timestamp">14:23 · 备课助手 · 2 次工具调用</div>
+    </div>
+
+    <div class="msg user">
+      <div class="bubble-user">生成教案吧，SSS那个重点讲一下</div>
+      <div class="timestamp right">14:25</div>
+    </div>
+
+    <div class="msg ai">
+      <div class="thinking"><div class="thinking-dots"><span></span><span></span><span></span></div>正在生成教案...</div>
+    </div>
+
+    <div class="msg ai">
+      <div class="bubble-ai">
+        好的，已根据八(2)班学情生成教案，SSS 判定部分安排了 15 分钟专项练习环节。
+      </div>
+      <div class="timestamp">14:25 · 1 次工具调用 · 890ms</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">错误状态</div>
+  <div class="chat-area">
+    <div class="msg user"><div class="bubble-user">查一下九(1)班的学情</div></div>
+    <div class="msg ai">
+      <div class="bubble-ai">
+        <div class="error-msg">学情 MCP 调用失败: 未找到班级 class_9_1 的数据。可能该班级尚未导入学情系统。</div>
+        抱歉，未能获取九(1)班的学情数据。请确认该班级已在学情系统中注册，或联系管理员导入数据。
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+</body>
+</html>

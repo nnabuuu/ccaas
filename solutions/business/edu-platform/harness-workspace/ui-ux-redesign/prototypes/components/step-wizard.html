@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: StepWizard</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--danger-t:#A32D2D;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+.widget{border:.5px solid var(--b1);border-radius:var(--rl);background:var(--bg1);overflow:hidden}
+.widget-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:.5px solid var(--b1)}
+.widget-title{font-size:13px;font-weight:600}
+.widget-badge{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--info-bg);color:var(--info-t)}
+.widget-body{padding:16px}
+.steps{display:flex;gap:4px;margin-bottom:16px}
+.step{flex:1;text-align:center;padding:8px 0;font-size:11px;color:var(--t3);border-bottom:2.5px solid #e0dfda;cursor:pointer;transition:all .15s}
+.step.act{color:var(--t1);font-weight:600;border-color:var(--t1)}
+.step.done{color:var(--success-t);border-color:var(--success-t)}
+.panel{display:none}.panel.vis{display:block}
+.row{display:flex;gap:10px;margin-bottom:12px}
+.field{flex:1}
+.label{font-size:11px;color:var(--t2);margin-bottom:4px;font-weight:500}
+.sel{width:100%;padding:8px 10px;border:.5px solid var(--b1);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);font-family:inherit;outline:none}
+.sel:focus{border-color:var(--info-t)}
+.tree{border:.5px solid var(--b1);border-radius:var(--rl);padding:10px 14px;max-height:200px;overflow-y:auto;font-size:12px;color:var(--t2)}
+.tree div{padding:3px 0}
+.tree .on{color:var(--t1);font-weight:600}
+.tree .indent{padding-left:18px}
+.bar{display:flex;align-items:center;gap:8px;padding:7px 10px;border:.5px solid var(--b1);border-radius:6px;margin-bottom:6px;font-size:12px;background:var(--bg1)}
+.bar-name{width:110px;flex-shrink:0}
+.bar-track{flex:1;height:6px;background:#eeede8;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.bar-pct{width:36px;text-align:right;font-weight:600;font-size:11px}
+.bar-tog{width:16px;height:16px;border-radius:3px;border:1.5px solid #c8c7c0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;flex-shrink:0;transition:all .15s}
+.bar-tog.on{background:var(--warn-bg);border-color:var(--warn-t);color:var(--warn-t)}
+.summary{background:var(--bg2);border-radius:var(--rl);padding:14px 16px;margin-bottom:12px}
+.sum-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}
+.sum-k{color:var(--t2)}.sum-v{font-weight:600}
+.tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:10px;margin:2px;background:var(--warn-bg);color:var(--warn-t);font-weight:500}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.btn{font-size:12px;padding:7px 16px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.btn:hover{background:var(--bg2)}
+.btn.pri{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.hint{font-size:11px;color:var(--t3);margin-top:6px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>StepWizard 组件</h3>
+<p>四步参数收集向导。用于备课、出题等需要多步输入的场景。<br>步骤间数据通过 $state 传递，最终 submitToEngine 提交结构化参数。可完整交互。</p>
+
+<div class="widget">
+  <div class="widget-head"><span class="widget-title">备课向导</span><span class="widget-badge">StepWizard</span></div>
+  <div class="widget-body">
+    <div class="steps" id="steps"></div>
+    <div class="panel" id="p0"></div>
+    <div class="panel" id="p1"></div>
+    <div class="panel" id="p2"></div>
+    <div class="panel" id="p3"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const names=['选择范围','选择章节','学情分析','确认生成'];
+let cur=0;const sel={chapters:[],gaps:[]};
+const chapters={'ch12':{label:'第12章 全等三角形',children:{'12.1':'12.1 全等三角形','12.2':'12.2 三角形全等的判定','12.3':'12.3 角的平分线的性质'}},'ch13':{label:'第13章 轴对称',children:{'13.1':'13.1 轴对称','13.2':'13.2 画轴对称图形','13.3':'13.3 等腰三角形'}}};
+const gapData={'12.2':[{kp:'SSS 判定',rate:42},{kp:'SAS 判定',rate:35},{kp:'ASA/AAS',rate:28}],'12.3':[{kp:'角平分线逆定理',rate:38}]};
+
+function render(){
+  document.getElementById('steps').innerHTML=names.map((s,i)=>`<div class="step${i===cur?' act':i<cur?' done':''}" onclick="go(${i})">${i<cur?'&#10003; ':''}${s}</div>`).join('');
+  [0,1,2,3].forEach(i=>document.getElementById('p'+i).className='panel'+(i===cur?' vis':''));
+}
+function go(n){cur=n;render();[r0,r1,r2,r3][n]()}
+
+function r0(){
+  document.getElementById('p0').innerHTML=`
+    <div class="row"><div class="field"><div class="label">学科</div><select class="sel"><option>数学</option><option>语文</option><option>英语</option></select></div>
+    <div class="field"><div class="label">年级学期</div><select class="sel"><option>八年级上</option><option>八年级下</option></select></div>
+    <div class="field"><div class="label">班级</div><select class="sel"><option>八(1)班</option><option selected>八(2)班</option><option>八(3)班</option></select></div></div>
+    <div class="row"><div class="field"><div class="label">课型</div><select class="sel"><option>新授课</option><option>复习课</option><option>练习课</option></select></div>
+    <div class="field"><div class="label">课时</div><select class="sel"><option>40 分钟</option><option selected>45 分钟</option><option>90 分钟</option></select></div></div>
+    <div class="actions"><button class="btn pri" onclick="go(1)">选择章节 &rarr;</button></div>`;
+}
+function r1(){
+  let h='<div class="tree">';
+  for(const[cid,ch]of Object.entries(chapters)){
+    h+=`<div style="font-weight:500;cursor:pointer" onclick="document.getElementById('ch_${cid}').style.display=document.getElementById('ch_${cid}').style.display==='none'?'block':'none'">${ch.label}</div><div id="ch_${cid}">`;
+    for(const[sid,lbl]of Object.entries(ch.children)){const on=sel.chapters.includes(sid);h+=`<div class="indent${on?' on':''}" style="cursor:pointer" onclick="togCh('${sid}')">${on?'&#9745; ':'&#9744; '}${lbl}</div>`}
+    h+=`</div>`}
+  h+='</div>';
+  if(sel.chapters.length)h+=`<div class="hint">已选: ${sel.chapters.join(', ')}</div>`;
+  h+=`<div class="actions"><button class="btn" onclick="go(0)">&larr; 上一步</button><button class="btn pri" onclick="go(2)"${sel.chapters.length?'':' disabled'}>查看学情 &rarr;</button></div>`;
+  document.getElementById('p1').innerHTML=h;
+}
+function togCh(sid){const i=sel.chapters.indexOf(sid);if(i>=0)sel.chapters.splice(i,1);else sel.chapters.push(sid);r1()}
+function r2(){
+  let gaps=[];sel.chapters.forEach(s=>{if(gapData[s])gaps.push(...gapData[s])});
+  if(!gaps.length)gaps=[{kp:'(无数据)',rate:0}];
+  sel.gaps=gaps.map(g=>({...g,em:g.rate>=30}));
+  let h='';
+  sel.gaps.forEach((g,i)=>{const c=g.rate>=35?'var(--danger-t)':g.rate>=25?'var(--warn-t)':'var(--success-t)';h+=`<div class="bar"><span class="bar-name">${g.kp}</span><div class="bar-track"><div class="bar-fill" style="width:${g.rate}%;background:${c}"></div></div><span class="bar-pct" style="color:${c}">${g.rate}%</span><span class="bar-tog${g.em?' on':''}" onclick="sel.gaps[${i}].em=!sel.gaps[${i}].em;r2()">${g.em?'!':''}</span></div>`});
+  h+=`<div class="hint">点击 ! 标记重点关注的知识点</div>`;
+  h+=`<div class="actions"><button class="btn" onclick="go(1)">&larr; 上一步</button><button class="btn pri" onclick="go(3)">确认 &rarr;</button></div>`;
+  document.getElementById('p2').innerHTML=h;
+}
+function r3(){
+  const em=sel.gaps.filter(g=>g.em);
+  let h=`<div class="summary">
+    <div class="sum-row"><span class="sum-k">学科 / 年级</span><span class="sum-v">数学 · 八年级上</span></div>
+    <div class="sum-row"><span class="sum-k">班级</span><span class="sum-v">八(2)班</span></div>
+    <div class="sum-row"><span class="sum-k">课型 / 时长</span><span class="sum-v">新授课 · 45 分钟</span></div>
+    <div class="sum-row"><span class="sum-k">教学内容</span><span class="sum-v">${sel.chapters.join(', ')}</span></div>
+    <div class="sum-row"><span class="sum-k">重点关注</span><span class="sum-v">${em.length?em.map(g=>`<span class="tag">${g.kp} ${g.rate}%</span>`).join(''):'无'}</span></div>
+  </div>`;
+  h+=`<div class="actions"><button class="btn" onclick="go(2)">&larr; 上一步</button><button class="btn pri" onclick="alert('submitToEngine()')">生成教案 &#8599;</button></div>`;
+  document.getElementById('p3').innerHTML=h;
+}
+go(0);
+</script>
+</body>
+</html>

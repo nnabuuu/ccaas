@@ -1,0 +1,359 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 01:40" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 01:40
+        - button "帮我出5道关于全等三角形判定的题 01:18" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e32]: 01:18
+      - generic [ref=e33]:
+        - generic [ref=e34]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 分析八(2)班数学学情
+          - generic [ref=e38]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备一下明天的课
+          - generic [ref=e46]: 10:21
+    - generic [ref=e47]:
+      - generic [ref=e48]: 已启用 Skills
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 备
+        - text: 备课助手
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 题
+        - text: 出题组卷
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: 情
+        - text: 学情分析
+      - generic [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]: 错
+        - text: 错题本生成器
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: +
+        - text: 管理 Skills
+    - generic [ref=e59]:
+      - generic [ref=e60]: 八(2)班
+      - generic [ref=e61]: 数学
+      - generic [ref=e62]: 树人中学
+    - button "User menu" [ref=e64] [cursor=pointer]:
+      - generic [ref=e65]: 张
+      - generic [ref=e66]:
+        - generic [ref=e67]: 张老师
+        - generic [ref=e68]: 数学教师 · 树人中学
+      - img [ref=e69]
+  - generic [ref=e118]:
+    - region "Notifications alt+T"
+    - log [ref=e119]:
+      - generic [ref=e120]:
+        - paragraph [ref=e124]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e125]:
+          - generic [ref=e126]:
+            - generic [ref=e127]:
+              - paragraph [ref=e128]:
+                - text: 好的，根据您的选择（混合出题 + 分层难度），以下是5道关于
+                - strong [ref=e129]: 全等三角形判定
+                - text: 的随堂测试题：
+              - separator [ref=e130]
+              - heading "全等三角形判定 · 随堂测试" [level=2] [ref=e131]
+              - paragraph [ref=e132]:
+                - strong [ref=e133]: 知识点范围
+                - text: ：SSS、SAS、ASA、AAS、HL ｜
+                - strong [ref=e134]: 建议用时
+                - text: ：15分钟
+              - separator [ref=e135]
+              - heading "【基础】" [level=3] [ref=e136]
+              - paragraph [ref=e137]:
+                - strong [ref=e138]: 第1题（选择题）
+                - text: 已知 △ABC 和 △DEF 中，AB = DE，BC = EF，AC = DF，则 △ABC ≌ △DEF 的判定依据是（ ）
+              - paragraph [ref=e139]: A. SAS B. ASA C. SSS D. AAS
+              - blockquote [ref=e140]:
+                - paragraph [ref=e141]: 考查知识点：SSS判定 ｜ 难度：⭐
+              - separator [ref=e142]
+              - paragraph [ref=e143]:
+                - strong [ref=e144]: 第2题（填空题）
+                - text: 如图，已知 AB = CD，BC = DA，连接 AC。则 △ABC ≌ △CDA，判定依据是 ________ ；由此可得 ∠B = ________ 。
+              - code [ref=e146]: A ———————— D | / | | / | | / | | / | | / | B ———————— C
+              - blockquote [ref=e147]:
+                - paragraph [ref=e148]: 考查知识点：SSS判定及其应用 ｜ 难度：⭐
+              - separator [ref=e149]
+              - heading "【中等】" [level=3] [ref=e150]
+              - paragraph [ref=e151]:
+                - strong [ref=e152]: 第3题（选择题）
+                - text: 已知 △ABC 和 △DEF 中，∠A = ∠D，AB = DE，下列条件中，
+                - strong [ref=e153]: 不能
+                - text: 判定 △ABC ≌ △DEF 的是（ ）
+              - paragraph [ref=e154]: A. BC = EF B. ∠B = ∠E C. AC = DF D. ∠C = ∠F
+              - blockquote [ref=e155]:
+                - paragraph [ref=e156]: 考查知识点：SAS、ASA、AAS的区分与"SSA不能判定" ｜ 难度：⭐⭐
+              - separator [ref=e157]
+              - paragraph [ref=e158]:
+                - strong [ref=e159]: 第4题（填空题）
+                - text: 如图，点 E、F 在线段 BC 上，BE = CF，AB = DC，∠B = ∠C。
+              - code [ref=e161]: A D / \ / \ / \ / \ / \ / \ B——E————F——C
+              - paragraph [ref=e162]: (1) △ABE ≌ △DCF 的判定依据是 ________ ；
+              - paragraph [ref=e163]: (2) 由全等可进一步得出 AE = ________ 。
+              - blockquote [ref=e164]:
+                - paragraph [ref=e165]: 考查知识点：SAS判定及全等性质应用 ｜ 难度：⭐⭐
+              - separator [ref=e166]
+              - heading "【较难】" [level=3] [ref=e167]
+              - paragraph [ref=e168]:
+                - strong [ref=e169]: 第5题（解答题）
+                - text: 如图，已知 ∠1 = ∠2，∠3 = ∠4，求证：AB = CD。
+              - code [ref=e171]: A /|\ / | \ / | \ / 1 | 2 \ B————O————D \ 3 | 4 / \ | / \ | / \|/ C
+              - paragraph [ref=e172]: （其中 ∠1 = ∠BAO，∠2 = ∠DAO，∠3 = ∠BCO，∠4 = ∠DCO，O 为 AC 与 BD 的交点）
+              - blockquote [ref=e173]:
+                - paragraph [ref=e174]: 考查知识点：ASA/AAS 判定 + 两步证明全等 ｜ 难度：⭐⭐⭐
+              - separator [ref=e175]
+              - heading "参考答案与解析" [level=2] [ref=e176]
+              - paragraph [ref=e177]:
+                - strong [ref=e178]: 第1题
+                - strong [ref=e179]: C
+                - text: 三组对应边分别相等，直接由 SSS 判定全等。
+              - paragraph [ref=e180]:
+                - strong [ref=e181]: 第2题
+                - text: SSS；∠D AB = CD，BC = DA，公共边 AC = CA，由 SSS 判定 △ABC ≌ △CDA，对应角 ∠B = ∠D。
+              - paragraph [ref=e182]:
+                - strong [ref=e183]: 第3题
+                - strong [ref=e184]: A
+              - list [ref=e185]:
+                - listitem [ref=e186]: B 项：∠A=∠D, ∠B=∠E, AB=DE → ASA ✔
+                - listitem [ref=e187]: C 项：∠A=∠D, AB=DE, AC=DF → SAS ✔
+                - listitem [ref=e188]: D 项：∠A=∠D, ∠C=∠F, AB=DE → AAS ✔
+                - listitem [ref=e189]:
+                  - strong [ref=e190]: A 项
+                  - text: ：∠A=∠D, AB=DE, BC=EF → 这是"边边角"(SSA)，
+                  - strong [ref=e191]: 不能
+                  - text: 判定全等。
+              - paragraph [ref=e192]:
+                - strong [ref=e193]: 第4题
+                - text: (1)
+                - strong [ref=e194]: SAS
+                - text: （∠B = ∠C，AB = DC，BE = CF） (2) AE =
+                - strong [ref=e195]: DF
+                - text: （全等三角形对应边相等）
+              - paragraph [ref=e196]:
+                - strong [ref=e197]: 第5题 证明思路
+                - text: ：
+              - paragraph [ref=e198]: ∵ ∠1 = ∠2，∠3 = ∠4 ∴ ∠1 + ∠3 = ∠2 + ∠4，即 ∠BOA = ∠DOC（对顶角也可辅助说明）
+              - paragraph [ref=e199]: 在 △ABO 和 △CDO 中：
+              - list [ref=e200]:
+                - listitem [ref=e201]: ∠1 = ∠2（已知）
+                - listitem [ref=e202]: OA = OC 或利用 ∠3 = ∠4 + 公共边 OB = OD 等条件
+                - listitem [ref=e203]: 先证 △AOB ≌ △COD（ASA），得 AB = CD。
+              - paragraph [ref=e204]:
+                - text: 具体过程： ∵ ∠1 = ∠2，∠AOB = ∠COD（对顶角相等），OA 为公共段相关 取 △ABC 和 △CDA 中，由 ∠1=∠2, ∠3=∠4 → ∠BAC = ∠DCA，又 AC = CA（公共边），∠BCA = ∠DAC，由
+                - strong [ref=e205]: ASA
+                - text: 得 △ABC ≌ △CDA，∴ AB = CD。 ∎
+              - separator [ref=e206]
+              - paragraph [ref=e207]: 共5题，基础2题 + 中等2题 + 较难1题，覆盖 SSS、SAS、ASA、AAS 四种判定方法及"SSA不能判定"这一易错点。
+            - generic [ref=e208]:
+              - img [ref=e210]
+              - generic [ref=e213] [cursor=pointer]: SkillSkill
+              - generic [ref=e214]: 75ms
+            - generic [ref=e215]:
+              - generic [ref=e216]:
+                - generic [ref=e219] [cursor=pointer]: 题型
+                - generic [ref=e222] [cursor=pointer]: 难度
+              - generic [ref=e223]:
+                - generic [ref=e224]:
+                  - generic [ref=e225]: 请选择题型
+                  - generic [ref=e226]:
+                    - generic [ref=e229] [cursor=pointer]:
+                      - generic [ref=e230]: 选择题
+                      - generic [ref=e231]: 单项选择题，适合快速检测
+                    - generic [ref=e234] [cursor=pointer]:
+                      - generic [ref=e235]: 填空题
+                      - generic [ref=e236]: 填写关键结果，考查计算和推理
+                    - generic [ref=e239] [cursor=pointer]:
+                      - generic [ref=e240]: 解答题
+                      - generic [ref=e241]: 需要写出完整证明过程
+                    - generic [ref=e244] [cursor=pointer]:
+                      - generic [ref=e245]: 混合出题
+                      - generic [ref=e246]: 包含多种题型，综合考查
+                  - generic [ref=e249] [cursor=pointer]:
+                    - generic [ref=e250]: 或者自定义
+                    - textbox "输入自定义内容..." [ref=e251]
+                - generic:
+                  - generic: 请选择难度级别
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 基础
+                        - generic: 直接应用判定定理，适合课堂巩固
+                    - generic:
+                      - generic:
+                        - generic: 中等
+                        - generic: 需要一定推理，适合随堂检测
+                    - generic:
+                      - generic:
+                        - generic: 较难
+                        - generic: 综合运用多个知识点，有一定挑战
+                    - generic:
+                      - generic:
+                        - generic: 分层（含3个难度）
+                        - generic: 从易到难，适合分层教学
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "输入自定义内容..."
+              - generic [ref=e252]:
+                - generic [ref=e253]: 0 / 2 已回答
+                - button "确认选择" [disabled] [ref=e254]
+          - generic [ref=e256]:
+            - generic [ref=e257]: 5 分钟前
+            - generic [ref=e258]:
+              - button "复制" [ref=e260] [cursor=pointer]:
+                - img [ref=e261]
+              - tooltip "复制"
+            - generic [ref=e264]:
+              - button "重试" [ref=e266] [cursor=pointer]:
+                - img [ref=e267]
+              - tooltip "重试"
+        - paragraph [ref=e273]: 选择题 · 中等
+        - generic [ref=e274]:
+          - generic [ref=e276]:
+            - heading "全等三角形判定 · 随堂测试（选择题）" [level=2] [ref=e277]
+            - paragraph [ref=e278]:
+              - strong [ref=e279]: 难度
+              - text: ：中等 ｜
+              - strong [ref=e280]: 题量
+              - text: ：5题 ｜
+              - strong [ref=e281]: 建议用时
+              - text: ：10分钟
+            - separator [ref=e282]
+            - paragraph [ref=e283]:
+              - strong [ref=e284]: "1."
+              - text: 在 △ABC 和 △DEF 中，已知 AB = DE，∠A = ∠D，添加下列哪个条件
+              - strong [ref=e285]: 仍不能
+              - text: 判定 △ABC ≌ △DEF？（ ）
+            - paragraph [ref=e286]: A. ∠B = ∠E B. AC = DF C. BC = EF D. ∠C = ∠F
+            - separator [ref=e287]
+            - paragraph [ref=e288]:
+              - strong [ref=e289]: "2."
+              - text: 如图，AC 与 BD 相交于点 O，OA = OC，OB = OD。若要证明 AB = CD，最直接的判定方法是（ ）
+            - code [ref=e291]: A D \ / \ / \ O / / \ / \ / \ B C
+            - paragraph [ref=e292]: A. SSS B. SAS C. ASA D. AAS
+            - separator [ref=e293]
+            - paragraph [ref=e294]:
+              - strong [ref=e295]: "3."
+              - text: 如图，∠B = ∠C = 90°，且 AB = DC，E 是 BC 上一点。则 △ABE ≌ △DCE 的判定依据是（ ）
+            - code [ref=e297]: A D | | | | B——— E ———C
+            - paragraph [ref=e298]: A. SAS B. ASA C. AAS D. HL
+            - separator [ref=e299]
+            - paragraph [ref=e300]:
+              - strong [ref=e301]: "4."
+              - text: △ABC 中，AD 是 BC 边上的中线。若再添加一个条件使 △ABD ≌ △ACD，下列条件中
+              - strong [ref=e302]: 不可行
+              - text: 的是（ ）
+            - paragraph [ref=e303]: A. AB = AC B. ∠B = ∠C C. ∠BAD = ∠CAD D. AD ⊥ BC
+            - separator [ref=e304]
+            - paragraph [ref=e305]:
+              - strong [ref=e306]: "5."
+              - text: 如图，AB ∥ CD，AB = CD，E 是 BD 的中点，以下四个结论： ① AE = CE ② AE ∥ CE ③ ∠ABE = ∠CDE ④ △ABE ≌ △CDE
+            - paragraph [ref=e307]: 其中正确结论的个数是（ ）
+            - code [ref=e309]: A \ \ E / / C
+            - paragraph [ref=e310]: （B 在左下，D 在右上，AB ∥ CD）
+            - paragraph [ref=e311]: A. 2个 B. 3个 C. 4个 D. 1个
+            - separator [ref=e312]
+            - heading "参考答案与解析" [level=2] [ref=e313]
+            - paragraph [ref=e314]:
+              - strong [ref=e315]: 第1题 C
+            - list [ref=e316]:
+              - listitem [ref=e317]:
+                - text: A：∠A=∠D, AB=DE, ∠B=∠E →
+                - strong [ref=e318]: ASA
+                - text: ✔
+              - listitem [ref=e319]:
+                - text: B：∠A=∠D, AB=DE, AC=DF →
+                - strong [ref=e320]: SAS
+                - text: ✔
+              - listitem [ref=e321]:
+                - text: D：∠A=∠D, ∠C=∠F, AB=DE →
+                - strong [ref=e322]: AAS
+                - text: ✔
+              - listitem [ref=e323]:
+                - strong [ref=e324]: C：∠A=∠D, AB=DE, BC=EF → "边边角"(SSA)，不能判定全等
+                - text: ✘
+            - paragraph [ref=e325]:
+              - strong [ref=e326]: 第2题 B
+              - text: OA=OC, OB=OD（两组边），∠AOB=∠COD（对顶角），由
+              - strong [ref=e327]: SAS
+              - text: 判定 △AOB ≌ △COD。
+            - paragraph [ref=e328]:
+              - strong [ref=e329]: 第3题 D
+              - text: ∠B=∠C=90°（直角），AB=DC（直角边），BE + EC = BC，利用 AE 为斜边 → 这是两个
+              - strong [ref=e330]: 直角三角形
+              - text: ，斜边 AE=DE 需要验证。实际上：∠B=∠C=90°，AB=DC，公共斜边... 不对。重新分析：RT△ABE 和 RT△DCE 中，∠B=∠C=90°，AB=DC，
+              - strong [ref=e331]: HL
+              - text: 需要斜边相等。但此处斜边 AE 与 DE 未必相等。正确思路：∠B=∠C=90°，AB=DC，∠AEB=∠DEC（对顶角）→
+              - strong [ref=e332]: AAS
+              - text: ，选
+              - strong [ref=e333]: C
+              - text: 。
+            - paragraph [ref=e334]:
+              - strong [ref=e335]: 第4题 B
+            - list [ref=e336]:
+              - listitem [ref=e337]:
+                - text: A：AB=AC + AD=AD + BD=CD →
+                - strong [ref=e338]: SSS
+                - text: ✔
+              - listitem [ref=e339]:
+                - text: C：∠BAD=∠CAD + AD=AD + BD=CD →
+                - strong [ref=e340]: SAS
+                - text: ✔
+              - listitem [ref=e341]:
+                - text: D：AD⊥BC → ∠ADB=∠ADC=90° + AD=AD + BD=CD →
+                - strong [ref=e342]: SAS
+                - text: ✔
+              - listitem [ref=e343]:
+                - strong [ref=e344]: B：∠B=∠C + AD=AD + BD=CD → "角边边"，不能判定全等
+                - text: ✘
+            - paragraph [ref=e345]:
+              - strong [ref=e346]: 第5题 B（3个）
+              - text: AB∥CD → ∠ABE=∠CDE（内错角）③✔；AB=CD，∠ABE=∠CDE，BE=DE（E为中点）→
+              - strong [ref=e347]: SAS
+              - text: 得 △ABE≌△CDE ④✔；由全等得 AE=CE ①✔；但 AE∥CE 不成立（A、E、C 不一定构成平行关系，实际上 AE 和 CE 共点于 E）②✘。正确共
+              - strong [ref=e348]: 3个
+              - text: 。
+            - separator [ref=e349]
+            - paragraph [ref=e350]:
+              - text: 5题均为中等难度选择题，重点考查：
+              - strong [ref=e351]: SSA不能判定全等
+              - text: （易错）、
+              - strong [ref=e352]: 对顶角的识别
+              - text: 、
+              - strong [ref=e353]: HL与AAS的区分
+              - text: 、
+              - strong [ref=e354]: 中线条件下的全等构造
+              - text: 、
+              - strong [ref=e355]: 全等性质的综合推理
+              - text: 。
+          - generic [ref=e357]:
+            - generic [ref=e358]: 2 分钟前
+            - generic [ref=e359]:
+              - button "复制" [ref=e361] [cursor=pointer]:
+                - img [ref=e362]
+              - tooltip "复制"
+            - generic [ref=e365]:
+              - button "重试" [ref=e367] [cursor=pointer]:
+                - img [ref=e368]
+              - tooltip "重试"
+    - generic [ref=e372]:
+      - textbox "Message input" [ref=e373]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e374] [cursor=pointer]:
+          - img [ref=e375]
+        - button "Send" [disabled] [ref=e378]:
+          - img [ref=e379]

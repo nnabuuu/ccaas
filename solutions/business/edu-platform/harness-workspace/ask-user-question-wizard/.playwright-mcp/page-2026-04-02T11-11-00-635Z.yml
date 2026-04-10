@@ -1,0 +1,138 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 19:08" [ref=e170] [cursor=pointer]:
+          - generic [ref=e172]: 帮我备课
+          - generic [ref=e173]: 19:08
+        - button "帮我备课 18:19" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 18:19
+        - button "帮我备课 18:09" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 18:09
+        - button "帮我备课 17:48" [ref=e33] [cursor=pointer]:
+          - generic [ref=e35]: 帮我备课
+          - generic [ref=e36]: 17:48
+        - button "帮我备课 16:29" [ref=e37] [cursor=pointer]:
+          - generic [ref=e39]: 帮我备课
+          - generic [ref=e40]: 16:29
+      - generic [ref=e41]:
+        - generic [ref=e42]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 分析八(2)班数学学情
+          - generic [ref=e46]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e47] [cursor=pointer]:
+          - generic [ref=e49]: 帮我备一下明天的课
+          - generic [ref=e50]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: 帮我备一下明天的课
+          - generic [ref=e54]: 10:21
+    - generic [ref=e55]:
+      - generic [ref=e56]: 已启用 Skills
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: 备
+        - text: 备课助手
+      - generic [ref=e59] [cursor=pointer]:
+        - generic [ref=e60]: 题
+        - text: 出题组卷
+      - generic [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: 情
+        - text: 学情分析
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 错
+        - text: 错题本生成器
+      - generic [ref=e65] [cursor=pointer]:
+        - generic [ref=e66]: +
+        - text: 管理 Skills
+    - generic [ref=e67]:
+      - generic [ref=e68]: 八(2)班
+      - generic [ref=e69]: 数学
+      - generic [ref=e70]: 树人中学
+    - button "User menu" [ref=e72] [cursor=pointer]:
+      - generic [ref=e73]: 张
+      - generic [ref=e74]:
+        - generic [ref=e75]: 张老师
+        - generic [ref=e76]: 数学教师 · 树人中学
+      - img [ref=e77]
+  - generic [ref=e126]:
+    - region "Notifications alt+T"
+    - log [ref=e127]:
+      - generic [ref=e128]:
+        - paragraph [ref=e177]: 帮我备课
+        - generic [ref=e179]:
+          - generic [ref=e187]:
+            - img [ref=e189]
+            - generic [ref=e192] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e193]: 79ms
+          - generic [ref=e194]:
+            - generic [ref=e195]:
+              - generic [ref=e196] [cursor=pointer]:
+                - generic [ref=e197]: ✓
+                - generic [ref=e198]: 选择范围
+              - generic [ref=e232] [cursor=pointer]:
+                - generic [ref=e200]: ✓
+                - generic [ref=e201]: 选择章节
+              - generic [ref=e276] [cursor=pointer]:
+                - generic [ref=e203]: ✓
+                - generic [ref=e204]: 学情分析
+              - generic [ref=e295] [cursor=pointer]:
+                - generic [ref=e206]: "4"
+                - generic [ref=e207]: 确认生成
+            - generic [ref=e372]:
+              - generic [ref=e373]: 请确认以下选择，点击可返回修改
+              - generic [ref=e374] [cursor=pointer]:
+                - generic [ref=e375]:
+                  - generic [ref=e376]:
+                    - generic [ref=e377]: ✓
+                    - generic [ref=e378]: 选择范围
+                  - generic [ref=e379]: 修改 ›
+                - generic [ref=e381]:
+                  - generic [ref=e382]:
+                    - generic [ref=e383]: "学科:"
+                    - text: 数学
+                  - generic [ref=e384]:
+                    - generic [ref=e385]: "年级学期:"
+                    - text: 八年级上
+                  - generic [ref=e386]:
+                    - generic [ref=e387]: "班级:"
+                    - text: 2班
+                  - generic [ref=e388]:
+                    - generic [ref=e389]: "课型:"
+                    - text: 新授课
+                  - generic [ref=e390]:
+                    - generic [ref=e391]: "课时:"
+                    - text: 1课时
+              - generic [ref=e392] [cursor=pointer]:
+                - generic [ref=e393]:
+                  - generic [ref=e394]:
+                    - generic [ref=e395]: ✓
+                    - generic [ref=e396]: 选择章节
+                  - generic [ref=e397]: 修改 ›
+                - generic [ref=e399]: 1.1 正数与负数、1.2 有理数、1.3 有理数的加减法、2.1 整式、2.2 整式的加减、3.1 从算式到方程、3.2 解一元一次方程、3.3 实际问题与一元一次方程
+              - generic [ref=e400] [cursor=pointer]:
+                - generic [ref=e401]:
+                  - generic [ref=e402]:
+                    - generic [ref=e403]: ✓
+                    - generic [ref=e404]: 学情分析
+                  - generic [ref=e405]: 修改 ›
+                - generic [ref=e407]: 合并同类项、一元一次方程的解法
+            - generic [ref=e228]:
+              - button "上一步" [ref=e229] [cursor=pointer]
+              - generic [ref=e230]: 4 / 4
+              - button "确认生成" [active] [ref=e408] [cursor=pointer]
+          - generic "思考中" [ref=e180]: 正在处理...
+    - generic [ref=e161]:
+      - textbox "Message input" [ref=e162]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e163] [cursor=pointer]:
+          - img [ref=e164]
+        - button "Stop generating" [ref=e185] [cursor=pointer]:
+          - img [ref=e168]

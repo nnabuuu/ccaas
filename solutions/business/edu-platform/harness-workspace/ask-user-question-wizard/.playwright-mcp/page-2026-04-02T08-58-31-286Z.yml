@@ -1,0 +1,96 @@
+- generic [ref=e14]:
+  - generic [ref=e16]:
+    - generic [ref=e17]:
+      - generic [ref=e18]: 即见教育
+      - button "新会话" [ref=e19] [cursor=pointer]:
+        - img [ref=e20]
+    - textbox "搜索会话..." [ref=e22]
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: 今天
+        - button "帮我备课 16:29" [ref=e26] [cursor=pointer]:
+          - generic [ref=e28]: 帮我备课
+          - generic [ref=e29]: 16:29
+      - generic [ref=e30]:
+        - generic [ref=e31]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e32] [cursor=pointer]:
+          - generic [ref=e34]: 分析八(2)班数学学情
+          - generic [ref=e35]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e36] [cursor=pointer]:
+          - generic [ref=e38]: 帮我备一下明天的课
+          - generic [ref=e39]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e40] [cursor=pointer]:
+          - generic [ref=e42]: 帮我备一下明天的课
+          - generic [ref=e43]: 10:21
+    - generic [ref=e44]:
+      - generic [ref=e45]: 已启用 Skills
+      - generic [ref=e46] [cursor=pointer]:
+        - generic [ref=e47]: 备
+        - text: 备课助手
+      - generic [ref=e48] [cursor=pointer]:
+        - generic [ref=e49]: 题
+        - text: 出题组卷
+      - generic [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]: 情
+        - text: 学情分析
+      - generic [ref=e52] [cursor=pointer]:
+        - generic [ref=e53]: 错
+        - text: 错题本生成器
+      - generic [ref=e54] [cursor=pointer]:
+        - generic [ref=e55]: +
+        - text: 管理 Skills
+    - generic [ref=e56]:
+      - generic [ref=e57]: 八(2)班
+      - generic [ref=e58]: 数学
+      - generic [ref=e59]: 树人中学
+    - button "User menu" [ref=e61] [cursor=pointer]:
+      - generic [ref=e62]: 张
+      - generic [ref=e63]:
+        - generic [ref=e64]: 张老师
+        - generic [ref=e65]: 数学教师 · 树人中学
+      - img [ref=e66]
+  - generic [ref=e70]:
+    - region "Notifications alt+T"
+    - log [ref=e71]:
+      - generic [ref=e73]:
+        - generic [ref=e74]: 下午好，张老师
+        - generic [ref=e75]: 我是你的教学助手
+        - generic [ref=e76]: 第14周 · 八(2)班 · 数学
+        - generic [ref=e77]:
+          - button "备 备课 生成教案和课件，对齐学情" [ref=e78] [cursor=pointer]:
+            - generic [ref=e79]:
+              - generic [ref=e80]: 备
+              - generic [ref=e81]: 备课
+            - generic [ref=e82]: 生成教案和课件，对齐学情
+          - button "题 出题 题库 + AI 原创混合组卷" [ref=e83] [cursor=pointer]:
+            - generic [ref=e84]:
+              - generic [ref=e85]: 题
+              - generic [ref=e86]: 出题
+            - generic [ref=e87]: 题库 + AI 原创混合组卷
+          - button "情 学情 薄弱点分析、趋势对比" [ref=e88] [cursor=pointer]:
+            - generic [ref=e89]:
+              - generic [ref=e90]: 情
+              - generic [ref=e91]: 学情
+            - generic [ref=e92]: 薄弱点分析、趋势对比
+          - button "错 错题本 自动归类学生个人错题" [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: 错
+              - generic [ref=e96]: 错题本
+            - generic [ref=e97]: 自动归类学生个人错题
+        - generic [ref=e98]:
+          - generic [ref=e99]: 试试这样说
+          - button "三角形全等的判定，设计15分钟课堂小测 →" [ref=e100] [cursor=pointer]:
+            - text: 三角形全等的判定，设计15分钟课堂小测
+            - generic [ref=e101]: →
+          - button "对比两个班上周的数学学情 →" [ref=e102] [cursor=pointer]:
+            - text: 对比两个班上周的数学学情
+            - generic [ref=e103]: →
+    - generic [ref=e105]:
+      - textbox "Message input" [active] [ref=e106]:
+        - /placeholder: 描述你的需求...
+        - text: 帮我备课
+      - generic:
+        - button "Select skill" [ref=e107] [cursor=pointer]:
+          - img [ref=e108]
+        - button "Send" [ref=e111] [cursor=pointer]:
+          - img [ref=e112]

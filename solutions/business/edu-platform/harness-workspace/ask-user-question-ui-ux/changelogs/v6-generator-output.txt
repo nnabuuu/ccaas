@@ -1,0 +1,15 @@
+## v6 Summary
+
+All tasks complete. Here's what was fixed:
+
+**3 changes, 3 issues resolved:**
+
+1. **tokens.css revert** — Eliminated -10 frozen file penalty from v5
+2. **Widget collapsing fix** (`postprocessor.ts`) — Added `ALWAYS_VISIBLE_TOOLS` with empty text separators to prevent AskUserQuestion from being collapsed into "使用了 N 个工具" after streaming
+3. **D7 persistence fix** (`ChatCoreContext.tsx`) — Backend stores `toolOutput: "Answer questions?"` (truthy string); changed condition from `!toolOutput` to `(!toolOutput || typeof toolOutput === 'string')` to trigger answer synthesis from the next user message
+
+**Key discovery**: After editing `ChatCoreContext.tsx`, the `chat-interface` package needed a rebuild (`npm run build`) because the edu-platform frontend imports from `dist/`, not source.
+
+**Browser verification**: All D1-D6 interactions verified (option click, auto-advance, chip switch, submit). D7 persistence verified — after page reload + login + session load, the widget correctly renders in submitted state with green-highlighted selection and "✓ 选择题 · 中等" summary footer.
+
+Screenshots saved to `screenshots/v6/` (11 screenshots). Changelog at `changelogs/v6-changelog.md`.

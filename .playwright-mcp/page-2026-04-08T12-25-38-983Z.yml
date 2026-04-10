@@ -1,0 +1,51 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e16]:
+      - textbox "🔍 搜索实体..." [ref=e18]
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - generic [ref=e62] [cursor=pointer]: ← 返回
+          - generic [ref=e63]: 📝 教案
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - generic [ref=e66]: 📝
+            - generic [ref=e67]: SSS/SAS 新授课教案
+            - generic [ref=e68]: · 八年级 · 数学 · 几何
+          - generic [ref=e69]:
+            - button "▶" [ref=e70] [cursor=pointer]
+            - button "选择" [ref=e71] [cursor=pointer]
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - generic [ref=e74]: 📝
+            - generic [ref=e75]: ASA/AAS 判定教案
+            - generic [ref=e76]: · 八年级 · 数学 · 几何
+          - generic [ref=e77]:
+            - button "▶" [ref=e78] [cursor=pointer]
+            - button "选择" [ref=e79] [cursor=pointer]
+        - generic [ref=e80]:
+          - generic [ref=e81]:
+            - generic [ref=e82]: 📝
+            - generic [ref=e83]: 全等三角形概念导入
+            - generic [ref=e84]: · 八年级 · 数学 · 几何
+          - generic [ref=e85]:
+            - button "▶" [ref=e86] [cursor=pointer]
+            - button "选择" [ref=e87] [cursor=pointer]
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - generic [ref=e90]: 📝
+            - generic [ref=e91]: 复习课：全等三角形判定对比
+            - generic [ref=e92]: · 八年级 · 数学 · 几何
+          - generic [ref=e93]:
+            - button "▶" [ref=e94] [cursor=pointer]
+            - button "选择" [ref=e95] [cursor=pointer]
+    - textbox "输入消息... 按 @ 引用实体" [ref=e5]
+  - generic [ref=e6]:
+    - button "📝 教案" [ref=e7] [cursor=pointer]:
+      - generic [ref=e8]: 📝
+      - generic [ref=e9]: 教案
+    - button "📖 课标" [ref=e10] [cursor=pointer]:
+      - generic [ref=e11]: 📖
+      - generic [ref=e12]: 课标
+    - button "❓ 题目" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: ❓
+      - generic [ref=e15]: 题目

@@ -1,0 +1,13 @@
+- generic [ref=e4]:
+  - heading "精准教学平台" [level=1] [ref=e5]
+  - paragraph [ref=e6]: 注册新账户
+  - generic [ref=e7]:
+    - textbox "用户名" [ref=e8]: teacher1
+    - textbox "密码" [ref=e9]: password123
+    - textbox "姓名" [ref=e14]: 王老师
+    - textbox "学校" [ref=e15]: 树人中学
+    - paragraph [ref=e18]: 用户名已存在
+    - button "注册" [ref=e16] [cursor=pointer]
+  - paragraph [ref=e11]:
+    - text: 已有账户？
+    - button "登录" [ref=e17] [cursor=pointer]

@@ -1,0 +1,14 @@
+Evaluation report written successfully.
+
+## v2 Evaluation Summary: 75/100 (+6 from v1)
+
+**v2 fixes confirmed:**
+- D3: 4→5 — dependsOn tooltip added on disabled steps
+- D5: 4→5 — SummaryStep shows actual item names instead of counts
+
+**Remaining blockers (unchanged from v1):**
+- D1 & D6 capped at 3/5 — LLM resume after control_response never produced visible output (waited >4 min)
+- D2 at 3/5 — default (non-wizard) UI submit path not browser-tested
+- D4 at 4/5 — API endpoints return 404, always falls back to mock
+
+**Top priority for v3:** Fix LLM resume (potential +24 weighted points if D1 and D6 both reach 5/5).

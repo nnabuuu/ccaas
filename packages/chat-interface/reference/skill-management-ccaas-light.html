@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即见教育 · Skill 管理 (ccaas-core 版)</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--info-bg:#E6F1FB;--info-t:#0C447C;--coral-bg:#FAECE7;--coral-t:#712B13;--purple-bg:#EEEDFE;--purple-t:#3C3489;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px;min-height:100vh}
+.sp{width:100%;max-width:780px}
+.sp-frame{background:var(--bg1);border-radius:16px;padding:22px;border:.5px solid var(--b1);box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.sp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sp-title{font-size:17px;font-weight:600}
+.sp-tenant{display:flex;align-items:center;gap:8px}
+.sp-tenant-name{font-size:13px;color:var(--t2)}
+.sp-tenant-badge{font-size:10px;padding:3px 10px;border-radius:10px;background:var(--purple-bg);color:var(--purple-t);font-weight:500}
+.sp-tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:.5px solid var(--b1);padding-bottom:0}
+.sp-tab{padding:9px 18px;font-size:13px;cursor:pointer;border:none;background:transparent;color:var(--t2);font-family:inherit;border-bottom:2.5px solid transparent;margin-bottom:-0.5px;transition:all .15s}
+.sp-tab:hover{color:var(--t1)}
+.sp-tab.act{color:var(--t1);font-weight:600;border-color:var(--t1)}
+.sp-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.sp-stat{background:var(--bg2);border-radius:var(--r);padding:12px 14px}
+.sp-stat-label{font-size:12px;color:var(--t2)}.sp-stat-val{font-size:22px;font-weight:600;margin-top:3px}
+.sp-section{margin-bottom:20px}
+.sp-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sp-section-title{font-size:14px;font-weight:600;color:var(--t2)}
+.sp-section-count{font-size:12px;color:var(--t3)}
+.sp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sp-card{background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);padding:16px 18px;transition:box-shadow .15s}
+.sp-card:hover{box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.sp-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sp-card-title{font-size:14px;font-weight:600}
+.sp-badge{font-size:11px;padding:3px 10px;border-radius:10px;font-weight:500}
+.sp-badge-active{background:var(--success-bg);color:var(--success-t)}
+.sp-badge-draft{background:var(--bg2);color:var(--t2)}
+.sp-badge-solution{background:var(--info-bg);color:var(--info-t)}
+.sp-badge-custom{background:var(--coral-bg);color:var(--coral-t)}
+.sp-badge-disabled{background:var(--bg2);color:var(--t3)}
+.sp-card-desc{font-size:12px;color:var(--t2);line-height:1.55;margin-bottom:10px}
+.sp-card-meta{display:flex;gap:10px;font-size:11px;color:var(--t3);margin-bottom:12px;flex-wrap:wrap}
+.sp-card-meta span{white-space:nowrap}
+.sp-card-actions{display:flex;gap:6px}
+.sp-card-actions button{font-size:12px;padding:5px 12px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.sp-card-actions button:hover{background:var(--bg2)}
+.sp-card-actions button.primary{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.sp-card-actions button.primary:hover{opacity:.9}
+.sp-empty{grid-column:1/-1;text-align:center;padding:36px;color:var(--t3);font-size:13px}
+.sp-add-btn{font-size:12px;padding:5px 14px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t1);font-family:inherit;font-weight:500;transition:all .15s}
+.sp-add-btn:hover{background:var(--bg2)}
+.sp-label{font-size:10px;text-align:center;color:var(--t3);padding:14px 0 6px}
+.sp-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2)}
+.sp-toggle-track{position:relative;width:30px;height:16px;background:#d4d3cc;border-radius:8px;cursor:pointer;transition:background .2s}
+.sp-toggle-track.on{background:var(--success-t)}
+.sp-toggle-knob{position:absolute;top:2px;left:2px;width:12px;height:12px;background:#fff;border-radius:50%;transition:left .2s}
+.sp-toggle-track.on .sp-toggle-knob{left:16px}
+.sp-param{display:flex;align-items:center;justify-content:space-between;padding:6px 0;font-size:12px;border-bottom:.5px solid rgba(0,0,0,.05)}
+.sp-param:last-child{border-bottom:none}
+.sp-param-key{color:var(--t2)}.sp-param-val{font-weight:500;color:var(--t1)}
+</style>
+</head>
+<body>
+<div class="sp">
+<div class="sp-label">即见教育 · Skill 管理 (ccaas-core 版) · 浅色 · Tenant 视角</div>
+<div class="sp-frame">
+  <div class="sp-header">
+    <span class="sp-title">Skill 管理</span>
+    <div class="sp-tenant">
+      <span class="sp-tenant-name">树人中学</span>
+      <span class="sp-tenant-badge">Tenant</span>
+    </div>
+  </div>
+  <div class="sp-tabs" id="tabs"></div>
+  <div id="content"></div>
+</div>
+</div>
+<script>
+const tabs=['Solution Skills','自建 Skills','使用统计'];
+let curTab=0;
+
+const solutionSkills=[
+  {t:'备课方案生成器',active:true,d:'一键生成符合课标要求的教学设计，支持学情驱动的差异化备课',m:['v2.1','全学科','本月 203 次'],params:[{k:'教案模板',v:'区级标准'},{k:'默认课型',v:'新授课'},{k:'学情驱动',v:'开启'}]},
+  {t:'出题组卷助手',active:true,d:'根据课标知识点和学情数据智能组卷，支持题库+AI原创混合模式',m:['v2.1','数学·英语·物理','本月 287 次'],params:[{k:'题目来源',v:'题库优先'},{k:'难度分布',v:'3:5:2'},{k:'校本教材',v:'已映射'}]},
+  {t:'学情周报生成',active:true,d:'自动汇总班级学情数据，生成教师可读的分析报告',m:['v1.2','全学科','本月 89 次'],params:[{k:'报告周期',v:'周报'},{k:'对比维度',v:'班级+年级'}]},
+  {t:'课堂观察记录',active:false,d:'辅助听课评课，结构化记录课堂教学行为并生成反馈',m:['v1.0','全学科','未启用'],params:[{k:'观察框架',v:'默认'},{k:'评分量表',v:'5级'}]},
+  {t:'AI素养实验室',active:false,d:'学生与预配置AI Agent交互，理解NLP/CV基础概念',m:['v0.9','AI教学','未启用'],params:[]},
+];
+
+const customSkills=[
+  {t:'错题本生成器',s:'active',d:'从作业和测验数据自动整理学生个人错题集，按知识点归类',m:['自建','本月 156 次']},
+  {t:'物理实验预习助手',s:'draft',d:'引导学生在实验课前完成预习流程和假设设计',m:['草稿','未发布']},
+];
+
+function render(){
+  document.getElementById('tabs').innerHTML=tabs.map((t,i)=>`<button class="sp-tab${i===curTab?' act':''}" onclick="setTab(${i})">${t}</button>`).join('');
+  const el=document.getElementById('content');
+  if(curTab===0) renderSolution(el);
+  else if(curTab===1) renderCustom(el);
+  else renderStats(el);
+}
+
+function renderSolution(el){
+  const active=solutionSkills.filter(s=>s.active);
+  const inactive=solutionSkills.filter(s=>!s.active);
+  let h=`<div class="sp-stats">
+    <div class="sp-stat"><div class="sp-stat-label">Solution 内置</div><div class="sp-stat-val">${solutionSkills.length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">已启用</div><div class="sp-stat-val">${active.length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">未启用</div><div class="sp-stat-val">${inactive.length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">本月总调用</div><div class="sp-stat-val">579</div></div>
+  </div>`;
+
+  h+=`<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">已启用</span><span class="sp-section-count">${active.length} 个</span></div><div class="sp-grid">`;
+  active.forEach((c,i)=>{h+=solCard(c,i,true)});
+  h+=`</div></div>`;
+
+  if(inactive.length){
+    h+=`<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">未启用</span><span class="sp-section-count">${inactive.length} 个</span></div><div class="sp-grid">`;
+    inactive.forEach((c,i)=>{h+=solCard(c,i+active.length,false)});
+    h+=`</div></div>`;
+  }
+  el.innerHTML=h;
+}
+
+function solCard(c,idx,isActive){
+  const badge=isActive?'sp-badge-active':'sp-badge-disabled';
+  const label=isActive?'已启用':'未启用';
+  let paramHtml='';
+  if(c.params.length){
+    paramHtml='<div style="margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:6px">';
+    c.params.forEach(p=>{paramHtml+=`<div class="sp-param"><span class="sp-param-key">${p.k}</span><span class="sp-param-val">${p.v}</span></div>`});
+    paramHtml+='</div>';
+  }
+  return `<div class="sp-card">
+    <div class="sp-card-head"><span class="sp-card-title">${c.t}</span><span class="sp-badge ${badge}">${label}</span></div>
+    <div class="sp-card-desc">${c.d}</div>
+    <div class="sp-card-meta">${c.m.map(m=>`<span>${m}</span>`).join('')}</div>
+    ${paramHtml}
+    <div class="sp-card-actions" style="margin-top:10px">
+      ${isActive?`<button class="primary" onclick="toggleSkill(${idx})">配置参数</button><button onclick="toggleSkill(${idx})">停用</button>`:`<button class="primary" onclick="toggleSkill(${idx})">启用</button><button>预览</button>`}
+    </div>
+  </div>`;
+}
+
+function renderCustom(el){
+  let h=`<div class="sp-stats">
+    <div class="sp-stat"><div class="sp-stat-label">自建 Skills</div><div class="sp-stat-val">${customSkills.length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">已发布</div><div class="sp-stat-val">${customSkills.filter(s=>s.s==='active').length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">草稿</div><div class="sp-stat-val">${customSkills.filter(s=>s.s==='draft').length}</div></div>
+    <div class="sp-stat"><div class="sp-stat-label">本月调用</div><div class="sp-stat-val">156</div></div>
+  </div>`;
+
+  h+=`<div class="sp-section"><div class="sp-section-head"><span class="sp-section-title">Tenant 自建 Skills</span><button class="sp-add-btn" onclick="alert('在 Jijian 中通过 SKILL.md 创建新 Skill')">+ 新建 Skill</button></div><div class="sp-grid">`;
+  customSkills.forEach(c=>{
+    const badge=c.s==='active'?'sp-badge-custom':'sp-badge-draft';
+    const label=c.s==='active'?'自建·已发布':'草稿';
+    h+=`<div class="sp-card">
+      <div class="sp-card-head"><span class="sp-card-title">${c.t}</span><span class="sp-badge ${badge}">${label}</span></div>
+      <div class="sp-card-desc">${c.d}</div>
+      <div class="sp-card-meta">${c.m.map(m=>`<span>${m}</span>`).join('')}</div>
+      <div class="sp-card-actions">
+        ${c.s==='active'?`<button class="primary">编辑</button><button>查看统计</button><button>停用</button>`:`<button class="primary">继续编辑</button><button>发布</button><button>删除</button>`}
+      </div>
+    </div>`;
+  });
+  h+=`</div></div>`;
+  el.innerHTML=h;
+}
+
+function renderStats(el){
+  el.innerHTML='<div class="sp-stats"><div class="sp-stat"><div class="sp-stat-label">总 Skills</div><div class="sp-stat-val">'+(solutionSkills.length+customSkills.length)+'</div></div><div class="sp-stat"><div class="sp-stat-label">本月调用</div><div class="sp-stat-val">735</div></div><div class="sp-stat"><div class="sp-stat-label">活跃教师</div><div class="sp-stat-val">24</div></div><div class="sp-stat"><div class="sp-stat-label">平均评分</div><div class="sp-stat-val">4.3</div></div></div><div class="sp-empty">使用趋势图表 · 按 Skill / 教师 / 时间 维度分析</div>';
+}
+
+function toggleSkill(idx){
+  solutionSkills[idx].active=!solutionSkills[idx].active;
+  render();
+}
+
+function setTab(i){curTab=i;render()}
+render();
+</script>
+</body>
+</html>

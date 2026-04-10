@@ -1,0 +1,12 @@
+All tasks complete. Here's a summary of v5 changes:
+
+**Key fixes:**
+1. **D7 Persistence (critical)**: The root cause was that both `react-sdk` and `chat-interface` packages had source code changes but weren't rebuilt — the frontend consumed stale `dist/` outputs. After rebuilding both packages, the `includeToolEvents=true` URL parameter and the toolEvents → contentBlocks reconstruction logic are active at runtime. Widget now renders correctly after page refresh.
+
+2. **"Answer questions?" poison prevention**: Added `getKnownValues()` and `isPlausibleAnswers()` validation to `parseToolOutputAsAnswers()`. The function now requires `·` separator for plain string parsing and validates that parsed answers match known option values. This prevents the backend's default `"Answer questions?"` toolOutput from producing bogus submitted state.
+
+3. **TS2352 fix**: Cast `nextMsg` through `unknown` before `Record<string, unknown>` in ChatCoreContext.
+
+**Browser-verified:** All widget features (chips, options, multiselect, preview, submit, persistence) confirmed working via Playwright screenshots saved to `screenshots/v5/`.
+
+**Expected score: 85 → ~91** (D7 jumps from 3/5 to 5/5).

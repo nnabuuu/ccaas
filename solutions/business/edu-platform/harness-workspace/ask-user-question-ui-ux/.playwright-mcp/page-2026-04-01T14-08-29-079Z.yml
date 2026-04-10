@@ -1,0 +1,179 @@
+- generic [ref=e4]:
+  - generic [ref=e5]: AskUserQuestion Widget — Test Harness
+  - generic [ref=e6]:
+    - generic [ref=e7]: "标准模式: 三个问题，推荐项默认选中，单选自动跳下一题"
+    - generic [ref=e8]:
+      - generic [ref=e9]: 好的，确认几个偏好：
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12] [cursor=pointer]:
+            - generic [ref=e14]: 题型
+            - generic [ref=e15]: 选择题
+          - generic [ref=e16] [cursor=pointer]:
+            - generic [ref=e18]: 难度
+            - generic [ref=e19]: 分层
+          - generic [ref=e20] [cursor=pointer]:
+            - generic [ref=e22]: 题量
+            - generic [ref=e23]: 5 题
+        - generic [ref=e24]:
+          - generic:
+            - generic: 希望生成哪种题型？
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - text: 混合出题
+                    - generic: 推荐
+                  - generic: 选择题 + 填空题 + 解答题，题型多样，区分度好
+              - generic:
+                - generic:
+                  - generic: 选择题
+                  - generic: 全部单选，适合快速作答和批改
+              - generic:
+                - generic:
+                  - generic: 填空题
+                  - generic: 考查计算和推理能力
+              - generic:
+                - generic:
+                  - generic: 解答题
+                  - generic: 考查完整证明过程
+            - generic:
+              - generic:
+                - generic: 或者自定义
+                - textbox "输入自定义内容..."
+          - generic [ref=e143]:
+            - generic [ref=e144]: 难度设置偏好？
+            - generic [ref=e145]:
+              - generic [ref=e149] [cursor=pointer]:
+                - generic [ref=e150]:
+                  - text: 分层
+                  - generic [ref=e151]: 推荐
+                - generic [ref=e152]: 基础 + 中等 + 较难，有梯度
+              - generic [ref=e155] [cursor=pointer]:
+                - generic [ref=e156]: 基础
+                - generic [ref=e157]: 基本概念和直接应用
+              - generic [ref=e160] [cursor=pointer]:
+                - generic [ref=e161]: 中等
+                - generic [ref=e162]: 需要分析和推理
+              - generic [ref=e165] [cursor=pointer]:
+                - generic [ref=e166]: 较难
+                - generic [ref=e167]: 综合运用，较强逻辑推理
+            - generic [ref=e170] [cursor=pointer]:
+              - generic [ref=e171]: 或者自定义
+              - textbox "输入自定义内容..." [ref=e172]
+          - generic:
+            - generic: 出多少题？
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - text: 5 题
+                    - generic: 推荐
+                  - generic: 课堂小测，约 15 分钟
+              - generic:
+                - generic:
+                  - generic: 10 题
+                  - generic: 单元练习，约 30 分钟
+              - generic:
+                - generic:
+                  - generic: 20 题
+                  - generic: 正式测试，约 45 分钟
+            - generic:
+              - generic:
+                - generic: 或者自定义
+                - textbox "输入自定义内容..."
+        - generic [ref=e55]:
+          - generic [ref=e56]: 3 / 3 已回答
+          - button "确认选择" [ref=e57] [cursor=pointer]
+  - generic [ref=e58]:
+    - generic [ref=e59]: "多选: checkbox + Other 打字自动勾选"
+    - generic [ref=e60]:
+      - generic [ref=e61]: 生成周报前确认：
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64] [cursor=pointer]:
+            - generic [ref=e66]: 周期
+            - generic [ref=e67]: 本周
+          - generic [ref=e68] [cursor=pointer]:
+            - generic [ref=e70]: 维度
+            - generic [ref=e202]: 知识点掌握度, 错题 Top 10
+        - generic [ref=e71]:
+          - generic:
+            - generic: 报告周期？
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - text: 本周
+                    - generic: 推荐
+                  - generic: 第 14 周数据
+              - generic:
+                - generic:
+                  - generic: 近两周
+                  - generic: 第 13~14 周对比
+              - generic:
+                - generic:
+                  - generic: 本月
+                  - generic: 整月汇总
+            - generic:
+              - generic:
+                - generic: 或者自定义
+                - textbox "输入自定义内容..."
+          - generic [ref=e173]:
+            - generic [ref=e174]: 包含哪些分析维度？
+            - generic [ref=e175]: 可多选
+            - generic [ref=e176]:
+              - generic [ref=e177] [cursor=pointer]:
+                - img [ref=e203]
+                - generic [ref=e179]:
+                  - generic [ref=e180]: 知识点掌握度
+                  - generic [ref=e181]: 按知识点统计正确率分布
+              - generic [ref=e184] [cursor=pointer]:
+                - generic [ref=e185]: 完成率趋势
+                - generic [ref=e186]: 作业完成率变化曲线
+              - generic [ref=e189] [cursor=pointer]:
+                - generic [ref=e190]: 个人排名变化
+                - generic [ref=e191]: 学生成绩排名波动
+              - generic [ref=e192] [cursor=pointer]:
+                - img [ref=e205]
+                - generic [ref=e194]:
+                  - generic [ref=e195]: 错题 Top 10
+                  - generic [ref=e196]: 全班错误率最高的题目
+            - generic [ref=e199] [cursor=pointer]:
+              - generic [ref=e200]: 或者自定义
+              - textbox "输入自定义内容..." [ref=e201]
+        - generic [ref=e97]:
+          - generic [ref=e98]: 2 / 2 已回答
+          - button "确认选择" [ref=e99] [cursor=pointer]
+  - generic [ref=e100]:
+    - generic [ref=e101]: "Preview 模式: 左选项 + 右预览，固定高度"
+    - generic [ref=e102]:
+      - generic [ref=e103]: 选择教案结构：
+      - generic [ref=e104]:
+        - generic [ref=e106] [cursor=pointer]:
+          - generic [ref=e108]: 教案结构
+          - generic [ref=e109]: 标准新授课
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]: 选择教案结构
+            - generic [ref=e113]:
+              - generic [ref=e117] [cursor=pointer]:
+                - generic [ref=e118]:
+                  - text: 标准新授课
+                  - generic [ref=e119]: 推荐
+                - generic [ref=e120]: 完整教学流程
+              - generic [ref=e123] [cursor=pointer]:
+                - generic [ref=e124]: 复习课
+                - generic [ref=e125]: 知识梳理 + 练习
+              - generic [ref=e128] [cursor=pointer]:
+                - generic [ref=e129]: 练习课
+                - generic [ref=e130]: 精讲精练为主
+            - generic [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]: 或者自定义
+              - textbox "输入自定义内容..." [ref=e135]
+          - generic [ref=e136]:
+            - generic [ref=e137]: 结构预览
+            - generic [ref=e138]: "## 标准新授课模板 ├─ 教学目标 │ └─ 知识、能力、情感 ├─ 重点与难点 ├─ 教学过程 [时间线] │ ├─ 复习导入 (5 min) │ ├─ 新知讲授 (15 min) │ ├─ 例题精讲 (10 min) │ ├─ 课堂练习 (10 min) │ └─ 小结作业 (5 min) ├─ 课堂练习 [表格] ├─ 板书设计 └─ 课后反思"
+        - generic [ref=e139]:
+          - generic [ref=e140]: 1 / 1 已回答
+          - button "确认选择" [ref=e141] [cursor=pointer]

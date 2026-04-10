@@ -1,0 +1,265 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: 即见教育
+      - button "新会话" [ref=e8] [cursor=pointer]:
+        - img [ref=e9]
+    - textbox "搜索会话..." [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]: 今天
+        - button "帮我备课 19:58" [ref=e417] [cursor=pointer]:
+          - generic [ref=e21]: 帮我备课
+          - generic [ref=e22]: 19:58
+        - button "帮我备课 19:55" [ref=e189] [cursor=pointer]:
+          - generic [ref=e191]: 帮我备课
+          - generic [ref=e192]: 19:55
+        - button "帮我备课 19:43" [ref=e15] [cursor=pointer]:
+          - generic [ref=e17]: 帮我备课
+          - generic [ref=e18]: 19:43
+        - button "帮我备课 19:35" [ref=e23] [cursor=pointer]:
+          - generic [ref=e25]: 帮我备课
+          - generic [ref=e26]: 19:35
+        - button "帮我备课 19:08" [ref=e27] [cursor=pointer]:
+          - generic [ref=e29]: 帮我备课
+          - generic [ref=e30]: 19:08
+        - button "帮我备课 18:19" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 帮我备课
+          - generic [ref=e34]: 18:19
+        - button "帮我备课 18:09" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备课
+          - generic [ref=e38]: 18:09
+        - button "帮我备课 17:48" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备课
+          - generic [ref=e42]: 17:48
+        - button "帮我备课 16:29" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备课
+          - generic [ref=e46]: 16:29
+      - generic [ref=e47]:
+        - generic [ref=e48]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e49] [cursor=pointer]:
+          - generic [ref=e51]: 分析八(2)班数学学情
+          - generic [ref=e52]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e53] [cursor=pointer]:
+          - generic [ref=e55]: 帮我备一下明天的课
+          - generic [ref=e56]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e57] [cursor=pointer]:
+          - generic [ref=e59]: 帮我备一下明天的课
+          - generic [ref=e60]: 10:21
+    - generic [ref=e61]:
+      - generic [ref=e62]: 已启用 Skills
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 备
+        - text: 备课助手
+      - generic [ref=e65] [cursor=pointer]:
+        - generic [ref=e66]: 题
+        - text: 出题组卷
+      - generic [ref=e67] [cursor=pointer]:
+        - generic [ref=e68]: 情
+        - text: 学情分析
+      - generic [ref=e69] [cursor=pointer]:
+        - generic [ref=e70]: 错
+        - text: 错题本生成器
+      - generic [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: +
+        - text: 管理 Skills
+    - generic [ref=e73]:
+      - generic [ref=e74]: 八(2)班
+      - generic [ref=e75]: 数学
+      - generic [ref=e76]: 树人中学
+    - button "User menu" [ref=e78] [cursor=pointer]:
+      - generic [ref=e79]: 张
+      - generic [ref=e80]:
+        - generic [ref=e81]: 张老师
+        - generic [ref=e82]: 数学教师 · 树人中学
+      - img [ref=e83]
+  - generic [ref=e132]:
+    - region "Notifications alt+T"
+    - log [ref=e133]:
+      - generic [ref=e134]:
+        - paragraph [ref=e179]: 帮我备课
+        - generic [ref=e180]:
+          - generic [ref=e181]:
+            - generic [ref=e193]:
+              - img [ref=e195]
+              - generic [ref=e198] [cursor=pointer]: 执行技能Skill
+              - generic [ref=e199]: 47ms
+            - paragraph [ref=e201]: 好的，让我帮您备课！首先需要收集一些基本信息。
+            - generic [ref=e418]:
+              - generic [ref=e419]:
+                - generic [ref=e422] [cursor=pointer]: 学科
+                - generic [ref=e425] [cursor=pointer]: 年级
+                - generic [ref=e428] [cursor=pointer]: 课型
+                - generic [ref=e431] [cursor=pointer]: 学情
+              - generic [ref=e432]:
+                - generic [ref=e433]:
+                  - generic [ref=e434]: 请选择学科？
+                  - generic [ref=e435]:
+                    - generic [ref=e438] [cursor=pointer]:
+                      - generic [ref=e439]: 数学
+                      - generic [ref=e440]: 初中数学
+                    - generic [ref=e443] [cursor=pointer]:
+                      - generic [ref=e444]: 语文
+                      - generic [ref=e445]: 初中语文
+                    - generic [ref=e448] [cursor=pointer]:
+                      - generic [ref=e449]: 英语
+                      - generic [ref=e450]: 初中英语
+                    - generic [ref=e453] [cursor=pointer]:
+                      - generic [ref=e454]: 物理
+                      - generic [ref=e455]: 初中物理
+                  - generic [ref=e458] [cursor=pointer]:
+                    - generic [ref=e459]: 或者自定义
+                    - textbox "输入自定义内容..." [ref=e460]
+                - generic:
+                  - generic: 请选择年级？
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 七年级
+                        - generic: 初一
+                    - generic:
+                      - generic:
+                        - generic: 八年级
+                        - generic: 初二
+                    - generic:
+                      - generic:
+                        - generic: 九年级
+                        - generic: 初三
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "输入自定义内容..."
+                - generic:
+                  - generic: 请选择课型？
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 新授课
+                        - generic: 新知识教学
+                    - generic:
+                      - generic:
+                        - generic: 复习课
+                        - generic: 知识巩固复习
+                    - generic:
+                      - generic:
+                        - generic: 练习课
+                        - generic: 习题训练
+                    - generic:
+                      - generic:
+                        - generic: 试卷讲评课
+                        - generic: 考试试卷分析讲评
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "输入自定义内容..."
+                - generic:
+                  - generic: 学生整体水平如何？
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 基础薄弱
+                        - generic: 需要更多基础巩固和引导
+                    - generic:
+                      - generic:
+                        - generic: 中等水平
+                        - generic: 大部分学生能跟上进度
+                    - generic:
+                      - generic:
+                        - generic: 优秀拔高
+                        - generic: 学生基础扎实，可拓展提升
+                    - generic:
+                      - generic:
+                        - generic: 分层教学
+                        - generic: 班级差异大，需分层设计
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "输入自定义内容..."
+              - generic [ref=e461]:
+                - generic [ref=e462]: 0 / 4 已回答
+                - button "确认选择" [disabled] [ref=e463]
+            - generic [ref=e464]:
+              - paragraph [ref=e465]: 收到！让我根据您的参数获取知识点树并生成教案。
+              - paragraph [ref=e466]:
+                - strong [ref=e467]: 备课参数确认：
+              - list [ref=e468]:
+                - listitem [ref=e469]: 学科：数学 | 年级：八年级上 | 班级：2班
+                - listitem [ref=e470]: 课型：新授课 | 课时：1课时（45分钟）
+                - listitem [ref=e471]: 薄弱知识点：合并同类项、一元一次方程的解法
+              - paragraph [ref=e472]: 让我先获取课标知识点树。
+            - generic [ref=e473]:
+              - img [ref=e475]
+              - generic [ref=e478] [cursor=pointer]: 正在处理ToolSearch
+              - generic [ref=e479]: 69ms
+            - generic [ref=e480]:
+              - img [ref=e482]
+              - generic [ref=e485] [cursor=pointer]: 查询课程知识树 · math 8curriculum_tree
+              - generic [ref=e486]: 56ms
+            - generic [ref=e487]:
+              - paragraph [ref=e488]: 已获取八年级数学知识点树（66个节点）。结合学生薄弱点（合并同类项、一元一次方程解法），我为您生成一节与这些前置知识紧密关联的新授课教案。
+              - paragraph [ref=e489]:
+                - text: 选定课题：
+                - strong [ref=e490]: 因式分解 — 提公因式法
+                - text: （衔接"合并同类项"薄弱点，为后续分式运算打基础）
+              - paragraph [ref=e491]: 正在生成教案各部分...
+            - generic [ref=e493] [cursor=pointer]:
+              - generic [ref=e494]: ▶
+              - generic [ref=e495]: 使用了 6 个工具
+              - img [ref=e500]
+            - generic [ref=e502]:
+              - paragraph [ref=e503]: 教案已全部生成完毕！以下是教案总览：
+              - separator [ref=e504]
+              - paragraph [ref=e505]:
+                - strong [ref=e506]: 《因式分解（一）—— 提公因式法》教案
+              - table [ref=e507]:
+                - rowgroup [ref=e508]:
+                  - row "模块 要点" [ref=e509]:
+                    - columnheader "模块" [ref=e510]
+                    - columnheader "要点" [ref=e511]
+                - rowgroup [ref=e512]:
+                  - row "教案概述 八年级上·2班·新授课·45分钟" [ref=e513]:
+                    - cell "教案概述" [ref=e514]
+                    - cell "八年级上·2班·新授课·45分钟" [ref=e515]
+                  - row "教学目标 3个维度目标 + 4项核心素养对应" [ref=e516]:
+                    - cell "教学目标" [ref=e517]
+                    - cell "3个维度目标 + 4项核心素养对应" [ref=e518]
+                  - row "重难点 重点2条 + 难点2条 + 3项突破策略" [ref=e519]:
+                    - cell "重难点" [ref=e520]
+                    - cell "重点2条 + 难点2条 + 3项突破策略" [ref=e521]
+                  - row "教学过程 5个环节：导入(5')→探究(18')→练习(12')→总结(5')→作业(5')" [ref=e522]:
+                    - cell "教学过程" [ref=e523]
+                    - cell "5个环节：导入(5')→探究(18')→练习(12')→总结(5')→作业(5')" [ref=e524]
+                  - row "评价方案 即时评价 + 出门条 + 自评互评" [ref=e525]:
+                    - cell "评价方案" [ref=e526]
+                    - cell "即时评价 + 出门条 + 自评互评" [ref=e527]
+                  - row "作业设计 基础5题(必做) + 提升3题 + 探究2题(选做)" [ref=e528]:
+                    - cell "作业设计" [ref=e529]
+                    - cell "基础5题(必做) + 提升3题 + 探究2题(选做)" [ref=e530]
+              - paragraph [ref=e531]:
+                - strong [ref=e532]: 针对班级薄弱点的设计亮点：
+              - list [ref=e533]:
+                - listitem [ref=e534]: 导入环节专设"合并同类项"热身题，补齐前置短板
+                - listitem [ref=e535]: B组作业第8题融入一元一次方程求解，衔接另一薄弱点
+                - listitem [ref=e536]: "\"找茬\"环节针对公因式提取不完整的典型错误"
+              - paragraph [ref=e537]:
+                - text: 需要我
+                - strong [ref=e538]: 导出为Word文档
+                - text: ，或者对某个环节做调整吗？
+          - generic [ref=e540]:
+            - generic [ref=e541]: 5 分钟前
+            - generic [ref=e542]:
+              - button "复制" [ref=e544] [cursor=pointer]:
+                - img [ref=e545]
+              - tooltip "复制"
+            - generic [ref=e548]:
+              - button "重试" [ref=e550] [cursor=pointer]:
+                - img [ref=e551]
+              - tooltip "重试"
+    - generic [ref=e167]:
+      - textbox "Message input" [ref=e168]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e169] [cursor=pointer]:
+          - img [ref=e170]
+        - button "Send" [disabled] [ref=e554]:
+          - img [ref=e174]

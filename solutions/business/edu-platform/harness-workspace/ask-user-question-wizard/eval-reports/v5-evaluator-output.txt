@@ -1,0 +1,27 @@
+## v5 Evaluation Complete
+
+**总分: 97/100** (up from v4's 89)
+
+### Score Breakdown
+
+| Dimension | Score | Weight | Weighted |
+|-----------|-------|--------|----------|
+| D1: control_request E2E | 5/5 | 20 | 20 |
+| D2: ControlRequestView default UI | **4/5** | 15 | 12 |
+| D3: WizardRenderer framework | 5/5 | 20 | 20 |
+| D4: TreeSelect + DataReview | 5/5 | 15 | 15 |
+| D5: SummaryStep + submit | 5/5 | 10 | 10 |
+| D6: lesson-plan wizard 4-step | 5/5 | 20 | 20 |
+| Penalties | | | 0 |
+
+### Key Findings
+
+- **D6 improved from 3/5 to 5/5 (+8 pts)**: The dedup mechanism (`storeCompletedAskUserAnswers` / `consumeLastAskUserAnswers`) successfully handles the non-deterministic double AskUserQuestion call. LLM now consistently resumes and generates a complete lesson plan after wizard submit.
+
+- **D2 remains at 4/5 (-3 pts)**: The default InteractiveViewInner UI renders correctly (77 CSS variables, tabs, radio cards, custom input) but was only observed incidentally during dedup flow. An independent non-wizard trigger was not tested.
+
+- **All other dimensions at 5/5**: Full E2E data flow, wizard framework, tree/data steps, summary + submit all working perfectly.
+
+### Score Progression: 69 → 75 → 86 → 89 → **97**
+
+Report written to `eval-reports/v5-eval.md`, progress updated in `progress.md`.

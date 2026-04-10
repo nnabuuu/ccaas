@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: MetricDashboard + BarList</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-t:#27500A;--warn-t:#854F0B;--danger-t:#A32D2D;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+.widget{border:.5px solid var(--b1);border-radius:var(--rl);background:var(--bg1);overflow:hidden;margin-bottom:20px}
+.wh{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:.5px solid var(--b1)}
+.wt{font-size:13px;font-weight:600}
+.wb{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--info-bg);color:var(--info-t)}
+.wd{padding:14px}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.metric{background:var(--bg2);border-radius:8px;padding:12px}
+.metric-label{font-size:11px;color:var(--t2)}
+.metric-val{font-size:22px;font-weight:600;margin-top:3px}
+.metric-delta{font-size:11px;margin-left:4px}
+.metric-delta.up{color:var(--success-t)}
+.metric-delta.down{color:var(--danger-t)}
+.section-title{font-size:12px;font-weight:500;color:var(--t2);margin-bottom:10px}
+.bar{display:flex;align-items:center;gap:8px;padding:7px 0;font-size:12px}
+.bar:not(:last-child){border-bottom:.5px solid rgba(0,0,0,.04)}
+.bar-name{width:120px;flex-shrink:0}
+.bar-track{flex:1;height:7px;background:#eeede8;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.bar-pct{width:40px;text-align:right;font-weight:600;font-size:11px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;padding-top:12px;border-top:.5px solid var(--b1)}
+.btn{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.btn:hover{background:var(--bg2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>MetricDashboard + BarList 组件</h3>
+<p>指标仪表盘 + 条形数据列表。用于学情概览、Skill 使用分析等场景。<br>顶部指标卡（数值+趋势），下方条形分布图。</p>
+
+<div class="widget">
+  <div class="wh"><span class="wt">八(2)班 · 第 14 周学情概览</span><span class="wb">MetricDashboard</span></div>
+  <div class="wd">
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-label">作业完成率</div>
+        <div class="metric-val">87%<span class="metric-delta up">+3%</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">平均正确率</div>
+        <div class="metric-val">72%<span class="metric-delta down">-2%</span></div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">薄弱知识点</div>
+        <div class="metric-val">3</div>
+      </div>
+    </div>
+    <div class="section-title">薄弱知识点 (错误率 Top 5)</div>
+    <div class="bar"><span class="bar-name">SSS 判定</span><div class="bar-track"><div class="bar-fill" style="width:42%;background:var(--danger-t)"></div></div><span class="bar-pct" style="color:var(--danger-t)">42%</span></div>
+    <div class="bar"><span class="bar-name">角平分线逆定理</span><div class="bar-track"><div class="bar-fill" style="width:38%;background:var(--danger-t)"></div></div><span class="bar-pct" style="color:var(--danger-t)">38%</span></div>
+    <div class="bar"><span class="bar-name">SAS 判定</span><div class="bar-track"><div class="bar-fill" style="width:35%;background:var(--warn-t)"></div></div><span class="bar-pct" style="color:var(--warn-t)">35%</span></div>
+    <div class="bar"><span class="bar-name">外角定理</span><div class="bar-track"><div class="bar-fill" style="width:31%;background:var(--warn-t)"></div></div><span class="bar-pct" style="color:var(--warn-t)">31%</span></div>
+    <div class="bar"><span class="bar-name">全等三角形性质</span><div class="bar-track"><div class="bar-fill" style="width:22%;background:var(--success-t)"></div></div><span class="bar-pct" style="color:var(--success-t)">22%</span></div>
+    <div class="actions">
+      <button class="btn">生成周报</button>
+      <button class="btn">按知识点钻取</button>
+      <button class="btn">对比上周</button>
+    </div>
+  </div>
+</div>
+
+<div class="widget">
+  <div class="wh"><span class="wt">Skill 使用分析 (示例)</span><span class="wb">MetricDashboard</span></div>
+  <div class="wd">
+    <div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric"><div class="metric-label">总调用</div><div class="metric-val">735</div></div>
+      <div class="metric"><div class="metric-label">活跃教师</div><div class="metric-val">24</div></div>
+      <div class="metric"><div class="metric-label">覆盖学校</div><div class="metric-val">6</div></div>
+      <div class="metric"><div class="metric-label">平均评分</div><div class="metric-val">4.3</div></div>
+    </div>
+    <div class="section-title">按 Skill 调用量分布</div>
+    <div class="bar"><span class="bar-name">出题组卷</span><div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--info-t)"></div></div><span class="bar-pct" style="color:var(--info-t)">287</span></div>
+    <div class="bar"><span class="bar-name">备课生成</span><div class="bar-track"><div class="bar-fill" style="width:51%;background:var(--info-t)"></div></div><span class="bar-pct" style="color:var(--info-t)">203</span></div>
+    <div class="bar"><span class="bar-name">错题本</span><div class="bar-track"><div class="bar-fill" style="width:39%;background:var(--info-t)"></div></div><span class="bar-pct" style="color:var(--info-t)">156</span></div>
+    <div class="bar"><span class="bar-name">学情周报</span><div class="bar-track"><div class="bar-fill" style="width:22%;background:var(--info-t)"></div></div><span class="bar-pct" style="color:var(--info-t)">89</span></div>
+  </div>
+</div>
+</div>
+</body>
+</html>

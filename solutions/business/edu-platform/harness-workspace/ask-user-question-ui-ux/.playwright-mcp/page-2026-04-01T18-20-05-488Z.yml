@@ -1,0 +1,285 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 02:14" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 02:14
+      - generic [ref=e29]:
+        - generic [ref=e30]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 分析八(2)班数学学情
+          - generic [ref=e34]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备一下明天的课
+          - generic [ref=e38]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:21
+    - generic [ref=e43]:
+      - generic [ref=e44]: 已启用 Skills
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 备
+        - text: 备课助手
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 题
+        - text: 出题组卷
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 情
+        - text: 学情分析
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 错
+        - text: 错题本生成器
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: +
+        - text: 管理 Skills
+    - generic [ref=e55]:
+      - generic [ref=e56]: 八(2)班
+      - generic [ref=e57]: 数学
+      - generic [ref=e58]: 树人中学
+    - button "User menu" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 张
+      - generic [ref=e62]:
+        - generic [ref=e63]: 张老师
+        - generic [ref=e64]: 数学教师 · 树人中学
+      - img [ref=e65]
+  - generic [ref=e114]:
+    - region "Notifications alt+T"
+    - log [ref=e115]:
+      - generic [ref=e116]:
+        - paragraph [ref=e120]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - generic [ref=e123]:
+              - img [ref=e125]
+              - generic [ref=e128] [cursor=pointer]: SkillSkill
+              - generic [ref=e129]: 52ms
+            - generic [ref=e130]:
+              - generic:
+                - generic:
+                  - generic: 题型
+                  - generic: 混合出题
+                - generic:
+                  - generic: 难度
+                  - generic: 基础
+              - generic [ref=e131]:
+                - generic:
+                  - generic: 请选择题型
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 选择题
+                        - generic: 单项选择题，适合快速检测基础概念
+                    - generic:
+                      - generic:
+                        - generic: 填空题
+                        - generic: 填写关键结果，考查计算和推理能力
+                    - generic:
+                      - generic:
+                        - generic: 解答题
+                        - generic: 需要写出完整推理过程
+                    - generic:
+                      - generic:
+                        - generic: 混合出题
+                        - generic: 包含选择、填空、解答多种题型
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "..."
+                - generic:
+                  - generic: 请选择难度
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 基础
+                        - generic: 侧重概念理解和直接应用
+                    - generic:
+                      - generic:
+                        - generic: 中等
+                        - generic: 需要一定的分析和推理
+                    - generic:
+                      - generic:
+                        - generic: 较难
+                        - generic: 综合性强，需要灵活运用多个判定方法
+                    - generic:
+                      - generic:
+                        - generic: 分层（含3个难度）
+                        - generic: 包含基础、中等、较难三个层次，适合分层教学
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "..."
+              - generic [ref=e133]: ✓ 混合出题 · 基础
+            - generic [ref=e134]:
+              - generic:
+                - generic:
+                  - generic: 题型
+                  - generic: 混合出题
+                - generic:
+                  - generic: 难度
+                  - generic: 基础
+              - generic [ref=e135]:
+                - generic:
+                  - generic: 请选择题型
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 选择题
+                        - generic: 单项选择题，适合快速检测基础概念
+                    - generic:
+                      - generic:
+                        - generic: 填空题
+                        - generic: 填写关键结果，考查计算和推理能力
+                    - generic:
+                      - generic:
+                        - generic: 解答题
+                        - generic: 需要写出完整推理过程
+                    - generic:
+                      - generic:
+                        - generic:
+                          - text: 混合出题
+                          - generic: 推荐
+                        - generic: 包含选择、填空、解答多种题型
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "..."
+                - generic:
+                  - generic: 请选择难度
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: 基础
+                        - generic: 侧重概念理解和直接应用
+                    - generic:
+                      - generic:
+                        - generic: 中等
+                        - generic: 需要一定的分析和推理
+                    - generic:
+                      - generic:
+                        - generic: 较难
+                        - generic: 综合性强，需要灵活运用多个判定方法
+                    - generic:
+                      - generic:
+                        - generic:
+                          - text: 分层（含3个难度）
+                          - generic: 推荐
+                        - generic: 包含基础、中等、较难三个层次，适合分层教学
+                  - generic:
+                    - generic:
+                      - generic: 或者自定义
+                      - textbox "..."
+              - generic [ref=e137]: ✓ 混合出题 · 基础
+          - generic [ref=e139]:
+            - generic [ref=e140]: 8 分钟前
+            - generic [ref=e141]:
+              - button "复制" [ref=e143] [cursor=pointer]:
+                - img [ref=e144]
+              - tooltip "复制"
+            - generic [ref=e147]:
+              - button "重试" [ref=e149] [cursor=pointer]:
+                - img [ref=e150]
+              - tooltip "重试"
+        - paragraph [ref=e156]: 混合出题 · 基础
+        - generic [ref=e157]:
+          - generic [ref=e159]:
+            - paragraph [ref=e160]:
+              - text: 好的！以下是
+              - strong [ref=e161]: 5道全等三角形判定
+              - text: 混合题，基础难度，建议用时
+              - strong [ref=e162]: 12分钟
+              - text: 。
+            - separator [ref=e163]
+            - heading "全等三角形判定 · 随堂测试" [level=2] [ref=e164]
+            - heading "一、选择题（每题3分，共6分）" [level=3] [ref=e165]
+            - paragraph [ref=e166]:
+              - strong [ref=e167]: "1."
+              - text: 下列条件中，能判定两个三角形全等的是（ ）
+            - paragraph [ref=e168]: A. 三个角对应相等（AAA） B. 两边和一个角对应相等（SSA） C. 两角和它们的夹边对应相等（ASA） D. 一边和一个角对应相等
+            - blockquote [ref=e169]:
+              - paragraph [ref=e170]: 📌 考查知识点：全等三角形判定方法的辨析 难度：★☆☆
+            - separator [ref=e171]
+            - paragraph [ref=e172]:
+              - strong [ref=e173]: "2."
+              - text: 如图，已知 AB = DE，BC = EF，∠B = ∠E，则 △ABC ≅ △DEF 的判定依据是（ ）
+            - paragraph [ref=e174]: A. SSS B. SAS C. ASA D. AAS
+            - blockquote [ref=e175]:
+              - paragraph [ref=e176]: 📌 考查知识点：SAS 判定方法的识别 难度：★☆☆
+            - separator [ref=e177]
+            - heading "二、填空题（每题3分，共6分）" [level=3] [ref=e178]
+            - paragraph [ref=e179]:
+              - strong [ref=e180]: "3."
+              - text: 在 △ABC 和 △DEF 中，已知 AB = DE，AC = DF，BC = EF，则 △ABC ≅ △DEF 的判定依据是 ________ 。
+            - blockquote [ref=e181]:
+              - paragraph [ref=e182]: 📌 考查知识点：SSS 判定 难度：★☆☆
+            - separator [ref=e183]
+            - paragraph [ref=e184]:
+              - strong [ref=e185]: "4."
+              - text: 在 △ABC 和 △DEF 中，已知 ∠A = ∠D，∠B = ∠E，AB = DE，则 △ABC ≅ △DEF。这里用到的判定方法是 ________；其中 AB 是 ∠A 和 ∠B 的 ________ 。
+            - blockquote [ref=e186]:
+              - paragraph [ref=e187]: 📌 考查知识点：ASA 判定及"夹边"概念 难度：★☆☆
+            - separator [ref=e188]
+            - heading "三、解答题（8分）" [level=3] [ref=e189]
+            - paragraph [ref=e190]:
+              - strong [ref=e191]: "5."
+              - text: 如图，点 B、E、C、F 在同一直线上，且 AB = DE，AC = DF，BE = CF。求证：△ABC ≅ △DEF。
+            - code [ref=e193]: A D / \ / \ / \ / \ B E C · C F |-----|-----|-----|
+            - blockquote [ref=e194]:
+              - paragraph [ref=e195]: 📌 考查知识点：SSS 判定 + 等量代换求相等线段 难度：★★☆
+            - separator [ref=e196]
+            - heading "参考答案与解析" [level=2] [ref=e197]
+            - paragraph [ref=e198]:
+              - strong [ref=e199]: 1. 答案：C
+            - blockquote [ref=e200]:
+              - paragraph [ref=e201]: AAA 只能说明相似，不能判定全等；SSA 不是判定方法（存在两解情况）；ASA 是全等判定的基本方法。
+            - paragraph [ref=e202]:
+              - strong [ref=e203]: 2. 答案：B
+            - blockquote [ref=e204]:
+              - paragraph [ref=e205]: 两边及其夹角对应相等，符合 SAS 判定。
+            - paragraph [ref=e206]:
+              - strong [ref=e207]: 3. 答案：SSS（边边边）
+            - blockquote [ref=e208]:
+              - paragraph [ref=e209]: 三边对应相等，直接使用 SSS 判定。
+            - paragraph [ref=e210]:
+              - strong [ref=e211]: 4. 答案：ASA（角边角）；夹边
+            - blockquote [ref=e212]:
+              - paragraph [ref=e213]: AB 是 ∠A 和 ∠B 两个角的公共边（夹边），满足 ASA 判定条件。
+            - paragraph [ref=e214]:
+              - strong [ref=e215]: 5. 证明过程：
+            - blockquote [ref=e216]:
+              - paragraph [ref=e217]:
+                - text: ∵ BE = CF ∴ BE + EC = CF + EC，即
+                - strong [ref=e218]: BC = EF
+                - text: 又 ∵ AB = DE，AC = DF ∴ △ABC ≅ △DEF（
+                - strong [ref=e219]: SSS
+                - text: ）
+            - separator [ref=e220]
+            - paragraph [ref=e221]:
+              - strong [ref=e222]: 知识点覆盖：
+              - text: SSS、SAS、ASA、AAS辨析 ｜
+              - strong [ref=e223]: 题型分布：
+              - text: 选择2 + 填空2 + 解答1
+          - generic [ref=e225]:
+            - generic [ref=e226]: 5 分钟前
+            - generic [ref=e227]:
+              - button "复制" [ref=e229] [cursor=pointer]:
+                - img [ref=e230]
+              - tooltip "复制"
+            - generic [ref=e233]:
+              - button "重试" [ref=e235] [cursor=pointer]:
+                - img [ref=e236]
+              - tooltip "重试"
+    - generic [ref=e240]:
+      - textbox "Message input" [ref=e241]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e242] [cursor=pointer]:
+          - img [ref=e243]
+        - button "Send" [disabled] [ref=e246]:
+          - img [ref=e247]

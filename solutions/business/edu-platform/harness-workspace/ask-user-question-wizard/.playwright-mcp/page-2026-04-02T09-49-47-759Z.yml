@@ -1,0 +1,153 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 17:48" [ref=e134] [cursor=pointer]:
+          - generic [ref=e136]: 帮我备课
+          - generic [ref=e137]: 17:48
+        - button "帮我备课 17:34" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 17:34
+        - button "帮我备课 17:25" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 17:25
+        - button "帮我备课 16:29" [ref=e33] [cursor=pointer]:
+          - generic [ref=e35]: 帮我备课
+          - generic [ref=e36]: 16:29
+      - generic [ref=e37]:
+        - generic [ref=e38]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 分析八(2)班数学学情
+          - generic [ref=e42]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备一下明天的课
+          - generic [ref=e46]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e47] [cursor=pointer]:
+          - generic [ref=e49]: 帮我备一下明天的课
+          - generic [ref=e50]: 10:21
+    - generic [ref=e51]:
+      - generic [ref=e52]: 已启用 Skills
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: 备
+        - text: 备课助手
+      - generic [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]: 题
+        - text: 出题组卷
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: 情
+        - text: 学情分析
+      - generic [ref=e59] [cursor=pointer]:
+        - generic [ref=e60]: 错
+        - text: 错题本生成器
+      - generic [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: +
+        - text: 管理 Skills
+    - generic [ref=e63]:
+      - generic [ref=e64]: 八(2)班
+      - generic [ref=e65]: 数学
+      - generic [ref=e66]: 树人中学
+    - button "User menu" [ref=e68] [cursor=pointer]:
+      - generic [ref=e69]: 张
+      - generic [ref=e70]:
+        - generic [ref=e71]: 张老师
+        - generic [ref=e72]: 数学教师 · 树人中学
+      - img [ref=e73]
+  - generic [ref=e77]:
+    - region "Notifications alt+T"
+    - log [ref=e78]:
+      - generic [ref=e79]:
+        - paragraph [ref=e124]: 帮我备课
+        - generic [ref=e126]:
+          - generic [ref=e138]:
+            - img [ref=e140]
+            - generic [ref=e143] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e144]: 76ms
+          - paragraph [ref=e146]: 好的，让我来帮您备课！首先需要收集一些基本信息。
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149] [cursor=pointer]:
+                - generic [ref=e150]: "1"
+                - generic [ref=e151]: 选择范围
+              - generic "请先完成「选择范围」" [ref=e152]:
+                - generic [ref=e153]: "2"
+                - generic [ref=e154]: 选择章节
+              - generic "请先完成「选择范围」「选择章节」" [ref=e155]:
+                - generic [ref=e156]: "3"
+                - generic [ref=e157]: 学情分析
+              - generic "请先完成「选择范围」「选择章节」「学情分析」" [ref=e158]:
+                - generic [ref=e159]: "4"
+                - generic [ref=e160]: 确认生成
+            - generic [ref=e162]:
+              - generic [ref=e163]:
+                - generic [ref=e164]: 学科
+                - combobox [ref=e165] [cursor=pointer]:
+                  - option "请选择..."
+                  - option "数学" [selected]
+                  - option "语文"
+                  - option "英语"
+                  - option "物理"
+                  - option "化学"
+                  - option "生物"
+                  - option "历史"
+                  - option "地理"
+              - generic [ref=e166]:
+                - generic [ref=e167]: 年级学期
+                - combobox [active] [ref=e168] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "七年级上"
+                  - option "七年级下"
+                  - option "八年级上"
+                  - option "八年级下"
+                  - option "九年级上"
+                  - option "九年级下"
+                  - option "高一上"
+                  - option "高一下"
+                  - option "高二上"
+                  - option "高二下"
+              - generic [ref=e169]:
+                - generic [ref=e170]: 班级
+                - combobox [ref=e171] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "1 班"
+                  - option "2 班"
+                  - option "3 班"
+                  - option "4 班"
+              - generic [ref=e172]:
+                - generic [ref=e173]:
+                  - text: 课型
+                  - generic [ref=e174]: "*"
+                - combobox [ref=e175] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "新授课"
+                  - option "复习课"
+                  - option "练习课"
+                  - option "试卷讲评"
+              - generic [ref=e176]:
+                - generic [ref=e177]:
+                  - text: 课时
+                  - generic [ref=e178]: "*"
+                - combobox [ref=e179] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "1 课时 (40 分钟)"
+                  - option "2 课时 (80 分钟)"
+                  - option "3 课时 (120 分钟)"
+              - generic [ref=e180]: 已填 3 / 5 项
+            - generic [ref=e181]:
+              - button "上一步" [disabled] [ref=e182]
+              - generic [ref=e183]: 1 / 4
+              - button "下一步" [disabled] [ref=e184]
+          - generic "思考中" [ref=e127]: 正在处理...
+    - generic [ref=e112]:
+      - textbox "Message input" [ref=e113]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e114] [cursor=pointer]:
+          - img [ref=e115]
+        - button "Stop generating" [ref=e132] [cursor=pointer]:
+          - img [ref=e119]

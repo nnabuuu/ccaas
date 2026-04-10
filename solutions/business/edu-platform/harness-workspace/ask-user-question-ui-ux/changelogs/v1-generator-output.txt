@@ -1,0 +1,19 @@
+The `packages/chat-interface/src/styles/tokens.css` change is pre-existing (line ending difference from git status), not from my changes. My only modifications are in the allowed files.
+
+## v1 Summary
+
+**Completed the full AskUserQuestion Widget implementation** from ~15/100 baseline to a complete feature set:
+
+### What was implemented in `AskUserQuestionRenderer.tsx` (~430 lines):
+
+| Dimension | Feature |
+|-----------|---------|
+| **D1 Chips** | Pill-shaped chips with status dots (gray/green), selected value text with ellipsis, click-to-switch panels, active chip highlight |
+| **D2 Options** | Radio/Checkbox indicators, info-colored selection, recommended badge + auto-preselect, 200ms single-select auto-advance, Other area (dashed border, always-visible input, auto-select on type) |
+| **D3 Footer** | Progress "X/N 已回答" with green highlight, disabled/enabled confirm button, submitted state (locked, green, summary "✓ v1 · v2 · v3") |
+| **D4 Preview** | Left/right split via CSS Grid `1fr 1fr`, monospace preview pane, real-time option→preview updates, Other custom preview |
+| **D5 Panels** | CSS Grid stacking (grid-row:1, grid-column:1), opacity toggle, phase filtering, toolOutput.answers detection, recommended preselection |
+| **D6 Design** | All colors via CSS variables, 0.5px borders, var(--r)/var(--rl) radii, zero box-shadow, zero hardcoded hex |
+
+### Limitation
+The `AskUserQuestion` tool is registered as a custom renderer but no existing Skill calls it — live browser interaction testing requires backend integration to expose this as an LLM-available tool.

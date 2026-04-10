@@ -1,0 +1,20 @@
+## v3 Evaluation Complete
+
+**总分: 86/100** (v2: 75 → v3: 86, +11)
+
+| Dimension | v2 | v3 | Delta |
+|-----------|----|----|-------|
+| D1: control_request E2E | 3 | 4 | +1 |
+| D2: default UI | 3 | 3 | 0 |
+| D3: WizardRenderer | 5 | 5 | 0 |
+| D4: TreeSelect+DataReview | 4 | 5 | +1 |
+| D5: SummaryStep | 5 | 5 | 0 |
+| D6: lesson-plan wizard | 3 | 4 | +1 |
+
+**Key findings:**
+- Both v3 fixes are high-confidence and well-targeted (request_id placement, dataEndpoint removal)
+- D1/D6 scored 4/5 instead of generator's estimated 5/5 because browser message-send failed in this Playwright session, preventing independent verification of LLM resume
+- If browser verification succeeds in v4, D1 and D6 would likely reach 5/5 (total → 94/100)
+- D2 remains at 3/5 — default UI has never been browser-tested across any evaluation round
+
+Report written to `eval-reports/v3-eval.md`, progress.md updated.

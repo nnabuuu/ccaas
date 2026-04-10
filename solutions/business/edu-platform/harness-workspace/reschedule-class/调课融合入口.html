@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>调课 · 融合入口原型</title>
+<style>
+:root{--bg:#fff;--bg2:#f5f5f0;--bg3:#eeeee8;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b:rgba(0,0,0,.1);--pur:#3C3489;--pbg:#EEEDFE;--tl:#085041;--tlbg:#E1F5EE;--bl:#0C447C;--blbg:#E6F1FB;--gn:#27500A;--gnbg:#EAF3DE;--am:#854F0B;--ambg:#FAEEDA;--rd:#A32D2D;--rdbg:#FCEBEB;--coral:#712B13;--coralbg:#FAECE7}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC",sans-serif;background:var(--bg3);color:var(--t1);font-size:12px;line-height:1.6}
+nav{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--b);padding:6px 8px;display:flex;gap:2px;overflow-x:auto}
+nav b{font-size:10px;border:none;background:none;color:var(--t3);cursor:pointer;white-space:nowrap;border-radius:4px;font-family:inherit;padding:5px 8px;font-weight:400}
+nav b:hover{background:var(--bg2)}nav b.on{background:var(--t1);color:#fff}
+.v{display:none;padding:10px;max-width:640px;margin:0 auto}.v.on{display:block}
+.cd{background:var(--bg);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:10px}
+.hd{padding:10px 12px;border-bottom:1px solid var(--b)}
+.hd h2{font-size:14px;font-weight:600;margin-bottom:2px}
+.hd p{font-size:10px;color:var(--t3)}
+.pl{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:500;display:inline-block}
+.bt{font-size:10px;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--b);background:var(--bg);color:var(--t2);font-family:inherit}
+.bt:hover{background:var(--bg2)}.bp{background:var(--t1);color:#fff;border-color:var(--t1)}
+.bt:disabled{opacity:.4;cursor:not-allowed}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--b)}
+.tab{flex:1;padding:8px;text-align:center;font-size:11px;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;font-family:inherit;border:none;background:none}
+.tab:hover{color:var(--t2);background:var(--bg2)}
+.tab.on{color:var(--t1);font-weight:500;border-bottom-color:var(--t1)}
+
+/* Form fields */
+.fm{padding:10px 12px}
+.fr{margin-bottom:10px}
+.fr label{display:block;font-size:10px;font-weight:500;color:var(--t2);margin-bottom:3px}
+.fr select,.fr input[type=text]{width:100%;padding:6px 8px;border:1px solid var(--b);border-radius:6px;font-size:11px;font-family:inherit;background:var(--bg)}
+.fr select{appearance:none;background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3e%3cpath d='M0 0l4 5 4-5' fill='%239c9a92'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 8px center}
+.inline{display:flex;gap:6px}.inline>*{flex:1}
+.hint{font-size:9px;color:var(--tl);margin-top:3px;display:flex;align-items:center;gap:3px}
+.hint::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--tl);flex-shrink:0}
+.warn{font-size:9px;color:var(--am);margin-top:3px;display:flex;align-items:center;gap:3px}
+.warn::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--am);flex-shrink:0}
+
+/* Recommend card */
+.rec{border:1px solid var(--b);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.rec:hover{border-color:var(--pur);background:var(--pbg)}
+.rec.sel{border-color:var(--pur);background:var(--pbg)}
+.rec-name{font-size:11px;font-weight:500;margin-bottom:2px}
+.rec-info{font-size:10px;color:var(--t2);line-height:1.5}
+.rec-tag{display:inline-block;font-size:8px;padding:1px 5px;border-radius:3px;margin-right:3px}
+.ok{background:var(--gnbg);color:var(--gn)}.soft{background:var(--ambg);color:var(--am)}
+
+/* Chat */
+.chat-area{padding:10px 12px}
+.msg{margin-bottom:10px;display:flex;gap:8px}
+.msg-avatar{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:600}
+.msg-u{background:var(--bg3);color:var(--t2)}
+.msg-ai{background:var(--pbg);color:var(--pur)}
+.msg-body{flex:1;min-width:0}
+.msg-body p{font-size:11px;color:var(--t2);line-height:1.7;margin-bottom:4px}
+.msg-body strong{color:var(--t1)}
+
+/* Proposal card */
+.prop{border:1px solid var(--b);border-radius:8px;padding:8px 10px;margin:6px 0}
+.prop-row{display:flex;align-items:start;gap:6px;padding:6px 0;border-bottom:1px solid var(--b);font-size:10px}
+.prop-row:last-of-type{border:none}
+.prop-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+.prop-detail{flex:1}
+.prop-class{font-size:11px;font-weight:500;margin-bottom:1px}
+.prop-change{color:var(--t2)}
+.prop-check{margin-top:2px}
+
+/* Confirm card */
+.confirm{border:1.5px solid var(--pur);border-radius:10px;overflow:hidden;margin:8px 0}
+.confirm-hd{padding:8px 12px;background:var(--pbg);font-size:12px;font-weight:500;color:var(--pur)}
+.confirm-body{padding:10px 12px}
+.confirm-item{padding:8px 0;border-bottom:1px solid var(--b)}
+.confirm-item:last-child{border:none}
+.confirm-label{font-size:9px;color:var(--t3);margin-bottom:2px}
+.confirm-val{font-size:11px}
+.confirm-actions{padding:8px 12px;border-top:1px solid var(--b);display:flex;gap:6px;justify-content:end}
+
+/* Toolbar mock */
+.toolbar{display:flex;gap:4px;padding:6px 10px;border-top:1px solid var(--b);background:var(--bg2)}
+.tool-pill{font-size:10px;padding:4px 10px;border-radius:12px;border:1px solid var(--b);background:var(--bg);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:3px}
+.tool-pill:hover{background:var(--bg3)}
+.tool-pill.hl{border-color:var(--pur);background:var(--pbg);color:var(--pur)}
+.input-mock{flex:1;padding:8px 10px;border:1px solid var(--b);border-radius:8px;font-size:11px;color:var(--t3);background:var(--bg)}
+
+/* Status */
+.status-card{border:1px solid var(--b);border-radius:8px;padding:10px 12px;margin:6px 0}
+.status-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.status-id{font-size:10px;color:var(--t3);font-family:monospace}
+</style>
+</head>
+<body>
+
+<nav>
+  <b class="on" onclick="sw('p1',this)">① 工具栏入口</b>
+  <b onclick="sw('p2',this)">② 表单·互换</b>
+  <b onclick="sw('p3',this)">③ 表单·代课</b>
+  <b onclick="sw('p4',this)">④ Chat·复杂场景</b>
+  <b onclick="sw('p5',this)">⑤ 确认卡片+结果</b>
+</nav>
+
+<!-- ① 工具栏入口 -->
+<div class="v on" id="p1">
+<div style="font-size:10px;color:var(--t3);margin-bottom:6px">Chat 融合入口 · 工具栏中的 📅调课 入口</div>
+<div class="cd">
+  <div style="padding:100px 12px 8px;font-size:11px;color:var(--t3);text-align:center">— Chat 对话区域 —</div>
+  <div class="toolbar">
+    <button class="tool-pill">📝 教案</button>
+    <button class="tool-pill">📋 作业</button>
+    <button class="tool-pill hl" onclick="sw('p2',document.querySelectorAll('nav b')[1])">📅 调课</button>
+    <button class="tool-pill">📊 学情</button>
+    <button class="tool-pill">@ 引用</button>
+  </div>
+  <div style="padding:8px 10px;display:flex;gap:6px">
+    <div class="input-mock" style="flex:1">输入消息...</div>
+    <button class="bt bp" disabled>发送</button>
+  </div>
+</div>
+<div style="font-size:10px;color:var(--t2);padding:4px;line-height:1.7">
+  点击 <span style="color:var(--pur);font-weight:500">📅 调课</span> 后弹出结构化调课面板（见视图②③）。<br>
+  如果教师直接在输入框打字描述调课需求，AI 走 Chat 自然语言流程（见视图④）。
+</div>
+</div>
+
+<!-- ② 表单·互换 -->
+<div class="v" id="p2">
+<div style="font-size:10px;color:var(--t3);margin-bottom:6px">结构化表单 · 互换场景</div>
+<div class="cd">
+  <div class="hd"><h2>📅 调课申请</h2></div>
+  <div class="tabs">
+    <button class="tab on">互换</button>
+    <button class="tab" onclick="sw('p3',document.querySelectorAll('nav b')[2])">代课</button>
+    <button class="tab">改时</button>
+    <button class="tab">补课</button>
+  </div>
+
+  <div class="fm">
+    <div class="fr"><label>原课时</label>
+      <div class="inline">
+        <select><option>本周</option><option selected>下周</option></select>
+        <select><option>周一</option><option>周二</option><option selected>周三</option><option>周四</option><option>周五</option></select>
+        <select><option>第1节</option><option>第2节</option><option>第3节</option><option>第4节</option><option selected>第5节</option><option>第6节</option></select>
+      </div>
+      <div style="margin-top:4px;padding:6px 8px;background:var(--bg2);border-radius:4px;font-size:10px">
+        📕 <strong>数学</strong> · 八(2)班 · B栋302教室 · 14:00-14:45
+      </div>
+    </div>
+
+    <div style="text-align:center;color:var(--t3);font-size:14px;margin:4px 0">⇅</div>
+
+    <div class="fr"><label>互换对象</label>
+      <div style="font-size:10px;color:var(--t2);margin-bottom:6px">AI 推荐可互换的教师：</div>
+      <div class="rec sel" onclick="this.classList.toggle('sel')">
+        <div class="rec-name">王老师 · 物理 · 周四第5节</div>
+        <div class="rec-info">
+          <span class="rec-tag ok">教室可用</span>
+          <span class="rec-tag ok">班级无冲突</span>
+        </div>
+        <div class="warn">八(2)班周四已有1节数学，调后连续2节</div>
+      </div>
+      <div class="rec">
+        <div class="rec-name">李老师 · 英语 · 周四第3节</div>
+        <div class="rec-info">
+          <span class="rec-tag ok">教室可用</span>
+          <span class="rec-tag ok">无冲突</span>
+        </div>
+        <div class="hint">最优推荐 · 无任何冲突</div>
+      </div>
+      <div class="rec">
+        <div class="rec-name">张老师 · 语文 · 周五第2节</div>
+        <div class="rec-info">
+          <span class="rec-tag ok">教室可用</span>
+          <span class="rec-tag soft">八(2)班需走动换教室</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fr"><label>原因</label>
+      <select><option>教研活动</option><option>校内事务</option><option>请假</option><option selected>其他</option></select>
+    </div>
+    <div class="fr"><label>备注（选填）</label><input type="text" placeholder="补充说明..."></div>
+
+    <div style="padding:6px 0;font-size:9px;color:var(--t3)">⚠️ 此申请需要教务处审批（通常 2 小时内处理）</div>
+  </div>
+  <div style="padding:8px 12px;border-top:1px solid var(--b);display:flex;gap:6px;justify-content:space-between">
+    <button class="bt" style="color:var(--bl)" onclick="sw('p4',document.querySelectorAll('nav b')[3])">💬 改用自然语言</button>
+    <div style="display:flex;gap:6px"><button class="bt">取消</button><button class="bt bp">提交申请</button></div>
+  </div>
+</div>
+</div>
+
+<!-- ③ 表单·代课 -->
+<div class="v" id="p3">
+<div style="font-size:10px;color:var(--t3);margin-bottom:6px">结构化表单 · 代课场景</div>
+<div class="cd">
+  <div class="hd"><h2>📅 调课申请</h2></div>
+  <div class="tabs">
+    <button class="tab" onclick="sw('p2',document.querySelectorAll('nav b')[1])">互换</button>
+    <button class="tab on">代课</button>
+    <button class="tab">改时</button>
+    <button class="tab">补课</button>
+  </div>
+
+  <div class="fm">
+    <div class="fr"><label>需要代课的课（可多选）</label>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:4px;border:1px solid var(--pur);font-size:10px;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" checked style="margin:0"> 周三 第5节 · 📕 数学 · 八(2)班
+        </div>
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:4px;border:1px solid var(--pur);font-size:10px;display:flex;align-items:center;gap:4px">
+          <input type="checkbox" checked style="margin:0"> 周三 第6节 · 📕 数学 · 八(3)班
+        </div>
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:4px;font-size:10px;display:flex;align-items:center;gap:4px;opacity:.5">
+          <input type="checkbox" style="margin:0"> 周三 第7节 · 自习（无需代课）
+        </div>
+      </div>
+    </div>
+
+    <div class="fr"><label>AI 推荐代课教师</label>
+      <div class="rec sel">
+        <div class="rec-name">刘老师 · 数学组</div>
+        <div class="rec-info">
+          <span class="rec-tag ok">同学科</span>
+          <span class="rec-tag ok">两节都空闲</span>
+        </div>
+        <div style="font-size:9px;color:var(--t2);margin-top:2px">📊 历史代课 3 次 · 平均评价 4.5/5 · 上周代过八(3)班</div>
+      </div>
+      <div class="rec">
+        <div class="rec-name">陈老师 · 数学组</div>
+        <div class="rec-info">
+          <span class="rec-tag ok">同学科</span>
+          <span class="rec-tag soft">仅第5节空闲</span>
+        </div>
+        <div style="font-size:9px;color:var(--t2);margin-top:2px">📊 历史代课 1 次</div>
+      </div>
+    </div>
+
+    <div class="fr"><label>原因</label><select><option selected>请假</option><option>教研活动</option><option>培训</option></select></div>
+    <div class="fr"><label>教学进度备注（帮助代课教师了解）</label><input type="text" placeholder="八(2)班讲到 SAS 判定例3，八(3)班讲到例2..."></div>
+  </div>
+  <div style="padding:8px 12px;border-top:1px solid var(--b);display:flex;gap:6px;justify-content:space-between">
+    <button class="bt" style="color:var(--bl)">💬 改用自然语言</button>
+    <div style="display:flex;gap:6px"><button class="bt">取消</button><button class="bt bp">提交申请</button></div>
+  </div>
+</div>
+</div>
+
+<!-- ④ Chat·复杂场景 -->
+<div class="v" id="p4">
+<div style="font-size:10px;color:var(--t3);margin-bottom:6px">Chat 自然语言 · 批量调课（从表单切换过来，或直接输入）</div>
+<div class="cd">
+  <div class="chat-area">
+
+    <div class="msg"><div class="msg-avatar msg-u">陈</div><div class="msg-body">
+      <p><strong>下周三下午有区级教研，第5-8节都不能上课，涉及八(2)(3)(4)三个班的数学课，帮我安排一下</strong></p>
+    </div></div>
+
+    <div class="msg"><div class="msg-avatar msg-ai">AI</div><div class="msg-body">
+      <p>好的，这是一个批量调课。先查了你下周三下午的课表：</p>
+      <div style="padding:6px 8px;background:var(--bg2);border-radius:6px;font-size:10px;margin:4px 0;line-height:1.8">
+        第5节 · 📕 数学 · 八(2)班<br>
+        第6节 · 📕 数学 · 八(3)班<br>
+        第7节 · 自习（无课）<br>
+        第8节 · 📕 数学 · 八(4)班
+      </div>
+      <p>需要调整 3 节课。我找了一套组合方案：</p>
+
+      <div class="prop">
+        <div style="font-size:10px;font-weight:500;color:var(--pur);padding-bottom:4px">推荐方案</div>
+        <div class="prop-row">
+          <div class="prop-icon">📕</div>
+          <div class="prop-detail">
+            <div class="prop-class">八(2)班 · 第5节</div>
+            <div class="prop-change">→ 和王老师(物理)互换到 <strong>周四第5节</strong></div>
+            <div class="prop-check"><span class="rec-tag ok">王老师空闲</span><span class="rec-tag ok">教室可用</span></div>
+          </div>
+        </div>
+        <div class="prop-row">
+          <div class="prop-icon">📕</div>
+          <div class="prop-detail">
+            <div class="prop-class">八(3)班 · 第6节</div>
+            <div class="prop-change">→ <strong>刘老师(数学组)代课</strong>，该时段空闲</div>
+            <div class="prop-check"><span class="rec-tag ok">同学科</span><span class="rec-tag ok">上周代过八(3)</span></div>
+          </div>
+        </div>
+        <div class="prop-row">
+          <div class="prop-icon">📕</div>
+          <div class="prop-detail">
+            <div class="prop-class">八(4)班 · 第8节</div>
+            <div class="prop-change">→ 补课到 <strong>周五第7节</strong>（课外活动时段）</div>
+            <div class="prop-check"><span class="rec-tag ok">班级空闲</span><span class="rec-tag soft">需学生同意</span></div>
+          </div>
+        </div>
+      </div>
+      <p>三节课用了不同方式（互换/代课/补课），因为约束条件不一样。要调整哪个？</p>
+    </div></div>
+
+    <div class="msg"><div class="msg-avatar msg-u">陈</div><div class="msg-body">
+      <p><strong>八(4)班补课不太好，能不能也找人代课？</strong></p>
+    </div></div>
+
+    <div class="msg"><div class="msg-avatar msg-ai">AI</div><div class="msg-body">
+      <p>查了一下第8节能代八(4)班数学的老师：</p>
+      <div style="padding:6px 8px;background:var(--bg2);border-radius:6px;font-size:10px;margin:4px 0;line-height:1.8">
+        刘老师 — ⚠️ 第8节不空闲（已代八(3)班第6节）<br>
+        张老师 — ✓ 第8节空闲，但没教过八(4)班<br>
+        <strong>赵老师</strong> — ✓ 第8节空闲，上学期教过八(4)班
+      </div>
+      <p>建议赵老师，她熟悉八(4)班的情况。要改成赵老师代课吗？</p>
+    </div></div>
+
+    <div class="msg"><div class="msg-avatar msg-u">陈</div><div class="msg-body">
+      <p><strong>好，就这样</strong></p>
+    </div></div>
+
+    <div class="msg"><div class="msg-avatar msg-ai">AI</div><div class="msg-body">
+      <p>确认一下最终方案：</p>
+      <!-- 确认卡片 -->
+      <div class="confirm">
+        <div class="confirm-hd">📅 调课确认 · 3 项变更</div>
+        <div class="confirm-body">
+          <div class="confirm-item">
+            <div class="confirm-label">变更 1 · 互换</div>
+            <div class="confirm-val">📕 数学 八(2)班 · 周三第5节 → <strong>周四第5节</strong></div>
+            <div style="font-size:9px;color:var(--t2)">和王老师(物理)互换 <span class="rec-tag ok">无冲突</span></div>
+          </div>
+          <div class="confirm-item">
+            <div class="confirm-label">变更 2 · 代课</div>
+            <div class="confirm-val">📕 数学 八(3)班 · 周三第6节 → <strong>刘老师代课</strong></div>
+            <div style="font-size:9px;color:var(--t2)">刘老师(数学组) <span class="rec-tag ok">同学科</span></div>
+          </div>
+          <div class="confirm-item">
+            <div class="confirm-label">变更 3 · 代课</div>
+            <div class="confirm-val">📕 数学 八(4)班 · 周三第8节 → <strong>赵老师代课</strong></div>
+            <div style="font-size:9px;color:var(--t2)">赵老师(数学组) <span class="rec-tag ok">教过八(4)</span></div>
+          </div>
+          <div class="confirm-item" style="border:none">
+            <div class="confirm-label">原因</div>
+            <div class="confirm-val">区级教研活动</div>
+            <div style="font-size:9px;color:var(--am);margin-top:2px">⚠️ 需要教务处审批</div>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="bt">再调整</button>
+          <button class="bt bp" onclick="sw('p5',document.querySelectorAll('nav b')[4])">提交调课申请</button>
+        </div>
+      </div>
+    </div></div>
+
+  </div>
+  <div style="padding:8px 10px;border-top:1px solid var(--b);display:flex;gap:6px">
+    <div class="input-mock" style="flex:1">输入消息...</div>
+    <button class="bt bp" disabled>发送</button>
+  </div>
+</div>
+</div>
+
+<!-- ⑤ 提交结果+联动 -->
+<div class="v" id="p5">
+<div style="font-size:10px;color:var(--t3);margin-bottom:6px">提交成功 · 联动建议</div>
+<div class="cd">
+  <div class="chat-area">
+    <!-- 提交结果 -->
+    <div class="msg"><div class="msg-avatar msg-ai">AI</div><div class="msg-body">
+      <div class="status-card" style="border-color:var(--gn)">
+        <div class="status-hd">
+          <span class="pl" style="background:var(--gnbg);color:var(--gn)">已提交</span>
+          <span class="status-id">#2025-0315-003</span>
+        </div>
+        <div style="font-size:10px;color:var(--t2);line-height:1.7">
+          3 项调课申请已提交至教务处。<br>
+          审批人：李主任 · 通常 2 小时内处理
+        </div>
+        <div style="margin-top:6px;display:flex;gap:4px">
+          <span class="pl" style="background:var(--bg2);color:var(--t2)">变更1 互换 · 待审批</span>
+          <span class="pl" style="background:var(--bg2);color:var(--t2)">变更2 代课 · 待审批</span>
+          <span class="pl" style="background:var(--bg2);color:var(--t2)">变更3 代课 · 待审批</span>
+        </div>
+      </div>
+
+      <p>调课批准后可能需要处理：</p>
+      <div style="margin-top:4px;display:flex;flex-direction:column;gap:4px">
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:6px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">📝</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:500">调整教案时间线</div>
+            <div style="font-size:9px;color:var(--t3)">八(2)班的 SAS 判定原计划周三讲，现改到周四</div>
+          </div>
+          <button class="bt" style="font-size:9px" onclick="alert('@ 引用教案 + 调课申请 → AI 帮助调整时间线')">处理</button>
+        </div>
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:6px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">📋</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:500">给代课老师写进度说明</div>
+            <div style="font-size:9px;color:var(--t3)">刘老师和赵老师需要了解教学进度</div>
+          </div>
+          <button class="bt" style="font-size:9px" onclick="alert('AI 自动生成进度说明草稿')">生成</button>
+        </div>
+        <div style="padding:6px 8px;background:var(--bg2);border-radius:6px;display:flex;align-items:center;gap:6px">
+          <span style="font-size:14px">📅</span>
+          <div style="flex:1">
+            <div style="font-size:10px;font-weight:500">查看调课申请状态</div>
+            <div style="font-size:9px;color:var(--t3)">随时可以通过 @ 引用查看审批进度</div>
+          </div>
+          <button class="bt" style="font-size:9px" onclick="alert('@ 调课申请 #2025-0315-003')">查看</button>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- 模拟审批通知 -->
+    <div style="text-align:center;padding:10px 0"><span style="font-size:9px;color:var(--t3);background:var(--bg2);padding:2px 8px;border-radius:4px">—— 45 分钟后 ——</span></div>
+
+    <div class="msg"><div class="msg-avatar msg-ai">AI</div><div class="msg-body">
+      <div class="status-card" style="border-color:var(--gn)">
+        <div class="status-hd">
+          <span class="pl" style="background:var(--gnbg);color:var(--gn)">已批准</span>
+          <span class="status-id">#2025-0315-003</span>
+        </div>
+        <div style="font-size:10px;color:var(--t2);line-height:1.7">
+          李主任已批准你的调课申请。<br>
+          课表已更新，相关教师和班级已通知。
+        </div>
+        <div style="margin-top:6px;display:flex;gap:4px;flex-wrap:wrap">
+          <span class="pl" style="background:var(--gnbg);color:var(--gn)">✓ 互换 · 王老师已确认</span>
+          <span class="pl" style="background:var(--gnbg);color:var(--gn)">✓ 代课 · 刘老师已确认</span>
+          <span class="pl" style="background:var(--gnbg);color:var(--gn)">✓ 代课 · 赵老师已确认</span>
+        </div>
+      </div>
+    </div></div>
+
+  </div>
+</div>
+</div>
+
+<script>
+function sw(id,el){document.querySelectorAll('.v').forEach(function(v){v.classList.remove('on')});document.getElementById(id).classList.add('on');document.querySelectorAll('nav b').forEach(function(b){b.classList.remove('on')});if(el)el.classList.add('on')}
+</script>
+</body>
+</html>

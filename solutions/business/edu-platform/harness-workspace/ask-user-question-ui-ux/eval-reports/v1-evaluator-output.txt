@@ -1,0 +1,31 @@
+Evaluation complete. Here's the summary:
+
+## V1 Evaluation Results
+
+**总分: 64/100** (just below 65 pass threshold)
+
+### Key Findings
+
+| Dimension | Weight | Score | Weighted |
+|-----------|--------|-------|----------|
+| D1 Chips 行 | 15 | 3/5 (capped) | 9 |
+| D2 选项+交互 | 25 | 3/5 (capped) | 15 |
+| D3 Footer+提交 | 15 | 3/5 (capped) | 9 |
+| D4 Preview 分栏 | 15 | 3/5 (capped) | 9 |
+| D5 面板+状态 | 20 | 3/5 (capped) | 12 |
+| D6 设计系统 | 10 | 5/5 | 10 |
+| **Total** | | | **64** |
+
+### Why the cap?
+
+All D1-D5 dimensions capped at 3/5 because **the AskUserQuestion widget was never rendered in the browser**. The AI skill ("出题组卷") responded with `show_info_card`/`suggest_actions` tools instead of calling `AskUserQuestion`. The component code is actually very well-implemented (code scores: D1-D3 at 5/5, D4-D5 at 4/5, D6 at 5/5 — estimated ~90/100 if uncapped).
+
+### Top 3 Issues
+
+1. **AskUserQuestion tool not triggered by AI Skill** — the component never renders in production
+2. **SubmittedView only shows first question** — page-reload restores only Q1 panel
+3. **Preview split toggles per-tab** — should be static like the prototype
+
+### Critical Next Step
+
+The Generator must ensure the AskUserQuestion tool is actually callable by the AI Skill (SKILL.md config or MCP tool registration) so browser verification can unlock 4/5 and 5/5 scores.

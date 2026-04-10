@@ -1,0 +1,18 @@
+## v4 Evaluation Complete
+
+**总分: 89/100** (up from v3's 86)
+
+### Score breakdown:
+| Dimension | v3 | v4 | Change |
+|-----------|-----|-----|--------|
+| D1: E2E data flow | 4/5 | **5/5** | +4 pts |
+| D2: Default UI | 3/5 | **4/5** | +3 pts |
+| D3: WizardRenderer | 5/5 | 5/5 | — |
+| D4: Tree+DataReview | 5/5 | 5/5 | — |
+| D5: Summary+Submit | 5/5 | 5/5 | — |
+| D6: Lesson plan wizard | 4/5 | **3/5** | -4 pts |
+
+### Critical finding:
+The **double AskUserQuestion bug** is now browser-confirmed. After the wizard submits, the LLM resumes but calls AskUserQuestion again instead of generating a lesson plan. The SKILL.md fix was structurally correct but didn't take effect at runtime (likely cached prompt). This is the single biggest blocker — fixing it would push D6 from 3→5 (+8 pts) for a potential **97-100/100**.
+
+Report written to `eval-reports/v4-eval.md`, progress updated in `progress.md`.

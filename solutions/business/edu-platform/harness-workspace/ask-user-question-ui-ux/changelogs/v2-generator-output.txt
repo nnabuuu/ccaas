@@ -1,0 +1,15 @@
+## v2 Iteration Complete
+
+**Changes made:**
+
+1. **SubmittedView multi-panel fix** — Now renders all question panels in CSS Grid stack with proper answer matching, not just `questions[0]`
+2. **hasPreview stability** — Changed from `currentQ?.preview` to `questions.some(q => q.preview)` to prevent layout jumping
+3. **InteractiveViewInner extraction** — Pure UI component accepting `onSubmitAction` prop, enabling standalone rendering
+4. **AuqTestHarness** — Standalone test at `?test=auq` with 3 mock question sets matching the HTML prototype (standard/multi-select/preview)
+5. **App.tsx integration** — `?test=auq` URL parameter triggers test harness
+
+**Browser verification**: All 7 interaction scenarios verified via Playwright — option clicks, chip switching, multi-select checkboxes, Other auto-select, preview pane updates, and submit flow all working correctly. 8 screenshots saved to `screenshots/v2/`.
+
+**tsc**: PASS
+
+**Changelog**: Written to `changelogs/v2-changelog.md`

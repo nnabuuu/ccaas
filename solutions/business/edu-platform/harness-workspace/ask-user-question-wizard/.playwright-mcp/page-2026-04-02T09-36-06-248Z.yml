@@ -1,0 +1,151 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 17:34" [ref=e817] [cursor=pointer]:
+          - generic [ref=e819]: 帮我备课
+          - generic [ref=e820]: 17:34
+        - button "帮我备课 17:25" [ref=e175] [cursor=pointer]:
+          - generic [ref=e177]: 帮我备课
+          - generic [ref=e178]: 17:25
+        - button "帮我备课 16:29" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 16:29
+      - generic [ref=e33]:
+        - generic [ref=e34]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 分析八(2)班数学学情
+          - generic [ref=e38]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备一下明天的课
+          - generic [ref=e46]: 10:21
+    - generic [ref=e47]:
+      - generic [ref=e48]: 已启用 Skills
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 备
+        - text: 备课助手
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 题
+        - text: 出题组卷
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: 情
+        - text: 学情分析
+      - generic [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]: 错
+        - text: 错题本生成器
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: +
+        - text: 管理 Skills
+    - generic [ref=e59]:
+      - generic [ref=e60]: 八(2)班
+      - generic [ref=e61]: 数学
+      - generic [ref=e62]: 树人中学
+    - button "User menu" [ref=e64] [cursor=pointer]:
+      - generic [ref=e65]: 张
+      - generic [ref=e66]:
+        - generic [ref=e67]: 张老师
+        - generic [ref=e68]: 数学教师 · 树人中学
+      - img [ref=e69]
+  - generic [ref=e760]:
+    - region "Notifications alt+T"
+    - log [ref=e761]:
+      - generic [ref=e762]:
+        - paragraph [ref=e807]: 帮我备课
+        - generic [ref=e809]:
+          - generic [ref=e821]:
+            - img [ref=e823]
+            - generic [ref=e826] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e827]: 84ms
+          - generic [ref=e828]:
+            - generic [ref=e829]:
+              - generic [ref=e830] [cursor=pointer]:
+                - generic [ref=e831]: ✓
+                - generic [ref=e832]: 选择范围
+              - generic [ref=e866] [cursor=pointer]:
+                - generic [ref=e834]: ✓
+                - generic [ref=e835]: 选择章节
+              - generic [ref=e910] [cursor=pointer]:
+                - generic [ref=e837]: "3"
+                - generic [ref=e838]: 学情分析
+              - generic [ref=e929] [cursor=pointer]:
+                - generic [ref=e840]: "4"
+                - generic [ref=e841]: 确认生成
+            - generic [ref=e930]:
+              - table [ref=e932]:
+                - rowgroup [ref=e933]:
+                  - row "知识点 掌握度 重点" [ref=e934]:
+                    - columnheader "知识点" [ref=e935]
+                    - columnheader "掌握度" [ref=e936]
+                    - columnheader "重点" [ref=e937]
+                - rowgroup [ref=e938]:
+                  - row "有理数的加减法 掌握较好 85% 标记" [ref=e939]:
+                    - cell "有理数的加减法 掌握较好" [ref=e940]:
+                      - generic [ref=e941]: 有理数的加减法
+                      - generic [ref=e942]: 掌握较好
+                    - cell "85%" [ref=e943]:
+                      - generic [ref=e947]: 85%
+                    - cell "标记" [ref=e948]:
+                      - button "标记" [ref=e949] [cursor=pointer]
+                  - row "有理数的乘除法 部分同学有困难 72% 标记" [ref=e950]:
+                    - cell "有理数的乘除法 部分同学有困难" [ref=e951]:
+                      - generic [ref=e952]: 有理数的乘除法
+                      - generic [ref=e953]: 部分同学有困难
+                    - cell "72%" [ref=e954]:
+                      - generic [ref=e958]: 72%
+                    - cell "标记" [ref=e959]:
+                      - button "标记" [ref=e960] [cursor=pointer]
+                  - row "整式的概念 掌握优秀 90% 标记" [ref=e961]:
+                    - cell "整式的概念 掌握优秀" [ref=e962]:
+                      - generic [ref=e963]: 整式的概念
+                      - generic [ref=e964]: 掌握优秀
+                    - cell "90%" [ref=e965]:
+                      - generic [ref=e969]: 90%
+                    - cell "标记" [ref=e970]:
+                      - button "标记" [ref=e971] [cursor=pointer]
+                  - row "合并同类项 需要重点复习 58% 已标记" [ref=e972]:
+                    - cell "合并同类项 需要重点复习" [ref=e973]:
+                      - generic [ref=e974]: 合并同类项
+                      - generic [ref=e975]: 需要重点复习
+                    - cell "58%" [ref=e976]:
+                      - generic [ref=e980]: 58%
+                    - cell "已标记" [ref=e981]:
+                      - button "已标记" [ref=e982] [cursor=pointer]
+                  - row "一元一次方程的解法 普遍较弱，建议强化 45% 已标记" [ref=e983]:
+                    - cell "一元一次方程的解法 普遍较弱，建议强化" [ref=e984]:
+                      - generic [ref=e985]: 一元一次方程的解法
+                      - generic [ref=e986]: 普遍较弱，建议强化
+                    - cell "45%" [ref=e987]:
+                      - generic [ref=e991]: 45%
+                    - cell "已标记" [ref=e992]:
+                      - button "已标记" [ref=e993] [cursor=pointer]
+                  - row "方程应用题 审题能力需提升 62% 标记" [ref=e994]:
+                    - cell "方程应用题 审题能力需提升" [ref=e995]:
+                      - generic [ref=e996]: 方程应用题
+                      - generic [ref=e997]: 审题能力需提升
+                    - cell "62%" [ref=e998]:
+                      - generic [ref=e1002]: 62%
+                    - cell "标记" [ref=e1003]:
+                      - button "标记" [ref=e1004] [cursor=pointer]
+              - generic [ref=e1005]: 已标记 2 个重点知识点
+            - generic [ref=e862]:
+              - button "上一步" [ref=e863] [cursor=pointer]
+              - generic [ref=e864]: 3 / 4
+              - button "下一步" [active] [ref=e865] [cursor=pointer]
+          - generic "思考中" [ref=e810]: 正在处理...
+    - generic [ref=e795]:
+      - textbox "Message input" [ref=e796]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e797] [cursor=pointer]:
+          - img [ref=e798]
+        - button "Stop generating" [ref=e815] [cursor=pointer]:
+          - img [ref=e802]

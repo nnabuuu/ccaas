@@ -1,0 +1,106 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e23]:
+      - generic [ref=e24]: 今天
+      - button "分析八(2)班数学学情 11:15" [ref=e25] [cursor=pointer]:
+        - generic [ref=e27]: 分析八(2)班数学学情
+        - generic [ref=e28]: 11:15
+      - button "帮我备一下明天的课 10:32" [ref=e29] [cursor=pointer]:
+        - generic [ref=e31]: 帮我备一下明天的课
+        - generic [ref=e32]: 10:32
+      - button "帮我备一下明天的课 10:21" [ref=e33] [cursor=pointer]:
+        - generic [ref=e35]: 帮我备一下明天的课
+        - generic [ref=e36]: 10:21
+    - generic [ref=e37]:
+      - generic [ref=e38]: 已启用 Skills
+      - generic [ref=e39] [cursor=pointer]:
+        - generic [ref=e40]: 备
+        - text: 备课助手
+      - generic [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: 题
+        - text: 出题组卷
+      - generic [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 情
+        - text: 学情分析
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 错
+        - text: 错题本生成器
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: +
+        - text: 管理 Skills
+    - generic [ref=e49]:
+      - generic [ref=e50]: 八(2)班
+      - generic [ref=e51]: 数学
+      - generic [ref=e52]: 树人中学
+    - button "User menu" [ref=e54] [cursor=pointer]:
+      - generic [ref=e55]: 张
+      - generic [ref=e56]:
+        - generic [ref=e57]: 张老师
+        - generic [ref=e58]: 数学教师 · 树人中学
+      - img [ref=e59]
+  - generic [ref=e63]:
+    - region "Notifications alt+T"
+    - log [ref=e64]:
+      - generic [ref=e65]:
+        - paragraph [ref=e110]: 出题
+        - generic [ref=e111]:
+          - generic [ref=e112]:
+            - generic [ref=e120]:
+              - img [ref=e122]
+              - generic [ref=e125] [cursor=pointer]: 执行技能Skill
+              - generic [ref=e126]: 35ms
+            - generic [ref=e127]:
+              - paragraph [ref=e128]: 好的！我来帮您出题。请先填写以下出题设置：
+              - generic [ref=e130]:
+                - generic [ref=e131]:
+                  - generic [ref=e132]: json
+                  - button "复制代码" [ref=e133] [cursor=pointer]:
+                    - img [ref=e134]
+                    - text: 复制
+                - code [ref=e138]:
+                  - text: "{ \"widget\": \"FormCollect\", \"props\": { \"label\": \"出题设置\", \"submit_action\": \"generate_quiz\", \"submit_label\": \"开始生成\", \"fields\": [ { \"name\": \"question_type\", \"label\": \"题型\", \"type\": \"select\", \"options\": [\"选择题\", \"填空题\", \"解答题\", \"混合出题\"], \"required\":"
+                  - generic [ref=e139]: "true"
+                  - text: "}, { \"name\": \"difficulty\", \"label\": \"难度\", \"type\": \"select\", \"options\": [\"基础\", \"中等\", \"较难\", \"分层（含3个难度）\"], \"required\":"
+                  - generic [ref=e140]: "true"
+                  - text: "}, { \"name\": \"count\", \"label\": \"题目数量\", \"type\": \"number\", \"default\": 5 }, { \"name\": \"time_limit\", \"label\": \"建议用时(分钟)\", \"type\": \"number\", \"default\": 15 } ] } }"
+              - paragraph [ref=e141]: 请告诉我：
+              - list [ref=e142]:
+                - listitem [ref=e143]:
+                  - strong [ref=e144]: 题型
+                  - text: — 选择题 / 填空题 / 解答题 / 混合出题？
+                - listitem [ref=e145]:
+                  - strong [ref=e146]: 难度
+                  - text: — 基础 / 中等 / 较难 / 分层（含3个难度）？
+                - listitem [ref=e147]:
+                  - strong [ref=e148]: 题目数量
+                  - text: — 默认5题，需要调整吗？
+                - listitem [ref=e149]:
+                  - strong [ref=e150]: 建议用时
+                  - text: — 默认15分钟，需要调整吗？
+              - paragraph [ref=e151]:
+                - text: 另外，请告诉我
+                - strong [ref=e152]: 学科和年级
+                - text: （如：初二数学、高一物理），我好获取对应的知识点供您选择。
+          - generic [ref=e154]:
+            - generic [ref=e155]: 刚刚
+            - generic [ref=e156]:
+              - button "复制" [ref=e158] [cursor=pointer]:
+                - img [ref=e159]
+              - tooltip "复制"
+            - generic [ref=e162]:
+              - button "重试" [ref=e164] [cursor=pointer]:
+                - img [ref=e165]
+              - tooltip "重试"
+    - generic [ref=e98]:
+      - textbox "Message input" [active] [ref=e99]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e100] [cursor=pointer]:
+          - img [ref=e101]
+        - button "Send" [disabled] [ref=e168]:
+          - img [ref=e105]

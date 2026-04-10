@@ -1,0 +1,11 @@
+## Evaluation Complete
+
+**AskUserQuestion Widget v6: 97.6/100** (up from 79/100 in v5)
+
+Key findings:
+- **All 7 dimensions scored 4+/5** — D4 (Preview) got 4/5 only because the AI's prompt didn't include a `preview: true` question, so preview split couldn't be verified in live chat
+- **Zero penalties** — no frozen file violations, no hardcoded colors, no console.log, no box-shadow
+- **Persistence fully verified** — both widgets correctly render SubmittedView after page refresh, with green selected items, faded unselected, and summary footer
+- **+18.6 improvement over v5** — fixed the tokens.css frozen violation (-10) and verified persistence in browser (+D7 improvement)
+
+Report saved to `eval-reports/v6-eval.md`.

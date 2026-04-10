@@ -1,0 +1,122 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 01:37" [ref=e214] [cursor=pointer]:
+          - generic [ref=e216]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e217]: 01:37
+        - button "帮我出5道关于全等三角形判定的题 01:18" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 01:18
+      - generic [ref=e29]:
+        - generic [ref=e30]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 分析八(2)班数学学情
+          - generic [ref=e34]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备一下明天的课
+          - generic [ref=e38]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:21
+    - generic [ref=e43]:
+      - generic [ref=e44]: 已启用 Skills
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 备
+        - text: 备课助手
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 题
+        - text: 出题组卷
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 情
+        - text: 学情分析
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 错
+        - text: 错题本生成器
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: +
+        - text: 管理 Skills
+    - generic [ref=e55]:
+      - generic [ref=e56]: 八(2)班
+      - generic [ref=e57]: 数学
+      - generic [ref=e58]: 树人中学
+    - button "User menu" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 张
+      - generic [ref=e62]:
+        - generic [ref=e63]: 张老师
+        - generic [ref=e64]: 数学教师 · 树人中学
+      - img [ref=e65]
+  - generic [ref=e157]:
+    - region "Notifications alt+T"
+    - log [ref=e158]:
+      - generic [ref=e159]:
+        - paragraph [ref=e204]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e206]:
+          - generic [ref=e218]:
+            - img [ref=e220]
+            - generic [ref=e223] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e224]: 75ms
+          - generic [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e229] [cursor=pointer]: 题型
+              - generic [ref=e232] [cursor=pointer]: 难度
+            - generic [ref=e233]:
+              - generic [ref=e234]:
+                - generic [ref=e235]: 请选择题型
+                - generic [ref=e236]:
+                  - generic [ref=e239] [cursor=pointer]:
+                    - generic [ref=e240]: 选择题
+                    - generic [ref=e241]: 单项选择题，适合快速检测
+                  - generic [ref=e244] [cursor=pointer]:
+                    - generic [ref=e245]: 填空题
+                    - generic [ref=e246]: 填写关键结果，考查计算和推理
+                  - generic [ref=e249] [cursor=pointer]:
+                    - generic [ref=e250]: 解答题
+                    - generic [ref=e251]: 需要写出完整证明过程
+                  - generic [ref=e254] [cursor=pointer]:
+                    - generic [ref=e255]: 混合出题
+                    - generic [ref=e256]: 包含多种题型，综合考查
+                - generic [ref=e259] [cursor=pointer]:
+                  - generic [ref=e260]: 或者自定义
+                  - textbox "输入自定义内容..." [ref=e261]
+              - generic:
+                - generic: 请选择难度级别
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 基础
+                      - generic: 直接应用判定定理，适合课堂巩固
+                  - generic:
+                    - generic:
+                      - generic: 中等
+                      - generic: 需要一定推理，适合随堂检测
+                  - generic:
+                    - generic:
+                      - generic: 较难
+                      - generic: 综合运用多个知识点，有一定挑战
+                  - generic:
+                    - generic:
+                      - generic: 分层（含3个难度）
+                      - generic: 从易到难，适合分层教学
+                - generic:
+                  - generic:
+                    - generic: 或者自定义
+                    - textbox "输入自定义内容..."
+            - generic [ref=e262]:
+              - generic [ref=e263]: 0 / 2 已回答
+              - button "确认选择" [disabled] [ref=e264]
+          - generic "思考中" [ref=e207]: 正在处理...
+    - generic [ref=e192]:
+      - textbox "Message input" [active] [ref=e193]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e194] [cursor=pointer]:
+          - img [ref=e195]
+        - button "Stop generating" [ref=e212] [cursor=pointer]:
+          - img [ref=e199]

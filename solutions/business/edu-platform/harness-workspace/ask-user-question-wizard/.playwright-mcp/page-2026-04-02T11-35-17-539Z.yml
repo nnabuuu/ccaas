@@ -1,0 +1,46 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: 即见教育
+      - button "新会话" [ref=e8] [cursor=pointer]:
+        - img [ref=e9]
+    - textbox "搜索会话..." [ref=e11]
+    - generic [ref=e13]: 暂无会话记录
+    - generic [ref=e14]:
+      - generic [ref=e15]: 已启用 Skills
+      - generic [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 备
+        - text: 备课助手
+      - generic [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 题
+        - text: 出题组卷
+      - generic [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: 情
+        - text: 学情分析
+      - generic [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: 错
+        - text: 错题本生成器
+      - generic [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: +
+        - text: 管理 Skills
+    - generic [ref=e26]:
+      - generic [ref=e27]: 八(2)班
+      - generic [ref=e28]: 数学
+      - generic [ref=e29]: 树人中学
+    - button "User menu" [ref=e31] [cursor=pointer]:
+      - generic [ref=e32]: 张
+      - generic [ref=e33]:
+        - generic [ref=e34]: 张老师
+        - generic [ref=e35]: 数学教师 · 树人中学
+      - img [ref=e36]
+  - generic [ref=e40]:
+    - region "Notifications alt+T"
+    - log [ref=e41]
+    - generic [ref=e54]:
+      - textbox "Message input" [ref=e55]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+        - button "Send" [disabled] [ref=e60]:
+          - img [ref=e61]

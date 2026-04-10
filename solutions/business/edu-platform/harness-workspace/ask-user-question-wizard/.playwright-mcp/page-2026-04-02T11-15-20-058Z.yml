@@ -1,0 +1,107 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 19:08" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 19:08
+        - button "帮我备课 18:19" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 18:19
+        - button "帮我备课 18:09" [ref=e33] [cursor=pointer]:
+          - generic [ref=e35]: 帮我备课
+          - generic [ref=e36]: 18:09
+        - button "帮我备课 17:48" [ref=e37] [cursor=pointer]:
+          - generic [ref=e39]: 帮我备课
+          - generic [ref=e40]: 17:48
+        - button "帮我备课 16:29" [ref=e41] [cursor=pointer]:
+          - generic [ref=e43]: 帮我备课
+          - generic [ref=e44]: 16:29
+      - generic [ref=e45]:
+        - generic [ref=e46]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e47] [cursor=pointer]:
+          - generic [ref=e49]: 分析八(2)班数学学情
+          - generic [ref=e50]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: 帮我备一下明天的课
+          - generic [ref=e54]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e55] [cursor=pointer]:
+          - generic [ref=e57]: 帮我备一下明天的课
+          - generic [ref=e58]: 10:21
+    - generic [ref=e59]:
+      - generic [ref=e60]: 已启用 Skills
+      - generic [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: 备
+        - text: 备课助手
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 题
+        - text: 出题组卷
+      - generic [ref=e65] [cursor=pointer]:
+        - generic [ref=e66]: 情
+        - text: 学情分析
+      - generic [ref=e67] [cursor=pointer]:
+        - generic [ref=e68]: 错
+        - text: 错题本生成器
+      - generic [ref=e69] [cursor=pointer]:
+        - generic [ref=e70]: +
+        - text: 管理 Skills
+    - generic [ref=e71]:
+      - generic [ref=e72]: 八(2)班
+      - generic [ref=e73]: 数学
+      - generic [ref=e74]: 树人中学
+    - button "User menu" [ref=e76] [cursor=pointer]:
+      - generic [ref=e77]: 张
+      - generic [ref=e78]:
+        - generic [ref=e79]: 张老师
+        - generic [ref=e80]: 数学教师 · 树人中学
+      - img [ref=e81]
+  - generic [ref=e85]:
+    - region "Notifications alt+T"
+    - log [ref=e86]:
+      - generic [ref=e88]:
+        - generic [ref=e89]: 晚上好，张老师
+        - generic [ref=e90]: 我是你的教学助手
+        - generic [ref=e91]: 第14周 · 八(2)班 · 数学
+        - generic [ref=e92]:
+          - button "备 备课 生成教案和课件，对齐学情" [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: 备
+              - generic [ref=e96]: 备课
+            - generic [ref=e97]: 生成教案和课件，对齐学情
+          - button "题 出题 题库 + AI 原创混合组卷" [ref=e98] [cursor=pointer]:
+            - generic [ref=e99]:
+              - generic [ref=e100]: 题
+              - generic [ref=e101]: 出题
+            - generic [ref=e102]: 题库 + AI 原创混合组卷
+          - button "情 学情 薄弱点分析、趋势对比" [ref=e103] [cursor=pointer]:
+            - generic [ref=e104]:
+              - generic [ref=e105]: 情
+              - generic [ref=e106]: 学情
+            - generic [ref=e107]: 薄弱点分析、趋势对比
+          - button "错 错题本 自动归类学生个人错题" [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]:
+              - generic [ref=e110]: 错
+              - generic [ref=e111]: 错题本
+            - generic [ref=e112]: 自动归类学生个人错题
+        - generic [ref=e113]:
+          - generic [ref=e114]: 试试这样说
+          - button "三角形全等的判定，设计15分钟课堂小测 →" [ref=e115] [cursor=pointer]:
+            - text: 三角形全等的判定，设计15分钟课堂小测
+            - generic [ref=e116]: →
+          - button "对比两个班上周的数学学情 →" [ref=e117] [cursor=pointer]:
+            - text: 对比两个班上周的数学学情
+            - generic [ref=e118]: →
+    - generic [ref=e120]:
+      - textbox "Message input" [ref=e121]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e122] [cursor=pointer]:
+          - img [ref=e123]
+        - button "Send" [disabled] [ref=e126]:
+          - img [ref=e127]

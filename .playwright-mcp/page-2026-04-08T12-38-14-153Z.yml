@@ -1,0 +1,14 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - textbox "输入消息... 按 @ 引用实体" [active] [ref=e6]
+    - button "发送" [ref=e7] [cursor=pointer]
+  - generic [ref=e8]:
+    - button "📝 教案" [ref=e9] [cursor=pointer]:
+      - generic [ref=e10]: 📝
+      - generic [ref=e11]: 教案
+    - button "📖 课标" [ref=e12] [cursor=pointer]:
+      - generic [ref=e13]: 📖
+      - generic [ref=e14]: 课标
+    - button "❓ 题目" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ❓
+      - generic [ref=e17]: 题目

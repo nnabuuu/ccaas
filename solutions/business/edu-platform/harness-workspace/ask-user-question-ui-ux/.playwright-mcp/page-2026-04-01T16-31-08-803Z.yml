@@ -1,0 +1,210 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 00:25" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 00:25
+        - button "帮我出5道全等三角形判定的题 00:03" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我出5道全等三角形判定的题
+          - generic [ref=e32]: 00:03
+      - generic [ref=e33]:
+        - generic [ref=e34]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 分析八(2)班数学学情
+          - generic [ref=e38]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 帮我备一下明天的课
+          - generic [ref=e46]: 10:21
+    - generic [ref=e47]:
+      - generic [ref=e48]: 已启用 Skills
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 备
+        - text: 备课助手
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 题
+        - text: 出题组卷
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: 情
+        - text: 学情分析
+      - generic [ref=e55] [cursor=pointer]:
+        - generic [ref=e56]: 错
+        - text: 错题本生成器
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: +
+        - text: 管理 Skills
+    - generic [ref=e59]:
+      - generic [ref=e60]: 八(2)班
+      - generic [ref=e61]: 数学
+      - generic [ref=e62]: 树人中学
+    - button "User menu" [ref=e64] [cursor=pointer]:
+      - generic [ref=e65]: 张
+      - generic [ref=e66]:
+        - generic [ref=e67]: 张老师
+        - generic [ref=e68]: 数学教师 · 树人中学
+      - img [ref=e69]
+  - generic [ref=e118]:
+    - region "Notifications alt+T"
+    - log [ref=e119]:
+      - generic [ref=e120]:
+        - paragraph [ref=e124]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e125]:
+          - paragraph [ref=e128]: 好的！在生成题目之前，我需要确认几个出题参数：
+          - generic [ref=e130]:
+            - generic [ref=e131]: 10 分钟前
+            - generic [ref=e132]:
+              - button "复制" [ref=e134] [cursor=pointer]:
+                - img [ref=e135]
+              - tooltip "复制"
+            - generic [ref=e138]:
+              - button "重试" [ref=e140] [cursor=pointer]:
+                - img [ref=e141]
+              - tooltip "重试"
+        - paragraph [ref=e147]: 混合出题 · 分层（含3个难度）
+        - generic [ref=e148]:
+          - generic [ref=e150]:
+            - paragraph [ref=e151]:
+              - text: 好的，将为您生成
+              - strong [ref=e152]: 5道全等三角形判定
+              - text: 的混合题型（选择+填空+解答），难度分层（基础→中等→较难）。
+            - separator [ref=e153]
+            - heading "📝 全等三角形判定 · 随堂测验" [level=2] [ref=e154]
+            - paragraph [ref=e155]:
+              - strong [ref=e156]: 建议用时：15分钟 | 满分：30分
+            - separator [ref=e157]
+            - heading "一、选择题（每题3分，共6分）" [level=3] [ref=e158]
+            - paragraph [ref=e159]:
+              - strong [ref=e160]: 1.（基础）
+              - text: 下列条件中，能判定 △ABC ≌ △DEF 的是（ ）
+            - paragraph [ref=e161]: A. AB = DE，BC = EF，AC = DF B. ∠A = ∠D，∠B = ∠E，∠C = ∠F C. AB = DE，BC = EF，∠A = ∠D D. AB = DE，∠A = ∠D，∠B = ∠F
+            - paragraph [ref=e162]:
+              - strong [ref=e163]: 考查知识点：
+              - text: SSS判定定理与常见错误辨析
+              - strong [ref=e164]: 难度：
+              - text: ⭐ 基础
+            - separator [ref=e165]
+            - paragraph [ref=e166]:
+              - strong [ref=e167]: 2.（基础）
+              - text: 如图，已知 AB = CD，AD = CB，则 △ABD ≌ △CDB 的判定依据是（ ）
+            - code [ref=e169]: A ————————— B | ╲ ╱ | | ╲ ╱ | | ╳ | | ╱ ╲ | | ╱ ╲ | D ————————— C
+            - paragraph [ref=e170]: A. SSS B. SAS C. ASA D. AAS
+            - paragraph [ref=e171]:
+              - strong [ref=e172]: 考查知识点：
+              - text: 利用公共边构造SSS
+              - strong [ref=e173]: 难度：
+              - text: ⭐ 基础
+            - separator [ref=e174]
+            - heading "二、填空题（每题4分，共8分）" [level=3] [ref=e175]
+            - paragraph [ref=e176]:
+              - strong [ref=e177]: 3.（中等）
+              - text: 在 △ABC 和 △DEF 中，已知 AB = DE，∠B = ∠E。若要用
+              - strong [ref=e178]: SAS
+              - text: 判定两三角形全等，还需补充条件 ______；若要用
+              - strong [ref=e179]: ASA
+              - text: 判定，则还需补充条件 ______。
+            - paragraph [ref=e180]:
+              - strong [ref=e181]: 考查知识点：
+              - text: SAS与ASA的条件辨析，"夹角"与"夹边"概念
+              - strong [ref=e182]: 难度：
+              - text: ⭐⭐ 中等
+            - separator [ref=e183]
+            - paragraph [ref=e184]:
+              - strong [ref=e185]: 4.（中等）
+              - text: 如图，点 E、F 在线段 BC 上，且 BE = CF，AB = DC，∠B = ∠C。
+            - code [ref=e187]: A D / \ / \ / \ / \ / \ / \ B───E───F───C
+            - paragraph [ref=e188]: 则 △ABE ≌ △DCF，理由是 ______（填判定方法）。由此可得 AE = ______。
+            - paragraph [ref=e189]:
+              - strong [ref=e190]: 考查知识点：
+              - text: SAS判定及全等三角形性质（对应边相等）
+              - strong [ref=e191]: 难度：
+              - text: ⭐⭐ 中等
+            - separator [ref=e192]
+            - heading "三、解答题（共16分）" [level=3] [ref=e193]
+            - paragraph [ref=e194]:
+              - strong [ref=e195]: 5.（较难，16分）
+              - text: 如图，已知 ∠1 = ∠2，∠3 = ∠4，求证：△ABD ≌ △ACD。
+            - code [ref=e197]: A /|\ / | \ / | \ ∠1/ ∠2|∠3 \∠4 / | \ B M C (AM为角平分线所在直线)
+            - paragraph [ref=e198]: 其中 ∠1、∠2 是 ∠BAC 被 AM 分成的两个角，∠3、∠4 分别是 ∠ABD 和 ∠ACD（或由 BD、CD 与 AM 构成的角，具体以题目图形为准）。
+            - paragraph [ref=e199]:
+              - strong [ref=e200]: 要求：
+              - text: 写出完整的证明过程，注明使用的判定方法。
+            - paragraph [ref=e201]:
+              - strong [ref=e202]: 考查知识点：
+              - text: ASA/AAS判定综合运用，逻辑推理与书写规范
+              - strong [ref=e203]: 难度：
+              - text: ⭐⭐⭐ 较难
+            - separator [ref=e204]
+            - heading "✅ 参考答案与解析" [level=2] [ref=e205]
+            - paragraph [ref=e206]:
+              - strong [ref=e207]: （以下为答案区，可裁切分离）
+            - separator [ref=e208]
+            - paragraph [ref=e209]:
+              - strong [ref=e210]: 第1题：A
+            - blockquote [ref=e211]:
+              - paragraph [ref=e212]: A选项满足 SSS（三边对应相等）。B选项三角对应相等不能判定全等（AAA只能说明相似）。C选项两边一角但角不是夹角，不满足SAS。D选项对应关系不正确。
+            - paragraph [ref=e213]:
+              - strong [ref=e214]: 第2题：A（SSS）
+            - blockquote [ref=e215]:
+              - paragraph [ref=e216]: AB = CD（已知），AD = CB（已知），BD = DB（公共边），∴ 由 SSS 判定 △ABD ≌ △CDB。
+            - paragraph [ref=e217]:
+              - strong [ref=e218]: 第3题：
+            - list [ref=e219]:
+              - listitem [ref=e220]:
+                - text: 用SAS：还需补充
+                - strong [ref=e221]: BC = EF
+                - text: （∠B的夹边）
+              - listitem [ref=e222]:
+                - text: 用ASA：还需补充
+                - strong [ref=e223]: ∠A = ∠D
+                - text: （AB边的另一端角）
+            - blockquote [ref=e224]:
+              - paragraph [ref=e225]: SAS要求"两边及其夹角"，已知∠B = ∠E为夹角，AB = DE为一边，需补另一夹边BC = EF。ASA要求"两角及其夹边"，AB = DE为夹边，已知一角∠B = ∠E，需补夹边另一端角∠A = ∠D。
+            - paragraph [ref=e226]:
+              - strong [ref=e227]: 第4题：SAS；AE = DF
+            - blockquote [ref=e228]:
+              - paragraph [ref=e229]: BE = CF（已知），AB = DC（已知），∠B = ∠C（已知），∴ 由SAS判定 △ABE ≌ △DCF。由全等三角形对应边相等，可得 AE = DF。
+            - paragraph [ref=e230]:
+              - strong [ref=e231]: 第5题：证明过程
+            - blockquote [ref=e232]:
+              - paragraph [ref=e233]:
+                - strong [ref=e234]: 证明：
+              - paragraph [ref=e235]: 在 △ABD 和 △ACD 中，
+              - paragraph [ref=e236]: ∵ ∠1 = ∠2（已知）
+              - paragraph [ref=e237]: AD = AD（公共边）
+              - paragraph [ref=e238]: ∠3 = ∠4（已知）
+              - paragraph [ref=e239]: ∴ △ABD ≌ △ACD（ASA）
+              - paragraph [ref=e240]: 即两角及其夹边对应相等，由 ASA 判定全等。 ∎
+            - separator [ref=e241]
+            - paragraph [ref=e242]:
+              - strong [ref=e243]: 难度分布：
+              - text: 基础2题（第1、2题）| 中等2题（第3、4题）| 较难1题（第5题）
+            - paragraph [ref=e244]:
+              - strong [ref=e245]: 知识点覆盖：
+              - text: SSS、SAS、ASA、AAS 四种判定方法均有涉及，兼顾概念辨析与证明书写能力。
+          - generic [ref=e247]:
+            - generic [ref=e248]: 5 分钟前
+            - generic [ref=e249]:
+              - button "复制" [ref=e251] [cursor=pointer]:
+                - img [ref=e252]
+              - tooltip "复制"
+            - generic [ref=e255]:
+              - button "重试" [ref=e257] [cursor=pointer]:
+                - img [ref=e258]
+              - tooltip "重试"
+    - generic [ref=e262]:
+      - textbox "Message input" [ref=e263]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e264] [cursor=pointer]:
+          - img [ref=e265]
+        - button "Send" [disabled] [ref=e268]:
+          - img [ref=e269]

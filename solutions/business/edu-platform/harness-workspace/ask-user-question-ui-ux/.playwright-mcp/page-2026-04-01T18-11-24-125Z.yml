@@ -1,0 +1,73 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我出5道关于全等三角形判定的题 02:11" [ref=e126] [cursor=pointer]:
+          - generic [ref=e128]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e129]: 02:11
+        - button "帮我出5道关于全等三角形判定的题 01:40" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+          - generic [ref=e28]: 01:40
+      - generic [ref=e29]:
+        - generic [ref=e30]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e31] [cursor=pointer]:
+          - generic [ref=e33]: 分析八(2)班数学学情
+          - generic [ref=e34]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e35] [cursor=pointer]:
+          - generic [ref=e37]: 帮我备一下明天的课
+          - generic [ref=e38]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e39] [cursor=pointer]:
+          - generic [ref=e41]: 帮我备一下明天的课
+          - generic [ref=e42]: 10:21
+    - generic [ref=e43]:
+      - generic [ref=e44]: 已启用 Skills
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 备
+        - text: 备课助手
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 题
+        - text: 出题组卷
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 情
+        - text: 学情分析
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: 错
+        - text: 错题本生成器
+      - generic [ref=e53] [cursor=pointer]:
+        - generic [ref=e54]: +
+        - text: 管理 Skills
+    - generic [ref=e55]:
+      - generic [ref=e56]: 八(2)班
+      - generic [ref=e57]: 数学
+      - generic [ref=e58]: 树人中学
+    - button "User menu" [ref=e60] [cursor=pointer]:
+      - generic [ref=e61]: 张
+      - generic [ref=e62]:
+        - generic [ref=e63]: 张老师
+        - generic [ref=e64]: 数学教师 · 树人中学
+      - img [ref=e65]
+  - generic [ref=e69]:
+    - region "Notifications alt+T"
+    - log [ref=e70]:
+      - generic [ref=e71]:
+        - paragraph [ref=e116]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e118]:
+          - generic [ref=e130]:
+            - img [ref=e132]
+            - generic [ref=e135] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e136]: 52ms
+          - generic "思考中" [ref=e119]: 正在处理...
+    - generic [ref=e104]:
+      - textbox "Message input" [active] [ref=e105]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e106] [cursor=pointer]:
+          - img [ref=e107]
+        - button "Stop generating" [ref=e124] [cursor=pointer]:
+          - img [ref=e111]

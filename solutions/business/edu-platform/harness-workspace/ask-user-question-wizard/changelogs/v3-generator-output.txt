@@ -1,0 +1,14 @@
+v3 Generator iteration complete.
+
+**Summary of v3 changes:**
+
+| Fix | Files | Impact |
+|-----|-------|--------|
+| `request_id` moved inside `response` object in control_response JSON | `cli-process.service.ts` | D1: 3→5, D6: 3→5 (+24 weighted) |
+| Removed `dataEndpoint` from wizard config | `lesson-plan.wizard.ts` | D4: 4→5 (+3 weighted) |
+
+**Key result**: Full E2E flow now works — "帮我备课" → 4-step wizard → submit → LLM resumes → generates complete lesson plan with all parameters. This was the single biggest blocker since v1.
+
+**Estimated score**: 75 → **~94/100** (D2 at 3/5 is the only remaining gap — default UI not specifically browser-tested).
+
+Changelog written to `changelogs/v3-changelog.md`, progress updated in `progress.md`.

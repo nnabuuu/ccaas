@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>即见教育 · Chat 完整布局 (暗色)</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--bg3:#eeeee8;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--purple-bg:#EEEDFE;--purple-t:#3C3489;--teal-bg:#E1F5EE;--teal-t:#085041;--coral-bg:#FAECE7;--coral-t:#712B13;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg3);color:var(--t1);height:100vh;overflow:hidden}
+
+.shell{display:flex;height:100vh;max-width:1120px;margin:0 auto}
+
+/* ===== Sidebar ===== */
+.side{width:260px;background:var(--bg2);border-right:.5px solid var(--b1);display:flex;flex-direction:column;flex-shrink:0}
+.side-header{padding:14px 16px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;justify-content:space-between}
+.side-logo{font-size:15px;font-weight:600}
+.side-new{width:28px;height:28px;border-radius:7px;border:.5px solid var(--b1);background:var(--bg1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--t2);transition:all .15s}
+.side-new:hover{background:var(--bg3);color:var(--t1)}
+
+.side-search{padding:8px 12px}
+.side-search input{width:100%;padding:7px 10px;border:.5px solid var(--b1);border-radius:8px;font-size:12px;background:var(--bg1);color:var(--t1);font-family:inherit;outline:none}
+.side-search input:focus{border-color:var(--info-t)}
+
+.side-section{padding:10px 12px 4px;font-size:10px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.3px}
+
+.side-scroll{flex:1;overflow-y:auto;padding-bottom:8px}
+.conv{display:flex;align-items:center;gap:8px;padding:8px 12px;margin:1px 8px;border-radius:8px;cursor:pointer;transition:background .1s;font-size:12px}
+.conv:hover{background:var(--bg1)}
+.conv.act{background:var(--bg1);font-weight:500}
+.conv-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.conv-dot.active{background:var(--info-t)}.conv-dot.done{background:var(--t3)}
+.conv-text{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--t1)}
+.conv-time{font-size:10px;color:var(--t3);flex-shrink:0}
+
+.side-skills{border-top:.5px solid var(--b1);padding:8px 0}
+.skill-item{display:flex;align-items:center;gap:8px;padding:6px 12px;margin:1px 8px;border-radius:6px;font-size:11px;color:var(--t2);cursor:pointer;transition:background .1s}
+.skill-item:hover{background:var(--bg1)}
+.skill-icon{width:18px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
+.skill-icon.sol{background:var(--success-bg);color:var(--success-t)}
+.skill-icon.cus{background:var(--coral-bg);color:var(--coral-t)}
+
+.side-avatar{width:28px;height:28px;border-radius:50%;background:var(--info-bg);color:var(--info-t);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.side-user{flex:1;min-width:0}
+.side-user-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.side-user-role{font-size:10px;color:var(--t3)}
+
+/* ===== Main ===== */
+.main{flex:1;display:flex;flex-direction:column;background:var(--bg1);min-width:0;position:relative}
+.main-top{padding:10px 20px;border-bottom:.5px solid var(--b1);display:flex;align-items:center}
+.main-title{font-size:14px;font-weight:500;color:var(--t1)}
+
+/* Sidebar footer */
+.side-footer{border-top:.5px solid var(--b1);padding:0;position:relative}
+.sf-user{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;transition:background .1s}
+.sf-user:hover{background:var(--bg1)}
+.user-menu{display:none;position:absolute;bottom:100%;left:8px;right:8px;background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);padding:6px 0;box-shadow:0 4px 16px rgba(0,0,0,.5);margin-bottom:4px}
+.user-menu.open{display:block}
+.um-email{padding:8px 14px;font-size:12px;color:var(--t2)}
+.um-sep{border-top:.5px solid var(--b1);margin:4px 0}
+.um-item{display:flex;align-items:center;gap:10px;padding:8px 14px;font-size:13px;color:var(--t1);cursor:pointer;transition:background .1s}
+.um-item:hover{background:var(--bg2)}
+.um-icon{width:16px;height:16px;color:var(--t2);flex-shrink:0}
+
+/* ===== Landing (new session) ===== */
+.landing{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px 20px}
+.greet{font-size:22px;font-weight:600;margin-bottom:6px}
+.greet-sub{font-size:14px;color:var(--t2);margin-bottom:4px}
+.greet-time{font-size:12px;color:var(--t3);margin-bottom:32px}
+.starter-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:100%;max-width:460px;margin-bottom:28px}
+.starter{background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);padding:14px 16px;cursor:pointer;transition:all .15s}
+.starter:hover{border-color:rgba(255,255,255,.15);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.starter-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.starter-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.starter-name{font-size:13px;font-weight:600}
+.starter-desc{font-size:11px;color:var(--t2);line-height:1.5}
+.prompts{width:100%;max-width:460px}
+.prompts-title{font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:500}
+.prompt{padding:10px 14px;background:var(--bg2);border-radius:var(--r);cursor:pointer;font-size:13px;color:var(--t1);margin-bottom:6px;transition:all .12s;display:flex;align-items:center}
+.prompt:hover{background:var(--bg3)}
+.prompt-arrow{margin-left:auto;color:var(--t3);font-size:11px;flex-shrink:0;transition:transform .15s}
+.prompt:hover .prompt-arrow{transform:translateX(2px);color:var(--t2)}
+
+/* ===== Chat view (active session) ===== */
+.chat-body{flex:1;overflow-y:auto;padding:20px 24px 8px;display:flex;flex-direction:column;gap:16px}
+.msg{max-width:85%;line-height:1.65}
+.msg.user{align-self:flex-end}
+.msg.ai{align-self:flex-start;max-width:100%}
+.bu{background:var(--t1);color:var(--bg1);padding:10px 16px;border-radius:18px 18px 4px 18px;font-size:14px}
+.ba{font-size:14px;color:var(--t1)}
+.sk{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:10px;background:var(--success-bg);color:var(--success-t);margin-bottom:6px}
+.skd{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* Inline widget in chat */
+.iw{border:.5px solid var(--b1);border-radius:var(--rl);background:var(--bg1);margin:8px 0;overflow:hidden}
+.iw-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:.5px solid var(--b1)}
+.iw-title{font-size:13px;font-weight:600}
+.iw-badge{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--info-bg);color:var(--info-t)}
+.iw-body{padding:14px}
+.iw-steps{display:flex;gap:4px;margin-bottom:14px}
+.iw-step{flex:1;text-align:center;padding:7px 0;font-size:11px;color:var(--t3);border-bottom:2px solid #3a3a38}
+.iw-step.act{color:var(--t1);font-weight:600;border-color:var(--t1)}
+.iw-step.done{color:var(--success-t);border-color:var(--success-t)}
+.iw-row{display:flex;gap:10px;margin-bottom:10px}
+.iw-field{flex:1}
+.iw-label{font-size:11px;color:var(--t2);margin-bottom:4px;font-weight:500}
+.iw-sel{width:100%;padding:8px 10px;border:.5px solid var(--b1);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);font-family:inherit;outline:none;transition:border-color .15s}
+.iw-sel:focus{border-color:var(--info-t)}
+.iw-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.iw-btn{font-size:12px;padding:7px 16px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.iw-btn:hover{background:var(--bg2)}
+.iw-btn.pri{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.iw-btn.pri:hover{opacity:.9}
+.iw-tree{border:.5px solid var(--b1);border-radius:var(--rl);padding:10px 14px;font-size:12px;color:var(--t2);max-height:160px;overflow-y:auto}
+.iw-tree div{padding:3px 0}
+.iw-tree .indent{padding-left:18px}
+.iw-tree .on{color:var(--t1);font-weight:600}
+.iw-bar{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px}
+.iw-bar:not(:last-of-type){border-bottom:.5px solid rgba(0,0,0,.04)}
+.iw-bar-name{width:100px;flex-shrink:0}
+.iw-bar-track{flex:1;height:6px;background:#333331;border-radius:3px;overflow:hidden}
+.iw-bar-fill{height:100%;border-radius:3px}
+.iw-bar-pct{width:36px;text-align:right;font-weight:600;font-size:11px}
+.iw-bar-tog{width:16px;height:16px;border-radius:3px;border:1.5px solid #4a4a48;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;flex-shrink:0;transition:all .15s}
+.iw-bar-tog.on{background:var(--warn-bg);border-color:var(--warn-t);color:var(--warn-t)}
+.iw-summary{background:var(--bg2);border-radius:var(--r);padding:12px 14px;margin-bottom:10px}
+.iw-sum-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+.iw-sum-k{color:var(--t2)}.iw-sum-v{font-weight:600}
+.iw-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:8px;margin:2px;background:var(--warn-bg);color:var(--warn-t);font-weight:500}
+
+/* ===== Floating input bar ===== */
+.input-wrap{padding:0 20px 16px;position:relative}
+.input-box-float{background:var(--bg1);border:.5px solid var(--b1);border-radius:16px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.input-row{display:flex;align-items:flex-end;gap:8px}
+.input-field{flex:1;padding:6px 8px;border:none;font-size:14px;background:transparent;color:var(--t1);font-family:inherit;outline:none;resize:none;line-height:1.5;max-height:120px}
+.input-field::placeholder{color:var(--t3)}
+.send{width:32px;height:32px;border-radius:10px;border:none;background:var(--t1);color:var(--bg1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;transition:opacity .15s;margin-bottom:1px}
+.send:hover{opacity:.85}
+.send:disabled{opacity:.25;cursor:default}
+.input-tools-row{display:flex;align-items:center;gap:4px;padding-top:4px}
+.input-tool{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.input-tool:hover{background:var(--bg2);color:var(--t2)}
+.input-tool svg{width:16px;height:16px}
+.send:hover{opacity:.85}
+.input-hint{font-size:10px;color:var(--t3);text-align:center;margin-top:6px}
+
+.view{display:none;flex-direction:column;flex:1}.view.vis{display:flex}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <div class="side">
+    <div class="side-header">
+      <span class="side-logo">即见教育</span>
+      <button class="side-new" title="新会话" onclick="showLanding()">+</button>
+    </div>
+    <div class="side-search"><input placeholder="搜索会话..." /></div>
+
+    <div class="side-scroll">
+      <div class="side-section">今天</div>
+      <div class="conv act" onclick="showChat(0)"><span class="conv-dot active"></span><span class="conv-text">新会话</span></div>
+
+      <div class="side-section">昨天</div>
+      <div class="conv" onclick="showChat(1)"><span class="conv-dot active"></span><span class="conv-text">12.1 全等三角形 — 教案生成</span><span class="conv-time">15:30</span></div>
+      <div class="conv" onclick="showChat(2)"><span class="conv-dot done"></span><span class="conv-text">八(2)班第13周学情分析</span><span class="conv-time">10:22</span></div>
+
+      <div class="side-section">本周</div>
+      <div class="conv" onclick="showChat(3)"><span class="conv-dot done"></span><span class="conv-text">第11章单元测试 — 组卷</span><span class="conv-time">周一</span></div>
+      <div class="conv" onclick="showChat(4)"><span class="conv-dot done"></span><span class="conv-text">八(2)班第12周错题整理</span><span class="conv-time">周一</span></div>
+      <div class="conv" onclick="showChat(5)"><span class="conv-dot done"></span><span class="conv-text">11.3 多边形内角和 — 备课</span><span class="conv-time">上周五</span></div>
+      <div class="conv" onclick="showChat(6)"><span class="conv-dot done"></span><span class="conv-text">家长会发言稿</span><span class="conv-time">上周四</span></div>
+
+      <div class="side-section">已启用 Skills</div>
+      <div class="side-skills">
+        <div class="skill-item"><div class="skill-icon sol">备</div>备课助手</div>
+        <div class="skill-item"><div class="skill-icon sol">题</div>出题组卷</div>
+        <div class="skill-item"><div class="skill-icon sol">情</div>学情分析</div>
+        <div class="skill-item"><div class="skill-icon cus">错</div>错题本生成器</div>
+        <div class="skill-item" style="color:var(--t3)"><div class="skill-icon" style="background:var(--bg3);color:var(--t3)">+</div>管理 Skills</div>
+      </div>
+    </div>
+
+    <div class="side-footer">
+      <div class="sf-user" onclick="document.getElementById('userMenu').classList.toggle('open')">
+        <div class="side-avatar">张</div>
+        <div class="side-user">
+          <div class="side-user-name">张明</div>
+          <div class="side-user-role">数学教师 · 树人中学</div>
+        </div>
+        <svg style="width:12px;height:12px;color:var(--t3);flex-shrink:0" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="user-menu" id="userMenu">
+        <div class="um-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="afd5c7cec1c8c2c6c1c8efdcc7daddcac181cacbda81ccc1">[email&#160;protected]</a></div>
+        <div class="um-sep"></div>
+        <div class="um-item" onclick="alert('设置：教案模板、默认参数、输出格式偏好')"><svg class="um-icon" viewBox="0 0 16 16"><path d="M8 10a2 2 0 100-4 2 2 0 000 4z" fill="currentColor"/><path d="M13.3 6.8l-.8-.5.1-.9a6 6 0 00-1-1.7l-.7.4-.8-.5V2.8a6 6 0 00-2-.4v.9l-.8.5-.8-.5a6 6 0 00-1.7 1l.4.7-.5.8H3.8a6 6 0 00-.3 1h.8l.5.8-.5.8a6 6 0 001 1.7l.7-.4.8.5v.8a6 6 0 002 .3v-.8l.8-.5.8.5a6 6 0 001.7-1l-.4-.7.5-.8h.8a6 6 0 00.3-1h-.8l-.5-.8z" fill="none" stroke="currentColor" stroke-width=".8"/></svg>设置</div>
+        <div class="um-item" onclick="alert('导出近期生成的文件')"><svg class="um-icon" viewBox="0 0 16 16"><path d="M8 2v8m-3-3l3 3 3-3M3 12h10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>导出记录</div>
+        <div class="um-item" onclick="alert('帮助文档')"><svg class="um-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 6a1.5 1.5 0 012.8.8c0 1-1.3 1-1.3 2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".6" fill="currentColor"/></svg>帮助</div>
+        <div class="um-sep"></div>
+        <div class="um-item" onclick="alert('退出登录')"><svg class="um-icon" viewBox="0 0 16 16"><path d="M6 2H4a1 1 0 00-1 1v10a1 1 0 001 1h2M10.5 12l3.5-4-3.5-4M14 8H7" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>退出登录</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main area -->
+  <div class="main">
+    <div class="main-top">
+      <span class="main-title" id="mainTitle">新会话</span>
+    </div>
+
+    <!-- View: Landing -->
+    <div class="view vis" id="v-landing">
+      <div class="landing">
+        <div class="greet" id="greet"></div>
+        <div class="greet-sub">我是你的教学助手</div>
+        <div class="greet-time" id="greetTime"></div>
+
+        <div class="starter-cards">
+          <div class="starter" onclick="sendMsg('帮我备一下明天的课')">
+            <div class="starter-top"><div class="starter-icon" style="background:var(--teal-bg);color:var(--teal-t)">备</div><span class="starter-name">备课</span></div>
+            <div class="starter-desc">生成教案和课件，对齐学情</div>
+          </div>
+          <div class="starter" onclick="sendMsg('帮我出一套随堂测试')">
+            <div class="starter-top"><div class="starter-icon" style="background:var(--info-bg);color:var(--info-t)">题</div><span class="starter-name">出题</span></div>
+            <div class="starter-desc">题库 + AI 原创混合组卷</div>
+          </div>
+          <div class="starter" onclick="sendMsg('看一下学情数据')">
+            <div class="starter-top"><div class="starter-icon" style="background:var(--purple-bg);color:var(--purple-t)">情</div><span class="starter-name">学情</span></div>
+            <div class="starter-desc">薄弱点分析、趋势对比</div>
+          </div>
+          <div class="starter" onclick="sendMsg('帮学生整理错题')">
+            <div class="starter-top"><div class="starter-icon" style="background:var(--coral-bg);color:var(--coral-t)">错</div><span class="starter-name">错题本</span></div>
+            <div class="starter-desc">自动归类学生个人错题</div>
+          </div>
+        </div>
+
+        <div class="prompts">
+          <div class="prompts-title">试试这样说</div>
+          <div class="prompt" onclick="sendMsg('三角形全等的判定，设计15分钟课堂小测')">三角形全等的判定，设计15分钟课堂小测<span class="prompt-arrow">&#8594;</span></div>
+          <div class="prompt" onclick="sendMsg('对比两个班上周的数学学情')">对比两个班上周的数学学情<span class="prompt-arrow">&#8594;</span></div>
+        </div>
+      </div>
+
+      <div class="input-wrap">
+        <div class="input-box-float">
+          <div class="input-row">
+            <textarea class="input-field" id="inp1" rows="1" placeholder="描述你的需求..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg(this.value)}" oninput="autoGrow(this)"></textarea>
+            <button class="send" onclick="sendMsg(document.getElementById('inp1').value)">&#8593;</button>
+          </div>
+          <div class="input-tools-row">
+            <button class="input-tool" title="附件"><svg viewBox="0 0 16 16"><path d="M8 1v10M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" transform="rotate(180 8 8)"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View: Active chat -->
+    <div class="view" id="v-chat">
+      <div class="chat-body" id="chatBody"></div>
+      <div class="input-wrap">
+        <div class="input-box-float">
+          <div class="input-row">
+            <textarea class="input-field" id="inp2" rows="1" placeholder="继续对话..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addUserMsg(this.value)}" oninput="autoGrow(this)"></textarea>
+            <button class="send" onclick="addUserMsg(document.getElementById('inp2').value)">&#8593;</button>
+          </div>
+          <div class="input-tools-row">
+            <button class="input-tool" title="附件"><svg viewBox="0 0 16 16"><path d="M8 1v10M3 6l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" transform="rotate(180 8 8)"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+const hour=new Date().getHours();
+const g=hour<6?'夜深了，张老师':hour<12?'早上好，张老师':hour<14?'中午好，张老师':hour<18?'下午好，张老师':'晚上好，张老师';
+document.getElementById('greet').textContent=g;
+document.getElementById('greetTime').textContent='第14周 · 还有2周期末考试';
+
+const demoChats={
+  1:[{r:'user',t:'帮我备一下12.1全等三角形'},{r:'ai',s:'备课助手',t:'好的，已为八(2)班准备了12.1全等三角形的教案。该节主要介绍全等三角形的定义和性质...'}],
+  2:[{r:'user',t:'看一下八(2)班第13周学情'},{r:'ai',s:'学情分析',t:'八(2)班第13周学情概览：作业完成率 85%，平均正确率 74%。主要薄弱点在三角形内角和定理的应用...'}],
+};
+
+function showLanding(){
+  document.getElementById('v-landing').classList.add('vis');
+  document.getElementById('v-chat').classList.remove('vis');
+  document.getElementById('mainTitle').textContent='新会话';
+  document.querySelectorAll('.conv').forEach(c=>c.classList.remove('act'));
+  document.querySelector('.conv').classList.add('act');
+}
+
+function showChat(idx){
+  document.getElementById('v-landing').classList.remove('vis');
+  document.getElementById('v-chat').classList.add('vis');
+  document.querySelectorAll('.conv').forEach(c=>c.classList.remove('act'));
+  const convs=document.querySelectorAll('.conv');
+  convs[idx].classList.add('act');
+  const title=convs[idx].querySelector('.conv-text').textContent;
+  document.getElementById('mainTitle').textContent=title;
+  const msgs=demoChats[idx]||[{r:'ai',t:'(会话内容加载中...)'}];
+  renderMsgs(msgs);
+}
+
+function sendMsg(text){
+  if(!text||!text.trim())return;
+  document.getElementById('v-landing').classList.remove('vis');
+  document.getElementById('v-chat').classList.add('vis');
+  document.getElementById('mainTitle').textContent=text.slice(0,20)+(text.length>20?'...':'');
+
+  const body=document.getElementById('chatBody');
+  body.innerHTML=`
+    <div class="msg user"><div class="bu">${esc(text)}</div></div>
+    <div class="msg ai">
+      <div class="sk"><span class="skd"></span>备课助手</div>
+      <div class="ba">
+        好的，请先选择班级和学科，我再为你准备备课方案。
+        <div class="iw">
+          <div class="iw-head"><span class="iw-title">备课向导</span><span class="iw-badge">StepWizard</span></div>
+          <div class="iw-body">
+            <div class="iw-steps" id="wizSteps"></div>
+            <div id="wizPanel"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('inp1').value='';
+  wizStep=0;wizData={cls:'',subj:'',grade:'',type:'new',dur:'45',chapters:[],gaps:[]};
+  renderWiz();
+}
+
+let wizStep=0;
+let wizData={cls:'',subj:'',grade:'',type:'new',dur:'45',chapters:[],gaps:[]};
+const wizNames=['选择范围','选择章节','学情分析','确认生成'];
+const chapTree={'ch12':{l:'第12章 全等三角形',ch:{'12.1':'12.1 全等三角形','12.2':'12.2 三角形全等的判定','12.3':'12.3 角的平分线的性质'}},'ch13':{l:'第13章 轴对称',ch:{'13.1':'13.1 轴对称','13.2':'13.2 画轴对称图形'}}};
+const gapBank={'12.2':[{k:'SSS 判定',r:42},{k:'SAS 判定',r:35},{k:'ASA/AAS',r:28}],'12.3':[{k:'角平分线逆定理',r:38}]};
+
+function renderWiz(){
+  document.getElementById('wizSteps').innerHTML=wizNames.map((n,i)=>
+    `<div class="iw-step${i===wizStep?' act':i<wizStep?' done':''}" onclick="wizGo(${i})">${i<wizStep?'&#10003; ':''}${n}</div>`
+  ).join('');
+  const p=document.getElementById('wizPanel');
+  if(wizStep===0) renderWiz0(p);
+  else if(wizStep===1) renderWiz1(p);
+  else if(wizStep===2) renderWiz2(p);
+  else renderWiz3(p);
+}
+function wizGo(n){if(n<=wizStep)wizStep=n;renderWiz()}
+
+function renderWiz0(p){
+  p.innerHTML=`
+    <div class="iw-row">
+      <div class="iw-field"><div class="iw-label">学科</div><select class="iw-sel" onchange="wizData.subj=this.value"><option value="">请选择</option><option value="math">数学</option><option value="chinese">语文</option><option value="english">英语</option><option value="physics">物理</option></select></div>
+      <div class="iw-field"><div class="iw-label">年级学期</div><select class="iw-sel" onchange="wizData.grade=this.value"><option value="">请选择</option><option value="G7-1">七年级上</option><option value="G7-2">七年级下</option><option value="G8-1">八年级上</option><option value="G8-2">八年级下</option></select></div>
+    </div>
+    <div class="iw-row">
+      <div class="iw-field"><div class="iw-label">班级</div><select class="iw-sel" onchange="wizData.cls=this.value"><option value="">请选择</option><option value="八(1)班">八(1)班</option><option value="八(2)班">八(2)班</option><option value="八(3)班">八(3)班</option><option value="八(4)班">八(4)班</option></select></div>
+      <div class="iw-field"><div class="iw-label">课型</div><select class="iw-sel" onchange="wizData.type=this.value"><option value="new">新授课</option><option value="review">复习课</option><option value="exercise">练习课</option></select></div>
+      <div class="iw-field"><div class="iw-label">课时</div><select class="iw-sel" onchange="wizData.dur=this.value"><option value="40">40 分钟</option><option value="45" selected>45 分钟</option><option value="90">90 分钟</option></select></div>
+    </div>
+    <div class="iw-actions"><button class="iw-btn pri" onclick="onWiz0Next()">选择章节 &#8594;</button></div>`;
+}
+function onWiz0Next(){
+  if(!wizData.subj||!wizData.grade||!wizData.cls){alert('请先选择学科、年级和班级');return}
+  wizStep=1;renderWiz();
+}
+
+function renderWiz1(p){
+  let h='<div class="iw-tree">';
+  for(const[cid,ch]of Object.entries(chapTree)){
+    h+=`<div style="font-weight:500;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">${ch.l}</div><div>`;
+    for(const[sid,lbl]of Object.entries(ch.ch)){
+      const on=wizData.chapters.includes(sid);
+      h+=`<div class="indent${on?' on':''}" style="cursor:pointer" onclick="wizTogCh('${sid}')">${on?'&#9745; ':'&#9744; '}${lbl}</div>`;
+    }
+    h+=`</div>`;
+  }
+  h+='</div>';
+  if(wizData.chapters.length) h+=`<div style="font-size:11px;color:var(--t3);margin-top:6px">已选: ${wizData.chapters.join(', ')}</div>`;
+  h+=`<div class="iw-actions"><button class="iw-btn" onclick="wizGo(0)">&larr; 上一步</button><button class="iw-btn pri" onclick="wizStep=2;renderWiz()"${wizData.chapters.length?'':' disabled'}>查看学情 &#8594;</button></div>`;
+  p.innerHTML=h;
+}
+function wizTogCh(sid){const i=wizData.chapters.indexOf(sid);if(i>=0)wizData.chapters.splice(i,1);else wizData.chapters.push(sid);renderWiz1(document.getElementById('wizPanel'))}
+
+function renderWiz2(p){
+  let gaps=[];wizData.chapters.forEach(s=>{if(gapBank[s])gaps.push(...gapBank[s])});
+  if(!gaps.length)gaps=[{k:'(暂无数据)',r:0}];
+  wizData.gaps=gaps.map(g=>({...g,em:g.r>=30}));
+  let h='<div style="font-size:11px;color:var(--t3);margin-bottom:8px">'+wizData.cls+' 近 30 天错题数据 · 点 ! 标记重点</div>';
+  wizData.gaps.forEach((g,i)=>{
+    const c=g.r>=35?'var(--danger-t)':g.r>=25?'var(--warn-t)':'var(--success-t)';
+    h+=`<div class="iw-bar"><span class="iw-bar-name">${g.k}</span><div class="iw-bar-track"><div class="iw-bar-fill" style="width:${g.r}%;background:${c}"></div></div><span class="iw-bar-pct" style="color:${c}">${g.r}%</span><span class="iw-bar-tog${g.em?' on':''}" onclick="wizData.gaps[${i}].em=!wizData.gaps[${i}].em;renderWiz2(document.getElementById('wizPanel'))">${g.em?'!':''}</span></div>`;
+  });
+  h+=`<div class="iw-actions"><button class="iw-btn" onclick="wizGo(1)">&larr; 上一步</button><button class="iw-btn pri" onclick="wizStep=3;renderWiz()">确认 &#8594;</button></div>`;
+  p.innerHTML=h;
+}
+
+function renderWiz3(p){
+  const subjMap={math:'数学',chinese:'语文',english:'英语',physics:'物理'};
+  const typeMap={new:'新授课',review:'复习课',exercise:'练习课'};
+  const em=wizData.gaps.filter(g=>g.em);
+  p.innerHTML=`
+    <div class="iw-summary">
+      <div class="iw-sum-row"><span class="iw-sum-k">学科 / 年级</span><span class="iw-sum-v">${subjMap[wizData.subj]||wizData.subj} · ${wizData.grade}</span></div>
+      <div class="iw-sum-row"><span class="iw-sum-k">班级</span><span class="iw-sum-v">${wizData.cls}</span></div>
+      <div class="iw-sum-row"><span class="iw-sum-k">课型 / 时长</span><span class="iw-sum-v">${typeMap[wizData.type]} · ${wizData.dur} 分钟</span></div>
+      <div class="iw-sum-row"><span class="iw-sum-k">教学内容</span><span class="iw-sum-v">${wizData.chapters.join(', ')}</span></div>
+      <div class="iw-sum-row"><span class="iw-sum-k">重点关注</span><span class="iw-sum-v">${em.length?em.map(g=>`<span class="iw-tag">${g.k} ${g.r}%</span>`).join(''):'无'}</span></div>
+    </div>
+    <div class="iw-actions"><button class="iw-btn" onclick="wizGo(2)">&larr; 上一步</button><button class="iw-btn pri" onclick="onWizSubmit()">生成教案 &#8599;</button></div>`;
+}
+
+function onWizSubmit(){
+  const body=document.getElementById('chatBody');
+  const em=wizData.gaps.filter(g=>g.em);
+  body.innerHTML+=`
+    <div class="msg ai">
+      <div class="ba">
+        好的，正在根据 ${wizData.cls} 的学情生成教案${em.length?'，重点关注 '+em.map(g=>g.k).join('、'):''}...
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:10px 14px;border:.5px solid var(--b1);border-radius:8px;background:var(--bg2)">
+          <div style="width:36px;height:36px;border-radius:8px;background:var(--info-bg);color:var(--info-t);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">.docx</div>
+          <div><div style="font-weight:600;font-size:13px">${wizData.chapters.join(', ')} — 教案</div><div style="font-size:11px;color:var(--t2);margin-top:2px">${wizData.dur} 分钟 · 含课件建议</div></div>
+        </div>
+        <div class="iw-actions" style="margin-top:10px">
+          <button class="iw-btn" onclick="alert('配套练习题')">配套练习题</button>
+          <button class="iw-btn" onclick="alert('生成课件')">生成课件</button>
+        </div>
+      </div>
+    </div>`;
+  body.scrollTop=body.scrollHeight;
+}
+
+function addUserMsg(text){
+  if(!text||!text.trim())return;
+  const body=document.getElementById('chatBody');
+  body.innerHTML+=`<div class="msg user"><div class="bu">${esc(text)}</div></div>`;
+  body.innerHTML+=`<div class="msg ai"><div class="ba">好的，正在处理...</div></div>`;
+  const inp=document.getElementById('inp2');
+  inp.value='';inp.style.height='auto';
+  body.scrollTop=body.scrollHeight;
+}
+
+function autoGrow(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px'}
+
+function renderMsgs(msgs){
+  const body=document.getElementById('chatBody');
+  body.innerHTML=msgs.map(m=>{
+    if(m.r==='user')return`<div class="msg user"><div class="bu">${esc(m.t)}</div></div>`;
+    return`<div class="msg ai">${m.s?`<div class="sk"><span class="skd"></span>${m.s}</div>`:''}<div class="ba">${esc(m.t)}</div></div>`;
+  }).join('');
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;

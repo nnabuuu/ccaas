@@ -1,0 +1,84 @@
+- generic [ref=e3]:
+  - generic [ref=e127]:
+    - generic [ref=e128]:
+      - generic [ref=e129]: 📦
+      - generic [ref=e130]: SAS 概念讲解
+      - button "×" [ref=e131] [cursor=pointer]
+    - generic [ref=e132]: 1 个实体已引用 · 发送时注入上下文
+  - generic [ref=e4]:
+    - generic [ref=e133]:
+      - textbox "🔍 搜索实体..." [active] [ref=e135]: SAS
+      - generic [ref=e183]:
+        - generic [ref=e185] [cursor=pointer]:
+          - generic [ref=e186]: 📝
+          - generic [ref=e187]: SSS/SAS 新授课教案
+        - generic [ref=e189] [cursor=pointer]:
+          - generic [ref=e190]: 📋
+          - generic [ref=e191]: SAS 判定专项练习 · 八(2)班
+        - generic [ref=e192] [cursor=pointer]:
+          - generic [ref=e193]:
+            - generic [ref=e194]: 📎
+            - generic [ref=e195]: SAS判定条件图.png
+          - generic [ref=e196]:
+            - text: └
+            - generic [ref=e197]: 📝 SSS/SAS 新授课教案
+            - generic [ref=e198]: › 📦 SAS 概念讲解
+        - generic [ref=e200] [cursor=pointer]:
+          - generic [ref=e201]: 📖
+          - generic [ref=e202]: 全等三角形的判定（SAS）
+        - generic [ref=e203] [cursor=pointer]:
+          - generic [ref=e204]:
+            - generic [ref=e205]: ❓
+            - generic [ref=e206]: 已知 AB=DE, ∠A=∠D, AC=DF, 求证 △ABC ≌ △DEF (SAS)
+          - generic [ref=e207]:
+            - text: └
+            - generic [ref=e208]: 📖 全等三角形的判定（SAS）
+        - generic [ref=e209] [cursor=pointer]:
+          - generic [ref=e210]:
+            - generic [ref=e211]: ❓
+            - generic [ref=e212]: 求证 △ABC ≌ △DEF (SAS)
+          - generic [ref=e213]:
+            - text: └
+            - generic [ref=e214]: 📖 全等三角形的判定（SAS）
+        - generic [ref=e216] [cursor=pointer]:
+          - generic [ref=e217]: ❓
+          - generic [ref=e218]: 利用 SAS 判定三角形全等的应用题
+        - generic [ref=e219] [cursor=pointer]:
+          - generic [ref=e220]:
+            - generic [ref=e221]: 📐
+            - generic [ref=e222]: SAS 判定随堂练
+          - generic [ref=e223]:
+            - text: └
+            - generic [ref=e224]: 📝 SSS/SAS 新授课教案
+        - generic [ref=e225] [cursor=pointer]:
+          - generic [ref=e226]:
+            - generic [ref=e227]: 📐
+            - generic [ref=e228]: SAS 概念填空
+          - generic [ref=e229]:
+            - text: └
+            - generic [ref=e230]: 📝 SSS/SAS 新授课教案
+        - generic [ref=e231] [cursor=pointer]:
+          - generic [ref=e232]:
+            - generic [ref=e233]: 📅
+            - generic [ref=e234]: 周三第1节 · SSS/SAS · 八(2)班
+          - generic [ref=e235]:
+            - text: └
+            - generic [ref=e236]: 📝 SSS/SAS 新授课教案
+        - generic [ref=e237] [cursor=pointer]:
+          - generic [ref=e238]:
+            - generic [ref=e239]: 📊
+            - generic [ref=e240]: SAS 练习综合分析 · 八(2)班
+          - generic [ref=e241]:
+            - text: └
+            - generic [ref=e242]: 📋 SAS 判定专项练习 · 八(2)班
+    - textbox "输入消息... 按 @ 引用实体" [ref=e5]
+  - generic [ref=e6]:
+    - button "📝 教案" [ref=e7] [cursor=pointer]:
+      - generic [ref=e8]: 📝
+      - generic [ref=e9]: 教案
+    - button "📖 课标" [ref=e10] [cursor=pointer]:
+      - generic [ref=e11]: 📖
+      - generic [ref=e12]: 课标
+    - button "❓ 题目" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: ❓
+      - generic [ref=e15]: 题目

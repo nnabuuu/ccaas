@@ -488,14 +488,13 @@ const timetableSubmitRequestTool: Tool = {
 
 const timetableListMyRequestsTool: Tool = {
   name: 'timetable_list_my_requests',
-  description: '查询当前教师的调课申请列表。teacherId 必须从 sessionContext 获取。可按状态过滤。',
+  description: '查询当前教师的调课申请列表。可按状态过滤。',
   inputSchema: {
     type: 'object' as const,
     properties: {
-      teacherId: { type: 'string', description: '教师ID（必须从 sessionContext.teacherId 获取）' },
+      teacherId: { type: 'string', description: '教师ID' },
       status: { type: 'string', description: '过滤状态: pending/approved/rejected' },
     },
-    required: ['teacherId'],
   },
 };
 
@@ -1042,11 +1041,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       classId: string;
     }>;
 
+    // Swap-aware: vacated original slots should not count as conflicts.
+    // When A↔B swap, both original entries are released before targets are occupied.
+    const vacatedKeys = new Set(
+      changes.map(c => `${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`)
+    );
+    const virtualSchedule = SCHEDULE.filter(entry =>
+      !vacatedKeys.has(`${entry.teacherId}:${entry.day}:${entry.period}`)
+    );
+
     const conflicts: Array<{ type: string; severity: 'soft' | 'hard'; description: string }> = [];
 
     for (const change of changes) {
-      // Hard: target teacher already has a class at target time
-      const targetTeacherBusy = SCHEDULE.find(
+      // Hard: target teacher already has a class at target time (excluding vacated slots)
+      const targetTeacherBusy = virtualSchedule.find(
         e => e.teacherId === change.targetTeacherId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (targetTeacherBusy) {
@@ -1057,8 +1065,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
       }
 
-      // Hard: target class already has a class at target time
-      const classBusy = SCHEDULE.find(
+      // Hard: target class already has a class at target time (excluding vacated slots)
+      const classBusy = virtualSchedule.find(
         e => e.classId === change.classId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (classBusy) {
@@ -1069,7 +1077,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
       }
 
-      // Hard: room event at target time
+      // Hard: room event at target time (external events, unaffected by schedule changes)
       const roomEvent = ROOM_EVENTS.find(
         re => re.day === change.targetDay && re.period === change.targetPeriod
       );
@@ -1081,12 +1089,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
       }
 
-      // Soft: same subject count in class for target day
+      // Soft: same subject count in class for target day (using virtual schedule)
       const originalEntry = SCHEDULE.find(
         e => e.teacherId === change.originalTeacherId && e.day === change.originalDay && e.period === change.originalPeriod
       );
       if (originalEntry) {
-        const sameSubjectCount = SCHEDULE.filter(
+        const sameSubjectCount = virtualSchedule.filter(
           e => e.classId === change.classId && e.day === change.targetDay && e.subject === originalEntry.subject
         ).length;
         if (sameSubjectCount >= 2) {
@@ -1130,7 +1138,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     requestCounter++;
     const now = new Date();
-    // Format: YYYY-MMDD (e.g., "2025-0418"), matches pre-seeded requestId format
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 

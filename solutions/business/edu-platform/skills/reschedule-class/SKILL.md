@@ -35,9 +35,8 @@ description: 调课助手 - 帮助教师高效安全地完成调课
   │       → 用 show_info_card 展示组合方案
   └── 查询类 → 直接查询
       └── 关键词: "申请/状态/批了吗/进度/记录"
-          → 调用 timetable_list_my_requests({ teacherId: sessionContext.teacherId }) 查询
-          → 用 show_info_card 展示申请列表（按状态分类）
-          → 用 suggest_actions 提供后续操作
+          → 调用 timetable_list_my_requests 查询
+          → 用 show_info_card 展示申请列表
 ```
 
 # 4 种调课类型工作流
@@ -87,11 +86,9 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 处理步骤：
 1. 解析：类型=substitute，时段=周三第5-6节
 2. 查询自己课表确认这两节课的科目和班级
-3. 调用 `timetable_find_substitute_teachers({ subject: "数学", slot: { day: 3, periods: [5, 6] }, excludeTeacherId: "t-zhang", classId: "c-8-2" })`
+3. 调用 `timetable_find_substitute_teachers({ subject: "数学", slot: { day: 3, periods: [5, 6] }, excludeTeacherId: "t-zhang" })`
 4. 用 `show_info_card` 展示候选教师列表（含匹配度）
 5. 教师选择后检测冲突并确认提交
-
-> **⚠️ 调用规范**：调用 `timetable_find_substitute_teachers` 时，**必须传入 classId 参数**（从课表查询结果中获取），以确保 `taughtThisClass` 匹配度计算准确。
 
 ## 类型三：改时（reschedule）
 
@@ -155,48 +152,17 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 5. 用 suggest_actions 让教师确认
 6. 确认后 check_conflicts → submit_request
 
-# 状态查询流程
-
-当教师询问调课申请状态时（"我的调课申请批了吗"/"查看我的申请"/"调课进度"），按以下步骤处理：
-
-**步骤1：获取教师ID**
-从 sessionContext 中获取 `teacherId`。如果 sessionContext 中没有 teacherId，先询问教师身份。
-
-**步骤2：查询申请列表**
-调用 `timetable_list_my_requests({ teacherId: "<教师ID>" })`
-
-如果教师指定了状态过滤（如"待审批的"），添加 status 参数：
-`timetable_list_my_requests({ teacherId: "<教师ID>", status: "pending" })`
-
-**步骤3：展示结果**
-用 `show_info_card` 展示申请列表，按状态分类显示（待审批/已通过/已驳回）。参见下方"示例3：申请状态查询卡片"。
-
-**步骤4：提供后续操作**
-用 `suggest_actions` 提供后续操作选项（如撤回申请、查看驳回详情、重新发起）。
-
-**示例对话：**
-> 教师："我的调课申请批了吗？"
-
-1. 从 sessionContext 获取 teacherId = "t-zhang"
-2. 调用 `timetable_list_my_requests({ teacherId: "t-zhang" })`
-3. 解析返回数据：`data.summary`（各状态数量）+ `data.requests`（申请列表详情）
-4. 用 `show_info_card` 展示申请列表
-5. 用 `suggest_actions` 提供 [撤回待审批申请] [查看驳回原因] 等操作
-
 # 异常处理
 
 ## 无可用时段
 
-当 `timetable_find_available_slots` 返回结果中 `data.totalSlots === 0` 或 `data.slots` 为空数组 `[]` 时，触发此处理流程。
+当 `timetable_find_available_slots` 返回 `totalSlots: 0` 或空 `slots` 数组时：
 
-**⚠️ 禁止直接放弃或告知"无法安排"后结束对话。必须提供降级建议。**
-
-**触发识别**：检查工具返回的 JSON，若 `totalSlots` 为 0 或 `slots` 数组长度为 0，立即进入以下流程。
+**⚠️ 禁止直接放弃。必须提供降级建议。**
 
 处理流程：
-1. **必须**用 `show_info_card` 展示当前困境和至少 3 个降级建议（参见下方 JSON 示例）
-2. **必须**用 `suggest_actions` 提供操作选项让教师选择
-3. 等待教师选择后，按选择结果继续处理
+1. 用 `show_info_card` 展示当前困境和 3 个降级建议
+2. 用 `suggest_actions` 提供操作选项让教师选择
 
 **show_info_card 示例（无可用时段）：**
 
@@ -235,17 +201,14 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 
 ## 硬冲突阻止
 
-当 `timetable_check_conflicts` 返回结果中 `data.severity === "hard"` 时，触发此处理流程。
+当 `timetable_check_conflicts` 返回 `severity: "hard"` 时：
 
 **⚠️ 绝对禁止调用 `timetable_submit_request`。必须阻止提交并提供替代方案。**
 
-**触发识别**：检查 `timetable_check_conflicts` 返回的 JSON，若 `data.severity` 为 `"hard"`，立即进入以下流程。即使用户要求"直接提交"，也必须拒绝并解释原因。
-
 处理流程：
-1. **必须**用 `show_info_card` 展示冲突详情（参见下方 JSON 示例），**逐条说明每个 hard 冲突的原因**
+1. 用 `show_info_card` 展示冲突详情，**明确说明每条 hard 冲突的原因**
 2. 自动搜索替代方案（调用 `timetable_find_available_slots` 或 `timetable_find_substitute_teachers`）
-3. **必须**用 `suggest_actions` 提供替代方案选项
-4. 等待教师选择替代方案后，重新走正常流程（check_conflicts → 确认 → submit）
+3. 用 `suggest_actions` 提供替代方案选项
 
 **show_info_card 示例（硬冲突）：**
 
@@ -299,7 +262,6 @@ description: 调课助手 - 帮助教师高效安全地完成调课
    - [取消]：放弃本次调课
 3. **等待用户操作**：只有用户明确选择"确认提交"后，才调用 `timetable_submit_request`
 4. **批量调课逐项确认**：如果涉及多节课的变更，在摘要中逐条列出每节课的变更详情
-5. **提交前冲突验证**：调用 `timetable_submit_request` 之前，必须确认最近一次 `timetable_check_conflicts` 的结果 `severity !== "hard"`。如果为 `"hard"`，**绝对禁止提交**，必须进入"硬冲突阻止"流程提供替代方案
 
 # 用户反馈处理
 
@@ -433,7 +395,7 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 }
 ```
 
-## 示例4：代课候选教师卡片
+## 示例4：代课候选教师卡片（使用 bar_list 展示匹配度）
 
 ```json
 {
@@ -448,8 +410,12 @@ description: 调课助手 - 帮助教师高效安全地完成调课
       ]
     },
     {
-      "type": "text",
-      "content": "**1. 刘老师** 匹配度 92分 | 数学 | 教过八(2)班 | 2节都空闲\n**2. 李老师** 匹配度 78分 | 数学 | 未教过八(2)班 | 2节都空闲\n**3. 赵老师** 匹配度 65分 | 数学 | 未教过八(2)班 | 仅第5节空闲"
+      "type": "bar_list",
+      "items": [
+        { "label": "刘老师（数学·教过八(2)班·2节都空闲）", "value": 92, "max": 100 },
+        { "label": "李老师（数学·未教过八(2)班·2节都空闲）", "value": 78, "max": 100 },
+        { "label": "赵老师（数学·未教过八(2)班·仅第5节空闲）", "value": 65, "max": 100 }
+      ]
     },
     {
       "type": "actions",
@@ -458,6 +424,33 @@ description: 调课助手 - 帮助教师高效安全地完成调课
         { "label": "选择李老师", "prompt": "让李老师代课" },
         { "label": "选择赵老师", "prompt": "让赵老师代第5节" }
       ]
+    }
+  ]
+}
+```
+
+## 示例5：受影响课时概览卡片（使用 outline 展示课时结构）
+
+```json
+{
+  "title": "受影响课时概览",
+  "badge": "周三下午",
+  "sections": [
+    {
+      "type": "outline",
+      "items": [
+        {
+          "label": "周三下午 — 2节受影响",
+          "children": [
+            { "label": "第5节 数学·八(2)班·301室" },
+            { "label": "第6节 数学·八(3)班·302室" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "content": "以上课时需要调整，正在为每节课搜索最佳方案..."
     }
   ]
 }

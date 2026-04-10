@@ -1,0 +1,175 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: 今天
+        - button "帮我备课 19:08" [ref=e170] [cursor=pointer]:
+          - generic [ref=e172]: 帮我备课
+          - generic [ref=e173]: 19:08
+        - button "帮我备课 18:19" [ref=e25] [cursor=pointer]:
+          - generic [ref=e27]: 帮我备课
+          - generic [ref=e28]: 18:19
+        - button "帮我备课 18:09" [ref=e29] [cursor=pointer]:
+          - generic [ref=e31]: 帮我备课
+          - generic [ref=e32]: 18:09
+        - button "帮我备课 17:48" [ref=e33] [cursor=pointer]:
+          - generic [ref=e35]: 帮我备课
+          - generic [ref=e36]: 17:48
+        - button "帮我备课 16:29" [ref=e37] [cursor=pointer]:
+          - generic [ref=e39]: 帮我备课
+          - generic [ref=e40]: 16:29
+      - generic [ref=e41]:
+        - generic [ref=e42]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e43] [cursor=pointer]:
+          - generic [ref=e45]: 分析八(2)班数学学情
+          - generic [ref=e46]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e47] [cursor=pointer]:
+          - generic [ref=e49]: 帮我备一下明天的课
+          - generic [ref=e50]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e51] [cursor=pointer]:
+          - generic [ref=e53]: 帮我备一下明天的课
+          - generic [ref=e54]: 10:21
+    - generic [ref=e55]:
+      - generic [ref=e56]: 已启用 Skills
+      - generic [ref=e57] [cursor=pointer]:
+        - generic [ref=e58]: 备
+        - text: 备课助手
+      - generic [ref=e59] [cursor=pointer]:
+        - generic [ref=e60]: 题
+        - text: 出题组卷
+      - generic [ref=e61] [cursor=pointer]:
+        - generic [ref=e62]: 情
+        - text: 学情分析
+      - generic [ref=e63] [cursor=pointer]:
+        - generic [ref=e64]: 错
+        - text: 错题本生成器
+      - generic [ref=e65] [cursor=pointer]:
+        - generic [ref=e66]: +
+        - text: 管理 Skills
+    - generic [ref=e67]:
+      - generic [ref=e68]: 八(2)班
+      - generic [ref=e69]: 数学
+      - generic [ref=e70]: 树人中学
+    - button "User menu" [ref=e72] [cursor=pointer]:
+      - generic [ref=e73]: 张
+      - generic [ref=e74]:
+        - generic [ref=e75]: 张老师
+        - generic [ref=e76]: 数学教师 · 树人中学
+      - img [ref=e77]
+  - generic [ref=e126]:
+    - region "Notifications alt+T"
+    - log [ref=e127]:
+      - generic [ref=e128]:
+        - paragraph [ref=e177]: 帮我备课
+        - generic [ref=e179]:
+          - generic [ref=e187]:
+            - img [ref=e189]
+            - generic [ref=e192] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e193]: 79ms
+          - generic [ref=e409]:
+            - generic [ref=e410]:
+              - generic [ref=e413] [cursor=pointer]: 学科
+              - generic [ref=e416] [cursor=pointer]: 年级
+              - generic [ref=e419] [cursor=pointer]: 课型
+              - generic [ref=e422] [cursor=pointer]: 学情
+            - generic [ref=e423]:
+              - generic [ref=e424]:
+                - generic [ref=e425]: 您想教哪个学科？
+                - generic [ref=e426]:
+                  - generic [ref=e429] [cursor=pointer]:
+                    - generic [ref=e430]: 数学
+                    - generic [ref=e431]: 初中数学课程
+                  - generic [ref=e434] [cursor=pointer]:
+                    - generic [ref=e435]: 语文
+                    - generic [ref=e436]: 初中语文课程
+                  - generic [ref=e439] [cursor=pointer]:
+                    - generic [ref=e440]: 英语
+                    - generic [ref=e441]: 初中英语课程
+                  - generic [ref=e444] [cursor=pointer]:
+                    - generic [ref=e445]: 物理
+                    - generic [ref=e446]: 初中物理课程
+                - generic [ref=e449] [cursor=pointer]:
+                  - generic [ref=e450]: 或者自定义
+                  - textbox "输入自定义内容..." [ref=e451]
+              - generic:
+                - generic: 您教的是哪个年级？
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 七年级
+                      - generic: 初一
+                  - generic:
+                    - generic:
+                      - generic: 八年级
+                      - generic: 初二
+                  - generic:
+                    - generic:
+                      - generic: 九年级
+                      - generic: 初三
+                - generic:
+                  - generic:
+                    - generic: 或者自定义
+                    - textbox "输入自定义内容..."
+              - generic:
+                - generic: 这节课的课型是什么？
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 新授课
+                      - generic: 讲解新知识点
+                  - generic:
+                    - generic:
+                      - generic: 复习课
+                      - generic: 复习巩固已学内容
+                  - generic:
+                    - generic:
+                      - generic: 练习课
+                      - generic: 以练习为主的课堂
+                  - generic:
+                    - generic:
+                      - generic: 试卷讲评课
+                      - generic: 讲评测试卷
+                - generic:
+                  - generic:
+                    - generic: 或者自定义
+                    - textbox "输入自定义内容..."
+              - generic:
+                - generic: 学生的整体学情水平如何？
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic: 基础薄弱
+                      - generic: 需要从基础抓起
+                  - generic:
+                    - generic:
+                      - generic: 中等水平
+                      - generic: 大部分学生能跟上进度
+                  - generic:
+                    - generic:
+                      - generic: 优秀拔高
+                      - generic: 整体水平较高，需要拓展
+                  - generic:
+                    - generic:
+                      - generic: 分层教学
+                      - generic: 学生水平差异大，需要分层
+                - generic:
+                  - generic:
+                    - generic: 或者自定义
+                    - textbox "输入自定义内容..."
+            - generic [ref=e452]:
+              - generic [ref=e453]: 0 / 4 已回答
+              - button "确认选择" [disabled] [ref=e454]
+          - generic "思考中" [ref=e180]: 正在处理...
+    - generic [ref=e161]:
+      - textbox "Message input" [ref=e162]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e163] [cursor=pointer]:
+          - img [ref=e164]
+        - button "Stop generating" [ref=e185] [cursor=pointer]:
+          - img [ref=e168]

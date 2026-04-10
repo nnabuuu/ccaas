@@ -1,0 +1,24 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e62]:
+        - generic [ref=e63]: 📝
+        - generic [ref=e64]: SSS/SAS 新授课教案
+        - button "×" [ref=e65] [cursor=pointer]
+      - generic [ref=e112]:
+        - generic [ref=e113]: 📋
+        - generic [ref=e114]: SAS 判定专项练习 · 八(2)班
+        - button "×" [ref=e115] [cursor=pointer]
+      - textbox "继续输入..." [ref=e66]
+      - button "发送" [ref=e7] [cursor=pointer]
+    - generic [ref=e67]: 2 个实体已引用 · 发送时注入上下文
+  - generic [ref=e8]:
+    - button "📝 教案" [ref=e9] [cursor=pointer]:
+      - generic [ref=e10]: 📝
+      - generic [ref=e11]: 教案
+    - button "📖 课标" [ref=e12] [cursor=pointer]:
+      - generic [ref=e13]: 📖
+      - generic [ref=e14]: 课标
+    - button "❓ 题目" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: ❓
+      - generic [ref=e17]: 题目

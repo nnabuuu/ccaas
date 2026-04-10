@@ -1,0 +1,23 @@
+## Evaluation Complete — v2
+
+**总分: 100/100** (up from 64/100 in v1)
+
+### Key findings:
+
+- **All 6 dimensions scored 5/5** — every requirement verified via browser interaction with 9 screenshots
+- **Zero penalties** — no hardcoded colors, no console.log, no box-shadow, no frozen file violations
+- **v1 issues resolved**: Test harness (`?test=auq`) solved the browser verification blocker; `SubmittedView` now renders all panels; `hasPreview` uses stable `questions.some()` 
+
+### What changed v1→v2:
+| Issue | v1 Impact | v2 Fix |
+|-------|-----------|--------|
+| Widget couldn't be triggered by AI | D1-D5 capped at 3/5 | `?test=auq` standalone test harness |
+| SubmittedView only rendered Q1 | D5 code 4/5 | Grid-stacked all panels |
+| hasPreview toggled per-tab | D4 code 4/5 | `questions.some()` stable |
+
+### Minor suggestions (not scored):
+1. Add CSS `:hover` effects (inline styles can't do this)
+2. Consider end-to-end AI Skill integration for full pipeline verification
+3. SubmittedView could allow tab browsing (matches prototype as-is)
+
+Report saved to `eval-reports/v2-eval.md`.

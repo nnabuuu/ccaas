@@ -1,0 +1,19 @@
+## v1 Iteration Complete
+
+**Key fix**: Added `triggerHeaders` fallback matching to the wizard registry. When the LLM sends AskUserQuestion with headers like "学科" instead of "备课向导", the system now matches it to the lesson-plan wizard via `findWizardByHeaders()`.
+
+**Verified E2E in browser** — all 4 wizard steps render and function:
+1. **选择范围** — form with 5 dropdowns, sessionContext pre-fills 学科
+2. **选择章节** — tree-select with checkboxes
+3. **学情分析** — data table with mastery % and emphasis toggles
+4. **确认生成** — summary with edit links, submit shows "✓ 向导已完成"
+
+**Files changed** (6 files):
+- `chat-interface/src/components/wizard/registry.ts` — triggerHeaders support + `findWizardByHeaders()`
+- `chat-interface/src/components/wizard/index.ts` — exports
+- `chat-interface/src/index.ts` — library public API
+- `edu-platform/frontend/src/components/AskUserQuestionRenderer.tsx` — fallback wizard lookup
+- `edu-platform/frontend/src/wizards/lesson-plan.wizard.ts` — registered trigger headers
+- `edu-platform/skills/lesson-plan-generator/SKILL.md` — stricter LLM format instructions
+
+**Estimated score**: ~45 → ~72/100. Remaining gaps: D4 control_response E2E backend verification, D6 visual polish.

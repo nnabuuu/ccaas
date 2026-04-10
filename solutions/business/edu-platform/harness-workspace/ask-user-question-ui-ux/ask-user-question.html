@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: AskUserQuestion v4</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--bg3:#eeeee8;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--purple-bg:#EEEDFE;--purple-t:#3C3489;--teal-bg:#E1F5EE;--teal-t:#085041;--coral-bg:#FAECE7;--coral-t:#712B13;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg3);color:var(--t1);display:flex;justify-content:center;padding:24px;min-height:100vh}
+.wrap{width:100%;max-width:680px}
+.wrap>h3{font-size:15px;font-weight:600;color:var(--t2);margin-bottom:8px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:20px;line-height:1.6}
+.section{margin-bottom:36px}
+.section-label{font-size:11px;font-weight:500;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:10px}
+.chat-bg{background:var(--bg2);border-radius:var(--rl);padding:16px;border:.5px solid var(--b1)}
+.msg{max-width:88%;line-height:1.65;margin-bottom:12px}
+.msg.user{margin-left:auto}.msg.ai{margin-right:auto;max-width:100%}
+.bu{background:var(--t1);color:var(--bg1);padding:10px 16px;border-radius:18px 18px 4px 18px;font-size:14px}
+.ba{font-size:14px;color:var(--t1)}
+.sk{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:3px 10px;border-radius:10px;background:var(--success-bg);color:var(--success-t);margin-bottom:6px}
+.skd{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ===== AUQ ===== */
+.auq{border:.5px solid var(--b1);border-radius:var(--rl);background:var(--bg1);margin:10px 0;overflow:hidden}
+
+/* Chips */
+.auq-chips{display:flex;gap:4px;padding:10px 14px;border-bottom:.5px solid var(--b1);background:var(--bg2);flex-wrap:wrap}
+.auq-chip{padding:5px 12px;font-size:12px;color:var(--t3);cursor:pointer;border-radius:20px;border:.5px solid transparent;transition:all .15s;font-weight:500;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.auq-chip:hover{color:var(--t2);background:var(--bg1)}
+.auq-chip.act{color:var(--t1);background:var(--bg1);border-color:var(--b1)}
+.chip-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--t3);transition:background .15s}
+.auq-chip.answered .chip-dot{background:var(--success-t)}
+.chip-val{font-size:10px;color:var(--t3);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none}
+.auq-chip.answered .chip-val{display:block}
+
+/* Panel — height = tallest tab (grid stack, all panels overlap in same cell) */
+.auq-body{display:grid;grid-template-columns:1fr}
+.auq-panel{grid-row:1;grid-column:1;padding:14px;opacity:0;pointer-events:none;transition:opacity .15s}
+.auq-panel.vis{opacity:1;pointer-events:auto}
+
+.auq-q{font-size:14px;font-weight:500;color:var(--t1);margin-bottom:4px}
+.auq-hint{font-size:11px;color:var(--t3);margin-bottom:10px}
+.auq-opts{display:flex;flex-direction:column;gap:6px}
+
+/* Option */
+.auq-opt{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:.5px solid var(--b1);border-radius:var(--r);cursor:pointer;transition:all .15s;background:var(--bg1)}
+.auq-opt:hover{border-color:rgba(0,0,0,.2);background:var(--bg2)}
+.auq-opt.selected{border-color:var(--info-t);background:var(--info-bg)}
+.auq-opt.selected .auq-ind{border-color:var(--info-t);background:var(--info-t)}
+.auq-opt.selected .auq-ind::after{opacity:1}
+
+.auq-ind{width:18px;height:18px;border-radius:50%;border:1.5px solid #c8c7c0;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.auq-ind::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--bg1);opacity:0;transition:opacity .15s}
+.auq-ind.chk{border-radius:4px}
+.auq-ind.chk::after{border-radius:0;background:none;width:8px;height:5px;border-left:2px solid var(--bg1);border-bottom:2px solid var(--bg1);transform:rotate(-45deg) translate(1px,-1px)}
+
+.auq-opt-body{flex:1;min-width:0}
+.auq-opt-label{font-size:13px;font-weight:500;color:var(--t1);display:flex;align-items:center;gap:6px}
+.auq-opt-desc{font-size:11px;color:var(--t2);line-height:1.5;margin-top:2px}
+.auq-rec{font-size:9px;padding:2px 6px;border-radius:6px;background:var(--success-bg);color:var(--success-t);font-weight:500}
+
+/* Other — always visible input */
+.auq-other{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:.5px dashed var(--b1);border-radius:var(--r);transition:all .15s;background:var(--bg1)}
+.auq-other.selected{border-color:var(--info-t);border-style:solid;background:var(--info-bg)}
+.auq-other.selected .auq-ind{border-color:var(--info-t);background:var(--info-t)}
+.auq-other.selected .auq-ind::after{opacity:1}
+.auq-other-body{flex:1;min-width:0}
+.auq-other-label{font-size:11px;color:var(--t3);margin-bottom:4px}
+.auq-other-input{width:100%;padding:7px 10px;border:.5px solid var(--b1);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--t1);font-family:inherit;outline:none;transition:border-color .15s}
+.auq-other-input:focus{border-color:var(--info-t)}
+.auq-other-input::placeholder{color:var(--t3)}
+
+/* Preview split */
+.auq-body.has-preview{grid-template-columns:1fr 1fr}
+.auq-body.has-preview .auq-preview{grid-column:2;grid-row:1}
+.auq-preview{border-left:.5px solid var(--b1);background:var(--bg2);padding:14px;font-family:"SF Mono",Menlo,monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;overflow-y:auto;color:var(--t1)}
+.preview-label{font-family:-apple-system,"SF Pro Text",sans-serif;font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;font-weight:500}
+
+/* Footer */
+.auq-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:.5px solid var(--b1)}
+.auq-progress{font-size:11px;color:var(--t3)}.auq-progress .dn{color:var(--success-t);font-weight:500}
+.auq-btn{font-size:12px;padding:7px 18px;border-radius:var(--r);cursor:pointer;border:none;background:var(--t1);color:var(--bg1);font-family:inherit;font-weight:500;transition:all .15s}
+.auq-btn:hover{opacity:.9}.auq-btn:disabled{opacity:.3;cursor:not-allowed}
+.auq-done{display:none;font-size:11px;color:var(--success-t);font-weight:500}
+
+/* Submitted */
+.auq.submitted .auq-chips{pointer-events:none}
+.auq.submitted .auq-chip{color:var(--t3)}.auq.submitted .auq-chip.act{color:var(--success-t)}
+.auq.submitted .auq-opt,.auq.submitted .auq-other{cursor:default;pointer-events:none}
+.auq.submitted .auq-opt:not(.selected){opacity:.3}
+.auq.submitted .auq-other:not(.selected){opacity:.3}
+.auq.submitted .auq-opt.selected{border-color:var(--success-t);background:var(--success-bg)}
+.auq.submitted .auq-other.selected{border-color:var(--success-t);background:var(--success-bg);border-style:solid}
+.auq.submitted .auq-opt.selected .auq-ind,.auq.submitted .auq-other.selected .auq-ind{border-color:var(--success-t);background:var(--success-t)}
+.auq.submitted .auq-other-input{pointer-events:none;opacity:.7}
+.auq.submitted .auq-footer{background:var(--success-bg)}
+.auq.submitted .auq-btn{display:none}
+.auq.submitted .auq-done{display:block}
+.auq.submitted .auq-progress{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>AskUserQuestion Widget v4</h3>
+<p>
+Chips 切换问题（显示已选值）· 固定高度面板 · 推荐项默认预选 · Other 输入始终可见（打字自动勾选）· 单选自动跳下一个 · Preview 分栏
+</p>
+
+<!-- ===== 示例1: 标准三问（单选，推荐默认选中） ===== -->
+<div class="section">
+<div class="section-label">标准模式: 三个问题，推荐项默认选中，单选自动跳下一题</div>
+<div class="chat-bg">
+  <div class="msg user"><div class="bu">帮我出5道关于全等三角形判定的题</div></div>
+  <div class="msg ai">
+    <div class="sk"><span class="skd"></span>出题组卷</div>
+    <div class="ba">
+      好的，确认几个偏好：
+      <div class="auq" id="auq1">
+        <div class="auq-chips">
+          <div class="auq-chip act answered" onclick="goTab(this,0)"><span class="chip-dot"></span>题型<span class="chip-val">混合出题</span></div>
+          <div class="auq-chip answered" onclick="goTab(this,1)"><span class="chip-dot"></span>难度<span class="chip-val">分层</span></div>
+          <div class="auq-chip answered" onclick="goTab(this,2)"><span class="chip-dot"></span>题量<span class="chip-val">5 题</span></div>
+        </div>
+        <div class="auq-body">
+          <div class="auq-panel vis" data-idx="0">
+            <div class="auq-q">希望生成哪种题型？</div>
+            <div class="auq-opts" data-type="radio">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="混合出题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">混合出题 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">选择题 + 填空题 + 解答题，题型多样，区分度好</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="选择题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">选择题</div><div class="auq-opt-desc">全部单选，适合快速作答和批改</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="填空题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">填空题</div><div class="auq-opt-desc">考查计算和推理能力</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="解答题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">解答题</div><div class="auq-opt-desc">考查完整证明过程</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="例: 3道选择 + 2道填空" oninput="otherTyping(this)" onclick="event.stopPropagation()"></div></div>
+          </div>
+          <div class="auq-panel" data-idx="1">
+            <div class="auq-q">难度设置偏好？</div>
+            <div class="auq-opts" data-type="radio">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="分层"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">分层 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">基础 + 中等 + 较难，有梯度</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="基础"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">基础</div><div class="auq-opt-desc">基本概念和直接应用</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="中等"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">中等</div><div class="auq-opt-desc">需要分析和推理</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="较难"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">较难</div><div class="auq-opt-desc">综合运用，较强逻辑推理</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="例: 难度系数 0.5~0.7" oninput="otherTyping(this)" onclick="event.stopPropagation()"></div></div>
+          </div>
+          <div class="auq-panel" data-idx="2">
+            <div class="auq-q">出多少题？</div>
+            <div class="auq-opts" data-type="radio">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="5 题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">5 题 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">课堂小测，约 15 分钟</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="10 题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">10 题</div><div class="auq-opt-desc">单元练习，约 30 分钟</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="20 题"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">20 题</div><div class="auq-opt-desc">正式测试，约 45 分钟</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="输入题目数量" oninput="otherTyping(this)" onclick="event.stopPropagation()"></div></div>
+          </div>
+        </div>
+        <div class="auq-footer">
+          <div class="auq-progress"><span class="dn">3</span> / 3 已回答</div>
+          <div class="auq-done"></div>
+          <button class="auq-btn" onclick="submitAuq(this)">确认选择</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== 示例2: 多选 ===== -->
+<div class="section">
+<div class="section-label">多选: checkbox + Other 打字自动勾选</div>
+<div class="chat-bg">
+  <div class="msg ai">
+    <div class="sk"><span class="skd"></span>学情分析</div>
+    <div class="ba">
+      生成周报前确认：
+      <div class="auq" id="auq2">
+        <div class="auq-chips">
+          <div class="auq-chip act answered" onclick="goTab(this,0)"><span class="chip-dot"></span>周期<span class="chip-val">本周</span></div>
+          <div class="auq-chip" onclick="goTab(this,1)"><span class="chip-dot"></span>维度<span class="chip-val"></span></div>
+        </div>
+        <div class="auq-body">
+          <div class="auq-panel vis" data-idx="0">
+            <div class="auq-q">报告周期？</div>
+            <div class="auq-opts" data-type="radio">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="本周"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">本周 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">第 14 周数据</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="近两周"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">近两周</div><div class="auq-opt-desc">第 13~14 周对比</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="本月"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">本月</div><div class="auq-opt-desc">整月汇总</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="例: 第10~14周" oninput="otherTyping(this)" onclick="event.stopPropagation()"></div></div>
+          </div>
+          <div class="auq-panel" data-idx="1">
+            <div class="auq-q">包含哪些分析维度？</div>
+            <div class="auq-hint">可多选</div>
+            <div class="auq-opts" data-type="checkbox">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="知识点掌握度"><div class="auq-ind chk"></div><div class="auq-opt-body"><div class="auq-opt-label">知识点掌握度</div><div class="auq-opt-desc">按知识点统计正确率分布</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="完成率趋势"><div class="auq-ind chk"></div><div class="auq-opt-body"><div class="auq-opt-label">完成率趋势</div><div class="auq-opt-desc">作业完成率变化曲线</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="个人排名"><div class="auq-ind chk"></div><div class="auq-opt-body"><div class="auq-opt-label">个人排名变化</div><div class="auq-opt-desc">学生成绩排名波动</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="错题 Top 10"><div class="auq-ind chk"></div><div class="auq-opt-body"><div class="auq-opt-label">错题 Top 10</div><div class="auq-opt-desc">全班错误率最高的题目</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind chk"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="例: 按性别分组对比" oninput="otherTyping(this)" onclick="event.stopPropagation()"></div></div>
+          </div>
+        </div>
+        <div class="auq-footer">
+          <div class="auq-progress"><span class="dn">1</span> / 2 已回答</div>
+          <div class="auq-done"></div>
+          <button class="auq-btn" disabled onclick="submitAuq(this)">确认选择</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== 示例3: Preview 分栏 ===== -->
+<div class="section">
+<div class="section-label">Preview 模式: 左选项 + 右预览，固定高度</div>
+<div class="chat-bg">
+  <div class="msg ai">
+    <div class="sk"><span class="skd"></span>备课助手</div>
+    <div class="ba">
+      选择教案结构：
+      <div class="auq" id="auq3">
+        <div class="auq-chips">
+          <div class="auq-chip act answered" onclick="goTab(this,0)"><span class="chip-dot"></span>教案结构<span class="chip-val">标准新授课</span></div>
+        </div>
+        <div class="auq-body has-preview">
+          <div class="auq-panel vis" data-idx="0">
+            <div class="auq-q">选择教案结构</div>
+            <div class="auq-opts" data-type="radio">
+              <div class="auq-opt selected" onclick="pick(this)" data-val="标准新授课" data-preview="standard"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">标准新授课 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">完整教学流程</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="复习课" data-preview="review"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">复习课</div><div class="auq-opt-desc">知识梳理 + 练习</div></div></div>
+              <div class="auq-opt" onclick="pick(this)" data-val="练习课" data-preview="practice"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">练习课</div><div class="auq-opt-desc">精讲精练为主</div></div></div>
+            </div>
+            <div class="auq-other" onclick="pickOther(this)"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="描述你想要的教案结构..." oninput="otherTyping(this);updatePreview(this,'custom')" onclick="event.stopPropagation()"></div></div>
+          </div>
+          <div class="auq-preview" id="pv3"><div class="preview-label">结构预览</div>
+## 标准新授课模板
+
+├─ 教学目标
+│  └─ 知识、能力、情感
+├─ 重点与难点
+├─ 教学过程 [时间线]
+│  ├─ 复习导入 (5 min)
+│  ├─ 新知讲授 (15 min)
+│  ├─ 例题精讲 (10 min)
+│  ├─ 课堂练习 (10 min)
+│  └─ 小结作业 (5 min)
+├─ 课堂练习 [表格]
+├─ 板书设计
+└─ 课后反思</div>
+        </div>
+        <div class="auq-footer">
+          <div class="auq-progress"><span class="dn">1</span> / 1 已回答</div>
+          <div class="auq-done"></div>
+          <button class="auq-btn" onclick="submitAuq(this)">确认选择</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===== 示例4: 已提交 ===== -->
+<div class="section">
+<div class="section-label">已提交状态</div>
+<div class="chat-bg">
+  <div class="msg ai">
+    <div class="sk"><span class="skd"></span>出题组卷</div>
+    <div class="ba">
+      确认几个偏好：
+      <div class="auq submitted">
+        <div class="auq-chips">
+          <div class="auq-chip act answered"><span class="chip-dot"></span>题型<span class="chip-val">混合出题</span></div>
+          <div class="auq-chip answered"><span class="chip-dot"></span>难度<span class="chip-val">分层</span></div>
+          <div class="auq-chip answered"><span class="chip-dot"></span>题量<span class="chip-val">5 题</span></div>
+        </div>
+        <div class="auq-body">
+          <div class="auq-panel vis">
+            <div class="auq-q">希望生成哪种题型？</div>
+            <div class="auq-opts">
+              <div class="auq-opt selected"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">混合出题 <span class="auq-rec">推荐</span></div><div class="auq-opt-desc">选择题 + 填空题 + 解答题</div></div></div>
+              <div class="auq-opt"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">选择题</div></div></div>
+              <div class="auq-opt"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">填空题</div></div></div>
+              <div class="auq-opt"><div class="auq-ind"></div><div class="auq-opt-body"><div class="auq-opt-label">解答题</div></div></div>
+            </div>
+            <div class="auq-other"><div class="auq-ind"></div><div class="auq-other-body"><div class="auq-other-label">或者自定义</div><input class="auq-other-input" placeholder="例: 3道选择 + 2道填空"></div></div>
+          </div>
+        </div>
+        <div class="auq-footer">
+          <div class="auq-progress"></div>
+          <div class="auq-done">&#10003; 混合出题 · 分层 · 5 题</div>
+          <button class="auq-btn">确认</button>
+        </div>
+      </div>
+      <div style="margin-top:10px">好的，正在生成 5 道混合题型、分层难度的试题...</div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+<script>
+const previews={
+  standard:'## 标准新授课模板\n\n├─ 教学目标\n│  └─ 知识、能力、情感\n├─ 重点与难点\n├─ 教学过程 [时间线]\n│  ├─ 复习导入 (5 min)\n│  ├─ 新知讲授 (15 min)\n│  ├─ 例题精讲 (10 min)\n│  ├─ 课堂练习 (10 min)\n│  └─ 小结作业 (5 min)\n├─ 课堂练习 [表格]\n├─ 板书设计\n└─ 课后反思',
+  review:'## 复习课模板\n\n├─ 复习目标\n├─ 知识网络图\n│  └─ 本单元知识点关系\n├─ 易错题精讲\n│  ├─ 典型错误分析\n│  └─ 归因与纠正\n├─ 当堂检测 [表格]\n│  └─ 基础 + 提升\n└─ 查漏补缺建议',
+  practice:'## 练习课模板\n\n├─ 练习目标\n├─ 分层练习 [时间线]\n│  ├─ 基础巩固 (10 min)\n│  ├─ 能力提升 (15 min)\n│  └─ 拓展挑战 (10 min)\n├─ 典型错题讲评\n└─ 课后分层作业',
+  custom:'## 自定义结构\n\n根据你的输入生成...\n\n请在左侧描述你想要的\n教案结构。'
+};
+
+function goTab(chip,idx){
+  const auq=chip.closest('.auq');
+  if(auq.classList.contains('submitted'))return;
+  auq.querySelectorAll('.auq-chip').forEach(c=>c.classList.remove('act'));
+  chip.classList.add('act');
+  auq.querySelectorAll('.auq-panel').forEach(p=>p.classList.toggle('vis',+p.dataset.idx===idx));
+}
+
+function pick(opt){
+  const auq=opt.closest('.auq');
+  if(auq.classList.contains('submitted'))return;
+  const c=opt.closest('.auq-opts');
+  const type=c.dataset.type;
+  const panel=opt.closest('.auq-panel');
+  const other=panel.querySelector('.auq-other');
+  if(type==='radio'){
+    c.querySelectorAll('.auq-opt').forEach(o=>o.classList.remove('selected'));
+    opt.classList.add('selected');
+    if(other){other.classList.remove('selected');other.querySelector('.auq-other-input').value=''}
+  }else{
+    opt.classList.toggle('selected');
+  }
+  if(opt.dataset.preview){
+    const pre=auq.querySelector('.auq-preview');
+    if(pre)pre.innerHTML='<div class="preview-label">结构预览</div>\n'+(previews[opt.dataset.preview]||'');
+  }
+  sync(auq);
+  if(type==='radio')autoAdvance(auq);
+}
+
+function pickOther(el){
+  const auq=el.closest('.auq');
+  if(auq.classList.contains('submitted'))return;
+  const panel=el.closest('.auq-panel');
+  const opts=panel.querySelector('.auq-opts');
+  const type=opts.dataset.type;
+  if(type==='radio'){
+    opts.querySelectorAll('.auq-opt').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+  }else{
+    el.classList.toggle('selected');
+  }
+  el.querySelector('.auq-other-input').focus();
+  sync(auq);
+}
+
+function otherTyping(input){
+  const other=input.closest('.auq-other');
+  const auq=input.closest('.auq');
+  const panel=input.closest('.auq-panel');
+  const opts=panel.querySelector('.auq-opts');
+  const type=opts.dataset.type;
+  if(input.value.length>0&&!other.classList.contains('selected')){
+    if(type==='radio')opts.querySelectorAll('.auq-opt').forEach(o=>o.classList.remove('selected'));
+    other.classList.add('selected');
+  }
+  if(input.value.length===0&&type==='radio'){
+    other.classList.remove('selected');
+  }
+  sync(auq);
+}
+
+function updatePreview(input,key){
+  const auq=input.closest('.auq');
+  const pre=auq.querySelector('.auq-preview');
+  if(!pre)return;
+  if(input.value.trim()){
+    pre.innerHTML='<div class="preview-label">自定义结构</div>\n根据你的描述:\n\n"'+input.value+'"\n\nAI 将据此生成教案结构。';
+  }else{
+    pre.innerHTML='<div class="preview-label">结构预览</div>\n'+previews.custom;
+  }
+}
+
+function sync(auq){
+  const chips=auq.querySelectorAll('.auq-chip');
+  const panels=auq.querySelectorAll('.auq-panel');
+  let n=0;
+  panels.forEach((p,i)=>{
+    const hasOpt=p.querySelector('.auq-opt.selected');
+    const hasOther=p.querySelector('.auq-other.selected');
+    const answered=!!(hasOpt||hasOther);
+    chips[i].classList.toggle('answered',answered);
+    const valEl=chips[i].querySelector('.chip-val');
+    if(valEl){
+      if(hasOther){
+        const inp=p.querySelector('.auq-other-input');
+        valEl.textContent=inp&&inp.value?inp.value:'自定义';
+      }else if(hasOpt){
+        valEl.textContent=hasOpt.dataset.val||'';
+      }else{
+        valEl.textContent='';
+      }
+    }
+    if(answered)n++;
+  });
+  const prog=auq.querySelector('.auq-progress');
+  if(prog)prog.innerHTML=`<span class="dn">${n}</span> / ${panels.length} 已回答`;
+  const btn=auq.querySelector('.auq-btn');
+  if(btn)btn.disabled=n<panels.length;
+}
+
+function autoAdvance(auq){
+  const panels=auq.querySelectorAll('.auq-panel');
+  const chips=auq.querySelectorAll('.auq-chip');
+  for(let i=0;i<panels.length;i++){
+    if(!panels[i].querySelector('.auq-opt.selected')&&!panels[i].querySelector('.auq-other.selected')){
+      setTimeout(()=>{
+        chips.forEach(c=>c.classList.remove('act'));
+        chips[i].classList.add('act');
+        panels.forEach(p=>p.classList.toggle('vis',+p.dataset.idx===i));
+      },200);
+      return;
+    }
+  }
+}
+
+function submitAuq(btn){
+  const auq=btn.closest('.auq');
+  auq.classList.add('submitted');
+  const sel=[];
+  auq.querySelectorAll('.auq-panel').forEach(p=>{
+    const other=p.querySelector('.auq-other.selected');
+    if(other){
+      const inp=other.querySelector('.auq-other-input');
+      sel.push(inp&&inp.value?inp.value:'自定义');
+    }else{
+      p.querySelectorAll('.auq-opt.selected').forEach(o=>sel.push(o.dataset.val||''));
+    }
+  });
+  auq.querySelector('.auq-done').textContent='\u2713 '+sel.join(' \u00b7 ');
+}
+</script>
+</body>
+</html>

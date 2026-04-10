@@ -1,0 +1,10 @@
+- generic [ref=e4]:
+  - heading "精准教学平台" [level=1] [ref=e5]
+  - paragraph [ref=e6]: 登录账户
+  - generic [ref=e7]:
+    - textbox "用户名" [ref=e8]: teacher
+    - textbox "密码" [active] [ref=e9]: teacher123
+    - button "登录" [ref=e10] [cursor=pointer]
+  - paragraph [ref=e11]:
+    - text: 没有账户？
+    - button "注册" [ref=e12] [cursor=pointer]

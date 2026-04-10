@@ -1,0 +1,21 @@
+Evaluation complete. Here's the summary:
+
+## v4 Evaluation Results: **85/100**
+
+| Dimension | Weight | Score | Weighted |
+|-----------|--------|-------|----------|
+| D1 Chips 行 | 12 | 5/5 | 12.0 |
+| D2 选项+交互 | 22 | 4/5 | 17.6 |
+| D3 Footer+提交 | 12 | 5/5 | 12.0 |
+| D4 Preview 分栏 | 12 | 3/5 | 7.2 |
+| D5 面板+状态 | 17 | 5/5 | 17.0 |
+| D6 设计系统 | 10 | 5/5 | 10.0 |
+| D7 持久化链路 | 15 | 3/5 | 9.0 |
+| Penalties | | | 0 |
+| **Total** | | | **85** |
+
+**Key findings**:
+- D1/D3/D5/D6 scored 5/5 — chips, footer, state management, and design system are excellent
+- D2 scored 4/5 — all interactions work but recommended badge/preselection couldn't be browser-verified (AI didn't send `recommended: true`)
+- D4 scored 3/5 — code looks complete but capped at 3/5 due to no browser verification (no `preview: true` questions from AI)
+- **D7 is the main gap**: code-level changes are correct (`includeToolEvents=true` + reconstruction logic), but after page refresh the SubmittedView does NOT render — the widget is completely absent from the persisted view

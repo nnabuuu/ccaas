@@ -1,0 +1,24 @@
+## V5 完成总结
+
+### 修改文件清单
+
+| 文件 | 变更类型 | 对应维度 |
+|------|---------|---------|
+| `widgets/EduFileCardActions.tsx` | **新增** | D4 |
+| `widget-registry.ts` | 修改 | D4 |
+| `index.css` | 修改 (4处) | D2, D3, D5, 移动端 |
+
+### 核心修复（对应 v4 eval 扣分项）
+
+1. **D4: FileCardActions widget** — 新增 `EduFileCardActions.tsx`，实现 `file-card-actions.html` 原型的文件卡片（类型着色 .docx=蓝/.pdf=珊瑚/.pptx=青/.xlsx=紫）+ Next Actions 按钮行。补全 4/4 widget 实现。
+
+2. **D2: Composer 三态阴影** — 将 `--composer-shadow*` 从 `none` 改为三级递进阴影值，删除 `box-shadow: var(--composer-float-shadow) !important` 硬编码。Tailwind 的 `shadow-composer/hover/focus` 类现在正常工作。
+
+3. **D3: User bubble 18px** — 添加 CSS 覆盖确保用户气泡圆角精确匹配原型 `18px 18px 4px 18px`（Tailwind JIT 未生成 arbitrary value class 导致之前实际为 0px）。
+
+4. **移动端汉堡菜单** — Context bar 仅在桌面端隐藏，移动端保留 hamburger 按钮。
+
+### 验证
+- `tsc --noEmit`: 两个包均通过
+- Browser: Landing page、composer shadow、mobile hamburger 截图验证通过
+- 预期: 86 → 100/100

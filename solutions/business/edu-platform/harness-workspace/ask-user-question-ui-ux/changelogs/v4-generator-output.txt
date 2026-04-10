@@ -1,0 +1,20 @@
+## V4 Summary
+
+**Changes made in `AskUserQuestionRenderer.tsx`:**
+
+1. **Recommended detection dual-mode** — `isRecommendedOpt()` checks both `opt.recommended === true` AND `(推荐)` in label text; `cleanLabel()` strips it for display. Fixes D2 badge and D5 preselection.
+
+2. **Global regex bug fix** — Split `REC_RE` into two: non-global for `.test()`, global for `.replace()`. The original `/g` flag caused `.test()` to alternate true/false.
+
+**Browser verification results (via `?test=auq` harness):**
+- Recommended badges visible and preselection working
+- Multiselect checkboxes with "可多选" hint
+- Preview split with live content switching
+- Submit flow: progress counter → enabled button → green/faded submitted state → footer summary
+
+**Unresolved (platform-level, not component issues):**
+- D4: Backend Skill doesn't send `preview: true` data in live chat
+- D7: Session history doesn't load after page refresh (SSE connection/session management issue)
+- ToolGroup: Widget trapped in collapsed accordion in live chat (chat-interface framework issue)
+
+**TSC:** All three packages pass.

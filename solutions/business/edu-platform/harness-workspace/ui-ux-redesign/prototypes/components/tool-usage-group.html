@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>组件: Tool Usage Group</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-t:#0C447C;--success-bg:#EAF3DE;--success-t:#27500A;--info-bg:#E6F1FB;--purple-bg:#EEEDFE;--purple-t:#3C3489;--danger-t:#A32D2D;--warn-t:#854F0B;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}
+body{font-family:-apple-system,"SF Pro Text","Segoe UI","PingFang SC",sans-serif;background:var(--bg2);color:var(--t1);display:flex;justify-content:center;padding:24px}
+.wrap{width:100%;max-width:640px}
+.wrap>h3{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:12px}
+.wrap>p{font-size:12px;color:var(--t3);margin-bottom:16px;line-height:1.6}
+
+/* ===== Tool Group: 第一层 — 自然语言摘要（可展开） ===== */
+.tg{margin:8px 0;border-radius:var(--rl);overflow:hidden}
+.tg-summary{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;user-select:none;font-size:13px;color:var(--t2);background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);transition:border-radius .15s}
+.tg-summary:hover{background:var(--bg2)}
+.tg.open .tg-summary{border-radius:var(--rl) var(--rl) 0 0;border-bottom-color:transparent}
+.tg-chev{font-size:9px;color:var(--t3);transition:transform .2s;flex-shrink:0;width:14px;text-align:center}
+.tg.open .tg-chev{transform:rotate(90deg)}
+.tg-text{flex:1;font-weight:500}
+
+/* ===== 第二层 — 步骤列表 ===== */
+.tg-detail{display:none;border:.5px solid var(--b1);border-top:none;border-radius:0 0 var(--rl) var(--rl);background:var(--bg1);padding:4px 14px 10px}
+.tg.open .tg-detail{display:block}
+.step{display:flex;gap:10px;padding:8px 0}
+.step:not(:last-child){border-bottom:.5px solid rgba(0,0,0,.04)}
+.step-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-icon svg{width:11px;height:11px}
+.step-icon.done{background:var(--success-bg)}.step-icon.done svg{stroke:var(--success-t);fill:none}
+.step-icon.run{background:var(--info-bg)}.step-icon.run svg{stroke:var(--info-t);fill:none}
+.step-icon.file{background:var(--purple-bg)}.step-icon.file svg{fill:var(--purple-t);stroke:none}
+.step-content{flex:1;min-width:0}
+.step-label{font-size:12px;color:var(--t1);line-height:1.5;cursor:pointer;border-radius:4px;padding:1px 4px;margin:-1px -4px;transition:background .1s}
+.step-label:hover{background:var(--bg2)}
+.step-label .tool-id{color:var(--t3);font-family:"SF Mono",Menlo,monospace;font-size:10px;margin-left:4px}
+.step-dur{font-size:10px;color:var(--t3);flex-shrink:0;margin-top:2px}
+
+/* ===== 第三层 — Table / JSON 详情 ===== */
+.step-detail{display:none;margin-top:6px}.step-detail.open{display:block}
+.tabs{display:flex;gap:2px;margin:4px 0;background:var(--bg2);border-radius:6px;padding:2px;width:fit-content}
+.tabs button{padding:3px 10px;font-size:10px;border-radius:4px;cursor:pointer;border:none;background:transparent;color:var(--t3);font-family:inherit;font-weight:500;transition:all .12s}
+.tabs button.act{background:var(--bg1);color:var(--t1);box-shadow:0 .5px 2px rgba(0,0,0,.08)}
+.pane{display:none}.pane.vis{display:block}
+.kv-sec{font-size:10px;font-weight:500;color:var(--t3);padding:6px 0 2px;text-transform:uppercase;letter-spacing:.3px}
+.kv{width:100%;border-collapse:collapse;font-size:10px;margin:3px 0}
+.kv th{text-align:left;padding:4px 8px;background:var(--bg2);color:var(--t2);font-weight:500;border-bottom:.5px solid var(--b1)}
+.kv td{padding:4px 8px;border-bottom:.5px solid rgba(0,0,0,.03);font-family:"SF Mono",Menlo,monospace;font-size:10px}
+.kv td:first-child{color:var(--t2);width:110px}
+pre.json{background:var(--bg2);padding:8px 10px;border-radius:6px;font-family:"SF Mono",Menlo,monospace;font-size:10px;overflow-x:auto;white-space:pre-wrap;margin:4px 0;color:var(--t1);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h3>Tool Usage Group 组件</h3>
+<p>三层折叠结构: 自然语言摘要 → 步骤列表 → Table/JSON 详情。<br>点击摘要展开步骤，点击步骤文字展开详情，Table/JSON 可切换。</p>
+
+<!-- 示例1: 备课 — 两步 MCP 调用 -->
+<div class="tg" onclick="tgToggle(event,this)">
+  <div class="tg-summary">
+    <span class="tg-chev">&#9654;</span>
+    <span class="tg-text">查询课标进度和班级学情，准备备课参数</span>
+  </div>
+  <div class="tg-detail">
+    <div class="step">
+      <div class="step-icon file"><svg viewBox="0 0 16 16"><path d="M4 1h5.5L14 5.5V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zm5 1v4h4"/></svg></div>
+      <div class="step-content">
+        <div class="step-label" onclick="stToggle(event,this)">查询八年级上学期数学教学进度 <span class="tool-id">curriculum_tree.query</span></div>
+        <div class="step-detail">
+          <div class="tabs"><button class="act" onclick="sw(event,this,'table')">Table</button><button onclick="sw(event,this,'json')">JSON</button></div>
+          <div class="pane vis" data-pane="table">
+            <div class="kv-sec">Request</div>
+            <table class="kv"><tr><th>Key</th><th>Value</th></tr><tr><td>subject</td><td>math</td></tr><tr><td>grade</td><td>G8-1</td></tr><tr><td>depth</td><td>2</td></tr></table>
+            <div class="kv-sec">Response</div>
+            <table class="kv"><tr><th>Key</th><th>Value</th></tr><tr><td>current_chapter</td><td>12.2</td></tr><tr><td>chapter_label</td><td>三角形全等的判定</td></tr><tr><td>total_chapters</td><td>4</td></tr><tr><td>progress_pct</td><td>50%</td></tr></table>
+          </div>
+          <div class="pane" data-pane="json"><pre class="json">// Request
+{"subject":"math","grade":"G8-1","depth":2}
+
+// Response
+{"current_chapter":"12.2","chapter_label":"三角形全等的判定",
+ "chapters":[{"id":"12.1","status":"done"},
+  {"id":"12.2","status":"current"},
+  {"id":"12.3","status":"upcoming"}]}</pre></div>
+        </div>
+      </div>
+      <span class="step-dur">230ms</span>
+    </div>
+
+    <div class="step">
+      <div class="step-icon file"><svg viewBox="0 0 16 16"><path d="M4 1h5.5L14 5.5V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zm5 1v4h4"/></svg></div>
+      <div class="step-content">
+        <div class="step-label" onclick="stToggle(event,this)">获取八(2)班近 30 天知识点错误率 <span class="tool-id">learning_analytics.class_gaps</span></div>
+        <div class="step-detail">
+          <div class="tabs"><button class="act" onclick="sw(event,this,'table')">Table</button><button onclick="sw(event,this,'json')">JSON</button></div>
+          <div class="pane vis" data-pane="table">
+            <div class="kv-sec">Request</div>
+            <table class="kv"><tr><th>Key</th><th>Value</th></tr><tr><td>class_id</td><td>class_2</td></tr><tr><td>chapters</td><td>["12.2"]</td></tr><tr><td>period</td><td>30d</td></tr></table>
+            <div class="kv-sec">Response (3 items)</div>
+            <table class="kv"><tr><th>知识点</th><th>错误率</th></tr><tr><td>SSS 判定</td><td style="color:var(--danger-t)">42%</td></tr><tr><td>SAS 判定</td><td style="color:var(--warn-t)">35%</td></tr><tr><td>ASA/AAS</td><td style="color:var(--warn-t)">28%</td></tr></table>
+          </div>
+          <div class="pane" data-pane="json"><pre class="json">// Request
+{"class_id":"class_2","chapters":["12.2"],"period":"30d"}
+
+// Response
+{"gaps":[{"kp":"SSS判定","error_rate":0.42},
+ {"kp":"SAS判定","error_rate":0.35},
+ {"kp":"ASA/AAS","error_rate":0.28}],"sample_size":43}</pre></div>
+        </div>
+      </div>
+      <span class="step-dur">415ms</span>
+    </div>
+
+    <div class="step">
+      <div class="step-icon done"><svg viewBox="0 0 16 16"><path d="M13.5 4.5l-7 7L3 8" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="step-content"><div class="step-label">完成，识别到 SSS 判定为主要薄弱点</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 示例2: 出题 — 题库+AI混合 -->
+<div class="tg" onclick="tgToggle(event,this)" style="margin-top:16px">
+  <div class="tg-summary">
+    <span class="tg-chev">&#9654;</span>
+    <span class="tg-text">检索题库并补充 AI 原创，生成 5 道选择题</span>
+  </div>
+  <div class="tg-detail">
+    <div class="step">
+      <div class="step-icon file"><svg viewBox="0 0 16 16"><path d="M4 1h5.5L14 5.5V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2a1 1 0 011-1zm5 1v4h4"/></svg></div>
+      <div class="step-content">
+        <div class="step-label" onclick="stToggle(event,this)">从区级题库检索匹配题目 <span class="tool-id">question_bank.search</span></div>
+        <div class="step-detail">
+          <div class="tabs"><button class="act" onclick="sw(event,this,'table')">Table</button><button onclick="sw(event,this,'json')">JSON</button></div>
+          <div class="pane vis" data-pane="table">
+            <div class="kv-sec">Request</div>
+            <table class="kv"><tr><th>Key</th><th>Value</th></tr><tr><td>kp</td><td>kp:math.geo.congruence.*.judgment</td></tr><tr><td>type</td><td>choice</td></tr><tr><td>difficulty</td><td>[0.4, 0.7]</td></tr><tr><td>limit</td><td>5</td></tr></table>
+            <div class="kv-sec">Response</div>
+            <table class="kv"><tr><th>Key</th><th>Value</th></tr><tr><td>matched</td><td>3</td></tr><tr><td>shortfall</td><td>2</td></tr></table>
+          </div>
+          <div class="pane" data-pane="json"><pre class="json">{"kp":"kp:math.geo.congruence.*.judgment",
+ "type":"choice","difficulty":[0.4,0.7],"limit":5}
+// → matched: 3, shortfall: 2</pre></div>
+        </div>
+      </div>
+      <span class="step-dur">320ms</span>
+    </div>
+    <div class="step">
+      <div class="step-icon run"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" stroke-width="1.5" fill="none"/><path d="M8 4v4l3 2" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+      <div class="step-content"><div class="step-label">AI 按课标和学情补充 2 道原创选择题，难度 0.5~0.65</div></div>
+      <span class="step-dur">1.2s</span>
+    </div>
+    <div class="step">
+      <div class="step-icon done"><svg viewBox="0 0 16 16"><path d="M13.5 4.5l-7 7L3 8" stroke-width="2" stroke-linecap="round"/></svg></div>
+      <div class="step-content"><div class="step-label">完成，题库 3 题 + AI 原创 2 题</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function tgToggle(e,el){if(e.target.closest('.step-label')||e.target.closest('.tabs')||e.target.closest('.step-detail'))return;el.classList.toggle('open')}
+function stToggle(e,el){e.stopPropagation();const d=el.nextElementSibling;if(d&&d.classList.contains('step-detail'))d.classList.toggle('open')}
+function sw(e,btn,p){e.stopPropagation();const c=btn.closest('.step-detail');c.querySelectorAll('.tabs button').forEach(b=>b.classList.remove('act'));btn.classList.add('act');c.querySelectorAll('.pane').forEach(x=>x.classList.toggle('vis',x.dataset.pane===p))}
+</script>
+</body>
+</html>

@@ -72,6 +72,9 @@ How to run, prerequisites, morning review checklist.
 ### Step 7: Self-Review
 
 **All modes:**
+- [ ] `claude_safe()` wrapper defined (env -u CLAUDECODE pattern) — see orchestrator-templates.md Pattern 0
+- [ ] ALL `claude -p` calls use `claude_safe -p` (not bare `claude`)
+- [ ] Script uses `set -eu` (NOT `set -euo pipefail` — pipefail fails in some environments)
 - [ ] Agent prompt(s) have fresh context warning at top
 - [ ] `--allowedTools` set for each `claude -p`
 - [ ] Git commits after each step

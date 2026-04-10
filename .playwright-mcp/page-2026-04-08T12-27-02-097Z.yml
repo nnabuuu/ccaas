@@ -1,0 +1,69 @@
+- generic [ref=e3]:
+  - generic [ref=e127]:
+    - generic [ref=e128]:
+      - generic [ref=e129]: 📦
+      - generic [ref=e130]: SAS 概念讲解
+      - button "×" [ref=e131] [cursor=pointer]
+    - generic [ref=e132]: 1 个实体已引用 · 发送时注入上下文
+  - generic [ref=e4]:
+    - generic [ref=e133]:
+      - textbox "🔍 搜索实体..." [active] [ref=e135]
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - generic [ref=e138]: 最近使用
+          - generic [ref=e140] [cursor=pointer]:
+            - generic [ref=e141]: 📝
+            - generic [ref=e142]: SSS/SAS 新授课教案
+          - generic [ref=e144] [cursor=pointer]:
+            - generic [ref=e145]: 📋
+            - generic [ref=e146]: SAS 判定专项练习 · 八(2)班
+          - generic [ref=e147] [cursor=pointer]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: 📎
+              - generic [ref=e150]: SAS判定条件图.png
+            - generic [ref=e151]:
+              - text: └
+              - generic [ref=e152]: 📝 SAS 概念讲解
+              - generic [ref=e153]: › 📦 SAS 概念讲解
+          - generic [ref=e154] [cursor=pointer]:
+            - generic [ref=e155]:
+              - generic [ref=e156]: 📅
+              - generic [ref=e157]: 周三第1节 · SSS/SAS · 八(2)班
+            - generic [ref=e158]:
+              - text: └
+              - generic [ref=e159]: 📝 SSS/SAS 新授课教案
+          - generic [ref=e160] [cursor=pointer]:
+            - generic [ref=e161]:
+              - generic [ref=e162]: 📦
+              - generic [ref=e163]: SAS 概念讲解
+            - generic [ref=e164]:
+              - text: └
+              - generic [ref=e165]: 📝 SAS 概念讲解
+        - generic [ref=e166]:
+          - generic [ref=e167]: 按类型浏览
+          - generic [ref=e168] [cursor=pointer]:
+            - generic [ref=e169]:
+              - generic [ref=e170]: 📝
+              - generic [ref=e171]: 教案
+            - generic [ref=e172]: ›
+          - generic [ref=e173] [cursor=pointer]:
+            - generic [ref=e174]:
+              - generic [ref=e175]: 📋
+              - generic [ref=e176]: 作业
+            - generic [ref=e177]: ›
+          - generic [ref=e178] [cursor=pointer]:
+            - generic [ref=e179]:
+              - generic [ref=e180]: 📖
+              - generic [ref=e181]: 课标
+            - generic [ref=e182]: ›
+    - textbox "输入消息... 按 @ 引用实体" [ref=e5]
+  - generic [ref=e6]:
+    - button "📝 教案" [ref=e7] [cursor=pointer]:
+      - generic [ref=e8]: 📝
+      - generic [ref=e9]: 教案
+    - button "📖 课标" [ref=e10] [cursor=pointer]:
+      - generic [ref=e11]: 📖
+      - generic [ref=e12]: 课标
+    - button "❓ 题目" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: ❓
+      - generic [ref=e15]: 题目

@@ -1,0 +1,94 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "New chat" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+          - generic [ref=e10]: New chat
+        - button "收起侧栏" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+      - generic [ref=e14]:
+        - generic:
+          - img
+        - textbox "Search" [ref=e15]
+    - generic [ref=e17]: No chat history yet
+    - button "Skills" [ref=e19] [cursor=pointer]:
+      - img [ref=e20]
+      - generic [ref=e22]: Skills
+    - button "User menu" [ref=e24] [cursor=pointer]:
+      - generic [ref=e25]: S
+      - generic [ref=e26]:
+        - generic [ref=e27]: sk-...qRtU
+        - img [ref=e28]
+  - generic [ref=e32]:
+    - region "Notifications alt+T":
+      - list:
+        - listitem [ref=e160]:
+          - img [ref=e162]
+          - generic [ref=e165]: 已启用「Lesson Plan Generator」
+    - generic [ref=e67]:
+      - generic [ref=e68]:
+        - generic [ref=e69]: Skill 管理
+        - generic [ref=e70]:
+          - generic [ref=e71]: default
+          - generic [ref=e72]: Tenant
+          - button "关闭技能面板" [ref=e73] [cursor=pointer]:
+            - img [ref=e74]
+      - tablist [ref=e77]:
+        - tab "Solution Skills" [selected] [ref=e78] [cursor=pointer]
+        - tab "自建 Skills" [ref=e79] [cursor=pointer]
+        - tab "使用统计" [ref=e80] [cursor=pointer]
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]: Solution 内置
+          - generic [ref=e84]: "3"
+        - generic [ref=e85]:
+          - generic [ref=e86]: 已启用
+          - generic [ref=e87]: "3"
+        - generic [ref=e88]:
+          - generic [ref=e89]: 未启用
+          - generic [ref=e90]: "0"
+        - generic [ref=e91]:
+          - generic [ref=e92]: 本月总调用
+          - generic [ref=e93]: —
+      - generic [ref=e94]:
+        - generic [ref=e96]:
+          - generic [ref=e97]: 已启用
+          - generic [ref=e98]: 3 个
+        - generic [ref=e99]:
+          - generic [ref=e166]:
+            - generic [ref=e167]:
+              - generic [ref=e168]: Lesson Plan Generator
+              - generic [ref=e169]: 已启用
+            - generic [ref=e170]: 备课助手
+            - generic [ref=e171]:
+              - generic [ref=e172]: v1.0.0
+              - generic [ref=e173]: skill
+            - generic [ref=e174]: 暂无参数配置
+            - generic [ref=e175]:
+              - button "配置参数" [ref=e176] [cursor=pointer]
+              - button "停用" [ref=e177] [cursor=pointer]
+          - generic [ref=e112]:
+            - generic [ref=e113]:
+              - generic [ref=e114]: Lesson Plan Generator
+              - generic [ref=e115]: 已启用
+            - generic [ref=e116]: 备课助手
+            - generic [ref=e117]:
+              - generic [ref=e118]: v1.0.0
+              - generic [ref=e119]: skill
+            - generic [ref=e120]: 暂无参数配置
+            - generic [ref=e121]:
+              - button "配置参数" [ref=e122] [cursor=pointer]
+              - button "停用" [ref=e123] [cursor=pointer]
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]: echo-chat
+              - generic [ref=e127]: 已启用
+            - generic [ref=e128]: Minimal echo skill for builder smoke test
+            - generic [ref=e129]:
+              - generic [ref=e130]: v1.0.0
+              - generic [ref=e131]: skill
+            - generic [ref=e132]: 暂无参数配置
+            - generic [ref=e133]:
+              - button "配置参数" [ref=e134] [cursor=pointer]
+              - button "停用" [ref=e135] [cursor=pointer]

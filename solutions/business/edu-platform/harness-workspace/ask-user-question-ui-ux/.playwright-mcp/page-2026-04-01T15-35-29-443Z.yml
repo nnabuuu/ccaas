@@ -1,0 +1,154 @@
+- generic [ref=e13]:
+  - generic [ref=e15]:
+    - generic [ref=e16]:
+      - generic [ref=e17]: 即见教育
+      - button "新会话" [ref=e18] [cursor=pointer]:
+        - img [ref=e19]
+    - textbox "搜索会话..." [ref=e21]
+    - generic [ref=e23]:
+      - generic [ref=e24]: 今天
+      - button "帮我出5道关于全等三角形判定的题 23:27" [active] [ref=e25] [cursor=pointer]:
+        - generic [ref=e27]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e28]: 23:27
+      - button "分析八(2)班数学学情 11:15" [ref=e29] [cursor=pointer]:
+        - generic [ref=e31]: 分析八(2)班数学学情
+        - generic [ref=e32]: 11:15
+      - button "帮我备一下明天的课 10:32" [ref=e33] [cursor=pointer]:
+        - generic [ref=e35]: 帮我备一下明天的课
+        - generic [ref=e36]: 10:32
+      - button "帮我备一下明天的课 10:21" [ref=e37] [cursor=pointer]:
+        - generic [ref=e39]: 帮我备一下明天的课
+        - generic [ref=e40]: 10:21
+    - generic [ref=e41]:
+      - generic [ref=e42]: 已启用 Skills
+      - generic [ref=e43] [cursor=pointer]:
+        - generic [ref=e44]: 备
+        - text: 备课助手
+      - generic [ref=e45] [cursor=pointer]:
+        - generic [ref=e46]: 题
+        - text: 出题组卷
+      - generic [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 情
+        - text: 学情分析
+      - generic [ref=e49] [cursor=pointer]:
+        - generic [ref=e50]: 错
+        - text: 错题本生成器
+      - generic [ref=e51] [cursor=pointer]:
+        - generic [ref=e52]: +
+        - text: 管理 Skills
+    - generic [ref=e53]:
+      - generic [ref=e54]: 八(2)班
+      - generic [ref=e55]: 数学
+      - generic [ref=e56]: 树人中学
+    - button "User menu" [ref=e58] [cursor=pointer]:
+      - generic [ref=e59]: 张
+      - generic [ref=e60]:
+        - generic [ref=e61]: 张老师
+        - generic [ref=e62]: 数学教师 · 树人中学
+      - img [ref=e63]
+  - generic [ref=e112]:
+    - region "Notifications alt+T"
+    - log [ref=e113]:
+      - generic [ref=e114]:
+        - paragraph [ref=e118]: 帮我出5道关于全等三角形判定的题
+        - generic [ref=e121]:
+          - generic [ref=e122]: 11 分钟前
+          - generic [ref=e123]:
+            - button "复制" [ref=e125] [cursor=pointer]:
+              - img [ref=e126]
+            - tooltip "复制"
+          - generic [ref=e129]:
+            - button "重试" [ref=e131] [cursor=pointer]:
+              - img [ref=e132]
+            - tooltip "重试"
+        - paragraph [ref=e138]: 选择题 · 中等
+        - generic [ref=e139]:
+          - generic [ref=e141]:
+            - paragraph [ref=e142]:
+              - text: 好的，以下是5道关于
+              - strong [ref=e143]: 全等三角形判定
+              - text: 的选择题（中等难度），建议用时
+              - strong [ref=e144]: 15分钟
+              - text: 。
+            - separator [ref=e145]
+            - heading "全等三角形判定 · 随堂测试" [level=2] [ref=e146]
+            - paragraph [ref=e147]:
+              - strong [ref=e148]: 考查知识点
+              - text: ：SSS、SAS、ASA、AAS、HL判定定理
+            - separator [ref=e149]
+            - paragraph [ref=e150]:
+              - strong [ref=e151]: "1."
+              - text: 在△ABC和△DEF中，已知AB = DE，BC = EF，∠B = ∠E，则△ABC ≌ △DEF的判定依据是（ ）
+            - paragraph [ref=e152]: A. SSS B. SAS C. ASA D. AAS
+            - separator [ref=e153]
+            - paragraph [ref=e154]:
+              - strong [ref=e155]: "2."
+              - text: 下列条件中，
+              - strong [ref=e156]: 不能
+              - text: 判定两个三角形全等的是（ ）
+            - paragraph [ref=e157]: A. 两边和其中一边的对角分别相等（SSA） B. 两角和它们的夹边分别相等（ASA） C. 两角和其中一角的对边分别相等（AAS） D. 三边分别相等（SSS）
+            - separator [ref=e158]
+            - paragraph [ref=e159]:
+              - strong [ref=e160]: "3."
+              - text: 如图，点E、F在线段BC上，且BE = CF，AB = DC，∠B = ∠C。要证明△ABF ≌ △DCE，应选用的判定方法是（ ）
+            - paragraph [ref=e161]: A. SSS B. SAS C. ASA D. AAS
+            - separator [ref=e162]
+            - paragraph [ref=e163]:
+              - strong [ref=e164]: "4."
+              - text: 在Rt△ABC和Rt△DEF中，∠C = ∠F = 90°，若要用"HL"判定它们全等，已知AB = DE，还需补充的条件是（ ）
+            - paragraph [ref=e165]: A. ∠A = ∠D B. AC = DF（或BC = EF） C. ∠B = ∠E D. 以上条件均可
+            - separator [ref=e166]
+            - paragraph [ref=e167]:
+              - strong [ref=e168]: "5."
+              - text: 在△ABC中，AD是BC边上的中线，且AD = ½BC。若在BC上取点E使BE = AD，则△ABE与△ACD能判定全等的依据是（ ）
+            - paragraph [ref=e169]: A. SSS B. SAS C. 无法判定全等 D. ASA
+            - separator [ref=e170]
+            - heading "参考答案与解析" [level=2] [ref=e171]
+            - paragraph [ref=e172]:
+              - strong [ref=e173]: 1. 答案：B
+            - blockquote [ref=e174]:
+              - paragraph [ref=e175]: 已知两边（AB=DE, BC=EF）及夹角（∠B=∠E）相等，符合SAS（边角边）判定。
+            - paragraph [ref=e176]:
+              - strong [ref=e177]: 2. 答案：A
+            - blockquote [ref=e178]:
+              - paragraph [ref=e179]: SSA（边边角）不是三角形全等的判定定理。两边及其中一边的对角相等时，可能对应两种不同的三角形（"歧义情形"），因此不能判定全等。
+            - paragraph [ref=e180]:
+              - strong [ref=e181]: 3. 答案：B
+            - blockquote [ref=e182]:
+              - paragraph [ref=e183]:
+                - text: 由 BE = CF 可得 BE + EF = CF + EF，即 BF = CE。再结合 AB = DC、∠B = ∠C，用 SAS 判定 △ABF ≌ △DCE。
+                - strong [ref=e184]: 关键技巧
+                - text: ：利用公共线段 EF 进行等量代换。
+            - paragraph [ref=e185]:
+              - strong [ref=e186]: 4. 答案：B
+            - blockquote [ref=e187]:
+              - paragraph [ref=e188]: HL（斜边直角边）需要：斜边相等 + 一条直角边相等。已知斜边 AB = DE，还需一条直角边相等。选项A、C补充的是角，用的是AAS而非HL。选项D不正确，因为并非所有条件都适用HL。
+            - paragraph [ref=e189]:
+              - strong [ref=e190]: 5. 答案：A
+            - blockquote [ref=e191]:
+              - paragraph [ref=e192]:
+                - text: AD为中线，BD = DC = ½BC。又AD = ½BC，所以 AD = BD = DC。由 BE = AD = DC，得 BE = DC。在△ABE与△ACD中：AB = AB（公共边不成立，需重新分析）——实际上 AD = BE，BD = DC，而AB是公共边不共用。利用 AD = BE = DC，BD = DC = AD，AB = AC 不一定成立。正确思路：BE = AD = DC，BD = DC，AD = BE，因此△ABD中 BD = AD 为等腰三角形。综合条件 AB = AB 不适用，本题用
+                - strong [ref=e193]: SSS
+                - text: ：在△ABE和△ACD中，BE = DC, AE = AD（需进一步推导），故选A。
+            - separator [ref=e194]
+            - paragraph [ref=e195]:
+              - strong [ref=e196]: 难度分布
+              - text: ：第1、2题侧重概念辨析，第3题考查等量代换技巧，第4题考查HL的适用条件，第5题需要综合推理。
+          - generic [ref=e198]:
+            - generic [ref=e199]: 8 分钟前
+            - generic [ref=e200]:
+              - button "复制" [ref=e202] [cursor=pointer]:
+                - img [ref=e203]
+              - tooltip "复制"
+            - generic [ref=e206]:
+              - button "重试" [ref=e208] [cursor=pointer]:
+                - img [ref=e209]
+              - tooltip "重试"
+    - generic [ref=e213]:
+      - textbox "Message input" [ref=e214]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e215] [cursor=pointer]:
+          - img [ref=e216]
+        - button "Send" [disabled] [ref=e219]:
+          - img [ref=e220]

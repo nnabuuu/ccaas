@@ -1,0 +1,51 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - button "New chat" [ref=e8] [cursor=pointer]:
+          - img [ref=e9]
+          - generic [ref=e10]: New chat
+        - button "收起侧栏" [ref=e11] [cursor=pointer]:
+          - img [ref=e12]
+      - generic [ref=e14]:
+        - generic:
+          - img
+        - textbox "Search" [ref=e15]
+    - generic [ref=e17]: No chat history yet
+    - button "Skills" [ref=e19] [cursor=pointer]:
+      - img [ref=e20]
+      - generic [ref=e22]: Skills
+    - button "User menu" [ref=e24] [cursor=pointer]:
+      - generic [ref=e25]: S
+      - generic [ref=e26]:
+        - generic [ref=e27]: sk-...qRtU
+        - img [ref=e28]
+  - generic [ref=e32]:
+    - region "Notifications alt+T"
+    - log [ref=e33]:
+      - heading "What shall we think through?" [level=1] [ref=e36]:
+        - img [ref=e37]
+        - text: What shall we think through?
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - textbox "Message input" [ref=e41]:
+          - /placeholder: How can I help you today?
+        - generic:
+          - button "Attach" [ref=e42] [cursor=pointer]:
+            - img [ref=e43]
+          - button "Send" [disabled] [ref=e44]:
+            - img [ref=e45]
+      - generic [ref=e47]:
+        - button "Summarize" [ref=e48] [cursor=pointer]:
+          - img [ref=e49]
+          - text: Summarize
+        - button "Analyze" [ref=e52] [cursor=pointer]:
+          - img [ref=e53]
+          - text: Analyze
+        - button "Plan" [ref=e56] [cursor=pointer]:
+          - img [ref=e57]
+          - text: Plan
+        - button "Help" [ref=e60] [cursor=pointer]:
+          - img [ref=e61]
+          - text: Help
+      - paragraph [ref=e64]: Claude is AI and can make mistakes. Please double-check responses.Esc cancel · ⌘/ focus

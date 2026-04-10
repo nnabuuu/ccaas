@@ -1,0 +1,162 @@
+- generic [ref=e3]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: 即见教育
+      - button "新会话" [ref=e8] [cursor=pointer]:
+        - img [ref=e9]
+    - textbox "搜索会话..." [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e63]:
+        - generic [ref=e64]: 今天
+        - button "帮我备课 19:38" [ref=e244] [cursor=pointer]:
+          - generic [ref=e246]: 帮我备课
+          - generic [ref=e247]: 19:38
+        - button "帮我备课 19:35" [ref=e130] [cursor=pointer]:
+          - generic [ref=e132]: 帮我备课
+          - generic [ref=e133]: 19:35
+        - button "帮我备课 19:08" [ref=e65] [cursor=pointer]:
+          - generic [ref=e67]: 帮我备课
+          - generic [ref=e68]: 19:08
+        - button "帮我备课 18:19" [ref=e69] [cursor=pointer]:
+          - generic [ref=e71]: 帮我备课
+          - generic [ref=e72]: 18:19
+        - button "帮我备课 18:09" [ref=e73] [cursor=pointer]:
+          - generic [ref=e75]: 帮我备课
+          - generic [ref=e76]: 18:09
+        - button "帮我备课 17:48" [ref=e77] [cursor=pointer]:
+          - generic [ref=e79]: 帮我备课
+          - generic [ref=e80]: 17:48
+        - button "帮我备课 16:29" [ref=e81] [cursor=pointer]:
+          - generic [ref=e83]: 帮我备课
+          - generic [ref=e84]: 16:29
+      - generic [ref=e85]:
+        - generic [ref=e86]: 昨天
+        - button "分析八(2)班数学学情 11:15" [ref=e87] [cursor=pointer]:
+          - generic [ref=e89]: 分析八(2)班数学学情
+          - generic [ref=e90]: 11:15
+        - button "帮我备一下明天的课 10:32" [ref=e91] [cursor=pointer]:
+          - generic [ref=e93]: 帮我备一下明天的课
+          - generic [ref=e94]: 10:32
+        - button "帮我备一下明天的课 10:21" [ref=e95] [cursor=pointer]:
+          - generic [ref=e97]: 帮我备一下明天的课
+          - generic [ref=e98]: 10:21
+    - generic [ref=e14]:
+      - generic [ref=e15]: 已启用 Skills
+      - generic [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 备
+        - text: 备课助手
+      - generic [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 题
+        - text: 出题组卷
+      - generic [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: 情
+        - text: 学情分析
+      - generic [ref=e22] [cursor=pointer]:
+        - generic [ref=e23]: 错
+        - text: 错题本生成器
+      - generic [ref=e24] [cursor=pointer]:
+        - generic [ref=e25]: +
+        - text: 管理 Skills
+    - generic [ref=e26]:
+      - generic [ref=e27]: 八(2)班
+      - generic [ref=e28]: 数学
+      - generic [ref=e29]: 树人中学
+    - button "User menu" [ref=e31] [cursor=pointer]:
+      - generic [ref=e32]: 张
+      - generic [ref=e33]:
+        - generic [ref=e34]: 张老师
+        - generic [ref=e35]: 数学教师 · 树人中学
+      - img [ref=e36]
+  - generic [ref=e200]:
+    - region "Notifications alt+T"
+    - log [ref=e201]:
+      - generic [ref=e202]:
+        - paragraph [ref=e251]: 帮我备课
+        - generic [ref=e253]:
+          - generic [ref=e261]:
+            - img [ref=e263]
+            - generic [ref=e266] [cursor=pointer]: 执行技能Skill
+            - generic [ref=e267]: 65ms
+          - paragraph [ref=e269]: 好的，让我来帮您备课！首先需要收集一些基本信息。
+          - generic [ref=e270]:
+            - generic [ref=e271]:
+              - generic [ref=e272] [cursor=pointer]:
+                - generic [ref=e273]: "1"
+                - generic [ref=e274]: 选择范围
+              - generic "请先完成「选择范围」" [ref=e275]:
+                - generic [ref=e276]: "2"
+                - generic [ref=e277]: 选择章节
+              - generic "请先完成「选择范围」「选择章节」" [ref=e278]:
+                - generic [ref=e279]: "3"
+                - generic [ref=e280]: 学情分析
+              - generic "请先完成「选择范围」「选择章节」「学情分析」" [ref=e281]:
+                - generic [ref=e282]: "4"
+                - generic [ref=e283]: 确认生成
+            - generic [ref=e285]:
+              - generic [ref=e286]:
+                - generic [ref=e287]: 学科
+                - combobox [ref=e288] [cursor=pointer]:
+                  - option "请选择..."
+                  - option "数学" [selected]
+                  - option "语文"
+                  - option "英语"
+                  - option "物理"
+                  - option "化学"
+                  - option "生物"
+                  - option "历史"
+                  - option "地理"
+              - generic [ref=e289]:
+                - generic [ref=e290]: 年级学期
+                - combobox [ref=e291] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "七年级上"
+                  - option "七年级下"
+                  - option "八年级上"
+                  - option "八年级下"
+                  - option "九年级上"
+                  - option "九年级下"
+                  - option "高一上"
+                  - option "高一下"
+                  - option "高二上"
+                  - option "高二下"
+              - generic [ref=e292]:
+                - generic [ref=e293]: 班级
+                - combobox [ref=e294] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "1 班"
+                  - option "2 班"
+                  - option "3 班"
+                  - option "4 班"
+              - generic [ref=e295]:
+                - generic [ref=e296]:
+                  - text: 课型
+                  - generic [ref=e297]: "*"
+                - combobox [ref=e298] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "新授课"
+                  - option "复习课"
+                  - option "练习课"
+                  - option "试卷讲评"
+              - generic [ref=e299]:
+                - generic [ref=e300]:
+                  - text: 课时
+                  - generic [ref=e301]: "*"
+                - combobox [ref=e302] [cursor=pointer]:
+                  - option "请选择..." [selected]
+                  - option "1 课时 (40 分钟)"
+                  - option "2 课时 (80 分钟)"
+                  - option "3 课时 (120 分钟)"
+              - generic [ref=e303]: 已填 3 / 5 项
+            - generic [ref=e304]:
+              - button "上一步" [disabled] [ref=e305]
+              - generic [ref=e306]: 1 / 4
+              - button "下一步" [disabled] [ref=e307]
+          - generic "思考中" [ref=e254]: 正在处理...
+    - generic [ref=e235]:
+      - textbox "Message input" [active] [ref=e236]:
+        - /placeholder: 描述你的需求...
+      - generic:
+        - button "Select skill" [ref=e237] [cursor=pointer]:
+          - img [ref=e238]
+        - button "Stop generating" [ref=e259] [cursor=pointer]:
+          - img [ref=e242]
