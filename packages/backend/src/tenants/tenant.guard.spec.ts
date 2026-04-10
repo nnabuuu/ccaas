@@ -74,6 +74,46 @@ describe('TenantGuard', () => {
     await expect(guard.canActivate(ctx)).rejects.toThrow('Tenant ID required');
   });
 
+  it('should use API key tenant when no header is provided', async () => {
+    const apiKeyTenant = { id: 'tenant-from-key', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(apiKeyTenant as any);
+
+    const request: Record<string, any> = {
+      context: {
+        tenantId: 'tenant-from-key',
+        apiKeyId: 'key-1',
+        apiKeyScopes: ['chat'],
+      },
+    };
+    const ctx = createMockContext(request);
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(request.tenant).toBe(apiKeyTenant);
+    expect(request.tenantId).toBe('tenant-from-key');
+    expect(tenantsService.getDefaultTenantId).not.toHaveBeenCalled();
+  });
+
+  it('should prefer X-Tenant-Id header over API key tenant', async () => {
+    const headerTenant = { id: 'tenant-header', status: 'active' };
+    tenantsService.findOne.mockResolvedValue(headerTenant as any);
+
+    const request: Record<string, any> = {
+      headers: { 'x-tenant-id': 'tenant-header' },
+      context: {
+        tenantId: 'tenant-from-key',
+        apiKeyId: 'key-1',
+        apiKeyScopes: ['admin'],
+      },
+    };
+    const ctx = createMockContext(request);
+    const result = await guard.canActivate(ctx);
+
+    expect(result).toBe(true);
+    expect(request.tenantId).toBe('tenant-header');
+    expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-header');
+  });
+
   // ── Header / query resolution ─────────────────────────────────────────
 
   it('should resolve tenant from X-Tenant-Id header', async () => {

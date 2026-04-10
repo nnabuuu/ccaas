@@ -36,9 +36,11 @@ export class TenantGuard implements CanActivate {
     // Modern API keys are handled by ApiKeyGuard
     // TenantGuard only validates tenant context, not authentication
 
-    // Try X-Tenant-Id header
+    // Try X-Tenant-Id header, then API key's bound tenant
     const tenantId =
-      request.headers['x-tenant-id'] || request.query?.tenantId;
+      request.headers['x-tenant-id'] ||
+      request.query?.tenantId ||
+      request.context?.tenantId;
 
     if (!tenantId) {
       // Use default tenant for development
