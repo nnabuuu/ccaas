@@ -72,12 +72,12 @@ changes: [
 > 教师："帮我把周三第5节和王老师换一下"
 
 处理步骤：
-1. 解析：类型=swap，原课时=周三第5节，目标教师=王老师
-2. 调用 `timetable_query_schedule({ teacherId: "t-zhang", week: 1 })` 确认周三第5节是否有课
-3. 调用 `timetable_query_schedule({ teacherId: "t-wang", week: 1 })` 查王老师课表，找到可互换的时段
+1. 解析：类型=swap，原课时=周三第5节，目标教师=王老师（teacherId从 TEACHERS 数据中匹配姓名获取）
+2. 调用 `timetable_query_schedule({ teacherId: "t-zhang", week: 1 })` — 从 `data.schedule` 中找到 `day===3 && period===5` 的条目，确认有课并提取 `classId`、`subject`、`room`
+3. 调用 `timetable_query_schedule({ teacherId: "t-wang", week: 1 })` — 从 `data.schedule` 中查看王老师所有课时，找到可互换的时段（优先选择与原课时不同天的时段，减少冲突风险）
 4. 构造 **两条配对变更**（张老师周三第5节 ↔ 王老师选定时段），两条变更的 original/target 互为镜像
-5. 调用 `timetable_check_conflicts({ changes: [变更1, 变更2] })` 检测冲突（系统自动识别互换配对）
-6. 用 `show_info_card` 展示方案详情
+5. 调用 `timetable_check_conflicts({ changes: [变更1, 变更2] })` 检测冲突（系统通过 vacatedKeys 自动识别互换配对）— **立即检查 `data.severity`**
+6. 用 `show_info_card` 展示方案详情（含冲突检测结果）
 7. 用 `suggest_actions` 让教师确认
 8. 教师确认后调用 `timetable_submit_request({ type: "swap", changes: [变更1, 变更2], reason: "..." })`
 
@@ -111,16 +111,17 @@ changes: [
 > 教师："下周三第5-6节我请假，找人代课"
 
 处理步骤：
-1. 解析：类型=substitute，时段=周三第5-6节
-2. 调用 `timetable_query_schedule({ teacherId: "t-zhang", week: 1 })` 确认这两节课的科目和班级
-3. 调用 `timetable_find_substitute_teachers({ subject: "数学", slot: { day: 3, periods: [5, 6] }, excludeTeacherId: "t-zhang", classId: "c-8-2" })`
-4. 用 `show_info_card` 展示候选教师列表（按匹配度排序展示排名）
-5. 用 `suggest_actions` 让教师选择代课教师
-6. 教师选择后，调用 `timetable_check_conflicts` 确认无冲突
-7. 用 `show_info_card` 展示确认摘要 + `suggest_actions` 确认
-8. 教师确认后调用 `timetable_submit_request({ type: "substitute", changes: [...], reason: "请假" })`
+1. 解析：类型=substitute，时段=周三第5-6节，week=2（"下周"）
+2. 调用 `timetable_query_schedule({ teacherId: "t-zhang", week: 2 })` 确认这两节课的科目和班级
+3. **从返回的 `data.schedule` 数组中筛选 `day===3 && (period===5 || period===6)` 的条目**。提取 `subject` 和 `classId` 字段。如果某个 period 没有课，告知教师仅处理有课的节次
+4. 调用 `timetable_find_substitute_teachers({ subject: "<步骤3提取的subject>", slot: { day: 3, periods: [<步骤3中有课的period列表>] }, excludeTeacherId: "t-zhang", classId: "<步骤3提取的classId>" })`
+5. 用 `show_info_card` 展示候选教师列表（按 `data.candidates` 数组的 `matchScore` 降序展示排名，可使用 `bar_list` section 可视化匹配度）
+6. 用 `suggest_actions` 让教师选择代课教师
+7. 教师选择后，构造 changes 数组（每个有课的 period 一条变更），调用 `timetable_check_conflicts` 确认无冲突
+8. 用 `show_info_card` 展示确认摘要 + `suggest_actions` 确认
+9. 教师确认后调用 `timetable_submit_request({ type: "substitute", changes: [...], reason: "请假" })`
 
-> **⚠️ 调用规范**：调用 `timetable_find_substitute_teachers` 时，**必须传入 classId 参数**（从课表查询结果中获取），以确保 `taughtThisClass` 匹配度计算准确。
+> **⚠️ 调用规范**：调用 `timetable_find_substitute_teachers` 时，**必须传入 classId 参数**（从 `timetable_query_schedule` 返回的 `data.schedule[i].classId` 字段获取），以确保 `taughtThisClass` 匹配度计算准确。
 
 ## 类型三：改时（reschedule）
 
@@ -503,6 +504,14 @@ changes: [
       ]
     },
     {
+      "type": "bar_list",
+      "items": [
+        { "label": "刘老师（数学·教过八(2)班）", "value": 92 },
+        { "label": "李老师（数学）", "value": 78 },
+        { "label": "赵老师（数学·仅第5节空闲）", "value": 65 }
+      ]
+    },
+    {
       "type": "text",
       "content": "**1. 刘老师** 匹配度 92分 | 数学 | 教过八(2)班 | 2节都空闲\n**2. 李老师** 匹配度 78分 | 数学 | 未教过八(2)班 | 2节都空闲\n**3. 赵老师** 匹配度 65分 | 数学 | 未教过八(2)班 | 仅第5节空闲"
     },
@@ -512,6 +521,43 @@ changes: [
         { "label": "选择刘老师", "prompt": "让刘老师代课" },
         { "label": "选择李老师", "prompt": "让李老师代课" },
         { "label": "选择赵老师", "prompt": "让赵老师代第5节" }
+      ]
+    }
+  ]
+}
+```
+
+## 示例5：课表概览卡片（outline 类型）
+
+```json
+{
+  "title": "张老师本周课表",
+  "badge": "第1周",
+  "sections": [
+    {
+      "type": "metrics",
+      "items": [
+        { "label": "本周总课时", "value": "10", "suffix": "节" },
+        { "label": "任教班级", "value": "2", "suffix": "个" }
+      ]
+    },
+    {
+      "type": "outline",
+      "items": [
+        {
+          "label": "周一",
+          "children": [
+            { "label": "第1节 数学·八(2)班·301室" },
+            { "label": "第3节 数学·八(3)班·302室" }
+          ]
+        },
+        {
+          "label": "周三",
+          "children": [
+            { "label": "第1节 数学·八(3)班·302室" },
+            { "label": "第5节 数学·八(2)班·301室" }
+          ]
+        }
       ]
     }
   ]
@@ -556,6 +602,26 @@ changes: [
 | `timetable_find_substitute_teachers` | 搜索代课教师 | 代课类型，**必须传入 classId 参数**（从课表查询结果获取） |
 | `show_info_card` | 展示结构化信息卡片 | 展示方案/确认摘要/申请列表时 |
 | `suggest_actions` | 展示操作按钮 | 需要教师选择或确认时 |
+
+# 周次解析规则
+
+在调用 timetable 工具时，需要传入 `week` 参数。按以下规则解析教师描述中的周次：
+
+- "本周" / "这周" / 未提及周次 → `week: 1`（默认）
+- "下周" / "下一周" → `week: 2`
+- "第N周" / "第N周" → `week: N`（直接使用数字N）
+- "期末考试周" / "考试周" / "活动周" → `week: 50`（系统会返回 totalSlots=0，触发降级建议流程）
+
+> **⚠️ 关键**：当 `week >= 50` 时，系统返回 `totalSlots: 0`（考试周/活动周所有时段被占用），此时**必须**走"无可用时段"降级建议流程。
+
+# 多节次请求处理
+
+当教师说"第5-6节请假"但课表中并非每个节次都有课时：
+
+1. 先用 `timetable_query_schedule` 查询课表
+2. 从返回的 `data.schedule` 数组中筛选匹配的条目（按 `day` 和 `period` 字段过滤）
+3. **只处理实际有课的节次**，对无课的节次不做调课操作
+4. 告知教师："您在周X第Y节没有课，仅需处理第Z节的课"
 
 # 工具响应处理规则（强制）
 
