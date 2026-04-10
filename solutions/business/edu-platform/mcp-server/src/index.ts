@@ -928,7 +928,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const week = (params.week as number) || 1;
     const classIds = (params.classIds as string[] | undefined) || [];
     const excludeTeacherId = params.excludeTeacherId as string | undefined;
-    const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
+    const rawPreferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
+    // Filter to valid school days (Mon-Fri = 1-5)
+    const preferredDays = rawPreferredDays.filter(d => d >= 1 && d <= 5);
+    if (preferredDays.length === 0) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: {
+              week,
+              totalSlots: 0,
+              slots: [],
+              note: '指定日期不在正常教学日范围内（周一至周五），无法安排调课',
+            },
+            status: 'success',
+          }),
+        }],
+      };
+    }
 
     // Weeks >= 50 simulate exam/event weeks where all slots are occupied
     if (week >= 50) {
@@ -1021,7 +1039,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           data: {
             week,
             totalSlots: slots.length,
-            slots: slots.slice(0, 20),
+            slots: slots.slice(0, 10),
           },
           status: 'success',
         }),
