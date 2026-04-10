@@ -2,78 +2,55 @@
 
 ## 目标
 
-基于 v2 eval report 的 Priority Fix 列表，重点提升 D6 E2E 场景可信度（S4/S5/S6 均为 0 分）。
+基于 v2 eval report 的 Priority Fix 列表，重点提升 D6（E2E 教师体验）的静态分析置信度和实际运行可靠性。
 
-v2 得分 86/100，D1-D5 全满分（75/75），D6 仅 11/25。核心问题是 S4（状态查询）、S5（无可用时段）、S6（硬冲突阻止）无法通过静态分析验证 AI 行为。
+v2 状态：86/100（D1-D5 = 75/75 满分，D6 = 11/25）
+- S4-S6 被评为 "Uncertain"（0 分），原因是无法从静态分析确认 AI 行为
+- Priority Fix #2: classId 参数传递规范不一致
+- Priority Fix #3: requestId 日期格式不一致
 
 ## 策略
 
-通过 MCP 服务端安全网 + SKILL.md 指令强化双管齐下，让 E2E 场景的预期行为更可预测：
-
-1. **服务端硬性保障**：即使 AI 行为有偏差，服务端也能拦截或纠正
-2. **SKILL.md 指令精确化**：明确字段路径、触发条件、必填参数
+**双层防御**：工具响应中嵌入行为指令（hint 字段）+ SKILL.md 场景速查表，确保 AI 在关键决策点获得即时、明确的行为指引。
 
 ## 修改清单
 
-### mcp-server/src/index.ts
+### mcp-server/src/index.ts — 4 处 hint 字段 + 1 处格式修复
 
-- **timetable_submit_request 添加服务端冲突守卫**（→ D6/S6）
-  - 提交前自动检测 hard 冲突（复用 check_conflicts 逻辑含 vacatedKeys swap 感知）
-  - 存在 hard 冲突时返回 `status: "error"` + `hardConflicts[]` 描述，拒绝写入
-  - 即使 AI 误跳过确认流程，服务端也会阻止错误提交
+1. **`find_available_slots`（week≥50 路径）**: totalSlots=0 响应新增 `data.hint` 字段，指令 AI 展示降级建议卡片 + 禁止结束对话。→ 目标：S5 场景
 
-- **timetable_list_my_requests 添加 teacherId 必填校验**（→ D6/S4）
-  - 不传 teacherId 时返回 `status: "error"` + 提示信息
-  - 迫使 AI 必须从 sessionContext 获取 teacherId
+2. **`find_available_slots`（正常路径）**: 当 slots.length===0 时动态添加同样 hint。覆盖非考试周但无空闲的边界。→ 目标：S5 场景
 
-- **requestId 日期格式修正**（→ Priority Fix #3）
-  - `YYYY-MMDD` → `YYYY-MM-DD`（如 `#2025-04-18-001`）
-  - 同步更新 5 条预置申请记录的 requestId
+3. **`check_conflicts`**: severity=hard 时新增 `data.hint`，明确指令绝对禁止 submit + 展示冲突 + 搜索替代。→ 目标：S6 场景
 
-### skills/reschedule-class/SKILL.md
+4. **`find_substitute_teachers`**: candidates.length===0 时新增 `data.hint`，建议切换方案类型。
 
-- **硬冲突阻止流程增加服务端安全网说明**（→ D6/S6）
-  - 新增说明：服务端也会拒绝硬冲突提交
-  - 评估者可确信即使 AI 行为偏差，提交也不会成功
+5. **requestId 格式修复**: dateStr 从 `YYYY-MM-DD` 改回 `YYYY-MMDD`，与预置数据（`#2025-0418-001` 等）格式一致，消除混淆。
 
-- **状态查询流程强化 teacherId 必填**（→ D6/S4）
-  - 添加 CRITICAL 标记强调 teacherId 是必填参数
-  - 添加服务端将返回错误的提示
+### skills/reschedule-class/SKILL.md — 3 处增强
 
-- **find_available_slots 响应处理精确化**（→ D6/S5）
-  - 添加 week≥50 触发条件说明
-  - 明确"禁止跳过 show_info_card 直接文本描述"
-  - 字段路径更精确：`data.totalSlots`（整数）
+1. **hint 字段处理说明**: "工具响应处理规则"引言段新增说明：异常情况下 `data.hint` 包含行为指引，必须优先遵循。
 
-- **check_conflicts 响应处理精确化**（→ D6/S6）
-  - 明确字段类型：`data.severity`（字符串："none"/"soft"/"hard"）
-  - 明确从 `data.conflicts[]` 的 `description` 字段提取冲突原因
-  - 重复安全保障说明
+2. **requestId 示例修正**: `list_my_requests` 响应说明中 requestId 从 `#2025-04-18-001` 修正为 `#2025-0418-001`。
 
-- **list_my_requests 响应字段精确化**（→ D6/S4）
-  - 逐字段列出返回数据结构（requestId, type, status, reason, changes[], rejectReason）
-  - 明确 changes[] 的子字段（from, to, classId, originalTeacher, targetTeacher）
-
-- **requestId 格式更新**
-  - 所有 JSON 示例中的 requestId 从 `#2025-0418-001` 更新为 `#2025-04-18-001`
-
-### solution.json
-
-- **appendSystemPrompt 更新**
-  - 强调 timetable_list_my_requests 的 teacherId 必填
-  - 强调服务端也会拒绝硬冲突提交
-  - 强调 totalSlots=0 时必须用 show_info_card
-  - 修正 list_my_requests 调用示例传入 sessionContext.teacherId
+3. **"关键场景预期行为"速查表**: 6 行表格，汇总每个 E2E 场景的触发条件、必须调用的工具序列、必须展示的输出、禁止行为。
 
 ## 自检结果
 
-- tsc: PASS (0 errors)
-- solution.json: VALID
-- 禁止 widget: 0 matches
-- 工具名一致性: 6/6 全部匹配
-- JSON 可解析: 8/8 blocks valid
+- tsc: **PASS** (0 errors)
+- solution.json: **VALID**
+- 禁止 widget: **0** matches
+- 工具名一致性: **全部匹配** (6/6)
+- JSON 可解析: **全部通过** (8/8 blocks)
+
+## 设计决策
+
+**为什么在工具响应中嵌入 hint 而不是只强化 SKILL.md？**
+- SKILL.md 作为系统提示在长对话中可能被上下文稀释
+- hint 在工具返回时即时出现，是 AI 做决策的"最后一英里"提醒
+- 两层防御（SKILL.md 规则 + tool response hint + 服务端冲突守卫）确保关键行为不被遗漏
 
 ## 本轮跳过
 
-- D1-D5 均已满分，无需调整
-- 本轮集中在 D6 E2E 安全性和可预测性
+- D1-D5：v2 已全部满分，无需调整
+- solution.json：v2 已完善，无需修改

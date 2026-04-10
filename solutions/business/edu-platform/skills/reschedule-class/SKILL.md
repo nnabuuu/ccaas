@@ -561,6 +561,8 @@ changes: [
 
 每次调用 timetable 工具后，**必须先检查返回数据**再决定下一步操作。以下检查规则在所有工作流中通用，**不可跳过**。
 
+**hint 字段**：部分工具在异常情况下（如 `totalSlots=0`、`severity=hard`、`totalCandidates=0`）会在返回值 `data` 中包含 `hint` 字段，提供具体的行为指引。当 `data.hint` 存在时，**必须优先遵循 hint 中的指令**。
+
 ## timetable_find_available_slots → 必检 totalSlots
 
 调用后**立即**检查返回值中的 `data.totalSlots` 字段（整数），按以下逻辑处理：
@@ -606,7 +608,7 @@ changes: [
 调用后处理返回值：
 1. 从 `data.summary` 对象获取 `pending`/`approved`/`rejected` 数量（整数）→ 映射到 `show_info_card` 的 metrics section
 2. 从 `data.requests[]` 数组获取每条申请详情：
-   - `requestId`（字符串，如 `"#2025-04-18-001"`）
+   - `requestId`（字符串，如 `"#2025-0418-001"`）
    - `type`（字符串：swap/substitute/reschedule/makeup）
    - `status`（字符串：pending/approved/rejected）
    - `reason`（字符串）
@@ -621,6 +623,19 @@ changes: [
 
 - **IF `data.totalEntries === 0`**：该教师/班级在本周无课，提示教师确认查询条件是否正确（周次、教师ID/班级ID）
 - **ELSE（`data.totalEntries > 0`）**：使用课表数据继续流程
+
+# 关键场景预期行为
+
+以下表格汇总各场景的预期工具调用序列和输出要求，作为行为自检参考：
+
+| 场景 | 触发条件 | 必须调用的工具序列 | 必须展示的输出 | 禁止行为 |
+|------|---------|------------------|--------------|---------|
+| 简单互换 | "换课/互换/交换" | query_schedule(自己) → query_schedule(对方) → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 方案卡片 + [确认/修改/取消] 按钮 | 跳过 check_conflicts |
+| 代课推荐 | "代课/请假/找人代" | query_schedule → find_substitute_teachers(**含 classId**) → show_info_card → suggest_actions → **选择后** → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 候选排名卡片 + 确认摘要卡片 | 不传 classId 参数 |
+| 模糊描述 | "有事/想办法/帮我安排" | query_schedule → 逐课分析(find_substitute/find_available) → show_info_card(组合方案) → suggest_actions → **等确认** → 逐项 check_conflicts → submit_request | 组合方案卡片，每课一行 | 直接猜测方案类型不查课表 |
+| 状态查询 | "批了吗/申请状态/查看申请" | list_my_requests(**teacherId 从 sessionContext 获取**) → show_info_card(metrics 统计 + text 列表) → suggest_actions | 按状态分类的申请列表 + 操作按钮 | 要求教师手动输入 teacherId |
+| 无可用时段 | find_available_slots 返回 totalSlots=0 | show_info_card(降级建议卡片) → suggest_actions([搜索下周] [放宽条件] [联系教务处]) | ≥3 个降级选项的卡片 | 说"无法安排"后结束对话 |
+| 硬冲突阻止 | check_conflicts 返回 severity="hard" | show_info_card(冲突详情) → 搜索替代(find_available 或 find_substitute) → suggest_actions(替代方案) | 冲突原因 + 替代方案选项 | 调用 submit_request |
 
 # 输出语言
 

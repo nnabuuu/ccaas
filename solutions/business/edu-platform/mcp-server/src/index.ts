@@ -1245,7 +1245,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     requestCounter++;
     const now = new Date();
-    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    // Format: YYYY-MMDD (e.g., "2025-0418") — compact date, matches pre-seeded requestId format
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 
     const newRequest: RescheduleRequest = {
@@ -1412,6 +1413,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     candidates.sort((a, b) => b.matchScore - a.matchScore);
 
+    const subHint = candidates.length === 0
+      ? '⚠️ totalCandidates=0：无可用代课教师。请建议教师尝试互换(swap)或改时(reschedule)方案。'
+      : undefined;
+
     return {
       content: [{
         type: 'text',
@@ -1422,6 +1427,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             requestedSlot: { day: slot.day, dayName: DAY_NAMES[slot.day], periods: slot.periods },
             candidates,
             matchScoreFormula: 'subjectMatch(40) + taughtThisClass(30) + availability(20) + historyBonus(max10)',
+            ...(subHint ? { hint: subHint } : {}),
           },
           status: 'success',
         }),
