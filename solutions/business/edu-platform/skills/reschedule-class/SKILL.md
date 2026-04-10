@@ -120,33 +120,130 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 
 # 模糊描述处理
 
-当教师说"下周三下午有事，课帮我想想办法"这类模糊描述时：
+当教师说"下周三下午有事，课帮我想想办法"这类模糊描述时，按以下步骤处理：
 
-1. 调用 `timetable_query_schedule` 查询该时段所有课时
-2. 对每节课逐一分析最佳方案：
-   - 有同科教师空闲 → 推荐代课（substitute）
-   - 有合适教师可互换 → 推荐互换（swap）
-   - 班级和教师有其他空闲 → 推荐改时（reschedule）
-   - 以上都不行 → 推荐补课（makeup）
-3. 用 `show_info_card` 展示组合方案（每节课一行）
-4. 用 `suggest_actions` 让教师确认整体方案
-5. 确认后逐项提交
+**步骤1：查询受影响课时**
+调用 `timetable_query_schedule({ teacherId: "<当前教师ID>", week: 1 })`，从结果中筛选受影响的课时（如"下午"=第5-8节，"周三"=day:3）。
+
+**步骤2：逐课分析最佳方案**
+对每节受影响的课，按优先级依次尝试：
+1. **代课**（优先）：调用 `timetable_find_substitute_teachers` 看是否有同科教师空闲
+2. **互换**：查看其他教师课表，看是否有互换机会
+3. **改时**：调用 `timetable_find_available_slots` 查找该班和教师都空闲的时段
+4. **补课**（兜底）：如果以上都不可行，建议课后或下周补课
+
+**步骤3：展示组合方案**
+用 `show_info_card` 展示每节课的推荐方案，每节课一行，标注方案类型和关键信息。
+
+**步骤4：教师确认**
+用 `suggest_actions` 提供 [确认整体方案] [修改某节课方案] [取消] 按钮。
+
+**步骤5：逐项提交**
+教师确认后，对每节课分别调用 `timetable_check_conflicts` 检测冲突，无 hard 冲突的逐项调用 `timetable_submit_request` 提交。有 hard 冲突的标记并提示教师调整。
+
+**示例对话：**
+> 教师："下周三下午有事，课帮我想想办法"
+
+1. 调用 `timetable_query_schedule({ teacherId: "t-zhang", week: 1 })`
+2. 筛选出周三下午（day:3, period≥5）的课时：第5节（数学·八(2)班）
+3. 为第5节调用 `timetable_find_substitute_teachers({ subject: "数学", slot: { day: 3, periods: [5] }, excludeTeacherId: "t-zhang", classId: "c-8-2" })`
+4. 假设找到刘老师（匹配度92），用 show_info_card 展示：
+   - 周三第5节 数学·八(2)班 → 推荐刘老师代课（匹配度92）
+5. 用 suggest_actions 让教师确认
+6. 确认后 check_conflicts → submit_request
 
 # 异常处理
 
 ## 无可用时段
-当 `timetable_find_available_slots` 返回空结果时：
-- 不能直接放弃，必须提供降级建议
-- 建议选项：①扩大搜索到下一周 ②减少约束条件 ③联系教务处人工协调
-- 用 `show_info_card` 展示当前困境和建议
-- 用 `suggest_actions` 提供操作选项
+
+当 `timetable_find_available_slots` 返回 `totalSlots: 0` 或空 `slots` 数组时：
+
+**⚠️ 禁止直接放弃。必须提供降级建议。**
+
+处理流程：
+1. 用 `show_info_card` 展示当前困境和 3 个降级建议
+2. 用 `suggest_actions` 提供操作选项让教师选择
+
+**show_info_card 示例（无可用时段）：**
+
+```json
+{
+  "title": "暂无可用时段",
+  "badge": "需协调",
+  "sections": [
+    {
+      "type": "metrics",
+      "items": [
+        { "label": "搜索范围", "value": "本周" },
+        { "label": "可用时段", "value": "0", "suffix": "个" }
+      ]
+    },
+    {
+      "type": "text",
+      "content": "本周所有时段已被占满，无法安排调课。以下是几个替代方案：\n\n**方案1**: 扩大到下一周搜索\n**方案2**: 减少约束条件（如接受 soft 冲突时段）\n**方案3**: 联系教务处人工协调"
+    },
+    {
+      "type": "actions",
+      "actions": [
+        { "label": "搜索下一周", "prompt": "扩大到下周搜索可用时段" },
+        { "label": "放宽条件", "prompt": "接受有轻微冲突的时段" },
+        { "label": "联系教务处", "prompt": "帮我整理情况说明，我去找教务处" }
+      ]
+    }
+  ]
+}
+```
+
+教师选择后的处理：
+- "搜索下一周"：用 `timetable_find_available_slots` 传入 `week + 1` 重新搜索
+- "放宽条件"：去掉 `classIds` 或 `subject` 约束重新搜索
+- "联系教务处"：整理需求摘要供教师带给教务处
 
 ## 硬冲突阻止
-当 `timetable_check_conflicts` 返回 hard 级别冲突时：
-- **禁止提交**：不能调用 `timetable_submit_request`
-- 明确说明冲突原因（如教室被占用、教师已有课等）
-- 用 `show_info_card` 展示冲突详情和替代方案
-- 用 `suggest_actions` 提供修改方案选项
+
+当 `timetable_check_conflicts` 返回 `severity: "hard"` 时：
+
+**⚠️ 绝对禁止调用 `timetable_submit_request`。必须阻止提交并提供替代方案。**
+
+处理流程：
+1. 用 `show_info_card` 展示冲突详情，**明确说明每条 hard 冲突的原因**
+2. 自动搜索替代方案（调用 `timetable_find_available_slots` 或 `timetable_find_substitute_teachers`）
+3. 用 `suggest_actions` 提供替代方案选项
+
+**show_info_card 示例（硬冲突）：**
+
+```json
+{
+  "title": "存在冲突，无法提交",
+  "badge": "硬冲突",
+  "sections": [
+    {
+      "type": "metrics",
+      "items": [
+        { "label": "冲突数", "value": "1", "suffix": "个" },
+        { "label": "严重级别", "value": "硬冲突" }
+      ]
+    },
+    {
+      "type": "text",
+      "content": "**冲突原因：** 王老师在周四第3节已有课（物理·八(1)班），无法互换。\n\n该方案无法提交。以下是替代建议：\n- 换到周四其他空闲节次\n- 选择其他教师互换"
+    },
+    {
+      "type": "actions",
+      "actions": [
+        { "label": "查看其他时段", "prompt": "帮我查周四其他空闲时段" },
+        { "label": "换其他教师", "prompt": "帮我找其他可以互换的教师" },
+        { "label": "取消调课", "prompt": "取消本次调课" }
+      ]
+    }
+  ]
+}
+```
+
+教师选择后的处理：
+- "查看其他时段"：调用 `timetable_find_available_slots` 搜索空闲时段
+- "换其他教师"：调用 `timetable_find_substitute_teachers` 或重新查课表
+- "取消调课"：按"用户反馈处理"中的取消流程处理
 
 # 确认门控（强制规则）
 
@@ -165,6 +262,54 @@ description: 调课助手 - 帮助教师高效安全地完成调课
    - [取消]：放弃本次调课
 3. **等待用户操作**：只有用户明确选择"确认提交"后，才调用 `timetable_submit_request`
 4. **批量调课逐项确认**：如果涉及多节课的变更，在摘要中逐条列出每节课的变更详情
+
+# 用户反馈处理
+
+用户在 suggest_actions 中选择不同按钮后，按以下流程处理：
+
+## 用户选择"修改方案"
+
+当用户选择"修改方案"或说"不对"/"换一个"/"重新选"时：
+
+1. 先确认用户想修改什么：
+   - 如果用户明确指出要改的部分（如"换另一位教师"/"换个时间"），直接回到对应步骤
+   - 如果用户只说"修改方案"，询问："您想修改哪部分？可以换教师、换时段、或换方案类型。"
+2. 根据调课类型回到对应步骤：
+   - **互换**：回到查询对方课表步骤，重新搜索可互换的教师/时段
+   - **代课**：回到 `timetable_find_substitute_teachers` 步骤，重新搜索候选教师
+   - **改时/补课**：回到 `timetable_find_available_slots` 步骤，重新搜索可用时段
+3. 重新展示方案卡片（show_info_card）和确认按钮（suggest_actions）
+
+## 用户选择"取消"
+
+当用户选择"取消"或说"算了"/"不调了"/"放弃"时：
+
+1. 确认取消："好的，已取消本次调课操作。"
+2. 用 `suggest_actions` 提供后续操作选项：
+
+```json
+{
+  "actions": [
+    {
+      "label": "重新开始调课",
+      "prompt": "我想重新安排调课",
+      "skill_hint": "reschedule-class"
+    },
+    {
+      "label": "查看我的申请",
+      "prompt": "查看我的调课申请状态",
+      "skill_hint": "reschedule-class"
+    }
+  ]
+}
+```
+
+## 用户更改需求
+
+当用户在确认前改变主意（如"还是代课吧"/"改成补课"）时：
+1. 识别新的调课类型
+2. 从新类型的工作流第一步重新开始
+3. 不保留旧方案数据
 
 # show_info_card JSON 示例
 
@@ -299,7 +444,8 @@ description: 调课助手 - 帮助教师高效安全地完成调课
     },
     {
       "label": "取消",
-      "prompt": "取消本次调课"
+      "prompt": "取消本次调课",
+      "skill_hint": "reschedule-class"
     }
   ]
 }

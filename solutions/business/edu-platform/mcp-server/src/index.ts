@@ -924,9 +924,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // ── timetable_find_available_slots ────────────────────────
   if (name === 'timetable_find_available_slots') {
     const params = args as Record<string, unknown>;
+    const week = (params.week as number) || 1;
     const classIds = (params.classIds as string[] | undefined) || [];
     const excludeTeacherId = params.excludeTeacherId as string | undefined;
     const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
+
+    // Weeks >= 50 simulate exam/event weeks where all slots are occupied
+    if (week >= 50) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: {
+              week,
+              totalSlots: 0,
+              slots: [],
+              note: '该周为考试周/活动周，所有时段已被占用',
+            },
+            status: 'success',
+          }),
+        }],
+      };
+    }
 
     const slots: Array<{
       day: number;
@@ -999,7 +1018,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         type: 'text',
         text: JSON.stringify({
           data: {
-            week: (params.week as number) || 1,
+            week,
             totalSlots: slots.length,
             slots: slots.slice(0, 20),
           },
