@@ -28,6 +28,7 @@ describe('http-error-mapping', () => {
         'MCP_ERROR',
         'INVALID_OUTPUT',
         'PARTIAL_FAILURE',
+        'ALREADY_EXISTS',
       ];
 
       errorCodes.forEach((code) => {
@@ -43,6 +44,7 @@ describe('http-error-mapping', () => {
       expect(ERROR_CODE_TO_HTTP_STATUS.NOT_FOUND).toBe(404);
       expect(ERROR_CODE_TO_HTTP_STATUS.SKILL_NOT_FOUND).toBe(404);
       expect(ERROR_CODE_TO_HTTP_STATUS.RATE_LIMITED).toBe(429);
+      expect(ERROR_CODE_TO_HTTP_STATUS.ALREADY_EXISTS).toBe(409);
     });
 
     it('should map server errors to 5xx status codes', () => {
@@ -83,6 +85,7 @@ describe('http-error-mapping', () => {
       expect(isClientError('NOT_FOUND')).toBe(true);
       expect(isClientError('SKILL_NOT_FOUND')).toBe(true);
       expect(isClientError('RATE_LIMITED')).toBe(true);
+      expect(isClientError('ALREADY_EXISTS')).toBe(true);
     });
 
     it('should return false for server error codes', () => {
@@ -120,6 +123,7 @@ describe('http-error-mapping', () => {
       expect(httpStatusToErrorCode(401)).toBe('SESSION_EXPIRED');
       expect(httpStatusToErrorCode(403)).toBe('PERMISSION_DENIED');
       expect(httpStatusToErrorCode(404)).toBe('NOT_FOUND');
+      expect(httpStatusToErrorCode(409)).toBe('ALREADY_EXISTS');
       expect(httpStatusToErrorCode(429)).toBe('RATE_LIMITED');
       expect(httpStatusToErrorCode(502)).toBe('MCP_ERROR');
       expect(httpStatusToErrorCode(503)).toBe('CONNECTION_LOST');

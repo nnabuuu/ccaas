@@ -211,6 +211,7 @@ type ErrorCode =
   | 'SESSION_EXPIRED'       // 401 - Unauthorized
   | 'PERMISSION_DENIED'     // 403 - Forbidden
   | 'SKILL_NOT_FOUND'       // 404 - Not Found
+  | 'ALREADY_EXISTS'        // 409 - Conflict
   | 'RATE_LIMITED'          // 429 - Too Many Requests
   | 'INTERNAL_ERROR'        // 500 - Internal Server Error
   | 'CLI_ERROR'             // 500 - CLI process error

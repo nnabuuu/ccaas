@@ -7,10 +7,10 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -66,7 +66,7 @@ export class SkillsService {
       where: { tenantId, slug },
     });
     if (existing) {
-      throw new ConflictException(`Skill with slug '${slug}' already exists`);
+      throw new AlreadyExistsException(`Skill with slug '${slug}' already exists`);
     }
 
     const skill = this.skillRepository.create({

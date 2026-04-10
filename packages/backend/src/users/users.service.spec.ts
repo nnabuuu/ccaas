@@ -5,7 +5,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -72,7 +73,7 @@ describe('UsersService', () => {
       expect(result).toEqual(mockUser);
     });
 
-    it('should throw ConflictException if email already exists', async () => {
+    it('should throw AlreadyExistsException if email already exists', async () => {
       const createDto: CreateUserDto = {
         email: 'test@example.com',
         name: 'Test User',
@@ -80,7 +81,7 @@ describe('UsersService', () => {
 
       repository.findOne.mockResolvedValue(mockUser); // Existing user
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow(AlreadyExistsException);
       await expect(service.create(createDto)).rejects.toThrow(
         'User with email test@example.com already exists',
       );

@@ -7,12 +7,12 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   Logger,
   OnModuleInit,
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -74,7 +74,7 @@ export class TenantsService implements OnModuleInit {
       where: { slug },
     });
     if (existing) {
-      throw new ConflictException(`Tenant with slug '${slug}' already exists`);
+      throw new AlreadyExistsException(`Tenant with slug '${slug}' already exists`);
     }
 
     const plan = dto.plan ?? 'free';

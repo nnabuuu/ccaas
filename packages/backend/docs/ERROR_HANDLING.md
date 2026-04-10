@@ -6,7 +6,7 @@ This document describes the standardized HTTP error handling system in the CCAAS
 
 The backend uses a three-layer error handling system:
 
-1. **Protocol ErrorCode** - 12 standard error codes shared between HTTP and WebSocket
+1. **Protocol ErrorCode** - 13 standard error codes shared between HTTP and WebSocket
 2. **Exception Classes** - Type-safe exception classes for each error code
 3. **Global Filter** - Unified exception filter that transforms all errors into standardized responses
 
@@ -20,6 +20,7 @@ type ErrorCode =
   | 'SESSION_EXPIRED'       // 401 - Unauthorized
   | 'PERMISSION_DENIED'     // 403 - Forbidden
   | 'SKILL_NOT_FOUND'       // 404 - Not Found
+  | 'ALREADY_EXISTS'        // 409 - Conflict
   | 'RATE_LIMITED'          // 429 - Too Many Requests
   | 'INTERNAL_ERROR'        // 500 - Internal Server Error
   | 'CLI_ERROR'             // 500 - CLI process error
@@ -71,6 +72,7 @@ All HTTP errors return a consistent JSON structure:
 import {
   ValidationException,
   SkillNotFoundException,
+  AlreadyExistsException,
   PermissionDeniedException,
   SessionExpiredException,
   RateLimitedException,
@@ -93,6 +95,23 @@ async getSkill(@Param('id') id: string) {
   }
 
   return skill;
+}
+```
+
+### Duplicate Resource (Conflict)
+
+```typescript
+@Post()
+async createTenant(@Body() dto: CreateTenantDto) {
+  const existing = await this.tenantsService.findBySlug(dto.slug);
+
+  if (existing) {
+    throw new AlreadyExistsException(
+      `Tenant with slug '${dto.slug}' already exists`
+    );
+  }
+
+  return this.tenantsService.create(dto);
 }
 ```
 
@@ -222,6 +241,7 @@ Error
     └── ProtocolHttpException
         ├── ValidationException
         ├── SkillNotFoundException
+        ├── AlreadyExistsException
         ├── PermissionDeniedException
         ├── SessionExpiredException
         ├── RateLimitedException

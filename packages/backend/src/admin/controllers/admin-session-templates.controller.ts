@@ -13,7 +13,6 @@ import {
   Param,
   Body,
   NotFoundException,
-  ConflictException,
   BadRequestException,
   Logger,
   UseGuards,
@@ -27,6 +26,7 @@ import { RequestContext } from '../../auth/types';
 import { TenantsService } from '../../tenants/tenants.service';
 import { Tenant, PLAN_MAX_SESSION_TTL_MS } from '../../tenants/entities/tenant.entity';
 import { AuditService } from '../services/audit.service';
+import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import {
   CreateSessionTemplateDto,
   UpdateSessionTemplateDto,
@@ -165,7 +165,7 @@ export class AdminSessionTemplatesController {
     const templates = this.getTemplates(tenant);
 
     if (templates[dto.name]) {
-      throw new ConflictException(
+      throw new AlreadyExistsException(
         `Session template "${dto.name}" already exists`,
       );
     }

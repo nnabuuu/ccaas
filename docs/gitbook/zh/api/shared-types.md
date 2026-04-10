@@ -210,6 +210,7 @@ type ErrorCode =
   | 'SESSION_EXPIRED'       // 401 - 未授权
   | 'PERMISSION_DENIED'     // 403 - 禁止访问
   | 'SKILL_NOT_FOUND'       // 404 - 未找到
+  | 'ALREADY_EXISTS'        // 409 - 冲突
   | 'RATE_LIMITED'          // 429 - 请求过多
   | 'INTERNAL_ERROR'        // 500 - 内部服务器错误
   | 'CLI_ERROR'             // 500 - CLI 进程错误

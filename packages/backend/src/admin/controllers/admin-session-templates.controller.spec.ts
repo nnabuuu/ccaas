@@ -5,9 +5,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
-  ConflictException,
   NotFoundException,
 } from '@nestjs/common';
+import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminSessionTemplatesController } from './admin-session-templates.controller';
 import { TenantsService } from '../../tenants/tenants.service';
 import { AuditService } from '../services/audit.service';
@@ -164,7 +164,7 @@ describe('AdminSessionTemplatesController', () => {
       );
     });
 
-    it('throws ConflictException when template already exists', async () => {
+    it('throws AlreadyExistsException when template already exists', async () => {
       tenantsService.findOne.mockResolvedValue(
         makeTenant({ 'existing-template': {} }) as any,
       );
@@ -175,7 +175,7 @@ describe('AdminSessionTemplatesController', () => {
           { name: 'existing-template', template: {} } as any,
           mockCtx,
         ),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(AlreadyExistsException);
     });
 
     it('throws BadRequestException when at template limit (50)', async () => {

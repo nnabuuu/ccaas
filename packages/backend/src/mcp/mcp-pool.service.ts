@@ -10,8 +10,8 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   NotFoundException,
-  ConflictException,
 } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -142,7 +142,7 @@ export class McpPoolService implements OnModuleInit, OnModuleDestroy {
     // Check for duplicate
     const existing = await this.findBySlug(tenantId, slug);
     if (existing) {
-      throw new ConflictException(`MCP server with slug '${slug}' already exists`);
+      throw new AlreadyExistsException(`MCP server with slug '${slug}' already exists`);
     }
 
     const server = this.mcpServerRepository.create({

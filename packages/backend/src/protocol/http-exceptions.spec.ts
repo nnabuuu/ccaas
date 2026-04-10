@@ -6,6 +6,8 @@ import {
   ProtocolHttpException,
   ValidationException,
   SkillNotFoundException,
+  ResourceNotFoundException,
+  AlreadyExistsException,
   PermissionDeniedException,
   SessionExpiredException,
   RateLimitedException,
@@ -94,6 +96,26 @@ describe('http-exceptions', () => {
       expect(exception.message).toBe('Skill not found: skill-123');
       expect(exception.getStatus()).toBe(404);
       expect(exception.recoverable).toBe(false);
+    });
+  });
+
+  describe('AlreadyExistsException', () => {
+    it('should create already exists error with default message', () => {
+      const exception = new AlreadyExistsException();
+
+      expect(exception.errorCode).toBe('ALREADY_EXISTS');
+      expect(exception.message).toBe('Resource already exists');
+      expect(exception.getStatus()).toBe(409);
+      expect(exception.recoverable).toBe(false);
+      expect(exception.retryable).toBe(false);
+    });
+
+    it('should create already exists error with custom message', () => {
+      const exception = new AlreadyExistsException(
+        "Tenant with slug 'my-tenant' already exists",
+      );
+
+      expect(exception.message).toBe("Tenant with slug 'my-tenant' already exists");
     });
   });
 

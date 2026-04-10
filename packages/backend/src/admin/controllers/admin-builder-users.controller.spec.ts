@@ -3,7 +3,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminBuilderUsersController } from './admin-builder-users.controller';
 import { UsersService } from '../../users/users.service';
 import { UserTenantService } from '../../users/user-tenant.service';
@@ -194,11 +194,11 @@ describe('AdminBuilderUsersController', () => {
 
     it('should throw 409 when email already exists', async () => {
       usersService.create.mockRejectedValue(
-        new ConflictException('User with email builder@example.com already exists'),
+        new AlreadyExistsException('User with email builder@example.com already exists'),
       );
 
       await expect(controller.create(dto, mockContext)).rejects.toThrow(
-        ConflictException,
+        AlreadyExistsException,
       );
       expect(tenantsService.create).not.toHaveBeenCalled();
     });
@@ -206,11 +206,11 @@ describe('AdminBuilderUsersController', () => {
     it('should throw 409 when tenant slug conflicts', async () => {
       usersService.create.mockResolvedValue(mockUser as any);
       tenantsService.create.mockRejectedValue(
-        new ConflictException("Tenant with slug 'builder-tenant' already exists"),
+        new AlreadyExistsException("Tenant with slug 'builder-tenant' already exists"),
       );
 
       await expect(controller.create(dto, mockContext)).rejects.toThrow(
-        ConflictException,
+        AlreadyExistsException,
       );
       expect(apiKeyService.create).not.toHaveBeenCalled();
     });

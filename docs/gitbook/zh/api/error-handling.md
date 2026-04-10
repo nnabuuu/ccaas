@@ -51,7 +51,7 @@
 
 ## 错误代码参考
 
-即见Agentic 使用 12 个标准错误代码，在 REST API 和 WebSocket 事件中保持一致：
+即见Agentic 使用 13 个标准错误代码，在 REST API 和 WebSocket 事件中保持一致：
 
 | 代码 | HTTP 状态 | 说明 | 可恢复 | 可重试 |
 |------|-----------|------|--------|--------|
@@ -59,6 +59,7 @@
 | `SESSION_EXPIRED` | 401 | 会话过期或认证失败 | 否 | 否 |
 | `PERMISSION_DENIED` | 403 | 此操作权限不足 | 否 | 否 |
 | `SKILL_NOT_FOUND` | 404 | 请求的资源未找到 | 否 | 否 |
+| `ALREADY_EXISTS` | 409 | 资源已存在（重复 slug、邮箱等） | 否 | 否 |
 | `RATE_LIMITED` | 429 | 超过速率限制 | 是 | 是 |
 | `INTERNAL_ERROR` | 500 | 意外的服务器错误 | 否 | 否 |
 | `CLI_ERROR` | 500 | AgentEngine 进程错误 | 是 | 是 |
@@ -75,6 +76,7 @@
 - `SESSION_EXPIRED` - 重新认证后重试
 - `PERMISSION_DENIED` - 请求适当的权限
 - `SKILL_NOT_FOUND` - 验证资源 ID
+- `ALREADY_EXISTS` - 使用不同的 slug/邮箱，或更新已有资源
 - `RATE_LIMITED` - 等待后重试(参见 `retryAfterMs`)
 
 **5xx 服务器错误** - 服务器遇到错误:
@@ -137,6 +139,22 @@
 ```
 
 **操作**: 等待指定的 `retryAfterMs` 时长后重试。
+
+### 资源已存在
+
+**场景**: 创建资源时 slug 或邮箱重复
+
+```json
+{
+  "code": "ALREADY_EXISTS",
+  "message": "Tenant with slug 'my-tenant' already exists",
+  "statusCode": 409,
+  "recoverable": false,
+  "retryable": false
+}
+```
+
+**操作**: 使用不同的 slug/邮箱，或更新已有资源而非新建。
 
 ### 资源未找到
 

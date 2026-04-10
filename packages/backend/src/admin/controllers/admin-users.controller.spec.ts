@@ -5,10 +5,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { AlreadyExistsException } from '../../protocol/http-exceptions';
 import { AdminUsersController } from './admin-users.controller';
 import { UsersService } from '../../users/users.service';
 import { UserTenantService } from '../../users/user-tenant.service';
@@ -312,7 +312,7 @@ describe('AdminUsersController', () => {
     it('should throw 409 on duplicate email', async () => {
       tenantsService.findOne.mockResolvedValue(mockTenant as any);
       usersService.create.mockRejectedValue(
-        new ConflictException('User with email test@example.com already exists'),
+        new AlreadyExistsException('User with email test@example.com already exists'),
       );
 
       await expect(
@@ -324,7 +324,7 @@ describe('AdminUsersController', () => {
           },
           adminCtx,
         ),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(AlreadyExistsException);
     });
 
     it('should throw if tenant not found', async () => {

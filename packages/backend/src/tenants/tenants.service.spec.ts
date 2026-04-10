@@ -7,7 +7,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { ConfigService } from '@nestjs/config';
 import { TenantsService } from './tenants.service';
 import { Tenant, PLAN_DEFAULT_SESSION_TTL_MS, PLAN_MAX_SESSION_TTL_MS } from './entities/tenant.entity';
@@ -275,7 +276,7 @@ describe('TenantsService', () => {
       expect(result.tenant.slug).toBe('my-test-company');
     });
 
-    it('should throw ConflictException if slug already exists', async () => {
+    it('should throw AlreadyExistsException if slug already exists', async () => {
       const dto = {
         name: 'Test Tenant',
         slug: 'existing-slug',
@@ -288,7 +289,7 @@ describe('TenantsService', () => {
 
       tenantRepository.findOne.mockResolvedValue(existingTenant as any);
 
-      await expect(service.create(dto)).rejects.toThrow(ConflictException);
+      await expect(service.create(dto)).rejects.toThrow(AlreadyExistsException);
       await expect(service.create(dto)).rejects.toThrow("Tenant with slug 'existing-slug' already exists");
     });
   });

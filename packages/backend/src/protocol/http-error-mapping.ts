@@ -18,6 +18,7 @@ export const ERROR_CODE_TO_HTTP_STATUS: Record<ErrorCode, number> = {
   SESSION_EXPIRED: 401, // Unauthorized
   RATE_LIMITED: 429, // Too Many Requests
   QUOTA_EXCEEDED: 429, // Quota Exceeded
+  ALREADY_EXISTS: 409, // Conflict
 
   // Server errors (5xx)
   TIMEOUT: 504, // Gateway Timeout
@@ -60,6 +61,7 @@ export function httpStatusToErrorCode(statusCode: number): ErrorCode {
   if (statusCode === 401) return 'SESSION_EXPIRED';
   if (statusCode === 403) return 'PERMISSION_DENIED';
   if (statusCode === 404) return 'NOT_FOUND';
+  if (statusCode === 409) return 'ALREADY_EXISTS';
   if (statusCode === 429) return 'RATE_LIMITED';
   if (statusCode === 502) return 'MCP_ERROR';
   if (statusCode === 503) return 'CONNECTION_LOST';

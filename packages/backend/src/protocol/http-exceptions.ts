@@ -142,6 +142,16 @@ export class RateLimitedException extends ProtocolHttpException {
 }
 
 /**
+ * Already exists / conflict error (409)
+ */
+export class AlreadyExistsException extends ProtocolHttpException {
+  constructor(message: string = 'Resource already exists') {
+    super('ALREADY_EXISTS', message, false, false);
+    this.name = 'AlreadyExistsException';
+  }
+}
+
+/**
  * Quota exceeded error (429)
  */
 export class QuotaExceededException extends ProtocolHttpException {

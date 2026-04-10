@@ -9,6 +9,7 @@ import {
   ProtocolHttpException,
   ValidationException,
   SkillNotFoundException,
+  AlreadyExistsException,
   RateLimitedException,
   SessionExpiredException,
 } from '../../protocol/http-exceptions';
@@ -71,6 +72,24 @@ describe('GlobalHttpExceptionFilter', () => {
           code: 'SKILL_NOT_FOUND',
           message: 'Skill not found: skill-123',
           statusCode: 404,
+          path: '/api/test',
+        }),
+      );
+    });
+
+    it('should handle AlreadyExistsException', () => {
+      const exception = new AlreadyExistsException("Tenant with slug 'test' already exists");
+
+      filter.catch(exception, mockHost);
+
+      expect(mockResponse.status).toHaveBeenCalledWith(409);
+      expect(mockResponse.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 'ALREADY_EXISTS',
+          message: "Tenant with slug 'test' already exists",
+          statusCode: 409,
+          recoverable: false,
+          retryable: false,
           path: '/api/test',
         }),
       );

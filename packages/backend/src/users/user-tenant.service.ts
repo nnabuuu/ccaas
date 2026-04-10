@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { UserTenant, UserRole } from './entities/user-tenant.entity';
@@ -28,7 +29,7 @@ export class UserTenantService {
     });
 
     if (existing) {
-      throw new ConflictException('User is already a member of this tenant');
+      throw new AlreadyExistsException('User is already a member of this tenant');
     }
 
     // Set canCreateSkills based on role if not explicitly provided

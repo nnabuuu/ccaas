@@ -51,7 +51,7 @@ All API errors return the following JSON structure:
 
 ## Error Codes Reference
 
-KedgeAgentic uses 12 standard error codes that are consistent across both REST API and WebSocket events:
+KedgeAgentic uses 13 standard error codes that are consistent across both REST API and WebSocket events:
 
 | Code | HTTP Status | Description | Recoverable | Retryable |
 |------|-------------|-------------|-------------|-----------|
@@ -59,6 +59,7 @@ KedgeAgentic uses 12 standard error codes that are consistent across both REST A
 | `SESSION_EXPIRED` | 401 | Session expired or authentication failed | No | No |
 | `PERMISSION_DENIED` | 403 | Insufficient permissions for this operation | No | No |
 | `SKILL_NOT_FOUND` | 404 | Requested resource not found | No | No |
+| `ALREADY_EXISTS` | 409 | Resource already exists (duplicate slug, email, etc.) | No | No |
 | `RATE_LIMITED` | 429 | Rate limit exceeded | Yes | Yes |
 | `INTERNAL_ERROR` | 500 | Unexpected server error | No | No |
 | `CLI_ERROR` | 500 | AgentEngine process error | Yes | Yes |
@@ -75,6 +76,7 @@ KedgeAgentic uses 12 standard error codes that are consistent across both REST A
 - `SESSION_EXPIRED` - Re-authenticate and retry
 - `PERMISSION_DENIED` - Request appropriate permissions
 - `SKILL_NOT_FOUND` - Verify the resource ID
+- `ALREADY_EXISTS` - Use a different slug/email or update the existing resource
 - `RATE_LIMITED` - Wait before retrying (see `retryAfterMs`)
 
 **5xx Server Errors** - The server encountered an error:
@@ -137,6 +139,22 @@ KedgeAgentic uses 12 standard error codes that are consistent across both REST A
 ```
 
 **Action**: Wait for the specified `retryAfterMs` duration before retrying.
+
+### Resource Already Exists
+
+**Scenario**: Creating a resource with a duplicate slug or email
+
+```json
+{
+  "code": "ALREADY_EXISTS",
+  "message": "Tenant with slug 'my-tenant' already exists",
+  "statusCode": 409,
+  "recoverable": false,
+  "retryable": false
+}
+```
+
+**Action**: Use a different slug/email, or update the existing resource instead of creating a new one.
 
 ### Resource Not Found
 

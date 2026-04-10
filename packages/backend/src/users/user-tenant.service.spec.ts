@@ -5,7 +5,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
+import { AlreadyExistsException } from '../protocol/http-exceptions';
 import { UserTenantService } from './user-tenant.service';
 import { UserTenant } from './entities/user-tenant.entity';
 import { CreateUserTenantDto } from './dto/create-user-tenant.dto';
@@ -144,7 +145,7 @@ describe('UserTenantService', () => {
       expect(result.canCreateSkills).toBe(false);
     });
 
-    it('should throw ConflictException if relationship already exists', async () => {
+    it('should throw AlreadyExistsException if relationship already exists', async () => {
       const createDto: CreateUserTenantDto = {
         userId: 'user-123',
         tenantId: 'tenant-123',
@@ -153,7 +154,7 @@ describe('UserTenantService', () => {
 
       repository.findOne.mockResolvedValue(mockUserTenant as any);
 
-      await expect(service.create(createDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createDto)).rejects.toThrow(AlreadyExistsException);
       await expect(service.create(createDto)).rejects.toThrow(
         'User is already a member of this tenant',
       );
