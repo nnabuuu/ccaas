@@ -17,13 +17,14 @@
   "sessionTemplates": {
     "lesson-planning": {
       "description": "备课助手模式",
-      "enabledSkills": ["lesson-plan-generator", "quiz-generator", "student-analysis"],
+      "enabledSkills": ["lesson-plan-generator", "quiz-generator", "student-analysis", "reschedule-class"],
       "appendSystemPrompt": "【强制要求】所有回复必须使用中文。\n\n## 文件卡片\n使用 ```file 代码块输出文件信息（JSON 格式含 fileName, fileType, downloadUrl, description），前端自动渲染为可下载的文件卡片。\n\n## 其他技能\n当教师请求出题时，使用 quiz-generator 技能流程。当教师请求学情分析时，调用 student_proficiency 获取数据并用 show_info_card 工具展示。"
     }
   },
   "skills": [
     { "slug": "lesson-plan-generator", "name": "lesson-plan-generator" },
     { "slug": "quiz-generator", "name": "quiz-generator" },
-    { "slug": "student-analysis", "name": "student-analysis" }
+    { "slug": "student-analysis", "name": "student-analysis" },
+    { "slug": "reschedule-class", "name": "reschedule-class" }
   ]
 }

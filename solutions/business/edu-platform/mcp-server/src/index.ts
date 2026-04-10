@@ -220,10 +220,316 @@ const suggestActionsTool: Tool = {
   },
 };
 
+// ─── Timetable Shared Data Model ──────────────────────────────
+
+interface ScheduleEntry {
+  day: number;          // 1-5 (Mon-Fri)
+  period: number;       // 1-8
+  subject: string;
+  className: string;
+  classId: string;
+  room: string;
+  teacherId: string;
+  teacherName: string;
+}
+
+interface TeacherInfo {
+  teacherId: string;
+  name: string;
+  subject: string;
+  classIds: string[];
+}
+
+interface RescheduleRequest {
+  requestId: string;
+  type: 'swap' | 'reschedule' | 'substitute' | 'makeup' | 'batch';
+  teacherId: string;
+  teacherName: string;
+  changes: Array<{
+    originalDay: number;
+    originalPeriod: number;
+    originalTeacherId: string;
+    targetDay: number;
+    targetPeriod: number;
+    targetTeacherId: string;
+    classId: string;
+  }>;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected' | 'auto_approved';
+  createdAt: string;
+  approver?: string;
+  rejectReason?: string;
+}
+
+const TEACHERS: TeacherInfo[] = [
+  { teacherId: 't-zhang', name: '张老师', subject: '数学', classIds: ['c-8-2', 'c-8-3'] },
+  { teacherId: 't-wang', name: '王老师', subject: '物理', classIds: ['c-8-1', 'c-8-2'] },
+  { teacherId: 't-li', name: '李老师', subject: '数学', classIds: ['c-8-1', 'c-8-4'] },
+  { teacherId: 't-liu', name: '刘老师', subject: '数学', classIds: ['c-8-3', 'c-8-4'] },
+  { teacherId: 't-chen', name: '陈老师', subject: '英语', classIds: ['c-8-1', 'c-8-2'] },
+  { teacherId: 't-zhao', name: '赵老师', subject: '数学', classIds: ['c-7-1', 'c-7-2'] },
+  { teacherId: 't-sun', name: '孙老师', subject: '语文', classIds: ['c-8-2', 'c-8-3'] },
+];
+
+// Complete week schedule: 7 teachers × 5 days × 8 periods (not every slot is occupied)
+const SCHEDULE: ScheduleEntry[] = [
+  // ── 张老师 (数学, 八2/八3) ──
+  { day: 1, period: 1, subject: '数学', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 1, period: 3, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 2, period: 2, subject: '数学', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 2, period: 5, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 3, period: 1, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 3, period: 5, subject: '数学', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 4, period: 2, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 4, period: 6, subject: '数学', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 5, period: 1, subject: '数学', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-zhang', teacherName: '张老师' },
+  { day: 5, period: 4, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-zhang', teacherName: '张老师' },
+  // ── 王老师 (物理, 八1/八2) ──
+  { day: 1, period: 2, subject: '物理', className: '八(1)班', classId: 'c-8-1', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 1, period: 5, subject: '物理', className: '八(2)班', classId: 'c-8-2', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 2, period: 3, subject: '物理', className: '八(1)班', classId: 'c-8-1', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 3, period: 3, subject: '物理', className: '八(2)班', classId: 'c-8-2', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 4, period: 3, subject: '物理', className: '八(1)班', classId: 'c-8-1', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 4, period: 5, subject: '物理', className: '八(2)班', classId: 'c-8-2', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 5, period: 2, subject: '物理', className: '八(1)班', classId: 'c-8-1', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  { day: 5, period: 6, subject: '物理', className: '八(2)班', classId: 'c-8-2', room: '物理实验室', teacherId: 't-wang', teacherName: '王老师' },
+  // ── 李老师 (数学, 八1/八4) ──
+  { day: 1, period: 3, subject: '数学', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-li', teacherName: '李老师' },
+  { day: 1, period: 6, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-li', teacherName: '李老师' },
+  { day: 2, period: 1, subject: '数学', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-li', teacherName: '李老师' },
+  { day: 2, period: 6, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-li', teacherName: '李老师' },
+  { day: 3, period: 2, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-li', teacherName: '李老师' },
+  { day: 3, period: 6, subject: '数学', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-li', teacherName: '李老师' },
+  { day: 4, period: 1, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-li', teacherName: '李老师' },
+  { day: 4, period: 4, subject: '数学', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-li', teacherName: '李老师' },
+  { day: 5, period: 3, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-li', teacherName: '李老师' },
+  { day: 5, period: 5, subject: '数学', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-li', teacherName: '李老师' },
+  // ── 刘老师 (数学, 八3/八4) ──
+  { day: 1, period: 4, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 2, period: 3, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 2, period: 7, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 3, period: 4, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 4, period: 2, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 4, period: 7, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 5, period: 2, subject: '数学', className: '八(4)班', classId: 'c-8-4', room: '304', teacherId: 't-liu', teacherName: '刘老师' },
+  { day: 5, period: 7, subject: '数学', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-liu', teacherName: '刘老师' },
+  // ── 陈老师 (英语, 八1/八2) ──
+  { day: 1, period: 4, subject: '英语', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 1, period: 7, subject: '英语', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 2, period: 4, subject: '英语', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 3, period: 4, subject: '英语', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 3, period: 7, subject: '英语', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 4, period: 4, subject: '英语', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 5, period: 4, subject: '英语', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-chen', teacherName: '陈老师' },
+  { day: 5, period: 8, subject: '英语', className: '八(1)班', classId: 'c-8-1', room: '303', teacherId: 't-chen', teacherName: '陈老师' },
+  // ── 赵老师 (数学, 七1/七2) ──
+  { day: 1, period: 1, subject: '数学', className: '七(1)班', classId: 'c-7-1', room: '201', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 1, period: 5, subject: '数学', className: '七(2)班', classId: 'c-7-2', room: '202', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 2, period: 2, subject: '数学', className: '七(1)班', classId: 'c-7-1', room: '201', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 2, period: 5, subject: '数学', className: '七(2)班', classId: 'c-7-2', room: '202', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 3, period: 1, subject: '数学', className: '七(2)班', classId: 'c-7-2', room: '202', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 3, period: 5, subject: '数学', className: '七(1)班', classId: 'c-7-1', room: '201', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 4, period: 1, subject: '数学', className: '七(1)班', classId: 'c-7-1', room: '201', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 4, period: 6, subject: '数学', className: '七(2)班', classId: 'c-7-2', room: '202', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 5, period: 1, subject: '数学', className: '七(1)班', classId: 'c-7-1', room: '201', teacherId: 't-zhao', teacherName: '赵老师' },
+  { day: 5, period: 6, subject: '数学', className: '七(2)班', classId: 'c-7-2', room: '202', teacherId: 't-zhao', teacherName: '赵老师' },
+  // ── 孙老师 (语文, 八2/八3) ──
+  { day: 1, period: 2, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 1, period: 6, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 2, period: 1, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 2, period: 6, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 3, period: 2, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 3, period: 6, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 4, period: 1, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 4, period: 5, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 5, period: 3, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
+  { day: 5, period: 5, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+];
+
+// Room events that cause hard conflicts (e.g., lab reserved for activity)
+const ROOM_EVENTS: Array<{ day: number; period: number; room: string; event: string }> = [
+  { day: 3, period: 7, room: '301', event: '校级数学竞赛集训' },
+  { day: 4, period: 8, room: '物理实验室', event: '实验室设备维护' },
+  { day: 5, period: 7, room: '302', event: '家长会布置' },
+];
+
+// Mutable store for submitted requests
+const SUBMITTED_REQUESTS: RescheduleRequest[] = [
+  {
+    requestId: '#2025-0418-001',
+    type: 'swap',
+    teacherId: 't-zhang',
+    teacherName: '张老师',
+    changes: [{ originalDay: 3, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 3, targetTeacherId: 't-wang', classId: 'c-8-2' }],
+    reason: '周三下午有教研活动',
+    status: 'pending',
+    createdAt: '2025-04-18T10:30:00Z',
+    approver: '李主任',
+  },
+  {
+    requestId: '#2025-0415-003',
+    type: 'substitute',
+    teacherId: 't-zhang',
+    teacherName: '张老师',
+    changes: [{ originalDay: 1, originalPeriod: 1, originalTeacherId: 't-zhang', targetDay: 1, targetPeriod: 1, targetTeacherId: 't-liu', classId: 'c-8-2' }],
+    reason: '病假',
+    status: 'approved',
+    createdAt: '2025-04-15T08:00:00Z',
+    approver: '李主任',
+  },
+  {
+    requestId: '#2025-0410-002',
+    type: 'reschedule',
+    teacherId: 't-zhang',
+    teacherName: '张老师',
+    changes: [{ originalDay: 2, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 7, targetTeacherId: 't-zhang', classId: 'c-8-3' }],
+    reason: '调整教学安排',
+    status: 'rejected',
+    createdAt: '2025-04-10T14:00:00Z',
+    approver: '李主任',
+    rejectReason: '目标时段教室已被占用',
+  },
+];
+
+let requestCounter = 4;
+
+// Helper: day number to Chinese name
+const DAY_NAMES = ['', '周一', '周二', '周三', '周四', '周五'];
+
+// ─── Timetable Tool Definitions ───────────────────────────────
+
+const timetableQueryScheduleTool: Tool = {
+  name: 'timetable_query_schedule',
+  description: '查询教师或班级的课表。按 teacherId 或 classId 过滤，返回该周的课程安排列表。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      teacherId: { type: 'string', description: '教师ID，如 t-zhang' },
+      classId: { type: 'string', description: '班级ID，如 c-8-2' },
+      week: { type: 'number', description: '周次（默认1=本周）' },
+    },
+  },
+};
+
+const timetableFindAvailableSlotsTool: Tool = {
+  name: 'timetable_find_available_slots',
+  description: '查找教师和班级都空闲的时段。通过排除已占用时段推算空闲。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      week: { type: 'number', description: '周次' },
+      subject: { type: 'string', description: '学科筛选' },
+      excludeTeacherId: { type: 'string', description: '排除的教师ID（即发起人自己）' },
+      classIds: { type: 'array', items: { type: 'string' }, description: '需要空闲的班级ID列表' },
+      preferredDays: { type: 'array', items: { type: 'number' }, description: '偏好的日期(1-5)' },
+    },
+    required: ['week'],
+  },
+};
+
+const timetableCheckConflictsTool: Tool = {
+  name: 'timetable_check_conflicts',
+  description: '检测调课变更是否存在冲突。返回冲突列表和严重级别(none/soft/hard)。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      changes: {
+        type: 'array',
+        description: '变更列表',
+        items: {
+          type: 'object',
+          properties: {
+            originalDay: { type: 'number' },
+            originalPeriod: { type: 'number' },
+            originalTeacherId: { type: 'string' },
+            targetDay: { type: 'number' },
+            targetPeriod: { type: 'number' },
+            targetTeacherId: { type: 'string' },
+            classId: { type: 'string' },
+          },
+          required: ['originalDay', 'originalPeriod', 'originalTeacherId', 'targetDay', 'targetPeriod', 'targetTeacherId', 'classId'],
+        },
+      },
+    },
+    required: ['changes'],
+  },
+};
+
+const timetableSubmitRequestTool: Tool = {
+  name: 'timetable_submit_request',
+  description: '提交调课申请。必须在教师明确确认后才能调用。返回申请号和状态。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      type: { type: 'string', enum: ['swap', 'reschedule', 'substitute', 'makeup', 'batch'], description: '调课类型' },
+      changes: {
+        type: 'array',
+        description: '变更列表',
+        items: {
+          type: 'object',
+          properties: {
+            originalDay: { type: 'number' },
+            originalPeriod: { type: 'number' },
+            originalTeacherId: { type: 'string' },
+            targetDay: { type: 'number' },
+            targetPeriod: { type: 'number' },
+            targetTeacherId: { type: 'string' },
+            classId: { type: 'string' },
+          },
+          required: ['originalDay', 'originalPeriod', 'originalTeacherId', 'targetDay', 'targetPeriod', 'targetTeacherId', 'classId'],
+        },
+      },
+      reason: { type: 'string', description: '调课原因' },
+      note: { type: 'string', description: '备注（可选）' },
+    },
+    required: ['type', 'changes', 'reason'],
+  },
+};
+
+const timetableListMyRequestsTool: Tool = {
+  name: 'timetable_list_my_requests',
+  description: '查询当前教师的调课申请列表。可按状态过滤。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      teacherId: { type: 'string', description: '教师ID' },
+      status: { type: 'string', description: '过滤状态: pending/approved/rejected' },
+    },
+  },
+};
+
+const timetableFindSubstituteTeachersTool: Tool = {
+  name: 'timetable_find_substitute_teachers',
+  description: '搜索可用的代课教师。按匹配度排序，考虑学科匹配、是否教过该班、空闲时段数。',
+  inputSchema: {
+    type: 'object' as const,
+    properties: {
+      subject: { type: 'string', description: '需要代课的学科' },
+      slot: {
+        type: 'object',
+        description: '需要代课的时段',
+        properties: {
+          day: { type: 'number', description: '星期几(1-5)' },
+          periods: { type: 'array', items: { type: 'number' }, description: '节次列表' },
+        },
+        required: ['day', 'periods'],
+      },
+      excludeTeacherId: { type: 'string', description: '排除的教师ID（请假教师自己）' },
+      classId: { type: 'string', description: '班级ID，用于判断是否教过该班' },
+    },
+    required: ['subject', 'slot', 'excludeTeacherId'],
+  },
+};
+
 // ─── List Tools Handler ─────────────────────────────────────
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: [curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool, showInfoCardTool, showReviewPanelTool, suggestActionsTool],
+  tools: [
+    curriculumTreeTool, writeOutputTool, studentProficiencyTool, teachingProgressTool, generateDocxTool,
+    showInfoCardTool, showReviewPanelTool, suggestActionsTool,
+    timetableQueryScheduleTool, timetableFindAvailableSlotsTool, timetableCheckConflictsTool,
+    timetableSubmitRequestTool, timetableListMyRequestsTool, timetableFindSubstituteTeachersTool,
+  ],
 }));
 
 // ─── Call Tool Handler ──────────────────────────────────────
@@ -570,6 +876,404 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         isError: true,
       };
     }
+  }
+
+  // ── timetable_query_schedule ────────────────────────────
+  if (name === 'timetable_query_schedule') {
+    const params = args as Record<string, unknown>;
+    const teacherId = params.teacherId as string | undefined;
+    const classId = params.classId as string | undefined;
+
+    let results = [...SCHEDULE];
+    if (teacherId) {
+      results = results.filter(e => e.teacherId === teacherId);
+    }
+    if (classId) {
+      results = results.filter(e => e.classId === classId);
+    }
+    results.sort((a, b) => a.day - b.day || a.period - b.period);
+
+    const teacher = teacherId ? TEACHERS.find(t => t.teacherId === teacherId) : undefined;
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            week: (params.week as number) || 1,
+            teacher: teacher ? { id: teacher.teacherId, name: teacher.name, subject: teacher.subject } : undefined,
+            totalEntries: results.length,
+            schedule: results.map(e => ({
+              day: e.day,
+              dayName: DAY_NAMES[e.day],
+              period: e.period,
+              subject: e.subject,
+              className: e.className,
+              classId: e.classId,
+              room: e.room,
+              teacherId: e.teacherId,
+              teacherName: e.teacherName,
+            })),
+          },
+          status: 'success',
+        }),
+      }],
+    };
+  }
+
+  // ── timetable_find_available_slots ────────────────────────
+  if (name === 'timetable_find_available_slots') {
+    const params = args as Record<string, unknown>;
+    const classIds = (params.classIds as string[] | undefined) || [];
+    const excludeTeacherId = params.excludeTeacherId as string | undefined;
+    const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
+
+    const slots: Array<{
+      day: number;
+      dayName: string;
+      period: number;
+      room: string;
+      conflictLevel: 'none' | 'soft' | 'hard';
+      conflictNote?: string;
+    }> = [];
+
+    for (const day of preferredDays) {
+      for (let period = 1; period <= 8; period++) {
+        // Check: is the initiating teacher free?
+        if (excludeTeacherId) {
+          const teacherBusy = SCHEDULE.some(e => e.teacherId === excludeTeacherId && e.day === day && e.period === period);
+          if (teacherBusy) continue;
+        }
+
+        // Check: are all requested classes free?
+        let classBusy = false;
+        for (const cid of classIds) {
+          if (SCHEDULE.some(e => e.classId === cid && e.day === day && e.period === period)) {
+            classBusy = true;
+            break;
+          }
+        }
+        if (classBusy) continue;
+
+        // Check room events for hard conflicts
+        const roomEvent = ROOM_EVENTS.find(re => re.day === day && re.period === period);
+        let conflictLevel: 'none' | 'soft' | 'hard' = 'none';
+        let conflictNote: string | undefined;
+
+        if (roomEvent) {
+          conflictLevel = 'hard';
+          conflictNote = `${roomEvent.room} 被占用: ${roomEvent.event}`;
+        }
+
+        // Check soft conflict: same subject in same class same day
+        if (classIds.length > 0 && params.subject) {
+          for (const cid of classIds) {
+            const sameDaySameSubject = SCHEDULE.filter(
+              e => e.classId === cid && e.day === day && e.subject === (params.subject as string)
+            ).length;
+            if (sameDaySameSubject >= 2) {
+              conflictLevel = conflictLevel === 'hard' ? 'hard' : 'soft';
+              conflictNote = conflictNote || `该班当天已有${sameDaySameSubject}节${params.subject as string}`;
+            }
+          }
+        }
+
+        // Find a free room
+        const occupiedRooms = SCHEDULE.filter(e => e.day === day && e.period === period).map(e => e.room);
+        const allRooms = ['301', '302', '303', '304', '201', '202', '物理实验室'];
+        const freeRoom = allRooms.find(r => !occupiedRooms.includes(r)) || '待定';
+
+        slots.push({
+          day,
+          dayName: DAY_NAMES[day],
+          period,
+          room: freeRoom,
+          conflictLevel,
+          conflictNote,
+        });
+      }
+    }
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            week: (params.week as number) || 1,
+            totalSlots: slots.length,
+            slots: slots.slice(0, 20),
+          },
+          status: 'success',
+        }),
+      }],
+    };
+  }
+
+  // ── timetable_check_conflicts ────────────────────────────
+  if (name === 'timetable_check_conflicts') {
+    const params = args as Record<string, unknown>;
+    const changes = params.changes as Array<{
+      originalDay: number;
+      originalPeriod: number;
+      originalTeacherId: string;
+      targetDay: number;
+      targetPeriod: number;
+      targetTeacherId: string;
+      classId: string;
+    }>;
+
+    const conflicts: Array<{ type: string; severity: 'soft' | 'hard'; description: string }> = [];
+
+    for (const change of changes) {
+      // Hard: target teacher already has a class at target time
+      const targetTeacherBusy = SCHEDULE.find(
+        e => e.teacherId === change.targetTeacherId && e.day === change.targetDay && e.period === change.targetPeriod
+      );
+      if (targetTeacherBusy) {
+        conflicts.push({
+          type: 'teacher_busy',
+          severity: 'hard',
+          description: `${targetTeacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${targetTeacherBusy.subject}·${targetTeacherBusy.className}）`,
+        });
+      }
+
+      // Hard: target class already has a class at target time
+      const classBusy = SCHEDULE.find(
+        e => e.classId === change.classId && e.day === change.targetDay && e.period === change.targetPeriod
+      );
+      if (classBusy) {
+        conflicts.push({
+          type: 'class_busy',
+          severity: 'hard',
+          description: `${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${classBusy.subject}·${classBusy.teacherName}）`,
+        });
+      }
+
+      // Hard: room event at target time
+      const roomEvent = ROOM_EVENTS.find(
+        re => re.day === change.targetDay && re.period === change.targetPeriod
+      );
+      if (roomEvent) {
+        conflicts.push({
+          type: 'room_event',
+          severity: 'hard',
+          description: `${roomEvent.room}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节被占用（${roomEvent.event}）`,
+        });
+      }
+
+      // Soft: same subject count in class for target day
+      const originalEntry = SCHEDULE.find(
+        e => e.teacherId === change.originalTeacherId && e.day === change.originalDay && e.period === change.originalPeriod
+      );
+      if (originalEntry) {
+        const sameSubjectCount = SCHEDULE.filter(
+          e => e.classId === change.classId && e.day === change.targetDay && e.subject === originalEntry.subject
+        ).length;
+        if (sameSubjectCount >= 2) {
+          conflicts.push({
+            type: 'subject_overload',
+            severity: 'soft',
+            description: `${originalEntry.className}在${DAY_NAMES[change.targetDay]}已有${sameSubjectCount}节${originalEntry.subject}，调课后将达${sameSubjectCount + 1}节`,
+          });
+        }
+      }
+    }
+
+    const overallSeverity = conflicts.some(c => c.severity === 'hard')
+      ? 'hard'
+      : conflicts.length > 0
+        ? 'soft'
+        : 'none';
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            severity: overallSeverity,
+            totalConflicts: conflicts.length,
+            conflicts,
+          },
+          status: 'success',
+        }),
+      }],
+    };
+  }
+
+  // ── timetable_submit_request ────────────────────────────
+  if (name === 'timetable_submit_request') {
+    const params = args as Record<string, unknown>;
+    const reqType = params.type as RescheduleRequest['type'];
+    const changes = params.changes as RescheduleRequest['changes'];
+    const reason = params.reason as string;
+    const note = params.note as string | undefined;
+
+    requestCounter++;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
+
+    const newRequest: RescheduleRequest = {
+      requestId,
+      type: reqType,
+      teacherId: changes[0]?.originalTeacherId || 'unknown',
+      teacherName: TEACHERS.find(t => t.teacherId === changes[0]?.originalTeacherId)?.name || '未知',
+      changes,
+      reason,
+      status: 'pending',
+      createdAt: now.toISOString(),
+      approver: '李主任',
+    };
+
+    SUBMITTED_REQUESTS.push(newRequest);
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            requestId,
+            status: newRequest.status,
+            approver: newRequest.approver,
+            message: `调课申请 ${requestId} 已提交，等待${newRequest.approver}审批`,
+            note: note || undefined,
+          },
+          status: 'success',
+        }),
+      }],
+    };
+  }
+
+  // ── timetable_list_my_requests ────────────────────────────
+  if (name === 'timetable_list_my_requests') {
+    const params = args as Record<string, unknown>;
+    const teacherId = params.teacherId as string | undefined;
+    const statusFilter = params.status as string | undefined;
+
+    let results = [...SUBMITTED_REQUESTS];
+    if (teacherId) {
+      results = results.filter(r => r.teacherId === teacherId);
+    }
+    if (statusFilter) {
+      results = results.filter(r => r.status === statusFilter);
+    }
+
+    const summary = {
+      pending: results.filter(r => r.status === 'pending').length,
+      approved: results.filter(r => r.status === 'approved').length,
+      rejected: results.filter(r => r.status === 'rejected').length,
+    };
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            total: results.length,
+            summary,
+            requests: results.map(r => ({
+              requestId: r.requestId,
+              type: r.type,
+              status: r.status,
+              reason: r.reason,
+              createdAt: r.createdAt,
+              approver: r.approver,
+              rejectReason: r.rejectReason,
+              changes: r.changes.map(c => ({
+                from: `${DAY_NAMES[c.originalDay]}第${c.originalPeriod}节`,
+                to: `${DAY_NAMES[c.targetDay]}第${c.targetPeriod}节`,
+                classId: c.classId,
+                originalTeacher: TEACHERS.find(t => t.teacherId === c.originalTeacherId)?.name || c.originalTeacherId,
+                targetTeacher: TEACHERS.find(t => t.teacherId === c.targetTeacherId)?.name || c.targetTeacherId,
+              })),
+            })),
+          },
+          status: 'success',
+        }),
+      }],
+    };
+  }
+
+  // ── timetable_find_substitute_teachers ────────────────────
+  if (name === 'timetable_find_substitute_teachers') {
+    const params = args as Record<string, unknown>;
+    const subject = params.subject as string;
+    const slot = params.slot as { day: number; periods: number[] };
+    const excludeTeacherId = params.excludeTeacherId as string;
+    const classId = params.classId as string | undefined;
+
+    const candidates: Array<{
+      teacherId: string;
+      teacherName: string;
+      subject: string;
+      availableSlots: number;
+      totalSlots: number;
+      historyCount: number;
+      taughtThisClass: boolean;
+      matchScore: number;
+    }> = [];
+
+    for (const teacher of TEACHERS) {
+      if (teacher.teacherId === excludeTeacherId) continue;
+
+      // Count how many of the requested periods this teacher is free
+      let freeCount = 0;
+      for (const period of slot.periods) {
+        const busy = SCHEDULE.some(
+          e => e.teacherId === teacher.teacherId && e.day === slot.day && e.period === period
+        );
+        if (!busy) freeCount++;
+      }
+
+      if (freeCount === 0) continue;
+
+      const taughtThisClass = classId ? teacher.classIds.includes(classId) : false;
+      const subjectMatch = teacher.subject === subject;
+
+      // Mock history count based on teacher data
+      const historyCount = taughtThisClass ? 3 : (subjectMatch ? 1 : 0);
+
+      // matchScore formula:
+      // subjectMatch: 40 points
+      // taughtThisClass: 30 points
+      // availability: (freeCount / totalSlots) * 20 points
+      // history bonus: min(historyCount * 2, 10) points
+      const matchScore = Math.round(
+        (subjectMatch ? 40 : 0) +
+        (taughtThisClass ? 30 : 0) +
+        (freeCount / slot.periods.length) * 20 +
+        Math.min(historyCount * 2, 10)
+      );
+
+      candidates.push({
+        teacherId: teacher.teacherId,
+        teacherName: teacher.name,
+        subject: teacher.subject,
+        availableSlots: freeCount,
+        totalSlots: slot.periods.length,
+        historyCount,
+        taughtThisClass,
+        matchScore,
+      });
+    }
+
+    candidates.sort((a, b) => b.matchScore - a.matchScore);
+
+    return {
+      content: [{
+        type: 'text',
+        text: JSON.stringify({
+          data: {
+            totalCandidates: candidates.length,
+            requestedSubject: subject,
+            requestedSlot: { day: slot.day, dayName: DAY_NAMES[slot.day], periods: slot.periods },
+            candidates,
+            matchScoreFormula: 'subjectMatch(40) + taughtThisClass(30) + availability(20) + historyBonus(max10)',
+          },
+          status: 'success',
+        }),
+      }],
+    };
   }
 
   // ── Widget passthrough tools ────────────────────────────
