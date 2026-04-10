@@ -18,7 +18,7 @@
     "lesson-planning": {
       "description": "备课助手模式",
       "enabledSkills": ["lesson-plan-generator", "quiz-generator", "student-analysis", "reschedule-class"],
-      "appendSystemPrompt": "【强制要求】所有回复必须使用中文。\n\n## 文件卡片\n使用 ```file 代码块输出文件信息（JSON 格式含 fileName, fileType, downloadUrl, description），前端自动渲染为可下载的文件卡片。\n\n## 其他技能\n当教师请求出题时，使用 quiz-generator 技能流程。当教师请求学情分析时，调用 student_proficiency 获取数据并用 show_info_card 工具展示。"
+      "appendSystemPrompt": "【强制要求】所有回复必须使用中文。\n\n## 文件卡片\n使用 ```file 代码块输出文件信息（JSON 格式含 fileName, fileType, downloadUrl, description），前端自动渲染为可下载的文件卡片。\n\n## 其他技能\n当教师请求出题时，使用 quiz-generator 技能流程。当教师请求学情分析时，调用 student_proficiency 获取数据并用 show_info_card 工具展示。\n\n## 调课技能\n当教师请求调课（互换、代课、改时、补课、请假、换课）时，使用 reschedule-class 技能流程。必须调用 timetable_query_schedule 查询课表、timetable_check_conflicts 检测冲突、timetable_find_available_slots 查找空闲时段、timetable_find_substitute_teachers 搜索代课教师、timetable_list_my_requests 查询申请状态。提交前必须用 show_info_card 展示变更摘要并用 suggest_actions 让教师确认，确认后才能调用 timetable_submit_request 提交。"
     }
   },
   "skills": [

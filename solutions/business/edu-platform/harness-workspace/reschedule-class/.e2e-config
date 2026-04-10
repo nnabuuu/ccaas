@@ -1,0 +1,4 @@
+export CCAAS_URL="http://localhost:3001"
+export TENANT_ID="fe322e3c-9441-493e-8185-ceb841166d55"
+export API_KEY="sk-edu-plat-x3E61kA8B8hfY2hw9MB_Qh1KUiNo18WX"
+export SOLUTION_SLUG="edu-platform"

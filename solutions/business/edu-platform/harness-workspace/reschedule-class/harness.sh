@@ -30,6 +30,11 @@ EVALUATOR_TOOLS="Read,Write,Grep,Glob,Bash"
 
 COST_PER_ITERATION=3.00  # estimate: Skill + MCP scope
 
+# E2E configuration
+CCAAS_URL="${CCAAS_URL:-http://localhost:3001}"
+CCAAS_BOOTSTRAP_KEY="${CCAAS_BOOTSTRAP_KEY:-sk-default-testd84f5b7a1dbdbc4c424417be6c009f01}"
+E2E_CONFIG=""  # set by setup_e2e()
+
 # --- Directories ---
 REPO_ROOT="$(cd "$(dirname "$0")/../../../../.." && pwd)"
 SOLUTION_DIR="${REPO_ROOT}/solutions/business/edu-platform"
@@ -125,6 +130,91 @@ run_pregate() {
   fi
 }
 
+setup_e2e() {
+  echo "  [E2E Setup] Registering tenant and configuring services..."
+
+  E2E_CONFIG="${HARNESS_DIR}/.e2e-config"
+
+  # Reuse existing config if CCAAS is still running
+  if [[ -f "$E2E_CONFIG" ]]; then
+    source "$E2E_CONFIG"
+    if curl -s "${CCAAS_URL}/api/v1/health" > /dev/null 2>&1; then
+      echo "  [E2E Setup] Reusing existing config (TENANT_ID=${TENANT_ID:0:8}...)"
+      return 0
+    fi
+    echo "  [E2E Setup] CCAAS not responding, re-configuring..."
+  fi
+
+  # Check CCAAS backend is up
+  if ! curl -s "${CCAAS_URL}/api/v1/health" > /dev/null 2>&1; then
+    echo "  [E2E Setup] WARNING: CCAAS not running at ${CCAAS_URL}. D6 will score 0."
+    return 1
+  fi
+
+  # Source solution-lib.sh (disable -u temporarily for its guard variable)
+  # Save SOLUTION_DIR — solution-lib.sh resets it to ""
+  local saved_solution_dir="${SOLUTION_DIR}"
+  set +u
+  source "${REPO_ROOT}/tools/solution-lib.sh"
+  set -u
+  SOLUTION_DIR="${saved_solution_dir}"
+  load_solution_config "${SOLUTION_DIR}"
+
+  # Create or get tenant
+  eval "$(create_or_get_tenant "$CCAAS_URL" "$SOLUTION_SLUG" "$SOLUTION_NAME" "$SOLUTION_DESCRIPTION" "$CCAAS_BOOTSTRAP_KEY")" || {
+    echo "  [E2E Setup] Failed to create tenant. D6 will score 0."
+    return 1
+  }
+
+  # Create API key
+  eval "$(create_solution_api_key "$CCAAS_URL" "$TENANT_ID" "$CCAAS_BOOTSTRAP_KEY" "$SOLUTION_NAME")" || {
+    echo "  [E2E Setup] Failed to create API key. D6 will score 0."
+    return 1
+  }
+
+  # Build MCP server
+  echo "  [E2E Setup] Building MCP server..."
+  cd "${SOLUTION_DIR}/mcp-server"
+  npm run build 2>&1 || {
+    echo "  [E2E Setup] MCP build failed. D6 will score 0."
+    return 1
+  }
+
+  # Inject skills and MCP servers
+  inject_skills "${SOLUTION_DIR}/skills" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1
+  inject_mcp_servers "${SOLUTION_DIR}" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1
+
+  # Save config for evaluator
+  cat > "$E2E_CONFIG" <<EOFCONFIG
+export CCAAS_URL="${CCAAS_URL}"
+export TENANT_ID="${TENANT_ID}"
+export API_KEY="${API_KEY}"
+export SOLUTION_SLUG="${SOLUTION_SLUG}"
+EOFCONFIG
+
+  echo "  [E2E Setup] Done. Config saved to ${E2E_CONFIG}"
+  return 0
+}
+
+rebuild_mcp() {
+  echo "  [Rebuild] Compiling MCP server..."
+  cd "${SOLUTION_DIR}/mcp-server"
+  if npm run build 2>&1; then
+    echo "  [Rebuild] PASS"
+    # Re-inject so new sessions use updated code
+    if [[ -f "${HARNESS_DIR}/.e2e-config" ]]; then
+      source "${HARNESS_DIR}/.e2e-config"
+      set +u; source "${REPO_ROOT}/tools/solution-lib.sh" 2>/dev/null || true; set -u
+      inject_mcp_servers "${SOLUTION_DIR}" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1 || true
+      inject_skills "${SOLUTION_DIR}/skills" "$CCAAS_URL" "$TENANT_ID" "$API_KEY" 2>&1 || true
+    fi
+    return 0
+  else
+    echo "  [Rebuild] FAIL — tsc errors, skipping re-inject"
+    return 1
+  fi
+}
+
 run_generator() {
   local version=$1
   local prev=$((version - 1))
@@ -187,6 +277,9 @@ run_evaluator() {
 mkdir -p "$EVAL_DIR" "$CHANGELOG_DIR"
 mkdir -p "${SOLUTION_DIR}/skills/reschedule-class"
 
+# E2E setup: register tenant, build MCP, inject skills
+setup_e2e || echo "  E2E setup failed — D6 will be evaluated as 0."
+
 # --- Main Loop ---
 
 echo "╔══════════════════════════════════════════════════════════════╗"
@@ -239,7 +332,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
 
   # ─── Step 1: Generator ───
   echo ""
-  echo "  [Step 1/5] Running Generator..."
+  echo "  [Step 1/6] Running Generator..."
   run_generator $i || {
     echo "  Generator failed. Retrying once..."
     sleep 5
@@ -252,15 +345,22 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
 
   # ─── Step 2: Frozen file check ───
   echo ""
-  echo "  [Step 2/5] Checking frozen files..."
+  echo "  [Step 2/6] Checking frozen files..."
   cd "$REPO_ROOT"
   check_frozen_files || {
     echo "  WARNING: $? frozen file(s) were reverted."
   }
 
-  # ─── Step 3: Pre-gate validation ───
+  # ─── Step 3: Rebuild MCP + re-inject ───
   echo ""
-  echo "  [Step 3/5] Running pre-gate validation..."
+  echo "  [Step 3/6] Rebuilding MCP server..."
+  rebuild_mcp || {
+    echo "  MCP rebuild failed. Evaluator will score pre-gate FAIL."
+  }
+
+  # ─── Step 4: Pre-gate validation ───
+  echo ""
+  echo "  [Step 4/6] Running pre-gate validation..."
   if ! run_pregate; then
     echo "  Pre-gate FAILED. Evaluator will score 0/100 but still report errors."
   fi
@@ -273,9 +373,9 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
           "${CHANGELOG_DIR}/" 2>/dev/null || true
   git commit -m "feat(shared): reschedule-class v${i} iteration" --allow-empty 2>/dev/null || true
 
-  # ─── Step 4: Evaluator ───
+  # ─── Step 5: Evaluator ───
   echo ""
-  echo "  [Step 4/5] Running Evaluator..."
+  echo "  [Step 5/6] Running Evaluator..."
   run_evaluator $i || {
     echo "  Evaluator failed. Retrying once..."
     sleep 5
@@ -286,9 +386,9 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
     }
   }
 
-  # ─── Step 5: Extract results + exit conditions ───
+  # ─── Step 6: Extract results + exit conditions ───
   echo ""
-  echo "  [Step 5/5] Extracting results..."
+  echo "  [Step 6/6] Extracting results..."
 
   eval_file="${EVAL_DIR}/v${i}-eval.md"
   if [[ ! -f "$eval_file" ]]; then

@@ -71,7 +71,7 @@ grep -c 'FormCollect\|TreeSelector\|MetricDashboard\|BarList' solutions/business
 # 应该为 0
 
 # 4. 工具名一致性
-for tool in $(grep -oP 'timetable_\w+' solutions/business/edu-platform/skills/reschedule-class/SKILL.md | sort -u); do
+for tool in $(grep -E -o 'timetable_[a-zA-Z_]+' solutions/business/edu-platform/skills/reschedule-class/SKILL.md | sort -u); do
   grep -c "'${tool}'" solutions/business/edu-platform/mcp-server/src/index.ts
 done
 ```

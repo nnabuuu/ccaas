@@ -133,7 +133,7 @@ Score each sub-item 0 or 1 (5 items × 3 = 15 pts).
 
 ```bash
 # Section type 检查
-grep -oP '"type"\s*:\s*"[^"]*"' solutions/business/edu-platform/skills/reschedule-class/SKILL.md | sort -u
+grep -E '"type"[[:space:]]*:[[:space:]]*"[^"]*"' solutions/business/edu-platform/skills/reschedule-class/SKILL.md | sed 's/.*"type"[[:space:]]*:[[:space:]]*//' | sed 's/,.*//' | sort -u
 # Only outline, bar_list, metrics, actions, text allowed
 
 # 禁止 widget
@@ -169,7 +169,7 @@ node -e "const s=JSON.parse(require('fs').readFileSync('solution.json','utf8'));
 node -e "const s=JSON.parse(require('fs').readFileSync('solution.json','utf8')); console.log(s.sessionTemplates['lesson-planning'].enabledSkills.includes('reschedule-class'))"
 
 # 工具名一致性
-for tool in $(grep -oP 'timetable_\w+' skills/reschedule-class/SKILL.md 2>/dev/null | sort -u); do
+for tool in $(grep -E -o 'timetable_[a-zA-Z_]+' skills/reschedule-class/SKILL.md 2>/dev/null | sort -u); do
   count=$(grep -c "'${tool}'" mcp-server/src/index.ts)
   echo "${tool}: ${count}"
 done
@@ -198,20 +198,72 @@ D1_D5_total = D1 + D2 + D3 + D4 + D5
 
 **If D1_D5_total < 53 → D6 = 0, skip E2E. Note: "D6 skipped (D1-D5 = XX/75 < 53)"**
 
-**If D1_D5_total >= 53 → Execute E2E:**
+**If D1_D5_total >= 53 → Execute E2E via CCAAS API:**
 
-> Note: E2E 需要启动完整服务栈。如果服务启动失败，D6 = 0 并记录错误。
+#### Step 1: Load E2E config
 
-6 个场景，每个 Pass/Fail:
+```bash
+E2E_CONFIG="harness-workspace/reschedule-class/.e2e-config"
+if [[ -f "$E2E_CONFIG" ]]; then
+  source "$E2E_CONFIG"
+  echo "CCAAS_URL=$CCAAS_URL TENANT_ID=$TENANT_ID API_KEY=${API_KEY:0:16}..."
+else
+  echo "E2E config not found — D6 = 0"
+fi
+```
 
-| # | 场景 | Pass 条件 | 分值 |
-|---|------|-----------|------|
-| S1 | 简单互换 | AI 调 query_schedule → show_info_card 方案 → suggest_actions 确认 → submit_request | 4 |
-| S2 | 代课推荐 | AI 调 find_substitute_teachers → show_info_card 排名 → 选择后提交 | 4 |
-| S3 | 模糊描述 | AI 先查课表 → 逐课推荐 → 组合方案 | 4 |
-| S4 | 状态查询 | AI 调 list_my_requests → show_info_card 列表 | 4 |
-| S5 | 无可用时段 | AI 给降级建议（不直接放弃） | 4.5 |
-| S6 | 硬冲突阻止 | AI 阻止提交 + 替代方案 | 4.5 |
+If file missing or CCAAS_URL unreachable → D6 = 0 with note "E2E config not available".
+
+#### Step 2: For each scenario, create a session and send a message
+
+**Create session:**
+```bash
+SESSION=$(curl -s -X POST "${CCAAS_URL}/api/v1/sessions" \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: ${TENANT_ID}" \
+  -H "X-Api-Key: ${API_KEY}" \
+  -d '{"templateName":"lesson-planning","context":{"teacherId":"teacher-wang","teacherName":"王老师","subject":"数学","grade":"七年级","classId":"class-701"}}')
+SESSION_ID=$(echo "$SESSION" | jq -r '.id // empty')
+```
+
+**Send message and capture SSE response:**
+```bash
+curl -s -N "${CCAAS_URL}/api/v1/sessions/${SESSION_ID}/messages" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "X-Tenant-Id: ${TENANT_ID}" \
+  -H "X-Api-Key: ${API_KEY}" \
+  -d '{"message":"<user message here>"}' \
+  --max-time 90 > /tmp/e2e-s1.txt 2>&1
+```
+
+**Check for tool calls in response:**
+```bash
+grep -o 'timetable_[a-zA-Z_]*' /tmp/e2e-s1.txt | sort -u
+grep -o 'show_info_card\|suggest_actions' /tmp/e2e-s1.txt | sort -u
+```
+
+#### Step 3: Test 6 scenarios
+
+| # | 场景 | 用户消息 | Pass 条件（期望工具调用） | 分值 |
+|---|------|---------|--------------------------|------|
+| S1 | 简单互换 | "我下周二第3节数学课和周四第5节想互换一下" | timetable_query_schedule + show_info_card + suggest_actions | 4 |
+| S2 | 代课推荐 | "我下周三请假，帮我找个代课老师上第2节数学课" | timetable_find_substitute_teachers + show_info_card | 4 |
+| S3 | 模糊描述 | "下周有事，数学课帮我想办法" | timetable_query_schedule + show_info_card | 4 |
+| S4 | 状态查询 | "查一下我之前提的调课申请状态" | timetable_list_my_requests + show_info_card | 4 |
+| S5 | 无可用时段 | "我想把周一到周五所有数学课都换到周六" | timetable_find_available_slots + 降级建议(不直接放弃) | 4.5 |
+| S6 | 硬冲突阻止 | "把周一第1节和第2节都换到周三第1节" | timetable_check_conflicts + 阻止提交 + 替代方案 | 4.5 |
+
+**Scoring per scenario:**
+- Pass = expected timetable tool(s) called AND show_info_card/suggest_actions used appropriately
+- Partial = some tools called but incomplete flow
+- Fail = wrong tools or no timetable tools called
+
+**Important notes:**
+- Create a **new session** for each scenario (don't reuse sessions)
+- Wait up to 90 seconds per scenario (LLM + MCP tool calls take time)
+- If session creation fails or CCAAS returns errors, D6 = 0 with error details
+- Score = sum of passed scenario weights (max 25)
 
 ## Output
 

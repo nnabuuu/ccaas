@@ -360,7 +360,10 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     type: 'swap',
     teacherId: 't-zhang',
     teacherName: '张老师',
-    changes: [{ originalDay: 3, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 3, targetTeacherId: 't-wang', classId: 'c-8-2' }],
+    changes: [
+      { originalDay: 3, originalPeriod: 5, originalTeacherId: 't-zhang', targetDay: 4, targetPeriod: 3, targetTeacherId: 't-zhang', classId: 'c-8-2' },
+      { originalDay: 4, originalPeriod: 3, originalTeacherId: 't-wang', targetDay: 3, targetPeriod: 5, targetTeacherId: 't-wang', classId: 'c-8-1' },
+    ],
     reason: '周三下午有教研活动',
     status: 'pending',
     createdAt: '2025-04-18T10:30:00Z',
@@ -395,6 +398,29 @@ let requestCounter = 4;
 
 // Helper: day number to Chinese name
 const DAY_NAMES = ['', '周一', '周二', '周三', '周四', '周五'];
+
+// Helper: resolve teacher by ID, name, or partial match
+// Handles different ID formats (e.g., "t-wang", "teacher-wang", "王老师")
+const TEACHER_NAME_MAP: Record<string, string> = {
+  zhang: '张老师', wang: '王老师', li: '李老师',
+  liu: '刘老师', chen: '陈老师', zhao: '赵老师', sun: '孙老师',
+};
+
+function resolveTeacher(idOrName: string | undefined): TeacherInfo | undefined {
+  if (!idOrName) return undefined;
+  // 1. Exact teacherId match
+  const exact = TEACHERS.find(t => t.teacherId === idOrName);
+  if (exact) return exact;
+  // 2. Exact name match (e.g., "王老师")
+  const byName = TEACHERS.find(t => t.name === idOrName);
+  if (byName) return byName;
+  // 3. Partial match: extract last segment after '-' and map to name
+  const parts = idOrName.toLowerCase().split('-');
+  const lastPart = parts[parts.length - 1];
+  const mappedName = TEACHER_NAME_MAP[lastPart];
+  if (mappedName) return TEACHERS.find(t => t.name === mappedName);
+  return undefined;
+}
 
 // ─── Timetable Tool Definitions ───────────────────────────────
 
@@ -488,14 +514,13 @@ const timetableSubmitRequestTool: Tool = {
 
 const timetableListMyRequestsTool: Tool = {
   name: 'timetable_list_my_requests',
-  description: '查询当前教师的调课申请列表。teacherId 必须从 sessionContext 获取。可按状态过滤。',
+  description: '查询当前教师的调课申请列表。可按状态过滤。',
   inputSchema: {
     type: 'object' as const,
     properties: {
-      teacherId: { type: 'string', description: '教师ID（必须从 sessionContext.teacherId 获取）' },
+      teacherId: { type: 'string', description: '教师ID' },
       status: { type: 'string', description: '过滤状态: pending/approved/rejected' },
     },
-    required: ['teacherId'],
   },
 };
 
@@ -882,19 +907,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // ── timetable_query_schedule ────────────────────────────
   if (name === 'timetable_query_schedule') {
     const params = args as Record<string, unknown>;
-    const teacherId = params.teacherId as string | undefined;
+    const rawTeacherId = params.teacherId as string | undefined;
     const classId = params.classId as string | undefined;
 
+    // Resolve teacher using fuzzy matching (handles "t-wang", "teacher-wang", "王老师")
+    const teacher = resolveTeacher(rawTeacherId);
+    const resolvedTeacherId = teacher?.teacherId;
+
     let results = [...SCHEDULE];
-    if (teacherId) {
-      results = results.filter(e => e.teacherId === teacherId);
+    if (rawTeacherId) {
+      results = results.filter(e => e.teacherId === (resolvedTeacherId || rawTeacherId));
     }
     if (classId) {
       results = results.filter(e => e.classId === classId);
     }
     results.sort((a, b) => a.day - b.day || a.period - b.period);
-
-    const teacher = teacherId ? TEACHERS.find(t => t.teacherId === teacherId) : undefined;
 
     return {
       content: [{
@@ -903,6 +930,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           data: {
             week: (params.week as number) || 1,
             teacher: teacher ? { id: teacher.teacherId, name: teacher.name, subject: teacher.subject } : undefined,
+            resolvedFrom: rawTeacherId !== resolvedTeacherId ? rawTeacherId : undefined,
             totalEntries: results.length,
             schedule: results.map(e => ({
               day: e.day,
@@ -927,8 +955,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const params = args as Record<string, unknown>;
     const week = (params.week as number) || 1;
     const classIds = (params.classIds as string[] | undefined) || [];
-    const excludeTeacherId = params.excludeTeacherId as string | undefined;
+    const rawExcludeId = params.excludeTeacherId as string | undefined;
     const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
+
+    // Resolve excludeTeacherId using fuzzy matching
+    const excludeTeacher = resolveTeacher(rawExcludeId);
+    const excludeTeacherId = excludeTeacher?.teacherId || rawExcludeId;
 
     // Weeks >= 50 simulate exam/event weeks where all slots are occupied
     if (week >= 50) {
@@ -1042,52 +1074,43 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       classId: string;
     }>;
 
+    // Swap-aware: vacated original slots should not count as conflicts.
+    // When A↔B swap, both original entries are released before targets are occupied.
+    const vacatedKeys = new Set(
+      changes.map(c => `${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`)
+    );
+    const virtualSchedule = SCHEDULE.filter(entry =>
+      !vacatedKeys.has(`${entry.teacherId}:${entry.day}:${entry.period}`)
+    );
+
     const conflicts: Array<{ type: string; severity: 'soft' | 'hard'; description: string }> = [];
 
-    // Swap-aware: collect slots vacated by all changes in this batch.
-    // In a swap, teacher A leaves slot X and teacher B leaves slot Y,
-    // so X is available for B and Y is available for A.
-    const vacatedTeacherKeys = new Set<string>();
-    const vacatedClassKeys = new Set<string>();
-    for (const c of changes) {
-      vacatedTeacherKeys.add(`${c.originalTeacherId}:${c.originalDay}:${c.originalPeriod}`);
-      vacatedClassKeys.add(`${c.classId}:${c.originalDay}:${c.originalPeriod}`);
-    }
-
     for (const change of changes) {
-      // Hard: target teacher already has a class at target time
-      const targetTeacherBusy = SCHEDULE.find(
+      // Hard: target teacher already has a class at target time (excluding vacated slots)
+      const targetTeacherBusy = virtualSchedule.find(
         e => e.teacherId === change.targetTeacherId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (targetTeacherBusy) {
-        // Skip if that teacher's slot is being vacated by another change in this batch
-        const vacKey = `${change.targetTeacherId}:${change.targetDay}:${change.targetPeriod}`;
-        if (!vacatedTeacherKeys.has(vacKey)) {
-          conflicts.push({
-            type: 'teacher_busy',
-            severity: 'hard',
-            description: `${targetTeacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${targetTeacherBusy.subject}·${targetTeacherBusy.className}）`,
-          });
-        }
+        conflicts.push({
+          type: 'teacher_busy',
+          severity: 'hard',
+          description: `${targetTeacherBusy.teacherName}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${targetTeacherBusy.subject}·${targetTeacherBusy.className}）`,
+        });
       }
 
-      // Hard: target class already has a class at target time
-      const classBusy = SCHEDULE.find(
+      // Hard: target class already has a class at target time (excluding vacated slots)
+      const classBusy = virtualSchedule.find(
         e => e.classId === change.classId && e.day === change.targetDay && e.period === change.targetPeriod
       );
       if (classBusy) {
-        // Skip if that class's slot is being vacated by another change in this batch
-        const vacKey = `${change.classId}:${change.targetDay}:${change.targetPeriod}`;
-        if (!vacatedClassKeys.has(vacKey)) {
-          conflicts.push({
-            type: 'class_busy',
-            severity: 'hard',
-            description: `${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${classBusy.subject}·${classBusy.teacherName}）`,
-          });
-        }
+        conflicts.push({
+          type: 'class_busy',
+          severity: 'hard',
+          description: `${classBusy.className}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节已有课（${classBusy.subject}·${classBusy.teacherName}）`,
+        });
       }
 
-      // Hard: room event at target time
+      // Hard: room event at target time (external events, unaffected by schedule changes)
       const roomEvent = ROOM_EVENTS.find(
         re => re.day === change.targetDay && re.period === change.targetPeriod
       );
@@ -1099,27 +1122,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         });
       }
 
-      // Soft: same subject count in class for target day
+      // Soft: same subject count in class for target day (using virtual schedule)
       const originalEntry = SCHEDULE.find(
         e => e.teacherId === change.originalTeacherId && e.day === change.originalDay && e.period === change.originalPeriod
       );
       if (originalEntry) {
-        // Count existing same-subject classes on target day, but subtract any
-        // that are being vacated (moved away) by other changes in this batch
-        let sameSubjectCount = SCHEDULE.filter(
+        const sameSubjectCount = virtualSchedule.filter(
           e => e.classId === change.classId && e.day === change.targetDay && e.subject === originalEntry.subject
         ).length;
-        // Subtract vacated entries: if another change moves the same class's same-subject
-        // class away from the target day, it no longer counts
-        for (const other of changes) {
-          if (other === change) continue;
-          const otherEntry = SCHEDULE.find(
-            e => e.teacherId === other.originalTeacherId && e.day === other.originalDay && e.period === other.originalPeriod
-          );
-          if (otherEntry && otherEntry.classId === change.classId && otherEntry.day === change.targetDay && otherEntry.subject === originalEntry.subject) {
-            sameSubjectCount--;
-          }
-        }
         if (sameSubjectCount >= 2) {
           conflicts.push({
             type: 'subject_overload',
@@ -1161,15 +1171,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     requestCounter++;
     const now = new Date();
-    // Format: YYYY-MMDD (e.g., "2025-0418"), matches pre-seeded requestId format
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 
     const newRequest: RescheduleRequest = {
       requestId,
       type: reqType,
-      teacherId: changes[0]?.originalTeacherId || 'unknown',
-      teacherName: TEACHERS.find(t => t.teacherId === changes[0]?.originalTeacherId)?.name || '未知',
+      teacherId: resolveTeacher(changes[0]?.originalTeacherId)?.teacherId || changes[0]?.originalTeacherId || 'unknown',
+      teacherName: resolveTeacher(changes[0]?.originalTeacherId)?.name || '未知',
       changes,
       reason,
       status: 'pending',
@@ -1199,12 +1208,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   // ── timetable_list_my_requests ────────────────────────────
   if (name === 'timetable_list_my_requests') {
     const params = args as Record<string, unknown>;
-    const teacherId = params.teacherId as string | undefined;
+    const rawTeacherId = params.teacherId as string | undefined;
     const statusFilter = params.status as string | undefined;
 
+    // Resolve teacher using fuzzy matching
+    const teacher = resolveTeacher(rawTeacherId);
+    const resolvedTeacherId = teacher?.teacherId;
+
     let results = [...SUBMITTED_REQUESTS];
-    if (teacherId) {
-      results = results.filter(r => r.teacherId === teacherId);
+    if (rawTeacherId) {
+      results = results.filter(r => r.teacherId === (resolvedTeacherId || rawTeacherId));
     }
     if (statusFilter) {
       results = results.filter(r => r.status === statusFilter);
@@ -1251,8 +1264,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const params = args as Record<string, unknown>;
     const subject = params.subject as string;
     const slot = params.slot as { day: number; periods: number[] };
-    const excludeTeacherId = params.excludeTeacherId as string;
+    const rawExcludeId = params.excludeTeacherId as string;
     const classId = params.classId as string | undefined;
+
+    // Resolve excludeTeacherId using fuzzy matching
+    const excludeTeacher = resolveTeacher(rawExcludeId);
+    const excludeTeacherId = excludeTeacher?.teacherId || rawExcludeId;
 
     const candidates: Array<{
       teacherId: string;
