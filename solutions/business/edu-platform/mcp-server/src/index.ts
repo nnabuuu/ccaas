@@ -267,7 +267,7 @@ const TEACHERS: TeacherInfo[] = [
   { teacherId: 't-li', name: '李老师', subject: '数学', classIds: ['c-8-1', 'c-8-4'] },
   { teacherId: 't-liu', name: '刘老师', subject: '数学', classIds: ['c-8-3', 'c-8-4'] },
   { teacherId: 't-chen', name: '陈老师', subject: '英语', classIds: ['c-8-1', 'c-8-2'] },
-  { teacherId: 't-zhao', name: '赵老师', subject: '数学', classIds: ['c-7-1', 'c-7-2'] },
+  { teacherId: 't-zhao', name: '赵老师', subject: '数学', classIds: ['c-7-1', 'c-7-2', 'class-701', 'class-702'] },
   { teacherId: 't-sun', name: '孙老师', subject: '语文', classIds: ['c-8-2', 'c-8-3'] },
   // E2E test teacher: 王老师(数学, 七年级) — matches evaluator sessionContext
   { teacherId: 'teacher-wang', name: '王老师', subject: '数学', classIds: ['class-701', 'class-702'] },
@@ -423,6 +423,18 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     status: 'pending',
     createdAt: '2025-04-12T14:00:00Z',
     approver: '李主任',
+  },
+  {
+    requestId: '#2025-04-05-006',
+    type: 'reschedule',
+    teacherId: 'teacher-wang',
+    teacherName: '王老师',
+    changes: [{ originalDay: 1, originalPeriod: 2, originalTeacherId: 'teacher-wang', targetDay: 3, targetPeriod: 7, targetTeacherId: 'teacher-wang', classId: 'class-702' }],
+    reason: '班会活动',
+    status: 'rejected',
+    createdAt: '2025-04-05T09:00:00Z',
+    approver: '李主任',
+    rejectReason: '目标时段与校级活动冲突',
   },
   // Historical substitute records for dynamic historyCount
   {

@@ -45,7 +45,11 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 
 ## 类型一：互换（swap）
 
-适用场景：和另一位教师交换课时。
+适用场景：和另一位教师交换课时，或将自己的两节课时间对调。
+
+### 子类型 A：与其他教师互换
+
+当教师明确提到另一位教师（如"和王老师换"），走此流程：
 
 **工具调用序列：**
 1. `timetable_query_schedule` — 查询自己的课表，确认要换的课时
@@ -54,6 +58,29 @@ description: 调课助手 - 帮助教师高效安全地完成调课
 4. `show_info_card` — 展示互换方案和冲突检测结果
 5. `suggest_actions` — 提供 [确认提交] [修改方案] [取消] 按钮
 6. **等待用户确认** → 用户选择确认后才调用 `timetable_submit_request`
+
+### 子类型 B：自身课时互换（自调）
+
+当教师说"把第X节和第Y节互换"但**没有提到其他教师**，说明是自己的两节课时间对调。此时无需查询其他教师课表，流程简化：
+
+**工具调用序列：**
+1. `timetable_query_schedule` — 查询自己的课表，确认两个时段都有课，提取 classId/subject/room
+2. 构造 **两条配对变更**（课时A移到课时B位置，课时B移到课时A位置），两条变更的 original/target 互为镜像
+3. `timetable_check_conflicts` — 检测互换后是否有冲突（系统通过 vacatedKeys 自动识别自调配对）→ **必检 `severity`**
+4. `show_info_card` — 展示互换方案
+5. `suggest_actions` — 提供 [确认提交] [修改方案] [取消]
+6. **等待用户确认** → 调用 `timetable_submit_request({ type: "swap", changes: [...], reason: "..." })`
+
+**自身互换示例：**
+> 教师："我下周二第3节和周四第5节想互换一下"
+
+处理步骤：
+1. 解析：自身互换，时段A=周二第3节，时段B=周四第5节，week=2
+2. 调用 `timetable_query_schedule({ teacherId: sessionContext.teacherId, week: 2 })`
+3. 从 `data.schedule` 中确认 day=2/period=3 和 day=4/period=5 都有课，提取 classId
+4. 构造两条配对变更（A→B位置，B→A位置）
+5. 调用 `timetable_check_conflicts({ changes: [变更1, 变更2] })`
+6. show_info_card + suggest_actions 确认后提交
 
 **互换变更结构（关键）：**
 互换必须构造 **两条** ScheduleChange，分别表示双方课时的交换。系统会通过 vacatedKeys 机制识别配对变更，避免误报冲突：
@@ -147,6 +174,17 @@ changes: [
     targetDay: 4, targetPeriod: 7, targetTeacherId: "t-zhang", classId: "c-8-3" }
 ]
 ```
+
+### 多节课移到同一时段（常见陷阱）
+
+当教师要求"把第X节和第Y节都换到第Z节"时，这意味着两节不同的课移到同一个目标时段。**这必然产生硬冲突**（同一教师不能同时上两节课）。处理方式：
+
+1. 调用 `timetable_query_schedule` 确认原课时
+2. 构造 **两条变更**，targetDay/targetPeriod 相同
+3. 调用 `timetable_check_conflicts({ changes: [变更1, 变更2] })` — 系统会检测到 intra-batch 冲突（同教师同时段双重预订），返回 `severity: "hard"`
+4. **进入"硬冲突阻止"流程**：展示冲突原因 + 搜索替代方案（为每节课分别找不同的空闲时段）
+
+> **⚠️ 关键**：即使用户明确要求"都换到同一节"，也**必须先构造变更并调用 check_conflicts**，让系统检测冲突，不可跳过检测直接拒绝。
 
 ## 类型四：补课（makeup）
 
@@ -701,7 +739,9 @@ changes: [
 
 | 场景 | 触发条件 | 必须调用的工具序列 | 必须展示的输出 | 禁止行为 |
 |------|---------|------------------|--------------|---------|
-| 简单互换 | "换课/互换/交换" | query_schedule(自己) → query_schedule(对方) → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 方案卡片 + [确认/修改/取消] 按钮 | 跳过 check_conflicts |
+| 与他人互换 | "和XX老师换课/互换" | query_schedule(自己) → query_schedule(对方) → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 方案卡片 + [确认/修改/取消] 按钮 | 跳过 check_conflicts |
+| 自身课时互换 | "第X节和第Y节互换"（无其他教师） | query_schedule(自己) → 构造两条配对变更 → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 方案卡片 + [确认/修改/取消] 按钮 | 不查课表直接构造变更 |
+| 多课到同一时段 | "把第X和第Y都换到第Z节" | query_schedule → 构造两条变更(同target) → check_conflicts(**必返hard**) → show_info_card(冲突) → 搜索替代 → suggest_actions | 冲突卡片 + 替代方案 | 跳过check_conflicts直接拒绝 |
 | 代课推荐 | "代课/请假/找人代" | query_schedule → find_substitute_teachers(**含 classId**) → show_info_card → suggest_actions → **选择后** → check_conflicts → show_info_card → suggest_actions → **等确认** → submit_request | 候选排名卡片 + 确认摘要卡片 | 不传 classId 参数 |
 | 模糊描述 | "有事/想办法/帮我安排" | query_schedule → 逐课分析(find_substitute/find_available) → show_info_card(组合方案) → suggest_actions → **等确认** → 逐项 check_conflicts → submit_request | 组合方案卡片，每课一行 | 直接猜测方案类型不查课表 |
 | 状态查询 | "批了吗/申请状态/查看申请" | list_my_requests(**teacherId 从 sessionContext 获取**) → show_info_card(metrics 统计 + text 列表) → suggest_actions | 按状态分类的申请列表 + 操作按钮 | 要求教师手动输入 teacherId |
