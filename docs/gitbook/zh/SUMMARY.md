@@ -43,6 +43,8 @@
   * [MCP 工具设计：多数据源整合](examples/smart-agri-service/mcp-design.md)
 * [麦肯锡顾问 McKinsey CLI](examples/mckinsey-cli/README.md)
   * [纯 Skill 方案：零 MCP 架构](examples/mckinsey-cli/skill-design.md)
+* [Article Analyzer UI/UX 重设计](examples/article-analyzer-ui-redesign.md)
+* [Context Layer @ Reference Picker](examples/reference-picker.md)
 
 ## 开发指南 <a href="#guide" id="guide"></a>
 
@@ -61,6 +63,7 @@
 * [File Explorer 组件](guide/file-explorer.md)
 * [会话持久化](guide/conversation-persistence.md)
 * [Context Layer](guide/context-layer.md)
+* [Harness Engineering](guide/harness-engineering.md)
 
 ## 高级配置 <a href="#advanced" id="advanced"></a>
 

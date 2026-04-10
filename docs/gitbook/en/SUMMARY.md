@@ -43,6 +43,8 @@
   * [MCP Design: Multi-Source Data Integration](examples/smart-agri-service/mcp-design.md)
 * [McKinsey CLI](examples/mckinsey-cli/README.md)
   * [Pure Skill Design: Zero-MCP Architecture](examples/mckinsey-cli/skill-design.md)
+* [Article Analyzer UI/UX Redesign](examples/article-analyzer-ui-redesign.md)
+* [Context Layer @ Reference Picker](examples/reference-picker.md)
 
 ## Developer Guide <a href="#guide" id="guide"></a>
 
@@ -61,6 +63,7 @@
 * [File Explorer Component](guide/file-explorer.md)
 * [Conversation Persistence](guide/conversation-persistence.md)
 * [Context Layer](guide/context-layer.md)
+* [Harness Engineering](guide/harness-engineering.md)
 
 ## Advanced Configuration <a href="#advanced" id="advanced"></a>
 
