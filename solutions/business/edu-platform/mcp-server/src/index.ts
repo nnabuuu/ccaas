@@ -269,6 +269,8 @@ const TEACHERS: TeacherInfo[] = [
   { teacherId: 't-chen', name: '陈老师', subject: '英语', classIds: ['c-8-1', 'c-8-2'] },
   { teacherId: 't-zhao', name: '赵老师', subject: '数学', classIds: ['c-7-1', 'c-7-2'] },
   { teacherId: 't-sun', name: '孙老师', subject: '语文', classIds: ['c-8-2', 'c-8-3'] },
+  // E2E test teacher: 王老师(数学, 七年级) — matches evaluator sessionContext
+  { teacherId: 'teacher-wang', name: '王老师', subject: '数学', classIds: ['class-701', 'class-702'] },
 ];
 
 // Complete week schedule: 7 teachers × 5 days × 8 periods (not every slot is occupied)
@@ -344,6 +346,16 @@ const SCHEDULE: ScheduleEntry[] = [
   { day: 4, period: 5, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
   { day: 5, period: 3, subject: '语文', className: '八(2)班', classId: 'c-8-2', room: '301', teacherId: 't-sun', teacherName: '孙老师' },
   { day: 5, period: 5, subject: '语文', className: '八(3)班', classId: 'c-8-3', room: '302', teacherId: 't-sun', teacherName: '孙老师' },
+  // ── E2E: 王老师(数学, 七(1)/七(2)班) — supports all 6 E2E scenarios ──
+  { day: 1, period: 1, subject: '数学', className: '七(1)班', classId: 'class-701', room: '205', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 1, period: 2, subject: '数学', className: '七(2)班', classId: 'class-702', room: '206', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 2, period: 3, subject: '数学', className: '七(1)班', classId: 'class-701', room: '205', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 3, period: 1, subject: '数学', className: '七(2)班', classId: 'class-702', room: '206', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 3, period: 2, subject: '数学', className: '七(1)班', classId: 'class-701', room: '205', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 3, period: 5, subject: '数学', className: '七(2)班', classId: 'class-702', room: '206', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 4, period: 5, subject: '数学', className: '七(1)班', classId: 'class-701', room: '205', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 5, period: 2, subject: '数学', className: '七(1)班', classId: 'class-701', room: '205', teacherId: 'teacher-wang', teacherName: '王老师' },
+  { day: 5, period: 4, subject: '数学', className: '七(2)班', classId: 'class-702', room: '206', teacherId: 'teacher-wang', teacherName: '王老师' },
 ];
 
 // Room events that cause hard conflicts (e.g., lab reserved for activity)
@@ -389,6 +401,29 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
     approver: '李主任',
     rejectReason: '目标时段教室已被占用',
   },
+  // E2E test teacher (teacher-wang) requests — for S4 status query
+  {
+    requestId: '#2025-04-08-004',
+    type: 'reschedule',
+    teacherId: 'teacher-wang',
+    teacherName: '王老师',
+    changes: [{ originalDay: 2, originalPeriod: 3, originalTeacherId: 'teacher-wang', targetDay: 4, targetPeriod: 7, targetTeacherId: 'teacher-wang', classId: 'class-701' }],
+    reason: '调整教学安排',
+    status: 'approved',
+    createdAt: '2025-04-08T10:00:00Z',
+    approver: '李主任',
+  },
+  {
+    requestId: '#2025-04-12-005',
+    type: 'substitute',
+    teacherId: 'teacher-wang',
+    teacherName: '王老师',
+    changes: [{ originalDay: 3, originalPeriod: 2, originalTeacherId: 'teacher-wang', targetDay: 3, targetPeriod: 2, targetTeacherId: 't-zhang', classId: 'class-701' }],
+    reason: '教研活动',
+    status: 'pending',
+    createdAt: '2025-04-12T14:00:00Z',
+    approver: '李主任',
+  },
   // Historical substitute records for dynamic historyCount
   {
     requestId: '#2025-03-20-001',
@@ -414,7 +449,7 @@ const SUBMITTED_REQUESTS: RescheduleRequest[] = [
   },
 ];
 
-let requestCounter = 6;
+let requestCounter = 8;
 
 // Helper: day number to Chinese name
 const DAY_NAMES = ['', '周一', '周二', '周三', '周四', '周五'];
@@ -953,6 +988,26 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const excludeTeacherId = params.excludeTeacherId as string | undefined;
     const preferredDays = (params.preferredDays as number[] | undefined) || [1, 2, 3, 4, 5];
 
+    // Weekend days (6-7) are not available for regular classes
+    const validDays = preferredDays.filter(d => d >= 1 && d <= 5);
+    if (validDays.length === 0) {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify({
+            data: {
+              week,
+              totalSlots: 0,
+              slots: [],
+              note: '所选日期为周末（周六/周日），学校不安排常规课程',
+              hint: '⚠️ totalSlots=0：周末无法安排常规课程。请用 show_info_card 展示降级建议（选择工作日时段/联系教务处安排周末补课），并用 suggest_actions 提供选项。禁止直接结束对话。',
+            },
+            status: 'success',
+          }),
+        }],
+      };
+    }
+
     // Weeks >= 50 simulate exam/event weeks where all slots are occupied
     if (week >= 50) {
       return {
@@ -981,7 +1036,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       conflictNote?: string;
     }> = [];
 
-    for (const day of preferredDays) {
+    for (const day of validDays) {
       for (let period = 1; period <= 8; period++) {
         // Check: is the initiating teacher free?
         if (excludeTeacherId) {
@@ -1159,6 +1214,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
     }
 
+    // Intra-batch conflict: multiple changes targeting same teacher+day+period
+    for (let i = 0; i < changes.length; i++) {
+      for (let j = i + 1; j < changes.length; j++) {
+        if (changes[i].targetTeacherId === changes[j].targetTeacherId &&
+            changes[i].targetDay === changes[j].targetDay &&
+            changes[i].targetPeriod === changes[j].targetPeriod) {
+          const teacherName = TEACHERS.find(t => t.teacherId === changes[i].targetTeacherId)?.name || changes[i].targetTeacherId;
+          conflicts.push({
+            type: 'teacher_double_booking',
+            severity: 'hard',
+            description: `${teacherName}不能在${DAY_NAMES[changes[i].targetDay]}第${changes[i].targetPeriod}节同时上两节课`,
+          });
+        }
+      }
+    }
+
     const overallSeverity = conflicts.some(c => c.severity === 'hard')
       ? 'hard'
       : conflicts.length > 0
@@ -1225,6 +1296,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       );
       if (roomEvent) {
         hardConflicts.push(`${roomEvent.room}在${DAY_NAMES[change.targetDay]}第${change.targetPeriod}节被占用（${roomEvent.event}）`);
+      }
+    }
+    // Intra-batch: multiple changes targeting same teacher+day+period
+    for (let i = 0; i < changes.length; i++) {
+      for (let j = i + 1; j < changes.length; j++) {
+        if (changes[i].targetTeacherId === changes[j].targetTeacherId &&
+            changes[i].targetDay === changes[j].targetDay &&
+            changes[i].targetPeriod === changes[j].targetPeriod) {
+          const tn = TEACHERS.find(t => t.teacherId === changes[i].targetTeacherId)?.name || changes[i].targetTeacherId;
+          hardConflicts.push(`${tn}不能在${DAY_NAMES[changes[i].targetDay]}第${changes[i].targetPeriod}节同时上两节课`);
+        }
       }
     }
     if (hardConflicts.length > 0) {
