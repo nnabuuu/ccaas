@@ -488,13 +488,14 @@ const timetableSubmitRequestTool: Tool = {
 
 const timetableListMyRequestsTool: Tool = {
   name: 'timetable_list_my_requests',
-  description: '查询当前教师的调课申请列表。可按状态过滤。',
+  description: '查询当前教师的调课申请列表。teacherId 必须从 sessionContext 获取。可按状态过滤。',
   inputSchema: {
     type: 'object' as const,
     properties: {
-      teacherId: { type: 'string', description: '教师ID' },
+      teacherId: { type: 'string', description: '教师ID（必须从 sessionContext.teacherId 获取）' },
       status: { type: 'string', description: '过滤状态: pending/approved/rejected' },
     },
+    required: ['teacherId'],
   },
 };
 
@@ -1129,6 +1130,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
     requestCounter++;
     const now = new Date();
+    // Format: YYYY-MMDD (e.g., "2025-0418"), matches pre-seeded requestId format
     const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const requestId = `#${dateStr}-${String(requestCounter).padStart(3, '0')}`;
 
