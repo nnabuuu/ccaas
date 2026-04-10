@@ -117,23 +117,24 @@ curl -X POST http://localhost:3001/api/v1/skills \
 | 6 | `show_info_card` | 展示结构化信息卡片 | 向导、数据可视化 |
 | 7 | `suggest_actions` | 后续操作按钮 | 引导下一步操作 |
 
-### 交互增强工具（2 个）
+### 交互增强工具（1 个已注册）
 
 | # | 工具名 | 用途 | 使用场景 |
 |---|--------|------|---------|
-| 8 | `show_step_wizard` | 多步向导交互 | 备课向导流程 |
-| 9 | `show_review_panel` | 审阅面板展示 | 内容审阅确认 |
+| 8 | `show_review_panel` | 审阅面板展示 | 内容审阅确认 |
+
+> `show_step_wizard`（多步向导）已定义但未在 ListToolsRequestSchema 中注册。
 
 ### 调课工具（6 个）
 
 | # | 工具名 | 用途 | 使用场景 |
 |---|--------|------|---------|
-| 10 | `timetable_query_schedule` | 按教师/班级/周次查询课表 | 调课前确认课时 |
-| 11 | `timetable_find_available_slots` | 查找空闲时段 | 改时/补课搜索可用时段 |
-| 12 | `timetable_check_conflicts` | 5 层冲突检测 | 提交前安全验证 |
-| 13 | `timetable_submit_request` | 提交调课申请 | 用户确认后提交 |
-| 14 | `timetable_list_my_requests` | 查询历史调课申请 | 查看申请状态 |
-| 15 | `timetable_find_substitute_teachers` | 推荐代课教师 | 按 matchScore 排序 |
+| 9 | `timetable_query_schedule` | 按教师/班级/周次查询课表 | 调课前确认课时 |
+| 10 | `timetable_find_available_slots` | 查找空闲时段 | 改时/补课搜索可用时段 |
+| 11 | `timetable_check_conflicts` | 5 层冲突检测 | 提交前安全验证 |
+| 12 | `timetable_submit_request` | 提交调课申请 | 用户确认后提交 |
+| 13 | `timetable_list_my_requests` | 查询历史调课申请 | 查看申请状态 |
+| 14 | `timetable_find_substitute_teachers` | 推荐代课教师 | 按 matchScore 排序 |
 
 ### show_info_card Section Types
 
