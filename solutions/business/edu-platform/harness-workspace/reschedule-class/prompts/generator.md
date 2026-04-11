@@ -7,24 +7,24 @@ You are a prompt engineer and TypeScript developer specializing in LLM-powered S
 **你运行在 fresh context 中（`claude -p`），没有前几轮的记忆。**
 你唯一的上下文来源是磁盘上的文件。以下文件构成了你的完整记忆：
 
-1. **`harness-workspace/reschedule-class/SPEC.md`** — 你的目标和约束（不会变）
-2. **`harness-workspace/reschedule-class/HARNESS_SPEC.md`** — 详细维度定义（6 维度含 D6 E2E）
+1. **`solutions/business/edu-platform/harness-workspace/reschedule-class/SPEC.md`** — 你的目标和约束（不会变）
+2. **`solutions/business/edu-platform/harness-workspace/reschedule-class/HARNESS_SPEC.md`** — 详细维度定义（6 维度含 D6 E2E）
 3. **`skills/reschedule-class/SKILL.md`** — Skill prompt 文件（前几轮可能已创建）
 4. **`mcp-server/src/index.ts`** — MCP Server 源码（你要在这里添加 6 个动态工具）
 5. **`solution.json`** — Solution 配置（你要更新这里）
-6. **`harness-workspace/reschedule-class/eval-reports/v{N-1}-eval.md`** — 上一轮评估报告
-7. **`harness-workspace/reschedule-class/progress.md`** — 所有历史轮次的分数走势
-8. **`harness-workspace/reschedule-class/reference/prd-summary.md`** — PRD 摘要
+6. **`solutions/business/edu-platform/harness-workspace/reschedule-class/eval-reports/v{N-1}-eval.md`** — 上一轮评估报告
+7. **`solutions/business/edu-platform/harness-workspace/reschedule-class/progress.md`** — 所有历史轮次的分数走势
+8. **`solutions/business/edu-platform/harness-workspace/reschedule-class/reference/prd-summary.md`** — PRD 摘要
 
 ## 工作流程
 
 ### 1. 阅读上下文（必须按顺序）
 
-1. 读 `harness-workspace/reschedule-class/SPEC.md` — 理解任务目标和冻结约束
-2. 读 `harness-workspace/reschedule-class/HARNESS_SPEC.md` — 理解 6 个评分维度的详细定义
-3. 读 `harness-workspace/reschedule-class/progress.md` — 看分数走势
+1. 读 `solutions/business/edu-platform/harness-workspace/reschedule-class/SPEC.md` — 理解任务目标和冻结约束
+2. 读 `solutions/business/edu-platform/harness-workspace/reschedule-class/HARNESS_SPEC.md` — 理解 6 个评分维度的详细定义
+3. 读 `solutions/business/edu-platform/harness-workspace/reschedule-class/progress.md` — 看分数走势
 4. 读上一轮的 eval report — 重点看扣分项和改进建议（首轮跳过）
-5. 读 `harness-workspace/reschedule-class/reference/prd-summary.md` — PRD 核心内容
+5. 读 `solutions/business/edu-platform/harness-workspace/reschedule-class/reference/prd-summary.md` — PRD 核心内容
 6. 读 `skills/lesson-plan-generator/SKILL.md` — **标杆 Skill**，你的 SKILL.md 要遵循这个结构
 7. 读 `mcp-server/src/index.ts` — 理解已有工具的定义模式和 handler 结构
 8. 读 `solution.json` — 理解当前配置
@@ -78,7 +78,7 @@ done
 
 ### 5. 写 changelog
 
-将本轮修改记录到 `harness-workspace/reschedule-class/changelogs/v{N}-changelog.md`：
+将本轮修改记录到 `solutions/business/edu-platform/harness-workspace/reschedule-class/changelogs/v{N}-changelog.md`：
 
 ```markdown
 # v{N} Changelog

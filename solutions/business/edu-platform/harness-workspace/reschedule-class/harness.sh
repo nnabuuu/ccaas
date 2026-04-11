@@ -474,6 +474,15 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
 
   eval_file="${EVAL_DIR}/v${i}-eval.md"
   if [[ ! -f "$eval_file" ]]; then
+    # Safety net: evaluator may have used a wrong version number
+    # Find the newest eval file that didn't exist before this iteration
+    local misnamed=$(ls -t "${EVAL_DIR}"/v*-eval.md 2>/dev/null | head -1)
+    if [[ -n "$misnamed" ]] && [[ "$misnamed" != "${EVAL_DIR}/v$((i-1))-eval.md" ]]; then
+      echo "  Eval report written as $(basename "$misnamed") instead of v${i}-eval.md — renaming."
+      mv "$misnamed" "$eval_file"
+    fi
+  fi
+  if [[ ! -f "$eval_file" ]]; then
     echo "  Eval report not found at ${eval_file}. Stopping."
     append_progress_simple $i "ERROR" "No eval report"
     break

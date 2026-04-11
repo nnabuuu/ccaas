@@ -11,7 +11,7 @@ You are an independent code quality evaluator. You have NOT seen the creation pr
 
 ## Rubric
 
-Read `harness-workspace/reschedule-class/EVAL_CRITERIA.md` carefully. Score each dimension independently.
+Read `solutions/business/edu-platform/harness-workspace/reschedule-class/EVAL_CRITERIA.md` carefully. Score each dimension independently.
 
 ## Input
 
@@ -22,8 +22,8 @@ Analyze the source files in (paths relative to `solutions/business/edu-platform/
 
 Reference files (DO NOT score these, they are for comparison):
 - `skills/lesson-plan-generator/SKILL.md` — gold standard for Skill structure
-- `harness-workspace/reschedule-class/reference/prd-summary.md` — PRD requirements
-- `harness-workspace/reschedule-class/HARNESS_SPEC.md` — detailed dimension definitions
+- `solutions/business/edu-platform/harness-workspace/reschedule-class/reference/prd-summary.md` — PRD requirements
+- `solutions/business/edu-platform/harness-workspace/reschedule-class/HARNESS_SPEC.md` — detailed dimension definitions
 
 ## Evaluation Procedure
 
@@ -200,41 +200,35 @@ D1_D5_total = D1 + D2 + D3 + D4 + D5
 
 **If D1_D5_total >= 53 → Execute E2E via CCAAS API:**
 
-#### Step 1: Load E2E config
+#### Step 1: Set E2E config
+
+**Use these exact values (hardcoded — do NOT try to read from a file):**
 
 ```bash
-E2E_CONFIG="harness-workspace/reschedule-class/.e2e-config"
-if [[ -f "$E2E_CONFIG" ]]; then
-  source "$E2E_CONFIG"
-  echo "CCAAS_URL=$CCAAS_URL TENANT_ID=$TENANT_ID API_KEY=${API_KEY:0:16}..."
-else
-  echo "E2E config not found — D6 = 0"
-fi
+CCAAS_URL="http://localhost:3001"
+TENANT_ID="fe322e3c-9441-493e-8185-ceb841166d55"
+API_KEY="sk-edu-plat-x3E61kA8B8hfY2hw9MB_Qh1KUiNo18WX"
+
+# Verify CCAAS is reachable
+curl -s "${CCAAS_URL}/api/v1/health" | head -1
 ```
 
-If file missing or CCAAS_URL unreachable → D6 = 0 with note "E2E config not available".
+If CCAAS_URL unreachable → D6 = 0 with note "CCAAS not available".
 
 #### Step 2: For each scenario, create a session and send a message
 
-**Create session:**
+**Create session and send message (sessions are created on first message):**
 ```bash
-SESSION=$(curl -s -X POST "${CCAAS_URL}/api/v1/sessions" \
-  -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: ${TENANT_ID}" \
-  -H "X-Api-Key: ${API_KEY}" \
-  -d '{"templateName":"lesson-planning","context":{"teacherId":"teacher-wang","teacherName":"王老师","subject":"数学","grade":"七年级","classId":"class-701"}}')
-SESSION_ID=$(echo "$SESSION" | jq -r '.id // empty')
-```
+# Generate a unique session ID
+SESSION_ID=$(python3 -c "import uuid; print(str(uuid.uuid4()))")
 
-**Send message and capture SSE response:**
-```bash
+# Send message — session is created automatically on first message
 curl -s -N "${CCAAS_URL}/api/v1/sessions/${SESSION_ID}/messages" \
   -X POST \
   -H "Content-Type: application/json" \
-  -H "X-Tenant-Id: ${TENANT_ID}" \
   -H "X-Api-Key: ${API_KEY}" \
-  -d '{"message":"<user message here>"}' \
-  --max-time 90 > /tmp/e2e-s1.txt 2>&1
+  -d "{\"tenantId\":\"${TENANT_ID}\",\"templateName\":\"lesson-planning\",\"message\":\"<user message here>\",\"context\":{\"teacherId\":\"teacher-wang\",\"teacherName\":\"王老师\",\"subject\":\"数学\",\"grade\":\"七年级\",\"classId\":\"class-701\"}}" \
+  --max-time 120 > /tmp/e2e-s1.txt 2>&1
 ```
 
 **Check for tool calls in response:**
@@ -267,7 +261,9 @@ grep -o 'show_info_card\|suggest_actions' /tmp/e2e-s1.txt | sort -u
 
 ## Output
 
-Write the evaluation report to: `harness-workspace/reschedule-class/eval-reports/v{N}-eval.md`
+**CRITICAL: The version number for this evaluation is {N}. Use exactly `v{N}` in the filename and report title. Do NOT infer or calculate a different version number from progress.md or changelogs.**
+
+Write the evaluation report to: `solutions/business/edu-platform/harness-workspace/reschedule-class/eval-reports/v{N}-eval.md`
 
 Use this format:
 
