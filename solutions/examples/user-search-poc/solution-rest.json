@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "User Search POC (REST)",
+    "slug": "user-search-poc-rest",
+    "description": "通过 REST Adapter Bridge 将普通 HTTP API 转为 MCP 工具，无需编写 MCP server"
+  },
+  "skills": [
+    { "slug": "user-search-assistant-rest" }
+  ],
+  "sessionTemplates": {
+    "user-search": {
+      "description": "按用户名查询业务系统用户信息（REST Adapter 方案）",
+      "enabledSkills": ["user-search-assistant-rest"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "所有回复使用中文。"
+    }
+  },
+  "syncFields": ["search_result"]
+}
