@@ -64,7 +64,11 @@ export class AdminSolutionsController {
    */
   private async verifyBuilderTenantAccess(ctx: RequestContext, tenantSlug: string): Promise<void> {
     if (!ctx.userId) {
-      throw new ForbiddenException('Builder API key must be linked to a user');
+      throw new ForbiddenException(
+        'Builder API key must be linked to a user. '
+        + 'Update the key with a userId via PUT /api/v1/admin/api-keys/:id, '
+        + 'or use POST /api/v1/admin/builder-users for one-step onboarding.',
+      );
     }
 
     const tenant = await this.tenantsService.findOne(tenantSlug);

@@ -55,6 +55,10 @@ export class CreateApiKeyDto {
 export class UpdateApiKeyDto {
   @IsOptional()
   @IsString()
+  userId?: string;
+
+  @IsOptional()
+  @IsString()
   name?: string;
 
   @IsOptional()

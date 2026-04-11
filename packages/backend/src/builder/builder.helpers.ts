@@ -19,7 +19,8 @@ import type { Tenant } from '../tenants/entities/tenant.entity';
 export function requireBuilderUserId(ctx: RequestContext): string {
   if (!ctx.userId) {
     throw new ForbiddenException(
-      'Builder API key must be linked to a user (userId required)',
+      'Builder API key must be linked to a user (userId required). '
+      + 'Update via PUT /api/v1/admin/api-keys/:id or use POST /api/v1/admin/builder-users.',
     );
   }
   return ctx.userId;

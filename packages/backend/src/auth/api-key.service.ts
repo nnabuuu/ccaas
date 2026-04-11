@@ -5,6 +5,7 @@
  */
 
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -153,9 +154,20 @@ export class ApiKeyService implements OnModuleInit {
     if (dto.userId) {
       try {
         await this.usersService.findOne(dto.userId);
-      } catch {
-        throw new NotFoundException(`User not found: ${dto.userId}`);
+      } catch (error) {
+        if (error instanceof NotFoundException) {
+          throw new NotFoundException(`User not found: ${dto.userId}`);
+        }
+        throw error;
       }
+    }
+
+    // Builder scope requires a userId — keys without one will always 403 at runtime
+    if (dto.scopes?.includes('builder') && !dto.userId) {
+      throw new BadRequestException(
+        'Builder API key must be linked to a user (userId is required for builder scope). '
+        + 'Use POST /api/v1/admin/builder-users for one-step onboarding.',
+      );
     }
 
     const apiKey = this.apiKeyRepository.create({
@@ -227,6 +239,28 @@ export class ApiKeyService implements OnModuleInit {
     if (dto.status !== undefined) key.status = dto.status;
     if (dto.expiresAt !== undefined) key.expiresAt = dto.expiresAt;
     if (dto.metadata !== undefined) key.metadata = dto.metadata;
+
+    if (dto.userId !== undefined) {
+      if (dto.userId) {
+        try {
+          await this.usersService.findOne(dto.userId);
+        } catch (error) {
+          if (error instanceof NotFoundException) {
+            throw new NotFoundException(`User not found: ${dto.userId}`);
+          }
+          throw error;
+        }
+      }
+      key.userId = dto.userId ? dto.userId : null;
+    }
+
+    // Enforce builder+userId invariant after all mutations
+    if (key.scopes?.includes('builder') && !key.userId) {
+      throw new BadRequestException(
+        'Builder API key must be linked to a user (userId is required for builder scope). '
+        + 'Provide a userId when setting builder scope, or remove builder from scopes.',
+      );
+    }
 
     const saved = await this.apiKeyRepository.save(key);
     this.logger.log(`Updated API key: ${saved.id}`);
