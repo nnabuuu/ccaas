@@ -497,9 +497,9 @@ export class ApiKeyService implements OnModuleInit {
   // ==========================================================================
 
   private generateRawKey(tenantSlug: string): string {
-    const prefix = tenantSlug.substring(0, 8).padEnd(8, 'x');
+    const slugHash = crypto.createHash('sha256').update(tenantSlug).digest('hex').substring(0, 8);
     const random = crypto.randomBytes(24).toString('base64url');
-    return `${API_KEY_PREFIX}${prefix}-${random}`;
+    return `${API_KEY_PREFIX}${slugHash}-${random}`;
   }
 
   private hashKey(rawKey: string): string {
