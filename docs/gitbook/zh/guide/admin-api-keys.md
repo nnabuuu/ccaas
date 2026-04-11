@@ -209,7 +209,22 @@ curl -X PUT https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
   }'
 ```
 
+**为已有密钥关联用户**（例如修复创建时未带 `userId` 的 builder key）：
+
+```bash
+curl -X PUT https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
+  -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "<user-id>"
+  }'
+```
+
 **审计日志**：所有更新都会记录修改前后的值。
+
+{% hint style="warning" %}
+**Builder scope 校验**：`builder` scope 的 API key **必须**绑定 `userId`。创建或更新 key 时如果包含 `builder` scope 但没有 `userId`，会返回 400 Bad Request。推荐使用 `POST /api/v1/admin/builder-users` 一站式完成 builder onboarding。
+{% endhint %}
 
 ### 吊销密钥
 
@@ -395,6 +410,7 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 1. ✓ 密钥具有所需的权限范围（例如创建技能需要 `skills:write`）
 2. ✓ 租户 ID 与密钥的租户匹配
 3. ✓ 密钥的权限范围级别允许该操作
+4. ✓ Builder key 必须绑定 `userId` — 通过 `PUT /api/v1/admin/api-keys/:id` 补充，或通过 `POST /api/v1/admin/builder-users` 重建
 
 ## 使用跟踪
 

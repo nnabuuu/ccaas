@@ -29,10 +29,23 @@ Builder key 自动拥有除 `admin` 和 `builder` 外的所有 scope（`skills:r
 ## 2. 前置条件
 
 - CCAAS 后端运行中：`npm run dev:backend`（默认 port 3001）
-- 拥有一个 `builder` scope 的 API key（由平台管理员通过 Admin API 创建）
+- 拥有一个 `builder` scope 的 API key（由平台管理员创建）
 - **Builder key 必须绑定 `userId`**，否则所有 Builder 端点返回 403
 
-管理员创建 Builder key 的方式：
+**推荐方式**：使用一站式 onboarding 接口（一次创建 user + tenant + key）：
+
+```bash
+curl -X POST http://localhost:3001/api/v1/admin/builder-users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-admin_xxx" \
+  -d '{
+    "email": "builder@example.com",
+    "name": "Acme Corp",
+    "tenantName": "Acme Corp"
+  }'
+```
+
+**手动方式**：先创建 user，再手动创建 builder key：
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/admin/api-keys \
@@ -46,7 +59,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
   }'
 ```
 
-> 保存返回的 `rawKey`，后续所有步骤都需要它。
+> 保存返回的 `rawKey`，后续所有步骤都需要它。创建 builder key 时不带 `userId` 会直接返回 400 Bad Request。
 
 ## 3. Step 1: 创建 Tenant
 
@@ -430,9 +443,13 @@ curl -N -X POST "$BASE_URL/api/v1/sessions/$SESSION_ID/messages" \
 
 ### 403: Builder API key must be linked to a user
 
-**原因**：Builder key 创建时没有绑定 `userId`。
+**原因**：Builder key 没有绑定 `userId`。
 
-**解决**：由管理员重新创建 builder key，确保包含 `userId` 字段。
+**解决**：
+- **修复存量 key**：`PUT /api/v1/admin/api-keys/:id`，body 中传 `{ "userId": "<user-id>" }`
+- **重建**：通过 `POST /api/v1/admin/builder-users` 一站式创建（推荐）
+
+> 注：当前版本已在创建时做防呆，builder scope 不带 userId 会直接返回 400。
 
 ### 403: You do not have access to this tenant
 

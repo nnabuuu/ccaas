@@ -209,7 +209,22 @@ curl -X PUT https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
   }'
 ```
 
+**Linking a user to an existing key** (e.g., fixing a builder key that was created without `userId`):
+
+```bash
+curl -X PUT https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
+  -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "<user-id>"
+  }'
+```
+
 **Audit Logging**: All updates are logged with before/after values.
+
+{% hint style="warning" %}
+**Builder scope validation**: API keys with `builder` scope **must** have a `userId`. Creating or updating a key to have `builder` scope without a `userId` will return 400 Bad Request. Use `POST /api/v1/admin/builder-users` for one-step builder onboarding.
+{% endhint %}
 
 ### Revoking a Key
 
@@ -395,6 +410,7 @@ Grant only the minimum scopes required:
 1. ✓ Key has the required scope (e.g., `skills:write` for creating skills)
 2. ✓ Tenant ID matches the key's tenant
 3. ✓ Operation is allowed for the key's scope level
+4. ✓ Builder keys must have a `userId` — update via `PUT /api/v1/admin/api-keys/:id` or recreate via `POST /api/v1/admin/builder-users`
 
 ## Usage Tracking
 

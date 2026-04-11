@@ -26,10 +26,23 @@ Builder keys automatically have all scopes except `admin` and `builder`.
 ## Prerequisites
 
 - CCAAS backend running (`npm run dev:backend`, default port 3001)
-- A `builder`-scoped API key (created by platform admin via Admin API)
+- A `builder`-scoped API key (created by platform admin)
 - **Builder key must have a `userId` bound** — otherwise all Builder endpoints return 403
 
-Admin creates a Builder key:
+**Recommended**: Use the one-step onboarding endpoint (creates user + tenant + key in one call):
+
+```bash
+curl -X POST http://localhost:3001/api/v1/admin/builder-users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer sk-admin_xxx" \
+  -d '{
+    "email": "builder@example.com",
+    "name": "Acme Corp",
+    "tenantName": "Acme Corp"
+  }'
+```
+
+**Alternative**: Create user first, then create a builder key manually:
 
 ```bash
 curl -X POST http://localhost:3001/api/v1/admin/api-keys \
@@ -44,7 +57,7 @@ curl -X POST http://localhost:3001/api/v1/admin/api-keys \
 ```
 
 {% hint style="warning" %}
-Save the returned `rawKey` — all subsequent steps require it.
+Save the returned `rawKey` — all subsequent steps require it. Builder keys without `userId` are rejected at creation time (400 Bad Request).
 {% endhint %}
 
 ## Step 1: Create Tenant
@@ -250,7 +263,7 @@ curl -N -X POST "http://localhost:3001/api/v1/sessions/$SESSION_ID/messages" \
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| 403: builder key must be linked to a user | Builder key has no `userId` | Admin recreates key with `userId` |
+| 403: builder key must be linked to a user | Builder key has no `userId` | Fix via `PUT /api/v1/admin/api-keys/:id` with `userId`, or recreate via `POST /api/v1/admin/builder-users` |
 | 403: You do not have access to this tenant | No UserTenant link | Can only operate on self-created tenants |
 | 403: cannot create keys with scopes: admin | Privilege escalation prevention | Use only allowed scopes |
 | 409: Skill slug already exists | Slug conflict | Change slug or PUT to update |

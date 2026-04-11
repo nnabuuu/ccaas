@@ -151,6 +151,9 @@ CCAAS 定义了 **9 个标准 Scopes**：
 | `mcp:write` | 创建/更新 MCP Servers | 管理员、开发者 |
 | `analytics:read` | 读取使用统计和分析数据 | 管理员 |
 | `admin` | 完全管理权限（创建 API Key 等） | 管理员 |
+| `builder` | 自助管理租户和密钥（需绑定 `userId`） | 外部开发者 |
+
+> **Builder scope 约束**：`builder` scope 的 API key **必须**绑定 `userId`，否则创建和更新时会返回 400 Bad Request。推荐通过 `POST /api/v1/admin/builder-users` 一站式 onboarding。已有的 key 可通过 `PUT /api/v1/admin/api-keys/:id` 补充 `userId`。
 
 **Default Scopes（默认授予）：**
 ```typescript
