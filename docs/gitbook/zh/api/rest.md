@@ -123,7 +123,7 @@
 |------|------|------|------|
 | `clientId` | string | 是 | 客户端标识 |
 | `message` | string | 是 | 用户消息 |
-| `tenantId` | string | 是 | 租户 ID |
+| `tenantId` | string | 条件必填 | 租户 ID。使用绑定租户的 API Key（admin/builder）时可省略，系统会自动从 Key 上下文解析。 |
 | `enabledSkills` | string[] | 否 | 启用的 Skill slug 列表 |
 | `attachments` | object[] | 否 | 附件列表 |
 
@@ -618,11 +618,14 @@ curl /api/v1/sessions/:sessionId/full-trace?include=messages,sessionEvents,token
 
 注册 MCP Server。
 
+**Slug 格式**：必须匹配 `^[a-z0-9][a-z0-9-]*$` — 小写字母、数字和连字符，以字母或数字开头。
+
 **请求体**：
 
 ```json
 {
   "name": "my-tools",
+  "slug": "my-tools",
   "url": "http://localhost:3004",
   "description": "工具服务描述",
   "tenantId": "tenant-uuid"

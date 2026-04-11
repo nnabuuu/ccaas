@@ -256,6 +256,10 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 | `analytics:read` | 访问使用分析和指标 |
 | `admin` | 完整管理权限（包含所有范围） |
 
+{% hint style="info" %}
+**Admin 权限特权**：具有 `admin` 范围的 API Key 会绕过技能级别的权限检查（如 `allowedTools` 限制）。Admin Key 还支持自动解析 `tenantId` — 通过 API Key 发送消息时，可以省略请求体中的 `tenantId`，系统会自动从 API Key 的租户上下文中解析。
+{% endhint %}
+
 ### 权限范围组合
 
 **常见模式**：

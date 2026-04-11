@@ -122,7 +122,7 @@ Send a message (full version with Skill routing support).
 |-------|------|----------|-------------|
 | `clientId` | string | Yes | Client identifier |
 | `message` | string | Yes | User message |
-| `tenantId` | string | Yes | Tenant ID |
+| `tenantId` | string | Conditional | Tenant ID. Required unless the API key has a bound tenant (admin/builder keys auto-resolve tenantId from key context). |
 | `enabledSkills` | string[] | No | List of enabled Skill slugs |
 | `attachments` | object[] | No | Attachment list |
 
@@ -616,11 +616,14 @@ Get the MCP Server list.
 
 Register an MCP Server.
 
+**Slug format**: Must match `^[a-z0-9][a-z0-9-]*$` — lowercase alphanumeric with hyphens, starting with a letter or digit.
+
 **Request Body**:
 
 ```json
 {
   "name": "my-tools",
+  "slug": "my-tools",
   "url": "http://localhost:3004",
   "description": "Tool service description",
   "tenantId": "tenant-uuid"

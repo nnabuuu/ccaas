@@ -263,9 +263,21 @@ await server.connect(transport)
 `args` 路径指向 `dist/index.js` 而非 `src/index.ts`。修改源码后需要执行 `npm run build` 重新编译。
 {% endhint %}
 
+{% hint style="info" %}
+**路径自动补全**：`args` 中的相对路径（如 `mcp-server/dist/index.js`）会在运行时自动加上租户的 MCP server 目录前缀：`tenants/{tenantId}/mcp-servers/{slug}/mcp-server/dist/index.js`。绝对路径、CLI 参数（`-v`）、模板变量（`${CORE_MCP_DIR}/...`）和 URL 不受影响。
+{% endhint %}
+
+{% hint style="info" %}
+**Slug 格式**：MCP server 的 slug 必须匹配 `^[a-z0-9][a-z0-9-]*$` — 小写字母、数字和连字符，以字母或数字开头。
+{% endhint %}
+
 ## REST API 方式（已有外部服务时的替代方案）
 
 如果你已有独立部署的 HTTP 服务，可以使用 REST 适配器将其接入即见Agentic 平台。
+
+{% hint style="info" %}
+**REST 适配器已支持 Agent 管道。** 平台会在运行时自动将 REST 适配器配置包装为 stdio bridge 进程。无需单独部署 — 只需注册 REST 适配器配置，平台会自动处理。
+{% endhint %}
 
 ### 基础模板
 

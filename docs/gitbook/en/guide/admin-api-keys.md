@@ -256,6 +256,10 @@ curl -X DELETE https://your-domain.com/api/v1/admin/api-keys/KEY_ID \
 | `analytics:read` | Access usage analytics and metrics |
 | `admin` | Full administrative access (includes all scopes) |
 
+{% hint style="info" %}
+**Admin scope privilege**: API keys with `admin` scope bypass skill-level permission checks (e.g., `allowedTools` restrictions). Admin keys can also auto-resolve `tenantId` — when sending messages via API key, you can omit `tenantId` from the request body and it will be resolved from the API key's tenant context.
+{% endhint %}
+
 ### Scope Combinations
 
 **Common Patterns**:

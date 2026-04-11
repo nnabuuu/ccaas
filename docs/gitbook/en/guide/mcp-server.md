@@ -293,9 +293,21 @@ Key fields:
 The `args` path points to `dist/index.js`, not `src/index.ts`. You must build the MCP Server before running it: `npm run build`.
 {% endhint %}
 
+{% hint style="info" %}
+**Path auto-completion**: Relative paths in `args` (e.g., `mcp-server/dist/index.js`) are automatically scoped to the tenant's MCP server directory at runtime: `tenants/{tenantId}/mcp-servers/{slug}/mcp-server/dist/index.js`. Absolute paths, CLI flags (`-v`), template variables (`${CORE_MCP_DIR}/...`), and URLs are passed through unchanged.
+{% endhint %}
+
+{% hint style="info" %}
+**Slug format**: MCP server slugs must match `^[a-z0-9][a-z0-9-]*$` — lowercase alphanumeric with hyphens, starting with a letter or digit.
+{% endhint %}
+
 ## REST API Approach (Alternative for External Services)
 
 Use the REST API approach when you need to wrap an existing external HTTP service as an MCP tool. This is useful for integrating third-party APIs that are already deployed as HTTP endpoints.
+
+{% hint style="info" %}
+**REST adapters work in Agent pipelines.** The platform automatically wraps REST adapter configurations as stdio bridge processes at runtime. No separate deployment is needed — just register the REST adapter config and the platform handles the rest.
+{% endhint %}
 
 ### Project Structure
 
