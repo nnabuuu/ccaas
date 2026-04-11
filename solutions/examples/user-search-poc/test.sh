@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# User Search POC — 端到端本地测试
+# User Search POC — 端到端本地测试（stdio MCP 方案）
 #
 # 前提：后端已运行 (npm run dev:backend → :3001)
 #       MCP server 依赖已安装 (cd mcp-server && npm install)
 #
-# 用法：cd solutions/examples/user-search-poc && bash test.sh
+# 用法：cd solutions/user-search-poc && bash test.sh
 #
 
 set -euo pipefail
@@ -24,10 +24,15 @@ info()  { echo -e "${GREEN}[INFO]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 fail()  { echo -e "${RED}[FAIL]${NC} $*"; exit 1; }
 
+# Check dependencies
+for cmd in curl jq; do
+  command -v "$cmd" &> /dev/null || fail "Missing required tool: $cmd"
+done
+
 # ── Step 0: Verify backend is up ──────────────────────────────────────────────
 info "检查后端是否运行..."
-if ! curl -sf "${BASE_URL}/api/health" > /dev/null 2>&1; then
-  fail "后端不可达 (${BASE_URL}/api/health)。请先运行: npm run dev:backend"
+if ! curl -sf "${BASE_URL}/api/v1/health" > /dev/null 2>&1; then
+  fail "后端不可达 (${BASE_URL}/api/v1/health)。请先运行: npm run dev:backend"
 fi
 info "后端运行中 ✓"
 
@@ -38,7 +43,7 @@ IMPORT_RESP=$(curl -sf -X POST "${BASE_URL}/api/v1/admin/solutions/import" \
   -H "Authorization: Bearer ${ADMIN_KEY}" \
   -d @solution.json)
 
-TENANT_ID=$(echo "$IMPORT_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['tenantId'])" 2>/dev/null || true)
+TENANT_ID=$(echo "$IMPORT_RESP" | jq -r '.tenantId // empty')
 
 if [ -z "$TENANT_ID" ]; then
   echo "$IMPORT_RESP"
@@ -57,47 +62,51 @@ info "MCP server 已部署到 ${MCP_DEPLOY_DIR}"
 
 # ── Step 2: Register skill ────────────────────────────────────────────────────
 info "注册 skill..."
-SKILL_CONTENT=$(cat skills/user-search-assistant/SKILL.md)
 
-SKILL_RESP=$(curl -sf -X POST "${BASE_URL}/api/v1/skills" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${ADMIN_KEY}" \
-  -H "X-Tenant-Id: ${TENANT_ID}" \
-  -d "$(python3 -c "
-import json, sys
-content = open('skills/user-search-assistant/SKILL.md').read()
-# Strip frontmatter
-lines = content.split('\n')
-in_fm = False
-body_lines = []
-for line in lines:
-    if line.strip() == '---':
-        in_fm = not in_fm
-        continue
-    if not in_fm:
-        body_lines.append(line)
-body = '\n'.join(body_lines).strip()
-print(json.dumps({
-    'name': 'User Search Assistant',
-    'slug': 'user-search-assistant',
-    'description': '根据前端绑定的业务身份，按用户名查询业务系统用户信息',
-    'content': body,
-}))
-")" 2>&1) || true
+SKILL_FILE="skills/user-search-assistant/SKILL.md"
+SKILL_CONTENT=$(cat "$SKILL_FILE" | jq -Rs .)
+SKILL_NAME=$(awk '/^---$/,/^---$/' "$SKILL_FILE" | grep "^name:" | sed 's/^name:[[:space:]]*//')
+SKILL_DESC=$(awk '/^---$/,/^---$/' "$SKILL_FILE" | grep "^description:" | sed 's/^description:[[:space:]]*//')
 
-info "Skill 注册结果: $(echo "$SKILL_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('slug', d.get('message','unknown')))" 2>/dev/null || echo "$SKILL_RESP")"
+# Check if skill exists
+EXISTING_ID=$(curl -s "${BASE_URL}/api/v1/skills/user-search-assistant" \
+  -H "X-Tenant-Id: user-search-poc" \
+  -H "X-Api-Key: ${ADMIN_KEY}" | jq -r '.id // empty')
 
-# ── Step 2b: Publish skill ───────────────────────────────────────────────────
-info "发布 skill..."
-SKILL_ID=$(echo "$SKILL_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" 2>/dev/null || true)
-
-if [ -n "$SKILL_ID" ]; then
-  PUBLISH_RESP=$(curl -sf -X POST "${BASE_URL}/api/v1/skills/${SKILL_ID}/publish" \
+if [ -n "$EXISTING_ID" ]; then
+  SKILL_RESP=$(curl -s -X PUT "${BASE_URL}/api/v1/skills/${EXISTING_ID}" \
+    -H "Content-Type: application/json" \
     -H "Authorization: Bearer ${ADMIN_KEY}" \
-    -H "X-Tenant-Id: ${TENANT_ID}" 2>&1) || true
-  info "Skill 发布结果: $(echo "$PUBLISH_RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status', d.get('message','unknown')))" 2>/dev/null || echo "$PUBLISH_RESP")"
+    -H "X-Tenant-Id: ${TENANT_ID}" \
+    -d "{
+      \"name\": \"${SKILL_NAME}\",
+      \"description\": \"${SKILL_DESC}\",
+      \"content\": ${SKILL_CONTENT}
+    }")
+  info "Skill 已更新: user-search-assistant"
 else
-  warn "跳过发布：无法获取 skill ID（可能 skill 已存在）"
+  SKILL_RESP=$(curl -s -X POST "${BASE_URL}/api/v1/skills" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${ADMIN_KEY}" \
+    -H "X-Tenant-Id: ${TENANT_ID}" \
+    -d "{
+      \"name\": \"${SKILL_NAME}\",
+      \"slug\": \"user-search-assistant\",
+      \"description\": \"${SKILL_DESC}\",
+      \"content\": ${SKILL_CONTENT},
+      \"type\": \"skill\"
+    }")
+
+  SKILL_ID=$(echo "$SKILL_RESP" | jq -r '.id // empty')
+  if [ -n "$SKILL_ID" ]; then
+    # Publish skill
+    curl -s -X POST "${BASE_URL}/api/v1/skills/${SKILL_ID}/publish" \
+      -H "Authorization: Bearer ${ADMIN_KEY}" \
+      -H "X-Tenant-Id: ${TENANT_ID}" > /dev/null 2>&1
+    info "Skill 已创建并发布: user-search-assistant (${SKILL_ID})"
+  else
+    warn "Skill 注册返回: $(echo "$SKILL_RESP" | jq -r '.message // "unknown"')"
+  fi
 fi
 
 # ── Step 3: Send message with context ─────────────────────────────────────────
