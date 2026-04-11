@@ -35,7 +35,7 @@ describe('SessionsGateway - WebSocket Events (Week 5)', () => {
 
   beforeEach(async () => {
     const mockSessionService = {
-      getOrCreateSession: jest.fn(),
+      getOrCreateSession: jest.fn().mockResolvedValue({ sessionId: 'mock', socket: null }),
       getSession: jest.fn(),
     };
 

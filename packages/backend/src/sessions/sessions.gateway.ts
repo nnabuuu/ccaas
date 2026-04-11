@@ -328,7 +328,7 @@ export class SessionsGateway implements OnGatewayConnection, OnGatewayDisconnect
       const userId = data.context?.userId as string | undefined;
 
       // Get or create session (Week 3: Pass userId for tracking)
-      const session = this.sessionService.getOrCreateSession(sessionId, clientId, client, userId);
+      const session = await this.sessionService.getOrCreateSession(sessionId, clientId, client, userId);
 
       // Check message queue feature flag
       const messageQueueEnabled = this.configService.get<boolean>('messageQueue.enabled', false);

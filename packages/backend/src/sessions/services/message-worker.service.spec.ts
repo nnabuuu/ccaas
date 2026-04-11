@@ -77,7 +77,7 @@ describe('MessageWorkerService — processMessage', () => {
     };
 
     sessionService = {
-      getOrCreateSession: jest.fn().mockReturnValue(mockSession),
+      getOrCreateSession: jest.fn().mockResolvedValue(mockSession),
       closeSession: jest.fn(),
     };
 
@@ -451,7 +451,7 @@ describe('MessageWorkerService — pollAndProcess', () => {
     };
 
     sessionService = {
-      getOrCreateSession: jest.fn().mockReturnValue({ sessionId: SESSION_ID, socket: null, workspaceDir: '/tmp' }),
+      getOrCreateSession: jest.fn().mockResolvedValue({ sessionId: SESSION_ID, socket: null, workspaceDir: '/tmp' }),
       closeSession: jest.fn(),
     };
 
@@ -602,7 +602,7 @@ describe('MessageWorkerService — lifecycle', () => {
       resetStaleProcessingMessages: jest.fn().mockResolvedValue(0),
     };
     const orchestrationService = { orchestrateMessage: jest.fn() };
-    const sessionService = { getOrCreateSession: jest.fn(), closeSession: jest.fn() };
+    const sessionService = { getOrCreateSession: jest.fn().mockResolvedValue({ sessionId: 'mock', socket: null }), closeSession: jest.fn() };
     const streamRegistry = { emit: jest.fn(), closeSession: jest.fn() };
 
     module = await Test.createTestingModule({

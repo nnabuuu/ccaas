@@ -110,13 +110,13 @@ export class SessionService implements OnModuleDestroy {
   /**
    * Get or create a session for a client
    */
-  getOrCreateSession(
+  async getOrCreateSession(
     sessionId: string,
     clientId: string,
     socket: Socket | null,
     userId?: string,
     tenantId?: string,
-  ): ManagedSession {
+  ): Promise<ManagedSession> {
     let session = this.sessions.get(sessionId);
 
     if (session) {
@@ -199,14 +199,16 @@ export class SessionService implements OnModuleDestroy {
     this.logger.log(`Created new session ${sessionId} for client ${clientId}`);
     this.logger.log(`Active sessions: ${this.sessions.size}/${this.maxSessions}`);
 
-    // Phase 2: Dual-write to database (fire-and-forget, graceful failure)
-    this.persistSessionToDatabase(session).catch((error) => {
+    // Phase 2: Dual-write to database (awaited, graceful failure)
+    try {
+      await this.persistSessionToDatabase(session);
+    } catch (error) {
       this.logger.error(
         `Failed to persist session ${sessionId} to database: ${error.message}`,
         error.stack,
       );
       // Session continues to work in-memory even if database write fails
-    });
+    }
 
     return session;
   }

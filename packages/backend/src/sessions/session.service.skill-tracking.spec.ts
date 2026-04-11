@@ -97,37 +97,37 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   describe('Session Creation with userId', () => {
-    it('should set userId when creating a session', () => {
+    it('should set userId when creating a session', async () => {
       const sessionId = 'test-session-1';
       const clientId = 'client-1';
       const userId = 'user-123';
       const mockSocket: any = { id: 'socket-1', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
 
       expect(session.userId).toBe(userId);
       expect(session.sessionId).toBe(sessionId);
     });
 
-    it('should allow creating session without userId (anonymous)', () => {
+    it('should allow creating session without userId (anonymous)', async () => {
       const sessionId = 'test-session-2';
       const clientId = 'client-2';
       const mockSocket: any = { id: 'socket-2', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       expect(session.userId).toBeUndefined();
       expect(session.sessionId).toBe(sessionId);
     });
 
-    it('should preserve userId on subsequent calls for same session', () => {
+    it('should preserve userId on subsequent calls for same session', async () => {
       const sessionId = 'test-session-3';
       const clientId = 'client-3';
       const userId = 'user-456';
       const mockSocket: any = { id: 'socket-3', emit: jest.fn() };
 
-      const session1 = service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
-      const session2 = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session1 = await service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
+      const session2 = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       expect(session1.userId).toBe(userId);
       expect(session2.userId).toBe(userId); // Should preserve original userId
@@ -135,24 +135,24 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   describe('Skill Tracking', () => {
-    it('should initialize syncedSkillIds as empty set', () => {
+    it('should initialize syncedSkillIds as empty set', async () => {
       const sessionId = 'test-session-4';
       const clientId = 'client-4';
       const mockSocket: any = { id: 'socket-4', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       expect(session.syncedSkillIds).toBeDefined();
       expect(session.syncedSkillIds).toBeInstanceOf(Set);
       expect(session.syncedSkillIds?.size).toBe(0);
     });
 
-    it('should track synced skills when skills are added', () => {
+    it('should track synced skills when skills are added', async () => {
       const sessionId = 'test-session-5';
       const clientId = 'client-5';
       const mockSocket: any = { id: 'socket-5', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       // Simulate syncing skills
       const skillIds = ['skill-1', 'skill-2', 'skill-3'];
@@ -164,12 +164,12 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
       expect(session.syncedSkillIds?.has('skill-3')).toBe(true);
     });
 
-    it('should update synced skills when re-syncing', () => {
+    it('should update synced skills when re-syncing', async () => {
       const sessionId = 'test-session-6';
       const clientId = 'client-6';
       const mockSocket: any = { id: 'socket-6', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       // First sync
       service.trackSyncedSkills(sessionId, ['skill-1', 'skill-2']);
@@ -183,12 +183,12 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
       expect(session.syncedSkillIds?.has('skill-3')).toBe(true);
     });
 
-    it('should handle empty skill list', () => {
+    it('should handle empty skill list', async () => {
       const sessionId = 'test-session-7';
       const clientId = 'client-7';
       const mockSocket: any = { id: 'socket-7', emit: jest.fn() };
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
 
       service.trackSyncedSkills(sessionId, []);
 
@@ -197,28 +197,28 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   describe('getAffectedSessions', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Create multiple sessions with different skills
       const mockSocket: any = { id: 'socket-test', emit: jest.fn() };
       const tenantId = 'tenant-123';
 
       // Session 1: Uses skill-1 and skill-2
-      const session1 = service.getOrCreateSession('session-1', 'client-1', mockSocket, 'user-1');
+      const session1 = await service.getOrCreateSession('session-1', 'client-1', mockSocket, 'user-1');
       session1.tenantId = tenantId;
       service.trackSyncedSkills('session-1', ['skill-1', 'skill-2']);
 
       // Session 2: Uses skill-2 and skill-3
-      const session2 = service.getOrCreateSession('session-2', 'client-2', mockSocket, 'user-2');
+      const session2 = await service.getOrCreateSession('session-2', 'client-2', mockSocket, 'user-2');
       session2.tenantId = tenantId;
       service.trackSyncedSkills('session-2', ['skill-2', 'skill-3']);
 
       // Session 3: Uses skill-3 only
-      const session3 = service.getOrCreateSession('session-3', 'client-3', mockSocket, 'user-3');
+      const session3 = await service.getOrCreateSession('session-3', 'client-3', mockSocket, 'user-3');
       session3.tenantId = tenantId;
       service.trackSyncedSkills('session-3', ['skill-3']);
 
       // Session 4: Different tenant
-      const session4 = service.getOrCreateSession('session-4', 'client-4', mockSocket, 'user-4');
+      const session4 = await service.getOrCreateSession('session-4', 'client-4', mockSocket, 'user-4');
       session4.tenantId = 'tenant-456';
       service.trackSyncedSkills('session-4', ['skill-1']);
     });
@@ -252,9 +252,9 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
       // session-4 has skill-1 but different tenant
     });
 
-    it('should handle sessions with no synced skills', () => {
+    it('should handle sessions with no synced skills', async () => {
       const mockSocket: any = { id: 'socket-empty', emit: jest.fn() };
-      const session = service.getOrCreateSession('session-empty', 'client-empty', mockSocket);
+      const session = await service.getOrCreateSession('session-empty', 'client-empty', mockSocket);
       session.tenantId = 'tenant-123';
       // Don't track any skills
 
@@ -265,20 +265,20 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   describe('markSessionsForRestart - Precise Restart', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Create sessions with different skills
       const mockSocket: any = { id: 'socket-test', emit: jest.fn() };
       const tenantId = 'tenant-123';
 
-      const session1 = service.getOrCreateSession('session-1', 'client-1', mockSocket);
+      const session1 = await service.getOrCreateSession('session-1', 'client-1', mockSocket);
       session1.tenantId = tenantId;
       service.trackSyncedSkills('session-1', ['skill-1', 'skill-2']);
 
-      const session2 = service.getOrCreateSession('session-2', 'client-2', mockSocket);
+      const session2 = await service.getOrCreateSession('session-2', 'client-2', mockSocket);
       session2.tenantId = tenantId;
       service.trackSyncedSkills('session-2', ['skill-2', 'skill-3']);
 
-      const session3 = service.getOrCreateSession('session-3', 'client-3', mockSocket);
+      const session3 = await service.getOrCreateSession('session-3', 'client-3', mockSocket);
       session3.tenantId = tenantId;
       service.trackSyncedSkills('session-3', ['skill-3']);
     });
@@ -317,9 +317,9 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
       expect(marked).toHaveLength(0);
     });
 
-    it('should not affect sessions in other tenants', () => {
+    it('should not affect sessions in other tenants', async () => {
       const mockSocket: any = { id: 'socket-other', emit: jest.fn() };
-      const session4 = service.getOrCreateSession('session-4', 'client-4', mockSocket);
+      const session4 = await service.getOrCreateSession('session-4', 'client-4', mockSocket);
       session4.tenantId = 'tenant-456';
       service.trackSyncedSkills('session-4', ['skill-1']);
 
@@ -335,13 +335,13 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   });
 
   describe('Backward Compatibility', () => {
-    it('should support old markSessionsForRestart without skillId (mark all tenant sessions)', () => {
+    it('should support old markSessionsForRestart without skillId (mark all tenant sessions)', async () => {
       const mockSocket: any = { id: 'socket-test', emit: jest.fn() };
       const tenantId = 'tenant-123';
 
-      service.getOrCreateSession('session-1', 'client-1', mockSocket).tenantId = tenantId;
-      service.getOrCreateSession('session-2', 'client-2', mockSocket).tenantId = tenantId;
-      service.getOrCreateSession('session-3', 'client-3', mockSocket).tenantId = tenantId;
+      (await service.getOrCreateSession('session-1', 'client-1', mockSocket)).tenantId = tenantId;
+      (await service.getOrCreateSession('session-2', 'client-2', mockSocket)).tenantId = tenantId;
+      (await service.getOrCreateSession('session-3', 'client-3', mockSocket)).tenantId = tenantId;
 
       // Call without skillId should mark all tenant sessions
       const marked = service.markSessionsForRestart(tenantId);
@@ -354,7 +354,7 @@ describe('SessionService - Skill Tracking (Week 3)', () => {
   describe('Session Cleanup', () => {
     it('should clear syncedSkillIds when session is terminated', async () => {
       const mockSocket: any = { id: 'socket-cleanup', emit: jest.fn() };
-      const session = service.getOrCreateSession('session-cleanup', 'client-cleanup', mockSocket);
+      const session = await service.getOrCreateSession('session-cleanup', 'client-cleanup', mockSocket);
 
       service.trackSyncedSkills('session-cleanup', ['skill-1', 'skill-2']);
       expect(session.syncedSkillIds?.size).toBe(2);

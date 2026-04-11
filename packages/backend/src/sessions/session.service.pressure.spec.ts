@@ -258,7 +258,7 @@ describe('SessionService — Pressure-Based Cleanup', () => {
       jest.restoreAllMocks();
     });
 
-    it('triggers cleanupIdleSessions when utilization reaches >= 80%', () => {
+    it('triggers cleanupIdleSessions when utilization reaches >= 80%', async () => {
       // Pre-fill 8/10 sessions (80% utilization)
       injectSessions(
         service,
@@ -266,12 +266,12 @@ describe('SessionService — Pressure-Based Cleanup', () => {
       );
       const cleanupSpy = jest.spyOn(service as any, 'cleanupIdleSessions');
 
-      service.getOrCreateSession('new-session', 'client-new', null);
+      await service.getOrCreateSession('new-session', 'client-new', null);
 
       expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('does NOT trigger proactive cleanup below 80% utilization', () => {
+    it('does NOT trigger proactive cleanup below 80% utilization', async () => {
       // Pre-fill 5/10 sessions (50% utilization)
       injectSessions(
         service,
@@ -279,12 +279,12 @@ describe('SessionService — Pressure-Based Cleanup', () => {
       );
       const cleanupSpy = jest.spyOn(service as any, 'cleanupIdleSessions');
 
-      service.getOrCreateSession('new-session', 'client-new', null);
+      await service.getOrCreateSession('new-session', 'client-new', null);
 
       expect(cleanupSpy).not.toHaveBeenCalled();
     });
 
-    it('proactive cleanup at 90% (critical) still runs before hard-limit check', () => {
+    it('proactive cleanup at 90% (critical) still runs before hard-limit check', async () => {
       // Pre-fill 9/10 (90%)
       injectSessions(
         service,
@@ -292,7 +292,7 @@ describe('SessionService — Pressure-Based Cleanup', () => {
       );
       const cleanupSpy = jest.spyOn(service as any, 'cleanupIdleSessions');
 
-      service.getOrCreateSession('new-session', 'client-new', null);
+      await service.getOrCreateSession('new-session', 'client-new', null);
 
       expect(cleanupSpy).toHaveBeenCalledTimes(1);
     });

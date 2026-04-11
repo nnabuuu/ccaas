@@ -99,7 +99,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const clientId = 'client-1';
 
       // Create initial session
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
       session.status = 'idle';
       session.needsRestart = true;
 
@@ -137,7 +137,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const sessionId = 'session-no-process';
       const clientId = 'client-2';
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket);
       session.cliProcess = null;
       session.needsRestart = true;
 
@@ -154,7 +154,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const clientId = 'client-3';
       const userId = 'user-123';
 
-      const session = service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
+      const session = await service.getOrCreateSession(sessionId, clientId, mockSocket, userId);
       service.trackSyncedSkills(sessionId, ['skill-1', 'skill-2']);
 
       await service.restartSession(sessionId);
@@ -169,7 +169,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const mockSocket: any = { id: 'socket-4', emit: jest.fn() };
       const sessionId = 'session-status';
 
-      const session = service.getOrCreateSession(sessionId, 'client-4', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-4', mockSocket);
       session.status = 'processing';
       session.needsRestart = true;
 
@@ -183,7 +183,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const mockSocket: any = { id: 'socket-5', emit: jest.fn() };
       const sessionId = 'session-clear-process';
 
-      const session = service.getOrCreateSession(sessionId, 'client-5', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-5', mockSocket);
       const mockProcess: any = {
         kill: jest.fn(),
         killed: false,
@@ -200,7 +200,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const mockSocket: any = { id: 'socket-6', emit: jest.fn() };
       const sessionId = 'session-timestamp';
 
-      const session = service.getOrCreateSession(sessionId, 'client-6', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-6', mockSocket);
       const originalTimestamp = new Date('2024-01-01');
       session.skillSyncedAt = originalTimestamp;
 
@@ -215,7 +215,7 @@ describe('SessionService - Session Restart (Week 4)', () => {
       const mockSocket: any = { id: 'socket-7', emit: jest.fn() };
       const sessionId = 'session-sigkill';
 
-      const session = service.getOrCreateSession(sessionId, 'client-7', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-7', mockSocket);
       const mockProcess: any = {
         kill: jest.fn((signal) => {
           if (signal === 'SIGTERM') {
@@ -238,12 +238,12 @@ describe('SessionService - Session Restart (Week 4)', () => {
   });
 
   describe('getSessionDetails', () => {
-    it('should return detailed session information', () => {
+    it('should return detailed session information', async () => {
       const mockSocket: any = { id: 'socket-details', emit: jest.fn() };
       const sessionId = 'session-details';
       const userId = 'user-123';
 
-      const session = service.getOrCreateSession(sessionId, 'client-details', mockSocket, userId);
+      const session = await service.getOrCreateSession(sessionId, 'client-details', mockSocket, userId);
       session.tenantId = 'tenant-123';
       service.trackSyncedSkills(sessionId, ['skill-1', 'skill-2']);
 
@@ -264,9 +264,9 @@ describe('SessionService - Session Restart (Week 4)', () => {
       expect(details).toBeNull();
     });
 
-    it('should handle sessions without userId', () => {
+    it('should handle sessions without userId', async () => {
       const mockSocket: any = { id: 'socket-anon', emit: jest.fn() };
-      const session = service.getOrCreateSession('session-anon', 'client-anon', mockSocket);
+      const session = await service.getOrCreateSession('session-anon', 'client-anon', mockSocket);
 
       const details = service.getSessionDetails('session-anon');
 
@@ -275,26 +275,26 @@ describe('SessionService - Session Restart (Week 4)', () => {
   });
 
   describe('canRestartSession', () => {
-    it('should return true for sessions that need restart', () => {
+    it('should return true for sessions that need restart', async () => {
       const mockSocket: any = { id: 'socket-can', emit: jest.fn() };
-      const session = service.getOrCreateSession('session-can', 'client-can', mockSocket);
+      const session = await service.getOrCreateSession('session-can', 'client-can', mockSocket);
       session.needsRestart = true;
 
       const canRestart = service.canRestartSession('session-can');
       expect(canRestart).toBe(true);
     });
 
-    it('should return false for sessions that do not need restart', () => {
+    it('should return false for sessions that do not need restart', async () => {
       const mockSocket: any = { id: 'socket-cannot', emit: jest.fn() };
-      service.getOrCreateSession('session-cannot', 'client-cannot', mockSocket);
+      await service.getOrCreateSession('session-cannot', 'client-cannot', mockSocket);
 
       const canRestart = service.canRestartSession('session-cannot');
       expect(canRestart).toBe(false);
     });
 
-    it('should return false for sessions that are processing', () => {
+    it('should return false for sessions that are processing', async () => {
       const mockSocket: any = { id: 'socket-processing', emit: jest.fn() };
-      const session = service.getOrCreateSession('session-proc', 'client-proc', mockSocket);
+      const session = await service.getOrCreateSession('session-proc', 'client-proc', mockSocket);
       session.needsRestart = true;
       session.status = 'processing';
 
@@ -309,12 +309,12 @@ describe('SessionService - Session Restart (Week 4)', () => {
   });
 
   describe('Session cleanup — per-tenant TTL + stuck-processing', () => {
-    it('uses per-tenant sessionTtlMs over global default', () => {
+    it('uses per-tenant sessionTtlMs over global default', async () => {
       const mockSocket: any = { id: 'socket-ttl', emit: jest.fn() };
       const sessionId = 'session-ttl-test';
 
       // Create a session and set a short per-tenant TTL (1 second)
-      const session = service.getOrCreateSession(sessionId, 'client-ttl', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-ttl', mockSocket);
       session.sessionTtlMs = 1000; // 1 second per-tenant TTL
       session.status = 'idle';
 
@@ -332,11 +332,11 @@ describe('SessionService - Session Restart (Week 4)', () => {
       expect(idleTime).toBeGreaterThan(ttl);
     });
 
-    it('force-closes sessions stuck in processing past maxProcessingMs', () => {
+    it('force-closes sessions stuck in processing past maxProcessingMs', async () => {
       const mockSocket: any = { id: 'socket-stuck', emit: jest.fn() };
       const sessionId = 'session-stuck-test';
 
-      const session = service.getOrCreateSession(sessionId, 'client-stuck', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-stuck', mockSocket);
       session.status = 'processing';
       // Set processingStartedAt to 31 minutes ago (past maxProcessingMs of 30 min)
       session.processingStartedAt = new Date(Date.now() - 31 * 60 * 1000);
@@ -347,11 +347,11 @@ describe('SessionService - Session Restart (Week 4)', () => {
       expect(age).toBeGreaterThan(maxProcessingMs);
     });
 
-    it('cleanupOldestIdleSession falls back to stuck-processing session', () => {
+    it('cleanupOldestIdleSession falls back to stuck-processing session', async () => {
       const mockSocket: any = { id: 'socket-fallback', emit: jest.fn() };
       const sessionId = 'session-only-processing';
 
-      const session = service.getOrCreateSession(sessionId, 'client-fallback', mockSocket);
+      const session = await service.getOrCreateSession(sessionId, 'client-fallback', mockSocket);
       session.status = 'processing';
       session.processingStartedAt = new Date(Date.now() - 60000);
 
@@ -360,6 +360,23 @@ describe('SessionService - Session Restart (Week 4)', () => {
       expect(service.getSession(sessionId)).toBeDefined();
       expect(session.status).toBe('processing');
       expect(session.processingStartedAt).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('getOrCreateSession — database persist failure', () => {
+    it('logs error but still returns session when database persist fails', async () => {
+      jest.spyOn(service as any, 'persistSessionToDatabase')
+        .mockRejectedValue(new Error('DB write failed'));
+      const logSpy = jest.spyOn((service as any).logger, 'error');
+
+      const session = await service.getOrCreateSession('s1', 'c1', null);
+
+      expect(session).toBeDefined();
+      expect(session.sessionId).toBe('s1');
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to persist session s1'),
+        expect.anything(),
+      );
     });
   });
 });

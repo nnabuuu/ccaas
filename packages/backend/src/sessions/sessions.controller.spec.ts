@@ -41,7 +41,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
 
   beforeEach(async () => {
     sessionService = {
-      getOrCreateSession: jest.fn(),
+      getOrCreateSession: jest.fn().mockResolvedValue({ sessionId: 'mock', socket: null }),
       closeSession: jest.fn(),
     };
 
@@ -270,7 +270,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SessionsController],
       providers: [
-        { provide: SessionService, useValue: { getOrCreateSession: jest.fn(), closeSession: jest.fn() } },
+        { provide: SessionService, useValue: { getOrCreateSession: jest.fn().mockResolvedValue({ sessionId: 'mock', socket: null }), closeSession: jest.fn() } },
         { provide: SessionsGateway, useValue: { getActiveSubAgents: jest.fn() } },
         { provide: CompletionOrchestrationService, useValue: { orchestrateMessage: jest.fn() } },
         { provide: MessageQueueService, useValue: messageQueueService },
