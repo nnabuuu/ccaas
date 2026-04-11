@@ -109,6 +109,8 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
     end: jest.fn(),
   };
 
+  const mockCtx: any = undefined;
+
   it('calls messageQueueService.enqueue() with correct payload', async () => {
     const dto: SendMessageDto = {
       message: 'hello',
@@ -116,7 +118,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       autoClose: true,
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
       SESSION_ID,
@@ -138,7 +140,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       tenantId: 'tenant-123',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
       SESSION_ID,
@@ -158,7 +160,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       appendSystemPrompt: 'Extra instruction.',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
       SESSION_ID,
@@ -175,7 +177,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       autoClose: true,
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(completionOrchestrationService.orchestrateMessage).not.toHaveBeenCalled();
   });
@@ -187,7 +189,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       autoClose: true,
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(sessionService.closeSession).not.toHaveBeenCalled();
   });
@@ -198,7 +200,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       tenantId: 'tenant-123',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(streamRegistry.closeSession).not.toHaveBeenCalled();
   });
@@ -212,7 +214,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       autoClose: true,
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(streamRegistry.emit).toHaveBeenCalledWith(
       SESSION_ID,
@@ -230,7 +232,7 @@ describe('SessionsController — sendMessage (queue-routed via enqueue)', () => 
       tenantId: 'tenant-123',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(streamRegistry.emit).toHaveBeenCalledWith(
       SESSION_ID,
@@ -299,9 +301,10 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
   });
 
   const mockRes: any = { setHeader: jest.fn(), write: jest.fn(), end: jest.fn() };
+  const mockCtx: any = undefined;
 
   it('subscribes the response to the stream registry before enqueuing', async () => {
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
 
     // subscribe must be called first, so the stream is ready before the worker fires
     expect(streamRegistry.subscribe).toHaveBeenCalledWith(
@@ -318,7 +321,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
     ];
     streamRegistry.getEventsSince.mockReturnValue(buffered);
 
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123', afterSeq: 4 }, mockRes);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123', afterSeq: 4 }, mockRes, mockCtx);
 
     expect(streamRegistry.getEventsSince).toHaveBeenCalledWith(SESSION_ID, 4);
     expect(mockRes.write).toHaveBeenCalledWith(
@@ -327,13 +330,13 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
   });
 
   it('does not call getEventsSince when afterSeq is undefined', async () => {
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
 
     expect(streamRegistry.getEventsSince).not.toHaveBeenCalled();
   });
 
   it('emits MISSING_TENANT_ID error and closes SSE when tenantId is absent', async () => {
-    await controller.sendMessage(SESSION_ID, { message: 'hi' } as any, mockRes);
+    await controller.sendMessage(SESSION_ID, { message: 'hi' } as any, mockRes, mockCtx);
 
     expect(streamRegistry.emit).toHaveBeenCalledWith(
       SESSION_ID,
@@ -350,7 +353,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       { slug: 'writer', enabled: true },
     ]);
 
-    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes);
+    await controller.sendMessage(SESSION_ID, { message: 'hi', tenantId: 'tenant-123' }, mockRes, mockCtx);
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
       SESSION_ID,
@@ -367,7 +370,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       templateName: 'kp-search',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(skillsService.findPublished).not.toHaveBeenCalled();
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
@@ -389,7 +392,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       tenantId: 'tenant-123',
     };
 
-    await controller.sendMessage(SESSION_ID, dto, mockRes);
+    await controller.sendMessage(SESSION_ID, dto, mockRes, mockCtx);
 
     expect(skillsService.findPublished).toHaveBeenCalledWith('tenant-123');
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
@@ -408,6 +411,7 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       SESSION_ID,
       { message: 'hi', tenantId: 'tenant-123', appendSystemPrompt: '   ' },
       mockRes,
+      mockCtx,
     );
 
     expect(messageQueueService.enqueue).toHaveBeenCalledWith(
@@ -415,6 +419,32 @@ describe('SessionsController — sendMessage SSE setup & edge cases', () => {
       expect.any(String),
       'tenant-123',
       expect.objectContaining({ systemPrompt: 'Base prompt.' }),
+    );
+  });
+
+  it('auto-resolves tenantId from API key context when body has no tenantId', async () => {
+    const ctxWithTenant: any = { tenantId: 'tenant-from-key' };
+
+    await controller.sendMessage(
+      SESSION_ID,
+      { message: 'hi' } as any,
+      mockRes,
+      ctxWithTenant,
+    );
+
+    // Should NOT emit MISSING_TENANT_ID error
+    expect(streamRegistry.emit).not.toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.objectContaining({ code: 'MISSING_TENANT_ID' }),
+    );
+    // Should call findOne with the auto-resolved tenantId from API key
+    expect(tenantsService.findOne).toHaveBeenCalledWith('tenant-from-key');
+    // Should enqueue (resolvedTenantId comes from tenant.id returned by mock)
+    expect(messageQueueService.enqueue).toHaveBeenCalledWith(
+      SESSION_ID,
+      expect.any(String),
+      'tenant-123', // mock findOne returns { id: 'tenant-123' }
+      expect.objectContaining({ message: 'hi' }),
     );
   });
 });

@@ -15,6 +15,7 @@ import {
   IsArray,
   ValidateNested,
   IsNotEmpty,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { McpServerType, McpServerStatus, McpServerConfig } from '../types';
@@ -29,6 +30,7 @@ export class CreateMcpServerDto {
 
   @IsString()
   @IsNotEmpty()
+  @Matches(/^[a-z0-9][a-z0-9-]*$/, { message: 'slug must be lowercase alphanumeric with hyphens' })
   slug!: string;
 
   @IsString()

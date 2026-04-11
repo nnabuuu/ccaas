@@ -29,7 +29,8 @@ export class QuotaGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const tenantId: string | undefined = request.body?.tenantId;
+    const tenantId: string | undefined =
+      request.body?.tenantId ?? request.context?.tenantId;
 
     if (!tenantId) {
       // Let the controller handle missing tenantId

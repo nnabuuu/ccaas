@@ -279,6 +279,7 @@ export class SessionsController {
    * buffered events since sequence N.
    */
   @Post(':sessionId/messages')
+  @OptionalAuth()
   @UseGuards(QuotaGuard)
   @Header('Content-Type', 'text/event-stream')
   @Header('Cache-Control', 'no-cache')
@@ -310,6 +311,7 @@ Response is \`text/event-stream\`, closed when Turn completes.
     @Param('sessionId') sessionId: string,
     @Body() data: SendMessageDto,
     @Res() res: Response,
+    @Ctx() ctx: RequestContext | undefined,
   ) {
     const subscriberId = uuidv4();
     this.logger.log(`SSE sendMessage: session=${sessionId} subscriber=${subscriberId}`);
@@ -327,6 +329,11 @@ Response is \`text/event-stream\`, closed when Turn completes.
     }
 
     let { enabledSkills } = data;
+
+    // Auto-resolve tenantId from API key if not provided in body
+    if (!data.tenantId) {
+      data.tenantId = ctx?.tenantId;
+    }
 
     if (!data.tenantId) {
       this.streamRegistry.emit(sessionId, {

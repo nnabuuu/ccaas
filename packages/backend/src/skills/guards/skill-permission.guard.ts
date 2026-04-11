@@ -114,6 +114,14 @@ export class SkillPermissionGuard implements CanActivate {
     tenantId: string | undefined,
     context: RequestContext | undefined,
   ): Promise<boolean> {
+    // Admin-scoped API keys bypass role-based permission checks
+    if (context?.apiKeyScopes?.includes('admin')) {
+      if (!tenantId) {
+        throw new ForbiddenException('Tenant context required');
+      }
+      return true;
+    }
+
     // Anonymous users cannot write
     if (!context || context.isAnonymous) {
       throw new ForbiddenException('Authentication required for this operation');
