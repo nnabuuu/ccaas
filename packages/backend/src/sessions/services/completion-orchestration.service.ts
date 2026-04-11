@@ -320,14 +320,54 @@ export class CompletionOrchestrationService {
       if (activeServers.length > 0) {
         const tenantMcpConfigs: Record<string, McpServerConfig> = {};
         for (const server of activeServers) {
-          // Skip servers with incomplete config
+          // REST adapter → wrap as stdio bridge process.
+          // Note: restAdapter config (including auth credentials) is passed via env var.
+          // This matches how all stdio MCP servers receive config and is acceptable since
+          // the bridge runs as a server-side child process, not exposed to the LLM directly.
+          if (!server.config?.command && server.config?.restAdapter) {
+            const coreMcpDir = process.env.CORE_MCP_DIR
+              || path.resolve(__dirname, '..', '..', '..', '..', 'mcp');
+            tenantMcpConfigs[server.slug] = {
+              command: 'node',
+              args: [path.join(coreMcpDir, 'rest-adapter-bridge', 'dist', 'index.js')],
+              env: {
+                REST_ADAPTER_CONFIG: JSON.stringify(server.config.restAdapter),
+                ...(server.config?.env as Record<string, string> ?? {}),
+              },
+            };
+            this.logger.log(`REST adapter "${server.slug}" wrapped as stdio bridge`);
+            continue;
+          }
+
+          // Skip servers with incomplete config (neither command nor restAdapter)
           if (!server.config?.command) {
-            this.logger.warn(`Skipping MCP server "${server.slug}": missing command`);
+            this.logger.warn(`Skipping MCP server "${server.slug}": missing command and restAdapter`);
             continue;
           }
           tenantMcpConfigs[server.slug] = {
             command: server.config.command,
-            args: server.config?.args ?? [],
+            args: (server.config?.args ?? []).map((arg: string) => {
+              // Already-resolved formats: absolute path, tenant path, CLI flag, template var
+              if (arg.startsWith('/') || arg.startsWith('tenants/') ||
+                  arg.startsWith('-') || arg.startsWith('${')) {
+                return arg;
+              }
+              // Non-path patterns: URL, pure digits, JSON, key=value
+              if (/^https?:\/\//.test(arg) || /^\d+$/.test(arg) ||
+                  arg.startsWith('{') || arg.startsWith('[') || arg.includes('=')) {
+                return arg;
+              }
+              // Skip prefixing for path traversal — pass through unchanged
+              if (arg.includes('..')) {
+                this.logger.warn(`Skipping tenant-path prefix for arg with traversal: "${arg}"`);
+                return arg;
+              }
+              // Heuristic: only transform args that look like file paths (contain . or /)
+              if (!arg.includes('.') && !arg.includes('/')) {
+                return arg;
+              }
+              return `tenants/${resolvedTenantId}/mcp-servers/${server.slug}/${arg}`;
+            }),
             env: server.config?.env as Record<string, string> | undefined,
           };
         }

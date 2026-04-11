@@ -326,6 +326,320 @@ describe('CompletionOrchestrationService - NIE-67: session spawn decision', () =
     });
   });
 
+  // ─── MCP args path auto-completion ─────────────────────────────────────
+
+  describe('MCP args relative path auto-completion', () => {
+    let mockMcpPool: { findOne: jest.Mock; findAllByTenantId: jest.Mock };
+    let mockSessService: {
+      ensureCLIProcess: jest.Mock;
+      sendFollowUp: jest.Mock;
+      createMcpSymlinks: jest.Mock;
+    };
+    let svc: CompletionOrchestrationService;
+
+    beforeEach(async () => {
+      mockMcpPool = {
+        findOne: jest.fn().mockResolvedValue(null),
+        findAllByTenantId: jest.fn().mockResolvedValue([]),
+      };
+      mockSessService = {
+        ensureCLIProcess: jest.fn().mockImplementation(
+          (_s: unknown, _m: unknown, onEvent: (e: unknown) => void) => {
+            process.nextTick(() =>
+              onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' }),
+            );
+            return Promise.resolve();
+          },
+        ),
+        sendFollowUp: jest.fn(),
+        createMcpSymlinks: jest.fn(),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          CompletionOrchestrationService,
+          { provide: SessionService, useValue: mockSessService },
+          { provide: SkillSyncService, useValue: { syncToSession: jest.fn().mockResolvedValue({ skillCount: 0, skillIds: [] }) } },
+          { provide: TenantsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
+          { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn().mockResolvedValue(undefined) } },
+          { provide: UserContextService, useValue: { recordContext: jest.fn().mockResolvedValue(undefined) } },
+          { provide: SkillsService, useValue: {} },
+          { provide: ConversationMetadataService, useValue: { autoGenerateTitle: jest.fn().mockResolvedValue(undefined) } },
+          { provide: SkillManagementService, useValue: { loadEnabledSkills: jest.fn().mockResolvedValue([]), generateInlineSkillPrompt: jest.fn().mockResolvedValue(undefined), generateMixedSkillPrompt: jest.fn().mockResolvedValue(undefined), generateSkillSystemPrompt: jest.fn().mockReturnValue(''), generateToolRegistryPrompt: jest.fn().mockReturnValue('') } },
+          { provide: TurnsService, useValue: { createNextTurn: jest.fn().mockResolvedValue({ id: 't1', turnNumber: 1 }), completeTurnWithRetry: jest.fn().mockResolvedValue({ turnNumber: 1, totalTokens: 0, durationMs: 0 }) } },
+          { provide: McpPoolService, useValue: mockMcpPool },
+          { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
+          { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+        ],
+      }).compile();
+
+      svc = module.get<CompletionOrchestrationService>(CompletionOrchestrationService);
+    });
+
+    it('should prepend tenant path for relative file args (index.mjs)', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'user-search-tools', status: 'active', config: { command: 'node', args: ['index.mjs'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers).toBeDefined();
+      expect(session.mcpServers!['user-search-tools'].args).toEqual([
+        'tenants/tenant-uuid-1/mcp-servers/user-search-tools/index.mjs',
+      ]);
+    });
+
+    it('should prepend tenant path for nested relative paths (mcp-server/index.mjs)', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'my-tool', status: 'active', config: { command: 'node', args: ['mcp-server/index.mjs'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['my-tool'].args).toEqual([
+        'tenants/tenant-uuid-1/mcp-servers/my-tool/mcp-server/index.mjs',
+      ]);
+    });
+
+    it('should NOT modify absolute paths', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'abs-tool', status: 'active', config: { command: 'node', args: ['/usr/bin/node'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['abs-tool'].args).toEqual(['/usr/bin/node']);
+    });
+
+    it('should NOT modify args already starting with tenants/', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'pre-resolved', status: 'active', config: { command: 'node', args: ['tenants/t1/mcp-servers/pre-resolved/index.mjs'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['pre-resolved'].args).toEqual([
+        'tenants/t1/mcp-servers/pre-resolved/index.mjs',
+      ]);
+    });
+
+    it('should NOT modify CLI flags', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'flag-tool', status: 'active', config: { command: 'node', args: ['-v', '--port', '3000'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['flag-tool'].args).toEqual(['-v', '--port', '3000']);
+    });
+
+    it('should NOT modify template variables', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'tmpl-tool', status: 'active', config: { command: 'node', args: ['${CORE_MCP_DIR}/server.js'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['tmpl-tool'].args).toEqual(['${CORE_MCP_DIR}/server.js']);
+    });
+
+    it('should NOT modify pure digit args', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'num-tool', status: 'active', config: { command: 'node', args: ['server.js', '3000'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['num-tool'].args).toEqual([
+        'tenants/tenant-uuid-1/mcp-servers/num-tool/server.js',
+        '3000',
+      ]);
+    });
+
+    it('should handle empty args gracefully', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'empty-tool', status: 'active', config: { command: 'node', args: [] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['empty-tool'].args).toEqual([]);
+    });
+
+    it('should NOT prepend path for args with path traversal (..)', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'evil-tool', status: 'active', config: { command: 'node', args: ['../../etc/passwd'] } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      // Path traversal arg should be passed through without tenant prefix
+      expect(session.mcpServers!['evil-tool'].args).toEqual(['../../etc/passwd']);
+    });
+
+    it('should handle undefined args gracefully', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'no-args', status: 'active', config: { command: 'node' } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers!['no-args'].args).toEqual([]);
+    });
+  });
+
+  // ─── REST adapter bridge wrapping ──────────────────────────────────────
+
+  describe('REST adapter bridge wrapping', () => {
+    let mockMcpPool: { findOne: jest.Mock; findAllByTenantId: jest.Mock };
+    let mockSessService: {
+      ensureCLIProcess: jest.Mock;
+      sendFollowUp: jest.Mock;
+      createMcpSymlinks: jest.Mock;
+    };
+    let svc: CompletionOrchestrationService;
+
+    beforeEach(async () => {
+      mockMcpPool = {
+        findOne: jest.fn().mockResolvedValue(null),
+        findAllByTenantId: jest.fn().mockResolvedValue([]),
+      };
+      mockSessService = {
+        ensureCLIProcess: jest.fn().mockImplementation(
+          (_s: unknown, _m: unknown, onEvent: (e: unknown) => void) => {
+            process.nextTick(() =>
+              onEvent({ type: 'agent_status', status: 'complete', sessionId: 'test-session-id' }),
+            );
+            return Promise.resolve();
+          },
+        ),
+        sendFollowUp: jest.fn(),
+        createMcpSymlinks: jest.fn(),
+      };
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          CompletionOrchestrationService,
+          { provide: SessionService, useValue: mockSessService },
+          { provide: SkillSyncService, useValue: { syncToSession: jest.fn().mockResolvedValue({ skillCount: 0, skillIds: [] }) } },
+          { provide: TenantsService, useValue: { findOne: jest.fn().mockResolvedValue({ id: 'tenant-uuid-1' }) } },
+          { provide: MessagesService, useValue: { create: jest.fn().mockResolvedValue({ id: 'msg-1' }), updateContent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: ConversationContextService, useValue: { createOrUpdate: jest.fn().mockResolvedValue(undefined) } },
+          { provide: UserContextService, useValue: { recordContext: jest.fn().mockResolvedValue(undefined) } },
+          { provide: SkillsService, useValue: {} },
+          { provide: ConversationMetadataService, useValue: { autoGenerateTitle: jest.fn().mockResolvedValue(undefined) } },
+          { provide: SkillManagementService, useValue: { loadEnabledSkills: jest.fn().mockResolvedValue([]), generateInlineSkillPrompt: jest.fn().mockResolvedValue(undefined), generateMixedSkillPrompt: jest.fn().mockResolvedValue(undefined), generateSkillSystemPrompt: jest.fn().mockReturnValue(''), generateToolRegistryPrompt: jest.fn().mockReturnValue('') } },
+          { provide: TurnsService, useValue: { createNextTurn: jest.fn().mockResolvedValue({ id: 't1', turnNumber: 1 }), completeTurnWithRetry: jest.fn().mockResolvedValue({ turnNumber: 1, totalTokens: 0, durationMs: 0 }) } },
+          { provide: McpPoolService, useValue: mockMcpPool },
+          { provide: SessionEventsService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
+          { provide: BundleService, useValue: { resolveActiveBundles: jest.fn().mockReturnValue({ mcpServers: {}, toolEventTriggers: [], appendSystemPrompts: [], activeBundleIds: [] }) } },
+          { provide: EventMapperService, useValue: { getTenantToolTriggers: jest.fn().mockReturnValue([]), registerTenantToolTriggers: jest.fn(), registerBundleTriggers: jest.fn() } },
+        ],
+      }).compile();
+
+      svc = module.get<CompletionOrchestrationService>(CompletionOrchestrationService);
+    });
+
+    const restAdapterConfig = {
+      baseUrl: 'https://api.example.com',
+      auth: { type: 'bearer' as const, token: 'test-token' },
+      endpoints: [{ name: 'search_users', description: 'Search users', method: 'GET' as const, path: '/users' }],
+    };
+
+    it('should wrap REST adapter server as stdio bridge config', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'rest-api', status: 'active', config: { restAdapter: restAdapterConfig } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      expect(session.mcpServers).toBeDefined();
+      const config = session.mcpServers!['rest-api'];
+      expect(config.command).toBe('node');
+      expect(config.args![0]).toMatch(/rest-adapter-bridge\/dist\/index\.js$/);
+      // Bridge args path should be absolute (starts with /)
+      expect(config.args![0]).toMatch(/^\//);
+    });
+
+    it('should serialize restAdapter config into REST_ADAPTER_CONFIG env', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'rest-api', status: 'active', config: { restAdapter: restAdapterConfig } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      const config = session.mcpServers!['rest-api'];
+      expect(config.env).toBeDefined();
+      expect(config.env!.REST_ADAPTER_CONFIG).toBe(JSON.stringify(restAdapterConfig));
+    });
+
+    it('should merge server.config.env into bridge env', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        {
+          slug: 'rest-api',
+          status: 'active',
+          config: {
+            restAdapter: restAdapterConfig,
+            env: { CUSTOM_VAR: 'custom-value' },
+          },
+        },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      const config = session.mcpServers!['rest-api'];
+      expect(config.env!.REST_ADAPTER_CONFIG).toBe(JSON.stringify(restAdapterConfig));
+      expect(config.env!.CUSTOM_VAR).toBe('custom-value');
+    });
+
+    it('should skip server with no command and no restAdapter (warn log)', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'broken-server', status: 'active', config: {} },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      // Should not appear in mcpServers
+      expect(session.mcpServers?.['broken-server']).toBeUndefined();
+    });
+
+    it('should handle normal stdio server alongside REST adapter', async () => {
+      mockMcpPool.findAllByTenantId.mockResolvedValue([
+        { slug: 'stdio-tool', status: 'active', config: { command: 'node', args: ['index.mjs'] } },
+        { slug: 'rest-api', status: 'active', config: { restAdapter: restAdapterConfig } },
+      ]);
+
+      const session = makeSession(0);
+      await svc.orchestrateMessage({ ...baseInput, session });
+
+      // stdio server processed normally
+      expect(session.mcpServers!['stdio-tool'].command).toBe('node');
+      expect(session.mcpServers!['stdio-tool'].args).toEqual([
+        'tenants/tenant-uuid-1/mcp-servers/stdio-tool/index.mjs',
+      ]);
+
+      // REST adapter wrapped as bridge
+      expect(session.mcpServers!['rest-api'].command).toBe('node');
+      expect(session.mcpServers!['rest-api'].args![0]).toMatch(/rest-adapter-bridge/);
+    });
+  });
+
   // ─── resolveEnabledSkills (private method) ─────────────────────────────
 
   describe('resolveEnabledSkills', () => {

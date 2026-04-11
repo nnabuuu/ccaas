@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "User Search POC",
+    "slug": "user-search-poc",
+    "description": "通过 stdio MCP server 模拟业务系统查询用户信息"
+  },
+  "skills": [
+    { "slug": "user-search-assistant" }
+  ],
+  "mcpServers": {
+    "user-search-tools": {
+      "command": "node",
+      "args": ["index.mjs"],
+      "description": "User search mock tools (business_http_request, write_output)"
+    }
+  },
+  "sessionTemplates": {
+    "user-search": {
+      "description": "按用户名查询业务系统用户信息",
+      "enabledSkills": ["user-search-assistant"],
+      "skillPromptMode": "inline",
+      "appendSystemPrompt": "所有回复使用中文。"
+    }
+  },
+  "syncFields": ["search_result"]
+}
