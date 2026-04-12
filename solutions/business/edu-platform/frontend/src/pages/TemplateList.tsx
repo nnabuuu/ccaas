@@ -31,6 +31,7 @@ export function TemplateList() {
     teacher: 0,
   })
   const [promoteTarget, setPromoteTarget] = useState<Template | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   // Debounced search
   useEffect(() => {
@@ -61,6 +62,21 @@ export function TemplateList() {
 
   useEffect(() => {
     fetchTemplates()
+  }, [fetchTemplates])
+
+  const handleDelete = useCallback(async (tplId: string, tplName: string) => {
+    if (!window.confirm(`确定删除模板「${tplName || '无标题'}」？此操作不可恢复。`)) return
+    setDeleting(tplId)
+    try {
+      const res = await fetch(`${EDU_API}/templates/${tplId}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchTemplates()
+      }
+    } catch {
+      // API unavailable
+    } finally {
+      setDeleting(null)
+    }
   }, [fetchTemplates])
 
   return (
@@ -239,18 +255,47 @@ export function TemplateList() {
                   <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--t1)' }}>
                     {tpl.name || '无标题模板'}
                   </span>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      background: isPending ? 'var(--warn-bg)' : scopeInfo.bg,
-                      color: isPending ? 'var(--warn-t)' : scopeInfo.color,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {isPending ? '审核中' : scopeInfo.label}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: isPending ? 'var(--warn-bg)' : scopeInfo.bg,
+                        color: isPending ? 'var(--warn-t)' : scopeInfo.color,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {isPending ? '审核中' : scopeInfo.label}
+                    </span>
+                    {tpl.scope === 'teacher' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(tpl.id, tpl.name)
+                        }}
+                        disabled={deleting === tpl.id}
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: 'transparent',
+                          color: 'var(--t3)',
+                          cursor: deleting === tpl.id ? 'not-allowed' : 'pointer',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: deleting === tpl.id ? 0.5 : 0.6,
+                          flexShrink: 0,
+                        }}
+                        title="删除模板"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Description */}
@@ -322,11 +367,11 @@ export function TemplateList() {
                       .filter(Boolean)
                       .join(' · ')}
                   </span>
-                  {canPromote && (
+                  <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        setPromoteTarget(tpl)
+                        navigate(`/lesson-plans/new?template_id=${tpl.id}`)
                       }}
                       style={{
                         padding: '4px 10px',
@@ -339,9 +384,29 @@ export function TemplateList() {
                         fontFamily: 'inherit',
                       }}
                     >
-                      提交推优
+                      使用此模板
                     </button>
-                  )}
+                    {canPromote && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPromoteTarget(tpl)
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: '11px',
+                          borderRadius: '6px',
+                          border: '0.5px solid var(--b1)',
+                          background: 'var(--bg1)',
+                          color: 'var(--t2)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                        }}
+                      >
+                        提交推优
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )

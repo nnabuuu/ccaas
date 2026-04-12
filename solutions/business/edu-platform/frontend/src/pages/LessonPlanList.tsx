@@ -20,6 +20,7 @@ export function LessonPlanList() {
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const pageSize = 20
 
   // Debounced search
@@ -53,6 +54,21 @@ export function LessonPlanList() {
 
   useEffect(() => {
     fetchPlans()
+  }, [fetchPlans])
+
+  const handleDelete = useCallback(async (planId: string, planTitle: string) => {
+    if (!window.confirm(`确定删除教案「${planTitle || '无标题'}」？此操作不可恢复。`)) return
+    setDeleting(planId)
+    try {
+      const res = await fetch(`${EDU_API}/lesson-plans/${planId}`, { method: 'DELETE' })
+      if (res.ok) {
+        fetchPlans()
+      }
+    } catch {
+      // API unavailable
+    } finally {
+      setDeleting(null)
+    }
   }, [fetchPlans])
 
   return (
@@ -176,18 +192,45 @@ export function LessonPlanList() {
                   <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--t1)' }}>
                     {plan.title || '无标题'}
                   </span>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      background: status.bg,
-                      color: status.color,
-                      fontWeight: 500,
-                    }}
-                  >
-                    {status.label}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: status.bg,
+                        color: status.color,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {status.label}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDelete(plan.id, plan.title)
+                      }}
+                      disabled={deleting === plan.id}
+                      style={{
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '4px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--t3)',
+                        cursor: deleting === plan.id ? 'not-allowed' : 'pointer',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: deleting === plan.id ? 0.5 : 0.6,
+                        flexShrink: 0,
+                      }}
+                      title="删除教案"
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
 
                 {/* Meta row */}

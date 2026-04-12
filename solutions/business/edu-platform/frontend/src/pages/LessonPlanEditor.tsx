@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import type { Block, LessonPlan, RequirementInfo } from '../types/lesson-plan'
+import type { Template } from '../types/template'
 import { BlockEditor } from '../components/editor/BlockEditor'
 import { RequirementBanner } from '../components/editor/RequirementBanner'
 import { EDU_API } from '../config'
@@ -8,9 +9,11 @@ import { EDU_API } from '../config'
 export function LessonPlanEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isNew = !id || id === 'new'
 
   const [title, setTitle] = useState('')
+  const [status, setStatus] = useState<string>('draft')
   const [className, setClassName] = useState('')
   const [subjectName, setSubjectName] = useState('')
   const [lessonType, setLessonType] = useState('')
@@ -20,15 +23,30 @@ export function LessonPlanEditor() {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [sidebarTemplates, setSidebarTemplates] = useState<Template[]>([])
 
   // Load lesson plan data
   useEffect(() => {
-    if (isNew) return
+    if (isNew) {
+      // Fork from template if template_id is provided
+      const templateId = searchParams.get('template_id')
+      if (templateId) {
+        fetch(`${EDU_API}/templates/${templateId}`)
+          .then((res) => res.json())
+          .then((tpl: Template) => {
+            setBlocks(tpl.blocks ?? [])
+            setLessonType(tpl.lesson_type ?? '')
+          })
+          .catch(() => {})
+      }
+      return
+    }
     setLoading(true)
     fetch(`${EDU_API}/lesson-plans/${id}`)
       .then((res) => res.json())
       .then((data: LessonPlan) => {
         setTitle(data.title ?? '')
+        setStatus(data.status ?? 'draft')
         setClassName(data.class_name ?? '')
         setSubjectName(data.subject_name ?? '')
         setLessonType(data.lesson_type ?? '')
@@ -38,12 +56,21 @@ export function LessonPlanEditor() {
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [id, isNew])
+  }, [id, isNew, searchParams])
+
+  // Load sidebar templates
+  useEffect(() => {
+    fetch(`${EDU_API}/templates?scope=teacher`)
+      .then((res) => res.json())
+      .then((data) => setSidebarTemplates(data.data ?? []))
+      .catch(() => {})
+  }, [])
 
   const handleSave = useCallback(async () => {
     setSaving(true)
     try {
       if (isNew) {
+        const templateId = searchParams.get('template_id')
         const res = await fetch(`${EDU_API}/lesson-plans`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -53,6 +80,7 @@ export function LessonPlanEditor() {
             subject_name: subjectName,
             lesson_type: lessonType,
             duration,
+            ...(templateId ? { source_template_id: templateId } : {}),
           }),
         })
         if (res.ok) {
@@ -85,7 +113,7 @@ export function LessonPlanEditor() {
     } finally {
       setSaving(false)
     }
-  }, [id, isNew, title, className, subjectName, lessonType, duration, blocks, navigate])
+  }, [id, isNew, title, className, subjectName, lessonType, duration, blocks, navigate, searchParams])
 
   const handleExport = useCallback(
     async (format: 'word' | 'pdf') => {
@@ -120,6 +148,51 @@ export function LessonPlanEditor() {
       }).catch(() => {})
     }
   }, [id, isNew])
+
+  const handlePublish = useCallback(async () => {
+    if (isNew || !id) return
+    try {
+      const res = await fetch(`${EDU_API}/lesson-plans/${id}/publish`, { method: 'POST' })
+      if (res.ok) {
+        setStatus('published')
+      }
+    } catch {
+      // API unavailable
+    }
+  }, [id, isNew])
+
+  const handleDelete = useCallback(async () => {
+    if (isNew || !id) return
+    if (!window.confirm('确定删除此教案？此操作不可恢复。')) return
+    try {
+      const res = await fetch(`${EDU_API}/lesson-plans/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        navigate('/lesson-plans')
+      }
+    } catch {
+      // API unavailable
+    }
+  }, [id, isNew, navigate])
+
+  const handleSaveAsTemplate = useCallback(async () => {
+    if (isNew || !id) return
+    try {
+      const res = await fetch(`${EDU_API}/lesson-plans/${id}/save-as-template`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.template_id) {
+          navigate(`/templates/${data.template_id}`)
+        }
+      }
+    } catch {
+      // API unavailable
+    }
+  }, [id, isNew, navigate])
+
+  const handleApplyTemplate = useCallback((tpl: Template) => {
+    if (!window.confirm(`应用模板「${tpl.name}」将替换当前所有内容块，确定继续？`)) return
+    setBlocks(tpl.blocks ?? [])
+  }, [])
 
   if (loading) {
     return (
@@ -318,6 +391,24 @@ export function LessonPlanEditor() {
               borderTop: '1px solid var(--b1)',
             }}
           >
+            {!isNew && (
+              <button
+                onClick={handleDelete}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  borderRadius: '8px',
+                  border: '0.5px solid var(--b1)',
+                  background: 'var(--bg1)',
+                  color: 'var(--warn-t)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  marginRight: 'auto',
+                }}
+              >
+                删除
+              </button>
+            )}
             <button
               onClick={() => handleExport('word')}
               style={{
@@ -348,6 +439,40 @@ export function LessonPlanEditor() {
             >
               导出 PDF
             </button>
+            {!isNew && (
+              <button
+                onClick={handleSaveAsTemplate}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  borderRadius: '8px',
+                  border: '0.5px solid var(--b1)',
+                  background: 'var(--bg1)',
+                  color: 'var(--t2)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                保存为模板
+              </button>
+            )}
+            {!isNew && status === 'draft' && (
+              <button
+                onClick={handlePublish}
+                style={{
+                  padding: '6px 14px',
+                  fontSize: '12px',
+                  borderRadius: '8px',
+                  border: '0.5px solid var(--success-t)',
+                  background: 'var(--success-bg)',
+                  color: 'var(--success-t)',
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                发布
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={saving}
@@ -388,17 +513,34 @@ export function LessonPlanEditor() {
             >
               模板
             </h4>
-            <div
-              style={{
-                padding: '10px 12px',
-                border: '1px solid var(--b1)',
-                borderRadius: '8px',
-                fontSize: '11px',
-                color: 'var(--t2)',
-                cursor: 'pointer',
-              }}
-            >
-              新授课模板
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {sidebarTemplates.length === 0 ? (
+                <div style={{ fontSize: '11px', color: 'var(--t3)' }}>暂无可用模板</div>
+              ) : (
+                sidebarTemplates.map((tpl) => (
+                  <div
+                    key={tpl.id}
+                    onClick={() => handleApplyTemplate(tpl)}
+                    style={{
+                      padding: '10px 12px',
+                      border: '1px solid var(--b1)',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      color: 'var(--t2)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ fontWeight: 500, color: 'var(--t1)', marginBottom: '2px' }}>
+                      {tpl.name || '无标题模板'}
+                    </div>
+                    {tpl.description && (
+                      <div style={{ fontSize: '10px', color: 'var(--t3)' }}>
+                        {tpl.description}
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

@@ -25,6 +25,7 @@ export function TemplateEditor() {
   const [blocks, setBlocks] = useState<Block[]>([])
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Load template data
   useEffect(() => {
@@ -83,6 +84,22 @@ export function TemplateEditor() {
       setSaving(false)
     }
   }, [id, isNew, name, description, lessonType, subject, blocks, navigate])
+
+  const handleDelete = useCallback(async () => {
+    if (isNew || !id) return
+    if (!window.confirm('确定删除此模板？此操作不可恢复。')) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`${EDU_API}/templates/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        navigate('/templates')
+      }
+    } catch {
+      // API unavailable
+    } finally {
+      setDeleting(false)
+    }
+  }, [id, isNew, navigate])
 
   if (loading) {
     return (
@@ -245,6 +262,26 @@ export function TemplateEditor() {
           paddingTop: '16px',
         }}
       >
+        {!isNew && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            style={{
+              padding: '6px 14px',
+              fontSize: '12px',
+              borderRadius: '8px',
+              border: '0.5px solid var(--b1)',
+              background: 'var(--bg1)',
+              color: 'var(--warn-t)',
+              cursor: deleting ? 'not-allowed' : 'pointer',
+              opacity: deleting ? 0.5 : 1,
+              fontFamily: 'inherit',
+              marginRight: 'auto',
+            }}
+          >
+            删除
+          </button>
+        )}
         <button
           onClick={() => navigate('/templates')}
           style={{
