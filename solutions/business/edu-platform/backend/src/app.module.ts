@@ -5,6 +5,11 @@ import { CurriculumModule } from './curriculum/curriculum.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { SolutionRegisterService } from './solution-register.service';
+import { TypeOrmConfigModule } from './typeorm/typeorm.module';
+import { LessonPlanModule } from './lesson-plan/lesson-plan.module';
+import { TemplateModule } from './template/template.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ActivityModule } from './activity/activity.module';
 
 @Module({
   imports: [
@@ -13,9 +18,14 @@ import { SolutionRegisterService } from './solution-register.service';
       envFilePath: '.env',
     }),
     DatabaseModule,
+    TypeOrmConfigModule,
     CurriculumModule,
     UsersModule,
     AuthModule,
+    LessonPlanModule,
+    TemplateModule,
+    DashboardModule,
+    ActivityModule,
   ],
   providers: [SolutionRegisterService],
 })
