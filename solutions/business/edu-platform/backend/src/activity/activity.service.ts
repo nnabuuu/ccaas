@@ -27,8 +27,8 @@ export class ActivityService {
     date: string,
     limit: number = 50,
   ): Promise<{ items: Activity[]; total: number }> {
-    const startOfDay = new Date(`${date}T00:00:00.000Z`);
-    const endOfDay = new Date(`${date}T23:59:59.999Z`);
+    const startOfDay = new Date(`${date}T00:00:00`);
+    const endOfDay = new Date(`${date}T23:59:59.999`);
 
     const [items, total] = await this.activityRepo.findAndCount({
       where: {
@@ -48,7 +48,7 @@ export class ActivityService {
   }> {
     const now = new Date();
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setDate(now.getDate() - 6);
     weekStart.setHours(0, 0, 0, 0);
 
     const activities = await this.activityRepo.find({
@@ -75,7 +75,7 @@ export class ActivityService {
     user_id: string,
     week_start: string,
   ): Promise<{ days: Record<string, string[]> }> {
-    const start = new Date(`${week_start}T00:00:00.000Z`);
+    const start = new Date(`${week_start}T00:00:00`);
     const end = new Date(start);
     end.setDate(end.getDate() + 7);
 
@@ -88,7 +88,8 @@ export class ActivityService {
 
     const days: Record<string, string[]> = {};
     for (const activity of activities) {
-      const dateStr = new Date(activity.timestamp).toISOString().split('T')[0];
+      const d = new Date(activity.timestamp);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!days[dateStr]) {
         days[dateStr] = [];
       }

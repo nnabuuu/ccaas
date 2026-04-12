@@ -1,10 +1,11 @@
-import { IsArray, ValidateNested, IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsArray, ValidateNested, IsString, IsNumber, IsOptional, IsObject } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class BlockItemDto {
   @IsString()
   type: string;
 
+  @IsObject()
   content: Record<string, any>;
 
   @IsNumber()
