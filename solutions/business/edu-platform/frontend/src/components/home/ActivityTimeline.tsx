@@ -1,19 +1,11 @@
+import { useNavigate } from 'react-router-dom'
 import type { ActivityItem } from '../../types/dashboard'
+import { ENTITY_COLOR_MAP, getEntityRoute } from '../../constants/entity-colors'
 
 interface ActivityTimelineProps {
   activities: ActivityItem[] | null
   selectedDate: string
   loading: boolean
-}
-
-const ENTITY_COLOR_MAP: Record<string, string> = {
-  lesson_plan: 'var(--purple-t)',
-  homework: 'var(--info-t)',
-  submission: 'var(--info-t)',
-  session: 'var(--success-t)',
-  requirement: 'var(--warn-t)',
-  classroom_record: 'var(--teal-t)',
-  proposal: 'var(--coral-t)',
 }
 
 function formatDateLabel(dateStr: string): string {
@@ -40,6 +32,8 @@ function formatTime(timestamp: string): string {
 }
 
 export function ActivityTimeline({ activities, selectedDate, loading }: ActivityTimelineProps) {
+  const navigate = useNavigate()
+
   if (loading) {
     return (
       <div style={{
@@ -87,6 +81,10 @@ export function ActivityTimeline({ activities, selectedDate, loading }: Activity
         activities.map((item, i) => (
           <div
             key={`${item.entity_id}-${i}`}
+            onClick={() => {
+              const route = getEntityRoute(item.entity_type, item.entity_id)
+              if (route !== '#') navigate(route)
+            }}
             style={{
               padding: '10px 0',
               borderBottom: i < activities.length - 1 ? '1px solid var(--b1)' : 'none',

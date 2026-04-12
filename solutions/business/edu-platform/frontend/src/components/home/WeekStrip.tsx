@@ -1,19 +1,10 @@
 import type { WeekDots } from '../../types/dashboard'
+import { ENTITY_COLOR_MAP } from '../../constants/entity-colors'
 
 interface WeekStripProps {
   weekDots: WeekDots | null
   selectedDate: string
   onSelectDate: (date: string) => void
-}
-
-const ENTITY_COLOR_MAP: Record<string, string> = {
-  lesson_plan: 'var(--purple-t)',
-  homework: 'var(--info-t)',
-  submission: 'var(--info-t)',
-  session: 'var(--success-t)',
-  requirement: 'var(--warn-t)',
-  classroom_record: 'var(--teal-t)',
-  proposal: 'var(--coral-t)',
 }
 
 const DOW_LABELS = ['一', '二', '三', '四', '五', '六', '日']
@@ -67,7 +58,7 @@ export function WeekStrip({ weekDots, selectedDate, onSelectDate }: WeekStripPro
               cursor: 'pointer',
               borderRadius: '6px',
               transition: 'background 0.1s',
-              background: isSelected ? 'var(--bg2)' : 'transparent',
+              background: 'transparent',
             }}
           >
             <div style={{

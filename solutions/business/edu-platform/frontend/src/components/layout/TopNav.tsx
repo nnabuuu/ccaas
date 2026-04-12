@@ -21,6 +21,7 @@ const NAV_ITEMS: NavItem[] = [
 export function TopNav() {
   const location = useLocation()
   const [pendingTotal, setPendingTotal] = useState<number>(0)
+  const [hoveredLabel, setHoveredLabel] = useState<string | null>(null)
 
   useEffect(() => {
     fetch(`${SOLUTION_URL}/api/dashboard/pending`)
@@ -57,10 +58,11 @@ export function TopNav() {
             ? location.pathname === '/'
             : location.pathname.startsWith(item.path)
         )
+        const isHovered = hoveredLabel === item.label
 
         const style: React.CSSProperties = {
           fontSize: '12px',
-          color: isActive ? 'var(--t1)' : 'var(--t3)',
+          color: isActive ? 'var(--t1)' : isHovered ? 'var(--t2)' : 'var(--t3)',
           fontWeight: isActive ? 500 : 400,
           padding: '4px 10px',
           borderRadius: '6px',
@@ -70,6 +72,7 @@ export function TopNav() {
           display: 'inline-flex',
           alignItems: 'center',
           gap: '2px',
+          background: isHovered && !isActive ? 'var(--bg2)' : 'transparent',
         }
 
         const badge = item.label === '作业' && pendingTotal > 0 ? (
@@ -86,16 +89,21 @@ export function TopNav() {
           </span>
         ) : null
 
+        const hoverHandlers = {
+          onMouseEnter: () => setHoveredLabel(item.label),
+          onMouseLeave: () => setHoveredLabel(null),
+        }
+
         if (item.path !== null) {
           return (
-            <Link key={item.label} to={item.path} style={style}>
+            <Link key={item.label} to={item.path} style={style} {...hoverHandlers}>
               {item.label}{badge}
             </Link>
           )
         }
 
         return (
-          <span key={item.label} style={style}>
+          <span key={item.label} style={style} {...hoverHandlers}>
             {item.label}{badge}
           </span>
         )

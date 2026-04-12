@@ -97,7 +97,7 @@ export function AISection({ briefing }: AISectionProps) {
                   marginTop: '7px',
                   opacity: 0.5,
                 }} />
-                <div dangerouslySetInnerHTML={{ __html: insight.summary }} />
+                <div>{insight.summary}</div>
               </div>
             ))}
           </div>
