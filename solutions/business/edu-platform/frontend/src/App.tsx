@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import {
   ChatInterface,
   ChatSidebar,
@@ -17,6 +18,8 @@ import type { ClassInfo } from './data/mock-classes'
 import { SERVER_URL, TENANT_ID } from './config'
 import { useEduAuth } from './hooks/useEduAuth'
 import type { EduAuth } from './hooks/useEduAuth'
+import { TopNav } from './components/layout/TopNav'
+import { HomePage } from './pages/HomePage'
 
 const customToolRenderers: ToolRendererMap = {
   AskUserQuestion: askUserQuestionRenderer,
@@ -69,7 +72,27 @@ function App() {
     )
   }
 
-  return <AppShell auth={auth} />
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
+      <TopNav />
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chat" element={<AppShell auth={auth} />} />
+          <Route path="/lesson-plans" element={
+            <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 24px' }}>
+              <h2 style={{ fontSize: '14px', color: 'var(--t2)' }}>教案管理（即将推出）</h2>
+            </div>
+          } />
+          <Route path="/templates" element={
+            <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 24px' }}>
+              <h2 style={{ fontSize: '14px', color: 'var(--t2)' }}>模板中心（即将推出）</h2>
+            </div>
+          } />
+        </Routes>
+      </div>
+    </div>
+  )
 }
 
 function AppShell({ auth }: { auth: EduAuth }) {
@@ -110,7 +133,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
   const teacherName = auth.user?.name ?? '老师'
 
   return (
-    <div className="h-dvh flex">
+    <div className="flex" style={{ height: '100%' }}>
       <ChatSidebar
         sessions={sessions}
         currentSessionId={sessionId}
