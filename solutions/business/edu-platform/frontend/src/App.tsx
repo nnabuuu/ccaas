@@ -20,6 +20,10 @@ import { useEduAuth } from './hooks/useEduAuth'
 import type { EduAuth } from './hooks/useEduAuth'
 import { TopNav } from './components/layout/TopNav'
 import { HomePage } from './pages/HomePage'
+import { LessonPlanList } from './pages/LessonPlanList'
+import { LessonPlanEditor } from './pages/LessonPlanEditor'
+import { TemplateList } from './pages/TemplateList'
+import { TemplateEditor } from './pages/TemplateEditor'
 
 const customToolRenderers: ToolRendererMap = {
   AskUserQuestion: askUserQuestionRenderer,
@@ -79,16 +83,12 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/chat" element={<AppShell auth={auth} />} />
-          <Route path="/lesson-plans" element={
-            <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 24px' }}>
-              <h2 style={{ fontSize: '14px', color: 'var(--t2)' }}>教案管理（即将推出）</h2>
-            </div>
-          } />
-          <Route path="/templates" element={
-            <div style={{ maxWidth: '640px', margin: '0 auto', padding: '40px 24px' }}>
-              <h2 style={{ fontSize: '14px', color: 'var(--t2)' }}>模板中心（即将推出）</h2>
-            </div>
-          } />
+          <Route path="/lesson-plans" element={<LessonPlanList />} />
+          <Route path="/lesson-plans/new" element={<LessonPlanEditor />} />
+          <Route path="/lesson-plans/:id" element={<LessonPlanEditor />} />
+          <Route path="/templates" element={<TemplateList />} />
+          <Route path="/templates/new" element={<TemplateEditor />} />
+          <Route path="/templates/:id" element={<TemplateEditor />} />
         </Routes>
       </div>
     </div>
