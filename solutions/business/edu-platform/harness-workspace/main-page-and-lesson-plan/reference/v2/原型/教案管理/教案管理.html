@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教案管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;
+  --t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;
+  --border:rgba(28,28,26,.07);
+  --blue:#1a5fa0;--blue-bg:#e4eff8;
+  --green:#2d6612;--green-bg:#e6f2dc;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --red:#942929;--red-bg:#f8e6e6;
+  --purple:#3a3185;--purple-bg:#eceafe;
+  --teal:#0d5245;--teal-bg:#ddf1eb;
+  --coral:#6b2a14;--coral-bg:#f7ebe5;
+  --sidebar-w:232px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* ═══ SHARED: SIDEBAR ═══ */
+.sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);flex-direction:column;padding:20px 0;z-index:100;overflow-y:auto}
+@media(min-width:1200px){.sidebar{display:flex}}
+.sb-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;padding:0 20px;margin-bottom:28px}
+.sb-section{margin-bottom:20px}
+.sb-label{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:0 20px;margin-bottom:6px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:var(--t2);cursor:pointer;transition:all .1s;text-decoration:none;font-weight:500;position:relative}
+.sb-link:hover{color:var(--t1);background:var(--surface2)}
+.sb-link.act{color:var(--t1);background:var(--surface2)}
+.sb-link.act::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0;background:var(--t1)}
+.sb-link-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--surface2)}
+.sb-link.act .sb-link-icon{background:var(--t1);color:var(--surface)}
+.sb-link-icon svg{width:12px;height:12px}
+.sb-link .notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:auto;font-weight:600}
+.sb-spacer{flex:1}
+.sb-user{padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-top:8px}
+.sb-avatar{width:28px;height:28px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--t2);flex-shrink:0}
+.sb-user-name{font-size:12px;font-weight:500}
+.sb-user-role{font-size:10px;color:var(--t3)}
+
+/* ═══ SHARED: TOP NAV ═══ */
+.topnav{display:flex;align-items:center;gap:2px;padding:0 20px;height:48px;border-bottom:1px solid var(--border);background:var(--surface)}
+@media(min-width:1200px){.topnav{display:none}}
+.topnav-logo{font-size:14px;font-weight:700;margin-right:20px;letter-spacing:-.3px}
+.topnav a{font-size:13px;color:var(--t2);padding:6px 12px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all .12s;font-weight:500}
+.topnav a:hover{color:var(--t1);background:var(--surface2)}
+.topnav a.act{color:var(--t1);background:var(--surface2)}
+.notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:2px;font-weight:600}
+
+/* ═══ MAIN CONTENT ═══ */
+.main{padding:32px 24px 80px}
+@media(min-width:1200px){.main{margin-left:var(--sidebar-w);padding:32px 48px 80px}}
+.view{display:none}.view.vis{display:block}
+.btn{font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--t2);font-family:inherit;transition:all .12s}
+.btn:hover{border-color:var(--t3);color:var(--t1)}
+.btn.pri{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.btn.pri:hover{opacity:.85}
+.btn.ai{background:var(--purple-bg);color:var(--purple);border-color:transparent}
+.badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500}
+
+/* ═══ LIST VIEW ═══ */
+.list-content{max-width:860px}
+.list-toolbar{display:flex;gap:8px;margin-bottom:20px;align-items:center}
+.list-toolbar input{flex:1;max-width:280px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:var(--surface)}
+.list-toolbar input:focus{outline:none;border-color:rgba(58,49,133,.3)}
+.list-toolbar select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--t2)}
+.list-toolbar .spacer{flex:1}
+
+.lp-list{display:flex;flex-direction:column;gap:8px}
+.lp-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;cursor:pointer;transition:border-color .12s}
+.lp-item:hover{border-color:var(--t3)}
+.lp-head{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.lp-title{font-size:14px;font-weight:500;line-height:1.4}
+.lp-req{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--teal);line-height:1.4;margin-bottom:6px}
+.lp-req-icon{width:16px;height:16px;border-radius:4px;background:var(--teal-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lp-req-icon svg{width:10px;height:10px;color:var(--teal)}
+.lp-no-req{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--amber);margin-bottom:6px}
+.lp-no-req-icon{width:16px;height:16px;border-radius:4px;background:var(--amber-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;font-weight:600;color:var(--amber)}
+.lp-meta{font-size:11px;color:var(--t3)}
+
+/* ═══ EDITOR VIEW ═══ */
+.ed-content{max-width:920px}
+.ed-back{font-size:12px;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:16px;transition:color .12s}
+.ed-back:hover{color:var(--t1)}
+.ed-title{font-size:22px;font-weight:700;letter-spacing:-.5px;border:none;outline:none;width:100%;font-family:inherit;background:transparent;padding:0;margin-bottom:8px;color:var(--t1)}
+.ed-meta{display:flex;gap:8px;margin-bottom:20px;font-size:12px;color:var(--t2);flex-wrap:wrap;align-items:center}
+.ed-meta select{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface);color:var(--t1);font-family:inherit}
+.ed-save{font-size:11px;color:var(--t3);margin-left:auto}
+
+.req-anchor{padding:14px 16px;background:var(--teal-bg);border-radius:8px;margin-bottom:24px;display:flex;align-items:start;gap:10px}
+.req-anchor-icon{width:20px;height:20px;border-radius:5px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.req-anchor-icon svg{width:12px;height:12px;color:var(--teal-bg)}
+.req-anchor-body{flex:1}
+.req-anchor-label{font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.req-anchor-text{font-size:12px;color:var(--teal);line-height:1.5;font-weight:500}
+.req-anchor-interp{font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5}
+.req-anchor-change{font-size:11px;color:var(--teal);cursor:pointer;flex-shrink:0;padding:4px 8px;border-radius:4px;text-decoration:none}
+.req-anchor-change:hover{background:rgba(13,82,69,.1)}
+
+.ed-layout{display:grid;grid-template-columns:1fr 200px;gap:24px}
+@media(max-width:800px){.ed-layout{grid-template-columns:1fr}}
+
+.block{position:relative;padding:8px 12px;margin-bottom:4px;border-radius:6px;border:1px solid transparent;transition:border-color .1s}
+.block:hover{border-color:var(--border)}
+.block-handle{position:absolute;left:-18px;top:10px;color:var(--t3);cursor:grab;opacity:0;transition:opacity .1s;font-size:11px}
+.block:hover .block-handle{opacity:1}
+.block-type{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;font-weight:600}
+.block-content{font-size:13px;line-height:1.7;outline:none;min-height:20px}
+.block-content:empty::before{content:attr(data-ph);color:var(--t3)}
+.block-content ul{padding-left:18px;margin:4px 0}
+.block-content li{margin-bottom:3px}
+.block-actions{position:absolute;right:6px;top:6px;display:flex;gap:2px;opacity:0;transition:opacity .1s}
+.block:hover .block-actions{opacity:1}
+.block-action{width:22px;height:22px;border-radius:4px;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px}
+.block-action:hover{background:var(--surface2);color:var(--t2)}
+.block.section-head{background:var(--surface2);border-radius:6px}
+.block.section-head .block-content{font-weight:600;font-size:14px}
+.block.table-block table{width:100%;border-collapse:collapse;font-size:11px}
+.block.table-block th{text-align:left;padding:5px 8px;background:var(--surface2);color:var(--t2);font-weight:500;border-bottom:1px solid var(--border)}
+.block.table-block td{padding:5px 8px;border-bottom:1px solid var(--border)}
+.block.callout{border-left:3px solid var(--amber);background:var(--amber-bg);border-radius:0 6px 6px 0}
+.block.callout .block-content{color:var(--amber);font-size:12px}
+.block.timeline .tl-item{display:flex;gap:10px;padding:5px 0;font-size:12px}
+.block.timeline .tl-item:not(:last-child){border-bottom:1px solid var(--border)}
+.block.timeline .tl-time{width:50px;flex-shrink:0;font-weight:500;color:var(--t2);font-size:11px}
+.block.timeline .tl-dur{width:44px;flex-shrink:0;font-size:10px;color:var(--t3)}
+.block.timeline .tl-desc{flex:1}
+.add-block{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;color:var(--t3);font-size:11px;border-radius:6px;margin:4px 0}
+.add-block:hover{color:var(--t2);background:var(--surface2)}
+
+.hw-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.hw-title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.hw-item{padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color .12s}
+.hw-item:hover{border-color:var(--t3)}
+.hw-item-meta{font-size:10px;color:var(--t3);margin-left:auto}
+.ed-footer{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+
+.sb-sec{margin-bottom:20px}
+.sb-sec-title{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.sb-sec-link{display:flex;align-items:center;gap:6px;padding:5px 0;font-size:11px;color:var(--t2);cursor:pointer;transition:color .1s}
+.sb-sec-link:hover{color:var(--purple)}
+.sb-sec-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+.sb-sec-file{display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px;color:var(--t2)}
+.sb-sec-file-size{font-size:9px;color:var(--t3);margin-left:auto}
+.sb-sec-file-ext{font-size:8px;font-weight:600;width:22px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sb-logo">精准教学</div>
+  <div class="sb-section"><div class="sb-label">导航</div>
+    <a class="sb-link" href="首页.html"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>首页</a>
+    <a class="sb-link act"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>教案</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>课堂</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>作业<span class="notif">3</span></a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>学情</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>资源</a>
+  </div>
+  <div class="sb-section"><div class="sb-label">管理</div>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>管理</a>
+  </div>
+  <div class="sb-spacer"></div>
+  <div class="sb-user"><div class="sb-avatar">陈</div><div><div class="sb-user-name">陈老师</div><div class="sb-user-role">数学 · 八年级</div></div></div>
+</aside>
+
+<!-- ═══ TOP NAV ═══ -->
+<nav class="topnav">
+  <span class="topnav-logo">精准教学</span>
+  <a>首页</a><a class="act">教案</a><a>课堂</a><a>作业<span class="notif">3</span></a><a>学情</a><a>资源</a><a>管理</a>
+</nav>
+
+<div class="main">
+
+<!-- ═══ LIST VIEW ═══ -->
+<div class="view vis list-content" id="listView">
+  <div class="list-toolbar">
+    <input type="text" placeholder="搜索教案...">
+    <select><option>全部学科</option><option>数学</option></select>
+    <select><option>全部状态</option><option>已完成</option><option>草稿</option></select>
+    <span class="spacer"></span>
+    <button class="btn ai">AI 备课</button>
+    <button class="btn pri" onclick="showEditor()">+ 新建教案</button>
+  </div>
+  <div class="lp-list">
+    <div class="lp-item" onclick="showEditor()">
+      <div class="lp-head"><div class="lp-title">12.2 三角形全等的判定 — SSS/SAS</div><span class="badge" style="background:var(--green-bg);color:var(--green)">已完成</span></div>
+      <div class="lp-req"><div class="lp-req-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>7.3.2 能运用 SSS、SAS 判定三角形全等</div>
+      <div class="lp-meta">八(2)班 · 数学 · 新授课 · 45分钟 · 昨天 15:30</div>
+    </div>
+    <div class="lp-item">
+      <div class="lp-head"><div class="lp-title">12.1 全等三角形</div><span class="badge" style="background:var(--purple-bg);color:var(--purple)">AI 生成</span></div>
+      <div class="lp-req"><div class="lp-req-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>7.3.1 理解全等三角形的概念，能识别对应元素</div>
+      <div class="lp-meta">八(2)班 · 数学 · 新授课 · 45分钟 · 周一</div>
+    </div>
+    <div class="lp-item">
+      <div class="lp-head"><div class="lp-title">12.2 三角形全等 — ASA/AAS</div><span class="badge" style="background:var(--surface2);color:var(--t3)">草稿</span></div>
+      <div class="lp-no-req"><div class="lp-no-req-icon">!</div>未关联学业要求 — 点击编辑并关联</div>
+      <div class="lp-meta">八(2)班 · 数学 · 新授课 · 今天</div>
+    </div>
+    <div class="lp-item">
+      <div class="lp-head"><div class="lp-title">11.3 多边形内角和 — 复习课</div><span class="badge" style="background:var(--green-bg);color:var(--green)">已完成</span></div>
+      <div class="lp-req"><div class="lp-req-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>7.2.3 掌握多边形内角和定理</div>
+      <div class="lp-meta">八(3)班 · 数学 · 复习课 · 上周</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ EDITOR VIEW ═══ -->
+<div class="view ed-content" id="editorView">
+  <div class="ed-back" onclick="showList()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>返回教案列表</div>
+  <input class="ed-title" value="12.2 三角形全等的判定 — SSS/SAS" />
+  <div class="ed-meta">
+    <select><option>八(2)班</option><option>八(3)班</option></select>
+    <select><option>数学</option></select>
+    <select><option>新授课</option><option>复习课</option></select>
+    <select><option>45 分钟</option><option>40 分钟</option></select>
+    <span class="ed-save">自动保存 · 2 分钟前</span>
+  </div>
+
+  <div class="req-anchor">
+    <div class="req-anchor-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+    <div class="req-anchor-body">
+      <div class="req-anchor-label">学业要求</div>
+      <div class="req-anchor-text">7.3.2 能运用 SSS、SAS 判定三角形全等</div>
+      <div class="req-anchor-interp">区级解读 v2.1：重点关注"夹角"概念的准确理解，通过 SSA 反例帮助学生区分 SAS 的适用条件</div>
+    </div>
+    <a class="req-anchor-change">更换</a>
+  </div>
+
+  <div class="ed-layout">
+    <div>
+      <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>教学目标</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable><ul><li>理解并掌握 SSS 和 SAS 两种判定方法</li><li>能运用 SSS、SAS 判定两个三角形全等</li><li>培养逻辑推理能力，体会分类讨论思想</li></ul></div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>教学过程</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block timeline"><span class="block-handle">&#8942;</span><div class="block-type">时间线</div>
+        <div class="tl-item"><span class="tl-time">0~5'</span><span class="tl-dur">5 min</span><div class="tl-desc" contenteditable>复习回顾：全等三角形的定义和性质</div></div>
+        <div class="tl-item"><span class="tl-time">5~15'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>SSS 判定讲解：三角形拼接实验</div></div>
+        <div class="tl-item"><span class="tl-time">15~25'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>SAS 判定讲解：强调"夹角"，对比 SSA 反例</div></div>
+        <div class="tl-item"><span class="tl-time">25~35'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>课堂练习：3 道基础 + 1 道综合</div></div>
+        <div class="tl-item"><span class="tl-time">35~40'</span><span class="tl-dur">5 min</span><div class="tl-desc" contenteditable>课堂小结 + 布置作业</div></div>
+        <div class="block-actions"><button class="block-action">&#10005;</button></div>
+      </div>
+      <div class="block callout"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>学情备注：八(2)班 SSS 判定错误率 42%，本节安排了 15 分钟专项练习。</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>课堂练习</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block table-block"><span class="block-handle">&#8942;</span><div class="block-type">表格</div>
+        <table><tr><th>题号</th><th>题型</th><th>知识点</th><th>难度</th><th>来源</th></tr>
+        <tr><td>1</td><td>选择</td><td>SSS 判定</td><td>0.45</td><td>题库</td></tr>
+        <tr><td>2</td><td>选择</td><td>SAS 判定</td><td>0.52</td><td>题库</td></tr>
+        <tr><td>3</td><td>选择</td><td>SSS 综合</td><td>0.55</td><td>AI 原创</td></tr>
+        <tr><td>4</td><td>证明</td><td>SSS+SAS</td><td>0.65</td><td>题库</td></tr></table>
+        <div class="block-actions"><button class="block-action">&#10005;</button></div>
+      </div>
+      <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>板书设计</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="block"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>左栏：SSS 判定定理及图示<br>中栏：SAS 判定定理及图示，标注"夹角"<br>右栏：课堂练习题目及学生板演区</div><div class="block-actions"><button class="block-action">&#10005;</button></div></div>
+      <div class="add-block">+ 添加内容块</div>
+
+      <div class="hw-section">
+        <div class="hw-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>关联练习<span style="flex:1"></span><button class="btn" style="font-size:11px;padding:4px 10px">选择练习</button></div>
+        <div class="hw-item"><strong style="font-weight:500">SSS/SAS 专项练习</strong><span class="badge" style="background:var(--blue-bg);color:var(--blue)">已发布</span><span class="hw-item-meta">5 道题 · 八(2)班</span></div>
+        <div class="hw-item"><strong style="font-weight:500">SSS 基础巩固</strong><span class="badge" style="background:var(--surface2);color:var(--t3)">草稿</span><span class="hw-item-meta">5 道题</span></div>
+      </div>
+      <div class="ed-footer"><button class="btn">导出 Word</button><button class="btn">导出 PDF</button><button class="btn pri">保存</button></div>
+    </div>
+
+    <div>
+      <div class="sb-sec"><div class="sb-sec-title">关联资源</div>
+        <div class="sb-sec-link"><span class="sb-sec-dot" style="background:var(--teal)"></span>课标: 12.2 全等判定</div>
+        <div class="sb-sec-link"><span class="sb-sec-dot" style="background:var(--blue)"></span>学情: 八(2)班 SSS 42%</div>
+        <div class="sb-sec-link"><span class="sb-sec-dot" style="background:var(--purple)"></span>题库: 12.2 相关 101 题</div>
+      </div>
+      <div class="sb-sec"><div class="sb-sec-title">模板</div>
+        <div class="sb-sec-link"><span class="sb-sec-dot" style="background:var(--t3)"></span>新授课模板</div>
+        <div class="sb-sec-link"><span class="sb-sec-dot" style="background:var(--t3)"></span>复习课模板</div>
+      </div>
+      <div class="sb-sec"><div class="sb-sec-title">文件</div>
+        <div class="sb-sec-file"><span class="sb-sec-file-ext" style="background:var(--surface2);color:var(--t3)">MD</span>教案.md<span class="sb-sec-file-size">12K</span></div>
+        <div class="sb-sec-file"><span class="sb-sec-file-ext" style="background:var(--blue-bg);color:var(--blue)">PPT</span>课件.pptx<span class="sb-sec-file-size">4.5M</span></div>
+        <div class="sb-sec-file"><span class="sb-sec-file-ext" style="background:var(--purple-bg);color:var(--purple)">AI</span>skill_output.json<span class="sb-sec-file-size">3K</span></div>
+        <div style="margin-top:8px"><button class="btn" style="font-size:10px;padding:3px 8px;width:100%">上传文件</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function showEditor(){document.getElementById('listView').classList.remove('vis');document.getElementById('editorView').classList.add('vis')}
+function showList(){document.getElementById('editorView').classList.remove('vis');document.getElementById('listView').classList.add('vis')}
+</script>
+</body>
+</html>

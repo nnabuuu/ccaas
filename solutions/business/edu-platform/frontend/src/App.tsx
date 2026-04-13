@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Routes, Route } from 'react-router-dom'
 import {
   ChatInterface,
   ChatSidebar,
@@ -18,12 +17,6 @@ import type { ClassInfo } from './data/mock-classes'
 import { SERVER_URL, TENANT_ID } from './config'
 import { useEduAuth } from './hooks/useEduAuth'
 import type { EduAuth } from './hooks/useEduAuth'
-import { TopNav } from './components/layout/TopNav'
-import { HomePage } from './pages/HomePage'
-import { LessonPlanList } from './pages/LessonPlanList'
-import { LessonPlanEditor } from './pages/LessonPlanEditor'
-import { TemplateList } from './pages/TemplateList'
-import { TemplateEditor } from './pages/TemplateEditor'
 
 const customToolRenderers: ToolRendererMap = {
   AskUserQuestion: askUserQuestionRenderer,
@@ -76,23 +69,7 @@ function App() {
     )
   }
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh' }}>
-      <TopNav />
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/chat" element={<AppShell auth={auth} />} />
-          <Route path="/lesson-plans" element={<LessonPlanList />} />
-          <Route path="/lesson-plans/new" element={<LessonPlanEditor />} />
-          <Route path="/lesson-plans/:id" element={<LessonPlanEditor />} />
-          <Route path="/templates" element={<TemplateList />} />
-          <Route path="/templates/new" element={<TemplateEditor />} />
-          <Route path="/templates/:id" element={<TemplateEditor />} />
-        </Routes>
-      </div>
-    </div>
-  )
+  return <AppShell auth={auth} />
 }
 
 function AppShell({ auth }: { auth: EduAuth }) {
@@ -133,7 +110,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
   const teacherName = auth.user?.name ?? '老师'
 
   return (
-    <div className="flex" style={{ height: '100%' }}>
+    <div className="h-dvh flex">
       <ChatSidebar
         sessions={sessions}
         currentSessionId={sessionId}

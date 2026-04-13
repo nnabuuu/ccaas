@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板管理</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f4f3ef;
+  --surface:#fbfaf7;
+  --surface2:#edece7;
+  --t1:#1c1c1a;
+  --t2:#5c5b56;
+  --t3:#9c9a92;
+  --border:rgba(28,28,26,.07);
+  --blue:#1a5fa0;--blue-bg:#e4eff8;
+  --green:#2d6612;--green-bg:#e6f2dc;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --red:#942929;--red-bg:#f8e6e6;
+  --purple:#3a3185;--purple-bg:#eceafe;
+  --teal:#0d5245;--teal-bg:#ddf1eb;
+  --coral:#6b2a14;--coral-bg:#f7ebe5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+
+.topnav{display:flex;align-items:center;gap:4px;padding:0 24px;height:44px;border-bottom:1px solid var(--border);background:var(--surface)}
+.topnav-logo{font-size:13px;font-weight:600;margin-right:16px;letter-spacing:-.3px}
+.topnav a{font-size:12px;color:var(--t3);padding:4px 10px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all .12s}
+.topnav a:hover{color:var(--t2);background:var(--surface2)}
+.topnav a.act{color:var(--t1);font-weight:500}
+
+.page{max-width:760px;margin:0 auto;padding:32px 24px 80px}
+.view{display:none}.view.vis{display:block}
+.btn{font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--t2);font-family:inherit;transition:all .12s}
+.btn:hover{border-color:var(--t3);color:var(--t1)}
+.btn.pri{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.btn.pri:hover{opacity:.85}
+.btn.sm{font-size:11px;padding:4px 10px}
+.badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500}
+
+/* ─── Tabs ─── */
+.tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab{padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--t3);font-family:inherit;border-bottom:2px solid transparent;transition:color .12s}
+.tab:hover{color:var(--t2)}
+.tab.act{color:var(--t1);border-bottom-color:var(--t1)}
+.tab-count{font-size:10px;color:var(--t3);margin-left:3px}
+
+/* ═══ LIST VIEW ═══ */
+.list-hd{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.list-hd input{flex:1;max-width:240px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:var(--surface)}
+.list-hd input:focus{outline:none;border-color:rgba(58,49,133,.3)}
+.list-hd .spacer{flex:1}
+
+.tpl-list{display:flex;flex-direction:column;gap:8px}
+.tpl-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;cursor:pointer;transition:border-color .12s}
+.tpl-item:hover{border-color:var(--t3)}
+.tpl-head{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:4px}
+.tpl-name{font-size:14px;font-weight:500}
+.tpl-desc{font-size:11px;color:var(--t2);margin-bottom:6px;line-height:1.5}
+.tpl-blocks{font-size:11px;color:var(--t3);margin-bottom:6px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.tpl-block-pill{padding:2px 6px;background:var(--surface2);border-radius:3px;font-size:10px}
+.tpl-block-arrow{color:var(--t3);font-size:9px}
+.tpl-footer{display:flex;align-items:center;gap:12px;font-size:10px;color:var(--t3)}
+.tpl-stat{display:flex;align-items:center;gap:3px}
+
+/* ═══ EDITOR VIEW ═══ */
+.ed-back{font-size:12px;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:16px;transition:color .12s}
+.ed-back:hover{color:var(--t1)}
+.ed-title{font-size:20px;font-weight:700;letter-spacing:-.4px;border:none;outline:none;width:100%;font-family:inherit;background:transparent;padding:0;margin-bottom:4px;color:var(--t1)}
+.ed-desc{font-size:12px;color:var(--t2);border:none;outline:none;width:100%;font-family:inherit;background:transparent;padding:0;margin-bottom:12px}
+.ed-meta{display:flex;gap:8px;margin-bottom:20px;font-size:12px;color:var(--t2);flex-wrap:wrap;align-items:center}
+.ed-meta select{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface);color:var(--t1);font-family:inherit}
+
+/* Template info banner */
+.tpl-info{padding:10px 14px;background:var(--surface2);border-radius:6px;margin-bottom:20px;font-size:11px;color:var(--t2);line-height:1.5}
+.tpl-info strong{color:var(--t1)}
+
+/* Block editor (shared with lesson plan) */
+.block{position:relative;padding:8px 12px;margin-bottom:4px;border-radius:6px;border:1px solid transparent;transition:border-color .1s}
+.block:hover{border-color:var(--border)}
+.block-handle{position:absolute;left:-18px;top:10px;color:var(--t3);cursor:grab;opacity:0;transition:opacity .1s;font-size:11px}
+.block:hover .block-handle{opacity:1}
+.block-type{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;font-weight:600}
+.block-content{font-size:13px;line-height:1.7;outline:none;min-height:20px;color:var(--t3);font-style:italic}
+.block-actions{position:absolute;right:6px;top:6px;display:flex;gap:4px;opacity:0;transition:opacity .1s;align-items:center}
+.block:hover .block-actions{opacity:1}
+.block-action{width:22px;height:22px;border-radius:4px;border:none;background:transparent;color:var(--t3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px}
+.block-action:hover{background:var(--surface2);color:var(--t2)}
+.block-req{font-size:9px;padding:2px 6px;border-radius:3px;background:var(--teal-bg);color:var(--teal);font-weight:500;cursor:default;font-style:normal}
+
+.block.section-head{background:var(--surface2);border-radius:6px}
+.block.section-head .block-content{font-weight:600;font-size:14px;font-style:normal;color:var(--t1)}
+
+.block.timeline-tpl .tl-row{display:flex;gap:8px;padding:4px 0;font-size:11px;color:var(--t3);font-style:italic;border-bottom:1px solid var(--border)}
+.block.timeline-tpl .tl-row:last-child{border:none}
+.block.timeline-tpl .tl-time{width:50px;flex-shrink:0;font-style:normal;color:var(--t2);font-weight:500}
+
+.block.callout-tpl{border-left:3px solid var(--amber);background:var(--amber-bg);border-radius:0 6px 6px 0}
+.block.callout-tpl .block-content{color:var(--amber);font-size:12px}
+
+.add-block{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;color:var(--t3);font-size:11px;border-radius:6px;transition:all .1s;margin:4px 0}
+.add-block:hover{color:var(--t2);background:var(--surface2)}
+
+.ed-footer{display:flex;gap:8px;margin-top:24px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ═══ PROMOTE MODAL ═══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(28,28,26,.15);display:none;align-items:center;justify-content:center;z-index:200}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:420px;max-width:90vw;overflow:hidden}
+.modal-hd{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:600}
+.modal-close{width:24px;height:24px;border:none;background:var(--surface2);border-radius:4px;cursor:pointer;font-size:11px;color:var(--t2);font-family:inherit}
+.modal-body{padding:16px 20px}
+.modal-label{font-size:11px;font-weight:500;color:var(--t3);margin-bottom:4px;margin-top:12px}
+.modal-label:first-child{margin-top:0}
+.modal-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface)}
+.modal-input:focus{outline:none;border-color:rgba(58,49,133,.3)}
+textarea.modal-input{resize:vertical;min-height:60px}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <span class="topnav-logo">精准教学</span>
+  <a>首页</a>
+  <a class="act">教案</a>
+  <a>课堂</a>
+  <a>作业</a>
+  <a>学情</a>
+  <a>资源</a>
+  <a>管理</a>
+</nav>
+
+<!-- ═══ LIST VIEW ═══ -->
+<div class="page view vis" id="listView">
+
+  <div class="tabs">
+    <button class="tab" onclick="window.location='教案管理.html'">教案</button>
+    <button class="tab act">模板</button>
+  </div>
+
+  <div class="tabs" style="margin-top:-12px">
+    <button class="tab act" onclick="showScope('district',this)">区级模板<span class="tab-count">5</span></button>
+    <button class="tab" onclick="showScope('school',this)">校本模板<span class="tab-count">3</span></button>
+    <button class="tab" onclick="showScope('mine',this)">我的模板<span class="tab-count">2</span></button>
+  </div>
+
+  <div class="list-hd">
+    <input type="text" placeholder="搜索模板...">
+    <select><option>全部课型</option><option>新授课</option><option>复习课</option><option>实验课</option></select>
+    <span class="spacer"></span>
+    <button class="btn pri" onclick="showEditor()">+ 新建模板</button>
+  </div>
+
+  <!-- District templates -->
+  <div id="scope-district">
+  <div class="tpl-list">
+    <div class="tpl-item" onclick="showEditor()">
+      <div class="tpl-head">
+        <div class="tpl-name">新授课标准模板</div>
+        <span class="badge" style="background:var(--green-bg);color:var(--green)">区级</span>
+      </div>
+      <div class="tpl-desc">适用于新概念、新定理的讲授课型</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">教学目标</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">重难点</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">教学过程</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">课堂练习</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">板书设计</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">课后反思</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          使用 142 次
+        </span>
+        <span class="tpl-stat">新授课 · 通用</span>
+        <span class="tpl-stat">v2.0</span>
+      </div>
+    </div>
+
+    <div class="tpl-item">
+      <div class="tpl-head">
+        <div class="tpl-name">复习课标准模板</div>
+        <span class="badge" style="background:var(--green-bg);color:var(--green)">区级</span>
+      </div>
+      <div class="tpl-desc">适用于单元复习、期中/期末复习</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">复习要点</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">知识网络</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">易错题精讲</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">当堂检测</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">拓展提升</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          使用 89 次
+        </span>
+        <span class="tpl-stat">复习课 · 通用</span>
+        <span class="tpl-stat">v1.1</span>
+      </div>
+    </div>
+
+    <div class="tpl-item">
+      <div class="tpl-head">
+        <div class="tpl-name">实验课模板</div>
+        <span class="badge" style="background:var(--green-bg);color:var(--green)">区级</span>
+      </div>
+      <div class="tpl-desc">适用于操作类、探究类实验课</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">实验目标</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">器材清单</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">操作步骤</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">数据记录</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">结论讨论</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          使用 37 次
+        </span>
+        <span class="tpl-stat">实验课 · 理科</span>
+        <span class="tpl-stat">v1.0</span>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- School templates (hidden by default) -->
+  <div id="scope-school" style="display:none">
+  <div class="tpl-list">
+    <div class="tpl-item">
+      <div class="tpl-head">
+        <div class="tpl-name">项目式学习模板</div>
+        <span class="badge" style="background:var(--blue-bg);color:var(--blue)">校本</span>
+      </div>
+      <div class="tpl-desc">本校特色：项目驱动的跨学科教学</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">项目背景</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">学习目标</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">任务分解</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">小组活动</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">成果展示</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">使用 24 次</span>
+        <span class="tpl-stat">通用 · 跨学科</span>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- My templates (hidden by default) -->
+  <div id="scope-mine" style="display:none">
+  <div class="tpl-list">
+    <div class="tpl-item">
+      <div class="tpl-head">
+        <div class="tpl-name">几何证明课模板</div>
+        <span class="badge" style="background:var(--surface2);color:var(--t3)">个人</span>
+      </div>
+      <div class="tpl-desc">自己常用的几何证明题讲解结构</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">教学目标</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">例题精讲</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">证明步骤</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">变式练习</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">总结归纳</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">使用 8 次</span>
+        <span class="tpl-stat">新授课 · 数学</span>
+        <span style="flex:1"></span>
+        <button class="btn sm" onclick="event.stopPropagation();openPromote()">提交推优</button>
+      </div>
+    </div>
+
+    <div class="tpl-item">
+      <div class="tpl-head">
+        <div class="tpl-name">计算专项课模板</div>
+        <span class="badge" style="background:var(--amber-bg);color:var(--amber)">审核中</span>
+      </div>
+      <div class="tpl-desc">高密度计算练习课</div>
+      <div class="tpl-blocks">
+        <span class="tpl-block-pill">速算热身</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">错题回顾</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">分层练习</span><span class="tpl-block-arrow">→</span>
+        <span class="tpl-block-pill">限时挑战</span>
+      </div>
+      <div class="tpl-footer">
+        <span class="tpl-stat">使用 5 次</span>
+        <span class="tpl-stat">练习课 · 数学</span>
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:var(--amber)">已提交校级审核</span>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ═══ EDITOR VIEW ═══ -->
+<div class="page view" id="editorView" style="max-width:640px">
+  <div class="ed-back" onclick="showList()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    返回模板列表
+  </div>
+
+  <input class="ed-title" value="新授课标准模板" />
+  <input class="ed-desc" value="适用于新概念、新定理的讲授课型" style="font-size:13px;color:var(--t2);margin-bottom:12px;border:none;outline:none;width:100%;font-family:inherit;background:transparent" />
+
+  <div class="ed-meta">
+    <select><option>新授课</option><option>复习课</option><option>练习课</option><option>实验课</option></select>
+    <select><option>通用（全学科）</option><option>数学</option><option>语文</option></select>
+    <span class="badge" style="background:var(--green-bg);color:var(--green)">区级</span>
+    <span style="font-size:11px;color:var(--t3);margin-left:auto">v2.0</span>
+  </div>
+
+  <div class="tpl-info">
+    模板定义教案的<strong>结构框架</strong>。每个内容块的文字是提示语，教师从模板创建教案后会看到这些提示并替换为实际内容。标记为<span class="badge" style="background:var(--teal-bg);color:var(--teal);font-size:9px;vertical-align:1px">建议保留</span>的块会提醒教师不要随意删除。
+  </div>
+
+  <!-- Template block editor -->
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>教学目标</div>
+    <div class="block-actions"><span class="block-req">建议保留</span><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>在此填写本节课的教学目标，建议从知识与技能、过程与方法、情感态度三个维度描述</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>重难点</div>
+    <div class="block-actions"><span class="block-req">建议保留</span><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>教学重点：...（学生必须掌握的核心知识）<br>教学难点：...（学生容易混淆或理解困难的部分）</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>教学过程</div>
+    <div class="block-actions"><span class="block-req">建议保留</span><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block timeline-tpl">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-type">时间线</div>
+    <div class="tl-row"><span class="tl-time">0~5'</span>导入环节：复习旧知或创设情境</div>
+    <div class="tl-row"><span class="tl-time">5~15'</span>新课讲解：核心概念/定理引入</div>
+    <div class="tl-row"><span class="tl-time">15~25'</span>深化理解：例题讲解与变式</div>
+    <div class="tl-row"><span class="tl-time">25~35'</span>课堂练习：学生独立完成 + 讲评</div>
+    <div class="tl-row"><span class="tl-time">35~40'</span>课堂小结 + 布置作业</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block callout-tpl">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>学情备注：在此记录该班级的学情特点和教学调整建议</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>课堂练习</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>在此设计或引用课堂练习题目</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>板书设计</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>描述板书的空间布局和内容安排</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block section-head">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>课后反思</div>
+    <div class="block-actions"><span class="block-req">建议保留</span><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="block">
+    <span class="block-handle">&#8942;</span>
+    <div class="block-content" contenteditable>课后填写：本节课的教学效果、学生反馈、改进方向</div>
+    <div class="block-actions"><button class="block-action">&#10005;</button></div>
+  </div>
+
+  <div class="add-block" onclick="alert('插入新模板块')">+ 添加内容块</div>
+
+  <div class="ed-footer">
+    <button class="btn" onclick="showList()">取消</button>
+    <button class="btn pri" onclick="alert('保存模板')">保存模板</button>
+  </div>
+</div>
+
+<!-- ═══ PROMOTE MODAL ═══ -->
+<div class="modal-overlay" id="promoteModal">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">提交推优</div>
+      <button class="modal-close" onclick="closePromote()">x</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-label">推优目标</div>
+      <select class="modal-input"><option>提交到校级审核</option><option>提交到区级审核</option></select>
+
+      <div class="modal-label">模板名称</div>
+      <input class="modal-input" value="几何证明课模板" />
+
+      <div class="modal-label">适用课型</div>
+      <input class="modal-input" value="新授课 · 数学" />
+
+      <div class="modal-label">推荐理由</div>
+      <textarea class="modal-input" placeholder="说明这个模板的特点和适用场景，帮助审核者理解其价值..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePromote()">取消</button>
+      <button class="btn pri" onclick="alert('已提交推优申请');closePromote()">提交</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showEditor(){document.getElementById('listView').classList.remove('vis');document.getElementById('editorView').classList.add('vis')}
+function showList(){document.getElementById('editorView').classList.remove('vis');document.getElementById('listView').classList.add('vis')}
+function showScope(scope,btn){
+  document.querySelectorAll('.tabs:nth-child(3) .tab').forEach(function(t){t.classList.remove('act')});
+  btn.classList.add('act');
+  ['district','school','mine'].forEach(function(s){document.getElementById('scope-'+s).style.display='none'});
+  document.getElementById('scope-'+scope).style.display='block';
+}
+function openPromote(){document.getElementById('promoteModal').classList.add('open')}
+function closePromote(){document.getElementById('promoteModal').classList.remove('open')}
+document.getElementById('promoteModal').addEventListener('click',function(e){if(e.target===this)closePromote()});
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
-# Edu Platform Design System
+# Edu Platform Design System (v2)
 
-> Source of truth extracted from `docs/reference/` prototypes.
+> Source of truth extracted from `reference/v2/` design package.
 > All frontend styling MUST conform to this document.
 
 ---
@@ -9,35 +9,39 @@
 
 > These principles explain the **why** behind the token values. Read this first.
 
-### 0.1 Warm Neutral (暖灰色调)
+### 0.1 Tinted Neutral (暖灰色调)
 
-All neutral colors carry an olive/warm-yellow undertone — **not** Tailwind's default cool gray.
+All neutral colors carry a warm olive/cream undertone — **not** Tailwind's default cool gray, and **not** pure white.
 
-| Role | Our Token | Value | Tailwind Equivalent | Difference |
-|------|-----------|-------|---------------------|------------|
-| Surface bg | `--bg2` | `#f5f5f0` | `gray-100` `#f3f4f6` | Warm cream vs cool blue-gray |
-| Dark bg | `--bg1` dark | `#1a1a18` | `zinc-900` `#18181b` | Warm green-black vs cool zinc |
-| Secondary text | `--t2` | `#6b6b65` | `gray-500` `#6b7280` | Warm olive vs cool slate |
+| Role | Our Token | Light Value | Dark Value | Difference |
+|------|-----------|-------------|------------|------------|
+| Page bg | `--bg` | `#f4f3ef` | `#1a1a18` | Warm cream, not white or cool gray |
+| Card surface | `--surface` | `#fbfaf7` | `#242422` | Off-white with warm tint |
+| Recessed fill | `--surface2` | `#edece7` | `#2c2c2a` | Section headers, hover fills |
+| Primary text | `--t1` | `#1c1c1a` | `#e8e6dc` | Near-black with warm undertone |
+| Secondary text | `--t2` | `#5c5b56` | `#9c9a92` | Warm olive mid-gray |
+| Tertiary text | `--t3` | `#9c9a92` | `#8a8983` | Warm gray for placeholders |
 
 If a color looks "cold" or "blue-ish" next to the prototypes, it's wrong.
 
 ### 0.2 No Accent Color (无品牌强调色)
 
 - There is **no** `--accent` / `--primary` blue or purple token.
-- Primary button: `bg=var(--t1), color=var(--bg1)` — text/background inversion *is* the primary treatment.
-- Semantic colors (`info`, `success`, `warn`, `danger`) are for **status indication only**, never brand identity.
+- Primary button: `bg=var(--t1), color=var(--surface)` — text/background inversion *is* the primary treatment.
+- Semantic colors (`blue`, `green`, `amber`, `red`) are for **status indication only**, never brand identity.
+- Purple (`--purple`) is reserved for AI-related elements only.
 
 ### 0.3 Zero Shadows (零阴影)
 
-- All three prototypes use **zero** `box-shadow`.
-- Elevation is expressed through `0.5px` borders + background color stepping (`bg1` → `bg2` → `bg3`).
+- All v2 prototypes use **zero** `box-shadow`.
+- Elevation is expressed through borders + background color stepping (`--bg` → `--surface` → `--surface2`).
 - Never add `shadow-sm`, `shadow-md`, or any `box-shadow` declaration.
 
-### 0.4 Hairline Borders (极细边框)
+### 0.4 Unified Borders (统一边框)
 
-- Standard border thickness: **`0.5px`**, not `1px`.
-- This creates a lighter, more modern feel than standard 1px borders.
-- Only exceptions: checkbox (`1px` — HTML constraint), step indicator active (`2px`), mini-tree left border (`2px`).
+- Standard border: **`1px solid var(--border)`** where `--border` = `rgba(28,28,26,.07)`.
+- Consistent 1px across all components (v1 used 0.5px — v2 standardizes to 1px).
+- Hover: border-color changes (e.g., `rgba(28,28,26,.15)`), **never** add shadow.
 
 ### 0.5 System Theme Only (跟随系统主题)
 
@@ -45,53 +49,55 @@ If a color looks "cold" or "blue-ish" next to the prototypes, it's wrong.
 - No manual toggle switch. No `.dark` class on `<html>`.
 - All colors must go through CSS custom properties so the media query swap works.
 
-### 0.6 Other Details
+### 0.6 Font
 
-- Message max-width: **`88%`** (not 70% or 80%).
-- `--danger-bg` exists for both light and dark themes.
-- `--bg3` is used only by the chat prototype (outermost canvas).
+- Brand font: `"Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif`.
 - All `<button>` and `<input>` must use `font-family: inherit`.
+
+### 0.7 Component Colors — Token Only (组件禁止色值字面量)
+
+This is a **hard rule**:
+- Components must **NEVER** use raw color literals: `'white'`, `'#fff'`, `'#000'`, `'rgba(...)'`, `'#f4f3ef'`, etc.
+- ALL colors in components go through `var(--token)` CSS custom properties.
+- The **only** place raw color values appear is `design-tokens.css` `:root` and dark mode blocks.
+- Exception: `rgba(58,49,133,.3)` for focus border (should ideally be a token too).
 
 ---
 
 ## 1. Design Tokens
 
+All tokens are defined in `src/styles/design-tokens.css`. This is the **single source of truth** for theme colors.
+
 ### 1.1 Color Tokens
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--bg1` | `#fff` | `#1a1a18` | Card surfaces, input fields, top bar |
-| `--bg2` | `#f5f5f0` | `#242422` | Page background, stat blocks, subtle fills |
-| `--bg3` | `#eeeee8` | `#2c2c2a` | Outermost canvas (chat only) |
-| `--t1` | `#1a1a1a` | `#e8e6dc` | Primary text, user bubble bg, primary buttons |
-| `--t2` | `#6b6b65` | `#9c9a92` | Secondary text, labels, meta |
-| `--t3` | `#9c9a92` | `#73726c` | Placeholder, disabled, hint text |
-| `--b1` | `rgba(0,0,0,.15)` | `rgba(255,255,255,.12)` | Primary border |
-| `--b2` | `rgba(0,0,0,.08)` | `rgba(255,255,255,.06)` | Subtle border, progress bar track |
+| `--bg` | `#f4f3ef` | `#1a1a18` | Page background |
+| `--surface` | `#fbfaf7` | `#242422` | Card surfaces, input fields, modal bg |
+| `--surface2` | `#edece7` | `#2c2c2a` | Section headers, hover fills, recessed areas |
+| `--t1` | `#1c1c1a` | `#e8e6dc` | Primary text, primary button bg |
+| `--t2` | `#5c5b56` | `#9c9a92` | Secondary text, labels, meta |
+| `--t3` | `#9c9a92` | `#8a8983` | Placeholder, disabled, hint text |
+| `--border` | `rgba(28,28,26,.07)` | `rgba(255,255,255,.10)` | Borders |
 
-**Semantic Colors:**
-
-| Token | Light | Dark | Usage |
-|-------|-------|------|-------|
-| `--info-bg` | `#E6F1FB` | `#042C53` | Info badge bg, doc icon bg |
-| `--info-t` | `#0C447C` | `#85B7EB` | Info text, input focus border |
-| `--success-bg` | `#EAF3DE` | `#173404` | Skill tag bg, published badge bg |
-| `--success-t` | `#27500A` | `#C0DD97` | Skill tag text, step done, published badge |
-| `--warn-bg` | `#FAEEDA` | `#412402` | Review badge bg, emphasis tag bg |
-| `--warn-t` | `#854F0B` | `#FAC775` | Review badge text, medium gap bar |
-| `--danger-bg` | `#FCEBEB` | `#3d0c0c` | Danger indicator background |
-| `--danger-t` | `#A32D2D` | `#F09595` | High error rate bar and text |
-
-**Brand / Category Colors:**
+**Semantic Colors (7 pairs — text + bg):**
 
 | Token | Light | Dark | Usage |
 |-------|-------|------|-------|
-| `--purple-bg` | `#EEEDFE` | `#1e1b3a` | AI section bg, selected date bg, AI-generated badge |
-| `--purple-t` | `#3C3489` | `#b3aff0` | AI section text, insert button, chip text |
-| `--teal-bg` | `#E1F5EE` | `#0a2e25` | Requirement banner bg, "建议保留" badge |
-| `--teal-t` | `#085041` | `#7ed4b8` | Requirement text, template actions |
-| `--coral-bg` | `#FAECE7` | `#2e1a12` | File card (PDF) bg |
-| `--coral-t` | `#712B13` | `#e8a68c` | File card (PDF) text |
+| `--blue` | `#1a5fa0` | `#85b7eb` | Info text, in-use badge |
+| `--blue-bg` | `#e4eff8` | `#042c53` | Info badge bg |
+| `--green` | `#2d6612` | `#c0dd97` | Published badge text |
+| `--green-bg` | `#e6f2dc` | `#173404` | Published badge bg |
+| `--amber` | `#7a4d0e` | `#fac775` | Warning text, unlinked requirement |
+| `--amber-bg` | `#f6edda` | `#412402` | Warning badge bg |
+| `--red` | `#942929` | `#f09595` | Danger text, urgent indicator |
+| `--red-bg` | `#f8e6e6` | `#3d0c0c` | Danger bg |
+| `--purple` | `#3a3185` | `#b3aff0` | AI elements, insert button |
+| `--purple-bg` | `#eceafe` | `#1e1b3a` | AI section bg, chips |
+| `--teal` | `#0d5245` | `#7ed4b8` | Requirement linked, "建议保留" badge |
+| `--teal-bg` | `#ddf1eb` | `#0a2e25` | Requirement banner bg |
+| `--coral` | `#6b2a14` | `#e8a68c` | File card (PDF) text |
+| `--coral-bg` | `#f7ebe5` | `#2e1a12` | File card (PDF) bg |
 
 **Overlay:**
 
@@ -99,31 +105,26 @@ If a color looks "cold" or "blue-ish" next to the prototypes, it's wrong.
 |-------|-------|------|-------|
 | `--overlay` | `rgba(0,0,0,0.4)` | `rgba(0,0,0,0.6)` | Modal backdrop |
 
-### 1.2 Radius Tokens
+**Layout:**
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| `--r` | `8px` | Buttons, form fields, stat blocks, small cards |
-| `--rl` | `12px` | Frame containers, widget cards, tree selector, large cards |
+| `--sidebar-w` | `232px` | Sidebar width |
 
-Special radii (hardcoded per component):
-- User bubble: `16px 16px 4px 16px` (asymmetric — bottom-left pinched)
-- Suggestion chips: `12px`
-- Badge pills: `10px`
-- Input field (pill): `20px`
-- Send button: `50%` (circle)
-- Role toggle pills: `14px`
-- Checkbox: `3px`
+### 1.2 Radius Values
+
+| Value | Usage |
+|-------|-------|
+| `6px` | Buttons, form fields, pills, small elements |
+| `8px` | Section block bg, input pill |
+| `10px` | Cards, list items, modal inner sections |
+| `12px` | Modal container |
 
 ### 1.3 Border
 
-- **Standard thickness**: `0.5px` (NOT `1px`)
-- **Border style**: `0.5px solid var(--b1)`
-- **Exceptions**:
-  - Step indicator active/done bottom border: `2px solid`
-  - Mini-tree left border: `2px solid var(--b1)`
-  - Checkbox border: `1px solid var(--b1)` (HTML constraint)
-  - Checked checkbox border: `1px solid var(--t1)`
+- **Standard**: `1px solid var(--border)`
+- **Hover**: border-color 加深, never add shadow
+- **Dashed**: `1px dashed var(--amber)` for unlinked requirement
 
 ---
 
@@ -132,195 +133,83 @@ Special radii (hardcoded per component):
 ### 2.1 Font Family
 
 ```css
-font-family: -apple-system, system-ui, "Segoe UI", sans-serif;
+font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif;
 ```
 
-No custom fonts. System stack only.
+Brand font is Plus Jakarta Sans.
 
-### 2.2 Font Size Scale
+### 2.2 Font Size Scale (v2)
 
 | Size | Usage |
 |------|-------|
-| `10px` | Prototype labels, bottom captions |
-| `11px` | Chips, badges, suggestion buttons, meta text, gap percentages |
-| `12px` | Form labels, card descriptions, tree nodes, secondary actions, step names, stat labels |
-| `13px` | Tab buttons, form selects, summary rows, card titles (small), gap names |
-| `14px` | Chat bubbles (user + AI), card titles (skill panel) |
-| `16px` | Login page title (special case) |
-| `18px` | Page titles (wizard) |
-| `20px` | Stat values (large numeric display) |
-| `22px` | Landing greeting (emotional/welcome text) |
+| `9px` | WeekStrip 星期名, "建议保留" badge |
+| `10px` | Section labels, status badges, timeline timestamps, block pills |
+| `11px` | Chips, meta text, descriptions, form labels |
+| `12px` | Body text, callout, action buttons, input fields |
+| `13px` | Tab text, list item text, select fields, nav links |
+| `14px` | Card titles, list item titles, block section title |
+| `20-22px` | Page title, editor title input |
+| `24-28px` | Hero greeting text |
 
 ### 2.3 Font Weight
 
 | Weight | Usage |
 |--------|-------|
-| `400` (regular) | Body text, descriptions, labels |
-| `500` (medium) | Titles, active tabs, selected tree nodes, summary values, widget titles |
-| `bold` / `700` | Not used standalone; only stat values use `font-weight: 500` |
-
-### 2.4 Line Height
-
-- Chat bubbles: `1.5`
-- Card descriptions: `1.5`
-- Code blocks: `1.5`
-- Default: browser default (no explicit `line-height` on most elements)
+| `400` (regular) | Body text, descriptions |
+| `500` (medium) | Titles, active tabs, nav links |
+| `600` (semibold) | Section labels, status badges |
+| `700` (bold) | Logo, hero greeting, editor title |
 
 ---
 
-## 3. Component Patterns
+## 3. Component Patterns (v2)
 
-### 3.1 Chat Interface (`chat-interface.html`)
+### 3.1 Navigation — Sidebar (≥1200px)
 
-**Top Bar**
-- Background: `var(--bg1)`
-- Bottom border: `0.5px solid var(--b1)`
-- Padding: `10px 16px`
-- Contains context chips in a flex row with `gap: 6px`
+- Fixed left, 232px wide, `background: var(--surface)`
+- Section labels: `10px 600 var(--t3) uppercase letter-spacing .5px`
+- Nav item: 36px height, icon 20×20 + 12×12 SVG
+- Active: left 3px `var(--t1)` bar + `var(--surface2)` bg + icon inverted
+- Hover: `var(--surface2)` bg
+- Badge (count): `var(--red-bg)` bg, `var(--red)` text, 9px, 4px radius
+- Bottom user: avatar 28×28 6px radius + name + role (11px `var(--t3)`)
 
-**Context Chip**
-- Font size: `11px`, padding: `3px 10px`, radius: `12px`
-- Default: `bg=bg2, color=t2, border=0.5px b1`
-- Active: `bg=info-bg, color=info-t, border=transparent`
+### 3.2 Navigation — TopNav (<1200px)
 
-**User Bubble**
-- Background: `var(--t1)` (dark in light mode, light in dark mode)
-- Text color: `var(--bg1)` (inverted)
-- Padding: `10px 14px`
-- Border radius: `16px 16px 4px 16px` (asymmetric)
-- Font size: `14px`
-- Aligned: `flex-end`
+- 48px height, `background: var(--surface); border-bottom: 1px solid var(--border)`
+- Logo: 14px 700
+- Links: 13px 500, `var(--t2)` default, `var(--t1)` + `var(--surface2)` pill active
 
-**AI Bubble**
-- **No background, no border** — plain text only
-- Padding: `2px 0`
-- Font size: `14px`, color: `var(--t1)`
-- Aligned: `flex-start`
+### 3.3 Card Pattern
 
-**Skill Tag**
-- Green dot (`6px` circle, `bg=success-t`) + text
-- Font size: `11px`, padding: `2px 8px`, radius: `10px`
-- Background: `var(--success-bg)`, color: `var(--success-t)`
-- Placed above AI message content
+- `background: var(--surface); border: 1px solid var(--border); border-radius: 10px`
+- Hover: `border-color` 加深 (never shadow)
+- Padding: `16px 20px`
 
-**Widget Card** (embedded interactive component)
-- Background: `var(--bg1)`
-- Border: `0.5px solid var(--b1)`
-- Border radius: `var(--rl)` (12px)
-- Padding: `14px`
-- Header: title (13px medium) + badge (info style)
+### 3.4 Button Pattern
 
-**Document Card**
-- Flex row, padding: `10px 12px`
-- Border: `0.5px solid var(--b1)`, radius: `var(--r)` (8px)
-- Icon: 32x32, radius `6px`, `bg=info-bg, color=info-t`
-
-**Suggestion Chips**
-- Bottom of chat frame (not inside message flow)
-- Background: `transparent`, border: `0.5px solid var(--b1)`
-- Font size: `11px`, padding: `4px 10px`, radius: `12px`
-- Hover: `bg=bg2`
-
-**Input Bar**
-- Background: `var(--bg1)`, top border: `0.5px solid var(--b1)`
-- Input: pill shape `border-radius: 20px`, focus border: `var(--info-t)`
-- Send button: `32x32` circle, `bg=t1, color=bg1`
-
-**Action Buttons**
-- Default: `bg=transparent, border=0.5px b1, color=t2, radius=r`
-- Primary: `bg=t1, color=bg1, border-color=t1`
-- Font size: `12px`, padding: `5px 12px`
-
-### 3.2 Lesson Plan Wizard (`lesson-plan-wizard.html`)
-
-**Step Indicator**
-- Flex row, each step `flex: 1`, centered text
+- Default: `border: 1px solid var(--border); background: var(--surface); color: var(--t2); border-radius: 6px`
+- Primary: `background: var(--t1); color: var(--surface); border-radius: 6px`
 - Font size: `12px`
-- Bottom border: `2px solid`
-- Default: `color=t3, border=b1`
-- Active: `color=t1, font-weight=500, border=t1`
-- Done: `color=success-t, border=success-t`, prefix `✓`
 
-**Form Fields**
-- Label: `12px`, color: `var(--t2)`, margin-bottom: `4px`
-- Select: padding `7px 10px`, border `0.5px solid var(--b1)`, radius `var(--r)`
-- Font size: `13px`
+### 3.5 Status Badge Pattern
 
-**Tree Selector**
-- Container: border `0.5px solid var(--b1)`, radius `var(--rl)`, padding `10px 14px`
-- Max height: `240px`, overflow-y: auto
-- Node: font size `13px`, hover bg: `var(--bg2)`
-- Caret: `14x14`, font size `11px`, color `var(--t3)`, rotates 90deg when open
-- Checkbox: `14x14`, radius `3px`, border `1px solid var(--b1)`
-- Checked: `bg=t1, border=t1`, checkmark via CSS pseudo-element
+- `font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 500`
+- Draft: `var(--surface2)` bg, `var(--t3)` text
+- Published: `var(--green-bg)` bg, `var(--green)` text
+- In-use: `var(--blue-bg)` bg, `var(--blue)` text
+- AI-generated: `var(--purple-bg)` bg, `var(--purple)` text
 
-**Gap Analysis Bar**
-- Row: padding `8px 12px`, radius `var(--r)`, border `0.5px solid var(--b1)`
-- Bar track: height `6px`, bg `var(--bg2)`, radius `3px`
-- Fill color by severity:
-  - `>= 35%`: `var(--danger-t)` (red)
-  - `>= 25%`: `var(--warn-t)` (amber)
-  - `< 25%`: `var(--success-t)` (green)
-- Emphasis toggle: `16x16`, radius `3px`, on state: `bg=warn-bg, border=warn-t, color=warn-t`
+### 3.6 Form Input Pattern
 
-**Summary Panel**
-- Background: `var(--bg2)`, radius `var(--rl)`, padding `14px 16px`
-- Key-value rows: flex, space-between, font size `13px`
-- Key: `color=t2`, value: `font-weight=500`
+- `padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--surface)`
+- Readonly: `background: var(--surface2); color: var(--t2)`
+- Focus: `border-color: rgba(58,49,133,.3)`
 
-**Emphasis Tags**
-- Font size: `11px`, padding `2px 8px`, radius `10px`
-- Background: `var(--warn-bg)`, color: `var(--warn-t)`
+### 3.7 Modal Pattern
 
-**Navigation Buttons**
-- Same as chat action buttons
-- Primary: `bg=t1, color=bg1, border=t1`
-- Font size: `13px`, padding `7px 16px`, radius `var(--r)`
-
-### 3.3 Skill Management Panel (`skill-management-panel.html`)
-
-**Tab Bar**
-- Background: `transparent`, no outer border
-- Tab default: `bg=transparent, color=t2, border=transparent`
-- Tab active: `bg=bg2, color=t1, font-weight=500, border=0.5px b1`
-- Font size: `13px`, padding `6px 14px`, radius `var(--r)`
-
-**Role Toggle**
-- Pill buttons: padding `4px 10px`, radius `14px`, font size `12px`
-- Default: `bg=transparent, border=0.5px b1, color=t2`
-- Active: `bg=t1, color=bg1, border=t1`
-
-**Stats Grid**
-- 4-column grid: `grid-template-columns: repeat(4, minmax(0, 1fr))`, gap `10px`
-- Background: `var(--bg2)`, radius `var(--r)`, padding `10px 12px`
-- Label: `12px`, color `var(--t2)`
-- Value: `20px`, font-weight `500`, margin-top `2px`
-
-**Card Grid**
-- 2-column grid, gap `12px`
-- Card: `bg=bg1, border=0.5px b1, radius=rl`, padding `14px 16px`
-- Title: `14px`, font-weight `500`
-- Description: `12px`, color `var(--t2)`, line-height `1.5`
-- Meta: `11px`, color `var(--t3)`, gap `12px`
-
-**Badge System**
-
-| Status | Class | Background | Color |
-|--------|-------|------------|-------|
-| Published | `badge-pub` | `var(--success-bg)` | `var(--success-t)` |
-| Review | `badge-rev` | `var(--warn-bg)` | `var(--warn-t)` |
-| Draft | `badge-dra` | `var(--bg2)` | `var(--t2)` |
-| Fork | `badge-fork` | `var(--info-bg)` | `var(--info-t)` |
-
-All badges: font size `11px`, padding `2px 8px`, radius `10px`.
-
-**Card Actions**
-- Font size: `12px`, padding `4px 10px`, radius `var(--r)`
-- Default: `bg=transparent, border=0.5px b1, color=t2`
-- Primary (first action): `bg=t1, color=bg1, border=t1`
-
-**Empty State**
-- Centered, padding `32px`, color `var(--t3)`, font size `13px`
+- Overlay: `var(--overlay)`
+- Container: `background: var(--surface); border: 1px solid var(--border); border-radius: 12px`
 
 ---
 
@@ -334,29 +223,31 @@ All badges: font size `11px`, padding `2px 8px`, radius `10px`.
 }
 ```
 
-Automatic via `prefers-color-scheme`. No manual toggle class (e.g., no `.dark` on `<html>`).
+Automatic via `prefers-color-scheme`. No manual toggle class.
 
-### 4.2 Inversion Principles
+### 4.2 Implementation Rules
 
-- Backgrounds get darker: `#fff` → `#1a1a18`
-- Text gets lighter: `#1a1a1a` → `#e8e6dc`
-- Borders flip opacity: `rgba(0,0,0,.15)` → `rgba(255,255,255,.12)`
-- Semantic colors shift to darker bg + lighter foreground
-- User bubble remains inverted (bg=t1 naturally adapts)
-
-### 4.3 Implementation
-
-ALL colors MUST go through CSS custom properties. Never use raw hex or Tailwind color utilities for theme colors. Tailwind is allowed only for layout (`flex`, `grid`, `p-4`, `gap-2`, etc.).
+1. ALL colors MUST go through CSS custom properties
+2. Never use raw hex, `rgba()`, or Tailwind color utilities in components
+3. Tailwind is allowed only for layout (`flex`, `grid`, `p-4`, `gap-2`, etc.)
+4. Every new token MUST have both light and dark values
+5. Update this document's token table when adding new tokens
 
 ---
 
-## 5. Layout Patterns
+## 5. Layout Patterns (v2)
 
-- Max widths: `720px` (chat), `680px` (wizard), `760px` (skill panel)
-- Page centering: `display: flex; justify-content: center; padding: 20px`
-- Frame containers: `bg=bg1, border=0.5px b1, radius=rl, padding=20px`
-- Chat frame uses `bg=bg2` as its surface (content area)
-- Body/canvas background: `var(--bg2)` or `var(--bg3)`
+| Page | Max Width | Alignment |
+|------|-----------|-----------|
+| HomePage | 800px | Left-aligned (not centered) |
+| LessonPlanList / TemplateList | 860px | Left-aligned |
+| LessonPlanEditor | 920px (grid 1fr + 200px) | Left-aligned |
+| TemplateEditor | 640px | Left-aligned |
+| Chat | inherited from chat-interface | — |
+
+Content is left-aligned — flush with the sidebar's right edge. **No `margin: 0 auto`** centering.
+
+Main area: `margin-left: var(--sidebar-w)` at ≥1200px; no margin at <1200px.
 
 ---
 
@@ -364,11 +255,44 @@ ALL colors MUST go through CSS custom properties. Never use raw hex or Tailwind 
 
 | Rule | Rationale |
 |------|-----------|
-| No Tailwind color classes (`bg-blue-500`, `text-gray-600`, etc.) | All colors via CSS variables for theme support |
-| No background or border on AI bubbles | Reference: AI text is plain, unstyled |
-| No symmetric border-radius on user bubbles | Must be `16px 16px 4px 16px` |
-| No `box-shadow` / `shadow-*` | Reference prototypes use zero shadows |
-| No `1px` borders (except checkbox) | Reference uses `0.5px` consistently |
-| No custom fonts or Google Fonts | System font stack only |
-| No hardcoded dark mode colors | All via `prefers-color-scheme` + CSS vars |
-| No `rgba()` colors in components | Use token variables `var(--b1)` etc. |
+| No hardcoded colors in components (`'white'`, `'#fff'`, `rgba()`, hex) | All colors via CSS variables for theme support |
+| No `box-shadow` / `shadow-*` | v2 prototypes use zero shadows |
+| No pure white `#fff` as surface | Use `var(--surface)` = `#fbfaf7` |
+| No pure black `#000` | Use `var(--t1)` = `#1c1c1a` |
+| No `margin: 0 auto` centering | Content left-aligned |
+| No Tailwind color classes (`bg-blue-500`, etc.) | All colors via CSS variables |
+| No gradients | v2 uses flat fills only |
+| No icon fonts | Use inline SVG (Lucide-style) |
+| No emoji as functional icons | Use SVG |
+| No `> 12px` border-radius | Cards 10px, buttons 6px, modals 12px |
+| No v1 variable names (`--bg1`, `--bg2`, `--b1`, `--info-t`, `--warn-t`) | Use v2 names (`--bg`, `--surface`, `--border`, `--blue`, `--amber`) |
+
+---
+
+## 7. v1 → v2 Migration Reference
+
+For components being migrated from v1:
+
+| v1 Token | v2 Token |
+|----------|----------|
+| `--bg1` | `--surface` (card bg) or `--bg` (page bg) |
+| `--bg2` | `--surface2` or `--bg` depending on context |
+| `--bg3` | `--surface2` |
+| `--b1` | `--border` |
+| `--b2` | `--border` (single border token in v2) |
+| `--info-bg` | `--blue-bg` |
+| `--info-t` | `--blue` |
+| `--success-bg` | `--green-bg` |
+| `--success-t` | `--green` |
+| `--warn-bg` | `--amber-bg` |
+| `--warn-t` | `--amber` |
+| `--danger-bg` | `--red-bg` |
+| `--danger-t` | `--red` |
+| `--purple-bg` | `--purple-bg` (same) |
+| `--purple-t` | `--purple` |
+| `--teal-bg` | `--teal-bg` (same) |
+| `--teal-t` | `--teal` |
+| `--coral-bg` | `--coral-bg` (same) |
+| `--coral-t` | `--coral` |
+| `--r` (8px) | 6px (buttons), 10px (cards) |
+| `--rl` (12px) | 10px (cards), 12px (modals) |
