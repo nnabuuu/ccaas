@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { SERVER_URL } from '../config'
-import type { Block, RequirementLink } from '../types/lesson-plan'
+import type { Block, RequirementLink, LessonPlanStatus } from '../types/lesson-plan'
 import { BlockEditor } from '../components/editor/BlockEditor'
 import { RequirementBanner } from '../components/editor/RequirementBanner'
 
@@ -32,7 +32,9 @@ export function LessonPlanEditor() {
       interpretation: '能运用判定方法完成至少 2 种类型的证明题',
     },
   )
+  const [status, setStatus] = useState<LessonPlanStatus>('draft')
   const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export function LessonPlanEditor() {
         if (data.lesson_type) setLessonType(data.lesson_type)
         if (data.blocks) setBlocks(data.blocks)
         if (data.requirement) setRequirement(data.requirement)
+        if (data.status) setStatus(data.status)
       })
       .catch(() => {})
   }, [id, isNew])
@@ -89,6 +92,19 @@ export function LessonPlanEditor() {
       setSaving(false)
     }
   }, [isNew, id, title, className, subject, lessonType, blocks, navigate])
+
+  const handlePublish = useCallback(async () => {
+    if (isNew || !id) return
+    setPublishing(true)
+    try {
+      await fetch(`${SERVER_URL}/api/lesson-plans/${id}/publish`, { method: 'POST' })
+      setStatus('published')
+    } catch {
+      // silently fail
+    } finally {
+      setPublishing(false)
+    }
+  }, [isNew, id])
 
   const selectStyle: React.CSSProperties = {
     padding: '6px 10px',
@@ -201,6 +217,36 @@ export function LessonPlanEditor() {
             marginTop: '24px',
             justifyContent: 'flex-end',
           }}>
+            {!isNew && status === 'draft' && (
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid var(--border)',
+                  background: 'var(--green-bg)',
+                  color: 'var(--green)',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  cursor: publishing ? 'default' : 'pointer',
+                  fontFamily: 'inherit',
+                  fontWeight: 500,
+                  opacity: publishing ? 0.7 : 1,
+                }}
+              >
+                {publishing ? '发布中...' : '发布'}
+              </button>
+            )}
+            {!isNew && status === 'published' && (
+              <span style={{
+                padding: '8px 16px',
+                fontSize: '11px',
+                color: 'var(--green)',
+                fontWeight: 500,
+              }}>
+                已发布
+              </span>
+            )}
             <button style={{
               padding: '8px 16px',
               border: '1px solid var(--border)',
