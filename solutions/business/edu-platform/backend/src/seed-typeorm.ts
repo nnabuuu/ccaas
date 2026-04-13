@@ -25,6 +25,14 @@ const dataSource = new DataSource({
   logging: false,
 });
 
+function parseUserIdArg(): string {
+  const idx = process.argv.indexOf('--user-id');
+  if (idx !== -1 && process.argv[idx + 1]) {
+    return process.argv[idx + 1];
+  }
+  return 'teacher_001';
+}
+
 async function seed() {
   await dataSource.initialize();
   console.log('TypeORM DataSource initialized');
@@ -44,7 +52,8 @@ async function seed() {
   await lpRepo.clear();
   await tplRepo.clear();
 
-  const userId = 'teacher_001';
+  const userId = parseUserIdArg();
+  console.log(`Using user_id: ${userId}`);
 
   // ──────────────────────────────────────────
   // Templates (2)

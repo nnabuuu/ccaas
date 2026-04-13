@@ -4,11 +4,23 @@ export class CreateLessonPlanDto {
   @IsString()
   title: string;
 
+  @IsOptional()
   @IsString()
-  subject_id: string;
+  subject_id?: string;
 
+  @IsOptional()
   @IsString()
-  class_id: string;
+  class_id?: string;
+
+  /** Frontend sends display name (e.g. '数学'), resolved to subject_id in service */
+  @IsOptional()
+  @IsString()
+  subject?: string;
+
+  /** Frontend sends display name (e.g. '八(2)班'), resolved to class_id in service */
+  @IsOptional()
+  @IsString()
+  class_name?: string;
 
   @IsOptional()
   @IsString()
@@ -17,6 +29,11 @@ export class CreateLessonPlanDto {
   @IsOptional()
   @IsNumber()
   duration_minutes?: number;
+
+  /** Frontend alias for duration_minutes */
+  @IsOptional()
+  @IsNumber()
+  duration?: number;
 
   @IsOptional()
   @IsString()

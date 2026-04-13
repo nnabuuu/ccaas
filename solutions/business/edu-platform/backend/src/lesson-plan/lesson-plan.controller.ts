@@ -13,6 +13,8 @@ import { LessonPlanService } from './lesson-plan.service';
 import { CreateLessonPlanDto } from './dto/create-lesson-plan.dto';
 import { UpdateLessonPlanDto } from './dto/update-lesson-plan.dto';
 import { UpdateBlocksDto } from './dto/update-blocks.dto';
+import { LinkRequirementDto } from './dto/link-requirement.dto';
+import { LinkExercisesDto } from './dto/link-exercises.dto';
 
 @ApiTags('lesson-plans')
 @Controller('lesson-plans')
@@ -23,15 +25,17 @@ export class LessonPlanController {
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('page_size') page_size?: string,
     @Query('subject_id') subject_id?: string,
     @Query('status') status?: string,
     @Query('class_id') class_id?: string,
     @Query('has_requirement') has_requirement?: string,
     @Query('q') q?: string,
   ) {
+    const resolvedLimit = page_size || limit;
     return this.lessonPlanService.findAll({
       page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      limit: resolvedLimit ? parseInt(resolvedLimit, 10) : 20,
       subject_id,
       status,
       class_id,
@@ -68,13 +72,9 @@ export class LessonPlanController {
   @Post(':id/link-requirement')
   linkRequirement(
     @Param('id') id: string,
-    @Body()
-    body: {
-      requirement_id: string;
-      requirement_snapshot: { code: string; text: string; version: string };
-    },
+    @Body() dto: LinkRequirementDto,
   ) {
-    return this.lessonPlanService.linkRequirement(id, body);
+    return this.lessonPlanService.linkRequirement(id, dto);
   }
 
   @Get(':id/requirement-status')
@@ -85,9 +85,9 @@ export class LessonPlanController {
   @Post(':id/exercises')
   linkExercises(
     @Param('id') id: string,
-    @Body() body: { exercise_ids: string[] },
+    @Body() dto: LinkExercisesDto,
   ) {
-    return this.lessonPlanService.linkExercises(id, body.exercise_ids);
+    return this.lessonPlanService.linkExercises(id, dto.exercise_ids);
   }
 
   @Post(':id/publish')

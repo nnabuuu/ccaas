@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Activity } from '../entities/activity.entity';
+import { formatActivityDetail } from '../shared/lookup-maps';
 
 @Injectable()
 export class ActivityService {
@@ -26,11 +27,11 @@ export class ActivityService {
     user_id: string,
     date: string,
     limit: number = 50,
-  ): Promise<{ items: Activity[]; total: number }> {
+  ): Promise<{ items: any[]; total: number }> {
     const startOfDay = new Date(`${date}T00:00:00`);
     const endOfDay = new Date(`${date}T23:59:59.999`);
 
-    const [items, total] = await this.activityRepo.findAndCount({
+    const [rawItems, total] = await this.activityRepo.findAndCount({
       where: {
         user_id,
         timestamp: Between(startOfDay, endOfDay),
@@ -38,6 +39,15 @@ export class ActivityService {
       order: { timestamp: 'DESC' },
       take: limit,
     });
+
+    const items = rawItems.map((a) => ({
+      entity_type: a.entity_type,
+      entity_id: a.entity_id,
+      entity_display_name: a.entity_display_name,
+      action: a.action,
+      detail: formatActivityDetail(a.detail),
+      timestamp: a.timestamp,
+    }));
 
     return { items, total };
   }

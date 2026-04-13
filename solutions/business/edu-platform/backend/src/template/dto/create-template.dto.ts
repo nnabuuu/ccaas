@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber, IsBoolean, IsObject, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TemplateBlockDto {
@@ -10,11 +10,14 @@ export class TemplateBlockDto {
   placeholder?: string;
 
   @IsOptional()
+  @IsObject()
   content?: Record<string, any>;
 
   @IsOptional()
+  @IsBoolean()
   is_required?: boolean;
 
+  @IsNumber()
   sort_order: number;
 }
 
@@ -33,6 +36,11 @@ export class CreateTemplateDto {
   @IsOptional()
   @IsArray()
   subject_ids?: string[];
+
+  /** Frontend sends display name (e.g. '数学'), resolved to subject_ids in service */
+  @IsOptional()
+  @IsString()
+  subject?: string;
 
   @IsOptional()
   @IsString()

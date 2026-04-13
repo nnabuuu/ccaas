@@ -19,6 +19,11 @@ export class UpdateTemplateDto {
   @IsArray()
   subject_ids?: string[];
 
+  /** Frontend sends display name (e.g. '数学') */
+  @IsOptional()
+  @IsString()
+  subject?: string;
+
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

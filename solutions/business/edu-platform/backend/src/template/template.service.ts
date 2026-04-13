@@ -7,6 +7,11 @@ import { TemplatePromotion } from '../entities/template-promotion.entity';
 import { ActivityService } from '../activity/activity.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
+import {
+  resolveSubjectNames,
+  resolveSubjectId,
+  formatVersion,
+} from '../shared/lookup-maps';
 
 @Injectable()
 export class TemplateService {
@@ -19,6 +24,79 @@ export class TemplateService {
     private readonly promotionRepo: Repository<TemplatePromotion>,
     private readonly activityService: ActivityService,
   ) {}
+
+  // ── Response Transformation ──────────────────────────────
+
+  private computeBlockSummary(blocks: TemplateBlock[]): string[] {
+    return blocks
+      .filter((b) => b.type === 'section')
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((b) => {
+        if (b.content && typeof b.content.text === 'string') return b.content.text;
+        if (b.placeholder) return b.placeholder;
+        return b.type;
+      });
+  }
+
+  private toListItem(tpl: LessonPlanTemplate, blocks?: TemplateBlock[]) {
+    return {
+      id: tpl.id,
+      name: tpl.name,
+      description: tpl.description,
+      lesson_type: tpl.lesson_type,
+      subject: resolveSubjectNames(tpl.subject_ids || []),
+      scope: tpl.scope,
+      version: formatVersion(tpl.version),
+      usage_count: tpl.usage_count,
+      promotion_status: tpl.promotion_status === 'none' ? undefined : tpl.promotion_status,
+      block_summary: blocks ? this.computeBlockSummary(blocks) : [],
+    };
+  }
+
+  private toDetail(tpl: LessonPlanTemplate) {
+    return {
+      id: tpl.id,
+      name: tpl.name,
+      description: tpl.description,
+      lesson_type: tpl.lesson_type,
+      subject: resolveSubjectNames(tpl.subject_ids || []),
+      scope: tpl.scope,
+      version: formatVersion(tpl.version),
+      blocks: (tpl.blocks || []).map((b) => ({
+        id: b.id,
+        type: b.type,
+        content: b.content,
+        sort_order: b.sort_order,
+        placeholder: b.placeholder || undefined,
+        is_required: b.is_required,
+      })),
+      usage_count: tpl.usage_count,
+      promotion_status: tpl.promotion_status === 'none' ? undefined : tpl.promotion_status,
+      created_at: tpl.created_at,
+      updated_at: tpl.updated_at,
+    };
+  }
+
+  /** Resolve frontend 'subject' display name to subject_ids array */
+  private resolveSubjectInput(dto: CreateTemplateDto | UpdateTemplateDto): string[] | undefined {
+    if (dto.subject_ids) return dto.subject_ids;
+    if (dto.subject) return [resolveSubjectId(dto.subject)];
+    return undefined;
+  }
+
+  // ── Internal (raw entity) ────────────────────────────────
+
+  private async findOneRaw(id: string): Promise<LessonPlanTemplate> {
+    const tpl = await this.templateRepo.findOne({
+      where: { id, is_deleted: false },
+      relations: ['blocks'],
+    });
+    if (!tpl) throw new NotFoundException(`Template ${id} not found`);
+    tpl.blocks = (tpl.blocks || []).sort((a, b) => a.sort_order - b.sort_order);
+    return tpl;
+  }
+
+  // ── Public API ───────────────────────────────────────────
 
   async findAll(query: {
     page?: number;
@@ -38,7 +116,7 @@ export class TemplateService {
     if (query.lesson_type) qb = qb.andWhere('t.lesson_type = :lt', { lt: query.lesson_type });
     if (query.q) qb = qb.andWhere('t.name LIKE :q', { q: `%${query.q}%` });
     if (query.subject_id) {
-      qb = qb.andWhere('t.subject_ids LIKE :sid', { sid: `%${query.subject_id}%` });
+      qb = qb.andWhere('t.subject_ids LIKE :sid', { sid: `%"${query.subject_id}"%` });
     }
 
     const [data, total] = await qb
@@ -47,26 +125,42 @@ export class TemplateService {
       .take(limit)
       .getManyAndCount();
 
-    return { data, total, page, limit };
+    // Hydrate blocks only for the paged results (needed for block_summary)
+    const ids = data.map((t) => t.id);
+    if (ids.length > 0) {
+      const withBlocks = await this.templateRepo
+        .createQueryBuilder('t')
+        .leftJoinAndSelect('t.blocks', 'blocks')
+        .where('t.id IN (:...ids)', { ids })
+        .getMany();
+      const blockMap = new Map(withBlocks.map((t) => [t.id, t.blocks || []]));
+      for (const tpl of data) {
+        tpl.blocks = blockMap.get(tpl.id) || [];
+      }
+    }
+
+    return {
+      items: data.map((tpl) => this.toListItem(tpl, tpl.blocks)),
+      total,
+      page,
+      page_size: limit,
+    };
   }
 
-  async findOne(id: string): Promise<LessonPlanTemplate> {
-    const tpl = await this.templateRepo.findOne({
-      where: { id, is_deleted: false },
-      relations: ['blocks'],
-    });
-    if (!tpl) throw new NotFoundException(`Template ${id} not found`);
-    tpl.blocks = (tpl.blocks || []).sort((a, b) => a.sort_order - b.sort_order);
-    return tpl;
+  async findOne(id: string) {
+    const tpl = await this.findOneRaw(id);
+    return this.toDetail(tpl);
   }
 
-  async create(dto: CreateTemplateDto): Promise<LessonPlanTemplate> {
+  async create(dto: CreateTemplateDto) {
     const userId = dto.user_id || 'default_user';
+    const subjectIds = this.resolveSubjectInput(dto);
+
     const template = this.templateRepo.create({
       name: dto.name,
       description: dto.description || '',
       lesson_type: dto.lesson_type || 'new',
-      subject_ids: dto.subject_ids || [],
+      subject_ids: subjectIds || [],
       scope: dto.scope || 'teacher',
       user_id: userId,
     });
@@ -97,30 +191,33 @@ export class TemplateService {
     return this.findOne(saved.id);
   }
 
-  async update(id: string, dto: UpdateTemplateDto): Promise<LessonPlanTemplate> {
-    const tpl = await this.findOne(id);
+  async update(id: string, dto: UpdateTemplateDto) {
+    const tpl = await this.findOneRaw(id);
+    const subjectIds = this.resolveSubjectInput(dto);
 
     if (dto.name !== undefined) tpl.name = dto.name;
     if (dto.description !== undefined) tpl.description = dto.description;
     if (dto.lesson_type !== undefined) tpl.lesson_type = dto.lesson_type;
-    if (dto.subject_ids !== undefined) tpl.subject_ids = dto.subject_ids;
+    if (subjectIds !== undefined) tpl.subject_ids = subjectIds;
 
     const saved = await this.templateRepo.save(tpl);
 
-    // Replace blocks if provided
+    // Replace blocks if provided (transactional to prevent data loss)
     if (dto.blocks) {
-      await this.blockRepo.delete({ template_id: id });
-      for (const b of dto.blocks) {
-        const block = this.blockRepo.create({
-          template_id: id,
-          type: b.type,
-          placeholder: b.placeholder || '',
-          content: b.content || {},
-          is_required: b.is_required || false,
-          sort_order: b.sort_order,
-        });
-        await this.blockRepo.save(block);
-      }
+      await this.blockRepo.manager.transaction(async (manager) => {
+        await manager.delete(TemplateBlock, { template_id: id });
+        const blockEntities = dto.blocks.map((b) =>
+          manager.create(TemplateBlock, {
+            template_id: id,
+            type: b.type,
+            placeholder: b.placeholder || '',
+            content: b.content || {},
+            is_required: b.is_required || false,
+            sort_order: b.sort_order,
+          }),
+        );
+        await manager.save(blockEntities);
+      });
     }
 
     await this.activityService.record({
@@ -135,7 +232,7 @@ export class TemplateService {
   }
 
   async softDelete(id: string): Promise<void> {
-    const tpl = await this.findOne(id);
+    const tpl = await this.findOneRaw(id);
     tpl.is_deleted = true;
     await this.templateRepo.save(tpl);
 
@@ -152,7 +249,7 @@ export class TemplateService {
     id: string,
     body: { target_scope: string; reason?: string },
   ): Promise<TemplatePromotion> {
-    const tpl = await this.findOne(id);
+    const tpl = await this.findOneRaw(id);
 
     const promotion = this.promotionRepo.create({
       template_id: id,
@@ -180,7 +277,7 @@ export class TemplateService {
   }
 
   async getPromotions(status?: string) {
-    const where: any = {};
+    const where: Record<string, string> = {};
     if (status) where.status = status;
 
     return this.promotionRepo.find({
@@ -200,7 +297,7 @@ export class TemplateService {
     });
     if (!promotion) throw new NotFoundException(`Promotion ${promotionId} not found`);
 
-    const template = await this.findOne(promotion.template_id);
+    const template = await this.findOneRaw(promotion.template_id);
 
     if (body.action === 'approve') {
       promotion.status = 'approved';

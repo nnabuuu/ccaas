@@ -24,14 +24,16 @@ export class TemplateController {
   findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('page_size') page_size?: string,
     @Query('scope') scope?: string,
     @Query('subject_id') subject_id?: string,
     @Query('lesson_type') lesson_type?: string,
     @Query('q') q?: string,
   ) {
+    const resolvedLimit = page_size || limit;
     return this.templateService.findAll({
       page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      limit: resolvedLimit ? parseInt(resolvedLimit, 10) : 20,
       scope,
       subject_id,
       lesson_type,

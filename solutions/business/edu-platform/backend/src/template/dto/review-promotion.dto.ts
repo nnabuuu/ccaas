@@ -1,7 +1,7 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsIn } from 'class-validator';
 
 export class ReviewPromotionDto {
-  @IsString()
+  @IsIn(['approve', 'reject', 'revision_requested'])
   action: string;
 
   @IsOptional()

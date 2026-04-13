@@ -10,6 +10,7 @@ export class DashboardService {
     private readonly promotionRepo: Repository<TemplatePromotion>,
   ) {}
 
+  // CCAAS-AI: mock — future: combine real grading tasks from homework module
   async getPending(user_id?: string, limit: number = 10) {
     // Mock pending items
     const mockItems = [
@@ -28,7 +29,7 @@ export class DashboardService {
         count: 35,
         deadline: '周三',
         progress: '35/40',
-        skill_status: null,
+        skill_status: '',
         link: '/homework/hw_2/grade',
       },
     ];
@@ -43,9 +44,9 @@ export class DashboardService {
       type: 'review',
       title: `${p.template?.name || '模板'}推优申请`,
       count: 1,
-      deadline: null,
-      progress: null,
-      skill_status: null,
+      deadline: '',
+      progress: '',
+      skill_status: '',
       link: '/templates/promotions',
     }));
 
@@ -57,9 +58,9 @@ export class DashboardService {
             type: 'review',
             title: '王老师推优申请',
             count: 1,
-            deadline: null,
-            progress: null,
-            skill_status: null,
+            deadline: '',
+            progress: '',
+            skill_status: '',
             link: '/templates/promotions',
           },
         ];
@@ -68,6 +69,7 @@ export class DashboardService {
     return { items, total: items.length };
   }
 
+  // CCAAS-AI: mock — future: call CCAAS Session API for recent Skill run results
   async getAiBriefing(user_id?: string) {
     return {
       insights: [
