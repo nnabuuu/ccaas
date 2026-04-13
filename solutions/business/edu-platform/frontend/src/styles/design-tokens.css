@@ -1,0 +1,73 @@
+:root {
+  /* 背景 */
+  --bg: #f4f3ef;
+  --surface: #fbfaf7;
+  --surface2: #edece7;
+
+  /* 文字 */
+  --t1: #1c1c1a;
+  --t2: #5c5b56;
+  --t3: #9c9a92;
+
+  /* 边框 */
+  --border: rgba(28, 28, 26, 0.07);
+
+  /* 语义色 */
+  --blue: #1a5fa0;
+  --blue-bg: #e4eff8;
+  --green: #2d6612;
+  --green-bg: #e6f2dc;
+  --amber: #7a4d0e;
+  --amber-bg: #f6edda;
+  --red: #942929;
+  --red-bg: #f8e6e6;
+  --purple: #3a3185;
+  --purple-bg: #eceafe;
+  --teal: #0d5245;
+  --teal-bg: #ddf1eb;
+  --coral: #6b2a14;
+  --coral-bg: #f7ebe5;
+
+  /* 布局 */
+  --sidebar-w: 232px;
+
+  /* 遮罩 */
+  --overlay: rgba(0, 0, 0, 0.4);
+
+  /* Focus 边框 */
+  --focus-border: rgba(58, 49, 133, 0.3);
+
+  /* AI chip 边框 */
+  --ai-chip-border: rgba(58, 49, 133, 0.15);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18;
+    --surface: #242422;
+    --surface2: #2c2c2a;
+    --t1: #e8e6dc;
+    --t2: #9c9a92;
+    --t3: #8a8983;
+    --border: rgba(255, 255, 255, 0.10);
+
+    --blue: #85b7eb;
+    --blue-bg: #042c53;
+    --green: #c0dd97;
+    --green-bg: #173404;
+    --amber: #fac775;
+    --amber-bg: #412402;
+    --red: #f09595;
+    --red-bg: #3d0c0c;
+    --purple: #b3aff0;
+    --purple-bg: #1e1b3a;
+    --teal: #7ed4b8;
+    --teal-bg: #0a2e25;
+    --coral: #e8a68c;
+    --coral-bg: #2e1a12;
+
+    --overlay: rgba(0, 0, 0, 0.6);
+    --focus-border: rgba(179, 175, 240, 0.3);
+    --ai-chip-border: rgba(179, 175, 240, 0.15);
+  }
+}

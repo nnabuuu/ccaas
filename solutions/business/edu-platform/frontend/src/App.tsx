@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import {
   ChatInterface,
   ChatSidebar,
@@ -17,6 +18,9 @@ import type { ClassInfo } from './data/mock-classes'
 import { SERVER_URL, TENANT_ID } from './config'
 import { useEduAuth } from './hooks/useEduAuth'
 import type { EduAuth } from './hooks/useEduAuth'
+import { Sidebar } from './components/layout/Sidebar'
+import { TopNav } from './components/layout/TopNav'
+import { HomePage } from './pages/HomePage'
 
 const customToolRenderers: ToolRendererMap = {
   AskUserQuestion: askUserQuestionRenderer,
@@ -69,10 +73,60 @@ function App() {
     )
   }
 
-  return <AppShell auth={auth} />
+  return <AuthenticatedApp auth={auth} />
 }
 
-function AppShell({ auth }: { auth: EduAuth }) {
+function AuthenticatedApp({ auth }: { auth: EduAuth }) {
+  return (
+    <>
+      <Sidebar />
+      <TopNav />
+      <Routes>
+        <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
+        <Route path="/chat" element={<ChatPage auth={auth} />} />
+        <Route path="/lesson-plans" element={<PageWrapper><PlaceholderPage title="教案" /></PageWrapper>} />
+        <Route path="/templates" element={<PageWrapper><PlaceholderPage title="模板" /></PageWrapper>} />
+      </Routes>
+    </>
+  )
+}
+
+function PageWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="main-content">
+        {children}
+      </div>
+      <style>{`
+        .main-content {
+          margin-left: 0;
+          padding: 32px 24px 80px;
+          background: var(--bg);
+          min-height: 100vh;
+        }
+        @media (min-width: 1200px) {
+          .main-content {
+            margin-left: var(--sidebar-w);
+            padding: 32px 48px 80px;
+          }
+        }
+      `}</style>
+    </>
+  )
+}
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <div style={{ maxWidth: '800px' }}>
+      <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--t1)', marginBottom: '8px' }}>
+        {title}
+      </h1>
+      <p style={{ fontSize: '13px', color: 'var(--t3)' }}>即将推出</p>
+    </div>
+  )
+}
+
+function ChatPage({ auth }: { auth: EduAuth }) {
   const [selectedClass] = useState<ClassInfo>(DEFAULT_CLASS)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -83,7 +137,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
 
   const { sessions, refresh } = useSessionList(SERVER_URL, auth.ccaasApiKey!, TENANT_ID)
 
-  const apiKeyHint = useMemo(() => {
+  const _apiKeyHint = useMemo(() => {
     if (!auth.ccaasApiKey) return undefined
     const key = auth.ccaasApiKey
     if (key.length <= 6) return `sk-...${key.slice(-2)}`
@@ -110,7 +164,7 @@ function AppShell({ auth }: { auth: EduAuth }) {
   const teacherName = auth.user?.name ?? '老师'
 
   return (
-    <div className="h-dvh flex">
+    <div className="chat-page">
       <ChatSidebar
         sessions={sessions}
         currentSessionId={sessionId}
@@ -164,6 +218,13 @@ function AppShell({ auth }: { auth: EduAuth }) {
           customToolRenderers={customToolRenderers}
         />
       </div>
+
+      <style>{`
+        .chat-page {
+          height: 100dvh;
+          display: flex;
+        }
+      `}</style>
     </div>
   )
 }

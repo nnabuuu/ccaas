@@ -49,9 +49,15 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, system-ui, 'Segoe UI', sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
 }
 
 /* ============================================================
