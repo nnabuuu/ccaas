@@ -21,6 +21,10 @@ import type { EduAuth } from './hooks/useEduAuth'
 import { Sidebar } from './components/layout/Sidebar'
 import { TopNav } from './components/layout/TopNav'
 import { HomePage } from './pages/HomePage'
+import { LessonPlanList } from './pages/LessonPlanList'
+import { LessonPlanEditor } from './pages/LessonPlanEditor'
+import { TemplateList } from './pages/TemplateList'
+import { TemplateEditor } from './pages/TemplateEditor'
 
 const customToolRenderers: ToolRendererMap = {
   AskUserQuestion: askUserQuestionRenderer,
@@ -93,8 +97,12 @@ function AuthenticatedApp({ auth }: { auth: EduAuth }) {
       <Routes>
         <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
         <Route path="/chat" element={<ChatPage auth={auth} />} />
-        <Route path="/lesson-plans" element={<PageWrapper><PlaceholderPage title="教案" /></PageWrapper>} />
-        <Route path="/templates" element={<PageWrapper><PlaceholderPage title="模板" /></PageWrapper>} />
+        <Route path="/lesson-plans" element={<PageWrapper><LessonPlanList /></PageWrapper>} />
+        <Route path="/lesson-plans/new" element={<PageWrapper><LessonPlanEditor /></PageWrapper>} />
+        <Route path="/lesson-plans/:id" element={<PageWrapper><LessonPlanEditor /></PageWrapper>} />
+        <Route path="/templates" element={<PageWrapper><TemplateList /></PageWrapper>} />
+        <Route path="/templates/new" element={<PageWrapper><TemplateEditor /></PageWrapper>} />
+        <Route path="/templates/:id" element={<PageWrapper><TemplateEditor /></PageWrapper>} />
       </Routes>
     </>
   )
