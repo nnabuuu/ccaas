@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import {
   ChatInterface,
@@ -77,10 +77,19 @@ function App() {
 }
 
 function AuthenticatedApp({ auth }: { auth: EduAuth }) {
+  const [pendingCount, setPendingCount] = useState(0)
+
+  useEffect(() => {
+    fetch(`${SERVER_URL}/api/dashboard/pending`)
+      .then((r) => r.json())
+      .then((data) => setPendingCount(data.total ?? 0))
+      .catch(() => {})
+  }, [])
+
   return (
     <>
-      <Sidebar />
-      <TopNav />
+      <Sidebar pendingCount={pendingCount} />
+      <TopNav pendingCount={pendingCount} />
       <Routes>
         <Route path="/" element={<PageWrapper><HomePage /></PageWrapper>} />
         <Route path="/chat" element={<ChatPage auth={auth} />} />
@@ -223,6 +232,11 @@ function ChatPage({ auth }: { auth: EduAuth }) {
         .chat-page {
           height: 100dvh;
           display: flex;
+        }
+        @media (min-width: 1200px) {
+          .chat-page {
+            margin-left: var(--sidebar-w);
+          }
         }
       `}</style>
     </div>

@@ -191,7 +191,7 @@ export function AISection({ briefing }: AISectionProps) {
           border-radius: 8px;
           font-size: 12px;
           font-family: inherit;
-          background: var(--bg);
+          background: var(--surface2);
           color: var(--t1);
           transition: border-color 0.15s;
         }

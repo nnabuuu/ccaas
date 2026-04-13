@@ -1,20 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-
-interface TopNavItem {
-  label: string
-  path: string | null
-  showBadge?: boolean
-}
-
-const NAV_LINKS: TopNavItem[] = [
-  { label: '首页', path: '/' },
-  { label: '教案', path: '/lesson-plans' },
-  { label: '课堂', path: null },
-  { label: '作业', path: null, showBadge: true },
-  { label: '学情', path: null },
-  { label: '资源', path: null },
-  { label: '管理', path: null },
-]
+import { NAV_ROUTES } from './nav-config'
 
 interface TopNavProps {
   pendingCount?: number
@@ -35,7 +20,7 @@ export function TopNav({ pendingCount }: TopNavProps) {
       <span className="topnav-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }}>
         精准教学
       </span>
-      {NAV_LINKS.map((item) => {
+      {NAV_ROUTES.map((item) => {
         const active = isActive(item.path)
         return (
           <a
@@ -45,7 +30,7 @@ export function TopNav({ pendingCount }: TopNavProps) {
             style={{ cursor: item.path ? 'pointer' : 'default' }}
           >
             {item.label}
-            {item.showBadge && pendingCount && pendingCount > 0 ? (
+            {item.hasBadge && pendingCount && pendingCount > 0 ? (
               <span className="topnav-notif">{pendingCount}</span>
             ) : null}
           </a>
@@ -77,7 +62,7 @@ export function TopNav({ pendingCount }: TopNavProps) {
         .topnav-link {
           font-size: 13px;
           color: var(--t2);
-          padding: 6px 12px;
+          padding: 4px 10px;
           border-radius: 6px;
           cursor: pointer;
           text-decoration: none;
