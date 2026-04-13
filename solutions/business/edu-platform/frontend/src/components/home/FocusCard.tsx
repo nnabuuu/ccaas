@@ -70,7 +70,7 @@ export function FocusCard({ pending }: FocusCardProps) {
             borderRadius: '6px',
             border: 'none',
             background: 'var(--t1)',
-            color: 'white',
+            color: 'var(--bg1)',
             fontSize: '12px',
             cursor: 'pointer',
             fontWeight: 500,

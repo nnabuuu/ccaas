@@ -20,10 +20,12 @@ export function PromoteModal({
   const [targetScope, setTargetScope] = useState<TemplateScope>('school')
   const [reason, setReason] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async () => {
     if (!reason.trim()) return
     setSubmitting(true)
+    setError('')
     try {
       const res = await fetch(`${EDU_API}/templates/${templateId}/promote`, {
         method: 'POST',
@@ -32,7 +34,12 @@ export function PromoteModal({
       })
       if (res.ok) {
         onSuccess()
+      } else {
+        const errData = await res.json().catch(() => null)
+        setError(errData?.message ?? '提交失败，请重试')
       }
+    } catch {
+      setError('网络异常，请重试')
     } finally {
       setSubmitting(false)
     }
@@ -43,7 +50,7 @@ export function PromoteModal({
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(28,28,26,0.15)',
+        background: 'var(--overlay)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -192,6 +199,12 @@ export function PromoteModal({
               }}
             />
           </div>
+
+          {error && (
+            <div style={{ fontSize: '12px', color: 'var(--danger-t)', marginTop: '4px' }}>
+              {error}
+            </div>
+          )}
         </div>
 
         {/* Footer */}

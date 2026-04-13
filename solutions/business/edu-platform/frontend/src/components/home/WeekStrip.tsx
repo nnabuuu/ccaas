@@ -78,7 +78,7 @@ export function WeekStrip({ weekDots, selectedDate, onSelectDate }: WeekStripPro
               justifyContent: 'center',
               borderRadius: '6px',
               ...(isSelected
-                ? { background: 'var(--t1)', color: 'white' }
+                ? { background: 'var(--t1)', color: 'var(--bg1)' }
                 : isToday
                   ? { background: 'var(--purple-bg)', color: 'var(--purple-t)' }
                   : { color: 'var(--t2)' }

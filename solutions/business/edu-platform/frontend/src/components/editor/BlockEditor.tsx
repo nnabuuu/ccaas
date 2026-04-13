@@ -238,7 +238,7 @@ function InsertGap({
           height: '20px',
           borderRadius: '50%',
           background: 'var(--purple-t)',
-          color: 'white',
+          color: 'var(--bg1)',
           border: 'none',
           cursor: 'pointer',
           fontSize: '14px',

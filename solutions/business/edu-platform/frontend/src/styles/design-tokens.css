@@ -23,7 +23,33 @@
   --teal-bg: #E1F5EE;     --teal-t: #085041;
   --coral-bg: #FAECE7;    --coral-t: #712B13;
 
+  /* 遮罩 */
+  --overlay: rgba(0, 0, 0, 0.4);
+
   /* 圆角 */
   --r: 8px;
   --rl: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg1: #1a1a18;
+    --bg2: #242422;
+    --bg3: #2c2c2a;
+    --t1: #e8e6dc;
+    --t2: #9c9a92;
+    --t3: #8a8983;
+    --b1: rgba(255, 255, 255, 0.12);
+
+    --info-bg: #042c53;     --info-t: #85b7eb;
+    --success-bg: #173404;  --success-t: #c0dd97;
+    --warn-bg: #412402;     --warn-t: #fac775;
+    --danger-bg: #3d0c0c;   --danger-t: #f09595;
+
+    --purple-bg: #1e1b3a;   --purple-t: #b3aff0;
+    --teal-bg: #0a2e25;     --teal-t: #7ed4b8;
+    --coral-bg: #2e1a12;    --coral-t: #e8a68c;
+
+    --overlay: rgba(0, 0, 0, 0.6);
+  }
 }

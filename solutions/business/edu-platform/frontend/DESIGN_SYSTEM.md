@@ -48,7 +48,7 @@ If a color looks "cold" or "blue-ish" next to the prototypes, it's wrong.
 ### 0.6 Other Details
 
 - Message max-width: **`88%`** (not 70% or 80%).
-- `--danger-bg` intentionally does not exist — danger uses text color only.
+- `--danger-bg` exists for both light and dark themes.
 - `--bg3` is used only by the chat prototype (outermost canvas).
 - All `<button>` and `<input>` must use `font-family: inherit`.
 
@@ -79,7 +79,25 @@ If a color looks "cold" or "blue-ish" next to the prototypes, it's wrong.
 | `--success-t` | `#27500A` | `#C0DD97` | Skill tag text, step done, published badge |
 | `--warn-bg` | `#FAEEDA` | `#412402` | Review badge bg, emphasis tag bg |
 | `--warn-t` | `#854F0B` | `#FAC775` | Review badge text, medium gap bar |
+| `--danger-bg` | `#FCEBEB` | `#3d0c0c` | Danger indicator background |
 | `--danger-t` | `#A32D2D` | `#F09595` | High error rate bar and text |
+
+**Brand / Category Colors:**
+
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--purple-bg` | `#EEEDFE` | `#1e1b3a` | AI section bg, selected date bg, AI-generated badge |
+| `--purple-t` | `#3C3489` | `#b3aff0` | AI section text, insert button, chip text |
+| `--teal-bg` | `#E1F5EE` | `#0a2e25` | Requirement banner bg, "建议保留" badge |
+| `--teal-t` | `#085041` | `#7ed4b8` | Requirement text, template actions |
+| `--coral-bg` | `#FAECE7` | `#2e1a12` | File card (PDF) bg |
+| `--coral-t` | `#712B13` | `#e8a68c` | File card (PDF) text |
+
+**Overlay:**
+
+| Token | Light | Dark | Usage |
+|-------|-------|------|-------|
+| `--overlay` | `rgba(0,0,0,0.4)` | `rgba(0,0,0,0.6)` | Modal backdrop |
 
 ### 1.2 Radius Tokens
 
