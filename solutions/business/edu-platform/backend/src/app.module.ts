@@ -10,6 +10,7 @@ import { LessonPlanModule } from './lesson-plan/lesson-plan.module';
 import { TemplateModule } from './template/template.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ActivityModule } from './activity/activity.module';
+import { ReferenceableModule } from './referenceable/referenceable.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ActivityModule } from './activity/activity.module';
     TemplateModule,
     DashboardModule,
     ActivityModule,
+    ReferenceableModule,
   ],
   providers: [SolutionRegisterService],
 })

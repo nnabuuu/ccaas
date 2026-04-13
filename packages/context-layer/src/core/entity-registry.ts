@@ -6,6 +6,7 @@ import type {
   RelationTree,
   EntityTypesResponse,
   BreadcrumbItem,
+  EntityContextProvider,
 } from './interfaces.js';
 
 export class EntityRegistry {
@@ -13,6 +14,7 @@ export class EntityRegistry {
   private relations: RelationInfo[] = [];
   private roots: string[] = [];
   private parentCache = new Map<string, Map<string, { parentType: string; parentId: string; displayName: string }>>();
+  private providers = new Map<string, EntityContextProvider>();
 
   register(options: ReferenceableOptions, controllerPath?: string, entityClass?: unknown): void {
     this.entities.set(options.type, { options, controllerPath, entityClass });
@@ -105,6 +107,20 @@ export class EntityRegistry {
     }
 
     return crumbs.length > 0 ? crumbs : null;
+  }
+
+  // ─── EntityContextProvider registration ───
+
+  registerProvider(type: string, provider: EntityContextProvider): void {
+    this.providers.set(type, provider);
+  }
+
+  getProvider(type: string): EntityContextProvider | undefined {
+    return this.providers.get(type);
+  }
+
+  hasProvider(type: string): boolean {
+    return this.providers.has(type);
   }
 
   private isSearchable(options: ReferenceableOptions): boolean {

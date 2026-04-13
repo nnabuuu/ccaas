@@ -6,6 +6,9 @@ import type {
   ResolveResponse,
   ShortcutsResponse,
   ShortcutsConfig,
+  EntityContext,
+  EditOperation,
+  EditResult,
 } from '../core/interfaces.js';
 
 export class ContextLayerClient {
@@ -89,5 +92,45 @@ export class ContextLayerClient {
       method: 'PUT',
       body: JSON.stringify(config),
     });
+  }
+
+  async getEntityContext(type: string, id: string): Promise<EntityContext> {
+    return this.fetch<EntityContext>(`/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}`);
+  }
+
+  /** @deprecated Use editEntity() instead */
+  async apply(body: {
+    target_type: string;
+    target_id: string;
+    field_path: string;
+    suggested_value: any;
+    action_description: string;
+    session_id?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    return this.fetch<{ success: boolean; error?: string }>('/apply', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getDocument(type: string, id: string): Promise<{ document: string }> {
+    return this.fetch<{ document: string }>(
+      `/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}/document`,
+    );
+  }
+
+  async editEntity(
+    type: string,
+    id: string,
+    operations: EditOperation[],
+    description?: string,
+  ): Promise<EditResult> {
+    return this.fetch<EditResult>(
+      `/entity/${encodeURIComponent(type)}/${encodeURIComponent(id)}/edit`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ operations, description }),
+      },
+    );
   }
 }

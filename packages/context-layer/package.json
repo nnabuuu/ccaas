@@ -29,16 +29,22 @@
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
+    "class-validator": "^0.14.0",
+    "class-transformer": "^0.5.0",
     "reflect-metadata": "^0.2.0"
   },
   "peerDependenciesMeta": {
     "@nestjs/common": { "optional": true },
-    "@nestjs/core": { "optional": true }
+    "@nestjs/core": { "optional": true },
+    "class-validator": { "optional": true },
+    "class-transformer": { "optional": true }
   },
   "devDependencies": {
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",
     "@nestjs/swagger": "^7.0.0",
+    "class-validator": "^0.14.1",
+    "class-transformer": "^0.5.1",
     "reflect-metadata": "^0.2.2",
     "typescript": "^5.3.0"
   }

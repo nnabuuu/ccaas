@@ -12,9 +12,11 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['context/(.*)'],
+  });
 
-  const port = process.env.PORT || 3011;
+  const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
 
   logger.log('');

@@ -1,0 +1,4 @@
+# TypeORM generated database
+data/edu-typeorm.db
+data/*.sqlite
+*.sqlite

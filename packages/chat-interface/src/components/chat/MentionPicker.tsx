@@ -25,6 +25,7 @@ export function MentionPicker({ baseUrl, sessionId, sessionTemplate }: MentionPi
       displayName: entity.displayName,
       icon: entity.icon,
       data: entity.data,
+      summary: entity.summary,
     });
   }, [addRef]);
 

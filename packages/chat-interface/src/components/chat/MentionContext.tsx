@@ -6,6 +6,7 @@ export interface MentionRef {
   displayName: string;
   icon: string;
   data?: unknown;
+  summary?: string;
 }
 
 interface MentionContextValue {

@@ -20,3 +20,6 @@ export type { ChatInterfaceComposerProps } from './ChatInterfaceComposer'
 
 export { ChatInterfaceToaster } from './ChatInterfaceToaster'
 export type { ChatInterfaceToasterProps } from './ChatInterfaceToaster'
+
+export { ApplyActionBlock } from './ApplyActionBlock'
+export type { ApplyActionProps } from './ApplyActionBlock'

@@ -5,5 +5,6 @@ export type { EmitParams, ClsContext } from './activity-emitter.js';
 export { RecommendEngine } from './recommend-engine.js';
 export type { IncrementParams } from './recommend-engine.js';
 export { ContextInjector } from './context-injector.js';
+export { ContextRouter } from './context-router.js';
 export { ShortcutManager } from './shortcut-manager.js';
 export * from './interfaces.js';

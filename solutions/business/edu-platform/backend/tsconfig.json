@@ -11,6 +11,12 @@
     "skipLibCheck": true,
     "strictNullChecks": false,
     "noImplicitAny": false,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@kedge-agentic/context-layer": ["./node_modules/@kedge-agentic/context-layer/dist/index"],
+      "@kedge-agentic/context-layer/core": ["./node_modules/@kedge-agentic/context-layer/dist/core/index"],
+      "@kedge-agentic/context-layer/nestjs": ["./node_modules/@kedge-agentic/context-layer/dist/nestjs/index"],
+      "@kedge-agentic/entity-document": ["./node_modules/@kedge-agentic/entity-document/dist/index"]
+    }
   }
 }

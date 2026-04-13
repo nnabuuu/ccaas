@@ -8,6 +8,7 @@ export interface EntityRef {
   displayName: string;
   icon: string;
   data?: unknown;
+  summary?: string;
 }
 
 export interface AtPickerProps {
@@ -147,7 +148,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
   }, [ctx]);
 
   // Handle select
-  const handleSelect = useCallback(async (entityType: string, entityId: string, displayName: string) => {
+  const handleSelect = useCallback(async (entityType: string, entityId: string, displayName: string, summary?: string) => {
     const typeInfo = ctx.entityTypes.find(t => t.type === entityType);
     const resolvedData = await ctx.fetchResolve(entityType, entityId);
     await ctx.recordActivity(entityType, entityId, displayName, 'referenced');
@@ -157,6 +158,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
       displayName,
       icon: typeInfo?.icon ?? '📄',
       data: resolvedData,
+      summary,
     });
     onClose();
   }, [ctx, onSelect, onClose]);
@@ -221,7 +223,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
       if (view.kind === 'home') {
         if (focusedIndex < recents.length) {
           const item = recents[focusedIndex];
-          handleSelect(item.entityType, item.entityId, item.displayName);
+          handleSelect(item.entityType, item.entityId, item.displayName, item.summary);
         } else {
           const rootIndex = focusedIndex - recents.length;
           const rootType = ctx.tree?.roots[rootIndex];
@@ -229,10 +231,10 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
         }
       } else if (view.kind === 'browse') {
         const item = browseItems[focusedIndex];
-        if (item) handleSelect(item.entityType, item.entityId, item.displayName);
+        if (item) handleSelect(item.entityType, item.entityId, item.displayName, item.summary);
       } else if (view.kind === 'search') {
         const item = searchResults[focusedIndex];
-        if (item) handleSelect(item.entityType, item.entityId, item.displayName);
+        if (item) handleSelect(item.entityType, item.entityId, item.displayName, item.summary);
       }
       return;
     }
@@ -320,7 +322,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                     key={`${item.entityType}:${item.entityId}`}
                     data-testid={`recent-item-${item.entityId}`}
                     data-nav-item
-                    onClick={() => handleSelect(item.entityType, item.entityId, item.displayName)}
+                    onClick={() => handleSelect(item.entityType, item.entityId, item.displayName, item.summary)}
                     style={{
                       padding: '6px 12px',
                       cursor: 'pointer',
@@ -344,6 +346,11 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                             {b.icon} {b.displayName}
                           </span>
                         ))}
+                      </div>
+                    )}
+                    {item.summary && (
+                      <div data-testid={`recent-summary-${item.entityId}`} style={{ fontSize: '11px', color: '#888', paddingLeft: '22px' }}>
+                        {item.summary}
                       </div>
                     )}
                   </div>
@@ -436,52 +443,59 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                 style={{
                   padding: '8px 12px',
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  flexDirection: 'column',
+                  gap: '2px',
                   cursor: 'pointer',
                   ...focusStyle(idx),
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(idx); }}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
-                  <span>{ctx.entityTypes.find(t => t.type === item.entityType)?.icon}</span>
-                  <span style={{ fontSize: '14px' }}>{item.displayName}</span>
-                  {item.subtitle && <span style={{ fontSize: '12px', color: '#999' }}>{item.subtitle}</span>}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {hasChildren(item.entityType) && item.hasChildren && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1 }}>
+                    <span>{ctx.entityTypes.find(t => t.type === item.entityType)?.icon}</span>
+                    <span style={{ fontSize: '14px' }}>{item.displayName}</span>
+                    {item.subtitle && <span style={{ fontSize: '12px', color: '#999' }}>{item.subtitle}</span>}
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    {hasChildren(item.entityType) && item.hasChildren && (
+                      <button
+                        data-testid={`drill-${item.entityId}`}
+                        onClick={(e) => { e.stopPropagation(); handleDrillDown(item); }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                        }}
+                      >
+                        ▶
+                      </button>
+                    )}
                     <button
-                      data-testid={`drill-${item.entityId}`}
-                      onClick={(e) => { e.stopPropagation(); handleDrillDown(item); }}
+                      data-testid={`select-${item.entityId}`}
+                      onClick={(e) => { e.stopPropagation(); handleSelect(item.entityType, item.entityId, item.displayName, item.summary); }}
                       style={{
-                        background: 'none',
-                        border: '1px solid #ddd',
+                        background: '#1a73e8',
+                        color: 'white',
+                        border: 'none',
                         borderRadius: '4px',
-                        padding: '2px 8px',
+                        padding: '2px 10px',
                         cursor: 'pointer',
-                        fontSize: '14px',
+                        fontSize: '12px',
                       }}
                     >
-                      ▶
+                      选择
                     </button>
-                  )}
-                  <button
-                    data-testid={`select-${item.entityId}`}
-                    onClick={(e) => { e.stopPropagation(); handleSelect(item.entityType, item.entityId, item.displayName); }}
-                    style={{
-                      background: '#1a73e8',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '4px',
-                      padding: '2px 10px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                    }}
-                  >
-                    选择
-                  </button>
-                </span>
+                  </span>
+                </div>
+                {item.summary && (
+                  <div data-testid={`browse-summary-${item.entityId}`} style={{ fontSize: '11px', color: '#888', paddingLeft: '22px' }}>
+                    {item.summary}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -498,7 +512,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                 key={`${item.entityType}:${item.entityId}`}
                 data-testid={`search-item-${item.entityId}`}
                 data-nav-item
-                onClick={() => handleSelect(item.entityType, item.entityId, item.displayName)}
+                onClick={() => handleSelect(item.entityType, item.entityId, item.displayName, item.summary)}
                 style={{
                   padding: '8px 12px',
                   cursor: 'pointer',
@@ -522,6 +536,11 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                         {b.icon} {b.displayName}
                       </span>
                     ))}
+                  </div>
+                )}
+                {item.summary && (
+                  <div data-testid={`search-summary-${item.entityId}`} style={{ fontSize: '11px', color: '#888', paddingLeft: '22px' }}>
+                    {item.summary}
                   </div>
                 )}
               </div>

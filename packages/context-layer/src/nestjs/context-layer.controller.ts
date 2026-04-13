@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Put, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Query, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { IsString, IsOptional, IsArray, IsIn, IsNotEmpty, ValidateIf, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { EntityRegistry } from '../core/entity-registry.js';
 import { RecommendEngine } from '../core/recommend-engine.js';
 import { ContextInjector } from '../core/context-injector.js';
+import { ContextRouter } from '../core/context-router.js';
 import { ShortcutManager } from '../core/shortcut-manager.js';
 import { ActivityEmitter } from '../core/activity-emitter.js';
 import type {
@@ -13,7 +16,62 @@ import type {
   ResolveResponse,
   ShortcutsResponse,
   ShortcutsConfig,
+  EntityContext,
+  EditResult,
 } from '../core/interfaces.js';
+
+// ─── DTOs ───
+
+export class EditOperationDto {
+  @IsIn(['str_replace', 'field_set'])
+  op!: 'str_replace' | 'field_set';
+
+  @ValidateIf(o => o.op === 'str_replace')
+  @IsString()
+  old_string?: string;
+
+  @ValidateIf(o => o.op === 'str_replace')
+  @IsString()
+  new_string?: string;
+
+  @ValidateIf(o => o.op === 'field_set')
+  @IsString()
+  field?: string;
+
+  @ValidateIf(o => o.op === 'field_set')
+  value?: any;
+}
+
+export class EditEntityDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EditOperationDto)
+  operations!: EditOperationDto[];
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+}
+
+export class RecordActivityDto {
+  @IsString() @IsNotEmpty() entityType!: string;
+  @IsString() @IsNotEmpty() entityId!: string;
+  @IsString() @IsNotEmpty() entityDisplayName!: string;
+  @IsString() @IsNotEmpty() sessionId!: string;
+  @IsIn(['referenced', 'viewed', 'created', 'updated', 'deleted'])
+  action!: 'referenced' | 'viewed' | 'created' | 'updated' | 'deleted';
+}
+
+export class ApplyDto {
+  @IsString() @IsNotEmpty() target_type!: string;
+  @IsString() @IsNotEmpty() target_id!: string;
+  @IsString() @IsNotEmpty() field_path!: string;
+  suggested_value: any;
+  @IsString() @IsNotEmpty() action_description!: string;
+  @IsOptional() @IsString() session_id?: string;
+}
+
+// ─── Controller ───
 
 @ApiTags('context')
 @Controller('context')
@@ -22,9 +80,13 @@ export class ContextLayerController {
     private registry: EntityRegistry,
     private recommend: RecommendEngine,
     private injector: ContextInjector,
+    private router: ContextRouter,
     private shortcuts: ShortcutManager,
     private activityEmitter: ActivityEmitter,
   ) {}
+
+  // TODO: Replace hardcoded 'default-user' with authenticated user from request context
+  private readonly userId = 'default-user';
 
   @Get('entity-types')
   getEntityTypes(): EntityTypesResponse {
@@ -87,13 +149,7 @@ export class ContextLayerController {
 
   @Post('activity')
   async recordActivity(
-    @Body() body: {
-      entityType: string;
-      entityId: string;
-      entityDisplayName: string;
-      sessionId: string;
-      action: 'referenced' | 'viewed' | 'created' | 'updated' | 'deleted';
-    },
+    @Body() body: RecordActivityDto,
   ): Promise<{ ok: true }> {
     await this.activityEmitter.emit(
       {
@@ -110,6 +166,75 @@ export class ContextLayerController {
       },
     );
     return { ok: true };
+  }
+
+  @Get('entity/:type/:id')
+  async getEntityContext(
+    @Param('type') type: string,
+    @Param('id') id: string,
+  ): Promise<EntityContext> {
+    try {
+      return await this.router.getEntityContext(type, id, 'default-user');
+    } catch (err: any) {
+      throw new HttpException(
+        err.message || 'Entity not found',
+        err.message?.includes('No EntityContextProvider') ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // ─── Document endpoints (Phase 4) ───
+
+  @Get('entity/:type/:id/document')
+  async getDocument(
+    @Param('type') type: string,
+    @Param('id') id: string,
+  ): Promise<{ document: string }> {
+    try {
+      const document = await this.router.getDocument(type, id, 'default-user');
+      return { document };
+    } catch (err: any) {
+      throw new HttpException(
+        err.message || 'Cannot serialize entity',
+        err.message?.includes('No EntityContextProvider') ? HttpStatus.NOT_FOUND : HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('entity/:type/:id/edit')
+  async editEntity(
+    @Param('type') type: string,
+    @Param('id') id: string,
+    @Body() body: EditEntityDto,
+  ): Promise<EditResult> {
+    const ops = body.operations.map(op => {
+      if (op.op === 'str_replace') {
+        return { op: 'str_replace' as const, old_string: op.old_string!, new_string: op.new_string! };
+      }
+      return { op: 'field_set' as const, field: op.field!, value: op.value };
+    });
+
+    return this.router.editEntity(type, id, ops, 'default-user');
+  }
+
+  // ─── Legacy apply (deprecated, forwards to field_set) ───
+
+  /** @deprecated Use POST /context/entity/:type/:id/edit instead */
+  @Post('apply')
+  async apply(
+    @Body() body: ApplyDto,
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.router.apply(
+      body.target_type,
+      body.target_id,
+      {
+        field_path: body.field_path,
+        suggested_value: body.suggested_value,
+        action_description: body.action_description,
+        session_id: body.session_id ?? '',
+      },
+      'default-user',
+    );
   }
 
   @Get('shortcuts')
