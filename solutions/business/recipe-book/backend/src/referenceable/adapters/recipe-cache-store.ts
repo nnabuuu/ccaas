@@ -2,6 +2,7 @@ import type { CacheStore } from '@kedge-agentic/context-layer/core';
 
 export class RecipeCacheStore implements CacheStore {
   private kv = new Map<string, unknown>();
+  private timers = new Map<string, ReturnType<typeof setTimeout>>();
   private sortedSets = new Map<string, Map<string, number>>();
   private hashes = new Map<string, Map<string, string>>();
 
@@ -9,8 +10,12 @@ export class RecipeCacheStore implements CacheStore {
     return (this.kv.get(key) as T) ?? null;
   }
 
-  async set<T>(key: string, value: T): Promise<void> {
+  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
     this.kv.set(key, value);
+    if (this.timers.has(key)) clearTimeout(this.timers.get(key)!);
+    if (ttl && ttl > 0) {
+      this.timers.set(key, setTimeout(() => { this.kv.delete(key); this.timers.delete(key); }, ttl * 1000));
+    }
   }
 
   async zincrby(key: string, increment: number, member: string): Promise<void> {

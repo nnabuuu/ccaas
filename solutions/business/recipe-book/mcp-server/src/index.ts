@@ -97,23 +97,51 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'show_info_card',
-      description: '展示信息卡片',
+      description: 'Display an info card with composed sections. USE when presenting structured data (outlines, charts, metrics, action buttons). SKIP for simple text responses.',
       inputSchema: {
         type: 'object',
         properties: {
-          title: { type: 'string' },
-          sections: { type: 'array', items: { type: 'object' } },
+          title: { type: 'string', description: '卡片标题' },
+          badge: { type: 'string', description: '可选的标签文本' },
+          sections: {
+            type: 'array',
+            description: '卡片内容区块列表',
+            items: {
+              type: 'object',
+              properties: {
+                type: {
+                  type: 'string',
+                  enum: ['outline', 'bar_list', 'metrics', 'actions', 'text'],
+                  description: '区块类型: outline=大纲树, bar_list=进度条列表, metrics=指标面板, actions=操作按钮, text=纯文本',
+                },
+              },
+              required: ['type'],
+            },
+          },
         },
         required: ['title', 'sections'],
       },
     },
     {
       name: 'suggest_actions',
-      description: '提供后续操作按钮',
+      description: 'Suggest follow-up actions as clickable buttons. Always call AFTER presenting information, not before.',
       inputSchema: {
         type: 'object',
         properties: {
-          actions: { type: 'array', items: { type: 'object', properties: { label: { type: 'string' }, action: { type: 'string' } } } },
+          actions: {
+            type: 'array',
+            description: '操作按钮列表',
+            items: {
+              type: 'object',
+              properties: {
+                label: { type: 'string', description: '按钮文字' },
+                prompt: { type: 'string', description: '点击后发送的消息' },
+                primary: { type: 'boolean', description: '是否为主要按钮' },
+                skill_hint: { type: 'string', description: '可选：导航到目标 Skill（如 nutrition-calculator）' },
+              },
+              required: ['label', 'prompt'],
+            },
+          },
         },
         required: ['actions'],
       },
@@ -136,11 +164,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     }
     case 'recipe_get_document': {
-      const data = await apiFetch(`/context/entity/recipe/${args.recipe_id}/document`);
+      const data = await apiFetch(`/context/entity/recipe/${encodeURIComponent(args.recipe_id)}/document`);
       return { content: [{ type: 'text', text: data.document }] };
     }
     case 'recipe_edit': {
-      const data = await apiFetch(`/context/entity/recipe/${args.recipe_id}/edit`, {
+      const data = await apiFetch(`/context/entity/recipe/${encodeURIComponent(args.recipe_id)}/edit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operations: args.operations }),
@@ -148,13 +176,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     }
     case 'nutrition_analyze': {
-      const doc = await apiFetch(`/context/entity/recipe/${args.recipe_id}`);
+      const doc = await apiFetch(`/context/entity/recipe/${encodeURIComponent(args.recipe_id)}`);
       return { content: [{ type: 'text', text: JSON.stringify({ recipe: doc.ref.display_name, note: '营养分析需要外部 API 支持' }, null, 2) }] };
     }
     case 'nutrition_compare': {
       const results = [];
       for (const id of args.recipe_ids) {
-        const doc = await apiFetch(`/context/entity/recipe/${id}`);
+        const doc = await apiFetch(`/context/entity/recipe/${encodeURIComponent(id)}`);
         results.push({ id, name: doc.ref.display_name });
       }
       return { content: [{ type: 'text', text: JSON.stringify(results, null, 2) }] };

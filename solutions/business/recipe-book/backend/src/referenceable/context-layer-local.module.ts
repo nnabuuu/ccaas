@@ -158,13 +158,19 @@ class RecipeContextLayerController {
     @Param('id') id: string,
     @Body() body: EditEntityDto,
   ): Promise<EditResult> {
-    const ops = body.operations.map(op => {
-      if (op.op === 'str_replace') {
-        return { op: 'str_replace' as const, old_string: op.old_string!, new_string: op.new_string! };
+    const ops = body.operations.map((op: any) => {
+      switch (op.op) {
+        case 'str_replace':
+          return { op: 'str_replace' as const, old_string: op.old_string!, new_string: op.new_string! };
+        case 'block_attr_set':
+          return { op: 'block_attr_set' as const, block_index: op.block_index, attr: op.attr, value: op.value };
+        case 'block_content_set':
+          return { op: 'block_content_set' as const, block_index: op.block_index, field: op.field, value: op.value };
+        default:
+          return { op: 'field_set' as const, field: op.field!, value: op.value };
       }
-      return { op: 'field_set' as const, field: op.field!, value: op.value };
     });
-    return contextRouter.editEntity(type, id, ops, 'default-user');
+    return contextRouter.editEntity(type, id, ops as any, 'default-user');
   }
 
   @Post('apply')
