@@ -58,6 +58,21 @@ describe('RecipeProvider', () => {
     expect(result.error).toContain('status');
   });
 
+  it('field_set: preserves all block attributes after frontmatter-only edit', async () => {
+    const ops: EditOperation[] = [
+      { op: 'field_set', field: 'title', value: '改名食谱' },
+    ];
+    const result = await provider.edit('test-id', ops, 'user1');
+    expect(result.success).toBe(true);
+    // field_set only should NOT touch blocks
+    const updateCall = mockService.update.mock.calls[0][1];
+    expect(updateCall.blocks).toBeUndefined();
+    // The returned document should still contain original block attributes
+    expect(result.document).toContain('<!-- type:ingredient');
+    expect(result.document).toContain('鸡蛋');
+    expect(result.document).toContain('注意火候');
+  });
+
   it('str_replace: replaces text content', async () => {
     const ops: EditOperation[] = [
       { op: 'str_replace', old_string: '这是一道简单的家常菜。', new_string: '这是一道美味的家常菜。' },
@@ -130,5 +145,27 @@ describe('RecipeProvider', () => {
     expect(results).toHaveLength(1);
     expect(results[0].type).toBe('recipe');
     expect(results[0].display_name).toContain('测试食谱');
+  });
+
+  it('block_attr_set: changes callout color', async () => {
+    const ops = [
+      { op: 'block_attr_set', block_index: 2, attr: 'color', value: 'error' },
+    ] as any;
+    const result = await provider.edit('test-id', ops, 'user1');
+    expect(result.success).toBe(true);
+    const savedBlocks = mockService.update.mock.calls[0][1].blocks;
+    const calloutBlock = savedBlocks.find((b: any) => b.type === 'callout');
+    expect(calloutBlock.content.color).toBe('error');
+  });
+
+  it('block_content_set: updates callout text', async () => {
+    const ops = [
+      { op: 'block_content_set', block_index: 2, field: 'text', value: '新提示' },
+    ] as any;
+    const result = await provider.edit('test-id', ops, 'user1');
+    expect(result.success).toBe(true);
+    const savedBlocks = mockService.update.mock.calls[0][1].blocks;
+    const calloutBlock = savedBlocks.find((b: any) => b.type === 'callout');
+    expect(calloutBlock.content.text).toBe('新提示');
   });
 });

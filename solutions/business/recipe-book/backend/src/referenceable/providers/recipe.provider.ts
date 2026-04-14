@@ -97,12 +97,24 @@ export class RecipeProvider extends DocumentEditProvider {
             return { success: false, error: result.error };
           }
           currentDoc = result.document!;
+        } else if ((op as any).op === 'block_attr_set') {
+          const { block_index, attr, value } = op as any;
+          const block = currentDoc.blocks[block_index];
+          if (!block) return { success: false, error: `Block index ${block_index} out of range` };
+          if (!block.attributes) block.attributes = {};
+          block.attributes[attr] = value;
+        } else if ((op as any).op === 'block_content_set') {
+          const { block_index, field, value } = op as any;
+          const block = currentDoc.blocks[block_index];
+          if (!block) return { success: false, error: `Block index ${block_index} out of range` };
+          block.content[field] = value;
         }
       }
 
       const updates: Record<string, any> = { ...metaUpdates };
+      const hasBlockOps = ops.some(op => (op as any).op === 'block_attr_set' || (op as any).op === 'block_content_set');
       const hasStrReplace = ops.some(op => op.op === 'str_replace');
-      if (hasStrReplace) {
+      if (hasStrReplace || hasBlockOps) {
         for (const [key, value] of Object.entries(currentDoc.meta)) {
           if (editableFields.has(key)) {
             updates[key] = value;
