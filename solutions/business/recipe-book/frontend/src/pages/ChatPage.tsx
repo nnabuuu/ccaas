@@ -21,7 +21,7 @@ function RecipeWelcome() {
     <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full">
       <div className="text-center mb-10">
         <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+          className="w-16 h-16 rounded-[var(--radius-md)] flex items-center justify-center mx-auto mb-6"
           style={{ background: 'var(--surface2)' }}
         >
           <svg className="w-8 h-8" viewBox="0 0 24 24" fill="var(--t1)" aria-hidden="true">
