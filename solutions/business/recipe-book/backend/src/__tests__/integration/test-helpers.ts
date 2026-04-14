@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { Module } from '@nestjs/common';
+import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
@@ -93,6 +93,7 @@ export async function createTestApp(): Promise<TestContext> {
   }).compile();
 
   const app = module.createNestApplication();
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.init();
   await app.listen(0);
   const address = app.getHttpServer().address();

@@ -36,7 +36,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'recipe_edit',
-      description: '编辑食谱（支持 str_replace 和 field_set）',
+      description: '编辑食谱（支持 str_replace、field_set、block_attr_set、block_content_set）',
       inputSchema: {
         type: 'object',
         properties: {
@@ -47,11 +47,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             items: {
               type: 'object',
               properties: {
-                op: { type: 'string', enum: ['str_replace', 'field_set'] },
-                old_string: { type: 'string' },
-                new_string: { type: 'string' },
-                field: { type: 'string' },
-                value: {},
+                op: { type: 'string', enum: ['str_replace', 'field_set', 'block_attr_set', 'block_content_set'] },
+                old_string: { type: 'string', description: 'str_replace: 要替换的原文本' },
+                new_string: { type: 'string', description: 'str_replace: 替换后的新文本' },
+                field: { type: 'string', description: 'field_set/block_content_set: 字段名' },
+                value: { description: 'field_set/block_attr_set/block_content_set: 新值' },
+                block_index: { type: 'number', description: 'block_attr_set/block_content_set: 目标块索引' },
+                attr: { type: 'string', description: 'block_attr_set: 属性名（如 color）' },
               },
               required: ['op'],
             },
