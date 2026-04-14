@@ -28,6 +28,11 @@
   --coral: #6b2a14;
   --coral-bg: #f7ebe5;
 
+  /* 圆角 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
   /* 布局 */
   --sidebar-w: 232px;
 

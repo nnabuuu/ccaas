@@ -14,7 +14,7 @@ export function useRecipes(q?: string) {
       const url = `${RECIPE_BACKEND_URL}/api/recipes${params.toString() ? `?${params}` : ''}`
       const res = await fetch(url)
       const data = await res.json()
-      setRecipes(Array.isArray(data) ? data : data.data ?? [])
+      setRecipes(Array.isArray(data) ? data : data.items ?? data.data ?? [])
     } catch {
       setRecipes([])
     } finally {
@@ -31,17 +31,30 @@ export function useRecipes(q?: string) {
 
 export function useRecipe(id: string | undefined) {
   const [recipe, setRecipe] = useState<Recipe | null>(null)
+  const [document, setDocument] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!id) return
     setLoading(true)
-    fetch(`${RECIPE_BACKEND_URL}/api/recipes/${id}`)
+
+    const recipeReq = fetch(`${RECIPE_BACKEND_URL}/api/recipes/${id}`)
       .then((r) => r.json())
-      .then((data) => setRecipe(data))
-      .catch(() => setRecipe(null))
+    const docReq = fetch(`${RECIPE_BACKEND_URL}/context/entity/recipe/${id}/document`)
+      .then((r) => r.json())
+      .catch(() => null)
+
+    Promise.all([recipeReq, docReq])
+      .then(([recipeData, docData]) => {
+        setRecipe(recipeData)
+        setDocument(docData?.document ?? null)
+      })
+      .catch(() => {
+        setRecipe(null)
+        setDocument(null)
+      })
       .finally(() => setLoading(false))
   }, [id])
 
-  return { recipe, loading }
+  return { recipe, document, loading }
 }

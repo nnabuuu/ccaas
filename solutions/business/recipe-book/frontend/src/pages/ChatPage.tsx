@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   ChatInterface,
   ChatSidebar,
@@ -10,10 +11,18 @@ const SESSION_REFRESH_DELAY_MS = 1000
 const FIRST_MESSAGE_REFRESH_DELAY_MS = 2000
 
 export function ChatPage() {
+  const [searchParams] = useSearchParams()
+  const recipeName = searchParams.get('recipeName')
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sessionId, setSessionId] = useState<string | undefined>(
     () => `conv_${crypto.randomUUID()}`
+  )
+
+  const placeholder = useMemo(
+    () => recipeName ? `讨论「${recipeName}」的做法...` : '问我关于食谱的问题...',
+    [recipeName],
   )
 
   const { sessions, refresh } = useSessionList(CCAAS_URL, API_KEY, TENANT_ID)
@@ -60,7 +69,7 @@ export function ChatPage() {
           sessionId={sessionId}
           onMenuClick={() => setMobileSidebarOpen(true)}
           onMessageSent={handleMessageSent}
-          composerPlaceholder="问我关于食谱的问题..."
+          composerPlaceholder={placeholder}
           disclaimer={null}
         />
       </div>

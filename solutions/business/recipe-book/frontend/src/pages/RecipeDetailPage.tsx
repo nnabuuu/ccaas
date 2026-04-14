@@ -152,7 +152,7 @@ function BlockRenderer({ block }: { block: Block }) {
 export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { recipe, loading } = useRecipe(id)
+  const { recipe, document, loading } = useRecipe(id)
 
   if (loading) {
     return <p style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</p>
@@ -181,7 +181,7 @@ export function RecipeDetailPage() {
               fontSize: 11,
               fontWeight: 500,
               padding: '2px 8px',
-              borderRadius: 4,
+              borderRadius: 'var(--radius-sm)',
               background: 'var(--green-bg)',
               color: 'var(--green)',
             }}
@@ -221,7 +221,7 @@ export function RecipeDetailPage() {
 
       <div style={{ marginTop: 32, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
         <button
-          onClick={() => navigate('/chat')}
+          onClick={() => navigate(`/chat?recipeId=${id}&recipeName=${encodeURIComponent(recipe.title)}`)}
           className="chat-link-btn"
         >
           与 AI 讨论这道菜 →
@@ -249,7 +249,7 @@ export function RecipeDetailPage() {
           font-size: 12px;
           color: var(--t2);
           padding: 3px 10px;
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
           background: var(--surface2);
         }
 
@@ -262,7 +262,7 @@ export function RecipeDetailPage() {
         .meta-item {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           padding: 12px 16px;
           min-width: 100px;
         }
@@ -292,7 +292,7 @@ export function RecipeDetailPage() {
           padding: 6px 12px;
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 6px;
+          border-radius: var(--radius-sm);
           font-size: 13px;
         }
 
@@ -320,7 +320,7 @@ export function RecipeDetailPage() {
 
         .block-callout {
           padding: 12px 16px;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           font-size: 13px;
           line-height: 1.6;
           margin: 0 0 12px;
@@ -332,7 +332,7 @@ export function RecipeDetailPage() {
           color: var(--t1);
           background: var(--surface2);
           border: 1px solid var(--border);
-          border-radius: 8px;
+          border-radius: var(--radius-md);
           padding: 8px 16px;
           cursor: pointer;
           font-family: inherit;

@@ -34,7 +34,7 @@ export function RecipeListPage() {
             padding: '8px 12px',
             fontSize: 13,
             border: '1px solid var(--border)',
-            borderRadius: 8,
+            borderRadius: 'var(--radius-md)',
             background: 'var(--surface)',
             color: 'var(--t1)',
             outline: 'none',
@@ -88,7 +88,7 @@ export function RecipeListPage() {
         .recipe-card {
           background: var(--surface);
           border: 1px solid var(--border);
-          border-radius: 10px;
+          border-radius: var(--radius-lg);
           padding: 16px;
           cursor: pointer;
           transition: border-color 0.12s;
@@ -101,7 +101,7 @@ export function RecipeListPage() {
           font-size: 11px;
           font-weight: 500;
           padding: 2px 8px;
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
           white-space: nowrap;
         }
 
@@ -109,7 +109,7 @@ export function RecipeListPage() {
           font-size: 11px;
           color: var(--t2);
           padding: 2px 8px;
-          border-radius: 4px;
+          border-radius: var(--radius-sm);
           background: var(--surface2);
         }
       `}</style>
