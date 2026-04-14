@@ -1,9 +1,11 @@
 import type { EntityDocument, DocumentMeta, BlockData } from './interfaces.js';
-import { detectTransform } from './transforms/index.js';
+import type { TransformRegistry } from './transform-registry.js';
+import { defaultRegistry } from './transform-registry.js';
 
-export function deserialize(text: string): EntityDocument {
+export function deserialize(text: string, registry?: TransformRegistry): EntityDocument {
+  const reg = registry ?? defaultRegistry;
   const { meta, body } = parseFrontmatter(text);
-  const blocks = parseBlocks(body);
+  const blocks = parseBlocks(body, reg);
   return { meta, blocks };
 }
 
@@ -49,7 +51,7 @@ function parseValue(raw: string): string | number | boolean {
   return raw;
 }
 
-function parseBlocks(body: string): BlockData[] {
+function parseBlocks(body: string, registry: TransformRegistry): BlockData[] {
   if (!body) return [];
 
   const chunks = splitIntoChunks(body);
@@ -57,14 +59,8 @@ function parseBlocks(body: string): BlockData[] {
 
   for (const chunk of chunks) {
     const lines = chunk.split('\n');
-    const transform = detectTransform(lines);
+    const transform = registry.detectTransform(lines);
 
-    // For timeline: need all lines including marker + table
-    // For table: need header + separator + rows
-    // For list: all consecutive list items
-    // For section: single line
-    // For callout: all > lines
-    // For text: everything as-is
     const content = transform.deserialize(lines);
     if (content) {
       blocks.push({ type: transform.type, content });

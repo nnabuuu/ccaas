@@ -1,4 +1,5 @@
 import type { EntityDocument, StrReplaceResult, BlockData } from './interfaces.js';
+import type { TransformRegistry } from './transform-registry.js';
 import { serialize } from './serializer.js';
 import { deserialize } from './deserializer.js';
 
@@ -6,8 +7,9 @@ export function strReplace(
   doc: EntityDocument,
   oldString: string,
   newString: string,
+  registry?: TransformRegistry,
 ): StrReplaceResult {
-  const text = serialize(doc);
+  const text = serialize(doc, registry);
 
   // Validate old_string exists
   const idx = text.indexOf(oldString);
@@ -28,7 +30,7 @@ export function strReplace(
   const newText = text.slice(0, idx) + newString + text.slice(idx + oldString.length);
 
   // Deserialize back
-  const newDoc = deserialize(newText);
+  const newDoc = deserialize(newText, registry);
 
   // Preserve attributes from original blocks by index matching
   preserveAttributes(doc.blocks, newDoc.blocks);

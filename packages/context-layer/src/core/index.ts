@@ -7,4 +7,5 @@ export type { IncrementParams } from './recommend-engine.js';
 export { ContextInjector } from './context-injector.js';
 export { ContextRouter } from './context-router.js';
 export { ShortcutManager } from './shortcut-manager.js';
+export { DocumentEditProvider } from './document-edit-provider.js';
 export * from './interfaces.js';

@@ -6,6 +6,7 @@ import { listTransform } from './list.js';
 import { calloutTransform } from './callout.js';
 import { imageTransform } from './image.js';
 import { textTransform } from './text.js';
+import { defaultRegistry } from '../transform-registry.js';
 
 // Priority order: more specific transforms first, text (fallback) last
 const transforms: BlockTransform[] = [
@@ -18,19 +19,12 @@ const transforms: BlockTransform[] = [
   textTransform,
 ];
 
-const transformsByType = new Map<string, BlockTransform>(
-  transforms.map(t => [t.type, t]),
-);
-
 export function getTransform(type: string): BlockTransform {
-  return transformsByType.get(type) ?? textTransform;
+  return defaultRegistry.getTransform(type);
 }
 
 export function detectTransform(lines: string[]): BlockTransform {
-  for (const t of transforms) {
-    if (t !== textTransform && t.detect(lines)) return t;
-  }
-  return textTransform;
+  return defaultRegistry.detectTransform(lines);
 }
 
 export { transforms, sectionTransform, timelineTransform, tableTransform, listTransform, calloutTransform, imageTransform, textTransform };

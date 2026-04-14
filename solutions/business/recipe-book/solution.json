@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "3.0",
+  "tenant": {
+    "name": "Recipe Book",
+    "slug": "recipe-book",
+    "description": "智能食谱管理平台"
+  },
+  "mcpServers": {
+    "recipe-tools": {
+      "command": "node",
+      "args": ["mcp-server/dist/index.js"],
+      "description": "Recipe Book MCP tools",
+      "type": "stdio",
+      "env": {}
+    }
+  },
+  "sessionTemplates": {
+    "cooking": {
+      "description": "烹饪助手模式",
+      "enabledSkills": ["recipe-assistant", "nutrition-calculator", "menu-planner"]
+    }
+  },
+  "skills": [
+    { "slug": "recipe-assistant", "name": "recipe-assistant" },
+    { "slug": "nutrition-calculator", "name": "nutrition-calculator" },
+    { "slug": "menu-planner", "name": "menu-planner" }
+  ]
+}

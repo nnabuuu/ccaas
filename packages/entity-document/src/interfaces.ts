@@ -20,6 +20,8 @@ export interface BlockTransform {
   detect(lines: string[]): boolean;
 }
 
+export type ContentToAttrConfig = Record<string, string[]>;
+
 export interface StrReplaceResult {
   success: boolean;
   error?: string;

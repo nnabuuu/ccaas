@@ -1,7 +1,9 @@
 import type { EntityDocument } from './interfaces.js';
-import { getTransform } from './transforms/index.js';
+import type { TransformRegistry } from './transform-registry.js';
+import { defaultRegistry } from './transform-registry.js';
 
-export function serialize(doc: EntityDocument): string {
+export function serialize(doc: EntityDocument, registry?: TransformRegistry): string {
+  const reg = registry ?? defaultRegistry;
   const parts: string[] = [];
 
   // YAML frontmatter
@@ -15,7 +17,7 @@ export function serialize(doc: EntityDocument): string {
 
   // Blocks
   for (const block of doc.blocks) {
-    const transform = getTransform(block.type);
+    const transform = reg.getTransform(block.type);
     const text = transform.serialize(block.content);
     if (text) parts.push(text);
   }
