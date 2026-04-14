@@ -1,0 +1,159 @@
+@import '../../../../../packages/chat-interface/src/styles/tokens.css';
+@import '../../../../../packages/chat-interface/src/styles/prose.css';
+
+:root {
+  --composer-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  --composer-shadow-hover: 0 2px 16px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(0,0,0,0.08);
+  --composer-shadow-focus: 0 2px 16px rgba(0,0,0,0.15), 0 0 0 0.5px rgba(0,0,0,0.12);
+  --accent: var(--t1);
+  --accent-hover: var(--t1);
+  --user-bubble-bg: var(--t1);
+  --menu-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --composer-shadow: 0 2px 16px rgba(0,0,0,0.2);
+    --composer-shadow-hover: 0 2px 16px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.08);
+    --composer-shadow-focus: 0 2px 16px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.12);
+    --accent: var(--t1);
+    --accent-hover: var(--t1);
+    --user-bubble-bg: var(--t1);
+    --menu-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+/* --- Global: remove all shadows --- */
+.font-serif { font-family: inherit !important; }
+.shadow-lg, .shadow-xl { box-shadow: none !important; }
+
+/* --- User bubble: inverted text color --- */
+[data-ck="user-msg"] > div,
+[data-ck="user-msg"] > div .prose,
+[data-ck="user-msg"] > div .prose p {
+  color: var(--bg1) !important;
+}
+
+[data-ck="user-msg"] > div:first-child {
+  border-radius: 18px 18px 4px 18px !important;
+}
+
+/* --- Context bar: hidden on desktop --- */
+@media (min-width: 1024px) {
+  [data-ck="context-bar"] {
+    display: none !important;
+  }
+}
+
+/* Composer: Floating card */
+div:has(> [data-ck="composer"]) {
+  position: relative;
+}
+
+div:has(> [data-ck="composer"]) > .ck-scrollbar {
+  padding-bottom: 100px !important;
+}
+
+[role="log"] {
+  font-size: 14px;
+}
+
+[data-ck="composer"] {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 0 20px 16px !important;
+  background: transparent !important;
+  border-top: none !important;
+}
+
+[data-ck="composer"]::before {
+  content: '';
+  position: absolute;
+  top: -32px;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: linear-gradient(to bottom, transparent, var(--bg2));
+  pointer-events: none;
+}
+
+[data-ck="composer-card"] {
+  border-radius: 24px !important;
+  max-width: none !important;
+  margin: 0 !important;
+  background: var(--bg1) !important;
+  border: 0.5px solid var(--b1) !important;
+  padding: 10px 12px !important;
+}
+
+[data-ck="composer-card"] > textarea {
+  padding: 6px 8px 40px 8px !important;
+  border: none !important;
+  border-radius: 0 !important;
+  font-size: 14px !important;
+  background: transparent !important;
+  line-height: 1.5 !important;
+  max-height: 120px !important;
+  resize: none !important;
+}
+
+[data-ck="composer-card"] > textarea:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+[data-ck="composer-card"] button[aria-label="Send"],
+[data-ck="composer-card"] button[aria-label="Stop generating"] {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 10px !important;
+  margin-left: auto;
+}
+
+[data-ck="composer-attach"] {
+  display: none !important;
+}
+
+[data-ck="composer-suggestions"] {
+  display: none !important;
+}
+
+[data-ck="composer-disclaimer"] {
+  display: none !important;
+}
+
+[data-ck="quick-suggestions"] {
+  position: absolute;
+  bottom: 64px;
+  left: 0;
+  right: 0;
+  z-index: 19;
+  padding: 0 20px 0 !important;
+}
+
+[data-ck="quick-suggestions"] button {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 12px !important;
+  min-height: auto !important;
+}
