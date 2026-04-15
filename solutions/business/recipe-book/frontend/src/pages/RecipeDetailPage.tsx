@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChatInterface } from '@kedge-agentic/chat-interface'
+import { MentionProvider, MentionPicker } from '../lib/mention'
 import { useRecipe } from '../hooks/useRecipes'
-import { CCAAS_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
+import { CCAAS_URL, RECIPE_BACKEND_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 import type { Block, IngredientItem } from '../types/recipe'
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -246,16 +247,31 @@ export function RecipeDetailPage() {
         </div>
         <div className="detail-chat-body">
           {isChatOpen && (
-            <ChatInterface
-              key={chatSessionId}
-              serverUrl={CCAAS_URL}
-              tenantId={TENANT_ID}
-              sessionTemplate={SESSION_TEMPLATE}
-              apiKey={API_KEY}
-              sessionId={chatSessionId}
-              composerPlaceholder={`讨论「${recipe.title}」的做法...`}
-              disclaimer={null}
-            />
+            <MentionProvider>
+              <ChatInterface
+                key={chatSessionId}
+                serverUrl={CCAAS_URL}
+                tenantId={TENANT_ID}
+                sessionTemplate={SESSION_TEMPLATE}
+                apiKey={API_KEY}
+                sessionId={chatSessionId}
+                sessionContext={{ recipeId: id, recipeName: recipe.title, cuisine: recipe.cuisine }}
+                composerPlaceholder={`讨论「${recipe.title}」的做法...`}
+                disclaimer={null}
+              />
+              <MentionPicker
+                baseUrl={RECIPE_BACKEND_URL}
+                sessionId={chatSessionId}
+                sessionTemplate={SESSION_TEMPLATE}
+                contextEntity={{
+                  entityType: 'recipe',
+                  entityId: id!,
+                  displayName: recipe.title,
+                  icon: '🍳',
+                }}
+                autoRef={true}
+              />
+            </MentionProvider>
           )}
         </div>
       </div>

@@ -26,6 +26,18 @@ export class ReferenceableModule implements OnModuleInit {
       abilities: { search: true, browse: true, resolve: true, track: true },
     });
 
+    this.registry.register({
+      type: 'recipe_section',
+      displayName: '章节',
+      icon: '📑',
+      color: 'amber',
+      abilities: { search: true, browse: true, resolve: true },
+    });
+
+    this.registry.setRelations([
+      { parent: 'recipe', child: 'recipe_section', label: '章节', foreignKey: 'recipeId' },
+    ]);
+
     this.registry.registerProvider('recipe', this.recipeProvider);
 
     recipeBrowseProvider.setServices(this.recipeService);

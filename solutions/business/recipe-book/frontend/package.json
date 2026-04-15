@@ -11,6 +11,7 @@
   "dependencies": {
     "@kedge-agentic/chat-interface": "file:../../../../packages/chat-interface",
     "@kedge-agentic/common": "file:../../../../packages/common",
+    "@kedge-agentic/context-layer-react": "file:../../../../packages/context-layer-react",
     "@kedge-agentic/react-sdk": "file:../../../../packages/react-sdk",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
