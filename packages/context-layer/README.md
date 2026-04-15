@@ -14,6 +14,7 @@ context-layer/
 │   │   ├── recommend-engine.ts  # Redis sorted set scoring
 │   │   ├── activity-emitter.ts  # Activity event dispatch
 │   │   ├── context-injector.ts  # Entity browse/search/resolve orchestration
+│   │   ├── document-edit-provider.ts  # Abstract base for entity editing
 │   │   └── shortcut-manager.ts  # User shortcut preferences
 │   ├── nestjs/            # Thin NestJS integration shell
 │   │   ├── context-layer.module.ts      # DynamicModule with forRoot()
@@ -71,6 +72,7 @@ export class LessonPlanController {}
 | **Activity Tracking** | Interceptor auto-tracks CRUD on `@Referenceable` controllers; `@Tracked` for explicit tracking |
 | **Recommend Engine** | Redis sorted sets with incremental scoring (5 core actions + custom `ActivityActionConfig`) |
 | **Context Injector** | Orchestrates browse, search, resolve via `EntityBrowseProvider` interface |
+| **Document Edit** | Abstract base class for serialize/str_replace/save loop on entity-document backed entities |
 
 ## API Summary
 

@@ -19,12 +19,13 @@ The `<AtPicker />` component provides a popup entity picker with recents, search
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `baseUrl` | `string` | Yes | Context Layer API base URL (e.g. `http://localhost:3001/api/v1/context`) |
-| `sessionId` | `string` | Yes | Current session ID for activity tracking |
+| `sessionId` | `string` | No | Current session ID for activity tracking and recents. When omitted, recents are skipped and activity is not recorded. |
 | `open` | `boolean` | Yes | Whether the picker is visible |
 | `onClose` | `() => void` | Yes | Called when picker should close (Escape, outside click) |
 | `onSelect` | `(entity: EntityRef) => void` | Yes | Called when user selects an entity |
 | `sessionTemplate` | `string` | No | Session template ID for template-specific shortcuts |
 | `initialDrillType` | `string` | No | Auto-drill into this entity type on open (from toolbar shortcut) |
+| `contextEntity` | `ContextEntityRef` | No | Entity the user is currently viewing (pinned at top of home view) |
 
 ### EntityRef
 
@@ -37,8 +38,24 @@ interface EntityRef {
   displayName: string;
   icon: string;
   data?: unknown; // Full resolved data from /context/resolve
+  summary?: string;
 }
 ```
+
+### ContextEntityRef
+
+Describes the entity context for the current view (e.g. the recipe being viewed in a split panel):
+
+```typescript
+interface ContextEntityRef {
+  entityType: string;
+  entityId: string;
+  displayName: string;
+  icon?: string; // Falls back to entity type icon, then '📄'
+}
+```
+
+When provided, a "当前上下文" section is pinned at the top of the home view. If the entity type has child relations, a drill button (▶) is shown to browse child entities.
 
 ### Usage
 
@@ -81,9 +98,21 @@ function ChatComposer() {
 }
 ```
 
+### Composable Context
+
+`contextEntity` (what entity you're viewing) and `sessionId` (activity history) are **separate composable concepts**:
+
+| Scenario | contextEntity | sessionId | Picker behavior |
+|----------|--------------|-----------|-----------------|
+| Split view, first message | recipe | undefined | Pin recipe at top, no recents |
+| Split view, ongoing | recipe | session123 | Pin recipe + recents |
+| Standalone /chat | undefined | session123 | Recents + type browse (existing behavior) |
+| Standalone /chat, first msg | undefined | undefined | Only type browse |
+
 ### Features
 
-- **Recents** — Activity-scored recent entities on initial view
+- **Context entity** — Pinned "当前上下文" section at top when `contextEntity` is provided
+- **Recents** — Activity-scored recent entities (requires `sessionId`)
 - **Search** — Debounced cross-type search (200ms delay)
 - **Drill-down** — Navigate parent-child relationships via the relation tree
 - **Breadcrumb** — Shows entity path for nested items (e.g. `Lesson Plan > Block > Attachment`)

@@ -11,14 +11,22 @@ export interface EntityRef {
   summary?: string;
 }
 
+export interface ContextEntityRef {
+  entityType: string;
+  entityId: string;
+  displayName: string;
+  icon?: string;
+}
+
 export interface AtPickerProps {
   baseUrl: string;
-  sessionId: string;
+  sessionId?: string;
   open: boolean;
   onClose: () => void;
   onSelect: (entity: EntityRef) => void;
   sessionTemplate?: string;
   initialDrillType?: string;
+  contextEntity?: ContextEntityRef;
 }
 
 export function AtPicker(props: AtPickerProps) {
@@ -42,7 +50,7 @@ interface BreadcrumbTrail {
   icon: string;
 }
 
-function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillType }: AtPickerProps) {
+function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillType, contextEntity }: AtPickerProps) {
   const ctx = useAtPickerContext();
   const [view, setView] = useState<ViewState>({ kind: 'home' });
   const [recents, setRecents] = useState<Recommendation[]>([]);
@@ -58,7 +66,9 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
   // Load recents on open
   useEffect(() => {
     if (!open) return;
-    ctx.fetchSuggest().then(setRecents);
+    if (ctx.sessionId) {
+      ctx.fetchSuggest().then(setRecents);
+    }
     ctx.getShortcuts(sessionTemplate).then(s => setShortcuts(s.pinned));
   }, [open, ctx, sessionTemplate]);
 
@@ -192,13 +202,15 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
   // Reset focused index when view or items change
   useEffect(() => { setFocusedIndex(-1); }, [view, recents, browseItems, searchResults]);
 
+  const contextEntityOffset = contextEntity ? 1 : 0;
+
   // Compute navigable items count for keyboard navigation
   const getNavigableCount = useCallback((): number => {
-    if (view.kind === 'home') return recents.length + (ctx.tree?.roots.length ?? 0);
+    if (view.kind === 'home') return contextEntityOffset + recents.length + (ctx.tree?.roots.length ?? 0);
     if (view.kind === 'browse') return browseItems.length;
     if (view.kind === 'search') return searchResults.length;
     return 0;
-  }, [view, recents, browseItems, searchResults, ctx.tree]);
+  }, [view, recents, browseItems, searchResults, ctx.tree, contextEntityOffset]);
 
   // Keyboard navigation handler
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -221,11 +233,13 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
     if (e.key === 'Enter' && focusedIndex >= 0) {
       e.preventDefault();
       if (view.kind === 'home') {
-        if (focusedIndex < recents.length) {
-          const item = recents[focusedIndex];
+        if (contextEntity && focusedIndex === 0) {
+          handleSelect(contextEntity.entityType, contextEntity.entityId, contextEntity.displayName);
+        } else if (focusedIndex - contextEntityOffset < recents.length) {
+          const item = recents[focusedIndex - contextEntityOffset];
           handleSelect(item.entityType, item.entityId, item.displayName, item.summary);
         } else {
-          const rootIndex = focusedIndex - recents.length;
+          const rootIndex = focusedIndex - contextEntityOffset - recents.length;
           const rootType = ctx.tree?.roots[rootIndex];
           if (rootType) handleTypeBrowse(rootType);
         }
@@ -249,7 +263,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
       handleBack();
       return;
     }
-  }, [focusedIndex, getNavigableCount, view, recents, browseItems, searchResults, ctx.tree, handleSelect, handleTypeBrowse, handleDrillDown, handleBack, onClose]);
+  }, [focusedIndex, getNavigableCount, view, recents, browseItems, searchResults, ctx.tree, handleSelect, handleTypeBrowse, handleDrillDown, handleBack, onClose, contextEntity, contextEntityOffset]);
 
   // Scroll focused item into view
   useEffect(() => {
@@ -310,9 +324,79 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
       </div>
 
       <div ref={listRef} style={{ overflowY: 'auto', flex: 1 }}>
-        {/* Home view: recents + type browse */}
+        {/* Home view: context entity + recents + type browse */}
         {view.kind === 'home' && (
           <>
+            {/* Context entity — pinned at top */}
+            {contextEntity && (() => {
+              const typeInfo = ctx.entityTypes.find(t => t.type === contextEntity.entityType);
+              const icon = contextEntity.icon || typeInfo?.icon || '📄';
+              const canDrill = ctx.tree?.relations.some(r => r.parent === contextEntity.entityType) ?? false;
+              return (
+                <div data-testid="context-entity-section">
+                  <div style={{ padding: '8px 12px', fontSize: '12px', color: '#888', fontWeight: 600 }}>当前上下文</div>
+                  <div
+                    data-testid={`context-entity-${contextEntity.entityId}`}
+                    data-nav-item
+                    onClick={() => handleSelect(contextEntity.entityType, contextEntity.entityId, contextEntity.displayName)}
+                    style={{
+                      padding: '8px 12px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#f0f7ff',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#e0efff'; setFocusedIndex(0); }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#f0f7ff'; }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{icon}</span>
+                      <span style={{ fontSize: '14px', fontWeight: 500 }}>{contextEntity.displayName}</span>
+                    </span>
+                    {canDrill && (
+                      <button
+                        data-testid={`context-entity-drill-${contextEntity.entityId}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const childRel = ctx.tree?.relations.find(r => r.parent === contextEntity.entityType);
+                          if (!childRel) return;
+                          const childTypeInfo = ctx.entityTypes.find(t => t.type === childRel.child);
+                          if (!childTypeInfo) return;
+                          setView({
+                            kind: 'browse',
+                            entityType: childRel.child,
+                            parentType: contextEntity.entityType,
+                            parentId: contextEntity.entityId,
+                            parentDisplayName: contextEntity.displayName,
+                            trail: [{
+                              entityType: childRel.child,
+                              parentType: contextEntity.entityType,
+                              parentId: contextEntity.entityId,
+                              displayName: contextEntity.displayName,
+                              icon: childTypeInfo.icon,
+                            }],
+                          });
+                          ctx.fetchBrowse(childRel.child, contextEntity.entityType, contextEntity.entityId).then(r => setBrowseItems(r.items));
+                        }}
+                        style={{
+                          background: 'none',
+                          border: '1px solid #c5d9f7',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#1a73e8',
+                        }}
+                      >
+                        ▶
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Recents */}
             {recents.length > 0 && (
               <div data-testid="recents-section">
@@ -329,9 +413,9 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '2px',
-                      ...focusStyle(idx),
+                      ...focusStyle(contextEntityOffset + idx),
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(idx); }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#f5f5f5'; setFocusedIndex(contextEntityOffset + idx); }}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -365,7 +449,7 @@ function AtPickerInner({ open, onClose, onSelect, sessionTemplate, initialDrillT
                 {ctx.tree.roots.map((rootType, idx) => {
                   const typeInfo = ctx.entityTypes.find(t => t.type === rootType);
                   if (!typeInfo) return null;
-                  const navIdx = recents.length + idx;
+                  const navIdx = contextEntityOffset + recents.length + idx;
                   return (
                     <div
                       key={rootType}

@@ -198,17 +198,182 @@ The agent decides which entities to fully resolve using 3 MCP tools:
 | `browse_children` | List child entities of a parent |
 | `search_entities` | Search across entity types |
 
+## Document Edit Provider
+
+The `DocumentEditProvider` abstract base class simplifies building `EntityContextProvider.serialize()` and `edit()` for entities backed by `@kedge-agentic/entity-document` blocks.
+
+### What It Does
+
+Instead of manually implementing the serialize → str_replace → save loop for each entity type, extend `DocumentEditProvider` and implement 5 abstract methods. The base class handles:
+
+1. **serialize** — loads entity, converts to `EntityDocument`, serializes to Markdown
+2. **edit** — applies edit operations, merges blocks back for storage, saves
+
+### 4 Edit Operations
+
+Called via `POST /context/entity/:type/:id/edit`, supports 4 operations:
+
+| Operation | Purpose | Handled By |
+|-----------|---------|------------|
+| `str_replace` | Exact-match text replacement in the Markdown document | Base class `DocumentEditProvider` |
+| `field_set` | Modify metadata fields (frontmatter) | Base class `DocumentEditProvider` |
+| `block_attr_set` | Modify a block's attributes (e.g. callout color) | Requires subclass implementation |
+| `block_content_set` | Modify a field within a block's content | Requires subclass implementation |
+
+{% hint style="warning" %}
+`str_replace` and `field_set` are automatically handled by the base `DocumentEditProvider.edit()`. `block_attr_set` and `block_content_set` require the subclass to override `edit()` — the base class does not provide default handling for these.
+{% endhint %}
+
+### Edit Flow
+
+```
+Agent calls POST /context/entity/:type/:id/edit
+  ↓
+Controller parses EditOperationDto[]
+  ↓
+ContextRouter.editEntity() → Provider.edit()
+  ↓
+DocumentEditProvider.edit():
+  1. loadEntity() to load the entity
+  2. validateEdit() to check if editing is allowed
+  3. Process operations:
+     - field_set → check editableFields, collect metaUpdates
+     - str_replace → call strReplace() to update document
+  4. mergeBlockForStorage() to merge attributes back into blocks
+  5. saveEntity() to persist
+  6. Return { success: true, document: updated Markdown }
+```
+
+### Abstract Methods
+
+| Method | Returns | Purpose |
+|--------|---------|---------|
+| `loadEntity(id, userId)` | `Promise<any>` | Load the entity from your data store |
+| `saveEntity(id, updates, userId)` | `Promise<void>` | Persist partial updates back to your data store |
+| `toEntityDocument(entity)` | `EntityDocument` | Convert loaded entity to an `EntityDocument` (meta + blocks) |
+| `getEditableFields()` | `Set<string>` | Which meta fields can be modified via `field_set` |
+| `getContentToAttrConfig()` | `ContentToAttrConfig` | Attribute extraction config for `splitBlock`/`mergeBlock` |
+
+### Optional Hook
+
+- `validateEdit(entity, ops)` — Return an `EditResult` to reject the edit before any operations run. Return `null` to allow. Commonly used for status checks (e.g. rejecting edits on published entities).
+
+### ContentToAttrConfig
+
+Controls attribute migration between block serialization and storage. Some attributes are stored in `content` but represented as `attributes` in the document:
+
+```typescript
+// callout's color is stored in content, extracted to attributes during serialization
+// ingredient's category works the same way
+const config: ContentToAttrConfig = {
+  callout: ['color'],
+  ingredient: ['category'],
+};
+```
+
+- `splitBlockForDocument(block, config)` — extracts specified fields from content to attributes (before serialization)
+- `mergeBlockForStorage(block, config)` — merges fields from attributes back into content (before saving)
+
+### Usage Example
+
+```typescript
+import { DocumentEditProvider } from '@kedge-agentic/context-layer';
+import type { EntityDocument, ContentToAttrConfig } from '@kedge-agentic/entity-document';
+
+export class LessonPlanEditProvider extends DocumentEditProvider {
+  constructor(private repo: LessonPlanRepository) { super(); }
+
+  async loadEntity(id: string, _userId: string) {
+    return this.repo.findOneOrFail(id);
+  }
+
+  async saveEntity(id: string, updates: any, _userId: string) {
+    await this.repo.update(id, updates);
+  }
+
+  toEntityDocument(entity: LessonPlan): EntityDocument {
+    return {
+      meta: { title: entity.title, subject: entity.subject },
+      blocks: entity.blocks.map(b => splitBlockForDocument(b, this.getContentToAttrConfig())),
+    };
+  }
+
+  getEditableFields() {
+    return new Set(['title', 'subject', 'duration']);
+  }
+
+  getContentToAttrConfig(): ContentToAttrConfig {
+    return { callout: ['color'] };
+  }
+
+  // Optional: reject edits on published entities
+  validateEdit(entity: LessonPlan, ops: EditOperation[]): EditResult | null {
+    if (entity.status === 'published') {
+      return { success: false, error: 'Published lesson plans cannot be edited' };
+    }
+    return null;
+  }
+}
+```
+
+The provider is then wired into your `EntityContextProvider` — the `serialize` and `edit` methods are ready to use as-is.
+
+### Custom TransformRegistry
+
+If your entity uses custom block types (e.g. `ingredient`), you need to create a custom `TransformRegistry` and use it in both `serialize()` and `edit()`:
+
+```typescript
+import { TransformRegistry } from '@kedge-agentic/entity-document';
+
+const recipeRegistry = TransformRegistry.withDefaults();
+recipeRegistry.register('ingredient', ingredientTransform);
+
+export class RecipeProvider extends DocumentEditProvider {
+  // override serialize to use custom registry
+  async serialize(id: string, userId: string): Promise<string> {
+    const entity = await this.loadEntity(id, userId);
+    const doc = this.toEntityDocument(entity);
+    return serialize(doc, recipeRegistry);
+  }
+
+  // override edit to ensure str_replace uses the same registry
+  async edit(id: string, ops: EditOperation[], userId: string): Promise<EditResult> {
+    // ... call strReplace(doc, old, new, recipeRegistry)
+  }
+}
+```
+
+{% hint style="warning" %}
+**Important**: If you use a custom registry, you must override both `serialize()` and `edit()`. The base class `strReplace()` defaults to `defaultRegistry`, and custom block types will lose attributes during round-trip.
+{% endhint %}
+
 ## Frontend Integration
 
 ### AtPicker Component
 
 The `<AtPicker />` component provides:
 
-- **Recents view** — Activity-scored recent entities
+- **Context entity** — When `contextEntity` is provided, a pinned "当前上下文" section appears at the top of the home view with drill-down support
+- **Recents view** — Activity-scored recent entities (requires `sessionId`)
 - **Search** — Debounced cross-type search (200ms)
 - **Drill-down** — Navigate parent → child via the relation tree
 - **Breadcrumb** — Shows entity path for nested items
 - **Keyboard navigation** — Arrow keys, Enter to select, Escape to close, ArrowRight to drill
+
+#### Entity Context Awareness
+
+`contextEntity` (what entity you're viewing) and `sessionId` (activity history) are **separate composable concepts**:
+
+| Scenario | contextEntity | sessionId | Picker behavior |
+|----------|--------------|-----------|-----------------|
+| Split view, first message | recipe | undefined | Pin recipe at top, no recents |
+| Split view, ongoing | recipe | session123 | Pin recipe + recents |
+| Standalone /chat | undefined | session123 | Recents + type browse |
+| Standalone /chat, first msg | undefined | undefined | Only type browse |
+
+The `MentionPicker` wrapper in `@kedge-agentic/chat-interface` adds two additional props:
+- `contextEntity` — passed through to AtPicker for the pinned section
+- `autoRef` — when `true`, auto-resolves the entity and adds it as a reference pill so the agent receives entity content on every message
 
 ### Inline Ref Pills
 

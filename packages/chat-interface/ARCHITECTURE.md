@@ -110,4 +110,17 @@ When `apiKey` is not provided, toggle buttons will show a "请先登录" warning
 **Context 分层：**
 - `ChatInterfaceContext` — widget/block 注册表 + MCP bridge (config concern)
 - `ChatCoreContext` — 连接状态、消息、输入、动作 (runtime concern)
+- `MentionContext` — @ 引用管理 (refs 数组、picker 开关)
 - `useChatCore()` — 在自定义组件中访问 chat 状态
+
+#### MentionPicker Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `baseUrl` | `string` | Yes | Context Layer API base URL |
+| `sessionId` | `string` | No | Session ID for recents/activity tracking |
+| `sessionTemplate` | `string` | No | Session template for shortcuts |
+| `contextEntity` | `ContextEntityRef` | No | 当前查看的实体，传入后 AtPicker 顶部固定展示"当前上下文" |
+| `autoRef` | `boolean` | No | 为 `true` 时自动解析 contextEntity 并注入为引用 pill |
+
+`contextEntity` 和 `sessionId` 是独立可组合的：分屏首条消息可仅有 contextEntity 而无 sessionId。

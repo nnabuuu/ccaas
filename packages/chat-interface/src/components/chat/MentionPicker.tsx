@@ -1,12 +1,15 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useMentionContext } from './MentionContext.js';
 import { AtPicker } from '@kedge-agentic/context-layer-react';
-import type { EntityRef } from '@kedge-agentic/context-layer-react';
+import type { EntityRef, ContextEntityRef } from '@kedge-agentic/context-layer-react';
+import { ContextLayerClient } from '@kedge-agentic/context-layer/client';
 
 interface MentionPickerProps {
   baseUrl: string;
-  sessionId: string;
+  sessionId?: string;
   sessionTemplate?: string;
+  contextEntity?: ContextEntityRef;
+  autoRef?: boolean;
 }
 
 /**
@@ -15,8 +18,41 @@ interface MentionPickerProps {
  *
  * Usage: wrap your chat input area with <MentionProvider> and render <MentionPicker>.
  */
-export function MentionPicker({ baseUrl, sessionId, sessionTemplate }: MentionPickerProps) {
+export function MentionPicker({ baseUrl, sessionId, sessionTemplate, contextEntity, autoRef }: MentionPickerProps) {
   const { refs, addRef, removeRef, pickerOpen, closePicker, initialDrillType } = useMentionContext();
+  const autoRefAppliedRef = useRef<string | null>(null);
+  const clientRef = useRef<ContextLayerClient | null>(null);
+  const clientBaseUrlRef = useRef<string>('');
+  if (!clientRef.current || clientBaseUrlRef.current !== baseUrl) {
+    clientRef.current = new ContextLayerClient(baseUrl);
+    clientBaseUrlRef.current = baseUrl;
+  }
+
+  // Auto-add contextEntity as a reference when autoRef is enabled
+  useEffect(() => {
+    if (!autoRef || !contextEntity) return;
+    const key = `${contextEntity.entityType}:${contextEntity.entityId}`;
+    if (autoRefAppliedRef.current === key) return;
+    autoRefAppliedRef.current = key; // set synchronously to prevent duplicate async calls
+    const client = clientRef.current!;
+    client.resolve(contextEntity.entityType, contextEntity.entityId).then(resolved => {
+      addRef({
+        entityType: contextEntity.entityType,
+        entityId: contextEntity.entityId,
+        displayName: contextEntity.displayName,
+        icon: contextEntity.icon || '📄',
+        data: resolved.data,
+        summary: resolved.displayName || contextEntity.displayName,
+      });
+    }).catch(() => {
+      addRef({
+        entityType: contextEntity.entityType,
+        entityId: contextEntity.entityId,
+        displayName: contextEntity.displayName,
+        icon: contextEntity.icon || '📄',
+      });
+    });
+  }, [autoRef, contextEntity, addRef, baseUrl]);
 
   const handleSelect = useCallback((entity: EntityRef) => {
     addRef({
@@ -55,6 +91,7 @@ export function MentionPicker({ baseUrl, sessionId, sessionTemplate }: MentionPi
             onClose={closePicker}
             onSelect={handleSelect}
             initialDrillType={initialDrillType}
+            contextEntity={contextEntity}
           />
         </div>
       )}

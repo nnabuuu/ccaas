@@ -230,6 +230,68 @@ DB block (color 回到 content)
 
 ---
 
+## 自定义 Block Type
+
+通过 `TransformRegistry`，Solution 可以注册自定义 block type，无需修改 `entity-document` 包本身。
+
+### 创建 Registry
+
+```typescript
+import { TransformRegistry } from '@kedge-agentic/entity-document';
+
+// 以 7 个内置 transform 为基础创建 registry
+const registry = TransformRegistry.withDefaults();
+
+// 注册自定义 block type
+registry.register('quiz', {
+  type: 'quiz',
+  detect: (lines) => lines[0].startsWith('<!-- type:quiz -->'),
+  serialize: (content) => {
+    const rows = content.questions.map((q: string) => `- [ ] ${q}`);
+    return `<!-- type:quiz -->\n${rows.join('\n')}`;
+  },
+  deserialize: (lines) => {
+    const questions = lines.slice(1).map((l: string) => l.replace(/^- \[.\] /, ''));
+    return { questions };
+  },
+});
+```
+
+### 检测优先级
+
+自定义 type 的 `register()` 会将其插入到 `text`（fallback）**之前**，与内置 type 一同参与优先级匹配。最终顺序为：
+
+1. 所有内置 type（section → timeline → table → list → callout → image）
+2. 自定义 type（按注册顺序）
+3. `text` — 始终最后
+
+### 传入 registry
+
+`serialize()` / `deserialize()` / `strReplace()` 均接受可选的 `registry` 参数。不传时使用内置 `defaultRegistry`（仅含 7 个内置 type）：
+
+```typescript
+import { serialize, deserialize, strReplace } from '@kedge-agentic/entity-document';
+
+const markdown = serialize(doc, registry);
+const doc2 = deserialize(markdown, registry);
+const result = strReplace(doc, oldStr, newStr, registry);
+```
+
+### BlockTransform 接口
+
+每个自定义 transform 必须实现 `BlockTransform`：
+
+```typescript
+interface BlockTransform {
+  type: string;                                          // block type 标识
+  serialize(content: Record<string, any>): string;       // content → markdown
+  deserialize(lines: string[]): Record<string, any> | null; // markdown lines → content
+  detect(lines: string[]): boolean;                      // 是否匹配这组 lines
+}
+```
+
+---
+
 ## str_replace 编辑
 
 通过 `strReplace(doc, old_string, new_string)` 在文档上执行文本替换：

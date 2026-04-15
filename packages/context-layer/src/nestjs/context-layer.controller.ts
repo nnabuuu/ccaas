@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Query, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { IsString, IsOptional, IsArray, IsIn, IsNotEmpty, ValidateIf, ValidateNested } from 'class-validator';
+import { IsString, IsOptional, IsArray, ArrayMaxSize, IsIn, IsNotEmpty, IsInt, IsObject, ValidateIf, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EntityRegistry } from '../core/entity-registry.js';
 import { RecommendEngine } from '../core/recommend-engine.js';
@@ -23,8 +23,8 @@ import type {
 // ─── DTOs ───
 
 export class EditOperationDto {
-  @IsIn(['str_replace', 'field_set'])
-  op!: 'str_replace' | 'field_set';
+  @IsIn(['str_replace', 'field_set', 'block_attr_set', 'block_content_set'])
+  op!: 'str_replace' | 'field_set' | 'block_attr_set' | 'block_content_set';
 
   @ValidateIf(o => o.op === 'str_replace')
   @IsString()
@@ -34,16 +34,25 @@ export class EditOperationDto {
   @IsString()
   new_string?: string;
 
-  @ValidateIf(o => o.op === 'field_set')
+  @ValidateIf(o => o.op === 'field_set' || o.op === 'block_content_set')
   @IsString()
   field?: string;
 
-  @ValidateIf(o => o.op === 'field_set')
+  @ValidateIf(o => o.op === 'field_set' || o.op === 'block_content_set')
   value?: any;
+
+  @ValidateIf(o => o.op === 'block_attr_set' || o.op === 'block_content_set')
+  @IsInt()
+  block_index?: number;
+
+  @ValidateIf(o => o.op === 'block_attr_set')
+  @IsObject()
+  attributes?: Record<string, any>;
 }
 
 export class EditEntityDto {
   @IsArray()
+  @ArrayMaxSize(50)
   @ValidateNested({ each: true })
   @Type(() => EditOperationDto)
   operations!: EditOperationDto[];
@@ -208,10 +217,16 @@ export class ContextLayerController {
     @Body() body: EditEntityDto,
   ): Promise<EditResult> {
     const ops = body.operations.map(op => {
-      if (op.op === 'str_replace') {
-        return { op: 'str_replace' as const, old_string: op.old_string!, new_string: op.new_string! };
+      switch (op.op) {
+        case 'str_replace':
+          return { op: 'str_replace' as const, old_string: op.old_string!, new_string: op.new_string! };
+        case 'block_attr_set':
+          return { op: 'block_attr_set' as const, block_index: op.block_index!, attributes: op.attributes! };
+        case 'block_content_set':
+          return { op: 'block_content_set' as const, block_index: op.block_index!, field: op.field!, value: op.value };
+        default:
+          return { op: 'field_set' as const, field: op.field!, value: op.value };
       }
-      return { op: 'field_set' as const, field: op.field!, value: op.value };
     });
 
     return this.router.editEntity(type, id, ops, 'default-user');

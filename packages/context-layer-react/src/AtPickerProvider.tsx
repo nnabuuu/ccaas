@@ -14,7 +14,7 @@ export type { EntityTypeInfo, RelationInfo, RelationTree, BreadcrumbItem, Browse
 
 interface AtPickerContextValue {
   baseUrl: string;
-  sessionId: string;
+  sessionId?: string;
   entityTypes: EntityTypeInfo[];
   tree: RelationTree | null;
   loading: boolean;
@@ -37,7 +37,7 @@ export function useAtPickerContext(): AtPickerContextValue {
 
 interface AtPickerProviderProps {
   baseUrl: string;
-  sessionId: string;
+  sessionId?: string;
   client?: ContextLayerClient;
   children: React.ReactNode;
 }
@@ -64,6 +64,7 @@ export function AtPickerProvider({ baseUrl, sessionId, client: externalClient, c
   }, [client]);
 
   const fetchSuggest = useCallback(async (): Promise<Recommendation[]> => {
+    if (!sessionId) return [];
     const data = await client.suggest(sessionId);
     return data.recents;
   }, [client, sessionId]);
@@ -83,6 +84,7 @@ export function AtPickerProvider({ baseUrl, sessionId, client: externalClient, c
   }, [client]);
 
   const recordActivity = useCallback(async (entityType: string, entityId: string, displayName: string, action: string) => {
+    if (!sessionId) return;
     await client.recordActivity({ entityType, entityId, entityDisplayName: displayName, sessionId, action });
   }, [client, sessionId]);
 

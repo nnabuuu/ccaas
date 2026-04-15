@@ -198,17 +198,182 @@ Agent 通过 3 个 MCP tools 决定需要完整 resolve 哪些实体：
 | `browse_children` | 列出父实体的子实体 |
 | `search_entities` | 跨实体类型搜索 |
 
+## Document Edit Provider
+
+`DocumentEditProvider` 抽象基类简化了基于 `@kedge-agentic/entity-document` block 数据的实体 `serialize()` 和 `edit()` 实现。
+
+### 功能
+
+无需为每种实体类型手动实现 serialize → str_replace → save 循环，只需继承 `DocumentEditProvider` 并实现 5 个抽象方法。基类自动处理：
+
+1. **serialize** — 加载实体、转换为 `EntityDocument`、序列化为 Markdown
+2. **edit** — 执行编辑操作、将 block 合并回存储格式、保存
+
+### 4 种编辑操作
+
+通过 `POST /context/entity/:type/:id/edit` 端点调用，支持 4 种操作：
+
+| 操作 | 用途 | 处理层 |
+|------|------|--------|
+| `str_replace` | 在 Markdown 文档中精确替换文本 | 基类 `DocumentEditProvider` |
+| `field_set` | 修改元数据字段（frontmatter） | 基类 `DocumentEditProvider` |
+| `block_attr_set` | 修改指定 block 的属性（如 callout 的 color） | 需子类实现 |
+| `block_content_set` | 修改指定 block 的 content 字段 | 需子类实现 |
+
+{% hint style="warning" %}
+`str_replace` 和 `field_set` 由基类 `DocumentEditProvider.edit()` 自动处理。`block_attr_set` 和 `block_content_set` 需要子类 override `edit()` 方法来实现，基类不提供默认处理。
+{% endhint %}
+
+### 编辑流程
+
+```
+Agent 调用 POST /context/entity/:type/:id/edit
+  ↓
+Controller 解析 EditOperationDto[]
+  ↓
+ContextRouter.editEntity() → Provider.edit()
+  ↓
+DocumentEditProvider.edit():
+  1. loadEntity() 加载实体
+  2. validateEdit() 检查是否允许编辑
+  3. 遍历操作：
+     - field_set → 检查 editableFields，收集 metaUpdates
+     - str_replace → 调用 strReplace() 更新文档
+  4. mergeBlockForStorage() 合并属性回 blocks
+  5. saveEntity() 持久化
+  6. 返回 { success: true, document: 更新后的 Markdown }
+```
+
+### 抽象方法
+
+| 方法 | 返回值 | 用途 |
+|------|--------|------|
+| `loadEntity(id, userId)` | `Promise<any>` | 从数据存储加载实体 |
+| `saveEntity(id, updates, userId)` | `Promise<void>` | 将部分更新持久化到数据存储 |
+| `toEntityDocument(entity)` | `EntityDocument` | 将加载的实体转换为 `EntityDocument`（meta + blocks） |
+| `getEditableFields()` | `Set<string>` | 哪些 meta 字段允许通过 `field_set` 修改 |
+| `getContentToAttrConfig()` | `ContentToAttrConfig` | `splitBlock`/`mergeBlock` 的 attribute 提取配置 |
+
+### 可选 Hook
+
+- `validateEdit(entity, ops)` — 返回 `EditResult` 可在操作执行前拒绝编辑。返回 `null` 表示允许。常用于状态检查（如拒绝已发布的实体编辑）。
+
+### ContentToAttrConfig
+
+控制 block 在序列化和存储之间的属性迁移。某些属性存储在 `content` 中但在文档中表现为 `attributes`：
+
+```typescript
+// callout 的 color 存储在 content 中，序列化时提取到 attributes
+// ingredient 的 category 同理
+const config: ContentToAttrConfig = {
+  callout: ['color'],
+  ingredient: ['category'],
+};
+```
+
+- `splitBlockForDocument(block, config)` — 将 content 中的指定字段提取到 attributes（用于序列化前）
+- `mergeBlockForStorage(block, config)` — 将 attributes 中的字段合并回 content（用于保存前）
+
+### 使用示例
+
+```typescript
+import { DocumentEditProvider } from '@kedge-agentic/context-layer';
+import type { EntityDocument, ContentToAttrConfig } from '@kedge-agentic/entity-document';
+
+export class LessonPlanEditProvider extends DocumentEditProvider {
+  constructor(private repo: LessonPlanRepository) { super(); }
+
+  async loadEntity(id: string, _userId: string) {
+    return this.repo.findOneOrFail(id);
+  }
+
+  async saveEntity(id: string, updates: any, _userId: string) {
+    await this.repo.update(id, updates);
+  }
+
+  toEntityDocument(entity: LessonPlan): EntityDocument {
+    return {
+      meta: { title: entity.title, subject: entity.subject },
+      blocks: entity.blocks.map(b => splitBlockForDocument(b, this.getContentToAttrConfig())),
+    };
+  }
+
+  getEditableFields() {
+    return new Set(['title', 'subject', 'duration']);
+  }
+
+  getContentToAttrConfig(): ContentToAttrConfig {
+    return { callout: ['color'] };
+  }
+
+  // 可选：拒绝已发布实体的编辑
+  validateEdit(entity: LessonPlan, ops: EditOperation[]): EditResult | null {
+    if (entity.status === 'published') {
+      return { success: false, error: '已发布的教案不允许编辑' };
+    }
+    return null;
+  }
+}
+```
+
+Provider 可直接接入 `EntityContextProvider` — `serialize` 和 `edit` 方法开箱即用。
+
+### 自定义 TransformRegistry
+
+如果实体使用了自定义 block 类型（如 `ingredient`），需要创建自定义 `TransformRegistry` 并在 `serialize()` 和 `edit()` 中使用：
+
+```typescript
+import { TransformRegistry } from '@kedge-agentic/entity-document';
+
+const recipeRegistry = TransformRegistry.withDefaults();
+recipeRegistry.register('ingredient', ingredientTransform);
+
+export class RecipeProvider extends DocumentEditProvider {
+  // override serialize 以使用自定义 registry
+  async serialize(id: string, userId: string): Promise<string> {
+    const entity = await this.loadEntity(id, userId);
+    const doc = this.toEntityDocument(entity);
+    return serialize(doc, recipeRegistry);
+  }
+
+  // override edit 以确保 str_replace 使用相同 registry
+  async edit(id: string, ops: EditOperation[], userId: string): Promise<EditResult> {
+    // ... 调用 strReplace(doc, old, new, recipeRegistry)
+  }
+}
+```
+
+{% hint style="warning" %}
+**重要**：如果使用了自定义 registry，必须同时 override `serialize()` 和 `edit()` 方法。基类的 `strReplace()` 默认使用 `defaultRegistry`，自定义 block 类型会在 round-trip 中丢失属性。
+{% endhint %}
+
 ## 前端集成
 
 ### AtPicker 组件
 
 `<AtPicker />` 组件提供：
 
-- **最近使用** — 基于活动评分的最近实体
+- **当前上下文** — 当提供 `contextEntity` 时，home 视图顶部展示固定的"当前上下文"区域，支持钻入浏览
+- **最近使用** — 基于活动评分的最近实体（需要 `sessionId`）
 - **搜索** — 防抖跨类型搜索（200ms）
 - **钻入浏览** — 通过关系树从父级导航到子级
 - **面包屑** — 展示嵌套实体的路径
 - **键盘导航** — 方向键、Enter 选中、Escape 关闭、ArrowRight 钻入
+
+#### 实体上下文感知
+
+`contextEntity`（当前正在查看的实体）和 `sessionId`（活动历史）是**两个可组合的独立概念**：
+
+| 场景 | contextEntity | sessionId | Picker 行为 |
+|------|--------------|-----------|-------------|
+| 分屏视图，首条消息 | recipe | undefined | 置顶显示食谱，无最近使用 |
+| 分屏视图，持续对话 | recipe | session123 | 置顶食谱 + 最近使用 |
+| 独立 /chat 页 | undefined | session123 | 最近使用 + 类型浏览 |
+| 独立 /chat，首条消息 | undefined | undefined | 仅类型浏览 |
+
+`@kedge-agentic/chat-interface` 中的 `MentionPicker` 封装组件额外支持：
+- `contextEntity` — 透传给 AtPicker，用于顶部固定区域
+- `autoRef` — 为 `true` 时，自动解析实体并添加为引用 pill，使 Agent 在每条消息中都能接收到实体内容
 
 ### 内联引用 Pills
 
