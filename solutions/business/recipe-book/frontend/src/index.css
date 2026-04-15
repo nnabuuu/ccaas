@@ -250,8 +250,8 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
 .at-picker-overlay [style*="26, 115, 232"] {
   color: var(--blue) !important;
 }
-/* Select button: keep white text on blue background */
-.at-picker-overlay button[style*="26, 115, 232"][style*="white"] {
+/* Select button: override text on blue background */
+.at-picker-overlay button[style*="26, 115, 232"][style*="255, 255, 255"] {
   background: var(--blue) !important;
   color: var(--surface) !important;
 }
@@ -354,7 +354,7 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
   .at-picker-overlay [style*="26, 115, 232"] {
     color: var(--blue) !important;
   }
-  .at-picker-overlay button[style*="26, 115, 232"][style*="white"] {
+  .at-picker-overlay button[style*="26, 115, 232"][style*="255, 255, 255"] {
     background: var(--blue) !important;
     color: var(--surface) !important;
   }
