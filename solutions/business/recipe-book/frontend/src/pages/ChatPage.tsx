@@ -7,7 +7,7 @@ import {
   useChatCore,
 } from '@kedge-agentic/chat-interface'
 import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
-import { CCAAS_URL, RECIPE_BACKEND_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
+import { CCAAS_URL, CONTEXT_LAYER_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 
 const STARTER_CARDS = [
   { emoji: '\u{1F373}', title: '改良菜谱', desc: '优化现有食谱的做法和调味', prompt: '帮我改良一道菜的做法' },
@@ -133,7 +133,7 @@ export function ChatPage() {
             disclaimer={null}
           />
           <MentionPicker
-            baseUrl={RECIPE_BACKEND_URL}
+            baseUrl={CONTEXT_LAYER_URL}
             sessionId={sessionId}
             sessionTemplate={SESSION_TEMPLATE}
           />

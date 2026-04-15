@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ChatInterface } from '@kedge-agentic/chat-interface'
 import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
 import { useRecipe } from '../hooks/useRecipes'
-import { CCAAS_URL, RECIPE_BACKEND_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
+import { CCAAS_URL, CONTEXT_LAYER_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 import type { Block, IngredientItem } from '../types/recipe'
 
 const DIFFICULTY_LABELS: Record<string, string> = {
@@ -263,7 +263,7 @@ export function RecipeDetailPage() {
                 disclaimer={null}
               />
               <MentionPicker
-                baseUrl={RECIPE_BACKEND_URL}
+                baseUrl={CONTEXT_LAYER_URL}
                 sessionId={chatSessionId}
                 sessionTemplate={SESSION_TEMPLATE}
                 contextEntity={{

@@ -1,6 +1,9 @@
 /** Recipe-book backend URL (port 3002) */
 export const RECIPE_BACKEND_URL = import.meta.env.VITE_RECIPE_URL || 'http://localhost:3002'
 
+/** Context layer URL — ContextLayerClient appends /entity-types, /browse, etc. */
+export const CONTEXT_LAYER_URL = RECIPE_BACKEND_URL + '/context'
+
 /** CCAAS core URL (port 3001) — for ChatInterface */
 export const CCAAS_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
