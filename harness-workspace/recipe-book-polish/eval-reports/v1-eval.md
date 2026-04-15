@@ -1,185 +1,139 @@
 # Eval Report — recipe-book-polish v1
 
-## Step 0: Baseline
-
-- **Tests**: 49 passed (49), 0 failed — 7 test files
-  - Original: block-utils (6), ingredient-transform (9), recipe-provider (13) = **28 original tests**
-  - Integration: context-api (6), edit-operations (4), edge-cases (7), agent-workflow (4) = **21 new tests**
-- **tsc**: clean (0 errors)
-- **Server**: Live at http://localhost:3002. `GET /context/entity-types` returns `recipe` type with `displayName: "食谱"`.
-
----
-
 ## Per-Dimension Scores
 
-### D1 Context API 端到端 (Weight: 20/100)
-**Score: 20/20**
+### D1 AtPicker Theme Integration (Weight: 20/100)
+**Score: 19/20**
+**Justification**:
+- **1.1 Container bg (3/3)**: Computed `backgroundColor: rgb(251, 250, 247)` = `--surface` (warm beige). NOT pure white #ffffff. PASS.
+- **1.2 Select button (3/3)**: Computed `backgroundColor: rgb(26, 95, 160)` = `--blue` (#1a5fa0). NOT `#1a73e8` (Google blue rgb(26,115,232)). PASS.
+- **1.3 Hover states (2/2)**: CSS rule confirmed: `.at-picker-overlay [data-nav-item]:hover { background: var(--surface2) !important; }`. PASS.
+- **1.4 Border color (2/2)**: Computed `borderColor: rgba(28, 28, 26, 0.07)` = `var(--border)`. NOT `#e0e0e0`. PASS.
+- **1.5 Text colors (2/2)**: Entity names = `rgb(26, 26, 26)` (--t1), subtitles = `rgb(118, 117, 115)` (~--t3), section headers = `rgb(102, 102, 99)` (--t2). No hardcoded #666/#888/#999. PASS.
+- **1.6 "当前上下文" section (2/3)**: CSS rules present and well-structured: `.at-picker-overlay [data-testid="context-entity-section"] [data-nav-item] { background: var(--blue-bg) !important; }`. Could not verify live rendering — detail page chat panel had no composer to trigger AtPicker with recipe context. CSS correct but -1 for unverified live behavior.
+- **1.7 Breadcrumb (2/2)**: "← 返回" = `rgb(26, 95, 160)` (--blue), "🍳 食谱" = `rgb(102, 102, 99)` (--t2). Warm colors throughout. PASS.
+- **1.8 CSS override quality (3/3)**: 70 `var(--` usages in index.css (threshold: ≥15). Hex color grep shows only comments, no new hardcoded hex values in override sections. PASS.
 
+**Suggestion**: Wire the detail page chat panel to include a composer so the AtPicker context section ("当前上下文") can be tested end-to-end.
+
+### D2 Typography & Readability (Weight: 20/100)
+**Score: 18/20**
+**Justification**:
+- **2.1 Ingredient amounts (4/4)**: Computed color `rgb(102, 102, 99)` on bg `rgb(251, 250, 247)`. Contrast ratio = **5.52:1** ≥ 4.5:1. PASS.
+- **2.2 Font family (3/3)**: Body, h1, h2 all resolve to `"Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif`. Consistent across all elements. PASS.
+- **2.3 Section headings (3/3)**: h2 "食材准备" = fontSize 17px, fontWeight 600. Consistent (single h2 on detail page). PASS.
+- **2.4 Body text line-height (2/2)**: Paragraph lineHeight = 23.8px / fontSize 14px = **1.70** ≥ 1.5. PASS.
+- **2.5 Loading/empty state (1/2)**: Navigated to `/recipes/nonexistent-id-12345`. Page renders empty template (blank h1, meta labels showing "分钟"/"人份" without values) — no explicit error message displayed. No --t3 colored error text exists because no error text exists at all. Partial pass: no readability violation per se, but UX gap (missing error state). -1.
+- **2.6 Meta labels (2/3)**: Labels "准备时间"/"烹饪时间"/"份量" = `rgb(118, 117, 115)` at **11px**. Contrast ratio = **4.41:1** (borderline below 4.5:1). Font-size 11px is below the 12px minimum in the criteria. -1.
+- **2.7 Badge legibility (3/3)**: Published badge: `rgb(251,250,247)` on `rgb(45,102,18)` = contrast **6.66:1** ≥ 3:1. Draft badge: `rgb(102,102,99)` on `rgb(237,236,231)` = contrast **4.87:1** ≥ 3:1. PASS.
+
+**Suggestion**: Increase meta label font-size from 11px to 12px for WCAG compliance.
+
+### D3 Component Visual Quality (Weight: 20/100)
+**Score: 20/20**
+**Justification**:
+- **3.1 Table alternating rows (3/3)**: Both tables show alternating backgrounds: `[transparent, rgb(251,250,247), transparent]`. Clear visual separation. PASS.
+- **3.2 Table container rounded (2/2)**: Wrapper `borderRadius: 8px`, `overflow: hidden`. Both tables. PASS.
+- **3.3 Ingredient separation (3/3)**: Items have `padding: 8px 14px`, `borderBottom: 1px solid rgba(28,28,26,0.07)`. Clear visual separation using `var(--border)`. PASS.
+- **3.4 Callout padding (2/2)**: Two callouts with `padding: 14px 18px` ≥ 12px. Warm semantic colors: amber callout (`bg: rgb(246,237,218)`, `color: rgb(122,77,14)`), blue callout (`bg: rgb(228,239,248)`, `color: rgb(26,95,160)`). PASS.
+- **3.5 Meta cards border (3/3)**: All 3 meta items: `border: 1px solid rgba(28,28,26,0.07)` = `var(--border)`, `borderRadius: 8px`, `bg: rgb(251,250,247)` = `var(--surface)`. Consistent. PASS.
+- **3.6 Recipe card hover (3/3)**: CSS rule `.recipe-card:hover` defined in `RecipeListPage.tsx:124`. Also confirmed via stylesheet rule scan. PASS.
+- **3.7 Chat trigger button (2/2)**: Computed `color: rgb(251,250,247)` (--surface), `bg: rgb(26,26,26)` (--t1). Uses design tokens. `.chat-trigger-btn:hover { opacity: 0.9; }` defined. PASS.
+- **3.8 Back button affordance (2/2)**: `color: rgb(102,102,99)` (--t2), hover state `.back-btn:hover { color: var(--t1); }` confirmed at `RecipeDetailPage.tsx:375`. PASS.
+
+**Suggestion**: None — component visual quality is solid.
+
+### D4 Dark Mode & Theme Consistency (Weight: 20/100)
+**Score: 18/20**
 **Justification**:
 
-| Check | Points | Evidence |
-|-------|--------|----------|
-| File exists | 2/2 | `src/__tests__/integration/context-api.integration.test.ts` confirmed |
-| browse test | 3/3 | Line 26: `'US-1.1: browse returns all recipes with displayName and subtitle'`; asserts `data.total >= 3` (L30), `item.displayName` (L33), `item.subtitle` (L34) |
-| search test | 3/3 | Line 38: `'US-1.2: search "鱼香" returns matching results'`; asserts result `displayName` includes '鱼香肉丝' (L45) |
-| entity-types test | 2/2 | Line 15: `'US-1.5: entity-types returns recipe type'`; asserts `displayName === '食谱'` (L21) |
-| entity context test | 3/3 | Line 48: `'US-1.4: entity context returns ref and structured data'`; asserts `ref.type === 'recipe'` (L54), `structured.title` (L56), `structured.cuisine` (L57) |
-| document test | 3/3 | Line 60: `'US-1.3: document returns markdown with ingredient blocks'`; asserts `document.toContain('<!-- type:ingredient')` (L66) |
-| resolve test | 2/2 | Line 70: `'US-1.6: resolve returns displayName and data'`; asserts `displayName` (L76), `data` (L77-78) |
-| createTestingModule | 2/2 | `test-helpers.ts:91`: `Test.createTestingModule({ imports: [TestAppModule] })`. All 4 integration files use `createTestApp` which wraps this. |
+*Dark mode verification approach*: Since `page.emulateMedia({ colorScheme: 'dark' })` was unavailable via Playwright MCP, used two methods: (1) static CSS analysis of `@media (prefers-color-scheme: dark)` rules, (2) manual CSS variable override simulation to verify computed styles.
 
-**Live verification** (Playwright):
-- `GET /context/browse?entity_type=recipe` → 3 items (提拉米苏, 番茄炒蛋, 鱼香肉丝), each with `displayName` + `subtitle`, `total: 3` ✅
-- `GET /context/search?q=鱼香&entity_type=recipe` → results contain `displayName: "鱼香肉丝"` ✅
-- `GET /context/entity-types` → `{type: 'recipe', displayName: '食谱', icon: '🍳'}` ✅
+- **4.1 Composer textarea (4/4)**: CSS rule at `index.css:170-172`: `[data-ck="composer-card"] > textarea { color: var(--t1) !important; }`. Dark mode rule at lines 181-183 reinforces. In dark mode: text = `--t1` (#e8e6dc), card bg = `--bg1` (#1a1a18 from chat-interface tokens.css:42). Manual simulation confirmed contrast **13.93:1**. PASS.
+- **4.2 Search input (3/3)**: Dark mode rule at `index.css:191-195`: `.search-input { color: var(--t1) !important; background: var(--surface) !important; }`. In dark mode: text #e8e6dc on bg #242422 ≈ **12:1** contrast. PASS.
+- **4.3 Placeholder text (2/2)**: `index.css:186-188`: `input::placeholder, textarea::placeholder { color: var(--t3) !important; }`. Dark --t3 = #8a8983 on dark surface = visible. AtPicker placeholder also overridden at line 331. PASS.
+- **4.4 AtPicker dark bg (2/2)**: `index.css:320-324`: `.at-picker-overlay { background: var(--surface) !important; }` in dark media query. `--surface` = #242422 in dark. PASS.
+- **4.5 AtPicker dark text (2/2)**: `index.css:326-330`: input color = `var(--t1)`, placeholder = `var(--t3)`. Lines 354-360: accent overrides use `var(--blue)` = #85b7eb. Manual simulation confirmed picker text = `rgb(232, 230, 220)` (--t1 dark). PASS.
+- **4.6 Recipe detail dark mode (2/2)**: `RecipeDetailPage.tsx` uses: body `var(--bg)`, surface `var(--surface)`, text `var(--t1)`, borders `var(--border)`. All auto-switch via design-tokens.css dark media query. Callout colors (--amber-bg, --blue-bg) have dark variants. PASS.
+- **4.7 No hardcoded white/black (1/3)**: Grep found 4 matches:
+  - `index.css:254` — selector `button[style*="white"]` (matching inline styles, not setting)
+  - `index.css:256` — **`color: white !important;`** (hardcoded value)
+  - `index.css:357` — selector (dark mode section, matching)
+  - `index.css:359` — **`color: white !important;`** (hardcoded value in dark section)
+  Two actual hardcoded `white` values for select button text. In dark mode, this creates white text on `--blue` (#85b7eb) with contrast ~2.08:1 — below WCAG AA. **FAIL**: 2 instances of hardcoded white. -2.
+- **4.8 Chat panel border (2/2)**: `RecipeDetailPage.tsx:303`: `border-left: 1px solid var(--border)`. `var(--border)` auto-switches to `rgba(255,255,255,0.10)` in dark. PASS.
 
-**Suggestion**: None — fully passing.
+**Suggestion**: Replace `color: white !important` with `color: var(--surface) !important` for AtPicker select buttons (lines 256, 359). This resolves to #fbfaf7 in light mode (nearly white) and #242422 in dark mode (dark text on light blue), fixing the dark mode contrast issue.
 
----
-
-### D2 编辑操作端到端 (Weight: 20/100)
+### D5 Build Quality (Weight: 20/100)
 **Score: 20/20**
-
 **Justification**:
+- **5.1 Frontend tsc (3/3)**: `npx tsc --noEmit` — zero errors. PASS.
+- **5.2 Frontend vite build (3/3)**: `npx vite build` — `built in 4.55s`. Warnings about chunk size only (not errors). PASS.
+- **5.3 Backend tsc (2/2)**: `npx tsc --noEmit` — zero errors. PASS.
+- **5.4 Backend tests (2/2)**: `npx vitest run` — **7 files, 49 tests, all passed**. PASS.
+- **5.5 No frozen package modifications (4/4)**: `git diff --name-only` on all frozen dirs returned only `solutions/business/recipe-book/backend/data/recipe-book.db` (database file, not source code). All `src/` dirs clean:
+  - `packages/context-layer-react/src/` — clean
+  - `packages/chat-interface/src/` — clean
+  - `packages/context-layer/src/` — clean
+  - `packages/entity-document/src/` — clean
+  - `solutions/business/edu-platform/` — clean
+  PASS.
+- **5.6 file: links (2/2)**: All 4 `@kedge-agentic/*` deps use `file:` links pointing to `../../../../packages/*`. PASS.
+- **5.7 Existing features (2/2)**: Verified via Playwright: `/recipes` loads (3 recipes displayed), `/recipes/:id` loads (鱼香肉丝 with full content), `/chat` loads (composer + session list). PASS.
+- **5.8 AtPicker functional (2/2)**: Typed `@` in chat composer → picker opened. Browsed 按类型浏览 → 食谱 category → saw 3 recipes (提拉米苏, 番茄炒蛋, 鱼香肉丝) with "选择" and "▶" buttons. Breadcrumb "← 返回" navigation visible. PASS.
 
-| Check | Points | Evidence |
-|-------|--------|----------|
-| File exists | 2/2 | `src/__tests__/integration/edit-operations.integration.test.ts` confirmed |
-| str_replace test | 4/4 | Line 28: `'US-2.1: str_replace modifies recipe text'`; asserts `success === true` (L36), `document.toContain('四川经典名菜')` (L37) |
-| field_set test | 4/4 | Line 40: `'US-2.2: field_set modifies title, verified via resolve'`; asserts `success === true` (L44), `resolveData.displayName === '改良鱼香肉丝'` (L50) |
-| block_attr_set test | 4/4 | Line 53: `'US-2.3: block_attr_set changes callout color'`; asserts `success === true` (L58), `callout.content.color === 'error'` (L65) |
-| block_content_set test | 4/4 | Line 68: `'US-2.4: block_content_set changes callout text'`; asserts `success === true` (L72), `blocks[7].content.text === '新的烹饪提示'` (L78) |
-| HTTP POST via fetch | 2/2 | `editRecipe()` helper (lines 18-25) uses `fetch(..., { method: 'POST' })` |
-
-**Live verification** (Playwright):
-- `POST /context/entity/recipe/{id}/edit` with `{op: 'field_set', field: 'title', value: 'Playwright验证鱼香肉丝'}` → `success: true`, document shows updated title ✅
-
-**Suggestion**: None — all 4 operations tested via HTTP, live edit works.
-
----
-
-### D3 边界条件 + 属性保留 (Weight: 20/100)
-**Score: 20/20**
-
-**Justification**:
-
-| Check | Points | Evidence |
-|-------|--------|----------|
-| File exists | 2/2 | `src/__tests__/integration/edge-cases.integration.test.ts` confirmed |
-| Published recipe rejection | 3/3 | Line 28: `'US-2.7: rejects editing published recipe'`; asserts `success === false`, `error.toContain('已发布')` (L33) |
-| Non-editable field | 2/2 | Line 36: `'US-2.8: rejects non-editable field (status)'`; `op: 'field_set', field: 'status'` (L38), asserts `success === false` |
-| Ingredient category preserved | 3/3 | Line 44: `'US-2.5: str_replace preserves ingredient category attribute'`; asserts `category === '主料'` (L60), items count (L62-63) |
-| Callout color preserved | 3/3 | Line 66: `'US-2.6: str_replace preserves callout color attribute'`; asserts `color === 'warning'` (L86) |
-| Sequential edits | 4/4 | Line 89: `'US-2.9: three sequential edits maintain data integrity'`; 8 expect() calls (L98, L104, L110, L117-119, L126, L131) — well above ≥3 threshold |
-| Empty search | 1/1 | Line 134: `'empty search returns no results without error'`; query `'不存在的菜'` (L136), asserts `results === []` (L140) |
-| Non-existent ID | 2/2 | Line 143: `'get document for non-existent ID returns error'`; asserts `res.ok === false` (L147) |
-
-**Live verification** (Playwright):
-- Edit published recipe (提拉米苏) → `{success: false, error: "已发布的食谱不允许修改，请先取消发布"}` ✅
-- Empty search `q=不存在的东西` → `{results: []}` with HTTP 200 ✅
-
-**Suggestion**: None — all 7 edge case tests comprehensive.
-
----
-
-### D4 Agent 工具链 + CCAAS 集成 (Weight: 20/100)
-**Score: 20/20**
-
-**Justification**:
-
-#### Part A: Static Tests (8/8)
-
-| Check | Points | Evidence |
-|-------|--------|----------|
-| File exists | 2/2 | `src/__tests__/integration/agent-workflow.integration.test.ts` confirmed |
-| Full chain: search→document→edit→verify | 4/4 | Line 19: `'US-3.1: search → get_document → edit → verify full workflow'`; 4 fetch calls: search (L21), get_document (L32), edit POST (L39), verify get_document (L56) |
-| Published recipe error test | 2/2 | Line 64: `'US-3.2: Agent gets clear error when editing published recipe'`; asserts `error.toContain('已发布')` (L79) |
-
-#### Part B: CCAAS Live Verification (12/12)
-
-| Check | Points | Evidence |
-|-------|--------|----------|
-| Tenant registered | 2/2 | `GET :3001/api/v1/admin/tenants/recipe-book` → HTTP 200, `slug: "recipe-book"`, `id: "8702b702-61f6-4156-912b-52fbce3eb484"` |
-| 3 Skills published | 3/3 | `GET :3001/api/v1/skills` (X-Tenant-Id) → 3 items: recipe-assistant, nutrition-calculator, menu-planner — all `status: "published"` |
-| MCP server registered | 2/2 | `GET :3001/api/v1/mcp-servers` → 1 server "Recipe Book MCP tools", `status: "active"` |
-| Live 4-step edit chain | 5/5 | Step 1 search "番茄" → found 番茄炒蛋 ✅; Step 2 get_document → 300 chars markdown ✅; Step 3 str_replace `old_string`/`new_string` → `success: true` ✅; Step 4 verify → updated text present ✅ |
-
-**Suggestion**: None — full CCAAS integration verified end-to-end.
-
----
-
-### D5 UI/UX 质量 (Weight: 20/100)
-**Score: 20/20**
-
-**Justification**:
-
-| Check | Points | Evidence |
-|-------|--------|----------|
-| show_info_card section type enum | 2/2 | `mcp-server/src/index.ts:116`: `enum: ['outline', 'bar_list', 'metrics', 'actions', 'text']` |
-| suggest_actions skill_hint | 2/2 | `mcp-server/src/index.ts:142`: `skill_hint: { type: 'string', description: '可选：导航到目标 Skill（如 nutrition-calculator）' }` |
-| recipe-assistant metrics + show_info_card | 3/3 | `SKILL.md:37`: `"type": "metrics"` with items (准备时间, 烹饪时间, 份量, 难度); `SKILL.md:29`: show_info_card example |
-| recipe-assistant 编辑确认 | 2/2 | `SKILL.md:65`: "展示变更摘要"; `SKILL.md:67`: "编辑确认 show_info_card 示例"; `SKILL.md:71`: `"title": "编辑完成"` |
-| nutrition-calculator bar_list + color_thresholds | 3/3 | `SKILL.md:42`: `"type": "bar_list"`; `SKILL.md:50`: `"color_thresholds": { "danger": 80, "warning": 60 }` |
-| menu-planner outline + children | 3/3 | `SKILL.md:35`: `"type": "outline"`; `SKILL.md:40,48`: nested `children` arrays (周一→午餐/晚餐, 周二→午餐/晚餐) |
-| skill_hint cross-skill ≥ 2 | 2/2 | recipe-assistant: 3 occurrences (L53, L54, L96); menu-planner: 2 occurrences (L68, L82) → total 5 ≥ 2 |
-| JSON validity | 3/3 | All 4 JSON blocks parse successfully: recipe-assistant (2 blocks), nutrition-calculator (1), menu-planner (1) — validated with `node -e` |
-
-**Suggestion**: Consider adding `skill_hint` to nutrition-calculator actions for bidirectional cross-skill navigation.
-
----
+**Suggestion**: None — build quality is clean.
 
 ## Penalties Applied
 
-| ID | Trigger | Check Command | Result | Impact |
-|----|---------|---------------|--------|--------|
-| P1 | `packages/entity-document/src/` modified | `git diff --name-only -- packages/entity-document/src/` | No output (no changes) | No penalty |
-| P2 | `packages/context-layer/src/core/` modified | `git diff --name-only -- packages/context-layer/src/core/` | No output (no changes) | No penalty |
-| P3 | `solutions/business/edu-platform/` modified | `git diff --name-only -- solutions/business/edu-platform/` | No output (no changes) | No penalty |
-| P4 | Original 28 unit tests deleted/failing | Vitest verbose: block-utils (6✅), ingredient-transform (9✅), recipe-provider (13✅) = 28 pass | No penalty |
-| P5 | `recipe.entity.ts` modified | `git diff --name-only -- .../recipe.entity.ts` | No output (no changes) | No penalty |
-
-Penalties: -0
-
----
+| ID | Check | Result |
+|----|-------|--------|
+| P1 | `packages/context-layer-react/src/` modified | **No changes** — no penalty |
+| P2 | `packages/chat-interface/src/` modified | **No changes** — no penalty |
+| P3 | `packages/context-layer/src/` modified | **No changes** — no penalty |
+| P4 | `packages/entity-document/src/` modified | **No changes** — no penalty |
+| P5 | `solutions/business/edu-platform/` modified | **No changes** — no penalty |
+| P6 | Backend existing tests fail | **49/49 passed** — no penalty |
+| P7 | AtPicker stops functioning | **Functional** (opens, loads entities, drill works) — no penalty |
 
 ## Score Summary
 
 | Dimension | Scored | Max | Notes |
 |-----------|--------|-----|-------|
-| D1 Context API 端到端 | 20 | 20 | 6 tests + 3 live endpoints verified |
-| D2 编辑操作端到端 | 20 | 20 | 4 operations tested via HTTP POST + live edit verified |
-| D3 边界条件 + 属性保留 | 20 | 20 | 7 edge case tests + published rejection + empty search live verified |
-| D4 Agent 工具链 + CCAAS | 20 | 20 | Full chain test + tenant/skills/MCP live verified + 4-step chain all pass |
-| D5 UI/UX 质量 | 20 | 20 | All SKILL.md patterns + JSON validity confirmed |
+| D1 | 19 | 20 | -1: 当前上下文 section could not be verified live |
+| D2 | 18 | 20 | -1: meta label 11px < 12px, -1: no error state for nonexistent recipe |
+| D3 | 20 | 20 | Full marks — all components well-polished |
+| D4 | 18 | 20 | -2: hardcoded `color: white` in AtPicker select button (dark mode contrast issue) |
+| D5 | 20 | 20 | Full marks — clean builds, all tests pass, no frozen pkg changes |
 
 Penalties: -0
 
-总分: 100/100
-
----
+总分: 95/100
 
 ## Bug Classification
 
-No deductions — no bugs found.
+| Deduction | Category | Description |
+|-----------|----------|-------------|
+| D1 -1 (当前上下文) | SYSTEM | Detail page chat panel lacks composer, preventing AtPicker context test |
+| D2 -1 (meta labels) | DESIGN | Meta label font-size 11px below 12px minimum, contrast 4.41:1 borderline |
+| D2 -1 (empty state) | DESIGN | Nonexistent recipe shows blank template instead of error message |
+| D4 -2 (hardcoded white) | DESIGN | `color: white` on select button creates ~2.08:1 contrast in dark mode |
 
 ## Actionable Fix Hints
 
-No critical fixes required. Minor improvement opportunities:
-
-1. **`skills/nutrition-calculator/SKILL.md`**: Add `skill_hint` references to actions (e.g., `"skill_hint": "recipe-assistant"` on "对比其他食谱") for bidirectional cross-skill navigation completeness.
-
----
+1. **Meta label font-size**: `RecipeDetailPage.tsx` → `.meta-item` first-child `div` → change `font-size: 11px` to `font-size: 12px`
+2. **AtPicker select button dark mode**: `index.css:256` and `index.css:359` → change `color: white !important` to `color: var(--surface) !important`
+3. **Empty state handling**: `RecipeDetailPage.tsx` → add a loading/error state when recipe fetch returns no data, e.g. `<p style={{color: 'var(--t2)'}}>找不到该食谱</p>`
+4. **Detail page chat composer**: Wire the detail page split chat panel to render the full ChatInterface component with composer and AtPicker capability
 
 ## Top 3 Priority Fixes
 
-1. No critical fixes needed
-2. (Optional) Add `skill_hint` to nutrition-calculator SKILL.md for cross-skill ring completion
-3. (Optional) Consider adding more edge case tests for concurrent edit scenarios
-
----
+1. **AtPicker dark mode button contrast** (`index.css:256,359`): Replace `color: white` with `color: var(--surface)` — fixes WCAG contrast failure in dark mode and eliminates hardcoded color
+2. **Meta label font-size** (`RecipeDetailPage.tsx`): Increase from 11px to 12px — fixes borderline WCAG compliance
+3. **Nonexistent recipe error state** (`RecipeDetailPage.tsx`): Add explicit "找不到该食谱" message with `--t2` color — improves UX and readability
 
 ## What's Working Well
 
-1. **Integration test architecture**: The `createTestApp()` / `test-helpers.ts` pattern is clean and reusable — creates a real NestJS testing module with proper lifecycle, seeds test data, and provides a shared `TestContext` with typed recipe IDs. All 4 integration test files follow this pattern consistently.
-
-2. **SKILL.md show_info_card examples**: All 3 skills demonstrate proper usage of different section types (metrics, bar_list, outline, text, actions) with real recipe domain data. The cross-skill `skill_hint` navigation (recipe→nutrition, recipe→menu, menu→nutrition) creates a coherent multi-skill experience. The edit confirmation flow with "编辑完成" card is a particularly well-designed UX pattern.
+1. **AtPicker theme integration is excellent**: 70 `var(--` token usages, comprehensive override of Google Material blue (#1a73e8) with warm palette. Hover, focus, border, text — all consistently use design tokens. The CSS architecture of matching inline styles via `[style*="..."]` selectors is clever and effective.
+2. **Component visual quality is polished**: Alternating table rows, rounded containers, well-spaced ingredient items with token-based borders, semantic callout colors (amber for tips, blue for info), consistent meta card treatment. The warm beige palette creates a cohesive, distinctive look that differentiates from generic Material Design.
