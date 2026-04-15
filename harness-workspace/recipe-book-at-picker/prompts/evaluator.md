@@ -339,7 +339,9 @@ Use this exact structure:
 
 Penalties: -X
 
-总分: XX/100
+**总分: XX/100**
+
+IMPORTANT: The "总分" line above MUST follow this exact format: `总分: <number>/100`. Do NOT add parenthetical qualifiers like "(Scenario A)" or other text. Output exactly ONE score line. Penalties from `git diff HEAD~1` and `git diff` (uncommitted) checks are the ONLY penalty sources — do NOT invent additional penalty scenarios beyond what the rubric specifies.
 
 ## Bug Classification
 [COMPONENT] / [SYSTEM] / [DESIGN] for each deduction

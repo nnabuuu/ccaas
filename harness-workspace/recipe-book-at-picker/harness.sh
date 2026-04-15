@@ -82,7 +82,8 @@ get_last_version() {
 
 extract_score() {
   local eval_file="$1"
-  grep -E '(总分|Total)[：:][[:space:]]*[0-9]+' "$eval_file" | head -1 | sed 's/.*[：:][[:space:]]*//' | sed 's|/.*||' | tr -d '[:space:]'
+  # Match "总分: X/100" or "总分 (Scenario A): X/100" or "**总分: X/100**"
+  grep -oE '(总分|Total)[^0-9]*[0-9]+/100' "$eval_file" | head -1 | grep -oE '[0-9]+/100' | sed 's|/100||'
 }
 
 estimate_cost() {

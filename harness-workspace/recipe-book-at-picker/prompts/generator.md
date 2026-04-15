@@ -212,13 +212,56 @@ this.registry.setRelations([
    </MentionProvider>
    ```
 
-3. 在 ChatPage.tsx 中同样集成 MentionPicker（如果存在独立 chat 页面），**不要**传 `contextEntity` 或 `autoRef`——独立 chat 页面没有上下文实体。
+3. **`@` 触发器 + clearRefs 接线（关键！）**
+
+   ChatInterfaceComposer **不会**自动检测 `@` 击键。你必须在解决方案代码中自行接线。做法：在 `MentionProvider` 内部创建一个辅助组件，用 `useMentionContext()` 获取 `openPicker` 和 `clearRefs`，然后：
+
+   a. **`@` 触发器**：用 `useEffect` 给 composer textarea 添加 keydown 监听器。textarea 的选择器是 `textarea[aria-label="Message input"]`。当检测到 `@` 键时调用 `openPicker()`。
+
+   b. **clearRefs**：把 `clearRefs()` 传给 ChatInterface 的 `onMessageSent` 回调。
+
+   示例（在 MentionProvider 内部使用的辅助组件）：
+
+   ```tsx
+   function MentionTrigger() {
+     const { openPicker, clearRefs } = useMentionContext();
+     useEffect(() => {
+       const textarea = document.querySelector('textarea[aria-label="Message input"]') as HTMLTextAreaElement;
+       if (!textarea) return;
+       const handler = (e: KeyboardEvent) => {
+         if (e.key === '@') {
+           openPicker();
+         }
+       };
+       textarea.addEventListener('keydown', handler);
+       return () => textarea.removeEventListener('keydown', handler);
+     }, [openPicker]);
+     return null;  // 不渲染任何 UI
+   }
+   ```
+
+   然后把 ChatInterface 的 onMessageSent 连接 clearRefs：
+   ```tsx
+   <MentionProvider>
+     <MentionTrigger />
+     <ChatInterface
+       onMessageSent={() => clearRefs()}
+       sessionContext={{ recipeId: id, recipeName: recipe.title, cuisine: recipe.cuisine }}
+     />
+     <MentionPicker ... />
+   </MentionProvider>
+   ```
+
+   **注意**：`clearRefs` 需要在 MentionProvider 内部获取。可以用辅助组件或 ref 传递模式。
+
+4. 在 ChatPage.tsx 中同样集成 MentionProvider + MentionPicker + MentionTrigger（如果存在独立 chat 页面），**不要**传 `contextEntity` 或 `autoRef`——独立 chat 页面没有上下文实体。
 
 **关键注意事项（严格遵守）**:
 - `baseUrl` 必须是 `RECIPE_BACKEND_URL`（:3002），因为 context endpoints 在 recipe backend 上
 - **必须使用 `MentionProvider` + `MentionPicker`**（从 `@kedge-agentic/chat-interface` 导入），**禁止**直接使用 `AtPicker`。MentionPicker 内部封装了 AtPicker，它与 MentionContext 集成管理 ref pills。
 - **禁止**手动实现 auto-ref 逻辑（如 useEffect + ContextLayerClient.resolve）。直接传 `autoRef={true}` prop 给 MentionPicker，它内部会自动解析 contextEntity 并注入 ref pill。
-- `MentionProvider` 必须包裹 `ChatInterface` 和 `MentionPicker`
+- `MentionProvider` 必须包裹 `ChatInterface`、`MentionPicker` 和 `MentionTrigger`
+- **必须**实现 `@` 触发器和 `clearRefs` 接线（见上方步骤 3）
 - `contextEntity` 告诉 picker 用户当前正在查看的实体，picker 顶部会显示 "当前上下文" 固定区域
 - `sessionId` 是可选的 — 首条消息时可能为 undefined，picker 仍可通过类型浏览 + contextEntity 工作
 
