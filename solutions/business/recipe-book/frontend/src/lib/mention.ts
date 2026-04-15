@@ -26,7 +26,10 @@ export function MentionTrigger({ clearRefsRef }: { clearRefsRef?: MutableRefObje
     const textarea = document.querySelector('textarea[aria-label="Message input"]') as HTMLTextAreaElement
     if (!textarea) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === '@') openPicker()
+      if (e.key === '@') {
+        e.preventDefault()
+        openPicker()
+      }
     }
     textarea.addEventListener('keydown', handler)
     return () => textarea.removeEventListener('keydown', handler)
