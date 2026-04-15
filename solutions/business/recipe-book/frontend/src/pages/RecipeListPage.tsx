@@ -55,6 +55,7 @@ export function RecipeListPage() {
                       background: recipe.status === 'published' ? 'var(--green)' : 'var(--surface2)',
                       color: recipe.status === 'published' ? 'var(--surface)' : 'var(--t2)',
                     }}
+                    aria-label={`状态: ${recipe.status === 'published' ? '已发布' : '草稿'}`}
                   >
                     {recipe.status === 'published' ? '已发布' : '草稿'}
                   </span>

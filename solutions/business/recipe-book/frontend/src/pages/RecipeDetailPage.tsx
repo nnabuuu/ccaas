@@ -407,7 +407,7 @@ export function RecipeDetailPage() {
 
         .meta-label {
           font-size: 12px;
-          color: var(--t3);
+          color: var(--t2);
           margin-bottom: 4px;
         }
 
