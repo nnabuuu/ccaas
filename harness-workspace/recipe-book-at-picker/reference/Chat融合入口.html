@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chat 融合入口</title>
+<style>
+:root{--bg1:#fff;--bg2:#f5f5f0;--bg3:#eeeee8;--t1:#1a1a1a;--t2:#6b6b65;--t3:#9c9a92;--b1:rgba(0,0,0,.12);--info-bg:#E6F1FB;--info-t:#0C447C;--success-bg:#EAF3DE;--success-t:#27500A;--warn-bg:#FAEEDA;--warn-t:#854F0B;--danger-bg:#FCEBEB;--danger-t:#A32D2D;--purple-bg:#EEEDFE;--purple-t:#3C3489;--teal-bg:#E1F5EE;--teal-t:#085041;--coral-bg:#FAECE7;--coral-t:#712B13;--r:8px;--rl:12px}
+*{box-sizing:border-box;margin:0}body{font-family:-apple-system,"SF Pro Text","PingFang SC",sans-serif;background:var(--bg3);color:var(--t1)}
+.btn{font-size:12px;padding:6px 14px;border-radius:var(--r);cursor:pointer;border:.5px solid var(--b1);background:var(--bg1);color:var(--t2);font-family:inherit;transition:all .15s}
+.btn:hover{background:var(--bg2)}.btn.pri{background:var(--t1);color:var(--bg1);border-color:var(--t1)}
+.btn.ai{background:var(--purple-bg);color:var(--purple-t);border-color:transparent}
+.btn.sm{font-size:11px;padding:4px 10px}
+.badge{font-size:10px;padding:2px 8px;border-radius:6px;display:inline-block}
+.page-nav{position:sticky;top:0;z-index:100;background:var(--bg1);border-bottom:.5px solid var(--b1);padding:8px 16px;display:flex;gap:0;align-items:center}
+.page-nav-label{font-size:10px;color:var(--t3);margin-right:4px}
+.page-nav-btn{padding:6px 12px;font-size:11px;font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--t3);font-family:inherit;border-bottom:2px solid transparent}
+.page-nav-btn:hover{color:var(--t2)}.page-nav-btn.act{color:var(--t1);border-bottom-color:var(--t1)}
+.view{display:none}.view.vis{display:block}
+
+/* Template library */
+.lib{display:flex;height:calc(100vh - 42px)}
+.lib-sidebar{width:200px;border-right:.5px solid var(--b1);background:var(--bg1);overflow-y:auto;flex-shrink:0}
+.lib-main{flex:1;overflow-y:auto;padding:20px}
+.lib-detail{width:340px;border-left:.5px solid var(--b1);background:var(--bg1);overflow-y:auto;flex-shrink:0}
+
+/* Sidebar nav */
+.nav-group{padding:6px 0}
+.nav-label{padding:4px 14px;font-size:10px;color:var(--t3);font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.nav-item{padding:7px 14px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--t2);transition:all .1s}
+.nav-item:hover{background:var(--bg2)}
+.nav-item.act{background:var(--t1);color:var(--bg1);margin:1px 6px;border-radius:6px}
+.nav-count{margin-left:auto;font-size:10px;color:var(--t3)}
+.nav-item.act .nav-count{color:rgba(255,255,255,.5)}
+
+/* Template cards grid */
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.tpl-card{background:var(--bg1);border:.5px solid var(--b1);border-radius:var(--rl);padding:14px;cursor:pointer;transition:all .12s}
+.tpl-card:hover{border-color:var(--purple-t);transform:translateY(-1px)}
+.tpl-card.selected{border-color:var(--purple-t);box-shadow:0 0 0 1px var(--purple-t)}
+.tpl-preview{height:100px;background:var(--bg2);border-radius:var(--r);margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:28px;position:relative;overflow:hidden}
+.tpl-name{font-size:13px;font-weight:500;margin-bottom:2px}
+.tpl-meta{font-size:11px;color:var(--t2);margin-bottom:6px}
+.tpl-tags{display:flex;gap:3px;flex-wrap:wrap}
+.tpl-stat{display:flex;gap:10px;margin-top:8px;font-size:10px;color:var(--t3)}
+.tpl-stat b{color:var(--t1)}
+
+/* Detail panel */
+.detail-section{padding:14px;border-bottom:.5px solid var(--b1)}
+.detail-title{font-size:15px;font-weight:500;margin-bottom:4px}
+.detail-meta{font-size:11px;color:var(--t2);line-height:1.7}
+.detail-label{font-size:11px;font-weight:500;color:var(--t3);margin-bottom:4px;margin-top:10px}
+
+/* Preview block */
+.preview-block{background:var(--bg2);border-radius:var(--r);padding:12px;margin:8px 0}
+.preview-item{display:flex;align-items:center;padding:6px 0;border-bottom:.5px solid rgba(0,0,0,.04);font-size:12px;gap:8px}
+.preview-item:last-child{border:none}
+.preview-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Chat interface */
+.chat-wrap{max-width:720px;margin:0 auto;height:calc(100vh - 42px);display:flex;flex-direction:column;background:var(--bg1)}
+.chat-body{flex:1;overflow-y:auto;padding:16px 20px}
+.chat-input-area{padding:12px 20px;border-top:.5px solid var(--b1)}
+
+/* Messages */
+.msg{margin-bottom:16px;max-width:600px}
+.msg-user{margin-left:auto;text-align:right}
+.msg-user .msg-bubble{background:var(--t1);color:var(--bg1);border-radius:var(--rl) var(--rl) 4px var(--rl);padding:10px 14px;display:inline-block;text-align:left;font-size:13px;line-height:1.6}
+.msg-ai{margin-right:auto}
+.msg-ai .msg-bubble{background:var(--bg2);border-radius:var(--rl) var(--rl) var(--rl) 4px;padding:10px 14px;display:inline-block;font-size:13px;line-height:1.6;color:var(--t1)}
+.msg-label{font-size:10px;color:var(--t3);margin-bottom:3px}
+
+/* Chat template card */
+.chat-tpl{border:.5px solid var(--b1);border-radius:var(--rl);overflow:hidden;margin:8px 0;max-width:420px;background:var(--bg1)}
+.chat-tpl-preview{height:120px;background:var(--bg2);display:flex;align-items:center;justify-content:center;position:relative}
+.chat-tpl-body{padding:12px}
+.chat-tpl-name{font-size:14px;font-weight:500;margin-bottom:2px}
+.chat-tpl-meta{font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:8px}
+.chat-tpl-actions{display:flex;gap:6px}
+
+/* Matching preview */
+.match-preview{display:flex;gap:20px;padding:8px 12px;align-items:center}
+.match-col{display:flex;flex-direction:column;gap:4px;flex:1}
+.match-item{padding:6px 10px;border-radius:6px;font-size:11px;text-align:center;font-weight:500}
+.match-left{background:var(--info-bg);color:var(--info-t)}
+.match-right{background:var(--success-bg);color:var(--success-t)}
+.match-line{width:30px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.match-dot{width:2px;height:16px;background:var(--b1);border-radius:1px}
+
+/* Chat input */
+.chat-input{display:flex;gap:8px;align-items:center}
+.chat-input input{flex:1;padding:10px 14px;border:.5px solid var(--b1);border-radius:20px;font-size:13px;font-family:inherit;outline:none}
+.chat-input input:focus{border-color:var(--purple-t)}
+.chat-send{width:36px;height:36px;border-radius:50%;border:none;background:var(--t1);color:var(--bg1);cursor:pointer;font-size:14px}
+
+/* Widget in chat */
+.chat-widget{border:.5px solid var(--b1);border-radius:var(--rl);margin:8px 0;overflow:hidden;max-width:480px}
+.chat-widget-head{padding:8px 12px;background:var(--bg2);font-size:11px;font-weight:500;display:flex;align-items:center;gap:6px}
+.chat-widget-body{padding:12px}
+</style>
+</head>
+<body>
+
+<div class="page-nav">
+  <span class="page-nav-label">Chat 融合入口 ▸</span>
+  <button class="page-nav-btn act">Chat · 课堂备课助手</button>
+</div>
+
+<div class="view vis" id="v-chat">
+<div class="chat-wrap">
+  <div style="padding:10px 20px;border-bottom:.5px solid var(--b1);font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px">
+    <span style="font-size:16px">💬</span> Chat · 课堂备课助手
+    <span style="margin-left:auto;font-size:10px;color:var(--t3)">上下文: 八(2)班 · 12.2 SAS 判定</span>
+  </div>
+
+  <div class="chat-body">
+    <!-- User message -->
+    <div class="msg msg-user">
+      <div class="msg-label">我</div>
+      <div class="msg-bubble">明天要讲 SAS 判定，帮我设计一个课堂互动环节，让学生能区分 SAS 和 ASA</div>
+    </div>
+
+    <!-- AI response -->
+    <div class="msg msg-ai">
+      <div class="msg-label">AI 助手</div>
+      <div class="msg-bubble">
+        八(2)班上次 SAS 练习正确率只有 56%，主要错误是混淆"夹角"的概念。我从模板库找到两个适合的互动设计：
+      </div>
+    </div>
+
+    <!-- Template card 1 - INTERACTIVE preview -->
+    <div class="msg msg-ai">
+      <div class="chat-tpl">
+        <div class="chat-tpl-preview" style="height:auto;padding:12px;background:var(--bg2)">
+          <div style="font-size:10px;color:var(--t3);text-align:center;margin-bottom:8px">试玩预览 · 点击左侧拖向右侧连线</div>
+          <div id="match-game" style="display:flex;gap:16px;justify-content:center;align-items:start;user-select:none">
+            <div style="display:flex;flex-direction:column;gap:6px" id="match-left">
+              <div class="match-draggable" data-key="sas" onclick="startMatch(this)" style="padding:8px 12px;background:var(--info-bg);border-radius:6px;font-size:11px;color:var(--info-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">两边一夹角</div>
+              <div class="match-draggable" data-key="sss" onclick="startMatch(this)" style="padding:8px 12px;background:var(--info-bg);border-radius:6px;font-size:11px;color:var(--info-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">三边相等</div>
+              <div class="match-draggable" data-key="asa" onclick="startMatch(this)" style="padding:8px 12px;background:var(--info-bg);border-radius:6px;font-size:11px;color:var(--info-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">两角一夹边</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);font-size:10px;padding:0 4px">
+              <div id="match-status" style="writing-mode:vertical-lr;letter-spacing:2px">点击连线</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px" id="match-right">
+              <div class="match-target" data-key="sas" onclick="endMatch(this)" style="padding:8px 12px;background:var(--success-bg);border-radius:6px;font-size:11px;color:var(--success-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">SAS</div>
+              <div class="match-target" data-key="sss" onclick="endMatch(this)" style="padding:8px 12px;background:var(--success-bg);border-radius:6px;font-size:11px;color:var(--success-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">SSS</div>
+              <div class="match-target" data-key="asa" onclick="endMatch(this)" style="padding:8px 12px;background:var(--success-bg);border-radius:6px;font-size:11px;color:var(--success-t);font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s">ASA</div>
+            </div>
+          </div>
+          <div id="match-result" style="text-align:center;font-size:10px;color:var(--t3);margin-top:6px">这就是学生在 H5 端会体验到的交互</div>
+          <span class="badge" style="position:absolute;top:6px;left:6px;background:var(--purple-bg);color:var(--purple-t)">推荐 · 可试玩</span>
+        </div>
+        <div class="chat-tpl-body">
+          <div class="chat-tpl-name">判定条件连线题</div>
+          <div class="chat-tpl-meta">
+            李老师 · 实验中学 · 用过 3 次 · 参与率 92%<br>
+            <span style="color:var(--success-t)">正确率提升 +15%</span> · 自带 AI 混淆分析
+          </div>
+          <div class="chat-tpl-actions">
+            <button class="btn ai btn sm" onclick="alert('AI 用 SAS/ASA/AAS 的内容填充模板\n生成课堂流页面\n自动配置 AI 指令：关注 SAS-ASA 混淆')">用这个 · 填入 SAS/ASA 内容</button>
+            <button class="btn sm" onclick="alert('在新标签页打开模板详情')">查看详情</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Template card 2 -->
+    <div class="msg msg-ai">
+      <div class="chat-tpl">
+        <div class="chat-tpl-preview" style="height:80px">
+          <div style="display:flex;gap:4px;font-size:10px">
+            <span style="padding:3px 8px;background:var(--info-bg);border-radius:4px;color:var(--info-t)">1 概念检查</span>
+            <span style="color:var(--t3)">→</span>
+            <span style="padding:3px 8px;background:var(--warn-bg);border-radius:4px;color:var(--warn-t)">2 连线辨析</span>
+            <span style="color:var(--t3)">→</span>
+            <span style="padding:3px 8px;background:var(--success-bg);border-radius:4px;color:var(--success-t)">3 再测验证</span>
+          </div>
+        </div>
+        <div class="chat-tpl-body">
+          <div class="chat-tpl-name">检查→辨析→验证 三步序列</div>
+          <div class="chat-tpl-meta">
+            系统预设 · 用过 8 次 · 参与率 90%<br>
+            先测一次 → 辨析讲解 → 再测看提升
+          </div>
+          <div class="chat-tpl-actions">
+            <button class="btn ai btn sm" onclick="alert('AI 用 SAS/ASA 内容填充三步序列：\nStep 1: 1 道选择题检查 SAS 理解\nStep 2: 连线题辨析 SAS vs ASA\nStep 3: 1 道变式题验证是否理解\n\n自动配置 AI 指令：对比 Step 1 和 Step 3 的正确率变化')">用这个 · 生成三步序列</button>
+            <button class="btn sm">查看详情</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI follow up -->
+    <div class="msg msg-ai">
+      <div class="msg-bubble" style="font-size:12px">
+        建议用<b>第二个（三步序列）</b>——它能让你看到"辨析前后"正确率的变化，直接验证教学效果。我可以帮你用 SAS/ASA/AAS 的内容自动填充，你只需要确认。
+      </div>
+    </div>
+
+    <!-- User reply -->
+    <div class="msg msg-user">
+      <div class="msg-label">我</div>
+      <div class="msg-bubble">就用第二个，帮我填好内容</div>
+    </div>
+
+    <!-- AI generates -->
+    <div class="msg msg-ai">
+      <div class="msg-label">AI 助手</div>
+      <div class="msg-bubble" style="font-size:12px;margin-bottom:4px">
+        已生成三步互动序列，填入了 SAS/ASA/AAS 的辨析内容：
+      </div>
+    </div>
+
+    <!-- Generated widget preview -->
+    <div class="msg msg-ai">
+      <div class="chat-widget">
+        <div class="chat-widget-head">
+          <span>📋</span> 已生成课堂互动 · 3 页
+          <span style="margin-left:auto" class="badge" style="background:var(--success-bg);color:var(--success-t)">已就绪</span>
+        </div>
+        <div class="chat-widget-body">
+          <div style="font-size:12px">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid rgba(0,0,0,.04)">
+              <span style="width:20px;height:20px;border-radius:50%;background:var(--info-bg);color:var(--info-t);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500">1</span>
+              <span style="font-weight:500">概念检查</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">选择题 · 30 秒</span>
+            </div>
+            <div style="padding:4px 0 4px 28px;font-size:11px;color:var(--t2)">PQ=XY, ∠P=∠X, PR=XZ → 判定依据是？</div>
+
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:.5px solid rgba(0,0,0,.04);margin-top:4px">
+              <span style="width:20px;height:20px;border-radius:50%;background:var(--warn-bg);color:var(--warn-t);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500">2</span>
+              <span style="font-weight:500">连线辨析</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">连线题 · 2 分钟</span>
+            </div>
+            <div style="padding:4px 0 4px 28px;font-size:11px;color:var(--t2)">将 6 个条件连到 SAS/SSS/ASA/AAS</div>
+
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;margin-top:4px">
+              <span style="width:20px;height:20px;border-radius:50%;background:var(--success-bg);color:var(--success-t);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500">3</span>
+              <span style="font-weight:500">验证测试</span>
+              <span style="font-size:10px;color:var(--t3);margin-left:auto">选择题 · 30 秒</span>
+            </div>
+            <div style="padding:4px 0 4px 28px;font-size:11px;color:var(--t2)">AB=DE, ∠B=∠E, BC=EF → 判定依据是？（变式题）</div>
+          </div>
+
+          <div style="margin-top:10px;padding:8px;background:linear-gradient(135deg,rgba(238,237,254,.1),transparent);border-radius:6px;font-size:10px;color:var(--purple-t);line-height:1.6">
+            🤖 AI 指令已配置：对比 Step 1 和 Step 3 的正确率变化；连线题混淆热点分析
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:10px">
+            <button class="btn pri btn sm" onclick="alert('三页互动已插入当前课堂流\n位置：第 3 页 SAS 讲解之后')">插入课堂流</button>
+            <button class="btn sm" onclick="alert('在课堂流编辑器中打开查看/修改')">编辑调整</button>
+            <button class="btn sm" onclick="alert('保存为我的互动序列模板')">保存为模板</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI note -->
+    <div class="msg msg-ai">
+      <div class="msg-bubble" style="font-size:12px">
+        这三页会插入到你课堂流的第 3 页（SAS 讲解）之后。课堂中 AI 助手会自动对比第 1 步和第 3 步的正确率变化——如果提升超过 15%，说明辨析讲解有效。
+      </div>
+    </div>
+
+    <!-- 追问修改 iteration -->
+    <div class="msg msg-user">
+      <div class="msg-label">我</div>
+      <div class="msg-bubble">第 2 步的连线题加一个干扰项 AAS</div>
+    </div>
+
+    <div class="msg msg-ai">
+      <div class="msg-label">AI 助手</div>
+      <div class="msg-bubble" style="font-size:12px">
+        已更新——连线题右列增加了 AAS，左列增加了"两角和一对边相等"作为对应条件。现在是 4 对 4 的连线：
+      </div>
+    </div>
+
+    <div class="msg msg-ai">
+      <div class="chat-widget">
+        <div class="chat-widget-head">
+          <span>🔄</span> 已更新 · 第 2 步连线题
+          <span style="margin-left:auto;font-size:10px;color:var(--warn-t)">已修改</span>
+        </div>
+        <div class="chat-widget-body">
+          <div style="display:flex;gap:12px;justify-content:center;margin-bottom:8px">
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="padding:5px 8px;background:var(--info-bg);border-radius:4px;font-size:10px;color:var(--info-t)">两边一夹角</div>
+              <div style="padding:5px 8px;background:var(--info-bg);border-radius:4px;font-size:10px;color:var(--info-t)">三边相等</div>
+              <div style="padding:5px 8px;background:var(--info-bg);border-radius:4px;font-size:10px;color:var(--info-t)">两角一夹边</div>
+              <div style="padding:5px 8px;background:var(--warn-bg);border-radius:4px;font-size:10px;color:var(--warn-t)">两角和一对边 <span style="font-size:8px">新增</span></div>
+            </div>
+            <div style="display:flex;align-items:center;color:var(--t3);font-size:10px">→</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="padding:5px 8px;background:var(--success-bg);border-radius:4px;font-size:10px;color:var(--success-t)">SAS</div>
+              <div style="padding:5px 8px;background:var(--success-bg);border-radius:4px;font-size:10px;color:var(--success-t)">SSS</div>
+              <div style="padding:5px 8px;background:var(--success-bg);border-radius:4px;font-size:10px;color:var(--success-t)">ASA</div>
+              <div style="padding:5px 8px;background:var(--warn-bg);border-radius:4px;font-size:10px;color:var(--warn-t)">AAS <span style="font-size:8px">新增</span></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--purple-t);padding:6px 8px;background:linear-gradient(135deg,rgba(238,237,254,.1),transparent);border-radius:4px;line-height:1.5">
+            🤖 AI 指令已更新：增加"SAS vs AAS 混淆"分析维度
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="btn pri btn sm" onclick="alert('更新后的三页互动已替换课堂流中的旧版本')">更新课堂流</button>
+            <button class="btn sm" onclick="alert('继续修改')">继续修改</button>
+            <button class="btn sm" onclick="alert('保存为新模板「SAS/ASA/AAS 四项连线辨析」')">保存为模板</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="msg msg-ai">
+      <div class="msg-bubble" style="font-size:12px">
+        AAS 作为干扰项不错——学生容易把"两角一夹边（ASA）"和"两角一对边（AAS）"搞混。AI 指令也更新了，会特别关注这两个的混淆率。满意的话点"更新课堂流"就好。
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="chat-input-area">
+    <div class="chat-input">
+      <input placeholder="继续对话... 比如「第2步的连线能不能加一个干扰项」" />
+      <button class="chat-send">↑</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px;font-size:10px;color:var(--t3)">
+      <span style="padding:2px 8px;background:var(--bg2);border-radius:10px;cursor:pointer" onclick="alert('查看模板库')">📂 模板库</span>
+      <span style="padding:2px 8px;background:var(--bg2);border-radius:10px;cursor:pointer" onclick="alert('查看课堂流')">📋 课堂流</span>
+      <span style="padding:2px 8px;background:var(--bg2);border-radius:10px;cursor:pointer" onclick="alert('切换到教案')">📝 教案</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function goN(id,btn){
+  document.querySelectorAll('.page-nav-btn').forEach(b=>b.classList.remove('act'));
+  if(btn)btn.classList.add('act');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('vis'));
+  document.getElementById(id).classList.add('vis');
+}
+
+// Interactive matching game
+let selectedSource = null;
+function startMatch(el) {
+  document.querySelectorAll('.match-draggable').forEach(d => d.style.borderColor = 'transparent');
+  if (selectedSource === el) { selectedSource = null; return; }
+  selectedSource = el;
+  el.style.borderColor = 'var(--info-t)';
+  document.getElementById('match-status').textContent = '选右侧';
+}
+function endMatch(el) {
+  if (!selectedSource) return;
+  const srcKey = selectedSource.dataset.key;
+  const tgtKey = el.dataset.key;
+  if (srcKey === tgtKey) {
+    selectedSource.style.background = 'var(--success-bg)';
+    selectedSource.style.color = 'var(--success-t)';
+    selectedSource.style.borderColor = 'var(--success-t)';
+    el.style.borderColor = 'var(--success-t)';
+    selectedSource.onclick = null;
+    el.onclick = null;
+    document.getElementById('match-result').innerHTML = '<span style="color:var(--success-t)">✓ 连对了！</span>';
+  } else {
+    selectedSource.style.borderColor = 'var(--danger-t)';
+    el.style.borderColor = 'var(--danger-t)';
+    document.getElementById('match-result').innerHTML = '<span style="color:var(--danger-t)">✗ 连错了，再试试</span>';
+    setTimeout(() => {
+      selectedSource.style.borderColor = 'transparent';
+      el.style.borderColor = 'transparent';
+      document.getElementById('match-result').textContent = '点击左侧重新开始';
+    }, 800);
+  }
+  selectedSource = null;
+  document.getElementById('match-status').textContent = '点击连线';
+}
+</script>
+</body>
+</html>
