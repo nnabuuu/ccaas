@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   ChatInterface,
@@ -6,7 +6,7 @@ import {
   useSessionList,
   useChatCore,
 } from '@kedge-agentic/chat-interface'
-import { MentionProvider, MentionPicker } from '../lib/mention'
+import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
 import { CCAAS_URL, RECIPE_BACKEND_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 
 const STARTER_CARDS = [
@@ -69,6 +69,7 @@ export function ChatPage() {
   const [searchParams] = useSearchParams()
   const recipeName = searchParams.get('recipeName')
 
+  const clearRefsRef = useRef<(() => void) | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const [sessionId, setSessionId] = useState<string | undefined>(
@@ -95,6 +96,7 @@ export function ChatPage() {
   }, [])
 
   const handleMessageSent = useCallback(() => {
+    clearRefsRef.current?.()
     setTimeout(() => refresh(), FIRST_MESSAGE_REFRESH_DELAY_MS)
   }, [refresh])
 
@@ -116,6 +118,7 @@ export function ChatPage() {
       />
       <div className="flex-1 flex flex-col min-w-0">
         <MentionProvider>
+          <MentionTrigger clearRefsRef={clearRefsRef} />
           <ChatInterface
             key={chatKey}
             serverUrl={CCAAS_URL}

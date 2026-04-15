@@ -78,6 +78,7 @@ export class RecipeBrowseProvider implements EntityBrowseProvider {
           displayName: item.title,
           subtitle: `${item.cuisine || ''} ${DIFFICULTY_MAP[item.difficulty] ?? item.difficulty ?? ''}`.trim(),
           icon: '🍳',
+          breadcrumb: null,
           summary: `${item.cuisine || ''} ${DIFFICULTY_MAP[item.difficulty] ?? item.difficulty ?? ''} 食谱`.trim(),
         });
       }
@@ -97,6 +98,7 @@ export class RecipeBrowseProvider implements EntityBrowseProvider {
                 displayName: heading,
                 subtitle: `${(recipe as any).title} / 章节`,
                 icon: '📑',
+                breadcrumb: [{ type: 'recipe', id: recipe.id, displayName: (recipe as any).title, icon: '🍳' }],
                 summary: `${(recipe as any).title} 的 ${heading}`,
               });
             }
@@ -130,17 +132,14 @@ export class RecipeBrowseProvider implements EntityBrowseProvider {
       const index = parseInt(indexStr, 10);
       const recipe = await this.recipeService.findOne(recipeId);
       const blocks = recipe.blocks || [];
-      const sectionBlocks = blocks
-        .map((block: any, idx: number) => ({ block, idx }))
-        .filter(({ block }: any) => block.type === 'section');
-      const target = sectionBlocks[index];
-      if (!target) throw new Error(`Section not found: ${entityId}`);
+      const target = blocks[index];
+      if (!target || target.type !== 'section') throw new Error(`Section not found: ${entityId}`);
 
       return {
         entityType: 'recipe_section',
         entityId,
-        displayName: target.block.content?.heading || target.block.data?.heading || `章节 ${index + 1}`,
-        data: target.block as any,
+        displayName: target.content?.heading || target.data?.heading || `章节 ${index + 1}`,
+        data: target as any,
         dataHash: '',
         resolvedAt: new Date().toISOString(),
         breadcrumb: [

@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChatInterface } from '@kedge-agentic/chat-interface'
-import { MentionProvider, MentionPicker } from '../lib/mention'
+import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
 import { useRecipe } from '../hooks/useRecipes'
 import { CCAAS_URL, RECIPE_BACKEND_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 import type { Block, IngredientItem } from '../types/recipe'
@@ -159,6 +159,7 @@ export function RecipeDetailPage() {
   const { recipe, loading } = useRecipe(id)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [chatSessionId] = useState(() => `recipe_${id}_${crypto.randomUUID()}`)
+  const clearRefsRef = useRef<(() => void) | null>(null)
 
   if (loading) {
     return <p style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</p>
@@ -248,6 +249,7 @@ export function RecipeDetailPage() {
         <div className="detail-chat-body">
           {isChatOpen && (
             <MentionProvider>
+              <MentionTrigger clearRefsRef={clearRefsRef} />
               <ChatInterface
                 key={chatSessionId}
                 serverUrl={CCAAS_URL}
@@ -256,6 +258,7 @@ export function RecipeDetailPage() {
                 apiKey={API_KEY}
                 sessionId={chatSessionId}
                 sessionContext={{ recipeId: id, recipeName: recipe.title, cuisine: recipe.cuisine }}
+                onMessageSent={() => clearRefsRef.current?.()}
                 composerPlaceholder={`讨论「${recipe.title}」的做法...`}
                 disclaimer={null}
               />
