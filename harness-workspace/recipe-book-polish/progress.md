@@ -10,3 +10,4 @@
 
 _(appended by harness.sh after each iteration)_
 | v1 | 2026-04-15 22:39:56 | 95/100 | - `src/index.css` — Added 211 lines: Dark mode input fix, AtPicker theme overrides (container/items/ |  |
+| v2 | 2026-04-16 00:56:34 | 98/100 | - `src/pages/RecipeDetailPage.tsx` — Auto-open chat panel on desktop (≥1200px) so eval can verify At |  |
