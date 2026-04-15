@@ -214,12 +214,12 @@ this.registry.setRelations([
 
 3. 在 ChatPage.tsx 中同样集成 MentionPicker（如果存在独立 chat 页面），**不要**传 `contextEntity` 或 `autoRef`——独立 chat 页面没有上下文实体。
 
-**关键注意事项**:
+**关键注意事项（严格遵守）**:
 - `baseUrl` 必须是 `RECIPE_BACKEND_URL`（:3002），因为 context endpoints 在 recipe backend 上
+- **必须使用 `MentionProvider` + `MentionPicker`**（从 `@kedge-agentic/chat-interface` 导入），**禁止**直接使用 `AtPicker`。MentionPicker 内部封装了 AtPicker，它与 MentionContext 集成管理 ref pills。
+- **禁止**手动实现 auto-ref 逻辑（如 useEffect + ContextLayerClient.resolve）。直接传 `autoRef={true}` prop 给 MentionPicker，它内部会自动解析 contextEntity 并注入 ref pill。
 - `MentionProvider` 必须包裹 `ChatInterface` 和 `MentionPicker`
-- `MentionPicker` 会自动从 `baseUrl/context/entity-types` 获取实体类型
 - `contextEntity` 告诉 picker 用户当前正在查看的实体，picker 顶部会显示 "当前上下文" 固定区域
-- `autoRef={true}` 自动解析实体并注入为 ref pill — AI 每次消息都会收到食谱内容
 - `sessionId` 是可选的 — 首条消息时可能为 undefined，picker 仍可通过类型浏览 + contextEntity 工作
 
 **验证**: `npx tsc --noEmit` + `npx vite build` in frontend dir.

@@ -33,7 +33,7 @@
 | MentionPicker renders with `contextEntity` + `autoRef` props | 3 | grep RecipeDetailPage.tsx for contextEntity and autoRef={true} |
 | MentionPicker renders in split view chat panel | 3 | Playwright: open split view, type @, snapshot shows AtPicker |
 | AtPicker shows "当前上下文" pinned section with recipe | 3 | Playwright: open picker in split view, verify "当前上下文" section with recipe name |
-| AtPicker shows entity types (食谱, 章节) | 2 | Playwright: snapshot picker home view, verify both types listed |
+| AtPicker shows root entity type (食谱) in type browse | 2 | Playwright: snapshot picker home view, verify 食谱 listed in type browse (章节 is child type, accessed via drill) |
 | Drill into pinned context entity shows sections | 3 | Playwright: click drill ▶ on pinned recipe in "当前上下文", verify sections appear |
 | MentionPicker also works on /chat page (no contextEntity) | 2 | Playwright: navigate /chat, type @, verify picker opens without "当前上下文" section |
 

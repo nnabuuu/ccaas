@@ -580,7 +580,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
     "solutions/business/recipe-book/backend/src/referenceable/" \
     "solutions/business/recipe-book/frontend/" \
     "${CHANGELOG_DIR}/" 2>/dev/null || true
-  git commit -m "feat(at-picker): recipe-book @picker v${i} iteration" --allow-empty 2>/dev/null || true
+  git commit -m "feat(frontend): recipe-book at-picker v${i} iteration" --allow-empty 2>/dev/null || true
 
   # ─── Step 4: Start 3 services ───
   echo ""
@@ -672,7 +672,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
   # Git snapshot: eval
   cd "$REPO_ROOT"
   git add "${EVAL_DIR}/" "${PROGRESS_FILE}" 2>/dev/null || true
-  git commit -m "feat(at-picker): recipe-book @picker v${i} eval — score ${score}/100" --allow-empty 2>/dev/null || true
+  git commit -m "feat(frontend): recipe-book at-picker v${i} eval — score ${score}/100" --allow-empty 2>/dev/null || true
 
   # ─── Exit conditions ───
 
@@ -694,7 +694,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
     git add \
       "solutions/business/recipe-book/backend/src/referenceable/" \
       "solutions/business/recipe-book/frontend/" && \
-    git commit -m "feat(at-picker): recipe-book @picker v${i} REVERTED — regression ${prev_score}->${score}" 2>/dev/null || true
+    git commit -m "feat(frontend): recipe-book at-picker v${i} reverted — regression ${prev_score} to ${score}" 2>/dev/null || true
     continue
   fi
 

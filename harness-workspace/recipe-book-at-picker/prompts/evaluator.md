@@ -136,8 +136,9 @@ Verify MentionPicker has `contextEntity` prop with recipe data and `autoRef={tru
 - With picker open in split view, verify a "当前上下文" section is visible at the top with the current recipe name pinned
 - This section is rendered because `contextEntity` was passed to MentionPicker
 
-**2.6 AtPicker shows entity types (2pts)**
-- With picker open, verify both "食谱" and "章节" are visible in the type browse section
+**2.6 AtPicker shows root entity type in type browse (2pts)**
+- With picker open, verify "食谱" is visible in the type browse section
+- Note: "章节" is a child type and correctly NOT shown at root level — it is accessed via drill-down (tested in 2.7)
 
 **2.7 Drill into pinned context entity (3pts)**
 - Click the drill/expand ▶ button on the pinned recipe in "当前上下文"
