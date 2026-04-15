@@ -33,9 +33,9 @@ export function RecipeListPage() {
       </div>
 
       {loading ? (
-        <p style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</p>
+        <p style={{ fontSize: 13, color: 'var(--t2)' }}>加载中...</p>
       ) : recipes.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--t3)' }}>未找到食谱</p>
+        <p style={{ fontSize: 13, color: 'var(--t2)' }}>未找到食谱</p>
       ) : (
         <div className="recipe-grid">
           {recipes.map((recipe) => (
@@ -53,7 +53,7 @@ export function RecipeListPage() {
                     className="status-badge"
                     style={{
                       background: recipe.status === 'published' ? 'var(--green)' : 'var(--surface2)',
-                      color: recipe.status === 'published' ? '#fff' : 'var(--t3)',
+                      color: recipe.status === 'published' ? 'var(--surface)' : 'var(--t2)',
                     }}
                   >
                     {recipe.status === 'published' ? '已发布' : '草稿'}
@@ -151,7 +151,7 @@ export function RecipeListPage() {
 
         .recipe-tag-text {
           font-size: 11px;
-          color: var(--t3);
+          color: var(--t2);
           display: flex;
           align-items: center;
           gap: 4px;
@@ -167,8 +167,8 @@ export function RecipeListPage() {
           display: flex;
           align-items: center;
           gap: 4px;
-          font-size: 11px;
-          color: var(--t3);
+          font-size: 12px;
+          color: var(--t2);
         }
       `}</style>
     </div>

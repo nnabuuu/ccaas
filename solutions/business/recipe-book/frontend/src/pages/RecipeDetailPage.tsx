@@ -18,7 +18,7 @@ function BlockRenderer({ block }: { block: Block }) {
   switch (type) {
     case 'section':
       return (
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--t1)', margin: '24px 0 12px' }}>
+        <h2 style={{ fontSize: 17, fontWeight: 600, color: 'var(--t1)', margin: '24px 0 12px', lineHeight: 1.3 }}>
           {content.heading as string}
         </h2>
       )
@@ -44,7 +44,7 @@ function BlockRenderer({ block }: { block: Block }) {
             {items.map((item, i) => (
               <div key={i} className="ingredient-item">
                 <span style={{ color: 'var(--t1)', fontWeight: 500 }}>{item.name}</span>
-                <span style={{ color: 'var(--t3)', fontSize: 12 }}>
+                <span style={{ color: 'var(--t2)', fontSize: 13 }}>
                   {item.amount}
                   {item.note ? ` · ${item.note}` : ''}
                 </span>
@@ -162,11 +162,11 @@ export function RecipeDetailPage() {
   const clearRefsRef = useRef<(() => void) | null>(null)
 
   if (loading) {
-    return <p style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</p>
+    return <p style={{ fontSize: 13, color: 'var(--t2)' }}>加载中...</p>
   }
 
   if (!recipe) {
-    return <p style={{ fontSize: 13, color: 'var(--t3)' }}>未找到食谱</p>
+    return <p style={{ fontSize: 13, color: 'var(--t2)' }}>未找到食谱</p>
   }
 
   return (
@@ -420,44 +420,61 @@ export function RecipeDetailPage() {
         .ingredient-list {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          overflow: hidden;
         }
 
         .ingredient-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 6px 12px;
+          padding: 8px 14px;
           background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: 4px;
+          border-bottom: 1px solid var(--border);
           font-size: 13px;
+        }
+
+        .ingredient-item:last-child {
+          border-bottom: none;
         }
 
         .block-table {
           width: 100%;
-          border-collapse: collapse;
+          border-collapse: separate;
+          border-spacing: 0;
           font-size: 13px;
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          overflow: hidden;
         }
 
         .block-table th {
           text-align: left;
-          padding: 8px 12px;
+          padding: 10px 14px;
           font-weight: 600;
           color: var(--t1);
           border-bottom: 1px solid var(--border);
-          background: var(--surface);
+          background: var(--surface2);
           font-size: 12px;
         }
 
         .block-table td {
-          padding: 8px 12px;
+          padding: 10px 14px;
           color: var(--t2);
           border-bottom: 1px solid var(--border);
         }
 
+        .block-table tbody tr:nth-child(even) {
+          background: var(--surface);
+        }
+
+        .block-table tbody tr:last-child td {
+          border-bottom: none;
+        }
+
         .block-callout {
-          padding: 12px 16px;
+          padding: 14px 18px;
           border-radius: 8px;
           font-size: 13px;
           line-height: 1.6;
