@@ -253,7 +253,7 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
 /* Select button: keep white text on blue background */
 .at-picker-overlay button[style*="26, 115, 232"][style*="white"] {
   background: var(--blue) !important;
-  color: white !important;
+  color: var(--surface) !important;
 }
 
 /* --- Section headers: #888 → rgb(136,136,136) → var(--t3) --- */
@@ -356,7 +356,7 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
   }
   .at-picker-overlay button[style*="26, 115, 232"][style*="white"] {
     background: var(--blue) !important;
-    color: white !important;
+    color: var(--surface) !important;
   }
 
   [data-testid="ref-pill"] {

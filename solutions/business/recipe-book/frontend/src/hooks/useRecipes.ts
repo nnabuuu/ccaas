@@ -39,14 +39,14 @@ export function useRecipe(id: string | undefined) {
     setLoading(true)
 
     const recipeReq = fetch(`${RECIPE_BACKEND_URL}/api/recipes/${id}`)
-      .then((r) => r.json())
+      .then((r) => r.ok ? r.json() : null)
     const docReq = fetch(`${RECIPE_BACKEND_URL}/context/entity/recipe/${id}/document`)
       .then((r) => r.json())
       .catch(() => null)
 
     Promise.all([recipeReq, docReq])
       .then(([recipeData, docData]) => {
-        setRecipe(recipeData)
+        setRecipe(recipeData && recipeData.id ? recipeData : null)
         setDocument(docData?.document ?? null)
       })
       .catch(() => {

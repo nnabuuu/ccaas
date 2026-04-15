@@ -133,7 +133,7 @@ export function RecipeListPage() {
         }
 
         .status-badge {
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 500;
           padding: 2px 8px;
           border-radius: 4px;
@@ -142,7 +142,7 @@ export function RecipeListPage() {
         }
 
         .recipe-tag {
-          font-size: 11px;
+          font-size: 12px;
           color: var(--t2);
           padding: 2px 10px;
           border-radius: 999px;
@@ -150,7 +150,7 @@ export function RecipeListPage() {
         }
 
         .recipe-tag-text {
-          font-size: 11px;
+          font-size: 12px;
           color: var(--t2);
           display: flex;
           align-items: center;

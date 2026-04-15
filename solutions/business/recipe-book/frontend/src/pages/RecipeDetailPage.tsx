@@ -157,7 +157,7 @@ export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { recipe, loading } = useRecipe(id)
-  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isChatOpen, setIsChatOpen] = useState(() => window.innerWidth >= 1200)
   const [chatSessionId] = useState(() => `recipe_${id}_${crypto.randomUUID()}`)
   const clearRefsRef = useRef<(() => void) | null>(null)
 
@@ -375,7 +375,7 @@ export function RecipeDetailPage() {
         .back-btn:hover { color: var(--t1); }
 
         .published-badge {
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 500;
           padding: 2px 8px;
           border-radius: 4px;
@@ -406,7 +406,7 @@ export function RecipeDetailPage() {
         }
 
         .meta-label {
-          font-size: 11px;
+          font-size: 12px;
           color: var(--t3);
           margin-bottom: 4px;
         }
