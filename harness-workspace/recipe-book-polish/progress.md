@@ -13,3 +13,4 @@ _(appended by harness.sh after each iteration)_
 | v2 | 2026-04-16 00:56:34 | 98/100 | - `src/pages/RecipeDetailPage.tsx` — Auto-open chat panel on desktop (≥1200px) so eval can verify At |  |
 | v3 | 2026-04-16 01:20:41 | 97/100 | - `src/index.css` — No new changes needed; the `[style*="white"]` → `[style*="255, 255, 255"]` fix w | **Fix 选择 button background override** — The CSS selector mismatch at `index.css: |
 | v4 | 2026-04-16 01:39:23 | 100/100 | - `src/index.css` — Fixed `选择` button CSS selector: removed `[style*="background"]` requirement that |  |
+| v5 | 2026-04-16 01:52:55 | 100/100 | - `src/pages/RecipeDetailPage.tsx` — `.meta-label` color from `var(--t3)` to `var(--t2)` for strict  |  |
