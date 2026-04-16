@@ -6,7 +6,8 @@ import {
   useSessionList,
   useChatCore,
 } from '@kedge-agentic/chat-interface'
-import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
+import { MentionProvider, MentionTrigger } from '../lib/mention'
+import { RecipePicker } from '../components/RecipePicker'
 import { CCAAS_URL, CONTEXT_LAYER_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 
 const STARTER_CARDS = [
@@ -132,11 +133,7 @@ export function ChatPage() {
             emptyState={<RecipeWelcome />}
             disclaimer={null}
           />
-          <MentionPicker
-            baseUrl={CONTEXT_LAYER_URL}
-            sessionId={sessionId}
-            sessionTemplate={SESSION_TEMPLATE}
-          />
+          <RecipePicker baseUrl={CONTEXT_LAYER_URL} />
         </MentionProvider>
       </div>
 

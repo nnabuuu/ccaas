@@ -196,177 +196,113 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
 }
 
 /* ============================================================
-   Area 1: AtPicker Theme Overrides
-   Warm palette alignment — replaces Material blue (#1a73e8)
-   with design tokens. AtPicker uses only inline styles +
-   one className (.at-picker-overlay).
+   RecipePicker styles
    ============================================================ */
 
-/* --- Container --- */
-.at-picker-overlay {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: var(--menu-shadow) !important;
+.recipe-picker-overlay {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 0 20px 8px;
 }
 
-/* --- Search input inside picker --- */
-.at-picker-overlay input {
-  color: var(--t1) !important;
-  background: var(--surface) !important;
-  border-color: var(--border) !important;
-}
-.at-picker-overlay input::placeholder {
-  color: var(--t3) !important;
-}
-
-/* --- Internal dividers: #f0f0f0/#e0e0e0 → var(--border) --- */
-.at-picker-overlay [style*="border-bottom"],
-.at-picker-overlay [style*="border-top"],
-.at-picker-overlay [style*="borderBottom"],
-.at-picker-overlay [style*="borderTop"] {
-  border-color: var(--border) !important;
+.recipe-picker-dropdown {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--menu-shadow);
+  overflow: hidden;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
-/* --- Item hover (CSS :hover overrides JS-set inline #f5f5f5) --- */
-.at-picker-overlay [data-nav-item]:hover {
-  background: var(--surface2) !important;
+.recipe-picker-search {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  font-size: 13px;
+  color: var(--t1);
+  outline: none;
+  box-sizing: border-box;
+}
+.recipe-picker-search::placeholder { color: var(--t3); }
+
+.recipe-picker-list {
+  overflow-y: auto;
+  flex: 1;
 }
 
-/* --- Focus state: keyboard nav sets inline bg #e8f0fe → rgb(232,240,254) --- */
-.at-picker-overlay [data-nav-item][style*="232, 240, 254"] {
-  background: var(--surface2) !important;
+.recipe-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--t1);
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.recipe-picker-item:hover,
+.recipe-picker-item.active { background: var(--surface2); }
+.recipe-picker-item.referenced {
+  opacity: 0.5;
+  cursor: default;
+}
+.recipe-picker-item.referenced:hover { background: transparent; }
+.recipe-picker-item-icon { flex-shrink: 0; }
+.recipe-picker-item-name { flex: 1; }
+.recipe-picker-item-check { font-size: 12px; color: var(--t3); }
+
+.recipe-picker-empty {
+  padding: 16px 14px;
+  font-size: 13px;
+  color: var(--t3);
+  text-align: center;
 }
 
-/* --- Context entity section: #f0f7ff background --- */
-.at-picker-overlay [data-testid="context-entity-section"] [data-nav-item] {
-  background: var(--blue-bg) !important;
-}
-.at-picker-overlay [data-testid="context-entity-section"] [data-nav-item]:hover,
-.at-picker-overlay [data-testid="context-entity-section"] [data-nav-item][style*="232, 240, 254"] {
-  background: var(--surface2) !important;
+.recipe-picker-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px 8px;
 }
 
-/* --- Accent color: #1a73e8 → rgb(26,115,232) → var(--blue) --- */
-.at-picker-overlay [style*="26, 115, 232"] {
-  color: var(--blue) !important;
-}
-/* Select button: override bg+text on blue background */
-.at-picker-overlay button[style*="26, 115, 232"] {
-  background: var(--blue) !important;
-  background-color: var(--blue) !important;
-  color: var(--surface) !important;
-}
-
-/* --- Section headers: #888 → rgb(136,136,136) → var(--t3) --- */
-.at-picker-overlay [style*="136, 136, 136"] {
-  color: var(--t3) !important;
+.recipe-picker-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--blue-bg);
+  border-radius: 12px;
+  font-size: 13px;
+  color: var(--blue);
+  border: 1px solid var(--border);
 }
 
-/* --- Subtitles: #999 → rgb(153,153,153) → var(--t3) --- */
-.at-picker-overlay [style*="153, 153, 153"] {
-  color: var(--t3) !important;
+.recipe-picker-pill-remove {
+  background: none;
+  border: none;
+  color: var(--t2);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+  font-family: inherit;
 }
 
-/* --- Secondary text: #666 → rgb(102,102,102) → var(--t2) --- */
-.at-picker-overlay [style*="102, 102, 102"] {
-  color: var(--t2) !important;
-}
-
-/* --- Chevron/arrow: #ccc → rgb(204,204,204) → var(--t3) --- */
-.at-picker-overlay [style*="204, 204, 204"] {
-  color: var(--t3) !important;
-}
-
-/* --- Drill button borders --- */
-.at-picker-overlay button[style*="197, 217, 247"] {
-  border-color: var(--blue) !important;
-  color: var(--blue) !important;
-}
-.at-picker-overlay button[style*="221, 221, 221"] {
-  border-color: var(--border) !important;
-}
-
-/* --- Hover backgrounds set by JS: #f5f5f5 → rgb(245,245,245) --- */
-.at-picker-overlay [style*="245, 245, 245"] {
-  background: var(--surface2) !important;
-}
-
-/* --- Context entity hover: #e0efff → rgb(224,239,255) --- */
-.at-picker-overlay [style*="224, 239, 255"] {
-  background: var(--surface2) !important;
-}
-
-/* --- Context entity default: #f0f7ff → rgb(240,247,255) --- */
-.at-picker-overlay [style*="240, 247, 255"] {
-  background: var(--blue-bg) !important;
-}
-
-/* --- RefPill: align to warm palette --- */
-[data-testid="ref-pill"] {
-  background: var(--blue-bg) !important;
-  color: var(--blue) !important;
-  border: 1px solid var(--border) !important;
-}
-[data-testid="ref-pill-remove"] {
-  color: var(--t2) !important;
-}
-
-/* ============================================================
-   Area 5: AtPicker Dark Mode Overrides
-   Every light-mode override above must have a dark counterpart.
-   The CSS variable values auto-switch via design-tokens.css,
-   so we just ensure overrides still apply in dark mode.
-   ============================================================ */
-@media (prefers-color-scheme: dark) {
-  .at-picker-overlay {
-    background: var(--surface) !important;
-    border-color: var(--border) !important;
-    box-shadow: var(--menu-shadow) !important;
-  }
-
-  .at-picker-overlay input {
-    color: var(--t1) !important;
-    background: var(--surface) !important;
-    border-color: var(--border) !important;
-  }
-  .at-picker-overlay input::placeholder {
-    color: var(--t3) !important;
-  }
-
-  .at-picker-overlay [data-nav-item]:hover,
-  .at-picker-overlay [data-nav-item][style*="232, 240, 254"],
-  .at-picker-overlay [style*="245, 245, 245"],
-  .at-picker-overlay [style*="224, 239, 255"] {
-    background: var(--surface2) !important;
-  }
-
-  .at-picker-overlay [data-testid="context-entity-section"] [data-nav-item] {
-    background: var(--blue-bg) !important;
-  }
-  .at-picker-overlay [data-testid="context-entity-section"] [data-nav-item]:hover,
-  .at-picker-overlay [data-testid="context-entity-section"] [data-nav-item][style*="232, 240, 254"] {
-    background: var(--surface2) !important;
-  }
-
-  .at-picker-overlay [style*="240, 247, 255"] {
-    background: var(--blue-bg) !important;
-  }
-
-  .at-picker-overlay [style*="26, 115, 232"] {
-    color: var(--blue) !important;
-  }
-  .at-picker-overlay button[style*="26, 115, 232"] {
-    background: var(--blue) !important;
-    background-color: var(--blue) !important;
-    color: var(--surface) !important;
-  }
-
-  [data-testid="ref-pill"] {
-    background: var(--blue-bg) !important;
-    color: var(--blue) !important;
-    border-color: var(--border) !important;
-  }
-  [data-testid="ref-pill-remove"] {
-    color: var(--t2) !important;
-  }
+.recipe-picker-refs-hint {
+  font-size: 11px;
+  color: var(--t3);
+  width: 100%;
+  margin-top: 2px;
 }

@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ChatInterface } from '@kedge-agentic/chat-interface'
-import { MentionProvider, MentionPicker, MentionTrigger } from '../lib/mention'
+import { MentionProvider, MentionTrigger } from '../lib/mention'
+import { RecipePicker } from '../components/RecipePicker'
 import { useRecipe } from '../hooks/useRecipes'
 import { CCAAS_URL, CONTEXT_LAYER_URL, TENANT_ID, SESSION_TEMPLATE, API_KEY } from '../config'
 import type { Block, IngredientItem } from '../types/recipe'
@@ -262,10 +263,8 @@ export function RecipeDetailPage() {
                 composerPlaceholder={`讨论「${recipe.title}」的做法...`}
                 disclaimer={null}
               />
-              <MentionPicker
+              <RecipePicker
                 baseUrl={CONTEXT_LAYER_URL}
-                sessionId={chatSessionId}
-                sessionTemplate={SESSION_TEMPLATE}
                 contextEntity={{
                   entityType: 'recipe',
                   entityId: id!,

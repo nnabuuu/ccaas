@@ -5,8 +5,6 @@
  */
 export { MentionProvider, useMentionContext } from '../../../../../../packages/chat-interface/src/components/chat/MentionContext'
 export type { MentionRef } from '../../../../../../packages/chat-interface/src/components/chat/MentionContext'
-export { MentionPicker } from '../../../../../../packages/chat-interface/src/components/chat/MentionPicker'
-
 import { useEffect, type MutableRefObject } from 'react'
 import { useMentionContext } from '../../../../../../packages/chat-interface/src/components/chat/MentionContext'
 
