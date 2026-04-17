@@ -306,3 +306,61 @@ div:has(> [data-ck="composer"]) > .ck-scrollbar {
   width: 100%;
   margin-top: 2px;
 }
+
+/* Staging area */
+.recipe-picker-staging {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.recipe-picker-staging-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.recipe-picker-staging-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  font-size: 12px;
+}
+.recipe-picker-staging-pill-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--blue);
+  opacity: 0.6;
+  font-size: 11px;
+  padding: 0 2px;
+  font-family: inherit;
+}
+.recipe-picker-staging-pill-remove:hover {
+  opacity: 1;
+}
+.recipe-picker-staging-count {
+  font-size: 11px;
+  color: var(--t3);
+  margin-top: 4px;
+}
+
+/* Staged item in list */
+.recipe-picker-item.staged {
+  background: transparent;
+}
+.recipe-picker-item .staged-check {
+  color: var(--blue);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+/* Flash green animation on Space-add */
+@keyframes flash-green {
+  0% { background-color: rgba(52, 199, 123, 0.2); }
+  100% { background-color: transparent; }
+}
+.recipe-picker-item.flash {
+  animation: flash-green 400ms ease-out;
+}

@@ -20,6 +20,10 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
   const clientRef = useRef<ContextLayerClient | null>(null)
   const clientBaseUrlRef = useRef('')
 
+  // Multi-select staging state
+  const [staging, setStaging] = useState<Array<{ id: string; title: string }>>([])
+  const [flashId, setFlashId] = useState<string | null>(null)
+
   if (!clientRef.current || clientBaseUrlRef.current !== baseUrl) {
     clientRef.current = new ContextLayerClient(baseUrl)
     clientBaseUrlRef.current = baseUrl
@@ -28,6 +32,22 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
   const isReferenced = useCallback((id: string) => {
     return refs.some(r => r.entityType === 'recipe' && r.entityId === id)
   }, [refs])
+
+  const isStaged = useCallback((id: string) => {
+    return staging.some(s => s.id === id)
+  }, [staging])
+
+  const toggleStaging = useCallback((recipe: { id: string; title: string }) => {
+    setStaging(prev => {
+      const exists = prev.some(s => s.id === recipe.id)
+      if (exists) return prev.filter(s => s.id !== recipe.id)
+      return [...prev, recipe]
+    })
+  }, [])
+
+  const removeFromStaging = useCallback((id: string) => {
+    setStaging(prev => prev.filter(s => s.id !== id))
+  }, [])
 
   // Selectable items (not already referenced)
   const selectableIndices = useMemo(() => {
@@ -65,11 +85,12 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
     })
   }, [autoRef, contextEntity, addRef, baseUrl])
 
-  // Focus input + reset active index when picker opens
+  // Focus input + reset state when picker opens
   useEffect(() => {
     if (pickerOpen) {
       setQuery('')
       setActiveIndex(0)
+      setStaging([])
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [pickerOpen])
@@ -109,13 +130,71 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
     closePicker()
   }, [addRef, closePicker])
 
-  // Keyboard navigation — handled on the search input so focus stays there
+  // Commit all staged items (+ optional extra recipe) then close
+  const commitStaging = useCallback(async (extraRecipe?: { id: string; title: string }) => {
+    const toCommit = [...staging]
+    if (extraRecipe && !toCommit.some(s => s.id === extraRecipe.id)) {
+      toCommit.push(extraRecipe)
+    }
+    if (toCommit.length === 0) return
+
+    const client = clientRef.current!
+    const results = await Promise.allSettled(
+      toCommit.map(async (recipe) => {
+        try {
+          const resolved = await client.resolve('recipe', recipe.id)
+          return { recipe, resolved }
+        } catch {
+          return { recipe, resolved: null }
+        }
+      })
+    )
+
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        const { recipe, resolved } = result.value
+        addRef({
+          entityType: 'recipe',
+          entityId: recipe.id,
+          displayName: recipe.title,
+          icon: '🍳',
+          ...(resolved ? { data: resolved.data, summary: resolved.displayName || recipe.title } : {}),
+        })
+      }
+    }
+
+    setStaging([])
+    closePicker()
+  }, [staging, addRef, closePicker])
+
+  // Keyboard navigation
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
-      closePicker()
+      if (staging.length > 0) {
+        commitStaging()
+      } else {
+        closePicker()
+      }
       return
     }
+
+    if (e.key === ' ') {
+      e.preventDefault()
+      if (selectableIndices.length === 0) return
+      const realIdx = selectableIndices[activeIndex]
+      if (realIdx != null && recipes[realIdx] && !isReferenced(recipes[realIdx].id)) {
+        const recipe = recipes[realIdx]
+        // Flash animation only when adding (not removing)
+        if (!isStaged(recipe.id)) {
+          setFlashId(recipe.id)
+          setTimeout(() => setFlashId(null), 400)
+        }
+        toggleStaging(recipe)
+      }
+      return
+    }
+
     if (selectableIndices.length === 0) return
 
     if (e.key === 'ArrowDown') {
@@ -128,10 +207,24 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
       e.preventDefault()
       const realIdx = selectableIndices[activeIndex]
       if (realIdx != null && recipes[realIdx]) {
-        handleSelect(recipes[realIdx])
+        if (staging.length > 0) {
+          commitStaging(recipes[realIdx])
+        } else {
+          handleSelect(recipes[realIdx])
+        }
       }
     }
-  }, [closePicker, selectableIndices, activeIndex, recipes, handleSelect])
+  }, [closePicker, selectableIndices, activeIndex, recipes, handleSelect, staging, commitStaging, isReferenced, isStaged, toggleStaging])
+
+  // Handle overlay click — commit staging if any, then close
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
+    if (e.target !== e.currentTarget) return
+    if (staging.length > 0) {
+      commitStaging()
+    } else {
+      closePicker()
+    }
+  }, [staging, commitStaging, closePicker])
 
   const activeDescendant = selectableIndices.length > 0 && selectableIndices[activeIndex] != null
     ? `recipe-item-${selectableIndices[activeIndex]}`
@@ -141,7 +234,7 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
     <>
       {/* Picker dropdown */}
       {pickerOpen && (
-        <div className="recipe-picker-overlay" onClick={(e) => { if (e.target === e.currentTarget) closePicker() }}>
+        <div className="recipe-picker-overlay" onClick={handleOverlayClick}>
           <div className="recipe-picker-dropdown">
             <input
               ref={inputRef}
@@ -151,11 +244,29 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
               aria-expanded={true}
               aria-controls="recipe-picker-listbox"
               aria-activedescendant={activeDescendant}
-              placeholder="搜索食谱...  ↑↓ 选择  ⏎ 确认  Esc 关闭"
+              placeholder={staging.length > 0
+                ? `已选 ${staging.length} 个 · Space继续选 ⏎确认`
+                : '搜索食谱... ↑↓选择 Space添加 ⏎确认 Esc关闭'
+              }
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
             />
+            {/* Staging area */}
+            {staging.length > 0 && (
+              <div className="recipe-picker-staging">
+                <div className="recipe-picker-staging-pills">
+                  {staging.map(s => (
+                    <span key={s.id} className="recipe-picker-staging-pill">
+                      <span>🍳</span>
+                      <span>{s.title}</span>
+                      <button className="recipe-picker-staging-pill-remove" onClick={() => removeFromStaging(s.id)}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="recipe-picker-staging-count">已选 {staging.length} 个</div>
+              </div>
+            )}
             <div className="recipe-picker-list" ref={listRef} id="recipe-picker-listbox" role="listbox">
               {loading && <div className="recipe-picker-empty">搜索中...</div>}
               {!loading && recipes.length === 0 && (
@@ -163,6 +274,7 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
               )}
               {!loading && recipes.map((r, i) => {
                 const referenced = isReferenced(r.id)
+                const staged = isStaged(r.id)
                 const isActive = !referenced && selectableIndices[activeIndex] === i
                 return (
                   <button
@@ -171,7 +283,7 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
                     id={`recipe-item-${i}`}
                     role="option"
                     aria-selected={isActive}
-                    className={`recipe-picker-item${referenced ? ' referenced' : ''}${isActive ? ' active' : ''}`}
+                    className={`recipe-picker-item${referenced ? ' referenced' : ''}${staged ? ' staged' : ''}${isActive ? ' active' : ''}${flashId === r.id ? ' flash' : ''}`}
                     onClick={() => !referenced && handleSelect(r)}
                     onMouseEnter={() => {
                       if (!referenced) {
@@ -184,6 +296,7 @@ export function RecipePicker({ baseUrl, contextEntity, autoRef }: RecipePickerPr
                     <span className="recipe-picker-item-icon">🍳</span>
                     <span className="recipe-picker-item-name">{r.title}</span>
                     {referenced && <span className="recipe-picker-item-check">✓ 已引用</span>}
+                    {staged && !referenced && <span className="recipe-picker-item-check staged-check">✓ 已选</span>}
                   </button>
                 )
               })}
