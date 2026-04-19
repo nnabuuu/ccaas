@@ -12,6 +12,7 @@ interface LessonMeta {
   gradeLevel: string
   description: string
   emoji: string
+  lessonType?: string
 }
 
 interface LessonsIndex {
@@ -181,7 +182,16 @@ export default function CourseSelectionPage() {
       .finally(() => setLoading(false))
   }, [])
 
+  function getRoute(lesson: LessonMeta): string {
+    if (lesson.lessonType === 'reading') return `/demo/${lesson.id}`
+    return `/lesson/${lesson.id}`
+  }
+
   function handleContinue(lesson: LessonMeta) {
+    if (lesson.lessonType === 'reading') {
+      navigate(getRoute(lesson))
+      return
+    }
     const sessionId = getSavedSession(lesson.id)
     navigate(`/lesson/${lesson.id}${sessionId ? `?session=${sessionId}` : ''}`, {
       state: { forceNew: false, lessonTitle: lesson.title },
@@ -189,6 +199,10 @@ export default function CourseSelectionPage() {
   }
 
   function handleNew(lesson: LessonMeta) {
+    if (lesson.lessonType === 'reading') {
+      navigate(getRoute(lesson))
+      return
+    }
     clearSession(lesson.id)
     navigate(`/lesson/${lesson.id}`, {
       state: { forceNew: true, lessonTitle: lesson.title },

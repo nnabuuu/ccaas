@@ -1,0 +1,150 @@
+/* ── Orchestrator / Demo Surface ── */
+
+/* Conductor bar */
+.orch-conductor{
+  position:fixed;top:0;left:0;right:0;z-index:50;
+  background:var(--rd-surface);border-bottom:1px solid var(--rd-border);
+  display:flex;align-items:center;gap:16px;padding:10px 20px;height:64px;
+}
+.orch-cnd-mark{
+  width:28px;height:28px;border-radius:7px;background:var(--rd-t1);
+  color:#f0efe8;display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;letter-spacing:-.3px;flex-shrink:0;
+}
+.orch-cnd-title{display:flex;flex-direction:column;gap:1px;margin-right:8px;flex-shrink:0}
+.orch-cnd-title-a{font-size:12px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+.orch-cnd-title-b{font-size:10px;color:var(--rd-t3);font-weight:500;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+
+/* Step rail */
+.orch-cnd-rail{display:flex;align-items:center;gap:2px;background:var(--rd-bg);padding:4px;border-radius:8px;border:1px solid var(--rd-border);flex-shrink:0}
+.orch-cnd-step{
+  display:flex;align-items:center;gap:7px;padding:6px 11px;
+  font-size:11px;font-weight:600;color:var(--rd-t3);
+  border-radius:6px;cursor:pointer;transition:all .15s;
+  font-family:inherit;border:none;background:transparent;white-space:nowrap;
+}
+.orch-cnd-step:hover{color:var(--rd-t1);background:var(--rd-surface2)}
+.orch-cnd-step .n{
+  width:16px;height:16px;border-radius:50%;
+  background:var(--rd-surface2);color:var(--rd-t3);
+  font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.orch-cnd-step.done{color:var(--rd-t2)}
+.orch-cnd-step.done .n{background:var(--rd-t2);color:var(--rd-surface)}
+.orch-cnd-step.act{background:var(--rd-t1);color:#f0efe8}
+.orch-cnd-step.act .n{background:#f0efe8;color:var(--rd-t1)}
+.orch-cnd-step .dur{font-size:9px;color:inherit;opacity:.6;font-weight:500}
+
+.orch-cnd-sep{width:1px;height:22px;background:var(--rd-border)}
+
+.orch-cnd-btn{
+  font-family:inherit;font-size:12px;font-weight:500;
+  padding:7px 12px;border-radius:7px;border:1px solid rgba(28,28,26,.14);
+  background:var(--rd-surface);color:var(--rd-t1);cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap;
+}
+.orch-cnd-btn:hover{background:var(--rd-surface2)}
+.orch-cnd-btn.pri{background:var(--rd-t1);color:var(--rd-surface);border-color:var(--rd-t1)}
+.orch-cnd-btn.pri:hover{opacity:.88}
+.orch-cnd-btn.ghost{border-color:transparent;background:transparent;color:var(--rd-t2)}
+.orch-cnd-btn.ghost:hover{background:var(--rd-surface2);color:var(--rd-t1)}
+
+.orch-cnd-time{
+  display:inline-flex;align-items:baseline;gap:4px;
+  font-size:13px;font-weight:700;color:var(--rd-t1);
+  padding-left:14px;margin-left:auto;
+}
+.orch-cnd-time .lb{font-size:9px;font-weight:600;color:var(--rd-t3);text-transform:uppercase;letter-spacing:.4px;margin-right:4px}
+.orch-cnd-time .sl{color:var(--rd-t3);font-weight:400}
+.orch-cnd-time .tot{color:var(--rd-t2);font-weight:600;font-size:12px}
+
+/* Stage */
+.orch-stage{
+  position:fixed;top:64px;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 20% 30%,rgba(28,28,26,.035) 0,transparent 55%),
+    radial-gradient(ellipse at 80% 70%,rgba(28,28,26,.04) 0,transparent 55%),
+    #e8e6df;
+  display:grid;grid-template-columns:1fr 240px;grid-template-rows:1fr;gap:20px;padding:24px 28px;overflow:hidden;
+}
+
+/* Featured */
+.orch-featured{
+  grid-column:1;grid-row:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;min-height:0;
+}
+.orch-featured-label{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.orch-featured-label .dot{width:7px;height:7px;border-radius:50%}
+.orch-featured-label.student .dot{background:#4a78b6}
+.orch-featured-label.teacher .dot{background:#4a8e72}
+.orch-featured-label.board .dot{background:#b78840}
+.orch-featured-label .role{color:var(--rd-t1)}
+.orch-featured-label .role-en{color:var(--rd-t3);font-weight:500;letter-spacing:.3px}
+.orch-featured-label .pulse{width:6px;height:6px;border-radius:50%;background:#0d5245;animation:orch-pulse 2s ease infinite}
+@keyframes orch-pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.orch-featured-box{flex:1;width:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.orch-dev-large{
+  position:relative;background:#2a2826;border-radius:14px;padding:14px;
+  box-shadow:0 30px 60px -20px rgba(28,28,26,.5),0 0 0 1px rgba(28,28,26,.25);
+  transform-origin:center center;flex-shrink:0;
+}
+.orch-dev-large.board{background:#1c1c1a}
+.orch-dev-large.teacher{background:#2e2c2a}
+.orch-dev-large iframe{width:100%;height:100%;border:none;border-radius:10px;background:var(--rd-bg);display:block}
+.orch-dev-large.board iframe{border-radius:4px}
+
+/* Filmstrip */
+.orch-strip{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:14px;min-height:0;overflow:hidden}
+.orch-strip-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--rd-t2);padding:0 2px}
+.orch-thumb{
+  background:var(--rd-surface);border:1px solid var(--rd-border);border-radius:10px;padding:10px;
+  cursor:pointer;display:flex;flex-direction:column;gap:8px;transition:all .15s;flex:1;min-height:0;
+  font-family:inherit;text-align:left;color:inherit;
+}
+.orch-thumb:hover{border-color:rgba(28,28,26,.14);background:var(--rd-surface2)}
+.orch-thumb-head{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.orch-thumb-dot{width:6px;height:6px;border-radius:50%}
+.orch-thumb.student .orch-thumb-dot{background:#4a78b6}
+.orch-thumb.teacher .orch-thumb-dot{background:#4a8e72}
+.orch-thumb.board .orch-thumb-dot{background:#b78840}
+.orch-thumb-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--rd-t1)}
+.orch-thumb-en{font-size:9px;color:var(--rd-t3);font-weight:500;margin-left:auto}
+.orch-thumb-view{flex:1;min-height:0;border:1px solid var(--rd-border);border-radius:5px;overflow:hidden;position:relative;background:var(--rd-bg)}
+.orch-thumb-view iframe{border:none;transform-origin:top left;pointer-events:none;background:var(--rd-bg)}
+.orch-thumb-cover{position:absolute;inset:0;background:transparent}
+.orch-thumb.active{border-color:var(--rd-t1);box-shadow:0 0 0 2px var(--rd-t1) inset}
+
+/* Tweaks panel */
+.orch-tweaks{
+  position:fixed;bottom:20px;right:20px;z-index:100;
+  background:var(--rd-surface);border:1px solid rgba(28,28,26,.14);
+  border-radius:10px;padding:14px 16px;width:240px;font-size:12px;
+  box-shadow:0 20px 40px -20px rgba(28,28,26,.3);
+}
+.orch-tw-hd{display:flex;align-items:center;gap:6px;margin-bottom:12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.orch-tw-hd .dot{width:5px;height:5px;border-radius:50%;background:var(--rd-t1)}
+.orch-tw-hd .sp{flex:1}
+.orch-tw-hd .cls{font-size:11px;color:var(--rd-t3);cursor:pointer;text-transform:none;letter-spacing:0;background:none;border:none;font-family:inherit;padding:0}
+.orch-tw-hd .cls:hover{color:var(--rd-t1)}
+.orch-tw-row{margin-bottom:10px}.orch-tw-row:last-child{margin-bottom:0}
+.orch-tw-lb{font-size:10px;font-weight:600;color:var(--rd-t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.orch-tw-opts{display:flex;gap:3px;background:var(--rd-bg);padding:2px;border-radius:5px;border:1px solid var(--rd-border)}
+.orch-tw-opts button{
+  flex:1;font-family:inherit;font-size:10px;font-weight:600;
+  padding:5px 6px;border-radius:4px;border:none;background:transparent;
+  color:var(--rd-t3);cursor:pointer;white-space:nowrap;
+}
+.orch-tw-opts button:hover{color:var(--rd-t1)}
+.orch-tw-opts button.act{background:var(--rd-t1);color:var(--rd-surface)}
+
+/* Triptych layout variant */
+.orch-stage.triptych{grid-template-columns:1fr 1fr 1fr}
+.orch-stage.triptych .orch-strip{display:contents}
+.orch-stage.triptych .orch-strip-h{display:none}
+.orch-stage.triptych .orch-thumb{flex:none}
+.orch-stage.triptych .orch-thumb-view{aspect-ratio:16/10}
+
+/* Minimal bezel */
+.orch-dev-large.minimal{background:transparent;padding:0;box-shadow:none}
+.orch-dev-large.minimal iframe{box-shadow:0 20px 50px -15px rgba(28,28,26,.3)}

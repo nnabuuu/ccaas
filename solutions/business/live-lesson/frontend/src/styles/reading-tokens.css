@@ -1,0 +1,84 @@
+/* ============================================================
+   Reading Lesson — Design Tokens
+   Warm-neutral light theme + Board dark scoped variant
+   Fonts: Plus Jakarta Sans (body) + Caveat (board handwriting)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap');
+
+:root {
+  /* ── Base (tinted warm neutrals) ── */
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.07);
+  --border-strong: rgba(28, 28, 26, 0.14);
+
+  /* ── Semantic pairs (dark text + tinted bg) ── */
+  --blue:   #1a5fa0;   --blue-bg:   #e4eff8;
+  --green:  #2d6612;   --green-bg:  #e6f2dc;
+  --amber:  #7a4d0e;   --amber-bg:  #f6edda;
+  --red:    #942929;    --red-bg:    #f8e6e6;
+  --purple: #3a3185;    --purple-bg: #eceafe;
+  --teal:   #0d5245;    --teal-bg:   #ddf1eb;
+  --coral:  #6b2a14;    --coral-bg:  #f7ebe5;
+
+  /* ── Spacing scale (4px unit) ── */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;  --sp-12: 48px;
+
+  /* ── Radii ── */
+  --r-pill:     3px;
+  --r-input:    6px;
+  --r-input-lg: 8px;
+  --r-card:     10px;
+  --r-card-lg:  12px;
+
+  /* ── Layout ── */
+  --sidebar-w: 232px;
+  --topbar-h:  48px;
+
+  /* ── Type scale ── */
+  --fs-hero:    26px;
+  --fs-h1:      22px;
+  --fs-h2:      16px;
+  --fs-h3:      14px;
+  --fs-body:    13px;
+  --fs-body-sm: 12px;
+  --fs-meta:    11px;
+  --fs-badge:   10px;
+  --fs-label:   10px;
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --lh-tight: 1.3;
+  --lh-body:  1.6;
+  --lh-prose: 1.8;
+
+  /* ── Focus accent ── */
+  --focus: rgba(58, 49, 133, 0.3);
+
+  /* ── Fonts ── */
+  --font-body: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-hand: "Caveat", cursive;
+}
+
+/* ── Board dark scoped variant ── */
+[data-surface="board"] {
+  --bg:       #1c1c1a;
+  --surface:  #2a2a28;
+  --surface2: #3a3a38;
+  --t1:       rgba(240, 239, 232, 0.85);
+  --t2:       rgba(240, 239, 232, 0.5);
+  --t3:       rgba(240, 239, 232, 0.2);
+  --border:   rgba(240, 239, 232, 0.08);
+  --border-strong: rgba(240, 239, 232, 0.14);
+  --board-accent: #5dcaa5;
+}
