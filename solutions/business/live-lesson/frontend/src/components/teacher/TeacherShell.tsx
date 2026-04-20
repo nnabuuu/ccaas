@@ -1,74 +1,97 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import type { ReadingManifest, ReadingStep } from '../../types/reading'
+import { useTeacherStream, type ClassroomState } from '../../hooks/useClassroom'
+
+const API_BASE = 'http://localhost:3007/api/classroom'
 
 interface Props {
   manifest: ReadingManifest
+  lessonId: string
+  sessionCode: string
   embed?: boolean
 }
 
-// Mock queue data (static demo)
-interface QueueItem {
-  count: number
-  question: string
-  names: string
-  time: string
-  priority: 'high' | 'medium' | 'low'
-}
-
-const MOCK_QUEUE: QueueItem[] = [
-  { count: 8, question: 'Myanmar 在哪里？地理位置不明，影响理解 ¶7。', names: '陈昕 · 赵雪 · 王译 · 李奕 +4', time: '', priority: 'high' },
-  { count: 4, question: 'Practice 栏怎样写才算对？能直接写 tattoos 吗？', names: '李奕 · 孙楠 · 徐然 · 郭斐', time: '2m', priority: 'high' },
-  { count: 3, question: 'Borneo 的 "diary" 比喻不懂', names: '周航 · 黄婉晴 · 邓梓涵', time: '1m', priority: 'medium' },
-  { count: 2, question: 'sharpening teeth 是生词', names: '黄婉晴 · 周航', time: '3m', priority: 'medium' },
-  { count: 2, question: 'Reason 列应该写中文还是英文？', names: '曾以柔 · 蔡明轩', time: '4m', priority: 'medium' },
-  { count: 1, question: 'metal rings 怎么读？', names: '程一', time: '5m', priority: 'low' },
-  { count: 1, question: 'wealth 是什么意思', names: '韩思远', time: '6m', priority: 'low' },
-]
-
-const MOCK_STUDENTS = [
-  { name: '陈昕妍', status: 'done' as const },
-  { name: '李奕辰', status: 'done' as const },
-  { name: '王译文', status: 'prog' as const, ai: true },
-  { name: '张皓月', status: 'done' as const },
-  { name: '刘子墨', status: 'prog' as const },
-  { name: '赵雪莉', status: 'idle' as const },
-  { name: '孙楠语', status: 'prog' as const, ai: true },
-  { name: '周航宇', status: 'done' as const },
-  { name: '吴思涵', status: 'prog' as const },
-  { name: '郑若曦', status: 'done' as const },
-  { name: '黄婉晴', status: 'prog' as const, ai: true },
-  { name: '马乐瑶', status: 'done' as const },
-]
-
-export default function TeacherShell({ manifest, embed }: Props) {
-  const [step, setStep] = useState(2) // default to step 3 (index 2) for demo
+export default function TeacherShell({ manifest, lessonId, sessionCode, embed }: Props) {
+  const [step, setStep] = useState(0)
   const [ovTab, setOvTab] = useState(0)
 
+  const classroomState = useTeacherStream(sessionCode)
+
   const currentStep = manifest.readingSteps[step]
+
+  // Derive metrics from live data (fallback to 0 when no stream yet)
+  const total = classroomState?.metrics.total ?? 0
+  const submitted = classroomState?.metrics.submitted ?? 0
+
+  // ── Timer state ──
+  const [stepStartedAt, setStepStartedAt] = useState(Date.now())
+  const [extraMinutes, setExtraMinutes] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
+
+  // Reset timer when step changes
+  useEffect(() => {
+    setStepStartedAt(Date.now())
+    setExtraMinutes(0)
+  }, [step])
+
+  // Countdown interval
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - stepStartedAt) / 1000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [stepStartedAt])
+
+  const stepDuration = currentStep?.duration ?? 0
+  const totalSeconds = (stepDuration + extraMinutes) * 60
+  const remaining = Math.max(0, totalSeconds - elapsed)
+  const mm = String(Math.floor(remaining / 60)).padStart(2, '0')
+  const ss = String(remaining % 60).padStart(2, '0')
+
+  // ── API calls ──
+  const apiSetStep = useCallback(async (newStep: number) => {
+    setStep(newStep)
+    try {
+      await fetch(`${API_BASE}/${sessionCode}/step`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: newStep }),
+      })
+    } catch { /* noop */ }
+  }, [sessionCode])
+
+  const apiNotify = useCallback(async (message: string, type: string) => {
+    try {
+      await fetch(`${API_BASE}/${sessionCode}/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, type }),
+      })
+    } catch { /* noop */ }
+  }, [sessionCode])
 
   // Listen for sync messages from parent
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return
       const d = e.data
       if (!d || typeof d !== 'object') return
-      if (d.type === 'sync' && typeof d.step === 'number') setStep(d.step)
+      if (d.type === 'sync' && typeof d.step === 'number') apiSetStep(d.step)
     }
     window.addEventListener('message', onMessage)
-    try { window.parent?.postMessage({ type: 'ready', role: 'teacher' }, '*') } catch { /* noop */ }
+    try { window.parent?.postMessage({ type: 'ready', role: 'teacher' }, window.location.origin) } catch { /* noop */ }
     return () => window.removeEventListener('message', onMessage)
-  }, [])
-
-  const submitted = 12
-  const total = 42
+  }, [apiSetStep])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--rd-bg)', color: 'var(--rd-t1)', fontVariantNumeric: 'tabular-nums' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', color: 'var(--t1)', fontVariantNumeric: 'tabular-nums' }}>
       {/* Ambient band */}
       {!embed && (
         <div className="tch-band">
           <div className="tch-band-mark">R</div>
           <div className="tch-band-title">课堂控制台</div>
           <div className="tch-band-class">高一(3)班 · {manifest.title} · {total} 人</div>
+          <div className="session-code">{sessionCode}</div>
           <div className="tch-band-step">
             <span className="lb">Step</span>
             <span className="n">{step + 1}</span>
@@ -76,9 +99,9 @@ export default function TeacherShell({ manifest, embed }: Props) {
             <span className="tot">{manifest.readingSteps.length}</span>
             <span className="sep">·</span>
             <span className="lb">Time</span>
-            <span className="n">12:48</span>
+            <span className="n">{mm}:{ss}</span>
             <span className="sl">/</span>
-            <span className="tot">45:00</span>
+            <span className="tot">{String(stepDuration).padStart(2, '0')}:00</span>
           </div>
         </div>
       )}
@@ -89,7 +112,7 @@ export default function TeacherShell({ manifest, embed }: Props) {
           <button
             key={s.id}
             className={`tch-rstep${i < step ? ' done' : ''}${i === step ? ' act' : ''}`}
-            onClick={() => setStep(i)}
+            onClick={() => apiSetStep(i)}
           >
             <div className="rn">{i + 1}</div>
             {s.label}
@@ -103,20 +126,20 @@ export default function TeacherShell({ manifest, embed }: Props) {
         <div className="tch-focus">
           {/* Hero */}
           {currentStep && (
-            <HeroSection step={currentStep} stepIdx={step} submitted={submitted} total={total} />
+            <HeroSection step={currentStep} stepIdx={step} submitted={submitted} total={total} timerDisplay={`${mm}:${ss}`} />
           )}
 
           {/* Primary grid: matrix + speech line */}
           <div className="tch-primary">
-            <MatrixCard submitted={submitted} total={total} />
+            <MatrixCard submitted={submitted} total={total} classroomState={classroomState} />
             <div className="tch-line-wrap">
               <SpeechLine stepIdx={step} />
               <div className="tch-sh" style={{ margin: '2px 0 6px' }}><span className="tch-sh-lb">快捷推送</span></div>
               <div className="tch-quick">
-                <button className="tch-qbtn">📍 Myanmar 位置提示</button>
-                <button className="tch-qbtn">🎯 Practice 写法示例</button>
-                <button className="tch-qbtn">📝 tā moko 生词卡</button>
-                <button className="tch-qbtn">⏱ 再给 2 分钟</button>
+                <button className="tch-qbtn" onClick={() => apiNotify('Myanmar (¶7a): 缅甸的美容实践是长颈族用铜环拉长脖子，象征美丽和身份', 'hint')}>📍 Myanmar 位置提示</button>
+                <button className="tch-qbtn" onClick={() => apiNotify('Practice 列要写具体做法，例如 "kohl eye makeup" 而不是 "makeup"', 'hint')}>🎯 Practice 写法示例</button>
+                <button className="tch-qbtn" onClick={() => apiNotify('tā moko: 毛利人的传统面部纹身，表示社会地位和家族身份', 'vocab')}>📝 tā moko 生词卡</button>
+                <button className="tch-qbtn" onClick={() => apiNotify('再给大家 2 分钟时间完成当前任务', 'time')}>⏱ 再给 2 分钟</button>
               </div>
             </div>
           </div>
@@ -126,11 +149,11 @@ export default function TeacherShell({ manifest, embed }: Props) {
 
           {/* Actions */}
           <div className="tch-actions">
-            <button className="tch-btn ghost" onClick={() => step > 0 && setStep(step - 1)}>← 上一步</button>
-            <button className="tch-btn">延长 2 min</button>
-            <button className="tch-btn">推送提示给全班</button>
+            <button className="tch-btn ghost" onClick={() => step > 0 && apiSetStep(step - 1)}>← 上一步</button>
+            <button className="tch-btn" onClick={() => setExtraMinutes(m => m + 2)}>延长 2 min</button>
+            <button className="tch-btn" onClick={() => apiNotify(`Step ${step + 1} 提示: ${currentStep?.description || ''}`, 'general')}>推送提示给全班</button>
             <div style={{ flex: 1 }} />
-            <button className="tch-btn pri" onClick={() => step < manifest.readingSteps.length - 1 && setStep(step + 1)}>
+            <button className="tch-btn pri" onClick={() => step < manifest.readingSteps.length - 1 && apiSetStep(step + 1)}>
               进入 Step {step + 2} →
             </button>
           </div>
@@ -145,15 +168,15 @@ export default function TeacherShell({ manifest, embed }: Props) {
                 className={`tch-ov-tab${ovTab === i ? ' act' : ''}`}
                 onClick={() => setOvTab(i)}
               >
-                {label} <span className="cnt">{i === 0 ? 14 : i === 1 ? 38 : 6}</span>
+                {label} <span className="cnt">0</span>
               </button>
             ))}
           </div>
           <div className="tch-ov-body">
             <PulseStats submitted={submitted} total={total} />
             <QueueFilter />
-            <QueueList items={MOCK_QUEUE} />
-            <StudentList students={MOCK_STUDENTS} total={total} />
+            <QueueList />
+            <StudentList classroomState={classroomState} total={total} />
           </div>
         </div>
       </div>
@@ -163,7 +186,7 @@ export default function TeacherShell({ manifest, embed }: Props) {
 
 // ── Sub-components ──
 
-function HeroSection({ step, stepIdx, submitted, total }: { step: ReadingStep; stepIdx: number; submitted: number; total: number }) {
+function HeroSection({ step, stepIdx, submitted, total, timerDisplay }: { step: ReadingStep; stepIdx: number; submitted: number; total: number; timerDisplay: string }) {
   return (
     <div className="tch-hero">
       <div className="tch-hero-main">
@@ -180,7 +203,7 @@ function HeroSection({ step, stepIdx, submitted, total }: { step: ReadingStep; s
         <div className="tch-hs-pair">
           <span className="tch-hs-lb">Step time</span>
           <span className="tch-hs-v">
-            <span className="n">7:23</span><span className="sl">/</span><span className="tot">{step.duration}:00</span>
+            <span className="n">{timerDisplay}</span><span className="sl">/</span><span className="tot">{String(step.duration).padStart(2, '0')}:00</span>
           </span>
         </div>
         <div className="tch-hs-pair">
@@ -194,14 +217,8 @@ function HeroSection({ step, stepIdx, submitted, total }: { step: ReadingStep; s
   )
 }
 
-function MatrixCard({ submitted, total }: { submitted: number; total: number }) {
-  const rows = [
-    { place: 'Ancient Egypt', para: '¶3 · 示范', practice: 'kohl eye makeup', reason: 'wealth & status', demo: true },
-    { place: 'Borneo', para: '¶5', practice: 'tattoos as diary', reason: '记录重要事件', demo: false },
-    { place: 'NZ Maori', para: '¶6', practice: 'tā moko', reason: 'position in society', demo: false, partial: true },
-    { place: 'Myanmar', para: '¶7a', practice: 'wearing metal rings', reason: '— 待填', demo: false, empty: true },
-    { place: 'Indonesia', para: '¶7b', practice: '— 待填', reason: '— 待填', demo: false, empty: true },
-  ]
+function MatrixCard({ submitted, total, classroomState }: { submitted: number; total: number; classroomState: ClassroomState | null }) {
+  const matrixRows = buildAggregatedMatrix(classroomState)
 
   return (
     <div className="tch-mat-card">
@@ -219,7 +236,7 @@ function MatrixCard({ submitted, total }: { submitted: number; total: number }) 
           </tr>
         </thead>
         <tbody>
-          {rows.map((r, i) => (
+          {matrixRows.map((r, i) => (
             <tr key={i} className={r.demo ? 'demo-row' : ''}>
               <td className="place">
                 {r.place}
@@ -240,19 +257,71 @@ function MatrixCard({ submitted, total }: { submitted: number; total: number }) 
   )
 }
 
+interface MatrixRow {
+  place: string
+  para: string
+  practice: string
+  reason: string
+  demo: boolean
+  partial?: boolean
+  empty?: boolean
+}
+
+function buildAggregatedMatrix(state: ClassroomState | null): MatrixRow[] {
+  const defaults: MatrixRow[] = [
+    { place: 'Ancient Egypt', para: '¶3 · 示范', practice: 'kohl eye makeup', reason: 'wealth & status', demo: true },
+    { place: 'Borneo', para: '¶5', practice: '— 待填', reason: '— 待填', demo: false, empty: true },
+    { place: 'NZ Maori', para: '¶6', practice: '— 待填', reason: '— 待填', demo: false, empty: true },
+    { place: 'Myanmar', para: '¶7a', practice: '— 待填', reason: '— 待填', demo: false, empty: true },
+    { place: 'Indonesia', para: '¶7b', practice: '— 待填', reason: '— 待填', demo: false, empty: true },
+  ]
+
+  if (!state || state.students.length === 0) return defaults
+
+  const places = ['Borneo', 'NZ Maori', 'Myanmar', 'Indonesia']
+  const aggregated: Record<string, { practice: string; reason: string }> = {}
+
+  for (const student of state.students) {
+    const sub = student.submissions[2]
+    if (!sub?.data?.matrix) continue
+    for (const place of places) {
+      const entry = sub.data.matrix[place]
+      if (!entry) continue
+      if (!aggregated[place] && (entry.practice || entry.reason)) {
+        aggregated[place] = { practice: entry.practice || '', reason: entry.reason || '' }
+      }
+    }
+  }
+
+  return defaults.map(row => {
+    if (row.demo) return row
+    const data = aggregated[row.place]
+    if (!data) return row
+    const hasPractice = !!data.practice
+    const hasReason = !!data.reason
+    return {
+      ...row,
+      practice: hasPractice ? data.practice : '— 待填',
+      reason: hasReason ? data.reason : '— 待填',
+      empty: !hasPractice && !hasReason,
+      partial: (hasPractice && !hasReason) || (!hasPractice && hasReason),
+    }
+  })
+}
+
 function SpeechLine({ stepIdx }: { stepIdx: number }) {
-  const lines: Record<number, string> = {
+  const lines: Record<number, React.ReactNode> = {
     0: '"Look at the title — Ideal Beauty. Before reading, what comes to mind?"',
-    1: '"Now read only the <span class="k">first sentence</span> of each paragraph. Find the <span class="k">signal words</span>."',
-    2: '"Good, we now have the <span class="k">skeleton</span>. Let\'s fill in the <span class="k">flesh</span>. Each group focuses on 2–3 paragraphs and builds a matrix: <span class="k">Place × Practice × Reason</span>."',
-    3: '"Look at the <span class="k">Reason column</span> in your matrix. Are these really <span class="k">shallow beauty ideals</span>?"',
-    4: '"Let\'s recap. We used <span class="k">4 strategies</span> today: Predicting, Skimming, Scanning, and Evaluating."',
+    1: <>&ldquo;Now read only the <span className="k">first sentence</span> of each paragraph. Find the <span className="k">signal words</span>.&rdquo;</>,
+    2: <>&ldquo;Good, we now have the <span className="k">skeleton</span>. Let&rsquo;s fill in the <span className="k">flesh</span>. Each group focuses on 2–3 paragraphs and builds a matrix: <span className="k">Place × Practice × Reason</span>.&rdquo;</>,
+    3: <>&ldquo;Look at the <span className="k">Reason column</span> in your matrix. Are these really <span className="k">shallow beauty ideals</span>?&rdquo;</>,
+    4: <>&ldquo;Let&rsquo;s recap. We used <span className="k">4 strategies</span> today: Predicting, Skimming, Scanning, and Evaluating.&rdquo;</>,
   }
 
   return (
     <div className="tch-line">
       <div className="tch-line-lb">你的下一句话 · say out loud</div>
-      <div className="tch-line-text" dangerouslySetInnerHTML={{ __html: lines[stepIdx] || '' }} />
+      <div className="tch-line-text">{lines[stepIdx] ?? ''}</div>
     </div>
   )
 }
@@ -293,7 +362,7 @@ function CueCards() {
 }
 
 function PulseStats({ submitted, total }: { submitted: number; total: number }) {
-  const inProgress = total - submitted - 4
+  const inProgress = Math.max(0, total - submitted)
   return (
     <div className="tch-pulse">
       <div className="tch-pulse-cell">
@@ -305,7 +374,7 @@ function PulseStats({ submitted, total }: { submitted: number; total: number }) 
         <div className="tch-pulse-row"><span className="tch-pulse-dot prog" /><span className="tch-pulse-lb">填写中</span></div>
       </div>
       <div className="tch-pulse-cell">
-        <div className="tch-pulse-n">4</div>
+        <div className="tch-pulse-n">0</div>
         <div className="tch-pulse-row"><span className="tch-pulse-dot idle" /><span className="tch-pulse-lb">未开始</span></div>
       </div>
     </div>
@@ -323,49 +392,24 @@ function QueueFilter() {
   )
 }
 
-function QueueList({ items }: { items: QueueItem[] }) {
-  const high = items.filter(i => i.priority === 'high')
-  const medium = items.filter(i => i.priority === 'medium')
-  const low = items.filter(i => i.priority === 'low')
-
+function QueueList() {
   return (
     <div className="tch-queue">
-      {high.length > 0 && (
-        <>
-          <div className="tch-q-group-h hi">高优先级 · 影响 ≥ 4 人<span className="tot">{high.length}</span></div>
-          {high.map((item, i) => <QueueRow key={`h${i}`} item={item} hi />)}
-        </>
-      )}
-      {medium.length > 0 && (
-        <>
-          <div className="tch-q-group-h">中优先级 · 影响 2–3 人<span className="tot">{medium.length}</span></div>
-          {medium.map((item, i) => <QueueRow key={`m${i}`} item={item} />)}
-        </>
-      )}
-      {low.length > 0 && (
-        <>
-          <div className="tch-q-group-h">低优先级 · 单人提问<span className="tot">{low.length}</span></div>
-          {low.map((item, i) => <QueueRow key={`l${i}`} item={item} />)}
-        </>
-      )}
-    </div>
-  )
-}
-
-function QueueRow({ item, hi }: { item: QueueItem; hi?: boolean }) {
-  return (
-    <div className={`tch-qrow${hi ? ' hi' : ''}`}>
-      <div className="qn">{item.count}</div>
-      <div className="qtext">
-        <div className="qq">{item.question}</div>
-        <div className="qnames">{item.names}</div>
+      <div className="tch-q-group-h" style={{ color: 'var(--t3)', fontStyle: 'italic' }}>
+        暂无学生提问
       </div>
-      <div className="qmeta">{item.time && <span>{item.time}</span>}</div>
     </div>
   )
 }
 
-function StudentList({ students, total }: { students: typeof MOCK_STUDENTS; total: number }) {
+interface StudentListProps {
+  classroomState: ClassroomState | null
+  total: number
+}
+
+function StudentList({ classroomState, total }: StudentListProps) {
+  const students = classroomState?.students ?? []
+
   return (
     <div className="tch-stu-view">
       <div className="tch-stu-h">
@@ -373,13 +417,21 @@ function StudentList({ students, total }: { students: typeof MOCK_STUDENTS; tota
         <span className="total">{total} 人</span>
       </div>
       <div className="tch-stu-list">
-        {students.map((s, i) => (
-          <div key={i} className={`tch-sl-row${s.status === 'idle' ? ' idle' : ''}`}>
-            <span className={`tch-sl-dot ${s.status}`} />
-            <span className="tch-sl-name">{s.name}</span>
-            {s.ai && <span className="tch-sl-ai" />}
+        {students.length === 0 && (
+          <div style={{ padding: '12px 0', fontSize: 12, color: 'var(--t3)', fontStyle: 'italic' }}>
+            等待学生加入...
           </div>
-        ))}
+        )}
+        {students.map((s) => {
+          const hasSubmissions = Object.keys(s.submissions).length > 0
+          const status = hasSubmissions ? 'done' : 'prog'
+          return (
+            <div key={s.id} className="tch-sl-row">
+              <span className={`tch-sl-dot ${status}`} />
+              <span className="tch-sl-name">{s.name}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

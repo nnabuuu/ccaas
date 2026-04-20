@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReadingManifest } from '../../types/reading'
+import { useSessionCreate } from '../../hooks/useClassroom'
 
 interface RoleConfig {
   key: string
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export default function DemoShell({ manifest }: Props) {
-  const [step, setStep] = useState(2)
+  const [step, setStep] = useState(0)
   const [featured, setFeatured] = useState('teacher')
   const [tweaksOpen, setTweaksOpen] = useState(false)
   const [layout, setLayout] = useState<'focus' | 'triptych'>('focus')
@@ -32,11 +33,23 @@ export default function DemoShell({ manifest }: Props) {
   const featBoxRef = useRef<HTMLDivElement>(null)
 
   const lessonId = manifest.id
+  const { session, loading: sessionLoading } = useSessionCreate(lessonId)
+  const sessionCode = session?.code ?? ''
+
+  // Build iframe src — teacher/student get session code via query param
+  const getIframeSrc = useCallback((role: string) => {
+    if (role === 'student') {
+      // Student goes to /join page; with session param it auto-joins
+      return `/join?session=${sessionCode}&embed=1`
+    }
+    // Teacher and board use their standard route with session param
+    return `${ROLES[role].route}${lessonId}?embed=1&session=${sessionCode}`
+  }, [lessonId, sessionCode])
 
   // Broadcast sync to all iframes
   const broadcast = useCallback((msg: Record<string, unknown>) => {
     iframeRefs.current.forEach((iframe) => {
-      try { iframe.contentWindow?.postMessage(msg, '*') } catch { /* noop */ }
+      try { iframe.contentWindow?.postMessage(msg, window.location.origin) } catch { /* noop */ }
     })
   }, [])
 
@@ -50,6 +63,7 @@ export default function DemoShell({ manifest }: Props) {
   // Listen for ready messages from iframes
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return
       const d = e.data
       if (!d || typeof d !== 'object') return
       if (d.type === 'ready') {
@@ -100,11 +114,15 @@ export default function DemoShell({ manifest }: Props) {
   const nowSec = (cum[step] || 0) * 60 + Math.round(((cum[step + 1] || 45) - (cum[step] || 0)) * 60 * 0.35)
   const fmtTime = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
 
+  if (sessionLoading) {
+    return <div style={{ padding: 40, color: 'var(--t3)' }}>正在创建课堂...</div>
+  }
+
   const thumbRoles = ROLE_ORDER.filter(r => r !== featured)
   const featRole = ROLES[featured]
 
   return (
-    <div style={{ height: '100vh', overflow: 'hidden', background: '#e8e6df', color: 'var(--rd-t1)', fontVariantNumeric: 'tabular-nums' }}>
+    <div style={{ height: '100vh', overflow: 'hidden', background: '#e8e6df', color: 'var(--t1)', fontVariantNumeric: 'tabular-nums' }}>
       {/* ── Conductor Bar ── */}
       <div className="orch-conductor">
         <div className="orch-cnd-mark">R</div>
@@ -112,6 +130,7 @@ export default function DemoShell({ manifest }: Props) {
           <div className="orch-cnd-title-a">{manifest.title} · 三端联动 Demo</div>
           <div className="orch-cnd-title-b">高一(3)班 · 阅读策略训练</div>
         </div>
+        {sessionCode && <div className="session-code">{sessionCode}</div>}
 
         <div className="orch-cnd-rail">
           {manifest.readingSteps.map((s, i) => (
@@ -155,8 +174,8 @@ export default function DemoShell({ manifest }: Props) {
             <div className={`orch-dev-large ${featured}${bezel === 'minimal' ? ' minimal' : ''}`}>
               <iframe
                 ref={el => { if (el) iframeRefs.current.set(featured, el) }}
-                key={featured}
-                src={`${ROLES[featured].route}${lessonId}?embed=1`}
+                key={`${featured}-${sessionCode}`}
+                src={getIframeSrc(featured)}
                 title={featRole.label}
               />
             </div>
@@ -182,7 +201,7 @@ export default function DemoShell({ manifest }: Props) {
                 <div className="orch-thumb-view">
                   <iframe
                     ref={el => { if (el) iframeRefs.current.set(`thumb-${role}`, el) }}
-                    src={`${R.route}${lessonId}?embed=1`}
+                    src={getIframeSrc(role)}
                     title={R.label}
                     style={{
                       width: R.w,

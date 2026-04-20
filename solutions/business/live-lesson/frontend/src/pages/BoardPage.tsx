@@ -10,9 +10,20 @@ export default function BoardPage() {
   const [pointer, setPointer] = useState<RevealPointer>({ step: 1, sub: 1 })
   const [justRevealedId, setJustRevealedId] = useState<string>()
 
+  const handleRevealCommand = useCallback((dir: string) => {
+    setPointer(prev => {
+      if (dir === 'next') return { step: prev.step, sub: prev.sub + 1 }
+      if (dir === 'prev') return { step: prev.step, sub: Math.max(1, prev.sub - 1) }
+      if (dir === 'reset') return { step: 1, sub: 1 }
+      if (dir === 'all') return { step: 99, sub: 999 }
+      return prev
+    })
+  }, [])
+
   // postMessage sync listener
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return
       if (e.data?.type === 'sync' && typeof e.data.step === 'number') {
         // step from orchestrator is 0-indexed, board steps are 1-indexed
         setPointer({ step: e.data.step + 1, sub: 999 })
@@ -24,31 +35,21 @@ export default function BoardPage() {
     window.addEventListener('message', onMessage)
     // Send ready signal
     if (window.parent !== window) {
-      window.parent.postMessage({ type: 'ready', role: 'board' }, '*')
+      window.parent.postMessage({ type: 'ready', role: 'board' }, window.location.origin)
     }
     return () => window.removeEventListener('message', onMessage)
-  }, [])
-
-  const handleRevealCommand = useCallback((dir: string) => {
-    setPointer(prev => {
-      if (dir === 'next') return { step: prev.step, sub: prev.sub + 1 }
-      if (dir === 'prev') return { step: prev.step, sub: Math.max(1, prev.sub - 1) }
-      if (dir === 'reset') return { step: 1, sub: 1 }
-      if (dir === 'all') return { step: 99, sub: 999 }
-      return prev
-    })
-  }, [])
+  }, [handleRevealCommand])
 
   const handlePointerChange = useCallback((p: RevealPointer) => {
     setPointer(p)
     setJustRevealedId(undefined)
   }, [])
 
-  if (loading) return <div style={{ padding: 40, color: 'var(--rd-t3)' }}>Loading board...</div>
-  if (error || !manifest) return <div style={{ padding: 40, color: 'var(--rd-red)' }}>Error: {error}</div>
+  if (loading) return <div style={{ padding: 40, color: 'var(--t3)' }}>Loading board...</div>
+  if (error || !manifest) return <div style={{ padding: 40, color: 'var(--red)' }}>Error: {error}</div>
 
   return (
-    <div data-surface="board" style={{ minHeight: '100vh', background: 'var(--rd-bg)', color: 'var(--rd-t1)' }}>
+    <div data-surface="board" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--t1)' }}>
       <BoardStage
         board={manifest.boardData}
         pointer={pointer}

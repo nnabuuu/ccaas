@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReadingManifest } from '../../types/reading'
+import { useStudentSession, useStudentStream } from '../../hooks/useClassroom'
 import StepTabs from './StepTabs'
 import TaskPanel from './TaskPanel'
 import TextPanel from './TextPanel'
@@ -8,6 +9,8 @@ import AiPanel from './AiPanel'
 
 interface Props {
   manifest: ReadingManifest
+  lessonId: string
+  sessionCode: string
   embed?: boolean
 }
 
@@ -18,42 +21,110 @@ const AI_PRESETS = [
   { q: '什么是 Skimming?', a: '不逐字读，只读每段<strong>第一句</strong>和<strong>转折词</strong>，快速判断结构。' },
 ]
 
-export default function StudentShell({ manifest, embed }: Props) {
+export default function StudentShell({ manifest, lessonId, sessionCode, embed }: Props) {
   const [step, setStep] = useState(0)
   const [boardOpen, setBoardOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+
+  const session = useStudentSession(sessionCode)
+  const stream = useStudentStream(sessionCode)
+
+  // Name input overlay state (for direct /student/:lessonId access without JoinPage)
+  const [nameInput, setNameInput] = useState('')
 
   const currentReadingStep = manifest.readingSteps[step]
   const focusParagraphs = currentReadingStep?.focusParagraphs || []
 
+  const boardOpenRef = useRef(boardOpen)
+  boardOpenRef.current = boardOpen
+
+  // Sync step from SSE named event
+  useEffect(() => {
+    if (stream.currentStep !== null) {
+      setStep(stream.currentStep)
+    }
+  }, [stream.currentStep])
+
+  // Show notification toast from SSE
+  useEffect(() => {
+    if (stream.notification) {
+      setToastMsg(stream.notification.message)
+      const timer = setTimeout(() => setToastMsg(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [stream.notification])
+
   // Listen for sync messages from parent (demo orchestrator)
   useEffect(() => {
     function onMessage(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return
       const d = e.data
       if (!d || typeof d !== 'object') return
       if (d.type === 'sync' && typeof d.step === 'number') {
         setStep(d.step)
-        if (d.step >= 1 && !boardOpen) setBoardOpen(true)
+        if (d.step >= 1 && !boardOpenRef.current) setBoardOpen(true)
       }
     }
     window.addEventListener('message', onMessage)
-    // Signal ready
-    try { window.parent?.postMessage({ type: 'ready', role: 'student' }, '*') } catch { /* noop */ }
+    try { window.parent?.postMessage({ type: 'ready', role: 'student' }, window.location.origin) } catch { /* noop */ }
     return () => window.removeEventListener('message', onMessage)
-  }, [boardOpen])
+  }, [])
 
   const handleJumpTo = useCallback((_paraId: string) => {
     // Text panel is always visible in the text-primary layout
-    // Scroll handled internally by TextPanel
   }, [])
 
+  const handleSubmit = useCallback(async (stepIdx: number, data: Record<string, any>) => {
+    return session.submit(stepIdx, data)
+  }, [session])
+
+  const handleJoin = useCallback(async () => {
+    const trimmed = nameInput.trim()
+    if (!trimmed) return
+    await session.join(trimmed)
+  }, [nameInput, session])
+
+  // Name input overlay — shown before joining (fallback when accessed without JoinPage)
+  if (!session.studentId) {
+    return (
+      <div className="stu-join-overlay">
+        <div className="stu-join-card">
+          <div className="stu-join-title">{manifest.title}</div>
+          <div className="stu-join-sub">
+            课堂码 <span className="session-code-sm">{sessionCode}</span> · 输入姓名加入课堂
+          </div>
+          <input
+            className="stu-join-input"
+            placeholder="你的姓名..."
+            value={nameInput}
+            onChange={e => setNameInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleJoin()}
+            autoFocus
+          />
+          {session.joinError && (
+            <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{session.joinError}</div>
+          )}
+          <button
+            className="stu-btn pri"
+            onClick={handleJoin}
+            disabled={session.joining || !nameInput.trim()}
+          >
+            {session.joining ? '加入中...' : '加入课堂'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--rd-bg)', color: 'var(--rd-t1)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', color: 'var(--t1)' }}>
       {/* Top bar */}
       {!embed && (
         <div className="stu-top">
           <div className="stu-top-title">{manifest.title}</div>
-          <div className="stu-top-class">高一(3)班</div>
+          <div className="session-code-sm">{sessionCode}</div>
+          <div className="stu-top-class">· {session.name}</div>
           <StepTabs steps={manifest.readingSteps} current={step} onSelect={setStep} />
           <div className="stu-top-step">{step + 1}/{manifest.readingSteps.length}</div>
         </div>
@@ -128,6 +199,8 @@ export default function StudentShell({ manifest, embed }: Props) {
                   step={currentReadingStep}
                   stepIdx={step}
                   onJumpTo={handleJumpTo}
+                  onSubmit={handleSubmit}
+                  submittedSteps={session.submittedSteps}
                 />
               )}
             </div>
@@ -138,9 +211,20 @@ export default function StudentShell({ manifest, embed }: Props) {
             open={aiOpen}
             onClose={() => setAiOpen(false)}
             presets={AI_PRESETS}
+            sessionCode={sessionCode}
+            studentId={session.studentId || ''}
+            step={step}
           />
         </div>
       </div>
+
+      {/* Notification toast */}
+      {toastMsg && (
+        <div className="stu-toast" onClick={() => setToastMsg(null)}>
+          <div className="stu-toast-icon">📢</div>
+          <div className="stu-toast-msg">{toastMsg}</div>
+        </div>
+      )}
     </div>
   )
 }

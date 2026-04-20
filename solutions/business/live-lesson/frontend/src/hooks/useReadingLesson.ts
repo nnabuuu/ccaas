@@ -7,16 +7,19 @@ interface UseReadingLessonResult {
   loading: boolean
   error: string | null
   embed: boolean
+  lessonId: string | undefined
+  sessionParam: string | null
 }
 
 /**
  * Fetches the reading lesson manifest from /lessons/:lessonId/manifest.json.
- * Also reads ?embed=1 from the URL to support iframe embedding.
+ * Also reads ?embed=1 and ?session=CODE from the URL.
  */
 export function useReadingLesson(): UseReadingLessonResult {
   const { lessonId } = useParams<{ lessonId: string }>()
   const [searchParams] = useSearchParams()
   const embed = searchParams.get('embed') === '1'
+  const sessionParam = searchParams.get('session')
 
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,5 +45,5 @@ export function useReadingLesson(): UseReadingLessonResult {
       .finally(() => setLoading(false))
   }, [lessonId])
 
-  return { manifest, loading, error, embed }
+  return { manifest, loading, error, embed, lessonId, sessionParam }
 }

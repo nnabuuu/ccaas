@@ -1,5 +1,25 @@
 import { useState, useCallback } from 'react'
 
+/** Renders a restricted subset of HTML tags as React elements (strong, span.ex, br). */
+function SafeHtml({ html }: { html: string }) {
+  const nodes: React.ReactNode[] = []
+  let key = 0
+  const re = /<strong>(.*?)<\/strong>|<span class="ex">(.*?)<\/span>|<br\s*\/?>|([^<]+)/g
+  let match
+  while ((match = re.exec(html)) !== null) {
+    if (match[1] !== undefined) {
+      nodes.push(<strong key={key++}>{match[1]}</strong>)
+    } else if (match[2] !== undefined) {
+      nodes.push(<span key={key++} className="ex">{match[2]}</span>)
+    } else if (match[0].startsWith('<br')) {
+      nodes.push(<br key={key++} />)
+    } else if (match[3] !== undefined) {
+      nodes.push(match[3])
+    }
+  }
+  return <>{nodes}</>
+}
+
 interface Preset {
   q: string
   a: string
@@ -10,15 +30,21 @@ interface ChatMsg {
   text: string
 }
 
+const API_BASE = 'http://localhost:3007/api/classroom'
+
 interface Props {
   open: boolean
   onClose: () => void
   presets: Preset[]
+  sessionCode?: string
+  studentId?: string
+  step?: number
 }
 
-export default function AiPanel({ open, onClose, presets }: Props) {
+export default function AiPanel({ open, onClose, presets, sessionCode, studentId, step }: Props) {
   const [messages, setMessages] = useState<ChatMsg[]>([])
   const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState<Record<number, 'got' | 'not'>>({})
 
   const askPreset = useCallback((idx: number) => {
@@ -30,11 +56,33 @@ export default function AiPanel({ open, onClose, presets }: Props) {
     ])
   }, [presets])
 
-  const sendCustom = useCallback(() => {
+  const sendCustom = useCallback(async () => {
     if (!input.trim()) return
-    setMessages(prev => [...prev, { role: 'user', text: input.trim() }])
+    const question = input.trim()
+    setMessages(prev => [...prev, { role: 'user', text: question }])
     setInput('')
-  }, [input])
+
+    if (sessionCode) {
+      setLoading(true)
+      try {
+        const res = await fetch(`${API_BASE}/${sessionCode}/ai/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentId: studentId || 'anonymous', question, step: step ?? 0 }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setMessages(prev => [...prev, { role: 'assistant', text: data.answer }])
+        } else {
+          setMessages(prev => [...prev, { role: 'assistant', text: '抱歉，暂时无法回答，请稍后再试。' }])
+        }
+      } catch {
+        setMessages(prev => [...prev, { role: 'assistant', text: '网络错误，请稍后再试。' }])
+      } finally {
+        setLoading(false)
+      }
+    }
+  }, [input, sessionCode, studentId, step])
 
   const handleFeedback = useCallback((msgIdx: number, kind: 'got' | 'not') => {
     setFeedback(prev => ({ ...prev, [msgIdx]: kind }))
@@ -68,7 +116,7 @@ export default function AiPanel({ open, onClose, presets }: Props) {
                 <div className="stu-ai-q">{m.text}</div>
               ) : (
                 <>
-                  <div className="stu-ai-a" dangerouslySetInnerHTML={{ __html: m.text }} />
+                  <div className="stu-ai-a"><SafeHtml html={m.text} /></div>
                   {!feedback[i] && (
                     <div className="stu-ai-fb">
                       <div className="stu-ai-fb-q">这个解释清楚吗？</div>
@@ -102,6 +150,9 @@ export default function AiPanel({ open, onClose, presets }: Props) {
               )}
             </div>
           ))}
+          {loading && (
+            <div className="stu-ai-a" style={{ opacity: 0.6, fontStyle: 'italic' }}>思考中...</div>
+          )}
         </div>
         <div className="stu-ai-input-row">
           <div className="stu-ai-av">💬</div>
