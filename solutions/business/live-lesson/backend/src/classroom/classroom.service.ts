@@ -224,40 +224,30 @@ export class ClassroomService {
       }
     }
 
-    // Build stepMetrics (per task)
-    const stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number }> = {};
-    for (let taskNum = 1; taskNum <= 5; taskNum++) {
-      const stepIdx = TASK_TO_STEP[taskNum];
-      let completedCount = 0;
-      let currentCount = 0;
-      let totalScore = 0;
-
-      for (const s of students) {
-        const subs = subsByStudent.get(s.id);
-        if (subs && subs[stepIdx]) {
-          completedCount++;
-          const score = subs[stepIdx].score;
-          if (score && typeof score.total === 'number') {
-            totalScore += score.total;
-          }
-        } else if (s.currentTask === taskNum) {
-          currentCount++;
-        }
-      }
-
-      stepMetrics[taskNum] = {
-        currentCount,
-        completedCount,
-        completionRate: total > 0 ? Math.round((completedCount / total) * 100) : 0,
-        avgScore: completedCount > 0 ? Math.round(totalScore / completedCount) : 0,
-      };
-    }
-
-    // Get questions from DB
+    // Fetch AI questions (needed for step metrics)
     const questions = await this.aiQuestionRepo.find({
       where: { sessionId },
       order: { askedAt: 'ASC' },
     });
+
+    // G2: per-student per-step durations
+    const studentDurations = this.computeStudentDurations(students, subsByStudent);
+
+    // Build enriched stepMetrics with byDimension, timing, AI stats
+    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations);
+
+    // G3: extract median times for stuck detection
+    const medianTimes = this.extractMedianTimes(stepMetrics);
+
+    // Compute student statuses once (G3)
+    const studentStatuses = new Map<string, string>();
+    for (const s of students) {
+      studentStatuses.set(s.id, this.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes));
+    }
+
+    // G6: health cards
+    const healthCards = this.computeHealthCards(students, studentStatuses, questions);
+
     const questionRecords = questions.map(q => ({
       studentId: q.studentId,
       studentName: q.studentName,
@@ -271,20 +261,39 @@ export class ClassroomService {
     return {
       sessionStatus: session?.status ?? 'active',
       currentStep: stepToCheck,
-      students: students.map(s => ({
-        id: s.id,
-        name: s.name,
-        currentTask: s.currentTask,
-        currentPhase: s.currentPhase,
-        stepStartedAt: s.stepStartedAt,
-        submissions: subsByStudent.get(s.id) || {},
-      })),
+      students: students.map(s => {
+        const subs = subsByStudent.get(s.id) || {};
+        const durations = studentDurations.get(s.id) || {};
+        const status = studentStatuses.get(s.id) || 'prog';
+
+        // G2: Enrich submissions with duration and aiRoundsCount
+        const enrichedSubs: Record<number, any> = {};
+        for (const [stepStr, sub] of Object.entries(subs)) {
+          const stepNum = Number(stepStr);
+          enrichedSubs[stepNum] = {
+            ...sub,
+            duration: durations[stepNum] ?? null,
+            aiRoundsCount: questions.filter(q => q.studentId === s.id && q.step === stepNum).length,
+          };
+        }
+
+        return {
+          id: s.id,
+          name: s.name,
+          currentTask: s.currentTask,
+          currentPhase: s.currentPhase,
+          stepStartedAt: s.stepStartedAt,
+          status,
+          submissions: enrichedSubs,
+        };
+      }),
       metrics: {
         total,
         submitted,
         inProgress: total - submitted,
       },
       stepMetrics,
+      healthCards,
       questions: questionRecords,
     };
   }
@@ -694,5 +703,249 @@ export class ClassroomService {
         }
       }
     }
+  }
+
+  // ── Teacher dashboard aggregation helpers ──
+
+  /** G2: Compute per-student per-step durations in seconds */
+  private computeStudentDurations(
+    students: Student[],
+    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
+  ): Map<string, Record<number, number>> {
+    const result = new Map<string, Record<number, number>>();
+    const taskSteps = [1, 3, 5, 7, 9];
+
+    for (const s of students) {
+      const subs = subsByStudent.get(s.id);
+      if (!subs) continue;
+
+      const durations: Record<number, number> = {};
+
+      for (let i = 0; i < taskSteps.length; i++) {
+        const stepIdx = taskSteps[i];
+        const sub = subs[stepIdx];
+        if (!sub) continue;
+
+        const subTime = new Date(sub.submittedAt).getTime();
+
+        if (i === 0) {
+          // First task: submittedAt - joinedAt
+          const joinTime = s.joinedAt instanceof Date
+            ? s.joinedAt.getTime()
+            : new Date(String(s.joinedAt)).getTime();
+          const dur = Math.round((subTime - joinTime) / 1000);
+          if (dur >= 0) durations[stepIdx] = dur;
+        } else {
+          // Subsequent tasks: submittedAt[N] - submittedAt[N-1]
+          const prevStepIdx = taskSteps[i - 1];
+          const prevSub = subs[prevStepIdx];
+          if (prevSub) {
+            const prevTime = new Date(prevSub.submittedAt).getTime();
+            const dur = Math.round((subTime - prevTime) / 1000);
+            if (dur >= 0) durations[stepIdx] = dur;
+          }
+        }
+      }
+
+      result.set(s.id, durations);
+    }
+
+    return result;
+  }
+
+  /** Build enriched stepMetrics with byDimension, timing, and AI stats */
+  private buildStepMetrics(
+    total: number,
+    students: Student[],
+    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
+    questions: AiQuestion[],
+    studentDurations: Map<string, Record<number, number>>,
+  ): Record<number, any> {
+    const stepMetrics: Record<number, any> = {};
+
+    for (let taskNum = 1; taskNum <= 5; taskNum++) {
+      const stepIdx = TASK_TO_STEP[taskNum];
+      let completedCount = 0;
+      let currentCount = 0;
+      let totalScore = 0;
+      const durations: number[] = [];
+      const dimensionAgg: Record<string, { good: number; partial: number; wrong: number; total: number }> = {};
+
+      for (const s of students) {
+        const subs = subsByStudent.get(s.id);
+        if (subs && subs[stepIdx]) {
+          completedCount++;
+          const score = subs[stepIdx].score;
+          if (score && typeof score.total === 'number') {
+            totalScore += score.total;
+          }
+
+          // Aggregate byDimension across students
+          if (score?.byDimension) {
+            for (const [dim, val] of Object.entries(score.byDimension)) {
+              if (!dimensionAgg[dim]) {
+                dimensionAgg[dim] = { good: 0, partial: 0, wrong: 0, total: 0 };
+              }
+              dimensionAgg[dim].total++;
+              if (typeof val === 'boolean') {
+                if (val) dimensionAgg[dim].good++;
+                else dimensionAgg[dim].wrong++;
+              } else if (typeof val === 'number') {
+                if (val === 100) dimensionAgg[dim].good++;
+                else if (val > 0) dimensionAgg[dim].partial++;
+                else dimensionAgg[dim].wrong++;
+              }
+            }
+          }
+
+          // Collect durations
+          const dur = studentDurations.get(s.id)?.[stepIdx];
+          if (dur !== undefined && dur >= 0) {
+            durations.push(dur);
+          }
+        } else if (s.currentTask === taskNum) {
+          currentCount++;
+        }
+      }
+
+      // Calculate byDimension percentages
+      const byDimension: Record<string, { good: number; partial: number; wrong: number }> = {};
+      for (const [dim, agg] of Object.entries(dimensionAgg)) {
+        if (agg.total > 0) {
+          byDimension[dim] = {
+            good: Math.round((agg.good / agg.total) * 100),
+            partial: Math.round((agg.partial / agg.total) * 100),
+            wrong: Math.round((agg.wrong / agg.total) * 100),
+          };
+        }
+      }
+
+      // Calculate timing
+      durations.sort((a, b) => a - b);
+      const avgTime = durations.length > 0
+        ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
+        : null;
+      const medianTime = durations.length > 0
+        ? durations[Math.floor(durations.length / 2)]
+        : null;
+
+      // AI stats for this step
+      const stepQuestions = questions.filter(q => q.step === stepIdx);
+      const aiRounds = stepQuestions.length;
+      const aiPeople = new Set(stepQuestions.map(q => q.studentId)).size;
+
+      stepMetrics[taskNum] = {
+        currentCount,
+        completedCount,
+        completionRate: total > 0 ? Math.round((completedCount / total) * 100) : 0,
+        avgScore: completedCount > 0 ? Math.round(totalScore / completedCount) : 0,
+        byDimension,
+        avgTime,
+        medianTime,
+        aiRounds,
+        aiPeople,
+      };
+    }
+
+    return stepMetrics;
+  }
+
+  /** Extract median times per task from stepMetrics for stuck detection */
+  private extractMedianTimes(stepMetrics: Record<number, any>): Record<number, number | null> {
+    const result: Record<number, number | null> = {};
+    for (let taskNum = 1; taskNum <= 5; taskNum++) {
+      result[taskNum] = stepMetrics[taskNum]?.medianTime ?? null;
+    }
+    return result;
+  }
+
+  /** G3: Compute student status (done/reading/stuck/prog) */
+  private computeStudentStatus(
+    student: Student,
+    subs: Record<number, any> | undefined,
+    medianTimes: Record<number, number | null>,
+  ): string {
+    // done: completed phase or submitted all 5 task steps
+    if (student.currentPhase === 'completed') return 'done';
+    if (subs) {
+      const allDone = [1, 3, 5, 7, 9].every(step => subs[step]);
+      if (allDone) return 'done';
+    }
+
+    // reading: listen phase
+    if (student.currentPhase === 'listen') return 'reading';
+
+    // stuck: on current step > median × 1.5 without submission
+    if (student.stepStartedAt) {
+      const median = medianTimes[student.currentTask];
+      if (median && median > 0) {
+        const elapsed = (Date.now() - new Date(student.stepStartedAt).getTime()) / 1000;
+        if (elapsed > median * 1.5) return 'stuck';
+      }
+    }
+
+    return 'prog';
+  }
+
+  /** G6: Compute health cards for teacher dashboard */
+  private computeHealthCards(
+    students: Student[],
+    studentStatuses: Map<string, string>,
+    questions: AiQuestion[],
+  ): {
+    furthest: { step: number; count: number };
+    median: { step: number };
+    stuck: { count: number; location: string };
+    aiTotal: { rounds: number; people: number };
+  } {
+    // Furthest: highest task any student has reached
+    const studentTasks: number[] = [];
+    for (const s of students) {
+      const effectiveTask = s.currentPhase === 'completed' ? 5 : s.currentTask;
+      studentTasks.push(effectiveTask);
+    }
+
+    let maxTask = 0;
+    let maxTaskCount = 0;
+    const taskCounts: Record<number, number> = {};
+    for (const t of studentTasks) {
+      taskCounts[t] = (taskCounts[t] || 0) + 1;
+      if (t > maxTask) maxTask = t;
+    }
+    maxTaskCount = taskCounts[maxTask] || 0;
+
+    // Median: middle value of student tasks
+    const sorted = [...studentTasks].sort((a, b) => a - b);
+    const medianStep = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
+
+    // Stuck: count + concentration
+    let stuckCount = 0;
+    const stuckByTask: Record<number, number> = {};
+    for (const s of students) {
+      if (studentStatuses.get(s.id) === 'stuck') {
+        stuckCount++;
+        stuckByTask[s.currentTask] = (stuckByTask[s.currentTask] || 0) + 1;
+      }
+    }
+
+    let stuckLocation = '';
+    if (stuckCount > 0) {
+      const maxEntry = Object.entries(stuckByTask).reduce(
+        (max, [task, count]) => (count > max[1] ? [task, count] : max),
+        ['0', 0] as [string, number],
+      );
+      stuckLocation = `Step ${maxEntry[0]}`;
+    }
+
+    // AI totals
+    const aiRounds = questions.length;
+    const aiPeople = new Set(questions.map(q => q.studentId)).size;
+
+    return {
+      furthest: { step: maxTask, count: maxTaskCount },
+      median: { step: medianStep },
+      stuck: { count: stuckCount, location: stuckLocation },
+      aiTotal: { rounds: aiRounds, people: aiPeople },
+    };
   }
 }

@@ -912,4 +912,171 @@ describe('ClassroomService — extended coverage', () => {
       if (closeHandler) closeHandler();
     });
   });
+
+  // ── Teacher dashboard enrichment (G2, G3, G6, stepMetrics) ──
+
+  describe('teacher dashboard — enriched getState', () => {
+    let session: ClassroomSession;
+    let idA: string, idB: string, idC: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      idA = (await service.join(session, '仪表盘学生A')).studentId;
+      idB = (await service.join(session, '仪表盘学生B')).studentId;
+      idC = (await service.join(session, '仪表盘学生C')).studentId;
+
+      // A: submits task 1 (perfect) and task 2 (all correct)
+      await service.submit(session, idA, 1, { answers: ['B', 'A'] });
+      await service.submit(session, idA, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+
+      // B: submits task 1 (all wrong)
+      await service.submit(session, idB, 1, { answers: ['A', 'B'] });
+
+      // C: stays at task 1 (no submissions)
+
+      // Add an AI question for student B at step 1
+      const q = aiQuestionRepo.create({
+        sessionId: session.id,
+        studentId: idB,
+        studentName: '仪表盘学生B',
+        step: 1,
+        question: '什么是predict？',
+        answer: 'Predict是预测策略。',
+        category: '概念理解',
+      });
+      await aiQuestionRepo.save(q);
+    });
+
+    it('should include byDimension with good/partial/wrong in stepMetrics', async () => {
+      const state = await service.getState(session.id);
+      const task1 = state.stepMetrics[1];
+
+      // A got q0:true,q1:true; B got q0:false,q1:false → 2 students
+      expect(task1.byDimension).toBeDefined();
+      expect(task1.byDimension.q0).toBeDefined();
+      expect(task1.byDimension.q0.good).toBe(50); // 1/2
+      expect(task1.byDimension.q0.wrong).toBe(50); // 1/2
+      expect(task1.byDimension.q0.partial).toBe(0);
+
+      // Task 2: only A submitted, all correct (match: p0,p1,p2 = true)
+      const task2 = state.stepMetrics[2];
+      expect(task2.byDimension.p0).toEqual({ good: 100, partial: 0, wrong: 0 });
+    });
+
+    it('should include avgTime and medianTime in stepMetrics', async () => {
+      const state = await service.getState(session.id);
+      const task1 = state.stepMetrics[1];
+
+      // Both A and B submitted step 1, so timing data should exist
+      // Exact values depend on test timing, just check type
+      expect(typeof task1.avgTime).toBe('number');
+      expect(typeof task1.medianTime).toBe('number');
+      expect(task1.avgTime).toBeGreaterThanOrEqual(0);
+      expect(task1.medianTime).toBeGreaterThanOrEqual(0);
+
+      // Task 3: nobody submitted → null
+      expect(state.stepMetrics[3].avgTime).toBeNull();
+      expect(state.stepMetrics[3].medianTime).toBeNull();
+    });
+
+    it('should include aiRounds and aiPeople in stepMetrics', async () => {
+      const state = await service.getState(session.id);
+      const task1 = state.stepMetrics[1];
+
+      // 1 AI question from student B at step 1
+      expect(task1.aiRounds).toBe(1);
+      expect(task1.aiPeople).toBe(1);
+
+      // Task 2: no AI questions
+      expect(state.stepMetrics[2].aiRounds).toBe(0);
+      expect(state.stepMetrics[2].aiPeople).toBe(0);
+    });
+
+    it('should include duration and aiRoundsCount in student submissions (G2)', async () => {
+      const state = await service.getState(session.id);
+
+      // Student A: has submissions at step 1 and step 3
+      const studentA = state.students.find(s => s.id === idA);
+      expect(studentA!.submissions[1].duration).toBeDefined();
+      expect(typeof studentA!.submissions[1].duration).toBe('number');
+      expect(studentA!.submissions[1].aiRoundsCount).toBe(0); // no AI for A
+
+      // Student B: has submission at step 1 with 1 AI question
+      const studentB = state.students.find(s => s.id === idB);
+      expect(studentB!.submissions[1].aiRoundsCount).toBe(1);
+    });
+
+    it('should include student status field (G3)', async () => {
+      const state = await service.getState(session.id);
+
+      // C has no submissions and is at task 1, phase 'listen' → reading
+      const studentC = state.students.find(s => s.id === idC);
+      expect(studentC!.status).toBe('reading');
+
+      // A is at task 3, phase 'listen' (advanced by submitting task 2) → reading
+      const studentA = state.students.find(s => s.id === idA);
+      expect(studentA!.status).toBe('reading');
+    });
+
+    it('should return done status for completed student', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, '完成状态学生')).studentId;
+
+      // Complete all 5 tasks
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await service.submit(sess!, sid, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      await service.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await service.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+
+      const state = await service.getState(sess!.id);
+      const student = state.students.find(s => s.id === sid);
+      expect(student!.status).toBe('done');
+    });
+
+    it('should include healthCards with correct structure (G6)', async () => {
+      const state = await service.getState(session.id);
+
+      expect(state.healthCards).toBeDefined();
+      expect(state.healthCards.furthest).toBeDefined();
+      expect(state.healthCards.median).toBeDefined();
+      expect(state.healthCards.stuck).toBeDefined();
+      expect(state.healthCards.aiTotal).toBeDefined();
+
+      // A is at task 3, B at task 2, C at task 1 → furthest = 3
+      expect(state.healthCards.furthest.step).toBe(3);
+      expect(state.healthCards.furthest.count).toBe(1); // only A
+
+      // Sorted tasks: [1, 2, 3] → median = 2
+      expect(state.healthCards.median.step).toBe(2);
+
+      // No stuck students in this scenario
+      expect(state.healthCards.stuck.count).toBe(0);
+
+      // AI totals: 1 question from 1 student
+      expect(state.healthCards.aiTotal.rounds).toBe(1);
+      expect(state.healthCards.aiTotal.people).toBe(1);
+    });
+
+    it('should preserve existing stepMetrics fields unchanged', async () => {
+      const state = await service.getState(session.id);
+
+      // Verify backward-compatible fields still correct
+      expect(state.stepMetrics[1].completedCount).toBe(2); // A + B
+      expect(state.stepMetrics[1].currentCount).toBe(1); // C at task 1
+      expect(state.stepMetrics[1].completionRate).toBe(67); // 2/3
+      expect(state.stepMetrics[1].avgScore).toBe(50); // (100+0)/2
+
+      expect(state.stepMetrics[2].completedCount).toBe(1); // A
+      expect(state.stepMetrics[2].currentCount).toBe(1); // B at task 2
+    });
+  });
 });
