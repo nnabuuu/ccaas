@@ -1420,4 +1420,168 @@ describe('ClassroomService — extended coverage', () => {
       }
     });
   });
+
+  // ── G3: stuck status detection ──
+
+  describe('teacher dashboard — stuck status (G3)', () => {
+    it('should return stuck status when student exceeds median × 1.5', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 2 students submit step 1 to create medianTime data for task 1
+      const s1 = (await service.join(sess!, 'StuckTestA')).studentId;
+      const s2 = (await service.join(sess!, 'StuckTestB')).studentId;
+      const s3 = (await service.join(sess!, 'StuckTestC')).studentId;
+
+      // Set joinedAt far in the past so durations are meaningful (not 0)
+      for (const sid of [s1, s2]) {
+        const stu = await studentRepo.findOne({ where: { id: sid } });
+        stu!.joinedAt = new Date(Date.now() - 300 * 1000) as any; // 5 min ago
+        await studentRepo.save(stu!);
+      }
+
+      await service.submit(sess!, s1, 1, { answers: ['B', 'A'] });
+      await service.submit(sess!, s2, 1, { answers: ['B', 'A'] });
+
+      // s3: manually set to non-listen phase with stepStartedAt far in the past
+      const student3 = await studentRepo.findOne({ where: { id: s3 } });
+      student3!.currentPhase = 'working';
+      student3!.currentTask = 1;
+      student3!.stepStartedAt = new Date(Date.now() - 999999 * 1000).toISOString();
+      await studentRepo.save(student3!);
+
+      const state = await service.getState(sess!.id);
+      const studentC = state.students.find((s: any) => s.id === s3);
+      expect(studentC!.status).toBe('stuck');
+    });
+
+    it('should return prog status when student is within median × 1.5', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      const s1 = (await service.join(sess!, 'ProgTestA')).studentId;
+      const s2 = (await service.join(sess!, 'ProgTestB')).studentId;
+
+      // Set joinedAt far in the past so medianTime > 0
+      const stu1 = await studentRepo.findOne({ where: { id: s1 } });
+      stu1!.joinedAt = new Date(Date.now() - 300 * 1000) as any;
+      await studentRepo.save(stu1!);
+
+      await service.submit(sess!, s1, 1, { answers: ['B', 'A'] });
+
+      // s2: non-listen, stepStartedAt is now (within threshold)
+      const student2 = await studentRepo.findOne({ where: { id: s2 } });
+      student2!.currentPhase = 'working';
+      student2!.currentTask = 1;
+      student2!.stepStartedAt = new Date().toISOString();
+      await studentRepo.save(student2!);
+
+      const state = await service.getState(sess!.id);
+      const studentB = state.students.find((s: any) => s.id === s2);
+      expect(studentB!.status).toBe('prog');
+    });
+  });
+
+  // ── G7: match issue detection ──
+
+  describe('teacher dashboard — match issue detection (G7)', () => {
+    it('should detect common wrong answers for match type', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      const s1 = (await service.join(sess!, 'MatchIssueA')).studentId;
+      const s2 = (await service.join(sess!, 'MatchIssueB')).studentId;
+
+      // Advance both to task 2 (submit step 1 first)
+      await service.submit(sess!, s1, 1, { answers: ['B', 'A'] });
+      await service.submit(sess!, s2, 1, { answers: ['B', 'A'] });
+
+      // Both submit match step with same wrong answer for pair 0
+      // correct for p0 is 'skimming', both submit 'wrongValue'
+      await service.submit(sess!, s1, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
+      await service.submit(sess!, s2, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
+
+      const state = await service.getState(sess!.id);
+      const issues = state.stepMetrics[2].issues;
+
+      expect(issues.length).toBeGreaterThanOrEqual(1);
+      // P1 (pairIdx 0, no left label) matched wrongValue instead of skimming
+      const matchIssue = issues.find((i: string) => i.includes('wrongValue'));
+      expect(matchIssue).toBeDefined();
+      expect(matchIssue).toMatch(/^2 人/);
+      expect(matchIssue).toMatch(/skimming/);
+    });
+  });
+
+  // ── G4: alertTag uses human-readable dimension names ──
+
+  describe('teacher dashboard — alertTag readable names (G4)', () => {
+    it('should use human-readable name in alertTag for quiz dimension', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 3 students all get Q1 wrong → q0 wrong=100% ≥ 30%
+      for (const name of ['AlertNameA', 'AlertNameB', 'AlertNameC']) {
+        const sid = (await service.join(sess!, name)).studentId;
+        await service.submit(sess!, sid, 1, { answers: ['C', 'A'] }); // Q1 wrong, Q2 correct
+      }
+
+      const state = await service.getState(sess!.id);
+      // Should use 'Q1' (human-readable) not 'q0' (code key)
+      expect(state.stepMetrics[1].alertTag).toBe('Q1 错误偏高');
+    });
+
+    it('should use Where/What/Why in alertTag for matrix dimension', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      const s1 = (await service.join(sess!, 'MatAlertA')).studentId;
+      const s2 = (await service.join(sess!, 'MatAlertB')).studentId;
+
+      // Advance both to task 3
+      await advanceToTask(service, sess!, s1, 3);
+      await advanceToTask(service, sess!, s2, 3);
+
+      // Both submit matrix with all wrong answers
+      await service.submit(sess!, s1, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
+      await service.submit(sess!, s2, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
+
+      const state = await service.getState(sess!.id);
+      // place wrong=100% → alertTag should use 'Where' not 'place'
+      expect(state.stepMetrics[3].alertTag).toMatch(/^(Where|What|Why) 错误偏高$/);
+    });
+
+    it('should prioritize stuck over wrong dimension in alertTag', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // Create 5+ stuck students at task 1
+      const stuckIds: string[] = [];
+      for (let i = 0; i < 6; i++) {
+        const sid = (await service.join(sess!, `StuckPri${i}`)).studentId;
+        stuckIds.push(sid);
+      }
+
+      // Set joinedAt far in the past for first student so medianTime > 0
+      const firstStu = await studentRepo.findOne({ where: { id: stuckIds[0] } });
+      firstStu!.joinedAt = new Date(Date.now() - 300 * 1000) as any;
+      await studentRepo.save(firstStu!);
+
+      // One student submits to create medianTime
+      await service.submit(sess!, stuckIds[0], 1, { answers: ['C', 'A'] });
+
+      // Set 5 students as stuck
+      for (let i = 1; i <= 5; i++) {
+        const student = await studentRepo.findOne({ where: { id: stuckIds[i] } });
+        student!.currentPhase = 'working';
+        student!.currentTask = 1;
+        student!.stepStartedAt = new Date(Date.now() - 999999 * 1000).toISOString();
+        await studentRepo.save(student!);
+      }
+
+      const state = await service.getState(sess!.id);
+      // stuck >= 5 should take priority over dimension errors
+      expect(state.stepMetrics[1].alertTag).toMatch(/人卡住$/);
+    });
+  });
 });

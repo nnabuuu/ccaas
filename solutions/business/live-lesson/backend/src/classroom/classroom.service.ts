@@ -887,6 +887,7 @@ export class ClassroomService {
         aiPeople,
         issues,
         questionAggregates,
+        _nameMap: nameMap,
       };
     }
 
@@ -1149,8 +1150,9 @@ export class ClassroomService {
 
     // Priority 2: any dimension with wrong >= 30%
     const byDim = metrics.byDimension || {};
+    const nameMap: Record<string, string> = metrics._nameMap || {};
     for (const [dimName, dim] of Object.entries(byDim) as [string, { wrong: number }][]) {
-      if (dim.wrong >= 30) return `${dimName} 错误偏高`;
+      if (dim.wrong >= 30) return `${nameMap[dimName] || dimName} 错误偏高`;
     }
 
     // Priority 3: any issue with count >= 5
