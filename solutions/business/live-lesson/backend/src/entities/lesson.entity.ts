@@ -20,6 +20,9 @@ export class Lesson {
   @Column({ default: '' })
   emoji: string;
 
+  @Column({ name: 'lesson_type', default: 'interactive' })
+  lessonType: string;
+
   @Column({ name: 'teaching_notes', nullable: true })
   teachingNotes: string;
 

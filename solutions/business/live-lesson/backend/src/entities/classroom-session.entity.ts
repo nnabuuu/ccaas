@@ -12,11 +12,17 @@ export class ClassroomSession {
   @Column({ name: 'lesson_id' })
   lessonId: string;
 
-  @Column({ default: 'active' })
-  status: 'active' | 'ended';
+  @Column({ default: 'waiting' })
+  status: 'waiting' | 'active' | 'ended';
 
-  @CreateDateColumn({ name: 'started_at' })
-  startedAt: Date;
+  @Column({ name: 'current_step', default: 0 })
+  currentStep: number;
+
+  @Column({ name: 'started_at', nullable: true })
+  startedAt: Date | null;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
   @Column({ name: 'ended_at', nullable: true })
   endedAt: Date | null;

@@ -33,7 +33,19 @@ export class LessonService implements OnModuleInit {
       if (!fs.existsSync(manifestPath)) continue;
 
       const existing = await this.repo.findOne({ where: { id: dir.name } });
-      if (existing) continue;
+      if (existing) {
+        // Backfill lessonType if not yet set
+        try {
+          const raw = fs.readFileSync(manifestPath, 'utf-8');
+          const manifest = JSON.parse(raw);
+          if (manifest.lessonType && existing.lessonType !== manifest.lessonType) {
+            existing.lessonType = manifest.lessonType;
+            await this.repo.save(existing);
+            this.logger.log(`Updated lessonType for ${existing.id}: ${manifest.lessonType}`);
+          }
+        } catch { /* skip */ }
+        continue;
+      }
 
       try {
         const raw = fs.readFileSync(manifestPath, 'utf-8');
@@ -46,6 +58,7 @@ export class LessonService implements OnModuleInit {
           gradeLevel: manifest.gradeLevel || '',
           description: manifest.teachingNotes || '',
           emoji: '📖',
+          lessonType: manifest.lessonType || 'interactive',
           teachingNotes: manifest.teachingNotes || '',
           manifestJson: raw,
         });
@@ -59,7 +72,7 @@ export class LessonService implements OnModuleInit {
 
   async findAll() {
     const rows = await this.repo.find({
-      select: ['id', 'title', 'subject', 'gradeLevel', 'description', 'emoji'],
+      select: ['id', 'title', 'subject', 'gradeLevel', 'description', 'emoji', 'lessonType'],
     });
     return { lessons: rows };
   }

@@ -18,9 +18,9 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<CourseSelectionPage />} />
+      <Route path="/join" element={<JoinPage />} />
       <Route path="/lesson/:lessonId" element={<LessonPageWrapper />} />
       <Route path="/board/:lessonId" element={<BoardPage />} />
-      <Route path="/join" element={<JoinPage />} />
       <Route path="/student/:lessonId" element={<StudentPage />} />
       <Route path="/teacher/:lessonId" element={<TeacherPage />} />
       <Route path="/demo/:lessonId" element={<DemoPage />} />

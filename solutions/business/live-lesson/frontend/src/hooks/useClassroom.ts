@@ -18,7 +18,7 @@ export function useSessionCreate(lessonId: string) {
   const created = useRef(false)
 
   useEffect(() => {
-    if (created.current) return
+    if (created.current || !lessonId) return
     created.current = true
 
     fetch(`${API_BASE}/sessions`, {
@@ -151,17 +151,23 @@ export function useStudentSession(sessionCode: string): StudentSession {
 // ── Teacher stream hook ──
 
 export interface ClassroomState {
+  sessionStatus?: 'waiting' | 'active' | 'ended'
   currentStep: number
   students: Array<{
     id: string
     name: string
-    submissions: Record<number, { step: number; data: any; submittedAt: string }>
+    currentTask: number
+    currentPhase: string
+    stepStartedAt: string
+    submissions: Record<number, { step: number; data: any; score: any; submittedAt: string }>
   }>
   metrics: {
     total: number
     submitted: number
     inProgress: number
   }
+  stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number }>
+  questions: Array<{ studentId: string; studentName: string; step: number; question: string; answer?: string; category?: string; timestamp: string }>
 }
 
 // ── Student SSE stream hook (named events) ──
@@ -191,10 +197,37 @@ export function useStudentStream(sessionCode: string) {
   return { currentStep, notification }
 }
 
+// ── AI Ask hook (student) ──
+
+export function useAiAsk(sessionCode: string) {
+  const [loading, setLoading] = useState(false)
+
+  const ask = useCallback(async (studentId: string, step: number, question: string): Promise<{ answer: string; category: string } | null> => {
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/${sessionCode}/ai/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, step, question }),
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      return { answer: data.answer, category: data.category || '其他' }
+    } catch {
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [sessionCode])
+
+  return { ask, loading }
+}
+
 // ── Teacher stream hook ──
 
-export function useTeacherStream(sessionCode: string): ClassroomState | null {
+export function useTeacherStream(sessionCode: string): { state: ClassroomState | null; activeNotificationIds: Set<string> } {
   const [state, setState] = useState<ClassroomState | null>(null)
+  const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set())
   const esRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
@@ -206,8 +239,29 @@ export function useTeacherStream(sessionCode: string): ClassroomState | null {
       try {
         const data = JSON.parse(event.data)
         setState(data)
+        if (data.activeNotifications) {
+          setActiveNotificationIds(new Set(data.activeNotifications.map((n: any) => n.id)))
+        }
       } catch { /* noop */ }
     }
+
+    es.addEventListener('notification', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        setActiveNotificationIds(prev => new Set(prev).add(data.id))
+      } catch { /* noop */ }
+    })
+
+    es.addEventListener('notification_revoke', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data)
+        setActiveNotificationIds(prev => {
+          const next = new Set(prev)
+          next.delete(data.id)
+          return next
+        })
+      } catch { /* noop */ }
+    })
 
     es.onerror = () => {
       // EventSource auto-reconnects
@@ -219,5 +273,5 @@ export function useTeacherStream(sessionCode: string): ClassroomState | null {
     }
   }, [sessionCode])
 
-  return state
+  return { state, activeNotificationIds }
 }

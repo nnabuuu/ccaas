@@ -36,6 +36,11 @@ export class ClassroomController {
     return this.classroomService.getSessionInfo(validateCode(code));
   }
 
+  @Post('sessions/:code/start')
+  startSession(@Param('code') code: string) {
+    return this.classroomService.startSession(validateCode(code));
+  }
+
   @Post('sessions/:code/end')
   endSession(@Param('code') code: string) {
     return this.classroomService.endSession(validateCode(code));
@@ -88,9 +93,8 @@ export class ClassroomController {
 
   @Post(':code/ai/ask')
   async aiAsk(@Param('code') code: string, @Body() dto: AiAskDto) {
-    // Validate code to ensure session exists
-    await this.classroomService.resolveActiveSession(validateCode(code));
-    const answer = this.classroomService.aiAsk(dto.step, dto.question);
-    return { answer };
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const result = await this.classroomService.aiAsk(session, dto.studentId, dto.step, dto.question);
+    return { answer: result.answer, category: result.category };
   }
 }
