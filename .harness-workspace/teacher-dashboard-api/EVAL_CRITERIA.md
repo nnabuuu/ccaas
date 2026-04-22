@@ -109,6 +109,23 @@
 | 有 `any` 类型在新增的公开接口中 | -2 |
 | console.log / debugger 残留 | -2 |
 
+---
+
+### D6: 前端渲染质量 (Penalty: 最多 -10)
+
+此维度为罚分项，不影响 D1-D5 的 100 分总分。
+
+| # | 检查项 | 罚分 | 检测方法 |
+|---|--------|------|---------|
+| 1 | Join 页面文字对比度 | -3 | `.stu-join-title` computed color RGB 各通道 < 200（非近白色） |
+| 2 | 学生端文字继承 | -3 | `.stu-root` 或 `.stu-join-card` 未显式设 color 导致继承 body |
+| 3 | 教师端文字对比度 | -2 | `.teacher-root` 文字可读（非近白色） |
+| 4 | body CSS 泄漏 | -2 | body color 与 surface 内 color 相同近白值 |
+
+**检测方法**: 读取 `tests/visual-qa-report.txt`，对照 CSS 源文件验证
+
+---
+
 ## 阈值
 
 - **Pass score**: 75/100

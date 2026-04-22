@@ -291,7 +291,7 @@ Save changelog to: ${CHANGELOG_DIR}/v${version}-changelog.md"
 
   local cost_args=""
   if [[ -n "$MAX_COST" ]]; then
-    cost_args="--max-cost $MAX_COST"
+    cost_args="--max-budget-usd $MAX_COST"
   fi
 
   cd "$PROJECT_ROOT"
@@ -327,6 +327,20 @@ step_git_post_gen() {
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>" || true
 }
 
+step_visual_qa() {
+  local version=$1
+  echo "Running visual QA checks..."
+  if ! command -v npx &>/dev/null || ! npx playwright --version &>/dev/null 2>&1; then
+    echo "WARNING: Playwright not available. Skipping visual QA."
+    echo "SKIP: Playwright not available" > "$HARNESS_DIR/tests/visual-qa-report.txt"
+    return 0
+  fi
+  bash "$HARNESS_DIR/tests/visual-qa.sh" || {
+    echo "Visual QA found rendering issues. Continuing to evaluator."
+    return 0  # Don't block — let evaluator assess penalty
+  }
+}
+
 step_evaluator() {
   local version=$1
   local prompt
@@ -340,7 +354,10 @@ step_evaluator() {
 Evaluate version ${version}.
 Analyze: solutions/business/live-lesson/backend/src/classroom/classroom.service.ts
 Tests: solutions/business/live-lesson/backend/src/classroom/classroom.service.spec.ts
-Save your evaluation to: ${EVAL_DIR}/v${version}-eval.md"
+Save your evaluation to: ${EVAL_DIR}/v${version}-eval.md
+
+## Visual QA Report
+Read the visual QA results at: ${HARNESS_DIR}/tests/visual-qa-report.txt"
 
   if [[ "$DRY_RUN" == true ]]; then
     echo "[DRY RUN] Would run evaluator v${version}"
@@ -499,6 +516,7 @@ if [[ -n "$RUN_STEP" && -n "$RUN_ITERATION" ]]; then
     frozen_check)  step_frozen_check ;;
     validation)    step_validation ;;
     git_post_gen)  step_git_post_gen "$RUN_ITERATION" ;;
+    visual_qa)     step_visual_qa "$RUN_ITERATION" ;;
     evaluator)     step_evaluator "$RUN_ITERATION" ;;
     extract)       step_extract "$RUN_ITERATION" ;;
     git_post_eval) step_git_post_eval "$RUN_ITERATION" ;;
@@ -539,7 +557,7 @@ for ((i=start_iter; i<=MAX_ITERATIONS; i++)); do
     state_init_iteration "$i"
   fi
 
-  # Step sequence: generator → frozen_check → validation → git → evaluator → extract → git → exit_check
+  # Step sequence: generator → frozen_check → validation → git → visual_qa → evaluator → extract → git → exit_check
   run_step "$local_idx" "generator" step_generator "$i" || { echo "Generator failed. Stopping."; break; }
   run_step "$local_idx" "frozen_check" step_frozen_check || true
   run_step "$local_idx" "validation" step_validation || {
@@ -550,6 +568,7 @@ for ((i=start_iter; i<=MAX_ITERATIONS; i++)); do
     continue
   }
   run_step "$local_idx" "git_post_gen" step_git_post_gen "$i" || true
+  run_step "$local_idx" "visual_qa" step_visual_qa "$i" || true
   run_step "$local_idx" "evaluator" step_evaluator "$i" || { echo "Evaluator failed. Stopping."; break; }
   run_step "$local_idx" "extract" step_extract "$i" || { echo "Extract failed. Stopping."; break; }
   run_step "$local_idx" "git_post_eval" step_git_post_eval "$i" || true

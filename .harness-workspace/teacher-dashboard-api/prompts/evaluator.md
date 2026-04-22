@@ -84,6 +84,18 @@ Count new test cases. Check:
 - No controller changes?
 - No deleted/renamed fields?
 
+## Step 9: Frontend Rendering (D6)
+
+Read the visual QA report at `.harness-workspace/teacher-dashboard-api/tests/visual-qa-report.txt`.
+- If all checks PASS: no penalty
+- If any check FAIL: apply corresponding penalty from EVAL_CRITERIA.md D6
+- If report says SKIP: no penalty (infrastructure not available)
+
+Also manually verify by reading CSS files:
+1. Check `solutions/business/live-lesson/frontend/src/styles/student.css` — `.stu-root` and `.stu-join-card` must have `color: var(--t1)`
+2. Check `solutions/business/live-lesson/frontend/src/index.css` — body color is dark-theme (#ececef)
+3. Verify no reading-lesson surface relies on body color inheritance
+
 # Output Format
 
 **Save your evaluation to: `.harness-workspace/teacher-dashboard-api/eval-reports/v{VERSION}-eval.md`** (write to file, NOT stdout)
@@ -127,6 +139,7 @@ Use this exact structure:
 | D3 Issues 质量 | .../5 | .../20 |
 | D4 测试覆盖 | .../5 | .../15 |
 | D5 向后兼容 | .../5 | .../15 |
+| D6 渲染质量 | penalty | -X |
 
 **Penalties**: -X
 **总分: XX/100**

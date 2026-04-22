@@ -49,6 +49,17 @@ steps:
     depends:
       - validation
 
+  - name: visual_qa
+    description: "Run Playwright visual QA checks for CSS contrast and inheritance"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step visual_qa --iteration ${ITERATION}
+    depends:
+      - git_post_gen
+    continueOn:
+      failure: true
+
   - name: evaluator
     description: "Run independent evaluator to score the implementation"
     command: bash
@@ -59,7 +70,7 @@ steps:
       limit: 1
       intervalSec: 10
     depends:
-      - git_post_gen
+      - visual_qa
 
   - name: extract
     description: "Extract score from eval report"

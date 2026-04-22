@@ -79,6 +79,10 @@
 4. **向后兼容** — 只增不删
 5. **无外部依赖** — 不引入新 npm 包
 6. **不添加 console.log / debugger**
+7. **CSS scope** — 确保所有 reading-lesson 根容器（`.stu-root`, `.stu-join-card`, `.teacher-root`）
+   显式设置 `color: var(--t1)`。不可依赖 body color 继承。
+   参考: `frontend/src/index.css` 的 `body { color: #ececef }` 是 dark-theme 用的，
+   不适用于 reading-lesson 的浅色表面。
 
 ## 设计数据模型参考（从 teacher.html 提取）
 

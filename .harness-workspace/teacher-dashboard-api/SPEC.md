@@ -64,6 +64,11 @@
   - 对比 `answerKey`，找出出现 ≥ 2 次的相同错误答案
   - 生成可读描述（需要从 answerKey 获取正确答案来描述错误模式）
 
+### G8: CSS Scope Isolation
+- **现状**: `index.css` 的 `body { color: #ececef }` 会被 reading-lesson 页面继承
+- **设计期望**: 所有 reading-lesson 根容器显式设置 `color: var(--t1)`，不依赖 body 继承
+- **方案**: 确保 `.stu-root`、`.stu-join-card`、`.teacher-root` 都有 `color: var(--t1)`
+
 ## 冻结约束
 
 1. **Entity 不变** — 不能修改 `*.entity.ts` 文件，不能加新列或新表
