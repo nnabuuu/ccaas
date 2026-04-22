@@ -2,12 +2,12 @@
   "harness": "teacher-dashboard-api",
   "mode": "code",
   "status": "running",
-  "current_iteration": 2,
+  "current_iteration": 3,
   "current_step": "git_post_eval",
   "max_iterations": 5,
   "score_threshold": 90,
   "started_at": "2026-04-22T17:13:22Z",
-  "updated_at": "2026-04-22T18:00:53Z",
+  "updated_at": "2026-04-22T18:12:12Z",
   "iterations": [
     {
       "version": 1,
@@ -59,7 +59,7 @@
     },
     {
       "version": 2,
-      "status": "in_progress",
+      "status": "completed",
       "steps": {
         "generator": {
           "status": "completed",
@@ -92,12 +92,60 @@
           "completed_at": "2026-04-22T18:00:53Z"
         },
         "git_post_eval": {
-          "status": "running",
-          "started_at": "2026-04-22T18:00:53Z"
+          "status": "completed",
+          "started_at": "2026-04-22T18:00:53Z",
+          "completed_at": "2026-04-22T18:00:55Z"
+        },
+        "exit_check": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:00:59Z",
+          "completed_at": "2026-04-22T18:00:59Z"
         }
       },
       "score": 78,
       "changelog_summary": "- `classroom.service.ts` — 新增 4 个 Gap 实现：\r;- `classroom.service.spec.ts` — 新增 15 个测试覆盖全部新功能\r;- D1 (字段完整性): 补全 G1（quality.cols 人类可读维度名）、G4（alertTag）、G5（questionAggregates）、G7（issues）四个缺失字段。byDimension 保留原始 code-name 键确保向后兼容，新增 quality.cols 提供设计期望的 `{name, good, partial, wrong}[]` 格式。\r;"
+    },
+    {
+      "version": 3,
+      "status": "in_progress",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:01:00Z",
+          "completed_at": "2026-04-22T18:06:12Z"
+        },
+        "frozen_check": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:06:12Z",
+          "completed_at": "2026-04-22T18:06:12Z"
+        },
+        "validation": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:06:12Z",
+          "completed_at": "2026-04-22T18:06:17Z"
+        },
+        "git_post_gen": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:06:17Z",
+          "completed_at": "2026-04-22T18:06:18Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:06:18Z",
+          "completed_at": "2026-04-22T18:12:11Z"
+        },
+        "extract": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:12:12Z",
+          "completed_at": "2026-04-22T18:12:12Z"
+        },
+        "git_post_eval": {
+          "status": "running",
+          "started_at": "2026-04-22T18:12:12Z"
+        }
+      },
+      "score": 95,
+      "changelog_summary": "- `classroom.service.ts` — 修复 `computeAlertTag` 使用 code-name 维度键（`q0`, `place`）生成 alertTag 的 bug，改为使用 human-readable 名称（`Q1`, `Where`）；在 `buildStepMetrics` 中将 `_nameMap` 存入 stepMetrics 供 alertTag 使用\r;- `classroom.service.spec.ts` — 新增 6 个测试：stuck 状态检测（2 个）、match 类型 issue 检测（1 个）、alertTag 使用 readable name（2 个）、alertTag stuck 优先级（1 个）\r;- D1 (字段完整性): 无变化，保持 4/5\r;"
     }
   ]
 }
