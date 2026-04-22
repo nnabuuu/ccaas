@@ -1,37 +1,42 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useEffect } from 'react'
 import type { Paragraph } from '../../types/reading'
 
 interface Props {
   title: string
   paragraphs: Paragraph[]
   focusIds: string[]
-  onClose: () => void
 }
 
-export default function TextPanel({ title, paragraphs, focusIds, onClose }: Props) {
+export default function TextPanel({ title, paragraphs, focusIds }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
-
-  const jumpTo = useCallback((paraId: string) => {
-    const el = scrollRef.current?.querySelector(`[data-para="${paraId}"]`)
-    if (!el) return
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    el.classList.add('flash')
-    setTimeout(() => el.classList.remove('flash'), 1800)
-  }, [])
+  const prevFocus = useRef('')
 
   const focusSet = new Set(focusIds)
+
+  // Auto-scroll to first focused paragraph when focus changes
+  useEffect(() => {
+    const k = focusIds.join(',')
+    if (k !== prevFocus.current && focusIds.length > 0 && scrollRef.current) {
+      prevFocus.current = k
+      setTimeout(() => {
+        const el = scrollRef.current?.querySelector(`[data-para="${focusIds[0]}"]`)
+        if (el && scrollRef.current) {
+          scrollRef.current.scrollTop = (el as HTMLElement).offsetTop - scrollRef.current.offsetTop - 10
+        }
+      }, 200)
+    }
+  }, [focusIds])
+
   const focusLabel = focusIds.length > 0
-    ? `聚焦 ¶${focusIds.map(id => id.replace('p', '')).join(',')}`
+    ? `Focus ¶${focusIds.map(id => id.replace('p', '')).join(',')}`
     : ''
 
   return (
     <div className="stu-text-area">
       <div className="stu-text-inner">
         <div className="stu-text-hd">
-          <div className="stu-text-hd-icon">📖</div>
-          <div className="stu-text-hd-title">课文 · {title}</div>
-          {focusLabel && <div className="stu-text-hd-badge">{focusLabel}</div>}
-          <button className="stu-text-hd-close" onClick={onClose}>✕</button>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--teal)', flex: 1 }}>Text · {title}</span>
+          {focusLabel && <span className="stu-text-hd-badge">{focusLabel}</span>}
         </div>
         <div className="stu-text-scroll" ref={scrollRef}>
           {paragraphs.map((p) => {
@@ -41,9 +46,10 @@ export default function TextPanel({ title, paragraphs, focusIds, onClose }: Prop
               <p
                 key={p.id}
                 data-para={p.id}
-                className={`stu-tp${!inFocus ? ' dim' : ''}`}
+                className="stu-tp"
+                style={{ opacity: inFocus ? 1 : 0.2 }}
               >
-                <span className="stu-tp-n">¶{num}</span>
+                <span className="stu-tp-n">¶{num}</span>{' '}
                 {p.role === 'key' ? (
                   <span className="stu-tp-key">{renderSignals(p.text, p.signals)}</span>
                 ) : (
@@ -73,6 +79,3 @@ function renderSignals(text: string, signals?: string[]) {
   if (remaining) parts.push(remaining)
   return <>{parts}</>
 }
-
-// Expose jumpTo for parent to call
-export type TextPanelHandle = { jumpTo: (paraId: string) => void }

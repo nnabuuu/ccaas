@@ -96,7 +96,7 @@ export default function JoinPage() {
 
   // Already joined — render student shell
   if (joinStep === 'joined' && manifest && sessionCode && session.studentId) {
-    return <StudentShell manifest={manifest} lessonId={lessonId} sessionCode={sessionCode} embed={embed} />
+    return <StudentShell manifest={manifest} lessonId={lessonId} sessionCode={sessionCode} studentId={session.studentId ?? undefined} embed={embed} />
   }
 
   return (

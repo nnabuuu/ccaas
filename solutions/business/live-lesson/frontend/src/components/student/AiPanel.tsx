@@ -1,171 +1,147 @@
-import { useState, useCallback } from 'react'
-
-/** Renders a restricted subset of HTML tags as React elements (strong, span.ex, br). */
-function SafeHtml({ html }: { html: string }) {
-  const nodes: React.ReactNode[] = []
-  let key = 0
-  const re = /<strong>(.*?)<\/strong>|<span class="ex">(.*?)<\/span>|<br\s*\/?>|([^<]+)/g
-  let match
-  while ((match = re.exec(html)) !== null) {
-    if (match[1] !== undefined) {
-      nodes.push(<strong key={key++}>{match[1]}</strong>)
-    } else if (match[2] !== undefined) {
-      nodes.push(<span key={key++} className="ex">{match[2]}</span>)
-    } else if (match[0].startsWith('<br')) {
-      nodes.push(<br key={key++} />)
-    } else if (match[3] !== undefined) {
-      nodes.push(match[3])
-    }
-  }
-  return <>{nodes}</>
-}
-
-interface Preset {
-  q: string
-  a: string
-}
+import { useState, useRef, useCallback } from 'react'
+import { useAiAsk } from '../../hooks/useClassroom'
 
 interface ChatMsg {
-  role: 'user' | 'assistant'
-  text: string
+  t: 'q' | 'a'
+  x: string
 }
-
-const API_BASE = 'http://localhost:3007/api/classroom'
 
 interface Props {
-  open: boolean
-  onClose: () => void
-  presets: Preset[]
+  taskId: number
   sessionCode?: string
   studentId?: string
-  step?: number
 }
 
-export default function AiPanel({ open, onClose, presets, sessionCode, studentId, step }: Props) {
-  const [messages, setMessages] = useState<ChatMsg[]>([])
+/* AI presets per task */
+const AI_BANK: Record<number, Array<{ q: string; a: string }>> = {
+  1: [
+    { q: 'What does "conflict" mean?', a: 'Conflict = 冲突。Two opposite ideas of beauty: gaining weight (Nigeria) vs slim (media).' },
+    { q: 'I don\'t understand ¶2', a: '¶2: media promotes "shallow beauty ideals" — too simple, only about appearance. The writer questions this.' },
+  ],
+  2: [
+    { q: 'What is "Phenomenon"?', a: 'Phenomenon = 现象。¶1-2 describes a phenomenon: different cultures have different beauty standards.' },
+    { q: 'What does "It appears that" mean?', a: '"It appears that" = 看起来。A signal word for conclusions.' },
+  ],
+  3: [
+    { q: 'How to fill Myanmar?', a: '¶7: "women wearing metal rings around their necks." Practice = wearing metal neck rings.' },
+    { q: 'Can\'t find the reason', a: 'Some reasons are implied. Borneo: tattoos like "a diary" → reason = recording life events.' },
+  ],
+  4: [
+    { q: 'What does "shallow" mean?', a: 'Shallow = 肤浅。Media beauty is "shallow" because it only cares about looks, ignoring cultural meaning.' },
+    { q: 'Can I add my own ideas?', a: 'Yes! Text evidence + your own observations both work.' },
+  ],
+  5: [
+    { q: 'What are the 4 strategies?', a: '1. Predicting → 2. Skimming → 3. Scanning → 4. Evaluating' },
+    { q: 'Works for other texts?', a: 'Absolutely! These 4 steps work for any argumentative or expository text.' },
+  ],
+}
+
+export default function AIFloat({ taskId, sessionCode, studentId }: Props) {
+  const [open, setOpen] = useState(false)
+  const [msgs, setMsgs] = useState<ChatMsg[]>([])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [feedback, setFeedback] = useState<Record<number, 'got' | 'not'>>({})
+  const chatRef = useRef<HTMLDivElement>(null)
+  const { ask, loading } = useAiAsk(sessionCode || '')
 
-  const askPreset = useCallback((idx: number) => {
-    const p = presets[idx]
-    if (!p) return
-    setMessages([
-      { role: 'user', text: p.q },
-      { role: 'assistant', text: p.a },
-    ])
-  }, [presets])
+  const presets = AI_BANK[taskId] || []
 
-  const sendCustom = useCallback(async () => {
-    if (!input.trim()) return
-    const question = input.trim()
-    setMessages(prev => [...prev, { role: 'user', text: question }])
-    setInput('')
+  const addMsg = (q: string, a: string) => {
+    setMsgs(m => [...m, { t: 'q', x: q }, { t: 'a', x: a }])
+    setTimeout(() => chatRef.current && (chatRef.current.scrollTop = chatRef.current.scrollHeight), 50)
+  }
 
-    if (sessionCode) {
-      setLoading(true)
-      try {
-        const res = await fetch(`${API_BASE}/${sessionCode}/ai/ask`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: studentId || 'anonymous', question, step: step ?? 0 }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setMessages(prev => [...prev, { role: 'assistant', text: data.answer }])
-        } else {
-          setMessages(prev => [...prev, { role: 'assistant', text: '抱歉，暂时无法回答，请稍后再试。' }])
-        }
-      } catch {
-        setMessages(prev => [...prev, { role: 'assistant', text: '网络错误，请稍后再试。' }])
-      } finally {
-        setLoading(false)
+  const sendQuestion = useCallback(async (question: string) => {
+    if (!question.trim()) return
+
+    // If we have a backend connection, use it
+    if (sessionCode && studentId) {
+      setMsgs(m => [...m, { t: 'q', x: question.trim() }])
+      setInput('')
+      const result = await ask(studentId, taskId, question.trim())
+      setMsgs(m => [...m, { t: 'a', x: result?.answer || 'AI assistant is temporarily unavailable.' }])
+      setTimeout(() => chatRef.current && (chatRef.current.scrollTop = chatRef.current.scrollHeight), 50)
+    } else {
+      // Offline mode: check if it matches a preset
+      const preset = presets.find(p => p.q === question)
+      if (preset) {
+        addMsg(preset.q, preset.a)
+      } else {
+        addMsg(question, 'Think about how the evidence in the text connects to your idea. Try using the pattern: "Based on the text, I think... because..."')
       }
+      setInput('')
     }
-  }, [input, sessionCode, studentId, step])
+  }, [sessionCode, studentId, taskId, ask, presets])
 
-  const handleFeedback = useCallback((msgIdx: number, kind: 'got' | 'not') => {
-    setFeedback(prev => ({ ...prev, [msgIdx]: kind }))
-    if (kind === 'not') {
-      setMessages(prev => [
-        ...prev,
-        { role: 'assistant', text: '换个说法 — 把它想象成给文章画思维导图：每段第一句是"分支标题"，转折词是"分支方向"。' },
-      ])
-    }
-  }, [])
+  const handleSend = () => {
+    if (!input.trim() || loading) return
+    sendQuestion(input.trim())
+  }
 
   return (
-    <div className={`stu-ai-panel${open ? ' open' : ''}`}>
-      <div className="stu-ai-inner">
-        <div className="stu-ai-hd">
-          <div className="stu-ai-hd-ic">💬</div>
-          <div className="stu-ai-hd-title">AI 助教</div>
-          <button className="stu-ai-hd-close" onClick={onClose}>收起 ▼</button>
-        </div>
-        <div className="stu-ai-chips">
-          {presets.map((p, i) => (
-            <button key={i} className="stu-ai-chip" onClick={() => askPreset(i)}>
-              {p.q}
-            </button>
-          ))}
-        </div>
-        <div className="stu-ai-chat">
-          {messages.map((m, i) => (
-            <div key={i}>
-              {m.role === 'user' ? (
-                <div className="stu-ai-q">{m.text}</div>
-              ) : (
-                <>
-                  <div className="stu-ai-a"><SafeHtml html={m.text} /></div>
-                  {!feedback[i] && (
-                    <div className="stu-ai-fb">
-                      <div className="stu-ai-fb-q">这个解释清楚吗？</div>
-                      <div className="stu-ai-fb-btns">
-                        <button
-                          className="stu-ai-fb-btn got"
-                          onClick={() => handleFeedback(i, 'got')}
-                        >
-                          <span>✓</span>我明白了
-                        </button>
-                        <button
-                          className="stu-ai-fb-btn not"
-                          onClick={() => handleFeedback(i, 'not')}
-                        >
-                          <span>?</span>还不明白
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {feedback[i] === 'got' && (
-                    <div className="stu-ai-fb done">
-                      <div className="stu-ai-fb-ack">✓ 已记录 · <strong>明白了</strong>。继续学习吧 →</div>
-                    </div>
-                  )}
-                  {feedback[i] === 'not' && (
-                    <div className="stu-ai-fb escal">
-                      <div className="stu-ai-fb-ack">已记录 · <strong>还不明白</strong>，再换种方式讲一遍</div>
-                    </div>
-                  )}
-                </>
-              )}
+    <>
+      {/* FAB button */}
+      <button
+        className="stu-ai-fab"
+        style={open ? { transform: 'rotate(45deg)' } : undefined}
+        onClick={() => setOpen(!open)}
+      >
+        {open ? '+' : '?'}
+      </button>
+
+      {/* Floating panel */}
+      {open && (
+        <div className="stu-ai-float-panel">
+          {/* Header */}
+          <div className="stu-ai-float-hd">
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--purple)' }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--purple)', flex: 1 }}>AI Assistant</span>
+          </div>
+
+          {/* Preset chips */}
+          {presets.length > 0 && (
+            <div className="stu-ai-float-chips">
+              {presets.map((pr, i) => (
+                <button
+                  key={i}
+                  className="stu-ai-float-chip"
+                  onClick={() => addMsg(pr.q, pr.a)}
+                  disabled={loading}
+                >{pr.q}</button>
+              ))}
             </div>
-          ))}
-          {loading && (
-            <div className="stu-ai-a" style={{ opacity: 0.6, fontStyle: 'italic' }}>思考中...</div>
           )}
+
+          {/* Chat messages */}
+          <div ref={chatRef} className="stu-ai-float-chat">
+            {msgs.length === 0 && (
+              <div style={{ fontSize: 11, color: 'var(--t3)', textAlign: 'center', padding: 16 }}>Ask me anything!</div>
+            )}
+            {msgs.map((m, i) => (
+              <div key={i} className={m.t === 'q' ? 'stu-ai-float-q' : 'stu-ai-float-a'}>{m.x}</div>
+            ))}
+            {loading && (
+              <div className="stu-ai-float-a" style={{ opacity: 0.6 }}>Thinking...</div>
+            )}
+          </div>
+
+          {/* Input */}
+          <div className="stu-ai-float-input">
+            <input
+              style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', background: 'var(--bg)' }}
+              placeholder="Type your question..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSend()}
+              disabled={loading}
+            />
+            <button
+              style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'var(--t1)', color: 'var(--surface)', cursor: 'pointer', fontSize: 12 }}
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+            >→</button>
+          </div>
         </div>
-        <div className="stu-ai-input-row">
-          <div className="stu-ai-av">💬</div>
-          <input
-            className="stu-ai-in"
-            placeholder="也可以直接问..."
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && sendCustom()}
-          />
-          <button className="stu-ai-send" onClick={sendCustom}>↗</button>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   )
 }

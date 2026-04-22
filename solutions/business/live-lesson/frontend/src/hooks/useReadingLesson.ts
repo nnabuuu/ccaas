@@ -13,7 +13,7 @@ interface UseReadingLessonResult {
 
 /**
  * Fetches the reading lesson manifest from /lessons/:lessonId/manifest.json.
- * Also reads ?embed=1 and ?session=CODE from the URL.
+ * Also reads ?embed=1 from the URL to support iframe embedding.
  */
 export function useReadingLesson(): UseReadingLessonResult {
   const { lessonId } = useParams<{ lessonId: string }>()
