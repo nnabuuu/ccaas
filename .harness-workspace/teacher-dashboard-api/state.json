@@ -1,0 +1,55 @@
+{
+  "harness": "teacher-dashboard-api",
+  "mode": "code",
+  "status": "running",
+  "current_iteration": 1,
+  "current_step": "git_post_eval",
+  "max_iterations": 5,
+  "score_threshold": 90,
+  "started_at": "2026-04-22T17:13:22Z",
+  "updated_at": "2026-04-22T17:42:16Z",
+  "iterations": [
+    {
+      "version": 1,
+      "status": "in_progress",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:13:25Z",
+          "completed_at": "2026-04-22T17:38:51Z"
+        },
+        "frozen_check": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:38:51Z",
+          "completed_at": "2026-04-22T17:38:52Z"
+        },
+        "validation": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:38:52Z",
+          "completed_at": "2026-04-22T17:38:56Z"
+        },
+        "git_post_gen": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:38:56Z",
+          "completed_at": "2026-04-22T17:38:57Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:38:57Z",
+          "completed_at": "2026-04-22T17:42:16Z"
+        },
+        "extract": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:42:16Z",
+          "completed_at": "2026-04-22T17:42:16Z"
+        },
+        "git_post_eval": {
+          "status": "running",
+          "started_at": "2026-04-22T17:42:16Z"
+        }
+      },
+      "score": 51,
+      "changelog_summary": "- `classroom.service.ts` — Refactored `getState()` to use extracted private helpers; added `computeStudentDurations()`, `buildStepMetrics()`, `extractMedianTimes()`, `computeStudentStatus()`, `computeHealthCards()`. Enriched stepMetrics with byDimension/avgTime/medianTime/aiRounds/aiPeople. Added per-student duration and aiRoundsCount to submissions. Added student status field. Added top-level healthCards object.\r;- `classroom.service.spec.ts` — Added 8 new tests in 'teacher dashboard — enriched getState' block covering: byDimension aggregation, timing fields, AI stats, per-student duration/aiRoundsCount, student status (reading/done), healthCards structure, backward compatibility of existing stepMetrics fields.\r;- D1 (字段完整性): Added `byDimension`, `avgTime`, `medianTime`, `aiRounds`, `aiPeople` to stepMetrics. Added `duration`, `aiRoundsCount` to student submissions. Added `status` to students. Added `healthCards` top-level object with furthest/median/stuck/aiTotal.\r;"
+    }
+  ]
+}

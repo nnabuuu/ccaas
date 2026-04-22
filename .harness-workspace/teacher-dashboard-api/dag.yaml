@@ -1,0 +1,89 @@
+# teacher-dashboard-api — DAGU DAG
+# Run: dagu start .harness-workspace/teacher-dashboard-api/dag.yaml --params "ITERATION=1"
+
+name: teacher-dashboard-api
+description: "Iteratively enhance classroom.service.ts getState() to match teacher dashboard design"
+tags:
+  - harness
+  - live-lesson
+  - code-mode
+
+params:
+  - ITERATION: "1"
+
+steps:
+  - name: generator
+    description: "Run code generator to fix gaps identified by evaluator"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step generator --iteration ${ITERATION}
+    retryPolicy:
+      limit: 1
+      intervalSec: 10
+
+  - name: frozen_check
+    description: "Verify entity files are unchanged"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step frozen_check --iteration ${ITERATION}
+    depends:
+      - generator
+
+  - name: validation
+    description: "Run tests and build to verify code is correct"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step validation --iteration ${ITERATION}
+    depends:
+      - frozen_check
+
+  - name: git_post_gen
+    description: "Git commit after successful generation"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step git_post_gen --iteration ${ITERATION}
+    depends:
+      - validation
+
+  - name: evaluator
+    description: "Run independent evaluator to score the implementation"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step evaluator --iteration ${ITERATION}
+    retryPolicy:
+      limit: 1
+      intervalSec: 10
+    depends:
+      - git_post_gen
+
+  - name: extract
+    description: "Extract score from eval report"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step extract --iteration ${ITERATION}
+    depends:
+      - evaluator
+
+  - name: git_post_eval
+    description: "Git commit eval report"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step git_post_eval --iteration ${ITERATION}
+    depends:
+      - extract
+
+  - name: exit_check
+    description: "Check if target score reached or max iterations hit"
+    command: bash
+    script: |
+      cd /Users/niex/Documents/GitHub/kedge-ccaas
+      bash .harness-workspace/teacher-dashboard-api/harness.sh --step exit_check --iteration ${ITERATION}
+    depends:
+      - git_post_eval
