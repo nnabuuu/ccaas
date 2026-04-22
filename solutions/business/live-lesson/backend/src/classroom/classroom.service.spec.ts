@@ -954,15 +954,16 @@ describe('ClassroomService — extended coverage', () => {
       const task1 = state.stepMetrics[1];
 
       // A got q0:true,q1:true; B got q0:false,q1:false → 2 students
+      // byDimension now uses readable keys: q0→Q1, q1→Q2
       expect(task1.byDimension).toBeDefined();
-      expect(task1.byDimension.q0).toBeDefined();
-      expect(task1.byDimension.q0.good).toBe(50); // 1/2
-      expect(task1.byDimension.q0.wrong).toBe(50); // 1/2
-      expect(task1.byDimension.q0.partial).toBe(0);
+      expect(task1.byDimension['Q1']).toBeDefined();
+      expect(task1.byDimension['Q1'].good).toBe(50); // 1/2
+      expect(task1.byDimension['Q1'].wrong).toBe(50); // 1/2
+      expect(task1.byDimension['Q1'].partial).toBe(0);
 
-      // Task 2: only A submitted, all correct (match: p0,p1,p2 = true)
+      // Task 2: only A submitted, all correct (match: p0→P1, p1→P2, p2→P3)
       const task2 = state.stepMetrics[2];
-      expect(task2.byDimension.p0).toEqual({ good: 100, partial: 0, wrong: 0 });
+      expect(task2.byDimension['P1']).toEqual({ good: 100, partial: 0, wrong: 0 });
     });
 
     it('should include avgTime and medianTime in stepMetrics', async () => {
@@ -1094,10 +1095,10 @@ describe('ClassroomService — extended coverage', () => {
       expect(colNames).toContain('Q1');
       expect(colNames).toContain('Q2');
 
-      // Verify values match byDimension
+      // Verify values match byDimension (keys are now readable)
       const q1Col = task1.quality.cols.find((c: any) => c.name === 'Q1');
-      expect(q1Col.good).toBe(task1.byDimension.q0.good);
-      expect(q1Col.wrong).toBe(task1.byDimension.q0.wrong);
+      expect(q1Col.good).toBe(task1.byDimension['Q1'].good);
+      expect(q1Col.wrong).toBe(task1.byDimension['Q1'].wrong);
     });
 
     it('should include quality.cols with readable names for match (G1)', async () => {
@@ -1116,10 +1117,8 @@ describe('ClassroomService — extended coverage', () => {
 
     it('should include alertTag as null when no alerts triggered (G4)', async () => {
       const state = await service.getState(session.id);
-      // Task 1: q0 wrong=50% ≥ 30% → alertTag should be set
-      expect(state.stepMetrics[1].alertTag).toBeDefined();
-      expect(typeof state.stepMetrics[1].alertTag).toBe('string');
-      expect(state.stepMetrics[1].alertTag).toMatch(/错误偏高/);
+      // Task 1: Q1 wrong=50% ≥ 30% → alertTag should use readable name
+      expect(state.stepMetrics[1].alertTag).toBe('Q1 错误偏高');
 
       // Task 3: no submissions → alertTag null
       expect(state.stepMetrics[3].alertTag).toBeNull();

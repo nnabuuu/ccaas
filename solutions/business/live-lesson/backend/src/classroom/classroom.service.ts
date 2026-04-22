@@ -826,12 +826,14 @@ export class ClassroomService {
         }
       }
 
-      // Calculate byDimension percentages (original code-name keys for backward compatibility)
+      // G1: byDimension with human-readable keys
       const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
+      const nameMap = this.getDimensionNameMap(stepDef?.answerKey);
       const byDimension: Record<string, { good: number; partial: number; wrong: number }> = {};
       for (const [dim, agg] of Object.entries(dimensionAgg)) {
         if (agg.total > 0) {
-          byDimension[dim] = {
+          const readableName = nameMap[dim] || dim;
+          byDimension[readableName] = {
             good: Math.round((agg.good / agg.total) * 100),
             partial: Math.round((agg.partial / agg.total) * 100),
             wrong: Math.round((agg.wrong / agg.total) * 100),
@@ -839,10 +841,9 @@ export class ClassroomService {
         }
       }
 
-      // G1: quality.cols — design-expected format with human-readable dimension names
-      const nameMap = this.getDimensionNameMap(stepDef?.answerKey);
-      const qualityCols = Object.entries(byDimension).map(([dim, vals]) => ({
-        name: nameMap[dim] || dim,
+      // quality.cols — same data in array format for design prototype
+      const qualityCols = Object.entries(byDimension).map(([name, vals]) => ({
+        name,
         good: vals.good,
         partial: vals.partial,
         wrong: vals.wrong,
@@ -887,7 +888,6 @@ export class ClassroomService {
         aiPeople,
         issues,
         questionAggregates,
-        _nameMap: nameMap,
       };
     }
 
@@ -1150,9 +1150,8 @@ export class ClassroomService {
 
     // Priority 2: any dimension with wrong >= 30%
     const byDim = metrics.byDimension || {};
-    const nameMap: Record<string, string> = metrics._nameMap || {};
     for (const [dimName, dim] of Object.entries(byDim) as [string, { wrong: number }][]) {
-      if (dim.wrong >= 30) return `${nameMap[dimName] || dimName} 错误偏高`;
+      if (dim.wrong >= 30) return `${dimName} 错误偏高`;
     }
 
     // Priority 3: any issue with count >= 5
