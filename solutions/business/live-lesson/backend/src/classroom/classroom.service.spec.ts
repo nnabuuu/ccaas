@@ -1583,4 +1583,107 @@ describe('ClassroomService — extended coverage', () => {
       expect(state.stepMetrics[1].alertTag).toMatch(/人卡住$/);
     });
   });
+
+  describe('teacher dashboard — stepMetrics name/desc/formatted times', () => {
+    it('should include name and desc from manifest', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const state = await service.getState(sess!.id);
+
+      expect(state.stepMetrics[1].name).toBe('Quiz Step');
+      expect(state.stepMetrics[1].desc).toBe('选择题');
+      expect(state.stepMetrics[2].name).toBe('Match Step');
+      expect(state.stepMetrics[2].desc).toBe('结构匹配');
+      expect(state.stepMetrics[3].name).toBe('Matrix Step');
+      expect(state.stepMetrics[3].desc).toBe('信息矩阵');
+      expect(state.stepMetrics[4].name).toBe('Stance Step');
+      expect(state.stepMetrics[4].desc).toBe('立场+论据');
+      expect(state.stepMetrics[5].name).toBe('Order Step');
+      expect(state.stepMetrics[5].desc).toBe('策略排序');
+    });
+
+    it('should include formatted time strings when times are available', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'TimeStudent')).studentId;
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+
+      const state = await service.getState(sess!.id);
+      const task1 = state.stepMetrics[1];
+      expect(task1.avgTimeFormatted).toMatch(/^\d+:\d{2}$/);
+      expect(task1.medianTimeFormatted).toMatch(/^\d+:\d{2}$/);
+
+      // No submissions for task 3 → null formatted times
+      expect(state.stepMetrics[3].avgTimeFormatted).toBeNull();
+      expect(state.stepMetrics[3].medianTimeFormatted).toBeNull();
+    });
+  });
+
+  describe('teacher dashboard — stepHistory (per-student per-step)', () => {
+    it('should include stepHistory with status/result for each task 1-5', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'HistoryStudent')).studentId;
+
+      // Submit task 1 perfectly
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+      // Submit task 2 with one wrong
+      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'wrong', 'inferring'] });
+
+      const state = await service.getState(sess!.id);
+      const student = state.students.find((s: any) => s.id === sid);
+      expect(student!.stepHistory).toBeDefined();
+
+      // Task 1: done, correct (100)
+      expect(student!.stepHistory[1].status).toBe('done');
+      expect(student!.stepHistory[1].result).toBe('correct');
+      expect(student!.stepHistory[1].time).toMatch(/^\d+:\d{2}$/);
+
+      // Task 2: done, partial (not 100)
+      expect(student!.stepHistory[2].status).toBe('done');
+      expect(student!.stepHistory[2].result).toBe('partial');
+
+      // Task 3: current step (prog or reading)
+      expect(['prog', 'reading']).toContain(student!.stepHistory[3].status);
+
+      // Tasks 4 and 5: future
+      expect(student!.stepHistory[4].status).toBe('future');
+      expect(student!.stepHistory[5].status).toBe('future');
+    });
+
+    it('should include result and timeFormatted in enriched submissions', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'EnrichedSubStudent')).studentId;
+
+      // Submit task 1 with wrong answers
+      await service.submit(sess!, sid, 1, { answers: ['A', 'B'] });
+
+      const state = await service.getState(sess!.id);
+      const student = state.students.find((s: any) => s.id === sid);
+      const sub = student!.submissions[1];
+
+      expect(sub.result).toBe('wrong');
+      expect(sub.timeFormatted).toMatch(/^\d+:\d{2}$/);
+    });
+
+    it('should mark all 5 tasks as done for completed student', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'DoneStudent')).studentId;
+
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await service.submit(sess!, sid, 5, { rows: [{ place: 'Borneo', practice: 'tā moko', reason: 'identity' }] });
+      await service.submit(sess!, sid, 7, { position: 'yes', evidence: ['ev1', 'ev2'] });
+      await service.submit(sess!, sid, 9, { order: ['Predict', 'Skim', 'Scan', 'Evaluate', 'Wrap-up'] });
+
+      const state = await service.getState(sess!.id);
+      const student = state.students.find((s: any) => s.id === sid);
+
+      for (let t = 1; t <= 5; t++) {
+        expect(student!.stepHistory[t].status).toBe('done');
+      }
+    });
+  });
 });

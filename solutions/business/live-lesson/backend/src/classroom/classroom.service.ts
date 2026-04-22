@@ -286,11 +286,47 @@ export class ClassroomService {
         const enrichedSubs: Record<number, any> = {};
         for (const [stepStr, sub] of Object.entries(subs)) {
           const stepNum = Number(stepStr);
+          const dur = durations[stepNum] ?? null;
           enrichedSubs[stepNum] = {
             ...sub,
-            duration: durations[stepNum] ?? null,
+            duration: dur,
+            timeFormatted: dur != null ? this.formatDuration(dur) : null,
+            result: this.deriveResult(sub.score),
             aiRoundsCount: questions.filter(q => q.studentId === s.id && q.step === stepNum).length,
           };
+        }
+
+          // Build stepHistory (task-number-keyed, 1-5) for student modal
+        const stepHistory: Record<number, any> = {};
+        for (let taskNum = 1; taskNum <= 5; taskNum++) {
+          const taskStepIdx = TASK_TO_STEP[taskNum];
+          const sub = subs[taskStepIdx];
+          const aiCount = questions.filter(q => q.studentId === s.id && q.step === taskStepIdx).length;
+
+          if (sub) {
+            // Completed step
+            const score = sub.score;
+            const dur = durations[taskStepIdx];
+            stepHistory[taskNum] = {
+              status: 'done',
+              result: this.deriveResult(score),
+              time: dur != null ? this.formatDuration(dur) : null,
+              aiRounds: aiCount,
+            };
+          } else if (s.currentTask === taskNum) {
+            // Current step
+            const isStuck = studentStatuses.get(s.id) === 'stuck';
+            stepHistory[taskNum] = {
+              status: isStuck ? 'stuck' : (s.currentPhase === 'listen' ? 'reading' : 'prog'),
+              aiRounds: aiCount,
+            };
+          } else if (s.currentTask > taskNum || s.currentPhase === 'completed') {
+            // Past step without submission (edge case)
+            stepHistory[taskNum] = { status: 'done', aiRounds: aiCount };
+          } else {
+            // Future step
+            stepHistory[taskNum] = { status: 'future' };
+          }
         }
 
         return {
@@ -301,6 +337,7 @@ export class ClassroomService {
           stepStartedAt: s.stepStartedAt,
           status,
           submissions: enrichedSubs,
+          stepHistory,
         };
       }),
       metrics: {
@@ -876,6 +913,8 @@ export class ClassroomService {
       }
 
       stepMetrics[taskNum] = {
+        name: stepDef?.label || `Step ${taskNum}`,
+        desc: this.getStepTypeDesc(stepDef?.answerKey),
         currentCount,
         completedCount,
         completionRate: total > 0 ? Math.round((completedCount / total) * 100) : 0,
@@ -884,6 +923,8 @@ export class ClassroomService {
         quality: { cols: qualityCols },
         avgTime,
         medianTime,
+        avgTimeFormatted: avgTime != null ? this.formatDuration(avgTime) : null,
+        medianTimeFormatted: medianTime != null ? this.formatDuration(medianTime) : null,
         aiRounds,
         aiPeople,
         issues,
@@ -991,6 +1032,34 @@ export class ClassroomService {
       stuck: { count: stuckCount, location: stuckLocation },
       aiTotal: { rounds: aiRounds, people: aiPeople },
     };
+  }
+
+  /** Derive result label from score: correct (100), partial (1-99), wrong (0) */
+  private deriveResult(score: any): string {
+    if (!score || typeof score.total !== 'number') return 'partial';
+    if (score.total === 100) return 'correct';
+    if (score.total === 0) return 'wrong';
+    return 'partial';
+  }
+
+  /** Format duration in seconds to m:ss string (e.g. 250 → '4:10') */
+  private formatDuration(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  /** Map answerKey type to Chinese description */
+  private getStepTypeDesc(answerKey: any): string {
+    if (!answerKey) return '';
+    const typeMap: Record<string, string> = {
+      quiz: '选择题',
+      match: '结构匹配',
+      matrix: '信息矩阵',
+      stance: '立场+论据',
+      order: '策略排序',
+    };
+    return typeMap[answerKey.type] || answerKey.type || '';
   }
 
   /** G1: Map code dimension keys to human-readable names based on answerKey structure */
