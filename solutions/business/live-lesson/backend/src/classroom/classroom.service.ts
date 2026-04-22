@@ -215,6 +215,15 @@ export class ClassroomService {
     const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
     const stepToCheck = currentStep ?? session?.currentStep ?? 0;
 
+    // Load manifest for G1/G4/G5/G7 enrichment
+    let manifest: any = null;
+    if (session?.lessonId) {
+      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+      if (lesson) {
+        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+      }
+    }
+
     const total = students.length;
     let submitted = 0;
     for (const s of students) {
@@ -233,8 +242,8 @@ export class ClassroomService {
     // G2: per-student per-step durations
     const studentDurations = this.computeStudentDurations(students, subsByStudent);
 
-    // Build enriched stepMetrics with byDimension, timing, AI stats
-    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations);
+    // Build enriched stepMetrics with byDimension, timing, AI stats, issues, questionAggregates
+    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest);
 
     // G3: extract median times for stuck detection
     const medianTimes = this.extractMedianTimes(stepMetrics);
@@ -243,6 +252,13 @@ export class ClassroomService {
     const studentStatuses = new Map<string, string>();
     for (const s of students) {
       studentStatuses.set(s.id, this.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes));
+    }
+
+    // G4: enrich stepMetrics with alertTag (needs studentStatuses computed above)
+    for (let taskNum = 1; taskNum <= 5; taskNum++) {
+      stepMetrics[taskNum].alertTag = this.computeAlertTag(
+        taskNum, stepMetrics[taskNum], students, studentStatuses,
+      );
     }
 
     // G6: health cards
@@ -753,15 +769,17 @@ export class ClassroomService {
     return result;
   }
 
-  /** Build enriched stepMetrics with byDimension, timing, and AI stats */
+  /** Build enriched stepMetrics with byDimension, timing, AI stats, issues, questionAggregates */
   private buildStepMetrics(
     total: number,
     students: Student[],
     subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
     questions: AiQuestion[],
     studentDurations: Map<string, Record<number, number>>,
-  ): Record<number, any> {
-    const stepMetrics: Record<number, any> = {};
+    manifest: any,
+  ): Record<number, Record<string, any>> {
+    const stepMetrics: Record<number, Record<string, any>> = {};
+    const readingSteps: any[] = manifest?.readingSteps || [];
 
     for (let taskNum = 1; taskNum <= 5; taskNum++) {
       const stepIdx = TASK_TO_STEP[taskNum];
@@ -808,7 +826,8 @@ export class ClassroomService {
         }
       }
 
-      // Calculate byDimension percentages
+      // Calculate byDimension percentages (original code-name keys for backward compatibility)
+      const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
       const byDimension: Record<string, { good: number; partial: number; wrong: number }> = {};
       for (const [dim, agg] of Object.entries(dimensionAgg)) {
         if (agg.total > 0) {
@@ -819,6 +838,15 @@ export class ClassroomService {
           };
         }
       }
+
+      // G1: quality.cols — design-expected format with human-readable dimension names
+      const nameMap = this.getDimensionNameMap(stepDef?.answerKey);
+      const qualityCols = Object.entries(byDimension).map(([dim, vals]) => ({
+        name: nameMap[dim] || dim,
+        good: vals.good,
+        partial: vals.partial,
+        wrong: vals.wrong,
+      }));
 
       // Calculate timing
       durations.sort((a, b) => a - b);
@@ -834,16 +862,31 @@ export class ClassroomService {
       const aiRounds = stepQuestions.length;
       const aiPeople = new Set(stepQuestions.map(q => q.studentId)).size;
 
+      // G7: issues — detect common wrong answers
+      const issues = this.detectIssues(stepIdx, subsByStudent, stepDef?.answerKey);
+
+      // G5: questionAggregates with isHigh >= 4
+      const questionAggregates: Record<string, { count: number; isHigh: boolean }> = {};
+      for (const q of stepQuestions) {
+        const cat = q.category || '其他';
+        if (!questionAggregates[cat]) questionAggregates[cat] = { count: 0, isHigh: false };
+        questionAggregates[cat].count++;
+        questionAggregates[cat].isHigh = questionAggregates[cat].count >= 4;
+      }
+
       stepMetrics[taskNum] = {
         currentCount,
         completedCount,
         completionRate: total > 0 ? Math.round((completedCount / total) * 100) : 0,
         avgScore: completedCount > 0 ? Math.round(totalScore / completedCount) : 0,
         byDimension,
+        quality: { cols: qualityCols },
         avgTime,
         medianTime,
         aiRounds,
         aiPeople,
+        issues,
+        questionAggregates,
       };
     }
 
@@ -947,5 +990,176 @@ export class ClassroomService {
       stuck: { count: stuckCount, location: stuckLocation },
       aiTotal: { rounds: aiRounds, people: aiPeople },
     };
+  }
+
+  /** G1: Map code dimension keys to human-readable names based on answerKey structure */
+  private getDimensionNameMap(answerKey: any): Record<string, string> {
+    const map: Record<string, string> = {};
+    if (!answerKey) return map;
+
+    switch (answerKey.type) {
+      case 'quiz':
+        for (const a of answerKey.answers || []) {
+          map[`q${a.questionIdx}`] = a.label || `Q${a.questionIdx + 1}`;
+        }
+        break;
+      case 'match':
+        for (const a of answerKey.answers || []) {
+          map[`p${a.pairIdx}`] = a.left ? `${a.left}→${a.correct}` : `P${a.pairIdx + 1}`;
+        }
+        break;
+      case 'matrix':
+        map['place'] = 'Where';
+        map['practice'] = 'What';
+        map['reason'] = 'Why';
+        break;
+      case 'stance':
+        map['position'] = 'Position';
+        map['evidence'] = 'Evidence';
+        break;
+      case 'order':
+        map['correct'] = 'Correct';
+        break;
+    }
+    return map;
+  }
+
+  /** G7: Detect common wrong answer patterns for a step */
+  private detectIssues(
+    stepIdx: number,
+    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
+    answerKey: any,
+  ): string[] {
+    if (!answerKey) return [];
+
+    const submissions: { data: any; score: any }[] = [];
+    for (const subs of subsByStudent.values()) {
+      if (subs[stepIdx]) {
+        submissions.push({ data: subs[stepIdx].data, score: subs[stepIdx].score });
+      }
+    }
+    if (submissions.length === 0) return [];
+
+    const wrongCounts = new Map<string, number>();
+
+    switch (answerKey.type) {
+      case 'quiz': {
+        const answers = answerKey.answers || [];
+        for (const sub of submissions) {
+          const studentAnswers = sub.data?.answers || [];
+          for (const a of answers) {
+            const studentAnswer = studentAnswers[a.questionIdx];
+            if (studentAnswer != null && studentAnswer !== a.correct) {
+              const label = a.label || `Q${a.questionIdx + 1}`;
+              const key = `${label} 选了 ${studentAnswer}（应为 ${a.correct}）`;
+              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+            }
+          }
+        }
+        break;
+      }
+      case 'match': {
+        const answers = answerKey.answers || [];
+        for (const sub of submissions) {
+          const pairs = sub.data?.pairs || sub.data?.answers || [];
+          for (const a of answers) {
+            const raw = pairs[a.pairIdx];
+            const studentValue = typeof raw === 'string' ? raw : raw?.value;
+            if (studentValue != null && studentValue.toLowerCase() !== a.correct.toLowerCase()) {
+              const label = a.left || `P${a.pairIdx + 1}`;
+              const key = `${label} 匹配为 ${studentValue}（应为 ${a.correct}）`;
+              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+            }
+          }
+        }
+        break;
+      }
+      case 'matrix': {
+        const answers = (answerKey.answers || []).filter((a: any) => !a.isDemo);
+        const colNames: Record<string, string> = { place: 'Where', practice: 'What', reason: 'Why' };
+        for (const sub of submissions) {
+          const studentRows = sub.data?.rows || [];
+          for (const a of answers) {
+            const studentRow = studentRows[a.rowIdx] || {};
+            for (const col of ['place', 'practice', 'reason']) {
+              const correct = (a[col] || '').toLowerCase().trim();
+              const student = (studentRow[col] || '').toLowerCase().trim();
+              if (student && correct && !student.includes(correct) && !correct.includes(student)) {
+                const key = `${colNames[col] || col} 写 ${studentRow[col]} 而非 ${a[col]}`;
+                wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+              }
+            }
+          }
+        }
+        break;
+      }
+      case 'stance': {
+        const validPositions: string[] = answerKey.validPositions || [];
+        const minEvidence: number = answerKey.minEvidence || 2;
+        for (const sub of submissions) {
+          const position = (sub.data?.position || '').toLowerCase();
+          const evidence = sub.data?.evidence || [];
+          if (position && !validPositions.includes(position)) {
+            const key = `立场为 ${sub.data.position}（有效立场：${validPositions.join('/')}）`;
+            wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+          }
+          if (Array.isArray(evidence) && evidence.length > 0 && evidence.length < minEvidence) {
+            const key = `论据不足（仅 ${evidence.length} 条，需 ${minEvidence} 条）`;
+            wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+          }
+        }
+        break;
+      }
+      case 'order': {
+        const correctOrder: string[] = answerKey.correctOrder || [];
+        for (const sub of submissions) {
+          const studentOrder = sub.data?.order || [];
+          if (studentOrder.length === 0) continue;
+          for (let i = 0; i < correctOrder.length; i++) {
+            const expected = correctOrder[i];
+            const got = typeof studentOrder[i] === 'string' ? studentOrder[i] : studentOrder[i]?.label;
+            if (got && got.toLowerCase() !== expected.toLowerCase()) {
+              const key = `位置 ${i + 1} 放了 ${got}（应为 ${expected}）`;
+              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
+            }
+          }
+        }
+        break;
+      }
+    }
+
+    return Array.from(wrongCounts.entries())
+      .filter(([, count]) => count >= 2)
+      .sort((a, b) => b[1] - a[1])
+      .map(([desc, count]) => `${count} 人${desc}`);
+  }
+
+  /** G4: Compute alertTag for a step card (priority: stuck > wrong_dimension > issue) */
+  private computeAlertTag(
+    taskNum: number,
+    metrics: Record<string, any>,
+    students: Student[],
+    studentStatuses: Map<string, string>,
+  ): string | null {
+    // Priority 1: stuck students at this step >= 5
+    const stuckAtStep = students.filter(
+      s => s.currentTask === taskNum && studentStatuses.get(s.id) === 'stuck',
+    ).length;
+    if (stuckAtStep >= 5) return `${stuckAtStep} 人卡住`;
+
+    // Priority 2: any dimension with wrong >= 30%
+    const byDim = metrics.byDimension || {};
+    for (const [dimName, dim] of Object.entries(byDim) as [string, { wrong: number }][]) {
+      if (dim.wrong >= 30) return `${dimName} 错误偏高`;
+    }
+
+    // Priority 3: any issue with count >= 5
+    const issues: string[] = metrics.issues || [];
+    for (const issue of issues) {
+      const m = issue.match(/^(\d+) 人/);
+      if (m && parseInt(m[1]) >= 5) return issue;
+    }
+
+    return null;
   }
 }

@@ -1078,5 +1078,346 @@ describe('ClassroomService — extended coverage', () => {
       expect(state.stepMetrics[2].completedCount).toBe(1); // A
       expect(state.stepMetrics[2].currentCount).toBe(1); // B at task 2
     });
+
+    // ── G1: quality.cols with human-readable dimension names ──
+
+    it('should include quality.cols with human-readable names for quiz (G1)', async () => {
+      const state = await service.getState(session.id);
+      const task1 = state.stepMetrics[1];
+
+      // quiz: q0→Q1, q1→Q2 (default mapping, no labels in FULL_MANIFEST)
+      expect(task1.quality).toBeDefined();
+      expect(task1.quality.cols).toBeDefined();
+      expect(task1.quality.cols.length).toBe(2);
+
+      const colNames = task1.quality.cols.map((c: any) => c.name);
+      expect(colNames).toContain('Q1');
+      expect(colNames).toContain('Q2');
+
+      // Verify values match byDimension
+      const q1Col = task1.quality.cols.find((c: any) => c.name === 'Q1');
+      expect(q1Col.good).toBe(task1.byDimension.q0.good);
+      expect(q1Col.wrong).toBe(task1.byDimension.q0.wrong);
+    });
+
+    it('should include quality.cols with readable names for match (G1)', async () => {
+      const state = await service.getState(session.id);
+      const task2 = state.stepMetrics[2];
+
+      // match without left labels: p0→P1, p1→P2, p2→P3
+      expect(task2.quality.cols.length).toBe(3);
+      const colNames = task2.quality.cols.map((c: any) => c.name);
+      expect(colNames).toContain('P1');
+      expect(colNames).toContain('P2');
+      expect(colNames).toContain('P3');
+    });
+
+    // ── G4: alertTag ──
+
+    it('should include alertTag as null when no alerts triggered (G4)', async () => {
+      const state = await service.getState(session.id);
+      // Task 1: q0 wrong=50% ≥ 30% → alertTag should be set
+      expect(state.stepMetrics[1].alertTag).toBeDefined();
+      expect(typeof state.stepMetrics[1].alertTag).toBe('string');
+      expect(state.stepMetrics[1].alertTag).toMatch(/错误偏高/);
+
+      // Task 3: no submissions → alertTag null
+      expect(state.stepMetrics[3].alertTag).toBeNull();
+    });
+
+    // ── G5: questionAggregates ──
+
+    it('should include questionAggregates with isHigh threshold >= 4 (G5)', async () => {
+      const state = await service.getState(session.id);
+
+      // Task 1: 1 AI question (category '概念理解') → isHigh = false (< 4)
+      const task1 = state.stepMetrics[1];
+      expect(task1.questionAggregates).toBeDefined();
+      expect(task1.questionAggregates['概念理解']).toBeDefined();
+      expect(task1.questionAggregates['概念理解'].count).toBe(1);
+      expect(task1.questionAggregates['概念理解'].isHigh).toBe(false);
+
+      // Task 2: no AI questions → empty aggregates
+      expect(Object.keys(state.stepMetrics[2].questionAggregates).length).toBe(0);
+    });
+
+    // ── G7: issues ──
+
+    it('should include issues array in stepMetrics (G7)', async () => {
+      const state = await service.getState(session.id);
+
+      // Task 1: A answered ['B','A'] (correct), B answered ['A','B'] (wrong)
+      // Only 1 wrong per question → count < 2 → no issues
+      expect(state.stepMetrics[1].issues).toBeDefined();
+      expect(Array.isArray(state.stepMetrics[1].issues)).toBe(true);
+
+      // Task 3: no submissions → no issues
+      expect(state.stepMetrics[3].issues).toEqual([]);
+    });
+  });
+
+  // ── G7: issues detection with multiple identical wrong answers ──
+
+  describe('teacher dashboard — issues detection (G7)', () => {
+    let session: ClassroomSession;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // Submit quiz (step 1) from 4 students: 2 give same wrong answer for Q1
+      const s1 = (await service.join(session, 'IssueA')).studentId;
+      const s2 = (await service.join(session, 'IssueB')).studentId;
+      const s3 = (await service.join(session, 'IssueC')).studentId;
+      const s4 = (await service.join(session, 'IssueD')).studentId;
+
+      // s1: Q1 wrong (chose C), Q2 correct
+      await service.submit(session, s1, 1, { answers: ['C', 'A'] });
+      // s2: Q1 wrong (chose C), Q2 correct — same wrong answer as s1
+      await service.submit(session, s2, 1, { answers: ['C', 'A'] });
+      // s3: Q1 wrong (chose D), Q2 wrong (chose B)
+      await service.submit(session, s3, 1, { answers: ['D', 'B'] });
+      // s4: all correct
+      await service.submit(session, s4, 1, { answers: ['B', 'A'] });
+    });
+
+    it('should detect common wrong answers with count >= 2', async () => {
+      const state = await service.getState(session.id);
+      const issues = state.stepMetrics[1].issues;
+
+      expect(issues.length).toBeGreaterThanOrEqual(1);
+      // 2 students chose 'C' for Q1 (correct is 'B')
+      const q1Issue = issues.find((i: string) => i.includes('Q1') && i.includes('C'));
+      expect(q1Issue).toBeDefined();
+      expect(q1Issue).toMatch(/^2 人/);
+    });
+
+    it('should not include wrong answers with count < 2', async () => {
+      const state = await service.getState(session.id);
+      const issues = state.stepMetrics[1].issues;
+
+      // Only 1 student chose 'D' for Q1 → should not appear
+      const dIssue = issues.find((i: string) => i.includes('D'));
+      expect(dIssue).toBeUndefined();
+    });
+
+    it('should sort issues by count descending', async () => {
+      const state = await service.getState(session.id);
+      const issues = state.stepMetrics[1].issues;
+
+      // Extract counts from issue strings
+      const counts = issues.map((i: string) => {
+        const m = i.match(/^(\d+) 人/);
+        return m ? parseInt(m[1]) : 0;
+      });
+
+      for (let i = 1; i < counts.length; i++) {
+        expect(counts[i]).toBeLessThanOrEqual(counts[i - 1]);
+      }
+    });
+  });
+
+  // ── G4: alertTag with wrong dimension threshold ──
+
+  describe('teacher dashboard — alertTag (G4)', () => {
+    it('should return alertTag when dimension wrong >= 30%', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 3 students all get Q1 wrong → wrong=100% for Q1 dimension
+      const ids: string[] = [];
+      for (const name of ['AlertA', 'AlertB', 'AlertC']) {
+        ids.push((await service.join(sess!, name)).studentId);
+      }
+      for (const id of ids) {
+        await service.submit(sess!, id, 1, { answers: ['C', 'A'] }); // Q1 wrong, Q2 correct
+      }
+
+      const state = await service.getState(sess!.id);
+      // Q1: wrong=100% ≥ 30% → alertTag should mention 错误偏高
+      expect(state.stepMetrics[1].alertTag).toBeDefined();
+      expect(state.stepMetrics[1].alertTag).toMatch(/错误偏高/);
+    });
+
+    it('should return null alertTag when no thresholds exceeded', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 1 student, all correct → no alerts
+      const sid = (await service.join(sess!, 'PerfectStudent')).studentId;
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+
+      const state = await service.getState(sess!.id);
+      expect(state.stepMetrics[1].alertTag).toBeNull();
+    });
+  });
+
+  // ── G5: questionAggregates isHigh threshold ──
+
+  describe('teacher dashboard — questionAggregates isHigh (G5)', () => {
+    it('should mark isHigh=true when count >= 4', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'QAStudent')).studentId;
+
+      // Add 4 AI questions with same category
+      for (let i = 0; i < 4; i++) {
+        const q = aiQuestionRepo.create({
+          sessionId: sess!.id,
+          studentId: sid,
+          studentName: 'QAStudent',
+          step: 1,
+          question: `问题${i}`,
+          answer: `回答${i}`,
+          category: '概念理解',
+        });
+        await aiQuestionRepo.save(q);
+      }
+
+      const state = await service.getState(sess!.id);
+      const qa = state.stepMetrics[1].questionAggregates;
+      expect(qa['概念理解'].count).toBe(4);
+      expect(qa['概念理解'].isHigh).toBe(true);
+    });
+
+    it('should mark isHigh=false when count < 4', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'QALowStudent')).studentId;
+
+      // Add 3 AI questions (below threshold)
+      for (let i = 0; i < 3; i++) {
+        const q = aiQuestionRepo.create({
+          sessionId: sess!.id,
+          studentId: sid,
+          studentName: 'QALowStudent',
+          step: 1,
+          question: `问题${i}`,
+          answer: `回答${i}`,
+          category: '阅读策略',
+        });
+        await aiQuestionRepo.save(q);
+      }
+
+      const state = await service.getState(sess!.id);
+      const qa = state.stepMetrics[1].questionAggregates;
+      expect(qa['阅读策略'].count).toBe(3);
+      expect(qa['阅读策略'].isHigh).toBe(false);
+    });
+  });
+
+  // ── G1: quality.cols with labeled manifest ──
+
+  describe('teacher dashboard — quality.cols with labeled manifest (G1)', () => {
+    it('should use left→correct labels for match dimensions', async () => {
+      // Create a lesson with match labels
+      await lessonRepo.save(
+        lessonRepo.create({
+          id: 'labeled-lesson',
+          title: 'Labeled Lesson',
+          subject: 'English',
+          gradeLevel: '7',
+          manifestJson: JSON.stringify({
+            id: 'labeled-lesson',
+            title: 'Labeled Lesson',
+            readingSteps: [
+              {
+                idx: 1,
+                label: 'Quiz Step',
+                strategy: 'quiz',
+                answerKey: {
+                  type: 'quiz',
+                  answers: [
+                    { questionIdx: 0, correct: 'B', label: 'Edem' },
+                    { questionIdx: 1, correct: 'A', label: 'Media' },
+                  ],
+                },
+              },
+              {
+                idx: 3,
+                label: 'Match Step',
+                strategy: 'match',
+                answerKey: {
+                  type: 'match',
+                  answers: [
+                    { pairIdx: 0, left: '¶1-2', correct: 'Phenomenon' },
+                    { pairIdx: 1, left: '¶3-4', correct: 'History' },
+                  ],
+                },
+              },
+              { idx: 5, label: 'Matrix', strategy: 'matrix', answerKey: {
+                type: 'matrix',
+                answers: [
+                  { rowIdx: 0, place: 'Japan', practice: 'meditation', reason: 'focus', isDemo: false },
+                ],
+              }},
+              { idx: 7, label: 'Stance', strategy: 'stance', answerKey: {
+                type: 'stance', validPositions: ['agree', 'disagree'], minEvidence: 2,
+              }},
+              { idx: 9, label: 'Order', strategy: 'order', answerKey: {
+                type: 'order', correctOrder: ['A', 'B', 'C'],
+              }},
+            ],
+          }),
+        }),
+      );
+
+      const created = await service.createSession('labeled-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'LabelStudent')).studentId;
+
+      // Submit quiz with partial correct
+      await service.submit(sess!, sid, 1, { answers: ['B', 'B'] });
+
+      const state = await service.getState(sess!.id);
+      const quizCols = state.stepMetrics[1].quality.cols;
+
+      // Labels from answerKey.answers[].label
+      const names = quizCols.map((c: any) => c.name);
+      expect(names).toContain('Edem');
+      expect(names).toContain('Media');
+    });
+
+    it('should use Where/What/Why for matrix dimensions', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'MatrixStudent')).studentId;
+
+      await advanceToTask(service, sess!, sid, 3);
+      await service.submit(sess!, sid, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'wrong', practice: 'wrong', reason: 'wrong' },
+        ],
+      });
+
+      const state = await service.getState(sess!.id);
+      const matrixCols = state.stepMetrics[3].quality.cols;
+      const names = matrixCols.map((c: any) => c.name);
+      expect(names).toContain('Where');
+      expect(names).toContain('What');
+      expect(names).toContain('Why');
+    });
+  });
+
+  // ── Empty classroom edge case ──
+
+  describe('teacher dashboard — empty classroom', () => {
+    it('should return empty healthCards and stepMetrics for 0 students', async () => {
+      const created = await service.createSession('full-lesson');
+      const state = await service.getState(created.sessionId);
+
+      expect(state.students.length).toBe(0);
+      expect(state.healthCards.furthest.step).toBe(0);
+      expect(state.healthCards.median.step).toBe(0);
+      expect(state.healthCards.stuck.count).toBe(0);
+
+      for (let t = 1; t <= 5; t++) {
+        expect(state.stepMetrics[t].completedCount).toBe(0);
+        expect(state.stepMetrics[t].issues).toEqual([]);
+        expect(state.stepMetrics[t].alertTag).toBeNull();
+        expect(Object.keys(state.stepMetrics[t].questionAggregates).length).toBe(0);
+      }
+    });
   });
 });
