@@ -15,6 +15,15 @@ export class Student {
   @Column()
   name: string;
 
+  @Column({ name: 'current_task', default: 1 })
+  currentTask: number;
+
+  @Column({ name: 'current_phase', default: 'listen' })
+  currentPhase: string;
+
+  @Column({ name: 'step_started_at', nullable: true })
+  stepStartedAt: string;
+
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt: Date;
 }

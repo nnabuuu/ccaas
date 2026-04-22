@@ -21,6 +21,9 @@ export class Submission {
   @Column({ type: 'simple-json', name: 'data_json' })
   dataJson: Record<string, any>;
 
+  @Column({ type: 'simple-json', name: 'score_json', nullable: true })
+  scoreJson: Record<string, any> | null;
+
   @CreateDateColumn({ name: 'submitted_at' })
   submittedAt: Date;
 }
