@@ -4,3 +4,4 @@
 |-----------|---------|---------|-----------|---------|---------|-----------|-------|-------|
 | v0 (baseline) | — | — | — | — | — | — | — | Pre-harness state; stepMetrics has byDimension/timing/AI stats |
 | v1 | 2026-04-23 01:42 | 51 | - `classroom.service.ts` — Refactored `getState()` to use ex |  |
+| v2 | 2026-04-23 02:00 | 78 | - `classroom.service.ts` — 新增 4 个 Gap 实现：;- `classroom.serv |  |

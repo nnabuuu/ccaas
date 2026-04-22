@@ -2,16 +2,16 @@
   "harness": "teacher-dashboard-api",
   "mode": "code",
   "status": "running",
-  "current_iteration": 1,
+  "current_iteration": 2,
   "current_step": "git_post_eval",
   "max_iterations": 5,
   "score_threshold": 90,
   "started_at": "2026-04-22T17:13:22Z",
-  "updated_at": "2026-04-22T17:42:16Z",
+  "updated_at": "2026-04-22T18:00:53Z",
   "iterations": [
     {
       "version": 1,
-      "status": "in_progress",
+      "status": "completed",
       "steps": {
         "generator": {
           "status": "completed",
@@ -44,12 +44,60 @@
           "completed_at": "2026-04-22T17:42:16Z"
         },
         "git_post_eval": {
-          "status": "running",
-          "started_at": "2026-04-22T17:42:16Z"
+          "status": "completed",
+          "started_at": "2026-04-22T17:42:16Z",
+          "completed_at": "2026-04-22T17:42:18Z"
+        },
+        "exit_check": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:42:23Z",
+          "completed_at": "2026-04-22T17:42:23Z"
         }
       },
       "score": 51,
       "changelog_summary": "- `classroom.service.ts` — Refactored `getState()` to use extracted private helpers; added `computeStudentDurations()`, `buildStepMetrics()`, `extractMedianTimes()`, `computeStudentStatus()`, `computeHealthCards()`. Enriched stepMetrics with byDimension/avgTime/medianTime/aiRounds/aiPeople. Added per-student duration and aiRoundsCount to submissions. Added student status field. Added top-level healthCards object.\r;- `classroom.service.spec.ts` — Added 8 new tests in 'teacher dashboard — enriched getState' block covering: byDimension aggregation, timing fields, AI stats, per-student duration/aiRoundsCount, student status (reading/done), healthCards structure, backward compatibility of existing stepMetrics fields.\r;- D1 (字段完整性): Added `byDimension`, `avgTime`, `medianTime`, `aiRounds`, `aiPeople` to stepMetrics. Added `duration`, `aiRoundsCount` to student submissions. Added `status` to students. Added `healthCards` top-level object with furthest/median/stuck/aiTotal.\r;"
+    },
+    {
+      "version": 2,
+      "status": "in_progress",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:42:23Z",
+          "completed_at": "2026-04-22T17:53:56Z"
+        },
+        "frozen_check": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:53:56Z",
+          "completed_at": "2026-04-22T17:53:57Z"
+        },
+        "validation": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:53:57Z",
+          "completed_at": "2026-04-22T17:54:02Z"
+        },
+        "git_post_gen": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:54:02Z",
+          "completed_at": "2026-04-22T17:54:03Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "started_at": "2026-04-22T17:54:03Z",
+          "completed_at": "2026-04-22T18:00:53Z"
+        },
+        "extract": {
+          "status": "completed",
+          "started_at": "2026-04-22T18:00:53Z",
+          "completed_at": "2026-04-22T18:00:53Z"
+        },
+        "git_post_eval": {
+          "status": "running",
+          "started_at": "2026-04-22T18:00:53Z"
+        }
+      },
+      "score": 78,
+      "changelog_summary": "- `classroom.service.ts` — 新增 4 个 Gap 实现：\r;- `classroom.service.spec.ts` — 新增 15 个测试覆盖全部新功能\r;- D1 (字段完整性): 补全 G1（quality.cols 人类可读维度名）、G4（alertTag）、G5（questionAggregates）、G7（issues）四个缺失字段。byDimension 保留原始 code-name 键确保向后兼容，新增 quality.cols 提供设计期望的 `{name, good, partial, wrong}[]` 格式。\r;"
     }
   ]
 }
