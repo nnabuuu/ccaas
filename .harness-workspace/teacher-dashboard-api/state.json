@@ -1,17 +1,17 @@
 {
   "harness": "teacher-dashboard-api",
   "mode": "code",
-  "status": "running",
+  "status": "completed",
   "current_iteration": 1,
-  "current_step": "git_post_eval",
+  "current_step": "exit_check",
   "max_iterations": 5,
   "score_threshold": 90,
   "started_at": "2026-04-22T19:36:36Z",
-  "updated_at": "2026-04-22T19:49:37Z",
+  "updated_at": "2026-04-22T19:49:44Z",
   "iterations": [
     {
       "version": 1,
-      "status": "in_progress",
+      "status": "completed",
       "steps": {
         "generator": {
           "status": "completed",
@@ -49,8 +49,14 @@
           "completed_at": "2026-04-22T19:49:37Z"
         },
         "git_post_eval": {
-          "status": "running",
-          "started_at": "2026-04-22T19:49:37Z"
+          "status": "completed",
+          "started_at": "2026-04-22T19:49:37Z",
+          "completed_at": "2026-04-22T19:49:39Z"
+        },
+        "exit_check": {
+          "status": "failed",
+          "started_at": "2026-04-22T19:49:44Z",
+          "error": "step returned non-zero"
         }
       },
       "score": 100,
