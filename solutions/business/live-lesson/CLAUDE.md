@@ -65,6 +65,58 @@ cd frontend && npm install && npm run dev
 - Solution Backend: 3007 (lesson API + classroom API + SSE stream)
 - CCAAS Backend: 3001 (required)
 
+## API Proxy Architecture
+
+Frontend uses **relative paths** for all solution backend API calls (`/api/...`). Never hardcode `http://localhost:3007` in frontend code.
+
+### Dev (Vite proxy)
+
+`frontend/vite.config.ts` proxies `/api` → `http://localhost:3007`:
+
+```ts
+server: {
+  proxy: { '/api': 'http://localhost:3007' },
+}
+```
+
+### Production deployment
+
+Production needs a reverse proxy (nginx/Caddy/etc.) to route `/api` to the solution backend:
+
+```nginx
+# Example nginx config
+server {
+    listen 80;
+
+    # Frontend static files
+    location / {
+        root /path/to/frontend/dist;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Solution backend API + SSE streams
+    location /api/ {
+        proxy_pass http://127.0.0.1:3007;
+        proxy_http_version 1.1;
+        # SSE support (classroom stream endpoints)
+        proxy_set_header Connection '';
+        proxy_buffering off;
+        proxy_cache off;
+    }
+}
+```
+
+### CCAAS SDK connection (exception)
+
+`useLiveLesson.ts` 中的 `SERVER_URL` (`http://localhost:3001`) **必须保持绝对路径**。SDK 使用 Socket.IO/SSE 直连 CCAAS 后端，不走 Vite proxy。生产环境需要将此值改为实际的 CCAAS 后端地址（环境变量或构建时注入）。
+
+### Checklist
+
+| 路径 | 代理目标 | 说明 |
+|------|----------|------|
+| `/api/*` | Solution Backend (3007) | lesson API + classroom API + SSE stream |
+| CCAAS SDK `serverUrl` | CCAAS Backend (3001) | Socket.IO 直连，不走代理 |
+
 ## API Endpoints
 | Method | Route | Purpose |
 |--------|-------|---------|
@@ -114,8 +166,10 @@ The `getState()` response includes enriched teacher dashboard data:
 ## Frontend Routes
 | Route | Component | Description |
 |-------|-----------|-------------|
+| `/` | CourseSelectionPage | Lesson list → create session → navigate |
 | `/join` | JoinPage | Student entry: code + name |
-| `/teacher/:lessonId` | TeacherPage | Auto-creates session, shows code |
-| `/demo/:lessonId` | DemoPage | Auto-creates session, 3-panel demo |
+| `/session/:sessionId` | SessionPage | Student view (session-centric) |
+| `/session/:sessionId/watch` | TeacherPage | Teacher dashboard (session-centric) |
+| `/session/:sessionId/demo` | DemoPage | 3-panel demo (session-centric) |
+| `/lesson/:lessonId` | LessonPage | Standalone lesson page |
 | `/board/:lessonId` | BoardPage | Projection board (no session needed) |
-| `/student/:lessonId` | StudentPage | Redirects to /join |

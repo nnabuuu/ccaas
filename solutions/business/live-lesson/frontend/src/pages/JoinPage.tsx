@@ -1,35 +1,34 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { useSessionLookup, useStudentSession } from '../hooks/useClassroom'
+import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
-import StudentShell from '../components/student/StudentShell'
 import '../styles/student.css'
+
+interface SavedSessionInfo {
+  sessionId: string
+  code: string
+  title: string
+  studentName: string
+}
 
 export default function JoinPage() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const sessionFromUrl = searchParams.get('session')
   const embed = searchParams.get('embed') === '1'
 
   const [codeInput, setCodeInput] = useState(sessionFromUrl || '')
   const [nameInput, setNameInput] = useState('')
-  const [joinStep, setJoinStep] = useState<'code' | 'name' | 'joined'>(sessionFromUrl ? 'code' : 'code')
+  const [joinStep, setJoinStep] = useState<'code' | 'name'>('code')
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
   const [autoLookupDone, setAutoLookupDone] = useState(false)
+  const [savedSessions, setSavedSessions] = useState<SavedSessionInfo[]>([])
 
   const lookup = useSessionLookup()
   const sessionCode = lookup.session?.code ?? ''
-  const lessonId = lookup.session?.lessonId ?? ''
   const session = useStudentSession(sessionCode)
-
-  const fetchManifest = useCallback(async (lid: string): Promise<ReadingManifest | null> => {
-    try {
-      const res = await fetch(`/lessons/${lid}/manifest.json`)
-      if (!res.ok) return null
-      return await res.json()
-    } catch {
-      return null
-    }
-  }, [])
+  const checkedRef = useRef(false)
 
   // Auto-lookup if session code is in URL
   useEffect(() => {
@@ -46,33 +45,55 @@ export default function JoinPage() {
         }
       })
     }
-  }, [sessionFromUrl, autoLookupDone, lookup, fetchManifest])
+  }, [sessionFromUrl, autoLookupDone, lookup])
 
-  // Restore from localStorage on mount (only if no URL param)
+  // Check localStorage for saved sessions → batch-verify with backend → show restore options
   useEffect(() => {
-    if (sessionFromUrl) return
+    if (sessionFromUrl || checkedRef.current) return
+    checkedRef.current = true
+
     const keys = Object.keys(localStorage).filter(k => k.startsWith('classroom:session:'))
+    if (keys.length === 0) return
+
+    // Collect sessionIds and local names from localStorage
+    const localMap = new Map<string, { key: string; name: string }>()
     for (const key of keys) {
       try {
         const saved = JSON.parse(localStorage.getItem(key) || '')
-        if (saved?.studentId && saved?.lessonId) {
-          const code = key.replace('classroom:session:', '')
-          setCodeInput(code)
-          lookup.lookup(code).then(s => {
-            if (s) {
-              fetchManifest(saved.lessonId).then(m => {
-                if (m) {
-                  setManifest(m)
-                  setJoinStep('joined')
-                }
-              })
-            }
-          })
-          break
-        }
+        if (!saved?.studentId) continue
+        const id = saved.sessionId
+        if (id) localMap.set(id, { key, name: saved.name || '' })
       } catch { /* noop */ }
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    if (localMap.size === 0) return
+
+    const checkAll = async () => {
+      try {
+        const resp = await fetch('/api/classroom/sessions/batch-check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionIds: [...localMap.keys()] }),
+        })
+        if (!resp.ok) return
+        const activeSessions: Array<{ sessionId: string; code: string; title: string }> = await resp.json()
+
+        // Clean up ended/missing sessions from localStorage
+        const activeIds = new Set(activeSessions.map(s => s.sessionId))
+        for (const [id, { key }] of localMap) {
+          if (!activeIds.has(id)) localStorage.removeItem(key)
+        }
+
+        setSavedSessions(activeSessions.map(s => ({
+          sessionId: s.sessionId,
+          code: s.code,
+          title: s.title,
+          studentName: localMap.get(s.sessionId)?.name || '',
+        })))
+      } catch { /* noop */ }
+    }
+
+    checkAll()
+  }, [sessionFromUrl])
 
   const handleCodeSubmit = useCallback(async () => {
     const code = codeInput.trim().toUpperCase()
@@ -85,25 +106,51 @@ export default function JoinPage() {
         setJoinStep('name')
       }
     }
-  }, [codeInput, lookup, fetchManifest])
+  }, [codeInput, lookup])
 
   const handleJoin = useCallback(async () => {
+    if (session.joining) return
     const trimmed = nameInput.trim()
     if (!trimmed) return
     await session.join(trimmed)
-    setJoinStep('joined')
-  }, [nameInput, session])
-
-  // Already joined — render student shell
-  if (joinStep === 'joined' && manifest && sessionCode && session.studentId) {
-    return <StudentShell manifest={manifest} lessonId={lessonId} sessionCode={sessionCode} studentId={session.studentId ?? undefined} embed={embed} />
-  }
+    const sid = lookup.session?.sessionId
+    if (!sid) return
+    // Patch localStorage with sessionId for restore
+    const key = `classroom:session:${lookup.session.code}`
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || '{}')
+      localStorage.setItem(key, JSON.stringify({ ...existing, sessionId: sid }))
+    } catch { /* noop */ }
+    const qs = embed ? `?embed=1` : ''
+    navigate(`/session/${sid}${qs}`, { replace: true })
+  }, [nameInput, session, navigate, lookup.session, embed])
 
   return (
     <div className="stu-join-overlay">
       <div className="stu-join-card" style={{ width: 360 }}>
         {joinStep === 'code' && (
           <>
+            {savedSessions.length > 0 && (
+              <div className="stu-restore-list">
+                {savedSessions.map(s => (
+                  <div key={s.sessionId} className="stu-restore-card">
+                    <div className="stu-restore-info">
+                      <span className="stu-restore-title">「{s.title}」</span>
+                      {s.studentName && <span className="stu-restore-name">{s.studentName}</span>}
+                    </div>
+                    <button
+                      className="stu-btn-sm pri"
+                      onClick={() => {
+                        const qs = embed ? '?embed=1' : ''
+                        navigate(`/session/${s.sessionId}${qs}`, { replace: true })
+                      }}
+                    >
+                      继续上次
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="stu-join-title">加入课堂</div>
             <div className="stu-join-sub">输入老师提供的 6 位课堂码</div>
             <input

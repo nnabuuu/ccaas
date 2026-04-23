@@ -12,11 +12,10 @@ import type { ChalkboardAction } from '../types/blackboard-actions'
 import type { TimelineItem } from '../types/blackboard-actions'
 import { saveSession, getSavedSession } from '../utils/sessionStore'
 
-// IMPORTANT: Must use absolute URL to backend, NOT relative path or empty string
-// Vite proxy ONLY works for relative URLs in HTML/CSS, NOT for fetch() or Socket.IO
+// IMPORTANT: Must use absolute URL for CCAAS backend — SDK uses Socket.IO, NOT fetch()
+// Vite proxy only works for HTTP requests, not WebSocket/SSE SDK connections
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
-const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend
-const LESSON_API_URL = 'http://localhost:3007' // Solution backend (lesson list + manifest)
+const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend (SDK — must stay absolute)
 
 const TENANT_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'
@@ -281,7 +280,7 @@ export function useLiveLesson(lessonId: string, forceNew: boolean, initialSessio
     if (!lessonId) return
     setManifest(null)
     const controller = new AbortController()
-    fetch(`${LESSON_API_URL}/api/lessons/${lessonId}/manifest`, { signal: controller.signal })
+    fetch(`/api/lessons/${lessonId}/manifest`, { signal: controller.signal })
       .then(res => {
         if (res.ok) return res.json()
         return null

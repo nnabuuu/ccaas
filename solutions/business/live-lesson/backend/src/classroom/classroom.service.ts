@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In, Not, MoreThan } from 'typeorm';
 import { randomInt } from 'crypto';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -13,10 +13,38 @@ import type { Response } from 'express';
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
 
-// step index (manifest idx) → task number (1-5)
-const STEP_TO_TASK: Record<number, number> = { 1: 1, 3: 2, 5: 3, 7: 4, 9: 5 };
-// task number → step index
-const TASK_TO_STEP: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 };
+/** Immutable value object — derived from manifest, cached per lessonId */
+interface TaskMap {
+  /** step idx → task number, e.g. { 1:1, 3:2, 5:3, 7:4, 9:5 } */
+  stepToTask: Record<number, number>;
+  /** task number → step idx, e.g. { 1:1, 2:3, 3:5, 4:7, 5:9 } */
+  taskToStep: Record<number, number>;
+  /** ordered step indices, e.g. [1, 3, 5, 7, 9] */
+  taskSteps: number[];
+  /** total number of tasks */
+  maxTask: number;
+}
+
+/** Build TaskMap from manifest. Fallback: steps with answerKey are tasks. */
+function buildTaskMap(manifest: any): TaskMap {
+  const readingSteps: any[] = manifest?.readingSteps || [];
+  const taskDefs = readingSteps
+    .filter((s: any) => s.type === 'task' || (!s.type && s.answerKey))
+    .sort((a: any, b: any) => a.idx - b.idx);
+
+  const stepToTask: Record<number, number> = {};
+  const taskToStep: Record<number, number> = {};
+  const taskSteps: number[] = [];
+
+  taskDefs.forEach((def: any, i: number) => {
+    const taskNum = i + 1;
+    stepToTask[def.idx] = taskNum;
+    taskToStep[taskNum] = def.idx;
+    taskSteps.push(def.idx);
+  });
+
+  return { stepToTask, taskToStep, taskSteps, maxTask: taskDefs.length };
+}
 
 @Injectable()
 export class ClassroomService {
@@ -24,6 +52,7 @@ export class ClassroomService {
   private subscribers = new Map<string, Set<Response>>();
   private heartbeatTimers = new Map<Response, NodeJS.Timeout>();
   private activeNotificationsMap = new Map<string, Map<string, { id: string; message: string; notifyType: string; timestamp: string }>>();
+  private taskMapCache = new Map<string, TaskMap>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -39,6 +68,20 @@ export class ClassroomService {
 
   private get lessonRepo(): Repository<Lesson> {
     return this.sessionRepo.manager.getRepository(Lesson);
+  }
+
+  private async getTaskMap(lessonId: string): Promise<TaskMap> {
+    const cached = this.taskMapCache.get(lessonId);
+    if (cached) return cached;
+
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+    let manifest: any = null;
+    if (lesson) {
+      try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+    }
+    const taskMap = buildTaskMap(manifest);
+    this.taskMapCache.set(lessonId, taskMap);
+    return taskMap;
   }
 
   // ── Session lifecycle ──
@@ -59,10 +102,12 @@ export class ClassroomService {
     throw new ConflictException('Failed to generate unique session code');
   }
 
-  async resolveSession(code: string): Promise<ClassroomSession> {
-    const session = await this.sessionRepo.findOne({ where: { code } });
+  async resolveSession(codeOrId: string): Promise<ClassroomSession> {
+    const session = codeOrId.length > 6
+      ? await this.sessionRepo.findOne({ where: { id: codeOrId } })
+      : await this.sessionRepo.findOne({ where: { code: codeOrId } });
     if (!session) {
-      throw new NotFoundException(`Session not found: ${code}`);
+      throw new NotFoundException('Session not found');
     }
     return session;
   }
@@ -85,6 +130,38 @@ export class ClassroomService {
       startedAt: session.startedAt,
       createdAt: session.createdAt,
     };
+  }
+
+  /** Batch-check sessions by ID list; return only resumable ones with lesson title.
+   *  A session expires 60 min after creation (one class period). */
+  async batchCheckSessions(sessionIds: string[], statusFilter?: 'waiting' | 'active') {
+    if (!sessionIds.length) return [];
+
+    const SESSION_TTL_MS = 60 * 60 * 1000; // 60 min
+    const cutoff = new Date(Date.now() - SESSION_TTL_MS);
+
+    const whereClauses = [];
+    if (!statusFilter || statusFilter === 'waiting') {
+      whereClauses.push({ id: In(sessionIds), status: 'waiting' as const, createdAt: MoreThan(cutoff) });
+    }
+    if (!statusFilter || statusFilter === 'active') {
+      whereClauses.push({ id: In(sessionIds), status: 'active' as const, createdAt: MoreThan(cutoff) });
+    }
+
+    const sessions = await this.sessionRepo.find({ where: whereClauses });
+    if (!sessions.length) return [];
+
+    const lessonIds = [...new Set(sessions.map(s => s.lessonId))];
+    const lessons = await this.lessonRepo.find({ where: { id: In(lessonIds) } });
+    const titleMap = new Map(lessons.map(l => [l.id, l.title]));
+
+    return sessions.map(s => ({
+      sessionId: s.id,
+      code: s.code,
+      lessonId: s.lessonId,
+      status: s.status,
+      title: titleMap.get(s.lessonId) || s.lessonId,
+    }));
   }
 
   async startSession(code: string) {
@@ -167,23 +244,29 @@ export class ClassroomService {
       await this.submissionRepo.save(submission);
     }
 
-    // Update student progress
-    const taskNum = STEP_TO_TASK[step];
-    if (taskNum !== undefined) {
-      const nextTask = taskNum + 1;
-      if (nextTask <= 5 && (student.currentTask <= taskNum)) {
-        student.currentTask = nextTask;
-        student.currentPhase = 'listen';
-        student.stepStartedAt = new Date().toISOString();
-      } else if (student.currentTask <= taskNum) {
-        student.currentTask = taskNum;
-        student.currentPhase = 'completed';
+    // Update student progress — only advance on perfect score or open-ended (no rubric).
+    // Guard: only process progress for current task or prior re-submissions (taskNum <= currentTask).
+    // This prevents a student at task 1 from skipping to task 5 by submitting step 9.
+    const taskMap = await this.getTaskMap(session.lessonId);
+    const taskNum = taskMap.stepToTask[step];
+    if (taskNum !== undefined && taskNum <= student.currentTask) {
+      const isComplete = !score || score.total === 100;
+      if (isComplete) {
+        const nextTask = taskNum + 1;
+        if (nextTask <= taskMap.maxTask && (student.currentTask === taskNum)) {
+          student.currentTask = nextTask;
+          student.currentPhase = 'listen';
+          student.stepStartedAt = new Date().toISOString();
+        } else if (student.currentTask === taskNum) {
+          student.currentTask = taskNum;
+          student.currentPhase = 'completed';
+        }
+        await this.studentRepo.save(student);
       }
-      await this.studentRepo.save(student);
     }
 
     this.broadcast(session.id);
-    return { ok: true, score };
+    return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
 
   async getState(sessionId: string, currentStep?: number) {
@@ -223,6 +306,7 @@ export class ClassroomService {
         try { manifest = JSON.parse(lesson.manifestJson); } catch {}
       }
     }
+    const taskMap = buildTaskMap(manifest);
 
     const total = students.length;
     let submitted = 0;
@@ -240,10 +324,10 @@ export class ClassroomService {
     });
 
     // G2: per-student per-step durations
-    const studentDurations = this.computeStudentDurations(students, subsByStudent);
+    const studentDurations = this.computeStudentDurations(students, subsByStudent, taskMap);
 
     // Build enriched stepMetrics with byDimension, timing, AI stats, issues, questionAggregates
-    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest);
+    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap);
 
     // G3: extract median times for stuck detection
     const medianTimes = this.extractMedianTimes(stepMetrics);
@@ -251,18 +335,18 @@ export class ClassroomService {
     // Compute student statuses once (G3)
     const studentStatuses = new Map<string, string>();
     for (const s of students) {
-      studentStatuses.set(s.id, this.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes));
+      studentStatuses.set(s.id, this.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes, taskMap));
     }
 
     // G4: enrich stepMetrics with alertTag (needs studentStatuses computed above)
-    for (let taskNum = 1; taskNum <= 5; taskNum++) {
+    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
       stepMetrics[taskNum].alertTag = this.computeAlertTag(
         taskNum, stepMetrics[taskNum], students, studentStatuses,
       );
     }
 
     // G6: health cards
-    const healthCards = this.computeHealthCards(students, studentStatuses, questions);
+    const healthCards = this.computeHealthCards(students, studentStatuses, questions, taskMap.maxTask);
 
     const questionRecords = questions.map(q => ({
       studentId: q.studentId,
@@ -296,15 +380,15 @@ export class ClassroomService {
           };
         }
 
-          // Build stepHistory (task-number-keyed, 1-5) for student modal
+          // Build stepHistory (task-number-keyed) for student modal
         const stepHistory: Record<number, any> = {};
-        for (let taskNum = 1; taskNum <= 5; taskNum++) {
-          const taskStepIdx = TASK_TO_STEP[taskNum];
+        for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
+          const taskStepIdx = taskMap.taskToStep[taskNum];
           const sub = subs[taskStepIdx];
           const aiCount = questions.filter(q => q.studentId === s.id && q.step === taskStepIdx).length;
 
-          if (sub) {
-            // Completed step
+          if (sub && (s.currentTask > taskNum || s.currentPhase === 'completed')) {
+            // Passed this step (submitted and advanced beyond it)
             const score = sub.score;
             const dur = durations[taskStepIdx];
             stepHistory[taskNum] = {
@@ -314,11 +398,14 @@ export class ClassroomService {
               aiRounds: aiCount,
             };
           } else if (s.currentTask === taskNum) {
-            // Current step
+            // Current step — may have a failed submission
             const isStuck = studentStatuses.get(s.id) === 'stuck';
+            const score = sub?.score;
+            const dur = sub ? durations[taskStepIdx] : undefined;
             stepHistory[taskNum] = {
               status: isStuck ? 'stuck' : (s.currentPhase === 'listen' ? 'reading' : 'prog'),
               aiRounds: aiCount,
+              ...(sub ? { result: this.deriveResult(score), time: dur != null ? this.formatDuration(dur) : null } : {}),
             };
           } else if (s.currentTask > taskNum || s.currentPhase === 'completed') {
             // Past step without submission (edge case)
@@ -457,12 +544,183 @@ export class ClassroomService {
     return { answer: parsed.answer, category: parsed.category };
   }
 
+  // ── AI Discuss (structured teaching dialogue) ──
+
+  private static readonly TASK_TO_STEP: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 };
+
+  async aiDiscuss(
+    session: ClassroomSession,
+    studentId: string,
+    taskNum: number,
+    interactionType: 'probeReply' | 'followUpReply',
+    studentResponse: string,
+  ): Promise<{ reply: string; followUpQuestion?: string }> {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) {
+      throw new NotFoundException('Student not found in this session');
+    }
+
+    try {
+      const systemPrompt = await this.buildDiscussSystemPrompt(
+        session, studentId, taskNum, interactionType,
+      );
+      const rawResponse = await this.callGlm(systemPrompt, studentResponse, {
+        maxTokens: 512,
+        temperature: 0.75,
+      });
+      return this.parseDiscussResponse(rawResponse, interactionType);
+    } catch (e) {
+      this.logger.warn(`AI discuss call failed: ${e}`);
+      return {
+        reply: 'AI tutor is temporarily unavailable. Please try again later.',
+        ...(interactionType === 'probeReply'
+          ? { followUpQuestion: 'Can you tell me more about what you found in the text?' }
+          : {}),
+      };
+    }
+  }
+
+  private async buildDiscussSystemPrompt(
+    session: ClassroomSession,
+    studentId: string,
+    taskNum: number,
+    interactionType: 'probeReply' | 'followUpReply',
+  ): Promise<string> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) return this.buildDiscussFallbackPrompt(interactionType);
+
+    const manifest = JSON.parse(lesson.manifestJson);
+    const readingSteps = manifest.readingSteps || [];
+    const stepIdx = ClassroomService.TASK_TO_STEP[taskNum];
+    const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
+
+    // L1-L3: shared base layers
+    const layers = this.buildBaseContextLayers(manifest, stepDef);
+
+    // L4: Student performance from submission
+    const submission = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId, step: stepIdx },
+    });
+    if (submission) {
+      const score = submission.scoreJson;
+      const data = submission.dataJson;
+      const scoreSummary = score
+        ? `Score: ${score.total ?? 'N/A'}%${score.byDimension ? `, Details: ${JSON.stringify(score.byDimension)}` : ''}`
+        : 'No score available';
+      const answerSummary = data
+        ? `Student answers: ${JSON.stringify(data).slice(0, 500)}`
+        : '';
+      layers.push(`【L4: Student Practice Performance】\n${scoreSummary}\n${answerSummary}`);
+    }
+
+    // L5: Pedagogical intent from manifest discuss field
+    const discuss = stepDef?.discuss;
+    if (discuss) {
+      const parts = [`【L5: Pedagogical Intent for Discuss Phase】`];
+      if (discuss.targetInsight) parts.push(`Target insight: ${discuss.targetInsight}`);
+      if (discuss.commonMisconceptions?.length) {
+        parts.push(`Common misconceptions:\n${discuss.commonMisconceptions.map((m: string) => `- ${m}`).join('\n')}`);
+      }
+      if (discuss.scaffoldStrategies?.length) {
+        parts.push(`Scaffold strategies:\n${discuss.scaffoldStrategies.map((s: string) => `- ${s}`).join('\n')}`);
+      }
+      layers.push(parts.join('\n'));
+    }
+
+    // L6: placeholder for student response (provided as user message)
+    layers.push(`【L6: Student Response】\nThe student's response will be provided as the user message.`);
+
+    // L7: Interaction type
+    if (interactionType === 'probeReply') {
+      layers.push(`【L7: Interaction Type — probeReply】
+You are responding to the student's answer to the probe question.
+You must provide TWO things:
+1. A reply that responds to their answer, guiding their thinking
+2. A follow-up question that pushes deeper
+
+Format your response EXACTLY like this:
+---REPLY---
+[Your reply here, 60-100 words]
+---FOLLOWUP---
+[Your follow-up question here, 1-2 sentences]`);
+    } else {
+      layers.push(`【L7: Interaction Type — followUpReply】
+You are responding to the student's answer to a follow-up question.
+Provide a concluding reply that wraps up the discussion.
+Do NOT ask another question. Just respond directly.
+Keep it 60-100 words.`);
+    }
+
+    // L8: Output format rules
+    layers.push(`【L8: Output Format Rules】
+- Write in English
+- Keep reply to 60-100 words
+- Use ¶N to reference specific paragraphs
+- CRITICAL: Do NOT fabricate quotes from the text. When citing ¶N, only quote text that actually exists in the article above.
+- Be encouraging but substantive — push thinking forward
+- Reference the student's specific words when possible`);
+
+    return layers.join('\n\n');
+  }
+
+  private buildDiscussFallbackPrompt(interactionType: string): string {
+    const base = `You are a Socratic English reading tutor. Respond to the student's answer thoughtfully in 60-100 words.`;
+    if (interactionType === 'probeReply') {
+      return base + `\n\nFormat:\n---REPLY---\n[reply]\n---FOLLOWUP---\n[follow-up question]`;
+    }
+    return base;
+  }
+
+  private parseDiscussResponse(
+    raw: string,
+    interactionType: string,
+  ): { reply: string; followUpQuestion?: string } {
+    if (interactionType === 'followUpReply') {
+      return { reply: raw.trim() };
+    }
+
+    const replyMatch = raw.match(/---REPLY---\s*([\s\S]*?)(?=---FOLLOWUP---|$)/);
+    const followUpMatch = raw.match(/---FOLLOWUP---\s*([\s\S]*?)$/);
+
+    return {
+      reply: replyMatch?.[1]?.trim() || raw.trim(),
+      followUpQuestion: followUpMatch?.[1]?.trim() || undefined,
+    };
+  }
+
   private parseCategoryFromResponse(response: string): { category: string; answer: string } {
     const match = response.match(/^【(.+?)】/);
     if (match) {
       return { category: match[1], answer: response.slice(match[0].length).trim() };
     }
     return { category: '其他', answer: response };
+  }
+
+  /** Shared L1-L3 context layers for AI prompts */
+  private buildBaseContextLayers(manifest: any, stepDef: any): string[] {
+    const layers: string[] = [];
+    const paragraphs: Array<{ id: string; text: string }> = manifest.article?.paragraphs || [];
+
+    // Layer 1: Role
+    layers.push(`你是一位专业的英语阅读教学助教，正在帮助中学生学习阅读理解策略。
+你的教学风格是苏格拉底式引导——通过提问帮助学生自己发现答案，而不是直接告诉他们。`);
+
+    // Layer 2: Article full text
+    if (paragraphs.length > 0) {
+      const articleTitle = manifest.article?.title || '';
+      const articleText = paragraphs.map((p: any, i: number) => `¶${i + 1}: ${p.text}`).join('\n\n');
+      layers.push(`【课文全文】\n标题：${articleTitle}\n\n${articleText}`);
+    }
+
+    // Layer 3: Step context
+    if (stepDef) {
+      const focusParas = stepDef.focusParagraphs?.join(', ') || '全文';
+      layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n策略：${stepDef.strategy || 'N/A'}\n描述：${stepDef.description || 'N/A'}\n关注段落：${focusParas}`);
+    }
+
+    return layers;
   }
 
   private async buildAiSystemPrompt(lessonId: string, step: number): Promise<string> {
@@ -475,27 +733,9 @@ export class ClassroomService {
       const manifest = JSON.parse(lesson.manifestJson);
       const readingSteps = manifest.readingSteps || [];
       const stepDef = readingSteps.find((s: any) => s.idx === step);
-      const paragraphs: Array<{ id: string; text: string }> = manifest.article?.paragraphs || [];
       const referenceQA: Array<{ q: string; a: string; category: string }> = manifest.aiReferenceQA || [];
 
-      const layers: string[] = [];
-
-      // Layer 1: Role
-      layers.push(`你是一位专业的英语阅读教学助教，正在帮助中学生学习阅读理解策略。
-你的教学风格是苏格拉底式引导——通过提问帮助学生自己发现答案，而不是直接告诉他们。`);
-
-      // Layer 2: Article full text
-      if (paragraphs.length > 0) {
-        const articleTitle = manifest.article?.title || '';
-        const articleText = paragraphs.map((p: any, i: number) => `¶${i + 1}: ${p.text}`).join('\n\n');
-        layers.push(`【课文全文】\n标题：${articleTitle}\n\n${articleText}`);
-      }
-
-      // Layer 3: Step context
-      if (stepDef) {
-        const focusParas = stepDef.focusParagraphs?.join(', ') || '全文';
-        layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n策略：${stepDef.strategy || 'N/A'}\n描述：${stepDef.description || 'N/A'}\n关注段落：${focusParas}`);
-      }
+      const layers = this.buildBaseContextLayers(manifest, stepDef);
 
       // Layer 4: Answer key awareness (task steps only)
       if (stepDef?.answerKey) {
@@ -546,7 +786,11 @@ export class ClassroomService {
 - 鼓励学生自己思考`;
   }
 
-  private async callGlm(systemPrompt: string, userMessage: string): Promise<string> {
+  private async callGlm(
+    systemPrompt: string,
+    userMessage: string,
+    options?: { maxTokens?: number; temperature?: number },
+  ): Promise<string> {
     const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
     if (!apiKey) {
       throw new Error('ZHIPU_API_KEY not configured');
@@ -565,8 +809,8 @@ export class ClassroomService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userMessage },
         ],
-        max_tokens: 256,
-        temperature: 0.7,
+        max_tokens: options?.maxTokens ?? 256,
+        temperature: options?.temperature ?? 0.7,
       }),
     });
 
@@ -764,9 +1008,10 @@ export class ClassroomService {
   private computeStudentDurations(
     students: Student[],
     subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
+    taskMap: TaskMap,
   ): Map<string, Record<number, number>> {
     const result = new Map<string, Record<number, number>>();
-    const taskSteps = [1, 3, 5, 7, 9];
+    const taskSteps = taskMap.taskSteps;
 
     for (const s of students) {
       const subs = subsByStudent.get(s.id);
@@ -814,12 +1059,13 @@ export class ClassroomService {
     questions: AiQuestion[],
     studentDurations: Map<string, Record<number, number>>,
     manifest: any,
+    taskMap: TaskMap,
   ): Record<number, Record<string, any>> {
     const stepMetrics: Record<number, Record<string, any>> = {};
     const readingSteps: any[] = manifest?.readingSteps || [];
 
-    for (let taskNum = 1; taskNum <= 5; taskNum++) {
-      const stepIdx = TASK_TO_STEP[taskNum];
+    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
+      const stepIdx = taskMap.taskToStep[taskNum];
       let completedCount = 0;
       let currentCount = 0;
       let totalScore = 0;
@@ -938,7 +1184,8 @@ export class ClassroomService {
   /** Extract median times per task from stepMetrics for stuck detection */
   private extractMedianTimes(stepMetrics: Record<number, any>): Record<number, number | null> {
     const result: Record<number, number | null> = {};
-    for (let taskNum = 1; taskNum <= 5; taskNum++) {
+    for (const taskNumStr of Object.keys(stepMetrics)) {
+      const taskNum = Number(taskNumStr);
       result[taskNum] = stepMetrics[taskNum]?.medianTime ?? null;
     }
     return result;
@@ -949,11 +1196,14 @@ export class ClassroomService {
     student: Student,
     subs: Record<number, any> | undefined,
     medianTimes: Record<number, number | null>,
+    taskMap: TaskMap,
   ): string {
-    // done: completed phase or submitted all 5 task steps
+    // done: completed phase or submitted all task steps.
+    // Note: the allDone check assumes submit() prevents cross-step skipping,
+    // so having all submissions implies legitimate sequential completion.
     if (student.currentPhase === 'completed') return 'done';
     if (subs) {
-      const allDone = [1, 3, 5, 7, 9].every(step => subs[step]);
+      const allDone = taskMap.taskSteps.every(step => subs[step]);
       if (allDone) return 'done';
     }
 
@@ -977,6 +1227,7 @@ export class ClassroomService {
     students: Student[],
     studentStatuses: Map<string, string>,
     questions: AiQuestion[],
+    maxTask: number,
   ): {
     furthest: { step: number; count: number };
     median: { step: number };
@@ -986,18 +1237,18 @@ export class ClassroomService {
     // Furthest: highest task any student has reached
     const studentTasks: number[] = [];
     for (const s of students) {
-      const effectiveTask = s.currentPhase === 'completed' ? 5 : s.currentTask;
+      const effectiveTask = s.currentPhase === 'completed' ? maxTask : s.currentTask;
       studentTasks.push(effectiveTask);
     }
 
-    let maxTask = 0;
-    let maxTaskCount = 0;
+    let furthestTask = 0;
+    let furthestCount = 0;
     const taskCounts: Record<number, number> = {};
     for (const t of studentTasks) {
       taskCounts[t] = (taskCounts[t] || 0) + 1;
-      if (t > maxTask) maxTask = t;
+      if (t > furthestTask) furthestTask = t;
     }
-    maxTaskCount = taskCounts[maxTask] || 0;
+    furthestCount = taskCounts[furthestTask] || 0;
 
     // Median: middle value of student tasks
     const sorted = [...studentTasks].sort((a, b) => a - b);
@@ -1027,7 +1278,7 @@ export class ClassroomService {
     const aiPeople = new Set(questions.map(q => q.studentId)).size;
 
     return {
-      furthest: { step: maxTask, count: maxTaskCount },
+      furthest: { step: furthestTask, count: furthestCount },
       median: { step: medianStep },
       stuck: { count: stuckCount, location: stuckLocation },
       aiTotal: { rounds: aiRounds, people: aiPeople },

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../styles/teacher.css'
 
-const API_BASE = 'http://localhost:3007/api'
+const API_BASE = '/api'
 
 interface LessonMeta {
   id: string
@@ -31,7 +31,7 @@ export default function CourseSelectionPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleCreate(lesson: LessonMeta) {
+  async function handleCreate(lesson: LessonMeta, mode: 'watch' | 'demo' = 'watch') {
     setCreating(true)
     try {
       const res = await fetch(`${API_BASE}/classroom/sessions`, {
@@ -41,7 +41,7 @@ export default function CourseSelectionPage() {
       })
       if (!res.ok) throw new Error(`创建失败 (${res.status})`)
       const data = await res.json()
-      navigate(`/teacher/${lesson.id}?session=${data.code}`)
+      navigate(`/session/${data.sessionId}/${mode}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : '创建课堂失败')
     } finally {
@@ -137,6 +137,28 @@ export default function CourseSelectionPage() {
               }}
             >
               {creating ? '创建中...' : '创建课堂'}
+            </button>
+
+            <button
+              onClick={() => handleCreate(readingLesson, 'demo')}
+              disabled={creating}
+              style={{
+                width: '100%',
+                padding: '12px 0',
+                fontSize: 14,
+                fontWeight: 600,
+                color: '#5c5b56',
+                background: 'transparent',
+                border: '1px solid #d5d3cc',
+                borderRadius: 10,
+                cursor: creating ? 'wait' : 'pointer',
+                opacity: creating ? 0.6 : 1,
+                transition: 'opacity .15s',
+                fontFamily: 'inherit',
+                marginTop: 10,
+              }}
+            >
+              三端联动 Demo
             </button>
 
             <p style={{ fontSize: 11, color: '#bcbab2', textAlign: 'center', marginTop: 14 }}>

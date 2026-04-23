@@ -8,8 +8,10 @@ import { SubmitDto } from './dto/submit.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
 import { AiAskDto } from './dto/ai-ask.dto';
+import { AiDiscussDto } from './dto/ai-discuss.dto';
 
 const CODE_RE = /^[A-Z2-9]{6}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function validateCode(code: string): string {
   const upper = code.toUpperCase();
@@ -17,6 +19,14 @@ function validateCode(code: string): string {
     throw new BadRequestException('Invalid session code format');
   }
   return upper;
+}
+
+function validateCodeOrId(value: string): string {
+  if (value.length > 6) {
+    if (!UUID_RE.test(value)) throw new BadRequestException('Invalid session identifier');
+    return value;
+  }
+  return validateCode(value);
 }
 
 @ApiTags('classroom')
@@ -31,9 +41,15 @@ export class ClassroomController {
     return this.classroomService.createSession(dto.lessonId);
   }
 
+  @Post('sessions/batch-check')
+  batchCheck(@Body() body: { sessionIds: string[]; status?: 'waiting' | 'active' }) {
+    const ids = (body.sessionIds || []).filter(id => UUID_RE.test(id)).slice(0, 50);
+    return this.classroomService.batchCheckSessions(ids, body.status);
+  }
+
   @Get('sessions/:code')
   getSession(@Param('code') code: string) {
-    return this.classroomService.getSessionInfo(validateCode(code));
+    return this.classroomService.getSessionInfo(validateCodeOrId(code));
   }
 
   @Post('sessions/:code/start')
@@ -96,5 +112,17 @@ export class ClassroomController {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
     const result = await this.classroomService.aiAsk(session, dto.studentId, dto.step, dto.question);
     return { answer: result.answer, category: result.category };
+  }
+
+  @Post(':code/ai/discuss')
+  async aiDiscuss(@Param('code') code: string, @Body() dto: AiDiscussDto) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.aiDiscuss(
+      session,
+      dto.studentId,
+      dto.taskNum,
+      dto.interactionType,
+      dto.studentResponse,
+    );
   }
 }

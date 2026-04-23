@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
-const API_BASE = 'http://localhost:3007/api/classroom'
+const API_BASE = '/api/classroom'
 
 // ── Session create hook (teacher) ──
 
@@ -238,6 +238,37 @@ export function useAiAsk(sessionCode: string) {
   }, [sessionCode])
 
   return { ask, loading }
+}
+
+// ── AI Discuss hook (student) ──
+
+export function useAiDiscuss(sessionCode: string) {
+  const [loading, setLoading] = useState(false)
+
+  const discuss = useCallback(async (
+    studentId: string,
+    taskNum: number,
+    interactionType: 'probeReply' | 'followUpReply',
+    studentResponse: string,
+  ): Promise<{ reply: string; followUpQuestion?: string } | null> => {
+    if (!sessionCode) return null
+    setLoading(true)
+    try {
+      const res = await fetch(`${API_BASE}/${sessionCode}/ai/discuss`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId, taskNum, interactionType, studentResponse }),
+      })
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }, [sessionCode])
+
+  return { discuss, loading }
 }
 
 // ── Teacher stream hook ──

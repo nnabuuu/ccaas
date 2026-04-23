@@ -1,37 +1,59 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useReadingLesson } from '../hooks/useReadingLesson'
-import { useSessionCreate, useTeacherStream } from '../hooks/useClassroom'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { useSessionLookup, useTeacherStream } from '../hooks/useClassroom'
+import { fetchManifest } from '../hooks/useManifest'
+import type { ReadingManifest } from '../types/reading'
 import TeacherShell from '../components/teacher/TeacherShell'
 import '../styles/teacher.css'
 
-const API_BASE = 'http://localhost:3007/api/classroom'
+const API_BASE = '/api/classroom'
 
 export default function TeacherPage() {
-  const { manifest, loading, error, embed, lessonId, sessionParam } = useReadingLesson()
+  const { sessionId } = useParams<{ sessionId: string }>()
+  const [searchParams] = useSearchParams()
+  const embed = searchParams.get('embed') === '1'
+
+  const lookup = useSessionLookup()
+  const [manifest, setManifest] = useState<ReadingManifest | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (initialized.current || !sessionId) return
+    initialized.current = true
+
+    lookup.lookup(sessionId).then(async s => {
+      if (!s) {
+        setError('课堂不存在')
+        setLoading(false)
+        return
+      }
+      const m = await fetchManifest(s.lessonId)
+      if (m) {
+        setManifest(m)
+      } else {
+        setError('加载课程失败')
+      }
+      setLoading(false)
+    })
+  }, [sessionId, lookup])
 
   if (loading) return <div style={{ padding: 40, color: 'var(--t3)' }}>Loading teacher...</div>
-  if (error || !manifest || !lessonId) return <div style={{ padding: 40, color: 'var(--red)' }}>Error: {error}</div>
+  if (error || !manifest || !lookup.session) return <div style={{ padding: 40, color: 'var(--red)' }}>Error: {error}</div>
 
-  // Session code from query param (e.g. from entry page or DemoShell iframe)
-  if (sessionParam) {
-    return <TeacherPageWithSession manifest={manifest} lessonId={lessonId} sessionCode={sessionParam} embed={embed} />
-  }
-
-  // No session code — auto-create one (legacy flow)
-  return <TeacherPageAutoCreate manifest={manifest} lessonId={lessonId} embed={embed} />
-}
-
-function TeacherPageAutoCreate({ manifest, lessonId, embed }: { manifest: any; lessonId: string; embed: boolean }) {
-  const { session, loading, error } = useSessionCreate(lessonId)
-
-  if (loading) return <div style={{ padding: 40, color: 'var(--t3)' }}>正在创建课堂...</div>
-  if (error || !session) return <div style={{ padding: 40, color: 'var(--red)' }}>创建课堂失败: {error}</div>
-
-  return <TeacherPageWithSession manifest={manifest} lessonId={lessonId} sessionCode={session.code} embed={embed} />
+  return (
+    <TeacherPageWithSession
+      manifest={manifest}
+      lessonId={lookup.session.lessonId}
+      sessionCode={lookup.session.code}
+      embed={embed}
+    />
+  )
 }
 
 function TeacherPageWithSession({ manifest, lessonId, sessionCode, embed }: {
-  manifest: any; lessonId: string; sessionCode: string; embed: boolean
+  manifest: ReadingManifest; lessonId: string; sessionCode: string; embed: boolean
 }) {
   const { state } = useTeacherStream(sessionCode)
   const [started, setStarted] = useState(false)
@@ -39,12 +61,10 @@ function TeacherPageWithSession({ manifest, lessonId, sessionCode, embed }: {
 
   const sessionStatus = state?.sessionStatus
 
-  // Once started or if session is already active, show TeacherShell
   if (started || sessionStatus === 'active') {
     return <TeacherShell manifest={manifest} lessonId={lessonId} sessionCode={sessionCode} embed={embed} />
   }
 
-  // Waiting state — show preparation view
   return (
     <WaitingView
       manifest={manifest}
@@ -66,7 +86,7 @@ function TeacherPageWithSession({ manifest, lessonId, sessionCode, embed }: {
 }
 
 function WaitingView({ manifest, sessionCode, students, starting, onStart }: {
-  manifest: any
+  manifest: ReadingManifest
   sessionCode: string
   students: Array<{ id: string; name: string }>
   starting: boolean
