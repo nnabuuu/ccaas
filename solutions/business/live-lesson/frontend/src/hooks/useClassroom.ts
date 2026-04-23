@@ -49,9 +49,11 @@ export function useSessionLookup() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`${API_BASE}/sessions/${code.toUpperCase()}`)
+      const normalized = code.length <= 6 ? code.toUpperCase() : code
+      const res = await fetch(`${API_BASE}/sessions/${normalized}`)
       if (!res.ok) {
-        setError(res.status === 404 ? '课堂码不存在' : `查询失败 (${res.status})`)
+        const msg404 = code.length > 6 ? '课堂不存在' : '课堂码不存在'
+        setError(res.status === 404 ? msg404 : `查询失败 (${res.status})`)
         return null
       }
       const data = await res.json()
@@ -88,7 +90,7 @@ interface StudentSession {
 export function useStudentSession(sessionCode: string): StudentSession {
   const storageKey = `classroom:session:${sessionCode}`
 
-  const [saved] = useState<{ studentId: string; name: string; lessonId: string } | null>(() => {
+  const [saved] = useState<{ studentId: string; name: string; lessonId: string; sessionId?: string } | null>(() => {
     try {
       const raw = localStorage.getItem(storageKey)
       return raw ? JSON.parse(raw) : null
@@ -98,6 +100,20 @@ export function useStudentSession(sessionCode: string): StudentSession {
   const [studentId, setStudentId] = useState<string | null>(saved?.studentId ?? null)
   const [name, setName] = useState<string | null>(saved?.name ?? null)
   const [lessonId, setLessonId] = useState<string | null>(saved?.lessonId ?? null)
+
+  // Re-read localStorage when sessionCode changes (e.g. from '' to real code)
+  useEffect(() => {
+    if (!sessionCode) return
+    try {
+      const raw = localStorage.getItem(`classroom:session:${sessionCode}`)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setStudentId(parsed.studentId ?? null)
+        setName(parsed.name ?? null)
+        setLessonId(parsed.lessonId ?? null)
+      }
+    } catch { /* noop */ }
+  }, [sessionCode])
 
   const [joining, setJoining] = useState(false)
   const [joinError, setJoinError] = useState<string | null>(null)
@@ -203,6 +219,7 @@ export function useAiAsk(sessionCode: string) {
   const [loading, setLoading] = useState(false)
 
   const ask = useCallback(async (studentId: string, step: number, question: string): Promise<{ answer: string; category: string } | null> => {
+    if (!sessionCode) return null
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/${sessionCode}/ai/ask`, {

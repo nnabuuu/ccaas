@@ -1,6 +1,6 @@
 import { useEffect, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
-import { useStudentTask, TaskColumn, TASKS } from './TaskPanel'
+import { useStudentTask, TaskColumn, TASKS, SessionCtx } from './TaskPanel'
 import TextPanel from './TextPanel'
 import AiPanel from './AiPanel'
 
@@ -63,15 +63,17 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId }
       </div>
 
       {/* Main area: left col (tasks) + right col (text) */}
-      <div className="stu-main-wrap">
-        <TaskColumn screen={screen} setScreen={setScreen} task={task} completeTask={completeTask} />
-        <TextPanel
-          title={manifest.article.title}
-          paragraphs={manifest.article.paragraphs}
-          focusIds={focusIds}
-        />
-        <AiPanel taskId={taskId || 1} sessionCode={sessionCode} studentId={studentId} />
-      </div>
+      <SessionCtx.Provider value={{ sessionCode, studentId }}>
+        <div className="stu-main-wrap">
+          <TaskColumn screen={screen} setScreen={setScreen} task={task} completeTask={completeTask} />
+          <TextPanel
+            title={manifest.article.title}
+            paragraphs={manifest.article.paragraphs}
+            focusIds={focusIds}
+          />
+          <AiPanel taskId={taskId || 1} />
+        </div>
+      </SessionCtx.Provider>
     </div>
   )
 }

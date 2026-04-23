@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useContext } from 'react'
 import { useAiAsk } from '../../hooks/useClassroom'
+import { SessionCtx } from './TaskPanel'
 
 interface ChatMsg {
   t: 'q' | 'a'
@@ -8,8 +9,6 @@ interface ChatMsg {
 
 interface Props {
   taskId: number
-  sessionCode?: string
-  studentId?: string
 }
 
 /* AI presets per task */
@@ -36,7 +35,8 @@ const AI_BANK: Record<number, Array<{ q: string; a: string }>> = {
   ],
 }
 
-export default function AIFloat({ taskId, sessionCode, studentId }: Props) {
+export default function AIFloat({ taskId }: Props) {
+  const { sessionCode, studentId } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<ChatMsg[]>([])
   const [input, setInput] = useState('')

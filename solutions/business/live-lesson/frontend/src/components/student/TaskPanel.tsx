@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback, useRef, Fragment } from 'react'
-import HelpButton, { HintBanner } from './HelpButton'
+import { useState, useEffect, useCallback, useRef, useContext, createContext, Fragment } from 'react'
+import HelpButton, { HintBanner, linkParas } from './HelpButton'
 import BoardInline from './BoardInline'
+import { useAiAsk } from '../../hooks/useClassroom'
+
+export const SessionCtx = createContext<{ sessionCode?: string; studentId?: string }>({})
 
 /* ═══ MARKDOWN-LITE RENDERER ═══ */
 function renderMd(text: string) {
@@ -39,6 +42,11 @@ function renderMd(text: string) {
       }
       if (rest) segs.push(rest)
       return segs
+    })
+    // para links ¶N, ¶N-M
+    parts = parts.flatMap((p) => {
+      if (typeof p !== 'string') return [p]
+      return linkParas(p)
     })
     // bullet
     if (line.startsWith('• ')) {
@@ -201,21 +209,20 @@ function reportAttempt(taskId: number, questionIdx: number, attempt: number, sel
 }
 
 /* ═══ LISTEN PHASE ═══ */
-function ListenPhase({ task }: { task: Task }) {
+function ListenPhase({ task, onDone }: { task: Task; onDone: () => void }) {
+  const [done, setDone] = useState(false)
+  const handleClick = () => { setDone(true); onDone() }
   return (
     <div id="phase-listen">
       <div className="stu-section-label"><span>Listen</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
-          Task {task.id} · {task.name}
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 16, color: 'var(--t1)' }}>
-          {task.subtitle}
-        </div>
         <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>
           {renderMd(task.intro)}
         </div>
       </div>
+      <button className={`stu-btn ${done ? 'ghost' : 'pri'}`} onClick={handleClick} disabled={done}>
+        {done ? 'Confirmed ✓' : "Got it, let's practice →"}
+      </button>
     </div>
   )
 }
@@ -303,7 +310,7 @@ function PracticePhase({ task, onDone }: { task: Task; onDone: () => void }) {
   return (
     <div id="phase-practice">
       <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
-      <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{ex.label}</div>
+      <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
       {/* QUIZ */}
       {ex.type === 'quiz' && ex.questions!.map((q, qi) => {
@@ -515,14 +522,16 @@ function OrderEx({ items, correctOrder, ans, setAns, done, wrongPositions, attem
 
 /* ═══ DISCUSS PHASE ═══ */
 function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
+  const { sessionCode, studentId } = useContext(SessionCtx)
   const d = task.discuss
   const pr = d.probe
   const [step, setStep] = useState(0)
   const [input1, setI1] = useState('')
   const [input2, setI2] = useState('')
-  const [extraMsgs, setEM] = useState<Array<{ t: string; x: string }>>([])
+  const [extraMsgs, setEM] = useState<Array<{ t: string; x: string; loading?: boolean; id?: number }>>([])
   const [extraIn, setEI] = useState('')
   const calledDone = useRef(false)
+  const { ask, loading: aiLoading } = useAiAsk(sessionCode || '')
 
   useEffect(() => {
     if (step >= 1 && !calledDone.current) {
@@ -531,10 +540,16 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
     }
   }, [step, onDone])
 
-  const sendExtra = () => {
-    if (!extraIn.trim()) return
-    setEM(m => [...m, { t: 'q', x: extraIn }, { t: 'a', x: 'Great question! Think about how the evidence in the text connects to your idea. Try using the pattern: "Based on the text, I think... because..."' }])
+  const sendExtra = async () => {
+    if (!extraIn.trim() || aiLoading) return
+    const question = extraIn.trim()
+    const placeholderId = Date.now()
     setEI('')
+    setEM(m => [...m, { t: 'q', x: question }, { t: 'a', x: 'Thinking...', loading: true, id: placeholderId }])
+    const reply = sessionCode && studentId
+      ? (await ask(studentId, task.id, question))?.answer || 'Sorry, AI is unavailable right now. Try again later.'
+      : 'AI discussion requires an active classroom session.'
+    setEM(m => m.map(msg => msg.id === placeholderId ? { t: 'a', x: reply, id: placeholderId } : msg))
   }
 
   return (
@@ -546,7 +561,7 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
         <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
           <div className="stu-ai-dot" />
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', lineHeight: 1.5 }}>{pr.q}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', lineHeight: 1.5 }}>{linkParas(pr.q)}</div>
             {pr.translate && <div style={{ marginTop: 4 }}><HelpButton translate={pr.translate} /></div>}
           </div>
         </div>
@@ -566,7 +581,7 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
       {step >= 1 && (
         <div className="stu-ai-reply">
           <div className="stu-ai-dot" />
-          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.7, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{pr.aiReply}</div>
+          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.7, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{linkParas(pr.aiReply)}</div>
         </div>
       )}
 
@@ -576,7 +591,7 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
             <div className="stu-ai-dot" />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', lineHeight: 1.5 }}>{pr.followUp}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', lineHeight: 1.5 }}>{linkParas(pr.followUp)}</div>
               {pr.followUpTranslate && <div style={{ marginTop: 4 }}><HelpButton translate={pr.followUpTranslate} /></div>}
             </div>
           </div>
@@ -597,7 +612,7 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
       {step >= 3 && (
         <div className="stu-ai-reply">
           <div className="stu-ai-dot" />
-          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.7, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{pr.followUpReply}</div>
+          <div style={{ flex: 1, fontSize: 13, lineHeight: 1.7, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{linkParas(pr.followUpReply)}</div>
         </div>
       )}
 
@@ -605,7 +620,7 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
       {step >= 1 && (
         <div className="stu-insight-box">
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Key Insight</div>
-          {d.insight}
+          {linkParas(d.insight)}
           {d.insightZh && <div style={{ marginTop: 4 }}><HelpButton translate={d.insightZh} /></div>}
         </div>
       )}
@@ -615,13 +630,14 @@ function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', marginBottom: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--purple)', marginBottom: 6 }}>Want to discuss more?</div>
           {extraMsgs.map((m, i) => (
-            <div key={i} className={m.t === 'q' ? 'stu-extra-q' : 'stu-extra-a'}>{m.x}</div>
+            <div key={i} className={m.t === 'q' ? 'stu-extra-q' : 'stu-extra-a'} style={m.loading ? { opacity: 0.6, fontStyle: 'italic' } : undefined}>{m.x}</div>
           ))}
           <div style={{ display: 'flex', gap: 6 }}>
             <input
               style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', background: 'var(--bg)' }}
-              placeholder="Ask anything..."
+              placeholder={aiLoading ? 'Waiting for AI...' : 'Ask anything...'}
               value={extraIn}
+              disabled={aiLoading}
               onChange={e => setEI(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') sendExtra() }}
             />
@@ -677,6 +693,13 @@ function TaskView({ task, onComplete }: { task: Task; onComplete: () => void }) 
     }, 100)
     return () => { clearTimeout(t); observer.disconnect() }
   }, [task.id, practiceDone, discussDone])
+
+  const onListenDone = useCallback(() => {
+    setTimeout(() => {
+      const el = scrollRef.current?.querySelector('#phase-practice')
+      if (el) scrollRef.current!.scrollTo({ top: (el as HTMLElement).offsetTop - 10, behavior: 'smooth' })
+    }, 100)
+  }, [])
 
   const onPracticeDone = useCallback(() => {
     if (!practiceDone) {
@@ -735,8 +758,15 @@ function TaskView({ task, onComplete }: { task: Task; onComplete: () => void }) 
       {/* Scrollable content */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
         <div className="stu-task-inner">
-          <div style={{ paddingTop: 24 }} />
-          <ListenPhase task={task} />
+          <div style={{ paddingTop: 24 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+              Task {task.id} · {task.name} — {task.time}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 8, color: 'var(--t1)' }}>
+              {task.subtitle}
+            </div>
+          </div>
+          <ListenPhase key={`l${task.id}`} task={task} onDone={onListenDone} />
           <PracticePhase key={`p${task.id}`} task={task} onDone={onPracticeDone} />
           {practiceDone && <DiscussPhase key={`d${task.id}`} task={task} onDone={onDiscussDone} />}
           {discussDone && <TakeawayPhase task={task} onComplete={onComplete} />}
