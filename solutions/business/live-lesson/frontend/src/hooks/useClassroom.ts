@@ -184,6 +184,52 @@ export interface ClassroomState {
   }
   stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number }>
   questions: Array<{ studentId: string; studentName: string; step: number; question: string; answer?: string; category?: string; timestamp: string }>
+  observation?: {
+    logs: Array<{
+      studentId: string
+      studentName: string
+      events: Array<{
+        id: string
+        timestamp: number
+        updatedAt: number
+        anchors: string[]
+        gist: string
+        quote: string | null
+        source: 'llm' | 'system'
+        systemType?: string
+        data?: Record<string, unknown>
+      }>
+      systemMetrics: {
+        messageCount: number
+        lastActiveAt: number
+        exerciseCorrectRate: number
+        currentStep: string
+      }
+    }>
+    alerts: Array<{
+      timestamp: number
+      studentName: string
+      studentId: string
+      severity: 'info' | 'warn' | 'urgent'
+      message: string
+      anchorId: string | null
+    }>
+    anchorStats: Array<{
+      anchorId: string
+      label: string
+      type: 'knowledge' | 'misconception'
+      studentCount: number
+      latestGist: string
+      updatedAt: number
+    }>
+    anchors: Array<{
+      id: string
+      type: 'knowledge' | 'misconception'
+      label: string
+      description: string
+      signals: string[]
+    }>
+  }
 }
 
 // ── Student SSE stream hook (named events) ──

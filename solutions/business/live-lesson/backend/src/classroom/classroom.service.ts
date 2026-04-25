@@ -3,11 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not, MoreThan } from 'typeorm';
 import { randomInt } from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { ObservationService } from './observation.service';
 import type { Response } from 'express';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
@@ -64,6 +67,7 @@ export class ClassroomService {
     private readonly sessionRepo: Repository<ClassroomSession>,
     @InjectRepository(AiQuestion)
     private readonly aiQuestionRepo: Repository<AiQuestion>,
+    private readonly observationService: ObservationService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -93,6 +97,7 @@ export class ClassroomService {
         const session = this.sessionRepo.create({ code, lessonId, status: 'waiting' });
         const saved = await this.sessionRepo.save(session);
         this.logger.log(`Session created: ${saved.code} for lesson ${lessonId}`);
+        await this.initObservation(saved.id, lessonId);
         return { sessionId: saved.id, code: saved.code, lessonId: saved.lessonId, status: saved.status };
       } catch (err: any) {
         if (err?.message?.includes('UNIQUE') || err?.code === 'SQLITE_CONSTRAINT') continue;
@@ -175,6 +180,12 @@ export class ClassroomService {
     session.status = 'active';
     session.startedAt = new Date();
     await this.sessionRepo.save(session);
+
+    // Initialize observation system with anchors from manifest
+    this.initObservation(session.id, session.lessonId).catch(e =>
+      this.logger.warn(`Observation init failed: ${e}`),
+    );
+
     this.broadcast(session.id);
     this.logger.log(`Session started: ${code}`);
     return { ok: true, status: 'active', startedAt: session.startedAt };
@@ -189,6 +200,12 @@ export class ClassroomService {
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
     this.activeNotificationsMap.delete(session.id);
+
+    // Persist observation data
+    this.observationService.cleanupSession(session.id).catch(e =>
+      this.logger.warn(`Observation cleanup failed: ${e}`),
+    );
+
     this.logger.log(`Session ended: ${code}`);
     return { ok: true, status: 'ended' };
   }
@@ -210,6 +227,12 @@ export class ClassroomService {
       name,
     });
     const saved = await this.studentRepo.save(student);
+
+    // Observation: student join event
+    this.observationService.addSystemEvent(
+      session.id, saved.id, saved.name, 'join', {}, `${saved.name} 加入课堂`,
+    );
+
     this.broadcast(session.id);
     return { studentId: saved.id, name: saved.name, lessonId: session.lessonId };
   }
@@ -264,6 +287,31 @@ export class ClassroomService {
         await this.studentRepo.save(student);
       }
     }
+
+    // Observation: exercise result event (await for sync persistence)
+    await this.observationService.addSystemEvent(
+      session.id, studentId, student.name, 'exercise_result',
+      { step, score: score?.total ?? null },
+      `提交 Step ${step} 答案${score ? `，得分 ${score.total}%` : ''}`,
+    );
+
+    // Observation: step_complete event when student advances
+    const currentTask = student.currentTask;
+    if (taskNum !== undefined && currentTask > taskNum) {
+      await this.observationService.addSystemEvent(
+        session.id, studentId, student.name, 'step_complete',
+        { step, taskNum, nextTask: currentTask },
+        `完成 Task ${taskNum}，进入 Task ${currentTask}`,
+      );
+    }
+
+    // Observation: observeTurn with enriched context
+    const exerciseCorrectRate = score?.total ?? 0;
+    await this.observationService.observeTurn(
+      session.id, studentId, student.name,
+      { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%` },
+      { currentStep: `step-${step}`, exerciseCorrectRate, idleSeconds: 0 },
+    ).catch(e => this.logger.warn(`Observation observeTurn after submit failed: ${e}`));
 
     this.broadcast(session.id);
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
@@ -435,6 +483,12 @@ export class ClassroomService {
       stepMetrics,
       healthCards,
       questions: questionRecords,
+      observation: {
+        logs: this.observationService.getStudentLogs(sessionId),
+        alerts: this.observationService.generateAlerts(sessionId),
+        anchorStats: this.observationService.computeAnchorStats(sessionId),
+        anchors: this.observationService.getAnchors(sessionId),
+      },
     };
   }
 
@@ -540,6 +594,18 @@ export class ClassroomService {
     });
     await this.aiQuestionRepo.save(aiQuestion);
 
+    // Observation: await GLM observe before broadcast so SSE includes results
+    const latestSub = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId },
+      order: { submittedAt: 'DESC' },
+    });
+    const correctRate = latestSub?.scoreJson?.total ?? 0;
+    await this.observationService.observeTurn(
+      session.id, studentId, student.name,
+      { student: question, ai: parsed.answer },
+      { currentStep: `step-${step}`, exerciseCorrectRate: correctRate, idleSeconds: 0 },
+    ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
+
     this.broadcast(session.id);
     return { answer: parsed.answer, category: parsed.category };
   }
@@ -570,7 +636,21 @@ export class ClassroomService {
         maxTokens: 512,
         temperature: 0.75,
       });
-      return this.parseDiscussResponse(rawResponse, interactionType);
+      const parsed = this.parseDiscussResponse(rawResponse, interactionType);
+
+      // Observation: await GLM observe before returning so state is up-to-date
+      const latestDiscussSub = await this.submissionRepo.findOne({
+        where: { sessionId: session.id, studentId },
+        order: { submittedAt: 'DESC' },
+      });
+      const discussCorrectRate = latestDiscussSub?.scoreJson?.total ?? 0;
+      await this.observationService.observeTurn(
+        session.id, studentId, student.name,
+        { student: studentResponse, ai: parsed.reply },
+        { currentStep: `task-${taskNum}`, exerciseCorrectRate: discussCorrectRate, idleSeconds: 0 },
+      ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
+
+      return parsed;
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
       return {
@@ -789,13 +869,31 @@ Keep it 60-100 words.`);
   private async callGlm(
     systemPrompt: string,
     userMessage: string,
-    options?: { maxTokens?: number; temperature?: number },
+    options?: {
+      maxTokens?: number;
+      temperature?: number;
+      responseFormat?: { type: 'json_object' };
+      model?: string;
+    },
   ): Promise<string> {
     const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
     if (!apiKey) {
       throw new Error('ZHIPU_API_KEY not configured');
     }
-    const model = this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
+    const model = options?.model || this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
+
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      max_tokens: options?.maxTokens ?? 256,
+      temperature: options?.temperature ?? 0.7,
+    };
+    if (options?.responseFormat) {
+      body.response_format = options.responseFormat;
+    }
 
     const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
       method: 'POST',
@@ -803,15 +901,7 @@ Keep it 60-100 words.`);
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessage },
-        ],
-        max_tokens: options?.maxTokens ?? 256,
-        temperature: options?.temperature ?? 0.7,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -952,6 +1042,30 @@ Keep it 60-100 words.`);
   }
 
   // ── Private helpers ──
+
+  private async initObservation(sessionId: string, lessonId: string): Promise<void> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+    if (!lesson) return;
+    try {
+      const manifest = JSON.parse(lesson.manifestJson);
+      let anchors = manifest.observationAnchors || [];
+
+      // Fallback: read anchors from filesystem manifest if DB manifest lacks them
+      if (anchors.length === 0) {
+        try {
+          const diskPath = path.resolve(process.cwd(), '../data/lessons', lessonId, 'manifest.json');
+          if (fs.existsSync(diskPath)) {
+            const diskManifest = JSON.parse(fs.readFileSync(diskPath, 'utf-8'));
+            anchors = diskManifest.observationAnchors || [];
+          }
+        } catch { /* disk read failed, continue without anchors */ }
+      }
+
+      if (anchors.length > 0) {
+        this.observationService.initSession(sessionId, anchors);
+      }
+    } catch { /* noop */ }
+  }
 
   private generateCode(): string {
     let code = '';
