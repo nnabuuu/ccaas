@@ -10,7 +10,7 @@ import type { Task } from './task-data'
 export { TASKS } from './task-data'
 export type { Task } from './task-data'
 
-export const SessionCtx = createContext<{ sessionCode?: string; studentId?: string; submit?: (step: number, data: any) => Promise<boolean> }>({})
+export const SessionCtx = createContext<{ sessionCode?: string; studentId?: string; submit?: (step: number, data: Record<string, any>) => Promise<boolean> }>({})
 
 /* ═══ MARKDOWN-LITE RENDERER ═══ */
 function renderMd(text: string) {
