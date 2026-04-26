@@ -5,53 +5,89 @@
   "gradeLevel": "高中一年级",
   "teachingNotes": "高一英语阅读策略训练课，围绕 B7U2 Ideal Beauty 课文，通过 5 步阅读法（Predict → Skim → Scan+Matrix → Evaluate → Recap）引导学生从信息提取到批判性思维。三端联动教学：教师控制台推进课堂节奏，学生端完成任务，投屏黑板展示结构化板书。",
   "lessonType": "reading",
+  "lessonIntro": "Hello! Welcome to today's English reading lesson.\n\nToday we're reading **Ideal Beauty**. Keep one big question in mind:\n\n*Is one idea of physical beauty really more attractive than another?*\n\nWe'll complete 5 tasks. Let's begin!",
+  "lessonSummary": "Great job today!\n\nYou explored whether one beauty standard is better than another, and practiced 4 reading strategies.\n\nReading is not just understanding words — it's organizing evidence and forming your own judgment.\n\nHomework: \"Beyond the Plate\" using today's 4 steps.",
+  "phaseConfig": [
+    {
+      "id": "listen",
+      "label": "Listen",
+      "unlockAfter": null
+    },
+    {
+      "id": "practice",
+      "label": "Practice",
+      "unlockAfter": "listen"
+    },
+    {
+      "id": "discuss",
+      "label": "Discuss",
+      "unlockAfter": "practice"
+    },
+    {
+      "id": "takeaway",
+      "label": "Takeaway",
+      "unlockAfter": "discuss"
+    }
+  ],
   "article": {
     "title": "Ideal Beauty",
     "source": "B7U2",
     "paragraphs": [
       {
         "id": "p1",
-        "text": "In many parts of Nigeria, it is traditional for women to go to special \"fattening rooms\" before they get married. Happiness Edem was one such young woman, and she went from 60 kg to twice that weight because, in her culture, being fat is a sign of wealth.",
+        "text": "Nigerian teenager Happiness Edem had just one aim in life: to put on weight. So she spent six months in a \"fattening room\" where her daily routine was to sleep, eat and grow fat. She went in weighing 60 kg, but came out weighing twice that. In some parts of Africa, being fat is desirable because it is a sign of attractiveness in women and power and wealth in men.",
         "role": "detail"
       },
       {
         "id": "p2",
-        "text": "But what about the rest of the world? Open any fashion magazine and you will see young models — women who are slim and fair. Many people are worried that modern media promotes shallow beauty ideals.",
-        "highlights": ["shallow beauty ideals"],
+        "text": "However, in magazines and in the media we are bombarded with images of slim women with a fair complexion and handsome, broad-shouldered young men. It is fairly rare to see short-sighted, middle-aged models. Some people question these shallow beauty ideals. Is one idea of physical beauty really more attractive than another?",
+        "highlights": [
+          "shallow beauty ideals"
+        ],
         "role": "key"
       },
       {
         "id": "p3",
-        "text": "Ideas about physical beauty change over time and different periods of history have had their own idea of what is beautiful. In ancient Egypt, both men and women used to paint dark kohl around their eyes.",
-        "signals": ["change over time", "different periods of history"],
+        "text": "Ideas about physical beauty change over time and different periods of history reveal different views of beauty, particularly of women. Egyptian paintings often show slim dark-haired women as the normal practice, while one of the earliest representations of women in art in Europe is an overweight female. This is the Venus of Hohle Fels and it is more than 35,000 years old.",
+        "signals": [
+          "change over time",
+          "different periods of history"
+        ],
         "role": "key"
       },
       {
         "id": "p4",
-        "text": "In the 1600s in Europe, being plump and pale-skinned was considered stunning beauty. Rubens painted many women with round, soft bodies. In Elizabethan England, pale skin was a sign of wealth.",
+        "text": "In the early 1600s, artists like Peter Paul Rubens also painted plump, pale-skinned women who were thought to be the most stunning examples of female beauty at that time. In Elizabethan England, pale skin was still fashionable because it was a sign of wealth: the make-up used to achieve this look was expensive, so only rich people could afford it.",
         "role": "detail"
       },
       {
         "id": "p5",
-        "text": "Within different cultures around the world, we can find diverse ideas about physical beauty. In Borneo, many people have tattoos. For them, their body art is like a diary of important events.",
-        "signals": ["different cultures around the world"],
+        "text": "Within different cultures around the world, there is a huge difference in what is considered beautiful. Traditional customs, like tattooing, head-shaving, piercing or other kinds of bodily changes can express social position, identity or values.",
+        "signals": [
+          "different cultures around the world"
+        ],
         "role": "key"
       },
       {
         "id": "p6",
-        "text": "In New Zealand, the Maori people have their own tradition — a form of tattooing called tā moko. Unlike in Borneo, these tattoos show a person's position in society.",
+        "text": "In Borneo, for instance, tattoos are like a diary because they are a written record of all the important events and places a man has experienced in his life. For New Zealand's Maoris they reflect the person's position in society. Western society used to have a very low opinion of tattoos. Today they are considered a popular form of body art among the new generation.",
         "role": "detail"
       },
       {
         "id": "p7",
-        "text": "European visitors to Myanmar were amazed to see women wearing metal rings around their necks. And in Indonesia, some people practised sharpening their teeth, as it was considered a form of cultural identity.",
+        "text": "For Europeans, the tradition of using metal rings to stretch a girl's neck may be shocking, but the Myanmar people consider women with long and thin necks more elegant. In Indonesia, the custom of sharpening girls' teeth to points might seem very odd while it is perfectly acceptable in other places to straighten children's teeth with braces. Wearing rings in the nose or plastic surgery might be seen as ugly and unattractive by some cultures, but it is commonplace in many others.",
         "role": "detail"
       },
       {
         "id": "p8",
-        "text": "It appears that people change their appearance to tell the world about their culture and status. Whether kohl, tattoos, or metal rings, these practices reflect cultural values, not just vanity.",
-        "highlights": ["tell the world", "culture and status"],
-        "signals": ["It appears that"],
+        "text": "It appears that through the ages and across different cultures, people have always changed their bodies and faces for a wide variety of reasons: sometimes to help them look more beautiful, and sometimes to enable them to show social position or display group identity. Whether it is wearing make-up or decorating the body with tattoos, rings and piercings, different cultures view these things with different eyes. Does this mean that we are all beautiful in our own way?",
+        "highlights": [
+          "show social position",
+          "display group identity"
+        ],
+        "signals": [
+          "It appears that"
+        ],
         "role": "key"
       }
     ]
@@ -69,7 +105,7 @@
     },
     {
       "q": "Nigeria 的审美观是什么？",
-      "a": "根据课文 ¶1，在尼日利亚，肥胖被视为财富和地位的象征。文中提到 'being fat is a sign of wealth.'",
+      "a": "根据课文 ¶1，在非洲部分地区，肥胖被视为女性的吸引力和男性的权力与财富的象征。文中提到 'being fat is desirable because it is a sign of attractiveness in women and power and wealth in men.'",
       "category": "课文内容"
     },
     {
@@ -93,16 +129,19 @@
       "strategy": "Orientation",
       "duration": 2,
       "description": "课前导读：了解本节课的学习目标和阅读方法。",
-      "focusParagraphs": ["p1", "p2"],
+      "focusParagraphs": [
+        "p1",
+        "p2"
+      ],
       "studentView": {
-        "title": "欢迎来到阅读策略课",
-        "body": "<p>今天我们要学习一篇关于<strong>世界各地不同审美观</strong>的英语文章 —— <strong>Ideal Beauty</strong>。</p><p>你将学到 <span class=\"hl\">4 种阅读策略</span>，帮助你快速、高效地读懂任何说明文或议论文：</p><ol><li><strong>Predicting（预测）</strong>—— 看标题，激活已有知识</li><li><strong>Skimming（略读）</strong>—— 只读首句，抓文章骨架</li><li><strong>Scanning（寻读）</strong>—— 带着问题细读，提取关键信息</li><li><strong>Evaluating（评价）</strong>—— 用证据批判性思考</li></ol><p>准备好了吗？让我们开始！</p>",
+        "title": "Welcome to Reading Strategies",
+        "body": "<p>Today we're reading an article about <strong>beauty standards around the world</strong> — <strong>Ideal Beauty</strong>.</p><p>You'll learn <span class=\"hl\">4 reading strategies</span> that help you read any expository or argumentative text quickly and effectively:</p><ol><li><strong>Predicting</strong> — read the title, activate what you already know</li><li><strong>Skimming</strong> — read first sentences only, find the skeleton</li><li><strong>Scanning</strong> — read with a purpose, extract key details</li><li><strong>Evaluating</strong> — think critically using evidence</li></ol><p>Ready? Let's get started!</p>",
         "keyPoints": [
-          "本节课共 5 个任务，每个任务前有方法讲解",
-          "不需要逐字读完全文——策略帮你用更少的时间获取更多信息",
-          "遇到生词不要怕，关注信号词和结构比词汇更重要"
+          "This lesson has 5 tasks, each with a strategy briefing beforehand",
+          "You don't need to read every word — strategies help you get more from less",
+          "Don't worry about new vocabulary — focus on signal words and structure"
         ],
-        "confirmLabel": "我准备好了，开始学习"
+        "confirmLabel": "I'm ready, let's go"
       },
       "teacherView": {
         "speechLine": "学生正在阅读课前导读",
@@ -127,13 +166,64 @@
       "strategy": "Predicting",
       "duration": 5,
       "description": "引导学生关注标题 Ideal Beauty，快速提取 ¶1-2 的核心冲突：尼日利亚增肥室 vs 现代媒体审美。",
-      "focusParagraphs": ["p1", "p2"],
+      "focusParagraphs": [
+        "p1",
+        "p2"
+      ],
+      "exerciseLabel": "Answer the questions about ¶1-2.",
+      "subtitle": "What is beauty?",
+      "summary": "You found the central conflict: one culture values gaining weight, while modern media promotes being slim.\n\nKey question: *Is one idea of physical beauty really more attractive than another?*\n\nLet's see how the writer answers it.",
       "answerKey": {
         "type": "quiz",
         "answers": [
-          { "questionIdx": 0, "correct": 1 },
-          { "questionIdx": 1, "correct": 2 },
-          { "questionIdx": 2, "correct": 1 }
+          {
+            "questionIdx": 0,
+            "correct": 1,
+            "questionText": "What did Happiness Edem do to become \"beautiful\"?",
+            "questionTranslate": "Happiness Edem 为了变\"美\"做了什么？",
+            "options": [
+              "Went on a diet to become slim",
+              "Gained weight in a fattening room",
+              "Got cosmetic surgery",
+              "Started a fashion brand"
+            ],
+            "hint": "Look at ¶1: what happened to her **weight**? Did it go up or down?",
+            "hintZh": "看 ¶1，她的**体重**发生了什么变化？增加还是减少？",
+            "walkthrough": "Read the 2nd sentence of ¶1: *'She spent six months in a **fattening room** where her daily routine was to sleep, eat and **grow fat**.'* The key phrase is 'fattening room' + 'grow fat' — she deliberately gained weight. Which option matches? → B",
+            "walkthroughZh": "读 ¶1 第 2 句：*'She spent six months in a **fattening room**…**grow fat**.'* 关键词是 'fattening room' + 'grow fat'——她刻意增重。哪个选项匹配？→ B"
+          },
+          {
+            "questionIdx": 1,
+            "correct": 2,
+            "questionText": "What kind of beauty does modern media promote?",
+            "questionTranslate": "现代媒体推崇哪种美？",
+            "options": [
+              "Plump and strong",
+              "Diverse and inclusive",
+              "Slim and fair-skinned",
+              "Tattooed and unique"
+            ],
+            "hint": "Look at ¶2: \"**in the media** we are bombarded with images of...\" — what kind of images?",
+            "hintZh": "看 ¶2：**媒体**给我们展示了什么样的 images？找 \"**slim**\" 和 \"**fair**\"。",
+            "walkthrough": "¶2 says: *'in the media we are bombarded with images of **slim** women with a **fair complexion**.'* Two keywords: **slim** + **fair**. Now check the options — only C says 'Slim and fair-skinned'. → C",
+            "walkthroughZh": "¶2 说：*'in the media we are bombarded with images of **slim** women with a **fair complexion**.'* 两个关键词：**slim** + **fair**。对照选项——只有 C 说 'Slim and fair-skinned'。→ C"
+          },
+          {
+            "questionIdx": 2,
+            "correct": 1,
+            "questionText": "What is the writer's main question?",
+            "questionTranslate": "作者真正想问的大问题是���么？",
+            "options": [
+              "Why do people want to be beautiful?",
+              "Is one idea of physical beauty really more attractive than another?",
+              "How can we become more beautiful?",
+              "Why is the media so powerful?"
+            ],
+            "hint": "Read the **last sentence** of ¶2 — the writer is asking a **question**. What is it?",
+            "hintZh": "仔细读 ¶2 的**最后一句**——作������问什么**问题**？",
+            "walkthrough": "The very last sentence of ¶2 is: *'**Is one idea of physical beauty really more attractive than another?**'* This is a direct question — the writer's central argument revolves around it. Which option matches word-for-word? → B",
+            "walkthroughZh": "¶2 最后一句：*'**Is one idea of physical beauty really more attractive than another?**'* 这是作者的核心问题——整篇文章围绕它展开。哪个选项一字不差？→ B"
+          }
         ]
       },
       "discuss": {
@@ -161,10 +251,30 @@
         "focusTitle": "课文导入",
         "focusSubtitle": "¶1-2 · 尼日利亚 vs 现代媒体",
         "quickActions": [
-          { "emoji": "💡", "label": "标题联想", "message": "看标题 Ideal Beauty，你脑海里想到什么？试着说出 3 个关键词。", "type": "hint" },
-          { "emoji": "📖", "label": "读¶1尼日利亚", "message": "请阅读第1段：在尼日利亚，结婚前要去 fattening rooms — 胖=富有。这和你的认知一样吗？", "type": "hint" },
-          { "emoji": "⚡", "label": "对比提示", "message": "¶1 说胖是美，¶2 说 slim and fair 才是美 — 谁对？带着这个问题继续读。", "type": "hint" },
-          { "emoji": "⏱", "label": "再给 2 分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+          {
+            "emoji": "💡",
+            "label": "标题联想",
+            "message": "看标题 Ideal Beauty，你脑海里想到什么？试着说出 3 个关键词。",
+            "type": "hint"
+          },
+          {
+            "emoji": "📖",
+            "label": "读¶1尼日利亚",
+            "message": "请阅读第1段：在尼日利亚，结婚前要去 fattening rooms — 胖=富有。这和你的认知一样吗？",
+            "type": "hint"
+          },
+          {
+            "emoji": "⚡",
+            "label": "对比提示",
+            "message": "¶1 说胖是美，¶2 说 slim and fair 才是美 — 谁对？带着这个问题继续读。",
+            "type": "hint"
+          },
+          {
+            "emoji": "⏱",
+            "label": "再给 2 分钟",
+            "message": "再给大家 2 分钟时间完成当前任务",
+            "type": "time"
+          }
         ],
         "cueCards": [
           {
@@ -191,14 +301,21 @@
       "strategy": "Skimming",
       "duration": 2,
       "description": "讲解 Skimming 阅读策略：只读首句 + 关键转折词，快速把握文章骨架。",
-      "focusParagraphs": ["p3", "p4", "p5", "p6", "p7", "p8"],
+      "focusParagraphs": [
+        "p3",
+        "p4",
+        "p5",
+        "p6",
+        "p7",
+        "p8"
+      ],
       "studentView": {
-        "title": "什么是 Skimming（略读）？",
-        "body": "<p><strong>Skimming</strong> 是一种快速阅读技巧：<strong>不逐字读</strong>，只读每段的<strong>第一句话</strong>和<strong>转折词（signal words）</strong>。</p><p>为什么有用？因为英语说明文/议论文有一个规律：<strong>每段的第一句通常是主题句（topic sentence）</strong>，告诉你这一段在讲什么。</p><p>你需要找的<strong>信号词</strong>包括：</p><ul><li><code>change over time</code> → 说明在讲<strong>时间变化</strong>（历史）</li><li><code>around the world</code> / <code>different cultures</code> → 说明在讲<strong>地理差异</strong>（文化）</li><li><code>It appears that</code> → 说明是<strong>总结 / 结论</strong></li></ul><p>接下来的任务中，你要用 Skimming 方法读 ¶3-8 的首句，判断每段属于哪个结构板块。</p>",
+        "title": "What is Skimming?",
+        "body": "<p><strong>Skimming</strong> is a fast reading technique: <strong>don't read word by word</strong> — only read the <strong>first sentence</strong> of each paragraph and look for <strong>signal words</strong>.</p><p>Why does this work? In expository and argumentative texts, the <strong>first sentence is usually the topic sentence</strong> — it tells you what the paragraph is about.</p><p>Look for these <strong>signal words</strong>:</p><ul><li><code>change over time</code> → the paragraph is about <strong>history</strong></li><li><code>around the world</code> / <code>different cultures</code> → it's about <strong>cultural differences</strong></li><li><code>It appears that</code> → it's a <strong>summary / conclusion</strong></li></ul><p>In the next task, use skimming to read the first sentences of ¶3–8 and decide which structural section each paragraph belongs to.</p>",
         "keyPoints": [
-          "核心公式：首句 + 信号词 = 段落功能",
-          "3 分钟 Skimming > 30 分钟逐字读",
-          "找到信号词后，判断段落属于 History / Culture / Conclusion 哪一类"
+          "Key formula: first sentence + signal words = paragraph function",
+          "3 minutes of skimming beats 30 minutes of word-by-word reading",
+          "After spotting signal words, classify paragraphs as History, Culture, or Conclusion"
         ]
       },
       "teacherView": {
@@ -219,19 +336,68 @@
       "id": "s2",
       "idx": 3,
       "type": "task",
+      "showRoles": true,
       "label": "结构解码",
       "labelEn": "Structural Decoding",
       "strategy": "Skimming",
       "duration": 8,
       "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：Phenomenon → History → Culture → Conclusion。",
-      "focusParagraphs": ["p3", "p4", "p5", "p6", "p7", "p8"],
+      "focusParagraphs": [
+        "p3",
+        "p4",
+        "p5",
+        "p6",
+        "p7",
+        "p8"
+      ],
+      "exerciseLabel": "Match each section to its function.",
+      "subtitle": "Find the skeleton",
+      "summary": "Text structure: Phenomenon → History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
       "answerKey": {
         "type": "match",
+        "options": [
+          "Phenomenon",
+          "History",
+          "Culture",
+          "Conclusion"
+        ],
         "answers": [
-          { "pairIdx": 0, "left": "¶1-2", "correct": "Phenomenon" },
-          { "pairIdx": 1, "left": "¶3-4", "correct": "History" },
-          { "pairIdx": 2, "left": "¶5-7", "correct": "Culture" },
-          { "pairIdx": 3, "left": "¶8", "correct": "Conclusion" }
+          {
+            "pairIdx": 0,
+            "left": "¶1-2",
+            "correct": "Phenomenon",
+            "hint": "\"Phenomenon\" = **opening conflict**. What two opposing ideas of beauty do ¶1-2 present?",
+            "hintZh": "Phenomenon = **开头的冲突**。¶1-2 提出了哪两个**对立**的审美观？",
+            "walkthrough": "¶1 opens with a specific story (Happiness Edem gaining weight). ¶2 contrasts this with modern media beauty. Together they present **the opening conflict** — two opposing beauty ideals. This is the 'Phenomenon' that the rest of the article will explain. → Phenomenon",
+            "walkthroughZh": "¶1 用一个具体故事开头（增肥室），¶2 对比现代媒体审美。两段一起呈现了**开篇冲突**——两种对立的审美观。这就是文章后面要解释的现象。→ Phenomenon"
+          },
+          {
+            "pairIdx": 1,
+            "left": "¶3-4",
+            "correct": "History",
+            "hint": "Look for **TIME** words in ¶3's first sentence: \"**change over time**\", \"**different periods**\".",
+            "hintZh": "找 ¶3 首句中的**时间**信号词：\"**change over time**\"、\"**different periods**\"。",
+            "walkthrough": "¶3 first sentence: *'Ideas about physical beauty **change over time** and **different periods of history** reveal different views.'* Both 'change over time' and 'periods of history' are **TIME** signal words. Time = History. → History",
+            "walkthroughZh": "¶3 首句：*'Ideas about physical beauty **change over time** and **different periods of history**…'* 'change over time' 和 'periods of history' 都是**时间**信号词。时间 = 历史。→ History"
+          },
+          {
+            "pairIdx": 2,
+            "left": "¶5-7",
+            "correct": "Culture",
+            "hint": "Look for **PLACE** words in ¶5's first sentence: \"**different cultures around the world**\".",
+            "hintZh": "找 ¶5 首句中的**地点**信号词：\"**different cultures around the world**\"。",
+            "walkthrough": "¶5 first sentence: *'Within **different cultures around the world**, there is a huge difference…'* The phrase 'different cultures around the world' is a **PLACE** signal word. Place = Culture. → Culture",
+            "walkthroughZh": "¶5 首句：*'Within **different cultures around the world**…'* 'different cultures around the world' 是**地点**信号词。地点 = 文化。→ Culture"
+          },
+          {
+            "pairIdx": 3,
+            "left": "¶8",
+            "correct": "Conclusion",
+            "hint": "\"**It appears that**\" is a **summary** signal — it introduces the conclusion.",
+            "hintZh": "\"**It appears that**\" 是**总结**信号词——引出结论。",
+            "walkthrough": "¶8 starts with: *'**It appears that** beauty really is only skin deep.'* 'It appears that' is a **summary** signal — the writer is wrapping up. Summary = Conclusion. → Conclusion",
+            "walkthroughZh": "¶8 开头：*'**It appears that** beauty really is only skin deep.'* 'It appears that' 是**总结**信号词——作者在做总结。总结 = 结论。→ Conclusion"
+          }
         ]
       },
       "discuss": {
@@ -259,10 +425,30 @@
         "focusTitle": "信号词 & 文章骨架",
         "focusSubtitle": "首句 + 转折词 → 四段结构",
         "quickActions": [
-          { "emoji": "👁", "label": "只读首句！", "message": "注意！只读每段的第一句话，不要读全段。找出关键转折词。", "type": "hint" },
-          { "emoji": "🔤", "label": "信号词提示", "message": "找这些词：change over time, different cultures, around the world, It appears that — 它们告诉你段落的功能。", "type": "hint" },
-          { "emoji": "🏗", "label": "文章结构", "message": "文章骨架：¶1-2 现象 → ¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？", "type": "hint" },
-          { "emoji": "⏱", "label": "再给 2 分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+          {
+            "emoji": "👁",
+            "label": "只读首句！",
+            "message": "注意！只读每段的第一句话，不要读全段。找出关键转折词。",
+            "type": "hint"
+          },
+          {
+            "emoji": "🔤",
+            "label": "信号词提示",
+            "message": "找这些词：change over time, different cultures, around the world, It appears that — 它们告诉你段落的功能。",
+            "type": "hint"
+          },
+          {
+            "emoji": "🏗",
+            "label": "文章结构",
+            "message": "文章骨架：¶1-2 现象 → ¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？",
+            "type": "hint"
+          },
+          {
+            "emoji": "⏱",
+            "label": "再给 2 分钟",
+            "message": "再给大家 2 分钟时间完成当前任务",
+            "type": "time"
+          }
         ],
         "cueCards": [
           {
@@ -271,7 +457,7 @@
           },
           {
             "title": "四段结构",
-            "body": "¶1-2: Phenomenon — 现象对比（Nigeria vs Media）\n¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（tell the world）"
+            "body": "¶1-2: Phenomenon — 现象对比（Nigeria vs Media）\n¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（show social position / display group identity）"
           },
           {
             "title": "过渡到 Step 3",
@@ -289,15 +475,21 @@
       "strategy": "Scanning",
       "duration": 2,
       "description": "讲解 Scanning 阅读策略：带着具体问题细读目标段落，提取关键信息填入矩阵表。",
-      "focusParagraphs": ["p3", "p4", "p5", "p6", "p7"],
+      "focusParagraphs": [
+        "p3",
+        "p4",
+        "p5",
+        "p6",
+        "p7"
+      ],
       "studentView": {
-        "title": "什么是 Scanning（寻读）？",
-        "body": "<p><strong>Scanning</strong> 和 Skimming 不同 —— 这次你要<strong>带着问题细读</strong>，在文章中快速定位具体信息。</p><p>想象你在字典里查一个单词：你不会从头到尾读字典，而是<strong>目标明确地扫描</strong>，找到那个词就停下来。Scanning 就是这个道理。</p><p>接下来你要构建一个 <strong>Place × Practice × Reason 矩阵表</strong>：</p><ul><li><strong>Place</strong>：哪个国家/文化？</li><li><strong>Practice</strong>：他们做什么来追求美？</li><li><strong>Reason</strong>：为什么这样做？（文化意义是什么？）</li></ul><p>我已经帮你填好了示范行（Ancient Egypt）。你的任务是用 Scanning 方法从 ¶5-7 中找出其余 4 个地方的信息。</p>",
+        "title": "What is Scanning?",
+        "body": "<p><strong>Scanning</strong> is different from skimming — this time you <strong>read with a specific question in mind</strong> and locate exact details in the text.</p><p>Think of looking up a word in a dictionary: you don't read the whole dictionary — you <strong>scan with a clear target</strong> and stop when you find it. That's scanning.</p><p>Next, you'll build a <strong>Place × Practice × Reason matrix</strong>:</p><ul><li><strong>Place</strong> — which country or culture?</li><li><strong>Practice</strong> — what do they do to pursue beauty?</li><li><strong>Reason</strong> — why do they do it? (What's the cultural meaning?)</li></ul><p>I've filled in the demo row (Ancient Egypt) for you. Your job is to scan ¶5–7 and find the information for the remaining 4 places.</p>",
         "keyPoints": [
-          "Scanning = 带着问题读，目标明确",
-          "每一行都要回答三个问题：在哪里？做什么？为什么？",
-          "注意：tā moko ≠ tattoo，要写准确名称",
-          "¶7 包含两个不同的地方（Myanmar 和 Indonesia），要分两行写"
+          "Scanning = read with a purpose, eyes on the target",
+          "Each row must answer three questions: Where? What? Why?",
+          "Note: the text says 'tattoos' — don't write 'tā moko'",
+          "¶7 contains two different places (Myanmar and Indonesia) — fill two separate rows"
         ]
       },
       "teacherView": {
@@ -318,21 +510,72 @@
       "id": "s3",
       "idx": 5,
       "type": "task",
+      "showRoles": true,
       "label": "矩阵构建",
       "labelEn": "Matrix Building",
       "strategy": "Scanning",
       "duration": 15,
       "description": "分组寻读：A组找历史证据(¶3-4)，B组找文化证据(¶5-7)。合作完成 Place × Practice × Reason 矩阵表。",
-      "focusParagraphs": ["p3", "p4", "p5", "p6", "p7"],
+      "focusParagraphs": [
+        "p3",
+        "p4",
+        "p5",
+        "p6",
+        "p7"
+      ],
+      "exerciseLabel": "Read ¶3-7 and fill the matrix.",
+      "subtitle": "Collect evidence",
+      "summary": "You turned paragraphs into organized evidence.\n\nYour matrix shows beauty is about culture, status, and identity.\n\nNext, use this evidence to form your own opinion.",
       "answerKey": {
         "type": "matrix",
         "answers": [
-          { "rowIdx": 0, "place": "Ancient Egypt", "practice": "kohl eye paint", "reason": "status", "isDemo": true },
-          { "rowIdx": 1, "place": "1600s Europe", "practice": "plump and pale-skinned", "reason": "wealth" },
-          { "rowIdx": 2, "place": "Borneo", "practice": "tattoos", "reason": "diary of events" },
-          { "rowIdx": 3, "place": "NZ Maori", "practice": "tā moko", "reason": "position in society" },
-          { "rowIdx": 4, "place": "Myanmar", "practice": "metal neck rings", "reason": "beauty/identity" },
-          { "rowIdx": 5, "place": "Indonesia", "practice": "sharpened teeth", "reason": "cultural identity" }
+          {
+            "rowIdx": 0,
+            "place": "Ancient Egypt",
+            "practice": "slim dark-haired women in paintings",
+            "reason": "beauty ideal / normal practice",
+            "isDemo": true
+          },
+          {
+            "rowIdx": 1,
+            "place": "1600s Europe",
+            "practice": "plump and pale-skinned",
+            "reason": "wealth",
+            "hint": "In ¶4, what body type was \"**the most stunning**\" beauty? Also: why was **pale skin** fashionable?",
+            "hintZh": "在 ¶4 中，什么体型是 \"**the most stunning**\" 的美？**白皮肤**为什么时髦？"
+          },
+          {
+            "rowIdx": 2,
+            "place": "Borneo",
+            "practice": "tattoos",
+            "reason": "diary of events",
+            "hint": "In ¶6: \"tattoos are like a **diary**...\" — a written record of what?",
+            "hintZh": "在 ¶6：\"tattoos are like a **diary**...\"——记录了什么？"
+          },
+          {
+            "rowIdx": 3,
+            "place": "NZ Maori",
+            "practice": "tattoos",
+            "reason": "position in society",
+            "hint": "In ¶6: Maori tattoos \"**reflect**\" something about a person. What?",
+            "hintZh": "在 ¶6：Maori 的 tattoos \"**reflect**\" 了一个人的什么？"
+          },
+          {
+            "rowIdx": 4,
+            "place": "Myanmar",
+            "practice": "metal neck rings",
+            "reason": "beauty/identity",
+            "hint": "In ¶7, find \"**metal rings**\" to stretch a girl's neck. Myanmar people consider long necks more ___?",
+            "hintZh": "在 ¶7 中找 \"**metal rings**\"。缅甸人认为长脖子更加___？"
+          },
+          {
+            "rowIdx": 5,
+            "place": "Indonesia",
+            "practice": "sharpened teeth",
+            "reason": "cultural identity",
+            "hint": "In ¶7, second sentence: \"the custom of **sharpening** girls' teeth...\" — what was the cultural reason?",
+            "hintZh": "在 ¶7 第二句：\"**sharpening** girls' teeth...\"——文化原因是什么？"
+          }
         ]
       },
       "discuss": {
@@ -340,7 +583,7 @@
           "q": "Look at your completed matrix. Are these beauty practices only about \"looking good\"? What do they have in common?",
           "translate": "这些审美实践仅仅是为了好看吗？有什么共同点？"
         },
-        "targetInsight": "Every beauty practice in the matrix carries deeper cultural meaning: wealth (Egypt, Europe), life records (Borneo), social position (Maori), cultural identity (Indonesia). The common thread is that beauty = cultural language for expressing identity and status.",
+        "targetInsight": "Every beauty practice in the matrix carries deeper cultural meaning: beauty standard (Egypt), wealth (Europe), life records (Borneo), social position (Maori), elegance (Myanmar), cultural identity (Indonesia). The common thread is that beauty = cultural language for expressing identity and status.",
         "commonMisconceptions": [
           "Thinking beauty practices are just about appearance/vanity",
           "Not seeing the common pattern across different cultures",
@@ -360,20 +603,40 @@
         "focusTitle": "实时矩阵",
         "focusSubtitle": "Place × Practice × Reason · live",
         "quickActions": [
-          { "emoji": "📍", "label": "Myanmar 位置提示", "message": "Myanmar (¶7a): 缅甸的美容实践是长颈族用铜环拉长脖子，象征美丽和身份", "type": "hint" },
-          { "emoji": "🎯", "label": "Practice 写法示例", "message": "Practice 列要写具体做法，例如 \"kohl eye makeup\" 而不是 \"makeup\"", "type": "hint" },
-          { "emoji": "📝", "label": "tā moko 生词卡", "message": "tā moko: 毛利人的传统面部纹身，表示社会地位和家族身份", "type": "vocab" },
-          { "emoji": "⏱", "label": "再给 2 分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+          {
+            "emoji": "📍",
+            "label": "Myanmar 位置提示",
+            "message": "Myanmar (¶7a): 缅甸的美容实践是长颈族用铜环拉长脖子，象征美丽和身份",
+            "type": "hint"
+          },
+          {
+            "emoji": "🎯",
+            "label": "Practice 写法示例",
+            "message": "Practice 列要写具体做法，例如 \"slim dark-haired women in paintings\" 而不是 \"paintings\"",
+            "type": "hint"
+          },
+          {
+            "emoji": "📝",
+            "label": "Maori tattoos",
+            "message": "原文说 Maori tattoos reflect a person's position in society，注意 Practice 写 tattoos 即可",
+            "type": "vocab"
+          },
+          {
+            "emoji": "⏱",
+            "label": "再给 2 分钟",
+            "message": "再给大家 2 分钟时间完成当前任务",
+            "type": "time"
+          }
         ],
         "cueCards": [
           {
             "title": "示范一行",
-            "body": "用 Ancient Egypt (¶3) 打样：\n• \"What did Egyptians do?\" → kohl makeup\n• \"Why?\" → wealth & status\n\n让学生模仿这个模式填其他行。"
+            "body": "用 Ancient Egypt (¶3) 打样：\n• \"What did Egyptians value?\" → slim dark-haired women\n• \"How do we know?\" → shown in paintings as normal practice\n\n让学生模仿这个模式填其他行。"
           },
           {
             "title": "易错点",
             "warn": true,
-            "body": "¶6 Maori: Practice 写 \"tattoos\" 过泛 → 应写 tā moko；Reason 是 social position。\n\n¶7: Myanmar 与 Indonesia 是两行不同地方，常被合并成一行。提醒分开写。"
+            "body": "¶6 Maori: Practice 写 tattoos，Reason 是 position in society。原文只说 tattoos，不要写 tā moko。\n\n¶7: Myanmar 与 Indonesia 是两行不同地方，常被合并成一行。提醒分开写。"
           },
           {
             "title": "过渡到 Step 4",
@@ -391,15 +654,18 @@
       "strategy": "Evaluating",
       "duration": 3,
       "description": "讲解批判性阅读方法：区分事实与观点，用证据支持自己的立场。",
-      "focusParagraphs": ["p2", "p8"],
+      "focusParagraphs": [
+        "p2",
+        "p8"
+      ],
       "studentView": {
-        "title": "如何批判性地阅读？",
-        "body": "<p>前面你已经用 Skimming 抓住了文章骨架，用 Scanning 提取了具体信息。现在到了最关键的一步 —— <strong>Evaluating（评价）</strong>。</p><p>回到 ¶2，作者写道：</p><blockquote><em>\"Many people are worried that modern media promotes <strong>shallow beauty ideals</strong>.\"</em></blockquote><p>注意：这是 <strong>\"many people\" 的看法</strong>，不一定是作者的结论。</p><p>你的任务是用矩阵表中的<strong>事实证据</strong>来判断：这些美的实践真的是 \"shallow（肤浅的）\" 吗？</p><p>写议论段的模板：</p><pre>I [agree/disagree] that beauty ideals are shallow.\nFirst, in [Place], [Practice] because [Reason].\nSecond, in [Place], [Practice] because [Reason].\nTherefore, beauty is [not] shallow.</pre>",
+        "title": "How to Read Critically",
+        "body": "<p>You've already used skimming to find the skeleton and scanning to extract details. Now comes the most important step — <strong>Evaluating</strong>.</p><p>Go back to ¶2, where the writer says:</p><blockquote><em>\"Many people are worried that modern media promotes <strong>shallow beauty ideals</strong>.\"</em></blockquote><p>Notice: this is <strong>what \"many people\" think</strong> — it's not necessarily the writer's conclusion.</p><p>Your job is to use the <strong>factual evidence</strong> from your matrix to judge: are these beauty practices really \"shallow\"?</p><p>Argumentative paragraph template:</p><pre>I [agree/disagree] that beauty ideals are shallow.\nFirst, in [Place], [Practice] because [Reason].\nSecond, in [Place], [Practice] because [Reason].\nTherefore, beauty is [not] shallow.</pre>",
         "keyPoints": [
-          "区分观点和事实：\"many people are worried\" 是观点，不是定论",
-          "用你矩阵表中的至少 2 条证据支持你的立场",
-          "用 First / Second / Therefore 组织段落结构",
-          "没有标准答案 —— agree、disagree、partly agree 都可以，关键是有证据"
+          "Distinguish opinion from fact: \"many people are worried\" is an opinion, not a conclusion",
+          "Support your position with at least 2 pieces of evidence from your matrix",
+          "Organize your paragraph with First / Second / Therefore",
+          "There's no single right answer — agree, disagree, or partly agree are all fine, as long as you have evidence"
         ]
       },
       "teacherView": {
@@ -420,16 +686,44 @@
       "id": "s4",
       "idx": 7,
       "type": "task",
+      "showRoles": true,
       "label": "批判质疑",
       "labelEn": "Critical Evaluation",
       "strategy": "Evaluating",
       "duration": 12,
       "description": "利用矩阵证据挑战 ¶2 的 'shallow beauty ideals'，写一段议论段。",
-      "focusParagraphs": ["p2", "p8"],
+      "focusParagraphs": [
+        "p2",
+        "p8"
+      ],
+      "exerciseLabel": "Choose your position and select supporting evidence.",
+      "subtitle": "Do you agree?",
+      "summary": "You used evidence to support your judgment — a big step in academic reading.\n\nLet's review how you learned today.",
       "answerKey": {
         "type": "stance",
-        "validPositions": ["agree", "partly", "disagree"],
-        "minEvidence": 2
+        "validPositions": [
+          "agree",
+          "partly",
+          "disagree"
+        ],
+        "minEvidence": 2,
+        "stanceQ": "Do you agree that the media's beauty standard is \"shallow\"?",
+        "stanceQZh": "你同意现代媒体的审美标准是\"肤浅的\"吗？",
+        "stanceOpts": [
+          "I agree",
+          "I partly agree",
+          "I disagree"
+        ],
+        "evidence": [
+          "Ancient Egypt: slim dark-haired women were the beauty ideal",
+          "1600s Europe: plump + pale = beauty (different from today)",
+          "Borneo: tattoos as a diary of life events",
+          "NZ Maori: tattoos show social position",
+          "Myanmar: metal neck rings seen as elegant",
+          "Indonesia: sharpening teeth for cultural identity",
+          "Beauty changes across time and cultures",
+          "Modern media only promotes one standard: slim and fair"
+        ]
       },
       "discuss": {
         "probe": {
@@ -456,10 +750,30 @@
         "focusTitle": "评分标准 & 写作模板",
         "focusSubtitle": "议论段：立场 + 矩阵证据",
         "quickActions": [
-          { "emoji": "🔍", "label": "回顾 Reason 列", "message": "回看你的矩阵 Reason 列：wealth, diary, social position, cultural identity — 这些算 shallow 吗？", "type": "hint" },
-          { "emoji": "📊", "label": "引用矩阵证据", "message": "写议论段时，至少引用矩阵中 2 个地方的证据。例如：In Borneo... In New Zealand...", "type": "hint" },
-          { "emoji": "📋", "label": "议论段模板", "message": "模板：I disagree that beauty ideals are shallow. First, in [Place], [Practice] because [Reason]. Second, in [Place]... Therefore, beauty is not shallow.", "type": "hint" },
-          { "emoji": "⏱", "label": "再给 2 分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+          {
+            "emoji": "🔍",
+            "label": "回顾 Reason 列",
+            "message": "回看你的矩阵 Reason 列：wealth, diary, social position, cultural identity — 这些算 shallow 吗？",
+            "type": "hint"
+          },
+          {
+            "emoji": "📊",
+            "label": "引用矩阵证据",
+            "message": "写议论段时，至少引用矩阵中 2 个地方的证据。例如：In Borneo... In New Zealand...",
+            "type": "hint"
+          },
+          {
+            "emoji": "📋",
+            "label": "议论段模板",
+            "message": "模板：I disagree that beauty ideals are shallow. First, in [Place], [Practice] because [Reason]. Second, in [Place]... Therefore, beauty is not shallow.",
+            "type": "hint"
+          },
+          {
+            "emoji": "⏱",
+            "label": "再给 2 分钟",
+            "message": "再给大家 2 分钟时间完成当前任务",
+            "type": "time"
+          }
         ],
         "cueCards": [
           {
@@ -487,16 +801,18 @@
       "strategy": "Synthesizing",
       "duration": 2,
       "description": "引导学生回顾本节课学到的 4 种阅读策略，为复盘做准备。",
-      "focusParagraphs": ["p8"],
+      "focusParagraphs": [
+        "p8"
+      ],
       "studentView": {
-        "title": "回顾：你今天学了什么？",
-        "body": "<p>恭喜你完成了所有阅读任务！现在让我们回顾一下今天用到的 <strong>4 种阅读策略</strong>：</p><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 1</td><td style=\"padding:8px\"><strong>Predicting</strong> — 看标题，激活你已有的知识</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 2</td><td style=\"padding:8px\"><strong>Skimming</strong> — 读首句 + 信号词，抓文章骨架</td></tr><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 3</td><td style=\"padding:8px\"><strong>Scanning</strong> — 带着问题细读，提取信息填矩阵</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 4</td><td style=\"padding:8px\"><strong>Evaluating</strong> — 用证据批判性思考，写议论段</td></tr></table><p style=\"margin-top:12px\">这套方法适用于<strong>任何说明文和议论文</strong>。下次考试阅读理解时，试试用这 4 步法！</p>",
+        "title": "Review: What Did You Learn Today?",
+        "body": "<p>Congratulations — you've completed all the reading tasks! Let's review the <strong>4 reading strategies</strong> you used today:</p><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 1</td><td style=\"padding:8px\"><strong>Predicting</strong> — read the title, activate prior knowledge</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 2</td><td style=\"padding:8px\"><strong>Skimming</strong> — read first sentences + signal words, find the skeleton</td></tr><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 3</td><td style=\"padding:8px\"><strong>Scanning</strong> — read with a purpose, extract details into a matrix</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 4</td><td style=\"padding:8px\"><strong>Evaluating</strong> — think critically with evidence, write an argument</td></tr></table><p style=\"margin-top:12px\">This method works for <strong>any expository or argumentative text</strong>. Try the 4-step approach next time you face a reading comprehension test!</p>",
         "keyPoints": [
-          "4 步法的顺序很重要：先预测 → 再略读 → 再细读 → 最后评价",
-          "文章的主旨在 ¶8：美不是肤浅的虚荣，而是文化的语言",
-          "回家作业：用同样的 4 步法阅读 \"Beyond the Plate\""
+          "The order of the 4 steps matters: Predict → Skim → Scan → Evaluate",
+          "The main idea is in ¶8: beauty is not shallow vanity — it's a cultural language",
+          "Homework: read \"Beyond the Plate\" using the same 4-step method"
         ],
-        "confirmLabel": "我记住了，查看复盘"
+        "confirmLabel": "Got it — show me the recap"
       },
       "teacherView": {
         "speechLine": "学生正在回顾阅读策略",
@@ -516,15 +832,32 @@
       "id": "s5",
       "idx": 9,
       "type": "task",
+      "showRoles": true,
       "label": "复盘升华",
       "labelEn": "Metacognitive Wrap-up",
       "strategy": "Synthesizing",
       "duration": 5,
       "description": "回顾 4 步阅读策略：Predict → Skim → Scan+Matrix → Evaluate。布置作业。",
-      "focusParagraphs": ["p8"],
+      "focusParagraphs": [
+        "p8"
+      ],
+      "exerciseLabel": "Put today's 4 reading strategies in the correct order.",
+      "subtitle": "Review & transfer",
+      "summary": "Reading process: Predict → Skim → Scan → Evaluate.\n\nThese work for any text. Keep using them!\n\nHomework: \"Beyond the Plate\" using today's 4 steps.",
       "answerKey": {
         "type": "order",
-        "correctOrder": ["Predict", "Skim", "Scan", "Evaluate"]
+        "items": [
+          "Scanning — find specific details",
+          "Predicting — read the title, ask questions",
+          "Evaluating — form your own judgment",
+          "Skimming — find the structure quickly"
+        ],
+        "correctOrder": [
+          1,
+          3,
+          0,
+          2
+        ]
       },
       "discuss": {
         "probe": {
@@ -551,10 +884,30 @@
         "focusTitle": "策略复盘",
         "focusSubtitle": "4 步阅读法 + ¶8 主旨",
         "quickActions": [
-          { "emoji": "🔮", "label": "Predict 回顾", "message": "Step 1 我们用了 Predicting：看标题 + ¶1，预测文章讲什么。这帮你准备好了阅读方向。", "type": "hint" },
-          { "emoji": "📐", "label": "Skim 回顾", "message": "Step 2 我们用了 Skimming：只读首句 + 信号词，3 分钟拿到文章骨架。", "type": "hint" },
-          { "emoji": "📚", "label": "布置作业", "message": "作业：用今天学的 4 步法阅读 \"Beyond the Plate\"。提交 structure map + matrix。下节课对比讲评。", "type": "general" },
-          { "emoji": "⏱", "label": "再给 2 分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+          {
+            "emoji": "🔮",
+            "label": "Predict 回顾",
+            "message": "Step 1 我们用了 Predicting：看标题 + ¶1，预测文章讲什么。这帮你准备好了阅读方向。",
+            "type": "hint"
+          },
+          {
+            "emoji": "📐",
+            "label": "Skim 回顾",
+            "message": "Step 2 我们用了 Skimming：只读首句 + 信号词，3 分钟拿到文章骨架。",
+            "type": "hint"
+          },
+          {
+            "emoji": "📚",
+            "label": "布置作业",
+            "message": "作业：用今天学的 4 步法阅读 \"Beyond the Plate\"。提交 structure map + matrix。下节课对比讲评。",
+            "type": "general"
+          },
+          {
+            "emoji": "⏱",
+            "label": "再给 2 分钟",
+            "message": "再给大家 2 分钟时间完成当前任务",
+            "type": "time"
+          }
         ],
         "cueCards": [
           {
@@ -563,7 +916,7 @@
           },
           {
             "title": "¶8 主旨",
-            "body": "\"It appears that people change their appearance to tell the world about their culture and status.\"\n\n核心观点：美不是 shallow vanity，而是 cultural language — 表达身份、归属、地位。"
+            "body": "\"It appears that ... people have always changed their bodies and faces ... to show social position or display group identity.\"\n\n核���观点：美不是 shallow vanity，而是 cultural language — 表达身份、归属、地位。\n\n结尾提问：\"Does this mean that we are all beautiful in our own way?\""
           },
           {
             "title": "作业说明",
@@ -582,363 +935,1076 @@
     },
     "steps": [
       {
-        "id": "s1", "idx": 1, "label": "图式激活",
-        "layout": { "columns": [
-          { "id": "L", "title": "现象", "subtitle": "先观察", "tone": "cool", "width": 1 },
-          { "id": "C", "title": "对照", "subtitle": "媒体 vs 现实", "tone": "warm", "width": 1.4 },
-          { "id": "R", "title": "悬念", "subtitle": "带着问题读", "tone": "accent", "width": 1 }
-        ] }
+        "id": "s1",
+        "idx": 1,
+        "label": "图式激活",
+        "layout": {
+          "columns": [
+            {
+              "id": "L",
+              "title": "现象",
+              "subtitle": "先观察",
+              "tone": "cool",
+              "width": 1
+            },
+            {
+              "id": "C",
+              "title": "对照",
+              "subtitle": "媒体 vs 现实",
+              "tone": "warm",
+              "width": 1.4
+            },
+            {
+              "id": "R",
+              "title": "悬念",
+              "subtitle": "带着问题读",
+              "tone": "accent",
+              "width": 1
+            }
+          ]
+        }
       },
       {
-        "id": "s2", "idx": 2, "label": "结构解码",
-        "layout": { "columns": [
-          { "id": "L", "title": "信号词", "subtitle": "首句 + 转折词", "tone": "cool", "width": 1 },
-          { "id": "C", "title": "骨架", "subtitle": "四段结构", "tone": "accent", "width": 2 }
-        ] }
+        "id": "s2",
+        "idx": 2,
+        "label": "结构解码",
+        "layout": {
+          "columns": [
+            {
+              "id": "L",
+              "title": "信号词",
+              "subtitle": "首句 + 转折词",
+              "tone": "cool",
+              "width": 1
+            },
+            {
+              "id": "C",
+              "title": "骨架",
+              "subtitle": "四段结构",
+              "tone": "accent",
+              "width": 2
+            }
+          ]
+        }
       },
       {
-        "id": "s3", "idx": 3, "label": "矩阵构建",
-        "layout": { "columns": [
-          { "id": "L", "title": "矩阵", "subtitle": "Place × Practice × Reason", "tone": "neutral", "width": 2 },
-          { "id": "R", "title": "学生答题", "subtitle": "对比讲评", "tone": "warm", "width": 1 }
-        ] }
+        "id": "s3",
+        "idx": 3,
+        "label": "矩阵构建",
+        "layout": {
+          "columns": [
+            {
+              "id": "L",
+              "title": "矩阵",
+              "subtitle": "Place × Practice × Reason",
+              "tone": "neutral",
+              "width": 2
+            },
+            {
+              "id": "R",
+              "title": "学生答题",
+              "subtitle": "对比讲评",
+              "tone": "warm",
+              "width": 1
+            }
+          ]
+        }
       },
       {
-        "id": "s4", "idx": 4, "label": "批判质疑",
-        "layout": { "columns": [
-          { "id": "L", "title": "论点", "subtitle": "媒体的主张", "tone": "cool", "width": 1 },
-          { "id": "C", "title": "立场", "subtitle": "你怎么看", "tone": "accent", "width": 1.6 },
-          { "id": "R", "title": "评分点", "subtitle": "怎么写", "tone": "muted", "width": 1 }
-        ] }
+        "id": "s4",
+        "idx": 4,
+        "label": "批判质疑",
+        "layout": {
+          "columns": [
+            {
+              "id": "L",
+              "title": "论点",
+              "subtitle": "媒体的主张",
+              "tone": "cool",
+              "width": 1
+            },
+            {
+              "id": "C",
+              "title": "立场",
+              "subtitle": "你怎么看",
+              "tone": "accent",
+              "width": 1.6
+            },
+            {
+              "id": "R",
+              "title": "评分点",
+              "subtitle": "怎么写",
+              "tone": "muted",
+              "width": 1
+            }
+          ]
+        }
       },
       {
-        "id": "s5", "idx": 5, "label": "复盘升华",
-        "layout": { "columns": [
-          { "id": "L", "title": "方法", "subtitle": "4 策略复盘", "tone": "cool", "width": 1 },
-          { "id": "C", "title": "文本", "subtitle": "回到 ¶8", "tone": "muted", "width": 1 },
-          { "id": "R", "title": "主题", "subtitle": "Beauty = ?", "tone": "accent", "width": 1.2 }
-        ] }
+        "id": "s5",
+        "idx": 5,
+        "label": "复盘升华",
+        "layout": {
+          "columns": [
+            {
+              "id": "L",
+              "title": "方法",
+              "subtitle": "4 策略复盘",
+              "tone": "cool",
+              "width": 1
+            },
+            {
+              "id": "C",
+              "title": "文本",
+              "subtitle": "回到 ¶8",
+              "tone": "muted",
+              "width": 1
+            },
+            {
+              "id": "R",
+              "title": "主题",
+              "subtitle": "Beauty = ?",
+              "tone": "accent",
+              "width": 1.2
+            }
+          ]
+        }
       }
     ],
     "blocks": [
       {
-        "id": "b-s1-title", "kind": "heading",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "neutral", "emphasis": "strong" },
-        "reveal": { "step": 1, "sub": 1 },
-        "data": { "eyebrow": "Step 1 · Predicting", "text": "What is \"beautiful\"?", "accent": "从你的经验出发" }
+        "id": "b-s1-title",
+        "kind": "heading",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "neutral",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 1,
+          "sub": 1
+        },
+        "data": {
+          "eyebrow": "Step 1 · Predicting",
+          "text": "What is \"beautiful\"?",
+          "accent": "从你的经验出发"
+        }
       },
       {
-        "id": "b-s1-quote", "kind": "quote",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "cool" },
-        "reveal": { "step": 1, "sub": 2 },
-        "data": { "paragraph": "¶2", "text": "Many people are worried that modern media promotes shallow beauty ideals.", "highlights": ["shallow beauty ideals"] }
+        "id": "b-s1-quote",
+        "kind": "quote",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "cool"
+        },
+        "reveal": {
+          "step": 1,
+          "sub": 2
+        },
+        "data": {
+          "paragraph": "¶2",
+          "text": "Many people are worried that modern media promotes shallow beauty ideals.",
+          "highlights": [
+            "shallow beauty ideals"
+          ]
+        }
       },
       {
-        "id": "b-s1-compare", "kind": "compare",
-        "region": "C", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "neutral" },
-        "reveal": { "step": 1, "sub": 3 },
+        "id": "b-s1-compare",
+        "kind": "compare",
+        "region": "C",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "neutral"
+        },
+        "reveal": {
+          "step": 1,
+          "sub": 3
+        },
         "data": {
           "joiner": "vs",
-          "left": { "label": "Modern Media", "tone": "cool", "items": ["slim", "fair-skinned", "youthful", "symmetrical", "\"shallow\""] },
-          "right": { "label": "Real Cultures", "tone": "warm", "items": ["plump (Nigeria)", "tattooed (Borneo)", "painted (Egypt)", "long-necked (Myanmar)"] }
+          "left": {
+            "label": "Modern Media",
+            "tone": "cool",
+            "items": [
+              "slim",
+              "fair-skinned",
+              "youthful",
+              "symmetrical",
+              "\"shallow\""
+            ]
+          },
+          "right": {
+            "label": "Real Cultures",
+            "tone": "warm",
+            "items": [
+              "plump (Nigeria)",
+              "tattooed (Borneo)",
+              "slim dark-haired (Egypt)",
+              "long-necked (Myanmar)"
+            ]
+          }
         }
       },
       {
-        "id": "b-s1-prompt", "kind": "annotation",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 1, "sub": 4 },
-        "data": { "kind": "aha", "text": "作者真的同意 \"shallow\" 吗？带着这个怀疑读下去。" }
-      },
-      {
-        "id": "b-s1-followup", "kind": "annotation",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "muted", "density": "tight" },
-        "reveal": { "step": 1, "sub": 5 },
-        "data": { "kind": "note", "text": "找证据：每个文化都有自己的\"理想\"，这算 shallow 吗？" }
-      },
-      {
-        "id": "b-s2-title", "kind": "heading",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "neutral", "emphasis": "strong" },
-        "reveal": { "step": 2, "sub": 1 },
-        "data": { "eyebrow": "Step 2 · Skimming", "text": "读首句，找骨架" }
-      },
-      {
-        "id": "b-s2-signals", "kind": "chip-row",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "cool" },
-        "reveal": { "step": 2, "sub": 2 },
-        "data": { "items": [
-          { "text": "change over time", "note": "→ 时间" },
-          { "text": "different periods", "note": "→ 时间" },
-          { "text": "around the world", "note": "→ 地理" },
-          { "text": "different cultures", "note": "→ 地理" },
-          { "text": "It appears that", "note": "→ 总结", "tone": "accent" }
-        ] }
-      },
-      {
-        "id": "b-s2-method", "kind": "annotation",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "muted", "density": "tight" },
-        "reveal": { "step": 2, "sub": 4 },
-        "data": { "kind": "aha", "text": "每段只读首句 + 转折词 = 拿到全文骨架。3 分钟 vs 30 分钟。" }
-      },
-      {
-        "id": "b-s2-flow", "kind": "flow",
-        "region": "C", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 2, "sub": 3 },
-        "data": { "arrow": "right", "steps": [
-          { "paragraph": "¶1-2", "label": "Phenomenon", "sub": "Media vs Reality" },
-          { "paragraph": "¶3-4", "label": "History", "sub": "Across Time" },
-          { "paragraph": "¶5-7", "label": "Culture", "sub": "Across Space" },
-          { "paragraph": "¶8", "label": "Conclusion", "sub": "All Beautiful" }
-        ] }
-      },
-      {
-        "id": "b-s2-pattern", "kind": "formula",
-        "region": "C", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "cool" },
-        "reveal": { "step": 2, "sub": 5 },
-        "data": { "expr": "首句 + [change / within / It appears] = 段落功能", "caption": "这是 skimming 的核心公式" }
-      },
-      {
-        "id": "b-s3-title", "kind": "heading",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "neutral", "emphasis": "strong" },
-        "reveal": { "step": 3, "sub": 1 },
-        "data": { "eyebrow": "Step 3 · Scanning", "text": "Place × Practice × Reason" }
-      },
-      {
-        "id": "b-s3-matrix", "kind": "matrix",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "neutral" },
-        "reveal": { "step": 3, "sub": 2 },
+        "id": "b-s1-prompt",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 1,
+          "sub": 4
+        },
         "data": {
-          "headers": ["Place", "Practice", "Reason"],
+          "kind": "aha",
+          "text": "作者真的同意 \"shallow\" 吗？带着这个怀疑读下去。"
+        }
+      },
+      {
+        "id": "b-s1-followup",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "muted",
+          "density": "tight"
+        },
+        "reveal": {
+          "step": 1,
+          "sub": 5
+        },
+        "data": {
+          "kind": "note",
+          "text": "找证据：每个文化都有自己的\"理想\"，这算 shallow 吗？"
+        }
+      },
+      {
+        "id": "b-s2-title",
+        "kind": "heading",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "neutral",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 2,
+          "sub": 1
+        },
+        "data": {
+          "eyebrow": "Step 2 · Skimming",
+          "text": "读首句，找骨架"
+        }
+      },
+      {
+        "id": "b-s2-signals",
+        "kind": "chip-row",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "cool"
+        },
+        "reveal": {
+          "step": 2,
+          "sub": 2
+        },
+        "data": {
+          "items": [
+            {
+              "text": "change over time",
+              "note": "→ 时间"
+            },
+            {
+              "text": "different periods",
+              "note": "→ 时间"
+            },
+            {
+              "text": "around the world",
+              "note": "→ 地理"
+            },
+            {
+              "text": "different cultures",
+              "note": "→ 地理"
+            },
+            {
+              "text": "It appears that",
+              "note": "→ 总结",
+              "tone": "accent"
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s2-method",
+        "kind": "annotation",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "muted",
+          "density": "tight"
+        },
+        "reveal": {
+          "step": 2,
+          "sub": 4
+        },
+        "data": {
+          "kind": "aha",
+          "text": "每段只读首句 + 转折词 = 拿到全文骨架。3 分钟 vs 30 分钟。"
+        }
+      },
+      {
+        "id": "b-s2-flow",
+        "kind": "flow",
+        "region": "C",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 2,
+          "sub": 3
+        },
+        "data": {
+          "arrow": "right",
+          "steps": [
+            {
+              "paragraph": "¶1-2",
+              "label": "Phenomenon",
+              "sub": "Media vs Reality"
+            },
+            {
+              "paragraph": "¶3-4",
+              "label": "History",
+              "sub": "Across Time"
+            },
+            {
+              "paragraph": "¶5-7",
+              "label": "Culture",
+              "sub": "Across Space"
+            },
+            {
+              "paragraph": "¶8",
+              "label": "Conclusion",
+              "sub": "All Beautiful"
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s2-pattern",
+        "kind": "formula",
+        "region": "C",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "cool"
+        },
+        "reveal": {
+          "step": 2,
+          "sub": 5
+        },
+        "data": {
+          "expr": "首句 + [change / within / It appears] = 段落功能",
+          "caption": "这是 skimming 的核心公式"
+        }
+      },
+      {
+        "id": "b-s3-title",
+        "kind": "heading",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "neutral",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 1
+        },
+        "data": {
+          "eyebrow": "Step 3 · Scanning",
+          "text": "Place × Practice × Reason"
+        }
+      },
+      {
+        "id": "b-s3-matrix",
+        "kind": "matrix",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "neutral"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 2
+        },
+        "data": {
+          "headers": [
+            "Place",
+            "Practice",
+            "Reason"
+          ],
           "rows": [
-            { "tone": "demo", "cells": [
-              { "text": "Ancient Egypt", "note": "示范 ¶3" },
-              { "text": "kohl eye paint" },
-              { "text": "status" }
-            ]},
-            { "cells": [
-              { "text": "Borneo", "note": "¶5" },
-              { "text": "tattoos" },
-              { "text": "diary of events" }
-            ]},
-            { "cells": [
-              { "text": "NZ Maori", "note": "¶6" },
-              { "text": "tā moko", "mark": "sig", "note": "常误写为 tattoos" },
-              { "text": "position in society" }
-            ]},
-            { "cells": [
-              { "text": "Myanmar", "note": "¶7" },
-              { "text": "metal neck rings" },
-              { "placeholder": "——?", "mark": "warn" }
-            ]},
-            { "cells": [
-              { "text": "Indonesia", "note": "¶7" },
-              { "text": "sharpened teeth" },
-              { "text": "cultural identity" }
-            ]}
+            {
+              "tone": "demo",
+              "cells": [
+                {
+                  "text": "Ancient Egypt",
+                  "note": "示范 ¶3"
+                },
+                {
+                  "text": "slim dark-haired women in paintings"
+                },
+                {
+                  "text": "beauty ideal"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Borneo",
+                  "note": "¶5"
+                },
+                {
+                  "text": "tattoos"
+                },
+                {
+                  "text": "diary of events"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "NZ Maori",
+                  "note": "¶6"
+                },
+                {
+                  "text": "tattoos",
+                  "mark": "sig"
+                },
+                {
+                  "text": "position in society"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Myanmar",
+                  "note": "¶7"
+                },
+                {
+                  "text": "metal neck rings"
+                },
+                {
+                  "placeholder": "——?",
+                  "mark": "warn"
+                }
+              ]
+            },
+            {
+              "cells": [
+                {
+                  "text": "Indonesia",
+                  "note": "¶7"
+                },
+                {
+                  "text": "sharpened teeth"
+                },
+                {
+                  "text": "cultural identity"
+                }
+              ]
+            }
           ]
         }
       },
       {
-        "id": "b-s3-pattern", "kind": "formula",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 3, "sub": 3 },
-        "data": { "expr": "In [Place], people [Practice] because it means [Reason].", "caption": "答题句型 — 用矩阵每一行套这句话" }
-      },
-      {
-        "id": "b-s3-stu-good", "kind": "student-work",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "success" },
-        "reveal": { "step": 3, "sub": 4 },
-        "data": { "author": "林雅婷", "status": "celebrate", "text": "In Borneo, people get tattoos because they record important life events — like a diary on skin." }
-      },
-      {
-        "id": "b-s3-stu-redo", "kind": "student-work",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "warm" },
-        "reveal": { "step": 3, "sub": 5 },
-        "data": { "author": "陈思远", "status": "redo", "text": "In Myanmar, women wear neck rings because they look beautiful." }
-      },
-      {
-        "id": "b-s3-redo-note", "kind": "annotation",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "warm" },
-        "reveal": { "step": 3, "sub": 6 },
-        "data": { "kind": "warning", "text": "思远 → 雅婷：从 \"好看\" 到 \"文化意义\"。回看 ¶8 \"tell the world about culture and status\"" }
-      },
-      {
-        "id": "b-s4-title", "kind": "heading",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "neutral", "emphasis": "strong" },
-        "reveal": { "step": 4, "sub": 1 },
-        "data": { "eyebrow": "Step 4 · Evaluating", "text": "Challenge \"shallow beauty\"" }
-      },
-      {
-        "id": "b-s4-claim", "kind": "quote",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "cool" },
-        "reveal": { "step": 4, "sub": 2 },
-        "data": { "paragraph": "¶2", "text": "\"Modern media promotes shallow beauty ideals.\"", "highlights": ["shallow"] }
-      },
-      {
-        "id": "b-s4-claim-note", "kind": "annotation",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "muted", "density": "tight" },
-        "reveal": { "step": 4, "sub": 3 },
-        "data": { "kind": "note", "text": "作者只是引用了 \"many people\" 的看法 — 这是一个观点，不是结论。" }
-      },
-      {
-        "id": "b-s4-mindmap", "kind": "mindmap",
-        "region": "C", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 4, "sub": 4 },
+        "id": "b-s3-pattern",
+        "kind": "formula",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 3
+        },
         "data": {
-          "center": { "label": "shallow?", "note": "同意 / 不同意 ?" },
-          "branches": [
-            { "label": "Disagree", "leaves": ["Borneo: 记录人生", "Maori: 社会地位", "Egypt: 阶级符号", "Myanmar: 文化身份"] },
-            { "label": "Partly agree", "leaves": ["媒体审美单一", "滤镜 ≠ 真实", "BUT: 不同文化都有 \"理想\""] },
-            { "label": "Agree", "leaves": ["fashion 杂志", "\"slim and fair\"", "商业驱动"] }
-          ]
+          "expr": "In [Place], people [Practice] because it means [Reason].",
+          "caption": "答题句型 — 用矩阵每一行套这句话"
         }
       },
       {
-        "id": "b-s4-rubric", "kind": "annotation",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "muted" },
-        "reveal": { "step": 4, "sub": 5 },
-        "data": { "kind": "note", "text": "评分点：\n1. 立场清晰\n2. 引用 >= 2 条矩阵事实\n3. 用 First / Second / Therefore 组段" }
-      },
-      {
-        "id": "b-s4-pattern", "kind": "formula",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 4, "sub": 6 },
-        "data": { "expr": "I [agree/disagree] that ... First, in [Place]... Second, in [Place]... Therefore, beauty is [not] shallow.", "caption": "议论段模板" }
-      },
-      {
-        "id": "b-s5-title", "kind": "heading",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "neutral", "emphasis": "strong" },
-        "reveal": { "step": 5, "sub": 1 },
-        "data": { "eyebrow": "Step 5 · Recap", "text": "4 Strategies, 1 Conclusion" }
-      },
-      {
-        "id": "b-s5-strategies", "kind": "flow",
-        "region": "L", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "cool" },
-        "reveal": { "step": 5, "sub": 2 },
-        "data": { "arrow": "right", "steps": [
-          { "paragraph": "1", "label": "Predict", "sub": "激活图式" },
-          { "paragraph": "2", "label": "Skim", "sub": "骨架" },
-          { "paragraph": "3", "label": "Scan", "sub": "矩阵" },
-          { "paragraph": "4", "label": "Evaluate", "sub": "批判" }
-        ] }
-      },
-      {
-        "id": "b-s5-quote", "kind": "quote",
-        "region": "C", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "muted" },
-        "reveal": { "step": 5, "sub": 3 },
-        "data": { "paragraph": "¶8", "text": "It appears that people change their appearance to tell the world about their culture and status.", "highlights": ["tell the world", "culture and status"] }
-      },
-      {
-        "id": "b-s5-thesis", "kind": "mindmap",
-        "region": "R", "geometry": { "col": 1, "span": 12 },
-        "style": { "tone": "accent" },
-        "reveal": { "step": 5, "sub": 4 },
+        "id": "b-s3-stu-good",
+        "kind": "student-work",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "success"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 4
+        },
         "data": {
-          "center": { "label": "Beauty", "note": "= cultural language" },
-          "branches": [
-            { "label": "across time", "leaves": ["ancient kohl", "1600s pale", "today slim"] },
-            { "label": "across space", "leaves": ["Nigeria 丰满", "Borneo 纹身", "Myanmar 颈环"] },
-            { "label": "common root", "leaves": ["表达身份", "群体归属", "\"tell the world\""] }
+          "author": "林雅婷",
+          "status": "celebrate",
+          "text": "In Borneo, people get tattoos because they record important life events — like a diary on skin."
+        }
+      },
+      {
+        "id": "b-s3-stu-redo",
+        "kind": "student-work",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "warm"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 5
+        },
+        "data": {
+          "author": "陈思远",
+          "status": "redo",
+          "text": "In Myanmar, women wear neck rings because they look beautiful."
+        }
+      },
+      {
+        "id": "b-s3-redo-note",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "warm"
+        },
+        "reveal": {
+          "step": 3,
+          "sub": 6
+        },
+        "data": {
+          "kind": "warning",
+          "text": "思远 → 雅婷：从 \"好看\" 到 \"文化意义\"。回看 ¶8 \"show social position or display group identity\""
+        }
+      },
+      {
+        "id": "b-s4-title",
+        "kind": "heading",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "neutral",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 1
+        },
+        "data": {
+          "eyebrow": "Step 4 · Evaluating",
+          "text": "Challenge \"shallow beauty\""
+        }
+      },
+      {
+        "id": "b-s4-claim",
+        "kind": "quote",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "cool"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 2
+        },
+        "data": {
+          "paragraph": "¶2",
+          "text": "\"Modern media promotes shallow beauty ideals.\"",
+          "highlights": [
+            "shallow"
           ]
         }
       },
       {
-        "id": "b-s5-hw", "kind": "annotation",
-        "geometry": { "col": 1, "span": 12 }, "fullBleed": true,
-        "style": { "tone": "success", "emphasis": "strong" },
-        "reveal": { "step": 5, "sub": 5 },
-        "data": { "kind": "aha", "text": "HW：用今天的 4 步法读 \"Beyond the Plate\"。提交 structure map + matrix。下节课对比讲评。" }
+        "id": "b-s4-claim-note",
+        "kind": "annotation",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "muted",
+          "density": "tight"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 3
+        },
+        "data": {
+          "kind": "note",
+          "text": "作者只是引用了 \"many people\" 的看法 — 这是一个观点，不是结论。"
+        }
+      },
+      {
+        "id": "b-s4-mindmap",
+        "kind": "mindmap",
+        "region": "C",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 4
+        },
+        "data": {
+          "center": {
+            "label": "shallow?",
+            "note": "同意 / 不同意 ?"
+          },
+          "branches": [
+            {
+              "label": "Disagree",
+              "leaves": [
+                "Borneo: 记录人生",
+                "Maori: 社会地位",
+                "Egypt: 阶级符号",
+                "Myanmar: 文化身份"
+              ]
+            },
+            {
+              "label": "Partly agree",
+              "leaves": [
+                "媒体审美单一",
+                "滤镜 ≠ 真实",
+                "BUT: 不同文化都有 \"理想\""
+              ]
+            },
+            {
+              "label": "Agree",
+              "leaves": [
+                "fashion 杂志",
+                "\"slim and fair\"",
+                "商业驱动"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s4-rubric",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "muted"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 5
+        },
+        "data": {
+          "kind": "note",
+          "text": "评分点：\n1. 立场清晰\n2. 引用 >= 2 条矩阵事实\n3. 用 First / Second / Therefore 组段"
+        }
+      },
+      {
+        "id": "b-s4-pattern",
+        "kind": "formula",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 4,
+          "sub": 6
+        },
+        "data": {
+          "expr": "I [agree/disagree] that ... First, in [Place]... Second, in [Place]... Therefore, beauty is [not] shallow.",
+          "caption": "议论段模板"
+        }
+      },
+      {
+        "id": "b-s5-title",
+        "kind": "heading",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "neutral",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 5,
+          "sub": 1
+        },
+        "data": {
+          "eyebrow": "Step 5 · Recap",
+          "text": "4 Strategies, 1 Conclusion"
+        }
+      },
+      {
+        "id": "b-s5-strategies",
+        "kind": "flow",
+        "region": "L",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "cool"
+        },
+        "reveal": {
+          "step": 5,
+          "sub": 2
+        },
+        "data": {
+          "arrow": "right",
+          "steps": [
+            {
+              "paragraph": "1",
+              "label": "Predict",
+              "sub": "激活图式"
+            },
+            {
+              "paragraph": "2",
+              "label": "Skim",
+              "sub": "骨架"
+            },
+            {
+              "paragraph": "3",
+              "label": "Scan",
+              "sub": "矩阵"
+            },
+            {
+              "paragraph": "4",
+              "label": "Evaluate",
+              "sub": "批判"
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s5-quote",
+        "kind": "quote",
+        "region": "C",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "muted"
+        },
+        "reveal": {
+          "step": 5,
+          "sub": 3
+        },
+        "data": {
+          "paragraph": "¶8",
+          "text": "It appears that ... people have always changed their bodies and faces ... to show social position or display group identity.",
+          "highlights": [
+            "show social position",
+            "display group identity"
+          ]
+        }
+      },
+      {
+        "id": "b-s5-thesis",
+        "kind": "mindmap",
+        "region": "R",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "style": {
+          "tone": "accent"
+        },
+        "reveal": {
+          "step": 5,
+          "sub": 4
+        },
+        "data": {
+          "center": {
+            "label": "Beauty",
+            "note": "= cultural language"
+          },
+          "branches": [
+            {
+              "label": "across time",
+              "leaves": [
+                "Egypt slim dark-haired",
+                "1600s pale",
+                "today slim"
+              ]
+            },
+            {
+              "label": "across space",
+              "leaves": [
+                "Nigeria 丰满",
+                "Borneo 纹身",
+                "Myanmar 颈环"
+              ]
+            },
+            {
+              "label": "common root",
+              "leaves": [
+                "表达身份",
+                "群体归属",
+                "\"show social position\""
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s5-hw",
+        "kind": "annotation",
+        "geometry": {
+          "col": 1,
+          "span": 12
+        },
+        "fullBleed": true,
+        "style": {
+          "tone": "success",
+          "emphasis": "strong"
+        },
+        "reveal": {
+          "step": 5,
+          "sub": 5
+        },
+        "data": {
+          "kind": "aha",
+          "text": "HW：用今天的 4 步法读 \"Beyond the Plate\"。提交 structure map + matrix。下节课对比讲评。"
+        }
       }
     ]
   },
-  "cumulativeMinutes": [0, 2, 7, 9, 17, 19, 34, 37, 49, 51, 56],
+  "cumulativeMinutes": [
+    0,
+    2,
+    7,
+    9,
+    17,
+    19,
+    34,
+    37,
+    49,
+    51,
+    56
+  ],
   "observationAnchors": [
     {
       "id": "K1",
       "type": "knowledge",
       "label": "Scanning 策略识别",
       "description": "能区分 scanning 和精读，快速定位关键信息",
-      "signals": ["scanning", "定位", "find", "locate", "look for", "目标明确"]
+      "signals": [
+        "scanning",
+        "定位",
+        "find",
+        "locate",
+        "look for",
+        "目标明确"
+      ]
     },
     {
       "id": "K2",
       "type": "knowledge",
       "label": "文本结构理解",
       "description": "识别不同文化/时代的审美标准对比结构（Phenomenon→History→Culture→Conclusion）",
-      "signals": ["structure", "结构", "history vs culture", "signal words", "首句", "骨架", "Phenomenon", "Conclusion"]
+      "signals": [
+        "structure",
+        "结构",
+        "history vs culture",
+        "signal words",
+        "首句",
+        "骨架",
+        "Phenomenon",
+        "Conclusion"
+      ]
     },
     {
       "id": "K3",
       "type": "knowledge",
       "label": "细节信息提取",
       "description": "从指定段落准确提取事实信息（地点、做法、原因）",
-      "signals": ["place", "practice", "reason", "矩阵", "matrix", "Borneo", "Maori", "tā moko", "Myanmar", "Indonesia"]
+      "signals": [
+        "place",
+        "practice",
+        "reason",
+        "矩阵",
+        "matrix",
+        "Borneo",
+        "Maori",
+        "tattoos",
+        "Myanmar",
+        "Indonesia"
+      ]
     },
     {
       "id": "K4",
       "type": "knowledge",
       "label": "批判性立场表达",
       "description": "能形成有理有据的个人立场并引用文本证据",
-      "signals": ["agree", "disagree", "evidence", "证据", "because", "therefore", "shallow", "立场", "opinion"]
+      "signals": [
+        "agree",
+        "disagree",
+        "evidence",
+        "证据",
+        "because",
+        "therefore",
+        "shallow",
+        "立场",
+        "opinion"
+      ]
     },
     {
       "id": "K5",
       "type": "knowledge",
       "label": "信息排序逻辑",
       "description": "理解文章信息的逻辑顺序和时间顺序，能正确排列阅读策略步骤",
-      "signals": ["order", "顺序", "first", "predict", "skim", "scan", "evaluate", "步骤"]
+      "signals": [
+        "order",
+        "顺序",
+        "first",
+        "predict",
+        "skim",
+        "scan",
+        "evaluate",
+        "步骤"
+      ]
     },
     {
       "id": "M1",
       "type": "misconception",
       "label": "表面理解陷阱",
       "description": "只理解字面意思，不理解深层含义（如把 standard of beauty 理解为「标准美」而非「审美标准」）",
-      "signals": ["字面", "表面", "literal", "don't understand why", "不懂为什么", "beauty = looks"]
+      "signals": [
+        "字面",
+        "表面",
+        "literal",
+        "don't understand why",
+        "不懂为什么",
+        "beauty = looks"
+      ]
     },
     {
       "id": "M2",
       "type": "misconception",
       "label": "证据不足论证",
       "description": "表达立场时不引用文本证据，只给个人感受",
-      "signals": ["I think", "I feel", "我觉得", "没有引用", "no evidence", "personal opinion only"]
+      "signals": [
+        "I think",
+        "I feel",
+        "我觉得",
+        "没有引用",
+        "no evidence",
+        "personal opinion only"
+      ]
     },
     {
       "id": "M3",
       "type": "misconception",
       "label": "细节混淆",
       "description": "混淆不同文化/段落的细节信息（如把 A 文化的做法归给 B 文化）",
-      "signals": ["混淆", "confuse", "wrong place", "wrong culture", "把.*归给", "tattoo.*Maori", "neck ring.*Borneo"]
+      "signals": [
+        "混淆",
+        "confuse",
+        "wrong place",
+        "wrong culture",
+        "把.*归给",
+        "tattoo.*Maori",
+        "neck ring.*Borneo"
+      ]
     },
     {
       "id": "M4",
       "type": "misconception",
       "label": "策略泛化误用",
       "description": "把 scanning 当成精读，或者不理解不同阅读策略的适用场景",
-      "signals": ["read everything", "逐字读", "全部读", "scanning = reading", "skim = scan", "混用策略"]
+      "signals": [
+        "read everything",
+        "逐字读",
+        "全部读",
+        "scanning = reading",
+        "skim = scan",
+        "混用策略"
+      ]
     }
   ]
 }

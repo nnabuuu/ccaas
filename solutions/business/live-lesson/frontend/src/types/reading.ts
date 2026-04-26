@@ -19,12 +19,64 @@ export interface Article {
 export interface ReadingStep {
   id: string
   idx: number
+  type?: 'task' | 'instruction'
   label: string
   labelEn: string
   strategy: string
   duration: number
   description: string
   focusParagraphs: string[]
+  // Task metadata (manifest-driven)
+  exerciseLabel?: string
+  subtitle?: string
+  summary?: string
+  showRoles?: boolean
+  studentView?: {
+    title: string
+    body: string
+    keyPoints?: string[]
+    confirmLabel?: string
+  }
+  discuss?: {
+    probe: { q: string; translate?: string }
+    targetInsight?: string
+    commonMisconceptions?: string[]
+    scaffoldStrategies?: string[]
+    insight: string
+    insightZh?: string
+  }
+  answerKey?: {
+    type: string
+    answers: Array<{
+      questionIdx?: number
+      pairIdx?: number
+      rowIdx?: number
+      correct?: number | string
+      hint?: string
+      hintZh?: string
+      walkthrough?: string
+      walkthroughZh?: string
+      questionText?: string
+      questionTranslate?: string
+      options?: string[]
+      // Matrix fields
+      place?: string
+      isDemo?: boolean
+      practice?: string
+      reason?: string
+      [key: string]: any
+    }>
+    // Shared match options pool
+    options?: string[]
+    // Stance fields
+    stanceQ?: string
+    stanceQZh?: string
+    stanceOpts?: string[]
+    evidence?: string[]
+    // Order fields
+    items?: string[]
+    correctOrder?: number[] | string[]
+  }
 }
 
 // ── Board Data ──
@@ -218,6 +270,67 @@ export interface BoardData {
   blocks: BoardBlock[]
 }
 
+// ── Observation System ──
+
+export interface ObservationAnchor {
+  id: string                    // "K1", "M1", etc.
+  type: 'knowledge' | 'misconception'
+  label: string
+  description: string
+  signals: string[]
+}
+
+export interface StudentEvent {
+  id: string                    // "e1", "e2"
+  timestamp: number
+  updatedAt: number
+  anchors: string[]             // anchor IDs
+  gist: string
+  quote: string | null
+  source: 'llm' | 'system'
+  systemType?: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave'
+  data?: Record<string, unknown>
+}
+
+export interface StudentLog {
+  studentId: string
+  studentName: string
+  events: StudentEvent[]
+  systemMetrics: {
+    messageCount: number
+    lastActiveAt: number
+    exerciseCorrectRate: number
+    currentStep: string
+  }
+}
+
+export type StudentObsStatus = 'active' | 'struggling' | 'stuck' | 'idle' | 'cruising'
+
+export interface Alert {
+  timestamp: number
+  studentName: string
+  studentId: string
+  severity: 'info' | 'warn' | 'urgent'
+  message: string
+  anchorId: string | null
+}
+
+export interface AnchorStats {
+  anchorId: string
+  label: string
+  type: 'knowledge' | 'misconception'
+  studentCount: number
+  latestGist: string
+  updatedAt: number
+}
+
+// ── Phase Config ──
+export interface PhaseConfig {
+  id: string
+  label: string
+  unlockAfter: string | null
+}
+
 // ── Reading Manifest (top-level) ──
 export interface ReadingManifest {
   id: string
@@ -226,8 +339,12 @@ export interface ReadingManifest {
   gradeLevel: string
   teachingNotes?: string
   lessonType: string
+  lessonIntro?: string
+  lessonSummary?: string
   article: Article
   readingSteps: ReadingStep[]
   boardData: BoardData
   cumulativeMinutes: number[]
+  observationAnchors?: ObservationAnchor[]
+  phaseConfig?: PhaseConfig[]
 }
