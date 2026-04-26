@@ -74,7 +74,7 @@ function ListenPhase({ task, onDone, lessonId }: { task: Task; onDone: () => voi
     <div id="phase-listen">
       <div className="stu-section-label"><span>Listen</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 20 }}>
-        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.wav`} />}
+        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
         <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>
           {renderMd(task.intro)}
         </div>
@@ -92,7 +92,7 @@ function TakeawayPhase({ task, onComplete, lessonId }: { task: Task; onComplete:
     <div id="phase-takeaway">
       <div className="stu-section-label"><span>Takeaway</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 16 }}>
-        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.wav`} />}
+        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.mp3`} />}
         <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{renderMd(task.summary)}</div>
       </div>
       <BoardInline taskId={task.id} />
@@ -107,10 +107,11 @@ function TakeawayPhase({ task, onComplete, lessonId }: { task: Task; onComplete:
 function TaskView({ task, onComplete, lessonId }: { task: Task; onComplete: () => void; lessonId?: string }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activePhase, setActivePhase] = useState('listen')
+  const [listenDone, setListenDone] = useState(false)
   const [practiceDone, setPracticeDone] = useState(false)
   const [discussDone, setDiscussDone] = useState(false)
 
-  useEffect(() => { setPracticeDone(false); setDiscussDone(false); setActivePhase('listen') }, [task.id])
+  useEffect(() => { setListenDone(false); setPracticeDone(false); setDiscussDone(false); setActivePhase('listen') }, [task.id])
 
   /* IntersectionObserver for phase tracking */
   useEffect(() => {
@@ -127,52 +128,50 @@ function TaskView({ task, onComplete, lessonId }: { task: Task; onComplete: () =
       PHASE_IDS.forEach(id => { const el = container.querySelector(`#phase-${id}`); if (el) observer.observe(el) })
     }, 100)
     return () => { clearTimeout(t); observer.disconnect() }
-  }, [task.id, practiceDone, discussDone])
+  }, [task.id, listenDone, practiceDone, discussDone])
 
-  const onListenDone = useCallback(() => {
-    setTimeout(() => {
-      const el = scrollRef.current?.querySelector('#phase-practice')
-      if (el) scrollRef.current!.scrollTo({ top: (el as HTMLElement).offsetTop - 10, behavior: 'smooth' })
-    }, 100)
-  }, [])
+  /* Auto-scroll to newly unlocked phase after DOM commits */
+  useEffect(() => {
+    if (!listenDone) return
+    const el = scrollRef.current?.querySelector('#phase-practice')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [listenDone])
 
-  const onPracticeDone = useCallback(() => {
-    if (!practiceDone) {
-      setPracticeDone(true)
-      setTimeout(() => {
-        const el = scrollRef.current?.querySelector('#phase-discuss')
-        if (el) scrollRef.current!.scrollTo({ top: (el as HTMLElement).offsetTop - 50, behavior: 'smooth' })
-      }, 200)
-    }
+  useEffect(() => {
+    if (!practiceDone) return
+    const el = scrollRef.current?.querySelector('#phase-discuss')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [practiceDone])
 
-  const onDiscussDone = useCallback(() => {
-    if (!discussDone) {
-      setDiscussDone(true)
-      setTimeout(() => {
-        const el = scrollRef.current?.querySelector('#phase-takeaway')
-        if (el) scrollRef.current!.scrollTo({ top: (el as HTMLElement).offsetTop - 50, behavior: 'smooth' })
-      }, 200)
-    }
+  useEffect(() => {
+    if (!discussDone) return
+    const el = scrollRef.current?.querySelector('#phase-takeaway')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [discussDone])
 
+  const onListenDone = useCallback(() => { setListenDone(true) }, [])
+  const onPracticeDone = useCallback(() => { setPracticeDone(true) }, [])
+  const onDiscussDone = useCallback(() => { setDiscussDone(true) }, [])
+
   const jumpTo = (phaseId: string) => {
+    if (phaseId === 'practice' && !listenDone) return
     if (phaseId === 'discuss' && !practiceDone) return
     if (phaseId === 'takeaway' && !discussDone) return
     const el = scrollRef.current?.querySelector(`#phase-${phaseId}`)
-    if (el) scrollRef.current!.scrollTo({ top: (el as HTMLElement).offsetTop - 50, behavior: 'smooth' })
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const phaseVisible = (id: string) => {
-    if (id === 'listen' || id === 'practice') return true
+    if (id === 'listen') return true
+    if (id === 'practice') return listenDone
     if (id === 'discuss') return practiceDone
     if (id === 'takeaway') return discussDone
     return false
   }
 
   return (
-    <>
-      {/* Sticky phase jump nav */}
+    <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
+      {/* Sticky phase nav — inside scroll container so scroll-margin-top works */}
       <div className="stu-phase-nav">
         {PHASE_IDS.map((id, i) => {
           const isAct = activePhase === id
@@ -190,27 +189,25 @@ function TaskView({ task, onComplete, lessonId }: { task: Task; onComplete: () =
         })}
       </div>
 
-      {/* Scrollable content */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto' }}>
-        <div className="stu-task-inner">
-          <div style={{ paddingTop: 24 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
-              Task {task.id} · {task.name} — {task.time}
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 8, color: 'var(--t1)' }}>
-              {task.subtitle}
-            </div>
+      <div className="stu-task-inner">
+        <div style={{ paddingTop: 24 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
+            Task {task.id} · {task.name} — {task.time}
           </div>
-          <ListenPhase key={`l${task.id}`} task={task} onDone={onListenDone} lessonId={lessonId} />
-          <PracticePhase key={`p${task.id}`} task={task} onDone={onPracticeDone} />
-          {practiceDone && <DiscussPhase key={`d${task.id}`} task={task} onDone={onDiscussDone} />}
-          {discussDone && <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} />}
-          {!practiceDone && <div className="stu-phase-locked-msg">Complete Practice to unlock Discuss</div>}
-          {practiceDone && !discussDone && <div className="stu-phase-locked-msg">Complete Discuss to unlock Takeaway</div>}
-          <div style={{ height: 80 }} />
+          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-.4px', lineHeight: 1.3, marginBottom: 8, color: 'var(--t1)' }}>
+            {task.subtitle}
+          </div>
         </div>
+        <ListenPhase key={`l${task.id}`} task={task} onDone={onListenDone} lessonId={lessonId} />
+        {listenDone && <PracticePhase key={`p${task.id}`} task={task} onDone={onPracticeDone} />}
+        {!listenDone && <div className="stu-phase-locked-msg">Complete Listen to unlock Practice</div>}
+        {practiceDone && <DiscussPhase key={`d${task.id}`} task={task} onDone={onDiscussDone} />}
+        {listenDone && !practiceDone && <div className="stu-phase-locked-msg">Complete Practice to unlock Discuss</div>}
+        {discussDone && <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} />}
+        {practiceDone && !discussDone && <div className="stu-phase-locked-msg">Complete Discuss to unlock Takeaway</div>}
+        <div style={{ height: 80 }} />
       </div>
-    </>
+    </div>
   )
 }
 
@@ -262,6 +259,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId }: 
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Welcome</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>Ideal Beauty</div>
+            {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-intro.mp3`} />}
             <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(LESSON_INTRO)}</div>
           </div>
           <button className="stu-btn pri" onClick={() => setScreen('1')}>Start Task 1 →</button>
@@ -272,6 +270,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId }: 
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Complete</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>Great job today!</div>
+            {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-summary.mp3`} />}
             <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(LESSON_SUMMARY)}</div>
           </div>
         </div>
