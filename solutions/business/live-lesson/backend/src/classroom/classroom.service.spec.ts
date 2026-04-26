@@ -6,7 +6,12 @@ import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
+import { ObservationEvent } from '../entities/observation-event.entity';
 import { Lesson } from '../entities/lesson.entity';
+import { ObservationService } from './observation.service';
+import { GradingService } from './grading.service';
+import { AiPromptBuilder } from './ai-prompt-builder';
+import { MetricsAggregator } from './metrics-aggregator';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
@@ -95,12 +100,12 @@ const FULL_MANIFEST = {
   ],
 };
 
-// Manifest with a step that has no answerKey
+// Manifest with a step that has no answerKey (but still a task)
 const NO_KEY_MANIFEST = {
   id: 'no-key-lesson',
   title: 'No Key Lesson',
   readingSteps: [
-    { idx: 1, label: 'Reading step', strategy: 'read' },
+    { idx: 1, type: 'task', label: 'Reading step', strategy: 'read' },
   ],
 };
 
@@ -141,13 +146,13 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
-      providers: [ClassroomService],
+      providers: [ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator],
     }).compile();
 
     service = module.get(ClassroomService);
@@ -227,11 +232,10 @@ describe('ClassroomService — persistence', () => {
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
 
-      // Verify progress advanced
+      // Verify progress: test-lesson has only 1 task, so completing it → completed
       const student = await studentRepo.findOne({ where: { id: studentId } });
-      expect(student!.currentTask).toBe(2);
-      expect(student!.currentPhase).toBe('listen');
-      expect(student!.stepStartedAt).toBeDefined();
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('completed');
 
       // Verify score visible in getState
       const state = await service.getState(session.id);
@@ -276,17 +280,18 @@ describe('ClassroomService — persistence', () => {
       // Task 1 (step idx 1) was submitted with score 100
       expect(state.stepMetrics[1].completedCount).toBe(1);
       expect(state.stepMetrics[1].avgScore).toBe(100);
-      // Student advanced to task 2
-      expect(state.stepMetrics[2].currentCount).toBe(1);
+      // test-lesson has only 1 task, so no stepMetrics[2]
+      expect(state.stepMetrics[2]).toBeUndefined();
     });
 
     it('should handle re-join returning existing student with persisted progress', async () => {
       const rejoined = await service.join(session, '测试学生');
       expect(rejoined.studentId).toBe(studentId);
 
-      // Progress should still reflect advanced state
+      // Progress should still reflect completed state (test-lesson has 1 task)
       const student = await studentRepo.findOne({ where: { id: studentId } });
-      expect(student!.currentTask).toBe(2);
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('completed');
     });
 
     it('should handle re-submit updating score', async () => {
@@ -341,6 +346,7 @@ describe('ClassroomService — persistence', () => {
 describe('ClassroomService — extended coverage', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let aiPromptBuilder: AiPromptBuilder;
   let sessionRepo: Repository<ClassroomSession>;
   let studentRepo: Repository<Student>;
   let submissionRepo: Repository<Submission>;
@@ -354,16 +360,17 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
-      providers: [ClassroomService],
+      providers: [ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator],
     }).compile();
 
     service = module.get(ClassroomService);
+    aiPromptBuilder = module.get(AiPromptBuilder);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     studentRepo = module.get(getRepositoryToken(Student));
     submissionRepo = module.get(getRepositoryToken(Submission));
@@ -598,7 +605,7 @@ describe('ClassroomService — extended coverage', () => {
     afterEach(() => jest.restoreAllMocks());
 
     it('should complete full aiAsk flow with mocked callGlm', async () => {
-      jest.spyOn(service as any, 'callGlm').mockResolvedValueOnce(
+      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
         '【概念理解】Skimming是一种快速阅读策略，帮助你抓住文章大意。',
       );
 
@@ -623,7 +630,7 @@ describe('ClassroomService — extended coverage', () => {
     });
 
     it('should fallback gracefully when callGlm throws', async () => {
-      jest.spyOn(service as any, 'callGlm').mockRejectedValueOnce(
+      jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValueOnce(
         new Error('API timeout'),
       );
 
@@ -655,6 +662,10 @@ describe('ClassroomService — extended coverage', () => {
   describe('session lifecycle errors', () => {
     it('should throw NotFoundException for invalid session code', async () => {
       await expect(service.resolveSession('XXXXXX')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException for non-existent UUID', async () => {
+      await expect(service.resolveSession('00000000-0000-0000-0000-000000000000')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for ended session via resolveActiveSession', async () => {
@@ -692,6 +703,36 @@ describe('ClassroomService — extended coverage', () => {
       expect(info.lessonId).toBe('full-lesson');
       expect(info.status).toBe('waiting');
       expect(info.createdAt).toBeDefined();
+    });
+  });
+
+  describe('resolveSession — UUID support', () => {
+    it('should resolve session by UUID (id)', async () => {
+      const created = await service.createSession('full-lesson');
+      const session = await service.resolveSession(created.sessionId);
+      expect(session.id).toBe(created.sessionId);
+      expect(session.code).toBe(created.code);
+    });
+
+    it('should resolve session by 6-char code', async () => {
+      const created = await service.createSession('full-lesson');
+      const session = await service.resolveSession(created.code);
+      expect(session.id).toBe(created.sessionId);
+    });
+
+    it('should return same session for both UUID and code', async () => {
+      const created = await service.createSession('full-lesson');
+      const byUuid = await service.resolveSession(created.sessionId);
+      const byCode = await service.resolveSession(created.code);
+      expect(byUuid.id).toBe(byCode.id);
+    });
+
+    it('should return session info when looked up by UUID', async () => {
+      const created = await service.createSession('full-lesson');
+      const info = await service.getSessionInfo(created.sessionId);
+      expect(info.sessionId).toBe(created.sessionId);
+      expect(info.code).toBe(created.code);
+      expect(info.lessonId).toBe('full-lesson');
     });
   });
 
@@ -840,6 +881,43 @@ describe('ClassroomService — extended coverage', () => {
       });
     });
 
+    describe('quiz attemptCounts passthrough', () => {
+      it('should include attemptCounts in score when provided', async () => {
+        const freshId = (await service.join(session, 'QuizAttemptStudent')).studentId;
+
+        const result = await service.submit(session, freshId, 1, {
+          answers: ['B', 'A'],
+          attemptCounts: { 0: 3, 1: 1 },
+        });
+        expect(result.score.total).toBe(100);
+        expect(result.score.attemptCounts).toEqual({ q0: 3, q1: 1 });
+      });
+
+      it('should not include attemptCounts when not provided', async () => {
+        const freshId = (await service.join(session, 'QuizNoAttempt')).studentId;
+
+        const result = await service.submit(session, freshId, 1, {
+          answers: ['B', 'A'],
+        });
+        expect(result.score.total).toBe(100);
+        expect(result.score.attemptCounts).toBeUndefined();
+      });
+    });
+
+    describe('match attemptCounts passthrough', () => {
+      it('should include attemptCounts in score when provided', async () => {
+        const freshId = (await service.join(session, 'MatchAttemptStudent')).studentId;
+        await advanceToTask(service, session, freshId, 2);
+
+        const result = await service.submit(session, freshId, 3, {
+          pairs: ['skimming', 'scanning', 'inferring'],
+          attemptCounts: { 0: 1, 1: 2, 2: 4 },
+        });
+        expect(result.score.total).toBe(100);
+        expect(result.score.attemptCounts).toEqual({ p0: 1, p1: 2, p2: 4 });
+      });
+    });
+
     describe('no answerKey', () => {
       it('should return null score for step without answerKey', async () => {
         const created = await service.createSession('no-key-lesson');
@@ -857,6 +935,40 @@ describe('ClassroomService — extended coverage', () => {
         expect(sub!.dataJson).toEqual({ text: 'some reading' });
         expect(sub!.scoreJson).toBeNull();
       });
+    });
+  });
+
+  // ── Score guard — submit flow ──
+
+  describe('score guard — submit flow', () => {
+    it('should not advance on wrong answer, then advance on correct resubmit', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'RetryStudent')).studentId;
+
+      // Wrong answer: should NOT advance
+      const wrong = await service.submit(sess!, sid, 1, { answers: ['A', 'B'] });
+      expect(wrong.score.total).toBe(0);
+      expect(wrong.currentTask).toBe(1);
+      expect(wrong.currentPhase).toBe('listen');
+
+      // Correct answer: should advance
+      const correct = await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+      expect(correct.score.total).toBe(100);
+      expect(correct.currentTask).toBe(2);
+      expect(correct.currentPhase).toBe('listen');
+    });
+
+    it('should advance when score is null (no answerKey / open-ended)', async () => {
+      const created = await service.createSession('no-key-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'OpenEndedStudent')).studentId;
+
+      const result = await service.submit(sess!, sid, 1, { text: 'anything' });
+      expect(result.score).toBeNull();
+      // no-key-lesson has only 1 task → completing it marks as completed
+      expect(result.currentTask).toBe(1);
+      expect(result.currentPhase).toBe('completed');
     });
   });
 
@@ -1056,8 +1168,8 @@ describe('ClassroomService — extended coverage', () => {
       expect(state.healthCards.furthest.step).toBe(3);
       expect(state.healthCards.furthest.count).toBe(1); // only A
 
-      // Sorted tasks: [1, 2, 3] → median = 2
-      expect(state.healthCards.median.step).toBe(2);
+      // Sorted tasks: [1, 1, 3] → median = 1 (B doesn't advance with score 0)
+      expect(state.healthCards.median.step).toBe(1);
 
       // No stuck students in this scenario
       expect(state.healthCards.stuck.count).toBe(0);
@@ -1077,7 +1189,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(state.stepMetrics[1].avgScore).toBe(50); // (100+0)/2
 
       expect(state.stepMetrics[2].completedCount).toBe(1); // A
-      expect(state.stepMetrics[2].currentCount).toBe(1); // B at task 2
+      expect(state.stepMetrics[2].currentCount).toBe(0); // B stays at task 1 (score 0)
     });
 
     // ── G1: quality.cols with human-readable dimension names ──
@@ -1248,6 +1360,130 @@ describe('ClassroomService — extended coverage', () => {
 
       const state = await service.getState(sess!.id);
       expect(state.stepMetrics[1].alertTag).toBeNull();
+    });
+  });
+
+  // ── attemptMetrics aggregation ──
+
+  describe('teacher dashboard — attemptMetrics', () => {
+    it('should aggregate avgAttempts and walkthroughRate from attemptCounts', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // Student A: Q1 took 3 tries (walkthrough), Q2 took 1 try
+      const sidA = (await service.join(sess!, 'AttemptA')).studentId;
+      await service.submit(sess!, sidA, 1, {
+        answers: ['B', 'A'],
+        attemptCounts: { 0: 3, 1: 1 },
+      });
+
+      // Student B: Q1 took 1 try, Q2 took 2 tries (walkthrough)
+      const sidB = (await service.join(sess!, 'AttemptB')).studentId;
+      await service.submit(sess!, sidB, 1, {
+        answers: ['B', 'A'],
+        attemptCounts: { 0: 1, 1: 2 },
+      });
+
+      const state = await service.getState(sess!.id);
+      const am = state.stepMetrics[1].attemptMetrics;
+      expect(am).toBeDefined();
+
+      // Q1 label from manifest: answerKey.answers[0] has no label → fallback "Q1"
+      // avgAttempts Q1: (3+1)/2 = 2.0, walkthroughRate: 1/2 = 50%
+      // avgAttempts Q2: (1+2)/2 = 1.5, walkthroughRate: 1/2 = 50%
+      const q1 = am['Q1'];
+      expect(q1).toBeDefined();
+      expect(q1.avgAttempts).toBe(2);
+      expect(q1.walkthroughRate).toBe(50);
+
+      const q2 = am['Q2'];
+      expect(q2).toBeDefined();
+      expect(q2.avgAttempts).toBe(1.5);
+      expect(q2.walkthroughRate).toBe(50);
+    });
+
+    it('should show empty attemptMetrics when no attemptCounts provided', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      const sid = (await service.join(sess!, 'NoAttemptData')).studentId;
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+
+      const state = await service.getState(sess!.id);
+      expect(state.stepMetrics[1].attemptMetrics).toEqual({});
+    });
+
+    it('should trigger walkthroughRate alertTag when >= 50%', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 2 students both need walkthrough on Q1 (attempts >= 2)
+      for (const name of ['WtA', 'WtB']) {
+        const sid = (await service.join(sess!, name)).studentId;
+        await service.submit(sess!, sid, 1, {
+          answers: ['B', 'A'],
+          attemptCounts: { 0: 3, 1: 1 },
+        });
+      }
+
+      const state = await service.getState(sess!.id);
+      // Q1 walkthroughRate = 100% >= 50% → alertTag
+      expect(state.stepMetrics[1].alertTag).toMatch(/半数需提示/);
+    });
+
+    it('should default to 1 when attemptCounts key is missing for a question', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'PartialKeys')).studentId;
+
+      // attemptCounts only has key 0, missing key 1 → backend should fallback to 1
+      const result = await service.submit(sess!, sid, 1, {
+        answers: ['B', 'A'],
+        attemptCounts: { 0: 4 },
+      });
+      expect(result.score.attemptCounts).toEqual({ q0: 4, q1: 1 });
+    });
+
+    it('should prefer 错误偏高 over 半数需提示 (priority 2 > 2.5)', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // 3 students all get Q1 wrong AND have high attempts → both alerts qualify
+      for (const name of ['PrioA', 'PrioB', 'PrioC']) {
+        const sid = (await service.join(sess!, name)).studentId;
+        await service.submit(sess!, sid, 1, {
+          answers: ['C', 'A'], // Q1 wrong → wrong=100%
+          attemptCounts: { 0: 5, 1: 1 }, // Q1 walkthrough
+        });
+      }
+
+      const state = await service.getState(sess!.id);
+      // wrong >= 30% fires first (priority 2), not 半数需提示 (priority 2.5)
+      expect(state.stepMetrics[1].alertTag).toMatch(/错误偏高/);
+    });
+
+    it('should aggregate only students who sent attemptCounts', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+      // Student A: sends attemptCounts
+      const sidA = (await service.join(sess!, 'WithAttempts')).studentId;
+      await service.submit(sess!, sidA, 1, {
+        answers: ['B', 'A'],
+        attemptCounts: { 0: 4, 1: 2 },
+      });
+
+      // Student B: no attemptCounts (legacy client)
+      const sidB = (await service.join(sess!, 'NoAttempts')).studentId;
+      await service.submit(sess!, sidB, 1, {
+        answers: ['B', 'A'],
+      });
+
+      const state = await service.getState(sess!.id);
+      const am = state.stepMetrics[1].attemptMetrics;
+      // Only student A counted → avgAttempts = 4/1, not (4+0)/2
+      expect(am['Q1'].avgAttempts).toBe(4);
+      expect(am['Q2'].avgAttempts).toBe(2);
     });
   });
 
@@ -1639,14 +1875,12 @@ describe('ClassroomService — extended coverage', () => {
       expect(student!.stepHistory[1].result).toBe('correct');
       expect(student!.stepHistory[1].time).toMatch(/^\d+:\d{2}$/);
 
-      // Task 2: done, partial (not 100)
-      expect(student!.stepHistory[2].status).toBe('done');
+      // Task 2: still current (failed submission), result attached
+      expect(['prog', 'reading']).toContain(student!.stepHistory[2].status);
       expect(student!.stepHistory[2].result).toBe('partial');
 
-      // Task 3: current step (prog or reading)
-      expect(['prog', 'reading']).toContain(student!.stepHistory[3].status);
-
-      // Tasks 4 and 5: future
+      // Tasks 3-5: future (task 2 wrong answer → student stays at task 2)
+      expect(student!.stepHistory[3].status).toBe('future');
       expect(student!.stepHistory[4].status).toBe('future');
       expect(student!.stepHistory[5].status).toBe('future');
     });
@@ -1674,9 +1908,12 @@ describe('ClassroomService — extended coverage', () => {
 
       await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
       await service.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await service.submit(sess!, sid, 5, { rows: [{ place: 'Borneo', practice: 'tā moko', reason: 'identity' }] });
-      await service.submit(sess!, sid, 7, { position: 'yes', evidence: ['ev1', 'ev2'] });
-      await service.submit(sess!, sid, 9, { order: ['Predict', 'Skim', 'Scan', 'Evaluate', 'Wrap-up'] });
+      await service.submit(sess!, sid, 5, { rows: [
+        { place: 'Japan', practice: 'meditation', reason: 'focus' },
+        { place: 'India', practice: 'yoga', reason: 'flexibility' },
+      ] });
+      await service.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await service.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
 
       const state = await service.getState(sess!.id);
       const student = state.students.find((s: any) => s.id === sid);
@@ -1685,5 +1922,860 @@ describe('ClassroomService — extended coverage', () => {
         expect(student!.stepHistory[t].status).toBe('done');
       }
     });
+  });
+
+  // ── Student-Teacher linkage: score guard + dashboard consistency ──
+
+  describe('student-teacher linkage — score guard integration', () => {
+    /**
+     * Core scenario: one session, 3 students at different stages.
+     * After each student action, verify teacher getState() reflects the
+     * correct currentTask, status, stepHistory, metrics, and healthCards.
+     */
+
+    let session: ClassroomSession;
+    let alice: string, bob: string, carol: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      alice = (await service.join(session, 'Alice')).studentId;
+      bob = (await service.join(session, 'Bob')).studentId;
+      carol = (await service.join(session, 'Carol')).studentId;
+    });
+
+    // ─── Phase 1: all students fresh, no submissions ───
+
+    it('P1: teacher sees 3 students all at task 1 / reading before any submissions', async () => {
+      const state = await service.getState(session.id);
+      expect(state.students).toHaveLength(3);
+
+      for (const s of state.students) {
+        expect(s.currentTask).toBe(1);
+        expect(s.currentPhase).toBe('listen');
+        expect(s.status).toBe('reading');
+        // All 5 steps: task 1 = reading/prog, tasks 2-5 = future
+        expect(['reading', 'prog']).toContain(s.stepHistory[1].status);
+        for (let t = 2; t <= 5; t++) {
+          expect(s.stepHistory[t].status).toBe('future');
+        }
+      }
+
+      // Metrics: nobody completed anything
+      expect(state.stepMetrics[1].completedCount).toBe(0);
+      expect(state.stepMetrics[1].currentCount).toBe(3);
+      expect(state.healthCards.furthest.step).toBe(1);
+      expect(state.healthCards.median.step).toBe(1);
+    });
+
+    // ─── Phase 2: Alice submits wrong → no advancement ───
+
+    it('P2: Alice submits wrong — response shows no advancement', async () => {
+      const res = await service.submit(session, alice, 1, { answers: ['A', 'B'] });
+      expect(res.score.total).toBe(0);
+      expect(res.currentTask).toBe(1);
+      expect(res.currentPhase).toBe('listen');
+    });
+
+    it('P2: teacher sees Alice still at task 1 with failed result, others unchanged', async () => {
+      const state = await service.getState(session.id);
+      const a = state.students.find((s: any) => s.id === alice);
+
+      // Alice: still at task 1 despite submission
+      expect(a!.currentTask).toBe(1);
+      expect(a!.status).toBe('reading'); // listen phase = reading
+      // stepHistory[1] should show current step with failed result attached
+      expect(['prog', 'reading']).toContain(a!.stepHistory[1].status);
+      expect(a!.stepHistory[1].result).toBe('wrong');
+
+      // Submission is recorded even though progress didn't advance
+      expect(a!.submissions[1]).toBeDefined();
+      expect(a!.submissions[1].result).toBe('wrong');
+
+      // stepMetrics: 1 completed (Alice submitted), but she's still current too
+      // completedCount counts submissions, currentCount counts students without submissions at this task
+      expect(state.stepMetrics[1].completedCount).toBe(1);
+      expect(state.stepMetrics[1].currentCount).toBe(2); // Bob + Carol
+      expect(state.stepMetrics[1].avgScore).toBe(0);
+
+      // healthCards: everyone still at task 1
+      expect(state.healthCards.furthest.step).toBe(1);
+      expect(state.healthCards.median.step).toBe(1);
+    });
+
+    // ─── Phase 3: Alice retries with correct answer → advances ───
+
+    it('P3: Alice retries correct — response shows advancement to task 2', async () => {
+      const res = await service.submit(session, alice, 1, { answers: ['B', 'A'] });
+      expect(res.score.total).toBe(100);
+      expect(res.currentTask).toBe(2);
+      expect(res.currentPhase).toBe('listen');
+    });
+
+    it('P3: teacher sees Alice at task 2, submission overwritten to correct', async () => {
+      const state = await service.getState(session.id);
+      const a = state.students.find((s: any) => s.id === alice);
+
+      expect(a!.currentTask).toBe(2);
+      expect(a!.status).toBe('reading');
+      // stepHistory[1] is now done/correct (advanced past it)
+      expect(a!.stepHistory[1].status).toBe('done');
+      expect(a!.stepHistory[1].result).toBe('correct');
+      // stepHistory[2] is current
+      expect(['reading', 'prog']).toContain(a!.stepHistory[2].status);
+
+      // stepMetrics[1]: score is now 100 (overwrite replaces previous submission)
+      expect(state.stepMetrics[1].completedCount).toBe(1);
+      expect(state.stepMetrics[1].avgScore).toBe(100);
+
+      // healthCards: Alice at task 2, Bob/Carol at task 1
+      expect(state.healthCards.furthest.step).toBe(2);
+      expect(state.healthCards.median.step).toBe(1); // [1, 1, 2] → median = 1
+    });
+
+    // ─��─ Phase 4: Bob submits perfect → advances; Carol submits wrong → stays ───
+
+    it('P4: Bob perfect + Carol wrong — divergent outcomes', async () => {
+      const bobRes = await service.submit(session, bob, 1, { answers: ['B', 'A'] });
+      expect(bobRes.score.total).toBe(100);
+      expect(bobRes.currentTask).toBe(2);
+
+      const carolRes = await service.submit(session, carol, 1, { answers: ['B', 'B'] });
+      expect(carolRes.score.total).toBe(50); // Q1 correct, Q2 wrong
+      expect(carolRes.currentTask).toBe(1); // blocked
+    });
+
+    it('P4: teacher dashboard reflects divergent student states', async () => {
+      const state = await service.getState(session.id);
+      const a = state.students.find((s: any) => s.id === alice);
+      const b = state.students.find((s: any) => s.id === bob);
+      const c = state.students.find((s: any) => s.id === carol);
+
+      expect(a!.currentTask).toBe(2);
+      expect(b!.currentTask).toBe(2);
+      expect(c!.currentTask).toBe(1); // stuck on task 1
+
+      // stepMetrics[1]: all 3 submitted
+      expect(state.stepMetrics[1].completedCount).toBe(3);
+      // avgScore: (100 + 100 + 50) / 3 = 83.33 → round → 83
+      expect(state.stepMetrics[1].avgScore).toBe(83);
+      // completion rate: 3/3 = 100% (submitted, not necessarily advanced)
+      expect(state.stepMetrics[1].completionRate).toBe(100);
+
+      // byDimension: Q1 all correct, Q2 has one wrong (Carol: B instead of A)
+      expect(state.stepMetrics[1].byDimension['Q1'].good).toBe(100);
+      expect(state.stepMetrics[1].byDimension['Q2'].wrong).toBeGreaterThan(0);
+
+      // healthCards: [2, 2, 1] → median = 2, furthest = 2
+      expect(state.healthCards.furthest.step).toBe(2);
+      expect(state.healthCards.furthest.count).toBe(2); // Alice + Bob
+      expect(state.healthCards.median.step).toBe(2); // sorted [1,2,2]→ idx 1 = 2
+
+      // Carol's stepHistory: task 1 shows current with partial result
+      expect(['prog', 'reading']).toContain(c!.stepHistory[1].status);
+      expect(c!.stepHistory[1].result).toBe('partial');
+      expect(c!.stepHistory[2].status).toBe('future');
+    });
+
+    // ─── Phase 5: Alice races ahead to task 4, Bob at task 2, Carol fixes task 1 ───
+
+    it('P5: Alice advances to task 4, Carol retries task 1 correctly', async () => {
+      // Alice: task 2 perfect, task 3 perfect → reaches task 4
+      await service.submit(session, alice, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      const aliceRes = await service.submit(session, alice, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      expect(aliceRes.currentTask).toBe(4);
+
+      // Carol: retry task 1 with correct answers
+      const carolRes = await service.submit(session, carol, 1, { answers: ['B', 'A'] });
+      expect(carolRes.score.total).toBe(100);
+      expect(carolRes.currentTask).toBe(2);
+    });
+
+    it('P5: teacher sees wide spread — healthCards reflect gap', async () => {
+      const state = await service.getState(session.id);
+      const a = state.students.find((s: any) => s.id === alice);
+      const b = state.students.find((s: any) => s.id === bob);
+      const c = state.students.find((s: any) => s.id === carol);
+
+      expect(a!.currentTask).toBe(4);
+      expect(b!.currentTask).toBe(2);
+      expect(c!.currentTask).toBe(2);
+
+      // Alice done steps 1-3, currently on 4
+      expect(a!.stepHistory[1].status).toBe('done');
+      expect(a!.stepHistory[2].status).toBe('done');
+      expect(a!.stepHistory[3].status).toBe('done');
+      expect(['reading', 'prog']).toContain(a!.stepHistory[4].status);
+      expect(a!.stepHistory[5].status).toBe('future');
+
+      // [4, 2, 2] → sorted [2, 2, 4]
+      expect(state.healthCards.furthest.step).toBe(4);
+      expect(state.healthCards.furthest.count).toBe(1);
+      expect(state.healthCards.median.step).toBe(2);
+
+      // stepMetrics[3]: only Alice completed
+      expect(state.stepMetrics[3].completedCount).toBe(1);
+      expect(state.stepMetrics[3].avgScore).toBe(100);
+    });
+
+    // ─── Phase 6: all complete → teacher sees all done ───
+
+    it('P6: all students complete all tasks', async () => {
+      // Bob: complete tasks 2-5
+      await service.submit(session, bob, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await service.submit(session, bob, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      await service.submit(session, bob, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await service.submit(session, bob, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+
+      // Carol: complete tasks 2-5
+      await service.submit(session, carol, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await service.submit(session, carol, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      await service.submit(session, carol, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await service.submit(session, carol, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+
+      // Alice: complete tasks 4-5
+      await service.submit(session, alice, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await service.submit(session, alice, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+    });
+
+    it('P6: teacher sees all students done with correct metrics', async () => {
+      const state = await service.getState(session.id);
+
+      for (const s of state.students) {
+        expect(s.currentPhase).toBe('completed');
+        expect(s.status).toBe('done');
+        for (let t = 1; t <= 5; t++) {
+          expect(s.stepHistory[t].status).toBe('done');
+        }
+      }
+
+      // All 5 steps: 3 students completed each
+      for (let t = 1; t <= 5; t++) {
+        expect(state.stepMetrics[t].completedCount).toBe(3);
+        expect(state.stepMetrics[t].completionRate).toBe(100);
+      }
+
+      expect(state.healthCards.furthest.step).toBe(5);
+      expect(state.healthCards.median.step).toBe(5);
+      expect(state.healthCards.stuck.count).toBe(0);
+    });
+  });
+
+  describe('student-teacher linkage — partial score edge cases', () => {
+    it('match step: 2/3 correct → score 67, no advancement; 3/3 → advances', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'MatchStudent')).studentId;
+
+      // Advance to task 2 first
+      await advanceToTask(service, sess!, sid, 2);
+
+      // 2/3 correct → ~67 → blocked
+      const partial = await service.submit(sess!, sid, 3, {
+        pairs: ['skimming', 'wrong', 'inferring'],
+      });
+      expect(partial.score.total).toBe(67);
+      expect(partial.currentTask).toBe(2);
+
+      // Teacher: student still at task 2 with partial result
+      const state1 = await service.getState(sess!.id);
+      const s1 = state1.students.find((s: any) => s.id === sid);
+      expect(s1!.currentTask).toBe(2);
+      expect(['prog', 'reading']).toContain(s1!.stepHistory[2].status);
+      expect(s1!.stepHistory[2].result).toBe('partial');
+
+      // Fix and resubmit
+      const correct = await service.submit(sess!, sid, 3, {
+        pairs: ['skimming', 'scanning', 'inferring'],
+      });
+      expect(correct.score.total).toBe(100);
+      expect(correct.currentTask).toBe(3);
+
+      // Teacher: student advanced
+      const state2 = await service.getState(sess!.id);
+      const s2 = state2.students.find((s: any) => s.id === sid);
+      expect(s2!.currentTask).toBe(3);
+      expect(s2!.stepHistory[2].status).toBe('done');
+      expect(s2!.stepHistory[2].result).toBe('correct');
+    });
+
+    it('matrix step: partial answers → blocked; full correct → advances', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'MatrixStudent')).studentId;
+
+      await advanceToTask(service, sess!, sid, 3);
+
+      // Only 1 of 2 rows, wrong content → score ≈ 0
+      const partial = await service.submit(sess!, sid, 5, {
+        rows: [{ place: 'Narnia', practice: 'magic', reason: 'fun' }],
+      });
+      expect(partial.score.total).toBeLessThan(100);
+      expect(partial.currentTask).toBe(3);
+
+      // Correct both rows
+      const correct = await service.submit(sess!, sid, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      expect(correct.score.total).toBe(100);
+      expect(correct.currentTask).toBe(4);
+
+      // Teacher: task 3 shows done/correct in stepHistory
+      const state = await service.getState(sess!.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.stepHistory[3].status).toBe('done');
+      expect(s!.stepHistory[3].result).toBe('correct');
+    });
+
+    it('stance step: valid position but too few evidence → 50, blocked', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'StanceStudent')).studentId;
+
+      await advanceToTask(service, sess!, sid, 4);
+
+      // Only 1 evidence item (min is 2)
+      const partial = await service.submit(sess!, sid, 7, {
+        position: 'agree', evidence: ['only_one'],
+      });
+      expect(partial.score.total).toBe(50);
+      expect(partial.currentTask).toBe(4);
+
+      // Teacher: student at task 4 with partial result
+      const state = await service.getState(sess!.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.stepHistory[4].result).toBe('partial');
+      expect(['prog', 'reading']).toContain(s!.stepHistory[4].status);
+    });
+
+    it('order step: wrong order → blocked; correct order → completed', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'OrderStudent')).studentId;
+
+      await advanceToTask(service, sess!, sid, 5);
+
+      // Wrong order
+      const wrong = await service.submit(sess!, sid, 9, {
+        order: ['Conclusion', 'Body', 'Introduction'],
+      });
+      expect(wrong.score.total).toBeLessThan(100);
+      expect(wrong.currentTask).toBe(5);
+      expect(wrong.currentPhase).not.toBe('completed');
+
+      // Correct order → completed
+      const correct = await service.submit(sess!, sid, 9, {
+        order: ['Introduction', 'Body', 'Conclusion'],
+      });
+      expect(correct.score.total).toBe(100);
+      expect(correct.currentTask).toBe(5);
+      expect(correct.currentPhase).toBe('completed');
+
+      // Teacher: student is done
+      const state = await service.getState(sess!.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.status).toBe('done');
+      expect(s!.stepHistory[5].status).toBe('done');
+      expect(s!.stepHistory[5].result).toBe('correct');
+    });
+  });
+
+  describe('student-teacher linkage — multi-student metrics accuracy', () => {
+    it('byDimension correctly aggregates wrong answers from blocked students', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const s1 = (await service.join(sess!, 'DimStudent1')).studentId;
+      const s2 = (await service.join(sess!, 'DimStudent2')).studentId;
+      const s3 = (await service.join(sess!, 'DimStudent3')).studentId;
+
+      // S1: both correct
+      await service.submit(sess!, s1, 1, { answers: ['B', 'A'] });
+      // S2: Q1 wrong, Q2 correct
+      await service.submit(sess!, s2, 1, { answers: ['A', 'A'] });
+      // S3: Q1 correct, Q2 wrong
+      await service.submit(sess!, s3, 1, { answers: ['B', 'B'] });
+
+      const state = await service.getState(sess!.id);
+      const task1 = state.stepMetrics[1];
+
+      // Q1: 2 good (S1, S3), 1 wrong (S2) → good=67%, wrong=33%
+      expect(task1.byDimension['Q1'].good).toBe(67);
+      expect(task1.byDimension['Q1'].wrong).toBe(33);
+
+      // Q2: 2 good (S1, S2), 1 wrong (S3) → good=67%, wrong=33%
+      expect(task1.byDimension['Q2'].good).toBe(67);
+      expect(task1.byDimension['Q2'].wrong).toBe(33);
+
+      // S1 advanced (100), S2 and S3 blocked (50 each)
+      const st1 = state.students.find((s: any) => s.id === s1);
+      const st2 = state.students.find((s: any) => s.id === s2);
+      const st3 = state.students.find((s: any) => s.id === s3);
+      expect(st1!.currentTask).toBe(2);
+      expect(st2!.currentTask).toBe(1);
+      expect(st3!.currentTask).toBe(1);
+
+      // avgScore: (100 + 50 + 50) / 3 = 67
+      expect(task1.avgScore).toBe(67);
+    });
+
+    it('stepMetrics counts are correct when some students skip ahead and others are blocked', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const fast = (await service.join(sess!, 'FastStudent')).studentId;
+      const slow = (await service.join(sess!, 'SlowStudent')).studentId;
+      const stuck = (await service.join(sess!, 'StuckStudent')).studentId;
+
+      // Fast: completes tasks 1-3
+      await advanceToTask(service, sess!, fast, 4);
+      // Slow: completes task 1 only
+      await service.submit(sess!, slow, 1, { answers: ['B', 'A'] });
+      // Stuck: fails task 1
+      await service.submit(sess!, stuck, 1, { answers: ['A', 'B'] });
+
+      const state = await service.getState(sess!.id);
+
+      // Task 1: all 3 submitted (completedCount=3), 0 currently at task 1 without submission
+      // But stuck student submitted and is still at task 1 — the count logic:
+      // completedCount = students with submission for this step
+      // currentCount = students at this task WITHOUT submission
+      expect(state.stepMetrics[1].completedCount).toBe(3);
+      expect(state.stepMetrics[1].currentCount).toBe(0);
+
+      // Task 2: only fast submitted, slow is current (no submission), stuck is below
+      expect(state.stepMetrics[2].completedCount).toBe(1);
+      expect(state.stepMetrics[2].currentCount).toBe(1); // slow at task 2
+
+      // Task 3: only fast submitted
+      expect(state.stepMetrics[3].completedCount).toBe(1);
+      expect(state.stepMetrics[3].currentCount).toBe(0);
+
+      // Task 4: nobody submitted, fast is current
+      expect(state.stepMetrics[4].completedCount).toBe(0);
+      expect(state.stepMetrics[4].currentCount).toBe(1); // fast at task 4
+
+      // healthCards: [4, 2, 1] → sorted [1, 2, 4]
+      expect(state.healthCards.furthest.step).toBe(4);
+      expect(state.healthCards.median.step).toBe(2);
+    });
+  });
+
+  describe('student-teacher linkage — open-ended / no-rubric steps', () => {
+    it('open-ended step always advances (null score)', async () => {
+      const created = await service.createSession('no-key-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'OpenStudent')).studentId;
+
+      const res = await service.submit(sess!, sid, 1, { text: 'my reflection' });
+      expect(res.score).toBeNull();
+      // no-key-lesson has only 1 task → completing it marks as completed
+      expect(res.currentTask).toBe(1);
+      expect(res.currentPhase).toBe('completed');
+
+      // Teacher: student completed, submission recorded
+      const state = await service.getState(sess!.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentTask).toBe(1);
+      expect(s!.submissions[1]).toBeDefined();
+      expect(s!.submissions[1].score).toBeNull();
+    });
+  });
+
+  describe('student-teacher linkage — SSE broadcast triggers', () => {
+    it('submit (wrong or correct) triggers broadcast — teacher SSE gets updated state', async () => {
+      const created = await service.createSession('full-lesson');
+      const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await service.join(sess!, 'SSEStudent')).studentId;
+
+      // Track broadcasts via SSE mock
+      const writtenChunks: string[] = [];
+      let resolveWrite: () => void;
+      const mockRes = {
+        setHeader: jest.fn(),
+        flushHeaders: jest.fn(),
+        write: jest.fn((chunk: string) => {
+          writtenChunks.push(chunk);
+          if (resolveWrite) resolveWrite();
+        }),
+        on: jest.fn(),
+      };
+      service.subscribe(created.sessionId, mockRes as any);
+
+      // Wait for initial state push
+      await new Promise<void>(r => { resolveWrite = r; });
+      const initialChunkCount = writtenChunks.length;
+
+      // Wrong answer — should still trigger broadcast
+      let broadcastReceived = new Promise<void>(r => { resolveWrite = r; });
+      await service.submit(sess!, sid, 1, { answers: ['A', 'B'] });
+      await broadcastReceived;
+      expect(writtenChunks.length).toBeGreaterThan(initialChunkCount);
+
+      // Parse broadcast: student still at task 1
+      const afterWrong = writtenChunks.length;
+      const wrongPayload = JSON.parse(
+        writtenChunks[afterWrong - 1].replace(/^data: /, '').replace(/\n\n$/, ''),
+      );
+      const studentInWrongBroadcast = wrongPayload.students.find((s: any) => s.id === sid);
+      expect(studentInWrongBroadcast.currentTask).toBe(1);
+
+      // Correct answer — triggers another broadcast
+      broadcastReceived = new Promise<void>(r => { resolveWrite = r; });
+      await service.submit(sess!, sid, 1, { answers: ['B', 'A'] });
+      await broadcastReceived;
+      expect(writtenChunks.length).toBeGreaterThan(afterWrong);
+
+      // Parse: student now at task 2
+      const correctPayload = JSON.parse(
+        writtenChunks[writtenChunks.length - 1].replace(/^data: /, '').replace(/\n\n$/, ''),
+      );
+      const studentInCorrectBroadcast = correctPayload.students.find((s: any) => s.id === sid);
+      expect(studentInCorrectBroadcast.currentTask).toBe(2);
+
+      // Cleanup SSE
+      const closeHandler = mockRes.on.mock.calls.find((c: any) => c[0] === 'close')?.[1];
+      if (closeHandler) closeHandler();
+    });
+  });
+
+  // ── Gap 1: Cross-step submission guard ──
+
+  describe('cross-step submission guard', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await service.join(session, 'CrossStepStudent')).studentId;
+    });
+
+    it('should NOT skip ahead when task-1 student submits step 9 with perfect answer', async () => {
+      // Student at task 1 submits step 9 (task 5) with correct answer
+      const res = await service.submit(session, sid, 9, {
+        order: ['Introduction', 'Body', 'Conclusion'],
+      });
+      // Submission saved and graded
+      expect(res.score.total).toBe(100);
+      // But student stays at task 1
+      expect(res.currentTask).toBe(1);
+      expect(res.currentPhase).toBe('listen');
+    });
+
+    it('should NOT skip ahead when task-1 student submits step 9 with wrong answer', async () => {
+      const res = await service.submit(session, sid, 9, {
+        order: ['Conclusion', 'Body', 'Introduction'],
+      });
+      expect(res.score.total).toBeLessThan(100);
+      expect(res.currentTask).toBe(1);
+      expect(res.currentPhase).toBe('listen');
+    });
+
+    it('should still persist cross-step submissions in DB', async () => {
+      const sub = await submissionRepo.findOne({
+        where: { sessionId: session.id, studentId: sid, step: 9 },
+      });
+      expect(sub).not.toBeNull();
+      expect(sub!.scoreJson).toBeDefined();
+    });
+
+    it('should advance normally when submitting the current task step', async () => {
+      const res = await service.submit(session, sid, 1, { answers: ['B', 'A'] });
+      expect(res.score.total).toBe(100);
+      expect(res.currentTask).toBe(2);
+      expect(res.currentPhase).toBe('listen');
+    });
+  });
+
+  // ── Gap 2: Re-submit lower score does not regress progress ──
+
+  describe('re-submit lower score — no progress regression', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await service.join(session, 'ResubmitStudent')).studentId;
+
+      // Pass task 1 → advance to task 2
+      await service.submit(session, sid, 1, { answers: ['B', 'A'] });
+    });
+
+    it('student should be at task 2 after passing task 1', async () => {
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
+    });
+
+    it('re-submitting step 1 with wrong answer should NOT regress to task 1', async () => {
+      const res = await service.submit(session, sid, 1, { answers: ['A', 'B'] });
+      expect(res.score.total).toBe(0);
+      // Still at task 2
+      expect(res.currentTask).toBe(2);
+      expect(res.currentPhase).toBe('listen');
+    });
+
+    it('DB submission should be overwritten with new (lower) score', async () => {
+      const sub = await submissionRepo.findOne({
+        where: { sessionId: session.id, studentId: sid, step: 1 },
+      });
+      expect(sub).not.toBeNull();
+      expect(sub!.scoreJson.total).toBe(0);
+    });
+
+    it('teacher getState() stepHistory[1] still shows done (currentTask > 1)', async () => {
+      const state = await service.getState(session.id);
+      const student = state.students.find((s: any) => s.id === sid);
+      // currentTask=2 > task 1, so stepHistory[1] should be 'done'
+      expect(student.stepHistory[1].status).toBe('done');
+    });
+
+    it('teacher stepMetrics[1].avgScore reflects latest (lower) score', async () => {
+      const state = await service.getState(session.id);
+      expect(state.stepMetrics[1].avgScore).toBe(0);
+    });
+  });
+
+  // ── Gap 3: Failed submission does not update stepStartedAt ──
+
+  describe('stepStartedAt — only updated on task advancement', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await service.join(session, 'TimingStudent')).studentId;
+
+      // Advance to task 2
+      await service.submit(session, sid, 1, { answers: ['B', 'A'] });
+    });
+
+    it('wrong answer on task 2 should NOT change stepStartedAt', async () => {
+      const before = await studentRepo.findOne({ where: { id: sid } });
+      const t0 = before!.stepStartedAt;
+      expect(t0).toBeDefined();
+
+      // Small delay to ensure timestamps would differ
+      await new Promise(r => setTimeout(r, 10));
+
+      await service.submit(session, sid, 3, { pairs: ['wrong', 'wrong', 'wrong'] });
+
+      const after = await studentRepo.findOne({ where: { id: sid } });
+      expect(after!.currentTask).toBe(2); // not advanced
+      expect(after!.stepStartedAt).toBe(t0); // unchanged
+    });
+
+    it('correct answer on task 2 should update stepStartedAt on advancement', async () => {
+      const before = await studentRepo.findOne({ where: { id: sid } });
+      const t0 = before!.stepStartedAt;
+
+      await new Promise(r => setTimeout(r, 10));
+
+      await service.submit(session, sid, 3, {
+        pairs: ['skimming', 'scanning', 'inferring'],
+      });
+
+      const after = await studentRepo.findOne({ where: { id: sid } });
+      expect(after!.currentTask).toBe(3); // advanced
+      expect(after!.stepStartedAt).not.toBe(t0); // updated
+    });
+  });
+
+  // ── Gap 4: allDone status with synthetic submissions ──
+
+  describe('computeStudentStatus — allDone with non-sequential submissions', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('full-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await service.join(session, 'SyntheticStudent')).studentId;
+
+      // Directly insert 5 submissions into DB (bypassing submit flow)
+      for (const step of [1, 3, 5, 7, 9]) {
+        await submissionRepo.save(
+          submissionRepo.create({
+            sessionId: session.id,
+            lessonId: session.lessonId,
+            studentId: sid,
+            step,
+            dataJson: { synthetic: true },
+            scoreJson: { total: 0 },
+          }),
+        );
+      }
+      // Student remains at currentTask=1, currentPhase='listen'
+    });
+
+    it('student should still be at task 1 despite 5 DB submissions', async () => {
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('listen');
+    });
+
+    it('getState allDone check returns done — documents known assumption', async () => {
+      // With the cross-step guard, this path is unreachable in normal flow.
+      // But if submissions are injected directly into DB, allDone triggers 'done'
+      // even though student.currentPhase !== 'completed'.
+      // This is a known assumption documented in computeStudentStatus.
+      const state = await service.getState(session.id);
+      const student = state.students.find((s: any) => s.id === sid);
+      // allDone fires because all 5 submissions exist — this documents the behavior
+      expect(student.status).toBe('done');
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// 3-task lesson — verifies dynamic TaskMap (no hardcoded 5-task assumption)
+// ════════════════════════════════════════════════════════════════
+
+const THREE_TASK_MANIFEST = {
+  id: 'three-task-lesson',
+  title: 'Three Task Lesson',
+  readingSteps: [
+    {
+      idx: 0, type: 'task', label: 'T1', strategy: 'quiz',
+      answerKey: { type: 'quiz', answers: [{ questionIdx: 0, correct: 'A' }] },
+    },
+    {
+      idx: 2, type: 'task', label: 'T2', strategy: 'quiz',
+      answerKey: { type: 'quiz', answers: [{ questionIdx: 0, correct: 'B' }] },
+    },
+    {
+      idx: 4, type: 'task', label: 'T3', strategy: 'quiz',
+      answerKey: { type: 'quiz', answers: [{ questionIdx: 0, correct: 'C' }] },
+    },
+  ],
+};
+
+describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let studentRepo: Repository<Student>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
+      ],
+      providers: [ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    studentRepo = module.get(getRepositoryToken(Student));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'three-task-lesson',
+        title: 'Three Task Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(THREE_TASK_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('should advance through 3 tasks and complete on last', async () => {
+    const created = await service.createSession('three-task-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const sid = (await service.join(session!, '三题学生')).studentId;
+
+    // T1 (idx=0) → currentTask=2
+    const r1 = await service.submit(session!, sid, 0, { answers: ['A'] });
+    expect(r1.score.total).toBe(100);
+    expect(r1.currentTask).toBe(2);
+    expect(r1.currentPhase).toBe('listen');
+
+    // T2 (idx=2) → currentTask=3
+    const r2 = await service.submit(session!, sid, 2, { answers: ['B'] });
+    expect(r2.score.total).toBe(100);
+    expect(r2.currentTask).toBe(3);
+    expect(r2.currentPhase).toBe('listen');
+
+    // T3 (idx=4) → completed (maxTask=3, not hardcoded 5)
+    const r3 = await service.submit(session!, sid, 4, { answers: ['C'] });
+    expect(r3.score.total).toBe(100);
+    expect(r3.currentTask).toBe(3);
+    expect(r3.currentPhase).toBe('completed');
+  });
+
+  it('should produce stepMetrics with 3 keys', async () => {
+    const created = await service.createSession('three-task-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await service.join(session!, '指标学生');
+
+    const state = await service.getState(session!.id);
+    const taskNums = Object.keys(state.stepMetrics).map(Number).sort((a, b) => a - b);
+    expect(taskNums).toEqual([1, 2, 3]);
+    // No task 4 or 5
+    expect(state.stepMetrics[4]).toBeUndefined();
+    expect(state.stepMetrics[5]).toBeUndefined();
+  });
+
+  it('should check allDone using [0, 2, 4] not [1, 3, 5, 7, 9]', async () => {
+    const created = await service.createSession('three-task-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const sid = (await service.join(session!, '完成检查学生')).studentId;
+
+    // Complete all 3 tasks
+    await service.submit(session!, sid, 0, { answers: ['A'] });
+    await service.submit(session!, sid, 2, { answers: ['B'] });
+    await service.submit(session!, sid, 4, { answers: ['C'] });
+
+    const state = await service.getState(session!.id);
+    const student = state.students.find((s: any) => s.id === sid);
+    expect(student!.status).toBe('done');
+    expect(student!.currentPhase).toBe('completed');
+  });
+
+  it('should show correct healthCards for 3-task lesson', async () => {
+    const created = await service.createSession('three-task-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const sid = (await service.join(session!, '健康卡学生')).studentId;
+
+    // Complete all 3 tasks
+    await service.submit(session!, sid, 0, { answers: ['A'] });
+    await service.submit(session!, sid, 2, { answers: ['B'] });
+    await service.submit(session!, sid, 4, { answers: ['C'] });
+
+    const state = await service.getState(session!.id);
+    // Completed student: effectiveTask = maxTask(3), not hardcoded 5
+    expect(state.healthCards.furthest.step).toBe(3);
   });
 });
