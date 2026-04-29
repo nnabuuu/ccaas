@@ -212,22 +212,21 @@ export interface ClassroomState {
       studentId: string
       severity: 'info' | 'warn' | 'urgent'
       message: string
-      anchorId: string | null
+      indicatorId: string | null
     }>
-    anchorStats: Array<{
-      anchorId: string
+    indicatorStats: Array<{
+      indicatorId: string
       label: string
       type: 'knowledge' | 'misconception'
       studentCount: number
       latestGist: string
       updatedAt: number
     }>
-    anchors: Array<{
+    indicators: Array<{
       id: string
       type: 'knowledge' | 'misconception'
       label: string
       description: string
-      signals: string[]
     }>
   }
 }
@@ -257,6 +256,70 @@ export function useStudentStream(sessionCode: string) {
   }, [sessionCode])
 
   return { currentStep, notification }
+}
+
+// ── Exercise API hooks (student) ──
+
+export interface ExerciseSpec {
+  type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map'
+  label: string
+  questions?: Array<{ idx: number; text: string; translate?: string; options: string[] }>
+  pairs?: Array<{ idx: number; left: string; options: string[] }>
+  rows?: Array<{ idx: number; place: string; isDemo: boolean; practice?: string; reason?: string }>
+  stanceQ?: string; stanceQZh?: string; stanceOpts?: string[]; evidence?: string[]
+  items?: string[]
+  functionOptions?: string[]
+  sections?: Array<{ id: string; label: string; range: number[]; correctFunction?: string; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
+  paragraphTokens?: Record<string, Array<{ t: string; interactive?: boolean; kind?: string; why?: string }>>
+  prompt?: string
+  axes?: { x: { neg: string; pos: string; label: string }; y: { neg: string; pos: string; label: string } }
+  mapItems?: Array<{ id: string; label: string; hint?: string; refs?: number[] }>
+  minReasonLength?: number
+}
+
+export interface CheckItem {
+  idx: number | string
+  correct: boolean
+  hint?: string
+  hintZh?: string
+  walkthrough?: string
+  walkthroughZh?: string
+  aiMessage?: string
+}
+
+export interface CheckResult {
+  type: string
+  allCorrect: boolean
+  items: CheckItem[]
+}
+
+export async function fetchExerciseSpec(sessionCode: string, step: number): Promise<ExerciseSpec | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/steps/${step}/exercise`)
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function checkAnswer(
+  sessionCode: string,
+  step: number,
+  studentId: string,
+  data: Record<string, unknown>,
+): Promise<CheckResult | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/steps/${step}/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, data }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
 }
 
 // ── AI Ask hook (student) ──
@@ -296,7 +359,7 @@ export function useAiDiscuss(sessionCode: string) {
     taskNum: number,
     interactionType: 'probeReply' | 'followUpReply',
     studentResponse: string,
-  ): Promise<{ reply: string; followUpQuestion?: string } | null> => {
+  ): Promise<{ reply: string; followUpQuestion?: string; quality: 'pass' | 'retry' } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {

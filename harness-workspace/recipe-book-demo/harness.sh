@@ -20,7 +20,7 @@ claude_safe() {
 # --- Configuration ---
 TASK_NAME="recipe-book-demo"
 MAX_ITERATIONS=8
-SCORE_THRESHOLD=90
+SCORE_THRESHOLD=100
 MIN_IMPROVEMENT=3
 ROLLBACK_THRESHOLD=5
 MAX_COST_USD="${MAX_COST:-200}"
@@ -304,7 +304,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
   git add \
     "solutions/business/recipe-book/" \
     "${CHANGELOG_DIR}/" 2>/dev/null || true
-  git commit -m "feat(recipe-book): demo v${i} iteration" --allow-empty 2>/dev/null || true
+  git commit -m "feat(backend): recipe-book demo v${i} iteration" --allow-empty 2>/dev/null || true
 
   # ─── Step 4: Evaluator ───
   echo ""
@@ -354,7 +354,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
   # Git snapshot: eval
   cd "$REPO_ROOT"
   git add "${EVAL_DIR}/" "${PROGRESS_FILE}" 2>/dev/null || true
-  git commit -m "feat(recipe-book): demo v${i} eval — score ${score}/100" --allow-empty 2>/dev/null || true
+  git commit -m "feat(backend): recipe-book demo v${i} eval — score ${score}/100" --allow-empty 2>/dev/null || true
 
   # ─── Exit conditions ───
 
@@ -372,7 +372,7 @@ for i in $(seq $START_VERSION $MAX_ITERATIONS); do
     cd "$REPO_ROOT"
     git checkout HEAD~2 -- \
       solutions/business/recipe-book/ 2>/dev/null || true
-    git add -A && git commit -m "feat(recipe-book): demo v${i} REVERTED — regression ${prev_score}->${score}" 2>/dev/null || true
+    git add -A && git commit -m "feat(backend): recipe-book demo v${i} REVERTED — regression ${prev_score}->${score}" 2>/dev/null || true
     continue
   fi
 

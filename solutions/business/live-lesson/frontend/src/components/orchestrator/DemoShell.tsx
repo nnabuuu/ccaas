@@ -1,28 +1,29 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { ReadingManifest } from '../../types/reading'
-import { useSessionCreate } from '../../hooks/useClassroom'
 
 interface RoleConfig {
   key: string
   label: string
   en: string
-  route: string
   w: number
   h: number
 }
 
 const ROLES: Record<string, RoleConfig> = {
-  student: { key: 'student', label: '学生端', en: 'Student · iPad', route: '/student/', w: 1400, h: 1050 },
-  teacher: { key: 'teacher', label: '教师控制台', en: 'Teacher · MacBook', route: '/teacher/', w: 1600, h: 1000 },
-  board:   { key: 'board',   label: '投屏黑板', en: 'Classroom Projector', route: '/board/', w: 1400, h: 1100 },
+  student: { key: 'student', label: '学生端', en: 'Student · iPad', w: 1400, h: 1050 },
+  teacher: { key: 'teacher', label: '教师控制台', en: 'Teacher · MacBook', w: 1600, h: 1000 },
+  board:   { key: 'board',   label: '投屏黑板', en: 'Classroom Projector', w: 1400, h: 1100 },
 }
 const ROLE_ORDER = ['teacher', 'student', 'board']
 
 interface Props {
   manifest: ReadingManifest
+  sessionId: string
+  sessionCode: string
+  lessonId: string
 }
 
-export default function DemoShell({ manifest }: Props) {
+export default function DemoShell({ manifest, sessionId, sessionCode, lessonId }: Props) {
   const [step, setStep] = useState(0)
   const [featured, setFeatured] = useState('teacher')
   const [tweaksOpen, setTweaksOpen] = useState(false)
@@ -32,19 +33,17 @@ export default function DemoShell({ manifest }: Props) {
   const iframeRefs = useRef<Map<string, HTMLIFrameElement>>(new Map())
   const featBoxRef = useRef<HTMLDivElement>(null)
 
-  const lessonId = manifest.id
-  const { session, loading: sessionLoading } = useSessionCreate(lessonId)
-  const sessionCode = session?.code ?? ''
-
-  // Build iframe src — teacher/student get session code via query param
+  // Build iframe src using session-centric routes
   const getIframeSrc = useCallback((role: string) => {
     if (role === 'student') {
-      // Student goes to /join page; with session param it auto-joins
       return `/join?session=${sessionCode}&embed=1`
     }
-    // Teacher and board use their standard route with session param
-    return `${ROLES[role].route}${lessonId}?embed=1&session=${sessionCode}`
-  }, [lessonId, sessionCode])
+    if (role === 'teacher') {
+      return `/session/${sessionId}/watch?embed=1`
+    }
+    // board uses lessonId route
+    return `/board/${lessonId}?embed=1`
+  }, [sessionId, sessionCode, lessonId])
 
   // Broadcast sync to all iframes
   const broadcast = useCallback((msg: Record<string, unknown>) => {
@@ -113,10 +112,6 @@ export default function DemoShell({ manifest }: Props) {
   const cum = manifest.cumulativeMinutes || [0, 3, 9, 26, 38, 45]
   const nowSec = (cum[step] || 0) * 60 + Math.round(((cum[step + 1] || 45) - (cum[step] || 0)) * 60 * 0.35)
   const fmtTime = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
-
-  if (sessionLoading) {
-    return <div style={{ padding: 40, color: 'var(--t3)' }}>正在创建课堂...</div>
-  }
 
   const thumbRoles = ROLE_ORDER.filter(r => r !== featured)
   const featRole = ROLES[featured]

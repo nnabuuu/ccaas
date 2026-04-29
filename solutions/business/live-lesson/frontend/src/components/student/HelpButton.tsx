@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
+import { renderMd } from './renderMd'
+import { SessionCtx } from './TaskPanel'
 
 interface Props {
   hint?: string
@@ -7,6 +9,7 @@ interface Props {
 }
 
 export default function HelpButton({ hint, hintZh, translate }: Props) {
+  const { config } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -24,6 +27,8 @@ export default function HelpButton({ hint, hintZh, translate }: Props) {
 
   if (!hasHint && !hasTr) return null
 
+  const mathOpts = { math: config.enableMath }
+
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
       <button className="stu-help-btn" onClick={e => { e.stopPropagation(); setOpen(!open) }}>?</button>
@@ -39,8 +44,8 @@ export default function HelpButton({ hint, hintZh, translate }: Props) {
             <div>
               <div style={{ fontSize: 9, fontWeight: 600, color: 'var(--amber)', textTransform: 'uppercase', marginBottom: 3 }}>Hint</div>
               <div style={{ fontSize: 12, color: 'var(--amber)', lineHeight: 1.5 }}>
-                {hint}
-                {hintZh && <span style={{ color: 'var(--t3)', marginLeft: 4 }}>{hintZh}</span>}
+                {renderMd(hint!, mathOpts)}
+                {hintZh && <span style={{ color: 'var(--t3)', marginLeft: 4 }}>{renderMd(hintZh, mathOpts)}</span>}
               </div>
             </div>
           )}
@@ -50,15 +55,29 @@ export default function HelpButton({ hint, hintZh, translate }: Props) {
   )
 }
 
-export function HintBanner({ hint, hintZh }: { hint?: string; hintZh?: string }) {
-  if (!hint) return null
+export function HintBanner({ hint, hintZh, walkthrough, walkthroughZh }: {
+  hint?: string; hintZh?: string
+  walkthrough?: string; walkthroughZh?: string
+}) {
+  const { config } = useContext(SessionCtx)
+  if (!hint && !walkthrough) return null
+  const mathOpts = { math: config.enableMath }
   return (
     <div className="stu-hint-banner" style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
       <span style={{ flexShrink: 0, fontSize: 14 }}>💡</span>
       <div>
-        <div style={{ fontWeight: 600, marginBottom: 2 }}>Need help?</div>
-        <div>{hint}</div>
-        {hintZh && <div style={{ color: 'var(--t3)', marginTop: 2 }}>{hintZh}</div>}
+        {hint && <>
+          <div style={{ fontWeight: 600, marginBottom: 2 }}>Need help?</div>
+          <div>{renderMd(hint, mathOpts)}</div>
+          {hintZh && <div style={{ color: 'var(--t3)', marginTop: 2 }}>{renderMd(hintZh, mathOpts)}</div>}
+        </>}
+        {walkthrough && <>
+          <div style={{ fontWeight: 600, marginTop: hint ? 8 : 0, marginBottom: 2, color: 'var(--blue)' }}>
+            Step-by-step
+          </div>
+          <div>{renderMd(walkthrough, mathOpts)}</div>
+          {walkthroughZh && <div style={{ color: 'var(--t3)', marginTop: 2 }}>{renderMd(walkthroughZh, mathOpts)}</div>}
+        </>}
       </div>
     </div>
   )

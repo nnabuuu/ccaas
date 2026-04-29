@@ -1,9 +1,18 @@
 // Reading lesson types — derived from manifest.json + board-data.js
 
+// ── Segment (structured rich content inside a paragraph) ──
+export type Segment =
+  | string
+  | { type: 'math'; value: string }
+  | { type: 'heading'; value: string }
+  | { type: 'image'; src: string; alt?: string; width?: number }
+  | { type: 'figure'; src: string; alt?: string; width?: number; caption?: string; math?: string }
+
 // ── Article ──
 export interface Paragraph {
   id: string
   text: string
+  content?: Segment[]
   role?: 'key' | 'detail'
   highlights?: string[]
   signals?: string[]
@@ -15,6 +24,24 @@ export interface Article {
   paragraphs: Paragraph[]
 }
 
+// ── Select-Evidence Token ──
+export interface ParagraphToken {
+  t: string
+  kind?: 'evidence' | 'pick' | 'distractor'
+  why?: string
+}
+
+export interface SelectEvidenceSection {
+  id: string
+  label: string
+  range: number[]
+  correctFunction: string
+  hint?: string
+  hintZh?: string
+  aiCorrect?: string
+  aiPartial?: string
+}
+
 // ── Reading Steps ──
 export interface ReadingStep {
   id: string
@@ -22,10 +49,14 @@ export interface ReadingStep {
   type?: 'task' | 'instruction'
   label: string
   labelEn: string
+  displayName?: string
   strategy: string
   duration: number
   description: string
   focusParagraphs: string[]
+  onEnter?: {
+    textbook?: 'open' | 'collapsed'
+  }
   // Task metadata (manifest-driven)
   exerciseLabel?: string
   subtitle?: string
@@ -47,7 +78,7 @@ export interface ReadingStep {
   }
   answerKey?: {
     type: string
-    answers: Array<{
+    answers?: Array<{
       questionIdx?: number
       pairIdx?: number
       rowIdx?: number
@@ -76,6 +107,10 @@ export interface ReadingStep {
     // Order fields
     items?: string[]
     correctOrder?: number[] | string[]
+    // Select-evidence fields
+    functionOptions?: string[]
+    sections?: SelectEvidenceSection[]
+    paragraphTokens?: Record<string, ParagraphToken[]>
   }
 }
 
@@ -272,23 +307,22 @@ export interface BoardData {
 
 // ── Observation System ──
 
-export interface ObservationAnchor {
+export interface ObservationIndicator {
   id: string                    // "K1", "M1", etc.
   type: 'knowledge' | 'misconception'
   label: string
   description: string
-  signals: string[]
 }
 
 export interface StudentEvent {
   id: string                    // "e1", "e2"
   timestamp: number
   updatedAt: number
-  anchors: string[]             // anchor IDs
+  anchors: string[]             // indicator IDs (e.g. K1, M1)
   gist: string
   quote: string | null
   source: 'llm' | 'system'
-  systemType?: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave'
+  systemType?: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave' | 'discuss_depth'
   data?: Record<string, unknown>
 }
 
@@ -312,11 +346,11 @@ export interface Alert {
   studentId: string
   severity: 'info' | 'warn' | 'urgent'
   message: string
-  anchorId: string | null
+  indicatorId: string | null
 }
 
-export interface AnchorStats {
-  anchorId: string
+export interface IndicatorStats {
+  indicatorId: string
   label: string
   type: 'knowledge' | 'misconception'
   studentCount: number
@@ -337,14 +371,16 @@ export interface ReadingManifest {
   title: string
   subject: string
   gradeLevel: string
+  description?: string
   teachingNotes?: string
   lessonType: string
   lessonIntro?: string
   lessonSummary?: string
+  enableMath?: boolean
   article: Article
   readingSteps: ReadingStep[]
   boardData: BoardData
   cumulativeMinutes: number[]
-  observationAnchors?: ObservationAnchor[]
+  observationIndicators?: ObservationIndicator[]
   phaseConfig?: PhaseConfig[]
 }

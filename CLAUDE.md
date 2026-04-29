@@ -12,6 +12,8 @@ ccaas/
 │   ├── vue-sdk/          # @kedge-agentic/vue-sdk - Vue composables
 │   ├── react-sdk/        # @kedge-agentic/react-sdk - React hooks
 │   ├── chat-interface/   # @kedge-agentic/chat-interface - Extensible chat UI (lib + app)
+│   ├── entity-document/  # @kedge-agentic/entity-document - Block ↔ Markdown transforms
+│   ├── context-layer/    # @kedge-agentic/context-layer - Entity context & editing
 │   └── shared/           # @kedge-agentic/common - Shared types & protocols
 ├── solutions/            # Domain-specific solutions (separate backends)
 └── docs/                 # Consolidated documentation
@@ -26,6 +28,8 @@ ccaas/
 | `@kedge-agentic/vue-sdk` | Vue 3 Composition API | Vue client integration |
 | `@kedge-agentic/react-sdk` | React hooks, SSE | React client integration |
 | `@kedge-agentic/chat-interface` | React, Tailwind, Vite | Extensible chat UI component library |
+| `@kedge-agentic/entity-document` | TypeScript, Vitest | Block ↔ Markdown bidirectional transform, pluggable TransformRegistry |
+| `@kedge-agentic/context-layer` | TypeScript, NestJS (optional) | Entity context routing, DocumentEditProvider base class |
 | `@kedge-agentic/common` | TypeScript, Zod | Shared types and protocols |
 
 ## Build
@@ -46,6 +50,8 @@ npm run dev:admin        # Start admin on :5175
 - **@kedge-agentic/vue-sdk**: See [`packages/vue-sdk/docs/ARCHITECTURE.md`](./packages/vue-sdk/docs/ARCHITECTURE.md)
 - **@kedge-agentic/react-sdk**: See [`packages/react-sdk/README.md`](./packages/react-sdk/README.md)
 - **@kedge-agentic/chat-interface**: See [`packages/chat-interface/ARCHITECTURE.md`](./packages/chat-interface/ARCHITECTURE.md)
+- **@kedge-agentic/entity-document**: See [`packages/entity-document/README.md`](./packages/entity-document/README.md)
+- **@kedge-agentic/context-layer**: See [`packages/context-layer/src/core/document-edit-provider.ts`](./packages/context-layer/src/core/document-edit-provider.ts)
 - **@kedge-agentic/common**: See [`packages/common/README.md`](./packages/common/README.md)
 
 ## Conventions → See [docs/CONVENTIONS.md](./docs/CONVENTIONS.md)

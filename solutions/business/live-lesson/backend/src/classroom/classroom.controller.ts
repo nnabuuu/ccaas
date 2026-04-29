@@ -1,14 +1,17 @@
-import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException, ParseIntPipe } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ClassroomService } from './classroom.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
+import { CheckDto } from './dto/check.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
 import { AiAskDto } from './dto/ai-ask.dto';
 import { AiDiscussDto } from './dto/ai-discuss.dto';
+import { PersonalTouchDto } from './dto/personal-touch.dto';
+import { BonusCheckDto } from './dto/bonus-check.dto';
 
 const CODE_RE = /^[A-Z2-9]{6}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -107,6 +110,56 @@ export class ClassroomController {
     return this.classroomService.notify(session.id, dto.message, dto.type);
   }
 
+  // ── Exercise API (session-scoped, answer-safe) ──
+
+  @Get(':code/steps/:step/exercise')
+  async getExercise(
+    @Param('code') code: string,
+    @Param('step', ParseIntPipe) step: number,
+  ) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.getExerciseSpec(session, step);
+  }
+
+  @Post(':code/steps/:step/check')
+  async checkAnswer(
+    @Param('code') code: string,
+    @Param('step', ParseIntPipe) step: number,
+    @Body() dto: CheckDto,
+  ) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.checkAnswer(session, dto.studentId, step, dto.data);
+  }
+
+  // ── Personal Touch + Bonus ──
+
+  @Post(':code/personal-touch')
+  async personalTouch(@Param('code') code: string, @Body() dto: PersonalTouchDto) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.getPersonalTouch(session, dto.studentId);
+  }
+
+  @Get(':code/bonus/:bonusStep/exercise')
+  async getBonusExercise(
+    @Param('code') code: string,
+    @Param('bonusStep', ParseIntPipe) bonusStep: number,
+  ) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.getBonusExercise(session, bonusStep);
+  }
+
+  @Post(':code/bonus/:bonusStep/check')
+  async checkBonusAnswer(
+    @Param('code') code: string,
+    @Param('bonusStep', ParseIntPipe) bonusStep: number,
+    @Body() dto: BonusCheckDto,
+  ) {
+    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    return this.classroomService.checkBonusAnswer(session, dto.studentId, bonusStep, dto.data);
+  }
+
+  // ── AI endpoints ──
+
   @Post(':code/ai/ask')
   async aiAsk(@Param('code') code: string, @Body() dto: AiAskDto) {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
@@ -117,12 +170,13 @@ export class ClassroomController {
   @Post(':code/ai/discuss')
   async aiDiscuss(@Param('code') code: string, @Body() dto: AiDiscussDto) {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.aiDiscuss(
+    const { reply, followUpQuestion, quality } = await this.classroomService.aiDiscuss(
       session,
       dto.studentId,
       dto.taskNum,
       dto.interactionType,
       dto.studentResponse,
     );
+    return { reply, followUpQuestion, quality };
   }
 }

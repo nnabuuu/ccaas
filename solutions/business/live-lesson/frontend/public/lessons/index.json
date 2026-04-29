@@ -16,6 +16,15 @@
       "description": "三端联动英语阅读课：5 步阅读策略 × 投屏黑板 × 学生任务 × 教师控制台",
       "emoji": "📖",
       "lessonType": "reading"
+    },
+    {
+      "id": "math-the-square-of-a-binomial",
+      "title": "完全平方公式",
+      "subject": "数学",
+      "gradeLevel": "初中八年级",
+      "description": "探究→辨识→应用→巧算→纠错五步掌握完全平方公式",
+      "emoji": "📐",
+      "lessonType": "reading"
     }
   ]
 }

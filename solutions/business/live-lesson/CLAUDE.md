@@ -108,7 +108,7 @@ server {
 
 ### CCAAS SDK connection (exception)
 
-`useLiveLesson.ts` 中的 `SERVER_URL` (`http://localhost:3001`) **必须保持绝对路径**。SDK 使用 Socket.IO/SSE 直连 CCAAS 后端，不走 Vite proxy。生产环境需要将此值改为实际的 CCAAS 后端地址（环境变量或构建时注入）。
+`useLiveLesson.ts` 中 `SERVER_URL` 从 `import.meta.env.VITE_CCAAS_URL` 读取（默认 `http://localhost:3001`）。SDK 使用 Socket.IO/SSE 直连 CCAAS 后端，不走 Vite proxy。生产环境在 `frontend/.env` 设置 `VITE_CCAAS_URL` 后重新构建。
 
 ### Checklist
 
@@ -131,6 +131,8 @@ server {
 | GET | `/api/classroom/:code/stream` | SSE real-time push |
 | POST | `/api/classroom/:code/step` | Teacher set step `{ step }` |
 | POST | `/api/classroom/:code/notify` | Teacher notification `{ message, type }` |
+| GET | `/api/classroom/:code/steps/:step/exercise` | ExerciseSpec (student-safe; select-evidence keeps grading data for client-side use) |
+| POST | `/api/classroom/:code/steps/:step/check` | Check answer `{ studentId, data }` → `{ type, allCorrect, items }` |
 | POST | `/api/classroom/:code/ai/ask` | AI question `{ studentId, question, step }` |
 
 ## Classroom State API (`GET /api/classroom/:code/state`)
@@ -161,6 +163,60 @@ The `getState()` response includes enriched teacher dashboard data:
   }],
   questions: [...]
 }
+```
+
+## Shared Schema Layer (`backend/src/schemas/`)
+
+All cross-module types live in `backend/src/schemas/` — both `lesson/` and `classroom/` import from here. **Never import from `classroom/` inside `lesson/`** (that would create a reverse dependency).
+
+```
+src/schemas/
+├── index.ts                    # barrel export
+├── answer-key.schema.ts        # Zod discriminated union for 7 exercise types
+├── exercise-spec.schema.ts     # Student-safe spec (no answers)
+├── grade-result.schema.ts      # GradeResult { total, byDimension, attemptCounts }
+├── task-map.schema.ts          # TaskMap interface
+├── manifest.schema.ts          # ReadingStep + Manifest (.passthrough())
+└── manifest.utils.ts           # sanitizeAnswerKey() + sanitizeManifest()
+```
+
+### Answer Key Types (server-side, contains answers)
+
+7 types via `z.union`: `quiz`, `match`, `matrix`, `stance`, `order`, `select-evidence`, `map`. Each has a typed export (e.g. `QuizAnswerKey`, `MapAnswerKey`). The union is `AnswerKeySchema` / `AnswerKey`.
+
+`validateAnswerKey(unknown)` wraps `safeParse` — returns `{ valid, errors }` for use in `lesson.service.ts` manifest validation.
+
+### ExerciseSpec (student-safe, answers stripped — except select-evidence)
+
+`sanitizeAnswerKey(answerKey) → ExerciseSpec | null` strips answer data before sending to students:
+
+| Type | Keeps | Strips |
+|------|-------|--------|
+| quiz | `questions[].{idx, text, translate?, options}` | correct, hint, walkthrough |
+| match | `pairs[].{idx, left, options}` | correct, hint |
+| matrix | demo rows keep practice/reason; non-demo only place/isDemo | hint, non-demo practice/reason |
+| stance | stanceQ, stanceQZh, stanceOpts, evidence | validPositions, minEvidence |
+| order | items | correctOrder |
+| select-evidence | functionOptions, sections.{id,label,range,correctFunction,hint,hintZh,aiCorrect,aiPartial}, paragraphTokens.{t,kind,why} | (nothing stripped — client-side grading) |
+| map | prompt, axes, mapItems.{id,label,hint?,refs?}, minReasonLength | expected |
+
+`sanitizeManifest(manifest)` applies `sanitizeAnswerKey` to every `readingSteps[].answerKey` — used by `lesson.service.ts` when serving manifests to frontend.
+
+### Key Rules
+
+- **Quiz `correct` is a numeric index** into `options[]`, not a letter. Submit data uses `{ answers: [0, 1] }` (numbers).
+- **`GradingService.grade()`** calls `AnswerKeySchema.safeParse()` — invalid keys return `null`, valid keys are type-narrowed to the specific subtype before dispatching to the grader.
+- **Each grader's `key` param is typed** to its specific subtype (e.g. `QuizGrader.grade(key: QuizAnswerKey, ...)`). No `any`.
+- **`GradeResult.byDimension`** is `Record<string, boolean | number>`, not `Record<string, any>`.
+- **Select-evidence uses client-side grading** — `sanitizeAnswerKey` intentionally keeps `correctFunction`, `hint`, `aiCorrect`/`aiPartial` on sections and `kind`/`why` on tokens. Frontend `_serverCheck` is NOT set for select-evidence. Server `/submit` grade is the source of truth.
+- **Old files** (`classroom/schemas/answer-key.schema.ts`, `classroom/exercise-sanitizer.ts`) are thin re-exports — do not add new code there.
+
+### Dependency Direction
+
+```
+src/schemas/           ← shared, imports nothing from lesson/ or classroom/
+src/lesson/            → imports from src/schemas/ only
+src/classroom/         → imports types from src/schemas/, owns graders + metrics
 ```
 
 ## Frontend Routes

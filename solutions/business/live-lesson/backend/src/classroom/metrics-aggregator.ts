@@ -1,18 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Student } from '../entities/student.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
+import type { TaskMap } from '../schemas';
 
-/** Immutable value object — derived from manifest, cached per lessonId */
-export interface TaskMap {
-  /** step idx -> task number, e.g. { 1:1, 3:2, 5:3, 7:4, 9:5 } */
-  stepToTask: Record<number, number>;
-  /** task number -> step idx, e.g. { 1:1, 2:3, 3:5, 4:7, 5:9 } */
-  taskToStep: Record<number, number>;
-  /** ordered step indices, e.g. [1, 3, 5, 7, 9] */
-  taskSteps: number[];
-  /** total number of tasks */
-  maxTask: number;
-}
+export type { TaskMap };
 
 /**
  * Computes per-step metrics for the teacher dashboard.
@@ -506,12 +497,14 @@ export class MetricsAggregator {
         break;
       }
       case 'order': {
-        const correctOrder: string[] = answerKey.correctOrder || [];
+        const orderItems: string[] = answerKey.items || [];
+        const correctOrderIdx: number[] = answerKey.correctOrder || [];
+        const correctLabels = correctOrderIdx.map((idx: number) => orderItems[idx] ?? String(idx));
         for (const sub of submissions) {
           const studentOrder = sub.data?.order || [];
           if (studentOrder.length === 0) continue;
-          for (let i = 0; i < correctOrder.length; i++) {
-            const expected = correctOrder[i];
+          for (let i = 0; i < correctLabels.length; i++) {
+            const expected = correctLabels[i];
             const got = typeof studentOrder[i] === 'string' ? studentOrder[i] : studentOrder[i]?.label;
             if (got && got.toLowerCase() !== expected.toLowerCase()) {
               const key = `位置 ${i + 1} 放了 ${got}（应为 ${expected}）`;

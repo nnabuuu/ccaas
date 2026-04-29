@@ -31,6 +31,7 @@ coverage/
 
 # Runtime data
 .agent-workspace/
+solutions/business/recipe-book/backend/data/recipe-book.db
 
 # Package lock (use root lock file)
 packages/*/package-lock.json

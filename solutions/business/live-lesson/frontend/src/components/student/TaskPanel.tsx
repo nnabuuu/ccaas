@@ -1,17 +1,27 @@
-import { useState, useEffect, useCallback, useRef, useMemo, createContext } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, useContext, createContext } from 'react'
 import BoardInline from './BoardInline'
 import AudioButton from './AudioButton'
 import { DiscussPhase } from './DiscussPhase'
 import { PracticePhase } from './PracticePhase'
+import { PersonalTouchScreen } from './PersonalTouchScreen'
+import { BonusPhase } from './BonusPhase'
 import { renderMd } from './renderMd'
-import { TASKS, LESSON_INTRO, LESSON_SUMMARY } from './task-data'
 import type { Task } from './task-data'
 import type { PhaseConfig } from '../../types/reading'
+import type { TextOverlay } from './TextPanel'
 
-export { TASKS } from './task-data'
 export type { Task } from './task-data'
 
-export const SessionCtx = createContext<{ sessionCode?: string; studentId?: string; submit?: (step: number, data: Record<string, any>) => Promise<boolean> }>({})
+export interface SessionConfig {
+  enableMath?: boolean
+}
+
+export const SessionCtx = createContext<{
+  sessionCode?: string
+  studentId?: string
+  submit?: (step: number, data: Record<string, any>) => Promise<boolean>
+  config: SessionConfig
+}>({ config: {} })
 
 const DEFAULT_PHASES: PhaseConfig[] = [
   { id: 'listen', label: 'Listen', unlockAfter: null },
@@ -22,49 +32,57 @@ const DEFAULT_PHASES: PhaseConfig[] = [
 
 /* ═══ LISTEN PHASE ═══ */
 function ListenPhase({ task, onDone, lessonId }: { task: Task; onDone: () => void; lessonId?: string }) {
+  const { config } = useContext(SessionCtx)
   const [done, setDone] = useState(false)
   const handleClick = () => { setDone(true); onDone() }
   const iv = task.instructionView
   return (
     <div id="phase-listen">
       <div className="stu-section-label"><span>Listen</span><div className="stu-section-line" /></div>
-      <div style={{ marginBottom: 20 }}>
-        {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
+      {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
+      <div className="stu-instr-card">
+        <div className="stu-instr-badge">{task.name}</div>
         {iv ? (
-          <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)' }}>
-            {iv.title && <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--t1)', marginBottom: 12 }}>{iv.title}</div>}
-            <div dangerouslySetInnerHTML={{ __html: iv.body }} />
+          <>
+            {iv.title && <div className="stu-instr-title">{iv.title}</div>}
+            <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: iv.body }} />
             {iv.keyPoints && iv.keyPoints.length > 0 && (
-              <ul style={{ margin: '12px 0', paddingLeft: 20 }}>
-                {iv.keyPoints.map((kp, i) => <li key={i} style={{ marginBottom: 4 }}>{kp}</li>)}
-              </ul>
+              <div className="stu-instr-kp">
+                <div className="stu-instr-kp-label">Remember</div>
+                <ul>
+                  {iv.keyPoints.map((kp, i) => <li key={i}>{kp}</li>)}
+                </ul>
+              </div>
             )}
-          </div>
+          </>
         ) : (
-          <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>
-            {renderMd(task.intro)}
-          </div>
+          <>
+            <div className="stu-instr-title">{task.subtitle}</div>
+            <div className="stu-instr-body">{renderMd(task.intro, { math: config.enableMath })}</div>
+          </>
         )}
       </div>
       <button className={`stu-btn ${done ? 'ghost' : 'pri'}`} onClick={handleClick} disabled={done}>
-        {done ? 'Confirmed ✓' : (iv?.confirmLabel || "Got it, let's practice →")}
+        {done ? 'Confirmed ✓' : (iv?.confirmLabel || "I understand — let's practice →")}
       </button>
     </div>
   )
 }
 
 /* ═══ TAKEAWAY PHASE ═══ */
-function TakeawayPhase({ task, onComplete, lessonId }: { task: Task; onComplete: () => void; lessonId?: string }) {
+function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; onComplete: () => void; lessonId?: string; taskCount?: number }) {
+  const { config } = useContext(SessionCtx)
+  const total = taskCount ?? 5
   return (
     <div id="phase-takeaway">
       <div className="stu-section-label"><span>Takeaway</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 16 }}>
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.mp3`} />}
-        <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{renderMd(task.summary)}</div>
+        <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{renderMd(task.summary, { math: config.enableMath })}</div>
       </div>
       <BoardInline taskId={task.id} />
       <button className="stu-btn pri" style={{ marginTop: 8 }} onClick={onComplete}>
-        {task.id < 5 ? 'Next Task →' : 'Complete Course →'}
+        {task.id < total ? 'Next Task →' : 'Complete Course →'}
       </button>
     </div>
   )
@@ -72,17 +90,17 @@ function TakeawayPhase({ task, onComplete, lessonId }: { task: Task; onComplete:
 
 /** Phase→component registry. Each entry renders the phase given standard props. */
 const PHASE_REGISTRY: Record<string, (props: {
-  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string
+  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number
 }) => JSX.Element | null> = {
   listen: ({ task, onDone, lessonId }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} />,
-  practice: ({ task, onDone, stepIdx }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} />,
+  practice: ({ task, onDone, stepIdx, onOverlayChange }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} />,
   discuss: ({ task, onDone }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} />,
-  takeaway: ({ task, onComplete, lessonId }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} />,
+  takeaway: ({ task, onComplete, lessonId, taskCount }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} />,
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number
 }) {
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
   const phaseIds = useMemo(() => phases.map(p => p.id), [phases])
@@ -93,7 +111,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig }: {
   const prevDoneRef = useRef<Set<string>>(new Set())
 
   // Reset on task change
-  useEffect(() => { setDonePhases(new Set()); prevDoneRef.current = new Set(); setActivePhase(phaseIds[0]) }, [task.id, phaseIds])
+  useEffect(() => { setDonePhases(new Set()); prevDoneRef.current = new Set(); setActivePhase(phaseIds[0]); onOverlayChange?.(null) }, [task.id, phaseIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const isUnlocked = useCallback((phase: PhaseConfig) => {
     return phase.unlockAfter === null || donePhases.has(phase.unlockAfter)
@@ -182,6 +200,8 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig }: {
                 task, lessonId, stepIdx, label: phase.label,
                 onDone: () => markDone(phase.id),
                 onComplete,
+                onOverlayChange,
+                taskCount,
               })}
               {showLocked && (
                 <div className="stu-phase-locked-msg">Complete {prevPhase.label} to unlock {phase.label}</div>
@@ -196,13 +216,13 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig }: {
 }
 
 /* ═══ CUSTOM HOOK — useStudentTask ═══ */
-export function useStudentTask() {
+export function useStudentTask(tasks: Task[]) {
   const [screen, setScreen] = useState<string>('intro')
   const [doneSet, setDoneSet] = useState<Set<number>>(new Set())
 
   let taskId = 0
-  if (screen !== 'intro' && screen !== 'summary') taskId = parseInt(screen)
-  const task = TASKS.find(t => t.id === taskId)
+  if (screen !== 'intro' && screen !== 'summary' && screen !== 'personal-touch' && screen !== 'bonus-unlock' && screen !== 'bonus') taskId = parseInt(screen)
+  const task = tasks.find(t => t.id === taskId)
 
   // Listen for sync messages from parent (demo orchestrator)
   useEffect(() => {
@@ -218,18 +238,19 @@ export function useStudentTask() {
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
+  const taskCount = tasks.length
   const completeTask = useCallback((tid: number) => {
     setDoneSet(d => { const n = new Set(d); n.add(tid); return n })
-    if (tid < 5) setScreen(String(tid + 1)); else setScreen('summary')
-  }, [])
+    if (tid < taskCount) setScreen(String(tid + 1)); else setScreen('personal-touch')
+  }, [taskCount])
 
   const currentFocus = task ? task.focus : []
 
-  return { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask }
+  return { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount }
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -240,22 +261,48 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   lessonIntro?: string
   lessonSummary?: string
   phaseConfig?: PhaseConfig[]
+  onOverlayChange?: (overlay: TextOverlay | null) => void
+  courseIntroView?: { title: string; body: string; keyPoints?: string[]; confirmLabel?: string } | null
+  taskCount?: number
 }) {
-  const introText = lessonIntro || LESSON_INTRO
-  const summaryText = lessonSummary || LESSON_SUMMARY
-  const title = articleTitle || 'Ideal Beauty'
+  const { config } = useContext(SessionCtx)
+  const introText = lessonIntro || ''
+  const summaryText = lessonSummary || ''
+  const title = articleTitle || 'Untitled Lesson'
 
   return (
     <div className="stu-left-col">
       {screen === 'intro' && (
         <div className="stu-task-inner" style={{ paddingTop: 32 }}>
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Welcome</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>{title}</div>
-            {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-intro.mp3`} />}
-            <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(introText)}</div>
+            {courseIntroView ? (
+              <div className="stu-instr-card">
+                {courseIntroView.title && <div className="stu-instr-title">{courseIntroView.title}</div>}
+                {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-i0-intro.mp3`} />}
+                <div className="stu-instr-body" dangerouslySetInnerHTML={{ __html: courseIntroView.body }} />
+                {courseIntroView.keyPoints && courseIntroView.keyPoints.length > 0 && (
+                  <div className="stu-instr-kp">
+                    <div className="stu-instr-kp-label">Remember</div>
+                    <ul>{courseIntroView.keyPoints.map((kp, i) => <li key={i}>{kp}</li>)}</ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Welcome</div>
+                <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>{title}</div>
+                {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-intro.mp3`} />}
+                <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(introText, { math: config.enableMath })}</div>
+              </>
+            )}
           </div>
-          <button className="stu-btn pri" onClick={() => setScreen('1')}>Start Task 1 →</button>
+          {(taskCount ?? 0) > 0 ? (
+            <button className="stu-btn pri" onClick={() => setScreen('1')}>
+              {courseIntroView?.confirmLabel || 'Start Task 1 →'}
+            </button>
+          ) : (
+            <div style={{ color: 'var(--t3)', fontSize: 14 }}>No tasks available for this lesson.</div>
+          )}
         </div>
       )}
       {screen === 'summary' && (
@@ -264,11 +311,32 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Complete</div>
             <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>Great job today!</div>
             {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-summary.mp3`} />}
-            <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(summaryText)}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(summaryText, { math: config.enableMath })}</div>
           </div>
         </div>
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} />}
+      {screen === 'personal-touch' && (
+        <PersonalTouchScreen onContinue={(bonusUnlocked) => {
+          if (bonusUnlocked) setScreen('bonus-unlock')
+          else setScreen('summary')
+        }} />
+      )}
+      {screen === 'bonus-unlock' && (
+        <div className="stu-task-inner" style={{ paddingTop: 32, textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔓</div>
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--t1)' }}>Bonus Challenge Unlocked!</div>
+          <p style={{ color: 'var(--t2)', marginBottom: 4 }}>You finished ahead of the class!</p>
+          <p style={{ color: 'var(--t2)', marginBottom: 20 }}>Try your strategies on a new article: <strong>"Beyond the Plate"</strong></p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <button className="stu-btn pri" onClick={() => setScreen('bonus')}>Start Bonus →</button>
+            <button className="stu-btn ghost" onClick={() => setScreen('summary')}>Skip to End</button>
+          </div>
+        </div>
+      )}
+      {screen === 'bonus' && (
+        <BonusPhase onComplete={() => setScreen('summary')} />
+      )}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} />}
     </div>
   )
 }

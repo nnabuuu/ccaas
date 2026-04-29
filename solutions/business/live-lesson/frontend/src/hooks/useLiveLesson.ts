@@ -15,7 +15,7 @@ import { saveSession, getSavedSession } from '../utils/sessionStore'
 // IMPORTANT: Must use absolute URL for CCAAS backend — SDK uses Socket.IO, NOT fetch()
 // Vite proxy only works for HTTP requests, not WebSocket/SSE SDK connections
 // See MEMORY.md: "Empty string causes SDK to use current origin (frontend port)"
-const SERVER_URL = 'http://localhost:3001' // Core CCAAS backend (SDK — must stay absolute)
+const SERVER_URL = import.meta.env.VITE_CCAAS_URL || 'http://localhost:3001'
 
 const TENANT_ID = 'live-lesson'
 const SESSION_TEMPLATE = 'teaching'

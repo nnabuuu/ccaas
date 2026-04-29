@@ -19,10 +19,10 @@
 .stu-prog-name.active{color:var(--t1);font-weight:600}
 
 /* Main wrap: left + right columns */
-.stu-main-wrap{flex:1;display:flex;min-height:0}
+.stu-main-wrap{flex:1;display:flex;min-height:0;position:relative}
 
-/* Left column (task area) */
-.stu-left-col{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+/* Left column (task area) — 50% when textbook open */
+.stu-left-col{flex:1 1 50%;display:flex;flex-direction:column;min-width:0;min-height:0}
 
 /* Task inner padding */
 .stu-task-inner{max-width:640px;margin:0 auto;padding:0 24px 80px;width:100%;flex:1}
@@ -42,6 +42,30 @@
 
 /* Locked phase message */
 .stu-phase-locked-msg{padding:40px 0;text-align:center;color:var(--t3);font-size:12px}
+
+/* ── Instruction card (Listen phase) ── */
+.stu-instr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card-lg,12px);padding:20px 22px 18px;margin-bottom:16px}
+.stu-instr-badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-badge,10px);font-weight:var(--fw-semibold,600);text-transform:uppercase;letter-spacing:.6px;color:var(--purple);background:var(--purple-bg);padding:3px 10px;border-radius:var(--r-pill,99px);margin-bottom:10px}
+.stu-instr-title{font-size:17px;font-weight:var(--fw-bold,700);color:var(--t1);line-height:var(--lh-tight,1.25);margin-bottom:14px}
+/* Body prose — descendant styles for HTML from dangerouslySetInnerHTML */
+.stu-instr-body{font-size:var(--fs-h3,14px);line-height:var(--lh-prose,1.85);color:var(--t2)}
+.stu-instr-body p{margin:0 0 10px}.stu-instr-body p:last-child{margin-bottom:0}
+.stu-instr-body strong{color:var(--t1);font-weight:var(--fw-semibold,600)}
+.stu-instr-body ul,.stu-instr-body ol{margin:8px 0 12px;padding-left:20px}
+.stu-instr-body li{margin-bottom:5px}
+.stu-instr-body code{font-family:'SF Mono',ui-monospace,monospace;font-size:12px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:3px}
+.stu-instr-body blockquote{margin:10px 0;padding:10px 14px;border-left:3px solid var(--amber);background:var(--amber-bg);border-radius:0 6px 6px 0;font-style:italic;color:var(--amber)}
+.stu-instr-body pre{margin:10px 0;padding:12px 14px;background:var(--surface2);border-radius:var(--r-input,6px);font-family:'SF Mono',ui-monospace,monospace;font-size:12px;line-height:1.7;color:var(--t2);white-space:pre-wrap;overflow-x:auto}
+.stu-instr-body .hl{background:var(--amber-bg);color:var(--amber);padding:0 4px;border-radius:3px;font-weight:var(--fw-semibold,600)}
+.stu-instr-body table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.stu-instr-body th,.stu-instr-body td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+.stu-instr-body tr:nth-child(even){background:var(--surface2)}
+/* Key points callout */
+.stu-instr-kp{margin-top:14px;padding:12px 14px;background:var(--teal-bg);border-left:3px solid var(--teal);border-radius:0 8px 8px 0}
+.stu-instr-kp-label{font-size:var(--fs-meta,10px);font-weight:var(--fw-semibold,600);color:var(--teal);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.stu-instr-kp ul{margin:0;padding-left:16px;list-style:disc}
+.stu-instr-kp li{font-size:var(--fs-body-sm,12px);color:var(--t2);line-height:1.6;margin-bottom:3px}
+.stu-instr-kp li:last-child{margin-bottom:0}
 
 /* ── Quiz (Practice) ── */
 .stu-quiz-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px}
@@ -74,10 +98,6 @@
 .stu-stance-btn{flex:1;padding:10px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--t2);text-align:center;transition:all .15s}
 .stu-stance-btn:hover{border-color:var(--t3)}
 .stu-stance-btn.selected{border-color:var(--teal);background:var(--teal-bg);color:var(--teal)}
-
-/* Evidence rows */
-.stu-evidence-row{display:flex;align-items:flex-start;gap:6px;padding:7px 10px;border-radius:5px;border:1px solid var(--border);margin-bottom:3px;cursor:pointer;background:var(--surface);font-size:12px;transition:all .15s}
-.stu-evidence-row.selected{border-color:var(--teal);background:var(--teal-bg)}
 
 /* ── Order (Practice) ── */
 .stu-order-slot{display:flex;align-items:center;gap:4px;padding:7px 10px;border-radius:5px;border:1.5px solid var(--teal);background:var(--teal-bg);font-size:12px;color:var(--teal);font-weight:500;margin-bottom:3px}
@@ -141,6 +161,29 @@
 .stu-tp.flash{background:rgba(13,82,69,.15);border-radius:4px;margin:0 -4px;padding:8px 6px;animation:para-flash 1.8s ease-out forwards}
 @keyframes para-flash{0%,30%{background:rgba(13,82,69,.18)}100%{background:transparent}}
 
+/* Segment styles (structured rich content) */
+.seg-heading{font-weight:700;font-size:14px;color:var(--t1);margin:8px 0 4px}
+.seg-math{margin:6px 0;text-align:center}
+.seg-figure{margin:8px 0;text-align:center}
+.seg-figure img{max-width:100%;border-radius:4px}
+.seg-figure figcaption{font-size:11px;color:var(--t3);margin-top:4px}
+
+/* Rail (collapsed textbook) */
+.stu-text-rail{width:36px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;cursor:pointer;transition:background .15s}
+.stu-text-rail:hover{background:var(--surface2)}
+.stu-text-rail-icon{width:22px;height:22px;border-radius:4px;background:var(--teal-bg);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.stu-text-rail-label{writing-mode:vertical-rl;font-size:10px;color:var(--t2);font-weight:600;letter-spacing:.6px}
+.stu-text-rail-badge{font-size:9px;color:var(--teal);font-weight:600;margin-top:auto}
+
+/* Textbook panel (expanded) — 50% side-by-side */
+.stu-text-overlay{flex:1 1 50%;min-width:0;min-height:0;border-left:1px solid var(--border);box-shadow:none;position:relative}
+
+/* Close button */
+.stu-text-close{width:24px;height:24px;border-radius:4px;border:none;background:transparent;color:var(--t3);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;margin-left:auto}
+.stu-text-close:hover{background:var(--surface2);color:var(--t1)}
+
+@media (max-width:768px){.stu-text-overlay{position:absolute;top:0;bottom:0;right:0;width:100%;z-index:10;flex:none}}
+
 /* Para reference links */
 .stu-para-link{color:var(--teal);cursor:pointer;font-weight:600;border-bottom:1.5px dashed var(--teal);transition:opacity .15s}
 .stu-para-link:hover{opacity:.7}
@@ -183,6 +226,70 @@
 .stu-audio-btn{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border:none;background:var(--teal-bg);color:var(--teal);border-radius:50%;cursor:pointer;font-size:10px;margin-right:4px;vertical-align:middle;transition:background .2s;padding:0;font-family:inherit;line-height:1;flex-shrink:0}
 .stu-audio-btn:hover{background:var(--teal);color:#fff}
 .stu-audio-btn.playing{background:var(--teal);color:#fff}
+
+/* ── Select Evidence ── */
+.se-root{/* container — inherits from practice phase */}
+.se-strip{display:flex;gap:6px;margin-bottom:16px;padding:4px;background:var(--surface2);border-radius:8px}
+.se-strip-btn{flex:1;padding:8px 4px;border-radius:6px;border:none;background:transparent;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--t2);transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.se-strip-btn.active{background:var(--surface);color:var(--t1);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.se-strip-btn.done{color:var(--green)}
+.se-strip-func{font-size:9px;color:var(--t3);font-weight:500}
+.se-strip-btn.done .se-strip-func{color:var(--green)}
+
+.se-card{margin-bottom:16px}
+.se-range{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--teal);background:var(--teal-bg);padding:3px 8px;border-radius:3px;margin-bottom:10px}
+.se-title{font-size:18px;font-weight:700;letter-spacing:-.2px;line-height:1.4;color:var(--t1);margin-bottom:4px}
+.se-help{font-size:12px;color:var(--t2);line-height:1.6;margin-bottom:14px}
+
+.se-step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.se-step-num{width:16px;height:16px;border-radius:50%;background:var(--t1);color:var(--surface);font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.se-step-num.done{background:var(--green)}
+
+.se-func-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px}
+.se-func-btn{padding:10px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--t2);text-align:center;transition:all .12s}
+.se-func-btn:hover:not(:disabled){border-color:var(--t3)}
+.se-func-btn.selected{border-color:var(--teal);background:var(--teal-bg);color:var(--teal);font-weight:600}
+.se-func-btn.locked{border-color:var(--green);background:var(--green-bg);color:var(--green);font-weight:600;cursor:default}
+.se-func-btn.wrong{border-color:var(--red);background:var(--red-bg);color:var(--red)}
+.se-func-btn.dim{opacity:.4;cursor:default}
+
+.se-ev-callout{padding:14px 16px;background:var(--bg);border:1px dashed rgba(28,28,26,.14);border-radius:10px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start}
+.se-ev-arrow{font-size:18px;color:var(--teal);flex-shrink:0;margin-top:1px}
+.se-ev-text{font-size:13px;line-height:1.6;color:var(--t2)}
+.se-ev-count{font-size:11px;color:var(--t3);margin-top:6px}
+
+.se-action-row{display:flex;gap:10px;align-items:center;margin-top:8px}
+.se-tally{font-size:11px;color:var(--t3);flex:1}
+.se-tally.ok{color:var(--green);font-weight:600}
+.se-btn{padding:10px 16px;border-radius:8px;border:none;background:var(--t1);color:var(--surface);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.se-btn.off{opacity:.35;cursor:default}
+.se-btn-ghost{padding:9px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--t2);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
+
+.se-hint-toggle{font-size:11px;color:var(--t3);cursor:pointer;padding:4px 8px;border-radius:4px;background:transparent;border:1px solid var(--border);font-family:inherit;align-self:flex-start}
+.se-hint-box{padding:10px 14px;background:var(--amber-bg);border:1px solid rgba(122,77,14,.15);border-radius:8px;font-size:12px;color:var(--amber);line-height:1.6;margin-top:8px}
+
+.se-ai-box{padding:14px 16px;background:var(--purple-bg);border-radius:10px;border:1px solid rgba(58,49,133,.12);margin-top:14px}
+.se-ai-head{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+.se-ai-dot{width:7px;height:7px;border-radius:50%;background:var(--purple);flex-shrink:0;margin-top:6px}
+.se-ai-opener{font-size:12px;line-height:1.7;color:var(--purple);font-weight:500}
+.se-ai-note{font-size:12px;line-height:1.65;color:var(--purple);padding:8px 0 8px 16px;border-left:2px solid rgba(58,49,133,.25);margin-bottom:6px;margin-left:2px}
+.se-ai-quote{font-weight:600;color:var(--t1)}
+
+.se-why-list{margin-top:10px;padding:10px 14px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
+.se-why-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);margin-bottom:6px}
+.se-why-item{font-size:12px;line-height:1.6;padding:5px 0;display:flex;gap:8px;color:var(--t2);border-bottom:1px dashed var(--border)}
+.se-why-item.last{border-bottom:none}
+.se-why-dot{flex-shrink:0;font-size:11px;margin-top:1px;font-weight:700}
+.se-why-dot.good{color:var(--green)}
+.se-why-dot.bad{color:var(--red)}
+
+/* Token styles (used in TextPanel overlay) */
+.se-tk{transition:all .12s}
+.se-tk-idle{cursor:pointer;padding:2px 1px;margin:0 -1px;border-radius:3px;border-bottom:1px dotted rgba(28,28,26,.18)}
+.se-tk-picked{background:#fef6c8;color:var(--t1);padding:3px 5px;margin:0 -2px;border-radius:3px;box-shadow:inset 0 -8px 0 #fce98a;font-weight:500;cursor:pointer}
+.se-tk-good{background:var(--green-bg);color:var(--green);padding:3px 5px;margin:0 -2px;border-radius:3px;font-weight:600}
+.se-tk-bad{background:var(--red-bg);color:var(--red);padding:3px 5px;margin:0 -2px;border-radius:3px;text-decoration:line-through;text-decoration-color:rgba(148,41,41,.4)}
+.se-tk-missed{background:rgba(45,102,18,.07);padding:3px 5px;margin:0 -2px;border-radius:3px;border-bottom:1px dashed var(--green);color:var(--t2)}
 
 /* ── Typing indicator ── */
 .stu-typing{display:flex;align-items:center;gap:4px;padding:8px 0}

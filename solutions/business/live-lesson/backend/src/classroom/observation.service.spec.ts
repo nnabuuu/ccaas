@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ObservationService } from './observation.service';
 import { ObservationEvent } from '../entities/observation-event.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 const ANCHORS = [
-  { id: 'K1', type: 'knowledge' as const, label: 'Scanning策略识别', description: '能区分scanning和精读', signals: ['scanning', '快速定位'] },
-  { id: 'K2', type: 'knowledge' as const, label: '文本结构理解', description: '识别对比结构', signals: ['对比', '结构'] },
-  { id: 'K3', type: 'knowledge' as const, label: '细节信息提取', description: '准确提取事实信息', signals: ['细节', '事实'] },
-  { id: 'M1', type: 'misconception' as const, label: '表面理解陷阱', description: '只理解字面意思', signals: ['字面'] },
-  { id: 'M2', type: 'misconception' as const, label: '证据不足论证', description: '不引用文本证据', signals: ['无证据'] },
+  { id: 'K1', type: 'knowledge' as const, label: 'Scanning策略识别', description: '能区分scanning和精读' },
+  { id: 'K2', type: 'knowledge' as const, label: '文本结构理解', description: '识别对比结构' },
+  { id: 'K3', type: 'knowledge' as const, label: '细节信息提取', description: '准确提取事实信息' },
+  { id: 'M1', type: 'misconception' as const, label: '表面理解陷阱', description: '只理解字面意思' },
+  { id: 'M2', type: 'misconception' as const, label: '证据不足论证', description: '不引用文本证据' },
 ];
 
 describe('ObservationService — aggregation', () => {
@@ -57,22 +57,45 @@ describe('ObservationService — aggregation', () => {
   // ─────────────────────────────────────────────
 
   describe('session lifecycle', () => {
-    it('should initialize anchors and return them', () => {
-      const anchors = svc.getAnchors(SESSION);
-      expect(anchors).toHaveLength(5);
-      expect(anchors.map(a => a.id)).toEqual(['K1', 'K2', 'K3', 'M1', 'M2']);
+    it('should initialize indicators and return them', () => {
+      const indicators = svc.getIndicators(SESSION);
+      expect(indicators).toHaveLength(5);
+      expect(indicators.map(a => a.id)).toEqual(['K1', 'K2', 'K3', 'M1', 'M2']);
     });
 
     it('should return empty logs before any students', () => {
       expect(svc.getStudentLogs(SESSION)).toEqual([]);
     });
 
-    it('should return empty anchors for unknown session', () => {
-      expect(svc.getAnchors('nonexistent')).toEqual([]);
+    it('should return empty indicators for unknown session', () => {
+      expect(svc.getIndicators('nonexistent')).toEqual([]);
     });
 
     it('should return empty logs for unknown session', () => {
       expect(svc.getStudentLogs('nonexistent')).toEqual([]);
+    });
+  });
+
+  // ─────────────────────────────────────────────
+  // 1b. getStudentLog (singular)
+  // ─────────────────────────────────────────────
+
+  describe('getStudentLog (singular)', () => {
+    it('should return null for unknown session', () => {
+      expect(svc.getStudentLog('nonexistent', 'stu-1')).toBeNull();
+    });
+
+    it('should return null for unknown student in known session', () => {
+      expect(svc.getStudentLog(SESSION, 'nonexistent')).toBeNull();
+    });
+
+    it('should return the specific student log', async () => {
+      await svc.addSystemEvent(SESSION, 'stu-1', 'A', 'join', {}, 'A joined');
+      await svc.addSystemEvent(SESSION, 'stu-2', 'B', 'join', {}, 'B joined');
+      const log = svc.getStudentLog(SESSION, 'stu-1');
+      expect(log).not.toBeNull();
+      expect(log!.studentId).toBe('stu-1');
+      expect(log!.studentName).toBe('A');
     });
   });
 
@@ -106,6 +129,18 @@ describe('ObservationService — aggregation', () => {
       expect(logs[0].events).toHaveLength(2);
       expect(logs[0].events[1].systemType).toBe('exercise_result');
       expect(logs[0].systemMetrics.exerciseCorrectRate).toBe(75);
+    });
+
+    it('should record a discuss_depth event with data payload', async () => {
+      await svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '小明 加入课堂');
+      await svc.addSystemEvent(SESSION, 'stu-1', '小明', 'discuss_depth', { taskNum: 1, depth: 'partial', interactionType: 'probeReply' }, 'Discuss depth: partial');
+
+      const logs = svc.getStudentLogs(SESSION);
+      expect(logs[0].events).toHaveLength(2);
+      const depthEvent = logs[0].events[1];
+      expect(depthEvent.systemType).toBe('discuss_depth');
+      expect(depthEvent.data).toEqual({ taskNum: 1, depth: 'partial', interactionType: 'probeReply' });
+      expect(depthEvent.gist).toBe('Discuss depth: partial');
     });
 
     it('should assign incrementing event IDs', () => {
@@ -177,7 +212,7 @@ describe('ObservationService — aggregation', () => {
     it('should return struggling when 1 misconception event in last 5 min', () => {
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       const log = svc.getStudentLogs(SESSION)[0];
-      // Inject a recent LLM event with a misconception anchor
+      // Inject a recent LLM event with a misconception indicator
       log.events.push({
         id: 'e2', timestamp: Date.now(), updatedAt: Date.now(),
         anchors: ['M1'], gist: '混淆了字面意思', quote: null, source: 'llm',
@@ -249,10 +284,10 @@ describe('ObservationService — aggregation', () => {
         studentName: '小明',
         studentId: 'stu-1',
         severity: 'urgent',
-        anchorId: 'M1',
+        indicatorId: 'M1',
       });
       expect(alerts[0].message).toContain('小明');
-      expect(alerts[0].message).toContain('表面理解陷阱'); // anchor label
+      expect(alerts[0].message).toContain('表面理解陷阱'); // indicator label
     });
 
     it('should generate warn alert for struggling student', () => {
@@ -266,7 +301,7 @@ describe('ObservationService — aggregation', () => {
       const alerts = svc.generateAlerts(SESSION);
       expect(alerts).toHaveLength(1);
       expect(alerts[0].severity).toBe('warn');
-      expect(alerts[0].anchorId).toBe('M2');
+      expect(alerts[0].indicatorId).toBe('M2');
     });
 
     it('should generate info alert for idle student', () => {
@@ -313,15 +348,15 @@ describe('ObservationService — aggregation', () => {
   });
 
   // ─────────────────────────────────────────────
-  // 6. computeAnchorStats — cross-student aggregation
+  // 6. computeIndicatorStats — cross-student aggregation
   // ─────────────────────────────────────────────
 
-  describe('computeAnchorStats', () => {
+  describe('computeIndicatorStats', () => {
     it('should return zero counts for all anchors when no events have anchors', () => {
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       svc.addSystemEvent(SESSION, 'stu-2', '小红', 'join', {}, '加入');
 
-      const stats = svc.computeAnchorStats(SESSION);
+      const stats = svc.computeIndicatorStats(SESSION);
       expect(stats).toHaveLength(5);
       for (const s of stats) {
         expect(s.studentCount).toBe(0);
@@ -329,7 +364,7 @@ describe('ObservationService — aggregation', () => {
       }
     });
 
-    it('should count distinct students per anchor', () => {
+    it('should count distinct students per indicator', () => {
       // 小明 hits K1
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       const logMing = svc.getStudentLogs(SESSION).find(l => l.studentId === 'stu-1')!;
@@ -346,14 +381,14 @@ describe('ObservationService — aggregation', () => {
         anchors: ['K1', 'K2'], gist: '小红区分了scanning和精读结构', quote: null, source: 'llm',
       });
 
-      // 小刚 only joins — no anchors
+      // 小刚 only joins — no indicators
       svc.addSystemEvent(SESSION, 'stu-3', '小刚', 'join', {}, '加入');
 
-      const stats = svc.computeAnchorStats(SESSION);
-      const k1 = stats.find(s => s.anchorId === 'K1')!;
-      const k2 = stats.find(s => s.anchorId === 'K2')!;
-      const k3 = stats.find(s => s.anchorId === 'K3')!;
-      const m1 = stats.find(s => s.anchorId === 'M1')!;
+      const stats = svc.computeIndicatorStats(SESSION);
+      const k1 = stats.find(s => s.indicatorId === 'K1')!;
+      const k2 = stats.find(s => s.indicatorId === 'K2')!;
+      const k3 = stats.find(s => s.indicatorId === 'K3')!;
+      const m1 = stats.find(s => s.indicatorId === 'M1')!;
 
       expect(k1.studentCount).toBe(2); // 小明 + 小红
       expect(k2.studentCount).toBe(1); // 小红 only
@@ -361,7 +396,7 @@ describe('ObservationService — aggregation', () => {
       expect(m1.studentCount).toBe(0);
     });
 
-    it('should return latest gist per anchor across students', () => {
+    it('should return latest gist per indicator across students', () => {
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       const log1 = svc.getStudentLogs(SESSION)[0];
       log1.events.push({
@@ -376,8 +411,8 @@ describe('ObservationService — aggregation', () => {
         anchors: ['K1'], gist: '更新的理解', quote: null, source: 'llm',
       });
 
-      const stats = svc.computeAnchorStats(SESSION);
-      const k1 = stats.find(s => s.anchorId === 'K1')!;
+      const stats = svc.computeIndicatorStats(SESSION);
+      const k1 = stats.find(s => s.indicatorId === 'K1')!;
       expect(k1.latestGist).toBe('更新的理解');
       expect(k1.updatedAt).toBe(5000);
     });
@@ -393,13 +428,13 @@ describe('ObservationService — aggregation', () => {
         });
       }
 
-      const stats = svc.computeAnchorStats(SESSION);
-      const m1 = stats.find(s => s.anchorId === 'M1')!;
+      const stats = svc.computeIndicatorStats(SESSION);
+      const m1 = stats.find(s => s.indicatorId === 'M1')!;
       expect(m1.studentCount).toBe(3);
       expect(m1.type).toBe('misconception');
     });
 
-    it('should not double-count when same student has multiple events for same anchor', () => {
+    it('should not double-count when same student has multiple events for same indicator', () => {
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       const log = svc.getStudentLogs(SESSION)[0];
       log.events.push(
@@ -407,8 +442,8 @@ describe('ObservationService — aggregation', () => {
         { id: 'e3', timestamp: 2000, updatedAt: 2000, anchors: ['K1'], gist: '第二次', quote: null, source: 'llm' as const },
       );
 
-      const stats = svc.computeAnchorStats(SESSION);
-      const k1 = stats.find(s => s.anchorId === 'K1')!;
+      const stats = svc.computeIndicatorStats(SESSION);
+      const k1 = stats.find(s => s.indicatorId === 'K1')!;
       expect(k1.studentCount).toBe(1); // same student, counted once
       expect(k1.latestGist).toBe('第二次'); // but latest gist is from e3
     });
@@ -461,11 +496,11 @@ describe('ObservationService — aggregation', () => {
       expect(allLogs).toHaveLength(3);
       expect(allLogs.every(l => l.events.length >= 2)).toBe(true); // at least join + result
 
-      // Anchor stats
-      const stats = svc.computeAnchorStats(SESSION);
-      const k1 = stats.find(s => s.anchorId === 'K1')!;
-      const m1 = stats.find(s => s.anchorId === 'M1')!;
-      const m2 = stats.find(s => s.anchorId === 'M2')!;
+      // Indicator stats
+      const stats = svc.computeIndicatorStats(SESSION);
+      const k1 = stats.find(s => s.indicatorId === 'K1')!;
+      const m1 = stats.find(s => s.indicatorId === 'M1')!;
+      const m2 = stats.find(s => s.indicatorId === 'M2')!;
 
       expect(k1.studentCount).toBe(2); // 小明 + 小刚
       expect(k1.type).toBe('knowledge');
@@ -515,7 +550,7 @@ describe('ObservationService — aggregation', () => {
 
       const alerts = svc.generateAlerts(SESSION);
       expect(alerts[0].severity).toBe('urgent');
-      expect(alerts[0].anchorId).toBe('M1'); // last misconception anchor
+      expect(alerts[0].indicatorId).toBe('M1'); // last misconception indicator
     });
   });
 
@@ -593,8 +628,8 @@ describe('ObservationService — aggregation', () => {
     });
   });
 
-  describe('deriveStatus with K-anchor awareness (Phase 2)', () => {
-    it('should return active when K-anchors outweigh single M-anchor', () => {
+  describe('deriveStatus with K-indicator awareness (Phase 2)', () => {
+    it('should return active when K-indicators outweigh single M-indicator', () => {
       svc.addSystemEvent(SESSION, 'stu-1', '小明', 'join', {}, '加入');
       const log = svc.getStudentLogs(SESSION)[0];
       const now = Date.now();
@@ -659,7 +694,7 @@ describe('ObservationService — aggregation', () => {
     });
   });
 
-  describe('computeAnchorStats distinct student counting (Phase 2)', () => {
+  describe('computeIndicatorStats distinct student counting (Phase 2)', () => {
     it('should count distinct students correctly with K and M mixed events', () => {
       // Student A: K1 + M1
       svc.addSystemEvent(SESSION, 'stu-a', 'A', 'join', {}, 'A 加入');
@@ -685,9 +720,9 @@ describe('ObservationService — aggregation', () => {
         anchors: ['M1'], gist: 'C misconception', quote: null, source: 'llm',
       });
 
-      const stats = svc.computeAnchorStats(SESSION);
-      const k1 = stats.find(s => s.anchorId === 'K1')!;
-      const m1 = stats.find(s => s.anchorId === 'M1')!;
+      const stats = svc.computeIndicatorStats(SESSION);
+      const k1 = stats.find(s => s.indicatorId === 'K1')!;
+      const m1 = stats.find(s => s.indicatorId === 'M1')!;
 
       expect(k1.studentCount).toBe(2); // A + B
       expect(m1.studentCount).toBe(2); // A + C
@@ -745,8 +780,8 @@ describe('ObservationService — aggregation', () => {
       expect(svc.generateAlerts(SESSION)).toEqual([]);
     });
 
-    it('should handle computeAnchorStats with empty student list', () => {
-      const stats = svc.computeAnchorStats(SESSION);
+    it('should handle computeIndicatorStats with empty student list', () => {
+      const stats = svc.computeIndicatorStats(SESSION);
       expect(stats).toHaveLength(5);
       expect(stats.every(s => s.studentCount === 0)).toBe(true);
     });
@@ -759,11 +794,263 @@ describe('ObservationService — aggregation', () => {
         anchors: ['K1', 'K2', 'M1'], gist: '复杂事件', quote: null, source: 'llm',
       });
 
-      const stats = svc.computeAnchorStats(SESSION);
-      expect(stats.find(s => s.anchorId === 'K1')!.studentCount).toBe(1);
-      expect(stats.find(s => s.anchorId === 'K2')!.studentCount).toBe(1);
-      expect(stats.find(s => s.anchorId === 'M1')!.studentCount).toBe(1);
-      expect(stats.find(s => s.anchorId === 'K3')!.studentCount).toBe(0);
+      const stats = svc.computeIndicatorStats(SESSION);
+      expect(stats.find(s => s.indicatorId === 'K1')!.studentCount).toBe(1);
+      expect(stats.find(s => s.indicatorId === 'K2')!.studentCount).toBe(1);
+      expect(stats.find(s => s.indicatorId === 'M1')!.studentCount).toBe(1);
+      expect(stats.find(s => s.indicatorId === 'K3')!.studentCount).toBe(0);
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// observeTurn + callObserverGlm — GLM mock tests
+// ═══════════════════════════════════════════════════════════════
+
+describe('ObservationService — observeTurn + GLM', () => {
+  let module: TestingModule;
+  let svc: ObservationService;
+  let eventRepo: Repository<ObservationEvent>;
+  let configService: ConfigService;
+
+  const SESSION = 'glm-sess';
+  const originalFetch = global.fetch;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [ObservationEvent],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([ObservationEvent]),
+      ],
+      providers: [ObservationService],
+    }).compile();
+
+    svc = module.get(ObservationService);
+    eventRepo = module.get(getRepositoryToken(ObservationEvent));
+    configService = module.get(ConfigService);
+  });
+
+  afterAll(async () => {
+    global.fetch = originalFetch;
+    await module.close();
+  });
+
+  beforeEach(async () => {
+    await svc.cleanupSession(SESSION);
+    await eventRepo.clear();
+    svc.initSession(SESSION, ANCHORS);
+    jest.restoreAllMocks();
+    global.fetch = originalFetch;
+  });
+
+  const TURN = { student: '我觉得scanning就是快速阅读', ai: '对，scanning是一种快速浏览策略' };
+  const CTX = { currentStep: '1', exerciseCorrectRate: 80, idleSeconds: 0 };
+
+  it('should return early when no API key', async () => {
+    jest.spyOn(configService, 'get').mockReturnValue(undefined);
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    // Only the join event; no LLM event appended
+    expect(logs[0].events).toHaveLength(1);
+  });
+
+  it('should return early when indicators are empty', async () => {
+    const emptySess = 'empty-indicators';
+    svc.initSession(emptySess, []);
+    svc.addSystemEvent(emptySess, 's1', '小明', 'join', {}, '加入');
+
+    await svc.observeTurn(emptySess, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(emptySess);
+    expect(logs[0].events).toHaveLength(1);
+  });
+
+  it('should handle GLM skip action (no event appended)', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'ZHIPU_OBSERVER_MODEL') return 'glm-4-flash';
+      return undefined;
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({ action: 'skip', anchors: [], gist: '', quote: null }) } }],
+      }),
+    });
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    // Only join event; skip means no new event
+    expect(logs[0].events).toHaveLength(1);
+    expect(logs[0].systemMetrics.messageCount).toBe(1);
+  });
+
+  it('should append event on GLM append action', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({
+          action: 'append',
+          anchors: ['K1'],
+          gist: '学生理解了scanning策略',
+          quote: '我觉得scanning就是快速阅读',
+        }) } }],
+      }),
+    });
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    expect(logs[0].events).toHaveLength(2); // join + append
+    const llmEvent = logs[0].events[1];
+    expect(llmEvent.source).toBe('llm');
+    expect(llmEvent.anchors).toEqual(['K1']);
+    expect(llmEvent.gist).toBe('学生理解了scanning策略');
+    expect(llmEvent.quote).toBe('我觉得scanning就是快速阅读');
+
+    // Verify persisted to DB
+    const dbEvents = await eventRepo.find({ where: { sessionId: SESSION, studentId: 's1', source: 'llm' } });
+    expect(dbEvents).toHaveLength(1);
+    expect(dbEvents[0].gist).toBe('学生理解了scanning策略');
+  });
+
+  it('should update existing event on GLM update action', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    // First: add a join event and an LLM event manually
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    const log = svc.getStudentLogs(SESSION)[0];
+    log.events.push({
+      id: 'e2', timestamp: Date.now(), updatedAt: Date.now(),
+      anchors: ['K1'], gist: '初步理解', quote: null, source: 'llm',
+    });
+    // Also persist e2 to DB so update can find it
+    await eventRepo.save(eventRepo.create({
+      sessionId: SESSION, studentId: 's1', eventId: 'e2',
+      anchors: ['K1'], gist: '初步理解', quote: null,
+      source: 'llm', systemType: null, data: null, updatedAt: new Date(),
+    }));
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({
+          action: 'update',
+          updateTarget: 'e2',
+          anchors: ['K1', 'K2'],
+          gist: '深入理解了scanning和文本结构',
+          quote: 'scanning就是快速找关键词',
+        }) } }],
+      }),
+    });
+
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    // Still 2 events (join + updated e2), no new event appended
+    expect(logs[0].events).toHaveLength(2);
+    const updated = logs[0].events.find(e => e.id === 'e2')!;
+    expect(updated.anchors).toEqual(['K1', 'K2']);
+    expect(updated.gist).toBe('深入理解了scanning和文本结构');
+    expect(updated.quote).toBe('scanning就是快速找关键词');
+  });
+
+  it('should handle fetch throwing an error gracefully', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    // Should not throw
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    expect(logs[0].events).toHaveLength(1); // only join
+  });
+
+  it('should handle HTTP non-200 response', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      text: () => Promise.resolve('Rate limit exceeded'),
+    });
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    expect(logs[0].events).toHaveLength(1); // only join
+  });
+
+  it('should handle response with no content', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ choices: [{ message: {} }] }),
+    });
+
+    svc.addSystemEvent(SESSION, 's1', '小明', 'join', {}, '加入');
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    const logs = svc.getStudentLogs(SESSION);
+    expect(logs[0].events).toHaveLength(1); // only join
+  });
+
+  it('should include (empty) in prompt when existingEvents is empty', async () => {
+    jest.spyOn(configService, 'get').mockImplementation((key: string) => {
+      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      return undefined;
+    });
+
+    const fetchSpy = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        choices: [{ message: { content: JSON.stringify({ action: 'skip', anchors: [], gist: '', quote: null }) } }],
+      }),
+    });
+    global.fetch = fetchSpy;
+
+    // Do NOT add any events before observeTurn (ensureStudentLog creates empty log)
+    await svc.observeTurn(SESSION, 's1', '小明', TURN, CTX);
+
+    // Verify fetch was called with (empty) in the prompt
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    const systemMsg = body.messages[0].content;
+    expect(systemMsg).toContain('(empty)');
   });
 });

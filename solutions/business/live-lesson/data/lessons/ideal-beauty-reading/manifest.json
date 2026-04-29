@@ -3,6 +3,7 @@
   "title": "Ideal Beauty — 阅读策略训练",
   "subject": "英语",
   "gradeLevel": "高中一年级",
+  "description": "围绕 Ideal Beauty 课文，通过预测、略读、精读、评价、总结五步阅读法训练英语阅读策略。",
   "teachingNotes": "高一英语阅读策略训练课，围绕 B7U2 Ideal Beauty 课文，通过 5 步阅读法（Predict → Skim → Scan+Matrix → Evaluate → Recap）引导学生从信息提取到批判性思维。三端联动教学：教师控制台推进课堂节奏，学生端完成任务，投屏黑板展示结构化板书。",
   "lessonType": "reading",
   "lessonIntro": "Hello! Welcome to today's English reading lesson.\n\nToday we're reading **Ideal Beauty**. Keep one big question in mind:\n\n*Is one idea of physical beauty really more attractive than another?*\n\nWe'll complete 5 tasks. Let's begin!",
@@ -141,7 +142,8 @@
           "You don't need to read every word — strategies help you get more from less",
           "Don't worry about new vocabulary — focus on signal words and structure"
         ],
-        "confirmLabel": "I'm ready, let's go"
+        "confirmLabel": "I'm ready, let's go",
+        "ttsText": "Welcome to Reading Strategies. Today we're reading an article about beauty standards around the world — Ideal Beauty. You'll learn 4 reading strategies that help you read any expository or argumentative text quickly and effectively. First, Predicting — read the title, activate what you already know. Second, Skimming — read first sentences only, find the skeleton. Third, Scanning — read with a purpose, extract key details. And fourth, Evaluating — think critically using evidence. Ready? Let's get started! Remember: this lesson has 5 tasks, each with a strategy briefing beforehand. You don't need to read every word — strategies help you get more from less. Don't worry about new vocabulary — focus on signal words and structure."
       },
       "teacherView": {
         "speechLine": "学生正在阅读课前导读",
@@ -163,6 +165,7 @@
       "type": "task",
       "label": "图式激活",
       "labelEn": "Schema Activation",
+      "displayName": "Predict",
       "strategy": "Predicting",
       "duration": 5,
       "description": "引导学生关注标题 Ideal Beauty，快速提取 ¶1-2 的核心冲突：尼日利亚增肥室 vs 现代媒体审美。",
@@ -228,19 +231,19 @@
       },
       "discuss": {
         "probe": {
-          "q": "For the last question — how did you figure out the answer? Where exactly in the text did you find the clue?",
-          "translate": "你是怎么看出作者的核心问题的？从文章哪里找到的？"
+          "q": "Look at how the writer starts: ¶1 tells us gaining weight is beautiful in Nigeria, but ¶2 says modern media promotes being slim. These are opposite ideas — why do you think the writer begins with this contrast?",
+          "translate": "注意作者的开头方式：¶1 说在尼日利亚增重是美的，¶2 说现代媒体推崇纤瘦。这是两个相反的观点——你觉得作者为什么要用这种对比开头？"
         },
-        "targetInsight": "¶2 uses the phrase 'Many people are worried' to introduce the concept of 'shallow beauty ideals' as a concern, not the author's own conclusion. The conflict opening (¶1 Nigeria vs ¶2 media) sets up the central question.",
+        "targetInsight": "The writer uses two opposing examples (Nigeria fattening rooms vs slim media ideal) to create tension — making the reader question whether there's one 'right' answer about beauty. This technique is called a conflict opening.",
         "commonMisconceptions": [
-          "Confusing Happiness Edem's story with the author's core question",
-          "Thinking ¶2's last sentence is a statement rather than an implied question",
-          "Only seeing the Nigeria vs media surface contrast without noticing the deeper universality question"
+          "Thinking the contrast is just background information with no rhetorical purpose",
+          "Only noticing one side of the contrast without seeing the deliberate opposition",
+          "Confusing 'why the writer does it' with 'what the text says'"
         ],
         "scaffoldStrategies": [
-          "If vague: 'Which specific sentence in ¶2 gave you the clue?'",
-          "If only mentions ¶1: 'Good — now look at how ¶2 ends. What question is the writer really asking?'",
-          "If correct: 'Notice the writer's technique: two opposing examples → big question. This is called a conflict opening.'"
+          "If vague: 'Think about your reaction — when you read ¶1 then ¶2, did something surprise you? That feeling is exactly what the writer wanted.'",
+          "If only mentions one side: 'Good. Now think about the OTHER paragraph too — what happens when you put these two opposite ideas together?'",
+          "If correct: 'Exactly! Two opposing examples make you question: is there one right answer about beauty? This technique is called a conflict opening.'"
         ],
         "insight": "Key technique: The text uses a \"conflict opening\" — two opposing facts, then a question. This is common in argumentative writing.",
         "insightZh": "文章用\"冲突开头\"——先给两个对立事实，再提出问题。这是议论文常见写法。"
@@ -290,59 +293,32 @@
             "body": "当多数学生能说出「不同文化有不同审美」时，引导过渡：\n\"Good. Now let's see HOW the author organizes these ideas. Read only the first sentence of each paragraph.\""
           }
         ]
-      }
-    },
-    {
-      "id": "i1",
-      "idx": 2,
-      "type": "instruction",
-      "label": "Skimming 讲解",
-      "labelEn": "Skimming Method",
-      "strategy": "Skimming",
-      "duration": 2,
-      "description": "讲解 Skimming 阅读策略：只读首句 + 关键转折词，快速把握文章骨架。",
-      "focusParagraphs": [
-        "p3",
-        "p4",
-        "p5",
-        "p6",
-        "p7",
-        "p8"
-      ],
-      "studentView": {
-        "title": "What is Skimming?",
-        "body": "<p><strong>Skimming</strong> is a fast reading technique: <strong>don't read word by word</strong> — only read the <strong>first sentence</strong> of each paragraph and look for <strong>signal words</strong>.</p><p>Why does this work? In expository and argumentative texts, the <strong>first sentence is usually the topic sentence</strong> — it tells you what the paragraph is about.</p><p>Look for these <strong>signal words</strong>:</p><ul><li><code>change over time</code> → the paragraph is about <strong>history</strong></li><li><code>around the world</code> / <code>different cultures</code> → it's about <strong>cultural differences</strong></li><li><code>It appears that</code> → it's a <strong>summary / conclusion</strong></li></ul><p>In the next task, use skimming to read the first sentences of ¶3–8 and decide which structural section each paragraph belongs to.</p>",
-        "keyPoints": [
-          "Key formula: first sentence + signal words = paragraph function",
-          "3 minutes of skimming beats 30 minutes of word-by-word reading",
-          "After spotting signal words, classify paragraphs as History, Culture, or Conclusion"
-        ]
       },
-      "teacherView": {
-        "speechLine": "学生正在学习 Skimming 方法",
-        "focusType": "signal-words",
-        "focusTitle": "Skimming 讲解",
-        "focusSubtitle": "学生自学中",
-        "quickActions": [],
-        "cueCards": [
-          {
-            "title": "自学内容",
-            "body": "学生正在阅读 Skimming 方法讲解：首句 + 信号词 = 段落功能。\n等待学生确认后进入结构解码任务。"
-          }
-        ]
+      "studentView": {
+        "title": "What is Predicting?",
+        "body": "<p><strong>Predicting</strong> means using clues — like the <strong>title</strong>, <strong>images</strong>, and <strong>first paragraph</strong> — to guess what a text is about <em>before</em> you read it fully.</p><p>Why does this work? When you predict, your brain <strong>activates prior knowledge</strong> — everything you already know about the topic. This makes new information easier to understand and remember.</p><p>Try this now:</p><ol><li>Read the title: <strong>Ideal Beauty</strong> — what does \"ideal\" mean here?</li><li>Skim ¶1 quickly — what <strong>specific example</strong> does the writer give?</li><li>Skim ¶2 — does it <strong>agree or disagree</strong> with ¶1?</li></ol><p>Then answer the 3 questions to check your predictions.</p>",
+        "keyPoints": [
+          "Predicting = title + first glance → activate what you already know",
+          "Look for a CONFLICT: two opposing ideas about beauty",
+          "Don't read every word yet — just enough to form a prediction"
+        ],
+        "confirmLabel": "I've read the title — let's predict"
       }
     },
     {
       "id": "s2",
-      "idx": 3,
+      "idx": 2,
       "type": "task",
       "showRoles": true,
       "label": "结构解码",
       "labelEn": "Structural Decoding",
+      "displayName": "Skim",
       "strategy": "Skimming",
       "duration": 8,
       "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：Phenomenon → History → Culture → Conclusion。",
       "focusParagraphs": [
+        "p1",
+        "p2",
         "p3",
         "p4",
         "p5",
@@ -350,55 +326,317 @@
         "p7",
         "p8"
       ],
-      "exerciseLabel": "Match each section to its function.",
+      "exerciseLabel": "Match each section to its function — then prove it from the text.",
       "subtitle": "Find the skeleton",
       "summary": "Text structure: Phenomenon → History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
       "answerKey": {
-        "type": "match",
-        "options": [
+        "type": "select-evidence",
+        "functionOptions": [
           "Phenomenon",
           "History",
           "Culture",
           "Conclusion"
         ],
-        "answers": [
+        "sections": [
           {
-            "pairIdx": 0,
-            "left": "¶1-2",
-            "correct": "Phenomenon",
-            "hint": "\"Phenomenon\" = **opening conflict**. What two opposing ideas of beauty do ¶1-2 present?",
-            "hintZh": "Phenomenon = **开头的冲突**。¶1-2 提出了哪两个**对立**的审美观？",
-            "walkthrough": "¶1 opens with a specific story (Happiness Edem gaining weight). ¶2 contrasts this with modern media beauty. Together they present **the opening conflict** — two opposing beauty ideals. This is the 'Phenomenon' that the rest of the article will explain. → Phenomenon",
-            "walkthroughZh": "¶1 用一个具体故事开头（增肥室），¶2 对比现代媒体审美。两段一起呈现了**开篇冲突**——两种对立的审美观。这就是文章后面要解释的现象。→ Phenomenon"
+            "id": "p12",
+            "label": "¶1-2",
+            "range": [
+              1,
+              2
+            ],
+            "correctFunction": "Phenomenon",
+            "hint": "Look for the two opposing IDEALS + the pivot question + the named ISSUE.",
+            "hintZh": "找两个对立的\"美的标准\" + 转折问句 + 被命名的问题。",
+            "aiCorrect": "Right — these phrases set up TWO opposing ideals + the named issue (\"shallow beauty ideals\"). That tension is the **phenomenon** the rest of the text investigates.",
+            "aiPartial": "Look for the **conflict-makers** — the two opposing ideals + the question that pivots between them."
           },
           {
-            "pairIdx": 1,
-            "left": "¶3-4",
-            "correct": "History",
-            "hint": "Look for **TIME** words in ¶3's first sentence: \"**change over time**\", \"**different periods**\".",
-            "hintZh": "找 ¶3 首句中的**时间**信号词：\"**change over time**\"、\"**different periods**\"。",
-            "walkthrough": "¶3 first sentence: *'Ideas about physical beauty **change over time** and **different periods of history** reveal different views.'* Both 'change over time' and 'periods of history' are **TIME** signal words. Time = History. → History",
-            "walkthroughZh": "¶3 首句：*'Ideas about physical beauty **change over time** and **different periods of history**…'* 'change over time' 和 'periods of history' 都是**时间**信号词。时间 = 历史。→ History"
+            "id": "p34",
+            "label": "¶3-4",
+            "range": [
+              3,
+              4
+            ],
+            "correctFunction": "History",
+            "hint": "Look for TIME signals — phrases pointing to a time period: \"change over time\", \"ancient Egypt\", \"the 1600s\", \"Elizabethan England\".",
+            "hintZh": "找时间信号——指向时间段的短语，包括古代地名（如 \"ancient Egypt\"）。",
+            "aiCorrect": "Exactly — all TIME signals: \"change over time\", \"different periods of history\", \"ancient Egypt\", \"the 1600s\", \"Elizabethan England\". Time words → History.",
+            "aiPartial": "You're mixing time markers with descriptive details. Which words specifically point to a *time period*?"
           },
           {
-            "pairIdx": 2,
-            "left": "¶5-7",
-            "correct": "Culture",
-            "hint": "Look for **PLACE** words in ¶5's first sentence: \"**different cultures around the world**\".",
-            "hintZh": "找 ¶5 首句中的**地点**信号词：\"**different cultures around the world**\"。",
-            "walkthrough": "¶5 first sentence: *'Within **different cultures around the world**, there is a huge difference…'* The phrase 'different cultures around the world' is a **PLACE** signal word. Place = Culture. → Culture",
-            "walkthroughZh": "¶5 首句：*'Within **different cultures around the world**…'* 'different cultures around the world' 是**地点**信号词。地点 = 文化。→ Culture"
+            "id": "p57",
+            "label": "¶5-7",
+            "range": [
+              5,
+              6,
+              7
+            ],
+            "correctFunction": "Culture",
+            "hint": "Look for PLACE signals — country / culture names: \"Borneo\", \"New Zealand\", \"Myanmar\", \"Indonesia\", plus \"different cultures around the world\".",
+            "hintZh": "找地点/文化信号——国家名称。",
+            "aiCorrect": "Yes — all PLACE / CULTURE signals: \"different cultures around the world\", \"Borneo\", \"New Zealand\", \"Myanmar\", \"Indonesia\", \"cultural identity\". Multiple places = Culture.",
+            "aiPartial": "You picked some practices. Those are *examples*, not signals. What word repeats at the start of each paragraph?"
           },
           {
-            "pairIdx": 3,
-            "left": "¶8",
-            "correct": "Conclusion",
-            "hint": "\"**It appears that**\" is a **summary** signal — it introduces the conclusion.",
-            "hintZh": "\"**It appears that**\" 是**总结**信号词——引出结论。",
-            "walkthrough": "¶8 starts with: *'**It appears that** beauty really is only skin deep.'* 'It appears that' is a **summary** signal — the writer is wrapping up. Summary = Conclusion. → Conclusion",
-            "walkthroughZh": "¶8 开头：*'**It appears that** beauty really is only skin deep.'* 'It appears that' 是**总结**信号词——作者在做总结。总结 = 结论。→ Conclusion"
+            "id": "p8",
+            "label": "¶8",
+            "range": [
+              8
+            ],
+            "correctFunction": "Conclusion",
+            "hint": "Three moves: SUMMARY phrase (\"appears that\"), list pulling earlier examples together (\"whether… or…\"), and final CLAIM (\"cultural values, not just vanity\").",
+            "hintZh": "总结词 + 把前面例子收拢的列表 + 最终判断。",
+            "aiCorrect": "Perfect — a summary phrase (\"appears that\"), a list pulling earlier examples together (\"whether… or…\"), and a final claim. No new evidence — just a verdict.",
+            "aiPartial": "A conclusion has three moves: summary phrase, refer back to earlier examples, final claim. Find each one."
           }
-        ]
+        ],
+        "paragraphTokens": {
+          "1": [
+            {
+              "t": "Nigerian teenager Happiness Edem had just one aim in life: to put on weight. So she spent six months in a "
+            },
+            {
+              "t": "\"fattening room\"",
+              "kind": "pick"
+            },
+            {
+              "t": " where her daily routine was to sleep, eat and grow fat. She went in weighing 60 kg, but came out weighing twice that. "
+            },
+            {
+              "t": "In some parts of Africa",
+              "kind": "distractor",
+              "why": "A place — but ¶1-2 isn't about places. It's about the conflict between two ideals."
+            },
+            {
+              "t": ", "
+            },
+            {
+              "t": "being fat is desirable because it is a sign of attractiveness in women and power and wealth in men",
+              "kind": "evidence",
+              "why": "Names ONE side of the conflict — a clear beauty ideal stated as fact. Sets up the contrast."
+            },
+            {
+              "t": "."
+            }
+          ],
+          "2": [
+            {
+              "t": "However, in magazines and in the media we are bombarded with images of "
+            },
+            {
+              "t": "slim women with a fair complexion",
+              "kind": "evidence",
+              "why": "Names the OTHER side of the conflict. Together with ¶1's fat-as-beauty, this is the phenomenon."
+            },
+            {
+              "t": " and handsome, broad-shouldered young men. It is fairly rare to see short-sighted, middle-aged models. Some people question these "
+            },
+            {
+              "t": "shallow beauty ideals",
+              "kind": "evidence",
+              "why": "The exact phrase the article will question. ¶1-2 sets up this issue — that's what makes them the Phenomenon section."
+            },
+            {
+              "t": ". "
+            },
+            {
+              "t": "Is one idea of physical beauty really more attractive than another?",
+              "kind": "evidence",
+              "why": "A pivot — the writer's central question that the rest of the article investigates."
+            }
+          ],
+          "3": [
+            {
+              "t": "Ideas about physical beauty "
+            },
+            {
+              "t": "change over time",
+              "kind": "evidence",
+              "why": "Pure TIME signal. This is the topic sentence — the cleanest single cue that ¶3-4 is History."
+            },
+            {
+              "t": " and "
+            },
+            {
+              "t": "different periods of history",
+              "kind": "evidence",
+              "why": "TIME signal repeated — the writer is being explicit. \"Periods of history\" can ONLY mean History."
+            },
+            {
+              "t": " reveal different views of beauty, particularly of women. "
+            },
+            {
+              "t": "Egyptian paintings",
+              "kind": "evidence",
+              "why": "A historical reference — anchors the example to a TIME period, which is what makes this section History."
+            },
+            {
+              "t": " often show "
+            },
+            {
+              "t": "slim dark-haired women",
+              "kind": "distractor",
+              "why": "A specific beauty ideal. The signal isn't WHAT they valued — it's WHEN (\"Egyptian\")."
+            },
+            {
+              "t": " as the normal practice, while one of the earliest representations of women in art in Europe is an overweight female. This is the Venus of Hohle Fels and it is more than 35,000 years old."
+            }
+          ],
+          "4": [
+            {
+              "t": "In "
+            },
+            {
+              "t": "the early 1600s",
+              "kind": "evidence",
+              "why": "A specific historical period — confirms the History pattern. Time anchors so far: change over time → Egyptian → 1600s."
+            },
+            {
+              "t": ", artists like Peter Paul Rubens also painted "
+            },
+            {
+              "t": "plump, pale-skinned women",
+              "kind": "distractor",
+              "why": "A description of the beauty ideal — interesting content, but not a structural signal."
+            },
+            {
+              "t": " who were thought to be the most stunning examples of female beauty at that time. In "
+            },
+            {
+              "t": "Elizabethan England",
+              "kind": "evidence",
+              "why": "Another historical era. Four time-anchors in two paragraphs = unambiguous History."
+            },
+            {
+              "t": ", pale skin was still fashionable because it was a sign of wealth: the make-up used to achieve this look was expensive, so only rich people could afford it."
+            }
+          ],
+          "5": [
+            {
+              "t": "Within "
+            },
+            {
+              "t": "different cultures around the world",
+              "kind": "evidence",
+              "why": "Topic sentence. \"Different cultures\" + \"around the world\" = pure PLACE/CULTURE signal. This is THE cue for ¶5-7."
+            },
+            {
+              "t": ", there is a huge difference in what is considered beautiful. Traditional customs, like "
+            },
+            {
+              "t": "tattooing, head-shaving, piercing",
+              "kind": "distractor",
+              "why": "Practices listed — but the structural signal is the place/culture framing, not what they do."
+            },
+            {
+              "t": " or other kinds of bodily changes can express "
+            },
+            {
+              "t": "social position, identity or values",
+              "kind": "evidence",
+              "why": "The deeper cultural meaning — beauty practices express identity, not just aesthetics."
+            },
+            {
+              "t": "."
+            }
+          ],
+          "6": [
+            {
+              "t": "In "
+            },
+            {
+              "t": "Borneo",
+              "kind": "evidence",
+              "why": "A place. The writer announced \"different cultures around the world\" — and now starts listing them."
+            },
+            {
+              "t": ", for instance, "
+            },
+            {
+              "t": "tattoos are like a diary",
+              "kind": "distractor",
+              "why": "A vivid metaphor — content, not a structural signal."
+            },
+            {
+              "t": " because they are a written record of all the important events and places a man has experienced in his life. For "
+            },
+            {
+              "t": "New Zealand's Maoris",
+              "kind": "evidence",
+              "why": "Another place. Pattern emerging: Borneo → New Zealand → (Myanmar next). Locations, not eras = Culture, not History."
+            },
+            {
+              "t": " they reflect "
+            },
+            {
+              "t": "the person's position in society",
+              "kind": "distractor",
+              "why": "Cultural meaning — important content but not the structural cue."
+            },
+            {
+              "t": ". Western society used to have a very low opinion of tattoos. Today they are considered a popular form of body art among the new generation."
+            }
+          ],
+          "7": [
+            {
+              "t": "For Europeans, the tradition of using "
+            },
+            {
+              "t": "metal rings",
+              "kind": "distractor",
+              "why": "A vivid practice — but the structural cue is \"Myanmar\", not what they wear."
+            },
+            {
+              "t": " to stretch a girl's neck may be shocking, but the "
+            },
+            {
+              "t": "Myanmar",
+              "kind": "evidence",
+              "why": "Third country in three paragraphs. The pattern is now undeniable — places, not eras."
+            },
+            {
+              "t": " people consider women with long and thin necks more elegant. In "
+            },
+            {
+              "t": "Indonesia",
+              "kind": "evidence",
+              "why": "Fourth place. Plus the next phrase says \"cultural identity\" — the writer is being explicit."
+            },
+            {
+              "t": ", the custom of sharpening girls' teeth to points might seem very odd while it is perfectly acceptable in other places to straighten children's teeth with braces. Wearing rings in the nose or plastic surgery might be seen as ugly and unattractive by some cultures, but it is commonplace in many others."
+            }
+          ],
+          "8": [
+            {
+              "t": "It "
+            },
+            {
+              "t": "appears that",
+              "kind": "evidence",
+              "why": "\"It appears that\" — classic SUMMARY signal. Argumentative texts use this to introduce conclusions."
+            },
+            {
+              "t": " through the ages and across different cultures, people have always changed their bodies and faces for a wide variety of reasons: sometimes to help them look more beautiful, and sometimes to enable them to "
+            },
+            {
+              "t": "show social position or display group identity",
+              "kind": "evidence",
+              "why": "Pulls together the cultural meanings from ¶5-7. Conclusions re-summarize, they don't add new info."
+            },
+            {
+              "t": ". "
+            },
+            {
+              "t": "Whether it is wearing make-up or decorating the body with tattoos, rings and piercings",
+              "kind": "evidence",
+              "why": "The \"whether… or…\" list pulls earlier examples together — only conclusions do this."
+            },
+            {
+              "t": ", different cultures view these things with different eyes. Does this mean that we are all beautiful in our own way?"
+            }
+          ]
+        }
       },
       "discuss": {
         "probe": {
@@ -464,55 +702,26 @@
             "body": "确认学生找到四段结构后：\n\"Good, we now have the skeleton. Let's fill in the flesh — each group focuses on 2-3 paragraphs and builds a matrix.\""
           }
         ]
-      }
-    },
-    {
-      "id": "i2",
-      "idx": 4,
-      "type": "instruction",
-      "label": "Scanning 讲解",
-      "labelEn": "Scanning Method",
-      "strategy": "Scanning",
-      "duration": 2,
-      "description": "讲解 Scanning 阅读策略：带着具体问题细读目标段落，提取关键信息填入矩阵表。",
-      "focusParagraphs": [
-        "p3",
-        "p4",
-        "p5",
-        "p6",
-        "p7"
-      ],
-      "studentView": {
-        "title": "What is Scanning?",
-        "body": "<p><strong>Scanning</strong> is different from skimming — this time you <strong>read with a specific question in mind</strong> and locate exact details in the text.</p><p>Think of looking up a word in a dictionary: you don't read the whole dictionary — you <strong>scan with a clear target</strong> and stop when you find it. That's scanning.</p><p>Next, you'll build a <strong>Place × Practice × Reason matrix</strong>:</p><ul><li><strong>Place</strong> — which country or culture?</li><li><strong>Practice</strong> — what do they do to pursue beauty?</li><li><strong>Reason</strong> — why do they do it? (What's the cultural meaning?)</li></ul><p>I've filled in the demo row (Ancient Egypt) for you. Your job is to scan ¶5–7 and find the information for the remaining 4 places.</p>",
-        "keyPoints": [
-          "Scanning = read with a purpose, eyes on the target",
-          "Each row must answer three questions: Where? What? Why?",
-          "Note: the text says 'tattoos' — don't write 'tā moko'",
-          "¶7 contains two different places (Myanmar and Indonesia) — fill two separate rows"
-        ]
       },
-      "teacherView": {
-        "speechLine": "学生正在学习 Scanning 方法",
-        "focusType": "matrix",
-        "focusTitle": "Scanning 讲解",
-        "focusSubtitle": "学生自学中",
-        "quickActions": [],
-        "cueCards": [
-          {
-            "title": "自学内容",
-            "body": "学生正在阅读 Scanning 方法讲解：带着 Place × Practice × Reason 问题细读。\n等待学生确认后进入矩阵构建任务。"
-          }
-        ]
+      "studentView": {
+        "title": "What is Skimming?",
+        "body": "<p><strong>Skimming</strong> is a fast reading technique: <strong>don't read word by word</strong> — only read the <strong>first sentence</strong> of each paragraph and look for <strong>signal words</strong>.</p><p>Why does this work? In expository and argumentative texts, the <strong>first sentence is usually the topic sentence</strong> — it tells you what the paragraph is about.</p><p>Look for these <strong>signal words</strong>:</p><ul><li><code>change over time</code> → the paragraph is about <strong>history</strong></li><li><code>around the world</code> / <code>different cultures</code> → it's about <strong>cultural differences</strong></li><li><code>It appears that</code> → it's a <strong>summary / conclusion</strong></li></ul><p>In the next task, use skimming to read the first sentences of ¶3–8 and decide which structural section each paragraph belongs to.</p>",
+        "keyPoints": [
+          "Key formula: first sentence + signal words = paragraph function",
+          "3 minutes of skimming beats 30 minutes of word-by-word reading",
+          "After spotting signal words, classify paragraphs as History, Culture, or Conclusion"
+        ],
+        "ttsText": "What is Skimming? Skimming is a fast reading technique: don't read word by word — only read the first sentence of each paragraph and look for signal words. Why does this work? In expository and argumentative texts, the first sentence is usually the topic sentence — it tells you what the paragraph is about. Look for these signal words: \"change over time\" means the paragraph is about history. \"Around the world\" or \"different cultures\" means it's about cultural differences. \"It appears that\" means it's a summary or conclusion. In the next task, use skimming to read the first sentences of paragraphs 3 to 8 and decide which structural section each paragraph belongs to. Remember: key formula — first sentence plus signal words equals paragraph function. 3 minutes of skimming beats 30 minutes of word-by-word reading. After spotting signal words, classify paragraphs as History, Culture, or Conclusion."
       }
     },
     {
       "id": "s3",
-      "idx": 5,
+      "idx": 3,
       "type": "task",
       "showRoles": true,
       "label": "矩阵构建",
       "labelEn": "Matrix Building",
+      "displayName": "Scan & Build",
       "strategy": "Scanning",
       "duration": 15,
       "description": "分组寻读：A组找历史证据(¶3-4)，B组找文化证据(¶5-7)。合作完成 Place × Practice × Reason 矩阵表。",
@@ -564,7 +773,7 @@
             "rowIdx": 4,
             "place": "Myanmar",
             "practice": "metal neck rings",
-            "reason": "beauty/identity",
+            "reason": "elegance",
             "hint": "In ¶7, find \"**metal rings**\" to stretch a girl's neck. Myanmar people consider long necks more ___?",
             "hintZh": "在 ¶7 中找 \"**metal rings**\"。缅甸人认为长脖子更加___？"
           },
@@ -643,52 +852,27 @@
             "body": "回到矩阵整体，指向 Reason 列：\n\"Look at the Reason column. What do you see? Are these really 'shallow beauty ideals'?\""
           }
         ]
-      }
-    },
-    {
-      "id": "i3",
-      "idx": 6,
-      "type": "instruction",
-      "label": "批判性阅读讲解",
-      "labelEn": "Critical Reading Guide",
-      "strategy": "Evaluating",
-      "duration": 3,
-      "description": "讲解批判性阅读方法：区分事实与观点，用证据支持自己的立场。",
-      "focusParagraphs": [
-        "p2",
-        "p8"
-      ],
-      "studentView": {
-        "title": "How to Read Critically",
-        "body": "<p>You've already used skimming to find the skeleton and scanning to extract details. Now comes the most important step — <strong>Evaluating</strong>.</p><p>Go back to ¶2, where the writer says:</p><blockquote><em>\"Many people are worried that modern media promotes <strong>shallow beauty ideals</strong>.\"</em></blockquote><p>Notice: this is <strong>what \"many people\" think</strong> — it's not necessarily the writer's conclusion.</p><p>Your job is to use the <strong>factual evidence</strong> from your matrix to judge: are these beauty practices really \"shallow\"?</p><p>Argumentative paragraph template:</p><pre>I [agree/disagree] that beauty ideals are shallow.\nFirst, in [Place], [Practice] because [Reason].\nSecond, in [Place], [Practice] because [Reason].\nTherefore, beauty is [not] shallow.</pre>",
-        "keyPoints": [
-          "Distinguish opinion from fact: \"many people are worried\" is an opinion, not a conclusion",
-          "Support your position with at least 2 pieces of evidence from your matrix",
-          "Organize your paragraph with First / Second / Therefore",
-          "There's no single right answer — agree, disagree, or partly agree are all fine, as long as you have evidence"
-        ]
       },
-      "teacherView": {
-        "speechLine": "学生正在学习批判性阅读方法",
-        "focusType": "rubric",
-        "focusTitle": "批判性阅读讲解",
-        "focusSubtitle": "学生自学中",
-        "quickActions": [],
-        "cueCards": [
-          {
-            "title": "自学内容",
-            "body": "学生正在阅读批判性阅读讲解：区分事实与观点，用矩阵证据写议论段。\n等待学生确认后进入批判质疑任务。"
-          }
-        ]
+      "studentView": {
+        "title": "What is Scanning?",
+        "body": "<p><strong>Scanning</strong> is different from skimming — this time you <strong>read with a specific question in mind</strong> and locate exact details in the text.</p><p>Think of looking up a word in a dictionary: you don't read the whole dictionary — you <strong>scan with a clear target</strong> and stop when you find it. That's scanning.</p><p>Next, you'll build a <strong>Place × Practice × Reason matrix</strong>:</p><ul><li><strong>Place</strong> — which country or culture?</li><li><strong>Practice</strong> — what do they do to pursue beauty?</li><li><strong>Reason</strong> — why do they do it? (What's the cultural meaning?)</li></ul><p>I've filled in the demo row (Ancient Egypt) for you. Your job is to scan ¶5–7 and find the information for the remaining 4 places.</p>",
+        "keyPoints": [
+          "Scanning = read with a purpose, eyes on the target",
+          "Each row must answer three questions: Where? What? Why?",
+          "Note: the text says 'tattoos' — don't write 'tā moko'",
+          "¶7 contains two different places (Myanmar and Indonesia) — fill two separate rows"
+        ],
+        "ttsText": "What is Scanning? Scanning is different from skimming — this time you read with a specific question in mind and locate exact details in the text. Think of looking up a word in a dictionary: you don't read the whole dictionary — you scan with a clear target and stop when you find it. That's scanning. Next, you'll build a Place, Practice, Reason matrix. Place — which country or culture? Practice — what do they do to pursue beauty? Reason — why do they do it? What's the cultural meaning? I've filled in the demo row, Ancient Egypt, for you. Your job is to scan paragraphs 5 to 7 and find the information for the remaining 4 places. Remember: scanning means read with a purpose, eyes on the target. Each row must answer three questions: Where? What? Why? Note: the text says \"tattoos\" — don't write \"tā moko\". Paragraph 7 contains two different places — Myanmar and Indonesia — fill two separate rows."
       }
     },
     {
       "id": "s4",
-      "idx": 7,
+      "idx": 4,
       "type": "task",
       "showRoles": true,
       "label": "批判质疑",
       "labelEn": "Critical Evaluation",
+      "displayName": "Evaluate",
       "strategy": "Evaluating",
       "duration": 12,
       "description": "利用矩阵证据挑战 ¶2 的 'shallow beauty ideals'，写一段议论段。",
@@ -696,34 +880,35 @@
         "p2",
         "p8"
       ],
-      "exerciseLabel": "Choose your position and select supporting evidence.",
+      "exerciseLabel": "Drag each practice onto the plane, then explain your reasoning.",
       "subtitle": "Do you agree?",
       "summary": "You used evidence to support your judgment — a big step in academic reading.\n\nLet's review how you learned today.",
       "answerKey": {
-        "type": "stance",
-        "validPositions": [
-          "agree",
-          "partly",
-          "disagree"
+        "type": "map",
+        "prompt": "Each chip below is one beauty practice from the text. Drag it onto the plane based on **two questions**, then explain *why* you placed it where you did.",
+        "axes": {
+          "x": { "neg": "Just appearance", "pos": "Cultural meaning", "label": "Why is it done?" },
+          "y": { "neg": "Temporary", "pos": "Permanent", "label": "How lasting is it?" }
+        },
+        "items": [
+          { "id": "kohl", "label": "Egyptian kohl", "hint": "¶3", "refs": [3] },
+          { "id": "plump", "label": "1600s plump & pale", "hint": "¶4", "refs": [4] },
+          { "id": "borneo", "label": "Borneo tattoos", "hint": "¶5", "refs": [5] },
+          { "id": "maori", "label": "Maori tā moko", "hint": "¶6", "refs": [6] },
+          { "id": "rings", "label": "Myanmar neck rings", "hint": "¶7", "refs": [7] },
+          { "id": "teeth", "label": "Indonesia teeth", "hint": "¶7", "refs": [7] },
+          { "id": "media", "label": "Modern media slim", "hint": "¶2", "refs": [2] }
         ],
-        "minEvidence": 2,
-        "stanceQ": "Do you agree that the media's beauty standard is \"shallow\"?",
-        "stanceQZh": "你同意现代媒体的审美标准是\"肤浅的\"吗？",
-        "stanceOpts": [
-          "I agree",
-          "I partly agree",
-          "I disagree"
-        ],
-        "evidence": [
-          "Ancient Egypt: slim dark-haired women were the beauty ideal",
-          "1600s Europe: plump + pale = beauty (different from today)",
-          "Borneo: tattoos as a diary of life events",
-          "NZ Maori: tattoos show social position",
-          "Myanmar: metal neck rings seen as elegant",
-          "Indonesia: sharpening teeth for cultural identity",
-          "Beauty changes across time and cultures",
-          "Modern media only promotes one standard: slim and fair"
-        ]
+        "expected": {
+          "kohl": [0.55, -0.2],
+          "plump": [-0.4, -0.5],
+          "borneo": [0.7, 0.85],
+          "maori": [0.85, 0.9],
+          "rings": [0.55, 0.55],
+          "teeth": [0.6, 0.8],
+          "media": [-0.7, -0.7]
+        },
+        "minReasonLength": 8
       },
       "discuss": {
         "probe": {
@@ -790,51 +975,27 @@
             "body": "选 1-2 篇好的学生作品展示，然后引导：\n\"Great arguments. Now let's step back — what reading strategies did we use today?\""
           }
         ]
-      }
-    },
-    {
-      "id": "i4",
-      "idx": 8,
-      "type": "instruction",
-      "label": "策略回顾指引",
-      "labelEn": "Strategy Recap Guide",
-      "strategy": "Synthesizing",
-      "duration": 2,
-      "description": "引导学生回顾本节课学到的 4 种阅读策略，为复盘做准备。",
-      "focusParagraphs": [
-        "p8"
-      ],
-      "studentView": {
-        "title": "Review: What Did You Learn Today?",
-        "body": "<p>Congratulations — you've completed all the reading tasks! Let's review the <strong>4 reading strategies</strong> you used today:</p><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 1</td><td style=\"padding:8px\"><strong>Predicting</strong> — read the title, activate prior knowledge</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 2</td><td style=\"padding:8px\"><strong>Skimming</strong> — read first sentences + signal words, find the skeleton</td></tr><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 3</td><td style=\"padding:8px\"><strong>Scanning</strong> — read with a purpose, extract details into a matrix</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 4</td><td style=\"padding:8px\"><strong>Evaluating</strong> — think critically with evidence, write an argument</td></tr></table><p style=\"margin-top:12px\">This method works for <strong>any expository or argumentative text</strong>. Try the 4-step approach next time you face a reading comprehension test!</p>",
-        "keyPoints": [
-          "The order of the 4 steps matters: Predict → Skim → Scan → Evaluate",
-          "The main idea is in ¶8: beauty is not shallow vanity — it's a cultural language",
-          "Homework: read \"Beyond the Plate\" using the same 4-step method"
-        ],
-        "confirmLabel": "Got it — show me the recap"
       },
-      "teacherView": {
-        "speechLine": "学生正在回顾阅读策略",
-        "focusType": "strategy-recap",
-        "focusTitle": "策略回顾",
-        "focusSubtitle": "学生自学中",
-        "quickActions": [],
-        "cueCards": [
-          {
-            "title": "自学内容",
-            "body": "学生正在回顾 4 种阅读策略的总结。\n等待学生确认后进入最终复盘步骤。"
-          }
-        ]
+      "studentView": {
+        "title": "How to Read Critically",
+        "body": "<p>You've already used skimming to find the skeleton and scanning to extract details. Now comes the most important step — <strong>Evaluating</strong>.</p><p>Go back to ¶2, where the writer says:</p><blockquote><em>\"Many people are worried that modern media promotes <strong>shallow beauty ideals</strong>.\"</em></blockquote><p>Notice: this is <strong>what \"many people\" think</strong> — it's not necessarily the writer's conclusion.</p><p>Your job is to use the <strong>factual evidence</strong> from your matrix to judge: are these beauty practices really \"shallow\"?</p><p>Argumentative paragraph template:</p><pre>I [agree/disagree] that beauty ideals are shallow.\nFirst, in [Place], [Practice] because [Reason].\nSecond, in [Place], [Practice] because [Reason].\nTherefore, beauty is [not] shallow.</pre>",
+        "keyPoints": [
+          "Distinguish opinion from fact: \"many people are worried\" is an opinion, not a conclusion",
+          "Support your position with at least 2 pieces of evidence from your matrix",
+          "Organize your paragraph with First / Second / Therefore",
+          "There's no single right answer — agree, disagree, or partly agree are all fine, as long as you have evidence"
+        ],
+        "ttsText": "How to Read Critically. You've already used skimming to find the skeleton and scanning to extract details. Now comes the most important step — Evaluating. Go back to paragraph 2, where the writer says: \"Many people are worried that modern media promotes shallow beauty ideals.\" Notice: this is what \"many people\" think — it's not necessarily the writer's conclusion. Your job is to use the factual evidence from your matrix to judge: are these beauty practices really \"shallow\"? Here's an argumentative paragraph template: I agree or disagree that beauty ideals are shallow. First, in a certain place, people do a certain practice because of a certain reason. Second, another example. Therefore, beauty is or is not shallow. Remember: distinguish opinion from fact — \"many people are worried\" is an opinion, not a conclusion. Support your position with at least 2 pieces of evidence from your matrix. Organize your paragraph with First, Second, Therefore. There's no single right answer — agree, disagree, or partly agree are all fine, as long as you have evidence."
       }
     },
     {
       "id": "s5",
-      "idx": 9,
+      "idx": 5,
       "type": "task",
       "showRoles": true,
       "label": "复盘升华",
       "labelEn": "Metacognitive Wrap-up",
+      "displayName": "Wrap-up",
       "strategy": "Synthesizing",
       "duration": 5,
       "description": "回顾 4 步阅读策略：Predict → Skim → Scan+Matrix → Evaluate。布置作业。",
@@ -923,6 +1084,17 @@
             "body": "课后阅读 \"Beyond the Plate\"：\n1. 用 4 步法自主阅读\n2. 画 structure map（文章骨架图）\n3. 填 matrix 表\n4. 下节课对比讲评\n\n提交到学生端即可。"
           }
         ]
+      },
+      "studentView": {
+        "title": "Review: What Did You Learn Today?",
+        "body": "<p>Congratulations — you've completed all the reading tasks! Let's review the <strong>4 reading strategies</strong> you used today:</p><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 1</td><td style=\"padding:8px\"><strong>Predicting</strong> — read the title, activate prior knowledge</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 2</td><td style=\"padding:8px\"><strong>Skimming</strong> — read first sentences + signal words, find the skeleton</td></tr><tr style=\"background:rgba(58,49,133,.06)\"><td style=\"padding:8px;font-weight:600\">Step 3</td><td style=\"padding:8px\"><strong>Scanning</strong> — read with a purpose, extract details into a matrix</td></tr><tr><td style=\"padding:8px;font-weight:600\">Step 4</td><td style=\"padding:8px\"><strong>Evaluating</strong> — think critically with evidence, write an argument</td></tr></table><p style=\"margin-top:12px\">This method works for <strong>any expository or argumentative text</strong>. Try the 4-step approach next time you face a reading comprehension test!</p>",
+        "keyPoints": [
+          "The order of the 4 steps matters: Predict → Skim → Scan → Evaluate",
+          "The main idea is in ¶8: beauty is not shallow vanity — it's a cultural language",
+          "Homework: read \"Beyond the Plate\" using the same 4-step method"
+        ],
+        "confirmLabel": "Got it — show me the recap",
+        "ttsText": "Review: What Did You Learn Today? Congratulations — you've completed all the reading tasks! Let's review the 4 reading strategies you used today. Step 1, Predicting — read the title, activate prior knowledge. Step 2, Skimming — read first sentences plus signal words, find the skeleton. Step 3, Scanning — read with a purpose, extract details into a matrix. Step 4, Evaluating — think critically with evidence, write an argument. This method works for any expository or argumentative text. Try the 4-step approach next time you face a reading comprehension test! Remember: the order of the 4 steps matters — Predict, Skim, Scan, Evaluate. The main idea is in paragraph 8: beauty is not shallow vanity — it's a cultural language. Homework: read \"Beyond the Plate\" using the same 4-step method."
       }
     }
   ],
@@ -1867,144 +2039,159 @@
     51,
     56
   ],
-  "observationAnchors": [
+  "observationIndicators": [
     {
       "id": "K1",
       "type": "knowledge",
-      "label": "Scanning 策略识别",
-      "description": "能区分 scanning 和精读，快速定位关键信息",
-      "signals": [
-        "scanning",
-        "定位",
-        "find",
-        "locate",
-        "look for",
-        "目标明确"
-      ]
+      "label": "冲突识别与预测",
+      "description": "能识别¶1和¶2的对立观点（尼日利亚增肥=美 vs 媒体推崇纤瘦），并理解作者刻意用这种对比开头（conflict opening）来激发读者思考的写作意图"
     },
     {
       "id": "K2",
       "type": "knowledge",
-      "label": "文本结构理解",
-      "description": "识别不同文化/时代的审美标准对比结构（Phenomenon→History→Culture→Conclusion）",
-      "signals": [
-        "structure",
-        "结构",
-        "history vs culture",
-        "signal words",
-        "首句",
-        "骨架",
-        "Phenomenon",
-        "Conclusion"
-      ]
+      "label": "信号词与文章结构",
+      "description": "通过首句信号词识别四段结构：Phenomenon→History→Culture→Conclusion。区分时间词(change over time)和地点词(different cultures)"
     },
     {
       "id": "K3",
       "type": "knowledge",
-      "label": "细节信息提取",
-      "description": "从指定段落准确提取事实信息（地点、做法、原因）",
-      "signals": [
-        "place",
-        "practice",
-        "reason",
-        "矩阵",
-        "matrix",
-        "Borneo",
-        "Maori",
-        "tattoos",
-        "Myanmar",
-        "Indonesia"
-      ]
+      "label": "矩阵信息定向提取",
+      "description": "用 scanning 从¶3-7定向提取Place×Practice×Reason三维信息，准确对应文化与证据"
     },
     {
       "id": "K4",
       "type": "knowledge",
-      "label": "批判性立场表达",
-      "description": "能形成有理有据的个人立场并引用文本证据",
-      "signals": [
-        "agree",
-        "disagree",
-        "evidence",
-        "证据",
-        "because",
-        "therefore",
-        "shallow",
-        "立场",
-        "opinion"
-      ]
+      "label": "审美深层规律洞察",
+      "description": "从矩阵的Reason列归纳出共性：审美不只是外表，而是文化身份、社会地位、财富的表达"
     },
     {
       "id": "K5",
       "type": "knowledge",
-      "label": "信息排序逻辑",
-      "description": "理解文章信息的逻辑顺序和时间顺序，能正确排列阅读策略步骤",
-      "signals": [
-        "order",
-        "顺序",
-        "first",
-        "predict",
-        "skim",
-        "scan",
-        "evaluate",
-        "步骤"
-      ]
+      "label": "证据支撑的批判立场",
+      "description": "对¶2 shallow beauty ideals形成有理有据的立场，引用至少2条矩阵证据，区分事实与观点"
+    },
+    {
+      "id": "K6",
+      "type": "knowledge",
+      "label": "四步策略元认知",
+      "description": "理解Predict→Skim→Scan→Evaluate的顺序和每步的目的，能迁移到新文章"
     },
     {
       "id": "M1",
       "type": "misconception",
-      "label": "表面理解陷阱",
-      "description": "只理解字面意思，不理解深层含义（如把 standard of beauty 理解为「标准美」而非「审美标准」）",
-      "signals": [
-        "字面",
-        "表面",
-        "literal",
-        "don't understand why",
-        "不懂为什么",
-        "beauty = looks"
-      ]
+      "label": "字面理解局限",
+      "description": "只理解表面意思：如把fattening room当健康问题、把standard of beauty译为「标准美」、不理解beauty is only skin deep的比喻义"
     },
     {
       "id": "M2",
       "type": "misconception",
-      "label": "证据不足论证",
-      "description": "表达立场时不引用文本证据，只给个人感受",
-      "signals": [
-        "I think",
-        "I feel",
-        "我觉得",
-        "没有引用",
-        "no evidence",
-        "personal opinion only"
-      ]
+      "label": "信号词辨识困难",
+      "description": "无法区分时间信号词和地点信号词，把History和Culture段落搞混，或把¶8当成文化段而非结论"
     },
     {
       "id": "M3",
       "type": "misconception",
-      "label": "细节混淆",
-      "description": "混淆不同文化/段落的细节信息（如把 A 文化的做法归给 B 文化）",
-      "signals": [
-        "混淆",
-        "confuse",
-        "wrong place",
-        "wrong culture",
-        "把.*归给",
-        "tattoo.*Maori",
-        "neck ring.*Borneo"
-      ]
+      "label": "跨文化细节张冠李戴",
+      "description": "把A文化的做法/原因归给B文化：如Borneo纹身说成Maori的，Myanmar颈环说成Indonesia的"
     },
     {
       "id": "M4",
       "type": "misconception",
-      "label": "策略泛化误用",
-      "description": "把 scanning 当成精读，或者不理解不同阅读策略的适用场景",
-      "signals": [
-        "read everything",
-        "逐字读",
-        "全部读",
-        "scanning = reading",
-        "skim = scan",
-        "混用策略"
-      ]
+      "label": "观点事实不分",
+      "description": "把¶2 many people are worried当作作者结论或全文事实，不理解这是引述他人观点；或自己论证时不区分观点和事实"
+    },
+    {
+      "id": "M5",
+      "type": "misconception",
+      "label": "无证据空洞论述",
+      "description": "表达立场时只给个人感受不引用文本证据，或论证逻辑断裂（有立场无论据，有论据无推理）"
+    },
+    {
+      "id": "M6",
+      "type": "misconception",
+      "label": "阅读策略混用",
+      "description": "混淆skimming和scanning（如scanning时逐字精读），或不理解策略顺序的意义（如跳过predict直接读细节）"
+    }
+  ],
+  "personalTouch": {
+    "strategyLabels": [
+      { "taskIdx": 1, "strategy": "Predicting", "emoji": "🔮" },
+      { "taskIdx": 2, "strategy": "Skimming", "emoji": "👁" },
+      { "taskIdx": 3, "strategy": "Scanning", "emoji": "🎯" },
+      { "taskIdx": 4, "strategy": "Evaluating", "emoji": "⚖️" }
+    ],
+    "tiers": [
+      { "minScore": 85, "label": "策略达人", "labelEn": "Strategy Master", "tone": "gold" },
+      { "minScore": 60, "label": "进步可期", "labelEn": "Getting There", "tone": "blue" },
+      { "minScore": 0, "label": "继续加油", "labelEn": "Keep Practicing", "tone": "neutral" }
+    ]
+  },
+  "bonusArticle": {
+    "title": "Beyond the Plate: Decoding Table Manners",
+    "paragraphs": [
+      {
+        "id": "bp1",
+        "text": "Every culture has unwritten rules about how food should be eaten. These rules — table manners — may seem trivial, but they carry deep meaning about respect, community, and identity. What counts as polite in one country can be rude in another.",
+        "role": "introduction"
+      },
+      {
+        "id": "bp2",
+        "text": "In Japan, slurping noodles loudly is not just acceptable — it is a compliment to the chef. The sound signals that the diner is enjoying the meal. Silence at the table, by contrast, might suggest the food is bland or unappreciated.",
+        "role": "example"
+      },
+      {
+        "id": "bp3",
+        "text": "In parts of India and the Middle East, eating with your hands is the traditional norm. Using the right hand to pick up rice or bread connects the eater physically to the food, and many people believe this enhances the sensory experience of dining.",
+        "role": "example"
+      },
+      {
+        "id": "bp4",
+        "text": "Western etiquette often expects diners to finish everything on their plate — leaving food behind may be seen as wasteful or impolite to the host. Yet in parts of China, leaving a little food signals that the host has been generous enough to provide more than enough.",
+        "role": "example"
+      },
+      {
+        "id": "bp5",
+        "text": "Table manners, like beauty standards, reveal that no single set of customs is universally \"correct.\" Understanding different dining traditions helps us appreciate cultural diversity and avoid judging others by our own standards alone.",
+        "role": "conclusion"
+      }
+    ]
+  },
+  "bonusSteps": [
+    {
+      "idx": 101,
+      "type": "task",
+      "label": "结构识别",
+      "labelEn": "Structure Identification",
+      "strategy": "Skimming (Transfer)",
+      "exerciseLabel": "Match each paragraph to its structural function.",
+      "answerKey": {
+        "type": "match",
+        "options": ["Introduction", "Example: sounds", "Example: hands", "Example: plates", "Conclusion"],
+        "answers": [
+          { "pairIdx": 0, "left": "¶1 (Every culture has unwritten rules...)", "correct": "Introduction" },
+          { "pairIdx": 1, "left": "¶2 (In Japan, slurping noodles...)", "correct": "Example: sounds" },
+          { "pairIdx": 2, "left": "¶3 (In parts of India...)", "correct": "Example: hands" },
+          { "pairIdx": 3, "left": "¶4 (Western etiquette...)", "correct": "Example: plates" },
+          { "pairIdx": 4, "left": "¶5 (Table manners, like beauty...)", "correct": "Conclusion" }
+        ]
+      }
+    },
+    {
+      "idx": 102,
+      "type": "task",
+      "label": "矩阵构建",
+      "labelEn": "Matrix Construction",
+      "strategy": "Scanning (Transfer)",
+      "exerciseLabel": "Complete the culture × custom × meaning matrix.",
+      "answerKey": {
+        "type": "matrix",
+        "answers": [
+          { "rowIdx": 0, "place": "Japan", "practice": "slurping noodles loudly", "reason": "compliment to the chef", "isDemo": true },
+          { "rowIdx": 1, "place": "India & Middle East", "practice": "eating with hands", "reason": "enhances sensory experience" },
+          { "rowIdx": 2, "place": "Western countries", "practice": "finishing everything on the plate", "reason": "leaving food is seen as wasteful" },
+          { "rowIdx": 3, "place": "Parts of China", "practice": "leaving a little food on the plate", "reason": "signals the host was generous" }
+        ]
+      }
     }
   ]
 }

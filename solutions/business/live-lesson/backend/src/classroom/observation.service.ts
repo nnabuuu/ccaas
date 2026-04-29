@@ -4,12 +4,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ObservationEvent } from '../entities/observation-event.entity';
 
-interface ObservationAnchor {
+interface ObservationIndicator {
   id: string;
   type: 'knowledge' | 'misconception';
   label: string;
   description: string;
-  signals: string[];
 }
 
 interface StudentEvent {
@@ -44,11 +43,11 @@ interface Alert {
   studentId: string;
   severity: 'info' | 'warn' | 'urgent';
   message: string;
-  anchorId: string | null;
+  indicatorId: string | null;
 }
 
-interface AnchorStats {
-  anchorId: string;
+interface IndicatorStats {
+  indicatorId: string;
   label: string;
   type: 'knowledge' | 'misconception';
   studentCount: number;
@@ -67,10 +66,10 @@ interface GLMObserverOutput {
 // ── Threshold constants ──
 const IDLE_THRESHOLD_MS = 180_000;       // 3 minutes
 const RECENT_WINDOW_MS = 300_000;        // 5 minutes
-const STRUGGLE_EVENT_COUNT = 3;          // M-anchor events before flagging stuck
+const STRUGGLE_EVENT_COUNT = 3;          // M-indicator events before flagging stuck
 const CRUISING_CORRECT_RATE = 80;        // min exerciseCorrectRate for cruising
 const CRUISING_MAX_MESSAGES = 2;         // max messages for cruising
-const PROGRESS_ANCHOR_MIN = 2;           // min K-anchors for "on-track" (mixed signal)
+const PROGRESS_INDICATOR_MIN = 2;        // min K-indicators for "on-track" (mixed signal)
 
 @Injectable()
 export class ObservationService {
@@ -78,8 +77,8 @@ export class ObservationService {
 
   /** sessionId → studentId → StudentLog */
   private studentLogs = new Map<string, Map<string, StudentLog>>();
-  /** sessionId → ObservationAnchor[] */
-  private anchorSets = new Map<string, ObservationAnchor[]>();
+  /** sessionId → ObservationIndicator[] */
+  private indicatorSets = new Map<string, ObservationIndicator[]>();
 
   constructor(
     @InjectRepository(ObservationEvent)
@@ -89,12 +88,12 @@ export class ObservationService {
 
   // ── Lifecycle ──
 
-  initSession(sessionId: string, anchors: ObservationAnchor[]): void {
-    this.anchorSets.set(sessionId, anchors);
+  initSession(sessionId: string, indicators: ObservationIndicator[]): void {
+    this.indicatorSets.set(sessionId, indicators);
     if (!this.studentLogs.has(sessionId)) {
       this.studentLogs.set(sessionId, new Map());
     }
-    this.logger.log(`Observation initialized for session ${sessionId} with ${anchors.length} anchors`);
+    this.logger.log(`Observation initialized for session ${sessionId} with ${indicators.length} indicators`);
   }
 
   async cleanupSession(sessionId: string): Promise<void> {
@@ -125,7 +124,7 @@ export class ObservationService {
       }
     }
     this.studentLogs.delete(sessionId);
-    this.anchorSets.delete(sessionId);
+    this.indicatorSets.delete(sessionId);
     this.logger.log(`Observation cleaned up for session ${sessionId}`);
   }
 
@@ -138,8 +137,8 @@ export class ObservationService {
     latestTurn: { student: string; ai: string },
     systemContext: { currentStep: string; exerciseCorrectRate: number; idleSeconds: number },
   ): Promise<void> {
-    const anchors = this.anchorSets.get(sessionId);
-    if (!anchors || anchors.length === 0) return;
+    const indicators = this.indicatorSets.get(sessionId);
+    if (!indicators || indicators.length === 0) return;
 
     const log = this.ensureStudentLog(sessionId, studentId, studentName);
 
@@ -150,7 +149,7 @@ export class ObservationService {
     log.systemMetrics.exerciseCorrectRate = systemContext.exerciseCorrectRate;
 
     try {
-      const result = await this.callObserverGlm(anchors, log.events, latestTurn);
+      const result = await this.callObserverGlm(indicators, log.events, latestTurn);
       if (!result || result.action === 'skip') return;
 
       const now = Date.now();
@@ -204,7 +203,7 @@ export class ObservationService {
     sessionId: string,
     studentId: string,
     studentName: string,
-    type: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave',
+    type: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave' | 'discuss_depth',
     data: Record<string, unknown>,
     gist: string,
   ): Promise<void> {
@@ -254,8 +253,14 @@ export class ObservationService {
     return Array.from(logs.values());
   }
 
-  getAnchors(sessionId: string): ObservationAnchor[] {
-    return this.anchorSets.get(sessionId) || [];
+  getStudentLog(sessionId: string, studentId: string): StudentLog | null {
+    const logs = this.studentLogs.get(sessionId);
+    if (!logs) return null;
+    return logs.get(studentId) ?? null;
+  }
+
+  getIndicators(sessionId: string): ObservationIndicator[] {
+    return this.indicatorSets.get(sessionId) || [];
   }
 
   deriveStatus(log: StudentLog): StudentObsStatus {
@@ -276,14 +281,14 @@ export class ObservationService {
     // Mixed signal handling: K-anchors can counterbalance M-anchors
     if (misconceptions.length >= STRUGGLE_EVENT_COUNT) {
       // If enough K-anchors outweigh misconceptions, downgrade to struggling
-      if (knowledgeEvents.length >= PROGRESS_ANCHOR_MIN && knowledgeEvents.length > misconceptions.length) {
+      if (knowledgeEvents.length >= PROGRESS_INDICATOR_MIN && knowledgeEvents.length > misconceptions.length) {
         return 'struggling';
       }
       return 'stuck';
     }
     if (misconceptions.length >= 1) {
-      // If strong K-anchor presence counterbalances, treat as active
-      if (knowledgeEvents.length >= PROGRESS_ANCHOR_MIN && knowledgeEvents.length > misconceptions.length) {
+      // If strong K-indicator presence counterbalances, treat as active
+      if (knowledgeEvents.length >= PROGRESS_INDICATOR_MIN && knowledgeEvents.length > misconceptions.length) {
         return 'active';
       }
       return 'struggling';
@@ -310,28 +315,28 @@ export class ObservationService {
         const lastMisconception = [...log.events]
           .reverse()
           .find(e => e.anchors.some(a => a.startsWith('M')));
-        const anchorId = lastMisconception?.anchors.find(a => a.startsWith('M')) ?? null;
-        const anchorLabel = anchorId ? this.getAnchorLabel(sessionId, anchorId) : '';
+        const indicatorId = lastMisconception?.anchors.find(a => a.startsWith('M')) ?? null;
+        const indicatorLabel = indicatorId ? this.getIndicatorLabel(sessionId, indicatorId) : '';
         alerts.push({
           timestamp: now,
           studentName: log.studentName,
           studentId: log.studentId,
           severity: 'urgent',
-          message: `${log.studentName} 连续遇到困难${anchorLabel ? `（${anchorLabel}）` : ''}`,
-          anchorId,
+          message: `${log.studentName} 连续遇到困难${indicatorLabel ? `（${indicatorLabel}）` : ''}`,
+          indicatorId,
         });
       } else if (status === 'struggling') {
         const lastMisconception = [...log.events]
           .reverse()
           .find(e => e.anchors.some(a => a.startsWith('M')));
-        const anchorId = lastMisconception?.anchors.find(a => a.startsWith('M')) ?? null;
+        const indicatorId = lastMisconception?.anchors.find(a => a.startsWith('M')) ?? null;
         alerts.push({
           timestamp: now,
           studentName: log.studentName,
           studentId: log.studentId,
           severity: 'warn',
           message: `${log.studentName} 出现误解信号`,
-          anchorId,
+          indicatorId,
         });
       } else if (status === 'idle') {
         const idleMinutes = Math.round(IDLE_THRESHOLD_MS / 60_000);
@@ -341,7 +346,7 @@ export class ObservationService {
           studentId: log.studentId,
           severity: 'info',
           message: `${log.studentName} 超过 ${idleMinutes} 分钟无活动`,
-          anchorId: null,
+          indicatorId: null,
         });
       }
     }
@@ -352,18 +357,18 @@ export class ObservationService {
     });
   }
 
-  computeAnchorStats(sessionId: string): AnchorStats[] {
-    const anchors = this.anchorSets.get(sessionId);
+  computeIndicatorStats(sessionId: string): IndicatorStats[] {
+    const indicators = this.indicatorSets.get(sessionId);
     const logs = this.studentLogs.get(sessionId);
-    if (!anchors || !logs) return [];
+    if (!indicators || !logs) return [];
 
-    return anchors.map(anchor => {
+    return indicators.map(indicator => {
       let studentCount = 0;
       let latestGist = '';
       let latestTime = 0;
 
       for (const log of logs.values()) {
-        const matchingEvents = log.events.filter(e => e.anchors.includes(anchor.id));
+        const matchingEvents = log.events.filter(e => e.anchors.includes(indicator.id));
         if (matchingEvents.length > 0) {
           studentCount++;
           const latest = matchingEvents.reduce((a, b) => a.updatedAt > b.updatedAt ? a : b);
@@ -375,9 +380,9 @@ export class ObservationService {
       }
 
       return {
-        anchorId: anchor.id,
-        label: anchor.label,
-        type: anchor.type,
+        indicatorId: indicator.id,
+        label: indicator.label,
+        type: indicator.type,
         studentCount,
         latestGist,
         updatedAt: latestTime,
@@ -412,13 +417,13 @@ export class ObservationService {
     return log;
   }
 
-  private getAnchorLabel(sessionId: string, anchorId: string): string {
-    const anchors = this.anchorSets.get(sessionId);
-    return anchors?.find(a => a.id === anchorId)?.label ?? '';
+  private getIndicatorLabel(sessionId: string, indicatorId: string): string {
+    const indicators = this.indicatorSets.get(sessionId);
+    return indicators?.find(a => a.id === indicatorId)?.label ?? '';
   }
 
   private async callObserverGlm(
-    anchors: ObservationAnchor[],
+    indicators: ObservationIndicator[],
     existingEvents: StudentEvent[],
     latestTurn: { student: string; ai: string },
   ): Promise<GLMObserverOutput | null> {
@@ -427,15 +432,15 @@ export class ObservationService {
 
     const model = this.configService.get<string>('ZHIPU_OBSERVER_MODEL') || 'glm-4-flash';
 
-    const anchorDefs = anchors.map(a => `${a.id} [${a.type}] ${a.label}: ${a.description}`).join('\n');
+    const indicatorDefs = indicators.map(a => `${a.id} [${a.type}] ${a.label}: ${a.description}`).join('\n');
     const eventLog = existingEvents.length > 0
       ? existingEvents.map(e => `${e.id}: [${e.anchors.join(',')}] ${e.gist}`).join('\n')
       : '(empty)';
 
     const systemPrompt = `You are an observation assistant for a teacher. Extract factual observations from student dialogue.
 
-ANCHORS:
-${anchorDefs}
+INDICATORS:
+${indicatorDefs}
 
 EXISTING EVENT LOG:
 ${eventLog}
@@ -455,9 +460,9 @@ Respond with JSON only:
 
 Rules:
 - "skip" if the turn has no observable learning signal
-- "update" if the turn refines an existing event (same anchor, new info)
+- "update" if the turn refines an existing event (same indicator, new info)
 - "append" if the turn shows a new observation
-- anchors: only IDs from the list above
+- anchors: only IDs from the indicator list above
 - gist: factual, no judgement, max 30 words
 - quote: exact student words, or null`;
 

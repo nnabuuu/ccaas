@@ -32,6 +32,12 @@ export function formatSubmitData(
     case 'matrix':
       result = { rows: ans.rows || [] }
       break
+    case 'select-evidence':
+      result = { sections: ans.sections || {} }
+      break
+    case 'map':
+      result = { placements: ans.placements || {}, reasons: ans.reasons || {} }
+      break
     default:
       result = ans
   }

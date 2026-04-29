@@ -148,7 +148,7 @@ function WaitingView({ manifest, sessionCode, students, starting, onStart }: {
           {sessionCode}
         </div>
         <div style={{ fontSize: 11, color: 'var(--t3)', marginBottom: 40 }}>
-          {copied ? '已复制!' : '点击复制 · 学生访问 /join 输入此码加入'}
+          {copied ? '已复制!' : <>点击复制 · 学生访问 <a href="/join" target="_blank" rel="noopener" style={{ color: 'var(--teal)', textDecoration: 'underline' }}>/join</a> 输入此码加入</>}
         </div>
 
         {/* Student list */}

@@ -9,7 +9,7 @@ export class SubmitDto {
 
   @IsInt()
   @Min(0)
-  @Max(4)
+  @Max(20)
   step: number;
 
   @IsObject()

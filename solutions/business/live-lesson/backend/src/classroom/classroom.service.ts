@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not, MoreThan } from 'typeorm';
@@ -11,22 +11,17 @@ import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationService } from './observation.service';
+import { GradingService } from './grading.service';
+import { sanitizeAnswerKey } from '../schemas/manifest.utils';
+import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../schemas';
+import type { ExerciseSpec, GradeResult, TaskMap, PersonalTouch } from '../schemas';
+import { AiPromptBuilder } from './ai-prompt-builder';
+import { MetricsAggregator } from './metrics-aggregator';
+import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { Response } from 'express';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
-
-/** Immutable value object — derived from manifest, cached per lessonId */
-interface TaskMap {
-  /** step idx → task number, e.g. { 1:1, 3:2, 5:3, 7:4, 9:5 } */
-  stepToTask: Record<number, number>;
-  /** task number → step idx, e.g. { 1:1, 2:3, 3:5, 4:7, 5:9 } */
-  taskToStep: Record<number, number>;
-  /** ordered step indices, e.g. [1, 3, 5, 7, 9] */
-  taskSteps: number[];
-  /** total number of tasks */
-  maxTask: number;
-}
 
 /** Build TaskMap from manifest. Fallback: steps with answerKey are tasks. */
 function buildTaskMap(manifest: any): TaskMap {
@@ -68,6 +63,10 @@ export class ClassroomService {
     @InjectRepository(AiQuestion)
     private readonly aiQuestionRepo: Repository<AiQuestion>,
     private readonly observationService: ObservationService,
+    private readonly gradingService: GradingService,
+    private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly metricsAggregator: MetricsAggregator,
+    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -206,6 +205,9 @@ export class ClassroomService {
       this.logger.warn(`Observation cleanup failed: ${e}`),
     );
 
+    // Observer engine: clear session metadata
+    this.engine.clearSessionMeta(session.id);
+
     this.logger.log(`Session ended: ${code}`);
     return { ok: true, status: 'ended' };
   }
@@ -233,11 +235,20 @@ export class ClassroomService {
       session.id, saved.id, saved.name, 'join', {}, `${saved.name} 加入课堂`,
     );
 
+    // Observer engine: student join
+    this.engine.dispatch({
+      type: 'student_join',
+      sessionId: session.id,
+      entityId: saved.id,
+      tenantId: session.lessonId,
+      payload: { studentName: saved.name },
+    }).catch(err => this.logger.error(`Observer dispatch student_join failed: ${err}`));
+
     this.broadcast(session.id);
     return { studentId: saved.id, name: saved.name, lessonId: session.lessonId };
   }
 
-  async submit(session: ClassroomSession, studentId: string, step: number, data: Record<string, any>) {
+  async submit(session: ClassroomSession, studentId: string, step: number, data: Record<string, unknown>) {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -295,6 +306,15 @@ export class ClassroomService {
       `提交 Step ${step} 答案${score ? `，得分 ${score.total}%` : ''}`,
     );
 
+    // Observer engine: exercise result
+    this.engine.dispatch({
+      type: 'exercise_result',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { step, score: score?.total ?? null },
+    }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
+
     // Observation: step_complete event when student advances
     const currentTask = student.currentTask;
     if (taskNum !== undefined && currentTask > taskNum) {
@@ -303,6 +323,15 @@ export class ClassroomService {
         { step, taskNum, nextTask: currentTask },
         `完成 Task ${taskNum}，进入 Task ${currentTask}`,
       );
+
+      // Observer engine: step complete
+      this.engine.dispatch({
+        type: 'step_complete',
+        sessionId: session.id,
+        entityId: studentId,
+        tenantId: session.lessonId,
+        payload: { step, taskNum, nextTask: currentTask },
+      }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
     }
 
     // Observation: observeTurn with enriched context
@@ -312,6 +341,15 @@ export class ClassroomService {
       { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%` },
       { currentStep: `step-${step}`, exerciseCorrectRate, idleSeconds: 0 },
     ).catch(e => this.logger.warn(`Observation observeTurn after submit failed: ${e}`));
+
+    // Observer engine: chat turn (exercise submit as a turn)
+    this.engine.dispatch({
+      type: 'chat_turn',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
+    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
     this.broadcast(session.id);
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
@@ -372,29 +410,29 @@ export class ClassroomService {
     });
 
     // G2: per-student per-step durations
-    const studentDurations = this.computeStudentDurations(students, subsByStudent, taskMap);
+    const studentDurations = this.metricsAggregator.computeStudentDurations(students, subsByStudent, taskMap);
 
     // Build enriched stepMetrics with byDimension, timing, AI stats, issues, questionAggregates
-    const stepMetrics = this.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap);
+    const stepMetrics = this.metricsAggregator.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap);
 
     // G3: extract median times for stuck detection
-    const medianTimes = this.extractMedianTimes(stepMetrics);
+    const medianTimes = this.metricsAggregator.extractMedianTimes(stepMetrics);
 
     // Compute student statuses once (G3)
     const studentStatuses = new Map<string, string>();
     for (const s of students) {
-      studentStatuses.set(s.id, this.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes, taskMap));
+      studentStatuses.set(s.id, this.metricsAggregator.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes, taskMap));
     }
 
     // G4: enrich stepMetrics with alertTag (needs studentStatuses computed above)
     for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-      stepMetrics[taskNum].alertTag = this.computeAlertTag(
+      stepMetrics[taskNum].alertTag = this.metricsAggregator.computeAlertTag(
         taskNum, stepMetrics[taskNum], students, studentStatuses,
       );
     }
 
     // G6: health cards
-    const healthCards = this.computeHealthCards(students, studentStatuses, questions, taskMap.maxTask);
+    const healthCards = this.metricsAggregator.computeHealthCards(students, studentStatuses, questions, taskMap.maxTask);
 
     const questionRecords = questions.map(q => ({
       studentId: q.studentId,
@@ -422,8 +460,8 @@ export class ClassroomService {
           enrichedSubs[stepNum] = {
             ...sub,
             duration: dur,
-            timeFormatted: dur != null ? this.formatDuration(dur) : null,
-            result: this.deriveResult(sub.score),
+            timeFormatted: dur != null ? this.metricsAggregator.formatDuration(dur) : null,
+            result: this.metricsAggregator.deriveResult(sub.score),
             aiRoundsCount: questions.filter(q => q.studentId === s.id && q.step === stepNum).length,
           };
         }
@@ -441,8 +479,8 @@ export class ClassroomService {
             const dur = durations[taskStepIdx];
             stepHistory[taskNum] = {
               status: 'done',
-              result: this.deriveResult(score),
-              time: dur != null ? this.formatDuration(dur) : null,
+              result: this.metricsAggregator.deriveResult(score),
+              time: dur != null ? this.metricsAggregator.formatDuration(dur) : null,
               aiRounds: aiCount,
             };
           } else if (s.currentTask === taskNum) {
@@ -453,7 +491,7 @@ export class ClassroomService {
             stepHistory[taskNum] = {
               status: isStuck ? 'stuck' : (s.currentPhase === 'listen' ? 'reading' : 'prog'),
               aiRounds: aiCount,
-              ...(sub ? { result: this.deriveResult(score), time: dur != null ? this.formatDuration(dur) : null } : {}),
+              ...(sub ? { result: this.metricsAggregator.deriveResult(score), time: dur != null ? this.metricsAggregator.formatDuration(dur) : null } : {}),
             };
           } else if (s.currentTask > taskNum || s.currentPhase === 'completed') {
             // Past step without submission (edge case)
@@ -486,8 +524,8 @@ export class ClassroomService {
       observation: {
         logs: this.observationService.getStudentLogs(sessionId),
         alerts: this.observationService.generateAlerts(sessionId),
-        anchorStats: this.observationService.computeAnchorStats(sessionId),
-        anchors: this.observationService.getAnchors(sessionId),
+        indicatorStats: this.observationService.computeIndicatorStats(sessionId),
+        indicators: this.observationService.getIndicators(sessionId),
       },
     };
   }
@@ -574,13 +612,13 @@ export class ClassroomService {
     let rawAnswer: string;
     try {
       const systemPrompt = await this.buildAiSystemPrompt(session.lessonId, step);
-      rawAnswer = await this.callGlm(systemPrompt, question);
+      rawAnswer = await this.aiPromptBuilder.callGlm(systemPrompt, question);
     } catch (e) {
       this.logger.warn(`AI call failed: ${e}`);
       rawAnswer = '【其他】AI 助教暂时无法回答，请稍后再试。';
     }
 
-    const parsed = this.parseCategoryFromResponse(rawAnswer);
+    const parsed = this.aiPromptBuilder.parseCategoryFromResponse(rawAnswer);
 
     // Persist to DB
     const aiQuestion = this.aiQuestionRepo.create({
@@ -606,13 +644,20 @@ export class ClassroomService {
       { currentStep: `step-${step}`, exerciseCorrectRate: correctRate, idleSeconds: 0 },
     ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
 
+    // Observer engine: chat turn
+    this.engine.dispatch({
+      type: 'chat_turn',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { student: question, ai: parsed.answer, step },
+    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+
     this.broadcast(session.id);
     return { answer: parsed.answer, category: parsed.category };
   }
 
   // ── AI Discuss (structured teaching dialogue) ──
-
-  private static readonly TASK_TO_STEP: Record<number, number> = { 1: 1, 2: 3, 3: 5, 4: 7, 5: 9 };
 
   async aiDiscuss(
     session: ClassroomSession,
@@ -620,7 +665,7 @@ export class ClassroomService {
     taskNum: number,
     interactionType: 'probeReply' | 'followUpReply',
     studentResponse: string,
-  ): Promise<{ reply: string; followUpQuestion?: string }> {
+  ): Promise<{ reply: string; followUpQuestion?: string; quality: 'pass' | 'retry'; depth?: 'surface' | 'partial' | 'deep' }> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -632,11 +677,26 @@ export class ClassroomService {
       const systemPrompt = await this.buildDiscussSystemPrompt(
         session, studentId, taskNum, interactionType,
       );
-      const rawResponse = await this.callGlm(systemPrompt, studentResponse, {
+      const rawResponse = await this.aiPromptBuilder.callGlm(systemPrompt, studentResponse, {
         maxTokens: 512,
         temperature: 0.75,
+        responseFormat: { type: 'json_object' },
       });
-      const parsed = this.parseDiscussResponse(rawResponse, interactionType);
+      const parsed = await this.aiPromptBuilder.parseOrRepairDiscussResponse(rawResponse, interactionType);
+
+      // Persist to reading_ai_questions so teacher dashboard aiRounds/aiPeople includes discuss
+      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+      const taskMap = lesson ? buildTaskMap(JSON.parse(lesson.manifestJson)) : null;
+      const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
+      await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
+        sessionId: session.id,
+        studentId,
+        studentName: student.name,
+        step: stepIdx,
+        question: `[discuss:${interactionType}] ${studentResponse}`,
+        answer: parsed.reply,
+        category: 'discuss',
+      }));
 
       // Observation: await GLM observe before returning so state is up-to-date
       const latestDiscussSub = await this.submissionRepo.findOne({
@@ -650,11 +710,33 @@ export class ClassroomService {
         { currentStep: `task-${taskNum}`, exerciseCorrectRate: discussCorrectRate, idleSeconds: 0 },
       ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
 
+      // Store discuss_depth system event for teacher dashboard visibility (await so state is up-to-date for SSE)
+      if (parsed.depth) {
+        await this.observationService.addSystemEvent(
+          session.id, studentId, student.name, 'discuss_depth',
+          { taskNum, depth: parsed.depth, interactionType },
+          `Discuss depth: ${parsed.depth}`,
+        );
+      }
+
+      // Observer engine: chat turn (discuss)
+      this.engine.dispatch({
+        type: 'chat_turn',
+        sessionId: session.id,
+        entityId: studentId,
+        tenantId: session.lessonId,
+        payload: { student: studentResponse, ai: parsed.reply, taskNum, interactionType },
+      }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+
+      // Push updated state to teacher dashboard (observation + questions changed)
+      this.broadcast(session.id);
+
       return parsed;
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
       return {
         reply: 'AI tutor is temporarily unavailable. Please try again later.',
+        quality: 'pass' as const,
         ...(interactionType === 'probeReply'
           ? { followUpQuestion: 'Can you tell me more about what you found in the text?' }
           : {}),
@@ -662,260 +744,323 @@ export class ClassroomService {
     }
   }
 
-  private async buildDiscussSystemPrompt(
-    session: ClassroomSession,
-    studentId: string,
-    taskNum: number,
-    interactionType: 'probeReply' | 'followUpReply',
-  ): Promise<string> {
+  // ── Personal Touch + Bonus ──
+
+  async getPersonalTouch(session: ClassroomSession, studentId: string) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) throw new NotFoundException('Student not found in this session');
+
     const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) return this.buildDiscussFallbackPrompt(interactionType);
+    if (!lesson) throw new NotFoundException('Lesson not found');
 
     const manifest = JSON.parse(lesson.manifestJson);
-    const readingSteps = manifest.readingSteps || [];
-    const stepIdx = ClassroomService.TASK_TO_STEP[taskNum];
-    const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
+    const taskMap = await this.getTaskMap(session.lessonId);
 
-    // L1-L3: shared base layers
-    const layers = this.buildBaseContextLayers(manifest, stepDef);
+    // Validate personalTouch config via Zod
+    const ptParsed = PersonalTouchSchema.safeParse(manifest.personalTouch);
+    if (!ptParsed.success) {
+      this.logger.warn(`personalTouch schema invalid: ${ptParsed.error.message}`);
+      return { strategies: [], tier: { label: '', labelEn: '', tone: 'neutral' }, aiComment: '', bonusUnlocked: false };
+    }
+    const personalTouch: PersonalTouch = ptParsed.data;
 
-    // L4: Student performance from submission
-    const submission = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step: stepIdx },
+    // Batch-fetch all submissions for this student (avoids N+1)
+    const allSubs = await this.submissionRepo.find({
+      where: { sessionId: session.id, studentId },
     });
-    if (submission) {
-      const score = submission.scoreJson;
-      const data = submission.dataJson;
-      const scoreSummary = score
-        ? `Score: ${score.total ?? 'N/A'}%${score.byDimension ? `, Details: ${JSON.stringify(score.byDimension)}` : ''}`
-        : 'No score available';
-      const answerSummary = data
-        ? `Student answers: ${JSON.stringify(data).slice(0, 500)}`
-        : '';
-      layers.push(`【L4: Student Practice Performance】\n${scoreSummary}\n${answerSummary}`);
+    const subsByStep = new Map(allSubs.map(s => [s.step, s]));
+
+    // Collect task 1-4 scores
+    const strategies: Array<{ task: number; strategy: string; score: number; attempts: number }> = [];
+    for (const sl of personalTouch.strategyLabels) {
+      const stepNum = taskMap.taskToStep[sl.taskIdx];
+      if (stepNum === undefined) continue;
+      const sub = subsByStep.get(stepNum);
+      const score = sub?.scoreJson?.total ?? 0;
+      const attempts = sub?.scoreJson?.attemptCounts
+        ? Math.max(...Object.values(sub.scoreJson.attemptCounts as Record<string, number>))
+        : 1;
+      strategies.push({ task: sl.taskIdx, strategy: sl.strategy, score, attempts });
     }
 
-    // L5: Pedagogical intent from manifest discuss field
-    const discuss = stepDef?.discuss;
-    if (discuss) {
-      const parts = [`【L5: Pedagogical Intent for Discuss Phase】`];
-      if (discuss.targetInsight) parts.push(`Target insight: ${discuss.targetInsight}`);
-      if (discuss.commonMisconceptions?.length) {
-        parts.push(`Common misconceptions:\n${discuss.commonMisconceptions.map((m: string) => `- ${m}`).join('\n')}`);
-      }
-      if (discuss.scaffoldStrategies?.length) {
-        parts.push(`Scaffold strategies:\n${discuss.scaffoldStrategies.map((s: string) => `- ${s}`).join('\n')}`);
-      }
-      layers.push(parts.join('\n'));
+    // Compute average score → tier (sort descending to ensure correct matching)
+    const avg = strategies.length > 0
+      ? strategies.reduce((sum, s) => sum + s.score, 0) / strategies.length
+      : 0;
+    const sortedTiers = [...personalTouch.tiers].sort((a, b) => b.minScore - a.minScore);
+    const tier = sortedTiers.find(t => avg >= t.minScore) || { label: '', labelEn: '', tone: 'neutral' as const };
+
+    // AI comment
+    let aiComment = '';
+    try {
+      const { system, user } = this.aiPromptBuilder.buildPersonalTouchPrompt(strategies);
+      aiComment = await this.aiPromptBuilder.callGlm(system, user, { maxTokens: 256, temperature: 0.8 });
+    } catch (e) {
+      this.logger.warn(`Personal touch AI comment failed: ${e}`);
+      aiComment = '你完成了所有阅读策略练习，继续保持！';
     }
 
-    // L6: placeholder for student response (provided as user message)
-    layers.push(`【L6: Student Response】\nThe student's response will be provided as the user message.`);
+    // Bonus unlock: teacher hasn't reached step 5 yet (student finished ahead)
+    const currentSession = await this.sessionRepo.findOne({ where: { id: session.id } });
+    const bonusUnlocked = (currentSession?.currentStep ?? 0) < 5;
 
-    // L7: Interaction type
-    if (interactionType === 'probeReply') {
-      layers.push(`【L7: Interaction Type — probeReply】
-You are responding to the student's answer to the probe question.
-You must provide TWO things:
-1. A reply that responds to their answer, guiding their thinking
-2. A follow-up question that pushes deeper
-
-Format your response EXACTLY like this:
----REPLY---
-[Your reply here, 60-100 words]
----FOLLOWUP---
-[Your follow-up question here, 1-2 sentences]`);
-    } else {
-      layers.push(`【L7: Interaction Type — followUpReply】
-You are responding to the student's answer to a follow-up question.
-Provide a concluding reply that wraps up the discussion.
-Do NOT ask another question. Just respond directly.
-Keep it 60-100 words.`);
-    }
-
-    // L8: Output format rules
-    layers.push(`【L8: Output Format Rules】
-- Write in English
-- Keep reply to 60-100 words
-- Use ¶N to reference specific paragraphs
-- CRITICAL: Do NOT fabricate quotes from the text. When citing ¶N, only quote text that actually exists in the article above.
-- Be encouraging but substantive — push thinking forward
-- Reference the student's specific words when possible`);
-
-    return layers.join('\n\n');
+    return { strategies, tier, aiComment, bonusUnlocked };
   }
 
-  private buildDiscussFallbackPrompt(interactionType: string): string {
-    const base = `You are a Socratic English reading tutor. Respond to the student's answer thoughtfully in 60-100 words.`;
-    if (interactionType === 'probeReply') {
-      return base + `\n\nFormat:\n---REPLY---\n[reply]\n---FOLLOWUP---\n[follow-up question]`;
-    }
-    return base;
-  }
+  async getBonusExercise(session: ClassroomSession, bonusStep: number) {
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) throw new NotFoundException('Lesson not found');
 
-  private parseDiscussResponse(
-    raw: string,
-    interactionType: string,
-  ): { reply: string; followUpQuestion?: string } {
-    if (interactionType === 'followUpReply') {
-      return { reply: raw.trim() };
+    const manifest = JSON.parse(lesson.manifestJson);
+    const rawBonusSteps: unknown[] = manifest.bonusSteps || [];
+
+    if (bonusStep < 1 || bonusStep > rawBonusSteps.length) {
+      throw new BadRequestException(`bonusStep must be between 1 and ${rawBonusSteps.length}`);
     }
 
-    const replyMatch = raw.match(/---REPLY---\s*([\s\S]*?)(?=---FOLLOWUP---|$)/);
-    const followUpMatch = raw.match(/---FOLLOWUP---\s*([\s\S]*?)$/);
+    // Validate the specific bonus step with Zod
+    const parsed = BonusStepSchema.safeParse(rawBonusSteps[bonusStep - 1]);
+    if (!parsed.success) {
+      throw new NotFoundException(`Invalid bonus exercise definition at step ${bonusStep}`);
+    }
+    const stepDef = parsed.data;
+
+    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel);
+    if (!spec) throw new NotFoundException(`Unsupported bonus exercise type`);
+
+    // Validate bonus article if present
+    const articleParsed = BonusArticleSchema.safeParse(manifest.bonusArticle);
 
     return {
-      reply: replyMatch?.[1]?.trim() || raw.trim(),
-      followUpQuestion: followUpMatch?.[1]?.trim() || undefined,
+      exercise: spec,
+      article: articleParsed.success ? articleParsed.data : null,
+      label: stepDef.labelEn || stepDef.label,
+      strategy: stepDef.strategy || '',
     };
   }
 
-  private parseCategoryFromResponse(response: string): { category: string; answer: string } {
-    const match = response.match(/^【(.+?)】/);
-    if (match) {
-      return { category: match[1], answer: response.slice(match[0].length).trim() };
-    }
-    return { category: '其他', answer: response };
-  }
-
-  /** Shared L1-L3 context layers for AI prompts */
-  private buildBaseContextLayers(manifest: any, stepDef: any): string[] {
-    const layers: string[] = [];
-    const paragraphs: Array<{ id: string; text: string }> = manifest.article?.paragraphs || [];
-
-    // Layer 1: Role
-    layers.push(`你是一位专业的英语阅读教学助教，正在帮助中学生学习阅读理解策略。
-你的教学风格是苏格拉底式引导——通过提问帮助学生自己发现答案，而不是直接告诉他们。`);
-
-    // Layer 2: Article full text
-    if (paragraphs.length > 0) {
-      const articleTitle = manifest.article?.title || '';
-      const articleText = paragraphs.map((p: any, i: number) => `¶${i + 1}: ${p.text}`).join('\n\n');
-      layers.push(`【课文全文】\n标题：${articleTitle}\n\n${articleText}`);
-    }
-
-    // Layer 3: Step context
-    if (stepDef) {
-      const focusParas = stepDef.focusParagraphs?.join(', ') || '全文';
-      layers.push(`【当前步骤】\n步骤：${stepDef.label || ''}\n策略：${stepDef.strategy || 'N/A'}\n描述：${stepDef.description || 'N/A'}\n关注段落：${focusParas}`);
-    }
-
-    return layers;
-  }
-
-  private async buildAiSystemPrompt(lessonId: string, step: number): Promise<string> {
-    try {
-      const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
-      if (!lesson) {
-        return this.buildFallbackPrompt();
-      }
-
-      const manifest = JSON.parse(lesson.manifestJson);
-      const readingSteps = manifest.readingSteps || [];
-      const stepDef = readingSteps.find((s: any) => s.idx === step);
-      const referenceQA: Array<{ q: string; a: string; category: string }> = manifest.aiReferenceQA || [];
-
-      const layers = this.buildBaseContextLayers(manifest, stepDef);
-
-      // Layer 4: Answer key awareness (task steps only)
-      if (stepDef?.answerKey) {
-        layers.push(`【答案信息（仅供参考，严禁直接告诉学生）】\n题型：${stepDef.answerKey.type}\n你知道正确答案，但绝对不能直接告诉学生。如果学生问答案，用提示和引导帮助他们自己找到。`);
-      }
-
-      // Layer 5: Reference Q&A (few-shot)
-      if (referenceQA.length > 0) {
-        const examples = referenceQA.map((qa: any) => `Q: ${qa.q}\nA: 【${qa.category}】${qa.a}`).join('\n\n');
-        layers.push(`【参考问答示例】\n${examples}`);
-      }
-
-      // Layer 6: Classification instruction
-      layers.push(`【回答格式要求】
-1. 回答开头必须用【分类名】标注问题类型
-2. 可用分类：概念理解、阅读策略、课文内容、解题求助
-3. 如果问题不属于以上分类，可以创建新的合适分类名
-4. 分类后直接给出回答内容
-
-分类回答策略：
-- 概念理解 → 直接解释，给出清晰定义和例子
-- 阅读策略 → 给步骤指导，用课文中的例子说明
-- 课文内容 → 引用原文段落回答
-- 解题求助 → 苏格拉底式引导，绝不给出答案
-
-回答规则：
-- 用中文回答
-- 简洁，2-3句话（30-150字），绝不超过150字
-- 鼓励学生自己思考`);
-
-      return layers.join('\n\n');
-    } catch {
-      return this.buildFallbackPrompt();
-    }
-  }
-
-  private buildFallbackPrompt(): string {
-    return `你是一位教学助教，正在帮助学生学习阅读理解。
-
-【回答格式要求】
-1. 回答开头必须用【分类名】标注问题类型
-2. 可用分类：概念理解、阅读策略、课文内容、解题求助
-
-回答规则：
-- 用苏格拉底式引导：给提示和思路，不直接给出答案
-- 用中文回答
-- 简洁，2-3 句话
-- 鼓励学生自己思考`;
-  }
-
-  private async callGlm(
-    systemPrompt: string,
-    userMessage: string,
-    options?: {
-      maxTokens?: number;
-      temperature?: number;
-      responseFormat?: { type: 'json_object' };
-      model?: string;
-    },
-  ): Promise<string> {
-    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
-    if (!apiKey) {
-      throw new Error('ZHIPU_API_KEY not configured');
-    }
-    const model = options?.model || this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
-
-    const body: Record<string, unknown> = {
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-      max_tokens: options?.maxTokens ?? 256,
-      temperature: options?.temperature ?? 0.7,
-    };
-    if (options?.responseFormat) {
-      body.response_format = options.responseFormat;
-    }
-
-    const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
+  async checkBonusAnswer(
+    session: ClassroomSession,
+    studentId: string,
+    bonusStep: number,
+    data: Record<string, unknown>,
+  ) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
     });
+    if (!student) throw new NotFoundException('Student not found in this session');
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`GLM API error ${res.status}: ${text}`);
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    const manifest = JSON.parse(lesson.manifestJson);
+    const rawBonusSteps: unknown[] = manifest.bonusSteps || [];
+
+    if (bonusStep < 1 || bonusStep > rawBonusSteps.length) {
+      throw new BadRequestException(`bonusStep must be between 1 and ${rawBonusSteps.length}`);
     }
 
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
+    const parsed = BonusStepSchema.safeParse(rawBonusSteps[bonusStep - 1]);
+    if (!parsed.success) {
+      throw new NotFoundException(`Invalid bonus exercise definition at step ${bonusStep}`);
+    }
+    const stepDef = parsed.data;
+
+    const gradeResult = await this.gradingService.grade(stepDef.answerKey, data);
+
+    // Virtual step range 101+ reserved for bonus exercises
+    const BONUS_STEP_OFFSET = 100;
+    const virtualStep = BONUS_STEP_OFFSET + bonusStep;
+    const existing = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId, step: virtualStep },
+    });
+    if (existing) {
+      existing.dataJson = data;
+      existing.scoreJson = gradeResult;
+      await this.submissionRepo.save(existing);
+    } else {
+      const submission = this.submissionRepo.create({
+        sessionId: session.id,
+        lessonId: session.lessonId,
+        studentId,
+        step: virtualStep,
+        dataJson: data,
+        scoreJson: gradeResult,
+      });
+      await this.submissionRepo.save(submission);
+    }
+
+    // Build per-item check feedback
+    const ak = stepDef.answerKey as Record<string, unknown>;
+    const items = gradeResult ? this.buildCheckItems(ak, data, gradeResult) : [];
+    const allCorrect = gradeResult ? gradeResult.total === 100 : false;
+
+    return { type: stepDef.answerKey.type, allCorrect, items };
   }
 
-  // ── Auto-grading ──
+  // ── Exercise API (session-scoped, answer-safe) ──
 
-  private async gradeSubmission(lessonId: string, step: number, data: Record<string, any>): Promise<Record<string, any> | null> {
+  // NOTE: select-evidence spec intentionally includes correctFunction/kind/why
+  // because grading happens client-side. Server-side grade (via /submit) is the
+  // source of truth. TODO: migrate to server-side /check grading to avoid exposing answers.
+  async getExerciseSpec(session: ClassroomSession, step: number): Promise<ExerciseSpec> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    const manifest = JSON.parse(lesson.manifestJson);
+    const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
+    const stepDef = steps.find((s) => s.idx === step);
+    if (!stepDef?.answerKey) {
+      throw new NotFoundException(`No exercise found at step ${step}`);
+    }
+
+    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel as string | undefined);
+    if (!spec) throw new NotFoundException(`Unsupported exercise type at step ${step}`);
+    return spec;
+  }
+
+  async checkAnswer(
+    session: ClassroomSession,
+    studentId: string,
+    step: number,
+    data: Record<string, unknown>,
+  ): Promise<{ type: string; allCorrect: boolean; items: Array<Record<string, unknown>> }> {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) throw new NotFoundException('Student not found in this session');
+
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+
+    const manifest = JSON.parse(lesson.manifestJson);
+    const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
+    const stepDef = steps.find((s) => s.idx === step);
+    if (!stepDef?.answerKey) {
+      throw new NotFoundException(`No exercise found at step ${step}`);
+    }
+
+    const ak = stepDef.answerKey as Record<string, unknown>;
+    const gradeResult = await this.gradingService.grade(ak, data as Record<string, unknown>);
+
+    // Build per-item feedback from gradeResult + answerKey hints
+    const items = gradeResult ? this.buildCheckItems(ak, data, gradeResult) : [];
+    const allCorrect = gradeResult ? gradeResult.total === 100 : false;
+
+    return { type: ak.type as string, allCorrect, items };
+  }
+
+  private buildCheckItems(
+    ak: Record<string, unknown>,
+    data: Record<string, unknown>,
+    gradeResult: GradeResult,
+  ): Array<Record<string, unknown>> {
+    const dimOk = (val: unknown): boolean => val === true || val === 100;
+    const answers = ak.answers as Array<Record<string, unknown>> | undefined;
+    const sections = ak.sections as Array<Record<string, unknown>> | undefined;
+
+    switch (ak.type) {
+      case 'quiz':
+        return (answers || []).map((a) => {
+          const correct = dimOk(gradeResult.byDimension?.[`q${a.questionIdx}`]);
+          return {
+            idx: a.questionIdx,
+            correct,
+            ...(!correct && a.hint && { hint: a.hint }),
+            ...(!correct && a.hintZh && { hintZh: a.hintZh }),
+            ...(!correct && a.walkthrough && { walkthrough: a.walkthrough }),
+            ...(!correct && a.walkthroughZh && { walkthroughZh: a.walkthroughZh }),
+          };
+        });
+
+      case 'match':
+        return (answers || []).map((a) => {
+          const correct = dimOk(gradeResult.byDimension?.[`p${a.pairIdx}`]);
+          return {
+            idx: a.pairIdx,
+            correct,
+            ...(!correct && a.hint && { hint: a.hint }),
+            ...(!correct && a.hintZh && { hintZh: a.hintZh }),
+            ...(!correct && a.walkthrough && { walkthrough: a.walkthrough }),
+            ...(!correct && a.walkthroughZh && { walkthroughZh: a.walkthroughZh }),
+          };
+        });
+
+      case 'matrix':
+        return (answers || []).filter((a) => !a.isDemo).map((a) => {
+          const place = gradeResult.byDimension?.place ?? 0;
+          const practice = gradeResult.byDimension?.practice ?? 0;
+          const reason = gradeResult.byDimension?.reason ?? 0;
+          const correct = dimOk(place) && dimOk(practice) && dimOk(reason);
+          return {
+            idx: a.rowIdx,
+            correct,
+            ...(!correct && a.hint && { hint: a.hint }),
+            ...(!correct && a.hintZh && { hintZh: a.hintZh }),
+          };
+        });
+
+      case 'stance': {
+        const posCorrect = dimOk(gradeResult.byDimension?.position);
+        const evCorrect = dimOk(gradeResult.byDimension?.evidence);
+        return [
+          { idx: 'position', correct: posCorrect },
+          { idx: 'evidence', correct: evCorrect },
+        ];
+      }
+
+      case 'order': {
+        const orderItems = ak.items as string[];
+        const correctOrder = (ak.correctOrder || []) as number[];
+        const studentOrder = (data.order || []) as unknown[];
+        return correctOrder.map((expectedIdx, pos) => {
+          const expectedLabel = (orderItems[expectedIdx] ?? '').toLowerCase();
+          const raw = studentOrder[pos];
+          const studentLabel = typeof raw === 'string' ? raw.toLowerCase()
+            : typeof raw === 'number' ? (orderItems[raw] ?? '').toLowerCase() : '';
+          return { idx: pos, correct: studentLabel === expectedLabel };
+        });
+      }
+
+      case 'select-evidence':
+        return (sections || []).map((s) => {
+          const sectionData = (data?.sections as Record<string, Record<string, unknown>> | undefined)?.[s.id as string];
+          const functionCorrect = (sectionData?.function as string)?.toLowerCase() === (s.correctFunction as string)?.toLowerCase();
+          return {
+            idx: s.id,
+            correct: functionCorrect,
+            ...(!functionCorrect && s.hint && { hint: s.hint }),
+            ...(!functionCorrect && s.hintZh && { hintZh: s.hintZh }),
+            ...(functionCorrect && s.aiCorrect && { aiMessage: s.aiCorrect }),
+            ...(!functionCorrect && s.aiPartial && { aiMessage: s.aiPartial }),
+          };
+        });
+
+      case 'map': {
+        const mapItems = ak.items as Array<Record<string, unknown>> | undefined;
+        const result: Array<Record<string, unknown>> = (mapItems || []).map((it) => {
+          const id = it.id as string;
+          const placed = gradeResult.byDimension?.[`${id}_placed`] === true;
+          const reasoned = gradeResult.byDimension?.[`${id}_reasoned`] === true;
+          const posScore = (gradeResult.byDimension?.[`${id}_positionScore`] as number) ?? 0;
+          return { idx: id, correct: placed && reasoned && posScore >= 50 };
+        });
+        if (gradeResult.llmFeedback) {
+          result.push({ idx: '_llm', correct: true, hint: gradeResult.llmFeedback });
+        }
+        return result;
+      }
+
+      default:
+        return [];
+    }
+  }
+
+  // ── Private helpers ──
+
+  private async gradeSubmission(lessonId: string, step: number, data: Record<string, unknown>): Promise<GradeResult | null> {
     try {
       const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
       if (!lesson) return null;
@@ -927,143 +1072,91 @@ Keep it 60-100 words.`);
       const stepDef = readingSteps.find((s: any) => s.idx === step);
       if (!stepDef || !stepDef.answerKey) return null;
 
-      const key = stepDef.answerKey;
-
-      switch (key.type) {
-        case 'quiz':
-          return this.gradeQuiz(key, data);
-        case 'match':
-          return this.gradeMatch(key, data);
-        case 'matrix':
-          return this.gradeMatrix(key, data);
-        case 'stance':
-          return this.gradeStance(key, data);
-        case 'order':
-          return this.gradeOrder(key, data);
-        default:
-          return null;
-      }
+      return await this.gradingService.grade(stepDef.answerKey, data);
     } catch (e) {
       this.logger.warn(`Grading failed for step ${step}: ${e}`);
       return null;
     }
   }
 
-  private gradeQuiz(key: any, data: Record<string, any>): Record<string, any> {
-    const answers = key.answers || [];
-    const studentAnswers = data.answers || [];
-    const byDimension: Record<string, boolean> = {};
-    let correct = 0;
+  private async buildAiSystemPrompt(lessonId: string, step: number): Promise<string> {
+    try {
+      const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
+      if (!lesson) {
+        return this.aiPromptBuilder.buildFallbackPrompt();
+      }
 
-    for (const a of answers) {
-      const studentAnswer = studentAnswers[a.questionIdx];
-      const isCorrect = studentAnswer === a.correct;
-      byDimension[`q${a.questionIdx}`] = isCorrect;
-      if (isCorrect) correct++;
+      const manifest = JSON.parse(lesson.manifestJson);
+      return this.aiPromptBuilder.buildAskSystemPrompt(manifest, step);
+    } catch {
+      return this.aiPromptBuilder.buildFallbackPrompt();
+    }
+  }
+
+  private async buildDiscussSystemPrompt(
+    session: ClassroomSession,
+    studentId: string,
+    taskNum: number,
+    interactionType: 'probeReply' | 'followUpReply',
+  ): Promise<string> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) return this.aiPromptBuilder.buildDiscussFallbackPrompt(interactionType);
+
+    const manifest = JSON.parse(lesson.manifestJson);
+    const readingSteps = manifest.readingSteps || [];
+    const taskMap = buildTaskMap(manifest);
+    const stepIdx = taskMap.taskToStep[taskNum] ?? taskNum;
+    const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
+
+    // Load submission for L4 context
+    const submission = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId, step: stepIdx },
+    });
+
+    // L4.5: Prior observation context — inject recent LLM observations for this student
+    // Strip anchor codes since the discuss LLM has no indicator definitions
+    const studentLog = this.observationService.getStudentLog(session.id, studentId);
+    let priorObservationContext: string | null = null;
+    if (studentLog?.events.length) {
+      const relevantEvents = studentLog.events
+        .filter(e => e.source === 'llm')
+        .slice(-3)
+        .map(e => `- ${e.gist}`)
+        .join('\n');
+      if (relevantEvents) {
+        priorObservationContext = relevantEvents;
+      }
     }
 
-    const total = answers.length > 0 ? Math.round((correct / answers.length) * 100) : 0;
-    return { total, byDimension };
+    return this.aiPromptBuilder.buildDiscussSystemPrompt(
+      manifest, stepDef, submission, interactionType, priorObservationContext,
+    );
   }
-
-  private gradeMatch(key: any, data: Record<string, any>): Record<string, any> {
-    const answers = key.answers || [];
-    const studentPairs = data.pairs || data.answers || [];
-    const byDimension: Record<string, boolean> = {};
-    let correct = 0;
-
-    for (const a of answers) {
-      const studentPair = studentPairs[a.pairIdx];
-      const studentValue = typeof studentPair === 'string' ? studentPair : studentPair?.value;
-      const isCorrect = studentValue?.toLowerCase() === a.correct.toLowerCase();
-      byDimension[`p${a.pairIdx}`] = isCorrect;
-      if (isCorrect) correct++;
-    }
-
-    const total = answers.length > 0 ? Math.round((correct / answers.length) * 100) : 0;
-    return { total, byDimension };
-  }
-
-  private gradeMatrix(key: any, data: Record<string, any>): Record<string, any> {
-    const answers = (key.answers || []).filter((a: any) => !a.isDemo);
-    const studentRows = data.rows || [];
-    let placeCorrect = 0, practiceCorrect = 0, reasonCorrect = 0;
-    const totalRows = answers.length;
-    const byDimension: Record<string, number> = {};
-
-    for (const a of answers) {
-      const studentRow = studentRows[a.rowIdx] || {};
-      const sPlace = (studentRow.place || '').toLowerCase().trim();
-      const sPractice = (studentRow.practice || '').toLowerCase().trim();
-      const sReason = (studentRow.reason || '').toLowerCase().trim();
-
-      if (sPlace.includes(a.place.toLowerCase())) placeCorrect++;
-      if (sPractice.includes(a.practice.toLowerCase()) || a.practice.toLowerCase().includes(sPractice)) practiceCorrect++;
-      if (sReason.includes(a.reason.toLowerCase()) || a.reason.toLowerCase().includes(sReason)) reasonCorrect++;
-    }
-
-    byDimension.place = totalRows > 0 ? Math.round((placeCorrect / totalRows) * 100) : 0;
-    byDimension.practice = totalRows > 0 ? Math.round((practiceCorrect / totalRows) * 100) : 0;
-    byDimension.reason = totalRows > 0 ? Math.round((reasonCorrect / totalRows) * 100) : 0;
-
-    const total = Math.round((byDimension.place + byDimension.practice + byDimension.reason) / 3);
-    return { total, byDimension };
-  }
-
-  private gradeStance(key: any, data: Record<string, any>): Record<string, any> {
-    const validPositions = key.validPositions || [];
-    const minEvidence = key.minEvidence || 2;
-    const position = (data.position || '').toLowerCase();
-    const evidence = data.evidence || [];
-
-    const hasValidPosition = validPositions.includes(position);
-    const hasEnoughEvidence = Array.isArray(evidence) && evidence.length >= minEvidence;
-
-    const byDimension: Record<string, boolean> = {
-      position: hasValidPosition,
-      evidence: hasEnoughEvidence,
-    };
-
-    const total = hasValidPosition && hasEnoughEvidence ? 100 : (hasValidPosition || hasEnoughEvidence ? 50 : 0);
-    return { total, byDimension };
-  }
-
-  private gradeOrder(key: any, data: Record<string, any>): Record<string, any> {
-    const correctOrder = key.correctOrder || [];
-    const studentOrder = data.order || [];
-
-    const isCorrect = correctOrder.length === studentOrder.length &&
-      correctOrder.every((item: string, idx: number) => {
-        const studentItem = typeof studentOrder[idx] === 'string' ? studentOrder[idx] : studentOrder[idx]?.label;
-        return studentItem?.toLowerCase() === item.toLowerCase();
-      });
-
-    return { total: isCorrect ? 100 : 0, byDimension: { correct: isCorrect } };
-  }
-
-  // ── Private helpers ──
 
   private async initObservation(sessionId: string, lessonId: string): Promise<void> {
     const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
     if (!lesson) return;
     try {
       const manifest = JSON.parse(lesson.manifestJson);
-      let anchors = manifest.observationAnchors || [];
+      let indicators = manifest.observationIndicators || [];
 
-      // Fallback: read anchors from filesystem manifest if DB manifest lacks them
-      if (anchors.length === 0) {
+      // Fallback: read indicators from filesystem manifest if DB manifest lacks them
+      if (indicators.length === 0) {
         try {
           const diskPath = path.resolve(process.cwd(), '../data/lessons', lessonId, 'manifest.json');
           if (fs.existsSync(diskPath)) {
             const diskManifest = JSON.parse(fs.readFileSync(diskPath, 'utf-8'));
-            anchors = diskManifest.observationAnchors || [];
+            indicators = diskManifest.observationIndicators || [];
           }
-        } catch { /* disk read failed, continue without anchors */ }
+        } catch { /* disk read failed, continue without indicators */ }
       }
 
-      if (anchors.length > 0) {
-        this.observationService.initSession(sessionId, anchors);
+      if (indicators.length > 0) {
+        this.observationService.initSession(sessionId, indicators);
       }
+
+      // Observer engine: set session metadata
+      this.engine.setSessionMeta(sessionId, { indicators, lessonId });
     } catch { /* noop */ }
   }
 
@@ -1096,7 +1189,7 @@ Keep it 60-100 words.`);
     }
   }
 
-  private broadcastNamed(sessionId: string, eventName: string, payload: any) {
+  broadcastNamed(sessionId: string, eventName: string, payload: any) {
     const subs = this.subscribers.get(sessionId);
     if (!subs || subs.size === 0) return;
 
@@ -1114,487 +1207,5 @@ Keep it 60-100 words.`);
         }
       }
     }
-  }
-
-  // ── Teacher dashboard aggregation helpers ──
-
-  /** G2: Compute per-student per-step durations in seconds */
-  private computeStudentDurations(
-    students: Student[],
-    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
-    taskMap: TaskMap,
-  ): Map<string, Record<number, number>> {
-    const result = new Map<string, Record<number, number>>();
-    const taskSteps = taskMap.taskSteps;
-
-    for (const s of students) {
-      const subs = subsByStudent.get(s.id);
-      if (!subs) continue;
-
-      const durations: Record<number, number> = {};
-
-      for (let i = 0; i < taskSteps.length; i++) {
-        const stepIdx = taskSteps[i];
-        const sub = subs[stepIdx];
-        if (!sub) continue;
-
-        const subTime = new Date(sub.submittedAt).getTime();
-
-        if (i === 0) {
-          // First task: submittedAt - joinedAt
-          const joinTime = s.joinedAt instanceof Date
-            ? s.joinedAt.getTime()
-            : new Date(String(s.joinedAt)).getTime();
-          const dur = Math.round((subTime - joinTime) / 1000);
-          if (dur >= 0) durations[stepIdx] = dur;
-        } else {
-          // Subsequent tasks: submittedAt[N] - submittedAt[N-1]
-          const prevStepIdx = taskSteps[i - 1];
-          const prevSub = subs[prevStepIdx];
-          if (prevSub) {
-            const prevTime = new Date(prevSub.submittedAt).getTime();
-            const dur = Math.round((subTime - prevTime) / 1000);
-            if (dur >= 0) durations[stepIdx] = dur;
-          }
-        }
-      }
-
-      result.set(s.id, durations);
-    }
-
-    return result;
-  }
-
-  /** Build enriched stepMetrics with byDimension, timing, AI stats, issues, questionAggregates */
-  private buildStepMetrics(
-    total: number,
-    students: Student[],
-    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
-    questions: AiQuestion[],
-    studentDurations: Map<string, Record<number, number>>,
-    manifest: any,
-    taskMap: TaskMap,
-  ): Record<number, Record<string, any>> {
-    const stepMetrics: Record<number, Record<string, any>> = {};
-    const readingSteps: any[] = manifest?.readingSteps || [];
-
-    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-      const stepIdx = taskMap.taskToStep[taskNum];
-      let completedCount = 0;
-      let currentCount = 0;
-      let totalScore = 0;
-      const durations: number[] = [];
-      const dimensionAgg: Record<string, { good: number; partial: number; wrong: number; total: number }> = {};
-
-      for (const s of students) {
-        const subs = subsByStudent.get(s.id);
-        if (subs && subs[stepIdx]) {
-          completedCount++;
-          const score = subs[stepIdx].score;
-          if (score && typeof score.total === 'number') {
-            totalScore += score.total;
-          }
-
-          // Aggregate byDimension across students
-          if (score?.byDimension) {
-            for (const [dim, val] of Object.entries(score.byDimension)) {
-              if (!dimensionAgg[dim]) {
-                dimensionAgg[dim] = { good: 0, partial: 0, wrong: 0, total: 0 };
-              }
-              dimensionAgg[dim].total++;
-              if (typeof val === 'boolean') {
-                if (val) dimensionAgg[dim].good++;
-                else dimensionAgg[dim].wrong++;
-              } else if (typeof val === 'number') {
-                if (val === 100) dimensionAgg[dim].good++;
-                else if (val > 0) dimensionAgg[dim].partial++;
-                else dimensionAgg[dim].wrong++;
-              }
-            }
-          }
-
-          // Collect durations
-          const dur = studentDurations.get(s.id)?.[stepIdx];
-          if (dur !== undefined && dur >= 0) {
-            durations.push(dur);
-          }
-        } else if (s.currentTask === taskNum) {
-          currentCount++;
-        }
-      }
-
-      // G1: byDimension with human-readable keys
-      const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
-      const nameMap = this.getDimensionNameMap(stepDef?.answerKey);
-      const byDimension: Record<string, { good: number; partial: number; wrong: number }> = {};
-      for (const [dim, agg] of Object.entries(dimensionAgg)) {
-        if (agg.total > 0) {
-          const readableName = nameMap[dim] || dim;
-          byDimension[readableName] = {
-            good: Math.round((agg.good / agg.total) * 100),
-            partial: Math.round((agg.partial / agg.total) * 100),
-            wrong: Math.round((agg.wrong / agg.total) * 100),
-          };
-        }
-      }
-
-      // quality.cols — same data in array format for design prototype
-      const qualityCols = Object.entries(byDimension).map(([name, vals]) => ({
-        name,
-        good: vals.good,
-        partial: vals.partial,
-        wrong: vals.wrong,
-      }));
-
-      // Calculate timing
-      durations.sort((a, b) => a - b);
-      const avgTime = durations.length > 0
-        ? Math.round(durations.reduce((sum, d) => sum + d, 0) / durations.length)
-        : null;
-      const medianTime = durations.length > 0
-        ? durations[Math.floor(durations.length / 2)]
-        : null;
-
-      // AI stats for this step
-      const stepQuestions = questions.filter(q => q.step === stepIdx);
-      const aiRounds = stepQuestions.length;
-      const aiPeople = new Set(stepQuestions.map(q => q.studentId)).size;
-
-      // G7: issues — detect common wrong answers
-      const issues = this.detectIssues(stepIdx, subsByStudent, stepDef?.answerKey);
-
-      // G5: questionAggregates with isHigh >= 4
-      const questionAggregates: Record<string, { count: number; isHigh: boolean }> = {};
-      for (const q of stepQuestions) {
-        const cat = q.category || '其他';
-        if (!questionAggregates[cat]) questionAggregates[cat] = { count: 0, isHigh: false };
-        questionAggregates[cat].count++;
-        questionAggregates[cat].isHigh = questionAggregates[cat].count >= 4;
-      }
-
-      stepMetrics[taskNum] = {
-        name: stepDef?.label || `Step ${taskNum}`,
-        desc: this.getStepTypeDesc(stepDef?.answerKey),
-        currentCount,
-        completedCount,
-        completionRate: total > 0 ? Math.round((completedCount / total) * 100) : 0,
-        avgScore: completedCount > 0 ? Math.round(totalScore / completedCount) : 0,
-        byDimension,
-        quality: { cols: qualityCols },
-        avgTime,
-        medianTime,
-        avgTimeFormatted: avgTime != null ? this.formatDuration(avgTime) : null,
-        medianTimeFormatted: medianTime != null ? this.formatDuration(medianTime) : null,
-        aiRounds,
-        aiPeople,
-        issues,
-        questionAggregates,
-      };
-    }
-
-    return stepMetrics;
-  }
-
-  /** Extract median times per task from stepMetrics for stuck detection */
-  private extractMedianTimes(stepMetrics: Record<number, any>): Record<number, number | null> {
-    const result: Record<number, number | null> = {};
-    for (const taskNumStr of Object.keys(stepMetrics)) {
-      const taskNum = Number(taskNumStr);
-      result[taskNum] = stepMetrics[taskNum]?.medianTime ?? null;
-    }
-    return result;
-  }
-
-  /** G3: Compute student status (done/reading/stuck/prog) */
-  private computeStudentStatus(
-    student: Student,
-    subs: Record<number, any> | undefined,
-    medianTimes: Record<number, number | null>,
-    taskMap: TaskMap,
-  ): string {
-    // done: completed phase or submitted all task steps.
-    // Note: the allDone check assumes submit() prevents cross-step skipping,
-    // so having all submissions implies legitimate sequential completion.
-    if (student.currentPhase === 'completed') return 'done';
-    if (subs) {
-      const allDone = taskMap.taskSteps.every(step => subs[step]);
-      if (allDone) return 'done';
-    }
-
-    // reading: listen phase
-    if (student.currentPhase === 'listen') return 'reading';
-
-    // stuck: on current step > median × 1.5 without submission
-    if (student.stepStartedAt) {
-      const median = medianTimes[student.currentTask];
-      if (median && median > 0) {
-        const elapsed = (Date.now() - new Date(student.stepStartedAt).getTime()) / 1000;
-        if (elapsed > median * 1.5) return 'stuck';
-      }
-    }
-
-    return 'prog';
-  }
-
-  /** G6: Compute health cards for teacher dashboard */
-  private computeHealthCards(
-    students: Student[],
-    studentStatuses: Map<string, string>,
-    questions: AiQuestion[],
-    maxTask: number,
-  ): {
-    furthest: { step: number; count: number };
-    median: { step: number };
-    stuck: { count: number; location: string };
-    aiTotal: { rounds: number; people: number };
-  } {
-    // Furthest: highest task any student has reached
-    const studentTasks: number[] = [];
-    for (const s of students) {
-      const effectiveTask = s.currentPhase === 'completed' ? maxTask : s.currentTask;
-      studentTasks.push(effectiveTask);
-    }
-
-    let furthestTask = 0;
-    let furthestCount = 0;
-    const taskCounts: Record<number, number> = {};
-    for (const t of studentTasks) {
-      taskCounts[t] = (taskCounts[t] || 0) + 1;
-      if (t > furthestTask) furthestTask = t;
-    }
-    furthestCount = taskCounts[furthestTask] || 0;
-
-    // Median: middle value of student tasks
-    const sorted = [...studentTasks].sort((a, b) => a - b);
-    const medianStep = sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
-
-    // Stuck: count + concentration
-    let stuckCount = 0;
-    const stuckByTask: Record<number, number> = {};
-    for (const s of students) {
-      if (studentStatuses.get(s.id) === 'stuck') {
-        stuckCount++;
-        stuckByTask[s.currentTask] = (stuckByTask[s.currentTask] || 0) + 1;
-      }
-    }
-
-    let stuckLocation = '';
-    if (stuckCount > 0) {
-      const maxEntry = Object.entries(stuckByTask).reduce(
-        (max, [task, count]) => (count > max[1] ? [task, count] : max),
-        ['0', 0] as [string, number],
-      );
-      stuckLocation = `Step ${maxEntry[0]}`;
-    }
-
-    // AI totals
-    const aiRounds = questions.length;
-    const aiPeople = new Set(questions.map(q => q.studentId)).size;
-
-    return {
-      furthest: { step: furthestTask, count: furthestCount },
-      median: { step: medianStep },
-      stuck: { count: stuckCount, location: stuckLocation },
-      aiTotal: { rounds: aiRounds, people: aiPeople },
-    };
-  }
-
-  /** Derive result label from score: correct (100), partial (1-99), wrong (0) */
-  private deriveResult(score: any): string {
-    if (!score || typeof score.total !== 'number') return 'partial';
-    if (score.total === 100) return 'correct';
-    if (score.total === 0) return 'wrong';
-    return 'partial';
-  }
-
-  /** Format duration in seconds to m:ss string (e.g. 250 → '4:10') */
-  private formatDuration(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${String(s).padStart(2, '0')}`;
-  }
-
-  /** Map answerKey type to Chinese description */
-  private getStepTypeDesc(answerKey: any): string {
-    if (!answerKey) return '';
-    const typeMap: Record<string, string> = {
-      quiz: '选择题',
-      match: '结构匹配',
-      matrix: '信息矩阵',
-      stance: '立场+论据',
-      order: '策略排序',
-    };
-    return typeMap[answerKey.type] || answerKey.type || '';
-  }
-
-  /** G1: Map code dimension keys to human-readable names based on answerKey structure */
-  private getDimensionNameMap(answerKey: any): Record<string, string> {
-    const map: Record<string, string> = {};
-    if (!answerKey) return map;
-
-    switch (answerKey.type) {
-      case 'quiz':
-        for (const a of answerKey.answers || []) {
-          map[`q${a.questionIdx}`] = a.label || `Q${a.questionIdx + 1}`;
-        }
-        break;
-      case 'match':
-        for (const a of answerKey.answers || []) {
-          map[`p${a.pairIdx}`] = a.left ? `${a.left}→${a.correct}` : `P${a.pairIdx + 1}`;
-        }
-        break;
-      case 'matrix':
-        map['place'] = 'Where';
-        map['practice'] = 'What';
-        map['reason'] = 'Why';
-        break;
-      case 'stance':
-        map['position'] = 'Position';
-        map['evidence'] = 'Evidence';
-        break;
-      case 'order':
-        map['correct'] = 'Correct';
-        break;
-    }
-    return map;
-  }
-
-  /** G7: Detect common wrong answer patterns for a step */
-  private detectIssues(
-    stepIdx: number,
-    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
-    answerKey: any,
-  ): string[] {
-    if (!answerKey) return [];
-
-    const submissions: { data: any; score: any }[] = [];
-    for (const subs of subsByStudent.values()) {
-      if (subs[stepIdx]) {
-        submissions.push({ data: subs[stepIdx].data, score: subs[stepIdx].score });
-      }
-    }
-    if (submissions.length === 0) return [];
-
-    const wrongCounts = new Map<string, number>();
-
-    switch (answerKey.type) {
-      case 'quiz': {
-        const answers = answerKey.answers || [];
-        for (const sub of submissions) {
-          const studentAnswers = sub.data?.answers || [];
-          for (const a of answers) {
-            const studentAnswer = studentAnswers[a.questionIdx];
-            if (studentAnswer != null && studentAnswer !== a.correct) {
-              const label = a.label || `Q${a.questionIdx + 1}`;
-              const key = `${label} 选了 ${studentAnswer}（应为 ${a.correct}）`;
-              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-            }
-          }
-        }
-        break;
-      }
-      case 'match': {
-        const answers = answerKey.answers || [];
-        for (const sub of submissions) {
-          const pairs = sub.data?.pairs || sub.data?.answers || [];
-          for (const a of answers) {
-            const raw = pairs[a.pairIdx];
-            const studentValue = typeof raw === 'string' ? raw : raw?.value;
-            if (studentValue != null && studentValue.toLowerCase() !== a.correct.toLowerCase()) {
-              const label = a.left || `P${a.pairIdx + 1}`;
-              const key = `${label} 匹配为 ${studentValue}（应为 ${a.correct}）`;
-              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-            }
-          }
-        }
-        break;
-      }
-      case 'matrix': {
-        const answers = (answerKey.answers || []).filter((a: any) => !a.isDemo);
-        const colNames: Record<string, string> = { place: 'Where', practice: 'What', reason: 'Why' };
-        for (const sub of submissions) {
-          const studentRows = sub.data?.rows || [];
-          for (const a of answers) {
-            const studentRow = studentRows[a.rowIdx] || {};
-            for (const col of ['place', 'practice', 'reason']) {
-              const correct = (a[col] || '').toLowerCase().trim();
-              const student = (studentRow[col] || '').toLowerCase().trim();
-              if (student && correct && !student.includes(correct) && !correct.includes(student)) {
-                const key = `${colNames[col] || col} 写 ${studentRow[col]} 而非 ${a[col]}`;
-                wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-              }
-            }
-          }
-        }
-        break;
-      }
-      case 'stance': {
-        const validPositions: string[] = answerKey.validPositions || [];
-        const minEvidence: number = answerKey.minEvidence || 2;
-        for (const sub of submissions) {
-          const position = (sub.data?.position || '').toLowerCase();
-          const evidence = sub.data?.evidence || [];
-          if (position && !validPositions.includes(position)) {
-            const key = `立场为 ${sub.data.position}（有效立场：${validPositions.join('/')}）`;
-            wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-          }
-          if (Array.isArray(evidence) && evidence.length > 0 && evidence.length < minEvidence) {
-            const key = `论据不足（仅 ${evidence.length} 条，需 ${minEvidence} 条）`;
-            wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-          }
-        }
-        break;
-      }
-      case 'order': {
-        const correctOrder: string[] = answerKey.correctOrder || [];
-        for (const sub of submissions) {
-          const studentOrder = sub.data?.order || [];
-          if (studentOrder.length === 0) continue;
-          for (let i = 0; i < correctOrder.length; i++) {
-            const expected = correctOrder[i];
-            const got = typeof studentOrder[i] === 'string' ? studentOrder[i] : studentOrder[i]?.label;
-            if (got && got.toLowerCase() !== expected.toLowerCase()) {
-              const key = `位置 ${i + 1} 放了 ${got}（应为 ${expected}）`;
-              wrongCounts.set(key, (wrongCounts.get(key) || 0) + 1);
-            }
-          }
-        }
-        break;
-      }
-    }
-
-    return Array.from(wrongCounts.entries())
-      .filter(([, count]) => count >= 2)
-      .sort((a, b) => b[1] - a[1])
-      .map(([desc, count]) => `${count} 人${desc}`);
-  }
-
-  /** G4: Compute alertTag for a step card (priority: stuck > wrong_dimension > issue) */
-  private computeAlertTag(
-    taskNum: number,
-    metrics: Record<string, any>,
-    students: Student[],
-    studentStatuses: Map<string, string>,
-  ): string | null {
-    // Priority 1: stuck students at this step >= 5
-    const stuckAtStep = students.filter(
-      s => s.currentTask === taskNum && studentStatuses.get(s.id) === 'stuck',
-    ).length;
-    if (stuckAtStep >= 5) return `${stuckAtStep} 人卡住`;
-
-    // Priority 2: any dimension with wrong >= 30%
-    const byDim = metrics.byDimension || {};
-    for (const [dimName, dim] of Object.entries(byDim) as [string, { wrong: number }][]) {
-      if (dim.wrong >= 30) return `${dimName} 错误偏高`;
-    }
-
-    // Priority 3: any issue with count >= 5
-    const issues: string[] = metrics.issues || [];
-    for (const issue of issues) {
-      const m = issue.match(/^(\d+) 人/);
-      if (m && parseInt(m[1]) >= 5) return issue;
-    }
-
-    return null;
   }
 }

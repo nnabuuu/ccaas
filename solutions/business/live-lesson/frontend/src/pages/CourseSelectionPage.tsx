@@ -49,8 +49,7 @@ export default function CourseSelectionPage() {
     }
   }
 
-  // For now, show the first reading-type lesson as the featured entry
-  const readingLesson = lessons.find(l => l.lessonType === 'reading') ?? lessons[0]
+  const readingLessons = lessons
 
   return (
     <div
@@ -63,7 +62,7 @@ export default function CourseSelectionPage() {
         justifyContent: 'center',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 420, padding: '40px 24px' }}>
+      <div style={{ width: '100%', maxWidth: 480, padding: '40px 24px' }}>
         {/* Logo mark */}
         <div
           style={{
@@ -91,78 +90,90 @@ export default function CourseSelectionPage() {
               重试
             </button>
           </div>
-        ) : readingLesson ? (
+        ) : readingLessons.length > 0 ? (
           <div>
             <h1
               style={{
-                fontSize: 28, fontWeight: 700, color: '#1c1c1a',
-                letterSpacing: '-.5px', lineHeight: 1.2, marginBottom: 8,
+                fontSize: 24, fontWeight: 700, color: '#1c1c1a',
+                letterSpacing: '-.4px', lineHeight: 1.2, marginBottom: 20,
               }}
             >
-              {readingLesson.title}
+              选择课程
             </h1>
-            <p
-              style={{
-                fontSize: 14, color: '#5c5b56', lineHeight: 1.6,
-                marginBottom: 6,
-              }}
-            >
-              {readingLesson.subject} · {readingLesson.gradeLevel}
-            </p>
-            <p
-              style={{
-                fontSize: 13, color: '#9c9a92', lineHeight: 1.7,
-                marginBottom: 32,
-              }}
-            >
-              {readingLesson.description}
-            </p>
-
-            <button
-              onClick={() => handleCreate(readingLesson)}
-              disabled={creating}
-              style={{
-                width: '100%',
-                padding: '14px 0',
-                fontSize: 15,
-                fontWeight: 600,
-                color: '#fbfaf7',
-                background: '#1c1c1a',
-                border: 'none',
-                borderRadius: 10,
-                cursor: creating ? 'wait' : 'pointer',
-                opacity: creating ? 0.6 : 1,
-                transition: 'opacity .15s',
-                fontFamily: 'inherit',
-              }}
-            >
-              {creating ? '创建中...' : '创建课堂'}
-            </button>
-
-            <button
-              onClick={() => handleCreate(readingLesson, 'demo')}
-              disabled={creating}
-              style={{
-                width: '100%',
-                padding: '12px 0',
-                fontSize: 14,
-                fontWeight: 600,
-                color: '#5c5b56',
-                background: 'transparent',
-                border: '1px solid #d5d3cc',
-                borderRadius: 10,
-                cursor: creating ? 'wait' : 'pointer',
-                opacity: creating ? 0.6 : 1,
-                transition: 'opacity .15s',
-                fontFamily: 'inherit',
-                marginTop: 10,
-              }}
-            >
-              三端联动 Demo
-            </button>
-
-            <p style={{ fontSize: 11, color: '#bcbab2', textAlign: 'center', marginTop: 14 }}>
-              创建后会生成课堂码，学生可通过 /join 加入
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {readingLessons.map(lesson => (
+                <div
+                  key={lesson.id}
+                  style={{
+                    background: '#fff',
+                    borderRadius: 12,
+                    padding: '20px 20px 16px',
+                    border: '1px solid #e8e6e0',
+                  }}
+                >
+                  <h2
+                    style={{
+                      fontSize: 20, fontWeight: 700, color: '#1c1c1a',
+                      letterSpacing: '-.3px', lineHeight: 1.3, marginBottom: 6,
+                    }}
+                  >
+                    {lesson.title}
+                  </h2>
+                  <p style={{ fontSize: 13, color: '#5c5b56', lineHeight: 1.5, marginBottom: 4 }}>
+                    {lesson.subject} · {lesson.gradeLevel}
+                  </p>
+                  <p style={{ fontSize: 12, color: '#9c9a92', lineHeight: 1.6, marginBottom: 16 }}>
+                    {lesson.description}
+                  </p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      onClick={() => handleCreate(lesson)}
+                      disabled={creating}
+                      style={{
+                        flex: 1,
+                        padding: '10px 0',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#fbfaf7',
+                        background: '#1c1c1a',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: creating ? 'wait' : 'pointer',
+                        opacity: creating ? 0.6 : 1,
+                        transition: 'opacity .15s',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {creating ? '创建中...' : '创建课堂'}
+                    </button>
+                    <button
+                      onClick={() => handleCreate(lesson, 'demo')}
+                      disabled={creating}
+                      style={{
+                        flex: 1,
+                        padding: '10px 0',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#5c5b56',
+                        background: 'transparent',
+                        border: '1px solid #d5d3cc',
+                        borderRadius: 8,
+                        cursor: creating ? 'wait' : 'pointer',
+                        opacity: creating ? 0.6 : 1,
+                        transition: 'opacity .15s',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      三端联动 Demo
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 11, color: '#bcbab2', textAlign: 'center', marginTop: 16 }}>
+              创建后会生成课堂码，学生可通过{' '}
+              <a href="/join" target="_blank" rel="noopener" style={{ color: '#1a5fa0', textDecoration: 'underline' }}>/join</a>
+              {' '}加入
             </p>
           </div>
         ) : (

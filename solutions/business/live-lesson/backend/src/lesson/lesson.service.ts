@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, InternalServerErrorException, Logger, On
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson } from '../entities/lesson.entity';
+import { validateAnswerKey, ManifestSchema } from '../schemas';
+import { sanitizeManifest } from '../schemas/manifest.utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,14 +36,23 @@ export class LessonService implements OnModuleInit {
 
       const existing = await this.repo.findOne({ where: { id: dir.name } });
       if (existing) {
-        // Backfill lessonType if not yet set
+        // Backfill lessonType and description from manifest
         try {
           const raw = fs.readFileSync(manifestPath, 'utf-8');
           const manifest = JSON.parse(raw);
+          let changed = false;
           if (manifest.lessonType && existing.lessonType !== manifest.lessonType) {
             existing.lessonType = manifest.lessonType;
+            changed = true;
+          }
+          const newDesc = manifest.description || manifest.teachingNotes || '';
+          if (newDesc && (!existing.description || existing.description !== newDesc)) {
+            existing.description = newDesc;
+            changed = true;
+          }
+          if (changed) {
             await this.repo.save(existing);
-            this.logger.log(`Updated lessonType for ${existing.id}: ${manifest.lessonType}`);
+            this.logger.log(`Updated fields for ${existing.id}`);
           }
         } catch { /* skip */ }
         continue;
@@ -51,12 +62,31 @@ export class LessonService implements OnModuleInit {
         const raw = fs.readFileSync(manifestPath, 'utf-8');
         const manifest = JSON.parse(raw);
 
+        // Validate full manifest structure (warn but don't block)
+        const parseResult = ManifestSchema.safeParse(manifest);
+        if (!parseResult.success) {
+          this.logger.warn(
+            `Lesson ${dir.name} manifest validation issues: ${parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')}`,
+          );
+        }
+
+        // Validate answerKeys at seed time (warn but don't block)
+        for (const step of (manifest.readingSteps || [])) {
+          if (!step.answerKey) continue;
+          const result = validateAnswerKey(step.answerKey);
+          if (!result.valid) {
+            this.logger.warn(
+              `Lesson ${dir.name} step ${step.idx} answerKey validation failed: ${result.errors.join('; ')}`,
+            );
+          }
+        }
+
         const lesson = this.repo.create({
           id: manifest.id || dir.name,
           title: manifest.title || dir.name,
           subject: manifest.subject || '',
           gradeLevel: manifest.gradeLevel || '',
-          description: manifest.teachingNotes || '',
+          description: manifest.description || manifest.teachingNotes || '',
           emoji: '📖',
           lessonType: manifest.lessonType || 'interactive',
           teachingNotes: manifest.teachingNotes || '',
@@ -86,7 +116,8 @@ export class LessonService implements OnModuleInit {
       throw new NotFoundException(`Lesson ${id} not found`);
     }
     try {
-      return JSON.parse(lesson.manifestJson);
+      const manifest = JSON.parse(lesson.manifestJson);
+      return sanitizeManifest(manifest);
     } catch {
       throw new InternalServerErrorException(`Lesson ${id} has corrupted manifest data`);
     }
