@@ -47,6 +47,7 @@ export default function BoardPage() {
 
   if (loading) return <div style={{ padding: 40, color: 'var(--t3)' }}>Loading board...</div>
   if (error || !manifest) return <div style={{ padding: 40, color: 'var(--red)' }}>Error: {error}</div>
+  if (!manifest.boardData) return <div style={{ padding: 40, color: 'var(--t3)' }}>No board data available.</div>
 
   return (
     <div data-surface="board" style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--t1)' }}>

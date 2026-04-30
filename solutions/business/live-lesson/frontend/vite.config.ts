@@ -27,36 +27,34 @@ export default defineConfig(({ mode }) => {
           target: BACKEND_TARGET,
           configure: (proxy) => {
             proxy.on('error', (_err, req, res) => {
-              if (!res.headersSent) {
-                setTimeout(() => {
-                  const retry = http.request(
-                    {
-                      hostname: backendUrl.hostname,
-                      port: backendUrl.port,
-                      path: req.url,
-                      method: req.method,
-                      headers: req.headers,
-                    },
-                    (upstream) => {
-                      res.writeHead(upstream.statusCode!, upstream.headers)
-                      upstream.pipe(res)
-                    },
-                  )
-                  retry.on('error', () => {
-                    res.writeHead(503, { 'Content-Type': 'application/json' })
-                    res.end(
-                      JSON.stringify({
-                        error: 'Backend restarting, please refresh',
-                      }),
-                    )
-                  })
-                  if (req.readable) {
-                    req.pipe(retry)
-                  } else {
-                    retry.end()
-                  }
-                }, 1500)
-              }
+              if (res.headersSent || res.writableEnded) return
+              setTimeout(() => {
+                if (res.headersSent || res.writableEnded) return
+                const retry = http.request(
+                  {
+                    hostname: backendUrl.hostname,
+                    port: backendUrl.port,
+                    path: req.url,
+                    method: req.method,
+                    headers: req.headers,
+                  },
+                  (upstream) => {
+                    if (res.headersSent || res.writableEnded) return upstream.destroy()
+                    res.writeHead(upstream.statusCode!, upstream.headers)
+                    upstream.pipe(res)
+                  },
+                )
+                retry.on('error', () => {
+                  if (res.headersSent || res.writableEnded) return
+                  res.writeHead(503, { 'Content-Type': 'application/json' })
+                  res.end(JSON.stringify({ error: 'Backend restarting, please refresh' }))
+                })
+                if (req.readable) {
+                  req.pipe(retry)
+                } else {
+                  retry.end()
+                }
+              }, 1500)
             })
           },
         },
