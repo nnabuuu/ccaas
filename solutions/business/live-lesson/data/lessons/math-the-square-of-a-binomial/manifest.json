@@ -766,5 +766,474 @@
       "label": "a/b辨认困难",
       "description": "面对(-3a-2b)²等复杂式子，无法正确辨认a和b并代入"
     }
-  ]
+  ],
+  "boardData": {
+    "id": "board-math-binomial-square",
+    "lesson": {
+      "title": "完全平方公式",
+      "subtitle": "(a±b)² = a² ± 2ab + b²",
+      "class": "人教版八年级上 16.3.2"
+    },
+    "steps": [
+      {
+        "id": "s1",
+        "idx": 1,
+        "label": "代数归纳",
+        "layout": {
+          "columns": [
+            { "id": "L", "title": "展开计算", "subtitle": "多项式乘法", "tone": "cool", "width": 1 },
+            { "id": "C", "title": "发现规律", "subtitle": "项数 · 系数", "tone": "warm", "width": 1.4 },
+            { "id": "R", "title": "公式", "subtitle": "从法到式", "tone": "accent", "width": 1 }
+          ]
+        }
+      },
+      {
+        "id": "s2",
+        "idx": 2,
+        "label": "几何直观",
+        "layout": {
+          "columns": [
+            { "id": "L", "title": "面积模型", "subtitle": "正方形切割", "tone": "cool", "width": 1.4 },
+            { "id": "R", "title": "对应关系", "subtitle": "图 → 式", "tone": "accent", "width": 1 }
+          ]
+        }
+      },
+      {
+        "id": "s3",
+        "idx": 3,
+        "label": "括号法应用",
+        "layout": {
+          "columns": [
+            { "id": "L", "title": "方法", "subtitle": "三步走", "tone": "cool", "width": 1 },
+            { "id": "R", "title": "练习矩阵", "subtitle": "辨认 a 和 b", "tone": "neutral", "width": 2 }
+          ]
+        }
+      },
+      {
+        "id": "s4",
+        "idx": 4,
+        "label": "高阶迁移",
+        "layout": {
+          "columns": [
+            { "id": "L", "title": "三项展开", "subtitle": "添括号法", "tone": "cool", "width": 1 },
+            { "id": "C", "title": "数值妙算", "subtitle": "拆数技巧", "tone": "warm", "width": 1.2 },
+            { "id": "R", "title": "拓展", "subtitle": "化归思想", "tone": "accent", "width": 1 }
+          ]
+        }
+      },
+      {
+        "id": "s5",
+        "idx": 5,
+        "label": "回顾对比",
+        "layout": {
+          "columns": [
+            { "id": "L", "title": "公式对比", "subtitle": "完全平方 vs 平方差", "tone": "cool", "width": 1 },
+            { "id": "C", "title": "易错点", "subtitle": "M1–M4", "tone": "warm", "width": 1.2 },
+            { "id": "R", "title": "总结", "subtitle": "知识地图", "tone": "accent", "width": 1 }
+          ]
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "b-s1-title",
+        "kind": "heading",
+        "geometry": { "col": 1, "span": 12 },
+        "fullBleed": true,
+        "style": { "tone": "neutral", "emphasis": "strong" },
+        "reveal": { "step": 1, "sub": 1 },
+        "data": {
+          "eyebrow": "Step 1 · 代数归纳",
+          "text": "从计算到公式",
+          "accent": "先算再看，规律自现"
+        }
+      },
+      {
+        "id": "b-s1-expand",
+        "kind": "matrix",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 1, "sub": 2 },
+        "data": {
+          "headers": ["原式", "展开过程", "结果"],
+          "rows": [
+            { "tone": "demo", "cells": [{ "text": "(p+1)²" }, { "text": "(p+1)(p+1) = p²+p+p+1" }, { "text": "p²+2p+1" }] },
+            { "cells": [{ "text": "(m+2)²" }, { "text": "(m+2)(m+2) = m²+2m+2m+4" }, { "text": "m²+4m+4" }] },
+            { "cells": [{ "text": "(p−1)²" }, { "text": "(p−1)(p−1) = p²−p−p+1" }, { "text": "p²−2p+1" }] },
+            { "cells": [{ "text": "(m−2)²" }, { "text": "(m−2)(m−2) = m²−2m−2m+4" }, { "text": "m²−4m+4" }] }
+          ]
+        }
+      },
+      {
+        "id": "b-s1-pattern",
+        "kind": "chip-row",
+        "region": "C",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "warm" },
+        "reveal": { "step": 1, "sub": 3 },
+        "data": {
+          "items": [
+            { "text": "都是三项", "note": "4项合并→3项" },
+            { "text": "首项=a²", "note": "第一个数的平方" },
+            { "text": "末项=b²", "note": "第二个数的平方" },
+            { "text": "中间项=±2ab", "note": "积的2倍", "tone": "accent" }
+          ]
+        }
+      },
+      {
+        "id": "b-s1-flow",
+        "kind": "flow",
+        "region": "C",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "warm" },
+        "reveal": { "step": 1, "sub": 4 },
+        "data": {
+          "arrow": "right",
+          "steps": [
+            { "label": "展开4项", "sub": "a²+ab+ab+b²" },
+            { "label": "合并同类项", "sub": "ab出现2次" },
+            { "label": "得到3项", "sub": "a²+2ab+b²" }
+          ]
+        }
+      },
+      {
+        "id": "b-s1-formula-plus",
+        "kind": "formula",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent", "emphasis": "strong" },
+        "reveal": { "step": 1, "sub": 5 },
+        "data": {
+          "expr": "(a+b)² = a² + 2ab + b²",
+          "caption": "和的完全平方"
+        }
+      },
+      {
+        "id": "b-s1-formula-minus",
+        "kind": "formula",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent", "emphasis": "strong" },
+        "reveal": { "step": 1, "sub": 6 },
+        "data": {
+          "expr": "(a−b)² = a² − 2ab + b²",
+          "caption": "差的完全平方"
+        }
+      },
+      {
+        "id": "b-s1-mnemonic",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 1, "sub": 7 },
+        "data": {
+          "kind": "aha",
+          "text": "口诀：首平方，尾平方，积的2倍在中央。"
+        }
+      },
+
+      {
+        "id": "b-s2-title",
+        "kind": "heading",
+        "geometry": { "col": 1, "span": 12 },
+        "fullBleed": true,
+        "style": { "tone": "neutral", "emphasis": "strong" },
+        "reveal": { "step": 2, "sub": 1 },
+        "data": {
+          "eyebrow": "Step 2 · 几何直观",
+          "text": "用面积「看见」公式",
+          "accent": "数形结合"
+        }
+      },
+      {
+        "id": "b-s2-area-flow",
+        "kind": "flow",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 2, "sub": 2 },
+        "data": {
+          "arrow": "right",
+          "steps": [
+            { "label": "画正方形", "sub": "边长 a+b" },
+            { "label": "十字切割", "sub": "在 a 处画线" },
+            { "label": "标面积", "sub": "4 块求和" }
+          ]
+        }
+      },
+      {
+        "id": "b-s2-area-grid",
+        "kind": "matrix",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 2, "sub": 3 },
+        "data": {
+          "headers": ["", "宽 a", "宽 b"],
+          "rows": [
+            { "cells": [{ "text": "高 a", "mark": "sig" }, { "text": "a²", "mark": "sig" }, { "text": "ab", "mark": "warn" }] },
+            { "cells": [{ "text": "高 b", "mark": "sig" }, { "text": "ab", "mark": "warn" }, { "text": "b²", "mark": "sig" }] }
+          ]
+        }
+      },
+      {
+        "id": "b-s2-aha",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 2, "sub": 4 },
+        "data": {
+          "kind": "aha",
+          "text": "两个 ab 长方形 = 中间项 2ab！漏掉它们就是 (a+b)²=a²+b² 的错误来源。"
+        }
+      },
+      {
+        "id": "b-s2-formula",
+        "kind": "formula",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 2, "sub": 5 },
+        "data": {
+          "expr": "(a+b)² = a² + ab + ab + b² = a² + 2ab + b²",
+          "caption": "面积之和 = 公式"
+        }
+      },
+
+      {
+        "id": "b-s3-title",
+        "kind": "heading",
+        "geometry": { "col": 1, "span": 12 },
+        "fullBleed": true,
+        "style": { "tone": "neutral", "emphasis": "strong" },
+        "reveal": { "step": 3, "sub": 1 },
+        "data": {
+          "eyebrow": "Step 3 · 括号法应用",
+          "text": "辨认 a 和 b，套模板",
+          "accent": "括号填充法"
+        }
+      },
+      {
+        "id": "b-s3-method",
+        "kind": "flow",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 3, "sub": 2 },
+        "data": {
+          "arrow": "down",
+          "steps": [
+            { "label": "1. 看括号", "sub": "和还是差？" },
+            { "label": "2. 找首 a", "sub": "第一个数" },
+            { "label": "3. 找尾 b", "sub": "第二个数" },
+            { "label": "4. 套公式", "sub": "a²±2ab+b²" }
+          ]
+        }
+      },
+      {
+        "id": "b-s3-matrix",
+        "kind": "matrix",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "neutral" },
+        "reveal": { "step": 3, "sub": 3 },
+        "data": {
+          "headers": ["原式", "a", "b", "展开结果"],
+          "rows": [
+            { "tone": "demo", "cells": [{ "text": "(2x+3y)²", "note": "示范" }, { "text": "2x" }, { "text": "3y" }, { "text": "4x²+12xy+9y²" }] },
+            { "cells": [{ "text": "(−3a−2b)²" }, { "text": "3a", "note": "提负号" }, { "text": "2b" }, { "placeholder": "——?" }] },
+            { "cells": [{ "text": "(y−1/2)²" }, { "text": "y" }, { "text": "1/2", "note": "分数" }, { "placeholder": "——?" }] },
+            { "cells": [{ "text": "(4m+n)²" }, { "text": "4m" }, { "text": "n" }, { "placeholder": "——?" }] },
+            { "cells": [{ "text": "(−2x+5)²" }, { "text": "5", "note": "改写" }, { "text": "2x" }, { "placeholder": "——?" }] }
+          ]
+        }
+      },
+      {
+        "id": "b-s3-warning",
+        "kind": "annotation",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "warm" },
+        "reveal": { "step": 3, "sub": 4 },
+        "data": {
+          "kind": "warning",
+          "text": "负号陷阱：(−3a−2b)² 先提取 −1 → [−(3a+2b)]² = (3a+2b)²，因为 (−1)²=1。"
+        }
+      },
+
+      {
+        "id": "b-s4-title",
+        "kind": "heading",
+        "geometry": { "col": 1, "span": 12 },
+        "fullBleed": true,
+        "style": { "tone": "neutral", "emphasis": "strong" },
+        "reveal": { "step": 4, "sub": 1 },
+        "data": {
+          "eyebrow": "Step 4 · 高阶迁移",
+          "text": "三项展开 & 数值妙算",
+          "accent": "化归思想"
+        }
+      },
+      {
+        "id": "b-s4-trinomial-flow",
+        "kind": "flow",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 4, "sub": 2 },
+        "data": {
+          "arrow": "right",
+          "steps": [
+            { "label": "(a+b+c)²", "sub": "三项" },
+            { "label": "[(a+b)+c]²", "sub": "添括号→两项" },
+            { "label": "a²+b²+c²+2ab+2bc+2ac", "sub": "展开" }
+          ]
+        }
+      },
+      {
+        "id": "b-s4-trinomial-formula",
+        "kind": "formula",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "cool" },
+        "reveal": { "step": 4, "sub": 3 },
+        "data": {
+          "expr": "(a+b+c)² = a²+b²+c² + 2ab+2bc+2ac",
+          "caption": "三个平方 + 三个「积的2倍」"
+        }
+      },
+      {
+        "id": "b-s4-speed-matrix",
+        "kind": "matrix",
+        "region": "C",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "warm" },
+        "reveal": { "step": 4, "sub": 4 },
+        "data": {
+          "headers": ["算式", "拆数", "a²", "2ab", "b²", "结果"],
+          "rows": [
+            { "tone": "demo", "cells": [{ "text": "102²" }, { "text": "(100+2)²" }, { "text": "10000" }, { "text": "400" }, { "text": "4" }, { "text": "10404", "mark": "sig" }] },
+            { "cells": [{ "text": "99²" }, { "text": "(100−1)²" }, { "text": "10000" }, { "text": "−200" }, { "text": "1" }, { "text": "9801", "mark": "sig" }] },
+            { "cells": [{ "text": "51²" }, { "text": "(50+1)²" }, { "text": "2500" }, { "text": "100" }, { "text": "1" }, { "text": "2601", "mark": "sig" }] }
+          ]
+        }
+      },
+      {
+        "id": "b-s4-aha",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 4, "sub": 5 },
+        "data": {
+          "kind": "aha",
+          "text": "化归思想：三项→两项，复杂数→整数±小数。把新问题转化成已会的公式。"
+        }
+      },
+
+      {
+        "id": "b-s5-title",
+        "kind": "heading",
+        "geometry": { "col": 1, "span": 12 },
+        "fullBleed": true,
+        "style": { "tone": "neutral", "emphasis": "strong" },
+        "reveal": { "step": 5, "sub": 1 },
+        "data": {
+          "eyebrow": "Step 5 · 回顾对比",
+          "text": "完全平方 vs 平方差",
+          "accent": "辨析总结"
+        }
+      },
+      {
+        "id": "b-s5-compare",
+        "kind": "compare",
+        "region": "L",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "neutral" },
+        "reveal": { "step": 5, "sub": 2 },
+        "data": {
+          "joiner": "vs",
+          "left": {
+            "label": "完全平方",
+            "tone": "accent",
+            "items": [
+              "(a±b)²",
+              "自己乘自己",
+              "结果：三项式",
+              "有中间项 ±2ab",
+              "末项 +b²（总为正）"
+            ]
+          },
+          "right": {
+            "label": "平方差",
+            "tone": "cool",
+            "items": [
+              "(a+b)(a−b)",
+              "和 × 差",
+              "结果：两项式",
+              "无中间项",
+              "末项 −b²"
+            ]
+          }
+        }
+      },
+      {
+        "id": "b-s5-errors",
+        "kind": "matrix",
+        "region": "C",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "warm" },
+        "reveal": { "step": 5, "sub": 3 },
+        "data": {
+          "headers": ["编号", "常见错误", "正确写法"],
+          "rows": [
+            { "cells": [{ "text": "M1" }, { "text": "(a+b)²=a²+b²", "mark": "err" }, { "text": "a²+2ab+b²", "mark": "ok" }] },
+            { "cells": [{ "text": "M2" }, { "text": "中间项写 ab", "mark": "err" }, { "text": "中间项是 2ab", "mark": "ok" }] },
+            { "cells": [{ "text": "M3" }, { "text": "(a−b)² 末项 −b²", "mark": "err" }, { "text": "末项 +b²", "mark": "ok" }] },
+            { "cells": [{ "text": "M4" }, { "text": "混淆两个公式", "mark": "err" }, { "text": "完全平方→三项；平方差→两项", "mark": "ok" }] }
+          ]
+        }
+      },
+      {
+        "id": "b-s5-mindmap",
+        "kind": "mindmap",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 5, "sub": 4 },
+        "data": {
+          "center": { "label": "乘法公式", "note": "知识地图" },
+          "branches": [
+            {
+              "label": "完全平方",
+              "leaves": ["(a+b)²=a²+2ab+b²", "(a−b)²=a²−2ab+b²", "口诀：首尾平方，积2倍中央"]
+            },
+            {
+              "label": "平方差",
+              "leaves": ["(a+b)(a−b)=a²−b²", "和×差→两项", "无中间项"]
+            },
+            {
+              "label": "拓展",
+              "leaves": ["三项式添括号", "数值巧算", "因式分解（逆用）"]
+            }
+          ]
+        }
+      },
+      {
+        "id": "b-s5-summary",
+        "kind": "annotation",
+        "region": "R",
+        "geometry": { "col": 1, "span": 12 },
+        "style": { "tone": "accent" },
+        "reveal": { "step": 5, "sub": 5 },
+        "data": {
+          "kind": "aha",
+          "text": "首平方，尾平方，积的2倍在中央。记住口诀，下节课学因式分解——公式的逆用！"
+        }
+      }
+    ]
+  }
 }
