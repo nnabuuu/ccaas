@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>课堂观察台 · Teacher Console</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.08); --border-strong:rgba(28,28,26,.14);
+  --amber:#7a4d0e; --amber-soft:#f6edda; --amber-dot:#c48a1e;
+  --green:#2d6612; --green-soft:#e6f2dc; --green-dot:#5a9a3a;
+  --red:#942929; --red-soft:#f8e6e6;
+  --blue:#1a5fa0; --blue-soft:#e4eff8;
+  --done-dot:#8a8a80; --idle:#bcbab2;
+  --ai:#4a4387; --ai-soft:#ecebf5; --ai-dot:#7a72b5;
+  --teal:#0d5245; --teal-soft:#ddf1eb;
+  --lecture:#6b5b3a; --lecture-soft:#f3eed8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+
+/* ═══ BAND ═══ */
+.band{display:flex;align-items:center;height:44px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.band-mark{width:22px;height:22px;border-radius:6px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.band-title{font-size:13px;font-weight:600;letter-spacing:-.1px}
+.band-mode{font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-soft);padding:2px 8px;border-radius:3px;letter-spacing:.3px}
+.band-self{font-size:10px;font-weight:600;color:var(--ai);background:var(--ai-soft);padding:2px 8px;border-radius:3px;letter-spacing:.3px}
+.band-class{font-size:12px;color:var(--t2);padding-left:12px;border-left:1px solid var(--border-strong);margin-left:2px}
+.band-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.band-live{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green)}
+.band-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green-dot);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══ TIMELINE ═══ */
+.timeline{display:flex;align-items:center;height:40px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.tl-time{font-size:12px;font-weight:700;color:var(--t1);min-width:42px;text-align:center}
+.tl-track-wrap{flex:1;position:relative;height:24px;display:flex;align-items:center;cursor:pointer}
+.tl-track{width:100%;height:6px;background:var(--surface2);border-radius:3px;position:relative;overflow:visible}
+.tl-fill{height:100%;border-radius:3px;background:var(--t1);position:absolute;top:0;left:0;transition:width .15s}
+.tl-thumb{width:14px;height:14px;border-radius:50%;background:var(--t1);border:2px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.2);position:absolute;top:50%;transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:left .15s}
+.tl-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:2px;height:12px;border-radius:1px;z-index:1}
+.tl-marker.task{background:var(--t1);opacity:.2}
+.tl-total{font-size:12px;color:var(--t3);min-width:42px;text-align:center}
+.tl-label{font-size:10px;color:var(--t2);background:var(--surface2);padding:2px 8px;border-radius:3px;white-space:nowrap;font-weight:500}
+.tl-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);flex-shrink:0;font-family:inherit}
+.tl-btn:hover{background:var(--surface2);color:var(--t1)}
+
+/* ═══ BODY ═══ */
+.body{flex:1;display:grid;grid-template-columns:1fr 340px;min-height:0}
+
+/* ═══ FOCUS (left) ═══ */
+.focus{padding:18px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+
+/* Health row */
+.health{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:4px}
+.hcard.warn{border-color:rgba(122,77,14,.2);background:var(--amber-soft)}
+.hcard.good{border-color:rgba(45,102,18,.15);background:var(--green-soft)}
+.hcard-lb{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.hcard.warn .hcard-lb{color:var(--amber)}
+.hcard.good .hcard-lb{color:var(--green)}
+.hcard-v{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--t1)}
+.hcard-sub{font-size:10px;color:var(--t2);line-height:1.4}
+.hcard-sub strong{color:var(--t1);font-weight:600}
+
+/* Section headers */
+.sh{display:flex;align-items:baseline;gap:10px}
+.sh-lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.sh-meta{font-size:11px;color:var(--t3);margin-left:auto}
+
+/* ═══ COLLAPSIBLE SECTION ═══ */
+.section-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.section-summary{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;user-select:none;transition:background .1s}
+.section-summary:hover{background:var(--surface2)}
+.section-summary .chevron{font-size:8px;color:var(--t3);transition:transform .2s;flex-shrink:0;width:12px;text-align:center}
+.section-box.open .section-summary .chevron{transform:rotate(90deg)}
+.section-detail{display:none;padding:0 14px 14px}
+.section-box.open .section-detail{display:block}
+
+/* Summary bar for steps */
+.steps-summary-bar{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.steps-distrib{display:flex;height:8px;border-radius:4px;overflow:hidden;flex:1;min-width:80px}
+.steps-distrib-seg{height:100%;transition:width .3s}
+.steps-summary-stats{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.steps-summary-stat{font-size:10px;color:var(--t2);font-weight:500;white-space:nowrap}
+.steps-summary-stat strong{font-weight:700}
+.steps-summary-stat.alert{color:var(--amber);font-weight:600}
+.steps-summary-label{font-size:11px;font-weight:600;color:var(--t1);flex-shrink:0}
+
+/* ═══ STEP CARDS ═══ */
+.step-cards{display:flex;flex-direction:column;gap:6px}
+.step-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;transition:all .15s}
+.step-card:hover{border-color:var(--border-strong);box-shadow:0 2px 8px rgba(28,28,26,.06)}
+.step-card.active{border-color:rgba(26,95,160,.3);box-shadow:inset 3px 0 0 var(--blue),0 2px 8px rgba(28,28,26,.06)}
+.step-card.has-alert{border-color:rgba(122,77,14,.25)}
+
+.sc-head{display:flex;align-items:center;gap:10px;padding:10px 14px 0}
+.sc-sn{width:22px;height:22px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-sn.task{background:var(--t1);color:var(--surface)}
+.sc-name{font-size:13px;font-weight:700;color:var(--t1)}
+.sc-type{font-size:9px;color:var(--t2);font-weight:500}
+.sc-badges{display:flex;gap:5px;margin-left:auto;flex-shrink:0;align-items:center}
+.sc-badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;display:flex;align-items:center;gap:3px}
+.sc-badge.student-count{background:var(--surface2);color:var(--t2)}
+.sc-badge.student-count.major{background:var(--blue-soft);color:var(--blue)}
+.sc-badge.ai-rounds{background:var(--ai-soft);color:var(--ai)}
+.sc-badge.ai-rounds.hot{background:rgba(148,41,41,.1);color:var(--red)}
+.sc-badge.alert-tag{background:var(--amber-soft);color:var(--amber)}
+.sc-badge .pip{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+
+.sc-metrics{display:flex;align-items:center;gap:14px;padding:6px 14px;font-size:10px;color:var(--t3)}
+.sc-metric{display:flex;align-items:center;gap:3px}
+.sc-metric strong{color:var(--t2);font-weight:600}
+
+.sc-dots{padding:4px 14px 10px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;align-content:flex-start;min-height:0}
+
+/* Student dots */
+.sdot{min-width:42px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:pointer;position:relative;transition:transform .1s;padding:0 4px;letter-spacing:-.1px}
+.sdot:hover{transform:scale(1.06);z-index:1}
+.sdot.done{background:var(--green-dot);color:#fff}
+.sdot.prog{background:var(--blue);color:#fff}
+.sdot.stuck{background:var(--amber-dot);color:#fff}
+.sdot.reading{background:var(--lecture);color:#fff}
+.sdot .ai-pip{position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:var(--ai-dot);border:1.5px solid var(--surface)}
+
+/* Swim legend */
+.swim-legend{display:flex;gap:12px;flex-wrap:wrap;padding:0 2px}
+.swim-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.swim-legend-item .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* ═══ OBSERVATION PANEL ═══ */
+/* Summary for observations */
+.obs-summary-bar{flex:1;display:flex;align-items:center;gap:8px;min-width:0}
+.obs-summary-label{font-size:11px;font-weight:600;color:var(--t1);flex-shrink:0}
+.obs-alert-pill{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;display:inline-flex;align-items:center;gap:3px;flex-shrink:0}
+.obs-alert-pill.urgent{background:var(--red);color:#fff}
+.obs-alert-pill.warn{background:var(--amber-soft);color:var(--amber)}
+.obs-summary-text{font-size:10px;color:var(--t2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Current vs historical */
+.obs-time-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);padding:10px 0 6px;display:flex;align-items:center;gap:6px}
+.obs-time-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.obs-time-label.current{color:var(--t1)}
+
+/* Alert cards */
+.obs-alert-card{padding:9px 12px;border-radius:8px;font-size:11px;line-height:1.5;color:var(--t2);margin-bottom:6px;display:flex;align-items:flex-start;gap:8px}
+.obs-alert-card.urgent{background:rgba(148,41,41,.06);border:1px solid rgba(148,41,41,.15)}
+.obs-alert-card.warn{background:rgba(196,138,30,.06);border:1px solid rgba(196,138,30,.15)}
+.obs-alert-card.info{background:rgba(26,95,160,.04);border:1px solid rgba(26,95,160,.1)}
+.obs-alert-icon{font-size:13px;flex-shrink:0;line-height:1.3}
+.obs-alert-body{flex:1;min-width:0}
+.obs-alert-title{font-weight:600;color:var(--t1)}
+.obs-alert-meta{font-size:9px;color:var(--t3);margin-top:2px}
+.obs-alert-card.urgent .obs-alert-title{color:var(--red)}
+.obs-alert-card.warn .obs-alert-title{color:var(--amber)}
+
+/* Student status groups */
+.obs-status-group{margin-bottom:10px}
+.obs-status-header{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.obs-status-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.obs-status-name{font-size:10px;font-weight:600;color:var(--t2)}
+.obs-status-count{font-size:9px;color:var(--t3);margin-left:auto}
+.obs-status-students{display:flex;flex-wrap:wrap;gap:3px}
+.obs-stu-chip{height:22px;padding:0 6px;border-radius:4px;font-size:9px;font-weight:600;display:inline-flex;align-items:center;gap:3px;color:#fff;cursor:default}
+
+/* Knowledge indicators */
+.obs-indicator{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.obs-ind-id{font-size:9px;font-weight:600;color:var(--t2);width:22px;flex-shrink:0}
+.obs-ind-label{font-size:10px;color:var(--t2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obs-ind-bar{width:60px;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;flex-shrink:0}
+.obs-ind-fill{height:100%;border-radius:3px}
+.obs-ind-val{font-size:9px;color:var(--t3);width:30px;text-align:right;flex-shrink:0}
+
+/* Historical dimming */
+.obs-historical{opacity:.55}
+
+/* ═══ COACHING ═══ */
+.coaching{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.coaching-toggle{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;user-select:none}
+.coaching-toggle:hover{background:var(--surface2)}
+.coaching-toggle .arrow{transition:transform .2s;font-size:9px}
+.coaching-toggle.open .arrow{transform:rotate(90deg)}
+.coaching-body{display:none;padding:0 14px 14px;flex-direction:column;gap:8px}
+.coaching-body.open{display:flex}
+.coach-line{background:var(--t1);color:#f0efe8;border-radius:8px;padding:10px 12px}
+.coach-line-lb{font-size:8px;font-weight:600;color:rgba(240,239,232,.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.coach-line-text{font-size:12px;line-height:1.5;color:rgba(240,239,232,.88)}
+
+/* ═══ OVERVIEW COLUMN (right) ═══ */
+.overview{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.ov-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* Queue */
+.queue-section{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.queue-h{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.queue-h .lb{font-size:10px;font-weight:700;color:var(--t2);letter-spacing:.3px}
+.queue-h .cnt{font-size:9px;color:var(--t3);background:var(--surface2);padding:1px 5px;border-radius:8px;font-weight:600;margin-left:auto}
+.queue{flex:1;overflow-y:auto;padding:4px 8px 8px}
+
+/* Category group header */
+.q-step-h{display:flex;align-items:center;gap:6px;padding:8px 6px 4px;font-size:9px;font-weight:700;color:var(--t2);position:sticky;top:0;background:var(--surface);z-index:1}
+.q-step-h .tot{font-weight:500;color:var(--t3)}
+
+/* Category badges */
+.cat-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:11px;font-weight:500}
+.cat-badge.concept{background:var(--blue-soft);color:var(--blue)}
+.cat-badge.strategy{background:var(--green-soft);color:var(--green)}
+.cat-badge.content{background:var(--ai-soft);color:var(--ai)}
+.cat-badge.task-help{background:var(--amber-soft);color:var(--amber)}
+.cat-badge.other{background:var(--surface2);color:var(--t3)}
+
+.qrow{display:flex;align-items:flex-start;gap:5px;padding:4px 6px 4px 12px;border-radius:4px;cursor:pointer}
+.qrow:hover{background:var(--bg)}
+.qrow .q-student{font-size:10px;font-weight:600;color:var(--t2);flex-shrink:0;min-width:48px}
+.qrow .qq{font-size:10px;font-weight:500;color:var(--t1);line-height:1.35;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.qrow .qmeta{font-size:8px;color:var(--t3);flex-shrink:0}
+
+/* Expandable answer */
+.q-answer{padding:6px 12px 8px 12px;font-size:11px;color:var(--t2);line-height:1.55;background:var(--bg);border-radius:0 0 4px 4px;margin:-2px 6px 4px 6px}
+.q-answer-label{font-size:9px;font-weight:600;color:var(--ai);text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:3px}
+
+/* ═══ STEP DETAIL MODAL ═══ */
+.overlay2{position:fixed;inset:0;background:rgba(28,28,26,.5);display:none;align-items:center;justify-content:center;padding:32px;z-index:90;backdrop-filter:blur(2px)}
+.overlay2.open{display:flex}
+.modal2{background:var(--bg);border-radius:14px;width:100%;max-width:720px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px -10px rgba(28,28,26,.3)}
+.m2-hd{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.m2-hd .sc-sn{width:24px;height:24px;font-size:11px}
+.m2-title{font-size:14px;font-weight:700;flex:1}
+.m2-desc{font-size:11px;color:var(--t2)}
+.m2-cls{cursor:pointer;padding:6px 12px;font-size:12px;color:var(--t2);border-radius:6px}
+.m2-cls:hover{background:var(--surface2);color:var(--t1)}
+.m2-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+.m2-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.m2-stat{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.m2-stat-n{font-size:18px;font-weight:700;color:var(--t1);line-height:1}
+.m2-stat-lb{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+.m2-section{margin-bottom:2px}
+.m2-section-h{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.m2-students{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.m2-students .sdot{min-width:44px}
+
+/* ═══ STUDENT MODAL ═══ */
+.overlay{position:fixed;inset:0;background:rgba(28,28,26,.5);display:none;align-items:center;justify-content:center;padding:32px;z-index:100;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:14px;width:100%;max-width:1060px;height:680px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px -10px rgba(28,28,26,.3)}
+.mod-hd{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.mod-av{width:36px;height:36px;border-radius:8px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.mod-ti{flex:1}
+.mod-ti-n{font-size:15px;font-weight:600}
+.mod-ti-m{font-size:11px;color:var(--t3);margin-top:2px}
+.mod-cls{cursor:pointer;padding:6px 12px;font-size:12px;color:var(--t2);border-radius:6px}
+.mod-cls:hover{background:var(--surface2);color:var(--t1)}
+.mod-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* Journey strip */
+.journey{padding:16px 24px 12px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.journey-strip{display:flex;align-items:stretch;gap:0;position:relative}
+.journey-node{flex:1;display:flex;flex-direction:column;padding:10px 12px;border-radius:8px;cursor:pointer;border:1.5px solid var(--border);position:relative;transition:all .12s;background:var(--surface)}
+.journey-node:hover{border-color:var(--border-strong);background:var(--surface2)}
+.journey-node.act{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 2px rgba(26,95,160,.12)}
+.journey-node.needs-attn{border-color:var(--amber-dot)}
+.journey-node.future{opacity:.45;border-style:dashed}
+.journey-connector{width:16px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.journey-connector::before{content:"";width:12px;height:2px;background:var(--border-strong);border-radius:1px}
+.journey-connector.future::before{height:1px;border-top:1px dashed var(--border-strong);background:none}
+
+.jn-top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.jn-sn{width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.jn-sn.task{background:var(--t1);color:var(--surface)}
+.journey-node.act .jn-sn.task{background:var(--blue)}
+.jn-name{font-size:11px;font-weight:700;color:var(--t1)}
+.jn-status{font-size:9px;font-weight:600;display:flex;align-items:center;gap:3px;margin-bottom:4px}
+.jn-status.done{color:var(--green)}
+.jn-status.prog{color:var(--blue)}
+.jn-status.partial{color:var(--amber)}
+.jn-status.future{color:var(--t3)}
+.jn-meta{display:flex;gap:10px;font-size:9px;color:var(--t3)}
+.jn-attn{display:none;position:absolute;top:-6px;right:-4px;font-size:7px;font-weight:700;color:var(--amber);background:var(--amber-soft);border:1px solid rgba(196,138,30,.3);padding:1px 5px;border-radius:3px;white-space:nowrap;align-items:center;gap:2px;animation:attn-pulse 2s infinite}
+.journey-node.needs-attn .jn-attn{display:flex}
+@keyframes attn-pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* Modal detail area */
+.mod-step-content{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;min-height:0}
+.mod-col{padding:20px 24px;overflow-y:auto}
+.mod-col.right{background:var(--surface);border-left:1px solid var(--border)}
+.mod-h{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.mod-empty{padding:40px 24px;text-align:center;color:var(--t3);font-size:12px;grid-column:1/-1;display:flex;align-items:center;justify-content:center}
+
+/* Result badges */
+.result-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px}
+.result-badge.correct{background:var(--green-soft);color:var(--green)}
+.result-badge.partial{background:var(--amber-soft);color:var(--amber)}
+.result-badge.wrong{background:var(--red-soft);color:var(--red)}
+
+/* Class comparison bars */
+.class-compare{display:flex;flex-direction:column;gap:10px}
+.cc-row{display:flex;align-items:center;gap:8px}
+.cc-label{font-size:10px;color:var(--t3);width:56px;flex-shrink:0}
+.cc-bar-wrap{flex:1;position:relative;height:20px;display:flex;align-items:center}
+.cc-bar-bg{position:absolute;width:100%;height:6px;background:var(--surface2);border-radius:3px}
+.cc-bar-class{position:absolute;height:6px;border-radius:3px;background:var(--border-strong);opacity:.5}
+.cc-bar-student{position:absolute;height:6px;border-radius:3px}
+.cc-marker{position:absolute;width:2px;height:14px;border-radius:1px;background:var(--t3);top:3px}
+.cc-val{font-size:10px;font-weight:600;color:var(--t1);width:40px;text-align:right;flex-shrink:0}
+.cc-legend{display:flex;gap:12px;margin-top:4px}
+.cc-legend-item{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--t3)}
+.cc-legend-item .d{width:8px;height:4px;border-radius:2px}
+
+/* Chat */
+.chat-row{margin-bottom:12px}
+.chat-row .who{font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.chat-bubble{padding:9px 13px;border-radius:10px;font-size:12.5px;line-height:1.55}
+.chat-row.stu .chat-bubble{background:var(--t1);color:var(--surface);display:inline-block;max-width:90%}
+.chat-row.ai .chat-bubble{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+.chat-row.ai strong{color:var(--t1);font-weight:600}
+</style></head><body>
+
+<!-- ═══ BAND ═══ -->
+<div class="band">
+  <div class="band-mark">R</div>
+  <div class="band-title">课堂观察台</div>
+  <div class="band-mode">观察模式</div>
+  <div class="band-self">学生自主推进</div>
+  <div class="band-class">高一(3)班 · Ideal Beauty · 42 人 · 5 Tasks</div>
+  <div class="band-right">
+    <div class="band-live">实时同步中</div>
+  </div>
+</div>
+
+<!-- ═══ TIMELINE ═══ -->
+<div class="timeline">
+  <button class="tl-btn">◀</button>
+  <div class="tl-time">18:22</div>
+  <div class="tl-track-wrap">
+    <div class="tl-track">
+      <div class="tl-marker task" style="left:20%"></div>
+      <div class="tl-marker task" style="left:40%"></div>
+      <div class="tl-marker task" style="left:60%"></div>
+      <div class="tl-marker task" style="left:80%"></div>
+      <div class="tl-fill" style="width:40.8%"></div>
+    </div>
+    <div class="tl-thumb" style="left:40.8%"></div>
+  </div>
+  <div class="tl-total">45:00</div>
+  <div class="tl-label" style="color:var(--green)">实时</div>
+  <button class="tl-btn">▶</button>
+</div>
+
+<div class="body">
+
+<!-- ═══ FOCUS (left) ═══ -->
+<div class="focus">
+
+  <!-- Health Cards -->
+  <div class="health">
+    <div class="hcard good">
+      <div class="hcard-lb">最快进度</div>
+      <div class="hcard-v">T5</div>
+      <div class="hcard-sub"><strong>2 人</strong>已到达</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-lb">中位进度</div>
+      <div class="hcard-v">T3</div>
+      <div class="hcard-sub"><strong>62%</strong> 学生在此</div>
+    </div>
+    <div class="hcard warn">
+      <div class="hcard-lb">卡点学生</div>
+      <div class="hcard-v">7</div>
+      <div class="hcard-sub">集中在 T3</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-lb">AI 对话</div>
+      <div class="hcard-v">52 轮</div>
+      <div class="hcard-sub"><strong>18</strong> 人触发</div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP CARDS (collapsible) ═══ -->
+  <div class="section-box open" id="stepsSection">
+    <div class="section-summary" onclick="toggleSection('stepsSection')">
+      <span class="chevron">▶</span>
+      <span class="steps-summary-label">课堂进程</span>
+      <div class="steps-summary-bar">
+        <div class="steps-distrib">
+          <div class="steps-distrib-seg" style="width:0%;background:var(--surface2)" title="T1: 0人"></div>
+          <div class="steps-distrib-seg" style="width:9.5%;background:var(--blue-soft)" title="T2: 4人"></div>
+          <div class="steps-distrib-seg" style="width:61.9%;background:var(--blue)" title="T3: 26人"></div>
+          <div class="steps-distrib-seg" style="width:23.8%;background:var(--green-dot)" title="T4: 10人"></div>
+          <div class="steps-distrib-seg" style="width:4.8%;background:var(--green-soft)" title="T5: 2人"></div>
+        </div>
+        <div class="steps-summary-stats">
+          <span class="steps-summary-stat"><strong>26</strong>人在T3</span>
+          <span class="steps-summary-stat alert">7卡住</span>
+          <span class="steps-summary-stat">AI <strong>52</strong>轮</span>
+        </div>
+      </div>
+    </div>
+    <div class="section-detail">
+    <div class="step-cards">
+
+      <!-- Step 1: Predict -->
+      <div class="step-card" onclick="openStepModal(1)">
+        <div class="sc-head">
+          <span class="sc-sn task">1</span>
+          <span class="sc-name">Predict</span>
+          <span class="sc-type">5 min · 选择题</span>
+          <div class="sc-badges">
+            <span class="sc-badge student-count">0 人</span>
+            <span class="sc-badge ai-rounds"><span class="pip" style="background:var(--ai-dot)"></span>5 轮</span>
+          </div>
+        </div>
+        <div class="sc-metrics">
+          <span class="sc-metric">正确率 <strong style="color:var(--green)">95%</strong></span>
+          <span class="sc-metric">AI <strong>3</strong> 人触发</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Skim -->
+      <div class="step-card" onclick="openStepModal(2)">
+        <div class="sc-head">
+          <span class="sc-sn task">2</span>
+          <span class="sc-name">Skim</span>
+          <span class="sc-type">8 min · 结构匹配</span>
+          <div class="sc-badges">
+            <span class="sc-badge student-count">4 人</span>
+            <span class="sc-badge ai-rounds"><span class="pip" style="background:var(--ai-dot)"></span>8 轮</span>
+          </div>
+        </div>
+        <div class="sc-metrics">
+          <span class="sc-metric">正确率 <strong style="color:var(--green)">83%</strong></span>
+          <span class="sc-metric">AI <strong>6</strong> 人触发</span>
+        </div>
+        <div class="sc-dots">
+          <div class="sdot reading" onclick="event.stopPropagation();openStudentModal('赵雪莉')">赵雪莉</div>
+          <div class="sdot reading" onclick="event.stopPropagation();openStudentModal('何子睿')">何子睿</div>
+          <div class="sdot prog" onclick="event.stopPropagation();openStudentModal('贾一凡')">贾一凡<span class="ai-pip"></span></div>
+          <div class="sdot done" onclick="event.stopPropagation();openStudentModal('余思远')">余思远</div>
+        </div>
+      </div>
+
+      <!-- Step 3: Scan & Build — main bottleneck -->
+      <div class="step-card has-alert" onclick="openStepModal(3)">
+        <div class="sc-head">
+          <span class="sc-sn task">3</span>
+          <span class="sc-name">Scan & Build</span>
+          <span class="sc-type">15 min · 信息矩阵</span>
+          <div class="sc-badges">
+            <span class="sc-badge student-count major">26 人</span>
+            <span class="sc-badge ai-rounds hot"><span class="pip" style="background:var(--red)"></span>30 轮</span>
+            <span class="sc-badge alert-tag">7 人卡住</span>
+          </div>
+        </div>
+        <div class="sc-metrics">
+          <span class="sc-metric">正确率 <strong style="color:var(--red)">31%</strong></span>
+          <span class="sc-metric">AI <strong>12</strong> 人触发</span>
+        </div>
+        <div class="sc-dots">
+          <div class="sdot done" onclick="event.stopPropagation()">陈昕妍</div>
+          <div class="sdot done" onclick="event.stopPropagation()">李奕辰</div>
+          <div class="sdot done" onclick="event.stopPropagation()">张皓月</div>
+          <div class="sdot done" onclick="event.stopPropagation()">周航宇</div>
+          <div class="sdot done" onclick="event.stopPropagation()">郑若曦</div>
+          <div class="sdot done" onclick="event.stopPropagation()">马乐瑶</div>
+          <div class="sdot done" onclick="event.stopPropagation()">林澜</div>
+          <div class="sdot done" onclick="event.stopPropagation()">朱思语</div>
+          <div class="sdot prog" onclick="event.stopPropagation();openStudentModal('王译文')">王译文<span class="ai-pip"></span></div>
+          <div class="sdot prog" onclick="event.stopPropagation()">刘子墨</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">孙楠语<span class="ai-pip"></span></div>
+          <div class="sdot prog" onclick="event.stopPropagation()">吴思涵</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">胡恩齐</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">罗婉儿</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">蔡明轩</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">韩思远</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">袁朗</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">丁雨桐</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">梁瑶</div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">黄婉晴<span class="ai-pip"></span></div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">徐晨曦<span class="ai-pip"></span></div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">郭斐然<span class="ai-pip"></span></div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">邓梓涵</div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">董思齐</div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">冯璐</div>
+          <div class="sdot stuck" onclick="event.stopPropagation()">谢安然<span class="ai-pip"></span></div>
+        </div>
+      </div>
+
+      <!-- Step 4: Evaluate -->
+      <div class="step-card" onclick="openStepModal(4)">
+        <div class="sc-head">
+          <span class="sc-sn task">4</span>
+          <span class="sc-name">Evaluate</span>
+          <span class="sc-type">12 min · 立场 + 论据</span>
+          <div class="sc-badges">
+            <span class="sc-badge student-count">10 人</span>
+            <span class="sc-badge ai-rounds"><span class="pip" style="background:var(--ai-dot)"></span>7 轮</span>
+          </div>
+        </div>
+        <div class="sc-metrics">
+          <span class="sc-metric">正确率 <strong style="color:var(--t3)">40%</strong></span>
+          <span class="sc-metric">AI <strong>5</strong> 人触发</span>
+        </div>
+        <div class="sc-dots">
+          <div class="sdot prog" onclick="event.stopPropagation()">叶瑞</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">许天乐<span class="ai-pip"></span></div>
+          <div class="sdot prog" onclick="event.stopPropagation()">潘悦</div>
+          <div class="sdot done" onclick="event.stopPropagation()">田苗苗</div>
+          <div class="sdot done" onclick="event.stopPropagation()">石磊</div>
+          <div class="sdot done" onclick="event.stopPropagation()">高远航</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">曾以柔</div>
+          <div class="sdot done" onclick="event.stopPropagation()">程一然</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">杨之涵</div>
+          <div class="sdot done" onclick="event.stopPropagation()">唐明珠</div>
+        </div>
+      </div>
+
+      <!-- Step 5: Wrap-up -->
+      <div class="step-card" onclick="openStepModal(5)">
+        <div class="sc-head">
+          <span class="sc-sn task">5</span>
+          <span class="sc-name">Wrap-up</span>
+          <span class="sc-type">5 min · 策略排序</span>
+          <div class="sc-badges">
+            <span class="sc-badge student-count">2 人</span>
+            <span class="sc-badge ai-rounds"><span class="pip" style="background:var(--ai-dot)"></span>2 轮</span>
+          </div>
+        </div>
+        <div class="sc-metrics">
+          <span class="sc-metric">完成率 <strong style="color:var(--t3)">5%</strong></span>
+          <span class="sc-metric">AI <strong>1</strong> 人触发</span>
+        </div>
+        <div class="sc-dots">
+          <div class="sdot done" onclick="event.stopPropagation()">方宇</div>
+          <div class="sdot prog" onclick="event.stopPropagation()">夏阳</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="swim-legend" style="margin-top:6px">
+      <div class="swim-legend-item"><span class="dot" style="background:var(--green-dot)"></span>已完成</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--blue)"></span>进行中</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--lecture)"></span>阅读中</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--amber-dot)"></span>卡住</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--ai-dot);width:6px;height:6px;border-radius:50%"></span>AI 对话中</div>
+    </div>
+    </div><!-- /section-detail -->
+  </div><!-- /section-box -->
+
+  <!-- ═══ OBSERVATION PANEL (collapsible) ═══ -->
+  <div class="section-box open" id="obsSection">
+    <div class="section-summary" onclick="toggleSection('obsSection')">
+      <span class="chevron">▶</span>
+      <span class="obs-summary-label">观察要点</span>
+      <div class="obs-summary-bar">
+        <span class="obs-alert-pill urgent">1 紧急</span>
+        <span class="obs-alert-pill warn">1 警告</span>
+        <span class="obs-summary-text">T3 7人卡住 · M1 Myanmar合并 7人 · M2 tā moko 4人</span>
+      </div>
+    </div>
+    <div class="section-detail">
+
+      <!-- ── CURRENT alerts (prominent) ── -->
+      <div class="obs-time-label current">当前 · 18:22</div>
+
+      <div class="obs-alert-card urgent">
+        <span class="obs-alert-icon">⚠</span>
+        <div class="obs-alert-body">
+          <div class="obs-alert-title">T3 有 7 名学生超过 3 分钟无进展</div>
+          <div style="font-size:10px;color:var(--t2);margin-top:3px">集中在 Myanmar / Indonesia 矩阵填写。建议全班提示 ¶7 段内分隔。</div>
+          <div class="obs-alert-meta">指标: M1 · 刚刚</div>
+        </div>
+      </div>
+
+      <div class="obs-alert-card warn">
+        <span class="obs-alert-icon">△</span>
+        <div class="obs-alert-body">
+          <div class="obs-alert-title">误解: tattoos vs tā moko（4 人）</div>
+          <div style="font-size:10px;color:var(--t2);margin-top:3px">NZ Maori 的 Practice 列写了泛称 tattoos，应为专有名词 tā moko。</div>
+          <div class="obs-alert-meta">指标: M2 · 2 分钟前</div>
+        </div>
+      </div>
+
+      <!-- ── Students by status ── -->
+      <div style="margin-top:12px">
+        <div class="obs-status-group">
+          <div class="obs-status-header">
+            <span class="obs-status-dot" style="background:var(--red)"></span>
+            <span class="obs-status-name">卡住</span>
+            <span class="obs-status-count">7 人</span>
+          </div>
+          <div class="obs-status-students">
+            <span class="obs-stu-chip" style="background:var(--red)">黄婉晴</span>
+            <span class="obs-stu-chip" style="background:var(--red)">徐晨曦</span>
+            <span class="obs-stu-chip" style="background:var(--red)">郭斐然</span>
+            <span class="obs-stu-chip" style="background:var(--red)">谢安然</span>
+            <span class="obs-stu-chip" style="background:var(--amber-dot)">邓梓涵</span>
+            <span class="obs-stu-chip" style="background:var(--amber-dot)">董思齐</span>
+            <span class="obs-stu-chip" style="background:var(--t3)">冯璐</span>
+          </div>
+        </div>
+        <div class="obs-status-group">
+          <div class="obs-status-header">
+            <span class="obs-status-dot" style="background:var(--blue)"></span>
+            <span class="obs-status-name">活跃</span>
+            <span class="obs-status-count">19 人</span>
+          </div>
+          <div class="obs-status-students">
+            <span class="obs-stu-chip" style="background:var(--blue)">王译文</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">刘子墨</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">孙楠语</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">吴思涵</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">胡恩齐</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">罗婉儿</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">蔡明轩</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">韩思远</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">袁朗</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">丁雨桐</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">梁瑶</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">赵雪莉</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">何子睿</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">贾一凡</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">叶瑞</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">许天乐</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">潘悦</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">曾以柔</span>
+            <span class="obs-stu-chip" style="background:var(--blue)">杨之涵</span>
+          </div>
+        </div>
+        <div class="obs-status-group">
+          <div class="obs-status-header">
+            <span class="obs-status-dot" style="background:var(--green-dot)"></span>
+            <span class="obs-status-name">顺畅</span>
+            <span class="obs-status-count">14 人</span>
+          </div>
+          <div class="obs-status-students">
+            <span class="obs-stu-chip" style="background:var(--green-dot)">陈昕妍</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">李奕辰</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">张皓月</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">周航宇</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">郑若曦</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">马乐瑶</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">林澜</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">朱思语</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">余思远</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">田苗苗</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">石磊</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">高远航</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">程一然</span>
+            <span class="obs-stu-chip" style="background:var(--green-dot)">唐明珠</span>
+          </div>
+        </div>
+        <div class="obs-status-group">
+          <div class="obs-status-header">
+            <span class="obs-status-dot" style="background:var(--green)"></span>
+            <span class="obs-status-name">已完成</span>
+            <span class="obs-status-count">2 人</span>
+          </div>
+          <div class="obs-status-students">
+            <span class="obs-stu-chip" style="background:var(--green)">方宇</span>
+            <span class="obs-stu-chip" style="background:var(--green)">夏阳</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Knowledge indicators ── -->
+      <div style="margin-top:12px">
+        <div style="font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">知识指标</div>
+        <div class="obs-indicator">
+          <span class="obs-ind-id">K1</span>
+          <span class="obs-ind-label">Text structure recognition</span>
+          <div class="obs-ind-bar"><div class="obs-ind-fill" style="width:78%;background:var(--green-dot)"></div></div>
+          <span class="obs-ind-val">33/42</span>
+        </div>
+        <div class="obs-indicator">
+          <span class="obs-ind-id">K2</span>
+          <span class="obs-ind-label">Evidence extraction</span>
+          <div class="obs-ind-bar"><div class="obs-ind-fill" style="width:31%;background:var(--amber-dot)"></div></div>
+          <span class="obs-ind-val">13/42</span>
+        </div>
+        <div class="obs-indicator">
+          <span class="obs-ind-id">K3</span>
+          <span class="obs-ind-label">Critical evaluation</span>
+          <div class="obs-ind-bar"><div class="obs-ind-fill" style="width:12%;background:var(--red)"></div></div>
+          <span class="obs-ind-val">5/42</span>
+        </div>
+      </div>
+
+      <!-- ── HISTORICAL observations ── -->
+      <div class="obs-historical">
+        <div class="obs-time-label">之前 · 12:00</div>
+        <div class="obs-alert-card info">
+          <span class="obs-alert-icon">ℹ</span>
+          <div class="obs-alert-body">
+            <div class="obs-alert-title" style="color:var(--blue)">T2 Listen 阶段平均停留仅 35s</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">预设 2min，部分学生未充分阅读引入。</div>
+            <div class="obs-alert-meta">12:00</div>
+          </div>
+        </div>
+        <div class="obs-alert-card info">
+          <span class="obs-alert-icon">ℹ</span>
+          <div class="obs-alert-body">
+            <div class="obs-alert-title" style="color:var(--blue)">进度跨度达到 3 Tasks</div>
+            <div style="font-size:10px;color:var(--t3);margin-top:2px">最快 T5，最慢 T2。</div>
+            <div class="obs-alert-meta">10:15</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /section-detail -->
+  </div><!-- /section-box -->
+
+  <!-- Coaching -->
+  <div class="coaching">
+    <div class="coaching-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+      <span class="arrow">▶</span> 教学参考 · 低优先级
+    </div>
+    <div class="coaching-body">
+      <div class="coach-line">
+        <div class="coach-line-lb">暂无教学建议</div>
+        <div class="coach-line-text">教学建议将根据课堂数据自动生成。</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ OVERVIEW COLUMN (right) ═══ -->
+<div class="overview">
+  <div class="ov-body">
+    <div class="queue-section">
+      <div class="queue-h">
+        <span class="lb">问题聚类 · 按分类</span>
+        <span class="cnt">14</span>
+      </div>
+      <div class="queue">
+
+        <!-- 概念理解 -->
+        <div class="q-step-h">
+          <span class="cat-badge concept">概念理解</span>
+          <span class="tot">5</span>
+        </div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">黄婉晴</span><div class="qq">What does "shallow" mean?</div><span class="qmeta">4分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Shallow = 肤浅。Media beauty is "shallow" because it only cares about looks, ignoring cultural meaning.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">赵雪莉</span><div class="qq">What is "Phenomenon"? 不懂这个词</div><span class="qmeta">6分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Phenomenon = 现象。¶1-2 describes a phenomenon: different cultures have different beauty standards.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">贾一凡</span><div class="qq">What does "diary of events" mean?</div><span class="qmeta">8分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>"Diary of events" = 事件的日记。Borneo 人的纹身记录重要事件。</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">邓梓涵</span><div class="qq">"sharpening teeth" 是生词</div><span class="qmeta">10分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Sharpening teeth = 磨尖牙齿。Indonesia 的文化习俗。</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">冯璐</span><div class="qq">Who is Happiness Edem?</div><span class="qmeta">15分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Happiness Edem is a Nigerian woman mentioned in ¶1 who went to a "fattening room" before marriage.</div>
+
+        <!-- 课文内容 -->
+        <div class="q-step-h">
+          <span class="cat-badge content">课文内容</span>
+          <span class="tot">4</span>
+        </div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">王译文</span><div class="qq">Myanmar 在哪里？地理位置不明</div><span class="qmeta">4分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Myanmar（缅甸）在东南亚。先跳过位置，重点看 ¶7 讲了那里女性做什么。</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">徐晨曦</span><div class="qq">Can I write "tattoos" or must I write "tā moko"?</div><span class="qmeta">6分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>For NZ Maori, use the specific term "tā moko" — it's different from general tattoos.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">郭斐然</span><div class="qq">怎么区分 History 和 Culture?</div><span class="qmeta">9分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Time signal words → History. Place signal words → Culture.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">孙楠语</span><div class="qq">How to find the "reason" if it's not stated?</div><span class="qmeta">11分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Some reasons are implied. Look for context clues like "as it was considered..."</div>
+
+        <!-- 解题求助 -->
+        <div class="q-step-h">
+          <span class="cat-badge task-help">解题求助</span>
+          <span class="tot">3</span>
+        </div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">许天乐</span><div class="qq">怎么写 disagree 的论据段</div><span class="qmeta">3分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Pattern: "I disagree because..." + evidence from matrix + explanation of what it proves.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">潘悦</span><div class="qq">Can I add my own experience?</div><span class="qmeta">5分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Yes! Text evidence + your own observations both work.</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">夏阳</span><div class="qq">Do these strategies work for other texts?</div><span class="qmeta">2分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Absolutely! These 4 steps work for any argumentative or expository text.</div>
+
+        <!-- 阅读策略 -->
+        <div class="q-step-h">
+          <span class="cat-badge strategy">阅读策略</span>
+          <span class="tot">2</span>
+        </div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">董思齐</span><div class="qq">Scanning 和 Skimming 有什么区别？</div><span class="qmeta">7分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Skimming finds structure (first sentences + signal words). Scanning finds specific details (where/what/why).</div>
+        <div class="qrow" onclick="toggleAnswer(this)"><span class="q-student">谢安然</span><div class="qq">怎么快速找到 signal words?</div><span class="qmeta">12分钟前</span></div>
+        <div class="q-answer" style="display:none"><span class="q-answer-label">AI 回答：</span>Focus on first sentences of each paragraph. Time words → History. Place words → Culture. Summary words → Conclusion.</div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- ═══ STEP DETAIL MODAL ═══ -->
+<div class="overlay2" id="stepModal" onclick="if(event.target===this)closeStepModal()">
+  <div class="modal2">
+    <div class="m2-hd">
+      <span class="sc-sn task" id="smNum"></span>
+      <span class="m2-title" id="smTitle"></span>
+      <span class="m2-desc" id="smDesc"></span>
+      <span class="m2-cls" onclick="closeStepModal()">关闭 ✕</span>
+    </div>
+    <div class="m2-body" id="smBody"></div>
+  </div>
+</div>
+
+<!-- ═══ STUDENT MODAL ═══ -->
+<div class="overlay" id="stuModal" onclick="if(event.target===this)closeStudentModal()">
+  <div class="modal">
+    <div class="mod-hd">
+      <div class="mod-av" id="stuAv"></div>
+      <div class="mod-ti"><div class="mod-ti-n" id="stuName"></div><div class="mod-ti-m" id="stuMeta"></div></div>
+      <div class="mod-cls" onclick="closeStudentModal()">关闭 ✕</div>
+    </div>
+    <!-- Journey strip -->
+    <div class="journey" id="stuJourney"></div>
+    <!-- Detail -->
+    <div class="mod-step-content" id="stuContent"></div>
+  </div>
+</div>
+
+<script>
+/* ═══ Section toggle ═══ */
+function toggleSection(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+
+/* ═══ Question answer toggle ═══ */
+function toggleAnswer(row) {
+  var ans = row.nextElementSibling;
+  if (ans && ans.classList.contains('q-answer')) {
+    ans.style.display = ans.style.display === 'none' ? '' : 'none';
+  }
+}
+
+/* ═══ STEP DETAIL MODAL ═══ */
+var STEP_DATA = {
+  1: { name:'Predict', desc:'5 min · 选择题', count:0, duration:'5:00', aiRounds:5, aiPeople:3, avgScore:95, issues:[] },
+  2: { name:'Skim', desc:'8 min · 结构匹配', count:4, duration:'8:00', aiRounds:8, aiPeople:6, avgScore:83, issues:['4 人混淆 History 和 Culture'] },
+  3: { name:'Scan & Build', desc:'15 min · 信息矩阵', count:26, duration:'15:00', aiRounds:30, aiPeople:12, avgScore:31, issues:['7 人将 Myanmar 与 Indonesia 合并','4 人 Practice 写 tattoos 而非 tā moko'] },
+  4: { name:'Evaluate', desc:'12 min · 立场 + 论据', count:10, duration:'12:00', aiRounds:7, aiPeople:5, avgScore:40, issues:['论据引用不足','Explanation 环节最弱'] },
+  5: { name:'Wrap-up', desc:'5 min · 策略排序', count:2, duration:'5:00', aiRounds:2, aiPeople:1, avgScore:0, issues:[] },
+};
+
+function openStepModal(n) {
+  var s = STEP_DATA[n];
+  document.getElementById('smNum').textContent = n;
+  document.getElementById('smTitle').textContent = s.name;
+  document.getElementById('smDesc').textContent = s.desc;
+  var h = '';
+  h += '<div class="m2-stats">';
+  h += '<div class="m2-stat"><div class="m2-stat-n">'+s.count+'</div><div class="m2-stat-lb">当前人数</div></div>';
+  h += '<div class="m2-stat"><div class="m2-stat-n">'+s.duration+'</div><div class="m2-stat-lb">预设时长</div></div>';
+  h += '<div class="m2-stat"><div class="m2-stat-n"'+(s.aiRounds>=20?' style="color:var(--amber)"':'')+'>'+s.aiRounds+'</div><div class="m2-stat-lb">AI 对话轮</div></div>';
+  h += '<div class="m2-stat"><div class="m2-stat-n">'+s.aiPeople+'</div><div class="m2-stat-lb">AI 触发人数</div></div>';
+  h += '</div>';
+  if (s.avgScore > 0) {
+    h += '<div class="m2-section"><div class="m2-section-h">正确率</div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">';
+    h += '<span style="font-size:10px;color:var(--t2);width:100px;flex-shrink:0;font-weight:500">总体</span>';
+    h += '<div style="flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;display:flex">';
+    h += '<div style="width:'+s.avgScore+'%;height:100%;background:var(--green-dot)"></div>';
+    h += '</div>';
+    h += '<span style="font-size:10px;font-weight:600;color:var(--t2);width:30px;text-align:right">'+s.avgScore+'%</span></div></div>';
+  }
+  if (s.issues.length) {
+    h += '<div class="m2-section"><div class="m2-section-h">主要问题</div><div style="display:flex;flex-direction:column;gap:5px">';
+    s.issues.forEach(function(iss) { h += '<div style="font-size:11px;color:var(--t2);line-height:1.45;padding:6px 8px;background:var(--surface);border-radius:5px;border-left:2px solid var(--amber-dot)">'+iss+'</div>'; });
+    h += '</div></div>';
+  }
+  document.getElementById('smBody').innerHTML = h;
+  document.getElementById('stepModal').classList.add('open');
+}
+function closeStepModal() { document.getElementById('stepModal').classList.remove('open'); }
+
+/* ═══ STUDENT MODAL ═══ */
+var STU = {
+  '王译文': { step:3, steps:[
+    {sn:1,label:'Predict',status:'done',result:'correct',score:95},
+    {sn:2,label:'Skim',status:'done',result:'correct',score:88},
+    {sn:3,label:'Scan & Build',status:'prog',result:'partial',score:31},
+    {sn:4,label:'Evaluate',status:'future',result:'future',score:0},
+    {sn:5,label:'Wrap-up',status:'future',result:'future',score:0}],
+    chat:[
+      {who:'stu',name:'王译文',text:'Myanmar 在哪啊 没听过'},
+      {who:'ai',text:'Myanmar（缅甸）在<strong>东南亚</strong>。先跳过位置，重点看 <strong>¶7</strong> 讲了那里女性做什么。'},
+      {who:'stu',name:'王译文',text:'¶7 找不到 Myanmar 的 practice'},
+      {who:'ai',text:'找 "wearing..." 后的名词：<strong>wearing metal rings around their necks</strong>。'},
+    ]},
+};
+
+function openStudentModal(name) {
+  var s = STU[name];
+  if (!s) { s = { step:3, steps:[
+    {sn:1,label:'Predict',status:'done',result:'correct',score:90},
+    {sn:2,label:'Skim',status:'done',result:'correct',score:85},
+    {sn:3,label:'Scan & Build',status:'prog',result:'partial',score:0},
+    {sn:4,label:'Evaluate',status:'future',result:'future',score:0},
+    {sn:5,label:'Wrap-up',status:'future',result:'future',score:0}], chat:[] }; }
+  document.getElementById('stuAv').textContent = name[0];
+  document.getElementById('stuName').textContent = name;
+  document.getElementById('stuMeta').textContent = '当前在 Step '+s.step+' · '+(s.steps[s.step-1]||{}).label;
+
+  // Journey strip
+  var jh = '<div class="journey-strip">';
+  s.steps.forEach(function(js, i) {
+    if (i > 0) jh += '<div class="journey-connector'+(js.status==='future'?' future':'')+'"></div>';
+    var isAct = s.step === js.sn;
+    var attn = (js.result==='partial'||js.status==='stuck') && !isAct && js.status!=='future';
+    jh += '<div class="journey-node'+(isAct?' act':'')+(js.status==='future'?' future':'')+(attn?' needs-attn':'')+'" onclick="selectJourneyStep('+js.sn+')">';
+    if (attn) jh += '<span class="jn-attn">⚠ 需关注</span>';
+    jh += '<div class="jn-top"><span class="jn-sn task">'+js.sn+'</span><span class="jn-name">'+js.label+'</span></div>';
+    var stCls = js.status==='done'&&js.result==='correct'?'done':js.status==='done'&&js.result==='partial'?'partial':js.status==='prog'?'prog':'future';
+    var stIco = js.status==='done'&&js.result==='correct'?'✓':js.status==='done'&&js.result==='partial'?'△':js.status==='prog'?'●':'○';
+    var stTxt = js.status==='done'&&js.result==='correct'?' 已完成':js.status==='done'&&js.result==='partial'?' 部分正确':js.status==='prog'?' 进行中':' 未到达';
+    jh += '<div class="jn-status '+stCls+'"><span class="ico">'+stIco+'</span>'+stTxt+'</div>';
+    if (js.status!=='future'&&js.score>0) jh += '<div class="jn-meta"><span>'+js.score+'%</span></div>';
+    jh += '</div>';
+  });
+  jh += '</div>';
+  document.getElementById('stuJourney').innerHTML = jh;
+
+  // Content — left: submission detail, right: AI chat or class compare
+  var ch = '';
+  if (s.chat && s.chat.length > 0) {
+    ch += '<div class="mod-col"><div class="mod-h">作答详情 · Step '+s.step+'</div>';
+    ch += '<div style="font-size:12px;color:var(--t3)">正在作答中…</div></div>';
+    ch += '<div class="mod-col right"><div class="mod-h">AI 对话 · '+s.chat.length/2+' 轮</div>';
+    s.chat.forEach(function(m) {
+      ch += '<div class="chat-row '+(m.who==='stu'?'stu':'ai')+'">';
+      ch += '<div class="who">'+(m.who==='stu'?m.name:'AI 助教')+'</div>';
+      ch += '<div class="chat-bubble">'+m.text+'</div></div>';
+    });
+    ch += '</div>';
+  } else {
+    ch += '<div class="mod-col"><div class="mod-h">作答详情 · Step '+s.step+'</div>';
+    ch += '<div style="font-size:12px;color:var(--t3)">正在作答中…</div></div>';
+    ch += '<div class="mod-col right"><div class="mod-h">班级对比 · Step '+s.step+'</div>';
+    ch += '<div class="class-compare">';
+    ch += '<div class="cc-row"><span class="cc-label">正确率</span><div class="cc-bar-wrap"><div class="cc-bar-bg"></div><div class="cc-bar-class" style="width:45%"></div><div class="cc-bar-student" style="width:30%;background:var(--amber-dot)"></div><div class="cc-marker" style="left:45%"></div></div><span class="cc-val">—</span></div>';
+    ch += '<div class="cc-row"><span class="cc-label">AI 轮次</span><div class="cc-bar-wrap"><div class="cc-bar-bg"></div><div class="cc-bar-class" style="width:30%"></div><div class="cc-bar-student" style="width:50%;background:var(--ai-dot)"></div><div class="cc-marker" style="left:30%"></div></div><span class="cc-val">3</span></div>';
+    ch += '<div class="cc-legend"><div class="cc-legend-item"><span class="d" style="background:var(--blue)"></span>该学生</div><div class="cc-legend-item"><span class="d" style="background:var(--border-strong);opacity:.5"></span>班级</div></div>';
+    ch += '</div></div>';
+  }
+  document.getElementById('stuContent').innerHTML = ch;
+  document.getElementById('stuModal').classList.add('open');
+}
+function closeStudentModal() { document.getElementById('stuModal').classList.remove('open'); }
+function selectJourneyStep(n) { /* Would update detail area in real app */ }
+</script>
+</body></html>

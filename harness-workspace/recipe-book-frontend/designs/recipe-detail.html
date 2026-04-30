@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#f4f3ef",
+                        surface: "#fbfaf7",
+                        surface2: "#edece7",
+                        t1: "#1c1c1a",
+                        t2: "#5c5b56",
+                        t3: "#9c9a92",
+                        border: "rgba(28, 28, 26, 0.07)",
+                        semantic: {
+                            blue: "#1a5fa0",
+                            blueBg: "#e4eff8",
+                            green: "#2d6612",
+                            amber: "#7a4d0e",
+                            amberBg: "#f6edda",
+                            red: "#942929",
+                            purple: "#3a3185",
+                        }
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans"],
+                        body: ["Plus Jakarta Sans"],
+                        label: ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f4f3ef; color: #1c1c1a; }
+        .material-symbols-outlined { font-size: 20px; vertical-align: middle; }
+    </style>
+</head>
+<body class="antialiased">
+<!-- SideNavBar Component (Shared Component) -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full w-[232px] z-40 p-4 bg-[#fbfaf7] dark:bg-stone-950 border-r border-[rgba(28,28,26,0.07)] dark:border-stone-800 font-['Plus_Jakarta_Sans'] text-[14px]">
+<div class="mb-8 px-2">
+<h1 class="text-lg font-bold text-[#1c1c1a] dark:text-stone-50">Recipe Book</h1>
+</div>
+<div class="space-y-1 mb-auto">
+<!-- Active State Logic: None requested for "我的食谱" -->
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span>首页</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>我的食谱</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span>发现</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>设置</span>
+</a>
+</div>
+<div class="mt-auto border-t border-[rgba(28,28,26,0.07)] pt-4 space-y-1">
+<div class="flex items-center gap-3 px-2 mb-4">
+<div class="w-8 h-8 rounded-full bg-stone-200 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Professional chef portrait with minimalist background soft warm lighting high end aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2zpo7ubIWABzKcWLoTTzqtJnmRoYuqNqFdTySqYd1gg2IH_yYd1tS3ErsE_FUogYPnrymluYpJczc9AgqMFhMgYTksYXCd3-V7NBxFsPCJz85DWFitrMmduw3G0n_a65XHFYodKgw-cfm61D9upBfZQ9C7-Re50KFgjLKlsmBA6bnLa-P1HBtOEbCrgfc7ZJitovd3f1SMmOw3BnQCGAcZ3TZ602BLgnwKQRGODfLk0HJ6ODIBT7uMUP0rdbP1laKJyzUS6ui8gA"/>
+</div>
+<div>
+<div class="font-bold text-sm text-[#1c1c1a]">我的厨房</div>
+<div class="text-xs text-[#5c5b56]">高级厨师</div>
+</div>
+</div>
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] hover:bg-[#edece7] rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>帮助</span>
+</a>
+<a class="flex items-center gap-3 p-2 text-[#5c5b56] hover:bg-[#edece7] rounded-lg transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>退出</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="lg:ml-[232px] min-h-screen">
+<!-- Header / Navigation Shell Replacement -->
+<header class="sticky top-0 z-30 bg-[#f4f3ef]/80 backdrop-blur-sm border-b border-[rgba(28,28,26,0.07)] px-6 py-4 flex items-center justify-between h-16">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 text-t2 hover:text-t1 transition-colors text-sm font-medium">
+<span class="material-symbols-outlined">arrow_back</span>
+                    返回食谱列表
+                </button>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-t2 cursor-pointer hover:text-t1" data-icon="favorite">favorite</span>
+<span class="material-symbols-outlined text-t2 cursor-pointer hover:text-t1" data-icon="share">share</span>
+<span class="material-symbols-outlined text-t2 cursor-pointer hover:text-t1" data-icon="more_vert">more_vert</span>
+</div>
+</header>
+<!-- Content Canvas -->
+<div class="max-w-6xl mx-auto p-6 lg:p-10">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left/Main Content Column -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Title Section -->
+<section>
+<div class="flex flex-wrap items-center gap-3 mb-4">
+<span class="px-3 py-1 bg-surface2 text-t2 text-xs font-medium rounded-full">川菜</span>
+<span class="px-3 py-1 bg-surface2 text-t2 text-xs font-medium rounded-full">中等</span>
+<span class="px-3 py-1 bg-stone-200 text-[#5c5b56] text-xs font-medium rounded-full">草稿</span>
+</div>
+<h1 class="text-4xl lg:text-5xl font-extrabold text-t1 tracking-tight">鱼香肉丝</h1>
+</section>
+<!-- Hero Image -->
+<div class="w-full h-[400px] rounded-xl overflow-hidden border border-border">
+<img class="w-full h-full object-cover" data-alt="Glistening Sichuan Shredded Pork dish with wood ear mushrooms and carrots macro photography warm lighting authentic chinese ceramic plate" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnqcTAkxIEpp3PHzbHdI5caTOtchsjkwUdQ4e6hjybTGSgWaA936BoLA8o7MgO46uW8SLLAxARZjRLYvLRZ1EIFirUnITspLrOPUHi_EFsjX7GxiAmd68DNLEUHliqPQvdnyF_UunGn1-kTxGLjMx48jhVMdFpS6K8M7Zfe2bHKOnfh32umO54sCfijvkEPJKgcD16b2oL9-WeAk_UCDdv3KqqnPFtQ0OJFgjt9PRDhamU-Uvrq65CGzUmgbCGIndF_-5VoBrCC-w"/>
+</div>
+<!-- Info Callout -->
+<div class="p-4 bg-semantic-blueBg rounded-xl flex gap-4 border border-blue-100">
+<span class="material-symbols-outlined text-semantic-blue mt-0.5">info</span>
+<p class="text-sm text-semantic-blue leading-relaxed">
+                            鱼香肉丝虽然名字有鱼，但实际不含鱼。它是川菜中的代表作，以独特的调料比例创造出类似烹鱼的香气，色泽红亮，咸甜酸辣。
+                        </p>
+</div>
+<!-- Ingredients Section -->
+<section class="bg-surface border border-border rounded-xl p-8">
+<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">restaurant_menu</span>
+                            食材准备
+                        </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+<div>
+<h3 class="text-sm font-semibold text-t3 uppercase tracking-wider mb-4">主料</h3>
+<ul class="space-y-3">
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">猪里脊</span>
+<span class="text-t2 font-medium">200g</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">木耳</span>
+<span class="text-t2 font-medium">50g</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">胡萝卜</span>
+<span class="text-t2 font-medium">1根</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">青椒</span>
+<span class="text-t2 font-medium">2个</span>
+</li>
+</ul>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-t3 uppercase tracking-wider mb-4">调料</h3>
+<ul class="space-y-3">
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">豆瓣酱</span>
+<span class="text-t2 font-medium">1勺</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">醋</span>
+<span class="text-t2 font-medium">2勺</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">糖</span>
+<span class="text-t2 font-medium">1勺</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">酱油</span>
+<span class="text-t2 font-medium">1勺</span>
+</li>
+<li class="flex justify-between border-b border-border pb-2">
+<span class="text-t1">料酒</span>
+<span class="text-t2 font-medium">1勺</span>
+</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Steps Section -->
+<section class="bg-surface border border-border rounded-xl p-8">
+<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">format_list_numbered</span>
+                            烹饪步骤
+                        </h2>
+<div class="space-y-8">
+<div class="flex gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded-full bg-surface2 flex items-center justify-center font-bold text-t1">1</span>
+<div class="pt-1">
+<p class="text-t1 leading-relaxed">切丝：将猪里脊、木耳、胡萝卜、青椒全部切成细丝。肉丝用少许盐、料酒、淀粉码味备用。</p>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded-full bg-surface2 flex items-center justify-center font-bold text-t1">2</span>
+<div class="pt-1">
+<p class="text-t1 leading-relaxed">调汁：取一小碗，加入醋、糖、酱油、料酒、生粉和少量清水，调制成“鱼香汁”。</p>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="flex-shrink-0 w-8 h-8 rounded-full bg-surface2 flex items-center justify-center font-bold text-t1">3</span>
+<div class="pt-1">
+<p class="text-t1 leading-relaxed">炒制：锅中热油，先下肉丝滑散至变色盛出。底油炒香豆瓣酱，下入蔬菜丝炒至断生，最后倒入肉丝和鱼香汁，大火快速翻炒均匀即可出锅。</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Warning Callout -->
+<div class="p-4 bg-semantic-amberBg rounded-xl flex gap-4 border border-amber-200">
+<span class="material-symbols-outlined text-semantic-amber mt-0.5">lightbulb</span>
+<p class="text-sm text-semantic-amber leading-relaxed">
+<strong>小贴士：</strong>鱼香肉丝的关键在于调料比例，醋和糖的比例通常为 2:1，这样才能勾勒出最正宗的“荔枝味”。
+                        </p>
+</div>
+<!-- Nutrition Table -->
+<section class="bg-surface border border-border rounded-xl p-8">
+<h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">nutrition</span>
+                            营养成分
+                        </h2>
+<div class="overflow-hidden border border-border rounded-lg">
+<table class="w-full text-left text-sm">
+<thead class="bg-surface2">
+<tr>
+<th class="px-4 py-3 font-semibold text-t1">成分</th>
+<th class="px-4 py-3 font-semibold text-t1 text-right">每份含量</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border">
+<tr>
+<td class="px-4 py-3 text-t2">热量 (Calories)</td>
+<td class="px-4 py-3 text-t1 text-right">320 kcal</td>
+</tr>
+<tr>
+<td class="px-4 py-3 text-t2">蛋白质 (Protein)</td>
+<td class="px-4 py-3 text-t1 text-right">24g</td>
+</tr>
+<tr>
+<td class="px-4 py-3 text-t2">脂肪 (Fat)</td>
+<td class="px-4 py-3 text-t1 text-right">18g</td>
+</tr>
+<tr>
+<td class="px-4 py-3 text-t2">碳水化合物 (Carbohydrates)</td>
+<td class="px-4 py-3 text-t1 text-right">12g</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Right Sidebar / Metadata Column -->
+<div class="lg:col-span-4 space-y-6">
+<!-- Stats Card -->
+<div class="bg-surface border border-border rounded-xl p-6 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col items-center p-4 bg-surface2 rounded-lg">
+<span class="material-symbols-outlined text-t2 mb-1" data-icon="schedule">schedule</span>
+<span class="text-xs text-t3 uppercase font-semibold">准备时间</span>
+<span class="text-lg font-bold text-t1">20min</span>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface2 rounded-lg">
+<span class="material-symbols-outlined text-t2 mb-1" data-icon="cooking">cooking</span>
+<span class="text-xs text-t3 uppercase font-semibold">烹饪时间</span>
+<span class="text-lg font-bold text-t1">15min</span>
+</div>
+</div>
+<div class="flex flex-col items-center p-4 bg-surface2 rounded-lg">
+<span class="material-symbols-outlined text-t2 mb-1" data-icon="groups">groups</span>
+<span class="text-xs text-t3 uppercase font-semibold">份量</span>
+<span class="text-lg font-bold text-t1">2 人份</span>
+</div>
+<button class="w-full bg-t1 text-surface py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:opacity-90 transition-all">
+                            与 AI 讨论这道菜
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<!-- AI Suggestions or Related Card -->
+<div class="bg-surface border border-border rounded-xl p-6">
+<h3 class="text-sm font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-semantic-blue">smart_toy</span>
+                            AI 智能建议
+                        </h3>
+<p class="text-xs text-t2 leading-relaxed italic">
+                            "根据您最近的厨艺记录，这道菜的酸度控制是关键。建议加入少许泡椒末以增加风味深度。"
+                        </p>
+</div>
+<!-- Recipe Author Card -->
+<div class="bg-surface border border-border rounded-xl p-6 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 border border-border">
+<img class="w-full h-full object-cover" data-alt="Professional chef with toque smiling soft bokeh warm kitchen lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCw4_3jI5HFMjvmUNAI84r-Cac5aTOyhtZulYOxP7SDxb_LTpa3cxS9431JUi4laEgH6GRKzoP0d4Zj4wNt-n2k2mTSdf2hbgOlBWoswMvHwLDNXocgvr8v9VB25bB3x9T0nenhEXzNF_p65q0rMG3vXkOexItYEjMy76RtpqP4D2sbz7ZzVzwK4YY_SBR4vetC8irugzqOMHs6cRISE3kT2tfqp0Ubxeo7e7yBzvVJiWYups6mxhZVrBdBQcEZchd-KcrOZEiIBNg"/>
+</div>
+<div>
+<div class="text-xs text-t3">上传者</div>
+<div class="font-bold text-t1">Chef Liu</div>
+<div class="text-xs text-t2">川菜特级厨师</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

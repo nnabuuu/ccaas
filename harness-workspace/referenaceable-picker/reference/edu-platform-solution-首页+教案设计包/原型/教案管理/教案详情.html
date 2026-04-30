@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>教案详情</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f4f3ef;--surface:#fbfaf7;--surface2:#edece7;
+  --t1:#1c1c1a;--t2:#5c5b56;--t3:#9c9a92;
+  --border:rgba(28,28,26,.07);
+  --blue:#1a5fa0;--blue-bg:#e4eff8;
+  --green:#2d6612;--green-bg:#e6f2dc;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --red:#942929;--red-bg:#f8e6e6;
+  --purple:#3a3185;--purple-bg:#eceafe;
+  --teal:#0d5245;--teal-bg:#ddf1eb;
+  --coral:#6b2a14;--coral-bg:#f7ebe5;
+  --sidebar-w:232px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* ═══ SIDEBAR ═══ */
+.sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);flex-direction:column;padding:20px 0;z-index:100;overflow-y:auto}
+@media(min-width:1200px){.sidebar{display:flex}}
+.sb-logo{font-size:14px;font-weight:700;padding:0 20px;margin-bottom:28px}
+.sb-section{margin-bottom:20px}
+.sb-label{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:0 20px;margin-bottom:6px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:var(--t2);cursor:pointer;transition:all .1s;text-decoration:none;font-weight:500;position:relative}
+.sb-link:hover{color:var(--t1);background:var(--surface2)}
+.sb-link.act{color:var(--t1);background:var(--surface2)}
+.sb-link.act::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0;background:var(--t1)}
+.sb-link-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--surface2)}
+.sb-link.act .sb-link-icon{background:var(--t1);color:var(--surface)}
+.sb-link-icon svg{width:12px;height:12px}
+.sb-link .notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:auto;font-weight:600}
+.sb-spacer{flex:1}
+.sb-user{padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-top:8px}
+.sb-avatar{width:28px;height:28px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--t2)}
+.sb-user-name{font-size:12px;font-weight:500}
+.sb-user-role{font-size:10px;color:var(--t3)}
+
+/* ═══ TOP NAV ═══ */
+.topnav{display:flex;align-items:center;gap:2px;padding:0 20px;height:48px;border-bottom:1px solid var(--border);background:var(--surface)}
+@media(min-width:1200px){.topnav{display:none}}
+.topnav-logo{font-size:14px;font-weight:700;margin-right:20px}
+.topnav a{font-size:13px;color:var(--t2);padding:6px 12px;border-radius:6px;cursor:pointer;text-decoration:none;font-weight:500}
+.topnav a:hover{color:var(--t1);background:var(--surface2)}
+.topnav a.act{color:var(--t1);background:var(--surface2)}
+.notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:2px;font-weight:600}
+
+/* ═══ MAIN ═══ */
+.main{padding:32px 24px 80px}
+@media(min-width:1200px){.main{margin-left:var(--sidebar-w);padding:32px 40px 80px}}
+.detail-layout{display:flex;flex-direction:column;gap:32px}
+@media(min-width:1200px){.detail-layout{display:grid;grid-template-columns:minmax(0,640px) minmax(280px,340px);gap:40px;align-items:start}}
+.btn{font-size:12px;padding:6px 14px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--t2);font-family:inherit}
+.btn:hover{border-color:var(--t3);color:var(--t1)}
+.btn.pri{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.btn.pri:hover{opacity:.85}
+.badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500}
+
+/* ═══ EDITOR ═══ */
+.editor-col{min-width:0}
+.ed-back{font-size:12px;color:var(--t3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;margin-bottom:16px}
+.ed-back:hover{color:var(--t1)}
+.ed-title{font-size:22px;font-weight:700;letter-spacing:-.5px;border:none;outline:none;width:100%;font-family:inherit;background:transparent;margin-bottom:8px;color:var(--t1)}
+.ed-meta{display:flex;gap:8px;margin-bottom:20px;font-size:12px;color:var(--t2);flex-wrap:wrap;align-items:center}
+.ed-meta select{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:11px;background:var(--surface);color:var(--t1);font-family:inherit}
+.ed-save{font-size:11px;color:var(--t3);margin-left:auto}
+
+.req-anchor{padding:14px 16px;background:var(--teal-bg);border-radius:8px;margin-bottom:24px;display:flex;align-items:start;gap:10px}
+.req-anchor-icon{width:20px;height:20px;border-radius:5px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.req-anchor-icon svg{width:12px;height:12px;color:var(--teal-bg)}
+.req-anchor-body{flex:1}
+.req-anchor-label{font-size:10px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.req-anchor-text{font-size:12px;color:var(--teal);line-height:1.5;font-weight:500}
+.req-anchor-interp{font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5}
+.req-anchor-change{font-size:11px;color:var(--teal);cursor:pointer;flex-shrink:0;padding:4px 8px;border-radius:4px;text-decoration:none}
+.req-anchor-change:hover{background:rgba(13,82,69,.1)}
+
+.block{position:relative;padding:8px 12px;margin-bottom:4px;border-radius:6px;border:1px solid transparent}
+.block:hover{border-color:var(--border)}
+.block-handle{position:absolute;left:-18px;top:10px;color:var(--t3);cursor:grab;opacity:0;font-size:11px}
+.block:hover .block-handle{opacity:1}
+.block-type{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;font-weight:600}
+.block-content{font-size:13px;line-height:1.7;outline:none;min-height:20px}
+.block-content ul{padding-left:18px;margin:4px 0}
+.block-content li{margin-bottom:3px}
+.block.section-head{background:var(--surface2);border-radius:6px}
+.block.section-head .block-content{font-weight:600;font-size:14px}
+.block.table-block table{width:100%;border-collapse:collapse;font-size:11px}
+.block.table-block th{text-align:left;padding:5px 8px;background:var(--surface2);color:var(--t2);font-weight:500;border-bottom:1px solid var(--border)}
+.block.table-block td{padding:5px 8px;border-bottom:1px solid var(--border)}
+.block.timeline .tl-item{display:flex;gap:10px;padding:5px 0;font-size:12px}
+.block.timeline .tl-item:not(:last-child){border-bottom:1px solid var(--border)}
+.block.timeline .tl-time{width:50px;flex-shrink:0;font-weight:500;color:var(--t2);font-size:11px}
+.block.timeline .tl-dur{width:44px;flex-shrink:0;font-size:10px;color:var(--t3)}
+.block.timeline .tl-desc{flex:1}
+
+.block.ai-callout{border-left:3px solid var(--purple);background:var(--purple-bg);border-radius:0 6px 6px 0}
+.block.ai-callout .block-content{color:var(--purple);font-size:12px}
+.ai-source{display:flex;align-items:center;gap:6px;margin-top:6px;padding-top:6px;border-top:1px solid rgba(58,49,133,.1)}
+.ai-source-pill{font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(58,49,133,.12);color:var(--purple);font-weight:600}
+.ai-source-time{font-size:9px;color:var(--t3)}
+.ai-source-ask{font-size:10px;color:var(--purple);cursor:pointer;margin-left:auto;display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:3px}
+.ai-source-ask:hover{background:rgba(58,49,133,.08)}
+
+.add-block{display:flex;align-items:center;gap:6px;padding:6px 12px;cursor:pointer;color:var(--t3);font-size:11px;border-radius:6px;margin:4px 0}
+.add-block:hover{color:var(--t2);background:var(--surface2)}
+.hw-section{margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}
+.hw-title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.hw-item{padding:8px 12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;font-size:12px;display:flex;align-items:center;gap:8px;cursor:pointer}
+.hw-item:hover{border-color:var(--t3)}
+.hw-item-meta{font-size:10px;color:var(--t3);margin-left:auto}
+.ed-footer{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
+
+/* ═══ AI PANEL ═══ */
+.ai-panel{position:relative}
+@media(min-width:1200px){.ai-panel{position:sticky;top:32px}}
+.ai-panel-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 80px)}
+.ai-panel-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.ai-panel-icon{width:24px;height:24px;border-radius:6px;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-panel-icon svg{width:13px;height:13px;color:var(--purple)}
+.ai-panel-title{font-size:13px;font-weight:600;flex:1}
+.ai-panel-tpl{font-size:9px;padding:2px 6px;border-radius:3px;background:var(--surface2);color:var(--t3);font-weight:500}
+.ai-panel-expand{font-size:10px;color:var(--t3);cursor:pointer;display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;text-decoration:none}
+.ai-panel-expand:hover{color:var(--purple);background:var(--purple-bg)}
+.ai-panel-body{flex:1;overflow-y:auto}
+
+.skill-out{padding:12px 16px;border-bottom:1px solid var(--border)}
+.skill-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.skill-pill{font-size:9px;padding:2px 6px;border-radius:3px;background:var(--purple-bg);color:var(--purple);font-weight:600}
+.skill-fresh{font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500}
+.skill-fresh.ok{background:var(--green-bg);color:var(--green)}
+.skill-fresh.stale{background:var(--amber-bg);color:var(--amber)}
+.skill-time{font-size:9px;color:var(--t3);margin-left:auto}
+.skill-body{font-size:11px;color:var(--t2);line-height:1.6}
+.skill-body strong{color:var(--t1)}
+.skill-reason-toggle{font-size:10px;color:var(--purple);cursor:pointer;display:flex;align-items:center;gap:3px;margin-top:6px}
+.skill-reason{display:none;font-size:10px;color:var(--t3);padding:6px 0;line-height:1.7}
+.skill-reason.open{display:block}
+
+/* Conversation */
+.ai-msgs{padding:12px 16px;border-top:1px solid var(--border)}
+.ai-msg{margin-bottom:12px}
+.ai-msg-who{font-size:9px;color:var(--t3);margin-bottom:3px;font-weight:500}
+.ai-msg-bubble{font-size:11px;line-height:1.6;padding:8px 12px;border-radius:8px}
+.ai-msg-bubble.from-ai{background:var(--surface2);color:var(--t2)}
+.ai-msg-bubble.from-ai strong{color:var(--t1)}
+.ai-msg-bubble.from-user{background:var(--t1);color:var(--surface);margin-left:40px}
+.ai-msg-note{font-size:9px;color:var(--t3);margin-top:2px;font-style:italic}
+
+/* @ pill */
+.at-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:1px 6px;border-radius:3px;background:var(--purple-bg);color:var(--purple);font-weight:500;vertical-align:baseline;font-style:normal}
+.at-pill svg{width:8px;height:8px;flex-shrink:0}
+
+/* Apply button */
+.apply-action{margin-top:6px;display:flex;align-items:center;gap:6px}
+.apply-btn{font-size:11px;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:500;border:none;display:flex;align-items:center;gap:4px;transition:opacity .12s}
+.apply-btn.pending{background:var(--t1);color:var(--surface)}
+.apply-btn.pending:hover{opacity:.85}
+.apply-btn.applied{background:var(--green-bg);color:var(--green);cursor:default}
+.apply-btn.outdated{background:var(--amber-bg);color:var(--amber)}
+.apply-btn.outdated:hover{opacity:.85}
+.apply-desc{font-size:9px;color:var(--t3);font-style:italic}
+
+/* Input */
+.ai-panel-input{padding:10px 16px;border-top:1px solid var(--border)}
+.ai-input-box{display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);min-height:36px;cursor:text}
+.ai-input-box:focus-within{border-color:rgba(58,49,133,.3)}
+.ai-input-box input{flex:1;border:none;background:transparent;font-size:12px;font-family:inherit;color:var(--t1);outline:none;min-width:60px}
+.ai-input-box input::placeholder{color:var(--t3)}
+.ai-input-box .at-pill .x{cursor:pointer;opacity:.5;font-size:12px;margin-left:1px}
+.ai-input-box .at-pill .x:hover{opacity:1}
+.ai-input-send{display:flex;align-items:center;gap:6px;margin-top:6px}
+.ai-input-hint{font-size:10px;color:var(--t3)}
+.ai-input-send .send{width:32px;height:32px;border-radius:8px;border:none;background:var(--t1);color:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:auto}
+.ai-input-send .send:hover{opacity:.85}
+
+/* Mobile */
+.ai-mobile-trigger{display:none;position:fixed;bottom:20px;right:20px;padding:10px 20px;border-radius:24px;border:none;background:var(--t1);color:var(--surface);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;align-items:center;gap:6px;z-index:50}
+@media(max-width:1199px){
+  .ai-panel{display:none}
+  .ai-panel.mob{display:block;position:fixed;bottom:0;left:0;right:0;z-index:200}
+  .ai-panel.mob .ai-panel-card{border-radius:12px 12px 0 0;max-height:60vh}
+  .ai-mobile-trigger{display:flex}
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-logo">精准教学</div>
+  <div class="sb-section"><div class="sb-label">导航</div>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>首页</a>
+    <a class="sb-link act"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>教案</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>课堂</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>作业<span class="notif">3</span></a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>学情</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>资源</a>
+  </div>
+  <div class="sb-section"><div class="sb-label">管理</div>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>管理</a>
+  </div>
+  <div class="sb-spacer"></div>
+  <div class="sb-user"><div class="sb-avatar">陈</div><div><div class="sb-user-name">陈老师</div><div class="sb-user-role">数学 · 八年级</div></div></div>
+</aside>
+
+<!-- Top nav -->
+<nav class="topnav"><span class="topnav-logo">精准教学</span><a>首页</a><a class="act">教案</a><a>课堂</a><a>作业<span class="notif">3</span></a><a>学情</a><a>资源</a><a>管理</a></nav>
+
+<div class="main">
+<div class="detail-layout">
+
+  <!-- ═══ EDITOR ═══ -->
+  <div class="editor-col">
+    <div class="ed-back"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>返回教案列表</div>
+    <input class="ed-title" value="12.2 三角形全等的判定 — SSS/SAS" />
+    <div class="ed-meta"><select><option>八(2)班</option></select><select><option>数学</option></select><select><option>新授课</option></select><select><option>45 分钟</option></select><span class="ed-save">自动保存 · 2 分钟前</span></div>
+
+    <div class="req-anchor">
+      <div class="req-anchor-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+      <div class="req-anchor-body"><div class="req-anchor-label">学业要求</div><div class="req-anchor-text">7.3.2 能运用 SSS、SAS 判定三角形全等</div><div class="req-anchor-interp">区级解读 v2.1：重点关注"夹角"概念的准确理解，通过 SSA 反例帮助学生区分 SAS 的适用条件</div></div>
+      <a class="req-anchor-change">更换</a>
+    </div>
+
+    <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>教学目标</div></div>
+    <div class="block"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable><ul><li>理解并掌握 SSS 和 SAS 两种判定方法</li><li>能运用 SSS、SAS 判定两个三角形全等</li><li>培养逻辑推理能力，体会分类讨论思想</li></ul></div></div>
+    <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>教学过程</div></div>
+    <div class="block timeline"><span class="block-handle">&#8942;</span><div class="block-type">时间线</div>
+      <div class="tl-item"><span class="tl-time">0~5'</span><span class="tl-dur">5 min</span><div class="tl-desc" contenteditable>复习回顾：全等三角形的定义和性质</div></div>
+      <div class="tl-item"><span class="tl-time">5~15'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>SSS 判定讲解：三角形拼接实验</div></div>
+      <div class="tl-item"><span class="tl-time">15~25'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>SAS 判定讲解：强调"夹角"，对比 SSA 反例</div></div>
+      <div class="tl-item"><span class="tl-time">25~35'</span><span class="tl-dur">10 min</span><div class="tl-desc" contenteditable>课堂练习：3 道基础 + 1 道综合</div></div>
+      <div class="tl-item"><span class="tl-time">35~40'</span><span class="tl-dur">5 min</span><div class="tl-desc" contenteditable>课堂小结 + 布置作业</div></div>
+    </div>
+
+    <div class="block ai-callout"><span class="block-handle">&#8942;</span>
+      <div class="block-content">学情备注：八(2)班 SSS 判定错误率 42%，连续 3 周下降。主要错因：夹角概念混淆（占 43%）。建议本节增加 SSA 反例对比练习。</div>
+      <div class="ai-source"><span class="ai-source-pill">Skill: 学情异常检测</span><span class="ai-source-time">今天 08:00</span>
+        <span class="ai-source-ask" onclick="injectRef('学情备注:八(2)班SSS/SAS')">追问 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+      </div>
+    </div>
+
+    <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>课堂练习</div></div>
+    <div class="block table-block"><span class="block-handle">&#8942;</span><div class="block-type">表格</div>
+      <table><tr><th>题号</th><th>题型</th><th>知识点</th><th>难度</th><th>来源</th></tr>
+      <tr><td>1</td><td>选择</td><td>SSS 判定</td><td>0.45</td><td>题库</td></tr>
+      <tr><td>2</td><td>选择</td><td>SAS 判定</td><td>0.52</td><td>题库</td></tr>
+      <tr><td>3</td><td>选择</td><td>SSS 综合</td><td>0.55</td><td>AI 原创</td></tr>
+      <tr><td>4</td><td>证明</td><td>SSS+SAS</td><td>0.65</td><td>题库</td></tr></table>
+    </div>
+    <div class="block section-head"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>板书设计</div></div>
+    <div class="block"><span class="block-handle">&#8942;</span><div class="block-content" contenteditable>左栏：SSS 判定定理及图示<br>中栏：SAS 判定定理及图示，标注"夹角"<br>右栏：课堂练习及学生板演区</div></div>
+    <div class="add-block">+ 添加内容块</div>
+    <div class="hw-section">
+      <div class="hw-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>关联练习<span style="flex:1"></span><button class="btn" style="font-size:11px;padding:4px 10px">选择练习</button></div>
+      <div class="hw-item"><strong style="font-weight:500">SSS/SAS 专项练习</strong><span class="badge" style="background:var(--blue-bg);color:var(--blue)">已发布</span><span class="hw-item-meta">5 道题 · 八(2)班</span></div>
+    </div>
+    <div class="ed-footer"><button class="btn">导出 Word</button><button class="btn">导出 PDF</button><button class="btn pri">保存</button></div>
+  </div>
+
+  <!-- ═══ AI PANEL ═══ -->
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-panel-card">
+      <div class="ai-panel-hd">
+        <div class="ai-panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+        <div class="ai-panel-title">备课助手</div>
+        <span class="ai-panel-tpl">备课助手模板</span>
+        <a class="ai-panel-expand" href="#">展开 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></a>
+      </div>
+
+      <div class="ai-panel-body">
+        <!-- Skill outputs -->
+        <div class="skill-out">
+          <div class="skill-hd"><span class="skill-pill">学情异常检测</span><span class="skill-fresh ok">数据最新</span><span class="skill-time">今天 08:00</span></div>
+          <div class="skill-body">八(2)班 SAS 正确率<strong>连续 3 周下降</strong>（72% → 64% → 56%）。主要错因：<strong>夹角概念混淆</strong>（占 43%）。</div>
+          <div class="skill-reason-toggle" onclick="this.nextElementSibling.classList.toggle('open')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>查看推理</div>
+          <div class="skill-reason">1. 提取八(2)班最近 3 周 SSS/SAS 作业<br>2. 正确率：72% → 64% → 56%<br>3. 错题：夹角混淆 43%、条件遗漏 31%、计算 26%<br>4. 对比全校均值 72%，偏低 16pt</div>
+        </div>
+        <div class="skill-out">
+          <div class="skill-hd"><span class="skill-pill">课标对齐检查</span><span class="skill-fresh stale">课标已更新</span><span class="skill-time">昨天</span></div>
+          <div class="skill-body">v2.1 新增<strong>"SSA 反例"</strong>教学建议。当前教案已提及反例，但<strong>练习题中缺少 SSA 辨析题</strong>。</div>
+        </div>
+
+        <!-- Conversation with @ references + apply buttons -->
+        <div class="ai-msgs">
+          <!-- Round 1: user asks about 学情 -->
+          <div class="ai-msg">
+            <div class="ai-msg-who">你 · 昨天 15:20</div>
+            <div class="ai-msg-bubble from-user"><span class="at-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/></svg>学情备注</span> 为什么夹角混淆占比这么高？有没有教学策略建议？</div>
+          </div>
+          <div class="ai-msg">
+            <div class="ai-msg-who">备课助手</div>
+            <div class="ai-msg-bubble from-ai">
+              根据 <span class="at-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/></svg>学情备注</span> 的分析，夹角混淆的核心原因是学生把 SAS 中的"夹角"和"任意角"混淆。建议调整时间线：<br><br>
+              <strong>SSS 讲解</strong> 10min → 8min（学生掌握较好）<br>
+              <strong>新增 SSA 反例</strong> 2min（省出的时间）<br>
+              和 <span class="at-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/></svg>课标 v2.1</span> 的建议对齐
+            </div>
+            <!-- Apply button: APPLIED -->
+            <div class="apply-action">
+              <button class="apply-btn applied" onclick="void(0)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                已应用 · 昨天 15:25
+              </button>
+              <span class="apply-desc">时间线: SSS 10min→8min, 新增 SSA 反例 2min</span>
+            </div>
+          </div>
+
+          <!-- Round 2: user asks to fix exercise -->
+          <div class="ai-msg">
+            <div class="ai-msg-who">你 · 今天 09:10</div>
+            <div class="ai-msg-bubble from-user"><span class="at-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 11 12 14 22 4"/></svg>课标 v2.1</span> 说要加 SSA 辨析题，帮我把第 3 题改成 SSA 辨析</div>
+          </div>
+          <div class="ai-msg">
+            <div class="ai-msg-who">备课助手</div>
+            <div class="ai-msg-bubble from-ai">
+              建议将第 3 题从"SSS 综合（选择）"改为：<br><br>
+              <strong>题目：</strong>已知 △ABC 和 △DEF 中，AB=DE，BC=EF，∠B=∠E。能否判定 △ABC ≅ △DEF？说明理由。<br>
+              <strong>考查：</strong>SSA 不能作为判定依据的辨析<br>
+              <strong>难度：</strong>0.50<br>
+              <strong>来源：</strong>AI 原创
+            </div>
+            <!-- Apply button: PENDING -->
+            <div class="apply-action">
+              <button class="apply-btn pending" onclick="this.className='apply-btn applied';this.innerHTML='<svg width=12 height=12 viewBox=&quot;0 0 24 24&quot; fill=none stroke=currentColor stroke-width=2.5 stroke-linecap=round><polyline points=&quot;20 6 9 17 4 12&quot;/></svg> 已应用 · 刚刚'">
+                应用到教案
+              </button>
+              <span class="apply-desc">替换练习表第 3 题</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input with @ pill slot -->
+      <div class="ai-panel-input">
+        <div class="ai-input-box" onclick="this.querySelector('input').focus()">
+          <span class="at-pill" id="atPill" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/></svg>
+            <span id="atText"></span>
+            <span class="x" onclick="event.stopPropagation();removeRef()">×</span>
+          </span>
+          <input type="text" id="inputField" placeholder="问备课助手... 输入 @ 引用实体">
+        </div>
+        <div class="ai-input-send">
+          <span class="ai-input-hint">@ 可引用教案、课标、学情、练习</span>
+          <button class="send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<button class="ai-mobile-trigger" onclick="document.getElementById('aiPanel').classList.toggle('mob')">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>备课助手
+</button>
+
+<script>
+function injectRef(text){
+  document.getElementById('atPill').style.display='inline-flex';
+  document.getElementById('atText').textContent=text;
+  document.getElementById('inputField').placeholder='输入你的问题...';
+  document.getElementById('inputField').focus();
+  document.getElementById('aiPanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function removeRef(){
+  document.getElementById('atPill').style.display='none';
+  document.getElementById('inputField').placeholder='问备课助手... 输入 @ 引用实体';
+}
+</script>
+</body>
+</html>

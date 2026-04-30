@@ -1,0 +1,46 @@
+{
+  "task": "live-lesson-observation-e2e",
+  "status": "completed",
+  "startedAt": "2026-04-24T13:40:07Z",
+  "currentIteration": 4,
+  "iterations": {
+    "4": {
+      "status": "running",
+      "startedAt": "2026-04-24T13:40:07Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:40:07Z",
+          "completedAt": "2026-04-24T13:43:16Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:43:16Z",
+          "completedAt": "2026-04-24T13:43:17Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:43:17Z",
+          "completedAt": "2026-04-24T13:43:24Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:43:26Z",
+          "completedAt": "2026-04-24T13:43:32Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:43:32Z",
+          "completedAt": "2026-04-24T13:50:42Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-24T13:50:42Z",
+          "completedAt": "2026-04-24T13:50:42Z"
+        }
+      },
+      "score": 100
+    }
+  },
+  "finishedAt": "2026-04-24T13:50:44Z"
+}

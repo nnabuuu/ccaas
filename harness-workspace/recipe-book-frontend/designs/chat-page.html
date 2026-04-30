@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {},
+            borderRadius: {
+              "DEFAULT": "0.25rem",
+              "lg": "0.5rem",
+              "xl": "0.75rem",
+              "full": "9999px"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Plus Jakarta Sans"],
+              "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f3ef;
+            color: #1c1c1a;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(28, 28, 26, 0.1);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="antialiased">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar (App Sidebar) -->
+<!-- Logic: Render SideNavBar as fixed 232px width -->
+<aside class="fixed left-0 top-0 h-full w-[232px] border-r border-[rgba(28,28,26,0.07)] bg-[#f4f3ef] flex flex-col py-6 px-4 z-50">
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-[#1c1c1a] flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-icon="restaurant_menu">restaurant_menu</span>
+</div>
+<div>
+<h1 class="text-lg font-bold text-[#1c1c1a] leading-none">食谱助手</h1>
+<p class="text-[10px] text-[#5c5b56] mt-1">您的厨艺专家</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Navigation Items -->
+<div class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-[#5c5b56] hover:bg-[#edece7] transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="home">home</span>
+                    首页
+                </div>
+<div class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-[#5c5b56] hover:bg-[#edece7] transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="explore">explore</span>
+                    发现
+                </div>
+<div class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-[#5c5b56] hover:bg-[#edece7] transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="bookmark">bookmark</span>
+                    收藏
+                </div>
+<!-- ACTIVE TAB: AI 对话 -->
+<div class="flex items-center px-3 py-2 text-sm font-semibold rounded-lg bg-[#edece7] text-[#1c1c1a] transition-colors cursor-pointer relative">
+<div class="absolute left-0 top-2 bottom-2 w-1 bg-[#1c1c1a] rounded-r"></div>
+<span class="material-symbols-outlined mr-3" data-icon="chat">chat</span>
+                    AI 对话
+                </div>
+<div class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-[#5c5b56] hover:bg-[#edece7] transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                    设置
+                </div>
+</nav>
+<div class="mt-auto border-t border-[rgba(28,28,26,0.07)] pt-4">
+<div class="group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-[#5c5b56] hover:bg-[#edece7] transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3" data-icon="logout">logout</span>
+                    退出登录
+                </div>
+</div>
+</aside>
+<!-- Chat Sidebar (280px width) -->
+<div class="ml-[232px] w-[280px] bg-[#fbfaf7] border-r border-[rgba(28,28,26,0.07)] flex flex-col h-full">
+<div class="p-5">
+<div class="flex items-center justify-between mb-6">
+<span class="text-sm font-bold text-[#1c1c1a]">食谱助手</span>
+<button class="bg-[#1c1c1a] text-white text-xs px-3 py-1.5 rounded-full font-medium hover:opacity-90 transition-opacity flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                        新对话
+                    </button>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] uppercase tracking-wider text-[#9c9a92] font-bold px-2 mb-2">最近对话</p>
+<!-- Session Active -->
+<div class="group flex items-center gap-3 px-3 py-3 bg-[#edece7] rounded-lg cursor-pointer border border-transparent">
+<span class="material-symbols-outlined text-[#1c1c1a] text-lg" data-icon="chat_bubble">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold text-[#1c1c1a] truncate">帮我改良鱼香肉丝的做法</p>
+<p class="text-[11px] text-[#5c5b56] truncate mt-0.5">刚才</p>
+</div>
+</div>
+<!-- Session Inactive -->
+<div class="group flex items-center gap-3 px-3 py-3 hover:bg-[#edece7]/50 rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[#5c5b56] text-lg" data-icon="chat_bubble">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-[#5c5b56] truncate group-hover:text-[#1c1c1a]">番茄炒蛋的营养分析</p>
+<p class="text-[11px] text-[#9c9a92] truncate mt-0.5">2小时前</p>
+</div>
+</div>
+<!-- Session Inactive -->
+<div class="group flex items-center gap-3 px-3 py-3 hover:bg-[#edece7]/50 rounded-lg cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[#5c5b56] text-lg" data-icon="chat_bubble">chat_bubble</span>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-[#5c5b56] truncate group-hover:text-[#1c1c1a]">提拉米苏的替代食材</p>
+<p class="text-[11px] text-[#9c9a92] truncate mt-0.5">昨天</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Profile Section -->
+<div class="mt-auto p-4 border-t border-[rgba(28,28,26,0.07)]">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#edece7]/50 cursor-pointer transition-colors">
+<img alt="厨师" class="w-10 h-10 rounded-full object-cover grayscale" data-alt="portrait of a professional male chef in a clean white uniform with a friendly expression in a modern kitchen setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzP4ZLBbNAFN7xcQB3lfELI8EZfAkbbjUffP4V2LmePF8m4WMRkBMpE3alr9jTm8Eq4ekB9n5qYyi8-xezOlP9PTHuH53vMZu7rdU4HReTOhO57JFKRwnhDVI8oc9oe20ApI7cpYoVetMkFpspogUn54gxMIW7ZF3RBrcDvTBIibjNklfc7iK1wC8HetunFczVzpP4zzYJCsSBadN103LpjLnKf9i2c1oMpjMwZePc-Iwk-6Go5Bsl5CcOqgJcLKSXYJFEWTU3bD0"/>
+<div class="min-w-0">
+<p class="text-sm font-bold text-[#1c1c1a] truncate">厨师</p>
+<p class="text-[11px] text-[#5c5b56] truncate">美食爱好者</p>
+</div>
+<span class="material-symbols-outlined ml-auto text-[#9c9a92] text-sm" data-icon="more_vert">more_vert</span>
+</div>
+</div>
+</div>
+<!-- Main Chat Area -->
+<main class="flex-1 flex flex-col relative h-full">
+<!-- Empty State / Welcome Screen -->
+<div class="flex-1 flex flex-col items-center justify-center p-6 max-w-3xl mx-auto w-full">
+<div class="text-center mb-10">
+<div class="w-16 h-16 bg-[#edece7] rounded-2xl flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-3xl text-[#1c1c1a]" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<h2 class="text-3xl font-extrabold text-[#1c1c1a] tracking-tight">你好，厨师！</h2>
+<p class="mt-3 text-base text-[#5c5b56] max-w-md mx-auto">
+                        我是你的食谱助手，可以帮你改良菜谱、分析营养、规划菜单。
+                    </p>
+</div>
+<!-- Starter Cards Grid -->
+<div class="grid grid-cols-2 gap-4 w-full">
+<div class="p-5 bg-[#fbfaf7] border border-[rgba(28,28,26,0.07)] rounded-[10px] cursor-pointer hover:bg-[#edece7] transition-all group">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">🍳</span>
+<h3 class="text-sm font-bold text-[#1c1c1a]">改良菜谱</h3>
+</div>
+<p class="text-xs text-[#5c5b56] leading-relaxed">优化现有食谱的做法和调味</p>
+</div>
+<div class="p-5 bg-[#fbfaf7] border border-[rgba(28,28,26,0.07)] rounded-[10px] cursor-pointer hover:bg-[#edece7] transition-all group">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">📊</span>
+<h3 class="text-sm font-bold text-[#1c1c1a]">营养分析</h3>
+</div>
+<p class="text-xs text-[#5c5b56] leading-relaxed">计算食谱的营养成分</p>
+</div>
+<div class="p-5 bg-[#fbfaf7] border border-[rgba(28,28,26,0.07)] rounded-[10px] cursor-pointer hover:bg-[#edece7] transition-all group">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">📋</span>
+<h3 class="text-sm font-bold text-[#1c1c1a]">菜单规划</h3>
+</div>
+<p class="text-xs text-[#5c5b56] leading-relaxed">根据需求规划一周菜单</p>
+</div>
+<div class="p-5 bg-[#fbfaf7] border border-[rgba(28,28,26,0.07)] rounded-[10px] cursor-pointer hover:bg-[#edece7] transition-all group">
+<div class="flex items-center gap-3 mb-2">
+<span class="text-xl">❓</span>
+<h3 class="text-sm font-bold text-[#1c1c1a]">烹饪问答</h3>
+</div>
+<p class="text-xs text-[#5c5b56] leading-relaxed">解答各种烹饪疑问</p>
+</div>
+</div>
+</div>
+<!-- Composer Area -->
+<div class="w-full max-w-3xl mx-auto px-6 pb-8">
+<div class="relative bg-white border border-[rgba(28,28,26,0.07)] rounded-[24px] shadow-sm focus-within:ring-1 focus-within:ring-[#1c1c1a] transition-shadow p-2">
+<div class="flex items-end gap-2 px-3 py-2">
+<button class="p-2 text-[#5c5b56] hover:bg-[#f4f3ef] rounded-full transition-colors">
+<span class="material-symbols-outlined text-xl" data-icon="attach_file">attach_file</span>
+</button>
+<textarea class="flex-1 bg-transparent border-none focus:ring-0 text-sm text-[#1c1c1a] py-2 resize-none max-h-32 placeholder:text-[#9c9a92]" placeholder="描述你的需求..." rows="1"></textarea>
+<button class="w-10 h-10 bg-[#1c1c1a] text-white rounded-full flex items-center justify-center hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-lg" data-icon="send">send</span>
+</button>
+</div>
+<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 whitespace-nowrap">
+<p class="text-[10px] text-[#9c9a92]">食谱助手可能会产生错误，请核实重要信息。</p>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,46 @@
+{
+  "task": "live-lesson-teacher-v2-fidelity",
+  "status": "completed",
+  "startedAt": "2026-04-21T19:53:04Z",
+  "currentIteration": 1,
+  "iterations": {
+    "1": {
+      "status": "running",
+      "startedAt": "2026-04-21T19:53:04Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:53:04Z",
+          "completedAt": "2026-04-21T20:02:54Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T20:02:54Z",
+          "completedAt": "2026-04-21T20:02:55Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T20:02:55Z",
+          "completedAt": "2026-04-21T20:02:58Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T20:02:59Z",
+          "completedAt": "2026-04-21T20:03:04Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T20:03:04Z",
+          "completedAt": "2026-04-21T20:11:46Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T20:11:47Z",
+          "completedAt": "2026-04-21T20:11:47Z"
+        }
+      },
+      "score": 99
+    }
+  },
+  "finishedAt": "2026-04-21T20:11:48Z"
+}

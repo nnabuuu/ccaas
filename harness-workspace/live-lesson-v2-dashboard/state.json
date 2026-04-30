@@ -1,0 +1,363 @@
+{
+  "task": "live-lesson-v2-dashboard",
+  "status": "completed",
+  "startedAt": "2026-04-21T11:11:12Z",
+  "currentIteration": 10,
+  "iterations": {
+    "1": {
+      "status": "running",
+      "startedAt": "2026-04-21T14:57:53Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T14:57:53Z",
+          "completedAt": "2026-04-21T15:27:30Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:27:30Z",
+          "completedAt": "2026-04-21T15:27:30Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:27:30Z",
+          "completedAt": "2026-04-21T15:27:36Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:27:37Z",
+          "completedAt": "2026-04-21T15:27:41Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:27:41Z",
+          "completedAt": "2026-04-21T15:43:57Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:43:57Z",
+          "completedAt": "2026-04-21T15:43:58Z"
+        }
+      },
+      "score": 85
+    },
+    "2": {
+      "status": "running",
+      "startedAt": "2026-04-21T15:43:59Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:43:59Z",
+          "completedAt": "2026-04-21T15:48:45Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:48:45Z",
+          "completedAt": "2026-04-21T15:48:45Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:48:45Z",
+          "completedAt": "2026-04-21T15:48:50Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:48:51Z",
+          "completedAt": "2026-04-21T15:48:57Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:48:57Z",
+          "completedAt": "2026-04-21T15:53:29Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:53:29Z",
+          "completedAt": "2026-04-21T15:53:29Z"
+        }
+      },
+      "score": 9
+    },
+    "3": {
+      "status": "running",
+      "startedAt": "2026-04-21T15:53:31Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T15:53:31Z",
+          "completedAt": "2026-04-21T16:12:32Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:12:32Z",
+          "completedAt": "2026-04-21T16:12:32Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:12:32Z",
+          "completedAt": "2026-04-21T16:12:37Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:12:38Z",
+          "completedAt": "2026-04-21T16:12:42Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:12:42Z",
+          "completedAt": "2026-04-21T16:30:13Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:30:13Z",
+          "completedAt": "2026-04-21T16:30:13Z"
+        }
+      },
+      "score": 79
+    },
+    "4": {
+      "status": "running",
+      "startedAt": "2026-04-21T16:30:16Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:30:16Z",
+          "completedAt": "2026-04-21T16:53:46Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:53:46Z",
+          "completedAt": "2026-04-21T16:53:46Z"
+        },
+        "validation": {
+          "status": "failed",
+          "startedAt": "2026-04-21T16:53:46Z",
+          "reason": "step function returned non-zero"
+        }
+      }
+    },
+    "5": {
+      "status": "running",
+      "startedAt": "2026-04-21T16:53:51Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T16:53:51Z",
+          "completedAt": "2026-04-21T17:09:45Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:09:45Z",
+          "completedAt": "2026-04-21T17:09:45Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:09:45Z",
+          "completedAt": "2026-04-21T17:09:50Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:09:51Z",
+          "completedAt": "2026-04-21T17:09:55Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:09:55Z",
+          "completedAt": "2026-04-21T17:27:10Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:27:11Z",
+          "completedAt": "2026-04-21T17:27:11Z"
+        }
+      },
+      "score": 63
+    },
+    "6": {
+      "status": "running",
+      "startedAt": "2026-04-21T17:27:13Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:27:13Z",
+          "completedAt": "2026-04-21T17:34:02Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:34:02Z",
+          "completedAt": "2026-04-21T17:34:02Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:34:02Z",
+          "completedAt": "2026-04-21T17:34:07Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:34:08Z",
+          "completedAt": "2026-04-21T17:34:11Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:34:11Z",
+          "completedAt": "2026-04-21T17:46:15Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:46:16Z",
+          "completedAt": "2026-04-21T17:46:16Z"
+        }
+      },
+      "score": 79
+    },
+    "7": {
+      "status": "running",
+      "startedAt": "2026-04-21T17:46:18Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:46:18Z",
+          "completedAt": "2026-04-21T17:56:57Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:56:58Z",
+          "completedAt": "2026-04-21T17:56:58Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:56:58Z",
+          "completedAt": "2026-04-21T17:57:02Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:57:04Z",
+          "completedAt": "2026-04-21T17:57:07Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T17:57:07Z",
+          "completedAt": "2026-04-21T18:11:47Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:11:47Z",
+          "completedAt": "2026-04-21T18:11:47Z"
+        }
+      },
+      "score": 74
+    },
+    "8": {
+      "status": "running",
+      "startedAt": "2026-04-21T18:11:50Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:11:50Z",
+          "completedAt": "2026-04-21T18:21:12Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:21:12Z",
+          "completedAt": "2026-04-21T18:21:12Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:21:12Z",
+          "completedAt": "2026-04-21T18:21:17Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:21:18Z",
+          "completedAt": "2026-04-21T18:21:22Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:21:22Z",
+          "completedAt": "2026-04-21T18:32:51Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:32:51Z",
+          "completedAt": "2026-04-21T18:32:51Z"
+        }
+      },
+      "score": 91
+    },
+    "9": {
+      "status": "running",
+      "startedAt": "2026-04-21T18:32:52Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:32:53Z",
+          "completedAt": "2026-04-21T18:39:46Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:39:46Z",
+          "completedAt": "2026-04-21T18:39:47Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:39:47Z",
+          "completedAt": "2026-04-21T18:39:51Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:39:52Z",
+          "completedAt": "2026-04-21T18:39:56Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:39:56Z",
+          "completedAt": "2026-04-21T18:51:05Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:51:05Z",
+          "completedAt": "2026-04-21T18:51:06Z"
+        }
+      },
+      "score": 96
+    },
+    "10": {
+      "status": "running",
+      "startedAt": "2026-04-21T18:51:07Z",
+      "steps": {
+        "generator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T18:51:07Z",
+          "completedAt": "2026-04-21T19:00:55Z"
+        },
+        "frozen-check": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:00:55Z",
+          "completedAt": "2026-04-21T19:00:56Z"
+        },
+        "validation": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:00:56Z",
+          "completedAt": "2026-04-21T19:01:00Z"
+        },
+        "services": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:01:02Z",
+          "completedAt": "2026-04-21T19:01:05Z"
+        },
+        "evaluator": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:01:05Z",
+          "completedAt": "2026-04-21T19:12:29Z"
+        },
+        "results": {
+          "status": "completed",
+          "startedAt": "2026-04-21T19:12:30Z",
+          "completedAt": "2026-04-21T19:12:30Z"
+        }
+      },
+      "score": 99
+    }
+  },
+  "finishedAt": "2026-04-21T19:12:31Z"
+}

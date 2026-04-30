@@ -1,0 +1,51 @@
+# DAGU DAG — live-lesson-teacher-v2-fidelity
+# Run: dagu start harness-workspace/live-lesson-teacher-v2-fidelity/dag.yaml
+# Docs: https://dagu.readthedocs.io/
+
+schedule: null  # manual trigger only
+name: live-lesson-teacher-v2-fidelity
+description: >
+  Iterative code-mode harness for teacher shell high-fidelity rewrite.
+  Runs generator → frozen check → validation → services → evaluator → results.
+
+env:
+  - HARNESS_DIR: harness-workspace/live-lesson-teacher-v2-fidelity
+  - MAX_ITERATIONS: "8"
+  - SCORE_THRESHOLD: "95"
+
+params: iteration=1
+
+steps:
+  - name: generator
+    description: Run the generator agent to rewrite TeacherShell
+    command: bash ${HARNESS_DIR}/harness.sh --step=generator --iteration=${iteration}
+
+  - name: frozen-check
+    description: Verify no frozen directories were modified
+    command: bash ${HARNESS_DIR}/harness.sh --step=frozen-check --iteration=${iteration}
+    depends:
+      - generator
+
+  - name: validation
+    description: Frontend typecheck + vite build
+    command: bash ${HARNESS_DIR}/harness.sh --step=validation --iteration=${iteration}
+    depends:
+      - frozen-check
+
+  - name: services
+    description: Start core backend + lesson backend + frontend dev server
+    command: bash ${HARNESS_DIR}/harness.sh --step=services --iteration=${iteration}
+    depends:
+      - validation
+
+  - name: evaluator
+    description: Run the evaluator agent with Playwright (curl + visual checks)
+    command: bash ${HARNESS_DIR}/harness.sh --step=evaluator --iteration=${iteration}
+    depends:
+      - services
+
+  - name: results
+    description: Extract scores and update progress
+    command: bash ${HARNESS_DIR}/harness.sh --step=results --iteration=${iteration}
+    depends:
+      - evaluator

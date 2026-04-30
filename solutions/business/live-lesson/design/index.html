@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Ideal Beauty · 三端课堂演示 · 首页</title>
+<link rel="stylesheet" href="surfaces/colors_and_type.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--amber-bg);color:var(--amber);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:72px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--amber);font-weight:500}
+.hero .sub{
+  font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:620px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+
+.cta-row{display:flex;gap:10px;align-items:center}
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 20px;border-radius:8px;
+  font-size:14px;font-weight:600;text-decoration:none;
+  transition:all .15s;
+}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.cta.pri .ar{display:inline-block;transition:transform .2s}
+.cta.pri:hover .ar{transform:translateX(3px)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.cta.sec:hover{background:var(--surface2)}
+.cta .kb{font-size:10px;color:var(--t3);padding:2px 5px;border:1px solid var(--border);border-radius:3px;font-family:ui-monospace,Menlo,monospace}
+
+/* ============ CONTEXT STRIP ============ */
+.ctx{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:18px 6px;margin-bottom:72px;
+}
+.ctx-cell{
+  padding:4px 22px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+}
+.ctx-cell:last-child{border-right:none}
+.ctx-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.ctx-v{font-size:14px;color:var(--t1);font-weight:600;letter-spacing:-.1px}
+.ctx-v .sm{font-size:11px;color:var(--t2);font-weight:500;margin-left:3px}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ SURFACE CARDS ============ */
+.surfaces{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:72px;
+}
+.scard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;gap:14px;
+  transition:all .18s;position:relative;overflow:hidden;
+}
+.scard:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(28,28,26,.18)}
+.scard-hd{display:flex;align-items:center;justify-content:space-between}
+.scard-role{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  padding:4px 9px;border-radius:4px;
+}
+.scard.stu .scard-role{background:#e2e8f0;color:#2b4a73}
+.scard.tch .scard-role{background:#e0ebe3;color:#254d37}
+.scard.brd .scard-role{background:#f1e8d4;color:#6b4a15}
+.scard-arrow{font-size:14px;color:var(--t3)}
+.scard:hover .scard-arrow{color:var(--t1);transform:translateX(3px)}
+.scard-arrow{transition:transform .2s}
+
+/* Card preview — SVG-rendered device */
+.scard-prev{
+  width:100%;aspect-ratio:16/10;
+  background:var(--bg);border-radius:6px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:14px;overflow:hidden;
+  position:relative;
+}
+.scard-prev svg{width:100%;height:100%;display:block}
+
+.scard h3{font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+.scard h3 .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:6px;letter-spacing:0}
+.scard p{font-size:13px;color:var(--t2);line-height:1.55}
+.scard p strong{color:var(--t1);font-weight:600}
+.scard-feat{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.sfeat{
+  font-size:10px;font-weight:500;color:var(--t2);
+  padding:3px 7px;background:var(--bg);border-radius:4px;
+  border:1px solid var(--border);
+}
+
+/* ============ LESSON MAP ============ */
+.map{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:26px 28px;margin-bottom:72px;
+}
+.map-h{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--t2);margin-bottom:20px;display:flex;align-items:center;gap:8px;
+}
+.map-h .chip{background:var(--t1);color:var(--surface);padding:2px 7px;border-radius:3px;font-size:9px}
+.map-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+  position:relative;
+}
+.map-grid::before{
+  content:'';position:absolute;top:14px;left:30px;right:30px;height:1px;
+  background:linear-gradient(to right,var(--border-strong) 0 calc(50% - 1px),transparent calc(50% - 1px) calc(50% + 1px),var(--border-strong) calc(50% + 1px));
+  background-image:repeating-linear-gradient(to right,var(--border-strong) 0 6px,transparent 6px 12px);
+}
+.mstep{
+  display:flex;flex-direction:column;gap:7px;
+  padding:0 10px;position:relative;
+}
+.mstep:first-child{padding-left:0}
+.mstep:last-child{padding-right:0}
+.mstep-n{
+  width:28px;height:28px;border-radius:50%;background:var(--surface2);
+  color:var(--t2);font-size:12px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--border-strong);position:relative;z-index:1;
+}
+.mstep.active .mstep-n{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.mstep-lb{font-size:13px;font-weight:700;color:var(--t1);letter-spacing:-.2px;margin-top:4px}
+.mstep-en{font-size:10px;color:var(--t3);font-weight:500;letter-spacing:.2px}
+.mstep-br{font-size:11px;color:var(--t2);line-height:1.5;margin-top:6px}
+.mstep-dur{font-size:10px;color:var(--t3);font-weight:600;margin-top:4px}
+.mstep-dur .u{color:var(--t2)}
+
+/* ============ SIGNATURE IDEA ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:40px 44px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:
+    radial-gradient(circle at 70% 40%, rgba(245,176,56,.18) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:40px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#b5a784;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#f5b038}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#f5b038;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:520px}
+.sig p strong{color:#e8e6df;font-weight:600}
+
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#f5b038;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:44px}
+  .ctx{grid-template-columns:repeat(2,1fr)}
+  .surfaces,.map-grid,.notes{grid-template-columns:1fr}
+  .sig-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">R</div>
+      <div class="brand-tx">
+        <div class="brand-a">Ruixin · 英语组</div>
+        <div class="brand-b">课堂执行演示 · v0.3 · 2024</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">单元</span><span class="meta-v">B7 U2 · Ideal Beauty</span></div>
+      <div class="meta-pair"><span class="meta-lb">班级</span><span class="meta-v">高一(3)班</span></div>
+      <div class="meta-pair"><span class="meta-lb">学情</span><span class="meta-v">M–L · 词汇薄弱</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Classroom Demo</span>
+      <span class="dot"></span>
+      三端联动 · 45 分钟课堂执行
+    </div>
+    <h1>让<em>读</em>不再是独自面对长文。</h1>
+    <p class="sub">
+      围绕一篇 Ideal Beauty 的阅读文本，三个端各司其职：<strong>学生 iPad</strong> 解码长句、<strong>投屏黑板</strong> 汇聚共识、<strong>教师控制台</strong> 实时看见每个学生的思维过程。这是这节课在 45 分钟内真正发生的事。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="demo.html">进入三端联动 Demo <span class="ar">→</span></a>
+      <a class="cta sec" href="surfaces/teacher.html">单看教师端 <span class="kb">T</span></a>
+    </div>
+  </section>
+
+  <!-- CONTEXT STRIP -->
+  <div class="ctx">
+    <div class="ctx-cell">
+      <span class="ctx-lb">文本</span>
+      <span class="ctx-v">¶1–8 · 480w<span class="sm">读写课</span></span>
+    </div>
+    <div class="ctx-cell">
+      <span class="ctx-lb">核心问题</span>
+      <span class="ctx-v">Why beauty varies<span class="sm">across cultures</span></span>
+    </div>
+    <div class="ctx-cell">
+      <span class="ctx-lb">时长</span>
+      <span class="ctx-v">45 min<span class="sm">5 步</span></span>
+    </div>
+    <div class="ctx-cell">
+      <span class="ctx-lb">学生数</span>
+      <span class="ctx-v">42 人<span class="sm">8 组</span></span>
+    </div>
+    <div class="ctx-cell">
+      <span class="ctx-lb">AI 作用</span>
+      <span class="ctx-v">Skill, 非 Chat<span class="sm">有边界</span></span>
+    </div>
+  </div>
+
+  <!-- SURFACES -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>三端 <span class="en">Three Surfaces</span></h2>
+    </div>
+    <span class="hint">点击进入任一端 · 也可直接进入联动 Demo</span>
+  </div>
+
+  <div class="surfaces">
+
+    <!-- STUDENT -->
+    <a class="scard stu" href="surfaces/student.html">
+      <div class="scard-hd">
+        <span class="scard-role">● Student · iPad</span>
+        <span class="scard-arrow">→</span>
+      </div>
+      <div class="scard-prev">
+        <svg viewBox="0 0 280 175" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- paper doc left -->
+          <rect x="10" y="12" width="152" height="151" rx="3" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="22" y="24" width="90" height="4" rx="1" fill="#1c1c1a"/>
+          <rect x="22" y="34" width="60" height="2" rx="1" fill="#9c9a92"/>
+          <g fill="#5c5b56">
+            <rect x="22" y="48" width="128" height="2" rx="1"/>
+            <rect x="22" y="54" width="120" height="2" rx="1"/>
+            <rect x="22" y="60" width="124" height="2" rx="1"/>
+          </g>
+          <!-- highlight -->
+          <rect x="22" y="72" width="72" height="8" rx="1" fill="#f6edda"/>
+          <rect x="22" y="74" width="60" height="2" rx="1" fill="#7a4d0e"/>
+          <g fill="#5c5b56">
+            <rect x="22" y="88" width="128" height="2" rx="1"/>
+            <rect x="22" y="94" width="110" height="2" rx="1"/>
+            <rect x="22" y="100" width="120" height="2" rx="1"/>
+          </g>
+          <!-- note tag -->
+          <rect x="120" y="118" width="32" height="14" rx="2" fill="#e9e7f3" stroke="#3a3185" stroke-width=".5"/>
+          <text x="124" y="128" font-family="Plus Jakarta Sans" font-size="6" font-weight="700" fill="#3a3185">批注 2</text>
+          <g fill="#5c5b56">
+            <rect x="22" y="118" width="90" height="2" rx="1"/>
+            <rect x="22" y="124" width="96" height="2" rx="1"/>
+            <rect x="22" y="130" width="70" height="2" rx="1"/>
+          </g>
+          <!-- matrix right -->
+          <rect x="172" y="12" width="98" height="151" rx="3" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="180" y="22" width="54" height="3" rx="1" fill="#1c1c1a"/>
+          <rect x="180" y="32" width="82" height="1" fill="#e4e2d8"/>
+          <g font-family="Plus Jakarta Sans" font-size="5" font-weight="600" fill="#1c1c1a">
+            <text x="180" y="46">Place</text>
+            <text x="218" y="46">Practice</text>
+          </g>
+          <rect x="180" y="52" width="82" height="1" fill="#e4e2d8"/>
+          <g font-family="Plus Jakarta Sans" font-size="5" fill="#5c5b56">
+            <text x="180" y="62">Borneo</text>
+            <text x="218" y="62">tattoos</text>
+            <text x="180" y="74">Maori</text>
+            <text x="218" y="74" fill="#b23a2a">tattoos ●</text>
+            <text x="180" y="86">Myanmar</text>
+            <text x="218" y="86" fill="#b23a2a">body art ●</text>
+            <text x="180" y="98">Indo.</text>
+            <text x="218" y="98" fill="#9c9a92">—</text>
+          </g>
+          <!-- AI reply -->
+          <rect x="180" y="110" width="82" height="44" rx="2" fill="#e9e7f3"/>
+          <text x="186" y="122" font-family="Plus Jakarta Sans" font-size="5" font-weight="700" fill="#3a3185">AI 追问</text>
+          <g font-family="Plus Jakarta Sans" font-size="5" fill="#3a3185">
+            <text x="186" y="134">看 ¶7 的</text>
+            <text x="186" y="143">"wearing…"</text>
+            <text x="186" y="150" font-weight="700">metal rings</text>
+          </g>
+        </svg>
+      </div>
+      <h3>学生端 <span class="en">Student · iPad</span></h3>
+      <p>文本居中的阅读界面。课文、板书、AI 助教三面板按需展开，<strong>Skill 边界内引导</strong> —— 不给答案，引导找出处，学生可反馈「明白了 / 还不明白」。</p>
+      <div class="scard-feat">
+        <span class="sfeat">文本优先布局</span>
+        <span class="sfeat">Dock 面板切换</span>
+        <span class="sfeat">AI 理解反馈</span>
+        <span class="sfeat">矩阵作答</span>
+      </div>
+    </a>
+
+    <!-- BOARD -->
+    <a class="scard brd" href="surfaces/board.html">
+      <div class="scard-hd">
+        <span class="scard-role">● Classroom Projector · 16:9</span>
+        <span class="scard-arrow">→</span>
+      </div>
+      <div class="scard-prev">
+        <svg viewBox="0 0 280 175" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="280" height="175" rx="2" fill="#f4f3ef"/>
+          <!-- center scaffold -->
+          <text x="140" y="26" font-family="Fraunces" font-style="italic" font-size="14" fill="#1c1c1a" text-anchor="middle">Ideal Beauty</text>
+          <text x="140" y="38" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92" text-anchor="middle" letter-spacing="1">WHY IT VARIES</text>
+          <!-- vertical spine -->
+          <line x1="140" y1="50" x2="140" y2="158" stroke="#1c1c1a" stroke-width="1"/>
+          <!-- three revealed branches -->
+          <g>
+            <rect x="36" y="58" width="72" height="30" rx="2" fill="#dfece8"/>
+            <line x1="108" y1="73" x2="140" y2="73" stroke="#0d5245" stroke-width="1"/>
+            <circle cx="140" cy="73" r="3" fill="#0d5245"/>
+            <text x="44" y="70" font-family="Fraunces" font-style="italic" font-size="9" font-weight="500" fill="#0d5245">History</text>
+            <text x="44" y="80" font-family="Plus Jakarta Sans" font-size="6" fill="#0d5245">Across Time</text>
+          </g>
+          <g>
+            <rect x="174" y="58" width="72" height="30" rx="2" fill="#e9e7f3"/>
+            <line x1="140" y1="73" x2="174" y2="73" stroke="#3a3185" stroke-width="1"/>
+            <circle cx="140" cy="73" r="3" fill="#3a3185"/>
+            <text x="182" y="70" font-family="Fraunces" font-style="italic" font-size="9" font-weight="500" fill="#3a3185">Culture</text>
+            <text x="182" y="80" font-family="Plus Jakarta Sans" font-size="6" fill="#3a3185">Across Space</text>
+          </g>
+          <g>
+            <rect x="90" y="112" width="100" height="30" rx="2" fill="#f6edda"/>
+            <line x1="140" y1="112" x2="140" y2="100" stroke="#7a4d0e" stroke-width="1"/>
+            <circle cx="140" cy="112" r="3" fill="#7a4d0e"/>
+            <text x="98" y="124" font-family="Fraunces" font-style="italic" font-size="9" font-weight="500" fill="#7a4d0e">Conclusion</text>
+            <text x="98" y="134" font-family="Plus Jakarta Sans" font-size="6" fill="#7a4d0e">All Beautiful · 美本身是语言</text>
+          </g>
+          <!-- chalk dots -->
+          <circle cx="24" cy="160" r="2" fill="#9c9a92"/>
+          <circle cx="30" cy="160" r="2" fill="#9c9a92" opacity=".5"/>
+          <circle cx="36" cy="160" r="2" fill="#9c9a92" opacity=".3"/>
+        </svg>
+      </div>
+      <h3>投屏黑板 <span class="en">Projector · 16:9</span></h3>
+      <p>不是 PPT。板书是<strong>随课堂生长</strong>的：每个小步骤揭开一小块骨架，5 步之后，全班的共同理解构成完整结构。</p>
+      <div class="scard-feat">
+        <span class="sfeat">渐进揭示</span>
+        <span class="sfeat">粉笔质感</span>
+        <span class="sfeat">结构化</span>
+        <span class="sfeat">可回看</span>
+      </div>
+    </a>
+
+    <!-- TEACHER -->
+    <a class="scard tch" href="surfaces/teacher.html">
+      <div class="scard-hd">
+        <span class="scard-role">● Teacher · 课堂观察台</span>
+        <span class="scard-arrow">→</span>
+      </div>
+      <div class="scard-prev">
+        <svg viewBox="0 0 280 175" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="280" height="175" fill="#fbfaf7"/>
+          <!-- side rail -->
+          <rect x="0" y="0" width="54" height="175" fill="#f4f3ef"/>
+          <g font-family="Plus Jakarta Sans" font-size="5" fill="#9c9a92">
+            <circle cx="12" cy="22" r="3" fill="#5c5b56"/><text x="20" y="24">图式</text>
+            <circle cx="12" cy="38" r="3" fill="#5c5b56"/><text x="20" y="40">结构</text>
+            <circle cx="12" cy="54" r="3" fill="#1c1c1a"/><text x="20" y="56" font-weight="700" fill="#1c1c1a">矩阵</text>
+            <circle cx="12" cy="70" r="3" fill="#fbfaf7" stroke="#9c9a92"/><text x="20" y="72">批判</text>
+            <circle cx="12" cy="86" r="3" fill="#fbfaf7" stroke="#9c9a92"/><text x="20" y="88">复盘</text>
+          </g>
+          <!-- hero -->
+          <text x="64" y="20" font-family="Plus Jakarta Sans" font-size="5" font-weight="700" fill="#7a4d0e">STEP 3</text>
+          <text x="98" y="20" font-family="Plus Jakarta Sans" font-size="5" fill="#5c5b56">现在进行中 · 7:23/17:00</text>
+          <text x="64" y="36" font-family="Plus Jakarta Sans" font-size="13" font-weight="700" fill="#1c1c1a">矩阵构建</text>
+          <!-- band -->
+          <rect x="60" y="46" width="216" height="22" rx="3" fill="#f4f3ef" stroke="#e4e2d8"/>
+          <text x="68" y="60" font-family="Plus Jakarta Sans" font-size="5" fill="#5c5b56">42 在线 · 31 提交 · 7 风险</text>
+          <rect x="216" y="52" width="52" height="10" rx="2" fill="#1c1c1a"/>
+          <text x="230" y="60" font-family="Plus Jakarta Sans" font-size="5" font-weight="700" fill="#fbfaf7">推送提示</text>
+          <!-- student cards -->
+          <g>
+            <rect x="60" y="76" width="104" height="40" rx="3" fill="#fbfaf7" stroke="#b23a2a" stroke-width="1"/>
+            <circle cx="70" cy="86" r="3" fill="#b23a2a"/>
+            <text x="78" y="88" font-family="Plus Jakarta Sans" font-size="6" font-weight="700" fill="#1c1c1a">王译文</text>
+            <text x="66" y="100" font-family="Plus Jakarta Sans" font-size="5" fill="#b23a2a">● 抄了 Borneo 的答案</text>
+            <text x="66" y="110" font-family="Plus Jakarta Sans" font-size="5" fill="#5c5b56">3 个矩阵格未填</text>
+          </g>
+          <g>
+            <rect x="172" y="76" width="104" height="40" rx="3" fill="#fbfaf7" stroke="#e4b000" stroke-width="1"/>
+            <circle cx="182" cy="86" r="3" fill="#e4b000"/>
+            <text x="190" y="88" font-family="Plus Jakarta Sans" font-size="6" font-weight="700" fill="#1c1c1a">李静</text>
+            <text x="178" y="100" font-family="Plus Jakarta Sans" font-size="5" fill="#7a4d0e">● Myanmar 写对了</text>
+            <text x="178" y="110" font-family="Plus Jakarta Sans" font-size="5" fill="#5c5b56">但 Reason 为空</text>
+          </g>
+          <!-- heatmap -->
+          <rect x="60" y="124" width="216" height="40" rx="3" fill="#f4f3ef" stroke="#e4e2d8"/>
+          <text x="66" y="136" font-family="Plus Jakarta Sans" font-size="5" font-weight="700" fill="#1c1c1a">班级热图 · Reason 列</text>
+          <g transform="translate(66,142)">
+            <rect x="0" y="0" width="14" height="14" rx="2" fill="#0d5245"/>
+            <rect x="16" y="0" width="14" height="14" rx="2" fill="#0d5245" opacity=".6"/>
+            <rect x="32" y="0" width="14" height="14" rx="2" fill="#e4b000"/>
+            <rect x="48" y="0" width="14" height="14" rx="2" fill="#b23a2a"/>
+            <rect x="64" y="0" width="14" height="14" rx="2" fill="#0d5245"/>
+            <rect x="80" y="0" width="14" height="14" rx="2" fill="#0d5245" opacity=".6"/>
+            <rect x="96" y="0" width="14" height="14" rx="2" fill="#e4b000" opacity=".8"/>
+            <rect x="112" y="0" width="14" height="14" rx="2" fill="#0d5245"/>
+            <rect x="128" y="0" width="14" height="14" rx="2" fill="#b23a2a"/>
+            <rect x="144" y="0" width="14" height="14" rx="2" fill="#0d5245" opacity=".7"/>
+            <rect x="160" y="0" width="14" height="14" rx="2" fill="#e4b000"/>
+            <rect x="176" y="0" width="14" height="14" rx="2" fill="#0d5245"/>
+          </g>
+        </svg>
+      </div>
+      <h3>课堂观察台 <span class="en">Teacher · MacBook</span></h3>
+      <p>实时监控面板。<strong>Step Cards</strong> 一眼看全班进度分布，点击学生姓名进入 Journey Strip 查看跨步骤表现，右栏聚合高频问题。</p>
+      <div class="scard-feat">
+        <span class="sfeat">Step 卡片</span>
+        <span class="sfeat">学生旅程条</span>
+        <span class="sfeat">问题聚类</span>
+        <span class="sfeat">时间轴回溯</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- LESSON MAP -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>45 分钟路线 <span class="en">Lesson Arc</span></h2>
+    </div>
+    <span class="hint">五步 · 每步都落到三端的一次同步</span>
+  </div>
+
+  <div class="map">
+    <div class="map-h"><span class="chip">ARC</span>Schema → Structure → Matrix → Challenge → Synthesis</div>
+    <div class="map-grid">
+      <div class="mstep"><div class="mstep-n">1</div><div class="mstep-lb">图式激活</div><div class="mstep-en">Schema Activation</div><div class="mstep-br">带着问题进文本 · 调用已有知识</div><div class="mstep-dur">3<span class="u">′</span></div></div>
+      <div class="mstep"><div class="mstep-n">2</div><div class="mstep-lb">结构解码</div><div class="mstep-en">Structural Decoding</div><div class="mstep-br">读首句 · 识别转折词 · 搭骨架</div><div class="mstep-dur">6<span class="u">′</span></div></div>
+      <div class="mstep active"><div class="mstep-n">3</div><div class="mstep-lb">矩阵构建</div><div class="mstep-en">Build the Matrix</div><div class="mstep-br">每组聚焦 2–3 段 · Place × Practice × Reason</div><div class="mstep-dur">17<span class="u">′</span></div></div>
+      <div class="mstep"><div class="mstep-n">4</div><div class="mstep-lb">批判质疑</div><div class="mstep-en">Critical Evaluation</div><div class="mstep-br">质疑 "shallow" · 引矩阵事实支持立场</div><div class="mstep-dur">12<span class="u">′</span></div></div>
+      <div class="mstep"><div class="mstep-n">5</div><div class="mstep-lb">复盘升华</div><div class="mstep-en">Recap & Synthesis</div><div class="mstep-br">回到 ¶8 · 4 策略 · 美是语言</div><div class="mstep-dur">7<span class="u">′</span></div></div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE IDEA -->
+  <section class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow"><span class="dot"></span>Signature Idea</div>
+        <h2>AI 作为 <em>Skill</em>，<br>而不是 Chat。</h2>
+        <p>
+          不要把 ChatGPT 直接丢给学生。我们给每一步定义一个有边界的「技能」：<strong>追问出处</strong>、<strong>对比矩阵</strong>、<strong>反向质疑</strong>。AI 不替学生思考，而是保证每个学生都<strong>卡在对的地方</strong>。这是这套设计与"AI 辅助学习"最大的不同。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t">
+            <strong>找出处, 不给答案</strong>
+            AI 引导学生回到文本第 N 段, 而不是直接给结论。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t">
+            <strong>反问替代鼓励</strong>
+            不说"你真棒", 而是"如果 Myanmar 也是为了美,那和 Borneo 的记录功能冲突吗?"
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t">
+            <strong>对教师透明</strong>
+            每次 AI 干预老师都可见, 可撤回, 可改写。AI 是助教, 不是黑箱。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">保真度说明 · Fidelity</div>
+      <div class="note-b">三端均为可交互 HTML 原型 · 非最终产品截图。交互与数据为课堂剧情的演示性示例。</div>
+    </div>
+    <div>
+      <div class="note-h">学情依据 · Context</div>
+      <div class="note-b">高一(3)班，42 人，英语 M–L 档。已完成 B7U1，正进入 B7U2。文本难度超纲约 <strong>15%</strong>。</div>
+    </div>
+    <div>
+      <div class="note-h">下一步 · Next</div>
+      <div class="note-b">(1) 加入<strong>课后 10 分钟复盘</strong>视图 (2) 家长端只读摘要 (3) 教研组横向对比数据。</div>
+    </div>
+  </div>
+
+  <footer>Designed for classroom execution · Ruixin English Team · Not a commercial product</footer>
+
+</div>
+
+</body>
+</html>

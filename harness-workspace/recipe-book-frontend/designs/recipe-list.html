@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>食谱列表 - 食谱助手</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        background: "#f4f3ef",
+                        surface: "#fbfaf7",
+                        surface2: "#edece7",
+                        t1: "#1c1c1a",
+                        t2: "#5c5b56",
+                        t3: "#9c9a92",
+                        border: "rgba(28, 28, 26, 0.07)",
+                        semantic_green: "#2d6612",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Plus Jakarta Sans"],
+                        body: ["Plus Jakarta Sans"],
+                        label: ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f3ef;
+            color: #1c1c1a;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .sidebar-active-border {
+            border-right-width: 2px;
+            border-color: #1c1c1a;
+        }
+    </style>
+</head>
+<body class="antialiased">
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full w-[232px] border-r border-black/5 bg-[#fbfaf7] dark:bg-stone-900 flex flex-col h-full py-6 px-4 z-50">
+<!-- Brand Header -->
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-8 h-8 bg-t1 dark:bg-stone-50 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white dark:text-stone-900 text-xl" data-icon="restaurant">restaurant</span>
+</div>
+<span class="text-xl font-bold text-[#1c1c1a] dark:text-stone-50">食谱助手</span>
+</div>
+<!-- Navigation Group -->
+<nav class="flex-1 space-y-1">
+<!-- Active Tab: 我的食谱 (Mapped to 食谱列表 request) -->
+<a class="flex items-center gap-3 px-3 py-2 text-[#1c1c1a] dark:text-stone-50 font-semibold border-r-2 border-[#1c1c1a] dark:border-stone-50 bg-[#edece7] dark:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="book" style="font-variation-settings: 'FILL' 1;">book</span>
+<span>我的食谱</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span>探索新菜</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+<span>膳食计划</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+<span>收藏夹</span>
+</a>
+<div class="pt-4 mt-4 border-t border-black/5 dark:border-white/10">
+<a class="flex items-center gap-3 px-3 py-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span>AI 对话</span>
+</a>
+</div>
+</nav>
+<!-- CTA -->
+<button class="mt-4 w-full bg-t1 text-white py-2.5 px-4 rounded-lg text-sm font-semibold hover:opacity-90 active:opacity-80 transition-all">
+            创建新食谱
+        </button>
+<!-- Footer Profile/Links -->
+<div class="mt-auto space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[#5c5b56] dark:text-stone-400 hover:bg-[#edece7] dark:hover:bg-stone-800 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>设置</span>
+</a>
+<div class="pt-4 mt-2 border-t border-black/5 dark:border-white/10 flex items-center gap-3 px-3 py-2">
+<div class="w-8 h-8 rounded-full bg-surface2 flex items-center justify-center text-t1 font-bold text-xs border border-border">
+                    厨
+                </div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-t1 leading-none">厨师</span>
+<span class="text-[10px] text-t3 leading-none mt-1">高级厨师</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[232px] min-h-screen">
+<!-- Top Header Section -->
+<header class="h-16 px-8 flex items-center justify-between sticky top-0 bg-[#f4f3ef]/80 backdrop-blur-md z-40 border-b border-black/5">
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-t3 text-lg" data-icon="search">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-t1 focus:border-t1 transition-all" placeholder="搜索食谱..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-t2 hover:bg-surface2 rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-600 rounded-full"></span>
+</button>
+<button class="p-2 text-t2 hover:bg-surface2 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="shopping_cart">shopping_cart</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-8 max-w-6xl mx-auto">
+<div class="mb-10">
+<h1 class="text-3xl font-extrabold text-t1 tracking-tight">食谱列表</h1>
+<p class="text-t2 mt-1">管理你的所有食谱</p>
+</div>
+<!-- Recipe Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Recipe Card 1 -->
+<div class="group bg-surface border border-border rounded-[10px] overflow-hidden hover:border-t2/20 transition-all duration-300 flex flex-col">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="close-up of sizzling Yu-Shiang Shredded Pork with vibrant wood ear mushrooms and scallions in a ceramic bowl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBp7v1YENCYjnIyQt-bI0z3dxU98WcI6e4i-rTtric8ROU-eDaXOsI-DeX9Ph4AwuSwD9nYTgqd5IFjiIPtp-fkiaQWKGBKnM7RURsv_OkGzbCdYXVo_6-MRfiKjI20VnRwWkcoVTYH4LUdH9eTSyvHFkFBwfcS34DtBRy0knWEyzSTEr-HsI1LYoF3X9jwMBALo83azf5bCV7KFV4i1Ab4WGU447b9KEf4jk7MeXlpL9iIRWRTN6e3yOov6DKO25Zy3cWkp7Eryk8"/>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-3">
+<h3 class="text-lg font-bold text-t1">鱼香肉丝</h3>
+<span class="px-2 py-1 bg-gray-100 text-[#5c5b56] text-[11px] font-medium rounded uppercase tracking-wider">草稿</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="px-2.5 py-0.5 bg-surface2 text-t2 text-xs rounded-full">川菜</span>
+<span class="flex items-center gap-1 text-xs text-t3">
+<span class="material-symbols-outlined text-[14px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+                                中等
+                            </span>
+</div>
+<div class="mt-auto pt-4 border-t border-border flex items-center justify-between text-t3 text-[11px]">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 15+20min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="group">group</span> 2人份</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recipe Card 2 -->
+<div class="group bg-surface border border-border rounded-[10px] overflow-hidden hover:border-t2/20 transition-all duration-300 flex flex-col">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="classic chinese tomato and scrambled eggs dish served in a white shallow bowl with fresh green garnish" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4gnkKhUCBXHUIwBeIZ4d_P-vpuGJmYG27WiSCwobar_lVKyZKAxBHPIW5ye1zHLjrVXJIfS8JYuY-EP1P6ROvyb6zDqg0_8EVHUDfo7jv109q5jysxkAVvEGf1Z98FpROnXaGfPZByBQEFap36Ecgox2KGzUKcdnOzQY5Oox9GYKl0dAIKg5iBRU65SyZmzrVXClKRPBNgDvoqtR1Uh-SsQnEaLfkqYItUh5RvAq1MMKiIuXEgUl__zGGtGHMwjoFsjoFil1QIKw"/>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-3">
+<h3 class="text-lg font-bold text-t1">番茄炒蛋</h3>
+<span class="px-2 py-1 bg-gray-100 text-[#5c5b56] text-[11px] font-medium rounded uppercase tracking-wider">草稿</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="px-2.5 py-0.5 bg-surface2 text-t2 text-xs rounded-full">家常</span>
+<span class="flex items-center gap-1 text-xs text-t3">
+<span class="material-symbols-outlined text-[14px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+                                简单
+                            </span>
+</div>
+<div class="mt-auto pt-4 border-t border-border flex items-center justify-between text-t3 text-[11px]">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 10+10min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="group">group</span> 2人份</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recipe Card 3 -->
+<div class="group bg-surface border border-border rounded-[10px] overflow-hidden hover:border-t2/20 transition-all duration-300 flex flex-col">
+<div class="h-48 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="elegant tiramisu slice on a designer plate with cocoa powder dusting and fresh mint leaf, moody cafe lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDI1WGX13NJQhg7Xyj36hOYF9hwLzYhHxp2b-CEEJrt4qTRgJqy-x0CN7TlfjI5bUbJT8J056lvglxrNoMKJi8kdOc3E3gzjcfuSXJMIzr8ac6tzP1RJQIafFx6ZTW7LUcO96RavVk7XTfkHEGfB5rDtlL_um1PO1_j5h6qQ7okFwiqcq3gSwxQvXhR040vZ-XIglF9TENmH5J6S6JiCkyEfh5z4Ht_llr2Nv6qhAIIz4IGDiAH3gHxxr4PlPD5U3lYaCLKyX_Hqvw"/>
+</div>
+<div class="p-5 flex flex-col flex-1">
+<div class="flex justify-between items-start mb-3">
+<h3 class="text-lg font-bold text-t1">提拉米苏</h3>
+<span class="px-2 py-1 bg-[#2d6612] text-white text-[11px] font-medium rounded uppercase tracking-wider">已发布</span>
+</div>
+<div class="flex flex-wrap gap-2 mb-4">
+<span class="px-2.5 py-0.5 bg-surface2 text-t2 text-xs rounded-full">西餐</span>
+<span class="flex items-center gap-1 text-xs text-t3">
+<span class="material-symbols-outlined text-[14px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+                                困难
+                            </span>
+</div>
+<div class="mt-auto pt-4 border-t border-border flex items-center justify-between text-t3 text-[11px]">
+<div class="flex items-center gap-3">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="schedule">schedule</span> 45+0min</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]" data-icon="group">group</span> 4人份</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento/Asymmetric Section for extra visual quality -->
+<div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="md:col-span-2 bg-t1 text-white rounded-xl p-8 flex flex-col justify-between relative overflow-hidden h-64">
+<div class="z-10">
+<h2 class="text-2xl font-bold mb-2">想要更多灵感？</h2>
+<p class="text-white/70 max-w-md">我们的 AI 助手可以根据你现有的食材，为你生成专属的健康食谱建议。</p>
+</div>
+<button class="z-10 w-fit bg-white text-t1 px-6 py-2 rounded-lg font-bold text-sm mt-4 hover:bg-surface2 transition-colors">
+                        立即对话
+                    </button>
+<!-- Decorative element -->
+<div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute right-10 top-10 w-24 h-24 bg-white/5 rounded-full blur-2xl border border-white/10"></div>
+</div>
+<div class="bg-surface border border-border rounded-xl p-6 flex flex-col items-center justify-center text-center">
+<div class="w-16 h-16 bg-surface2 rounded-full flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-t1 text-3xl" data-icon="analytics">analytics</span>
+</div>
+<h3 class="font-bold text-t1">食谱周报</h3>
+<p class="text-t2 text-xs mt-2">查看你上周的烹饪成就与营养摄入分析。</p>
+<a class="text-t1 text-xs font-bold mt-4 underline underline-offset-4" href="#">查看报告</a>
+</div>
+</div>
+</div>
+</main>
+</body></html>

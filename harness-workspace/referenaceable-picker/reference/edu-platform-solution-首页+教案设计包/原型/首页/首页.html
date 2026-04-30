@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>首页</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#f4f3ef;
+  --surface:#fbfaf7;
+  --surface2:#edece7;
+  --t1:#1c1c1a;
+  --t2:#5c5b56;
+  --t3:#9c9a92;
+  --border:rgba(28,28,26,.07);
+  --blue:#1a5fa0;--blue-bg:#e4eff8;
+  --green:#2d6612;--green-bg:#e6f2dc;
+  --amber:#7a4d0e;--amber-bg:#f6edda;
+  --red:#942929;--red-bg:#f8e6e6;
+  --purple:#3a3185;--purple-bg:#eceafe;
+  --teal:#0d5245;--teal-bg:#ddf1eb;
+  --coral:#6b2a14;--coral-bg:#f7ebe5;
+  --sidebar-w:232px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* ─── Sidebar ─── */
+.sidebar{display:none;position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);flex-direction:column;padding:20px 0;z-index:100;overflow-y:auto}
+@media(min-width:1200px){.sidebar{display:flex}}
+.sb-logo{font-size:14px;font-weight:700;letter-spacing:-.3px;padding:0 20px;margin-bottom:28px}
+.sb-section{margin-bottom:20px}
+.sb-label{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;padding:0 20px;margin-bottom:6px}
+.sb-link{display:flex;align-items:center;gap:10px;padding:8px 20px;font-size:13px;color:var(--t2);cursor:pointer;transition:all .1s;text-decoration:none;font-weight:500;position:relative}
+.sb-link:hover{color:var(--t1);background:var(--surface2)}
+.sb-link.act{color:var(--t1);background:var(--surface2)}
+.sb-link.act::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 2px 2px 0;background:var(--t1)}
+.sb-link-icon{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--surface2)}
+.sb-link.act .sb-link-icon{background:var(--t1);color:var(--surface)}
+.sb-link-icon svg{width:12px;height:12px}
+.sb-link .notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:auto;font-weight:600}
+.sb-spacer{flex:1}
+.sb-user{padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-top:8px}
+.sb-avatar{width:28px;height:28px;border-radius:6px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--t2);flex-shrink:0}
+.sb-user-name{font-size:12px;font-weight:500}
+.sb-user-role{font-size:10px;color:var(--t3)}
+
+/* ─── Top nav ─── */
+.topnav{display:flex;align-items:center;gap:2px;padding:0 20px;height:48px;border-bottom:1px solid var(--border);background:var(--surface)}
+@media(min-width:1200px){.topnav{display:none}}
+.topnav-logo{font-size:14px;font-weight:700;margin-right:20px;letter-spacing:-.3px}
+.topnav a{font-size:13px;color:var(--t2);padding:6px 12px;border-radius:6px;cursor:pointer;text-decoration:none;transition:all .12s;font-weight:500}
+.topnav a:hover{color:var(--t1);background:var(--surface2)}
+.topnav a.act{color:var(--t1);background:var(--surface2)}
+.notif{font-size:9px;padding:1px 5px;border-radius:4px;background:var(--red-bg);color:var(--red);margin-left:2px;font-weight:600}
+
+/* ─── Main ─── */
+.main{padding:40px 24px 80px;max-width:720px}
+@media(min-width:1200px){
+  .main{margin-left:var(--sidebar-w);padding:40px 48px 80px;max-width:none}
+}
+
+/* ─── Hero ─── */
+.hero{margin-bottom:28px;max-width:640px}
+.hero h1{font-size:24px;font-weight:700;letter-spacing:-.6px;line-height:1.2;margin-bottom:4px}
+@media(min-width:1200px){.hero h1{font-size:28px;letter-spacing:-.7px}}
+.hero-sub{font-size:13px;color:var(--t3);line-height:1.5}
+.hero-sub strong{color:var(--t2);font-weight:500}
+
+/* ─── Two-column: kicks in with sidebar ─── */
+.home-grid{display:flex;flex-direction:column;gap:32px}
+@media(min-width:1200px){
+  .home-grid{
+    display:grid;
+    grid-template-columns:minmax(0,640px) minmax(280px,360px);
+    gap:48px;
+    align-items:start;
+  }
+}
+
+/* ─── Left column ─── */
+.left-col{display:flex;flex-direction:column;gap:0}
+
+/* ─── Focus card ─── */
+.focus{margin-bottom:8px;padding:16px 20px;background:var(--surface);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:16px}
+.focus-bar{width:4px;align-self:stretch;border-radius:2px;background:var(--red);flex-shrink:0}
+.focus-body{flex:1;min-width:0}
+.focus-label{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.focus-title{font-size:14px;font-weight:500;line-height:1.4}
+.focus-meta{font-size:11px;color:var(--t2);margin-top:2px}
+.focus-btn{padding:8px 16px;border-radius:6px;border:none;background:var(--t1);color:var(--surface);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500;flex-shrink:0}
+.focus-btn:hover{opacity:.85}
+.focus-more{padding:6px 20px 10px;font-size:11px;color:var(--t3);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:24px}
+.focus-more:hover{color:var(--t2)}
+.focus-extra{display:none;margin:-4px 0 24px}
+.focus-extra.open{display:block}
+.focus-extra-item{padding:8px 20px;font-size:12px;color:var(--t2);display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;margin-top:-1px}
+.focus-extra-item:first-child{border-radius:0}
+.focus-extra-item strong{color:var(--t1);font-weight:500}
+.focus-extra-meta{font-size:10px;color:var(--t3);margin-left:auto;flex-shrink:0}
+
+/* ─── AI section ─── */
+.ai{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ai-body{padding:16px 20px 12px}
+.ai-header{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.ai-icon{width:22px;height:22px;border-radius:5px;background:var(--purple-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-icon svg{color:var(--purple)}
+.ai-title{font-size:12px;font-weight:600;color:var(--purple)}
+.ai-items{display:flex;flex-direction:column;gap:6px}
+.ai-item{font-size:12px;color:var(--t2);line-height:1.5;display:flex;gap:10px;padding:4px 0}
+.ai-item strong{color:var(--t1);font-weight:500}
+.ai-bullet{width:4px;height:4px;border-radius:50%;background:var(--purple);flex-shrink:0;margin-top:7px;opacity:.5}
+.ai-chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 20px 4px}
+.ai-chip{font-size:11px;color:var(--purple);padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid rgba(58,49,133,.15);background:var(--purple-bg);font-family:inherit;transition:all .12s}
+.ai-chip:hover{border-color:var(--purple)}
+.ai-input{padding:8px 20px 14px;display:flex;gap:8px;align-items:center}
+.ai-input input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:var(--bg);color:var(--t1);transition:border-color .15s}
+.ai-input input::placeholder{color:var(--t3)}
+.ai-input input:focus{outline:none;border-color:rgba(58,49,133,.3)}
+.ai-input .send{width:32px;height:32px;border-radius:8px;border:none;background:var(--t1);color:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ai-input .send:hover{opacity:.85}
+.ai-input .full{font-size:11px;color:var(--t3);text-decoration:none;display:flex;align-items:center;gap:3px;padding:4px 8px;border-radius:4px;flex-shrink:0;white-space:nowrap;transition:all .12s}
+.ai-input .full:hover{color:var(--purple);background:var(--purple-bg)}
+
+/* ─── Right column ─── */
+.right-col{position:relative}
+@media(min-width:1200px){.right-col{position:sticky;top:40px}}
+
+.sec-label{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* ─── Week strip ─── */
+.week-strip{display:flex;gap:4px;margin-bottom:16px}
+.week-day{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;width:100%;cursor:pointer;border-radius:6px;transition:background .1s}
+.week-day:hover{background:var(--surface)}
+.week-day.sel{background:var(--surface)}
+.week-dow{font-size:9px;color:var(--t3);font-weight:600}
+.week-date{font-size:13px;font-weight:500;color:var(--t2);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.week-day.sel .week-date{background:var(--t1);color:var(--surface)}
+.week-day.today .week-date{background:var(--purple-bg);color:var(--purple)}
+.week-day.sel.today .week-date{background:var(--t1);color:var(--surface)}
+.week-dots{display:flex;gap:2px;height:4px}
+.wd{width:3px;height:3px;border-radius:50%}
+
+/* ─── Timeline ─── */
+.tl-section{border-top:1px solid var(--border);padding-top:16px}
+.tl-date-label{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px}
+.tl{padding:10px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;cursor:pointer}
+.tl:last-child{border:none}.tl:hover{opacity:.7}
+.tl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.tl-body{flex:1;min-width:0}
+.tl-text{font-size:12px;color:var(--t2);line-height:1.5}
+.tl-text strong{color:var(--t1);font-weight:500}
+.tl-time{font-size:10px;color:var(--t3);margin-top:2px}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sb-logo">精准教学</div>
+  <div class="sb-section"><div class="sb-label">导航</div>
+    <a class="sb-link act"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>首页</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>教案</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>课堂</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>作业<span class="notif">3</span></a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>学情</a>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>资源</a>
+  </div>
+  <div class="sb-section"><div class="sb-label">管理</div>
+    <a class="sb-link"><div class="sb-link-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>管理</a>
+  </div>
+  <div class="sb-spacer"></div>
+  <div class="sb-user"><div class="sb-avatar">陈</div><div><div class="sb-user-name">陈老师</div><div class="sb-user-role">数学 · 八年级</div></div></div>
+</aside>
+
+<!-- Top nav -->
+<nav class="topnav">
+  <span class="topnav-logo">精准教学</span>
+  <a class="act">首页</a><a>教案</a><a>课堂</a><a>作业<span class="notif">3</span></a><a>学情</a><a>资源</a><a>管理</a>
+</nav>
+
+<div class="main">
+  <div class="hero">
+    <h1>下午好，陈老师</h1>
+    <div class="hero-sub">3 月 17 日 周一 · 本周编辑了 <strong>4 份教案</strong>，批改了 <strong>67 份答卷</strong></div>
+  </div>
+
+  <div class="home-grid">
+    <!-- Left: action-oriented, capped at 640px -->
+    <div class="left-col">
+      <div class="focus">
+        <div class="focus-bar"></div>
+        <div class="focus-body">
+          <div class="focus-label">需要处理</div>
+          <div class="focus-title">八(2)班 SAS 专项练习 — 32 份待批改</div>
+          <div class="focus-meta">截止明天 · 已提交 32/38 · Skill 已预分析完成</div>
+        </div>
+        <button class="focus-btn">去批改</button>
+      </div>
+      <div class="focus-more" onclick="document.querySelector('.focus-extra').classList.toggle('open');this.querySelector('span').textContent=document.querySelector('.focus-extra').classList.contains('open')?'收起':'还有 2 项待处理'">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <span>还有 2 项待处理</span>
+      </div>
+      <div class="focus-extra">
+        <div class="focus-extra-item"><strong>八(3)班 全等复习作业</strong> — 35 份待批改<span class="focus-extra-meta">截止周三</span></div>
+        <div class="focus-extra-item"><strong>王老师推优申请</strong> — 3 道几何辨析题待审核<span class="focus-extra-meta">昨天提交</span></div>
+      </div>
+
+      <div class="ai">
+        <div class="ai-body">
+          <div class="ai-header">
+            <div class="ai-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+            <div class="ai-title">AI 助手发现了几件事</div>
+          </div>
+          <div class="ai-items">
+            <div class="ai-item"><div class="ai-bullet"></div><div>八(2)班 SAS 正确率<strong>连续 3 周下降</strong>（72% → 64% → 56%），主要错因是夹角概念混淆，建议检查前置知识掌握情况</div></div>
+            <div class="ai-item"><div class="ai-bullet"></div><div>课标 "全等三角形的判定" 区级解读更新了 <strong>v2.1</strong>，你的 SSS/SAS 教案可能需要对齐新要求</div></div>
+            <div class="ai-item"><div class="ai-bullet"></div><div>八(1)班王老师也在教全等三角形单元，她的<strong>课堂流好评率 92%</strong>，可以参考</div></div>
+          </div>
+        </div>
+        <div class="ai-chips">
+          <button class="ai-chip">分析夹角错因</button>
+          <button class="ai-chip">对齐课标 v2.1</button>
+          <button class="ai-chip">查看王老师课堂流</button>
+          <button class="ai-chip">新建教案</button>
+          <button class="ai-chip">发布作业</button>
+        </div>
+        <div class="ai-input">
+          <input type="text" placeholder="或者直接问...">
+          <button class="send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+          <a class="full" href="Chat融合入口.html">完整对话 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M7 7h10v10"/></svg></a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: time-oriented, sticky -->
+    <div class="right-col">
+      <div class="sec-label">本周</div>
+      <div class="week-strip">
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">一</div><div class="week-date">10</div><div class="week-dots"><div class="wd" style="background:var(--green)"></div></div></div>
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">二</div><div class="week-date">11</div><div class="week-dots"></div></div>
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">三</div><div class="week-date">12</div><div class="week-dots"><div class="wd" style="background:var(--purple)"></div><div class="wd" style="background:var(--blue)"></div><div class="wd" style="background:var(--coral)"></div></div></div>
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">四</div><div class="week-date">13</div><div class="week-dots"><div class="wd" style="background:var(--amber)"></div></div></div>
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">五</div><div class="week-date">14</div><div class="week-dots"><div class="wd" style="background:var(--purple)"></div></div></div>
+        <div class="week-day" onclick="selDay(this)"><div class="week-dow">六</div><div class="week-date">15</div><div class="week-dots"></div></div>
+        <div class="week-day sel today" onclick="selDay(this)"><div class="week-dow">日</div><div class="week-date">17</div><div class="week-dots"><div class="wd" style="background:var(--purple)"></div><div class="wd" style="background:var(--blue)"></div><div class="wd" style="background:var(--green)"></div></div></div>
+      </div>
+
+      <div class="tl-section">
+        <div class="tl-date-label">今天 · 3 月 17 日</div>
+        <div class="tl"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-body"><div class="tl-text"><strong>SSS/SAS 新授课教案</strong> 更新了内容块 "SAS 判定条件"</div><div class="tl-time">15 分钟前</div></div></div>
+        <div class="tl"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-body"><div class="tl-text"><strong>八(2)班 SAS 专项练习</strong> 收到 32 份提交（共 38 人）</div><div class="tl-time">1 小时前</div></div></div>
+        <div class="tl"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-body"><div class="tl-text"><strong>全等三角形导入</strong> 已用于八(3)班课堂</div><div class="tl-time">10:30</div></div></div>
+        <div class="tl"><div class="tl-dot" style="background:var(--amber)"></div><div class="tl-body"><div class="tl-text"><strong>全等三角形的判定</strong> 区级解读已更新 v2.1</div><div class="tl-time">09:00</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selDay(el){
+  document.querySelectorAll('.week-day').forEach(function(d){d.classList.remove('sel')});
+  el.classList.add('sel');
+}
+</script>
+</body>
+</html>

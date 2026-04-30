@@ -1,0 +1,51 @@
+# DAGU DAG — live-lesson-v2-dashboard
+# Run: dagu start harness-workspace/live-lesson-v2-dashboard/dag.yaml
+# Docs: https://dagu.readthedocs.io/
+
+schedule: null  # manual trigger only
+name: live-lesson-v2-dashboard
+description: >
+  Iterative code-mode harness for live-lesson V2 dashboard.
+  Runs generator → frozen check → validation → services → evaluator → results.
+
+env:
+  - HARNESS_DIR: harness-workspace/live-lesson-v2-dashboard
+  - MAX_ITERATIONS: "10"
+  - SCORE_THRESHOLD: "98"
+
+params: iteration=1
+
+steps:
+  - name: generator
+    description: Run the generator agent for implementation
+    command: bash ${HARNESS_DIR}/harness.sh --step=generator --iteration=${iteration}
+
+  - name: frozen-check
+    description: Verify no frozen directories were modified
+    command: bash ${HARNESS_DIR}/harness.sh --step=frozen-check --iteration=${iteration}
+    depends:
+      - generator
+
+  - name: validation
+    description: Backend build + frontend typecheck + vite build
+    command: bash ${HARNESS_DIR}/harness.sh --step=validation --iteration=${iteration}
+    depends:
+      - frozen-check
+
+  - name: services
+    description: Start core backend + lesson backend + frontend dev server
+    command: bash ${HARNESS_DIR}/harness.sh --step=services --iteration=${iteration}
+    depends:
+      - validation
+
+  - name: evaluator
+    description: Run the evaluator agent with Playwright
+    command: bash ${HARNESS_DIR}/harness.sh --step=evaluator --iteration=${iteration}
+    depends:
+      - services
+
+  - name: results
+    description: Extract scores and update progress
+    command: bash ${HARNESS_DIR}/harness.sh --step=results --iteration=${iteration}
+    depends:
+      - evaluator

@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>课堂观察台 · Self-paced Observer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.08); --border-strong:rgba(28,28,26,.14);
+  --amber:#7a4d0e; --amber-soft:#f6edda; --amber-dot:#c48a1e;
+  --green:#2d6612; --green-soft:#e6f2dc; --green-dot:#5a9a3a;
+  --red:#942929; --red-soft:#f8e6e6;
+  --blue:#1a5fa0; --blue-soft:#e4eff8;
+  --done-dot:#8a8a80; --idle:#bcbab2;
+  --ai:#4a4387; --ai-soft:#ecebf5; --ai-dot:#7a72b5;
+  --teal:#0d5245; --teal-soft:#ddf1eb;
+  --lecture:#6b5b3a; --lecture-soft:#f3eed8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+
+/* ═══ BAND ═══ */
+.band{display:flex;align-items:center;height:44px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.band-mark{width:22px;height:22px;border-radius:6px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.band-title{font-size:13px;font-weight:600;letter-spacing:-.1px}
+.band-mode{font-size:10px;font-weight:600;color:var(--teal);background:var(--teal-soft);padding:2px 8px;border-radius:3px;letter-spacing:.3px}
+.band-self{font-size:10px;font-weight:600;color:var(--ai);background:var(--ai-soft);padding:2px 8px;border-radius:3px;letter-spacing:.3px}
+.band-class{font-size:12px;color:var(--t2);padding-left:12px;border-left:1px solid var(--border-strong);margin-left:2px}
+.band-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.band-live{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--green)}
+.band-live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--green-dot);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══ TIMELINE SCRUBBER ═══ */
+.timeline{display:flex;align-items:center;height:40px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.tl-time{font-size:12px;font-weight:700;color:var(--t1);min-width:42px;text-align:center}
+.tl-track-wrap{flex:1;position:relative;height:24px;display:flex;align-items:center;cursor:pointer}
+.tl-track{width:100%;height:6px;background:var(--surface2);border-radius:3px;position:relative;overflow:visible}
+.tl-fill{height:100%;border-radius:3px;background:var(--t1);position:absolute;top:0;left:0;transition:width .15s}
+.tl-thumb{width:14px;height:14px;border-radius:50%;background:var(--t1);border:2px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.2);position:absolute;top:50%;transform:translate(-50%,-50%);cursor:grab;z-index:2;transition:left .15s}
+.tl-thumb:active{cursor:grabbing;transform:translate(-50%,-50%) scale(1.2)}
+/* Step markers on track */
+.tl-marker{position:absolute;top:50%;transform:translate(-50%,-50%);width:2px;height:12px;border-radius:1px;z-index:1}
+.tl-marker.task{background:var(--t1);opacity:.2}
+.tl-marker.lecture{background:var(--lecture);opacity:.2}
+.tl-total{font-size:12px;color:var(--t3);min-width:42px;text-align:center}
+.tl-label{font-size:10px;color:var(--t2);background:var(--surface2);padding:2px 8px;border-radius:3px;white-space:nowrap;font-weight:500}
+.tl-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t2);flex-shrink:0}
+.tl-btn:hover{background:var(--surface2);color:var(--t1)}
+
+/* ═══ BODY ═══ */
+.body{flex:1;display:grid;grid-template-columns:1fr 330px;min-height:0}
+
+/* ═══ FOCUS ═══ */
+.focus{padding:18px 24px;overflow-y:auto;display:flex;flex-direction:column;gap:16px}
+
+/* Health row */
+.health{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.hcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:4px}
+.hcard.warn{border-color:rgba(122,77,14,.2);background:var(--amber-soft)}
+.hcard.good{border-color:rgba(45,102,18,.15);background:var(--green-soft)}
+.hcard-lb{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.hcard.warn .hcard-lb{color:var(--amber)}
+.hcard.good .hcard-lb{color:var(--green)}
+.hcard-v{font-size:22px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--t1)}
+.hcard-sub{font-size:10px;color:var(--t2);line-height:1.4}
+.hcard-sub strong{color:var(--t1);font-weight:600}
+
+/* Section header */
+.sh{display:flex;align-items:baseline;gap:10px}
+.sh-lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.sh-meta{font-size:11px;color:var(--t3);margin-left:auto}
+
+/* ═══ SWIMLANE ═══ */
+.swimlane{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.swim-row{display:flex;align-items:stretch;border-bottom:1px solid var(--border)}
+.swim-row:last-child{border-bottom:none}
+.swim-label{width:155px;flex-shrink:0;padding:8px 12px;display:flex;align-items:flex-start;gap:7px;border-right:1px solid var(--border)}
+.swim-label .sn{width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.swim-label .sn.task{background:var(--t1);color:var(--surface)}
+.swim-label .sn.lecture{background:var(--lecture-soft);color:var(--lecture);border:1px solid rgba(107,91,58,.2)}
+.swim-label-info{display:flex;flex-direction:column;gap:1px;min-width:0}
+.swim-label-name{font-size:11px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.swim-label-type{font-size:9px;font-weight:600;letter-spacing:.3px}
+.swim-label-type.task{color:var(--t2)}
+.swim-label-type.lecture{color:var(--lecture)}
+.swim-label-count{font-size:10px;color:var(--t3);margin-top:1px}
+
+.swim-dots{flex:1;padding:6px 10px;display:flex;flex-wrap:wrap;gap:3px;align-items:flex-start;align-content:flex-start;min-height:34px}
+.sdot{min-width:42px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;cursor:default;position:relative;transition:transform .1s;padding:0 4px;letter-spacing:-.1px}
+.sdot:hover{transform:scale(1.06);z-index:1}
+.sdot.done{background:var(--green-dot);color:#fff}
+.sdot.prog{background:var(--blue);color:#fff}
+.sdot.stuck{background:var(--amber-dot);color:#fff}
+.sdot.reading{background:var(--lecture);color:#fff}
+.sdot.confirmed{background:var(--green-dot);color:#fff}
+.sdot .ai-pip{position:absolute;top:-2px;right:-2px;width:6px;height:6px;border-radius:50%;background:var(--ai-dot);border:1.5px solid var(--surface)}
+
+.swim-stats{width:74px;flex-shrink:0;border-left:1px solid var(--border);padding:6px 8px;display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:3px}
+.swim-stats-top{display:flex;align-items:baseline;justify-content:space-between}
+.swim-stats-n{font-size:14px;font-weight:700;color:var(--t1);line-height:1}
+.swim-stats-lb{font-size:7px;color:var(--t3);letter-spacing:.2px}
+.swim-stats-q{display:flex;align-items:baseline;gap:2px}
+.swim-stats-pct{font-size:13px;font-weight:700;white-space:nowrap;line-height:1}
+.swim-stats-pct.good{color:var(--green)}
+.swim-stats-pct.mid{color:var(--amber)}
+.swim-stats-pct.low{color:var(--red)}
+.swim-stats-pct.neutral{color:var(--t3)}
+.swim-stats-qlb{font-size:7px;color:var(--t3);letter-spacing:.1px}
+
+/* Swim row clickable */
+.swim-row{cursor:pointer;transition:background .1s}
+.swim-row:hover{background:var(--surface2)}
+.swim-row.selected{background:rgba(26,95,160,.05);box-shadow:inset 3px 0 0 var(--blue)}
+
+.swim-legend{display:flex;gap:12px;flex-wrap:wrap;padding:0 2px}
+.swim-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.swim-legend-item .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* ═══ PATTERNS ═══ */
+.patterns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 13px}
+.pat.alert{border-color:rgba(122,77,14,.2)}
+.pat-h{font-size:9px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.pat-h .dot{width:5px;height:5px;border-radius:50%}
+.pat-h.warn{color:var(--amber)}.pat-h.warn .dot{background:var(--amber-dot)}
+.pat-h.info{color:var(--blue)}.pat-h.info .dot{background:var(--blue)}
+.pat-body{font-size:11px;line-height:1.5;color:var(--t2)}
+.pat-body strong{color:var(--t1);font-weight:600}
+.pat-metric{display:flex;align-items:baseline;gap:5px;margin-top:5px;padding-top:5px;border-top:1px solid var(--border)}
+.pat-metric .n{font-size:15px;font-weight:700;color:var(--t1)}
+.pat-metric .unit{font-size:10px;color:var(--t3)}
+
+/* ═══ COACHING ═══ */
+.coaching{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.coaching-toggle{display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;user-select:none}
+.coaching-toggle:hover{background:var(--surface2)}
+.coaching-toggle .arrow{transition:transform .2s;font-size:9px}
+.coaching-toggle.open .arrow{transform:rotate(90deg)}
+.coaching-body{display:none;padding:0 14px 14px;flex-direction:column;gap:8px}
+.coaching-body.open{display:flex}
+.coach-line{background:var(--t1);color:#f0efe8;border-radius:8px;padding:10px 12px}
+.coach-line-lb{font-size:8px;font-weight:600;color:rgba(240,239,232,.4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.coach-line-text{font-size:12px;line-height:1.5;color:rgba(240,239,232,.88)}
+.coach-line-text .k{background:rgba(196,138,30,.22);color:#f0c56c;padding:1px 4px;border-radius:3px;font-weight:600}
+
+/* ═══ OVERVIEW COLUMN ═══ */
+.overview{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.ov-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 12px;flex-shrink:0}
+.ov-tab{flex:1;padding:10px 4px;font-size:10px;font-weight:600;color:var(--t3);cursor:pointer;text-align:center;border-bottom:2px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:3px}
+.ov-tab.act{color:var(--t1);border-bottom-color:var(--t1)}
+.ov-tab .cnt{font-size:9px;color:var(--t3);background:var(--surface2);padding:1px 5px;border-radius:8px;font-weight:600}
+.ov-tab.act .cnt{background:var(--t1);color:var(--surface)}
+.ov-body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+
+/* Per-step quality */
+.step-quality{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sq-h{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.sq-step{margin-bottom:8px}.sq-step:last-child{margin-bottom:0}
+.sq-step-h{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.sq-step-h .sn{width:14px;height:14px;border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.sq-step-h .sn.task{background:var(--t1);color:var(--surface)}
+.sq-step-h .sn.lecture{background:var(--lecture-soft);color:var(--lecture)}
+.sq-step-h .name{font-size:10px;font-weight:600;color:var(--t1)}
+.sq-step-h .rate{margin-left:auto;font-size:10px;font-weight:600;color:var(--t2)}
+.sq-bar{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;display:flex}
+.sq-seg{height:100%}
+.sq-seg.good{background:var(--green-dot)}
+.sq-seg.partial{background:var(--amber-dot)}
+.sq-seg.wrong{background:var(--red)}
+.sq-seg.confirmed{background:var(--green-dot)}
+.sq-seg.reading{background:var(--lecture);opacity:.4}
+
+/* AI section */
+.ai-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.ai-sh{font-size:9px;font-weight:700;color:var(--ai);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.ai-sh::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ai-dot)}
+.ai-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.ai-cell{text-align:center}
+.ai-cell-n{font-size:16px;font-weight:700;color:var(--t1)}
+.ai-cell-lb{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px}
+.ai-steps{margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.ai-step-row{display:flex;align-items:center;gap:6px;font-size:10px}
+.ai-step-row .sn{width:14px;height:14px;border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.ai-step-row .sn.task{background:var(--t1);color:var(--surface)}
+.ai-step-row .sn.lecture{background:var(--lecture-soft);color:var(--lecture)}
+.ai-step-row .name{flex:1;color:var(--t2);font-weight:500}
+.ai-step-row .val{color:var(--t1);font-weight:600}
+
+/* Question queue — grouped by step */
+.queue-section{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.queue-h{display:flex;align-items:center;gap:6px;padding:10px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.queue-h .lb{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.queue-h .cnt{font-size:9px;color:var(--t3);background:var(--surface2);padding:1px 5px;border-radius:8px;font-weight:600;margin-left:auto}
+.queue{flex:1;overflow-y:auto;padding:4px 8px 8px}
+
+/* Step group header for questions */
+.q-step-h{display:flex;align-items:center;gap:6px;padding:8px 6px 4px;font-size:9px;font-weight:700;color:var(--t2);position:sticky;top:0;background:var(--surface);z-index:1}
+.q-step-h .sn{width:14px;height:14px;border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.q-step-h .sn.task{background:var(--t1);color:var(--surface)}
+.q-step-h .sn.lecture{background:var(--lecture-soft);color:var(--lecture)}
+.q-step-h .step-name{flex:1}
+.q-step-h .tot{font-weight:500;color:var(--t3)}
+
+.qrow{display:flex;align-items:flex-start;gap:5px;padding:4px 6px 4px 26px;border-radius:4px;cursor:pointer}
+.qrow:hover{background:var(--bg)}
+.qrow .qn{font-size:11px;font-weight:700;color:var(--t1);min-width:16px;text-align:right;flex-shrink:0}
+.qrow.hi .qn{color:var(--amber)}
+.qrow .qq{font-size:10px;font-weight:500;color:var(--t1);line-height:1.35;flex:1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.qrow .qmeta{font-size:8px;color:var(--t3);flex-shrink:0}
+.qrow .trend{color:var(--amber);font-weight:700}
+.qrow .hi-tag{font-size:7px;font-weight:700;color:var(--amber);background:var(--amber-soft);padding:1px 4px;border-radius:2px;flex-shrink:0;margin-top:1px}
+
+/* ═══ STEP DETAIL PANEL ═══ */
+.step-detail{display:none;padding:14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.step-detail.open{display:block}
+.sd-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sd-head .sn{width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.sd-head .sn.task{background:var(--t1);color:var(--surface)}
+.sd-head .sn.lecture{background:var(--lecture-soft);color:var(--lecture)}
+.sd-head .sd-name{font-size:13px;font-weight:700;color:var(--t1)}
+.sd-head .sd-type{font-size:9px;font-weight:600;margin-left:auto;padding:2px 7px;border-radius:3px}
+.sd-head .sd-type.task{background:var(--surface2);color:var(--t2)}
+.sd-head .sd-type.lecture{background:var(--lecture-soft);color:var(--lecture)}
+.sd-close{font-size:10px;color:var(--t3);cursor:pointer;padding:2px 6px;border-radius:4px;margin-left:4px}
+.sd-close:hover{background:var(--surface2);color:var(--t1)}
+.sd-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.sd-stat{background:var(--bg);border-radius:6px;padding:8px 10px;text-align:center}
+.sd-stat-n{font-size:18px;font-weight:700;color:var(--t1);line-height:1}
+.sd-stat-lb{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+.sd-section{margin-bottom:10px}
+.sd-section-h{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.sd-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.sd-bar-label{font-size:10px;color:var(--t2);width:52px;flex-shrink:0;font-weight:500}
+.sd-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;display:flex}
+.sd-bar-seg{height:100%}
+.sd-bar-seg.good{background:var(--green-dot)}
+.sd-bar-seg.partial{background:var(--amber-dot)}
+.sd-bar-seg.wrong{background:var(--red)}
+.sd-bar-num{font-size:10px;font-weight:600;color:var(--t2);width:30px;text-align:right}
+.sd-bar-legend{display:flex;gap:10px;margin-top:6px}
+.sd-bar-legend-item{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--t3)}
+.sd-bar-legend-item .d{width:6px;height:6px;border-radius:2px}
+.sd-issues{display:flex;flex-direction:column;gap:5px}
+.sd-issue{font-size:11px;color:var(--t2);line-height:1.45;padding:6px 8px;background:var(--bg);border-radius:5px;border-left:2px solid var(--amber-dot)}
+.sd-issue strong{color:var(--t1);font-weight:600}
+.sd-confirm-row{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:4px}
+.sd-confirm-row .label{color:var(--t2);flex:1}
+.sd-confirm-row .val{font-weight:600;color:var(--t1)}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(28,28,26,.5);display:none;align-items:center;justify-content:center;padding:32px;z-index:100;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:14px;width:100%;max-width:960px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px -10px rgba(28,28,26,.3)}
+.mod-hd{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.mod-av{width:36px;height:36px;border-radius:8px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.mod-ti{flex:1}
+.mod-ti-n{font-size:15px;font-weight:600}
+.mod-ti-m{font-size:11px;color:var(--t3);margin-top:2px}
+.mod-cls{cursor:pointer;padding:6px 12px;font-size:12px;color:var(--t2);border-radius:6px}
+.mod-cls:hover{background:var(--surface2);color:var(--t1)}
+.mod-body{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
+.mod-col{padding:20px 24px;overflow-y:auto}
+.mod-col.right{background:var(--surface);border-left:1px solid var(--border)}
+.mod-h{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+table.mat{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+table.mat th{text-align:left;padding:8px 10px;background:var(--surface2);font-weight:600;color:var(--t2);font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+table.mat td{padding:8px 10px;border-bottom:1px solid var(--border);line-height:1.4;vertical-align:top}
+table.mat td.place{font-weight:600;color:var(--t1);width:28%}
+.err-tx{color:var(--amber);font-weight:500}
+.emp-tx{color:var(--t3);font-style:italic}
+.err-mark{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--amber);margin-right:5px;vertical-align:middle}
+.ai-note{background:var(--ai-soft);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.7;color:var(--t1)}
+.ai-note-h{font-size:10px;font-weight:700;color:var(--ai);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px}
+.ai-note-h::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ai-dot)}
+.chat-row{margin-bottom:12px}
+.chat-row .who{font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.chat-bubble{padding:9px 13px;border-radius:10px;font-size:12.5px;line-height:1.55}
+.chat-row.stu .chat-bubble{background:var(--t1);color:var(--surface);display:inline-block;max-width:90%}
+.chat-row.ai .chat-bubble{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+.chat-row.ai strong{color:var(--t1);font-weight:600}
+</style></head><body>
+
+<!-- ═══ BAND ═══ -->
+<div class="band">
+  <div class="band-mark">R</div>
+  <div class="band-title">课堂观察台</div>
+  <div class="band-mode">观察模式</div>
+  <div class="band-self">学生自主推进</div>
+  <div class="band-class">高一(3)班 · Ideal Beauty · 42 人 · 5 Tasks</div>
+  <div class="band-right">
+    <div class="band-live">实时同步中</div>
+  </div>
+</div>
+
+<!-- ═══ TIMELINE SCRUBBER ═══ -->
+<div class="timeline">
+  <button class="tl-btn" title="后退 30s" onclick="scrub(-30)">◀</button>
+  <div class="tl-time" id="tlTime">18:22</div>
+  <div class="tl-track-wrap" id="tlWrap">
+    <div class="tl-track">
+      <!-- task boundary markers -->
+      <div class="tl-marker task" style="left:11%"></div>
+      <div class="tl-marker task" style="left:29%"></div>
+      <div class="tl-marker task" style="left:62%"></div>
+      <div class="tl-marker task" style="left:89%"></div>
+      <div class="tl-fill" id="tlFill" style="width:40.8%"></div>
+    </div>
+    <div class="tl-thumb" id="tlThumb" style="left:40.8%"></div>
+  </div>
+  <div class="tl-total">45:00</div>
+  <div class="tl-label" id="tlLabel">实时 · 18:22</div>
+  <button class="tl-btn" title="前进 30s" onclick="scrub(30)">▶</button>
+  <button class="tl-btn tl-btn-live" id="tlLiveBtn" title="跳转到当前" onclick="goLive()" style="display:none;font-size:9px;width:auto;padding:0 8px;gap:4px;color:var(--green);border-color:var(--green-dot)"><span style='width:5px;height:5px;border-radius:50%;background:var(--green-dot);display:inline-block'></span>直播</button>
+</div>
+
+<div class="body">
+
+<!-- ═══ FOCUS ═══ -->
+<div class="focus">
+
+  <!-- Health -->
+  <div class="health">
+    <div class="hcard good">
+      <div class="hcard-lb">最快进度</div>
+      <div class="hcard-v">T4</div>
+      <div class="hcard-sub"><strong>2 人</strong>已到 Evaluate</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-lb">中位进度</div>
+      <div class="hcard-v">T3</div>
+      <div class="hcard-sub">Scan & Build · <strong>62%</strong> 学生在此</div>
+    </div>
+    <div class="hcard warn">
+      <div class="hcard-lb">卡点学生</div>
+      <div class="hcard-v">7</div>
+      <div class="hcard-sub">集中在 <strong>T3 Practice</strong> · Myanmar / Indonesia</div>
+    </div>
+    <div class="hcard">
+      <div class="hcard-lb">AI 对话</div>
+      <div class="hcard-v">52 轮</div>
+      <div class="hcard-sub"><strong>18</strong> 人触发 · 均 2.9 轮</div>
+    </div>
+  </div>
+
+  <!-- SWIMLANE -->
+  <div>
+    <div class="sh" style="margin-bottom:6px">
+      <span class="sh-lb">学生分布 · 按 Step</span>
+      <span class="sh-meta">每格 = 1 名学生</span>
+    </div>
+    <div class="swimlane">
+
+      <!-- Task 1: Predict -->
+      <div class="swim-row" onclick="selectStep(1)">
+        <div class="swim-label">
+          <span class="sn task">1</span>
+          <div class="swim-label-info">
+            <div class="swim-label-name">Predict</div>
+            <div class="swim-label-type task">5 min · 选择题</div>
+          </div>
+        </div>
+        <div class="swim-dots"></div>
+        <div class="swim-stats">
+          <div class="swim-stats-top"><span class="swim-stats-n" style="color:var(--t3)">0</span><span class="swim-stats-lb">当前</span></div>
+          <div class="swim-stats-q"><span class="swim-stats-pct good">95%</span></div><div class="swim-stats-qlb">正确率</div>
+        </div>
+      </div>
+
+      <!-- Task 2: Skim -->
+      <div class="swim-row" onclick="selectStep(2)">
+        <div class="swim-label">
+          <span class="sn task">2</span>
+          <div class="swim-label-info">
+            <div class="swim-label-name">Skim</div>
+            <div class="swim-label-type task">8 min · 结构匹配</div>
+          </div>
+        </div>
+        <div class="swim-dots">
+          <div class="sdot reading" title="赵雪莉 · Listen">赵雪莉</div>
+          <div class="sdot reading" title="何子睿 · Listen">何子睿</div>
+          <div class="sdot prog" title="贾一凡 · Practice · AI">贾一凡<span class="ai-pip"></span></div>
+          <div class="sdot done" title="余思远 · Takeaway ✓">余思远</div>
+        </div>
+        <div class="swim-stats">
+          <div class="swim-stats-top"><span class="swim-stats-n">4</span><span class="swim-stats-lb">当前</span></div>
+          <div class="swim-stats-q"><span class="swim-stats-pct good">88%</span></div><div class="swim-stats-qlb">正确率</div>
+        </div>
+      </div>
+
+      <!-- Task 3: Scan & Build — 主瓶颈 -->
+      <div class="swim-row" style="background:rgba(26,95,160,.03)" onclick="selectStep(3)">
+        <div class="swim-label">
+          <span class="sn task">3</span>
+          <div class="swim-label-info">
+            <div class="swim-label-name">Scan & Build</div>
+            <div class="swim-label-type task">15 min · 信息矩阵</div>
+            <div class="swim-label-count" style="color:var(--amber);font-weight:600">7 卡住</div>
+          </div>
+        </div>
+        <div class="swim-dots">
+          <div class="sdot done" title="陈昕妍 · Discuss ✓">陈昕妍</div>
+          <div class="sdot done" title="李奕辰 · Discuss ✓">李奕辰</div>
+          <div class="sdot done" title="张皓月 · Takeaway ✓">张皓月</div>
+          <div class="sdot done" title="周航宇 · Discuss ✓">周航宇</div>
+          <div class="sdot done" title="郑若曦 · Takeaway ✓">郑若曦</div>
+          <div class="sdot done" title="马乐瑶 · Discuss ✓">马乐瑶</div>
+          <div class="sdot done" title="林澜 · Discuss ✓">林澜</div>
+          <div class="sdot done" title="朱思语 · Takeaway ✓">朱思语</div>
+          <div class="sdot prog" title="王译文 · Practice · AI" onclick="openModal()">王译文<span class="ai-pip"></span></div>
+          <div class="sdot prog" title="刘子墨 · Practice">刘子墨</div>
+          <div class="sdot prog" title="孙楠语 · Practice · AI">孙楠语<span class="ai-pip"></span></div>
+          <div class="sdot prog" title="吴思涵 · Practice">吴思涵</div>
+          <div class="sdot prog" title="胡恩齐 · Practice">胡恩齐</div>
+          <div class="sdot prog" title="罗婉儿 · Practice">罗婉儿</div>
+          <div class="sdot prog" title="蔡明轩 · Listen">蔡明轩</div>
+          <div class="sdot prog" title="韩思远 · Practice">韩思远</div>
+          <div class="sdot prog" title="袁朗 · Practice">袁朗</div>
+          <div class="sdot prog" title="丁雨桐 · Practice">丁雨桐</div>
+          <div class="sdot prog" title="梁瑶 · Discuss">梁瑶</div>
+          <div class="sdot stuck" title="黄婉晴 · Practice · AI">黄婉晴<span class="ai-pip"></span></div>
+          <div class="sdot stuck" title="徐晨曦 · Practice · AI">徐晨曦<span class="ai-pip"></span></div>
+          <div class="sdot stuck" title="郭斐然 · Practice · AI">郭斐然<span class="ai-pip"></span></div>
+          <div class="sdot stuck" title="邓梓涵 · Practice">邓梓涵</div>
+          <div class="sdot stuck" title="董思齐 · Practice">董思齐</div>
+          <div class="sdot stuck" title="冯璐 · Listen">冯璐</div>
+          <div class="sdot stuck" title="谢安然 · Practice · AI">谢安然<span class="ai-pip"></span></div>
+        </div>
+        <div class="swim-stats">
+          <div class="swim-stats-top"><span class="swim-stats-n" style="color:var(--blue)">26</span><span class="swim-stats-lb">当前</span></div>
+          <div class="swim-stats-q"><span class="swim-stats-pct mid">31%</span></div><div class="swim-stats-qlb">正确率</div>
+        </div>
+      </div>
+
+      <!-- Task 4: Evaluate -->
+      <div class="swim-row" onclick="selectStep(4)">
+        <div class="swim-label">
+          <span class="sn task">4</span>
+          <div class="swim-label-info">
+            <div class="swim-label-name">Evaluate</div>
+            <div class="swim-label-type task">12 min · 立场 + 论据</div>
+          </div>
+        </div>
+        <div class="swim-dots">
+          <div class="sdot prog" title="叶瑞 · Discuss">叶瑞</div>
+          <div class="sdot prog" title="许天乐 · Practice · AI">许天乐<span class="ai-pip"></span></div>
+          <div class="sdot prog" title="潘悦 · Practice">潘悦</div>
+          <div class="sdot done" title="田苗苗 · Takeaway ✓">田苗苗</div>
+          <div class="sdot done" title="石磊 · Takeaway ✓">石磊</div>
+          <div class="sdot done" title="高远航 · Discuss ✓">高远航</div>
+          <div class="sdot prog" title="曾以柔 · Practice">曾以柔</div>
+          <div class="sdot done" title="程一然 · Takeaway ✓">程一然</div>
+          <div class="sdot prog" title="杨之涵 · Listen">杨之涵</div>
+          <div class="sdot done" title="唐明珠 · Discuss ✓">唐明珠</div>
+        </div>
+        <div class="swim-stats">
+          <div class="swim-stats-top"><span class="swim-stats-n">10</span><span class="swim-stats-lb">当前</span></div>
+          <div class="swim-stats-q"><span class="swim-stats-pct neutral">40%</span></div><div class="swim-stats-qlb">正确率</div>
+        </div>
+      </div>
+
+      <!-- Task 5: Wrap-up -->
+      <div class="swim-row" onclick="selectStep(5)">
+        <div class="swim-label">
+          <span class="sn task">5</span>
+          <div class="swim-label-info">
+            <div class="swim-label-name">Wrap-up</div>
+            <div class="swim-label-type task">5 min · 策略排序</div>
+          </div>
+        </div>
+        <div class="swim-dots">
+          <div class="sdot done" title="方宇 · Takeaway ✓">方宇</div>
+          <div class="sdot prog" title="夏阳 · Discuss">夏阳</div>
+        </div>
+        <div class="swim-stats">
+          <div class="swim-stats-top"><span class="swim-stats-n">2</span><span class="swim-stats-lb">当前</span></div>
+          <div class="swim-stats-q"><span class="swim-stats-pct neutral">5%</span></div><div class="swim-stats-qlb">完成率</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="swim-legend" style="margin-top:6px">
+      <div class="swim-legend-item"><span class="dot" style="background:var(--green-dot)"></span>已提交/确认</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--blue)"></span>填写中</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--lecture)"></span>阅读中</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--amber-dot)"></span>卡住</div>
+      <div class="swim-legend-item"><span class="dot" style="background:var(--ai-dot)"></span>AI 对话中</div>
+    </div>
+  </div>
+
+  <!-- Patterns -->
+  <div>
+    <div class="sh" style="margin-bottom:6px"><span class="sh-lb">观察要点</span></div>
+    <div class="patterns">
+      <div class="pat alert">
+        <div class="pat-h warn"><span class="dot"></span>T3 瓶颈</div>
+        <div class="pat-body"><strong>62%</strong> 学生在 Scan & Build，<strong>7 人卡住</strong>。卡点: Myanmar / Indonesia 合并。</div>
+        <div class="pat-metric"><span class="n">26</span><span class="unit">/ 42 在 T3</span></div>
+      </div>
+      <div class="pat alert">
+        <div class="pat-h warn"><span class="dot"></span>Listen 跳过倾向</div>
+        <div class="pat-body">T2 Listen 阶段平均停留 <strong>35s</strong>（预设 2min），部分学生未充分阅读引入。</div>
+        <div class="pat-metric"><span class="n">35s</span><span class="unit">vs 预设 2:00</span></div>
+      </div>
+      <div class="pat">
+        <div class="pat-h info"><span class="dot"></span>进度分散度</div>
+        <div class="pat-body">最快 T5（Wrap-up），最慢 T2（Skim）。跨度 <strong>3 Tasks</strong>。</div>
+        <div class="pat-metric"><span class="n">3</span><span class="unit">Task 跨度</span></div>
+      </div>
+      <div class="pat">
+        <div class="pat-h info"><span class="dot"></span>AI 集中在任务步</div>
+        <div class="pat-body">Listen 触发 <strong>12%</strong>，Practice <strong>45%</strong>。AI 主要在 T3 被使用。</div>
+        <div class="pat-metric"><span class="n">45%</span><span class="unit">Practice AI 触发率</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coaching -->
+  <div class="coaching">
+    <div class="coaching-toggle" onclick="this.classList.toggle('open');this.nextElementSibling.classList.toggle('open')">
+      <span class="arrow">▶</span> 教学参考 · 低优先级
+    </div>
+    <div class="coaching-body">
+      <div class="coach-line">
+        <div class="coach-line-lb">T3 Scan & Build</div>
+        <div class="coach-line-text">"Only collect three things: <span class="k">WHERE</span>, <span class="k">WHAT</span> people did, and <span class="k">WHY</span>."</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ OVERVIEW COLUMN ═══ -->
+<div class="overview">
+
+  <div class="ov-body">
+
+    <!-- Step detail panel -->
+    <div class="step-detail" id="stepDetail"></div>
+
+    <!-- AI section -->
+    <div class="ai-section">
+      <div class="ai-sh">AI 助教活动</div>
+      <div class="ai-grid">
+        <div class="ai-cell"><div class="ai-cell-n">18</div><div class="ai-cell-lb">触发人数</div></div>
+        <div class="ai-cell"><div class="ai-cell-n">52</div><div class="ai-cell-lb">总对话轮</div></div>
+        <div class="ai-cell"><div class="ai-cell-n">0</div><div class="ai-cell-lb">越界</div></div>
+      </div>
+      <div class="ai-steps">
+        <div class="ai-step-row"><span class="sn task">1</span><span class="name">Predict</span><span class="val">5 轮</span></div>
+        <div class="ai-step-row"><span class="sn task">2</span><span class="name">Skim</span><span class="val">8 轮</span></div>
+        <div class="ai-step-row"><span class="sn task">3</span><span class="name">Scan & Build</span><span class="val" style="color:var(--amber);font-weight:700">30 轮</span></div>
+        <div class="ai-step-row"><span class="sn task">4</span><span class="name">Evaluate</span><span class="val">7 轮</span></div>
+        <div class="ai-step-row"><span class="sn task">5</span><span class="name">Wrap-up</span><span class="val">2 轮</span></div>
+      </div>
+    </div>
+
+    <!-- Question queue grouped BY STEP -->
+    <div class="queue-section">
+      <div class="queue-h"><span class="lb">问题聚类 · 按 Task</span><span class="cnt">14</span></div>
+      <div class="queue">
+
+        <!-- T1 -->
+        <div class="q-step-h"><span class="sn task">1</span><span class="step-name">Predict</span><span class="tot">2</span></div>
+        <div class="qrow"><div class="qn">2</div><div class="qq">What does "shallow" mean?</div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qq">Who is Happiness Edem?</div></div>
+
+        <!-- T2 -->
+        <div class="q-step-h"><span class="sn task">2</span><span class="step-name">Skim</span><span class="tot">2</span></div>
+        <div class="qrow hi"><div class="qn">4</div><div class="qq">What is "Phenomenon"? 不懂这个词</div><span class="hi-tag">高频</span></div>
+        <div class="qrow"><div class="qn">2</div><div class="qq">怎么区分 History 和 Culture?</div></div>
+
+        <!-- T3 -->
+        <div class="q-step-h"><span class="sn task">3</span><span class="step-name">Scan & Build</span><span class="tot">7</span></div>
+        <div class="qrow hi" onclick="openModal()"><div class="qn">8</div><div class="qq">Myanmar 在哪里？地理位置不明</div><div class="qmeta"><span class="trend">↑3</span></div></div>
+        <div class="qrow hi"><div class="qn">4</div><div class="qq">Can I write "tattoos" or must I write "tā moko"?</div><span class="hi-tag">高频</span></div>
+        <div class="qrow"><div class="qn">3</div><div class="qq">What does "diary of events" mean?</div></div>
+        <div class="qrow"><div class="qn">2</div><div class="qq">"sharpening teeth" 是生词</div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qq">How to find the "reason" if it's not stated?</div></div>
+
+        <!-- T4 -->
+        <div class="q-step-h"><span class="sn task">4</span><span class="step-name">Evaluate</span><span class="tot">2</span></div>
+        <div class="qrow"><div class="qn">2</div><div class="qq">怎么写 disagree 的论据段</div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qq">Can I add my own experience?</div></div>
+
+        <!-- T5 -->
+        <div class="q-step-h"><span class="sn task">5</span><span class="step-name">Wrap-up</span><span class="tot">1</span></div>
+        <div class="qrow"><div class="qn">1</div><div class="qq">Do these strategies work for other texts?</div></div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mod-hd">
+      <div class="mod-av">王</div>
+      <div class="mod-ti"><div class="mod-ti-n">王译文 · Step 4 矩阵构建</div><div class="mod-ti-m">填写中 · v1 已提交 · 3 轮 AI 对话 · 在此步停留 8:12</div></div>
+      <div class="mod-cls" onclick="closeModal()">关闭 ✕</div>
+    </div>
+    <div class="mod-body">
+      <div class="mod-col">
+        <div class="mod-h">学生矩阵 (v1)</div>
+        <table class="mat">
+          <tr><th>Place</th><th>Practice</th><th>Reason</th></tr>
+          <tr><td class="place">Borneo</td><td>tattoos as diary</td><td>记录重要事件</td></tr>
+          <tr><td class="place">NZ Maori</td><td class="err-tx"><span class="err-mark"></span>tattoos</td><td class="emp-tx">—</td></tr>
+          <tr><td class="place">Myanmar</td><td class="err-tx"><span class="err-mark"></span>body art</td><td class="err-tx"><span class="err-mark"></span>记录重要事件</td></tr>
+          <tr><td class="place">Indonesia</td><td class="emp-tx">—</td><td class="emp-tx">—</td></tr>
+        </table>
+        <div class="ai-note">
+          <div class="ai-note-h">AI Skill 分析</div>
+          Borneo 理解正确。NZ Maori 的 Practice 写 "tattoos" 过泛（应为 <strong>tā moko</strong>）。Myanmar 抄了 Borneo 的 Reason，说明没读 ¶7，且与 Indonesia 合并。
+        </div>
+      </div>
+      <div class="mod-col right">
+        <div class="mod-h">与 AI 助教的对话</div>
+        <div class="chat-row stu"><div class="who">王译文 · 4 min</div><div class="chat-bubble">Myanmar 在哪啊 没听过</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">Myanmar（缅甸）在<strong>东南亚</strong>。先跳过位置，重点看 <strong>¶7</strong> 讲了那里女性做什么。</div></div>
+        <div class="chat-row stu"><div class="who">王译文 · 3 min</div><div class="chat-bubble">¶7 找不到 Myanmar 的 practice</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">找 "wearing..." 后的名词：<strong>wearing metal rings around their necks</strong>。</div></div>
+        <div class="chat-row stu"><div class="who">王译文 · 1 min</div><div class="chat-bubble">那 Indonesia 呢</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">Indonesia 是<strong>另一行</strong>。关键词：<strong>sharpening teeth</strong>（磨尖牙齿）。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal(){document.getElementById('ov').classList.add('open')}
+function closeModal(){document.getElementById('ov').classList.remove('open')}
+
+// Timeline scrubber
+var totalSec = 45*60;
+var liveSec = 18*60+22;
+var curSec = liveSec;
+var isLive = true;
+
+function fmt(s){
+  var m=Math.floor(s/60), ss=Math.floor(s%60);
+  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
+function updateTL(){
+  var pct = (curSec/totalSec)*100;
+  document.getElementById('tlFill').style.width=pct+'%';
+  document.getElementById('tlThumb').style.left=pct+'%';
+  document.getElementById('tlTime').textContent=fmt(curSec);
+  document.getElementById('tlLabel').textContent=isLive?'实时 · '+fmt(curSec):'回放 · '+fmt(curSec);
+  document.getElementById('tlLabel').style.color=isLive?'var(--green)':'var(--amber)';
+  document.getElementById('tlLiveBtn').style.display=isLive?'none':'inline-flex';
+}
+function scrub(delta){
+  isLive=false;
+  curSec=Math.max(0,Math.min(totalSec,curSec+delta));
+  updateTL();
+}
+function goLive(){
+  isLive=true;
+  curSec=liveSec;
+  updateTL();
+}
+
+// Drag
+var wrap=document.getElementById('tlWrap');
+function pctFromEvent(e){
+  var r=wrap.getBoundingClientRect();
+  return Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+}
+wrap.addEventListener('mousedown',function(e){
+  isLive=false;
+  curSec=Math.round(pctFromEvent(e)*totalSec);
+  updateTL();
+  function onMove(e2){curSec=Math.round(pctFromEvent(e2)*totalSec);updateTL();}
+  function onUp(){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);}
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onUp);
+});
+
+updateTL();
+
+// Step detail data
+var STEPS = {
+  1:{n:1,name:'Predict',type:'task',count:0,
+    quality:{correct:40,partial:2,wrong:0,empty:0,total:42,pct:'95%',
+      cols:[{name:'Q1 Edem',good:98,partial:2,wrong:0},{name:'Q2 Media',good:95,partial:5,wrong:0},{name:'Q3 Main question',good:90,partial:7,wrong:3}]},
+    avgTime:'4:10',medTime:'3:45',
+    ai:{people:3,rounds:5},
+    notes:'大部分学生顺利完成。Q3（作者核心问题）错误率最高，3 人选了干扰项。'},
+  2:{n:2,name:'Skim',type:'task',count:4,
+    quality:{correct:35,partial:5,wrong:2,empty:0,total:42,pct:'83%',
+      cols:[{name:'¶1-2→Phenomenon',good:95,partial:5,wrong:0},{name:'¶3-4→History',good:88,partial:10,wrong:2},{name:'¶5-7→Culture',good:85,partial:12,wrong:3},{name:'¶8→Conclusion',good:90,partial:7,wrong:3}]},
+    avgTime:'6:30',medTime:'5:50',
+    ai:{people:6,rounds:8},
+    issues:['4 人混淆 History 和 Culture','2 人不理解 Phenomenon 含义'],
+    notes:'主要困难在于区分 History（时间信号词）和 Culture（地理信号词）。'},
+  3:{n:3,name:'Scan & Build',type:'task',count:26,
+    quality:{correct:8,partial:5,wrong:2,empty:11,total:26,pct:'31%',
+      cols:[
+        {name:'Where',good:92,partial:8,wrong:0},
+        {name:'What',good:67,partial:25,wrong:8},
+        {name:'Why',good:42,partial:16,wrong:8}
+      ]},
+    avgTime:'12:00',medTime:'10:30',
+    ai:{people:12,rounds:30},
+    issues:['7 人将 Myanmar 与 Indonesia 合并','4 人 Practice 写 tattoos 而非 tā moko','Why 列空缺率最高 (42%)'],
+    notes:'主瓶颈。卡点集中在 ¶7 段内转折识别和隐含原因推断。'},
+  4:{n:4,name:'Evaluate',type:'task',count:10,
+    quality:{correct:4,partial:4,wrong:2,empty:0,total:10,pct:'40%',
+      cols:[
+        {name:'Position',good:80,partial:20,wrong:0},
+        {name:'Evidence',good:50,partial:30,wrong:20},
+        {name:'Explanation',good:30,partial:40,wrong:30}
+      ]},
+    avgTime:'8:00',medTime:'7:20',
+    ai:{people:5,rounds:7},
+    issues:['论据引用不足——多数只选 1 条','Explanation 环节最弱——能给证据但不能解释证明了什么'],
+    notes:'立场表达较好，但"证据→解释"链条不完整。'},
+  5:{n:5,name:'Wrap-up',type:'task',count:2,
+    quality:{correct:2,partial:0,wrong:0,empty:0,total:2,pct:'100%'},
+    avgTime:'3:00',medTime:'2:40',
+    ai:{people:1,rounds:2},
+    notes:'仅 2 人到达。策略排序正确率高。'},
+};
+
+var selectedStep = null;
+function selectStep(n){
+  if(selectedStep===n){closeStepDetail();return;}
+  selectedStep=n;
+  document.querySelectorAll('.swim-row').forEach(function(r,i){r.classList.toggle('selected',i===n-1)});
+  renderStepDetail(n);
+}
+function closeStepDetail(){
+  document.getElementById('stepDetail').classList.remove('open');
+  document.getElementById('stepDetail').innerHTML='';
+  document.querySelectorAll('.swim-row').forEach(function(r){r.classList.remove('selected')});
+  selectedStep=null;
+}
+function renderStepDetail(n){
+  var s=STEPS[n]; if(!s)return;
+  var el=document.getElementById('stepDetail');
+  var h='';
+  h+='<div class="sd-head">';
+  h+='<span class="sn '+s.type+'">'+s.n+'</span>';
+  h+='<span class="sd-name">'+s.name+'</span>';
+  h+='<span class="sd-type task">Task</span>';
+  h+='<span class="sd-close" onclick="event.stopPropagation();closeStepDetail()">✕</span>';
+  h+='</div>';
+
+  h+='<div class="sd-stats">';
+  h+='<div class="sd-stat"><div class="sd-stat-n">'+s.count+'</div><div class="sd-stat-lb">当前人数</div></div>';
+  h+='<div class="sd-stat"><div class="sd-stat-n">'+s.medTime+'</div><div class="sd-stat-lb">中位用时</div></div>';
+  h+='<div class="sd-stat"><div class="sd-stat-n">'+s.ai.rounds+'</div><div class="sd-stat-lb">AI 对话轮</div></div>';
+  h+='</div>';
+
+  if(s.type==='task' && s.quality && s.quality.cols){
+    var q=s.quality;
+    h+='<div class="sd-section"><div class="sd-section-h">各维度正确率</div>';
+    q.cols.forEach(function(c){
+      h+='<div class="sd-bar-row"><span class="sd-bar-label">'+c.name+'</span>';
+      h+='<div class="sd-bar-track"><div class="sd-bar-seg good" style="width:'+c.good+'%"></div><div class="sd-bar-seg partial" style="width:'+c.partial+'%"></div><div class="sd-bar-seg wrong" style="width:'+c.wrong+'%"></div></div>';
+      h+='<span class="sd-bar-num">'+c.good+'%</span></div>';
+    });
+    h+='<div class="sd-bar-legend">';
+    h+='<div class="sd-bar-legend-item"><span class="d" style="background:var(--green-dot)"></span>正确</div>';
+    h+='<div class="sd-bar-legend-item"><span class="d" style="background:var(--amber-dot)"></span>部分正确</div>';
+    h+='<div class="sd-bar-legend-item"><span class="d" style="background:var(--red)"></span>错误</div>';
+    h+='</div></div>';
+  }
+
+  if(s.type==='lecture' && s.confirm){
+    var c=s.confirm;
+    h+='<div class="sd-section"><div class="sd-section-h">确认情况</div>';
+    h+='<div class="sd-confirm-row"><span class="label">已确认"我学会了"</span><span class="val">'+c.confirmed+' / '+c.total+'</span></div>';
+    h+='<div class="sd-confirm-row"><span class="label">阅读中</span><span class="val">'+c.reading+'</span></div>';
+    h+='<div class="sd-confirm-row"><span class="label">平均停留</span><span class="val">'+s.avgTime+'</span></div>';
+    h+='</div>';
+  }
+
+  if(s.issues && s.issues.length){
+    h+='<div class="sd-section"><div class="sd-section-h">问题</div><div class="sd-issues">';
+    s.issues.forEach(function(iss){h+='<div class="sd-issue">'+iss+'</div>';});
+    h+='</div></div>';
+  }
+
+  if(s.notes){
+    h+='<div style="font-size:11px;color:var(--t2);line-height:1.5;padding:8px 0 0;border-top:1px solid var(--border)">'+s.notes+'</div>';
+  }
+
+  el.innerHTML=h;
+  el.classList.add('open');
+}
+</script>
+</body></html>
