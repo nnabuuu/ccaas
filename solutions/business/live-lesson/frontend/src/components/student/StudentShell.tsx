@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
-import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise, type TaskQuestion, type TaskMatchPair, type TaskMatrixRow } from './task-data'
+import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
 import { fetchExerciseSpec, type ExerciseSpec } from '../../hooks/useClassroom'
+import { enrichExerciseFromSpec } from './enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
 import AiPanel from './AiPanel'
@@ -130,154 +131,12 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     const apiSpec = exerciseSpecs[stepIdx]
     const ak = step.answerKey
 
-    if (apiSpec) {
-      // Use sanitized exercise spec from API (no answers embedded)
-      const ex = { ...enriched.exercise }
-      ex.type = apiSpec.type
-      if (apiSpec.label) ex.label = apiSpec.label
-
-      if (apiSpec.type === 'quiz' && apiSpec.questions) {
-        ex.questions = apiSpec.questions.map((q, i) => {
-          const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-          return { ...base, q: q.text, translate: q.translate, opts: q.options } as TaskQuestion
-        })
-      }
-      if (apiSpec.type === 'match' && apiSpec.pairs) {
-        ex.pairs = apiSpec.pairs.map((p, i) => {
-          const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-          return { ...base, left: p.left, opts: p.options } as TaskMatchPair
-        })
-      }
-      if (apiSpec.type === 'matrix' && apiSpec.rows) {
-        ex.rows = apiSpec.rows.map((r, i) => {
-          const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-          return { ...base, place: r.place, demo: r.isDemo, ...(r.practice && { practice: r.practice }), ...(r.reason && { reason: r.reason }) } as TaskMatrixRow
-        })
-      }
-      if (apiSpec.type === 'stance') {
-        if (apiSpec.stanceQ) ex.stanceQ = apiSpec.stanceQ
-        if (apiSpec.stanceQZh) ex.stanceQZh = apiSpec.stanceQZh
-        if (apiSpec.stanceOpts) ex.stanceOpts = apiSpec.stanceOpts
-        if (apiSpec.evidence) ex.evidence = apiSpec.evidence
-      }
-      if (apiSpec.type === 'order') {
-        if (apiSpec.items) ex.items = apiSpec.items
-        // No correctOrder — grading via check API
-      }
-      if (apiSpec.type === 'map') {
-        if (apiSpec.prompt) ex.prompt = apiSpec.prompt
-        if (apiSpec.axes) ex.axes = apiSpec.axes
-        if (apiSpec.mapItems) ex.mapItems = apiSpec.mapItems
-        if (apiSpec.minReasonLength) ex.minReasonLength = apiSpec.minReasonLength
-      }
-      if (apiSpec.type === 'select-evidence') {
-        // Internal grading needs full manifest data (correctFunction, kind, why).
-        // Don't overwrite with stripped API spec — just keep manifest fields.
-      }
-
-      // Mark that this exercise uses server-side checking (no local answers)
-      // except select-evidence which uses self-contained internal grading
-      if (apiSpec.type !== 'select-evidence') {
-        ;(ex as TaskExercise & { _serverCheck?: boolean })._serverCheck = true
-      }
-
-      enriched = { ...enriched, exercise: ex }
-    } else if (ak) {
-      // Fallback: manifest answerKey injection (may contain answers from sanitized manifest)
-      // Cast to any — ak comes from manifest JSON and has many optional fields not in the TS type
-      const akAny = ak as any
-      const ex = { ...enriched.exercise }
-      if (step.exerciseLabel) ex.label = step.exerciseLabel
-
-      if (ak.type === 'quiz' && ak.answers?.length) {
-        ex.questions = ak.answers.map((a: Record<string, unknown>, i: number) => {
-          const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-          return {
-            ...base,
-            ...(a.questionText ? { q: a.questionText as string } : {}),
-            ...(a.questionTranslate ? { translate: a.questionTranslate as string } : {}),
-            ...(a.options ? { opts: a.options as string[] } : {}),
-            ...(typeof a.correct === 'number' ? { correct: a.correct } : {}),
-            ...(a.hint ? { hint: a.hint as string } : {}),
-            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
-            ...(a.walkthrough ? { walkthrough: a.walkthrough as string } : {}),
-            ...(a.walkthroughZh ? { walkthroughZh: a.walkthroughZh as string } : {}),
-          } as TaskQuestion
-        })
-        // Sanitized manifest uses ExerciseSpec format (text/translate/options fields)
-        if (akAny.questions?.length) {
-          ex.questions = akAny.questions.map((q: Record<string, unknown>, i: number) => {
-            const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-            return { ...base, q: (q.text as string) || base.q, translate: (q.translate as string) || base.translate, opts: (q.options as string[]) || base.opts } as TaskQuestion
-          })
-        }
-      }
-      if (ak.type === 'match' && ak.answers?.length) {
-        const sharedOpts = ak.options
-        ex.pairs = ak.answers.map((a: Record<string, unknown>, i: number) => {
-          const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-          return {
-            ...base,
-            ...(a.left ? { left: a.left as string } : {}),
-            ...(sharedOpts ? { opts: sharedOpts } : {}),
-            ...(a.correct != null ? { correct: typeof a.correct === 'number' ? a.correct : (sharedOpts as string[] | undefined)?.indexOf(a.correct as string) ?? 0 } : {}),
-            ...(a.hint ? { hint: a.hint as string } : {}),
-            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
-          } as TaskMatchPair
-        })
-        // Sanitized manifest uses ExerciseSpec format
-        if (akAny.pairs?.length) {
-          ex.pairs = akAny.pairs.map((p: Record<string, unknown>, i: number) => {
-            const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-            return { ...base, left: (p.left as string) || base.left, opts: (p.options as string[]) || base.opts } as TaskMatchPair
-          })
-        }
-      }
-      if (ak.type === 'matrix' && ak.answers?.length) {
-        ex.rows = ak.answers.map((a: Record<string, unknown>, i: number) => {
-          const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-          return {
-            ...base,
-            ...(a.place ? { place: a.place as string } : {}),
-            ...(a.isDemo != null ? { demo: a.isDemo as boolean } : {}),
-            ...(a.practice ? { practice: a.practice as string } : {}),
-            ...(a.reason ? { reason: a.reason as string } : {}),
-            ...(a.hint ? { hint: a.hint as string } : {}),
-            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
-          } as TaskMatrixRow
-        })
-        // Sanitized manifest uses ExerciseSpec format
-        if (akAny.rows?.length) {
-          ex.rows = akAny.rows.map((r: Record<string, unknown>, i: number) => {
-            const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-            return { ...base, place: (r.place as string) || base.place, demo: (r.isDemo as boolean) ?? base.demo, ...(r.practice ? { practice: r.practice as string } : {}), ...(r.reason ? { reason: r.reason as string } : {}) } as TaskMatrixRow
-          })
-        }
-      }
-      if (ak.type === 'stance') {
-        if (ak.stanceQ) ex.stanceQ = ak.stanceQ
-        if (ak.stanceQZh) ex.stanceQZh = ak.stanceQZh
-        if (ak.stanceOpts) ex.stanceOpts = ak.stanceOpts
-        if (ak.evidence) ex.evidence = ak.evidence
-      }
-      if (ak.type === 'order') {
-        if (ak.items) ex.items = ak.items
-        if (ak.correctOrder) ex.correctOrder = ak.correctOrder as number[]
-      }
-      if (ak.type === 'select-evidence') {
-        ex.type = 'select-evidence'
-        if (ak.functionOptions) ex.functionOptions = ak.functionOptions
-        if (ak.sections) ex.sections = ak.sections
-        if (ak.paragraphTokens) ex.paragraphTokens = ak.paragraphTokens
-      }
-      if (ak.type === 'map') {
-        if (akAny.prompt) ex.prompt = akAny.prompt
-        if (akAny.axes) ex.axes = akAny.axes
-        if (akAny.mapItems) ex.mapItems = akAny.mapItems
-        else if (ak.items) ex.mapItems = ak.items as any
-        if (akAny.minReasonLength) ex.minReasonLength = akAny.minReasonLength
-      }
-      enriched = { ...enriched, exercise: ex }
+    const { exercise: enrichedEx, serverCheck } = enrichExerciseFromSpec(
+      enriched.exercise, apiSpec, ak, step.exerciseLabel,
+    )
+    enriched = { ...enriched, exercise: enrichedEx }
+    if (serverCheck) {
+      ;(enriched.exercise as TaskExercise & { _serverCheck?: boolean })._serverCheck = true
     }
 
     if (instructionMap[enriched.id]) enriched.instructionView = instructionMap[enriched.id]
@@ -330,7 +189,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       </div>
 
       {/* Main area: left col (tasks) + right col (text) */}
-      <SessionCtx.Provider value={{ sessionCode, studentId, submit, config: { enableMath: manifest.enableMath } }}>
+      <SessionCtx.Provider value={{ sessionCode, studentId, submit, config: { enableMath: manifest.enableMath }, boardData: manifest.boardData }}>
         <div className="stu-main-wrap">
           <TaskColumn
             screen={screen} setScreen={setScreen} task={enrichedTask} completeTask={completeTask}
