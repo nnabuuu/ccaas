@@ -379,7 +379,7 @@ export interface ReadingManifest {
   enableMath?: boolean
   article: Article
   readingSteps: ReadingStep[]
-  boardData: BoardData
+  boardData?: BoardData
   cumulativeMinutes: number[]
   observationIndicators?: ObservationIndicator[]
   phaseConfig?: PhaseConfig[]

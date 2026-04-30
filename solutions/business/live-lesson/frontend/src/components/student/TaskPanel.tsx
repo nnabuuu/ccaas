@@ -7,7 +7,7 @@ import { PersonalTouchScreen } from './PersonalTouchScreen'
 import { BonusPhase } from './BonusPhase'
 import { renderMd } from './renderMd'
 import type { Task } from './task-data'
-import type { PhaseConfig } from '../../types/reading'
+import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
 
 export type { Task } from './task-data'
@@ -21,6 +21,7 @@ export const SessionCtx = createContext<{
   studentId?: string
   submit?: (step: number, data: Record<string, any>) => Promise<boolean>
   config: SessionConfig
+  boardData?: BoardData | null
 }>({ config: {} })
 
 const DEFAULT_PHASES: PhaseConfig[] = [
@@ -71,7 +72,7 @@ function ListenPhase({ task, onDone, lessonId }: { task: Task; onDone: () => voi
 
 /* ═══ TAKEAWAY PHASE ═══ */
 function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; onComplete: () => void; lessonId?: string; taskCount?: number }) {
-  const { config } = useContext(SessionCtx)
+  const { config, boardData } = useContext(SessionCtx)
   const total = taskCount ?? 5
   return (
     <div id="phase-takeaway">
@@ -80,7 +81,7 @@ function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; 
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.mp3`} />}
         <div style={{ fontSize: 15, lineHeight: 1.85, color: 'var(--t1)', whiteSpace: 'pre-line' }}>{renderMd(task.summary, { math: config.enableMath })}</div>
       </div>
-      <BoardInline taskId={task.id} />
+      <BoardInline taskId={task.id} boardData={boardData} />
       <button className="stu-btn pri" style={{ marginTop: 8 }} onClick={onComplete}>
         {task.id < total ? 'Next Task →' : 'Complete Course →'}
       </button>
