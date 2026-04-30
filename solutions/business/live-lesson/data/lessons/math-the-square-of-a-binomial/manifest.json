@@ -1,0 +1,770 @@
+{
+  "id": "math-the-square-of-a-binomial",
+  "title": "完全平方公式",
+  "subject": "数学",
+  "gradeLevel": "初中八年级",
+  "description": "从多项式乘法归纳完全平方公式，用面积模型理解几何直观，掌握括号填充法与数值巧算。",
+  "teachingNotes": "初中八年级数学完全平方公式教学，从多项式乘法归纳公式→面积模型几何直观→括号填充法应用→数值巧算迁移→公式对比总结。五步推进，兼顾逻辑推导、直观建模与结构辨析三大教学目标。",
+  "lessonType": "reading",
+  "enableMath": true,
+  "lessonIntro": "同学们好！欢迎来到今天的数学课。\n\n今天我们学习**完全平方公式**。带着一个核心问题来学习：\n\n*为什么 $(a+b)^2$ 不等于 $a^2+b^2$？中间那一项从哪里来？*\n\n我们将完成 5 个任务，从计算归纳到几何直观，再到灵活应用。开始吧！",
+  "lessonSummary": "今天做得很好！\n\n你从多项式乘法出发，发现了完全平方公式的规律，用面积模型理解了 $2ab$ 的来源，还学会了括号填充法和数值巧算。\n\n记住口诀：**首平方，尾平方，积的2倍在中央。**\n\n作业：课本练习第 60-61 页。",
+  "phaseConfig": [
+    { "id": "listen", "label": "听讲", "unlockAfter": null },
+    { "id": "practice", "label": "练习", "unlockAfter": "listen" },
+    { "id": "discuss", "label": "讨论", "unlockAfter": "practice" },
+    { "id": "takeaway", "label": "小结", "unlockAfter": "discuss" }
+  ],
+  "article": {
+    "title": "完全平方公式",
+    "source": "人教版八年级上 16.3.2",
+    "paragraphs": [
+      {
+        "id": "p1",
+        "text": "◎ 探究\n计算下列多项式的积，你能发现什么规律？\n（1）(p+1)² = (p+1)(p+1) = ________；\n（2）(m+2)² = (m+2)(m+2) = ________；\n（3）(p−1)² = (p−1)(p−1) = ________；\n（4）(m−2)² = (m−2)(m−2) = ________。",
+        "content": [
+          { "type": "heading", "value": "◎ 探究" },
+          "计算下列多项式的积，你能发现什么规律？",
+          { "type": "math", "value": "(p+1)^2 = (p+1)(p+1) = \\square" },
+          { "type": "math", "value": "(m+2)^2 = (m+2)(m+2) = \\square" },
+          { "type": "math", "value": "(p-1)^2 = (p-1)(p-1) = \\square" },
+          { "type": "math", "value": "(m-2)^2 = (m-2)(m-2) = \\square" }
+        ],
+        "role": "key"
+      },
+      {
+        "id": "p2",
+        "text": "上面的运算都是形如 (a±b)² 的多项式相乘。先看和的平方：\n(a+b)² = (a+b)(a+b) = a² + ab + ab + b² = a² + 2ab + b²。\n两个数的和的平方，等于它们的平方和，加上它们的积的2倍。",
+        "content": [
+          "上面的运算都是形如 $(a \\pm b)^2$ 的多项式相乘。先看**和的平方**：",
+          { "type": "math", "value": "(a+b)^2 = (a+b)(a+b) = a^2 + ab + ab + b^2 = a^2 + 2ab + b^2" },
+          "两个数的和的平方，等于它们的平方和，加上它们的积的2倍。"
+        ],
+        "role": "key"
+      },
+      {
+        "id": "p3",
+        "text": "再看差的平方：\n(a−b)² = (a−b)(a−b) = a² − ab − ab + b² = a² − 2ab + b²。\n两个数的差的平方，等于它们的平方和，减去它们的积的2倍。",
+        "content": [
+          "再看**差的平方**：",
+          { "type": "math", "value": "(a-b)^2 = (a-b)(a-b) = a^2 - ab - ab + b^2 = a^2 - 2ab + b^2" },
+          "两个数的差的平方，等于它们的平方和，减去它们的积的2倍。"
+        ],
+        "role": "key"
+      },
+      {
+        "id": "p4",
+        "text": "综合以上推导，得到完全平方公式：\n(a+b)² = a² + 2ab + b²\n(a−b)² = a² − 2ab + b²\n\n文字表述：两个数的和（或差）的平方，等于它们的平方和，加上（或减去）它们的积的2倍。\n口诀：首平方，尾平方，积的2倍在中央。\n\n注意：(a+b)² 是多项式乘法 (a+b)(p+q) 中 p=a, q=b 的特殊情形。完全平方公式的结果一定是三项式，而不是两项式。",
+        "content": [
+          { "type": "heading", "value": "完全平方公式" },
+          "综合以上推导，得到：",
+          { "type": "math", "value": "(a+b)^2 = a^2 + 2ab + b^2" },
+          { "type": "math", "value": "(a-b)^2 = a^2 - 2ab + b^2" },
+          "**文字表述**：两个数的和（或差）的平方，等于它们的平方和，加上（或减去）它们的积的2倍。",
+          "**口诀**：首平方，尾平方，积的2倍在中央。",
+          "注意：$(a+b)^2$ 是多项式乘法 $(a+b)(p+q)$ 中 $p=a, q=b$ 的特殊情形。完全平方公式的结果一定是**三项式**，而不是两项式。"
+        ],
+        "role": "key"
+      },
+      {
+        "id": "p5",
+        "text": "◎ 几何解释\n用面积模型来理解完全平方公式：把边长为 (a+b) 的正方形分割成四块——左上角是边长为 a 的正方形（面积 a²），右下角是边长为 b 的正方形（面积 b²），另外两块是长 a、宽 b 的长方形（面积各为 ab）。\n\n大正方形的面积 = (a+b)²，也等于四块面积之和 = a² + ab + ab + b² = a² + 2ab + b²。\n这就是中间项 2ab 的几何来源：两个长方形的面积之和。",
+        "content": [
+          { "type": "heading", "value": "◎ 几何解释" },
+          "用面积模型来理解完全平方公式：把边长为 $(a+b)$ 的正方形分割成四块——左上角是边长为 $a$ 的正方形（面积 $a^2$），右下角是边长为 $b$ 的正方形（面积 $b^2$），另外两块是长 $a$、宽 $b$ 的长方形（面积各为 $ab$）。",
+          "大正方形的面积：",
+          { "type": "math", "value": "(a+b)^2 = a^2 + ab + ab + b^2 = a^2 + 2ab + b^2" },
+          "这就是中间项 $2ab$ 的几何来源：**两个长方形的面积之和**。"
+        ],
+        "role": "key"
+      },
+      {
+        "id": "p6",
+        "text": "◎ 括号法应用\n使用公式时，关键是正确辨认 a 和 b。可以用「括号填充法」：先画出 ___² + 2·___·___ + ___² 三个空位，然后把 a 和 b 分别填入。\n\n例3：\n（1）(2x+3y)²：a=2x, b=3y → (2x)² + 2·(2x)·(3y) + (3y)² = 4x² + 12xy + 9y²\n（2）(y−1/2)²：a=y, b=1/2 → y² − 2·y·(1/2) + (1/2)² = y² − y + 1/4\n\n注意负号处理：(-3a−2b)² 可以先提取负号变为 [−(3a+2b)]² = (3a+2b)²，再用公式。",
+        "content": [
+          { "type": "heading", "value": "◎ 括号法应用" },
+          "使用公式时，关键是正确辨认 $a$ 和 $b$。可以用「括号填充法」：",
+          { "type": "math", "value": "\\boxed{\\phantom{x}}^{\\,2} + 2 \\cdot \\boxed{\\phantom{x}} \\cdot \\boxed{\\phantom{x}} + \\boxed{\\phantom{x}}^{\\,2}" },
+          "**例3：**",
+          "（1）$(2x+3y)^2$：$a=2x, b=3y$",
+          { "type": "math", "value": "(2x)^2 + 2 \\cdot (2x) \\cdot (3y) + (3y)^2 = 4x^2 + 12xy + 9y^2" },
+          "（2）$(y-\\tfrac{1}{2})^2$：$a=y, b=\\tfrac{1}{2}$",
+          { "type": "math", "value": "y^2 - 2 \\cdot y \\cdot \\tfrac{1}{2} + \\left(\\tfrac{1}{2}\\right)^2 = y^2 - y + \\tfrac{1}{4}" },
+          "注意负号处理：$(-3a-2b)^2 = [-(3a+2b)]^2 = (3a+2b)^2$，再用公式。"
+        ],
+        "role": "detail"
+      },
+      {
+        "id": "p7",
+        "text": "◎ 数值巧算\n完全平方公式可以用来巧算接近整数的平方：\n\n例4：\n（1）102² = (100+2)² = 100² + 2×100×2 + 2² = 10000 + 400 + 4 = 10404\n（2）99² = (100−1)² = 100² − 2×100×1 + 1² = 10000 − 200 + 1 = 9801\n\n拆数技巧：把数字拆成「整数 ± 小数」的形式，再套用公式。",
+        "content": [
+          { "type": "heading", "value": "◎ 数值巧算" },
+          "完全平方公式可以用来巧算接近整数的平方：",
+          "**例4：**",
+          { "type": "math", "value": "102^2 = (100+2)^2 = 100^2 + 2 \\times 100 \\times 2 + 2^2 = 10000 + 400 + 4 = 10404" },
+          { "type": "math", "value": "99^2 = (100-1)^2 = 100^2 - 2 \\times 100 \\times 1 + 1^2 = 10000 - 200 + 1 = 9801" },
+          "**拆数技巧**：把数字拆成「整数 $\\pm$ 小数」的形式，再套用公式。"
+        ],
+        "role": "detail"
+      },
+      {
+        "id": "p8",
+        "text": "◎ 拓展与辨析\n三项式的平方：(a+b+c)² 可以添括号变为两项式 [(a+b)+c]²，再用公式展开得 a² + b² + c² + 2ab + 2bc + 2ac。\n\n完全平方公式 vs 平方差公式：\n• (a+b)² = a² + 2ab + b²（三项，有中间项 2ab）\n• (a+b)(a−b) = a² − b²（两项，无中间项）\n\n常见错误：\n• 最常见：(a+b)² = a² + b²（漏掉中间项 2ab）\n• 中间项系数错：写成 ab 而非 2ab\n• 末项符号错：(a−b)² 末项写成 −b²（实际是 +b²）\n• 公式混淆：把完全平方公式和平方差公式搞混",
+        "content": [
+          { "type": "heading", "value": "◎ 拓展与辨析" },
+          "**三项式的平方**：$(a+b+c)^2$ 可以添括号变为两项式 $[(a+b)+c]^2$，再用公式展开：",
+          { "type": "math", "value": "(a+b+c)^2 = a^2 + b^2 + c^2 + 2ab + 2bc + 2ac" },
+          "**完全平方公式 vs 平方差公式**：",
+          "• $(a+b)^2 = a^2 + 2ab + b^2$（三项，有中间项 $2ab$）",
+          "• $(a+b)(a-b) = a^2 - b^2$（两项，无中间项）",
+          "**常见错误**：",
+          "• 最常见：$(a+b)^2 = a^2 + b^2$（漏掉中间项 $2ab$）",
+          "• 中间项系数错：写成 $ab$ 而非 $2ab$",
+          "• 末项符号错：$(a-b)^2$ 末项写成 $-b^2$（实际是 $+b^2$）",
+          "• 公式混淆：把完全平方公式和平方差公式搞混"
+        ],
+        "role": "key"
+      }
+    ]
+  },
+  "readingSteps": [
+    {
+      "id": "i0",
+      "idx": 0,
+      "type": "instruction",
+      "label": "课前导读",
+      "labelEn": "Pre-lesson Guide",
+      "duration": 2,
+      "description": "课前导读：了解本节课的学习目标和任务安排。",
+      "focusParagraphs": ["p1"],
+      "studentView": {
+        "title": "欢迎来到完全平方公式",
+        "body": "<p>今天我们学习<strong>完全平方公式</strong>——一个看起来简单，但用好了非常强大的公式。</p><p>你将完成 <span class=\"hl\">5 个任务</span>，每个任务训练一个数学能力：</p><ol><li><strong>代数归纳</strong> — 从计算中发现规律</li><li><strong>几何直观</strong> — 用面积模型「看见」公式</li><li><strong>括号法应用</strong> — 准确辨认 a 和 b</li><li><strong>高阶转化</strong> — 三项式拓展和数值巧算</li><li><strong>复盘总结</strong> — 对比完全平方与平方差</li></ol><p>三个教学目标：<strong>逻辑推导</strong>、<strong>直观建模</strong>、<strong>结构辨析</strong>。</p><p>准备好了吗？让我们开始！</p>",
+        "keyPoints": [
+          "本节课共 5 个任务，每个任务先听讲再练习",
+          "核心问题：为什么 (a+b)² ≠ a²+b²？",
+          "口诀预告：首平方，尾平方，积的2倍在中央"
+        ],
+        "confirmLabel": "我准备好了"
+      },
+      "teacherView": {
+        "speechLine": "之前我们学了多项式乘多项式，那是通法。今天看一类非常有节奏感的特殊运算。",
+        "focusType": "article-excerpt",
+        "focusTitle": "课前导读",
+        "focusSubtitle": "学生自学中",
+        "quickActions": [],
+        "cueCards": [
+          {
+            "title": "导读说明",
+            "body": "学生正在自主阅读课前导读，了解本节课的五个任务和三个教学目标。\n无需干预，等待学生点击「我准备好了」后自动进入任务 1。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "s1",
+      "idx": 1,
+      "type": "task",
+      "label": "代数归纳",
+      "labelEn": "Algebraic Induction",
+      "displayName": "代数归纳",
+      "strategy": "从法到式",
+      "duration": 8,
+      "description": "计算4道多项式乘法，观察结果的项数和系数特征，从计算中归纳出完全平方公式的规律。",
+      "focusParagraphs": ["p1", "p2", "p3"],
+      "exerciseLabel": "观察计算结果，回答以下问题。",
+      "subtitle": "从法到式",
+      "summary": "你从4道计算中发现了规律：\n\n$(a+b)^2 = a^2 + 2ab + b^2$\n$(a-b)^2 = a^2 - 2ab + b^2$\n\n结果都是三项式，中间项是两数积的2倍。\n\n接下来，我们用几何的方式「看见」这个规律。",
+      "answerKey": {
+        "type": "quiz",
+        "answers": [
+          {
+            "questionIdx": 0,
+            "correct": 2,
+            "questionText": "(a+b)(a+b) 展开后有几项？",
+            "questionTranslate": "How many terms does (a+b)(a+b) expand to?",
+            "options": ["两项", "四项", "三项", "一项"],
+            "hint": "把 $(a+b)(a+b)$ 用多项式乘法展开：$a \\cdot a + a \\cdot b + b \\cdot a + b \\cdot b$，然后合并同类项。",
+            "hintZh": "展开后有 $a^2+ab+ab+b^2$，合并同类项后是几项？",
+            "walkthrough": "$(a+b)(a+b) = a^2 + ab + ab + b^2$，其中 $ab$ 和 $ab$ 是同类项，合并得 $a^2 + 2ab + b^2$，共三项。",
+            "walkthroughZh": "展开得 $a^2 + ab + ab + b^2$，合并 $ab+ab=2ab$，最终 $a^2 + 2ab + b^2$ 是三项。"
+          },
+          {
+            "questionIdx": 1,
+            "correct": 1,
+            "questionText": "(2x−3y)(2x−3y) = ?",
+            "questionTranslate": "What is (2x−3y)(2x−3y)?",
+            "options": ["4x²+12xy+9y²", "4x²−12xy+9y²", "4x²−12xy−9y²", "2x²−6xy+9y²"],
+            "hint": "这是 $(a-b)^2$ 的形式，其中 $a=2x$, $b=3y$。注意中间项的符号。",
+            "hintZh": "套用 $(a-b)^2 = a^2-2ab+b^2$，$a=2x$, $b=3y$。",
+            "walkthrough": "$(2x-3y)^2 = (2x)^2 - 2 \\cdot (2x) \\cdot (3y) + (3y)^2 = 4x^2 - 12xy + 9y^2$。注意末项 $(3y)^2=9y^2$ 是正的。",
+            "walkthroughZh": "$a=2x$, $b=3y$，套公式：$(2x)^2-2(2x)(3y)+(3y)^2 = 4x^2-12xy+9y^2$。"
+          },
+          {
+            "questionIdx": 2,
+            "correct": 1,
+            "questionText": "比较四道题的结果，共同规律是什么？",
+            "questionTranslate": "What pattern do all four results share?",
+            "options": ["首项=两数之和，末项=两数之差", "首项=第一个数的平方，末项=第二个数的平方，中间项=两数积的2倍", "所有项的系数都是1", "结果都是两项式"],
+            "hint": "看看每道题结果的首项、末项和中间项，它们和原式中的两个数有什么关系？",
+            "hintZh": "观察首项与 $a$ 的关系、末项与 $b$ 的关系、中间项与 $a \\cdot b$ 的关系。",
+            "walkthrough": "四道题结果分别是 $p^2+2p+1$, $m^2+4m+4$, $p^2-2p+1$, $m^2-4m+4$。首项=第一个数的平方，末项=第二个数的平方，中间项=两数积的2倍（正负取决于原式符号）。",
+            "walkthroughZh": "首项始终是第一个数的平方，末项是第二个数的平方，中间项是两数乘积的2倍。这就是完全平方公式的规律。"
+          }
+        ]
+      },
+      "discuss": {
+        "probe": {
+          "q": "你在计算中发现了什么规律？为什么展开后总是三项，而不是四项或两项？",
+          "translate": "What pattern did you find? Why does the expansion always have three terms?"
+        },
+        "targetInsight": "因为 (a+b)(a+b) 展开后有4项，但其中2项是同类项（ab和ba），合并后变成2ab，所以最终是三项。这就是完全平方公式的代数本质。",
+        "commonMisconceptions": [
+          "认为 (a+b)² = a²+b²，漏掉中间项",
+          "混淆展开前的项数和合并后的项数",
+          "不理解为什么中间项系数是2"
+        ],
+        "scaffoldStrategies": [
+          "如果模糊：'你把 (a+b)(a+b) 完整展开后有几项？哪些可以合并？'",
+          "如果只说三项：'很好，为什么是三项而不是四项？展开时明明有4个乘积。'",
+          "如果正确：'没错！ab出现了两次，合并成2ab。这就是中间项2ab的来源。'"
+        ],
+        "insight": "展开 (a+b)² 时产生4项，其中 ab 出现两次，合并为 2ab，所以结果是三项式。",
+        "insightZh": "(a+b)² 展开有4项，其中 ab 出现两次合并为 2ab，最终是三项式 a²+2ab+b²。"
+      },
+      "teacherView": {
+        "speechLine": "之前我们学了多项式乘多项式，那是通法。今天看一类非常有节奏感的特殊运算。",
+        "focusType": "article-excerpt",
+        "focusTitle": "代数归纳",
+        "focusSubtitle": "¶1-3 · 从计算到公式",
+        "quickActions": [
+          { "emoji": "💡", "label": "展开提示", "message": "把 (a+b)(a+b) 完整展开，注意合并同类项。", "type": "hint" },
+          { "emoji": "📖", "label": "看¶1探究", "message": "请看课本¶1的四道题，先动手算，再找规律。", "type": "hint" },
+          { "emoji": "⚡", "label": "规律提示", "message": "比较四道题的结果：首项、中间项、末项分别和原式有什么关系？", "type": "hint" },
+          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+        ],
+        "cueCards": [
+          {
+            "title": "引导策略",
+            "body": "不要直接给出公式。让学生先计算，再观察规律。\n\n提问模板：\n• \"展开后几项？哪些合并了？\"\n• \"中间项的系数为什么是2？\""
+          },
+          {
+            "title": "¶1-3 要点",
+            "body": "¶1: 四道探究题 → ¶2: 和的平方推导 → ¶3: 差的平方推导\n\n核心发现：展开有4项，合并同类项后变3项，中间项=2ab"
+          },
+          {
+            "title": "过渡到任务2",
+            "body": "当学生能说出\"中间项是两数乘积的2倍\"时，引导过渡：\n\"好，我们用代数推出了公式。但2ab到底从哪来？让我们画个图来看看。\""
+          }
+        ]
+      },
+      "studentView": {
+        "title": "代数归纳：从计算到发现",
+        "body": "<p>我们已经学过<strong>多项式乘多项式</strong>的通用方法。今天来观察一类特殊的乘法。</p><p>请看 ¶1 的四道题，它们都是 <strong>(a±b)²</strong> 的形式。先动手展开计算，然后观察结果：</p><ol><li>展开后有几项？</li><li>首项、末项和原式中的数有什么关系？</li><li>中间那一项从哪来？</li></ol><p>带着这三个问题来做练习。</p>",
+        "keyPoints": [
+          "先用多项式乘法展开，再观察规律",
+          "注意合并同类项后的项数变化",
+          "重点关注中间项的系数"
+        ],
+        "confirmLabel": "我理解了，开始练习"
+      }
+    },
+    {
+      "id": "s2",
+      "idx": 2,
+      "type": "task",
+      "label": "几何直观",
+      "labelEn": "Geometric Intuition",
+      "displayName": "几何直观",
+      "strategy": "数形结合",
+      "duration": 10,
+      "description": "通过面积模型理解完全平方公式，用正方形分割解释「为什么中间项是2ab」。",
+      "focusParagraphs": ["p5"],
+      "exerciseLabel": "用面积模型理解公式。",
+      "subtitle": "数形结合",
+      "summary": "面积模型告诉我们：\n\n大正方形面积 $= (a+b)^2 =$ 四块面积之和 $= a^2 + ab + ab + b^2 = a^2 + 2ab + b^2$\n\n两个长方形的面积之和就是 $2ab$。\n\n接下来，学习如何用公式快速计算。",
+      "answerKey": {
+        "type": "quiz",
+        "answers": [
+          {
+            "questionIdx": 0,
+            "correct": 0,
+            "questionText": "边长为 (a+b) 的正方形被切成4块，它们分别是什么？",
+            "questionTranslate": "A square with side (a+b) is cut into 4 pieces. What are they?",
+            "options": ["两个正方形（a²和b²）加两个长方形（都是ab）", "一个正方形和三个长方形", "四个相等的正方形", "一个大长方形和两个小正方形"],
+            "hint": "画一个正方形，边长是 $a+b$。在距左边 $a$ 的地方画一条竖线，距上边 $a$ 的地方画一条横线。看看分成了什么？",
+            "hintZh": "画正方形，边长 $a+b$，在 $a$ 处画十字线，看四块分别是什么形状。",
+            "walkthrough": "边长 $a+b$ 的正方形，在 $a$ 处画十字线：左上角 $a \\times a=a^2$（正方形），右下角 $b \\times b=b^2$（正方形），右上角 $a \\times b=ab$（长方形），左下角 $b \\times a=ab$（长方形）。",
+            "walkthroughZh": "十字分割后：左上 $a^2$，右下 $b^2$，右上和左下各 $ab$。两个正方形+两个长方形。"
+          },
+          {
+            "questionIdx": 1,
+            "correct": 2,
+            "questionText": "两个长方形的面积之和是多少？",
+            "questionTranslate": "What is the total area of the two rectangles?",
+            "options": ["a²+b²", "ab", "2ab", "a+b"],
+            "hint": "每个长方形的长是 $a$，宽是 $b$，面积是 $ab$。两个呢？",
+            "hintZh": "每个长方形面积 $= ab$，两个加起来呢？",
+            "walkthrough": "每个长方形面积 $= a \\times b = ab$。两个长方形面积之和 $= ab + ab = 2ab$。",
+            "walkthroughZh": "$ab + ab = 2ab$。这就是完全平方公式中间项的来源！"
+          },
+          {
+            "questionIdx": 2,
+            "correct": 1,
+            "questionText": "面积模型如何证明 (a+b)² = a²+2ab+b²？",
+            "questionTranslate": "How does the area model prove (a+b)² = a²+2ab+b²?",
+            "options": ["因为所有面积都是正方形", "大正方形面积=(a+b)²，也等于四块面积之和 a²+ab+ab+b²", "因为 a 和 b 可以互换", "只需要把两个正方形面积相加"],
+            "hint": "大正方形的面积有两种算法：一种用边长，一种把四块加起来。",
+            "hintZh": "大正方形面积可以怎么算？四块面积加起来又等于什么？",
+            "walkthrough": "大正方形面积 $= (a+b)^2$（用边长算）。同时，大正方形 $= a^2 + ab + ab + b^2 = a^2+2ab+b^2$。两种算法结果相等，所以 $(a+b)^2=a^2+2ab+b^2$。",
+            "walkthroughZh": "大正方形面积 $=(a+b)^2$，也 $=a^2+ab+ab+b^2=a^2+2ab+b^2$。两种算法相等即证明。"
+          }
+        ]
+      },
+      "discuss": {
+        "probe": {
+          "q": "面积模型中，2ab 对应的是哪两块？如果没有它们，(a+b)² 就变成什么了？",
+          "translate": "In the area model, which two pieces correspond to 2ab? Without them, what would (a+b)² become?"
+        },
+        "targetInsight": "2ab 对应两个长方形。如果漏掉它们，(a+b)²就变成了a²+b²，这正是最常见的错误。面积模型直观地说明了为什么不能丢掉中间项。",
+        "commonMisconceptions": [
+          "认为正方形只能分成两块（a²和b²）",
+          "不理解为什么有两个ab而不是一个",
+          "把面积模型和平方差公式的图混淆"
+        ],
+        "scaffoldStrategies": [
+          "如果模糊：'画出那个正方形，数一数一共几块？哪两块是长方形？'",
+          "如果只说ab：'对，每个长方形是ab。但有几个长方形？加起来呢？'",
+          "如果正确：'很好！两个ab就是2ab。如果漏掉它们，面积就不对了——这就是(a+b)²≠a²+b²的原因。'"
+        ],
+        "insight": "面积模型中，2ab 是两个长方形的面积之和。漏掉它们就是最常见的错误 (a+b)²=a²+b²。",
+        "insightZh": "2ab 来自两个长方形。漏掉它们就会犯 (a+b)²=a²+b² 的错误。"
+      },
+      "teacherView": {
+        "speechLine": "把字母 a 和 b 看作线段的长，(a+b)² 就是边长为 a+b 的正方形面积。",
+        "focusType": "article-excerpt",
+        "focusTitle": "几何直观",
+        "focusSubtitle": "¶5 · 面积模型",
+        "quickActions": [
+          { "emoji": "💡", "label": "画图提示", "message": "画一个正方形，边长标记为 a+b，然后在 a 的位置画十字线。", "type": "hint" },
+          { "emoji": "📖", "label": "看¶5模型", "message": "看课本¶5的面积图，数一数有几块？每块面积是多少？", "type": "hint" },
+          { "emoji": "⚡", "label": "关键问题", "message": "如果没有那两个长方形，面积就少了多少？这就是为什么不能写 (a+b)²=a²+b²。", "type": "hint" },
+          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+        ],
+        "cueCards": [
+          {
+            "title": "引导策略",
+            "body": "建议在黑板上画面积模型，让学生亲手标注每块面积。\n\n提问模板：\n• \"这个正方形分成了几块？\"\n• \"两个长方形加起来等于什么？\"\n• \"如果漏掉它们，会怎样？\""
+          },
+          {
+            "title": "¶5 要点",
+            "body": "面积模型：(a+b)² 的正方形 → 4块\n• 左上: a² • 右下: b²\n• 右上+左下: ab+ab = 2ab\n\n直观解释：2ab 就是两个长方形的面积"
+          },
+          {
+            "title": "过渡到任务3",
+            "body": "当学生理解 2ab 的几何含义后，引导：\n\"好，现在你知道公式是什么、为什么是这样。下一步——怎么用它来做题。\""
+          }
+        ]
+      },
+      "studentView": {
+        "title": "几何直观：用图形理解公式",
+        "body": "<p>代数告诉我们 (a+b)² = a² + 2ab + b²。但 <strong>2ab</strong> 到底从哪来？</p><p>我们用<strong>面积模型</strong>来「看见」它：</p><ol><li>画一个边长为 (a+b) 的正方形</li><li>在距左边 a 处画竖线，距上边 a 处画横线</li><li>现在正方形被分成了 <strong>4 块</strong></li></ol><p>数一数每块的面积，你就能<strong>看见</strong> 2ab 从哪来了。</p>",
+        "keyPoints": [
+          "面积模型把抽象公式变成可见的图形",
+          "重点：两个长方形的面积之和 = 2ab",
+          "漏掉 2ab 就是最常见的错误"
+        ],
+        "confirmLabel": "我理解了，开始练习"
+      }
+    },
+    {
+      "id": "s3",
+      "idx": 3,
+      "type": "task",
+      "label": "括号法应用",
+      "labelEn": "Template Application",
+      "displayName": "括号法应用",
+      "strategy": "括号填充法",
+      "duration": 12,
+      "description": "用「括号填充法」练习完全平方公式的应用：先辨认 a 和 b，再填入公式模板，处理负号和分数。",
+      "focusParagraphs": ["p4", "p6"],
+      "exerciseLabel": "用括号填充法展开下列各式。",
+      "subtitle": "括号填充法",
+      "summary": "括号填充法三步走：\n\n1. 辨认 $a$ 和 $b$\n2. 画出三个空位：$\\_\\_\\_ ^2 \\pm 2 \\cdot \\_\\_\\_ \\cdot \\_\\_\\_ + \\_\\_\\_ ^2$\n3. 填入 $a$ 和 $b$，计算\n\n关键技巧：遇到负号，先提出来变成和的平方。\n\n下一步：把公式用到数值巧算上。",
+      "answerKey": {
+        "type": "matrix",
+        "answers": [
+          {
+            "place": "(2x+3y)²",
+            "isDemo": true,
+            "practice": "4x²+12xy+9y²",
+            "reason": "和的平方：a=2x, b=3y"
+          },
+          {
+            "place": "(−3a−2b)²",
+            "isDemo": false,
+            "practice": "9a²+12ab+4b²",
+            "reason": "提负号：[−(3a+2b)]²=(3a+2b)²",
+            "hint": "先提取负号：$(-3a-2b)^2 = [-(3a+2b)]^2 = (3a+2b)^2$，再套公式。",
+            "hintZh": "先提取负号：$(-3a-2b)^2 = [-(3a+2b)]^2 = (3a+2b)^2$，再套公式。"
+          },
+          {
+            "place": "(y−1/2)²",
+            "isDemo": false,
+            "practice": "y²−y+1/4",
+            "reason": "差的平方+分数：a=y, b=1/2",
+            "hint": "$a=y$, $b=\\frac{1}{2}$，中间项 $2 \\cdot y \\cdot \\frac{1}{2} = y$，注意是差的平方所以中间项前面是减号。",
+            "hintZh": "$a=y$, $b=\\frac{1}{2}$，中间项 $2 \\cdot y \\cdot \\frac{1}{2} = y$，注意是差的平方所以中间项前面是减号。"
+          },
+          {
+            "place": "(4m+n)²",
+            "isDemo": false,
+            "practice": "16m²+8mn+n²",
+            "reason": "和的平方：a=4m, b=n",
+            "hint": "$a=4m$, $b=n$。首项 $(4m)^2=16m^2$，中间项 $2 \\cdot 4m \\cdot n=8mn$，末项 $n^2$。",
+            "hintZh": "$a=4m$, $b=n$。首项 $(4m)^2=16m^2$，中间项 $2 \\cdot 4m \\cdot n=8mn$，末项 $n^2$。"
+          },
+          {
+            "place": "(−2x+5)²",
+            "isDemo": false,
+            "practice": "4x²−20x+25",
+            "reason": "负号处理：a=−2x 或改写为 (5−2x)²",
+            "hint": "可改写为 $(5-2x)^2$，$a=5$, $b=2x$，差的平方：$25-2 \\cdot 5 \\cdot 2x+4x^2=4x^2-20x+25$。",
+            "hintZh": "可改写为 $(5-2x)^2$，$a=5$, $b=2x$，差的平方：$25-2 \\cdot 5 \\cdot 2x+4x^2=4x^2-20x+25$。"
+          }
+        ]
+      },
+      "discuss": {
+        "probe": {
+          "q": "遇到 (−3a−2b)² 这种两个都是负的情况，你用了什么技巧？为什么这个技巧有效？",
+          "translate": "For (−3a−2b)², what technique did you use? Why does it work?"
+        },
+        "targetInsight": "提取公因数−1：(−3a−2b)²=[−(3a+2b)]²=(3a+2b)²。因为 (−x)²=x²，负号平方变正号，所以可以先提出负号再计算。",
+        "commonMisconceptions": [
+          "直接令 a=−3a, b=−2b 导致符号混乱",
+          "分数代入时忘记 (1/2)² = 1/4 而非 1/2",
+          "末项 b² 前面写成负号"
+        ],
+        "scaffoldStrategies": [
+          "如果混乱：'你能把 −3a−2b 改写成「负号乘以某个东西」吗？'",
+          "如果部分正确：'好的，提出负号后变成了什么？(−1)² 等于多少？'",
+          "如果正确：'完美！这就是处理全负项的标准技巧：先提负号，平方后消掉。'"
+        ],
+        "insight": "处理负号的技巧：先提取−1，(−x)²=x²，负号平方消失后再套公式。",
+        "insightZh": "遇到全负项，先提取负号：(−3a−2b)²=(3a+2b)²，因为 (−1)²=1。"
+      },
+      "teacherView": {
+        "speechLine": "用公式时很多同学会犯'符号焦虑症'。公式里的 a 和 b 就像两个空位置。",
+        "focusType": "article-excerpt",
+        "focusTitle": "括号法应用",
+        "focusSubtitle": "¶4,6 · 公式应用",
+        "quickActions": [
+          { "emoji": "💡", "label": "模板提示", "message": "先画出 ___² + 2·___·___ + ___² 三个空位，然后填入 a 和 b。", "type": "hint" },
+          { "emoji": "📖", "label": "看例题", "message": "看课本 ¶6 的例3，学习如何辨认 a 和 b。", "type": "hint" },
+          { "emoji": "⚡", "label": "负号技巧", "message": "遇到 (−3a−2b)²，先提取负号：[−(3a+2b)]² = (3a+2b)²。", "type": "hint" },
+          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+        ],
+        "cueCards": [
+          {
+            "title": "引导策略",
+            "body": "让学生养成三步习惯：\n1. 辨认 a 和 b\n2. 判断和还是差\n3. 填模板计算\n\n重点关注：负号处理和分数代入"
+          },
+          {
+            "title": "常见错误",
+            "body": "• (−3a−2b)² 直接展开容易符号混乱\n  → 先提负号：= (3a+2b)²\n• (y−1/2)² 中间项忘记乘2\n  → 2·y·(1/2) = y，不是 y/2\n• 末项 (1/2)² = 1/4，不是 1/2"
+          },
+          {
+            "title": "过渡到任务4",
+            "body": "学生熟练使用公式后，引导：\n\"公式不只能用在代数式上。你能用它来快速算 102² 吗？\""
+          }
+        ]
+      },
+      "studentView": {
+        "title": "括号法应用：辨认 a 和 b",
+        "body": "<p>公式的关键是<strong>正确辨认 a 和 b</strong>。</p><p>用<strong>括号填充法</strong>三步走：</p><ol><li>辨认原式中的 <strong>a</strong> 和 <strong>b</strong></li><li>画出模板：___² ± 2·___·___ + ___²</li><li>把 a 和 b 填入，计算每项</li></ol><p>第一行是<strong>示范</strong>，后面的自己完成。注意负号和分数的处理！</p>",
+        "keyPoints": [
+          "先辨认 a 和 b，再套模板",
+          "负号技巧：先提取 −1，(−x)²=x²",
+          "分数注意：(1/2)² = 1/4"
+        ],
+        "confirmLabel": "我理解了，开始练习"
+      }
+    },
+    {
+      "id": "s4",
+      "idx": 4,
+      "type": "task",
+      "label": "高阶转化",
+      "labelEn": "Advanced Transfer",
+      "displayName": "高阶转化",
+      "strategy": "结构拓展",
+      "duration": 10,
+      "description": "三项式拓展 (a+b+c)² 的添括号法 + 数值巧算（102²、99²），将公式应用到更复杂的场景。",
+      "focusParagraphs": ["p7", "p8"],
+      "exerciseLabel": "用完全平方公式解决高阶问题。",
+      "subtitle": "结构拓展",
+      "summary": "公式的威力：\n\n1. **三项式**：添括号变两项式 → $(a+b+c)^2 = a^2+b^2+c^2+2ab+2bc+2ac$\n2. **数值巧算**：把数字拆成「整数±小数」 → $102^2=(100+2)^2=10404$\n\n最后一步：对比完全平方和平方差，彻底理清两个公式。",
+      "answerKey": {
+        "type": "quiz",
+        "answers": [
+          {
+            "questionIdx": 0,
+            "correct": 0,
+            "questionText": "(a+b+c)² 如何展开？最佳策略是什么？",
+            "questionTranslate": "How to expand (a+b+c)²? What is the best strategy?",
+            "options": ["添括号变两项式：[(a+b)+c]²，再用公式", "直接用分配律展开每一项", "用平方差公式", "无法使用完全平方公式"],
+            "hint": "三项式不能直接套两项式的公式。但如果把前两项看成一个整体呢？",
+            "hintZh": "把 $a+b$ 看成一个整体，$(a+b+c)^2 = [(a+b)+c]^2$，然后呢？",
+            "walkthrough": "$[(a+b)+c]^2$ 中，令 $A=a+b$, $B=c$，套公式：$A^2+2AC+C^2 = (a+b)^2+2(a+b)c+c^2$，再展开 $(a+b)^2$。最终得 $a^2+b^2+c^2+2ab+2bc+2ac$。",
+            "walkthroughZh": "添括号：$[(a+b)+c]^2 = (a+b)^2+2(a+b)c+c^2 = a^2+2ab+b^2+2ac+2bc+c^2$。"
+          },
+          {
+            "questionIdx": 1,
+            "correct": 2,
+            "questionText": "(a+b+c)² = a²+b²+c²+___？",
+            "questionTranslate": "What goes in the blank: (a+b+c)² = a²+b²+c²+___?",
+            "options": ["2abc", "ab+bc+ac", "2ab+2bc+2ac", "2(a+b+c)"],
+            "hint": "展开 $[(a+b)+c]^2$ 后，除了三个平方项，还有哪些交叉项？每个交叉项的系数是多少？",
+            "hintZh": "交叉项来自「积的2倍」：$2 \\cdot (a+b) \\cdot c$ 展开后有 $2ac$ 和 $2bc$，加上 $(a+b)^2$ 里的 $2ab$。",
+            "walkthrough": "$(a+b+c)^2 = a^2+b^2+c^2+2ab+2bc+2ac$。三个「积的2倍」分别是 $2ab$、$2bc$、$2ac$。",
+            "walkthroughZh": "三个交叉项各自带系数2：$2ab + 2bc + 2ac$。"
+          },
+          {
+            "questionIdx": 2,
+            "correct": 1,
+            "questionText": "用完全平方公式计算 102² = ?",
+            "questionTranslate": "Use the formula to calculate 102² = ?",
+            "options": ["10204", "10404", "10004", "10604"],
+            "hint": "$102 = 100+2$，套用 $(a+b)^2 = a^2+2ab+b^2$。",
+            "hintZh": "$102^2 = (100+2)^2 = 100^2 + 2 \\times 100 \\times 2 + 2^2 = ?$",
+            "walkthrough": "$(100+2)^2 = 10000 + 400 + 4 = 10404$。",
+            "walkthroughZh": "$100^2=10000$, $2 \\times 100 \\times 2=400$, $2^2=4$，合计 $10404$。"
+          }
+        ]
+      },
+      "discuss": {
+        "probe": {
+          "q": "三项式 (a+b+c)² 不能直接套公式。你用了什么方法把三项变成两项？这个方法还能用在哪里？",
+          "translate": "You can't directly apply the formula to (a+b+c)². What technique did you use? Where else could it be applied?"
+        },
+        "targetInsight": "添括号法：把三项式的前两项用括号括起来变成两项式，再套完全平方公式。这个「分组」思想在因式分解、多项式除法等许多场景都会用到。",
+        "commonMisconceptions": [
+          "认为 (a+b+c)² = a²+b²+c²，漏掉交叉项",
+          "交叉项只写 ab+bc+ac，忘记系数2",
+          "数值巧算时 102=100+2 但忘记展开中间项"
+        ],
+        "scaffoldStrategies": [
+          "如果困惑：'(a+b+c) 有三项，但公式需要两项。能不能把某两项「打包」成一项？'",
+          "如果部分正确：'你把 (a+b) 看成整体了——很好。现在展开 (a+b)²+2(a+b)c+c² 的每一部分。'",
+          "如果正确：'完美！添括号法的核心是「分组」，这个思想在高中数学里会反复出现。'"
+        ],
+        "insight": "添括号法：把多项变成两项，再套两项式的公式。这个分组思想在很多场景都能用。",
+        "insightZh": "添括号法核心：「多项变两项」。(a+b+c)²=[(a+b)+c]²，分组后套公式。"
+      },
+      "teacherView": {
+        "speechLine": "公式的威力不只在代数。看看能不能用它来算 102 的平方？",
+        "focusType": "article-excerpt",
+        "focusTitle": "高阶转化",
+        "focusSubtitle": "¶7-8 · 拓展应用",
+        "quickActions": [
+          { "emoji": "💡", "label": "添括号", "message": "(a+b+c) 有三项——试试把前两项括起来，变成两项式。", "type": "hint" },
+          { "emoji": "📖", "label": "看例4", "message": "看课本 ¶7 的例4，学习数值巧算的拆数技巧。", "type": "hint" },
+          { "emoji": "⚡", "label": "小组讨论", "message": "5分钟小组讨论：三项式怎么变成两项式？", "type": "hint" },
+          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+        ],
+        "cueCards": [
+          {
+            "title": "引导策略",
+            "body": "建议先让学生尝试 5 分钟小组讨论，再点拨。\n\n提问模板：\n• \"三项不能直接套公式，怎么办？\"\n• \"102 离哪个整百数最近？\""
+          },
+          {
+            "title": "¶7-8 要点",
+            "body": "¶7: 数值巧算 102²=(100+2)², 99²=(100−1)²\n¶8: 三项式添括号 + 公式对比 + 常见错误\n\n添括号法：(a+b+c)²=[(a+b)+c]²"
+          },
+          {
+            "title": "过渡到任务5",
+            "body": "完成后引导复盘：\n\"我们已经学了完全平方公式。但还有一个公式长得很像——平方差公式。它们有什么区别？\""
+          }
+        ]
+      },
+      "studentView": {
+        "title": "高阶转化：拓展与巧算",
+        "body": "<p>完全平方公式可以<strong>拓展到三项式</strong>，也可以用来<strong>快速计算</strong>。</p><p>两个挑战：</p><ol><li><strong>三项式</strong>：(a+b+c)² 怎么办？提示——把前两项「打包」</li><li><strong>数值巧算</strong>：102² 怎么用公式快速算出？提示——拆成 (100+2)²</li></ol><p>试试看！</p>",
+        "keyPoints": [
+          "三项式 → 添括号变两项式",
+          "数值巧算 → 拆成「整数±小数」",
+          "这两个技巧在中考中经常出现"
+        ],
+        "confirmLabel": "我理解了，开始练习"
+      }
+    },
+    {
+      "id": "s5",
+      "idx": 5,
+      "type": "task",
+      "label": "复盘总结",
+      "labelEn": "Review & Compare",
+      "displayName": "复盘总结",
+      "strategy": "公式对比",
+      "duration": 5,
+      "description": "完全平方公式 vs 平方差公式的区别（项数、结构、中间项），通过配对练习巩固辨析能力。",
+      "focusParagraphs": ["p4", "p8"],
+      "exerciseLabel": "将每个问题与正确答案配对。",
+      "subtitle": "公式对比",
+      "summary": "两个公式对比：\n\n• 完全平方 $(a \\pm b)^2$ → **三项**式，有中间项 $2ab$\n• 平方差 $(a+b)(a-b)$ → **两项**式，无中间项\n\n口诀：**首平方，尾平方，积的2倍在中央。**\n\n恭喜你完成了全部 5 个任务！",
+      "answerKey": {
+        "type": "match",
+        "options": ["三项", "两项", "有2ab", "正号(+b²)", "漏掉中间项2ab"],
+        "answers": [
+          {
+            "left": "(a+b)² 展开后有几项？",
+            "correct": 0,
+            "hint": "Expand $(a+b)^2$ and count the terms.",
+            "hintZh": "展开 $(a+b)^2=a^2+2ab+b^2$，数一数有几项。"
+          },
+          {
+            "left": "(a+b)(a−b) 展开后有几项？",
+            "correct": 1,
+            "hint": "This is the difference of squares formula.",
+            "hintZh": "这是平方差公式：$(a+b)(a-b)=a^2-b^2$，有几项？"
+          },
+          {
+            "left": "完全平方公式的中间项是什么？",
+            "correct": 2,
+            "hint": "What is the middle term in $a^2+\\_\\_\\_+b^2$?",
+            "hintZh": "$a^2+\\_\\_\\_+b^2$ 中间填什么？"
+          },
+          {
+            "left": "(a−b)² 的末项 b² 前面是什么符号？",
+            "correct": 3,
+            "hint": "$(a-b)^2 = a^2-2ab+b^2$. Look at the sign before $b^2$.",
+            "hintZh": "$(a-b)^2=a^2-2ab+b^2$，$b^2$ 前面是加号还是减号？"
+          },
+          {
+            "left": "(a+b)²=a²+b² 这个写法错在哪里？",
+            "correct": 4,
+            "hint": "Compare with the correct formula: $(a+b)^2=a^2+2ab+b^2$.",
+            "hintZh": "和正确公式对比一下，少了什么？"
+          }
+        ]
+      },
+      "discuss": {
+        "probe": {
+          "q": "完全平方公式和平方差公式长得很像，但结果完全不同。你能用一句话说清它们的核心区别吗？",
+          "translate": "The perfect square formula and difference of squares look similar but give very different results. Can you state the key difference in one sentence?"
+        },
+        "targetInsight": "完全平方是「自己乘自己」(a+b)²，结果有三项（包含中间项2ab）；平方差是「和乘差」(a+b)(a−b)，结果只有两项（中间项互相抵消）。",
+        "commonMisconceptions": [
+          "混淆 (a+b)² 和 (a+b)(a−b)",
+          "认为 (a−b)² 的末项是 −b²",
+          "分不清什么时候用哪个公式"
+        ],
+        "scaffoldStrategies": [
+          "如果混淆：'(a+b)² 是谁乘谁？(a+b)(a−b) 又是谁乘谁？两个式子的因式相同吗？'",
+          "如果模糊：'试试代入 a=3, b=2 分别算一下，看结果有什么不同。'",
+          "如果正确：'很好！一句话概括：完全平方→三项有中间项，平方差→两项无中间项。'"
+        ],
+        "insight": "完全平方 = 自己乘自己 → 三项有2ab；平方差 = 和乘差 → 两项无中间项。",
+        "insightZh": "完全平方(a+b)²→三项有2ab；平方差(a+b)(a−b)→两项无中间项。"
+      },
+      "teacherView": {
+        "speechLine": "学生口述对比，教师完成对比板书。让学生自己总结，比教师直接给答案效果好。",
+        "focusType": "article-excerpt",
+        "focusTitle": "复盘总结",
+        "focusSubtitle": "¶4,8 · 公式对比",
+        "quickActions": [
+          { "emoji": "💡", "label": "对比提示", "message": "完全平方和平方差：一个是自己乘自己，一个是和乘差。结果有什么不同？", "type": "hint" },
+          { "emoji": "📖", "label": "看¶8对比", "message": "看课本 ¶8 的公式对比，注意项数和中间项的区别。", "type": "hint" },
+          { "emoji": "⚡", "label": "口述总结", "message": "请用自己的话说一下：完全平方公式和平方差公式的区别。", "type": "hint" },
+          { "emoji": "⏱", "label": "再给2分钟", "message": "再给大家 2 分钟时间完成当前任务", "type": "time" }
+        ],
+        "cueCards": [
+          {
+            "title": "引导策略",
+            "body": "让学生口述对比，教师在黑板上完成对比板书。\n\n对比维度：\n• 形式：(a+b)² vs (a+b)(a−b)\n• 项数：三项 vs 两项\n• 中间项：有2ab vs 无"
+          },
+          {
+            "title": "常见错误汇总",
+            "body": "M1: (a+b)²=a²+b² 漏掉中间项\nM2: 中间项写 ab 而非 2ab\nM3: (a−b)² 末项写成 −b²\nM4: 混淆完全平方与平方差\nM5: 复杂式子辨认 a/b 困难"
+          },
+          {
+            "title": "课堂小结",
+            "body": "口诀：首平方，尾平方，积的2倍在中央。\n\n作业：课本练习第 60-61 页。\n\n预告：下节课学习因式分解——完全平方公式的逆用。"
+          }
+        ]
+      },
+      "studentView": {
+        "title": "复盘总结：两个公式大对比",
+        "body": "<p>完全平方公式和<strong>平方差公式</strong>是两个最重要的乘法公式，但它们<strong>经常被混淆</strong>。</p><p>回忆一下：</p><ul><li><strong>完全平方</strong>：(a+b)² = a² + 2ab + b²</li><li><strong>平方差</strong>：(a+b)(a−b) = a² − b²</li></ul><p>它们的区别在哪里？用配对练习来检验你的理解。</p>",
+        "keyPoints": [
+          "完全平方 → 三项式（有中间项 2ab）",
+          "平方差 → 两项式（无中间项）",
+          "口诀：首平方，尾平方，积的2倍在中央"
+        ],
+        "confirmLabel": "我理解了，开始练习"
+      }
+    }
+  ],
+  "observationIndicators": [
+    {
+      "id": "K1",
+      "type": "knowledge",
+      "label": "逻辑推导",
+      "description": "从多项式乘法归纳出完全平方公式规律，理解展开4项→合并同类项→3项的过程"
+    },
+    {
+      "id": "K2",
+      "type": "knowledge",
+      "label": "直观建模",
+      "description": "用面积模型解释2ab的来源，理解两个长方形面积之和=2ab"
+    },
+    {
+      "id": "K3",
+      "type": "knowledge",
+      "label": "结构辨析",
+      "description": "准确识别公式中的a和b，区分完全平方公式与平方差公式"
+    },
+    {
+      "id": "K4",
+      "type": "knowledge",
+      "label": "括号法熟练",
+      "description": "应用「括号填充法」处理负号、分数等复杂情况"
+    },
+    {
+      "id": "K5",
+      "type": "knowledge",
+      "label": "高阶迁移",
+      "description": "拓展到三项式的添括号法和数值巧算，举一反三"
+    },
+    {
+      "id": "M1",
+      "type": "misconception",
+      "label": "漏掉中间项",
+      "description": "(a+b)²=a²+b² — 最常见错误，漏掉中间项2ab"
+    },
+    {
+      "id": "M2",
+      "type": "misconception",
+      "label": "中间项系数错",
+      "description": "中间项写成ab而非2ab，忘记系数2"
+    },
+    {
+      "id": "M3",
+      "type": "misconception",
+      "label": "末项符号错",
+      "description": "(a−b)²末项写成−b²，实际应为+b²"
+    },
+    {
+      "id": "M4",
+      "type": "misconception",
+      "label": "公式混淆",
+      "description": "完全平方公式与平方差公式混淆，不清楚何时用哪个"
+    },
+    {
+      "id": "M5",
+      "type": "misconception",
+      "label": "a/b辨认困难",
+      "description": "面对(-3a-2b)²等复杂式子，无法正确辨认a和b并代入"
+    }
+  ]
+}
