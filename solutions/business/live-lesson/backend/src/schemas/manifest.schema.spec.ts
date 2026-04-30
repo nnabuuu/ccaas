@@ -1,4 +1,5 @@
 import { ManifestSchema, ReadingStepSchema, PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from './manifest.schema';
+import { BoardDataSchema, BoardBlockSchema, BoardStepSchema } from './board-data.schema';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -70,11 +71,11 @@ describe('ManifestSchema', () => {
       id: 'test', title: 'Test', subject: 's', gradeLevel: 'g', lessonType: 'reading',
       article: { title: 'T', source: 'S', paragraphs: [{ id: 'p1', text: 'hello' }] },
       readingSteps: [{ id: 's1', idx: 0, label: 'Step' }],
-      boardData: { custom: true },
+      customExtra: { custom: true },
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect((result.data as Record<string, unknown>).boardData).toEqual({ custom: true });
+      expect((result.data as Record<string, unknown>).customExtra).toEqual({ custom: true });
     }
   });
 });
@@ -146,6 +147,82 @@ describe('BonusArticleSchema', () => {
       paragraphs: [],
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe('BoardDataSchema', () => {
+  const validBlock = {
+    id: 'b1', kind: 'heading',
+    geometry: { col: 0, span: 3 },
+    reveal: { step: 0, sub: 0 },
+    data: {},
+  };
+
+  const validStep = { id: 's1', idx: 0, label: 'Step 1' };
+
+  it('should validate minimal boardData', () => {
+    const result = BoardDataSchema.safeParse({
+      id: 'bd1',
+      lesson: { title: 'Test Lesson' },
+      steps: [validStep],
+      blocks: [validBlock],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject missing lesson', () => {
+    const result = BoardDataSchema.safeParse({
+      id: 'bd1', steps: [validStep], blocks: [validBlock],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject missing id', () => {
+    const result = BoardDataSchema.safeParse({
+      lesson: { title: 'T' }, steps: [validStep], blocks: [validBlock],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should preserve passthrough fields on boardData', () => {
+    const result = BoardDataSchema.safeParse({
+      id: 'bd1',
+      lesson: { title: 'Test' },
+      steps: [validStep],
+      blocks: [validBlock],
+      theme: 'dark',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect((result.data as Record<string, unknown>).theme).toBe('dark');
+    }
+  });
+
+  it('should reject invalid block kind', () => {
+    const result = BoardBlockSchema.safeParse({
+      ...validBlock, kind: 'unknown-kind',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should preserve passthrough fields on blocks', () => {
+    const result = BoardBlockSchema.safeParse({
+      ...validBlock, fullBleed: true, style: { tone: 'warm' },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.fullBleed).toBe(true);
+    }
+  });
+
+  it('should preserve passthrough fields on steps', () => {
+    const result = BoardStepSchema.safeParse({
+      ...validStep, layout: { columns: [] },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.layout).toEqual({ columns: [] });
+    }
   });
 });
 

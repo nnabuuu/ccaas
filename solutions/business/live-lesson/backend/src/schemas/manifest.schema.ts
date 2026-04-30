@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { AnswerKeySchema } from './answer-key.schema';
+import { BoardDataSchema } from './board-data.schema';
 
 // ── Segment (structured rich content) ──
 
@@ -156,6 +157,7 @@ export const ManifestSchema = z.object({
   personalTouch: PersonalTouchSchema.optional(),
   bonusArticle: BonusArticleSchema.optional(),
   bonusSteps: z.array(BonusStepSchema).optional(),
+  boardData: BoardDataSchema.optional(),
 }).passthrough();
 
 export type ReadingStep = z.infer<typeof ReadingStepSchema>;

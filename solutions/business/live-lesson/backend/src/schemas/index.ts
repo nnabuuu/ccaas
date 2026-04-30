@@ -22,6 +22,12 @@ export { ExerciseSpecSchema, type ExerciseSpec } from './exercise-spec.schema';
 // Task map
 export type { TaskMap } from './task-map.schema';
 
+// Board data
+export {
+  BoardDataSchema, BoardBlockSchema, BoardStepSchema,
+  type BoardData, type BoardBlock, type BoardStep,
+} from './board-data.schema';
+
 // Manifest
 export {
   ManifestSchema, ReadingStepSchema,
