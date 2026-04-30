@@ -18,9 +18,9 @@ const ROLE_ORDER = ['teacher', 'student', 'board']
 
 interface Props {
   manifest: ReadingManifest
-  sessionId: string
-  sessionCode: string
-  lessonId: string
+  sessionId?: string
+  sessionCode?: string
+  lessonId?: string
 }
 
 export default function DemoShell({ manifest, sessionId, sessionCode, lessonId }: Props) {

@@ -182,7 +182,7 @@ function renderSegments(content: Segment[], math: boolean) {
         )
       }
       default: {
-        const _exhaustive: never = seg
+        const _exhaustive: never = seg; void _exhaustive
         return null
       }
     }

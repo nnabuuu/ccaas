@@ -116,7 +116,7 @@ export default function JoinPage() {
     const sid = lookup.session?.sessionId
     if (!sid) return
     // Patch localStorage with sessionId for restore
-    const key = `classroom:session:${lookup.session.code}`
+    const key = `classroom:session:${lookup.session!.code}`
     try {
       const existing = JSON.parse(localStorage.getItem(key) || '{}')
       localStorage.setItem(key, JSON.stringify({ ...existing, sessionId: sid }))

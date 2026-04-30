@@ -80,7 +80,7 @@ export function TutoringChatbox({
   tutoringMode,
   currentBeat,
   suggestedQuestions,
-  selectionMode,
+  selectionMode: _selectionMode,
   messages,
   isProcessing,
   isThinking,

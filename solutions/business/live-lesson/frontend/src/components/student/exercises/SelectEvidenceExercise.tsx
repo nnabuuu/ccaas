@@ -55,7 +55,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
     setSecStates(prev => ({ ...prev, [id]: { ...prev[id], ...partial } }))
   }, [])
 
-  const allGraded = sections.every(s => secStates[s.id].stage === 'graded')
+  // const allGraded = sections.every(s => secStates[s.id].stage === 'graded')
   const currentIdRef = useRef(currentId)
   useEffect(() => { currentIdRef.current = currentId }, [currentId])
 

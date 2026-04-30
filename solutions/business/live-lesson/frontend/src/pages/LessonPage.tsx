@@ -34,7 +34,7 @@ export default function LessonPage() {
     globalBoardOps,
     timeline,
     currentBeat,
-    messages,
+    messages: _messages,
     tutoringMessages,
     isProcessing,
     isThinking,

@@ -94,7 +94,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange }: {
     // Local grading fallback
     if (ex.type === 'quiz' || ex.type === 'match') {
       const items = ex.type === 'quiz' ? ex.questions! : ex.pairs!
-      const result = gradeItemSet(items, ans, { correctQs, attempts }, task.id)
+      const result = gradeItemSet(items as { correct: number }[], ans, { correctQs, attempts }, task.id)
       setAttempts(result.attempts); setCorrectQs(result.correctQs); setWrongQs(result.wrongQs)
       if (result.wrongQs.size > 0) {
         const cleared = { ...ans }; result.wrongQs.forEach(qi => { delete cleared[qi] }); setAns(cleared)

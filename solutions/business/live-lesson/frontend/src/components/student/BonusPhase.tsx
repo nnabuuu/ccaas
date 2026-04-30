@@ -163,21 +163,17 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
         <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
         {ex.type === 'match' && (
           <MatchExercise
-            pairs={ex.pairs}
+            pairs={ex.pairs! as any}
             ans={ans}
             setAns={setAns}
             correctQs={correctQs}
             wrongQs={wrongQs}
-            attempts={attempts}
-            allDone={allDone}
+            attemptCount={(pi: number) => (attempts as any)?.[pi] ?? 0}
           />
         )}
         {ex.type === 'matrix' && (
           <MatrixExercise
-            rows={ex.rows}
-            ans={ans}
-            setAns={setAns}
-            allDone={allDone}
+            rows={ex.rows! as any}
           />
         )}
       </div>

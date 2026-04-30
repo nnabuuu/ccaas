@@ -35,7 +35,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
 
   // Needs attention?
   const needsAttn = (js: typeof journeySteps[0]) =>
-    js.status !== 'future' && (js.result === 'partial' || js.status === 'stuck')
+    js.status !== 'future' && (js.result === 'partial' || (js.status as string) === 'stuck')
 
   // Selected step data
   const selSub = student.submissions?.[selectedStep]

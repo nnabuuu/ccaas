@@ -60,10 +60,10 @@ export function StepDetailModal({ stepNum, manifest, state, questions, onClose, 
           )}
 
           {/* Attempt difficulty */}
-          {metrics?.attemptMetrics && Object.keys(metrics.attemptMetrics).length > 0 && (
+          {(metrics as any)?.attemptMetrics && Object.keys((metrics as any).attemptMetrics).length > 0 && (
             <div className="m2-section">
               <div className="m2-section-h">尝试难度</div>
-              {Object.entries(metrics.attemptMetrics).map(([dim, m]: [string, any]) => (
+              {Object.entries((metrics as any).attemptMetrics).map(([dim, m]: [string, any]) => (
                 <div key={dim} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
                   <span style={{ fontSize: 10, width: 100, flexShrink: 0, fontWeight: 500, color: 'var(--t2)' }}>{dim}</span>
                   <span style={{ fontSize: 10, fontWeight: 600, color: m.avgAttempts >= 2 ? 'var(--amber)' : 'var(--t2)' }}>

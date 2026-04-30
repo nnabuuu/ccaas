@@ -52,8 +52,8 @@ export default function TeacherPage() {
   )
 }
 
-function TeacherPageWithSession({ manifest, lessonId, sessionCode, embed }: {
-  manifest: ReadingManifest; lessonId: string; sessionCode: string; embed: boolean
+function TeacherPageWithSession({ manifest, sessionCode, embed }: {
+  manifest: ReadingManifest; lessonId?: string; sessionCode: string; embed: boolean
 }) {
   const { state } = useTeacherStream(sessionCode)
   const [started, setStarted] = useState(false)
@@ -62,7 +62,7 @@ function TeacherPageWithSession({ manifest, lessonId, sessionCode, embed }: {
   const sessionStatus = state?.sessionStatus
 
   if (started || sessionStatus === 'active') {
-    return <TeacherShell manifest={manifest} lessonId={lessonId} sessionCode={sessionCode} embed={embed} />
+    return <TeacherShell manifest={manifest} sessionCode={sessionCode} embed={embed} />
   }
 
   return (

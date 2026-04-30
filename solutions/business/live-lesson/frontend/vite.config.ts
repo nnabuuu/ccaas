@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: BACKEND_TARGET,
           configure: (proxy) => {
-            proxy.on('error', (err, req, res) => {
+            proxy.on('error', (_err, req, res) => {
               if (!res.headersSent) {
                 setTimeout(() => {
                   const retry = http.request(

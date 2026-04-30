@@ -191,7 +191,6 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
           const unlocked = isUnlocked(phase)
           const renderer = PHASE_REGISTRY[phase.id]
           if (!renderer) return null
-          const isLast = i === phases.length - 1
           const prevPhase = phases[i - 1]
           const showLocked = !unlocked && prevPhase && isUnlocked(prevPhase)
           return (

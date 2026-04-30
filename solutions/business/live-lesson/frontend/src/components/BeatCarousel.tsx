@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import type { BeatSnapshot } from '../types'

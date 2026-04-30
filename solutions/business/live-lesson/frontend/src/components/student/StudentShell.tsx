@@ -184,6 +184,8 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       enriched = { ...enriched, exercise: ex }
     } else if (ak) {
       // Fallback: manifest answerKey injection (may contain answers from sanitized manifest)
+      // Cast to any — ak comes from manifest JSON and has many optional fields not in the TS type
+      const akAny = ak as any
       const ex = { ...enriched.exercise }
       if (step.exerciseLabel) ex.label = step.exerciseLabel
 
@@ -192,19 +194,19 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
           return {
             ...base,
-            ...(a.questionText && { q: a.questionText as string }),
-            ...(a.questionTranslate && { translate: a.questionTranslate as string }),
-            ...(a.options && { opts: a.options as string[] }),
-            ...(typeof a.correct === 'number' && { correct: a.correct }),
-            ...(a.hint && { hint: a.hint as string }),
-            ...(a.hintZh && { hintZh: a.hintZh as string }),
-            ...(a.walkthrough && { walkthrough: a.walkthrough as string }),
-            ...(a.walkthroughZh && { walkthroughZh: a.walkthroughZh as string }),
+            ...(a.questionText ? { q: a.questionText as string } : {}),
+            ...(a.questionTranslate ? { translate: a.questionTranslate as string } : {}),
+            ...(a.options ? { opts: a.options as string[] } : {}),
+            ...(typeof a.correct === 'number' ? { correct: a.correct } : {}),
+            ...(a.hint ? { hint: a.hint as string } : {}),
+            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
+            ...(a.walkthrough ? { walkthrough: a.walkthrough as string } : {}),
+            ...(a.walkthroughZh ? { walkthroughZh: a.walkthroughZh as string } : {}),
           } as TaskQuestion
         })
         // Sanitized manifest uses ExerciseSpec format (text/translate/options fields)
-        if (ak.questions?.length) {
-          ex.questions = ak.questions.map((q: Record<string, unknown>, i: number) => {
+        if (akAny.questions?.length) {
+          ex.questions = akAny.questions.map((q: Record<string, unknown>, i: number) => {
             const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
             return { ...base, q: (q.text as string) || base.q, translate: (q.translate as string) || base.translate, opts: (q.options as string[]) || base.opts } as TaskQuestion
           })
@@ -216,16 +218,16 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
           return {
             ...base,
-            ...(a.left && { left: a.left as string }),
-            ...(sharedOpts && { opts: sharedOpts }),
-            ...(a.correct != null && { correct: typeof a.correct === 'number' ? a.correct : (sharedOpts as string[] | undefined)?.indexOf(a.correct as string) ?? 0 }),
-            ...(a.hint && { hint: a.hint as string }),
-            ...(a.hintZh && { hintZh: a.hintZh as string }),
+            ...(a.left ? { left: a.left as string } : {}),
+            ...(sharedOpts ? { opts: sharedOpts } : {}),
+            ...(a.correct != null ? { correct: typeof a.correct === 'number' ? a.correct : (sharedOpts as string[] | undefined)?.indexOf(a.correct as string) ?? 0 } : {}),
+            ...(a.hint ? { hint: a.hint as string } : {}),
+            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
           } as TaskMatchPair
         })
         // Sanitized manifest uses ExerciseSpec format
-        if (ak.pairs?.length) {
-          ex.pairs = ak.pairs.map((p: Record<string, unknown>, i: number) => {
+        if (akAny.pairs?.length) {
+          ex.pairs = akAny.pairs.map((p: Record<string, unknown>, i: number) => {
             const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
             return { ...base, left: (p.left as string) || base.left, opts: (p.options as string[]) || base.opts } as TaskMatchPair
           })
@@ -236,19 +238,19 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
           return {
             ...base,
-            ...(a.place && { place: a.place as string }),
-            ...(a.isDemo != null && { demo: a.isDemo as boolean }),
-            ...(a.practice && { practice: a.practice as string }),
-            ...(a.reason && { reason: a.reason as string }),
-            ...(a.hint && { hint: a.hint as string }),
-            ...(a.hintZh && { hintZh: a.hintZh as string }),
+            ...(a.place ? { place: a.place as string } : {}),
+            ...(a.isDemo != null ? { demo: a.isDemo as boolean } : {}),
+            ...(a.practice ? { practice: a.practice as string } : {}),
+            ...(a.reason ? { reason: a.reason as string } : {}),
+            ...(a.hint ? { hint: a.hint as string } : {}),
+            ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
           } as TaskMatrixRow
         })
         // Sanitized manifest uses ExerciseSpec format
-        if (ak.rows?.length) {
-          ex.rows = ak.rows.map((r: Record<string, unknown>, i: number) => {
+        if (akAny.rows?.length) {
+          ex.rows = akAny.rows.map((r: Record<string, unknown>, i: number) => {
             const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-            return { ...base, place: (r.place as string) || base.place, demo: (r.isDemo as boolean) ?? base.demo, ...(r.practice && { practice: r.practice as string }), ...(r.reason && { reason: r.reason as string }) } as TaskMatrixRow
+            return { ...base, place: (r.place as string) || base.place, demo: (r.isDemo as boolean) ?? base.demo, ...(r.practice ? { practice: r.practice as string } : {}), ...(r.reason ? { reason: r.reason as string } : {}) } as TaskMatrixRow
           })
         }
       }
@@ -260,7 +262,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       }
       if (ak.type === 'order') {
         if (ak.items) ex.items = ak.items
-        if (ak.correctOrder) ex.correctOrder = ak.correctOrder
+        if (ak.correctOrder) ex.correctOrder = ak.correctOrder as number[]
       }
       if (ak.type === 'select-evidence') {
         ex.type = 'select-evidence'
@@ -269,11 +271,11 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
         if (ak.paragraphTokens) ex.paragraphTokens = ak.paragraphTokens
       }
       if (ak.type === 'map') {
-        if (ak.prompt) ex.prompt = ak.prompt
-        if (ak.axes) ex.axes = ak.axes
-        if (ak.mapItems) ex.mapItems = ak.mapItems
-        else if (ak.items) ex.mapItems = ak.items
-        if (ak.minReasonLength) ex.minReasonLength = ak.minReasonLength
+        if (akAny.prompt) ex.prompt = akAny.prompt
+        if (akAny.axes) ex.axes = akAny.axes
+        if (akAny.mapItems) ex.mapItems = akAny.mapItems
+        else if (ak.items) ex.mapItems = ak.items as any
+        if (akAny.minReasonLength) ex.minReasonLength = akAny.minReasonLength
       }
       enriched = { ...enriched, exercise: ex }
     }

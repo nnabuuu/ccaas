@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef } from 'react'
 import HelpButton from './HelpButton'
-import { linkParas } from './utils/linkParas'
+
 import { renderMd } from './renderMd'
 import { useAiAsk, useAiDiscuss } from '../../hooks/useClassroom'
 import { SessionCtx } from './TaskPanel'

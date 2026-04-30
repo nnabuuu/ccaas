@@ -17,7 +17,7 @@ export default function SessionPage() {
   const session = useStudentSession(sessionCode)
 
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
-  const [checking, setChecking] = useState(true)
+  const [_checking, setChecking] = useState(true)
   const initialized = useRef(false)
 
   useEffect(() => {
