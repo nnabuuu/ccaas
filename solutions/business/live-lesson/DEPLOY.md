@@ -36,6 +36,7 @@
 
 - OS: Ubuntu 22.04+ / Debian 12+
 - Node.js: 20.x LTS
+- PM2: 最新版
 - Nginx: 1.24+
 - 内存: >= 2GB
 - 磁盘: >= 10GB
@@ -47,9 +48,13 @@
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
 sudo apt-get install -y nodejs nginx certbot python3-certbot-nginx
 
+# PM2
+npm install -g pm2
+
 # 验证
 node -v   # v20.x
 npm -v    # 10.x
+pm2 -v    # 5.x
 ```
 
 ---
@@ -58,19 +63,32 @@ npm -v    # 10.x
 
 ### 目录结构
 
-```bash
-# 建议部署到 /opt/live-lesson
-sudo mkdir -p /opt/live-lesson
-sudo chown $USER:$USER /opt/live-lesson
+项目部署在 `/root/ccaas`，live-lesson 位于：
 
+```
+/root/ccaas/                              # 仓库根目录
+├── packages/
+│   ├── common/                           # 共享类型
+│   ├── react-sdk/                        # React SDK
+│   └── observer-engine/                  # 观察引擎
+└── solutions/business/live-lesson/       # ← 项目根目录
+    ├── backend/                          # NestJS 后端
+    ├── frontend/                         # React 前端
+    ├── mcp-server/                       # MCP Server
+    └── data/lessons/                     # 课程数据
+```
+
+```bash
 # 克隆仓库（或通过 CI/CD 推送）
-git clone <repo-url> /opt/live-lesson/repo
-cd /opt/live-lesson/repo
+git clone <repo-url> /root/ccaas
+cd /root/ccaas
 ```
 
 ### 构建
 
 ```bash
+cd /root/ccaas
+
 # 1. 安装根依赖（monorepo 的 workspace packages）
 npm install
 
@@ -102,10 +120,10 @@ SQLite 数据库会在 backend 首次启动时自动创建和 seed。
 
 ```bash
 # 确保 data 目录存在
-mkdir -p /opt/live-lesson/repo/solutions/business/live-lesson/backend/data
+mkdir -p /root/ccaas/solutions/business/live-lesson/backend/data
 
 # 如果需要预置课程数据，确认 manifest 文件存在：
-ls ../data/lessons/*/manifest.json
+ls /root/ccaas/solutions/business/live-lesson/data/lessons/*/manifest.json
 ```
 
 > **注意**：生产环境 `synchronize` 为 `false`（由 `NODE_ENV=production` 控制）。
@@ -166,7 +184,7 @@ server {
     # listen 443 ssl;
 
     # ── 静态前端 ──
-    root /opt/live-lesson/repo/solutions/business/live-lesson/frontend/dist;
+    root /root/ccaas/solutions/business/live-lesson/frontend/dist;
     index index.html;
 
     location / {
@@ -248,63 +266,86 @@ sudo certbot --nginx -d live-lesson.edunest.cn
 
 ---
 
-## 5. 进程管理 (systemd)
+## 5. 进程管理 (PM2)
 
-### Solution Backend
+### 启动 Solution Backend
 
-```ini
-# /etc/systemd/system/live-lesson-backend.service
-[Unit]
-Description=Live Lesson Solution Backend
-After=network.target
+```bash
+cd /root/ccaas/solutions/business/live-lesson/backend
 
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/live-lesson/repo/solutions/business/live-lesson/backend
-ExecStart=/usr/bin/node dist/main.js
-Restart=on-failure
-RestartSec=5
-Environment=NODE_ENV=production
-Environment=PORT=3007
-Environment=CORS_ORIGIN=https://live-lesson.edunest.cn
-EnvironmentFile=/opt/live-lesson/repo/solutions/business/live-lesson/backend/.env
+# 首次启动
+pm2 start dist/main.js --name live-lesson-backend \
+  --cwd /root/ccaas/solutions/business/live-lesson/backend
 
-[Install]
-WantedBy=multi-user.target
+# 保存进程列表（开机自启）
+pm2 save
+pm2 startup
 ```
 
-### CCAAS Backend（如果需要在同一台机器运行）
+### 启动 CCAAS Backend（如果需要在同一台机器运行）
 
-```ini
-# /etc/systemd/system/ccaas-backend.service
-[Unit]
-Description=CCAAS Platform Backend
-After=network.target
+```bash
+cd /root/ccaas/packages/backend
 
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/live-lesson/repo/packages/backend
-ExecStart=/usr/bin/node dist/main.js
-Restart=on-failure
-RestartSec=5
-Environment=NODE_ENV=production
-Environment=PORT=3001
+pm2 start dist/main.js --name ccaas-backend \
+  --cwd /root/ccaas/packages/backend
 
-[Install]
-WantedBy=multi-user.target
+pm2 save
+```
+
+### PM2 常用命令
+
+```bash
+# 查看所有进程
+pm2 list
+
+# 查看日志
+pm2 logs live-lesson-backend
+pm2 logs live-lesson-backend --lines 100
+
+# 重启
+pm2 restart live-lesson-backend
+
+# 停止
+pm2 stop live-lesson-backend
+
+# 删除
+pm2 delete live-lesson-backend
+
+# 监控面板
+pm2 monit
+```
+
+### 使用 ecosystem 配置文件（可选）
+
+创建 `/root/ccaas/solutions/business/live-lesson/ecosystem.config.js`：
+
+```javascript
+module.exports = {
+  apps: [
+    {
+      name: 'live-lesson-backend',
+      script: 'dist/main.js',
+      cwd: '/root/ccaas/solutions/business/live-lesson/backend',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3007,
+        CORS_ORIGIN: 'https://live-lesson.edunest.cn',
+      },
+      max_memory_restart: '500M',
+      error_file: '/root/.pm2/logs/live-lesson-backend-error.log',
+      out_file: '/root/.pm2/logs/live-lesson-backend-out.log',
+    },
+  ],
+};
 ```
 
 ```bash
-# 启动服务
-sudo systemctl daemon-reload
-sudo systemctl enable live-lesson-backend ccaas-backend
-sudo systemctl start live-lesson-backend ccaas-backend
+# 使用 ecosystem 文件启动
+pm2 start /root/ccaas/solutions/business/live-lesson/ecosystem.config.js
 
-# 查看状态
-sudo systemctl status live-lesson-backend
-sudo journalctl -u live-lesson-backend -f
+# 重启
+pm2 restart ecosystem.config.js
 ```
 
 ---
@@ -313,6 +354,7 @@ sudo journalctl -u live-lesson-backend -f
 
 ```bash
 # 1. 验证 backend 启动
+pm2 list
 curl http://localhost:3007/api/lessons
 # 应返回 JSON 课程列表
 
@@ -351,7 +393,7 @@ curl -N https://live-lesson.edunest.cn/api/classroom/<session-code>/stream
 Seed 逻辑只做 insert-if-not-exists，更新需手动：
 
 ```bash
-cd /opt/live-lesson/repo/solutions/business/live-lesson/backend
+cd /root/ccaas/solutions/business/live-lesson/backend
 
 node -e "
 const fs = require('fs'), path = require('path'), DB = require('better-sqlite3');
@@ -364,7 +406,7 @@ console.log('Updated', lessonId);
 "
 
 # 然后重启 backend
-sudo systemctl restart live-lesson-backend
+pm2 restart live-lesson-backend
 ```
 
 ---
@@ -374,8 +416,14 @@ sudo systemctl restart live-lesson-backend
 ### 日志
 
 ```bash
-# Backend 日志
-sudo journalctl -u live-lesson-backend -f --no-pager
+# Backend 日志（实时）
+pm2 logs live-lesson-backend
+
+# Backend 日志（最近 200 行）
+pm2 logs live-lesson-backend --lines 200
+
+# 清除日志
+pm2 flush live-lesson-backend
 
 # Nginx 访问日志
 tail -f /var/log/nginx/access.log
@@ -388,21 +436,21 @@ tail -f /var/log/nginx/error.log
 
 ```bash
 # SQLite 热备份
-sqlite3 /opt/live-lesson/repo/solutions/business/live-lesson/backend/data/live-lesson.db \
-  ".backup '/opt/live-lesson/backups/live-lesson-$(date +%Y%m%d).db'"
+sqlite3 /root/ccaas/solutions/business/live-lesson/backend/data/live-lesson.db \
+  ".backup '/root/backups/live-lesson-$(date +%Y%m%d).db'"
 ```
 
 建议设置 cron 每日备份：
 
 ```bash
 # /etc/cron.d/live-lesson-backup
-0 3 * * * www-data sqlite3 /opt/live-lesson/repo/solutions/business/live-lesson/backend/data/live-lesson.db ".backup '/opt/live-lesson/backups/live-lesson-$(date +\%Y\%m\%d).db'"
+0 3 * * * root mkdir -p /root/backups && sqlite3 /root/ccaas/solutions/business/live-lesson/backend/data/live-lesson.db ".backup '/root/backups/live-lesson-$(date +\%Y\%m\%d).db'"
 ```
 
 ### 更新部署
 
 ```bash
-cd /opt/live-lesson/repo
+cd /root/ccaas
 git pull origin master
 
 # 重新构建
@@ -410,7 +458,7 @@ cd solutions/business/live-lesson/backend && npx nest build
 cd ../frontend && npm run build
 
 # 重启
-sudo systemctl restart live-lesson-backend
+pm2 restart live-lesson-backend
 ```
 
 ---
@@ -420,19 +468,20 @@ sudo systemctl restart live-lesson-backend
 | 症状 | 排查 |
 |------|------|
 | 前端空白页 | 检查 `frontend/dist/index.html` 是否存在，Nginx root 路径是否正确 |
-| API 返回 502 | `systemctl status live-lesson-backend`，确认 backend 在 3007 端口运行 |
+| API 返回 502 | `pm2 list` 确认 backend 在运行，`pm2 logs live-lesson-backend` 看错误 |
 | SSE 断开 | 检查 Nginx `proxy_buffering off` 和 `proxy_read_timeout` |
 | Socket.IO 连不上 | 检查 `frontend/.env` 中 `VITE_CCAAS_URL` 是否正确，重新 build |
 | 课程列表为空 | 检查 `data/lessons/*/manifest.json` 是否存在，或 DB 是否已 seed |
-| AI 批改无响应 | 检查 `ZHIPU_API_KEY` 是否配置，`journalctl` 看 LLM 调用错误 |
+| AI 批改无响应 | 检查 `ZHIPU_API_KEY` 是否配置，`pm2 logs` 看 LLM 调用错误 |
 | 数据库锁 | SQLite WAL 模式下并发写入受限，确认只有一个 backend 实例 |
+| PM2 进程重启循环 | `pm2 logs live-lesson-backend --err --lines 50` 查看崩溃原因 |
 
 ---
 
 ## 10. 安全注意事项
 
-- `ZHIPU_API_KEY` 不要提交到 git，通过 `.env` 或 systemd `EnvironmentFile` 管理
+- `ZHIPU_API_KEY` 不要提交到 git，通过 `.env` 管理
 - 生产环境 `synchronize: false`（由 `NODE_ENV=production` 控制），避免表结构自动变更
-- SQLite 文件权限限制为 `www-data:www-data 600`
+- SQLite 文件权限限制为 `root:root 600`
 - Nginx 启用 HTTPS 后，确保 HSTS header
 - `CORS_ORIGIN` 严格限制为 `https://live-lesson.edunest.cn`
