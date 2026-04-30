@@ -36,3 +36,14 @@ solutions/business/recipe-book/backend/data/recipe-book.db
 # Package lock (use root lock file)
 packages/*/package-lock.json
 .gstack/
+
+# Playwright MCP snapshots/screenshots
+.playwright-mcp/
+
+# Claude Code temp files
+.claude/plan.md
+.claude/skills/
+
+# Debug screenshots & snapshots (root level)
+/*.png
+/*.yml
