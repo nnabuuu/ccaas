@@ -2,3 +2,6 @@
 data/live-lesson.db
 data/live-lesson.db-wal
 data/live-lesson.db-shm
+
+# ElevenLabs auth token (short-lived JWT)
+scripts/.elevenlabs-token
