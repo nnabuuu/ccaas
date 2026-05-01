@@ -105,9 +105,11 @@ function extractSegments() {
   for (const s of steps) {
     if (s.type === 'instruction') {
       const tts = s.studentView?.ttsText ?? '';
-      if (tts) segments.push({ name: `step-${taskNum + 1}-intro`, text: tts });
+      if (tts) segments.push({ name: 'step-i0-intro', text: tts });
     } else if (s.type === 'task') {
       taskNum++;
+      const introTts = s.studentView?.ttsText ?? '';
+      if (introTts) segments.push({ name: `step-${taskNum}-intro`, text: introTts });
       const summary = s.summary ?? '';
       if (summary) segments.push({ name: `step-${taskNum}-summary`, text: cleanMd(summary) });
     }
