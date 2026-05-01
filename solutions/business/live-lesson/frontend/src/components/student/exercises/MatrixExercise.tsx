@@ -1,12 +1,16 @@
 import HelpButton from '../HelpButton'
+
 import type { TaskMatrixRow, ServerHintMap } from '../task-data'
 
 interface Props {
   rows: TaskMatrixRow[]
   serverHints?: ServerHintMap
+  ans?: Record<number, { what?: string; why?: string }>
+  onAnsChange?: (rowIdx: number, field: 'what' | 'why', value: string) => void
+  disabled?: boolean
 }
 
-export function MatrixExercise({ rows, serverHints }: Props) {
+export function MatrixExercise({ rows, serverHints, ans = {}, onAnsChange, disabled }: Props) {
   return (
     <div className="stu-mat-wrap">
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -26,12 +30,12 @@ export function MatrixExercise({ rows, serverHints }: Props) {
               <td className="stu-mat-td">
                 {r.demo ? r.practice : (
                   <div>
-                    <input className="stu-mat-in" placeholder="What?" />
+                    <input className="stu-mat-in" placeholder="What?" value={ans[ri]?.what || ''} onChange={e => onAnsChange?.(ri, 'what', e.target.value)} disabled={disabled} />
                     <div style={{ marginTop: 2 }}><HelpButton hint={sh?.hint ?? r.hint} hintZh={sh?.hintZh ?? r.hintZh} /></div>
                   </div>
                 )}
               </td>
-              <td className="stu-mat-td">{r.demo ? r.reason : <input className="stu-mat-in" placeholder="Why?" />}</td>
+              <td className="stu-mat-td">{r.demo ? r.reason : <input className="stu-mat-in" placeholder="Why?" value={ans[ri]?.why || ''} onChange={e => onAnsChange?.(ri, 'why', e.target.value)} disabled={disabled} />}</td>
             </tr>
           )})}
 

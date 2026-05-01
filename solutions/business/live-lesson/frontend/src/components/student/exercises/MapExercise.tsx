@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 
+
 interface MapAxis { neg: string; pos: string; label: string }
 interface MapItem { id: string; label: string; hint?: string; refs?: number[] }
 
