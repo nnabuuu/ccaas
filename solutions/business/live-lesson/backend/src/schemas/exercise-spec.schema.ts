@@ -38,6 +38,7 @@ export const ExerciseSpecSchema = z.object({
     label: z.string(),
     range: z.array(z.number()),
     correctFunction: z.string().optional(),
+    minHits: z.number().optional(),
     hint: z.string().optional(),
     hintZh: z.string().optional(),
     aiCorrect: z.string().optional(),

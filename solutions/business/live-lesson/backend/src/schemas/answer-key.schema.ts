@@ -105,6 +105,7 @@ const SelectEvidenceSectionSchema = z.object({
   label: z.string().min(1),
   range: z.array(z.number()).min(1),
   correctFunction: z.string().min(1),
+  minHits: z.number().int().min(1).optional(),
   hint: z.string().optional(),
   hintZh: z.string().optional(),
   aiCorrect: z.string().optional(),

@@ -185,8 +185,10 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
         }
       })
     })
+    const minHits = Math.min(current.minHits ?? totalEv, totalEv)
+    const passed = hit >= minHits
     const perfect = hit === totalEv && wrongPicks.length === 0
-    return { wrongPicks, missed, hit, totalEv, perfect }
+    return { wrongPicks, missed, hit, totalEv, perfect, passed }
   }, [state, current, paragraphTokens])
 
   // Why items list for graded view
@@ -329,9 +331,11 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
                   <div className="se-ai-opener">
                     {feedback.perfect
                       ? md(current.aiCorrect)
-                      : feedback.wrongPicks.length > 0
-                        ? <>You found <strong>{feedback.hit} of {feedback.totalEv}</strong> signals — but a few of your picks aren't signals. Let me explain:</>
-                        : <>You found <strong>{feedback.hit} of {feedback.totalEv}</strong> signals. {feedback.missed.length > 0 ? 'A few are still missing — check the dashed-underline phrases.' : ''}</>}
+                      : feedback.passed
+                        ? md(current.aiPartial) || <>You found <strong>{feedback.hit} of {feedback.totalEv}</strong> signals — enough to move on.</>
+                        : feedback.wrongPicks.length > 0
+                          ? <>You found <strong>{feedback.hit} of {feedback.totalEv}</strong> signals — but a few of your picks aren't signals. Let me explain:</>
+                          : <>You found <strong>{feedback.hit} of {feedback.totalEv}</strong> signals. {feedback.missed.length > 0 ? 'A few are still missing — check the dashed-underline phrases.' : ''}</>}
                   </div>
                 </div>
 
@@ -368,15 +372,20 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
 
               {/* Actions */}
               <div className="se-action-row" style={{ marginTop: 12 }}>
-                <span className={`se-tally${feedback.perfect ? ' ok' : ''}`}>
+                <span className={`se-tally${feedback.passed ? ' ok' : ''}`}>
                   {feedback.perfect
                     ? `Perfect — ${feedback.hit}/${feedback.totalEv} signals.`
-                    : `${feedback.hit}/${feedback.totalEv} signals \u00b7 ${feedback.wrongPicks.length} non-signals picked.`}
+                    : feedback.passed
+                      ? `${feedback.hit}/${feedback.totalEv} signals — enough to move on.`
+                      : `${feedback.hit}/${feedback.totalEv} signals \u00b7 ${feedback.wrongPicks.length} non-signals picked.`}
                 </span>
-                {!feedback.perfect && (
+                {!feedback.passed && (
                   <button className="se-btn-ghost" onClick={retry}>Try again</button>
                 )}
-                {feedback.perfect && (() => {
+                {feedback.passed && !feedback.perfect && (
+                  <button className="se-btn-ghost" onClick={retry}>Try for full marks</button>
+                )}
+                {feedback.passed && (() => {
                   const nextSec = sections.find(s => secStates[s.id].stage !== 'graded')
                   return nextSec
                     ? <button className="se-btn" onClick={() => setCurrentId(nextSec.id)}>Next section &rarr;</button>

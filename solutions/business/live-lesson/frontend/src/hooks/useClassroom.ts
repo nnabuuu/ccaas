@@ -269,7 +269,7 @@ export interface ExerciseSpec {
   stanceQ?: string; stanceQZh?: string; stanceOpts?: string[]; evidence?: string[]
   items?: string[]
   functionOptions?: string[]
-  sections?: Array<{ id: string; label: string; range: number[]; correctFunction?: string; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
+  sections?: Array<{ id: string; label: string; range: number[]; correctFunction?: string; minHits?: number; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
   paragraphTokens?: Record<string, Array<{ t: string; interactive?: boolean; kind?: string; why?: string }>>
   prompt?: string
   axes?: { x: { neg: string; pos: string; label: string }; y: { neg: string; pos: string; label: string } }

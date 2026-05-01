@@ -31,7 +31,7 @@ export interface TaskExercise {
   items?: string[]; correctOrder?: number[]
   // select-evidence fields (injected from manifest answerKey at runtime)
   functionOptions?: string[]
-  sections?: Array<{ id: string; label: string; range: number[]; correctFunction: string; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
+  sections?: Array<{ id: string; label: string; range: number[]; correctFunction: string; minHits?: number; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
   paragraphTokens?: Record<string, Array<{ t: string; kind?: 'evidence' | 'pick' | 'distractor'; why?: string }>>
   // map fields
   prompt?: string

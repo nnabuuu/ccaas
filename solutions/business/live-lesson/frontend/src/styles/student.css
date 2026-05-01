@@ -285,11 +285,16 @@
 
 /* Token styles (used in TextPanel overlay) */
 .se-tk{transition:all .12s}
-.se-tk-idle{cursor:pointer;padding:2px 1px;margin:0 -1px;border-radius:3px;border-bottom:1px dotted rgba(28,28,26,.18)}
+.se-tk-idle{cursor:pointer;padding:2px 4px;margin:0 -2px;border-radius:3px;background:rgba(0,150,136,.07);border-bottom:1.5px dashed rgba(0,150,136,.35);transition:background .15s}
+.se-tk-idle:hover{background:rgba(0,150,136,.14)}
 .se-tk-picked{background:#fef6c8;color:var(--t1);padding:3px 5px;margin:0 -2px;border-radius:3px;box-shadow:inset 0 -8px 0 #fce98a;font-weight:500;cursor:pointer}
 .se-tk-good{background:var(--green-bg);color:var(--green);padding:3px 5px;margin:0 -2px;border-radius:3px;font-weight:600}
 .se-tk-bad{background:var(--red-bg);color:var(--red);padding:3px 5px;margin:0 -2px;border-radius:3px;text-decoration:line-through;text-decoration-color:rgba(148,41,41,.4)}
 .se-tk-missed{background:rgba(45,102,18,.07);padding:3px 5px;margin:0 -2px;border-radius:3px;border-bottom:1px dashed var(--green);color:var(--t2)}
+
+/* ── Voice hint ── */
+.stu-voice-hint{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--t3);margin-bottom:6px;padding:4px 0}
+.stu-voice-hint span{font-size:13px}
 
 /* ── Typing indicator ── */
 .stu-typing{display:flex;align-items:center;gap:4px;padding:8px 0}

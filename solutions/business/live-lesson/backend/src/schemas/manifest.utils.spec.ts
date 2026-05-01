@@ -177,6 +177,22 @@ describe('sanitizeAnswerKey', () => {
       expect(tokens[1]).toEqual({ t: 'evidence text', kind: 'evidence', why: 'because reasons' });
       expect(tokens[2]).toEqual({ t: 'distractor', kind: 'distractor', why: 'not relevant' });
     });
+
+    it('keeps minHits on sections when present', () => {
+      const seKeyWithMinHits = {
+        ...seKey,
+        sections: [
+          { id: 'p12', label: '¶1-2', range: [1, 2], correctFunction: 'Phenomenon', minHits: 2, hint: 'h', aiCorrect: 'good', aiPartial: 'partial' },
+        ],
+      };
+      const spec = sanitizeAnswerKey(seKeyWithMinHits)!;
+      expect(spec.sections![0].minHits).toBe(2);
+    });
+
+    it('omits minHits from sections when not present', () => {
+      const spec = sanitizeAnswerKey(seKey)!;
+      expect(spec.sections![0]).not.toHaveProperty('minHits');
+    });
   });
 });
 

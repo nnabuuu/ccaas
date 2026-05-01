@@ -99,6 +99,7 @@ function sanitizeSelectEvidence(ak: AKInput): ExerciseSpec {
     label: s.label as string,
     range: s.range as number[],
     correctFunction: s.correctFunction as string,
+    ...(s.minHits != null && { minHits: s.minHits as number }),
     ...(s.hint && { hint: s.hint as string }),
     ...(s.hintZh && { hintZh: s.hintZh as string }),
     ...(s.aiCorrect && { aiCorrect: s.aiCorrect as string }),

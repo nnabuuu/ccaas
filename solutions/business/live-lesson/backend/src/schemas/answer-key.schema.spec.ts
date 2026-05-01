@@ -194,6 +194,41 @@ describe('validateAnswerKey', () => {
       const ak = { ...validSE, paragraphTokens: undefined };
       expect(validateAnswerKey(ak).valid).toBe(true);
     });
+
+    it('passes with valid minHits on sections', () => {
+      const ak = {
+        ...validSE,
+        sections: [
+          { id: 'p12', label: '¶1-2', range: [1, 2], correctFunction: 'Phenomenon', minHits: 2 },
+          { id: 'p34', label: '¶3-4', range: [3, 4], correctFunction: 'History', minHits: 3 },
+        ],
+      };
+      expect(validateAnswerKey(ak).valid).toBe(true);
+    });
+
+    it('passes without minHits (optional, defaults to all)', () => {
+      expect(validateAnswerKey(validSE).valid).toBe(true);
+    });
+
+    it('rejects minHits < 1', () => {
+      const ak = {
+        ...validSE,
+        sections: [
+          { id: 'p12', label: '¶1-2', range: [1, 2], correctFunction: 'Phenomenon', minHits: 0 },
+        ],
+      };
+      expect(validateAnswerKey(ak).valid).toBe(false);
+    });
+
+    it('rejects non-integer minHits', () => {
+      const ak = {
+        ...validSE,
+        sections: [
+          { id: 'p12', label: '¶1-2', range: [1, 2], correctFunction: 'Phenomenon', minHits: 2.5 },
+        ],
+      };
+      expect(validateAnswerKey(ak).valid).toBe(false);
+    });
   });
 
   // ── Real manifest data (ideal-beauty-reading) ──

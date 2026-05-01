@@ -346,6 +346,7 @@
               2
             ],
             "correctFunction": "Phenomenon",
+            "minHits": 2,
             "hint": "Look for the two opposing IDEALS + the pivot question + the named ISSUE.",
             "hintZh": "找两个对立的\"美的标准\" + 转折问句 + 被命名的问题。",
             "aiCorrect": "Right — these phrases set up TWO opposing ideals + the named issue (\"shallow beauty ideals\"). That tension is the **phenomenon** the rest of the text investigates.",
@@ -359,6 +360,7 @@
               4
             ],
             "correctFunction": "History",
+            "minHits": 3,
             "hint": "Look for TIME signals — phrases pointing to a time period: \"change over time\", \"ancient Egypt\", \"the 1600s\", \"Elizabethan England\".",
             "hintZh": "找时间信号——指向时间段的短语，包括古代地名（如 \"ancient Egypt\"）。",
             "aiCorrect": "Exactly — all TIME signals: \"change over time\", \"different periods of history\", \"ancient Egypt\", \"the 1600s\", \"Elizabethan England\". Time words → History.",
@@ -373,6 +375,7 @@
               7
             ],
             "correctFunction": "Culture",
+            "minHits": 3,
             "hint": "Look for PLACE signals — country / culture names: \"Borneo\", \"New Zealand\", \"Myanmar\", \"Indonesia\", plus \"different cultures around the world\".",
             "hintZh": "找地点/文化信号——国家名称。",
             "aiCorrect": "Yes — all PLACE / CULTURE signals: \"different cultures around the world\", \"Borneo\", \"New Zealand\", \"Myanmar\", \"Indonesia\", \"cultural identity\". Multiple places = Culture.",
@@ -385,6 +388,7 @@
               8
             ],
             "correctFunction": "Conclusion",
+            "minHits": 2,
             "hint": "Three moves: SUMMARY phrase (\"appears that\"), list pulling earlier examples together (\"whether… or…\"), and final CLAIM (\"cultural values, not just vanity\").",
             "hintZh": "总结词 + 把前面例子收拢的列表 + 最终判断。",
             "aiCorrect": "Perfect — a summary phrase (\"appears that\"), a list pulling earlier examples together (\"whether… or…\"), and a final claim. No new evidence — just a verdict.",

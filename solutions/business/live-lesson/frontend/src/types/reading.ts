@@ -36,6 +36,7 @@ export interface SelectEvidenceSection {
   label: string
   range: number[]
   correctFunction: string
+  minHits?: number
   hint?: string
   hintZh?: string
   aiCorrect?: string
