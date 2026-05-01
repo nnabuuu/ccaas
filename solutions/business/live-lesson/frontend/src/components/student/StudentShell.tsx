@@ -3,10 +3,10 @@ import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
 import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
 import { fetchExerciseSpec, type ExerciseSpec } from '../../hooks/useClassroom'
-import { enrichExerciseFromSpec } from './enrich-exercise'
+import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
-import AiPanel from './AiPanel'
+import AiPanel from './ai-ask/AiPanel'
 
 interface Props {
   manifest: ReadingManifest
@@ -124,8 +124,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     if (step.subtitle) enriched.subtitle = step.subtitle
     if (step.summary) enriched.summary = step.summary
 
-    // 2) Merge discuss
-    if (step.discuss) enriched.manifestDiscuss = step.discuss
+    // 2) Merge discuss (now built directly from manifest in buildTasksFromManifest)
 
     // 3) Build/merge exercise — prefer API exerciseSpec (answer-safe) over manifest answerKey
     const apiSpec = exerciseSpecs[stepIdx]

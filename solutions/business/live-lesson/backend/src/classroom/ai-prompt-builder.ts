@@ -91,7 +91,43 @@ export class AiPromptBuilder {
 - 鼓励学生自己思考`;
   }
 
-  /** Build the full discuss system prompt with L1-L8 layers */
+  /** Build Socratic discuss prompt — uses manifest systemPrompt directly */
+  buildSocraticPrompt(
+    manifest: any,
+    stepDef: any,
+    submission: { scoreJson: any; dataJson: any } | null,
+    priorObservationContext?: string | null,
+  ): string {
+    const layers = this.buildBaseContextLayers(manifest, stepDef);
+
+    // L4: Student performance from submission
+    if (submission) {
+      const score = submission.scoreJson;
+      const data = submission.dataJson;
+      const scoreSummary = score
+        ? `Score: ${score.total ?? 'N/A'}%${score.byDimension ? `, Details: ${JSON.stringify(score.byDimension)}` : ''}`
+        : 'No score available';
+      const answerSummary = data
+        ? `Student answers: ${JSON.stringify(data).slice(0, 500)}`
+        : '';
+      layers.push(`【L4: Student Practice Performance】\n${scoreSummary}\n${answerSummary}`);
+    }
+
+    // L4.5: Prior observation context
+    if (priorObservationContext) {
+      layers.push(`【L4.5: Prior Observations for This Student】\n${priorObservationContext}`);
+    }
+
+    // L5: Socratic system prompt from manifest (replaces old L5-L8)
+    const discuss = stepDef?.discuss;
+    if (discuss?.systemPrompt) {
+      layers.push(discuss.systemPrompt);
+    }
+
+    return layers.join('\n\n');
+  }
+
+  /** @deprecated Use buildSocraticPrompt instead */
   buildDiscussSystemPrompt(
     manifest: any,
     stepDef: any,
@@ -306,6 +342,46 @@ Do NOT include a followUpQuestion key.`);
     if (options?.responseFormat) {
       body.response_format = options.responseFormat;
     }
+
+    const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`GLM API error ${res.status}: ${text}`);
+    }
+
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content ?? 'AI 未返回有效回答。';
+  }
+
+  /** Multi-turn conversation call — accepts pre-built messages array */
+  async callGlmConversation(
+    systemPrompt: string,
+    messages: Array<{ role: 'assistant' | 'user'; content: string }>,
+    options?: { maxTokens?: number; temperature?: number; model?: string },
+  ): Promise<string> {
+    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
+    if (!apiKey) {
+      throw new Error('ZHIPU_API_KEY not configured');
+    }
+    const model = options?.model || this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
+
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages,
+      ],
+      max_tokens: options?.maxTokens ?? 512,
+      temperature: options?.temperature ?? 0.75,
+    };
 
     const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
       method: 'POST',

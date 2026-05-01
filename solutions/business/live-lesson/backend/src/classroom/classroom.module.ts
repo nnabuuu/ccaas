@@ -15,29 +15,66 @@ import {
   OBSERVER_HANDLER_METADATA,
 } from '@kedge-agentic/observer-engine';
 import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySink } from '@kedge-agentic/observer-engine';
+
+// ── Infra ──
 import { ClassroomService } from './classroom.service';
+import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
-import { ObservationService } from './observation.service';
-import { GradingService } from './grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
-import { GlmLlmGateway } from './adapters/glm-llm-gateway';
-import { ClassroomNotifySink } from './adapters/classroom-notify-sink';
-import { JoinHandler } from './handlers/join-handler';
-import { ExerciseHandler } from './handlers/exercise-handler';
-import { StepCompleteHandler } from './handlers/step-complete-handler';
-import { ChatTurnHandler } from './handlers/chat-turn-handler';
-import { StatusChangeHandler } from './handlers/status-change-handler';
+
+// ── Exercise component ──
+import { ExerciseService } from './exercise/exercise.service';
+import { ExerciseController } from './exercise/exercise.controller';
+import { GradingService } from './exercise/grading.service';
+
+// ── Socratic Discuss component ──
+import { DiscussService } from './socratic-discuss/discuss.service';
+import { DiscussController } from './socratic-discuss/discuss.controller';
+
+// ── AI Ask component ──
+import { AiAskService } from './ai-ask/ai-ask.service';
+import { AiAskController } from './ai-ask/ai-ask.controller';
+
+// ── Personal Touch component ──
+import { PersonalizationService } from './personal-touch/personalization.service';
+import { PersonalTouchController } from './personal-touch/personal-touch.controller';
+
+// ── Observation component ──
+import { ObservationService } from './observation/observation.service';
+import { GlmLlmGateway } from './observation/adapters/glm-llm-gateway';
+import { ClassroomNotifySink } from './observation/adapters/classroom-notify-sink';
+import { JoinHandler } from './observation/handlers/join-handler';
+import { ExerciseHandler } from './observation/handlers/exercise-handler';
+import { StepCompleteHandler } from './observation/handlers/step-complete-handler';
+import { ChatTurnHandler } from './observation/handlers/chat-turn-handler';
+import { StatusChangeHandler } from './observation/handlers/status-change-handler';
 
 @Module({
   imports: [
     DiscoveryModule,
     TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ObservationEvent, ObservationRecord, ObserverEventRecord]),
   ],
-  controllers: [ClassroomController],
+  controllers: [
+    ClassroomController,
+    ExerciseController,
+    DiscussController,
+    AiAskController,
+    PersonalTouchController,
+  ],
   providers: [
-    ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
-    GlmLlmGateway, ClassroomNotifySink,
+    // Infra
+    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator,
+    // Exercise
+    ExerciseService, GradingService,
+    // Socratic Discuss
+    DiscussService,
+    // AI Ask
+    AiAskService,
+    // Personal Touch
+    PersonalizationService,
+    // Observation
+    ObservationService, GlmLlmGateway, ClassroomNotifySink,
     JoinHandler, ExerciseHandler, StepCompleteHandler, ChatTurnHandler, StatusChangeHandler,
     {
       provide: OBSERVER_ENGINE,

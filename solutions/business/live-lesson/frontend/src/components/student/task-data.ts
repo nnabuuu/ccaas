@@ -39,19 +39,16 @@ export interface TaskExercise {
   mapItems?: MapItem[]
   minReasonLength?: number
 }
-export interface TaskDiscussProbe {
-  q: string; translate: string
+export interface FallbackMC {
+  question: string; questionZh?: string
+  options: string[]; correctIndex: number
+  explanation: string; explanationZh?: string
 }
 export interface TaskDiscuss {
-  probe: TaskDiscussProbe
-  insight: string; insightZh: string
-}
-/** Manifest-sourced discuss metadata for AI generation */
-export interface ManifestDiscuss {
-  probe: { q: string; translate?: string }
-  targetInsight?: string
-  commonMisconceptions?: string[]
-  scaffoldStrategies?: string[]
+  openingQ: string; openingQZh?: string
+  scaffolds?: string[]
+  maxRounds: number; maxTimeSeconds: number
+  fallbackMC: FallbackMC
   insight: string; insightZh?: string
 }
 export interface InstructionView {
@@ -65,7 +62,6 @@ export interface Task {
   id: number; name: string; subtitle: string; time: string
   focus: number[]; intro: string; exercise: TaskExercise
   discuss: TaskDiscuss; summary: string
-  manifestDiscuss?: ManifestDiscuss
   instructionView?: InstructionView
 }
 
@@ -129,9 +125,14 @@ export function buildTasksFromManifest(
         label: step.exerciseLabel || '',
       },
       discuss: {
-        probe: { q: step.discuss?.probe?.q || '', translate: step.discuss?.probe?.translate || '' },
+        openingQ: step.discuss?.openingQ || '',
+        openingQZh: step.discuss?.openingQZh,
+        scaffolds: step.discuss?.scaffolds,
+        maxRounds: step.discuss?.maxRounds || 6,
+        maxTimeSeconds: step.discuss?.maxTimeSeconds || 300,
+        fallbackMC: step.discuss?.fallbackMC || { question: '', options: [], correctIndex: 0, explanation: '' },
         insight: step.discuss?.insight || '',
-        insightZh: step.discuss?.insightZh || '',
+        insightZh: step.discuss?.insightZh,
       },
       summary: step.summary || '',
     }))

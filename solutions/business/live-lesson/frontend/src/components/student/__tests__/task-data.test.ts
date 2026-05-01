@@ -57,7 +57,7 @@ describe('buildTasksFromManifest', () => {
       description: 'Read carefully', focusParagraphs: ['p1', 'p3'],
       exerciseLabel: 'Quiz Time',
       answerKey: { type: 'quiz' },
-      discuss: { probe: { q: 'Why?', translate: '为什么?' }, insight: 'Because', insightZh: '因为' },
+      discuss: { openingQ: 'Why?', openingQZh: '为什么?', maxRounds: 6, maxTimeSeconds: 300, fallbackMC: { question: 'Q?', options: ['A', 'B'], correctIndex: 0, explanation: 'E' }, insight: 'Because', insightZh: '因为' },
       summary: 'Good job',
     }]
     const tasks = buildTasksFromManifest(steps)
@@ -71,7 +71,7 @@ describe('buildTasksFromManifest', () => {
     expect(t.intro).toBe('Read carefully')
     expect(t.exercise.type).toBe('quiz')
     expect(t.exercise.label).toBe('Quiz Time')
-    expect(t.discuss.probe.q).toBe('Why?')
+    expect(t.discuss.openingQ).toBe('Why?')
     expect(t.summary).toBe('Good job')
   })
 
@@ -84,7 +84,7 @@ describe('buildTasksFromManifest', () => {
     expect(tasks[0].time).toBe('')
     expect(tasks[0].focus).toEqual([])
     expect(tasks[0].exercise.type).toBe('quiz')
-    expect(tasks[0].discuss.probe.q).toBe('')
+    expect(tasks[0].discuss.openingQ).toBe('')
   })
 
   it('name priority: displayName > labelEn > label', () => {

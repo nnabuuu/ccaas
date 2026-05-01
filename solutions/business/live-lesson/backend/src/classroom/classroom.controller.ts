@@ -1,28 +1,16 @@
-import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ClassroomService } from './classroom.service';
+import { StudentSubmissionService } from './student-submission.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
-import { CheckDto } from './dto/check.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
-import { AiAskDto } from './dto/ai-ask.dto';
-import { AiDiscussDto } from './dto/ai-discuss.dto';
-import { PersonalTouchDto } from './dto/personal-touch.dto';
-import { BonusCheckDto } from './dto/bonus-check.dto';
+import { validateCode } from './validate-code';
 
-const CODE_RE = /^[A-Z2-9]{6}$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function validateCode(code: string): string {
-  const upper = code.toUpperCase();
-  if (!CODE_RE.test(upper)) {
-    throw new BadRequestException('Invalid session code format');
-  }
-  return upper;
-}
 
 function validateCodeOrId(value: string): string {
   if (value.length > 6) {
@@ -35,7 +23,10 @@ function validateCodeOrId(value: string): string {
 @ApiTags('classroom')
 @Controller('classroom')
 export class ClassroomController {
-  constructor(private readonly classroomService: ClassroomService) {}
+  constructor(
+    private readonly classroomService: ClassroomService,
+    private readonly studentSubmission: StudentSubmissionService,
+  ) {}
 
   // ── Session lifecycle ──
 
@@ -70,13 +61,17 @@ export class ClassroomController {
   @Post(':code/join')
   async join(@Param('code') code: string, @Body() dto: JoinDto) {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.join(session, dto.name);
+    const { _broadcast, ...result } = await this.studentSubmission.join(session, dto.name);
+    if (_broadcast) this.classroomService.broadcast(session.id);
+    return result;
   }
 
   @Post(':code/submit')
   async submit(@Param('code') code: string, @Body() dto: SubmitDto) {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.submit(session, dto.studentId, dto.step, dto.data);
+    const result = await this.studentSubmission.submit(session, dto.studentId, dto.step, dto.data);
+    this.classroomService.broadcast(session.id);
+    return result;
   }
 
   @Get(':code/state')
@@ -108,75 +103,5 @@ export class ClassroomController {
   async notify(@Param('code') code: string, @Body() dto: NotifyDto) {
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
     return this.classroomService.notify(session.id, dto.message, dto.type);
-  }
-
-  // ── Exercise API (session-scoped, answer-safe) ──
-
-  @Get(':code/steps/:step/exercise')
-  async getExercise(
-    @Param('code') code: string,
-    @Param('step', ParseIntPipe) step: number,
-  ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.getExerciseSpec(session, step);
-  }
-
-  @Post(':code/steps/:step/check')
-  async checkAnswer(
-    @Param('code') code: string,
-    @Param('step', ParseIntPipe) step: number,
-    @Body() dto: CheckDto,
-  ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.checkAnswer(session, dto.studentId, step, dto.data);
-  }
-
-  // ── Personal Touch + Bonus ──
-
-  @Post(':code/personal-touch')
-  async personalTouch(@Param('code') code: string, @Body() dto: PersonalTouchDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.getPersonalTouch(session, dto.studentId);
-  }
-
-  @Get(':code/bonus/:bonusStep/exercise')
-  async getBonusExercise(
-    @Param('code') code: string,
-    @Param('bonusStep', ParseIntPipe) bonusStep: number,
-  ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.getBonusExercise(session, bonusStep);
-  }
-
-  @Post(':code/bonus/:bonusStep/check')
-  async checkBonusAnswer(
-    @Param('code') code: string,
-    @Param('bonusStep', ParseIntPipe) bonusStep: number,
-    @Body() dto: BonusCheckDto,
-  ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    return this.classroomService.checkBonusAnswer(session, dto.studentId, bonusStep, dto.data);
-  }
-
-  // ── AI endpoints ──
-
-  @Post(':code/ai/ask')
-  async aiAsk(@Param('code') code: string, @Body() dto: AiAskDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    const result = await this.classroomService.aiAsk(session, dto.studentId, dto.step, dto.question);
-    return { answer: result.answer, category: result.category };
-  }
-
-  @Post(':code/ai/discuss')
-  async aiDiscuss(@Param('code') code: string, @Body() dto: AiDiscussDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
-    const { reply, followUpQuestion, quality } = await this.classroomService.aiDiscuss(
-      session,
-      dto.studentId,
-      dto.taskNum,
-      dto.interactionType,
-      dto.studentResponse,
-    );
-    return { reply, followUpQuestion, quality };
   }
 }

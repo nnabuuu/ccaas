@@ -43,11 +43,24 @@ const StudentViewSchema = z.object({
 
 // ── Discuss ──
 
+const FallbackMCSchema = z.object({
+  question: z.string(),
+  questionZh: z.string().optional(),
+  options: z.array(z.string()).min(2),
+  correctIndex: z.number().int().min(0),
+  explanation: z.string(),
+  explanationZh: z.string().optional(),
+});
+
 const DiscussSchema = z.object({
-  probe: z.object({ q: z.string(), translate: z.string().optional() }),
-  targetInsight: z.string().optional(),
-  commonMisconceptions: z.array(z.string()).optional(),
-  scaffoldStrategies: z.array(z.string()).optional(),
+  openingQ: z.string(),
+  openingQZh: z.string().optional(),
+  goal: z.string(),
+  systemPrompt: z.string(),
+  scaffolds: z.array(z.string()).optional(),
+  maxRounds: z.number().int().min(1).default(6),
+  maxTimeSeconds: z.number().int().min(60).default(300),
+  fallbackMC: FallbackMCSchema,
   insight: z.string(),
   insightZh: z.string().optional(),
 });
@@ -165,3 +178,5 @@ export type Manifest = z.infer<typeof ManifestSchema>;
 export type PersonalTouch = z.infer<typeof PersonalTouchSchema>;
 export type BonusArticle = z.infer<typeof BonusArticleSchema>;
 export type BonusStep = z.infer<typeof BonusStepSchema>;
+export type Discuss = z.infer<typeof DiscussSchema>;
+export type FallbackMC = z.infer<typeof FallbackMCSchema>;

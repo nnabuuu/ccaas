@@ -159,10 +159,16 @@ export function sanitizeManifest(manifest: unknown): unknown {
   const steps: Array<Record<string, unknown>> = clone.readingSteps || [];
 
   for (const step of steps) {
-    if (!step.answerKey) continue;
-    const spec = sanitizeAnswerKey(step.answerKey, step.exerciseLabel as string | undefined);
-    if (spec) {
-      step.answerKey = spec;
+    if (step.answerKey) {
+      const spec = sanitizeAnswerKey(step.answerKey, step.exerciseLabel as string | undefined);
+      if (spec) {
+        step.answerKey = spec;
+      }
+    }
+    if (step.discuss && typeof step.discuss === 'object') {
+      const d = step.discuss as Record<string, unknown>;
+      delete d.systemPrompt;
+      delete d.goal;
     }
   }
 

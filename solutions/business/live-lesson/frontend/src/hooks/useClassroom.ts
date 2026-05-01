@@ -349,7 +349,7 @@ export function useAiAsk(sessionCode: string) {
   return { ask, loading }
 }
 
-// ── AI Discuss hook (student) ──
+// ── AI Discuss hook (Socratic conversation) ──
 
 export function useAiDiscuss(sessionCode: string) {
   const [loading, setLoading] = useState(false)
@@ -357,16 +357,17 @@ export function useAiDiscuss(sessionCode: string) {
   const discuss = useCallback(async (
     studentId: string,
     taskNum: number,
-    interactionType: 'probeReply' | 'followUpReply',
-    studentResponse: string,
-  ): Promise<{ reply: string; followUpQuestion?: string; quality: 'pass' | 'retry' } | null> => {
+    messages: Array<{ role: 'ai' | 'student'; text: string }>,
+    round: number,
+    timeUsedSeconds: number,
+  ): Promise<{ reply: string; goalReached: boolean } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/${sessionCode}/ai/discuss`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, taskNum, interactionType, studentResponse }),
+        body: JSON.stringify({ studentId, taskNum, messages, round, timeUsedSeconds }),
       })
       if (!res.ok) return null
       return await res.json()
@@ -378,6 +379,31 @@ export function useAiDiscuss(sessionCode: string) {
   }, [sessionCode])
 
   return { discuss, loading }
+}
+
+// ── Discuss completion reporting hook ──
+
+export function useDiscussComplete(sessionCode: string) {
+  const complete = useCallback(async (data: {
+    studentId: string; taskNum: number
+    completionType: 'goal_reached' | 'fallback_rounds' | 'fallback_time'
+    roundsUsed: number; timeUsedSeconds: number
+    mcSelectedIndex?: number
+  }): Promise<{ ok: boolean; mcCorrect?: boolean } | null> => {
+    if (!sessionCode) return null
+    try {
+      const res = await fetch(`${API_BASE}/${sessionCode}/ai/discuss-complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      return null
+    }
+  }, [sessionCode])
+  return { complete }
 }
 
 // ── Teacher stream hook ──

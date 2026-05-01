@@ -2,14 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ClassroomService } from './classroom.service';
+import { StudentSubmissionService } from './student-submission.service';
+import { ExerciseService } from './exercise/exercise.service';
+import { DiscussService } from './socratic-discuss/discuss.service';
+import { AiAskService } from './ai-ask/ai-ask.service';
+import { PersonalizationService } from './personal-touch/personalization.service';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ObservationEvent } from '../entities/observation-event.entity';
 import { Lesson } from '../entities/lesson.entity';
-import { ObservationService } from './observation.service';
-import { GradingService } from './grading.service';
+import { ObservationService } from './observation/observation.service';
+import { GradingService } from './exercise/grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
 import { Repository } from 'typeorm';
@@ -160,7 +165,7 @@ const NO_KEY_MANIFEST = {
 
 /** Advance a student to the given task by submitting all prior task steps. */
 async function advanceToTask(
-  svc: ClassroomService,
+  svc: StudentSubmissionService,
   session: ClassroomSession,
   studentId: string,
   targetTask: number,
@@ -183,6 +188,7 @@ async function advanceToTask(
 describe('ClassroomService — persistence', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
   let sessionRepo: Repository<ClassroomSession>;
   let studentRepo: Repository<Student>;
   let submissionRepo: Repository<Submission>;
@@ -203,12 +209,14 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
       providers: [
-        ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
 
     service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     studentRepo = module.get(getRepositoryToken(Student));
     submissionRepo = module.get(getRepositoryToken(Submission));
@@ -252,7 +260,7 @@ describe('ClassroomService — persistence', () => {
       const created = await service.createSession('test-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      const joined = await service.join(session!, '测试学生');
+      const joined = await submissionSvc.join(session!, '测试学生');
       studentId = joined.studentId;
     });
 
@@ -271,7 +279,7 @@ describe('ClassroomService — persistence', () => {
 
     it('should persist score, advance progress, and reflect in getState after submit', async () => {
       // Submit and verify score
-      const result = await service.submit(session, studentId, 1, {
+      const result = await submissionSvc.submit(session, studentId, 1, {
         answers: [1, 0],
       });
       expect(result.ok).toBe(true);
@@ -338,7 +346,7 @@ describe('ClassroomService — persistence', () => {
     });
 
     it('should handle re-join returning existing student with persisted progress', async () => {
-      const rejoined = await service.join(session, '测试学生');
+      const rejoined = await submissionSvc.join(session, '测试学生');
       expect(rejoined.studentId).toBe(studentId);
 
       // Progress should still reflect completed state (test-lesson has 1 task)
@@ -349,7 +357,7 @@ describe('ClassroomService — persistence', () => {
 
     it('should handle re-submit updating score', async () => {
       // Submit again with wrong answers
-      const result = await service.submit(session, studentId, 1, {
+      const result = await submissionSvc.submit(session, studentId, 1, {
         answers: [0, 1],
       });
       expect(result.score.total).toBe(0);
@@ -365,7 +373,7 @@ describe('ClassroomService — persistence', () => {
     it('should mark session as ended', async () => {
       const created = await service.createSession('test-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      await service.join(session!, '学生A');
+      await submissionSvc.join(session!, '学生A');
 
       const result = await service.endSession(created.code);
       expect(result.status).toBe('ended');
@@ -378,8 +386,8 @@ describe('ClassroomService — persistence', () => {
     it('should preserve student and submission data after endSession', async () => {
       const created = await service.createSession('test-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const joined = await service.join(session!, '学生B');
-      await service.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+      const joined = await submissionSvc.join(session!, '学生B');
+      await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
 
       await service.endSession(created.code);
 
@@ -399,6 +407,10 @@ describe('ClassroomService — persistence', () => {
 describe('ClassroomService — extended coverage', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let exerciseSvc: ExerciseService;
+  let discussSvc: DiscussService;
+    let aiAskSvc: AiAskService;
   let aiPromptBuilder: AiPromptBuilder;
   let sessionRepo: Repository<ClassroomSession>;
   let studentRepo: Repository<Student>;
@@ -420,12 +432,17 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
       providers: [
-        ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
 
     service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    exerciseSvc = module.get(ExerciseService);
+    discussSvc = module.get(DiscussService);
+      aiAskSvc = module.get(AiAskService);
     aiPromptBuilder = module.get(AiPromptBuilder);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     studentRepo = module.get(getRepositoryToken(Student));
@@ -473,16 +490,16 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      idA = (await service.join(session, '学生A')).studentId;
-      idB = (await service.join(session, '学生B')).studentId;
-      idC = (await service.join(session, '学生C')).studentId;
+      idA = (await submissionSvc.join(session, '学生A')).studentId;
+      idB = (await submissionSvc.join(session, '学生B')).studentId;
+      idC = (await submissionSvc.join(session, '学生C')).studentId;
 
       // A submits step 1 (task 1) → advances to task 2
-      await service.submit(session, idA, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, idA, 1, { answers: [1, 0] });
 
       // B submits step 1 (task 1) → task 2, then step 3 (task 2) → task 3
-      await service.submit(session, idB, 1, { answers: [1, 0] });
-      await service.submit(session, idB, 3, {
+      await submissionSvc.submit(session, idB, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, idB, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
 
@@ -533,9 +550,9 @@ describe('ClassroomService — extended coverage', () => {
       const createdB = await service.createSession('full-lesson');
       const sessB = await sessionRepo.findOne({ where: { id: createdB.sessionId } });
 
-      await service.join(sessA!, '隔离学生1');
-      await service.join(sessA!, '隔离学生2');
-      await service.join(sessB!, '隔离学生3');
+      await submissionSvc.join(sessA!, '隔离学生1');
+      await submissionSvc.join(sessA!, '隔离学生2');
+      await submissionSvc.join(sessB!, '隔离学生3');
 
       const stateA = await service.getState(sessA!.id);
       const stateB = await service.getState(sessB!.id);
@@ -553,20 +570,20 @@ describe('ClassroomService — extended coverage', () => {
     it('should set currentPhase to completed when all tasks are submitted', async () => {
       const created = await service.createSession('full-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const joined = await service.join(session!, '完成学生');
+      const joined = await submissionSvc.join(session!, '完成学生');
       const sid = joined.studentId;
 
       // Submit all 6 tasks in order
-      await service.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
-      await service.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
-      await service.submit(session!, sid, 5, {
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
+      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
+      await submissionSvc.submit(session!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       }); // task 3→4
-      await service.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] }); // task 4→5
-      await service.submit(session!, sid, 9, {
+      await submissionSvc.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] }); // task 4→5
+      await submissionSvc.submit(session!, sid, 9, {
         order: ['Introduction', 'Body', 'Conclusion'],
       }); // task 5 → completed
 
@@ -578,11 +595,11 @@ describe('ClassroomService — extended coverage', () => {
     it('should save submission but not change progress for non-task steps', async () => {
       const created = await service.createSession('full-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const joined = await service.join(session!, '非任务学生');
+      const joined = await submissionSvc.join(session!, '非任务学生');
       const sid = joined.studentId;
 
       // Step 2 is not in STEP_TO_TASK mapping
-      await service.submit(session!, sid, 2, { note: 'some reading notes' });
+      await submissionSvc.submit(session!, sid, 2, { note: 'some reading notes' });
 
       // Submission saved
       const sub = await submissionRepo.findOne({
@@ -600,18 +617,18 @@ describe('ClassroomService — extended coverage', () => {
     it('should not regress student progress when re-submitting an earlier step', async () => {
       const created = await service.createSession('full-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const joined = await service.join(session!, '超前学生');
+      const joined = await submissionSvc.join(session!, '超前学生');
       const sid = joined.studentId;
 
       // Advance to task 3
-      await service.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
-      await service.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
+      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
 
       let student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentTask).toBe(3);
 
       // Re-submit step 1 (task 1) — should NOT regress to task 2
-      await service.submit(session!, sid, 1, { answers: [0, 1] });
+      await submissionSvc.submit(session!, sid, 1, { answers: [0, 1] });
 
       student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentTask).toBe(3);
@@ -662,7 +679,7 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      studentId = (await service.join(session, 'AI学生')).studentId;
+      studentId = (await submissionSvc.join(session, 'AI学生')).studentId;
     });
 
     afterEach(() => jest.restoreAllMocks());
@@ -672,7 +689,7 @@ describe('ClassroomService — extended coverage', () => {
         '【概念理解】Skimming是一种快速阅读策略，帮助你抓住文章大意。',
       );
 
-      const result = await service.aiAsk(session, studentId, 1, '什么是skimming？');
+      const result = await aiAskSvc.aiAsk(session, studentId, 1, '什么是skimming？');
 
       expect(result.category).toBe('概念理解');
       expect(result.answer).toBe('Skimming是一种快速阅读策略，帮助你抓住文章大意。');
@@ -697,7 +714,7 @@ describe('ClassroomService — extended coverage', () => {
         new Error('API timeout'),
       );
 
-      const result = await service.aiAsk(session, studentId, 1, '这篇文章讲了什么？');
+      const result = await aiAskSvc.aiAsk(session, studentId, 1, '这篇文章讲了什么？');
 
       expect(result.category).toBe('其他');
       expect(result.answer).toBe('AI 助教暂时无法回答，请稍后再试。');
@@ -715,7 +732,7 @@ describe('ClassroomService — extended coverage', () => {
 
     it('should throw NotFoundException for invalid studentId', async () => {
       await expect(
-        service.aiAsk(session, 'non-existent-id', 1, '问题'),
+        aiAskSvc.aiAsk(session, 'non-existent-id', 1, '问题'),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -753,7 +770,7 @@ describe('ClassroomService — extended coverage', () => {
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       await expect(
-        service.submit(session!, 'non-existent-student', 1, { answers: [1, 0] }),
+        submissionSvc.submit(session!, 'non-existent-student', 1, { answers: [1, 0] }),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -893,10 +910,10 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('match grading', () => {
       it('should score 100 for all correct pairs', async () => {
-        const freshId = (await service.join(session, '匹配全对学生')).studentId;
-        await advanceToTask(service, session, freshId, 2);
+        const freshId = (await submissionSvc.join(session, '匹配全对学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 2);
 
-        const result = await service.submit(session, freshId, 3, {
+        const result = await submissionSvc.submit(session, freshId, 3, {
           pairs: ['skimming', 'scanning', 'inferring'],
         });
         expect(result.score.total).toBe(100);
@@ -904,10 +921,10 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should score partially for some correct pairs', async () => {
-        const freshId = (await service.join(session, '匹配部分学生')).studentId;
-        await advanceToTask(service, session, freshId, 2);
+        const freshId = (await submissionSvc.join(session, '匹配部分学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 2);
 
-        const result = await service.submit(session, freshId, 3, {
+        const result = await submissionSvc.submit(session, freshId, 3, {
           pairs: ['skimming', 'wrong', 'inferring'],
         });
         expect(result.score.total).toBe(67); // 2/3 = 66.67 → round to 67
@@ -917,10 +934,10 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should score 0 for all wrong pairs', async () => {
-        const freshId = (await service.join(session, '匹配全错学生')).studentId;
-        await advanceToTask(service, session, freshId, 2);
+        const freshId = (await submissionSvc.join(session, '匹配全错学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 2);
 
-        const result = await service.submit(session, freshId, 3, {
+        const result = await submissionSvc.submit(session, freshId, 3, {
           pairs: ['wrong1', 'wrong2', 'wrong3'],
         });
         expect(result.score.total).toBe(0);
@@ -929,10 +946,10 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('order grading', () => {
       it('should score 100 for correct order', async () => {
-        const freshId = (await service.join(session, '排序学生')).studentId;
-        await advanceToTask(service, session, freshId, 5);
+        const freshId = (await submissionSvc.join(session, '排序学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 5);
 
-        const result = await service.submit(session, freshId, 9, {
+        const result = await submissionSvc.submit(session, freshId, 9, {
           order: ['Introduction', 'Body', 'Conclusion'],
         });
         expect(result.score.total).toBe(100);
@@ -940,10 +957,10 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should score 0 for wrong order', async () => {
-        const freshId = (await service.join(session, '排序错误学生')).studentId;
-        await advanceToTask(service, session, freshId, 5);
+        const freshId = (await submissionSvc.join(session, '排序错误学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 5);
 
-        const result = await service.submit(session, freshId, 9, {
+        const result = await submissionSvc.submit(session, freshId, 9, {
           order: ['Conclusion', 'Body', 'Introduction'],
         });
         expect(result.score.total).toBe(0);
@@ -953,10 +970,10 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('stance grading', () => {
       it('should score 100 for valid position + enough evidence', async () => {
-        const freshId = (await service.join(session, '观点学生')).studentId;
-        await advanceToTask(service, session, freshId, 4);
+        const freshId = (await submissionSvc.join(session, '观点学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 4);
 
-        const result = await service.submit(session, freshId, 7, {
+        const result = await submissionSvc.submit(session, freshId, 7, {
           position: 'agree',
           evidence: ['reason1', 'reason2'],
         });
@@ -966,10 +983,10 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should score 50 for valid position but insufficient evidence', async () => {
-        const freshId = (await service.join(session, '证据不足学生')).studentId;
-        await advanceToTask(service, session, freshId, 4);
+        const freshId = (await submissionSvc.join(session, '证据不足学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 4);
 
-        const result = await service.submit(session, freshId, 7, {
+        const result = await submissionSvc.submit(session, freshId, 7, {
           position: 'agree',
           evidence: ['only_one'],
         });
@@ -979,10 +996,10 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should score 0 for invalid position and no evidence', async () => {
-        const freshId = (await service.join(session, '全错学生')).studentId;
-        await advanceToTask(service, session, freshId, 4);
+        const freshId = (await submissionSvc.join(session, '全错学生')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 4);
 
-        const result = await service.submit(session, freshId, 7, {
+        const result = await submissionSvc.submit(session, freshId, 7, {
           position: 'neutral', // not in validPositions
           evidence: [],
         });
@@ -994,9 +1011,9 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('quiz attemptCounts passthrough', () => {
       it('should include attemptCounts in score when provided', async () => {
-        const freshId = (await service.join(session, 'QuizAttemptStudent')).studentId;
+        const freshId = (await submissionSvc.join(session, 'QuizAttemptStudent')).studentId;
 
-        const result = await service.submit(session, freshId, 1, {
+        const result = await submissionSvc.submit(session, freshId, 1, {
           answers: [1, 0],
           attemptCounts: { 0: 3, 1: 1 },
         });
@@ -1005,9 +1022,9 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should not include attemptCounts when not provided', async () => {
-        const freshId = (await service.join(session, 'QuizNoAttempt')).studentId;
+        const freshId = (await submissionSvc.join(session, 'QuizNoAttempt')).studentId;
 
-        const result = await service.submit(session, freshId, 1, {
+        const result = await submissionSvc.submit(session, freshId, 1, {
           answers: [1, 0],
         });
         expect(result.score.total).toBe(100);
@@ -1017,10 +1034,10 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('match attemptCounts passthrough', () => {
       it('should include attemptCounts in score when provided', async () => {
-        const freshId = (await service.join(session, 'MatchAttemptStudent')).studentId;
-        await advanceToTask(service, session, freshId, 2);
+        const freshId = (await submissionSvc.join(session, 'MatchAttemptStudent')).studentId;
+        await advanceToTask(submissionSvc, session, freshId, 2);
 
-        const result = await service.submit(session, freshId, 3, {
+        const result = await submissionSvc.submit(session, freshId, 3, {
           pairs: ['skimming', 'scanning', 'inferring'],
           attemptCounts: { 0: 1, 1: 2, 2: 4 },
         });
@@ -1033,9 +1050,9 @@ describe('ClassroomService — extended coverage', () => {
       it('should return null score for step without answerKey', async () => {
         const created = await service.createSession('no-key-lesson');
         const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-        const sid = (await service.join(sess!, '无key学生')).studentId;
+        const sid = (await submissionSvc.join(sess!, '无key学生')).studentId;
 
-        const result = await service.submit(sess!, sid, 1, { text: 'some reading' });
+        const result = await submissionSvc.submit(sess!, sid, 1, { text: 'some reading' });
         expect(result.score).toBeNull();
 
         // Submission still saved
@@ -1064,12 +1081,12 @@ describe('ClassroomService — extended coverage', () => {
         }));
         const created = await service.createSession('ephemeral-lesson');
         const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-        const sid = (await service.join(sess!, 'GhostStudent')).studentId;
+        const sid = (await submissionSvc.join(sess!, 'GhostStudent')).studentId;
 
         // Remove the lesson → gradeSubmission will hit !lesson branch
         await lessonRepo.delete('ephemeral-lesson');
 
-        const result = await service.submit(sess!, sid, 1, { answers: [0] });
+        const result = await submissionSvc.submit(sess!, sid, 1, { answers: [0] });
         expect(result.score).toBeNull();
       });
     });
@@ -1087,8 +1104,8 @@ describe('ClassroomService — extended coverage', () => {
 
     describe('order — per-position items', () => {
       it('should return all correct when order matches', async () => {
-        const sid = (await service.join(session, 'OrderCheckOK')).studentId;
-        const result = await service.checkAnswer(session, sid, 1, {
+        const sid = (await submissionSvc.join(session, 'OrderCheckOK')).studentId;
+        const result = await exerciseSvc.checkAnswer(session, sid, 1, {
           order: ['Introduction', 'Body', 'Conclusion'],
         });
         expect(result.type).toBe('order');
@@ -1099,9 +1116,9 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should mark only wrong positions as incorrect', async () => {
-        const sid = (await service.join(session, 'OrderCheckPartial')).studentId;
+        const sid = (await submissionSvc.join(session, 'OrderCheckPartial')).studentId;
         // Swap first and last: [Conclusion, Body, Introduction]
-        const result = await service.checkAnswer(session, sid, 1, {
+        const result = await exerciseSvc.checkAnswer(session, sid, 1, {
           order: ['Conclusion', 'Body', 'Introduction'],
         });
         expect(result.type).toBe('order');
@@ -1116,8 +1133,8 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should return all wrong when order is fully reversed', async () => {
-        const sid = (await service.join(session, 'OrderCheckAllWrong')).studentId;
-        const result = await service.checkAnswer(session, sid, 1, {
+        const sid = (await submissionSvc.join(session, 'OrderCheckAllWrong')).studentId;
+        const result = await exerciseSvc.checkAnswer(session, sid, 1, {
           order: ['Body', 'Conclusion', 'Introduction'],
         });
         expect(result.allCorrect).toBe(false);
@@ -1141,8 +1158,8 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should return per-item correct flags based on placement and reasoning', async () => {
-        const sid = (await service.join(session, 'MapCheckOK')).studentId;
-        const result = await service.checkAnswer(session, sid, 3, {
+        const sid = (await submissionSvc.join(session, 'MapCheckOK')).studentId;
+        const result = await exerciseSvc.checkAnswer(session, sid, 3, {
           placements: { itemA: { x: 0.5, y: 0.5 }, itemB: { x: -0.5, y: -0.5 } },
           reasons: { itemA: 'Because it is important and new', itemB: 'Because it is low and old' },
         });
@@ -1158,8 +1175,8 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should mark unplaced items as incorrect', async () => {
-        const sid = (await service.join(session, 'MapCheckMissing')).studentId;
-        const result = await service.checkAnswer(session, sid, 3, {
+        const sid = (await submissionSvc.join(session, 'MapCheckMissing')).studentId;
+        const result = await exerciseSvc.checkAnswer(session, sid, 3, {
           placements: { itemA: { x: 0.5, y: 0.5 } },  // itemB not placed
           reasons: { itemA: 'Good reason here' },
         });
@@ -1169,8 +1186,8 @@ describe('ClassroomService — extended coverage', () => {
       });
 
       it('should mark items with short reasons as incorrect', async () => {
-        const sid = (await service.join(session, 'MapCheckShortReason')).studentId;
-        const result = await service.checkAnswer(session, sid, 3, {
+        const sid = (await submissionSvc.join(session, 'MapCheckShortReason')).studentId;
+        const result = await exerciseSvc.checkAnswer(session, sid, 3, {
           placements: { itemA: { x: 0.5, y: 0.5 }, itemB: { x: -0.5, y: -0.5 } },
           reasons: { itemA: 'ok', itemB: 'Because it is low and old' },  // itemA reason too short (< 3)
         });
@@ -1188,16 +1205,16 @@ describe('ClassroomService — extended coverage', () => {
     it('should not advance on wrong answer, then advance on correct resubmit', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'RetryStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'RetryStudent')).studentId;
 
       // Wrong answer: should NOT advance
-      const wrong = await service.submit(sess!, sid, 1, { answers: [0, 1] });
+      const wrong = await submissionSvc.submit(sess!, sid, 1, { answers: [0, 1] });
       expect(wrong.score.total).toBe(0);
       expect(wrong.currentTask).toBe(1);
       expect(wrong.currentPhase).toBe('listen');
 
       // Correct answer: should advance
-      const correct = await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      const correct = await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
       expect(correct.score.total).toBe(100);
       expect(correct.currentTask).toBe(2);
       expect(correct.currentPhase).toBe('listen');
@@ -1206,9 +1223,9 @@ describe('ClassroomService — extended coverage', () => {
     it('should advance when score is null (no answerKey / open-ended)', async () => {
       const created = await service.createSession('no-key-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'OpenEndedStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'OpenEndedStudent')).studentId;
 
-      const result = await service.submit(sess!, sid, 1, { text: 'anything' });
+      const result = await submissionSvc.submit(sess!, sid, 1, { text: 'anything' });
       expect(result.score).toBeNull();
       // no-key-lesson has only 1 task → completing it marks as completed
       expect(result.currentTask).toBe(1);
@@ -1222,7 +1239,7 @@ describe('ClassroomService — extended coverage', () => {
     it('should send initial state with currentStep and activeNotifications', async () => {
       const created = await service.createSession('full-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      await service.join(session!, 'SSE学生');
+      await submissionSvc.join(session!, 'SSE学生');
 
       // Set teacher step and notification
       await service.setStep(created.sessionId, 5);
@@ -1279,16 +1296,16 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      idA = (await service.join(session, '仪表盘学生A')).studentId;
-      idB = (await service.join(session, '仪表盘学生B')).studentId;
-      idC = (await service.join(session, '仪表盘学生C')).studentId;
+      idA = (await submissionSvc.join(session, '仪表盘学生A')).studentId;
+      idB = (await submissionSvc.join(session, '仪表盘学生B')).studentId;
+      idC = (await submissionSvc.join(session, '仪表盘学生C')).studentId;
 
       // A: submits task 1 (perfect) and task 2 (all correct)
-      await service.submit(session, idA, 1, { answers: [1, 0] });
-      await service.submit(session, idA, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.submit(session, idA, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, idA, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
 
       // B: submits task 1 (all wrong)
-      await service.submit(session, idB, 1, { answers: [0, 1] });
+      await submissionSvc.submit(session, idB, 1, { answers: [0, 1] });
 
       // C: stays at task 1 (no submissions)
 
@@ -1380,19 +1397,19 @@ describe('ClassroomService — extended coverage', () => {
     it('should return done status for completed student', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, '完成状态学生')).studentId;
+      const sid = (await submissionSvc.join(sess!, '完成状态学生')).studentId;
 
       // Complete all 6 tasks
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
-      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await service.submit(sess!, sid, 5, {
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.submit(sess!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
-      await service.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await service.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
 
       const state = await service.getState(sess!.id);
       const student = state.students.find(s => s.id === sid);
@@ -1521,19 +1538,19 @@ describe('ClassroomService — extended coverage', () => {
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       // Submit quiz (step 1) from 4 students: 2 give same wrong answer for Q1
-      const s1 = (await service.join(session, 'IssueA')).studentId;
-      const s2 = (await service.join(session, 'IssueB')).studentId;
-      const s3 = (await service.join(session, 'IssueC')).studentId;
-      const s4 = (await service.join(session, 'IssueD')).studentId;
+      const s1 = (await submissionSvc.join(session, 'IssueA')).studentId;
+      const s2 = (await submissionSvc.join(session, 'IssueB')).studentId;
+      const s3 = (await submissionSvc.join(session, 'IssueC')).studentId;
+      const s4 = (await submissionSvc.join(session, 'IssueD')).studentId;
 
       // s1: Q1 wrong (chose C), Q2 correct
-      await service.submit(session, s1, 1, { answers: [2, 0] });
+      await submissionSvc.submit(session, s1, 1, { answers: [2, 0] });
       // s2: Q1 wrong (chose C), Q2 correct — same wrong answer as s1
-      await service.submit(session, s2, 1, { answers: [2, 0] });
+      await submissionSvc.submit(session, s2, 1, { answers: [2, 0] });
       // s3: Q1 wrong (chose D), Q2 wrong (chose B)
-      await service.submit(session, s3, 1, { answers: [3, 1] });
+      await submissionSvc.submit(session, s3, 1, { answers: [3, 1] });
       // s4: all correct
-      await service.submit(session, s4, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, s4, 1, { answers: [1, 0] });
     });
 
     it('should detect common wrong answers with count >= 2', async () => {
@@ -1582,10 +1599,10 @@ describe('ClassroomService — extended coverage', () => {
       // 3 students all get Q1 wrong → wrong=100% for Q1 dimension
       const ids: string[] = [];
       for (const name of ['AlertA', 'AlertB', 'AlertC']) {
-        ids.push((await service.join(sess!, name)).studentId);
+        ids.push((await submissionSvc.join(sess!, name)).studentId);
       }
       for (const id of ids) {
-        await service.submit(sess!, id, 1, { answers: [2, 0] }); // Q1 wrong, Q2 correct
+        await submissionSvc.submit(sess!, id, 1, { answers: [2, 0] }); // Q1 wrong, Q2 correct
       }
 
       const state = await service.getState(sess!.id);
@@ -1599,8 +1616,8 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       // 1 student, all correct → no alerts
-      const sid = (await service.join(sess!, 'PerfectStudent')).studentId;
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      const sid = (await submissionSvc.join(sess!, 'PerfectStudent')).studentId;
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
 
       const state = await service.getState(sess!.id);
       expect(state.stepMetrics[1].alertTag).toBeNull();
@@ -1615,15 +1632,15 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       // Student A: Q1 took 3 tries (walkthrough), Q2 took 1 try
-      const sidA = (await service.join(sess!, 'AttemptA')).studentId;
-      await service.submit(sess!, sidA, 1, {
+      const sidA = (await submissionSvc.join(sess!, 'AttemptA')).studentId;
+      await submissionSvc.submit(sess!, sidA, 1, {
         answers: [1, 0],
         attemptCounts: { 0: 3, 1: 1 },
       });
 
       // Student B: Q1 took 1 try, Q2 took 2 tries (walkthrough)
-      const sidB = (await service.join(sess!, 'AttemptB')).studentId;
-      await service.submit(sess!, sidB, 1, {
+      const sidB = (await submissionSvc.join(sess!, 'AttemptB')).studentId;
+      await submissionSvc.submit(sess!, sidB, 1, {
         answers: [1, 0],
         attemptCounts: { 0: 1, 1: 2 },
       });
@@ -1650,8 +1667,8 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      const sid = (await service.join(sess!, 'NoAttemptData')).studentId;
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      const sid = (await submissionSvc.join(sess!, 'NoAttemptData')).studentId;
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
 
       const state = await service.getState(sess!.id);
       expect(state.stepMetrics[1].attemptMetrics).toEqual({});
@@ -1663,8 +1680,8 @@ describe('ClassroomService — extended coverage', () => {
 
       // 2 students both need walkthrough on Q1 (attempts >= 2)
       for (const name of ['WtA', 'WtB']) {
-        const sid = (await service.join(sess!, name)).studentId;
-        await service.submit(sess!, sid, 1, {
+        const sid = (await submissionSvc.join(sess!, name)).studentId;
+        await submissionSvc.submit(sess!, sid, 1, {
           answers: [1, 0],
           attemptCounts: { 0: 3, 1: 1 },
         });
@@ -1678,10 +1695,10 @@ describe('ClassroomService — extended coverage', () => {
     it('should default to 1 when attemptCounts key is missing for a question', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'PartialKeys')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'PartialKeys')).studentId;
 
       // attemptCounts only has key 0, missing key 1 → backend should fallback to 1
-      const result = await service.submit(sess!, sid, 1, {
+      const result = await submissionSvc.submit(sess!, sid, 1, {
         answers: [1, 0],
         attemptCounts: { 0: 4 },
       });
@@ -1694,8 +1711,8 @@ describe('ClassroomService — extended coverage', () => {
 
       // 3 students all get Q1 wrong AND have high attempts → both alerts qualify
       for (const name of ['PrioA', 'PrioB', 'PrioC']) {
-        const sid = (await service.join(sess!, name)).studentId;
-        await service.submit(sess!, sid, 1, {
+        const sid = (await submissionSvc.join(sess!, name)).studentId;
+        await submissionSvc.submit(sess!, sid, 1, {
           answers: [2, 0], // Q1 wrong → wrong=100%
           attemptCounts: { 0: 5, 1: 1 }, // Q1 walkthrough
         });
@@ -1711,15 +1728,15 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       // Student A: sends attemptCounts
-      const sidA = (await service.join(sess!, 'WithAttempts')).studentId;
-      await service.submit(sess!, sidA, 1, {
+      const sidA = (await submissionSvc.join(sess!, 'WithAttempts')).studentId;
+      await submissionSvc.submit(sess!, sidA, 1, {
         answers: [1, 0],
         attemptCounts: { 0: 4, 1: 2 },
       });
 
       // Student B: no attemptCounts (legacy client)
-      const sidB = (await service.join(sess!, 'NoAttempts')).studentId;
-      await service.submit(sess!, sidB, 1, {
+      const sidB = (await submissionSvc.join(sess!, 'NoAttempts')).studentId;
+      await submissionSvc.submit(sess!, sidB, 1, {
         answers: [1, 0],
       });
 
@@ -1737,7 +1754,7 @@ describe('ClassroomService — extended coverage', () => {
     it('should mark isHigh=true when count >= 4', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'QAStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'QAStudent')).studentId;
 
       // Add 4 AI questions with same category
       for (let i = 0; i < 4; i++) {
@@ -1762,7 +1779,7 @@ describe('ClassroomService — extended coverage', () => {
     it('should mark isHigh=false when count < 4', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'QALowStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'QALowStudent')).studentId;
 
       // Add 3 AI questions (below threshold)
       for (let i = 0; i < 3; i++) {
@@ -1844,10 +1861,10 @@ describe('ClassroomService — extended coverage', () => {
 
       const created = await service.createSession('labeled-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'LabelStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'LabelStudent')).studentId;
 
       // Submit quiz with partial correct
-      await service.submit(sess!, sid, 1, { answers: [1, 1] });
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 1] });
 
       const state = await service.getState(sess!.id);
       const quizCols = state.stepMetrics[1].quality.cols;
@@ -1861,10 +1878,10 @@ describe('ClassroomService — extended coverage', () => {
     it('should use Where/What/Why for matrix dimensions', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'MatrixStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'MatrixStudent')).studentId;
 
-      await advanceToTask(service, sess!, sid, 3);
-      await service.submit(sess!, sid, 5, {
+      await advanceToTask(submissionSvc, sess!, sid, 3);
+      await submissionSvc.submit(sess!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'wrong', practice: 'wrong', reason: 'wrong' },
@@ -1909,9 +1926,9 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
       // 2 students submit step 1 to create medianTime data for task 1
-      const s1 = (await service.join(sess!, 'StuckTestA')).studentId;
-      const s2 = (await service.join(sess!, 'StuckTestB')).studentId;
-      const s3 = (await service.join(sess!, 'StuckTestC')).studentId;
+      const s1 = (await submissionSvc.join(sess!, 'StuckTestA')).studentId;
+      const s2 = (await submissionSvc.join(sess!, 'StuckTestB')).studentId;
+      const s3 = (await submissionSvc.join(sess!, 'StuckTestC')).studentId;
 
       // Set joinedAt far in the past so durations are meaningful (not 0)
       for (const sid of [s1, s2]) {
@@ -1920,8 +1937,8 @@ describe('ClassroomService — extended coverage', () => {
         await studentRepo.save(stu!);
       }
 
-      await service.submit(sess!, s1, 1, { answers: [1, 0] });
-      await service.submit(sess!, s2, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s1, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s2, 1, { answers: [1, 0] });
 
       // s3: manually set to non-listen phase with stepStartedAt far in the past
       const student3 = await studentRepo.findOne({ where: { id: s3 } });
@@ -1939,15 +1956,15 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      const s1 = (await service.join(sess!, 'ProgTestA')).studentId;
-      const s2 = (await service.join(sess!, 'ProgTestB')).studentId;
+      const s1 = (await submissionSvc.join(sess!, 'ProgTestA')).studentId;
+      const s2 = (await submissionSvc.join(sess!, 'ProgTestB')).studentId;
 
       // Set joinedAt far in the past so medianTime > 0
       const stu1 = await studentRepo.findOne({ where: { id: s1 } });
       stu1!.joinedAt = new Date(Date.now() - 300 * 1000) as any;
       await studentRepo.save(stu1!);
 
-      await service.submit(sess!, s1, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s1, 1, { answers: [1, 0] });
 
       // s2: non-listen, stepStartedAt is now (within threshold)
       const student2 = await studentRepo.findOne({ where: { id: s2 } });
@@ -1969,17 +1986,17 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      const s1 = (await service.join(sess!, 'MatchIssueA')).studentId;
-      const s2 = (await service.join(sess!, 'MatchIssueB')).studentId;
+      const s1 = (await submissionSvc.join(sess!, 'MatchIssueA')).studentId;
+      const s2 = (await submissionSvc.join(sess!, 'MatchIssueB')).studentId;
 
       // Advance both to task 2 (submit step 1 first)
-      await service.submit(sess!, s1, 1, { answers: [1, 0] });
-      await service.submit(sess!, s2, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s1, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s2, 1, { answers: [1, 0] });
 
       // Both submit match step with same wrong answer for pair 0
       // correct for p0 is 'skimming', both submit 'wrongValue'
-      await service.submit(sess!, s1, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
-      await service.submit(sess!, s2, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
+      await submissionSvc.submit(sess!, s1, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
+      await submissionSvc.submit(sess!, s2, 3, { pairs: ['wrongValue', 'scanning', 'inferring'] });
 
       const state = await service.getState(sess!.id);
       const issues = state.stepMetrics[2].issues;
@@ -2002,8 +2019,8 @@ describe('ClassroomService — extended coverage', () => {
 
       // 3 students all get Q1 wrong → q0 wrong=100% ≥ 30%
       for (const name of ['AlertNameA', 'AlertNameB', 'AlertNameC']) {
-        const sid = (await service.join(sess!, name)).studentId;
-        await service.submit(sess!, sid, 1, { answers: [2, 0] }); // Q1 wrong, Q2 correct
+        const sid = (await submissionSvc.join(sess!, name)).studentId;
+        await submissionSvc.submit(sess!, sid, 1, { answers: [2, 0] }); // Q1 wrong, Q2 correct
       }
 
       const state = await service.getState(sess!.id);
@@ -2015,16 +2032,16 @@ describe('ClassroomService — extended coverage', () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-      const s1 = (await service.join(sess!, 'MatAlertA')).studentId;
-      const s2 = (await service.join(sess!, 'MatAlertB')).studentId;
+      const s1 = (await submissionSvc.join(sess!, 'MatAlertA')).studentId;
+      const s2 = (await submissionSvc.join(sess!, 'MatAlertB')).studentId;
 
       // Advance both to task 3
-      await advanceToTask(service, sess!, s1, 3);
-      await advanceToTask(service, sess!, s2, 3);
+      await advanceToTask(submissionSvc, sess!, s1, 3);
+      await advanceToTask(submissionSvc, sess!, s2, 3);
 
       // Both submit matrix with all wrong answers
-      await service.submit(sess!, s1, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
-      await service.submit(sess!, s2, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
+      await submissionSvc.submit(sess!, s1, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
+      await submissionSvc.submit(sess!, s2, 5, { rows: [{ place: 'X', practice: 'X', reason: 'X' }, { place: 'X', practice: 'X', reason: 'X' }] });
 
       const state = await service.getState(sess!.id);
       // place wrong=100% → alertTag should use 'Where' not 'place'
@@ -2038,7 +2055,7 @@ describe('ClassroomService — extended coverage', () => {
       // Create 5+ stuck students at task 1
       const stuckIds: string[] = [];
       for (let i = 0; i < 6; i++) {
-        const sid = (await service.join(sess!, `StuckPri${i}`)).studentId;
+        const sid = (await submissionSvc.join(sess!, `StuckPri${i}`)).studentId;
         stuckIds.push(sid);
       }
 
@@ -2048,7 +2065,7 @@ describe('ClassroomService — extended coverage', () => {
       await studentRepo.save(firstStu!);
 
       // One student submits to create medianTime
-      await service.submit(sess!, stuckIds[0], 1, { answers: [2, 0] });
+      await submissionSvc.submit(sess!, stuckIds[0], 1, { answers: [2, 0] });
 
       // Set 5 students as stuck
       for (let i = 1; i <= 5; i++) {
@@ -2086,8 +2103,8 @@ describe('ClassroomService — extended coverage', () => {
     it('should include formatted time strings when times are available', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'TimeStudent')).studentId;
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      const sid = (await submissionSvc.join(sess!, 'TimeStudent')).studentId;
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
 
       const state = await service.getState(sess!.id);
       const task1 = state.stepMetrics[1];
@@ -2104,12 +2121,12 @@ describe('ClassroomService — extended coverage', () => {
     it('should include stepHistory with status/result for each task 1-5', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'HistoryStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'HistoryStudent')).studentId;
 
       // Submit task 1 perfectly
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
       // Submit task 2 with one wrong
-      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'wrong', 'inferring'] });
+      await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'wrong', 'inferring'] });
 
       const state = await service.getState(sess!.id);
       const student = state.students.find((s: any) => s.id === sid);
@@ -2133,10 +2150,10 @@ describe('ClassroomService — extended coverage', () => {
     it('should include result and timeFormatted in enriched submissions', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'EnrichedSubStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'EnrichedSubStudent')).studentId;
 
       // Submit task 1 with wrong answers
-      await service.submit(sess!, sid, 1, { answers: [0, 1] });
+      await submissionSvc.submit(sess!, sid, 1, { answers: [0, 1] });
 
       const state = await service.getState(sess!.id);
       const student = state.students.find((s: any) => s.id === sid);
@@ -2149,16 +2166,16 @@ describe('ClassroomService — extended coverage', () => {
     it('should mark all 5 tasks as done for completed student', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'DoneStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'DoneStudent')).studentId;
 
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
-      await service.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await service.submit(sess!, sid, 5, { rows: [
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.submit(sess!, sid, 5, { rows: [
         { place: 'Japan', practice: 'meditation', reason: 'focus' },
         { place: 'India', practice: 'yoga', reason: 'flexibility' },
       ] });
-      await service.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await service.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
 
       const state = await service.getState(sess!.id);
       const student = state.students.find((s: any) => s.id === sid);
@@ -2184,9 +2201,9 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      alice = (await service.join(session, 'Alice')).studentId;
-      bob = (await service.join(session, 'Bob')).studentId;
-      carol = (await service.join(session, 'Carol')).studentId;
+      alice = (await submissionSvc.join(session, 'Alice')).studentId;
+      bob = (await submissionSvc.join(session, 'Bob')).studentId;
+      carol = (await submissionSvc.join(session, 'Carol')).studentId;
     });
 
     // ─── Phase 1: all students fresh, no submissions ───
@@ -2216,7 +2233,7 @@ describe('ClassroomService — extended coverage', () => {
     // ─── Phase 2: Alice submits wrong → no advancement ───
 
     it('P2: Alice submits wrong — response shows no advancement', async () => {
-      const res = await service.submit(session, alice, 1, { answers: [0, 1] });
+      const res = await submissionSvc.submit(session, alice, 1, { answers: [0, 1] });
       expect(res.score.total).toBe(0);
       expect(res.currentTask).toBe(1);
       expect(res.currentPhase).toBe('listen');
@@ -2251,7 +2268,7 @@ describe('ClassroomService — extended coverage', () => {
     // ─── Phase 3: Alice retries with correct answer → advances ───
 
     it('P3: Alice retries correct — response shows advancement to task 2', async () => {
-      const res = await service.submit(session, alice, 1, { answers: [1, 0] });
+      const res = await submissionSvc.submit(session, alice, 1, { answers: [1, 0] });
       expect(res.score.total).toBe(100);
       expect(res.currentTask).toBe(2);
       expect(res.currentPhase).toBe('listen');
@@ -2281,11 +2298,11 @@ describe('ClassroomService — extended coverage', () => {
     // ─��─ Phase 4: Bob submits perfect → advances; Carol submits wrong → stays ───
 
     it('P4: Bob perfect + Carol wrong — divergent outcomes', async () => {
-      const bobRes = await service.submit(session, bob, 1, { answers: [1, 0] });
+      const bobRes = await submissionSvc.submit(session, bob, 1, { answers: [1, 0] });
       expect(bobRes.score.total).toBe(100);
       expect(bobRes.currentTask).toBe(2);
 
-      const carolRes = await service.submit(session, carol, 1, { answers: [1, 1] });
+      const carolRes = await submissionSvc.submit(session, carol, 1, { answers: [1, 1] });
       expect(carolRes.score.total).toBe(50); // Q1 correct, Q2 wrong
       expect(carolRes.currentTask).toBe(1); // blocked
     });
@@ -2326,8 +2343,8 @@ describe('ClassroomService — extended coverage', () => {
 
     it('P5: Alice advances to task 4, Carol retries task 1 correctly', async () => {
       // Alice: task 2 perfect, task 3 perfect → reaches task 4
-      await service.submit(session, alice, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      const aliceRes = await service.submit(session, alice, 5, {
+      await submissionSvc.submit(session, alice, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      const aliceRes = await submissionSvc.submit(session, alice, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
@@ -2336,7 +2353,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(aliceRes.currentTask).toBe(4);
 
       // Carol: retry task 1 with correct answers
-      const carolRes = await service.submit(session, carol, 1, { answers: [1, 0] });
+      const carolRes = await submissionSvc.submit(session, carol, 1, { answers: [1, 0] });
       expect(carolRes.score.total).toBe(100);
       expect(carolRes.currentTask).toBe(2);
     });
@@ -2372,30 +2389,30 @@ describe('ClassroomService — extended coverage', () => {
 
     it('P6: all students complete all tasks', async () => {
       // Bob: complete tasks 2-5
-      await service.submit(session, bob, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await service.submit(session, bob, 5, {
+      await submissionSvc.submit(session, bob, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.submit(session, bob, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
-      await service.submit(session, bob, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await service.submit(session, bob, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.submit(session, bob, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.submit(session, bob, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
 
       // Carol: complete tasks 2-5
-      await service.submit(session, carol, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await service.submit(session, carol, 5, {
+      await submissionSvc.submit(session, carol, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.submit(session, carol, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
-      await service.submit(session, carol, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await service.submit(session, carol, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.submit(session, carol, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.submit(session, carol, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
 
       // Alice: complete tasks 4-5
-      await service.submit(session, alice, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await service.submit(session, alice, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.submit(session, alice, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.submit(session, alice, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
     });
 
     it('P6: teacher sees all students done with correct metrics', async () => {
@@ -2425,13 +2442,13 @@ describe('ClassroomService — extended coverage', () => {
     it('match step: 2/3 correct → score 67, no advancement; 3/3 → advances', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'MatchStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'MatchStudent')).studentId;
 
       // Advance to task 2 first
-      await advanceToTask(service, sess!, sid, 2);
+      await advanceToTask(submissionSvc, sess!, sid, 2);
 
       // 2/3 correct → ~67 → blocked
-      const partial = await service.submit(sess!, sid, 3, {
+      const partial = await submissionSvc.submit(sess!, sid, 3, {
         pairs: ['skimming', 'wrong', 'inferring'],
       });
       expect(partial.score.total).toBe(67);
@@ -2445,7 +2462,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(s1!.stepHistory[2].result).toBe('partial');
 
       // Fix and resubmit
-      const correct = await service.submit(sess!, sid, 3, {
+      const correct = await submissionSvc.submit(sess!, sid, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
       expect(correct.score.total).toBe(100);
@@ -2462,19 +2479,19 @@ describe('ClassroomService — extended coverage', () => {
     it('matrix step: partial answers → blocked; full correct → advances', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'MatrixStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'MatrixStudent')).studentId;
 
-      await advanceToTask(service, sess!, sid, 3);
+      await advanceToTask(submissionSvc, sess!, sid, 3);
 
       // Only 1 of 2 rows, wrong content → score ≈ 0
-      const partial = await service.submit(sess!, sid, 5, {
+      const partial = await submissionSvc.submit(sess!, sid, 5, {
         rows: [{ place: 'Narnia', practice: 'magic', reason: 'fun' }],
       });
       expect(partial.score.total).toBeLessThan(100);
       expect(partial.currentTask).toBe(3);
 
       // Correct both rows
-      const correct = await service.submit(sess!, sid, 5, {
+      const correct = await submissionSvc.submit(sess!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
@@ -2493,12 +2510,12 @@ describe('ClassroomService — extended coverage', () => {
     it('stance step: valid position but too few evidence → 50, blocked', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'StanceStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'StanceStudent')).studentId;
 
-      await advanceToTask(service, sess!, sid, 4);
+      await advanceToTask(submissionSvc, sess!, sid, 4);
 
       // Only 1 evidence item (min is 2)
-      const partial = await service.submit(sess!, sid, 7, {
+      const partial = await submissionSvc.submit(sess!, sid, 7, {
         position: 'agree', evidence: ['only_one'],
       });
       expect(partial.score.total).toBe(50);
@@ -2514,12 +2531,12 @@ describe('ClassroomService — extended coverage', () => {
     it('order step: wrong order → blocked; correct order → advances', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'OrderStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'OrderStudent')).studentId;
 
-      await advanceToTask(service, sess!, sid, 5);
+      await advanceToTask(submissionSvc, sess!, sid, 5);
 
       // Wrong order
-      const wrong = await service.submit(sess!, sid, 9, {
+      const wrong = await submissionSvc.submit(sess!, sid, 9, {
         order: ['Conclusion', 'Body', 'Introduction'],
       });
       expect(wrong.score.total).toBeLessThan(100);
@@ -2527,7 +2544,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(wrong.currentPhase).not.toBe('completed');
 
       // Correct order → completes (task 5 is the last)
-      const correct = await service.submit(sess!, sid, 9, {
+      const correct = await submissionSvc.submit(sess!, sid, 9, {
         order: ['Introduction', 'Body', 'Conclusion'],
       });
       expect(correct.score.total).toBe(100);
@@ -2546,16 +2563,16 @@ describe('ClassroomService — extended coverage', () => {
     it('byDimension correctly aggregates wrong answers from blocked students', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const s1 = (await service.join(sess!, 'DimStudent1')).studentId;
-      const s2 = (await service.join(sess!, 'DimStudent2')).studentId;
-      const s3 = (await service.join(sess!, 'DimStudent3')).studentId;
+      const s1 = (await submissionSvc.join(sess!, 'DimStudent1')).studentId;
+      const s2 = (await submissionSvc.join(sess!, 'DimStudent2')).studentId;
+      const s3 = (await submissionSvc.join(sess!, 'DimStudent3')).studentId;
 
       // S1: both correct
-      await service.submit(sess!, s1, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, s1, 1, { answers: [1, 0] });
       // S2: Q1 wrong, Q2 correct
-      await service.submit(sess!, s2, 1, { answers: [0, 0] });
+      await submissionSvc.submit(sess!, s2, 1, { answers: [0, 0] });
       // S3: Q1 correct, Q2 wrong
-      await service.submit(sess!, s3, 1, { answers: [1, 1] });
+      await submissionSvc.submit(sess!, s3, 1, { answers: [1, 1] });
 
       const state = await service.getState(sess!.id);
       const task1 = state.stepMetrics[1];
@@ -2583,16 +2600,16 @@ describe('ClassroomService — extended coverage', () => {
     it('stepMetrics counts are correct when some students skip ahead and others are blocked', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const fast = (await service.join(sess!, 'FastStudent')).studentId;
-      const slow = (await service.join(sess!, 'SlowStudent')).studentId;
-      const stuck = (await service.join(sess!, 'StuckStudent')).studentId;
+      const fast = (await submissionSvc.join(sess!, 'FastStudent')).studentId;
+      const slow = (await submissionSvc.join(sess!, 'SlowStudent')).studentId;
+      const stuck = (await submissionSvc.join(sess!, 'StuckStudent')).studentId;
 
       // Fast: completes tasks 1-3
-      await advanceToTask(service, sess!, fast, 4);
+      await advanceToTask(submissionSvc, sess!, fast, 4);
       // Slow: completes task 1 only
-      await service.submit(sess!, slow, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, slow, 1, { answers: [1, 0] });
       // Stuck: fails task 1
-      await service.submit(sess!, stuck, 1, { answers: [0, 1] });
+      await submissionSvc.submit(sess!, stuck, 1, { answers: [0, 1] });
 
       const state = await service.getState(sess!.id);
 
@@ -2625,9 +2642,9 @@ describe('ClassroomService — extended coverage', () => {
     it('open-ended step always advances (null score)', async () => {
       const created = await service.createSession('no-key-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'OpenStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'OpenStudent')).studentId;
 
-      const res = await service.submit(sess!, sid, 1, { text: 'my reflection' });
+      const res = await submissionSvc.submit(sess!, sid, 1, { text: 'my reflection' });
       expect(res.score).toBeNull();
       // no-key-lesson has only 1 task → completing it marks as completed
       expect(res.currentTask).toBe(1);
@@ -2646,7 +2663,7 @@ describe('ClassroomService — extended coverage', () => {
     it('submit (wrong or correct) triggers broadcast — teacher SSE gets updated state', async () => {
       const created = await service.createSession('full-lesson');
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await service.join(sess!, 'SSEStudent')).studentId;
+      const sid = (await submissionSvc.join(sess!, 'SSEStudent')).studentId;
 
       // Track broadcasts via SSE mock
       const writtenChunks: string[] = [];
@@ -2666,9 +2683,10 @@ describe('ClassroomService — extended coverage', () => {
       await new Promise<void>(r => { resolveWrite = r; });
       const initialChunkCount = writtenChunks.length;
 
-      // Wrong answer — should still trigger broadcast
+      // Wrong answer — manually broadcast after submit (controller triggers broadcast)
       let broadcastReceived = new Promise<void>(r => { resolveWrite = r; });
-      await service.submit(sess!, sid, 1, { answers: [0, 1] });
+      await submissionSvc.submit(sess!, sid, 1, { answers: [0, 1] });
+      await service.broadcast(created.sessionId);
       await broadcastReceived;
       expect(writtenChunks.length).toBeGreaterThan(initialChunkCount);
 
@@ -2680,9 +2698,10 @@ describe('ClassroomService — extended coverage', () => {
       const studentInWrongBroadcast = wrongPayload.students.find((s: any) => s.id === sid);
       expect(studentInWrongBroadcast.currentTask).toBe(1);
 
-      // Correct answer — triggers another broadcast
+      // Correct answer — manually broadcast after submit
       broadcastReceived = new Promise<void>(r => { resolveWrite = r; });
-      await service.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await service.broadcast(created.sessionId);
       await broadcastReceived;
       expect(writtenChunks.length).toBeGreaterThan(afterWrong);
 
@@ -2708,12 +2727,12 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      sid = (await service.join(session, 'CrossStepStudent')).studentId;
+      sid = (await submissionSvc.join(session, 'CrossStepStudent')).studentId;
     });
 
     it('should NOT skip ahead when task-1 student submits step 9 with perfect answer', async () => {
       // Student at task 1 submits step 9 (task 5) with correct answer
-      const res = await service.submit(session, sid, 9, {
+      const res = await submissionSvc.submit(session, sid, 9, {
         order: ['Introduction', 'Body', 'Conclusion'],
       });
       // Submission saved and graded
@@ -2724,7 +2743,7 @@ describe('ClassroomService — extended coverage', () => {
     });
 
     it('should NOT skip ahead when task-1 student submits step 9 with wrong answer', async () => {
-      const res = await service.submit(session, sid, 9, {
+      const res = await submissionSvc.submit(session, sid, 9, {
         order: ['Conclusion', 'Body', 'Introduction'],
       });
       expect(res.score.total).toBeLessThan(100);
@@ -2741,7 +2760,7 @@ describe('ClassroomService — extended coverage', () => {
     });
 
     it('should advance normally when submitting the current task step', async () => {
-      const res = await service.submit(session, sid, 1, { answers: [1, 0] });
+      const res = await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
       expect(res.score.total).toBe(100);
       expect(res.currentTask).toBe(2);
       expect(res.currentPhase).toBe('listen');
@@ -2757,10 +2776,10 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      sid = (await service.join(session, 'ResubmitStudent')).studentId;
+      sid = (await submissionSvc.join(session, 'ResubmitStudent')).studentId;
 
       // Pass task 1 → advance to task 2
-      await service.submit(session, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
     });
 
     it('student should be at task 2 after passing task 1', async () => {
@@ -2769,7 +2788,7 @@ describe('ClassroomService — extended coverage', () => {
     });
 
     it('re-submitting step 1 with wrong answer should NOT regress to task 1', async () => {
-      const res = await service.submit(session, sid, 1, { answers: [0, 1] });
+      const res = await submissionSvc.submit(session, sid, 1, { answers: [0, 1] });
       expect(res.score.total).toBe(0);
       // Still at task 2
       expect(res.currentTask).toBe(2);
@@ -2806,10 +2825,10 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      sid = (await service.join(session, 'TimingStudent')).studentId;
+      sid = (await submissionSvc.join(session, 'TimingStudent')).studentId;
 
       // Advance to task 2
-      await service.submit(session, sid, 1, { answers: [1, 0] });
+      await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
     });
 
     it('wrong answer on task 2 should NOT change stepStartedAt', async () => {
@@ -2820,7 +2839,7 @@ describe('ClassroomService — extended coverage', () => {
       // Small delay to ensure timestamps would differ
       await new Promise(r => setTimeout(r, 10));
 
-      await service.submit(session, sid, 3, { pairs: ['wrong', 'wrong', 'wrong'] });
+      await submissionSvc.submit(session, sid, 3, { pairs: ['wrong', 'wrong', 'wrong'] });
 
       const after = await studentRepo.findOne({ where: { id: sid } });
       expect(after!.currentTask).toBe(2); // not advanced
@@ -2833,7 +2852,7 @@ describe('ClassroomService — extended coverage', () => {
 
       await new Promise(r => setTimeout(r, 10));
 
-      await service.submit(session, sid, 3, {
+      await submissionSvc.submit(session, sid, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
 
@@ -2852,7 +2871,7 @@ describe('ClassroomService — extended coverage', () => {
     beforeAll(async () => {
       const created = await service.createSession('full-lesson');
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      sid = (await service.join(session, 'SyntheticStudent')).studentId;
+      sid = (await submissionSvc.join(session, 'SyntheticStudent')).studentId;
 
       // Directly insert 6 submissions into DB (bypassing submit flow)
       for (const step of [1, 3, 5, 7, 9]) {
@@ -2915,6 +2934,7 @@ const THREE_TASK_MANIFEST = {
 describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
   let sessionRepo: Repository<ClassroomSession>;
   let studentRepo: Repository<Student>;
   let lessonRepo: Repository<Lesson>;
@@ -2933,12 +2953,14 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
       providers: [
-        ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
 
     service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     studentRepo = module.get(getRepositoryToken(Student));
     lessonRepo = module.get(getRepositoryToken(Lesson));
@@ -2961,22 +2983,22 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   it('should advance through 3 tasks and complete on last', async () => {
     const created = await service.createSession('three-task-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    const sid = (await service.join(session!, '三题学生')).studentId;
+    const sid = (await submissionSvc.join(session!, '三题学生')).studentId;
 
     // T1 (idx=0) → currentTask=2
-    const r1 = await service.submit(session!, sid, 0, { answers: [0] });
+    const r1 = await submissionSvc.submit(session!, sid, 0, { answers: [0] });
     expect(r1.score.total).toBe(100);
     expect(r1.currentTask).toBe(2);
     expect(r1.currentPhase).toBe('listen');
 
     // T2 (idx=2) → currentTask=3
-    const r2 = await service.submit(session!, sid, 2, { answers: [1] });
+    const r2 = await submissionSvc.submit(session!, sid, 2, { answers: [1] });
     expect(r2.score.total).toBe(100);
     expect(r2.currentTask).toBe(3);
     expect(r2.currentPhase).toBe('listen');
 
     // T3 (idx=4) → completed (maxTask=3, not hardcoded 5)
-    const r3 = await service.submit(session!, sid, 4, { answers: [2] });
+    const r3 = await submissionSvc.submit(session!, sid, 4, { answers: [2] });
     expect(r3.score.total).toBe(100);
     expect(r3.currentTask).toBe(3);
     expect(r3.currentPhase).toBe('completed');
@@ -2985,7 +3007,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   it('should produce stepMetrics with 3 keys', async () => {
     const created = await service.createSession('three-task-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    await service.join(session!, '指标学生');
+    await submissionSvc.join(session!, '指标学生');
 
     const state = await service.getState(session!.id);
     const taskNums = Object.keys(state.stepMetrics).map(Number).sort((a, b) => a - b);
@@ -2998,12 +3020,12 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   it('should check allDone using [0, 2, 4] not [1, 3, 5, 7, 9]', async () => {
     const created = await service.createSession('three-task-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    const sid = (await service.join(session!, '完成检查学生')).studentId;
+    const sid = (await submissionSvc.join(session!, '完成检查学生')).studentId;
 
     // Complete all 3 tasks
-    await service.submit(session!, sid, 0, { answers: [0] });
-    await service.submit(session!, sid, 2, { answers: [1] });
-    await service.submit(session!, sid, 4, { answers: [2] });
+    await submissionSvc.submit(session!, sid, 0, { answers: [0] });
+    await submissionSvc.submit(session!, sid, 2, { answers: [1] });
+    await submissionSvc.submit(session!, sid, 4, { answers: [2] });
 
     const state = await service.getState(session!.id);
     const student = state.students.find((s: any) => s.id === sid);
@@ -3014,12 +3036,12 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   it('should show correct healthCards for 3-task lesson', async () => {
     const created = await service.createSession('three-task-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    const sid = (await service.join(session!, '健康卡学生')).studentId;
+    const sid = (await submissionSvc.join(session!, '健康卡学生')).studentId;
 
     // Complete all 3 tasks
-    await service.submit(session!, sid, 0, { answers: [0] });
-    await service.submit(session!, sid, 2, { answers: [1] });
-    await service.submit(session!, sid, 4, { answers: [2] });
+    await submissionSvc.submit(session!, sid, 0, { answers: [0] });
+    await submissionSvc.submit(session!, sid, 2, { answers: [1] });
+    await submissionSvc.submit(session!, sid, 4, { answers: [2] });
 
     const state = await service.getState(session!.id);
     // Completed student: effectiveTask = maxTask(3), not hardcoded 5
@@ -3027,11 +3049,14 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   });
 });
 
-// ── aiDiscuss quality passthrough ──
+// ── aiDiscuss Socratic flow ──
 
-describe('ClassroomService — aiDiscuss quality gate', () => {
+describe('ClassroomService — aiDiscuss Socratic', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let discussSvc: DiscussService;
+    let aiAskSvc: AiAskService;
   let aiPromptBuilder: AiPromptBuilder;
   let sessionRepo: Repository<ClassroomSession>;
   let lessonRepo: Repository<Lesson>;
@@ -3048,7 +3073,15 @@ describe('ClassroomService — aiDiscuss quality gate', () => {
         label: 'Task 1',
         strategy: 'quiz',
         answerKey: { type: 'quiz', answers: [{ questionIdx: 0, correct: 0, questionText: 'Q?', options: ['A', 'B'] }] },
-        discuss: { targetInsight: 'Main idea comprehension' },
+        discuss: {
+          goal: 'Understand the main idea',
+          openingQ: 'What do you think?',
+          systemPrompt: 'You are a tutor. [GOAL_REACHED] when done.',
+          maxRounds: 6,
+          maxTimeSeconds: 300,
+          fallbackMC: { question: 'Q?', options: ['A', 'B'], correctIndex: 0, explanation: 'E' },
+          insight: 'Key insight',
+        },
       },
     ],
   };
@@ -3067,12 +3100,16 @@ describe('ClassroomService — aiDiscuss quality gate', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
       providers: [
-        ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
 
     service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    discussSvc = module.get(DiscussService);
+      aiAskSvc = module.get(AiAskService);
     aiPromptBuilder = module.get(AiPromptBuilder);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     lessonRepo = module.get(getRepositoryToken(Lesson));
@@ -3087,7 +3124,7 @@ describe('ClassroomService — aiDiscuss quality gate', () => {
 
     const { code } = await service.createSession('discuss-lesson');
     session = await service.resolveSession(code);
-    const joined = await service.join(session, 'DiscussStudent');
+    const joined = await submissionSvc.join(session, 'DiscussStudent');
     studentId = joined.studentId;
   });
 
@@ -3097,113 +3134,77 @@ describe('ClassroomService — aiDiscuss quality gate', () => {
 
   afterEach(() => jest.restoreAllMocks());
 
-  it('should return quality=pass when LLM outputs pass', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Great work!', followUpQuestion: 'What else?', quality: 'pass' }),
+  it('should return reply and goalReached=false for normal turn', async () => {
+    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+      'Good thinking! What about the second paragraph?',
     );
 
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'I think the main idea is...');
+    const msgs = [{ role: 'ai' as const, text: 'What do you think?' }, { role: 'student' as const, text: 'I think the main idea is...' }];
+    const result = await discussSvc.aiDiscuss(session, studentId, 1, msgs, 1, 30);
 
-    expect(result.quality).toBe('pass');
-    expect(result.reply).toBe('Great work!');
-    expect(result.followUpQuestion).toBe('What else?');
+    expect(result.goalReached).toBe(false);
+    expect(result.reply).toBe('Good thinking! What about the second paragraph?');
   });
 
-  it('should return quality=retry when LLM outputs retry', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Can you try harder?', followUpQuestion: 'Look at ¶1 again.', quality: 'retry' }),
+  it('should detect [GOAL_REACHED] and set goalReached=true', async () => {
+    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+      '[GOAL_REACHED] Excellent! You understood the main idea perfectly.',
     );
 
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'idk');
+    const msgs = [{ role: 'ai' as const, text: 'What do you think?' }, { role: 'student' as const, text: 'The contrast creates tension.' }];
+    const result = await discussSvc.aiDiscuss(session, studentId, 1, msgs, 2, 60);
 
-    expect(result.quality).toBe('retry');
-    expect(result.reply).toBe('Can you try harder?');
-    expect(result.followUpQuestion).toBe('Look at ¶1 again.');
+    expect(result.goalReached).toBe(true);
+    expect(result.reply).toBe('Excellent! You understood the main idea perfectly.');
   });
 
-  it('should default to quality=pass when LLM omits quality key', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Nice answer.', followUpQuestion: 'Tell me more.' }),
+  it('should return fallback reply on callGlmConversation failure', async () => {
+    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockRejectedValueOnce(new Error('API timeout'));
+
+    const msgs = [{ role: 'ai' as const, text: 'Q' }, { role: 'student' as const, text: 'anything' }];
+    const result = await discussSvc.aiDiscuss(session, studentId, 1, msgs, 1, 10);
+
+    expect(result.goalReached).toBe(false);
+    expect(result.reply).toContain('rephrase');
+  });
+
+  it('should strip [GOAL_REACHED] marker from reply text', async () => {
+    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+      'Great answer! [GOAL_REACHED] You nailed it.',
     );
 
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'The text says...');
+    const msgs = [{ role: 'ai' as const, text: 'Q' }, { role: 'student' as const, text: 'answer' }];
+    const result = await discussSvc.aiDiscuss(session, studentId, 1, msgs, 1, 20);
 
-    expect(result.quality).toBe('pass');
+    expect(result.goalReached).toBe(true);
+    expect(result.reply).not.toContain('[GOAL_REACHED]');
+    expect(result.reply).toBe('Great answer! You nailed it.');
   });
 
-  it('should return quality=pass on callGlm failure (error fallback)', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValueOnce(new Error('API timeout'));
+  // ── discussComplete ──
 
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'anything');
-
-    expect(result.quality).toBe('pass');
-    expect(result.reply).toContain('unavailable');
-    expect(result.followUpQuestion).toBeTruthy(); // fallback includes a generic follow-up
-  });
-
-  it('should return quality for followUpReply type', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Great conclusion!', quality: 'pass' }),
+  it('should validate MC answer correctly', async () => {
+    const result = await discussSvc.discussComplete(
+      session, studentId, 1, 'fallback_rounds', 6, 120, 0,
     );
-
-    const result = await service.aiDiscuss(session, studentId, 1, 'followUpReply', 'I think it means...');
-
-    expect(result.quality).toBe('pass');
-    expect(result.reply).toBe('Great conclusion!');
-    expect(result.followUpQuestion).toBeUndefined();
+    expect(result.ok).toBe(true);
+    expect(result.mcCorrect).toBe(true); // correctIndex is 0
   });
 
-  it('should return quality=pass when LLM returns garbage quality value', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Ok.', followUpQuestion: 'Next?', quality: 'maybe' }),
+  it('should detect wrong MC answer', async () => {
+    const result = await discussSvc.discussComplete(
+      session, studentId, 1, 'fallback_time', 3, 300, 1,
     );
-
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'test');
-
-    expect(result.quality).toBe('pass');
+    expect(result.ok).toBe(true);
+    expect(result.mcCorrect).toBe(false); // correctIndex is 0, selected 1
   });
 
-  it('should parse all fields correctly from JSON response', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
-      JSON.stringify({ reply: 'Your answer is thoughtful.', followUpQuestion: 'What about ¶2?', quality: 'retry' }),
+  it('should handle goal_reached completion without MC', async () => {
+    const result = await discussSvc.discussComplete(
+      session, studentId, 1, 'goal_reached', 4, 180,
     );
-
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'some answer');
-
-    expect(result.reply).toBe('Your answer is thoughtful.');
-    expect(result.followUpQuestion).toBe('What about ¶2?');
-    expect(result.quality).toBe('retry');
-  });
-
-  it('should repair broken JSON via LLM fallback', async () => {
-    const spy = jest.spyOn(aiPromptBuilder, 'callGlm');
-    // First call: primary discuss → returns broken JSON
-    spy.mockResolvedValueOnce('Here is my reply: great job! Quality: pass');
-    // Second call: repair → returns valid JSON
-    spy.mockResolvedValueOnce(
-      JSON.stringify({ reply: 'great job!', followUpQuestion: 'What else?', quality: 'pass' }),
-    );
-
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'test');
-
-    expect(spy).toHaveBeenCalledTimes(2);
-    expect(result.reply).toBe('great job!');
-    expect(result.followUpQuestion).toBe('What else?');
-    expect(result.quality).toBe('pass');
-  });
-
-  it('should fall back to raw text with quality=pass when repair also fails', async () => {
-    const spy = jest.spyOn(aiPromptBuilder, 'callGlm');
-    // First call: primary discuss → broken
-    spy.mockResolvedValueOnce('totally garbled output');
-    // Second call: repair → also fails
-    spy.mockRejectedValueOnce(new Error('API down'));
-
-    const result = await service.aiDiscuss(session, studentId, 1, 'probeReply', 'test');
-
-    expect(spy).toHaveBeenCalledTimes(2);
-    expect(result.reply).toBe('totally garbled output');
-    expect(result.quality).toBe('pass');
+    expect(result.ok).toBe(true);
+    expect(result.mcCorrect).toBeUndefined();
   });
 });
 
@@ -3274,6 +3275,8 @@ const BONUS_MANIFEST = {
 describe('ClassroomService — Personal Touch & Bonus', () => {
   let module: TestingModule;
   let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let personalizationSvc: PersonalizationService;
   let sessionRepo: Repository<ClassroomSession>;
   let studentRepo: Repository<Student>;
   let submissionRepo: Repository<Submission>;
@@ -3297,12 +3300,15 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
       ],
       providers: [
-        ClassroomService, ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
 
     service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    personalizationSvc = module.get(PersonalizationService);
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     studentRepo = module.get(getRepositoryToken(Student));
     submissionRepo = module.get(getRepositoryToken(Submission));
@@ -3319,7 +3325,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
 
     const created = await service.createSession('bonus-lesson');
     session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    const joined = await service.join(session!, 'BonusStudent');
+    const joined = await submissionSvc.join(session!, 'BonusStudent');
     studentId = joined.studentId;
   });
 
@@ -3332,11 +3338,11 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
   describe('getPersonalTouch', () => {
     it('should return strategies, tier, aiComment, and bonusUnlocked', async () => {
       // Submit task 1 with perfect score
-      await service.submit(session, studentId, 1, { answers: [1] });
+      await submissionSvc.submit(session, studentId, 1, { answers: [1] });
 
       jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('你做得很好！');
 
-      const result = await service.getPersonalTouch(session, studentId);
+      const result = await personalizationSvc.getPersonalTouch(session, studentId);
 
       expect(result.strategies).toBeDefined();
       expect(result.strategies.length).toBeGreaterThan(0);
@@ -3351,7 +3357,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     it('should unlock bonus when teacher currentStep < 5', async () => {
       jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('Great!');
       // Session currentStep defaults to 0 (teacher hasn't advanced)
-      const result = await service.getPersonalTouch(session, studentId);
+      const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.bonusUnlocked).toBe(true);
     });
 
@@ -3359,7 +3365,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('Great!');
       // Advance teacher step
       await sessionRepo.update(session.id, { currentStep: 5 });
-      const result = await service.getPersonalTouch(session, studentId);
+      const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.bonusUnlocked).toBe(false);
       // Reset
       await sessionRepo.update(session.id, { currentStep: 0 });
@@ -3367,19 +3373,19 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
 
     it('should fallback gracefully when AI call fails', async () => {
       jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValueOnce(new Error('API down'));
-      const result = await service.getPersonalTouch(session, studentId);
+      const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.aiComment).toContain('继续保持');
     });
 
     it('should throw NotFoundException for invalid studentId', async () => {
       jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('x');
-      await expect(service.getPersonalTouch(session, 'nonexistent-id')).rejects.toThrow(NotFoundException);
+      await expect(personalizationSvc.getPersonalTouch(session, 'nonexistent-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getBonusExercise', () => {
     it('should return sanitized exercise spec + article for step 1', async () => {
-      const result = await service.getBonusExercise(session, 1);
+      const result = await personalizationSvc.getBonusExercise(session, 1);
 
       expect(result.exercise).toBeDefined();
       expect(result.exercise.type).toBe('match');
@@ -3392,7 +3398,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should return matrix exercise for step 2', async () => {
-      const result = await service.getBonusExercise(session, 2);
+      const result = await personalizationSvc.getBonusExercise(session, 2);
 
       expect(result.exercise).toBeDefined();
       expect(result.exercise.type).toBe('matrix');
@@ -3401,22 +3407,22 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should strip correct answers from sanitized exercise spec', async () => {
-      const result = await service.getBonusExercise(session, 1);
+      const result = await personalizationSvc.getBonusExercise(session, 1);
       // Match pairs should not expose the correct answer
       const pairs = result.exercise.pairs as Array<Record<string, unknown>>;
       expect(pairs.every((p) => !('correct' in p))).toBe(true);
     });
 
     it('should throw BadRequestException for invalid bonusStep', async () => {
-      await expect(service.getBonusExercise(session, 0)).rejects.toThrow(BadRequestException);
-      await expect(service.getBonusExercise(session, 3)).rejects.toThrow(BadRequestException);
+      await expect(personalizationSvc.getBonusExercise(session, 0)).rejects.toThrow(BadRequestException);
+      await expect(personalizationSvc.getBonusExercise(session, 3)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('checkBonusAnswer', () => {
     it('should grade a correct match answer and return allCorrect=true', async () => {
       const data = { pairs: ['Introduction', 'Example'] };
-      const result = await service.checkBonusAnswer(session, studentId, 1, data);
+      const result = await personalizationSvc.checkBonusAnswer(session, studentId, 1, data);
 
       expect(result.type).toBe('match');
       expect(result.allCorrect).toBe(true);
@@ -3425,7 +3431,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
 
     it('should grade an incorrect match answer and return allCorrect=false', async () => {
       const data = { pairs: ['Example', 'Introduction'] };
-      const result = await service.checkBonusAnswer(session, studentId, 1, data);
+      const result = await personalizationSvc.checkBonusAnswer(session, studentId, 1, data);
 
       expect(result.type).toBe('match');
       expect(result.allCorrect).toBe(false);
@@ -3434,7 +3440,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
 
     it('should persist bonus submission with virtual step 101', async () => {
       const data = { pairs: ['Introduction', 'Example'] };
-      await service.checkBonusAnswer(session, studentId, 1, data);
+      await personalizationSvc.checkBonusAnswer(session, studentId, 1, data);
 
       const sub = await submissionRepo.findOne({
         where: { sessionId: session.id, studentId, step: 101 },
@@ -3445,13 +3451,13 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
 
     it('should update existing submission on resubmit', async () => {
       const data1 = { pairs: ['Example', 'Example'] };
-      await service.checkBonusAnswer(session, studentId, 1, data1);
+      await personalizationSvc.checkBonusAnswer(session, studentId, 1, data1);
       const sub1 = await submissionRepo.findOne({
         where: { sessionId: session.id, studentId, step: 101 },
       });
 
       const data2 = { pairs: ['Introduction', 'Example'] };
-      await service.checkBonusAnswer(session, studentId, 1, data2);
+      await personalizationSvc.checkBonusAnswer(session, studentId, 1, data2);
       const sub2 = await submissionRepo.findOne({
         where: { sessionId: session.id, studentId, step: 101 },
       });
@@ -3462,14 +3468,14 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should throw BadRequestException for out-of-range bonusStep', async () => {
-      await expect(service.checkBonusAnswer(session, studentId, 0, {})).rejects.toThrow(BadRequestException);
-      await expect(service.checkBonusAnswer(session, studentId, 99, {})).rejects.toThrow(BadRequestException);
+      await expect(personalizationSvc.checkBonusAnswer(session, studentId, 0, {})).rejects.toThrow(BadRequestException);
+      await expect(personalizationSvc.checkBonusAnswer(session, studentId, 99, {})).rejects.toThrow(BadRequestException);
     });
 
     it('should grade a correct matrix bonus exercise (step 2)', async () => {
       // rowIdx=0 is demo (skipped), rowIdx=1 is the gradeable row
       const data = { rows: [{}, { place: 'India', practice: 'hands', reason: 'sensory' }] };
-      const result = await service.checkBonusAnswer(session, studentId, 2, data);
+      const result = await personalizationSvc.checkBonusAnswer(session, studentId, 2, data);
 
       expect(result.type).toBe('matrix');
       expect(result.allCorrect).toBe(true);
@@ -3483,7 +3489,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should throw NotFoundException for invalid studentId', async () => {
-      await expect(service.checkBonusAnswer(session, 'bad-id', 1, {})).rejects.toThrow(NotFoundException);
+      await expect(personalizationSvc.checkBonusAnswer(session, 'bad-id', 1, {})).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -3500,9 +3506,9 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       }));
       const created = await service.createSession('no-touch-lesson');
       const noTouchSession = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const joined = await service.join(noTouchSession!, 'NoTouchStudent');
+      const joined = await submissionSvc.join(noTouchSession!, 'NoTouchStudent');
 
-      const result = await service.getPersonalTouch(noTouchSession!, joined.studentId);
+      const result = await personalizationSvc.getPersonalTouch(noTouchSession!, joined.studentId);
 
       expect(result.strategies).toEqual([]);
       expect(result.tier.tone).toBe('neutral');
