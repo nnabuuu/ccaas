@@ -1,0 +1,104 @@
+import { BACKEND_URL } from './constants';
+
+type Json = Record<string, unknown>;
+
+async function request(method: string, path: string, body?: unknown): Promise<{ status: number; data: unknown }> {
+  const url = `${BACKEND_URL}${path}`;
+  const opts: RequestInit = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = text;
+  }
+  return { status: res.status, data };
+}
+
+// ── Lesson API ──
+
+export async function getLessons() {
+  return request('GET', '/api/lessons');
+}
+
+export async function getManifest(lessonId: string) {
+  return request('GET', `/api/lessons/${lessonId}/manifest`);
+}
+
+// ── Session lifecycle ──
+
+export async function createSession(lessonId: string) {
+  return request('POST', '/api/classroom/sessions', { lessonId });
+}
+
+export async function getSession(code: string) {
+  return request('GET', `/api/classroom/sessions/${code}`);
+}
+
+export async function startSession(code: string) {
+  return request('POST', `/api/classroom/sessions/${code}/start`);
+}
+
+export async function endSession(code: string) {
+  return request('POST', `/api/classroom/sessions/${code}/end`);
+}
+
+// ── Classroom operations ──
+
+export async function joinStudent(code: string, name: string) {
+  return request('POST', `/api/classroom/${code}/join`, { name });
+}
+
+export async function submitAnswer(code: string, studentId: string, step: number, data: Json) {
+  return request('POST', `/api/classroom/${code}/submit`, { studentId, step, data });
+}
+
+export async function getState(code: string, step?: number) {
+  const qs = step !== undefined ? `?step=${step}` : '';
+  return request('GET', `/api/classroom/${code}/state${qs}`);
+}
+
+export async function setStep(code: string, step: number) {
+  return request('POST', `/api/classroom/${code}/step`, { step });
+}
+
+// ── Exercise ──
+
+export async function getExercise(code: string, step: number) {
+  return request('GET', `/api/classroom/${code}/steps/${step}/exercise`);
+}
+
+export async function checkAnswer(code: string, step: number, studentId: string, data: Json) {
+  return request('POST', `/api/classroom/${code}/steps/${step}/check`, { studentId, data });
+}
+
+// ── AI ──
+
+export async function aiAsk(code: string, studentId: string, step: number, question: string) {
+  return request('POST', `/api/classroom/${code}/ai/ask`, { studentId, step, question });
+}
+
+export async function aiDiscuss(
+  code: string,
+  studentId: string,
+  taskNum: number,
+  messages: Array<{ role: 'ai' | 'student'; text: string }>,
+  round: number,
+  timeUsedSeconds: number,
+) {
+  return request('POST', `/api/classroom/${code}/ai/discuss`, {
+    studentId, taskNum, messages, round, timeUsedSeconds,
+  });
+}
+
+// ── Personal touch ──
+
+export async function personalTouch(code: string, studentId: string) {
+  return request('POST', `/api/classroom/${code}/personal-touch`, { studentId });
+}
