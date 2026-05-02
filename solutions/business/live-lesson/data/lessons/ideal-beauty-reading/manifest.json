@@ -215,7 +215,7 @@
             "questionIdx": 2,
             "correct": 1,
             "questionText": "What is the writer's main question?",
-            "questionTranslate": "作者真正想问的大问题是���么？",
+            "questionTranslate": "作者真正想问的大问题是什么？",
             "options": [
               "Why do people want to be beautiful?",
               "Is one idea of physical beauty really more attractive than another?",
@@ -223,7 +223,7 @@
               "Why is the media so powerful?"
             ],
             "hint": "Read the **last sentence** of ¶2 — the writer is asking a **question**. What is it?",
-            "hintZh": "仔细读 ¶2 的**最后一句**——作������问什么**问题**？",
+            "hintZh": "仔细读 ¶2 的**最后一句**——作者在问什么**问题**？",
             "walkthrough": "The very last sentence of ¶2 is: *'**Is one idea of physical beauty really more attractive than another?**'* This is a direct question — the writer's central argument revolves around it. Which option matches word-for-word? → B",
             "walkthroughZh": "¶2 最后一句：*'**Is one idea of physical beauty really more attractive than another?**'* 这是作者的核心问题——整篇文章围绕它展开。哪个选项一字不差？→ B"
           }
@@ -1107,7 +1107,7 @@
           },
           {
             "title": "¶8 主旨",
-            "body": "\"It appears that ... people have always changed their bodies and faces ... to show social position or display group identity.\"\n\n核���观点：美不是 shallow vanity，而是 cultural language — 表达身份、归属、地位。\n\n结尾提问：\"Does this mean that we are all beautiful in our own way?\""
+            "body": "\"It appears that ... people have always changed their bodies and faces ... to show social position or display group identity.\"\n\n核心观点：美不是 shallow vanity，而是 cultural language — 表达身份、归属、地位。\n\n结尾提问：\"Does this mean that we are all beautiful in our own way?\""
           },
           {
             "title": "作业说明",
