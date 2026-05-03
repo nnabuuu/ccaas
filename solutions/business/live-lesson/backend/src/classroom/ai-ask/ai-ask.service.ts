@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { ObservationService } from '../observation/observation.service';
@@ -21,6 +22,8 @@ export class AiAskService {
     private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(AiQuestion)
     private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationService: ObservationService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -30,7 +33,13 @@ export class AiAskService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async aiAsk(session: ClassroomSession, studentId: string, step: number, question: string): Promise<{ answer: string; category: string }> {
+  async aiAsk(
+    session: ClassroomSession,
+    studentId: string,
+    step: number,
+    question: string,
+    messages?: Array<{ role: string; text: string }>,
+  ): Promise<{ answer: string; category: string }> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -40,8 +49,17 @@ export class AiAskService {
 
     let rawAnswer: string;
     try {
-      const systemPrompt = await this.buildAiSystemPrompt(session.lessonId, step);
-      rawAnswer = await this.aiPromptBuilder.callGlm(systemPrompt, question);
+      if (messages && messages.length > 0) {
+        const systemPrompt = await this.buildContinueChatSystemPrompt(session.lessonId, step);
+        const llmMessages = messages.map(m => ({
+          role: (m.role === 'student' ? 'user' : 'assistant') as 'user' | 'assistant',
+          content: m.text,
+        }));
+        rawAnswer = await this.aiPromptBuilder.callGlmConversation(systemPrompt, llmMessages);
+      } else {
+        const systemPrompt = await this.buildAiSystemPrompt(session.lessonId, step);
+        rawAnswer = await this.aiPromptBuilder.callGlm(systemPrompt, question);
+      }
     } catch (e) {
       this.logger.warn(`AI call failed: ${e}`);
       rawAnswer = '【其他】AI 助教暂时无法回答，请稍后再试。';
@@ -59,6 +77,26 @@ export class AiAskService {
       category: parsed.category,
     });
     await this.aiQuestionRepo.save(aiQuestion);
+
+    if (messages && messages.length > 0) {
+      const threadId = `continue:${step}`;
+      await this.chatMessageRepo.manager.transaction(async (em) => {
+        const repo = em.getRepository(ChatMessage);
+        const existingCount = await repo.count({
+          where: { sessionId: session.id, studentId, threadId },
+        });
+        await repo.save([
+          repo.create({ sessionId: session.id, studentId, threadId, role: 'student', content: question, seq: existingCount }),
+          repo.create({ sessionId: session.id, studentId, threadId, role: 'ai', content: parsed.answer, seq: existingCount + 1 }),
+        ]);
+      });
+
+      await this.observationService.addSystemEvent(
+        session.id, studentId, student.name, 'continue_chat_turn',
+        { step, messageCount: messages.length },
+        `延伸讨论: step-${step}`,
+      ).catch(e => this.logger.warn(`Observation continue_chat_turn failed: ${e}`));
+    }
 
     const latestSub = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId },
@@ -82,7 +120,11 @@ export class AiAskService {
     return { answer: parsed.answer, category: parsed.category };
   }
 
-  private async buildAiSystemPrompt(lessonId: string, step: number): Promise<string> {
+  private async buildPromptFromManifest(
+    lessonId: string,
+    step: number,
+    builder: (manifest: any, step: number) => string,
+  ): Promise<string> {
     try {
       const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
       if (!lesson) {
@@ -90,9 +132,17 @@ export class AiAskService {
       }
 
       const manifest = JSON.parse(lesson.manifestJson);
-      return this.aiPromptBuilder.buildAskSystemPrompt(manifest, step);
+      return builder(manifest, step);
     } catch {
       return this.aiPromptBuilder.buildFallbackPrompt();
     }
+  }
+
+  private buildAiSystemPrompt(lessonId: string, step: number): Promise<string> {
+    return this.buildPromptFromManifest(lessonId, step, (m, s) => this.aiPromptBuilder.buildAskSystemPrompt(m, s));
+  }
+
+  private buildContinueChatSystemPrompt(lessonId: string, step: number): Promise<string> {
+    return this.buildPromptFromManifest(lessonId, step, (m, s) => this.aiPromptBuilder.buildContinueChatPrompt(m, s));
   }
 }

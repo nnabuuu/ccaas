@@ -203,7 +203,7 @@ export class ObservationService {
     sessionId: string,
     studentId: string,
     studentName: string,
-    type: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave' | 'discuss_depth' | 'discuss_complete',
+    type: 'exercise_result' | 'idle_timeout' | 'step_complete' | 'join' | 'leave' | 'discuss_depth' | 'discuss_complete' | 'continue_chat_turn',
     data: Record<string, unknown>,
     gist: string,
   ): Promise<void> {

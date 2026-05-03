@@ -11,6 +11,7 @@ import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { ObservationEvent } from '../../entities/observation-event.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
@@ -18,11 +19,16 @@ import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 const ASK_MANIFEST = {
   id: 'ask-lesson',
   title: 'Ask Lesson',
+  article: { title: 'Test Article', paragraphs: [{ id: 'p1', text: 'Paragraph one.' }] },
   readingSteps: [{
     idx: 1, label: 'Quiz Step', strategy: 'quiz',
     answerKey: {
       type: 'quiz',
       answers: [{ questionIdx: 0, correct: 1, questionText: 'Q1', options: ['A', 'B'] }],
+    },
+    discuss: {
+      fallbackMC: { explanation: 'The answer is B because of reason X.' },
+      insight: 'Key insight about the topic.',
     },
   }],
 };
@@ -51,11 +57,11 @@ describe('AiAskService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
       ],
       providers: [
         AiAskService, ObservationService, AiPromptBuilder,
@@ -82,7 +88,13 @@ describe('AiAskService', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  let chatMessageRepo: Repository<ChatMessage>;
+
+  beforeAll(async () => {
+    chatMessageRepo = module.get(getRepositoryToken(ChatMessage));
   });
 
   async function createSessionAndStudent() {
@@ -172,6 +184,202 @@ describe('AiAskService', () => {
       await expect(
         service.aiAsk(session, 'nonexistent', 1, 'hello'),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('uses callGlmConversation when messages are provided (multi-turn)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const convSpy = jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('答案是 B，因为文中提到...');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: '答案是 B，因为文中提到...',
+        category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      const messages = [
+        { role: 'student', text: 'Why is the answer B?' },
+        { role: 'ai', text: 'Because the article says...' },
+        { role: 'student', text: 'Can you explain more?' },
+      ];
+
+      const result = await service.aiAsk(session, student.id, 1, 'Can you explain more?', messages);
+
+      expect(result.answer).toBe('答案是 B，因为文中提到...');
+      expect(convSpy).toHaveBeenCalledWith(
+        expect.stringContaining('延伸讨论'),
+        expect.arrayContaining([
+          { role: 'user', content: 'Why is the answer B?' },
+          { role: 'assistant', content: 'Because the article says...' },
+          { role: 'user', content: 'Can you explain more?' },
+        ]),
+      );
+    });
+
+    it('falls back to callGlm when messages is empty', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const glmSpy = jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【理解】single-turn reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'single-turn reply', category: '理解',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'Hello?', []);
+
+      expect(glmSpy).toHaveBeenCalled();
+    });
+
+    it('persists ChatMessages only when messages are provided (multi-turn)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('多轮回复');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: '多轮回复', category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      const messages = [
+        { role: 'student', text: 'First question' },
+        { role: 'ai', text: 'First reply' },
+        { role: 'student', text: 'Second question' },
+      ];
+
+      await service.aiAsk(session, student.id, 1, 'Second question', messages);
+
+      const saved = await chatMessageRepo.find({
+        where: { sessionId: session.id, studentId: student.id, threadId: 'continue:1' },
+        order: { seq: 'ASC' },
+      });
+      expect(saved).toHaveLength(2);
+      expect(saved[0].role).toBe('student');
+      expect(saved[0].content).toBe('Second question');
+      expect(saved[1].role).toBe('ai');
+      expect(saved[1].content).toBe('多轮回复');
+    });
+
+    it('does NOT persist ChatMessages for single-turn (no messages)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【其他】single reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'single reply', category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'solo question');
+
+      const saved = await chatMessageRepo.find({
+        where: { sessionId: session.id, studentId: student.id, threadId: 'continue:1' },
+      });
+      expect(saved).toHaveLength(0);
+    });
+
+    it('returns fallback on callGlmConversation failure (multi-turn)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockRejectedValue(new Error('timeout'));
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      const result = await service.aiAsk(
+        session, student.id, 1, 'test',
+        [{ role: 'student', text: 'test' }],
+      );
+
+      expect(result.answer).toContain('无法回答');
+      expect(result.category).toBe('其他');
+    });
+
+    it('maps role correctly: student→user, ai→assistant', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const convSpy = jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('ok');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'ok', category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'q', [
+        { role: 'student', text: 'hello' },
+        { role: 'ai', text: 'hi' },
+      ]);
+
+      const llmMessages = convSpy.mock.calls[0][1];
+      expect(llmMessages[0]).toEqual({ role: 'user', content: 'hello' });
+      expect(llmMessages[1]).toEqual({ role: 'assistant', content: 'hi' });
+    });
+
+    it('fires continue_chat_turn system event for multi-turn', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'reply', category: '其他',
+      });
+      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'follow-up', [
+        { role: 'student', text: 'follow-up' },
+      ]);
+
+      expect(addSysEvt).toHaveBeenCalledWith(
+        session.id, student.id, student.name, 'continue_chat_turn',
+        expect.objectContaining({ step: 1, messageCount: 1 }),
+        expect.stringContaining('延伸讨论'),
+      );
+    });
+
+    it('does NOT fire continue_chat_turn for single-turn (no messages)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【其他】reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'reply', category: '其他',
+      });
+      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'solo question');
+
+      expect(addSysEvt).not.toHaveBeenCalled();
+    });
+
+    it('uses continue-chat prompt (not ask prompt) for multi-turn', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'reply', category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      await service.aiAsk(session, student.id, 1, 'q', [
+        { role: 'student', text: 'hi' },
+      ]);
+
+      const systemPrompt = jest.mocked(aiPromptBuilder.callGlmConversation).mock.calls[0][0];
+      expect(systemPrompt).toContain('延伸讨论');
+      expect(systemPrompt).not.toContain('严禁直接告诉学生');
+      expect(systemPrompt).toContain('正确答案');
+    });
+
+    it('increments seq correctly across multiple multi-turn calls', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
+        answer: 'reply', category: '其他',
+      });
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+
+      // First round
+      await service.aiAsk(session, student.id, 1, 'q1', [
+        { role: 'student', text: 'q1' },
+      ]);
+      // Second round
+      await service.aiAsk(session, student.id, 1, 'q2', [
+        { role: 'student', text: 'q1' },
+        { role: 'ai', text: 'reply' },
+        { role: 'student', text: 'q2' },
+      ]);
+
+      const saved = await chatMessageRepo.find({
+        where: { sessionId: session.id, studentId: student.id, threadId: 'continue:1' },
+        order: { seq: 'ASC' },
+      });
+      expect(saved).toHaveLength(4);
+      expect(saved.map(m => m.seq)).toEqual([0, 1, 2, 3]);
+      expect(saved.map(m => m.role)).toEqual(['student', 'ai', 'student', 'ai']);
     });
   });
 });

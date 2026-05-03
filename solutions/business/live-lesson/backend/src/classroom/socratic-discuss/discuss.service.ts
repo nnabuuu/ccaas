@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { ObservationService } from '../observation/observation.service';
@@ -22,6 +23,8 @@ export class DiscussService {
     private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(AiQuestion)
     private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationService: ObservationService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -76,6 +79,10 @@ export class DiscussService {
         category: 'discuss',
       }));
 
+      await this.persistThread(
+        session.id, studentId, `discuss:${taskNum}`, messages, reply,
+      ).catch(e => this.logger.warn(`persistThread failed: ${e}`));
+
       const latestSub = await this.submissionRepo.findOne({
         where: { sessionId: session.id, studentId },
         order: { submittedAt: 'DESC' },
@@ -89,7 +96,7 @@ export class DiscussService {
       if (goalReached) {
         await this.observationService.addSystemEvent(
           session.id, studentId, student.name, 'discuss_complete',
-          { taskNum, completionType: 'goal_reached', roundsUsed: round, timeUsedSeconds },
+          { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
           `讨论完成: 目标达成 (${round} 轮)`,
         );
       }
@@ -149,6 +156,8 @@ export class DiscussService {
       {
         taskNum,
         completionType,
+        method: completionType === 'goal_reached' ? 'socratic' : 'fallback_mc',
+        goalReached: completionType === 'goal_reached',
         roundsUsed,
         timeUsedSeconds,
         ...(mcSelectedIndex !== undefined && { mcSelectedIndex, mcCorrect }),
@@ -159,6 +168,30 @@ export class DiscussService {
     );
 
     return { ok: true, mcCorrect };
+  }
+
+  private async persistThread(
+    sessionId: string,
+    studentId: string,
+    threadId: string,
+    messages: Array<{ role: 'ai' | 'student'; text: string }>,
+    aiReply: string,
+  ): Promise<void> {
+    await this.chatMessageRepo.manager.transaction(async (em) => {
+      const repo = em.getRepository(ChatMessage);
+      const existingCount = await repo.count({
+        where: { sessionId, studentId, threadId },
+      });
+      const fullThread = [...messages, { role: 'ai' as const, text: aiReply }];
+      const newMsgs = fullThread.slice(existingCount);
+      if (!newMsgs.length) return;
+      await repo.save(
+        newMsgs.map((m, i) => repo.create({
+          sessionId, studentId, threadId,
+          role: m.role, content: m.text, seq: existingCount + i,
+        })),
+      );
+    });
   }
 
   private async buildSocraticSystemPrompt(

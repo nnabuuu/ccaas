@@ -11,6 +11,7 @@ import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { ObservationEvent } from '../../entities/observation-event.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
@@ -51,11 +52,11 @@ describe('DiscussService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
       ],
       providers: [
         DiscussService, ObservationService, AiPromptBuilder,
@@ -161,7 +162,7 @@ describe('DiscussService', () => {
 
       expect(addSysEvt).toHaveBeenCalledWith(
         session.id, student.id, student.name, 'discuss_complete',
-        expect.objectContaining({ completionType: 'goal_reached', roundsUsed: 2 }),
+        expect.objectContaining({ completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: 2 }),
         expect.stringContaining('目标达成'),
       );
     });
@@ -222,7 +223,7 @@ describe('DiscussService', () => {
       expect(result.ok).toBe(true);
       expect(addSysEvt).toHaveBeenCalledWith(
         session.id, student.id, student.name, 'discuss_complete',
-        expect.objectContaining({ completionType: 'fallback_rounds', roundsUsed: 5 }),
+        expect.objectContaining({ completionType: 'fallback_rounds', method: 'fallback_mc', goalReached: false, roundsUsed: 5 }),
         expect.any(String),
       );
     });
