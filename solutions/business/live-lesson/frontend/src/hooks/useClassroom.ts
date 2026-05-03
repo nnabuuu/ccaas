@@ -327,14 +327,19 @@ export async function checkAnswer(
 export function useAiAsk(sessionCode: string) {
   const [loading, setLoading] = useState(false)
 
-  const ask = useCallback(async (studentId: string, step: number, question: string): Promise<{ answer: string; category: string } | null> => {
+  const ask = useCallback(async (
+    studentId: string,
+    step: number,
+    question: string,
+    messages?: Array<{ role: string; text: string }>,
+  ): Promise<{ answer: string; category: string } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {
       const res = await fetch(`${API_BASE}/${sessionCode}/ai/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentId, step, question }),
+        body: JSON.stringify({ studentId, step, question, messages }),
       })
       if (!res.ok) return null
       const data = await res.json()
@@ -404,6 +409,23 @@ export function useDiscussComplete(sessionCode: string) {
     }
   }, [sessionCode])
   return { complete }
+}
+
+// ── Chat history hook (student restore) ──
+
+export function useChatHistory(sessionCode: string) {
+  const fetchHistory = useCallback(async (studentId: string, threadId?: string): Promise<Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>> | null> => {
+    if (!sessionCode || !studentId) return null
+    const params = new URLSearchParams({ studentId })
+    if (threadId) params.set('threadId', threadId)
+    try {
+      const res = await fetch(`${API_BASE}/${sessionCode}/chat-history?${params}`)
+      return res.ok ? res.json() : null
+    } catch {
+      return null
+    }
+  }, [sessionCode])
+  return { fetchHistory }
 }
 
 // ── Teacher stream hook ──

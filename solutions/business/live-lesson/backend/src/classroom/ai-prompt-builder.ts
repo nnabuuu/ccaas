@@ -76,6 +76,47 @@ export class AiPromptBuilder {
     return layers.join('\n\n');
   }
 
+  /** Build system prompt for Continue Chat (post-discuss, answer revealed) */
+  buildContinueChatPrompt(manifest: any, step: number): string {
+    const readingSteps = manifest.readingSteps || [];
+    const stepDef = readingSteps.find((s: any) => s.idx === step);
+
+    const layers = this.buildBaseContextLayers(manifest, stepDef);
+
+    // Override L1 role for post-discuss context
+    layers[0] = `你是英语阅读助教，学生已完成练习并看到了答案，现在在做延伸讨论。
+你的目标是帮助学生深入理解，可以自由引用答案和课文来解释。`;
+
+    // L4: Answer key (freely available)
+    if (stepDef?.answerKey) {
+      layers.push(`【正确答案】\n${JSON.stringify(stepDef.answerKey, null, 2)}\n\n学生已经看到答案，你可以直接引用答案来帮助解释。`);
+    }
+
+    // L5: Discuss explanation & insight
+    const discuss = stepDef?.discuss;
+    if (discuss) {
+      const parts: string[] = [];
+      if (discuss.fallbackMC?.explanation) {
+        parts.push(`解析：${discuss.fallbackMC.explanation}`);
+      }
+      if (discuss.insight) {
+        parts.push(`核心洞察：${discuss.insight}`);
+      }
+      if (parts.length > 0) {
+        layers.push(`【参考解析】\n${parts.join('\n')}`);
+      }
+    }
+
+    // L6: Response rules
+    layers.push(`【回答规则】
+- 直接解释，可以引用答案和课文
+- 鼓励学生深入思考、提出更多问题
+- 用中文回答
+- 简洁明了，不超过 200 字`);
+
+    return layers.join('\n\n');
+  }
+
   /** Fallback prompt when manifest is unavailable */
   buildFallbackPrompt(): string {
     return `你是一位教学助教，正在帮助学生学习阅读理解。

@@ -74,6 +74,20 @@ export class ClassroomController {
     return result;
   }
 
+  @Get(':code/chat-history')
+  async getChatHistory(
+    @Param('code') code: string,
+    @Query('studentId') studentId: string,
+    @Query('threadId') threadId?: string,
+  ) {
+    if (!studentId) throw new BadRequestException('studentId is required');
+    if (threadId && !/^(discuss|continue):\d+$/.test(threadId)) {
+      throw new BadRequestException('Invalid threadId format');
+    }
+    const session = await this.classroomService.resolveSession(validateCode(code));
+    return this.classroomService.getChatHistory(session.id, studentId, threadId);
+  }
+
   @Get(':code/state')
   async getState(
     @Param('code') code: string,

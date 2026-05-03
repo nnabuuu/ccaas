@@ -303,6 +303,131 @@ describe('AiPromptBuilder', () => {
     });
   });
 
+  // ── buildContinueChatPrompt (post-discuss, answer revealed) ──
+
+  describe('buildContinueChatPrompt', () => {
+    const manifest = {
+      article: { title: 'Beauty in Math', paragraphs: [{ id: 'p1', text: 'The golden ratio...' }] },
+      readingSteps: [{
+        idx: 1, label: 'Quiz Step', strategy: 'quiz',
+        answerKey: {
+          type: 'quiz',
+          answers: [{ questionIdx: 0, correct: 1, questionText: 'Q1', options: ['A', 'B'] }],
+        },
+        discuss: {
+          fallbackMC: { explanation: 'B is correct because the golden ratio appears in nature.' },
+          insight: 'Math connects to beauty in unexpected ways.',
+        },
+      }],
+    };
+
+    it('should contain post-discuss role (延伸讨论), not Socratic restriction', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 1);
+
+      expect(prompt).toContain('延伸讨论');
+      expect(prompt).toContain('自由引用答案');
+      expect(prompt).not.toContain('严禁直接告诉学生');
+      expect(prompt).not.toContain('苏格拉底');
+    });
+
+    it('should include the full answer key', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 1);
+
+      expect(prompt).toContain('正确答案');
+      expect(prompt).toContain('"correct": 1');
+      expect(prompt).toContain('可以直接引用答案来帮助解释');
+    });
+
+    it('should include discuss explanation and insight', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 1);
+
+      expect(prompt).toContain('B is correct because the golden ratio appears in nature.');
+      expect(prompt).toContain('Math connects to beauty in unexpected ways.');
+    });
+
+    it('should include article text and step context', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 1);
+
+      expect(prompt).toContain('课文全文');
+      expect(prompt).toContain('The golden ratio...');
+      expect(prompt).toContain('Beauty in Math');
+      expect(prompt).toContain('当前步骤');
+      expect(prompt).toContain('Quiz Step');
+    });
+
+    it('should include 200-char limit in response rules', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 1);
+
+      expect(prompt).toContain('不超过 200 字');
+      expect(prompt).toContain('用中文回答');
+    });
+
+    it('should handle step without answerKey', () => {
+      const noAnswerManifest = {
+        article: { title: 'T', paragraphs: [] },
+        readingSteps: [{ idx: 2, label: 'Reading Step', strategy: 'reading' }],
+      };
+
+      const prompt = builder.buildContinueChatPrompt(noAnswerManifest, 2);
+
+      expect(prompt).toContain('延伸讨论');
+      expect(prompt).not.toContain('正确答案');
+    });
+
+    it('should handle step without discuss field', () => {
+      const noDiscussManifest = {
+        article: { title: 'T', paragraphs: [] },
+        readingSteps: [{
+          idx: 3, label: 'Practice', strategy: 'quiz',
+          answerKey: { type: 'quiz', answers: [] },
+        }],
+      };
+
+      const prompt = builder.buildContinueChatPrompt(noDiscussManifest, 3);
+
+      expect(prompt).toContain('正确答案');
+      expect(prompt).not.toContain('参考解析');
+    });
+
+    it('should handle unknown step index gracefully', () => {
+      const prompt = builder.buildContinueChatPrompt(manifest, 99);
+
+      expect(prompt).toContain('延伸讨论');
+      expect(prompt).not.toContain('正确答案');
+      expect(prompt).not.toContain('当前步骤');
+    });
+
+    it('should handle discuss with only explanation (no insight)', () => {
+      const partialManifest = {
+        article: { title: 'T', paragraphs: [] },
+        readingSteps: [{
+          idx: 1, label: 'S1', strategy: 'quiz',
+          discuss: { fallbackMC: { explanation: 'Only explanation here.' } },
+        }],
+      };
+
+      const prompt = builder.buildContinueChatPrompt(partialManifest, 1);
+
+      expect(prompt).toContain('Only explanation here.');
+      expect(prompt).toContain('参考解析');
+    });
+
+    it('should handle discuss with only insight (no explanation)', () => {
+      const partialManifest = {
+        article: { title: 'T', paragraphs: [] },
+        readingSteps: [{
+          idx: 1, label: 'S1', strategy: 'quiz',
+          discuss: { insight: 'Only insight here.' },
+        }],
+      };
+
+      const prompt = builder.buildContinueChatPrompt(partialManifest, 1);
+
+      expect(prompt).toContain('Only insight here.');
+      expect(prompt).toContain('参考解析');
+    });
+  });
+
   // ── Prompt content: verify JSON schema and quality rules ──
 
   describe('buildDiscussSystemPrompt — JSON format instructions', () => {

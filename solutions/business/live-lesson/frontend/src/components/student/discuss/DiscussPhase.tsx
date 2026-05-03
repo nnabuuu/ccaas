@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useRef, useCallback } from 'react'
 import { renderMd } from '../renderMd'
-import { useAiAsk, useAiDiscuss, useDiscussComplete } from '../../../hooks/useClassroom'
+import { useAiAsk, useAiDiscuss, useDiscussComplete, useChatHistory } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, FallbackMC } from '../task-data'
 
@@ -112,7 +112,25 @@ function ContinueChat({ taskId }: { taskId: number }) {
   const [msgs, setMsgs] = useState<Array<{ role: 'q' | 'a'; text: string; loading?: boolean; id?: number }>>([])
   const [input, setInput] = useState('')
   const { ask, loading } = useAiAsk(sessionCode || '')
+  const { fetchHistory } = useChatHistory(sessionCode || '')
   const endRef = useRef<HTMLDivElement>(null)
+  const restoredRef = useRef(false)
+
+  useEffect(() => {
+    if (restoredRef.current || !sessionCode || !studentId) return
+    restoredRef.current = true
+    fetchHistory(studentId, `continue:${taskId}`).then(data => {
+      if (!data) return
+      const thread = data[`continue:${taskId}`]
+      if (!thread || thread.length === 0) return
+      const restored = thread.map(m => ({
+        role: (m.role === 'student' ? 'q' : 'a') as 'q' | 'a',
+        text: m.content,
+      }))
+      setMsgs(restored)
+      setOpen(true)
+    })
+  }, [sessionCode, studentId, taskId, fetchHistory])
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
@@ -124,8 +142,10 @@ function ContinueChat({ taskId }: { taskId: number }) {
     const pid = Date.now()
     setInput('')
     setMsgs(m => [...m, { role: 'q', text: q }, { role: 'a', text: 'Thinking...', loading: true, id: pid }])
+    const history = [...msgs.filter(m => !m.loading), { role: 'q' as const, text: q }]
+      .map(m => ({ role: m.role === 'q' ? 'student' : 'ai', text: m.text }))
     const reply = sessionCode && studentId
-      ? (await ask(studentId, taskId, q))?.answer || 'Sorry, AI is unavailable right now.'
+      ? (await ask(studentId, taskId, q, history))?.answer || 'Sorry, AI is unavailable right now.'
       : 'AI discussion requires an active session.'
     setMsgs(m => m.map(msg => msg.id === pid ? { role: 'a' as const, text: reply, id: pid } : msg))
   }
@@ -199,9 +219,29 @@ export function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void 
 
   const { discuss, loading } = useAiDiscuss(sessionCode || '')
   const { complete } = useDiscussComplete(sessionCode || '')
+  const { fetchHistory } = useChatHistory(sessionCode || '')
   const useAi = !!(sessionCode && studentId)
 
   const getElapsed = useCallback(() => Math.floor((Date.now() - startTime) / 1000), [startTime])
+
+  // Restore discuss thread on mount
+  const restoredRef = useRef(false)
+  useEffect(() => {
+    if (restoredRef.current || !sessionCode || !studentId) return
+    restoredRef.current = true
+    fetchHistory(studentId, `discuss:${task.id}`).then(data => {
+      if (!data) return
+      const thread = data[`discuss:${task.id}`]
+      if (!thread || thread.length === 0) return
+      const restored: Msg[] = thread.map(m => ({
+        role: m.role as 'ai' | 'student',
+        text: m.content,
+      }))
+      setMessages(restored)
+      const studentMsgCount = restored.filter(m => m.role === 'student').length
+      setRound(studentMsgCount)
+    })
+  }, [sessionCode, studentId, task.id, fetchHistory])
 
   // Timer — pauses while AI is loading so students aren't penalised for latency
   useEffect(() => {

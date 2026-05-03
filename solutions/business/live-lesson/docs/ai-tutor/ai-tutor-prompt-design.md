@@ -134,6 +134,21 @@ New field in `manifest.json`:
 ]
 ```
 
+## Continue Chat Prompt (Post-Discuss)
+
+`buildContinueChatPrompt()` — 用于 discuss 完成后的延伸讨论，此时学生已经看到答案。
+
+与 Ask Prompt 的关键差异：
+- **L1 角色**：不再苏格拉底限制，改为"延伸讨论助教"
+- **L4 答案**：包含完整 `answerKey` JSON，AI 可直接引用
+- **L5 解析**：包含 `discuss.fallbackMC.explanation` + `discuss.insight`
+- **L6 规则**：直接解释、200 字限制、鼓励深入思考
+
+### 调用路径
+
+`POST /ai/ask` 收到 `messages[]` 时 → `buildContinueChatPrompt()` → `callGlmConversation()`
+`POST /ai/ask` 无 `messages` 时 → `buildAskSystemPrompt()` → `callGlm()`（原有行为不变）
+
 ## Test Strategy
 
 See `harness-workspace/live-lesson-ai-tutor-e2e/tests/test-prompt-quality.sh`:

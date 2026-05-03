@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>课堂控制台 · Teacher Console</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+/* ==========================================================
+   Methodology · Shneiderman VISM + Landscape focus grid
+   Zone A · Ambient band       (48px top)
+   Zone B · Overview column    (right, 360px)
+   Zone C · Focus column       (flex, full-bleed landscape)
+   Zone D · Detail modal       (on demand)
+   Color · Ink 90% · Amber = attention · Muted purple = AI only
+   ========================================================== */
+
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.08); --border-strong:rgba(28,28,26,.14);
+  --amber:#7a4d0e; --amber-soft:#f6edda; --amber-dot:#c48a1e;
+  --done-dot:#8a8a80; --idle:#bcbab2;
+  --ai:#4a4387; --ai-soft:#ecebf5; --ai-dot:#7a72b5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;height:100vh;overflow:hidden;display:flex;flex-direction:column;font-variant-numeric:tabular-nums}
+
+/* Ambient band */
+.band{display:flex;align-items:center;height:48px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:20px}
+.band-mark{width:22px;height:22px;border-radius:6px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.band-title{font-size:13px;font-weight:600;letter-spacing:-.1px}
+.band-class{font-size:12px;color:var(--t2);padding-left:10px;border-left:1px solid var(--border-strong);margin-left:2px}
+.band-step{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:12px;color:var(--t2)}
+.band-step .lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+.band-step .n{font-size:13px;font-weight:700;color:var(--t1)}
+.band-step .sl{color:var(--t3);margin:0 2px}
+.band-step .tot{font-size:13px;font-weight:600;color:var(--t2)}
+.band-step .sep{color:var(--t3);margin:0 4px}
+
+/* Step rail */
+.rail{display:flex;height:36px;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;flex-shrink:0}
+.rstep{flex:1;display:flex;align-items:center;gap:8px;padding:0 10px;cursor:pointer;font-size:12px;color:var(--t3);font-weight:500}
+.rstep .rn{width:18px;height:18px;border-radius:50%;background:var(--surface2);color:var(--t3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rstep.done{color:var(--t2)}
+.rstep.act{color:var(--t1);font-weight:600}
+.rstep.act .rn{background:var(--t1);color:var(--surface)}
+.rstep .rt{font-size:10px;color:var(--t3);margin-left:auto;font-weight:500}
+.rstep.act .rt{color:var(--t2)}
+
+/* Body */
+.body{flex:1;display:grid;grid-template-columns:1fr 360px;min-height:0}
+
+/* ============ FOCUS COLUMN ============ */
+.focus{padding:22px 28px;overflow-y:auto}
+
+/* Hero row — full width */
+.hero{display:flex;align-items:flex-end;gap:20px;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.hero-main{flex:1}
+.hero-eyebrow{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px}
+.hero-eyebrow .pill{background:var(--t1);color:var(--surface);padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:.3px}
+.hero-title{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1.1;margin-bottom:6px}
+.hero-title .en{color:var(--t3);font-weight:500;font-size:18px;letter-spacing:-.2px;margin-left:10px}
+.hero-brief{font-size:13px;color:var(--t2);line-height:1.6;max-width:720px}
+.hero-brief strong{color:var(--t1);font-weight:600}
+.hero-side{display:flex;gap:14px;align-items:baseline;flex-shrink:0;padding-left:20px;border-left:1px solid var(--border)}
+.hs-pair{display:flex;flex-direction:column;gap:3px}
+.hs-lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.hs-v{display:inline-flex;align-items:baseline;gap:3px}
+.hs-v .n{font-size:20px;font-weight:700;color:var(--t1);line-height:1;letter-spacing:-.3px}
+.hs-v .sl{color:var(--t3)}
+.hs-v .tot{font-size:14px;font-weight:600;color:var(--t2)}
+
+/* Primary grid — matrix fills landscape space */
+.primary{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;margin-bottom:20px}
+
+/* Model matrix — the CORE component of this step */
+.mat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mat-head{display:flex;align-items:baseline;gap:10px;padding:14px 18px 12px;border-bottom:1px solid var(--border)}
+.mat-head .lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.mat-head .ti{font-size:13px;font-weight:600;color:var(--t1)}
+.mat-head .meta{margin-left:auto;font-size:11px;color:var(--t3)}
+table.matrix{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.matrix th{text-align:left;padding:10px 14px;background:var(--surface);font-weight:600;color:var(--t2);font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)}
+table.matrix td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.5;color:var(--t1)}
+table.matrix tr:last-child td{border-bottom:none}
+table.matrix td.place{font-weight:600;color:var(--t1);width:24%}
+table.matrix td .para{font-size:10px;color:var(--t3);font-weight:500;display:block;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.demo-row{background:var(--amber-soft)}
+.demo-row td{color:var(--t1)}
+.demo-row td.place{color:var(--amber)}
+.demo-row .tag{display:inline-block;font-size:9px;font-weight:700;color:var(--amber);background:#fff4dc;padding:1px 5px;border-radius:3px;margin-left:6px;letter-spacing:.3px;vertical-align:middle}
+.empty-cell{color:var(--t3);font-style:italic}
+.partial-cell{color:var(--t2)}
+.live-prog{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);margin-left:6px;font-variant-numeric:tabular-nums}
+.live-prog .b{display:inline-block;width:24px;height:3px;background:var(--surface2);border-radius:2px;position:relative;overflow:hidden}
+.live-prog .b::after{content:"";position:absolute;left:0;top:0;bottom:0;background:var(--t1);width:var(--w,0)}
+
+/* Teacher's line */
+.line-wrap{display:flex;flex-direction:column;gap:10px}
+.line{background:var(--t1);color:#f0efe8;border-radius:12px;padding:18px 20px}
+.line-lb{font-size:10px;font-weight:600;color:rgba(240,239,232,.55);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.line-text{font-size:15px;line-height:1.6;font-weight:500;color:rgba(240,239,232,.96);text-wrap:pretty}
+.line-text .k{background:rgba(196,138,30,.22);color:#f0c56c;padding:1px 5px;border-radius:3px;font-weight:600}
+
+/* Quick actions row */
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.qbtn{font-size:11px;padding:6px 10px;border-radius:6px;background:var(--surface);border:1px solid var(--border);color:var(--t2);cursor:pointer;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.qbtn:hover{background:var(--surface2);color:var(--t1)}
+.qbtn .k{font-size:9px;font-family:ui-monospace,Menlo,monospace;color:var(--t3);padding:1px 4px;border:1px solid var(--border);border-radius:3px}
+
+/* Cue cards — 3 cols below */
+.sh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.sh-lb{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px}
+.sh-meta{font-size:11px;color:var(--t3);margin-left:auto}
+.cues{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.cue{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.cue-h{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.cue-h .dot{width:5px;height:5px;border-radius:50%;background:var(--t3)}
+.cue-h.warn .dot{background:var(--amber-dot)}
+.cue-h.warn{color:var(--amber)}
+.cue-body{font-size:13px;line-height:1.65;color:var(--t2)}
+.cue-body strong{color:var(--t1);font-weight:600}
+.cue-body .q{color:var(--t1);font-weight:500}
+.cue-list{list-style:none;padding:0}
+.cue-list li{display:flex;gap:8px;margin-bottom:4px;font-size:13px;color:var(--t2);line-height:1.55}
+.cue-list li::before{content:"—";color:var(--t3);flex-shrink:0}
+
+/* Actions bar */
+.actions{display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--border)}
+.btn{font-size:13px;padding:9px 16px;border-radius:7px;cursor:pointer;border:1px solid var(--border-strong);background:var(--surface);color:var(--t1);font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--surface2)}
+.btn.pri{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.btn.pri:hover{opacity:.9}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--t2)}
+.btn.ghost:hover{background:var(--surface2);color:var(--t1)}
+
+/* ============ OVERVIEW COLUMN ============ */
+.overview{border-left:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden}
+.ov-tabs{display:flex;border-bottom:1px solid var(--border);padding:0 16px;flex-shrink:0;background:var(--surface)}
+.ov-tab{flex:1;padding:12px 4px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;text-align:center;border-bottom:2px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.ov-tab.act{color:var(--t1);border-bottom-color:var(--t1)}
+.ov-tab .cnt{font-size:10px;color:var(--t3);background:var(--surface2);padding:1px 6px;border-radius:8px;font-weight:600}
+.ov-tab.act .cnt{background:var(--t1);color:var(--surface)}
+
+.ov-body{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* Pulse — compact */
+.pulse{display:grid;grid-template-columns:repeat(3,1fr);padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.pulse-cell{padding:0 10px;border-left:1px solid var(--border)}
+.pulse-cell:first-child{border-left:0;padding-left:2px}
+.pulse-n{font-size:22px;font-weight:700;line-height:1;letter-spacing:-.4px;color:var(--t1);margin-bottom:5px}
+.pulse-row{display:flex;align-items:center;gap:5px}
+.pulse-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.pulse-dot.done{background:var(--done-dot)}
+.pulse-dot.prog{background:var(--t1)}
+.pulse-dot.idle{background:var(--idle)}
+.pulse-lb{font-size:10px;color:var(--t2);font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+
+/* Filter bar for queue */
+.q-filter{display:flex;align-items:center;gap:6px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.q-filter::-webkit-scrollbar{display:none}
+.q-search{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--t2);font-family:inherit;display:flex;align-items:center;gap:6px}
+.q-search::before{content:"⌕";color:var(--t3);font-size:12px}
+.q-chip{font-size:10px;padding:4px 9px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--t2);cursor:pointer;white-space:nowrap;font-weight:600;font-family:inherit}
+.q-chip.act{background:var(--t1);color:var(--surface);border-color:var(--t1)}
+.q-chip .n{margin-left:3px;opacity:.7;font-variant-numeric:tabular-nums}
+
+/* Queue list — dense & virtualizable */
+.queue{flex:1;overflow-y:auto;padding:4px 8px 8px}
+.q-group-h{display:flex;align-items:baseline;gap:6px;padding:10px 8px 6px;font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;position:sticky;top:0;background:var(--surface);z-index:1}
+.q-group-h .tot{margin-left:auto;font-weight:500;color:var(--t3)}
+.q-group-h.hi{color:var(--amber)}
+
+.qrow{display:flex;align-items:flex-start;gap:8px;padding:8px 8px;border-radius:6px;cursor:pointer;position:relative}
+.qrow:hover{background:var(--bg)}
+.qrow .qn{font-size:13px;font-weight:700;color:var(--t1);line-height:1.2;min-width:22px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;padding-top:1px}
+.qrow.hi .qn{color:var(--amber)}
+.qrow .qtext{flex:1;min-width:0}
+.qrow .qq{font-size:12px;font-weight:500;color:var(--t1);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.qrow .qnames{font-size:10px;color:var(--t3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qrow .qmeta{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--t3);flex-shrink:0;padding-top:3px;font-variant-numeric:tabular-nums}
+.qrow .qmeta .trend{color:var(--amber);font-weight:700}
+
+.q-more{text-align:center;padding:10px;font-size:11px;color:var(--t2);cursor:pointer;border-top:1px solid var(--border);background:var(--surface)}
+.q-more:hover{background:var(--surface2)}
+
+/* Student list — full names, 2 cols */
+.stu-view{border-top:1px solid var(--border);flex-shrink:0}
+.stu-h{display:flex;align-items:baseline;gap:8px;padding:12px 16px 8px}
+.stu-h .lb{font-size:9px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.stu-h .total{margin-left:auto;font-size:10px;color:var(--t3)}
+.stu-h .view-toggle{display:inline-flex;gap:2px;padding:1px;background:var(--bg);border-radius:4px;border:1px solid var(--border)}
+.stu-h .view-toggle span{font-size:9px;padding:2px 6px;border-radius:3px;color:var(--t3);cursor:pointer;font-weight:600}
+.stu-h .view-toggle .act{background:var(--t1);color:var(--surface)}
+.stu-list{max-height:180px;overflow-y:auto;padding:0 10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:2px 4px}
+.sl-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:4px;font-size:11px;cursor:pointer;position:relative;min-width:0}
+.sl-row:hover{background:var(--bg)}
+.sl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.sl-dot.done{background:var(--done-dot)}
+.sl-dot.prog{background:var(--t1)}
+.sl-dot.idle{background:transparent;border:1px solid var(--idle)}
+.sl-name{color:var(--t1);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.sl-row.idle .sl-name{color:var(--t3)}
+.sl-ai{width:5px;height:5px;border-radius:50%;background:var(--ai-dot);flex-shrink:0}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(28,28,26,.5);display:none;align-items:center;justify-content:center;padding:32px;z-index:100;backdrop-filter:blur(2px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg);border-radius:14px;width:100%;max-width:960px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px -10px rgba(28,28,26,.3)}
+.mod-hd{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.mod-av{width:36px;height:36px;border-radius:8px;background:var(--t1);color:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+.mod-ti{flex:1}
+.mod-ti-n{font-size:15px;font-weight:600}
+.mod-ti-m{font-size:11px;color:var(--t3);margin-top:2px}
+.mod-cls{cursor:pointer;padding:6px 12px;font-size:12px;color:var(--t2);border-radius:6px}
+.mod-cls:hover{background:var(--surface2);color:var(--t1)}
+.mod-body{flex:1;overflow:hidden;display:grid;grid-template-columns:1fr 1fr}
+.mod-col{padding:20px 24px;overflow-y:auto}
+.mod-col.right{background:var(--surface);border-left:1px solid var(--border)}
+.mod-h{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+table.mat{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px}
+table.mat th{text-align:left;padding:8px 10px;background:var(--surface2);font-weight:600;color:var(--t2);font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+table.mat td{padding:8px 10px;border-bottom:1px solid var(--border);line-height:1.4;vertical-align:top}
+table.mat td.place{font-weight:600;color:var(--t1);width:28%}
+.err-tx{color:var(--amber);font-weight:500}
+.emp-tx{color:var(--t3);font-style:italic}
+.err-mark{display:inline-block;width:3px;height:3px;border-radius:50%;background:var(--amber);margin-right:5px;vertical-align:middle}
+.ai-note{background:var(--ai-soft);border-radius:8px;padding:14px 16px;font-size:12px;line-height:1.7;color:var(--t1)}
+.ai-note-h{font-size:10px;font-weight:700;color:var(--ai);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px}
+.ai-note-h::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ai-dot)}
+.chat-row{margin-bottom:12px}
+.chat-row .who{font-size:10px;color:var(--t3);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:.3px}
+.chat-bubble{padding:9px 13px;border-radius:10px;font-size:12.5px;line-height:1.55}
+.chat-row.stu .chat-bubble{background:var(--t1);color:var(--surface);display:inline-block;max-width:90%}
+.chat-row.ai .chat-bubble{background:var(--bg);border:1px solid var(--border);color:var(--t2)}
+.chat-row.ai strong{color:var(--t1);font-weight:600}
+</style></head><body>
+
+<!-- Ambient -->
+<div class="band">
+  <div class="band-mark">R</div>
+  <div class="band-title">课堂控制台</div>
+  <div class="band-class">高一(3)班 · Ideal Beauty · 42 人</div>
+  <div class="band-step">
+    <span class="lb">Step</span><span class="n">3</span><span class="sl">/</span><span class="tot">5</span>
+    <span class="sep">·</span>
+    <span class="lb">Time</span><span class="n">12:48</span><span class="sl">/</span><span class="tot">45:00</span>
+  </div>
+</div>
+
+<!-- Step rail -->
+<div class="rail">
+  <div class="rstep done"><div class="rn">1</div>图式激活<div class="rt">3'</div></div>
+  <div class="rstep done"><div class="rn">2</div>结构解码<div class="rt">6'</div></div>
+  <div class="rstep act"><div class="rn">3</div>矩阵构建<div class="rt">17'</div></div>
+  <div class="rstep"><div class="rn">4</div>批判质疑<div class="rt">12'</div></div>
+  <div class="rstep"><div class="rn">5</div>复盘<div class="rt">7'</div></div>
+</div>
+
+<div class="body">
+
+  <!-- ===== FOCUS COLUMN ===== -->
+  <div class="focus">
+
+    <!-- Hero (full width) -->
+    <div class="hero">
+      <div class="hero-main">
+        <div class="hero-eyebrow"><span class="pill">STEP 3</span>现在进行中 · 学生分组扫读 ¶5–7</div>
+        <div class="hero-title">矩阵构建<span class="en">Build the Matrix</span></div>
+        <div class="hero-brief">每组聚焦 2–3 段，提取 <strong>Place × Practice × Reason</strong>。提交后由 AI Skill 逐项反馈。老师侧示范 ¶3 一行，其余由学生完成。</div>
+      </div>
+      <div class="hero-side">
+        <div class="hs-pair"><span class="hs-lb">Step time</span><span class="hs-v"><span class="n">7:23</span><span class="sl">/</span><span class="tot">17:00</span></span></div>
+        <div class="hs-pair"><span class="hs-lb">Submitted</span><span class="hs-v"><span class="n">12</span><span class="sl">/</span><span class="tot">42</span></span></div>
+      </div>
+    </div>
+
+    <!-- Primary grid: matrix + line -->
+    <div class="primary">
+
+      <!-- Live matrix -->
+      <div class="mat-card">
+        <div class="mat-head">
+          <span class="lb">Class matrix</span>
+          <span class="ti">Ideas about physical beauty</span>
+          <span class="meta">live · 12 / 42 提交 · 中位 3 / 4 正确</span>
+        </div>
+        <table class="matrix">
+          <tr><th style="width:24%">Place</th><th style="width:32%">Practice · 做法</th><th style="width:44%">Reason · 原因</th></tr>
+          <tr class="demo-row">
+            <td class="place">Ancient Egypt<span class="para">¶3 · 示范</span></td>
+            <td>kohl eye makeup<span class="tag">MODEL</span></td>
+            <td>wealth &amp; status — 显示身份与财富</td>
+          </tr>
+          <tr>
+            <td class="place">Borneo<span class="para">¶5</span></td>
+            <td>tā moko / facial tattoos<span class="live-prog"><span class="b" style="--w:72%"></span>30/42</span></td>
+            <td>记录重要事件，像日记</td>
+          </tr>
+          <tr>
+            <td class="place">NZ Maori<span class="para">¶6</span></td>
+            <td class="partial-cell">tā moko <span style="color:var(--amber);font-weight:500">— 常误写成 "tattoos"</span></td>
+            <td class="partial-cell">position in society</td>
+          </tr>
+          <tr>
+            <td class="place">Myanmar<span class="para">¶7a</span></td>
+            <td class="partial-cell">wearing metal rings on neck <span class="live-prog"><span class="b" style="--w:32%"></span>14/42</span></td>
+            <td class="empty-cell">— 待填</td>
+          </tr>
+          <tr>
+            <td class="place">Indonesia<span class="para">¶7b</span></td>
+            <td class="empty-cell">— 待填</td>
+            <td class="empty-cell">— 待填</td>
+          </tr>
+        </table>
+      </div>
+
+      <!-- Right column: line + quick actions -->
+      <div class="line-wrap">
+        <div class="line">
+          <div class="line-lb">你的下一句话 · say out loud</div>
+          <div class="line-text">"Good, we now have the <span class="k">skeleton</span>. Let's fill in the <span class="k">flesh</span>. Each group focuses on 2–3 paragraphs and builds a matrix: <span class="k">Place × Practice × Reason</span>."</div>
+        </div>
+        <div class="sh" style="margin:2px 0 6px"><span class="sh-lb">快捷推送</span></div>
+        <div class="quick">
+          <button class="qbtn">📍 Myanmar 位置提示 <span class="k">⌥1</span></button>
+          <button class="qbtn">🎯 Practice 写法示例 <span class="k">⌥2</span></button>
+          <button class="qbtn">📝 tā moko 生词卡 <span class="k">⌥3</span></button>
+          <button class="qbtn">⏱ 再给 2 分钟 <span class="k">⌥4</span></button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Cue cards -->
+    <div class="sh"><span class="sh-lb">参考要点</span><span class="sh-meta">3 cards · scannable</span></div>
+    <div class="cues">
+      <div class="cue">
+        <div class="cue-h"><span class="dot"></span>示范一行</div>
+        <div class="cue-body">用 <strong>Ancient Egypt (¶3)</strong> 打样：
+          <ul class="cue-list">
+            <li><span class="q">"What did Egyptians do?"</span> → kohl makeup</li>
+            <li><span class="q">"Why?"</span> → wealth &amp; status</li>
+          </ul>
+          让学生模仿这句型做其它行。</div>
+      </div>
+      <div class="cue">
+        <div class="cue-h warn"><span class="dot"></span>易错点 · 2</div>
+        <div class="cue-body">
+          <strong>¶6 Maori</strong>：Practice 写 "tattoos" 过泛 → <strong>tā moko</strong>；Reason 是 <strong>social position</strong>。<br><br>
+          <strong>¶7</strong>：Myanmar 与 Indonesia 是<strong>两行不同地方</strong>，常被合并。
+        </div>
+      </div>
+      <div class="cue">
+        <div class="cue-h"><span class="dot"></span>过渡到 Step 4</div>
+        <div class="cue-body">回到矩阵整体，指向 <strong>Reason 列</strong>：<br><span class="q">"Look at the Reason column. What do you see?"</span><br>引出批判质疑。</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn ghost">← 上一步</button>
+      <button class="btn">延长 2 min</button>
+      <button class="btn">推送提示给全班</button>
+      <div style="flex:1"></div>
+      <button class="btn pri">进入 Step 4 →</button>
+    </div>
+
+  </div>
+
+  <!-- ===== OVERVIEW COLUMN ===== -->
+  <div class="overview">
+
+    <!-- Tabs (scales when queue gets heavy) -->
+    <div class="ov-tabs">
+      <div class="ov-tab act">待处理 <span class="cnt">14</span></div>
+      <div class="ov-tab">全部对话 <span class="cnt">38</span></div>
+      <div class="ov-tab">已解决 <span class="cnt">6</span></div>
+    </div>
+
+    <div class="ov-body">
+
+      <!-- Pulse -->
+      <div class="pulse">
+        <div class="pulse-cell"><div class="pulse-n">12</div><div class="pulse-row"><span class="pulse-dot done"></span><span class="pulse-lb">已提交</span></div></div>
+        <div class="pulse-cell"><div class="pulse-n">26</div><div class="pulse-row"><span class="pulse-dot prog"></span><span class="pulse-lb">填写中</span></div></div>
+        <div class="pulse-cell"><div class="pulse-n">4</div><div class="pulse-row"><span class="pulse-dot idle"></span><span class="pulse-lb">未开始</span></div></div>
+      </div>
+
+      <!-- Queue filter — handles high volume -->
+      <div class="q-filter">
+        <div class="q-search">搜索聚类 / 学生姓名…</div>
+        <button class="q-chip act">按影响<span class="n">14</span></button>
+        <button class="q-chip">按时间</button>
+        <button class="q-chip">仅高频<span class="n">2</span></button>
+      </div>
+
+      <!-- Queue list — sticky group headers, scrollable, truncating -->
+      <div class="queue">
+
+        <div class="q-group-h hi">高优先级 · 影响 ≥ 4 人<span class="tot">2</span></div>
+
+        <div class="qrow hi" onclick="openModal()">
+          <div class="qn">8</div>
+          <div class="qtext">
+            <div class="qq">Myanmar 在哪里？地理位置不明，影响理解 ¶7 两种不同风俗。</div>
+            <div class="qnames">陈昕 · 赵雪 · 王译 · 李奕 · 孙楠 +3</div>
+          </div>
+          <div class="qmeta"><span class="trend">↑3</span></div>
+        </div>
+
+        <div class="qrow hi">
+          <div class="qn">4</div>
+          <div class="qtext">
+            <div class="qq">Practice 栏怎样写才算对？能直接写 tattoos 吗？</div>
+            <div class="qnames">李奕 · 孙楠 · 徐然 · 郭斐</div>
+          </div>
+          <div class="qmeta"><span>2m</span></div>
+        </div>
+
+        <div class="q-group-h">中优先级 · 影响 2–3 人<span class="tot">3</span></div>
+
+        <div class="qrow">
+          <div class="qn">3</div>
+          <div class="qtext">
+            <div class="qq">Borneo 的 "diary" 比喻不懂</div>
+            <div class="qnames">周航 · 黄婉晴 · 邓梓涵</div>
+          </div>
+          <div class="qmeta"><span>1m</span></div>
+        </div>
+        <div class="qrow">
+          <div class="qn">2</div>
+          <div class="qtext">
+            <div class="qq">sharpening teeth 是生词</div>
+            <div class="qnames">黄婉晴 · 周航</div>
+          </div>
+          <div class="qmeta"><span>3m</span></div>
+        </div>
+        <div class="qrow">
+          <div class="qn">2</div>
+          <div class="qtext">
+            <div class="qq">Reason 列应该写中文还是英文？</div>
+            <div class="qnames">曾以柔 · 蔡明轩</div>
+          </div>
+          <div class="qmeta"><span>4m</span></div>
+        </div>
+
+        <div class="q-group-h">低优先级 · 单人提问<span class="tot">9</span></div>
+
+        <div class="qrow"><div class="qn">1</div><div class="qtext"><div class="qq">metal rings 怎么读？</div><div class="qnames">程一</div></div><div class="qmeta"><span>5m</span></div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qtext"><div class="qq">wealth 是什么意思</div><div class="qnames">韩思远</div></div><div class="qmeta"><span>6m</span></div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qtext"><div class="qq">tā moko 要背吗</div><div class="qnames">何子睿</div></div><div class="qmeta"><span>6m</span></div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qtext"><div class="qq">可以画图代替文字吗</div><div class="qnames">董思齐</div></div><div class="qmeta"><span>7m</span></div></div>
+        <div class="qrow"><div class="qn">1</div><div class="qtext"><div class="qq">Ancient Egypt 的 kohl 怎么拼</div><div class="qnames">袁朗</div></div><div class="qmeta"><span>8m</span></div></div>
+
+        <div class="q-more">展开剩余 4 条 ↓</div>
+      </div>
+
+      <!-- Student list — FULL NAMES -->
+      <div class="stu-view">
+        <div class="stu-h">
+          <span class="lb">班级视图</span>
+          <span class="total">42 人</span>
+          <span class="view-toggle"><span class="act">列表</span><span>网格</span></span>
+        </div>
+        <div class="stu-list">
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">陈昕妍</span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">李奕辰</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">王译文</span><span class="sl-ai"></span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">张皓月</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">刘子墨</span></div>
+          <div class="sl-row idle"><span class="sl-dot idle"></span><span class="sl-name">赵雪莉</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">孙楠语</span><span class="sl-ai"></span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">周航宇</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">吴思涵</span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">郑若曦</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">黄婉晴</span><span class="sl-ai"></span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">马乐瑶</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">胡恩齐</span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">林澜</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">徐晨曦</span><span class="sl-ai"></span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">高远航</span></div>
+          <div class="sl-row"><span class="sl-dot done"></span><span class="sl-name">朱思语</span></div>
+          <div class="sl-row idle"><span class="sl-dot idle"></span><span class="sl-name">何子睿</span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">郭斐然</span><span class="sl-ai"></span></div>
+          <div class="sl-row"><span class="sl-dot prog"></span><span class="sl-name">罗婉儿</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="mod-hd">
+      <div class="mod-av">王</div>
+      <div class="mod-ti"><div class="mod-ti-n">王译文 · Group B</div><div class="mod-ti-m">填写中 · v1 已提交 · 3 轮与 AI 对话</div></div>
+      <div class="mod-cls" onclick="closeModal()">关闭 ✕</div>
+    </div>
+    <div class="mod-body">
+      <div class="mod-col">
+        <div class="mod-h">Mirror view · 学生矩阵 (v1)</div>
+        <table class="mat">
+          <tr><th>Place</th><th>Practice</th><th>Reason</th></tr>
+          <tr><td class="place">Borneo</td><td>tattoos as diary</td><td>记录重要事件</td></tr>
+          <tr><td class="place">NZ Maori</td><td class="err-tx"><span class="err-mark"></span>tattoos</td><td class="emp-tx">—</td></tr>
+          <tr><td class="place">Myanmar</td><td class="err-tx"><span class="err-mark"></span>body art</td><td class="err-tx"><span class="err-mark"></span>记录重要事件</td></tr>
+          <tr><td class="place">Indonesia</td><td class="emp-tx">—</td><td class="emp-tx">—</td></tr>
+        </table>
+        <div class="ai-note">
+          <div class="ai-note-h">AI Skill 分析</div>
+          Borneo 理解正确。NZ Maori 的 Practice 写 "tattoos" 过泛（应为 <strong>tā moko</strong>）。Myanmar 抄了 Borneo 的 Reason，说明没读 ¶7，且与 Indonesia 合并。<br><br>建议推送："Look at ¶7 — Myanmar and Indonesia are two different places."
+        </div>
+      </div>
+      <div class="mod-col right">
+        <div class="mod-h">与 AI 助教的对话</div>
+        <div class="chat-row stu"><div class="who">王译文 · 4 min</div><div class="chat-bubble">Myanmar 在哪啊 没听过</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">Myanmar（缅甸）在<strong>东南亚</strong>。先跳过位置，重点看 <strong>¶7</strong> 讲了那里女性做什么。</div></div>
+        <div class="chat-row stu"><div class="who">王译文 · 3 min</div><div class="chat-bubble">¶7 找不到 Myanmar 的 practice</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">找 "wearing..." 后的名词：<strong>wearing metal rings around their necks</strong>。</div></div>
+        <div class="chat-row stu"><div class="who">王译文 · 1 min</div><div class="chat-bubble">那 Indonesia 呢</div></div>
+        <div class="chat-row ai"><div class="who">AI 助教</div><div class="chat-bubble">Indonesia 是<strong>另一行</strong>。关键词：<strong>sharpening teeth</strong>（磨尖牙齿）。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal(){document.getElementById('ov').classList.add('open')}
+function closeModal(){document.getElementById('ov').classList.remove('open')}
+
+// cross-surface sync shim
+var STEPS = [
+  {n:1, label:'图式激活', en:'Schema Activation', brief:'激活已有知识 · 带着问题进入文本', time:'3\''},
+  {n:2, label:'结构解码', en:'Structural Decoding', brief:'读首句、识别转折词，搭骨架', time:'6\''},
+  {n:3, label:'矩阵构建', en:'Build the Matrix', brief:'每组聚焦 2–3 段，提取 Place × Practice × Reason', time:'17\''},
+  {n:4, label:'批判质疑', en:'Challenge the Media', brief:'质疑 "shallow" · 引用矩阵事实支持立场', time:'12\''},
+  {n:5, label:'复盘升华', en:'Recap & Synthesis', brief:'回到 ¶8 · 4 策略 · Beauty = cultural language', time:'7\''}
+];
+function setTeacherStep(idx){
+  // idx is 0-based
+  var step = STEPS[idx] || STEPS[2];
+  // update step rail
+  var rails = document.querySelectorAll('.rstep');
+  rails.forEach(function(r,i){
+    r.classList.remove('done','act');
+    if (i < idx) r.classList.add('done');
+    if (i === idx) r.classList.add('act');
+  });
+  // update band step number
+  var bandN = document.querySelector('.band-step .n');
+  if (bandN) bandN.textContent = step.n;
+  // update hero eyebrow pill + title
+  var pill = document.querySelector('.hero-eyebrow .pill');
+  if (pill) pill.textContent = 'STEP ' + step.n;
+  var eyebrowTxt = document.querySelector('.hero-eyebrow');
+  if (eyebrowTxt) {
+    var prog = idx < 2 ? '已完成' : (idx === 2 ? '现在进行中' : '即将进入');
+    eyebrowTxt.childNodes[2] && (eyebrowTxt.lastChild.nodeType===3 ? eyebrowTxt.lastChild.textContent = prog+' · '+step.brief : null);
+    // safer: clear and rebuild
+    eyebrowTxt.innerHTML = '<span class="pill">STEP '+step.n+'</span>'+prog+' · '+step.brief;
+  }
+  var heroTitle = document.querySelector('.hero-title');
+  if (heroTitle) heroTitle.innerHTML = step.label + '<span class="en">'+step.en+'</span>';
+  var heroBrief = document.querySelector('.hero-brief');
+  if (heroBrief) heroBrief.textContent = step.brief;
+  // step-time side stat
+  var stSide = document.querySelectorAll('.hero-side .hs-pair')[0];
+  if (stSide) {
+    var v = stSide.querySelector('.hs-v');
+    if (v) v.innerHTML = '<span class="n">'+(idx<2?step.time.replace('\'',':00'):(idx===2?'7:23':'0:00'))+'</span><span class="sl">/</span><span class="tot">'+step.time+'</span>';
+  }
+}
+window.addEventListener('message', function(e){
+  var d = e.data || {};
+  if (d.type === 'sync' && typeof d.step === 'number') setTeacherStep(d.step);
+  if (d.type === 'openModal') openModal();
+});
+try { window.parent && window.parent.postMessage({type:'ready', role:'teacher'}, '*'); } catch(e){}
+</script>
+</body></html>

@@ -5,6 +5,7 @@ import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
+import { ChatMessage } from '../entities/chat-message.entity';
 import { ObservationEvent } from '../entities/observation-event.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import {
@@ -53,7 +54,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
 @Module({
   imports: [
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ObservationEvent, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
     ClassroomController,

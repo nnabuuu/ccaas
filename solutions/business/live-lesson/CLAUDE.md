@@ -133,7 +133,15 @@ server {
 | POST | `/api/classroom/:code/notify` | Teacher notification `{ message, type }` |
 | GET | `/api/classroom/:code/steps/:step/exercise` | ExerciseSpec (student-safe; select-evidence keeps grading data for client-side use) |
 | POST | `/api/classroom/:code/steps/:step/check` | Check answer `{ studentId, data }` → `{ type, allCorrect, items }` |
-| POST | `/api/classroom/:code/ai/ask` | AI question `{ studentId, question, step }` |
+| POST | `/api/classroom/sessions/batch-check` | Batch check sessions `{ codes[] }` |
+| POST | `/api/classroom/sessions/:code/start` | Start session |
+| GET | `/api/classroom/:code/chat-history` | Chat history for continue-chat threads |
+| POST | `/api/classroom/:code/ai/ask` | AI question `{ studentId, question, step, messages? }` |
+| POST | `/api/classroom/:code/ai/discuss` | Socratic discuss turn `{ studentId, step, message }` |
+| POST | `/api/classroom/:code/ai/discuss-complete` | Mark discuss complete `{ studentId, step }` |
+| POST | `/api/classroom/:code/personal-touch` | Personal touch feedback `{ studentId, step }` |
+| GET | `/api/classroom/:code/bonus/:bonusStep/exercise` | Bonus exercise spec |
+| POST | `/api/classroom/:code/bonus/:bonusStep/check` | Check bonus answer `{ studentId, data }` |
 
 ## Classroom State API (`GET /api/classroom/:code/state`)
 

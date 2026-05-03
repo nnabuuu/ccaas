@@ -9,6 +9,7 @@ import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
+import { ChatMessage } from '../entities/chat-message.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationService } from './observation/observation.service';
 import { MetricsAggregator } from './metrics-aggregator';
@@ -36,6 +37,8 @@ export class ClassroomService {
     private readonly sessionRepo: Repository<ClassroomSession>,
     @InjectRepository(AiQuestion)
     private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationService: ObservationService,
     private readonly metricsAggregator: MetricsAggregator,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -323,6 +326,29 @@ export class ClassroomService {
         indicators: this.observationService.getIndicators(sessionId),
       },
     };
+  }
+
+  // ── Chat history ──
+
+  async getChatHistory(
+    sessionId: string,
+    studentId: string,
+    threadId?: string,
+  ): Promise<Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>>> {
+    const where: { sessionId: string; studentId: string; threadId?: string } = { sessionId, studentId };
+    if (threadId) where.threadId = threadId;
+    const messages = await this.chatMessageRepo.find({ where, order: { seq: 'ASC' } });
+    const grouped: Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>> = {};
+    for (const m of messages) {
+      if (!grouped[m.threadId]) grouped[m.threadId] = [];
+      grouped[m.threadId].push({
+        role: m.role,
+        content: m.content,
+        seq: m.seq,
+        createdAt: m.createdAt instanceof Date ? m.createdAt.toISOString() : String(m.createdAt),
+      });
+    }
+    return grouped;
   }
 
   // ── SSE ──
