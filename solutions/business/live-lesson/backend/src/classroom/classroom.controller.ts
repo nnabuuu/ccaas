@@ -74,6 +74,23 @@ export class ClassroomController {
     return result;
   }
 
+  @Get(':code/students/:studentId/submissions/:step')
+  async getSubmission(
+    @Param('code') code: string,
+    @Param('studentId') studentId: string,
+    @Param('step') step: string,
+  ) {
+    if (!studentId || !UUID_RE.test(studentId)) {
+      throw new BadRequestException('studentId must be a valid UUID');
+    }
+    const parsedStep = parseInt(step, 10);
+    if (isNaN(parsedStep) || parsedStep < 0) {
+      throw new BadRequestException('step must be a non-negative number');
+    }
+    const session = await this.classroomService.resolveSession(validateCodeOrId(code));
+    return this.studentSubmission.getSubmission(session, studentId, parsedStep);
+  }
+
   @Get(':code/chat-history')
   async getChatHistory(
     @Param('code') code: string,
@@ -92,6 +109,19 @@ export class ClassroomController {
   async getSnapshots(@Param('code') code: string) {
     const session = await this.classroomService.resolveSession(validateCode(code));
     return this.classroomService.getSnapshots(session.id);
+  }
+
+  @Get(':code/steps/:step/surfaces')
+  async getSurfaces(
+    @Param('code') code: string,
+    @Param('step') step: string,
+  ) {
+    const parsedStep = parseInt(step, 10);
+    if (isNaN(parsedStep) || parsedStep < 1) {
+      throw new BadRequestException('step must be a positive number');
+    }
+    const session = await this.classroomService.resolveSession(validateCode(code));
+    return this.classroomService.getSurfaces(session.id, parsedStep);
   }
 
   @Get(':code/state')

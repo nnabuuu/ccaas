@@ -686,8 +686,8 @@ describe('ClassroomService — extended coverage', () => {
 
     afterEach(() => jest.restoreAllMocks());
 
-    it('should complete full aiAsk flow with mocked callGlm', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce(
+    it('should complete full aiAsk flow with mocked callLlm', async () => {
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce(
         '【概念理解】Skimming是一种快速阅读策略，帮助你抓住文章大意。',
       );
 
@@ -711,8 +711,8 @@ describe('ClassroomService — extended coverage', () => {
       expect(q!.category).toBe('概念理解');
     });
 
-    it('should fallback gracefully when callGlm throws', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValueOnce(
+    it('should fallback gracefully when callLlm throws', async () => {
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockRejectedValueOnce(
         new Error('API timeout'),
       );
 
@@ -1150,7 +1150,7 @@ describe('ClassroomService — extended coverage', () => {
     describe('map — per-item + LLM feedback', () => {
       beforeEach(() => {
         // Mock LLM call to prevent real API calls and timeouts
-        jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue(
+        jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue(
           JSON.stringify({ items: [], overall: 'Test feedback' }),
         );
       });
@@ -3137,7 +3137,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('should return reply and goalReached=false for normal turn', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValueOnce(
       'Good thinking! What about the second paragraph?',
     );
 
@@ -3149,7 +3149,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
   });
 
   it('should detect [GOAL_REACHED] and set goalReached=true', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValueOnce(
       '[GOAL_REACHED] Excellent! You understood the main idea perfectly.',
     );
 
@@ -3160,8 +3160,8 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
     expect(result.reply).toBe('Excellent! You understood the main idea perfectly.');
   });
 
-  it('should return fallback reply on callGlmConversation failure', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockRejectedValueOnce(new Error('API timeout'));
+  it('should return fallback reply on callLlmConversation failure', async () => {
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValueOnce(new Error('API timeout'));
 
     const msgs = [{ role: 'ai' as const, text: 'Q' }, { role: 'student' as const, text: 'anything' }];
     const result = await discussSvc.aiDiscuss(session, studentId, 1, msgs, 1, 10);
@@ -3171,7 +3171,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
   });
 
   it('should strip [GOAL_REACHED] marker from reply text', async () => {
-    jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValueOnce(
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValueOnce(
       'Great answer! [GOAL_REACHED] You nailed it.',
     );
 
@@ -3342,7 +3342,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       // Submit task 1 with perfect score
       await submissionSvc.submit(session, studentId, 1, { answers: [1] });
 
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('你做得很好！');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('你做得很好！');
 
       const result = await personalizationSvc.getPersonalTouch(session, studentId);
 
@@ -3357,14 +3357,14 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should unlock bonus when teacher currentStep < 5', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('Great!');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('Great!');
       // Session currentStep defaults to 0 (teacher hasn't advanced)
       const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.bonusUnlocked).toBe(true);
     });
 
     it('should NOT unlock bonus when teacher currentStep >= 5', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('Great!');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('Great!');
       // Advance teacher step
       await sessionRepo.update(session.id, { currentStep: 5 });
       const result = await personalizationSvc.getPersonalTouch(session, studentId);
@@ -3374,13 +3374,13 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
     });
 
     it('should fallback gracefully when AI call fails', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValueOnce(new Error('API down'));
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockRejectedValueOnce(new Error('API down'));
       const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.aiComment).toContain('继续保持');
     });
 
     it('should throw NotFoundException for invalid studentId', async () => {
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValueOnce('x');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('x');
       await expect(personalizationSvc.getPersonalTouch(session, 'nonexistent-id')).rejects.toThrow(NotFoundException);
     });
   });
@@ -3686,5 +3686,110 @@ describe('ClassroomService — snapshots', () => {
     await service.endSession(session!.code);
 
     expect((service as any).lastSnapshotAt.has(session!.id)).toBe(false);
+  });
+});
+
+describe('StudentSubmissionService — getSubmission', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'getsub-lesson',
+        title: 'GetSub Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(TEST_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('returns null when no submission exists', async () => {
+    const created = await service.createSession('getsub-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'Alice');
+
+    const result = await submissionSvc.getSubmission(session!, joined.studentId, 1);
+    expect(result).toBeNull();
+  });
+
+  it('returns data, score, and submittedAt for existing submission', async () => {
+    const created = await service.createSession('getsub-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'Bob');
+
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+
+    const result = await submissionSvc.getSubmission(session!, joined.studentId, 1);
+    expect(result).not.toBeNull();
+    expect(result!.data).toEqual({ answers: [1, 0] });
+    expect(result!.score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+    expect(result!.submittedAt).toBeDefined();
+    expect(typeof result!.submittedAt).toBe('string');
+  });
+
+  it('returns null for wrong step', async () => {
+    const created = await service.createSession('getsub-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'Charlie');
+
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+
+    const result = await submissionSvc.getSubmission(session!, joined.studentId, 99);
+    expect(result).toBeNull();
+  });
+
+  it('returns null for wrong studentId', async () => {
+    const created = await service.createSession('getsub-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await submissionSvc.join(session!, 'Dave');
+
+    const result = await submissionSvc.getSubmission(session!, 'nonexistent-id', 1);
+    expect(result).toBeNull();
+  });
+
+  it('returns updated data after re-submission', async () => {
+    const created = await service.createSession('getsub-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'Eve');
+
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [0, 0] });
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+
+    const result = await submissionSvc.getSubmission(session!, joined.studentId, 1);
+    expect(result!.data).toEqual({ answers: [1, 0] });
+    expect(result!.score!.total).toBe(100);
   });
 });

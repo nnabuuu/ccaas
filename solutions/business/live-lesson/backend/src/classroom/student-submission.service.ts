@@ -155,6 +155,20 @@ export class StudentSubmissionService {
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
 
+  async getSubmission(session: ClassroomSession, studentId: string, step: number) {
+    const sub = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId, step },
+    });
+    if (!sub) return null;
+    return {
+      data: sub.dataJson,
+      score: sub.scoreJson ?? null,
+      submittedAt: sub.submittedAt instanceof Date
+        ? sub.submittedAt.toISOString()
+        : String(sub.submittedAt),
+    };
+  }
+
   private async gradeSubmission(lessonId: string, step: number, data: Record<string, unknown>): Promise<GradeResult | null> {
     try {
       const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
