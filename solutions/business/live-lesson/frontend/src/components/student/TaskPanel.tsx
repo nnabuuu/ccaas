@@ -114,6 +114,13 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
   // Reset on task change
   useEffect(() => { setDonePhases(new Set()); prevDoneRef.current = new Set(); setActivePhase(phaseIds[0]); onOverlayChange?.(null) }, [task.id, phaseIds]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Clear text overlay when practice phase completes (e.g., select-evidence section mask)
+  useEffect(() => {
+    if (donePhases.has('practice') && !prevDoneRef.current.has('practice')) {
+      onOverlayChange?.(null)
+    }
+  }, [donePhases]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const isUnlocked = useCallback((phase: PhaseConfig) => {
     return phase.unlockAfter === null || donePhases.has(phase.unlockAfter)
   }, [donePhases])
