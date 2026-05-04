@@ -199,7 +199,7 @@ function ContinueChat({ taskId }: { taskId: number }) {
 type Phase = 'chat' | 'fallback' | 'done'
 type Msg = { role: 'ai' | 'student'; text: string }
 
-export function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void }) {
+export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: () => void; isRevisit?: boolean }) {
   const { sessionCode, studentId, submit, config } = useContext(SessionCtx)
   const enableMath = config.enableMath
   const d = task.discuss
@@ -209,11 +209,11 @@ export function DiscussPhase({ task, onDone }: { task: Task; onDone: () => void 
   const [round, setRound] = useState(0)
   const [startTime] = useState(Date.now())
   const [elapsed, setElapsed] = useState(0)
-  const [phase, setPhase] = useState<Phase>('chat')
+  const [phase, setPhase] = useState<Phase>(isRevisit ? 'done' : 'chat')
   const [goalReached, setGoalReached] = useState(false)
   const [fallbackReason, setFallbackReason] = useState<'rounds' | 'time' | ''>('')
   const [, setMcAnswer] = useState<number | null>(null)
-  const calledDone = useRef(false)
+  const calledDone = useRef(!!isRevisit)
   const msgEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 

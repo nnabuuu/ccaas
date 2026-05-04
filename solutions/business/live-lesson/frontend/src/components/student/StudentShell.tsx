@@ -198,6 +198,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             onOverlayChange={handleOverlayChange}
             courseIntroView={courseIntroView}
             taskCount={taskCount}
+            doneSet={doneSet}
           />
           <TextPanel
             title={manifest.article.title}

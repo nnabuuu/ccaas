@@ -2,6 +2,42 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 
 const API_BASE = '/api/classroom'
 
+// ── Submission cache (localStorage tier) ──
+
+const CACHE_PREFIX = 'sub:'
+
+export interface CachedSubmission {
+  data: Record<string, unknown>
+  score: Record<string, unknown> | null
+}
+
+export function cacheSubmission(sessionCode: string, step: number, data: Record<string, unknown>, score: Record<string, unknown> | null) {
+  try {
+    localStorage.setItem(`${CACHE_PREFIX}${sessionCode}:${step}`, JSON.stringify({ data, score }))
+  } catch { /* quota exceeded — best effort */ }
+}
+
+export function getCachedSubmission(sessionCode: string, step: number): CachedSubmission | null {
+  try {
+    const raw = localStorage.getItem(`${CACHE_PREFIX}${sessionCode}:${step}`)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+export async function getSubmission(
+  sessionCode: string, studentId: string, step: number,
+): Promise<CachedSubmission | null> {
+  const cached = getCachedSubmission(sessionCode, step)
+  if (cached) return cached
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/submissions/${step}`)
+    if (!res.ok) return null
+    const sub = await res.json()
+    if (sub) cacheSubmission(sessionCode, step, sub.data, sub.score)
+    return sub
+  } catch { return null }
+}
+
 // ── Session create hook (teacher) ──
 
 interface SessionInfo {
@@ -154,6 +190,8 @@ export function useStudentSession(sessionCode: string): StudentSession {
         body: JSON.stringify({ studentId, step, data }),
       })
       if (!res.ok) throw new Error(`Submit failed: ${res.status}`)
+      const body = await res.json().catch(() => null) as { score?: Record<string, unknown> } | null
+      cacheSubmission(sessionCode, step, data, body?.score ?? null)
       setSubmittedSteps(prev => new Set(prev).add(step))
       return true
     } catch {

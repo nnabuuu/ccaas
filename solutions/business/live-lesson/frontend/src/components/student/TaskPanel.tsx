@@ -32,9 +32,9 @@ const DEFAULT_PHASES: PhaseConfig[] = [
 ]
 
 /* ═══ LISTEN PHASE ═══ */
-function ListenPhase({ task, onDone, lessonId }: { task: Task; onDone: () => void; lessonId?: string }) {
+function ListenPhase({ task, onDone, lessonId, isRevisit }: { task: Task; onDone: () => void; lessonId?: string; isRevisit?: boolean }) {
   const { config } = useContext(SessionCtx)
-  const [done, setDone] = useState(false)
+  const [done, setDone] = useState(!!isRevisit)
   const handleClick = () => { setDone(true); onDone() }
   const iv = task.instructionView
   return (
@@ -91,28 +91,37 @@ function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; 
 
 /** Phase→component registry. Each entry renders the phase given standard props. */
 const PHASE_REGISTRY: Record<string, (props: {
-  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number
+  task: Task; onDone: () => void; onComplete: () => void; lessonId?: string; stepIdx?: number; label: string; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; isRevisit?: boolean
 }) => JSX.Element | null> = {
-  listen: ({ task, onDone, lessonId }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} />,
-  practice: ({ task, onDone, stepIdx, onOverlayChange }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} />,
-  discuss: ({ task, onDone }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} />,
+  listen: ({ task, onDone, lessonId, isRevisit }) => <ListenPhase key={`l${task.id}`} task={task} onDone={onDone} lessonId={lessonId} isRevisit={isRevisit} />,
+  practice: ({ task, onDone, stepIdx, onOverlayChange, isRevisit }) => <PracticePhase key={`p${task.id}`} task={task} onDone={onDone} stepIdx={stepIdx} onOverlayChange={onOverlayChange} isRevisit={isRevisit} />,
+  discuss: ({ task, onDone, isRevisit }) => <DiscussPhase key={`d${task.id}`} task={task} onDone={onDone} isRevisit={isRevisit} />,
   takeaway: ({ task, onComplete, lessonId, taskCount }) => <TakeawayPhase task={task} onComplete={onComplete} lessonId={lessonId} taskCount={taskCount} />,
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>
 }) {
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
   const phaseIds = useMemo(() => phases.map(p => p.id), [phases])
+  const isRevisit = doneSet?.has(task.id) ?? false
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [activePhase, setActivePhase] = useState(phaseIds[0])
   const [donePhases, setDonePhases] = useState<Set<string>>(new Set())
   const prevDoneRef = useRef<Set<string>>(new Set())
 
-  // Reset on task change
-  useEffect(() => { setDonePhases(new Set()); prevDoneRef.current = new Set(); setActivePhase(phaseIds[0]); onOverlayChange?.(null) }, [task.id, phaseIds]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Reset on task change — pre-fill all phases done when revisiting a completed step
+  useEffect(() => {
+    if (isRevisit) {
+      const allDone = new Set(phaseIds)
+      setDonePhases(allDone); prevDoneRef.current = new Set(allDone)
+    } else {
+      setDonePhases(new Set()); prevDoneRef.current = new Set()
+    }
+    setActivePhase(phaseIds[0]); onOverlayChange?.(null)
+  }, [task.id, phaseIds, isRevisit]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Clear text overlay when practice phase completes (e.g., select-evidence section mask)
   useEffect(() => {
@@ -209,6 +218,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
                 onComplete,
                 onOverlayChange,
                 taskCount,
+                isRevisit,
               })}
               {showLocked && (
                 <div className="stu-phase-locked-msg">Complete {prevPhase.label} to unlock {phase.label}</div>
@@ -257,7 +267,7 @@ export function useStudentTask(tasks: Task[]) {
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -271,6 +281,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   onOverlayChange?: (overlay: TextOverlay | null) => void
   courseIntroView?: { title: string; body: string; keyPoints?: string[]; confirmLabel?: string } | null
   taskCount?: number
+  doneSet?: Set<number>
 }) {
   const { config } = useContext(SessionCtx)
   const introText = lessonIntro || ''
@@ -343,7 +354,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus' && (
         <BonusPhase onComplete={() => setScreen('summary')} />
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} />}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} />}
     </div>
   )
 }

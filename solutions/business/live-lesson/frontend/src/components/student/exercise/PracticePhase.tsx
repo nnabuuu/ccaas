@@ -1,10 +1,10 @@
-import { useState, useContext } from 'react'
+import { useState, useEffect, useContext } from 'react'
 import { linkParas } from '../utils/linkParas'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, TaskExercise, ServerHintMap } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
 import { gradeItemSet, reportAttempt, formatSubmitData } from './gradeItemSet'
-import { checkAnswer, type CheckResult } from '../../../hooks/useClassroom'
+import { checkAnswer, type CheckResult, type CachedSubmission, getCachedSubmission, getSubmission } from '../../../hooks/useClassroom'
 import { QuizExercise } from './QuizExercise'
 import { MatchExercise } from './MatchExercise'
 import { MatrixExercise } from './MatrixExercise'
@@ -13,8 +13,37 @@ import { OrderExercise } from './OrderExercise'
 import { SelectEvidenceExercise } from './SelectEvidenceExercise'
 import { MapExercise } from './MapExercise'
 
-export function PracticePhase({ task, onDone, stepIdx, onOverlayChange }: {
-  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void
+/** Reverse formatSubmitData: convert persisted submission data back to component ans state */
+export function restoreAns(type: string, data: Record<string, unknown>): Record<string, unknown> {
+  if (!data) return {}
+  switch (type) {
+    case 'quiz': {
+      const ans: Record<string, unknown> = {}
+      ;((data.answers as unknown[]) || []).forEach((v, i) => { ans[i] = v })
+      return ans
+    }
+    case 'match': {
+      const ans: Record<string, unknown> = {}
+      ;((data.pairs as unknown[]) || []).forEach((v, i) => { ans[i] = v })
+      return ans
+    }
+    case 'order':
+      return { order: data.order || [] }
+    case 'stance':
+      return { stance: data.position, evidence: data.evidence || [] }
+    case 'map':
+      return { placements: data.placements || {}, reasons: data.reasons || {} }
+    case 'matrix':
+      return data // matrix restoration handled separately via effectiveMatrixAns
+    case 'select-evidence':
+      return {} // select-evidence uses placeholder UI in review mode
+    default:
+      return data as Record<string, unknown>
+  }
+}
+
+export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisit }: {
+  task: Task; onDone: () => void; stepIdx?: number; onOverlayChange?: (overlay: TextOverlay | null) => void; isRevisit?: boolean
 }) {
   const ctx = useContext(SessionCtx)
   const ex = task.exercise
@@ -28,6 +57,37 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange }: {
   const [serverHints, setServerHints] = useState<ServerHintMap>({})
   const [mapFeedback, setMapFeedback] = useState<string | null>(null)
   const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
+
+  // ── Revisit: cache-first submission restore ──
+  const [prevSubmission, setPrevSubmission] = useState<CachedSubmission | null>(() => {
+    if (!isRevisit || !ctx.sessionCode || stepIdx === undefined) return null
+    return getCachedSubmission(ctx.sessionCode, stepIdx)
+  })
+  const [submissionChecked, setSubmissionChecked] = useState(!isRevisit || prevSubmission != null)
+
+  useEffect(() => {
+    if (!isRevisit || prevSubmission || !ctx.sessionCode || !ctx.studentId || stepIdx === undefined) return
+    let cancelled = false
+    getSubmission(ctx.sessionCode, ctx.studentId, stepIdx).then(sub => {
+      if (cancelled) return
+      if (sub) setPrevSubmission(sub)
+      setSubmissionChecked(true)
+    })
+    return () => { cancelled = true }
+  }, [isRevisit, prevSubmission, ctx.sessionCode, ctx.studentId, stepIdx])
+
+  const reviewMode = !!(isRevisit && prevSubmission)
+
+  // Derive effective state for review mode (pre-filled, locked answers)
+  const effectiveAns = reviewMode ? restoreAns(ex.type, prevSubmission.data) : ans
+  const effectiveMatrixAns = reviewMode && ex.type === 'matrix'
+    ? (prevSubmission.data.rows || {}) as Record<number, { what?: string; why?: string }>
+    : matrixAns
+  const effectiveCorrectQs = reviewMode && (ex.type === 'quiz' || ex.type === 'match')
+    ? new Set((ex.type === 'quiz' ? ex.questions! : ex.pairs!).map((_, i) => i))
+    : correctQs
+  const effectiveAllDone = reviewMode || allDone
+  const effectiveSoftDone = reviewMode || softDone
 
   const canSub = () => {
     if (ex.type === 'quiz') return !ex.questions!.some((_, qi) => !correctQs.has(qi) && ans[qi] === undefined)
@@ -205,44 +265,62 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange }: {
 
   const attemptCount = (qi: number) => (attempts[qi] || []).length
 
+  // Loading state: revisit requested but submission not yet loaded from API
+  if (isRevisit && !submissionChecked) {
+    return (
+      <div id="phase-practice">
+        <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
+        <div style={{ fontSize: 13, color: 'var(--t3)', padding: '16px 0' }}>Loading previous answers...</div>
+      </div>
+    )
+  }
+
+  const noopSetAns: typeof setAns = reviewMode ? () => {} : setAns
+
   return (
     <div id="phase-practice">
       <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
       <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
-      {ex.type === 'quiz' && <QuizExercise questions={ex.questions!} ans={ans} setAns={setAns} correctQs={correctQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
-      {ex.type === 'match' && <MatchExercise pairs={ex.pairs!} ans={ans} setAns={setAns} correctQs={correctQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
-      {ex.type === 'matrix' && <MatrixExercise rows={ex.rows!} serverHints={serverHints} ans={matrixAns} onAnsChange={(ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))} disabled={allDone} />}
-      {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={ans} setAns={setAns} softDone={softDone} />}
-      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={ans} setAns={setAns} done={allDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} />}
+      {ex.type === 'quiz' && <QuizExercise questions={ex.questions!} ans={effectiveAns} setAns={noopSetAns} correctQs={effectiveCorrectQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
+      {ex.type === 'match' && <MatchExercise pairs={ex.pairs!} ans={effectiveAns} setAns={noopSetAns} correctQs={effectiveCorrectQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
+      {ex.type === 'matrix' && <MatrixExercise rows={ex.rows!} serverHints={serverHints} ans={effectiveMatrixAns} onAnsChange={reviewMode ? (() => {}) : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))} disabled={effectiveAllDone} />}
+      {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={effectiveAns} setAns={noopSetAns} softDone={effectiveSoftDone} />}
+      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={effectiveAns} setAns={noopSetAns} done={effectiveAllDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} />}
       {ex.type === 'map' && ex.axes && ex.mapItems && (
         <MapExercise
           prompt={ex.prompt || ''}
           axes={ex.axes}
           mapItems={ex.mapItems}
           minReasonLength={ex.minReasonLength || 8}
-          ans={ans}
-          setAns={setAns}
-          allDone={allDone}
+          ans={effectiveAns}
+          setAns={noopSetAns}
+          allDone={effectiveAllDone}
           feedback={mapFeedback}
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (
-        <SelectEvidenceExercise
-          exercise={ex}
-          onOverlayChange={onOverlayChange || (() => {})}
-          onSubmit={(data) => {
-            if (stepIdx !== undefined && ctx.submit) {
-              ctx.submit(stepIdx, formatSubmitData('select-evidence', data))
-            }
-          }}
-          onDone={() => { setAllDone(true); onDone() }}
-        />
+        reviewMode ? (
+          <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 16 }}>✓</span>Evidence analysis submitted
+          </div>
+        ) : (
+          <SelectEvidenceExercise
+            exercise={ex}
+            onOverlayChange={onOverlayChange || (() => {})}
+            onSubmit={(data) => {
+              if (stepIdx !== undefined && ctx.submit) {
+                ctx.submit(stepIdx, formatSubmitData('select-evidence', data))
+              }
+            }}
+            onDone={() => { setAllDone(true); onDone() }}
+          />
+        )
       )}
 
       {/* Submit/Done */}
       <div style={{ marginTop: 16 }}>
-        {allDone ? (
+        {effectiveAllDone ? (
           <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: 16 }}>✓</span>Practice complete!
           </div>
