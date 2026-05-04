@@ -13,6 +13,7 @@ import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
 import { ObservationEvent } from '../../entities/observation-event.entity';
+import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
 
 const PT_MANIFEST = {
@@ -75,11 +76,11 @@ describe('PersonalizationService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder],
     }).compile();

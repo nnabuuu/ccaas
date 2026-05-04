@@ -13,6 +13,7 @@ import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ObservationEvent } from '../entities/observation-event.entity';
+import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationService } from './observation/observation.service';
 import { GradingService } from './exercise/grading.service';
@@ -203,11 +204,11 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -426,11 +427,11 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -2947,11 +2948,11 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3094,11 +3095,11 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3294,11 +3295,11 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
@@ -3515,5 +3516,175 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       expect(result.tier.tone).toBe('neutral');
       expect(result.bonusUnlocked).toBe(false);
     });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Snapshot persistence & retrieval
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('ClassroomService — snapshots', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let snapshotRepo: Repository<ClassroomSnapshot>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    snapshotRepo = module.get(getRepositoryToken(ClassroomSnapshot));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'snap-lesson',
+        title: 'Snapshot Test Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(TEST_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  it('broadcast() should persist a snapshot', async () => {
+    const created = await service.createSession('snap-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await submissionSvc.join(session!, 'SnapStudent');
+
+    // Force lastSnapshotAt to be stale so throttle does not block
+    (service as any).lastSnapshotAt.delete(session!.id);
+
+    await service.broadcast(session!.id);
+
+    // Wait for async save to complete
+    await new Promise(r => setTimeout(r, 50));
+
+    const snaps = await snapshotRepo.find({ where: { sessionId: session!.id } });
+    expect(snaps.length).toBeGreaterThanOrEqual(1);
+    expect(snaps[0].sessionId).toBe(session!.id);
+
+    const parsed = JSON.parse(snaps[0].stateJson);
+    expect(parsed.students).toBeDefined();
+    expect(parsed.metrics).toBeDefined();
+  });
+
+  it('broadcast() should throttle — no second snapshot within 10s', async () => {
+    const created = await service.createSession('snap-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await submissionSvc.join(session!, 'ThrottleStudent');
+
+    // Clear throttle state and do first broadcast
+    (service as any).lastSnapshotAt.delete(session!.id);
+    await service.broadcast(session!.id);
+    await new Promise(r => setTimeout(r, 50));
+
+    const countAfterFirst = (await snapshotRepo.find({ where: { sessionId: session!.id } })).length;
+
+    // Second broadcast immediately — should be throttled
+    await service.broadcast(session!.id);
+    await new Promise(r => setTimeout(r, 50));
+
+    const countAfterSecond = (await snapshotRepo.find({ where: { sessionId: session!.id } })).length;
+    expect(countAfterSecond).toBe(countAfterFirst);
+  });
+
+  it('getSnapshots() should return snapshots ordered by capturedAt', async () => {
+    const created = await service.createSession('snap-lesson');
+    const sessionId = created.sessionId;
+
+    // Insert snapshots with explicit timestamps
+    const t1 = new Date('2025-01-01T10:00:00Z');
+    const t2 = new Date('2025-01-01T10:00:10Z');
+    const t3 = new Date('2025-01-01T10:00:20Z');
+
+    await snapshotRepo.save([
+      snapshotRepo.create({ sessionId, capturedAt: t3, stateJson: JSON.stringify({ order: 3 }) }),
+      snapshotRepo.create({ sessionId, capturedAt: t1, stateJson: JSON.stringify({ order: 1 }) }),
+      snapshotRepo.create({ sessionId, capturedAt: t2, stateJson: JSON.stringify({ order: 2 }) }),
+    ]);
+
+    const result = await service.getSnapshots(sessionId);
+    expect(result.length).toBeGreaterThanOrEqual(3);
+
+    // Find our test entries
+    const ours = result.filter(r => r.state.order);
+    expect(ours.map(r => r.state.order)).toEqual([1, 2, 3]);
+
+    // Verify capturedAt is ISO string
+    for (const snap of ours) {
+      expect(typeof snap.capturedAt).toBe('string');
+      expect(new Date(snap.capturedAt).getTime()).not.toBeNaN();
+    }
+  });
+
+  it('getSnapshots() should skip corrupted JSON rows gracefully', async () => {
+    const created = await service.createSession('snap-lesson');
+    const sessionId = created.sessionId;
+
+    const t1 = new Date('2025-02-01T10:00:00Z');
+    const t2 = new Date('2025-02-01T10:00:10Z');
+
+    await snapshotRepo.save([
+      snapshotRepo.create({ sessionId, capturedAt: t1, stateJson: JSON.stringify({ valid: true }) }),
+      snapshotRepo.create({ sessionId, capturedAt: t2, stateJson: 'NOT VALID JSON{{{' }),
+    ]);
+
+    const warnSpy = jest.spyOn((service as any).logger, 'warn');
+
+    const result = await service.getSnapshots(sessionId);
+    const valid = result.filter(r => r.state.valid);
+    expect(valid.length).toBe(1);
+    expect(valid[0].state.valid).toBe(true);
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Skipping corrupted snapshot'));
+  });
+
+  it('getSnapshots() should return empty array for unknown session', async () => {
+    const result = await service.getSnapshots('nonexistent-session-id');
+    expect(result).toEqual([]);
+  });
+
+  it('endSession() should clean up lastSnapshotAt', async () => {
+    const created = await service.createSession('snap-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    session!.status = 'active';
+    session!.startedAt = new Date();
+    await sessionRepo.save(session!);
+
+    // Trigger a broadcast to populate lastSnapshotAt
+    (service as any).lastSnapshotAt.set(session!.id, Date.now());
+    expect((service as any).lastSnapshotAt.has(session!.id)).toBe(true);
+
+    await service.endSession(session!.code);
+
+    expect((service as any).lastSnapshotAt.has(session!.id)).toBe(false);
   });
 });

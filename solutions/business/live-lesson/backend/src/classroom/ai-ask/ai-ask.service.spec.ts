@@ -13,6 +13,7 @@ import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { ObservationEvent } from '../../entities/observation-event.entity';
+import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 
@@ -57,11 +58,11 @@ describe('AiAskService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
         AiAskService, ObservationService, AiPromptBuilder,

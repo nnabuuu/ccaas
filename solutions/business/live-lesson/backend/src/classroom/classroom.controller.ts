@@ -88,6 +88,12 @@ export class ClassroomController {
     return this.classroomService.getChatHistory(session.id, studentId, threadId);
   }
 
+  @Get(':code/snapshots')
+  async getSnapshots(@Param('code') code: string) {
+    const session = await this.classroomService.resolveSession(validateCode(code));
+    return this.classroomService.getSnapshots(session.id);
+  }
+
   @Get(':code/state')
   async getState(
     @Param('code') code: string,

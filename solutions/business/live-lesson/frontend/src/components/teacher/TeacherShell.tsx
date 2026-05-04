@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useTeacherStream } from '../../hooks/useClassroom'
-import type { ClassroomState } from '../../hooks/useClassroom'
+import type { ClassroomState, StateSnapshot } from '../../hooks/useClassroom'
 import { STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI, getCatBadgeClass, formatRelative } from './teacher-helpers'
 import { Band } from './Band'
 import { Timeline } from './Timeline'
@@ -23,11 +23,35 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
   const [coachOpen, setCoachOpen] = useState(false)
 
   // Self-fetch classroom state via SSE when not provided as prop
-  const { state: streamState } = useTeacherStream(sessionCode || '')
-  const state = classroomState || streamState || null
+  const { state: streamState, snapshots } = useTeacherStream(sessionCode || '')
+
+  // Replay state management
+  const [replayState, setReplayState] = useState<ClassroomState | null>(null)
+  const [seekTimestamp, setSeekTimestamp] = useState<number | null>(null)
+  const isLive = replayState === null
+
+  const handleSeek = useCallback((snapshot: StateSnapshot | null) => {
+    if (snapshot) {
+      setReplayState(snapshot.state)
+      setSeekTimestamp(snapshot.timestamp)
+    } else {
+      setReplayState(null)
+      setSeekTimestamp(null)
+    }
+  }, [])
+
+  const liveState = classroomState || streamState || null
+  const state = replayState || liveState
   const students = state?.students || []
   const questions = state?.questions || []
   const total = students.length
+
+  // Session start time: use first snapshot timestamp or fallback to mount time
+  const fallbackStart = useRef(Date.now())
+  const sessionStartedAt = useMemo(() => {
+    if (snapshots.length > 0) return snapshots[0].timestamp
+    return fallbackStart.current
+  }, [snapshots])
 
   const health = useMemo(() => computeHealthCards(state), [state])
 
@@ -119,8 +143,23 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
       {/* ═══ BAND ═══ */}
       {!embed && <Band manifest={manifest} total={total} sessionCode={sessionCode} />}
 
+      {/* ═══ REPLAY BANNER ═══ */}
+      {!isLive && seekTimestamp && (
+        <div className="replay-banner">
+          回放中 · {new Date(seekTimestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+          <span style={{ marginLeft: 8, cursor: 'pointer', textDecoration: 'underline' }} onClick={() => handleSeek(null)}>回到实时</span>
+        </div>
+      )}
+
       {/* ═══ TIMELINE ═══ */}
-      <Timeline steps={manifest.readingSteps.filter(rs => rs.type === 'task')} />
+      <Timeline
+        steps={manifest.readingSteps.filter(rs => rs.type === 'task')}
+        snapshots={snapshots}
+        sessionStartedAt={sessionStartedAt}
+        isLive={isLive}
+        seekTimestamp={seekTimestamp}
+        onSeek={handleSeek}
+      />
 
       {/* ═══ BODY ═══ */}
       <div className="body">

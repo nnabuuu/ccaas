@@ -10,6 +10,7 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
+import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationService } from './observation/observation.service';
 import { MetricsAggregator } from './metrics-aggregator';
@@ -26,6 +27,8 @@ export class ClassroomService {
   private subscribers = new Map<string, Set<Response>>();
   private heartbeatTimers = new Map<Response, NodeJS.Timeout>();
   private activeNotificationsMap = new Map<string, Map<string, { id: string; message: string; notifyType: string; timestamp: string }>>();
+  private lastSnapshotAt = new Map<string, number>();
+  private readonly SNAPSHOT_THROTTLE_MS = 10_000;
 
   constructor(
     private readonly configService: ConfigService,
@@ -39,6 +42,8 @@ export class ClassroomService {
     private readonly aiQuestionRepo: Repository<AiQuestion>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
+    @InjectRepository(ClassroomSnapshot)
+    private readonly snapshotRepo: Repository<ClassroomSnapshot>,
     private readonly observationService: ObservationService,
     private readonly metricsAggregator: MetricsAggregator,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
@@ -157,6 +162,7 @@ export class ClassroomService {
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
     this.activeNotificationsMap.delete(session.id);
+    this.lastSnapshotAt.delete(session.id);
 
     this.observationService.cleanupSession(session.id).catch(e =>
       this.logger.warn(`Observation cleanup failed: ${e}`),
@@ -430,9 +436,13 @@ export class ClassroomService {
 
   async broadcast(sessionId: string) {
     const subs = this.subscribers.get(sessionId);
+    const state = await this.getState(sessionId);
+
+    // Persist snapshot (throttled) regardless of subscriber count
+    this.maybePersistSnapshot(sessionId, state);
+
     if (!subs || subs.size === 0) return;
 
-    const state = await this.getState(sessionId);
     const payload = `data: ${JSON.stringify(state)}\n\n`;
 
     for (const res of subs) {
@@ -467,6 +477,40 @@ export class ClassroomService {
         }
       }
     }
+  }
+
+  // ── Snapshots ──
+
+  private maybePersistSnapshot(sessionId: string, state: Record<string, unknown>): void {
+    const now = Date.now();
+    const last = this.lastSnapshotAt.get(sessionId) || 0;
+    if (now - last < this.SNAPSHOT_THROTTLE_MS) return;
+    this.lastSnapshotAt.set(sessionId, now);
+    this.snapshotRepo.save(
+      this.snapshotRepo.create({
+        sessionId,
+        capturedAt: new Date(now),
+        stateJson: JSON.stringify(state),
+      }),
+    ).catch(e => this.logger.warn(`Snapshot persist failed: ${e}`));
+  }
+
+  async getSnapshots(sessionId: string): Promise<Array<{ capturedAt: string; state: Record<string, unknown> }>> {
+    const rows = await this.snapshotRepo.find({
+      where: { sessionId },
+      order: { capturedAt: 'ASC' },
+    });
+    return rows.reduce<Array<{ capturedAt: string; state: Record<string, unknown> }>>((acc, r) => {
+      try {
+        acc.push({
+          capturedAt: r.capturedAt instanceof Date ? r.capturedAt.toISOString() : String(r.capturedAt),
+          state: JSON.parse(r.stateJson),
+        });
+      } catch {
+        this.logger.warn(`Skipping corrupted snapshot ${r.id}`);
+      }
+      return acc;
+    }, []);
   }
 
   // ── Private helpers ──

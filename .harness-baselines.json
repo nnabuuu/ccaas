@@ -1,9 +1,9 @@
 {
-  "console_log": 203,
-  "any_type": 369,
+  "console_log": 209,
+  "any_type": 435,
   "todo_unlinked": 9,
   "eslint_disable": 27,
   "backend_coverage": 60,
-  "frontend_hardcoded_localhost": 24,
-  "css_text_no_color": 9
+  "frontend_hardcoded_localhost": 21,
+  "css_text_no_color": 6
 }

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ObservationService } from './observation.service';
 import { ObservationEvent } from '../../entities/observation-event.entity';
+import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
@@ -32,7 +33,7 @@ describe('ObservationService — aggregation', () => {
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([ObservationEvent]),
+        TypeOrmModule.forFeature([ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [ObservationService],
     }).compile();
@@ -827,7 +828,7 @@ describe('ObservationService — observeTurn + GLM', () => {
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([ObservationEvent]),
+        TypeOrmModule.forFeature([ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [ObservationService],
     }).compile();

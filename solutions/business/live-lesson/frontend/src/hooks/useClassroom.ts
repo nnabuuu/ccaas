@@ -428,12 +428,40 @@ export function useChatHistory(sessionCode: string) {
   return { fetchHistory }
 }
 
+// ── Snapshot type ──
+
+export interface StateSnapshot {
+  timestamp: number  // ms since epoch
+  state: ClassroomState
+}
+
 // ── Teacher stream hook ──
 
-export function useTeacherStream(sessionCode: string): { state: ClassroomState | null; activeNotificationIds: Set<string> } {
+export function useTeacherStream(sessionCode: string): {
+  state: ClassroomState | null
+  activeNotificationIds: Set<string>
+  snapshots: StateSnapshot[]
+} {
   const [state, setState] = useState<ClassroomState | null>(null)
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set())
   const esRef = useRef<EventSource | null>(null)
+  const snapshotsRef = useRef<StateSnapshot[]>([])
+  const [snapshotsVersion, setSnapshotsVersion] = useState(0)
+
+  // Fetch historical snapshots on mount
+  useEffect(() => {
+    if (!sessionCode) return
+    fetch(`${API_BASE}/${sessionCode}/snapshots`)
+      .then(r => r.ok ? r.json() : [])
+      .then((history: Array<{ capturedAt: string; state: ClassroomState }>) => {
+        snapshotsRef.current = history.map(h => ({
+          timestamp: new Date(h.capturedAt).getTime(),
+          state: h.state,
+        }))
+        setSnapshotsVersion(v => v + 1)
+      })
+      .catch(() => { /* noop */ })
+  }, [sessionCode])
 
   useEffect(() => {
     if (!sessionCode) return
@@ -446,6 +474,20 @@ export function useTeacherStream(sessionCode: string): { state: ClassroomState |
         setState(data)
         if (data.activeNotifications) {
           setActiveNotificationIds(new Set(data.activeNotifications.map((n: any) => n.id)))
+        }
+        // Accumulate snapshot in memory (dedup + cap)
+        const ts = Date.now()
+        const lastTs = snapshotsRef.current.length > 0
+          ? snapshotsRef.current[snapshotsRef.current.length - 1].timestamp
+          : 0
+        if (ts > lastTs) {
+          snapshotsRef.current.push({ timestamp: ts, state: data })
+          if (snapshotsRef.current.length > 600) {
+            // Thin first half: keep every 2nd entry
+            const half = Math.floor(snapshotsRef.current.length / 2)
+            snapshotsRef.current = snapshotsRef.current.filter((_, i) => i >= half || i % 2 === 0)
+          }
+          setSnapshotsVersion(v => v + 1)
         }
       } catch { /* noop */ }
     }
@@ -478,5 +520,5 @@ export function useTeacherStream(sessionCode: string): { state: ClassroomState |
     }
   }, [sessionCode])
 
-  return { state, activeNotificationIds }
+  return { state, activeNotificationIds, snapshots: snapshotsRef.current }
 }
