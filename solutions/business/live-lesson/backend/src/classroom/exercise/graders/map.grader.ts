@@ -67,13 +67,16 @@ export class MapGrader implements Grader {
     // ── LLM reasoning evaluation ──
     const builder = this.aiPromptBuilder;
     const itemsWithReasons = itemIds.filter(id => (reasons[id] || '').trim().length >= minLen);
+    const RULE_WEIGHT = 0.7;
+    const LLM_WEIGHT = 0.3;
+
     if (builder && itemsWithReasons.length > 0) {
       try {
         const llmResult = await this.evaluateReasons(builder, key, placements, reasons, itemsWithReasons);
         if (llmResult && llmResult.items.length > 0) {
           const relevantCount = llmResult.items.filter(i => i.relevant).length;
           const relevanceRate = relevantCount / llmResult.items.length;
-          const adjustedTotal = Math.round(ruleTotal * 0.7 + relevanceRate * 100 * 0.3);
+          const adjustedTotal = Math.round(ruleTotal * RULE_WEIGHT + relevanceRate * 100 * LLM_WEIGHT);
 
           return {
             total: adjustedTotal,
@@ -134,7 +137,7 @@ export class MapGrader implements Grader {
     });
     const userMessage = `学生的放置和理由：\n${userLines.join('\n')}`;
 
-    const raw = await builder.callGlm(systemPrompt, userMessage, {
+    const raw = await builder.callLlm(systemPrompt, userMessage, {
       maxTokens: 512,
       temperature: 0,
       responseFormat: { type: 'json_object' },
