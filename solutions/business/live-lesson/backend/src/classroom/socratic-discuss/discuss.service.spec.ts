@@ -105,7 +105,7 @@ describe('DiscussService', () => {
   describe('aiDiscuss', () => {
     it('returns reply from LLM and saves AiQuestion record', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('Good observation!');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Good observation!');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('system prompt');
       jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
       jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
@@ -128,7 +128,7 @@ describe('DiscussService', () => {
 
     it('detects [GOAL_REACHED] tag, strips it, returns goalReached: true', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue(
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue(
         'You got it! [GOAL_REACHED]',
       );
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
@@ -149,7 +149,7 @@ describe('DiscussService', () => {
 
     it('fires addSystemEvent on goal_reached', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('Done [GOAL_REACHED]');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Done [GOAL_REACHED]');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
       jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
       jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
@@ -170,7 +170,7 @@ describe('DiscussService', () => {
 
     it('dispatches chat_turn observation event', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('Reply');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Reply');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
       jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
       jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
@@ -188,7 +188,7 @@ describe('DiscussService', () => {
 
     it('returns fallback on LLM failure', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockRejectedValue(new Error('LLM down'));
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValue(new Error('LLM down'));
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
       jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
 

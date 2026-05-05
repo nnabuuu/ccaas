@@ -808,13 +808,13 @@ describe('ObservationService — aggregation', () => {
 // observeTurn + callObserverGlm — GLM mock tests
 // ═══════════════════════════════════════════════════════════════
 
-describe('ObservationService — observeTurn + GLM', () => {
+describe('ObservationService — observeTurn + LLM', () => {
   let module: TestingModule;
   let svc: ObservationService;
   let eventRepo: Repository<ObservationEvent>;
   let configService: ConfigService;
 
-  const SESSION = 'glm-sess';
+  const SESSION = 'llm-sess';
   const originalFetch = global.fetch;
 
   beforeAll(async () => {
@@ -878,8 +878,8 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should handle GLM skip action (no event appended)', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
-      if (key === 'ZHIPU_OBSERVER_MODEL') return 'glm-4-flash';
+      if (key === 'LLM_API_KEY') return 'test-key';
+      if (key === 'LLM_OBSERVER_MODEL') return 'deepseek-v4-flash';
       return undefined;
     });
 
@@ -901,7 +901,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should append event on GLM append action', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 
@@ -936,7 +936,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should update existing event on GLM update action', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 
@@ -980,7 +980,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should handle fetch throwing an error gracefully', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 
@@ -996,7 +996,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should handle HTTP non-200 response', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 
@@ -1015,7 +1015,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should handle response with no content', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 
@@ -1033,7 +1033,7 @@ describe('ObservationService — observeTurn + GLM', () => {
 
   it('should include (empty) in prompt when existingEvents is empty', async () => {
     jest.spyOn(configService, 'get').mockImplementation((key: string) => {
-      if (key === 'ZHIPU_API_KEY') return 'test-key';
+      if (key === 'LLM_API_KEY') return 'test-key';
       return undefined;
     });
 

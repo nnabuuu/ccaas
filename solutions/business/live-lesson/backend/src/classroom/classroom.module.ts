@@ -44,7 +44,7 @@ import { PersonalTouchController } from './personal-touch/personal-touch.control
 
 // ── Observation component ──
 import { ObservationService } from './observation/observation.service';
-import { GlmLlmGateway } from './observation/adapters/glm-llm-gateway';
+import { OpenAiLlmGateway } from './observation/adapters/openai-llm-gateway';
 import { ClassroomNotifySink } from './observation/adapters/classroom-notify-sink';
 import { JoinHandler } from './observation/handlers/join-handler';
 import { ExerciseHandler } from './observation/handlers/exercise-handler';
@@ -76,7 +76,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
     // Personal Touch
     PersonalizationService,
     // Observation
-    ObservationService, GlmLlmGateway, ClassroomNotifySink,
+    ObservationService, OpenAiLlmGateway, ClassroomNotifySink,
     JoinHandler, ExerciseHandler, StepCompleteHandler, ChatTurnHandler, StatusChangeHandler,
     {
       provide: OBSERVER_ENGINE,
@@ -105,7 +105,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
       inject: [
         getRepositoryToken(ObservationRecord),
         getRepositoryToken(ObserverEventRecord),
-        GlmLlmGateway,
+        OpenAiLlmGateway,
         ClassroomNotifySink,
       ],
     },

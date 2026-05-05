@@ -3,18 +3,19 @@ import { ConfigService } from '@nestjs/config';
 import type { LlmGateway, LlmChatMessage, LlmCompletionOptions } from '@kedge-agentic/observer-engine';
 
 @Injectable()
-export class GlmLlmGateway implements LlmGateway {
-  private readonly logger = new Logger(GlmLlmGateway.name);
+export class OpenAiLlmGateway implements LlmGateway {
+  private readonly logger = new Logger(OpenAiLlmGateway.name);
 
   constructor(private readonly configService: ConfigService) {}
 
   async chat(messages: LlmChatMessage[], options?: LlmCompletionOptions): Promise<string> {
-    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
+    const apiKey = this.configService.get<string>('LLM_API_KEY');
     if (!apiKey) {
-      throw new Error('ZHIPU_API_KEY not configured');
+      throw new Error('LLM_API_KEY not configured');
     }
 
-    const model = this.configService.get<string>('ZHIPU_OBSERVER_MODEL') || 'glm-4-flash';
+    const model = this.configService.get<string>('LLM_OBSERVER_MODEL') || 'deepseek-v4-flash';
+    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
 
     const body: Record<string, unknown> = {
       model,
@@ -26,7 +27,7 @@ export class GlmLlmGateway implements LlmGateway {
       body.response_format = { type: 'json_object' };
     }
 
-    const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -37,7 +38,7 @@ export class GlmLlmGateway implements LlmGateway {
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`GLM API error ${res.status}: ${text}`);
+      throw new Error(`LLM API error ${res.status}: ${text}`);
     }
 
     const data = await res.json();

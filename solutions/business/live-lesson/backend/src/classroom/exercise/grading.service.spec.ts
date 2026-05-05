@@ -11,7 +11,7 @@ describe('GradingService (dispatcher)', () => {
 
   beforeEach(() => {
     const mockAiPromptBuilder = {
-      callGlm: jest.fn().mockRejectedValue(new Error('not configured in test')),
+      callLlm: jest.fn().mockRejectedValue(new Error('not configured in test')),
     } as unknown as AiPromptBuilder;
     service = new GradingService(mockAiPromptBuilder);
   });

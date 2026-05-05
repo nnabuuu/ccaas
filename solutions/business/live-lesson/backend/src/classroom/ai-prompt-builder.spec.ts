@@ -590,11 +590,11 @@ describe('AiPromptBuilder', () => {
       const brokenRaw = 'Here is my reply: great job! Quality: pass';
       const repairedJson = JSON.stringify({ reply: 'great job!', followUpQuestion: 'What else?', quality: 'pass' });
 
-      jest.spyOn(builder, 'callGlm').mockResolvedValueOnce(repairedJson);
+      jest.spyOn(builder, 'callLlm').mockResolvedValueOnce(repairedJson);
 
       const result = await builder.parseOrRepairDiscussResponse(brokenRaw, 'probeReply');
 
-      expect(builder.callGlm).toHaveBeenCalledTimes(1);
+      expect(builder.callLlm).toHaveBeenCalledTimes(1);
       expect(result.reply).toBe('great job!');
       expect(result.followUpQuestion).toBe('What else?');
       expect(result.quality).toBe('pass');
@@ -603,7 +603,7 @@ describe('AiPromptBuilder', () => {
     it('should fall back to raw text when LLM repair also fails', async () => {
       const brokenRaw = 'Some broken output';
 
-      jest.spyOn(builder, 'callGlm').mockRejectedValueOnce(new Error('API down'));
+      jest.spyOn(builder, 'callLlm').mockRejectedValueOnce(new Error('API down'));
 
       const result = await builder.parseOrRepairDiscussResponse(brokenRaw, 'probeReply');
 
@@ -614,7 +614,7 @@ describe('AiPromptBuilder', () => {
     it('should fall back to raw text when LLM repair returns non-JSON', async () => {
       const brokenRaw = 'Totally garbled';
 
-      jest.spyOn(builder, 'callGlm').mockResolvedValueOnce('Still not JSON');
+      jest.spyOn(builder, 'callLlm').mockResolvedValueOnce('Still not JSON');
 
       const result = await builder.parseOrRepairDiscussResponse(brokenRaw, 'probeReply');
 
@@ -625,7 +625,7 @@ describe('AiPromptBuilder', () => {
 
     it('should pass temperature=0 and json_object mode to repair call', async () => {
       const brokenRaw = 'not json';
-      const spy = jest.spyOn(builder, 'callGlm').mockResolvedValueOnce(
+      const spy = jest.spyOn(builder, 'callLlm').mockResolvedValueOnce(
         JSON.stringify({ reply: 'fixed', quality: 'pass' }),
       );
 

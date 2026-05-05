@@ -78,7 +78,7 @@ export class PersonalizationService {
     let aiComment = '';
     try {
       const { system, user } = this.aiPromptBuilder.buildPersonalTouchPrompt(strategies);
-      aiComment = await this.aiPromptBuilder.callGlm(system, user, { maxTokens: 256, temperature: 0.8 });
+      aiComment = await this.aiPromptBuilder.callLlm(system, user, { maxTokens: 256, temperature: 0.8 });
     } catch (e) {
       this.logger.warn(`Personal touch AI comment failed: ${e}`);
       aiComment = '你完成了所有阅读策略练习，继续保持！';

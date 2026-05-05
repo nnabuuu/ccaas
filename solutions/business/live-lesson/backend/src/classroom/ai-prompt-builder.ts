@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * Builds AI prompts and handles GLM API calls.
+ * Builds AI prompts and handles LLM API calls.
  * Owns all prompt construction logic (ask + discuss) and response parsing.
  */
 @Injectable()
@@ -300,7 +300,7 @@ Do NOT include a followUpQuestion key.`);
 
   /**
    * Parse with LLM repair fallback: sync parse → code-fence strip → LLM repair → raw fallback.
-   * When JSON.parse fails, sends the raw text back to GLM with the target schema
+   * When JSON.parse fails, sends the raw text back to the LLM with the target schema
    * and json_object mode so the LLM can fix its own output.
    */
   async parseOrRepairDiscussResponse(
@@ -323,7 +323,7 @@ Do NOT include a followUpQuestion key.`);
       ? '{"reply": "string", "followUpQuestion": "string", "quality": "pass or retry", "depth": "surface or partial or deep"}'
       : '{"reply": "string", "quality": "pass or retry", "depth": "surface or partial or deep"}';
     try {
-      const repaired = await this.callGlm(
+      const repaired = await this.callLlm(
         `Convert the following text into valid JSON matching this exact schema:\n${schema}\nExtract the reply, follow-up question (if any), and quality judgment from the text.\nOutput ONLY the JSON object.`,
         raw,
         { maxTokens: 512, temperature: 0, responseFormat: { type: 'json_object' } },
@@ -355,7 +355,7 @@ Do NOT include a followUpQuestion key.`);
     return { system, user };
   }
 
-  async callGlm(
+  async callLlm(
     systemPrompt: string,
     userMessage: string,
     options?: {
@@ -365,11 +365,12 @@ Do NOT include a followUpQuestion key.`);
       model?: string;
     },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
+    const apiKey = this.configService.get<string>('LLM_API_KEY');
     if (!apiKey) {
-      throw new Error('ZHIPU_API_KEY not configured');
+      throw new Error('LLM_API_KEY not configured');
     }
-    const model = options?.model || this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
+    const model = options?.model || this.configService.get<string>('LLM_MODEL') || 'deepseek-v4-flash';
+    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
 
     const body: Record<string, unknown> = {
       model,
@@ -384,7 +385,7 @@ Do NOT include a followUpQuestion key.`);
       body.response_format = options.responseFormat;
     }
 
-    const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -395,7 +396,7 @@ Do NOT include a followUpQuestion key.`);
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`GLM API error ${res.status}: ${text}`);
+      throw new Error(`LLM API error ${res.status}: ${text}`);
     }
 
     const data = await res.json();
@@ -403,16 +404,17 @@ Do NOT include a followUpQuestion key.`);
   }
 
   /** Multi-turn conversation call — accepts pre-built messages array */
-  async callGlmConversation(
+  async callLlmConversation(
     systemPrompt: string,
     messages: Array<{ role: 'assistant' | 'user'; content: string }>,
     options?: { maxTokens?: number; temperature?: number; model?: string },
   ): Promise<string> {
-    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
+    const apiKey = this.configService.get<string>('LLM_API_KEY');
     if (!apiKey) {
-      throw new Error('ZHIPU_API_KEY not configured');
+      throw new Error('LLM_API_KEY not configured');
     }
-    const model = options?.model || this.configService.get<string>('ZHIPU_MODEL') || 'glm-4-flash';
+    const model = options?.model || this.configService.get<string>('LLM_MODEL') || 'deepseek-v4-flash';
+    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
 
     const body: Record<string, unknown> = {
       model,
@@ -424,7 +426,7 @@ Do NOT include a followUpQuestion key.`);
       temperature: options?.temperature ?? 0.75,
     };
 
-    const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -435,7 +437,7 @@ Do NOT include a followUpQuestion key.`);
 
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      throw new Error(`GLM API error ${res.status}: ${text}`);
+      throw new Error(`LLM API error ${res.status}: ${text}`);
     }
 
     const data = await res.json();

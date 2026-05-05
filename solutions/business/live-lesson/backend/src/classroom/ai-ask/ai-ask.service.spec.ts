@@ -114,7 +114,7 @@ describe('AiAskService', () => {
   describe('aiAsk', () => {
     it('returns parsed answer + category, saves AiQuestion', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【理解】The answer is B because...');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【理解】The answer is B because...');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'The answer is B because...',
         category: '理解',
@@ -136,7 +136,7 @@ describe('AiAskService', () => {
 
     it('returns fallback answer on LLM failure', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockRejectedValue(new Error('API error'));
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockRejectedValue(new Error('API error'));
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'AI 助教暂时无法回答，请稍后再试。',
         category: '其他',
@@ -150,7 +150,7 @@ describe('AiAskService', () => {
 
     it('dispatches chat_turn observation event', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【其他】reply');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【其他】reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
@@ -165,7 +165,7 @@ describe('AiAskService', () => {
 
     it('calls observeTurn with correct step context', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【理解】answer');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【理解】answer');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'answer', category: '理解',
       });
@@ -187,9 +187,9 @@ describe('AiAskService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
-    it('uses callGlmConversation when messages are provided (multi-turn)', async () => {
+    it('uses callLlmConversation when messages are provided (multi-turn)', async () => {
       const { session, student } = await createSessionAndStudent();
-      const convSpy = jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('答案是 B，因为文中提到...');
+      const convSpy = jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('答案是 B，因为文中提到...');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: '答案是 B，因为文中提到...',
         category: '其他',
@@ -215,9 +215,9 @@ describe('AiAskService', () => {
       );
     });
 
-    it('falls back to callGlm when messages is empty', async () => {
+    it('falls back to callLlm when messages is empty', async () => {
       const { session, student } = await createSessionAndStudent();
-      const glmSpy = jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【理解】single-turn reply');
+      const glmSpy = jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【理解】single-turn reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'single-turn reply', category: '理解',
       });
@@ -230,7 +230,7 @@ describe('AiAskService', () => {
 
     it('persists ChatMessages only when messages are provided (multi-turn)', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('多轮回复');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('多轮回复');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: '多轮回复', category: '其他',
       });
@@ -257,7 +257,7 @@ describe('AiAskService', () => {
 
     it('does NOT persist ChatMessages for single-turn (no messages)', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【其他】single reply');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【其他】single reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'single reply', category: '其他',
       });
@@ -271,9 +271,9 @@ describe('AiAskService', () => {
       expect(saved).toHaveLength(0);
     });
 
-    it('returns fallback on callGlmConversation failure (multi-turn)', async () => {
+    it('returns fallback on callLlmConversation failure (multi-turn)', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockRejectedValue(new Error('timeout'));
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValue(new Error('timeout'));
       jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const result = await service.aiAsk(
@@ -287,7 +287,7 @@ describe('AiAskService', () => {
 
     it('maps role correctly: student→user, ai→assistant', async () => {
       const { session, student } = await createSessionAndStudent();
-      const convSpy = jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('ok');
+      const convSpy = jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('ok');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'ok', category: '其他',
       });
@@ -305,7 +305,7 @@ describe('AiAskService', () => {
 
     it('fires continue_chat_turn system event for multi-turn', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
@@ -325,7 +325,7 @@ describe('AiAskService', () => {
 
     it('does NOT fire continue_chat_turn for single-turn (no messages)', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('【其他】reply');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【其他】reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
@@ -339,7 +339,7 @@ describe('AiAskService', () => {
 
     it('uses continue-chat prompt (not ask prompt) for multi-turn', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
@@ -349,7 +349,7 @@ describe('AiAskService', () => {
         { role: 'student', text: 'hi' },
       ]);
 
-      const systemPrompt = jest.mocked(aiPromptBuilder.callGlmConversation).mock.calls[0][0];
+      const systemPrompt = jest.mocked(aiPromptBuilder.callLlmConversation).mock.calls[0][0];
       expect(systemPrompt).toContain('延伸讨论');
       expect(systemPrompt).not.toContain('严禁直接告诉学生');
       expect(systemPrompt).toContain('正确答案');
@@ -357,7 +357,7 @@ describe('AiAskService', () => {
 
     it('increments seq correctly across multiple multi-turn calls', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(aiPromptBuilder, 'callGlmConversation').mockResolvedValue('reply');
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('reply');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });

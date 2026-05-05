@@ -55,10 +55,10 @@ export class AiAskService {
           role: (m.role === 'student' ? 'user' : 'assistant') as 'user' | 'assistant',
           content: m.text,
         }));
-        rawAnswer = await this.aiPromptBuilder.callGlmConversation(systemPrompt, llmMessages);
+        rawAnswer = await this.aiPromptBuilder.callLlmConversation(systemPrompt, llmMessages);
       } else {
         const systemPrompt = await this.buildAiSystemPrompt(session.lessonId, step);
-        rawAnswer = await this.aiPromptBuilder.callGlm(systemPrompt, question);
+        rawAnswer = await this.aiPromptBuilder.callLlm(systemPrompt, question);
       }
     } catch (e) {
       this.logger.warn(`AI call failed: ${e}`);

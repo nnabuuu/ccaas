@@ -59,7 +59,7 @@ export class DiscussService {
         content: m.text,
       }));
 
-      const rawResponse = await this.aiPromptBuilder.callGlmConversation(
+      const rawResponse = await this.aiPromptBuilder.callLlmConversation(
         systemPrompt, llmMessages, { maxTokens: 512, temperature: 0.75 },
       );
 

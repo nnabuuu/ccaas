@@ -133,7 +133,7 @@ describe('PersonalizationService', () => {
       jest.spyOn(aiPromptBuilder, 'buildPersonalTouchPrompt').mockReturnValue({
         system: 'sys', user: 'usr',
       });
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('You did great!');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('You did great!');
 
       const result = await service.getPersonalTouch(session, student.id);
 
@@ -155,7 +155,7 @@ describe('PersonalizationService', () => {
       jest.spyOn(aiPromptBuilder, 'buildPersonalTouchPrompt').mockReturnValue({
         system: 'sys', user: 'usr',
       });
-      jest.spyOn(aiPromptBuilder, 'callGlm').mockResolvedValue('Keep going!');
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('Keep going!');
 
       const result = await service.getPersonalTouch(session, student.id);
       // With no submissions, all strategy scores default to 0 → lowest tier

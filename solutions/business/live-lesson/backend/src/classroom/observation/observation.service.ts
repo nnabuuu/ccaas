@@ -3,13 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ObservationEvent } from '../../entities/observation-event.entity';
+import type { ObservationDef } from '../../schemas';
 
-interface ObservationIndicator {
-  id: string;
-  type: 'knowledge' | 'misconception';
-  label: string;
-  description: string;
-}
+/** Narrowed ObservationDef with all LLM-pipeline fields required */
+type ObservationIndicator = {
+  [K in 'id' | 'type' | 'label' | 'description']-?: NonNullable<ObservationDef[K]>;
+};
 
 interface StudentEvent {
   id: string;
@@ -55,7 +54,7 @@ interface IndicatorStats {
   updatedAt: number;
 }
 
-interface GLMObserverOutput {
+interface ObserverLlmOutput {
   action: 'skip' | 'update' | 'append';
   updateTarget?: string;
   anchors: string[];
@@ -149,7 +148,7 @@ export class ObservationService {
     log.systemMetrics.exerciseCorrectRate = systemContext.exerciseCorrectRate;
 
     try {
-      const result = await this.callObserverGlm(indicators, log.events, latestTurn);
+      const result = await this.callObserverLlm(indicators, log.events, latestTurn);
       if (!result || result.action === 'skip') return;
 
       const now = Date.now();
@@ -195,7 +194,7 @@ export class ObservationService {
         }));
       }
     } catch (e) {
-      this.logger.warn(`observeTurn GLM call failed: ${e}`);
+      this.logger.warn(`observeTurn LLM call failed: ${e}`);
     }
   }
 
@@ -422,15 +421,16 @@ export class ObservationService {
     return indicators?.find(a => a.id === indicatorId)?.label ?? '';
   }
 
-  private async callObserverGlm(
+  private async callObserverLlm(
     indicators: ObservationIndicator[],
     existingEvents: StudentEvent[],
     latestTurn: { student: string; ai: string },
-  ): Promise<GLMObserverOutput | null> {
-    const apiKey = this.configService.get<string>('ZHIPU_API_KEY');
+  ): Promise<ObserverLlmOutput | null> {
+    const apiKey = this.configService.get<string>('LLM_API_KEY');
     if (!apiKey) return null;
 
-    const model = this.configService.get<string>('ZHIPU_OBSERVER_MODEL') || 'glm-4-flash';
+    const model = this.configService.get<string>('LLM_OBSERVER_MODEL') || 'deepseek-v4-flash';
+    const baseUrl = this.configService.get<string>('LLM_BASE_URL') || 'https://api.deepseek.com';
 
     const indicatorDefs = indicators.map(a => `${a.id} [${a.type}] ${a.label}: ${a.description}`).join('\n');
     const eventLog = existingEvents.length > 0
@@ -467,7 +467,7 @@ Rules:
 - quote: exact student words, or null`;
 
     try {
-      const res = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      const res = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -487,7 +487,7 @@ Rules:
 
       if (!res.ok) {
         const text = await res.text().catch(() => '');
-        this.logger.warn(`Observer GLM error ${res.status}: ${text}`);
+        this.logger.warn(`Observer LLM error ${res.status}: ${text}`);
         return null;
       }
 
@@ -495,9 +495,9 @@ Rules:
       const content = data.choices?.[0]?.message?.content;
       if (!content) return null;
 
-      return JSON.parse(content) as GLMObserverOutput;
+      return JSON.parse(content) as ObserverLlmOutput;
     } catch (e) {
-      this.logger.warn(`Observer GLM parse error: ${e}`);
+      this.logger.warn(`Observer LLM parse error: ${e}`);
       return null;
     }
   }
