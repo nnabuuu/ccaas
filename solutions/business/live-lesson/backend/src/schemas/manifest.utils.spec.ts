@@ -43,6 +43,12 @@ describe('sanitizeAnswerKey', () => {
       expect(q.walkthrough).toBeUndefined();
       expect(q.walkthroughZh).toBeUndefined();
     });
+
+    it('preserves paraRef when present', () => {
+      const key = { ...quizKey, answers: [{ ...quizKey.answers[0], paraRef: [3, 4] }] };
+      const spec = sanitizeAnswerKey(key)!;
+      expect((spec.questions![0] as any).paraRef).toEqual([3, 4]);
+    });
   });
 
   describe('match', () => {
@@ -66,6 +72,12 @@ describe('sanitizeAnswerKey', () => {
       expect(p.correct).toBeUndefined();
       expect(p.hint).toBeUndefined();
     });
+
+    it('preserves paraRef when present', () => {
+      const key = { ...matchKey, answers: [{ ...matchKey.answers[0], paraRef: [5] }] };
+      const spec = sanitizeAnswerKey(key)!;
+      expect((spec.pairs![0] as any).paraRef).toEqual([5]);
+    });
   });
 
   describe('matrix', () => {
@@ -84,12 +96,29 @@ describe('sanitizeAnswerKey', () => {
       expect(spec.rows![0].isDemo).toBe(true);
     });
 
-    it('strips non-demo row practice/reason/hint', () => {
+    it('keeps non-demo row practice/reason for practiceCount subset, strips hint', () => {
       const spec = sanitizeAnswerKey(matrixKey)!;
       const row = spec.rows![1] as Record<string, unknown>;
-      expect(row.practice).toBeUndefined();
-      expect(row.reason).toBeUndefined();
+      expect(row.practice).toBe('pale skin');
+      expect(row.reason).toBe('wealth');
       expect(row.hint).toBeUndefined();
+    });
+
+    it('preserves paraRef, whatPrompt, whyPrompt, practiceCount', () => {
+      const key = {
+        type: 'matrix',
+        practiceCount: 3,
+        answers: [
+          { rowIdx: 0, place: 'Egypt', practice: 'x', reason: 'y', isDemo: true },
+          { rowIdx: 1, place: 'Borneo', practice: 'tattoos', reason: 'diary', paraRef: [6], whatPrompt: 'What body mod?', whyPrompt: 'What did it record?' },
+        ],
+      };
+      const spec = sanitizeAnswerKey(key)!;
+      expect((spec as any).practiceCount).toBe(3);
+      const row = spec.rows![1] as Record<string, unknown>;
+      expect(row.paraRef).toEqual([6]);
+      expect(row.whatPrompt).toBe('What body mod?');
+      expect(row.whyPrompt).toBe('What did it record?');
     });
   });
 

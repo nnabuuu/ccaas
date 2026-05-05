@@ -9,12 +9,14 @@ export const ExerciseSpecSchema = z.object({
     text: z.string(),
     translate: z.string().optional(),
     options: z.array(z.string()),
+    paraRef: z.array(z.number()).optional(),
   })).optional(),
   // match
   pairs: z.array(z.object({
     idx: z.number(),
     left: z.string(),
     options: z.array(z.string()),
+    paraRef: z.array(z.number()).optional(),
   })).optional(),
   // matrix
   rows: z.array(z.object({
@@ -23,7 +25,11 @@ export const ExerciseSpecSchema = z.object({
     isDemo: z.boolean(),
     practice: z.string().optional(),
     reason: z.string().optional(),
+    paraRef: z.array(z.number()).optional(),
+    whatPrompt: z.string().optional(),
+    whyPrompt: z.string().optional(),
   })).optional(),
+  practiceCount: z.number().optional(),
   // stance
   stanceQ: z.string().optional(),
   stanceQZh: z.string().optional(),

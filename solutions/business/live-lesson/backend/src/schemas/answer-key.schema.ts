@@ -17,6 +17,7 @@ const QuizAnswerItemSchema = z.object({
   hintZh: z.string().optional(),
   walkthrough: z.string().optional(),
   walkthroughZh: z.string().optional(),
+  paraRef: z.array(z.number().int().positive()).optional(),
 });
 
 const QuizAnswerKeySchema = z.object({
@@ -38,6 +39,7 @@ const MatchAnswerItemSchema = z.object({
   hintZh: z.string().optional(),
   walkthrough: z.string().optional(),
   walkthroughZh: z.string().optional(),
+  paraRef: z.array(z.number().int().positive()).optional(),
 });
 
 const MatchAnswerKeySchema = z.object({
@@ -59,6 +61,9 @@ const MatrixAnswerItemSchema = z.object({
   reason: z.string().optional(),
   hint: z.string().optional(),
   hintZh: z.string().optional(),
+  paraRef: z.array(z.number().int().positive()).optional(),
+  whatPrompt: z.string().optional(),
+  whyPrompt: z.string().optional(),
 }).refine(
   (row) => row.isDemo || (row.practice && row.reason),
   { message: 'matrix: non-demo rows must have practice and reason' },
@@ -67,6 +72,7 @@ const MatrixAnswerItemSchema = z.object({
 const MatrixAnswerKeySchema = z.object({
   type: z.literal('matrix'),
   answers: z.array(MatrixAnswerItemSchema).nonempty(),
+  practiceCount: z.number().int().min(1).optional(),
 });
 
 // ── Stance ──

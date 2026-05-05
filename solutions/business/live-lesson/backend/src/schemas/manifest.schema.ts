@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { AnswerKeySchema } from './answer-key.schema';
 import { BoardDataSchema } from './board-data.schema';
+import { ObservationDefSchema } from './observation.schema';
 
 // ── Segment (structured rich content) ──
 
@@ -63,6 +64,7 @@ const DiscussSchema = z.object({
   fallbackMC: FallbackMCSchema,
   insight: z.string(),
   insightZh: z.string().optional(),
+  observe: z.array(z.string()).optional(),
 });
 
 // ── PhaseConfig ──
@@ -103,6 +105,11 @@ export const ReadingStepSchema = z.object({
   discuss: DiscussSchema.optional(),
   // Teacher
   teacherView: TeacherViewSchema.optional(),
+  // Observe (declarative observability): array of $ref strings / inline defs, or single inline def
+  observe: z.union([
+    z.array(z.union([z.string(), ObservationDefSchema])),
+    ObservationDefSchema,
+  ]).optional(),
 }).passthrough();
 
 // ── PersonalTouch ──
@@ -171,6 +178,7 @@ export const ManifestSchema = z.object({
   bonusArticle: BonusArticleSchema.optional(),
   bonusSteps: z.array(BonusStepSchema).optional(),
   boardData: BoardDataSchema.optional(),
+  observations: z.record(z.string(), ObservationDefSchema).optional(),
 }).passthrough();
 
 export type ReadingStep = z.infer<typeof ReadingStepSchema>;

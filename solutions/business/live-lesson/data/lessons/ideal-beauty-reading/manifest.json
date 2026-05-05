@@ -752,6 +752,7 @@
       "summary": "You turned paragraphs into organized evidence.\n\nYour matrix shows beauty is about culture, status, and identity.\n\nNext, use this evidence to form your own opinion.",
       "answerKey": {
         "type": "matrix",
+        "practiceCount": 3,
         "answers": [
           {
             "rowIdx": 0,
@@ -765,6 +766,9 @@
             "place": "1600s Europe",
             "practice": "plump and pale-skinned",
             "reason": "wealth",
+            "paraRef": [4],
+            "whatPrompt": "What body type?",
+            "whyPrompt": "Why was pale skin fashionable?",
             "hint": "In ¶4, what body type was \"**the most stunning**\" beauty? Also: why was **pale skin** fashionable?",
             "hintZh": "在 ¶4 中，什么体型是 \"**the most stunning**\" 的美？**白皮肤**为什么时髦？"
           },
@@ -773,6 +777,9 @@
             "place": "Borneo",
             "practice": "tattoos",
             "reason": "diary of events",
+            "paraRef": [6],
+            "whatPrompt": "What body modification?",
+            "whyPrompt": "What did it record?",
             "hint": "In ¶6: \"tattoos are like a **diary**...\" — a written record of what?",
             "hintZh": "在 ¶6：\"tattoos are like a **diary**...\"——记录了什么？"
           },
@@ -781,6 +788,9 @@
             "place": "NZ Maori",
             "practice": "tattoos",
             "reason": "position in society",
+            "paraRef": [6],
+            "whatPrompt": "What body modification?",
+            "whyPrompt": "What did it reflect?",
             "hint": "In ¶6: Maori tattoos \"**reflect**\" something about a person. What?",
             "hintZh": "在 ¶6：Maori 的 tattoos \"**reflect**\" 了一个人的什么？"
           },
@@ -789,6 +799,9 @@
             "place": "Myanmar",
             "practice": "metal neck rings",
             "reason": "elegance",
+            "paraRef": [7],
+            "whatPrompt": "What did they stretch?",
+            "whyPrompt": "What quality did it show?",
             "hint": "In ¶7, find \"**metal rings**\" to stretch a girl's neck. Myanmar people consider long necks more ___?",
             "hintZh": "在 ¶7 中找 \"**metal rings**\"。缅甸人认为长脖子更加___？"
           },
@@ -797,6 +810,9 @@
             "place": "Indonesia",
             "practice": "sharpened teeth",
             "reason": "cultural identity",
+            "paraRef": [7],
+            "whatPrompt": "What did they sharpen?",
+            "whyPrompt": "What was the cultural reason?",
             "hint": "In ¶7, second sentence: \"the custom of **sharpening** girls' teeth...\" — what was the cultural reason?",
             "hintZh": "在 ¶7 第二句：\"**sharpening** girls' teeth...\"——文化原因是什么？"
           }

@@ -39,6 +39,7 @@ function sanitizeQuiz(ak: AKInput): ExerciseSpec {
       text: a.questionText as string,
       ...(a.questionTranslate && { translate: a.questionTranslate as string }),
       options: (a.options as string[]) || [],
+      ...(a.paraRef && { paraRef: a.paraRef as number[] }),
     })),
   };
 }
@@ -52,6 +53,7 @@ function sanitizeMatch(ak: AKInput): ExerciseSpec {
       idx: a.pairIdx as number,
       left: a.left as string,
       options: (a.options as string[]) || (ak.options as string[]) || [],
+      ...(a.paraRef && { paraRef: a.paraRef as number[] }),
     })),
   };
 }
@@ -65,9 +67,13 @@ function sanitizeMatrix(ak: AKInput): ExerciseSpec {
       idx: a.rowIdx as number,
       place: a.place as string,
       isDemo: !!a.isDemo,
-      ...(a.isDemo && a.practice && { practice: a.practice as string }),
-      ...(a.isDemo && a.reason && { reason: a.reason as string }),
+      ...(a.practice && { practice: a.practice as string }),
+      ...(a.reason && { reason: a.reason as string }),
+      ...(a.paraRef && { paraRef: a.paraRef as number[] }),
+      ...(a.whatPrompt && { whatPrompt: a.whatPrompt as string }),
+      ...(a.whyPrompt && { whyPrompt: a.whyPrompt as string }),
     })),
+    ...(ak.practiceCount && { practiceCount: ak.practiceCount as number }),
   };
 }
 
