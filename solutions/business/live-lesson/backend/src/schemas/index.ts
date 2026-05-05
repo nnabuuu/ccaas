@@ -37,3 +37,13 @@ export {
 
 // Sanitize utilities
 export { sanitizeAnswerKey, sanitizeManifest } from './manifest.utils';
+
+// Observation (unified observability)
+export {
+  ObserveDimensionSchema, ObserveIssueRuleSchema, ObserveSurfaceSchema,
+  ObservationDefSchema, ObserveDefinitionSchema,
+  type ObserveDimension, type ObserveIssueRule, type ObserveSurface,
+  type ObservationDef, type ObserveDefinition,
+} from './observation.schema';
+
+export { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve } from './observation-resolver';
