@@ -214,6 +214,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const [fallbackReason, setFallbackReason] = useState<'rounds' | 'time' | ''>('')
   const [, setMcAnswer] = useState<number | null>(null)
   const calledDone = useRef(!!isRevisit)
+  const submittedRef = useRef(!!isRevisit)
   const msgEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -262,10 +263,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
     msgEndRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
   }, [messages, loading, phase])
 
-  // Signal done
+  // Persist submission data when done (but don't unlock next phase yet)
   useEffect(() => {
-    if (phase === 'done' && !calledDone.current) {
-      calledDone.current = true
+    if (phase === 'done' && !submittedRef.current) {
+      submittedRef.current = true
       submit?.(task.id, {
         phase: 'discuss',
         skipped: false,
@@ -274,9 +275,16 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         completionType: goalReached ? 'goal_reached' : (fallbackReason === 'rounds' ? 'fallback_rounds' : 'fallback_time'),
         taskId: task.id,
       })
+    }
+  }, [phase, round, goalReached, fallbackReason, submit, task.id])
+
+  // Student clicks "Continue" to unlock Takeaway
+  const handleContinue = useCallback(() => {
+    if (!calledDone.current) {
+      calledDone.current = true
       onDone()
     }
-  }, [phase, round, goalReached, fallbackReason, submit, task.id, onDone])
+  }, [onDone])
 
   // Send message
   const send = async () => {
@@ -417,11 +425,17 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
             </div>
           )}
 
-          {/* Unlock notice */}
+          {/* Unlock notice / Continue button */}
           {phase === 'done' && (
             <div className="sd-unlock-notice">
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-              <div className="sd-unlock-pill">✓ Discuss complete — next section unlocked</div>
+              {isRevisit ? (
+                <div className="sd-unlock-pill">✓ Discuss complete</div>
+              ) : (
+                <button type="button" className="sd-unlock-pill sd-continue-action" onClick={handleContinue}>
+                  Continue to Takeaway →
+                </button>
+              )}
               <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
             </div>
           )}

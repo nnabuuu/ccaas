@@ -94,6 +94,10 @@
 .stu-mat-in{width:100%;border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-size:12px;font-family:inherit;background:var(--bg)}
 .stu-mat-in:focus{outline:none;border-color:rgba(58,49,133,.3)}
 
+/* ── Locate button (paragraph reference) ── */
+.stu-locate-btn{width:20px;height:20px;font-size:12px;border:none;background:none;cursor:pointer;opacity:0.6;border-radius:4px;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.stu-locate-btn:hover{opacity:1;background:var(--surface2)}
+
 /* ── Stance (Practice) ── */
 .stu-stance-btn{flex:1;padding:10px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--t2);text-align:center;transition:all .15s}
 .stu-stance-btn:hover{border-color:var(--t3)}
@@ -338,6 +342,8 @@
 /* Unlock notice */
 .sd-unlock-notice{display:flex;align-items:center;gap:10px;margin:16px 0 8px}
 .sd-unlock-pill{font-size:11px;font-weight:600;color:var(--green);padding:4px 12px;border-radius:20px;background:var(--green-bg);border:1px solid rgba(13,82,69,.15);white-space:nowrap}
+.sd-unlock-pill.sd-continue-action{cursor:pointer;border:none;transition:background .15s,color .15s}
+.sd-unlock-pill.sd-continue-action:hover{background:var(--teal);color:#fff}
 /* Continue chat */
 .sd-continue-btn{padding:8px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-weight:500;cursor:pointer;color:var(--purple);font-family:inherit}
 .sd-continue-btn:hover{border-color:var(--purple);background:var(--purple-bg)}
