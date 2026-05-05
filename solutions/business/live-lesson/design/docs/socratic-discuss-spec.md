@@ -38,7 +38,7 @@
 > 作为学生，第一轮回答前我可以看到句型提示（scaffolds），点击后会填入输入框，帮我开始表达。
 
 ### US-8：解锁下一阶段
-> 作为课堂流系统，当 Discuss 完成（无论通过对话达标还是选择题完成），`onDone` 回调被触发，解锁 Takeaway 阶段。聊天流底部显示 "✓ Discuss complete — next section unlocked" 分隔线通知。
+> 作为课堂流系统，当 Discuss 完成（无论通过对话达标还是选择题完成），数据立即持久化，但 Takeaway 阶段不会自动解锁。学生需要点击 "Continue to Takeaway →" 按钮手动解锁下一阶段。重访时显示静态 "✓ Discuss complete" 标签。
 
 ---
 
@@ -56,7 +56,7 @@
 │  ── 路径 A：学生达标 ──                         │
 │  [🎉] 庆祝消息 "Amazing! You figured it out!"  │
 │  [AI] 解释总结 + Key Insight                   │
-│  ── ✓ Discuss complete — next unlocked ──     │
+│  ── [Continue to Takeaway →] 按钮 ──          │
 │                                              │
 │  ── 路径 B：超轮/超时 ──                        │
 │  [AI] "Let me give you a question..."         │
@@ -67,7 +67,7 @@
 │       │  [Submit]             │               │
 │       └───────────────────────┘               │
 │  [AI] 解释 + Key Insight                      │
-│  ── ✓ Discuss complete — next unlocked ──     │
+│  ── [Continue to Takeaway →] 按钮 ──          │
 │                                              │
 │  💬 [继续讨论] (可选，不阻塞流程)                │
 └──────────────────────────────────────────────┘
@@ -186,7 +186,7 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
 **状态说明：**
 - `chat`：苏格拉底对话进行中，输入框可用
 - `fallback`：选择题以 AI 气泡形式嵌在聊天流中，输入框隐藏
-- `done`：解释 + insight + 解锁通知显示在聊天流中，`onDone()` 被调用，输入框隐藏
+- `done`：解释 + insight 显示在聊天流中，数据已持久化，学生点击 "Continue to Takeaway →" 后 `onDone()` 被调用解锁下一阶段，输入框隐藏
 
 ---
 
@@ -212,8 +212,8 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
   - 嵌套的 Key Insight 卡片（amber 色）
 
 ### 4. 解锁通知
-- 居中分隔线样式：`── ✓ Discuss complete — next section unlocked ──`
-- 绿色药丸标签，两侧水平线
+- 非重访时为可点击的 "Continue to Takeaway →" 按钮（teal 悬浮色），重访时为静态 "✓ Discuss complete" 药丸标签
+- 两侧水平线
 
 ### 5. TypingIndicator
 - 三个紫色圆点的打字动画，等待 Claude 响应时显示
@@ -260,7 +260,7 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
   - 后端用 `buildContinueChatPrompt()` + `callGlmConversation()` 进行多轮对话
   - 对话通过 `ChatMessage` entity 持久化到 `continue:{step}` thread
   - 刷新页面后通过 `GET /chat-history` 恢复历史
-- 不影响阶段解锁（`onDone` 已经触发）
+- 不影响阶段解锁（`onDone` 在学生点击 "Continue to Takeaway →" 时触发，ContinueChat 独立于此流程）
 
 ---
 
@@ -318,7 +318,7 @@ practiceDone && React.createElement(SocraticDiscuss, {
 ### 为什么允许完成后继续讨论？
 - 看到答案后产生的"恍然大悟"往往伴随新问题
 - 自由讨论是深化理解的最佳时机
-- 不阻塞流程（onDone 已触发，Takeaway 已解锁）
+- 不阻塞流程（学生点击 "Continue to Takeaway →" 后 Takeaway 解锁，ContinueChat 独立于此）
 
 ### 为什么状态栏显示轮数和时间？
 - 轻度时间压力有助于保持注意力

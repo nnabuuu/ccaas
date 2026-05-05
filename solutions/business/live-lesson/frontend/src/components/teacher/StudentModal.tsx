@@ -116,12 +116,16 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                     <div style={{ fontSize: 12, fontWeight: 600, color: selTotal >= 80 ? 'var(--green)' : selTotal >= 50 ? 'var(--amber)' : 'var(--red)', marginBottom: 8 }}>
                       得分: {selTotal}%
                     </div>
-                    {Object.entries(selByDim).map(([key, val]: [string, unknown]) => (
-                      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '4px 0' }}>
-                        <span className={`result-badge ${val ? 'correct' : 'wrong'}`}>{val ? '✓' : '✗'}</span>
-                        <span style={{ color: 'var(--t2)' }}>{key}</span>
-                      </div>
-                    ))}
+                    {Object.entries(selByDim).map(([key, val]: [string, unknown]) => {
+                      const dimLabels = (stepMetrics as any)?.dimensionLabels || {}
+                      const label = dimLabels[key] || key
+                      return (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, padding: '4px 0' }}>
+                          <span className={`result-badge ${val ? 'correct' : 'wrong'}`}>{val ? '✓' : '✗'}</span>
+                          <span style={{ color: 'var(--t2)' }}>{label}</span>
+                        </div>
+                      )
+                    })}
                     {Object.keys(selByDim).length === 0 && (
                       <div style={{ fontSize: 12, color: 'var(--t3)' }}>已提交，暂无维度数据</div>
                     )}
