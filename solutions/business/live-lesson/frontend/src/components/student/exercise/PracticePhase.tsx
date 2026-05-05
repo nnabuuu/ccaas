@@ -184,6 +184,8 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     }
   }
 
+  const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
+
   /** Handle server-side check result — update local state based on per-item feedback */
   const handleCheckResult = (result: CheckResult) => {
     if (result.allCorrect) {
@@ -202,7 +204,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
       const newHints = { ...serverHints }
       result.items.forEach(item => {
-        const idx = typeof item.idx === 'number' ? item.idx : parseInt(String(item.idx), 10)
+        const idx = toIdx(item.idx)
         if (!newAttempts[idx]) newAttempts[idx] = []
         newAttempts[idx].push({ selected: ans[idx], isCorrect: item.correct, ts: Date.now() })
         reportAttempt(task.id, idx, newAttempts[idx].length, ans[idx], null, item.correct)
@@ -233,14 +235,14 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       // Mark wrong positions from items (use item.idx, not array index)
       const wrong = new Set<number>()
       result.items.forEach(item => {
-        const pos = typeof item.idx === 'number' ? item.idx : parseInt(String(item.idx), 10)
+        const pos = toIdx(item.idx)
         if (!item.correct) wrong.add(pos)
       })
       setWrongQs(wrong); setAns({})
     } else if (ex.type === 'matrix') {
       const newHints = { ...serverHints }
       result.items.forEach(item => {
-        const idx = typeof item.idx === 'number' ? item.idx : parseInt(String(item.idx), 10)
+        const idx = toIdx(item.idx)
         if (!item.correct && (item.hint || item.hintZh)) {
           newHints[idx] = { hint: item.hint, hintZh: item.hintZh }
         }
@@ -282,9 +284,42 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
       <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
-      {ex.type === 'quiz' && <QuizExercise questions={ex.questions!} ans={effectiveAns} setAns={noopSetAns} correctQs={effectiveCorrectQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
-      {ex.type === 'match' && <MatchExercise pairs={ex.pairs!} ans={effectiveAns} setAns={noopSetAns} correctQs={effectiveCorrectQs} wrongQs={wrongQs} attemptCount={attemptCount} serverHints={serverHints} />}
-      {ex.type === 'matrix' && <MatrixExercise rows={ex.rows!} serverHints={serverHints} ans={effectiveMatrixAns} onAnsChange={reviewMode ? (() => {}) : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))} disabled={effectiveAllDone} />}
+      {ex.type === 'quiz' && (
+        <QuizExercise
+          questions={ex.questions!}
+          ans={effectiveAns}
+          setAns={noopSetAns}
+          correctQs={effectiveCorrectQs}
+          wrongQs={wrongQs}
+          attemptCount={attemptCount}
+          serverHints={serverHints}
+        />
+      )}
+      {ex.type === 'match' && (
+        <MatchExercise
+          pairs={ex.pairs!}
+          ans={effectiveAns}
+          setAns={noopSetAns}
+          correctQs={effectiveCorrectQs}
+          wrongQs={wrongQs}
+          attemptCount={attemptCount}
+          serverHints={serverHints}
+        />
+      )}
+      {ex.type === 'matrix' && (
+        <MatrixExercise
+          rows={ex.rows!}
+          practiceCount={ex.practiceCount}
+          studentId={ctx.studentId}
+          stepIdx={stepIdx}
+          serverHints={serverHints}
+          ans={effectiveMatrixAns}
+          onAnsChange={reviewMode
+            ? (() => {})
+            : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))}
+          disabled={effectiveAllDone}
+        />
+      )}
       {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={effectiveAns} setAns={noopSetAns} softDone={effectiveSoftDone} />}
       {ex.type === 'order' && <OrderExercise items={ex.items!} ans={effectiveAns} setAns={noopSetAns} done={effectiveAllDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} />}
       {ex.type === 'map' && ex.axes && ex.mapItems && (

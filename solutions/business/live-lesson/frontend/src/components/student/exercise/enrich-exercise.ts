@@ -34,20 +34,41 @@ function enrichFromApi(exercise: TaskExercise, apiSpec: ExerciseSpec): EnrichRes
   if (apiSpec.type === 'quiz' && apiSpec.questions) {
     ex.questions = apiSpec.questions.map((q, i) => {
       const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-      return { ...base, q: q.text, translate: q.translate, opts: q.options } as TaskQuestion
+      return {
+        ...base,
+        q: q.text,
+        translate: q.translate,
+        opts: q.options,
+        ...(q.paraRef && { paraRef: q.paraRef }),
+      } as TaskQuestion
     })
   }
   if (apiSpec.type === 'match' && apiSpec.pairs) {
     ex.pairs = apiSpec.pairs.map((p, i) => {
       const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-      return { ...base, left: p.left, opts: p.options } as TaskMatchPair
+      return {
+        ...base,
+        left: p.left,
+        opts: p.options,
+        ...(p.paraRef && { paraRef: p.paraRef }),
+      } as TaskMatchPair
     })
   }
   if (apiSpec.type === 'matrix' && apiSpec.rows) {
     ex.rows = apiSpec.rows.map((r, i) => {
       const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-      return { ...base, place: r.place, demo: r.isDemo, ...(r.practice && { practice: r.practice }), ...(r.reason && { reason: r.reason }) } as TaskMatrixRow
+      return {
+        ...base,
+        place: r.place,
+        demo: r.isDemo,
+        ...(r.practice && { practice: r.practice }),
+        ...(r.reason && { reason: r.reason }),
+        ...(r.paraRef && { paraRef: r.paraRef }),
+        ...(r.whatPrompt && { whatPrompt: r.whatPrompt }),
+        ...(r.whyPrompt && { whyPrompt: r.whyPrompt }),
+      } as TaskMatrixRow
     })
+    if (apiSpec.practiceCount) ex.practiceCount = apiSpec.practiceCount
   }
   if (apiSpec.type === 'stance') {
     if (apiSpec.stanceQ) ex.stanceQ = apiSpec.stanceQ
@@ -91,13 +112,19 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
         ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
         ...(a.walkthrough ? { walkthrough: a.walkthrough as string } : {}),
         ...(a.walkthroughZh ? { walkthroughZh: a.walkthroughZh as string } : {}),
+        ...(a.paraRef ? { paraRef: a.paraRef as number[] } : {}),
       } as TaskQuestion
     })
     // Sanitized manifest uses ExerciseSpec format (text/translate/options fields)
     if (ak.questions?.length) {
       ex.questions = ak.questions.map((q: Record<string, unknown>, i: number) => {
         const base = ex.questions?.[i] || {} as Partial<TaskQuestion>
-        return { ...base, q: (q.text as string) || base.q, translate: (q.translate as string) || base.translate, opts: (q.options as string[]) || base.opts } as TaskQuestion
+        return {
+          ...base,
+          q: (q.text as string) || base.q,
+          translate: (q.translate as string) || base.translate,
+          opts: (q.options as string[]) || base.opts,
+        } as TaskQuestion
       })
     }
   }
@@ -109,16 +136,25 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
         ...base,
         ...(a.left ? { left: a.left as string } : {}),
         ...(sharedOpts ? { opts: sharedOpts } : {}),
-        ...(a.correct != null ? { correct: typeof a.correct === 'number' ? a.correct : (sharedOpts as string[] | undefined)?.indexOf(a.correct as string) ?? 0 } : {}),
+        ...(a.correct != null
+          ? { correct: typeof a.correct === 'number'
+              ? a.correct
+              : (sharedOpts as string[] | undefined)?.indexOf(a.correct as string) ?? 0 }
+          : {}),
         ...(a.hint ? { hint: a.hint as string } : {}),
         ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
+        ...(a.paraRef ? { paraRef: a.paraRef as number[] } : {}),
       } as TaskMatchPair
     })
     // Sanitized manifest uses ExerciseSpec format
     if (ak.pairs?.length) {
       ex.pairs = ak.pairs.map((p: Record<string, unknown>, i: number) => {
         const base = ex.pairs?.[i] || {} as Partial<TaskMatchPair>
-        return { ...base, left: (p.left as string) || base.left, opts: (p.options as string[]) || base.opts } as TaskMatchPair
+        return {
+          ...base,
+          left: (p.left as string) || base.left,
+          opts: (p.options as string[]) || base.opts,
+        } as TaskMatchPair
       })
     }
   }
@@ -133,14 +169,28 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
         ...(a.reason ? { reason: a.reason as string } : {}),
         ...(a.hint ? { hint: a.hint as string } : {}),
         ...(a.hintZh ? { hintZh: a.hintZh as string } : {}),
+        ...(a.paraRef ? { paraRef: a.paraRef as number[] } : {}),
+        ...(a.whatPrompt ? { whatPrompt: a.whatPrompt as string } : {}),
+        ...(a.whyPrompt ? { whyPrompt: a.whyPrompt as string } : {}),
       } as TaskMatrixRow
     })
+    if (ak.practiceCount) ex.practiceCount = ak.practiceCount
     // Sanitized manifest uses ExerciseSpec format
     if (ak.rows?.length) {
       ex.rows = ak.rows.map((r: Record<string, unknown>, i: number) => {
         const base = ex.rows?.[i] || {} as Partial<TaskMatrixRow>
-        return { ...base, place: (r.place as string) || base.place, demo: (r.isDemo as boolean) ?? base.demo, ...(r.practice ? { practice: r.practice as string } : {}), ...(r.reason ? { reason: r.reason as string } : {}) } as TaskMatrixRow
+        return {
+          ...base,
+          place: (r.place as string) || base.place,
+          demo: (r.isDemo as boolean) ?? base.demo,
+          ...(r.practice ? { practice: r.practice as string } : {}),
+          ...(r.reason ? { reason: r.reason as string } : {}),
+          ...(r.paraRef ? { paraRef: r.paraRef as number[] } : {}),
+          ...(r.whatPrompt ? { whatPrompt: r.whatPrompt as string } : {}),
+          ...(r.whyPrompt ? { whyPrompt: r.whyPrompt as string } : {}),
+        } as TaskMatrixRow
       })
+      if (ak.practiceCount) ex.practiceCount = ak.practiceCount
     }
   }
   if (ak.type === 'stance') {
