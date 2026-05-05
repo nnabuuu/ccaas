@@ -88,8 +88,8 @@ export function useSessionLookup() {
       const normalized = code.length <= 6 ? code.toUpperCase() : code
       const res = await fetch(`${API_BASE}/sessions/${normalized}`)
       if (!res.ok) {
-        const msg404 = code.length > 6 ? '课堂不存在' : '课堂码不存在'
-        setError(res.status === 404 ? msg404 : `查询失败 (${res.status})`)
+        const msg = code.length > 6 ? '课堂不存在' : '课堂码不存在'
+        setError(res.status === 404 || res.status === 400 ? msg : `查询失败 (${res.status})`)
         return null
       }
       const data = await res.json()
