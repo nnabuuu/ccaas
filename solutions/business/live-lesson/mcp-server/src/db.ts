@@ -67,26 +67,12 @@ export function initDb(): Database.Database {
 }
 
 /**
- * Seed lessons from manifest files in data/lessons/ and index.json.
+ * Seed lessons from manifest files in data/lessons/.
  * Uses INSERT OR REPLACE so updated manifests are picked up on restart.
  */
 export function seedFromManifestFiles(db: Database.Database): void {
   const lessonsDir = path.resolve(__dirname, '../../data/lessons');
   if (!fs.existsSync(lessonsDir)) return;
-
-  // Read index.json for description + emoji metadata
-  const indexPath = path.resolve(__dirname, '../../frontend/public/lessons/index.json');
-  let indexMap = new Map<string, { description: string; emoji: string }>();
-  if (fs.existsSync(indexPath)) {
-    try {
-      const indexData = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
-      for (const entry of indexData.lessons ?? []) {
-        indexMap.set(entry.id, { description: entry.description ?? '', emoji: entry.emoji ?? '' });
-      }
-    } catch {
-      // ignore parse errors
-    }
-  }
 
   const upsert = db.prepare(`
     INSERT OR REPLACE INTO lessons (id, title, subject, grade_level, description, emoji, teaching_notes, manifest_json, updated_at)
@@ -102,15 +88,14 @@ export function seedFromManifestFiles(db: Database.Database): void {
     try {
       const raw = fs.readFileSync(manifestPath, 'utf-8');
       const manifest = JSON.parse(raw) as LessonManifest;
-      const meta = indexMap.get(manifest.id) ?? { description: '', emoji: '' };
 
       upsert.run(
         manifest.id,
         manifest.title,
         manifest.subject,
         manifest.gradeLevel,
-        meta.description,
-        meta.emoji,
+        manifest.description ?? '',
+        '📖',
         manifest.teachingNotes ?? null,
         raw,
       );

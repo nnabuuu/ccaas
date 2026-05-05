@@ -101,7 +101,7 @@ const loadLessonTool: Tool = {
 返回 manifest JSON + 初始板书状态。
 
 Example:
-{ "lessonId": "math-linear-eq-intro" }`,
+{ "lessonId": "ideal-beauty-reading" }`,
   inputSchema: {
     type: 'object',
     properties: {

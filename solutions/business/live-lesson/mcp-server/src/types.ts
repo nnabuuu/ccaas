@@ -73,6 +73,7 @@ export interface LessonManifest {
   title: string;
   subject: string;
   gradeLevel: string;
+  description?: string;
   teachingNotes?: string;
   boardNodes: SkeletonNode[];
   teachingPhases: TeachingPhase[];

@@ -14,7 +14,7 @@ AI-driven interactive teaching system with dynamic blackboard and Socratic dialo
 Each lesson run creates a **ClassroomSession** with a 6-char code (e.g. `HX3KM7`). All classroom operations (join, submit, stream, etc.) use the session code instead of lessonId. This enables multiple instances of the same lesson running concurrently.
 
 ## Key Files
-- `data/lessons/math-linear-eq-intro/manifest.json` - Lesson data (13 nodes, 5 phases)
+- `data/lessons/ideal-beauty-reading/manifest.json` - Lesson manifest (reading lesson)
 - `mcp-server/src/db.ts` - SQLite init, seed, CRUD operations
 - `mcp-server/src/state-manager.ts` - Factory-based state machine with DB persistence
 - `mcp-server/src/index.ts` - 8 MCP tools, DB init + session restore on startup
