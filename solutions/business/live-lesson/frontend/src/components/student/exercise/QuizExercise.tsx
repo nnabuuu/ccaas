@@ -1,4 +1,5 @@
 import HelpButton, { HintBanner } from '../HelpButton'
+import { scrollToParas } from '../utils/linkParas'
 import type { TaskQuestion, ServerHintMap } from '../task-data'
 
 interface Props {
@@ -28,6 +29,9 @@ export function QuizExercise({ questions, ans, setAns, correctQs, wrongQs, attem
             <span style={{ flex: 1 }}>{q.q}</span>
             {locked && <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 600 }}>✓</span>}
             {tries > 0 && !locked && <span style={{ fontSize: 9, color: 'var(--t3)' }}>{tries === 1 ? '1 attempt' : `${tries} attempts`}</span>}
+            {q.paraRef && !locked && (
+              <button className="stu-locate-btn" onClick={e => { e.stopPropagation(); scrollToParas(q.paraRef!.map(n => `p${n}`)) }} title="查看原文">📖</button>
+            )}
             <HelpButton hint={hint} hintZh={hintZh} translate={q.translate} />
           </div>
           {q.opts.map((o, oi) => {

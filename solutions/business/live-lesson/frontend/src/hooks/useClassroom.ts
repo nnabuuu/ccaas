@@ -301,9 +301,10 @@ export function useStudentStream(sessionCode: string) {
 export interface ExerciseSpec {
   type: 'quiz' | 'match' | 'matrix' | 'stance' | 'order' | 'select-evidence' | 'map'
   label: string
-  questions?: Array<{ idx: number; text: string; translate?: string; options: string[] }>
-  pairs?: Array<{ idx: number; left: string; options: string[] }>
-  rows?: Array<{ idx: number; place: string; isDemo: boolean; practice?: string; reason?: string }>
+  questions?: Array<{ idx: number; text: string; translate?: string; options: string[]; paraRef?: number[] }>
+  pairs?: Array<{ idx: number; left: string; options: string[]; paraRef?: number[] }>
+  rows?: Array<{ idx: number; place: string; isDemo: boolean; practice?: string; reason?: string; paraRef?: number[]; whatPrompt?: string; whyPrompt?: string }>
+  practiceCount?: number
   stanceQ?: string; stanceQZh?: string; stanceOpts?: string[]; evidence?: string[]
   items?: string[]
   functionOptions?: string[]

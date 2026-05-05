@@ -4,11 +4,13 @@ export interface TaskQuestion {
   q: string; opts: string[]; correct?: number
   hint?: string; hintZh?: string; translate?: string
   walkthrough?: string; walkthroughZh?: string
+  paraRef?: number[]
 }
 export interface TaskMatchPair {
   left: string; opts: string[]; correct?: number
   hint?: string; hintZh?: string
   walkthrough?: string; walkthroughZh?: string
+  paraRef?: number[]
 }
 
 export type ServerHintMap = Record<number, {
@@ -18,6 +20,8 @@ export type ServerHintMap = Record<number, {
 export interface TaskMatrixRow {
   place: string; demo?: boolean; practice?: string; reason?: string
   hint?: string; hintZh?: string
+  paraRef?: number[]
+  whatPrompt?: string; whyPrompt?: string
 }
 export interface MapAxis { neg: string; pos: string; label: string }
 export interface MapItem { id: string; label: string; hint?: string; refs?: number[] }
@@ -33,6 +37,8 @@ export interface TaskExercise {
   functionOptions?: string[]
   sections?: Array<{ id: string; label: string; range: number[]; correctFunction: string; minHits?: number; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
   paragraphTokens?: Record<string, Array<{ t: string; kind?: 'evidence' | 'pick' | 'distractor'; why?: string }>>
+  // matrix fields
+  practiceCount?: number
   // map fields
   prompt?: string
   axes?: { x: MapAxis; y: MapAxis }

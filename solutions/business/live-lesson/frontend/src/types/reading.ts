@@ -382,6 +382,7 @@ export interface ReadingManifest {
   readingSteps: ReadingStep[]
   boardData?: BoardData
   cumulativeMinutes: number[]
+  observations?: Record<string, any>
   observationIndicators?: ObservationIndicator[]
   phaseConfig?: PhaseConfig[]
 }

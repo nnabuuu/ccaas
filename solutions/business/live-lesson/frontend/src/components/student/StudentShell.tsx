@@ -50,7 +50,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   // Clear paraRefIds after 3s highlight
   useEffect(() => {
     if (!paraRefIds.length) return
-    const t = setTimeout(() => setParaRefIds([]), 3000)
+    const t = setTimeout(() => setParaRefIds([]), 5000)
     return () => clearTimeout(t)
   }, [paraRefIds])
 

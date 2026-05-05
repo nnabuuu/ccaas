@@ -1,4 +1,5 @@
 import HelpButton, { HintBanner } from '../HelpButton'
+import { scrollToParas } from '../utils/linkParas'
 import type { TaskMatchPair, ServerHintMap } from '../task-data'
 
 interface Props {
@@ -42,6 +43,9 @@ export function MatchExercise({ pairs, ans, setAns, correctQs, wrongQs, attemptC
                   >{o}</button>
                 )
               })}
+              {p.paraRef && !locked && (
+                <button className="stu-locate-btn" onClick={e => { e.stopPropagation(); scrollToParas(p.paraRef!.map(n => `p${n}`)) }} title="查看原文">📖</button>
+              )}
               {!locked && <HelpButton hint={hint} hintZh={hintZh} />}
               {tries > 0 && !locked && <span style={{ fontSize: 9, color: 'var(--t3)' }}>{tries === 1 ? '1 attempt' : `${tries} attempts`}</span>}
             </div>
