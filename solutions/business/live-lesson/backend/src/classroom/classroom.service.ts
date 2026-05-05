@@ -16,6 +16,7 @@ import { ObservationService } from './observation/observation.service';
 import { MetricsAggregator } from './metrics-aggregator';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from './task-map.utils';
+import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
@@ -29,6 +30,7 @@ export class ClassroomService {
   private activeNotificationsMap = new Map<string, Map<string, { id: string; message: string; notifyType: string; timestamp: string }>>();
   private lastSnapshotAt = new Map<string, number>();
   private readonly SNAPSHOT_THROTTLE_MS = 10_000;
+  private observeRegistryCache = new Map<string, Record<string, ObservationDef>>();
 
   constructor(
     private readonly configService: ConfigService,
@@ -169,6 +171,7 @@ export class ClassroomService {
     );
 
     this.engine.clearSessionMeta(session.id);
+    this.observeRegistryCache.delete(session.lessonId);
 
     this.logger.log(`Session ended: ${code}`);
     return { ok: true, status: 'ended' };
@@ -228,7 +231,15 @@ export class ClassroomService {
     });
 
     const studentDurations = this.metricsAggregator.computeStudentDurations(students, subsByStudent, taskMap);
-    const stepMetrics = this.metricsAggregator.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap);
+    const registry = (session?.lessonId && this.observeRegistryCache.get(session.lessonId)) || buildRegistry(manifest);
+    const readingSteps: Array<Record<string, unknown>> = manifest?.readingSteps || [];
+    const resolvedObserves: Record<number, ResolvedObserve> = {};
+    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
+      const stepIdx = taskMap.taskToStep[taskNum];
+      const stepDef = readingSteps.find((s) => s.idx === stepIdx);
+      resolvedObserves[taskNum] = resolveObserve(stepDef, registry);
+    }
+    const stepMetrics = this.metricsAggregator.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap, resolvedObserves);
     const medianTimes = this.metricsAggregator.extractMedianTimes(stepMetrics);
 
     const studentStatuses = new Map<string, string>();
@@ -355,6 +366,48 @@ export class ClassroomService {
       });
     }
     return grouped;
+  }
+
+  // ── Surfaces (on-demand observe data) ──
+
+  async getSurfaces(sessionId: string, taskNum: number) {
+    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
+    if (!session) throw new NotFoundException('Session not found');
+
+    let manifest: Record<string, unknown> | null = null;
+    if (session.lessonId) {
+      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+      if (lesson) {
+        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+      }
+    }
+    const taskMap = buildTaskMap(manifest);
+    const stepIdx = taskMap.taskToStep[taskNum];
+    if (stepIdx == null) return {};
+
+    const surfaceRegistry = (session.lessonId && this.observeRegistryCache.get(session.lessonId)) || buildRegistry(manifest);
+    const readingSteps = (manifest?.readingSteps || []) as Array<Record<string, unknown>>;
+    const stepDef = readingSteps.find((s) => s.idx === stepIdx);
+    const resolved = resolveObserve(stepDef, surfaceRegistry);
+    if (resolved.surfaces.length === 0) return {};
+
+    const students = await this.studentRepo.find({ where: { sessionId } });
+    const submissions = await this.submissionRepo.find({ where: { sessionId } });
+    const subsByStudent = new Map<string, Record<number, { step: number; data: unknown; score: unknown; submittedAt: string }>>();
+    for (const sub of submissions) {
+      if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});
+      subsByStudent.get(sub.studentId)![sub.step] = {
+        step: sub.step,
+        data: sub.dataJson,
+        score: sub.scoreJson ?? null,
+        submittedAt: sub.submittedAt instanceof Date ? sub.submittedAt.toISOString() : String(sub.submittedAt),
+      };
+    }
+
+    return this.metricsAggregator.buildSurfaces(
+      taskNum, subsByStudent, stepIdx, resolved.surfaces,
+      students.map(s => ({ id: s.id, name: s.name })),
+    );
   }
 
   // ── SSE ──
@@ -519,25 +572,35 @@ export class ClassroomService {
     const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
     if (!lesson) return;
     try {
-      const manifest = JSON.parse(lesson.manifestJson);
-      let indicators = manifest.observationIndicators || [];
+      let manifest = JSON.parse(lesson.manifestJson);
 
-      if (indicators.length === 0) {
+      // Fallback: try disk manifest if DB manifest has no observation data
+      const hasObsData = manifest.observations || manifest.observationIndicators || manifest.observeDefinitions;
+      if (!hasObsData) {
         try {
           const diskPath = path.resolve(process.cwd(), '../data/lessons', lessonId, 'manifest.json');
           if (fs.existsSync(diskPath)) {
             const diskManifest = JSON.parse(fs.readFileSync(diskPath, 'utf-8'));
-            indicators = diskManifest.observationIndicators || [];
+            const diskHasObs = diskManifest.observations || diskManifest.observationIndicators || diskManifest.observeDefinitions;
+            if (diskHasObs) manifest = diskManifest;
           }
-        } catch { /* disk read failed, continue without indicators */ }
+        } catch { /* disk read failed, continue */ }
       }
+
+      const indicators = resolveGlobalObservations(manifest)
+        .filter((d): d is typeof d & { id: string; label: string; type: 'knowledge' | 'misconception'; description: string } =>
+          !!d.id && !!d.label && !!d.type && !!d.description,
+        );
 
       if (indicators.length > 0) {
         this.observationService.initSession(sessionId, indicators);
       }
 
+      this.observeRegistryCache.set(lessonId, buildRegistry(manifest));
       this.engine.setSessionMeta(sessionId, { indicators, lessonId });
-    } catch { /* noop */ }
+    } catch (e) {
+      this.logger.warn(`Observation init parse/setup failed for ${lessonId}: ${e}`);
+    }
   }
 
   private generateCode(): string {

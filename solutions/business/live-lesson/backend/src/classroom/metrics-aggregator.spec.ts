@@ -1,7 +1,8 @@
 import { MetricsAggregator } from './metrics-aggregator';
 import { Student } from '../entities/student.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
-import type { TaskMap } from '../schemas';
+import type { TaskMap, ResolvedObserve } from '../schemas';
+import { resolveObserve } from '../schemas';
 
 function makeStudent(overrides: Partial<Student> = {}): Student {
   return {
@@ -320,6 +321,221 @@ describe('MetricsAggregator', () => {
       const result = agg.buildStepMetrics(3, students, subs, [], new Map(), manifest, taskMap);
       expect(result[1].issues.length).toBeGreaterThanOrEqual(1);
       expect(result[1].issues[0]).toContain('2 人');
+    });
+  });
+
+  describe('map type with resolvedObserves', () => {
+    it('uses resolved dimension names for map answerKey', () => {
+      const taskMap = makeTaskMap(1);
+      const answerKey = {
+        type: 'map',
+        items: [
+          { id: 'kohl', label: 'Kohl' },
+          { id: 'henna', label: 'Henna' },
+        ],
+      };
+      const manifest = {
+        readingSteps: [{ idx: 1, label: 'Map It', answerKey }],
+      };
+
+      const resolved = resolveObserve({ answerKey });
+      const resolvedObserves: Record<number, ResolvedObserve> = { 1: resolved };
+
+      const students = [
+        makeStudent({ id: 's1', currentTask: 2 }),
+        makeStudent({ id: 's2', currentTask: 2 }),
+      ];
+      const subs = makeSubsByStudent([
+        {
+          studentId: 's1', step: 1,
+          score: { total: 80, byDimension: { kohl_placed: true, kohl_reasoned: true, kohl_positionScore: 70, henna_placed: false, henna_reasoned: false, henna_positionScore: 0 } },
+        },
+        {
+          studentId: 's2', step: 1,
+          score: { total: 60, byDimension: { kohl_placed: true, kohl_reasoned: false, kohl_positionScore: 50, henna_placed: true, henna_reasoned: true, henna_positionScore: 40 } },
+        },
+      ]);
+
+      const result = agg.buildStepMetrics(2, students, subs, [], new Map(), manifest, taskMap, resolvedObserves);
+
+      // Dimension names should be human-readable
+      expect(result[1].byDimension['Kohl \u2014 Placed']).toBeDefined();
+      expect(result[1].byDimension['Henna \u2014 Reasoning']).toBeDefined();
+      expect(result[1].byDimension['kohl_placed']).toBeUndefined();
+
+      // dimensionLabels should be present
+      expect(result[1].dimensionLabels['kohl_placed']).toBe('Kohl \u2014 Placed');
+      expect(result[1].dimensionLabels['henna_positionScore']).toBe('Henna \u2014 Position');
+    });
+
+    it('detects issues using observe rules for map type', () => {
+      const taskMap = makeTaskMap(1);
+      const answerKey = {
+        type: 'map',
+        items: [{ id: 'art', label: 'Art' }],
+      };
+      const manifest = {
+        readingSteps: [{ idx: 1, label: 'Map', answerKey }],
+      };
+
+      const resolved = resolveObserve({ answerKey });
+      const resolvedObserves: Record<number, ResolvedObserve> = { 1: resolved };
+
+      const students = [
+        makeStudent({ id: 's1', currentTask: 2 }),
+        makeStudent({ id: 's2', currentTask: 2 }),
+        makeStudent({ id: 's3', currentTask: 2 }),
+      ];
+      // 2/3 students have art_placed = false → 67% wrong → should trigger *_placed rule (threshold 30)
+      const subs = makeSubsByStudent([
+        { studentId: 's1', step: 1, score: { total: 0, byDimension: { art_placed: false, art_reasoned: false, art_positionScore: 0 } } },
+        { studentId: 's2', step: 1, score: { total: 0, byDimension: { art_placed: false, art_reasoned: true, art_positionScore: 50 } } },
+        { studentId: 's3', step: 1, score: { total: 100, byDimension: { art_placed: true, art_reasoned: true, art_positionScore: 80 } } },
+      ]);
+
+      const result = agg.buildStepMetrics(3, students, subs, [], new Map(), manifest, taskMap, resolvedObserves);
+      expect(result[1].issues.some((i: string) => i.includes('未放置'))).toBe(true);
+    });
+  });
+
+  describe('select-evidence type with resolvedObserves', () => {
+    it('uses resolved dimension names for select-evidence', () => {
+      const taskMap = makeTaskMap(1);
+      const answerKey = {
+        type: 'select-evidence',
+        sections: [
+          { id: 'intro', label: 'Introduction' },
+          { id: 'body', label: 'Body' },
+        ],
+      };
+      const manifest = {
+        readingSteps: [{ idx: 1, label: 'Evidence', answerKey }],
+      };
+
+      const resolved = resolveObserve({ answerKey });
+      const resolvedObserves: Record<number, ResolvedObserve> = { 1: resolved };
+
+      const students = [
+        makeStudent({ id: 's1', currentTask: 2 }),
+      ];
+      const subs = makeSubsByStudent([
+        {
+          studentId: 's1', step: 1,
+          score: { total: 50, byDimension: { intro_func: true, body_func: false } },
+        },
+      ]);
+
+      const result = agg.buildStepMetrics(1, students, subs, [], new Map(), manifest, taskMap, resolvedObserves);
+      expect(result[1].byDimension['Introduction Function']).toBeDefined();
+      expect(result[1].byDimension['Body Function']).toBeDefined();
+      expect(result[1].dimensionLabels['intro_func']).toBe('Introduction Function');
+    });
+  });
+
+  describe('buildSurfaces', () => {
+    it('extracts reasoning surface data from submissions', () => {
+      const taskMap = makeTaskMap(1);
+      const subs = makeSubsByStudent([
+        {
+          studentId: 's1', step: 1,
+          data: { reasons: { kohl: 'Because it is traditional', henna: 'Cultural significance' } },
+          score: { total: 80 },
+        },
+        {
+          studentId: 's2', step: 1,
+          data: { reasons: { kohl: 'Used for beauty' } },
+          score: { total: 60 },
+        },
+      ]);
+
+      const surfaces = [
+        { type: 'reasoning' as const, source: 'data.reasons', label: 'Student Reasoning' },
+      ];
+
+      const result = agg.buildSurfaces(1, subs, 1, surfaces, [
+        { id: 's1', name: 'Alice' },
+        { id: 's2', name: 'Bob' },
+      ]);
+
+      expect(result.reasoning).toBeDefined();
+      expect(result.reasoning.length).toBe(3); // 2 from Alice + 1 from Bob
+      expect(result.reasoning[0]).toMatchObject({ studentName: 'Alice', itemId: 'kohl' });
+    });
+
+    it('extracts positions surface data', () => {
+      const subs = makeSubsByStudent([
+        {
+          studentId: 's1', step: 1,
+          data: { placements: { kohl: [0.5, 0.3], henna: [-0.2, 0.8] } },
+          score: { total: 80 },
+        },
+      ]);
+
+      const surfaces = [
+        { type: 'positions' as const, source: 'data.placements', label: 'Positions' },
+      ];
+
+      const result = agg.buildSurfaces(1, subs, 1, surfaces, [
+        { id: 's1', name: 'Alice' },
+      ]);
+
+      expect(result.positions).toBeDefined();
+      expect(result.positions).toHaveLength(2);
+      expect(result.positions[0]).toMatchObject({ itemId: 'kohl', x: 0.5, y: 0.3 });
+    });
+
+    it('extracts llmFeedback surface data', () => {
+      const subs = makeSubsByStudent([
+        {
+          studentId: 's1', step: 1,
+          data: {},
+          score: { total: 80, llmFeedback: 'Good understanding of the topic.' },
+        },
+      ]);
+
+      const surfaces = [
+        { type: 'llmFeedback' as const, source: 'score.llmFeedback', label: 'AI Feedback' },
+      ];
+
+      const result = agg.buildSurfaces(1, subs, 1, surfaces, [
+        { id: 's1', name: 'Alice' },
+      ]);
+
+      expect(result.llmFeedback).toBeDefined();
+      expect(result.llmFeedback[0]).toMatchObject({ studentName: 'Alice', feedback: 'Good understanding of the topic.' });
+    });
+
+    it('returns empty for students without submissions', () => {
+      const subs = new Map<string, Record<number, any>>();
+      const surfaces = [
+        { type: 'reasoning' as const, source: 'data.reasons', label: 'Reasoning' },
+      ];
+
+      const result = agg.buildSurfaces(1, subs, 1, surfaces, []);
+      expect(result.reasoning).toEqual([]);
+    });
+  });
+
+  describe('dimensionLabels output', () => {
+    it('includes dimensionLabels in stepMetrics without resolvedObserves', () => {
+      const taskMap = makeTaskMap(1);
+      const manifest = {
+        readingSteps: [{
+          idx: 1, label: 'Quiz',
+          answerKey: {
+            type: 'quiz',
+            answers: [{ questionIdx: 0, correct: 1, label: 'Main Idea' }],
+          },
+        }],
+      };
+      const students = [makeStudent({ id: 's1', currentTask: 2 })];
+      const subs = makeSubsByStudent([
+        { studentId: 's1', step: 1, score: { total: 100, byDimension: { q0: true } } },
+      ]);
+
+      const result = agg.buildStepMetrics(1, students, subs, [], new Map(), manifest, taskMap);
+      expect(result[1].dimensionLabels).toBeDefined();
+      expect(result[1].dimensionLabels['q0']).toBe('Main Idea');
     });
   });
 });

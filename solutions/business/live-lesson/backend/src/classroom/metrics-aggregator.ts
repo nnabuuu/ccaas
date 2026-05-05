@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Student } from '../entities/student.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
-import type { TaskMap } from '../schemas';
+import type { TaskMap, ResolvedObserve, ObserveSurface } from '../schemas';
 
 export type { TaskMap };
 
@@ -21,6 +21,7 @@ export class MetricsAggregator {
     studentDurations: Map<string, Record<number, number>>,
     manifest: any,
     taskMap: TaskMap,
+    resolvedObserves?: Record<number, ResolvedObserve>,
   ): Record<number, Record<string, any>> {
     const stepMetrics: Record<number, Record<string, any>> = {};
     const readingSteps: any[] = manifest?.readingSteps || [];
@@ -83,7 +84,8 @@ export class MetricsAggregator {
 
       // G1: byDimension with human-readable keys
       const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
-      const nameMap = this.getDimensionNameMap(stepDef?.answerKey);
+      const nameMap = resolvedObserves?.[taskNum]?.dimensionNameMap
+        || this.getDimensionNameMap(stepDef?.answerKey);
       const byDimension: Record<string, { good: number; partial: number; wrong: number }> = {};
       for (const [dim, agg] of Object.entries(dimensionAgg)) {
         if (agg.total > 0) {
@@ -130,8 +132,11 @@ export class MetricsAggregator {
       const aiRounds = stepQuestions.length;
       const aiPeople = new Set(stepQuestions.map(q => q.studentId)).size;
 
-      // G7: issues -- detect common wrong answers
-      const issues = this.detectIssues(stepIdx, subsByStudent, stepDef?.answerKey);
+      // G7: issues -- detect common wrong answers (rules-driven or legacy fallback)
+      const observeRules = resolvedObserves?.[taskNum]?.issueRules;
+      const issues = observeRules?.length
+        ? this.detectIssuesByRules(observeRules, dimensionAgg, nameMap)
+        : this.detectIssues(stepIdx, subsByStudent, stepDef?.answerKey);
 
       // G5: questionAggregates with isHigh >= 4
       const questionAggregates: Record<string, { count: number; isHigh: boolean }> = {};
@@ -160,6 +165,7 @@ export class MetricsAggregator {
         issues,
         questionAggregates,
         attemptMetrics,
+        dimensionLabels: nameMap,
       };
     }
 
@@ -363,6 +369,163 @@ export class MetricsAggregator {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  /** Rule-driven issue detection using resolved observe issueRules */
+  private detectIssuesByRules(
+    rules: ResolvedObserve['issueRules'],
+    dimensionAgg: Record<string, { good: number; partial: number; wrong: number; total: number }>,
+    nameMap: Record<string, string>,
+  ): string[] {
+    const results: string[] = [];
+
+    for (const rule of rules) {
+      const isWildcard = rule.dimension.includes('*');
+      const matchingDims = isWildcard
+        ? Object.keys(dimensionAgg).filter(k => this.matchWildcard(rule.dimension, k))
+        : dimensionAgg[rule.dimension] ? [rule.dimension] : [];
+
+      for (const dim of matchingDims) {
+        const agg = dimensionAgg[dim];
+        if (!agg || agg.total === 0) continue;
+        const label = nameMap[dim] || dim;
+        let triggered = false;
+        let count = 0;
+
+        switch (rule.condition) {
+          case 'wrong_pct_gte': {
+            const wrongPct = Math.round((agg.wrong / agg.total) * 100);
+            if (wrongPct >= rule.threshold) {
+              triggered = true;
+              count = agg.wrong;
+            }
+            break;
+          }
+          case 'count_lt': {
+            if (agg.total < rule.threshold) {
+              triggered = true;
+              count = agg.total;
+            }
+            break;
+          }
+          case 'score_lt': {
+            const avgScore = agg.total > 0
+              ? Math.round(((agg.good * 100 + agg.partial * 50) / agg.total))
+              : 0;
+            if (avgScore < rule.threshold) {
+              triggered = true;
+              count = agg.wrong + agg.partial;
+            }
+            break;
+          }
+        }
+
+        if (triggered) {
+          results.push(
+            rule.template.replace('{count}', String(count)).replace('{label}', label),
+          );
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /** Match a wildcard pattern like "*_placed" against a key (simple prefix/suffix only) */
+  private matchWildcard(pattern: string, key: string): boolean {
+    if (pattern === '*') return true;
+    if (pattern.startsWith('*') && pattern.endsWith('*')) {
+      return key.includes(pattern.slice(1, -1));
+    }
+    if (pattern.startsWith('*')) {
+      return key.endsWith(pattern.slice(1));
+    }
+    if (pattern.endsWith('*')) {
+      return key.startsWith(pattern.slice(0, -1));
+    }
+    return pattern === key;
+  }
+
+  /** Build surface data from student submissions for a step */
+  buildSurfaces(
+    taskNum: number,
+    subsByStudent: Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>,
+    stepIdx: number,
+    surfaces: ObserveSurface[],
+    students: Array<{ id: string; name: string }>,
+  ): Record<string, any[]> {
+    const result: Record<string, any[]> = {};
+    const studentNameMap = new Map(students.map(s => [s.id, s.name]));
+
+    for (const surface of surfaces) {
+      const items: any[] = [];
+
+      for (const [studentId, subs] of subsByStudent.entries()) {
+        const sub = subs[stepIdx];
+        if (!sub) continue;
+        const studentName = studentNameMap.get(studentId) || studentId;
+
+        const value = this.getNestedValue(sub, surface.source);
+        if (value == null) continue;
+
+        switch (surface.type) {
+          case 'reasoning': {
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              for (const [itemId, text] of Object.entries(value)) {
+                if (text) items.push({ studentId, studentName, itemId, text });
+              }
+            } else if (Array.isArray(value)) {
+              for (const entry of value) {
+                items.push({ studentId, studentName, ...entry });
+              }
+            }
+            break;
+          }
+          case 'llmFeedback': {
+            items.push({ studentId, studentName, feedback: value });
+            break;
+          }
+          case 'llmItems': {
+            if (Array.isArray(value)) {
+              items.push({ studentId, studentName, items: value });
+            }
+            break;
+          }
+          case 'positions': {
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              for (const [itemId, coords] of Object.entries(value)) {
+                if (Array.isArray(coords) && coords.length >= 2) {
+                  items.push({ studentId, studentName, itemId, x: coords[0], y: coords[1] });
+                } else if (typeof coords === 'object' && coords) {
+                  items.push({ studentId, studentName, itemId, ...(coords as object) });
+                }
+              }
+            }
+            break;
+          }
+          case 'raw': {
+            items.push({ studentId, studentName, value });
+            break;
+          }
+        }
+      }
+
+      if (!result[surface.type]) result[surface.type] = [];
+      result[surface.type].push(...items);
+    }
+
+    return result;
+  }
+
+  /** Resolve dot-separated path like "data.reasons" or "score.llmFeedback" */
+  private getNestedValue(obj: any, path: string): any {
+    let current = obj;
+    for (const key of path.split('.')) {
+      if (current == null || typeof current !== 'object') return undefined;
+      if (!Object.prototype.hasOwnProperty.call(current, key)) return undefined;
+      current = current[key];
+    }
+    return current;
   }
 
   /** G1: Map code dimension keys to human-readable names based on answerKey structure */
