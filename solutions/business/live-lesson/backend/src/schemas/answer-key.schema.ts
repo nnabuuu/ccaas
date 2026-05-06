@@ -168,6 +168,7 @@ const MapAnswerKeySchema = z.object({
   items: z.array(MapItemSchema).min(1),
   expected: z.record(z.string(), z.tuple([z.number().min(-1).max(1), z.number().min(-1).max(1)])).optional(),
   minReasonLength: z.number().int().min(1).optional(),
+  practiceCount: z.number().int().min(1).optional(),
 });
 
 // ── Discriminated Union ──

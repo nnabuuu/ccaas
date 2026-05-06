@@ -12,7 +12,9 @@ export class MapGrader implements Grader {
     const placements = (data.placements || {}) as Record<string, { x: number; y: number }>;
     const reasons = (data.reasons || {}) as Record<string, string>;
     const minLen = key.minReasonLength ?? 8;
-    const itemIds = key.items.map(i => i.id);
+    const allItemIds = key.items.map(i => i.id);
+    // When practiceCount is set, only grade the first N items
+    const itemIds = key.practiceCount ? allItemIds.slice(0, key.practiceCount) : allItemIds;
     const totalItems = itemIds.length;
 
     // Per-item dimensions

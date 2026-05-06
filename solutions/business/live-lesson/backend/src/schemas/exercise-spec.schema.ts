@@ -69,6 +69,8 @@ export const ExerciseSpecSchema = z.object({
     refs: z.array(z.number()).optional(),
   })).optional(),
   minReasonLength: z.number().optional(),
+  // map practiceCount + givenPlacements
+  givenPlacements: z.record(z.string(), z.object({ x: z.number(), y: z.number() })).optional(),
 });
 
 export type ExerciseSpec = z.infer<typeof ExerciseSpecSchema>;

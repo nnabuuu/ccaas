@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -13,6 +13,9 @@ interface Props {
   setAns: (fn: (a: Record<string, any>) => Record<string, any>) => void
   allDone: boolean
   feedback?: string | null
+  onActiveChange?: (paraRefs: number[]) => void
+  givenPlacements?: Record<string, { x: number; y: number }>
+  practiceCount?: number
 }
 
 type Placements = Record<string, { x: number; y: number }>
@@ -24,7 +27,7 @@ function quadrantLabel(val: number, axis: MapAxis): string {
   return 'Neutral'
 }
 
-export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback }: Props) {
+export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount }: Props) {
   const placements: Placements = ans.placements || {}
   const reasons: Reasons = ans.reasons || {}
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -32,9 +35,42 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   const planeRef = useRef<HTMLDivElement>(null)
   const hasDragged = useRef(false)
 
-  const unplaced = mapItems.filter(it => !placements[it.id])
-  const placed = mapItems.filter(it => !!placements[it.id])
+  // Split items into practice (tray) and given (pre-placed)
+  const givenIds = useMemo(
+    () => new Set(givenPlacements ? Object.keys(givenPlacements) : []),
+    [givenPlacements],
+  )
+  const practiceItems = practiceCount
+    ? mapItems.slice(0, practiceCount)
+    : mapItems.filter(it => !givenIds.has(it.id))
+  const givenItems = practiceCount
+    ? mapItems.slice(practiceCount)
+    : mapItems.filter(it => givenIds.has(it.id))
+
+  const unplaced = practiceItems.filter(it => !placements[it.id])
+  const placed = practiceItems.filter(it => !!placements[it.id])
   const reasonedCount = placed.filter(it => (reasons[it.id] || '').trim().length >= minReasonLength).length
+
+  // Fire onActiveChange when activeId or pendingTrayChip changes
+  const [pendingTrayChip, setPendingTrayChip] = useState<string | null>(null)
+
+  const onActiveChangeRef = useRef(onActiveChange)
+  onActiveChangeRef.current = onActiveChange
+
+  useEffect(() => {
+    const cb = onActiveChangeRef.current
+    if (!cb) return
+    const selectedId = pendingTrayChip || activeId
+    if (selectedId) {
+      const item = mapItems.find(it => it.id === selectedId)
+      if (item?.refs?.length) {
+        cb(item.refs)
+        return () => { onActiveChangeRef.current?.([]) }
+      }
+    }
+    cb([])
+    return undefined
+  }, [activeId, pendingTrayChip, mapItems])
 
   const updatePlacements = useCallback((id: string, x: number, y: number) => {
     setAns(a => ({
@@ -78,11 +114,13 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
     const chipEl = (e.target as HTMLElement).closest('[data-chip-id]')
     if (!chipEl) return
     const id = chipEl.getAttribute('data-chip-id')!
+    // Don't allow dragging given items
+    if (givenIds.has(id)) return
     setDragging(id)
     setActiveId(id)
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
     e.preventDefault()
-  }, [allDone])
+  }, [allDone, givenIds])
 
   const handlePlanePointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging) return
@@ -106,8 +144,6 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   }, [dragging, removePlacement])
 
   // Drop from tray: click tray chip → click on plane
-  const [pendingTrayChip, setPendingTrayChip] = useState<string | null>(null)
-
   const handleTrayChipClick = useCallback((id: string) => {
     if (allDone) return
     setPendingTrayChip(id)
@@ -189,7 +225,33 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
         <div style={{ ...axisLabel, left: 4, top: '50%', transform: 'translateY(-50%)' }}>{axes.x.neg}</div>
         <div style={{ ...axisLabel, right: 4, top: '50%', transform: 'translateY(-50%)' }}>{axes.x.pos}</div>
 
-        {/* Placed chips */}
+        {/* Given (pre-placed) chips */}
+        {givenItems.map(it => {
+          const gp = givenPlacements?.[it.id]
+          if (!gp) return null
+          const pctX = ((gp.x + 1) / 2) * 100
+          const pctY = ((1 - (gp.y + 1) / 2)) * 100
+          return (
+            <div
+              key={it.id}
+              style={{
+                ...placedChipStyle,
+                left: `${pctX}%`,
+                top: `${pctY}%`,
+                background: 'var(--surface2, var(--surface))',
+                border: '1.5px dashed var(--border)',
+                opacity: 0.65,
+                pointerEvents: 'none',
+                color: 'var(--t3)',
+              }}
+            >
+              <span style={{ ...chipDotStyle, background: 'var(--border)' }} />
+              <span style={{ fontSize: 11, whiteSpace: 'nowrap' }}>{it.label}</span>
+            </div>
+          )
+        })}
+
+        {/* Placed chips (student) */}
         {placed.map(it => {
           const p = placements[it.id]
           const pctX = ((p.x + 1) / 2) * 100
@@ -224,7 +286,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
       {placed.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-            Reasoning ({reasonedCount}/{mapItems.length})
+            Reasoning ({reasonedCount}/{practiceItems.length})
           </div>
           {placed.map(it => {
             const p = placements[it.id]
@@ -306,14 +368,14 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
       )}
 
       {/* Progress bar */}
-      {mapItems.length > 0 && (
+      {practiceItems.length > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--t3)' }}>
-          <span>{reasonedCount}/{mapItems.length}</span>
+          <span>{reasonedCount}/{practiceItems.length}</span>
           <div style={{ flex: 1, height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
             <div style={{
               height: '100%',
-              width: `${(reasonedCount / mapItems.length) * 100}%`,
-              background: reasonedCount === mapItems.length ? 'var(--green)' : 'var(--purple)',
+              width: `${(reasonedCount / practiceItems.length) * 100}%`,
+              background: reasonedCount === practiceItems.length ? 'var(--green)' : 'var(--purple)',
               borderRadius: 2,
               transition: 'width .2s',
             }} />
@@ -367,7 +429,8 @@ const chipDotStyle: React.CSSProperties = {
 }
 
 const planeStyle: React.CSSProperties = {
-  position: 'relative', aspectRatio: '1/1', maxHeight: 400,
+  position: 'relative', aspectRatio: '1/1',
+  maxHeight: 'min(360px, calc(100vh - 280px))',
   width: '100%', background: 'var(--surface)',
   border: '1px solid var(--border)', borderRadius: 8,
   cursor: 'crosshair', overflow: 'hidden', touchAction: 'none',

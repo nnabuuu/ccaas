@@ -136,6 +136,22 @@ function sanitizeSelectEvidence(ak: AKInput): ExerciseSpec {
 
 function sanitizeMap(ak: AKInput): ExerciseSpec {
   const rawAxes = ak.axes as Record<string, Record<string, string>> | undefined;
+  const items = (ak.items as Array<AKInput>) || [];
+  const practiceCount = ak.practiceCount as number | undefined;
+  const expected = ak.expected as Record<string, [number, number]> | undefined;
+
+  // Build givenPlacements for items beyond practiceCount
+  let givenPlacements: Record<string, { x: number; y: number }> | undefined;
+  if (practiceCount && practiceCount < items.length && expected) {
+    givenPlacements = {};
+    for (let i = practiceCount; i < items.length; i++) {
+      const id = items[i].id as string;
+      if (expected[id]) {
+        givenPlacements[id] = { x: expected[id][0], y: expected[id][1] };
+      }
+    }
+  }
+
   return {
     type: 'map',
     label: '',
@@ -144,13 +160,15 @@ function sanitizeMap(ak: AKInput): ExerciseSpec {
       x: { neg: rawAxes.x.neg, pos: rawAxes.x.pos, label: rawAxes.x.label },
       y: { neg: rawAxes.y.neg, pos: rawAxes.y.pos, label: rawAxes.y.label },
     } : undefined,
-    mapItems: ((ak.items as Array<AKInput>) || []).map(it => ({
+    mapItems: items.map(it => ({
       id: it.id as string,
       label: it.label as string,
       ...(it.hint && { hint: it.hint as string }),
       ...(it.refs && { refs: it.refs as number[] }),
     })),
     minReasonLength: (ak.minReasonLength as number) || 8,
+    ...(practiceCount && { practiceCount }),
+    ...(givenPlacements && Object.keys(givenPlacements).length > 0 && { givenPlacements }),
   };
 }
 

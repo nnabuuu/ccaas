@@ -156,7 +156,9 @@ export class ExerciseService {
 
       case 'map': {
         const mapItems = ak.items as Array<Record<string, unknown>> | undefined;
-        const result: Array<Record<string, unknown>> = (mapItems || []).map((it) => {
+        const practiceCount = ak.practiceCount as number | undefined;
+        const itemsToCheck = practiceCount ? (mapItems || []).slice(0, practiceCount) : (mapItems || []);
+        const result: Array<Record<string, unknown>> = itemsToCheck.map((it) => {
           const id = it.id as string;
           const placed = gradeResult.byDimension?.[`${id}_placed`] === true;
           const reasoned = gradeResult.byDimension?.[`${id}_reasoned`] === true;

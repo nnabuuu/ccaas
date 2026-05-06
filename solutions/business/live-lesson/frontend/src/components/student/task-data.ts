@@ -37,13 +37,14 @@ export interface TaskExercise {
   functionOptions?: string[]
   sections?: Array<{ id: string; label: string; range: number[]; correctFunction: string; minHits?: number; hint?: string; hintZh?: string; aiCorrect?: string; aiPartial?: string }>
   paragraphTokens?: Record<string, Array<{ t: string; kind?: 'evidence' | 'pick' | 'distractor'; why?: string }>>
-  // matrix fields
+  // matrix + map fields
   practiceCount?: number
   // map fields
   prompt?: string
   axes?: { x: MapAxis; y: MapAxis }
   mapItems?: MapItem[]
   minReasonLength?: number
+  givenPlacements?: Record<string, { x: number; y: number }>
 }
 export interface FallbackMC {
   question: string; questionZh?: string

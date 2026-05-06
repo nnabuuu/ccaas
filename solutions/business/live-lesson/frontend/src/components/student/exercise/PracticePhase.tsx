@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import { useState, useEffect, useContext, useRef } from 'react'
 import { linkParas } from '../utils/linkParas'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, TaskExercise, ServerHintMap } from '../task-data'
@@ -58,6 +58,10 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [mapFeedback, setMapFeedback] = useState<string | null>(null)
   const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
 
+  // Per-question timing: track when each question was first viewed
+  const questionTimesRef = useRef<Record<number, number>>({})
+  const [answerChanges, setAnswerChanges] = useState<Array<{ qi: number; from: number | null; to: number; at: number }>>([])
+
   // ── Revisit: cache-first submission restore ──
   const [prevSubmission, setPrevSubmission] = useState<CachedSubmission | null>(() => {
     if (!isRevisit || !ctx.sessionCode || stepIdx === undefined) return null
@@ -98,10 +102,11 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     if (ex.type === 'select-evidence') return false // handled internally
     if (ex.type === 'map') {
       const items = ex.mapItems || []
+      const practice = ex.practiceCount ? items.slice(0, ex.practiceCount) : items
       const pl = ans.placements || {}
       const rs = ans.reasons || {}
       const min = ex.minReasonLength || 8
-      return items.every(it => pl[it.id] && (rs[it.id] || '').trim().length >= min)
+      return practice.every(it => pl[it.id] && (rs[it.id] || '').trim().length >= min)
     }
     return true
   }
@@ -130,6 +135,17 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
     const effectiveAns = ex.type === 'matrix' ? { ...ans, rows: matrixAns } : ans
     const submitData = formatSubmitData(ex.type, effectiveAns, { attemptCounts })
+
+    // Attach per-question timing and answer changes
+    if (ex.type === 'quiz' || ex.type === 'match') {
+      const now = Date.now()
+      const qTimes: Record<number, number> = {}
+      for (const [qiStr, startTs] of Object.entries(questionTimesRef.current)) {
+        qTimes[Number(qiStr)] = Math.round((now - startTs) / 1000)
+      }
+      submitData.questionTimes = qTimes
+      submitData.answerChanges = answerChanges
+    }
 
     // Try server-side check API when available (no local answers needed)
     if (useServerCheck && stepIdx !== undefined) {
@@ -277,7 +293,30 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     )
   }
 
-  const noopSetAns: typeof setAns = reviewMode ? () => {} : setAns
+  // Wrapped setAns that tracks answer changes and question timing
+  const trackedSetAns: typeof setAns = reviewMode ? () => {} : (updater) => {
+    setAns(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      // Track per-question timing + answer changes for quiz/match
+      if (ex.type === 'quiz' || ex.type === 'match') {
+        const now = Date.now()
+        for (const key of Object.keys(next)) {
+          const qi = Number(key)
+          if (isNaN(qi)) continue
+          // Record first-view timestamp
+          if (questionTimesRef.current[qi] == null) {
+            questionTimesRef.current[qi] = now
+          }
+          // Record answer change if value changed
+          if (prev[qi] !== undefined && next[qi] !== undefined && prev[qi] !== next[qi]) {
+            setAnswerChanges(changes => [...changes, { qi, from: prev[qi] as number | null, to: next[qi] as number, at: now }])
+          }
+        }
+      }
+      return next
+    })
+  }
+  const noopSetAns: typeof setAns = reviewMode ? () => {} : trackedSetAns
 
   return (
     <div id="phase-practice">
@@ -332,6 +371,16 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           setAns={noopSetAns}
           allDone={effectiveAllDone}
           feedback={mapFeedback}
+          givenPlacements={ex.givenPlacements}
+          practiceCount={ex.practiceCount}
+          onActiveChange={(refs) => {
+            if (!onOverlayChange) return
+            if (refs.length > 0) {
+              onOverlayChange({ tokens: {}, activeParagraphs: refs, tokenStates: {} })
+            } else {
+              onOverlayChange(null)
+            }
+          }}
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (

@@ -338,6 +338,7 @@ export interface ExerciseSpec {
   axes?: { x: { neg: string; pos: string; label: string }; y: { neg: string; pos: string; label: string } }
   mapItems?: Array<{ id: string; label: string; hint?: string; refs?: number[] }>
   minReasonLength?: number
+  givenPlacements?: Record<string, { x: number; y: number }>
 }
 
 export interface CheckItem {
