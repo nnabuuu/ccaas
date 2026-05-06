@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useSessionLookup, useStudentSession } from '../hooks/useClassroom'
+import { useSessionLookup, useStudentSession, useStudentStream } from '../hooks/useClassroom'
 import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
 import StudentShell from '../components/student/StudentShell'
@@ -57,15 +57,53 @@ export default function SessionPage() {
     }).finally(() => setChecking(false))
   }, [sessionId, navigate, embed, lookup, fetchManifest])
 
+  const lookupStatus = lookup.session?.status as 'waiting' | 'active' | 'ended' | undefined
+  const stream = useStudentStream(sessionCode, lookupStatus)
+
   if (manifest && sessionCode && session.studentId) {
+    if (stream.sessionStatus === 'waiting') {
+      return (
+        <div className="stu-join-overlay">
+          <div className="stu-join-card" style={{ width: 380, textAlign: 'center' }}>
+            <div className="stu-join-title">{manifest.title}</div>
+            <div style={{ fontSize: 14, color: 'var(--t2)', margin: '8px 0 4px' }}>{session.name}</div>
+            <div style={{ fontSize: 13, color: 'var(--t3)', margin: '20px 0 16px' }}>等待老师开始上课</div>
+            <div className="stu-lobby-pulse" />
+            <div className="session-code-sm" style={{ marginTop: 20 }}>{sessionCode}</div>
+          </div>
+        </div>
+      )
+    }
+
+    if (stream.sessionStatus === 'ended') {
+      return (
+        <div className="stu-join-overlay">
+          <div className="stu-join-card" style={{ width: 380, textAlign: 'center' }}>
+            <div className="stu-join-title">课堂已结束</div>
+          </div>
+        </div>
+      )
+    }
+
+    if (stream.sessionStatus === 'active') {
+      return (
+        <StudentShell
+          manifest={manifest}
+          sessionCode={sessionCode}
+          studentId={session.studentId ?? undefined}
+          embed={embed}
+          submit={session.submit}
+        />
+      )
+    }
+
+    // SSE not connected yet
     return (
-      <StudentShell
-        manifest={manifest}
-        sessionCode={sessionCode}
-        studentId={session.studentId ?? undefined}
-        embed={embed}
-        submit={session.submit}
-      />
+      <div className="stu-join-overlay">
+        <div className="stu-join-card" style={{ width: 360, textAlign: 'center' }}>
+          <div className="stu-join-title">连接中...</div>
+        </div>
+      </div>
     )
   }
 

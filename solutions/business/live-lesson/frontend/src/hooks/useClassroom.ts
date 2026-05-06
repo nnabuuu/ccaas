@@ -271,13 +271,20 @@ export interface ClassroomState {
 
 // ── Student SSE stream hook (named events) ──
 
-export function useStudentStream(sessionCode: string) {
+export function useStudentStream(sessionCode: string, initialStatus?: 'waiting' | 'active' | 'ended') {
   const [currentStep, setCurrentStep] = useState<number | null>(null)
   const [notification, setNotification] = useState<{ message: string; notifyType: string } | null>(null)
+  const [sessionStatus, setSessionStatus] = useState<'waiting' | 'active' | 'ended' | null>(initialStatus ?? null)
 
   useEffect(() => {
     if (!sessionCode) return
     const es = new EventSource(`${API_BASE}/${sessionCode}/stream`)
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.sessionStatus) setSessionStatus(data.sessionStatus)
+      } catch { /* noop */ }
+    }
     es.addEventListener('step_sync', (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data)
@@ -293,7 +300,7 @@ export function useStudentStream(sessionCode: string) {
     return () => es.close()
   }, [sessionCode])
 
-  return { currentStep, notification }
+  return { currentStep, notification, sessionStatus }
 }
 
 // ── Exercise API hooks (student) ──

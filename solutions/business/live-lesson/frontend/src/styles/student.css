@@ -217,6 +217,11 @@
 .session-code-sm{font-family:'SF Mono',ui-monospace,monospace;font-size:12px;font-weight:600;letter-spacing:.1em;background:var(--surface2);padding:2px 7px;border-radius:4px;color:var(--t1)}
 .stu-btn.ghost{background:none;color:var(--t3);font-weight:400}.stu-btn.ghost:hover{color:var(--t1);background:var(--surface2)}
 
+/* ── Lobby pulse animation ── */
+.stu-lobby-pulse{width:40px;height:40px;border-radius:50%;background:var(--teal);margin:0 auto;animation:stu-pulse 2s ease-in-out infinite}
+@keyframes stu-pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:1}}
+@media (prefers-reduced-motion:reduce){.stu-lobby-pulse{animation:none;opacity:.8}}
+
 /* Restore session cards */
 .stu-restore-list{margin-bottom:20px;display:flex;flex-direction:column;gap:8px}
 .stu-restore-card{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface2)}
