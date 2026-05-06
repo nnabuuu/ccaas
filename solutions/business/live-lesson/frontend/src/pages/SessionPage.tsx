@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useSessionLookup, useStudentSession, useStudentStream } from '../hooks/useClassroom'
+import { useSessionLookup, useStudentSession, useStudentStream, fetchStudentProgress, type StudentProgress } from '../hooks/useClassroom'
 import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
 import StudentShell from '../components/student/StudentShell'
@@ -17,6 +17,7 @@ export default function SessionPage() {
   const session = useStudentSession(sessionCode)
 
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
+  const [initialProgress, setInitialProgress] = useState<StudentProgress | null>(null)
   const [_checking, setChecking] = useState(true)
   const initialized = useRef(false)
 
@@ -48,9 +49,13 @@ export default function SessionPage() {
         return
       }
 
-      const m = await fetchManifest(s.lessonId)
+      const [m, progress] = await Promise.all([
+        fetchManifest(s.lessonId),
+        fetchStudentProgress(s.code, saved.studentId),
+      ])
       if (m) {
         setManifest(m)
+        setInitialProgress(progress)
       } else {
         navigate('/join', { replace: true })
       }
@@ -93,6 +98,7 @@ export default function SessionPage() {
           studentId={session.studentId ?? undefined}
           embed={embed}
           submit={session.submit}
+          initialProgress={initialProgress}
         />
       )
     }

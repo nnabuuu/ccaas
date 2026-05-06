@@ -1,14 +1,19 @@
-import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Res, Query, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { Response } from 'express';
 import { ClassroomService } from './classroom.service';
 import { StudentSubmissionService } from './student-submission.service';
+import { ObserveService } from './observe.service';
+import { Lesson } from '../entities/lesson.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
 import { validateCode } from './validate-code';
+import { buildTaskMap } from './task-map.utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,6 +31,9 @@ export class ClassroomController {
   constructor(
     private readonly classroomService: ClassroomService,
     private readonly studentSubmission: StudentSubmissionService,
+    private readonly observeService: ObserveService,
+    @InjectRepository(Lesson)
+    private readonly lessonRepo: Repository<Lesson>,
   ) {}
 
   // ── Session lifecycle ──
@@ -93,6 +101,18 @@ export class ClassroomController {
     return this.studentSubmission.getSubmission(session, studentId, parsedStep);
   }
 
+  @Get(':code/students/:studentId/progress')
+  async getStudentProgress(
+    @Param('code') code: string,
+    @Param('studentId') studentId: string,
+  ) {
+    if (!studentId || !UUID_RE.test(studentId)) {
+      throw new BadRequestException('studentId must be a valid UUID');
+    }
+    const session = await this.classroomService.resolveSession(validateCodeOrId(code));
+    return this.studentSubmission.getProgress(session, studentId);
+  }
+
   @Get(':code/chat-history')
   async getChatHistory(
     @Param('code') code: string,
@@ -143,6 +163,64 @@ export class ClassroomController {
   async stream(@Param('code') code: string, @Res() res: Response) {
     const session = await this.classroomService.resolveSession(validateCode(code));
     this.classroomService.subscribe(session.id, res);
+  }
+
+  // ── Observe endpoints ──
+
+  @Get(':code/steps/:step/observe/:type')
+  async getObserve(
+    @Param('code') code: string,
+    @Param('step') step: string,
+    @Param('type') type: string,
+  ) {
+    const parsedStep = parseInt(step, 10);
+    if (isNaN(parsedStep) || parsedStep < 1) {
+      throw new BadRequestException('step must be a positive number');
+    }
+    const validTypes = ['mc', 'evidence', 'map', 'discuss'];
+    if (!validTypes.includes(type)) {
+      throw new BadRequestException(`type must be one of: ${validTypes.join(', ')}`);
+    }
+
+    const session = await this.classroomService.resolveSession(validateCode(code));
+
+    // Load manifest to get answerKey
+    const { manifest, taskMap } = await this.loadManifestForSession(session);
+    const stepIdx = taskMap.taskToStep[parsedStep];
+    if (stepIdx == null) throw new NotFoundException('Step not found');
+
+    type StepDef = { idx: number; answerKey?: Record<string, unknown> | null };
+    const readingSteps: StepDef[] = (manifest?.readingSteps as StepDef[]) || [];
+    const stepDef = readingSteps.find(s => s.idx === stepIdx);
+    const answerKey = stepDef?.answerKey;
+
+    // Load students and submissions
+    const { students, subsByStudent } = await this.observeService.loadObserveData(session.id);
+
+    switch (type) {
+      case 'mc':
+        return this.observeService.computeMcObserve(students, subsByStudent, stepIdx, answerKey);
+      case 'evidence':
+        return this.observeService.computeEvidenceObserve(students, subsByStudent, stepIdx, answerKey);
+      case 'map':
+        return this.observeService.computeMapObserve(students, subsByStudent, stepIdx, answerKey);
+      case 'discuss':
+        return this.observeService.computeDiscussObserve(session.id, students, stepIdx);
+      default:
+        throw new BadRequestException('Unknown observe type');
+    }
+  }
+
+  /** Load manifest helper used by observe endpoint */
+  private async loadManifestForSession(session: { lessonId: string }): Promise<{ manifest: Record<string, unknown>; taskMap: ReturnType<typeof buildTaskMap> }> {
+    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
+    if (!lesson) throw new NotFoundException('Lesson not found');
+    try {
+      const manifest = JSON.parse(lesson.manifestJson);
+      return { manifest, taskMap: buildTaskMap(manifest) };
+    } catch {
+      throw new NotFoundException('Invalid manifest');
+    }
   }
 
   @Post(':code/step')

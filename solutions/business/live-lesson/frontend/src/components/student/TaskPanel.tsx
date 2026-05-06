@@ -233,9 +233,25 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
 }
 
 /* ═══ CUSTOM HOOK — useStudentTask ═══ */
-export function useStudentTask(tasks: Task[]) {
-  const [screen, setScreen] = useState<string>('intro')
-  const [doneSet, setDoneSet] = useState<Set<number>>(new Set())
+export function useStudentTask(
+  tasks: Task[],
+  initialProgress?: { currentTask: number; currentPhase: string } | null,
+) {
+  const [screen, setScreen] = useState<string>(() => {
+    if (!initialProgress || initialProgress.currentTask <= 1) return 'intro'
+    const { currentTask, currentPhase } = initialProgress
+    if (currentTask > tasks.length) return 'personal-touch'
+    if (currentTask === tasks.length && currentPhase === 'completed') return 'personal-touch'
+    return String(currentTask)
+  })
+  const [doneSet, setDoneSet] = useState<Set<number>>(() => {
+    if (!initialProgress || initialProgress.currentTask <= 1) return new Set()
+    const { currentTask, currentPhase } = initialProgress
+    const done = new Set<number>()
+    for (let i = 1; i < currentTask; i++) done.add(i)
+    if (currentPhase === 'completed') done.add(currentTask)
+    return done
+  })
 
   let taskId = 0
   if (screen !== 'intro' && screen !== 'summary' && screen !== 'personal-touch' && screen !== 'bonus-unlock' && screen !== 'bonus') taskId = parseInt(screen)

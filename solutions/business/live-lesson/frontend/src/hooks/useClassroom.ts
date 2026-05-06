@@ -202,6 +202,23 @@ export function useStudentSession(sessionCode: string): StudentSession {
   return { studentId, name, joining, joinError, join, submit, submittedSteps, lessonId }
 }
 
+// ── Student progress restore ──
+
+export interface StudentProgress {
+  currentTask: number
+  currentPhase: string
+}
+
+export async function fetchStudentProgress(
+  sessionCode: string, studentId: string,
+): Promise<StudentProgress | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/progress`)
+    if (!res.ok) return null
+    return await res.json()
+  } catch { return null }
+}
+
 // ── Teacher stream hook ──
 
 export interface ClassroomState {

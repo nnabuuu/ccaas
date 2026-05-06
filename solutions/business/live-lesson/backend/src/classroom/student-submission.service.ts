@@ -155,6 +155,14 @@ export class StudentSubmissionService {
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
 
+  async getProgress(session: ClassroomSession, studentId: string) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) return null;
+    return { currentTask: student.currentTask, currentPhase: student.currentPhase };
+  }
+
   async getSubmission(session: ClassroomSession, studentId: string, step: number) {
     const sub = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId, step },

@@ -14,9 +14,10 @@ interface Props {
   sessionCode?: string
   studentId?: string
   submit?: (step: number, data: Record<string, unknown>) => Promise<boolean>
+  initialProgress?: { currentTask: number; currentPhase: string } | null
 }
 
-export default function StudentShell({ manifest, embed, sessionCode, studentId, submit }: Props) {
+export default function StudentShell({ manifest, embed, sessionCode, studentId, submit, initialProgress }: Props) {
   // Lazy-load KaTeX CSS only for math-enabled lessons
   useEffect(() => {
     if (!manifest.enableMath) return
@@ -27,7 +28,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     () => buildTasksFromManifest(manifest.readingSteps || []),
     [manifest.readingSteps],
   )
-  const { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount } = useStudentTask(tasks)
+  const { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount } = useStudentTask(tasks, initialProgress)
   const [textOverlay, setTextOverlay] = useState<TextOverlay | null>(null)
   const handleOverlayChange = useCallback((ov: TextOverlay | null) => setTextOverlay(ov), [])
   const [exerciseSpecs, setExerciseSpecs] = useState<Record<number, ExerciseSpec>>({})
