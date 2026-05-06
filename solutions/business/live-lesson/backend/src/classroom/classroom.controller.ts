@@ -10,6 +10,7 @@ import { Lesson } from '../entities/lesson.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
 import { SubmitDto } from './dto/submit.dto';
+import { PhaseDto } from './dto/phase.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
 import { validateCode } from './validate-code';
@@ -82,6 +83,14 @@ export class ClassroomController {
     const result = await this.studentSubmission.submit(session, dto.studentId, dto.step, dto.data);
     this.classroomService.broadcast(session.id);
     return result;
+  }
+
+  @Post(':code/phase')
+  async updatePhase(@Param('code') code: string, @Body() dto: PhaseDto) {
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
+    await this.studentSubmission.updatePhase(session, dto.studentId, dto.task, dto.phase);
+    this.classroomService.broadcast(session.id);
+    return { ok: true };
   }
 
   @Get(':code/students/:studentId/submissions/:step')

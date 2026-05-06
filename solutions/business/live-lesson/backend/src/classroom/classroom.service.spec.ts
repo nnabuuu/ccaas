@@ -184,6 +184,7 @@ async function advanceToTask(
   ];
   for (let i = 0; i < targetTask - 1 && i < steps.length; i++) {
     await svc.submit(session, studentId, steps[i].step, steps[i].data);
+    await svc.updatePhase(session, studentId, i + 2, 'listen');
   }
 }
 
@@ -295,7 +296,9 @@ describe('ClassroomService — persistence', () => {
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
 
-      // Verify progress: test-lesson has only 1 task, so completing it → completed
+      // Phase advancement is now done via updatePhase (frontend-driven)
+      // test-lesson has only 1 task, so completing it → completed
+      await submissionSvc.updatePhase(session, studentId, 1, 'completed');
       const student = await studentRepo.findOne({ where: { id: studentId } });
       expect(student!.currentTask).toBe(1);
       expect(student!.currentPhase).toBe('completed');
@@ -496,14 +499,17 @@ describe('ClassroomService — extended coverage', () => {
       idB = (await submissionSvc.join(session, '学生B')).studentId;
       idC = (await submissionSvc.join(session, '学生C')).studentId;
 
-      // A submits step 1 (task 1) → advances to task 2
+      // A submits step 1 (task 1) → frontend reports advance to task 2
       await submissionSvc.submit(session, idA, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session, idA, 2, 'listen');
 
       // B submits step 1 (task 1) → task 2, then step 3 (task 2) → task 3
       await submissionSvc.submit(session, idB, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session, idB, 2, 'listen');
       await submissionSvc.submit(session, idB, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
+      await submissionSvc.updatePhase(session, idB, 3, 'listen');
 
       // C does nothing → stays at task 1
     });
@@ -575,19 +581,24 @@ describe('ClassroomService — extended coverage', () => {
       const joined = await submissionSvc.join(session!, '完成学生');
       const sid = joined.studentId;
 
-      // Submit all 6 tasks in order
-      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
-      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
+      // Submit all 5 tasks in order, with frontend-driven phase advancement
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session!, sid, 2, 'listen');
+      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session!, sid, 3, 'listen');
       await submissionSvc.submit(session!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
-      }); // task 3→4
-      await submissionSvc.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] }); // task 4→5
+      });
+      await submissionSvc.updatePhase(session!, sid, 4, 'listen');
+      await submissionSvc.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(session!, sid, 5, 'listen');
       await submissionSvc.submit(session!, sid, 9, {
         order: ['Introduction', 'Body', 'Conclusion'],
-      }); // task 5 → completed
+      });
+      await submissionSvc.updatePhase(session!, sid, 5, 'completed');
 
       const student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentPhase).toBe('completed');
@@ -622,9 +633,11 @@ describe('ClassroomService — extended coverage', () => {
       const joined = await submissionSvc.join(session!, '超前学生');
       const sid = joined.studentId;
 
-      // Advance to task 3
-      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] }); // task 1→2
-      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] }); // task 2→3
+      // Advance to task 3 via submit + frontend-driven phase advancement
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session!, sid, 2, 'listen');
+      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session!, sid, 3, 'listen');
 
       let student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentTask).toBe(3);
@@ -1228,17 +1241,20 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
       const sid = (await submissionSvc.join(sess!, 'RetryStudent')).studentId;
 
-      // Wrong answer: should NOT advance
+      // Wrong answer: phase not reported, student stays at task 1
       const wrong = await submissionSvc.submit(sess!, sid, 1, { answers: [0, 1] });
       expect(wrong.score.total).toBe(0);
-      expect(wrong.currentTask).toBe(1);
-      expect(wrong.currentPhase).toBe('listen');
+      let student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('listen');
 
-      // Correct answer: should advance
+      // Correct answer: frontend reports phase advancement
       const correct = await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
       expect(correct.score.total).toBe(100);
-      expect(correct.currentTask).toBe(2);
-      expect(correct.currentPhase).toBe('listen');
+      await submissionSvc.updatePhase(sess!, sid, 2, 'listen');
+      student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
+      expect(student!.currentPhase).toBe('listen');
     });
 
     it('should advance when score is null (no answerKey / open-ended)', async () => {
@@ -1248,9 +1264,11 @@ describe('ClassroomService — extended coverage', () => {
 
       const result = await submissionSvc.submit(sess!, sid, 1, { text: 'anything' });
       expect(result.score).toBeNull();
-      // no-key-lesson has only 1 task → completing it marks as completed
-      expect(result.currentTask).toBe(1);
-      expect(result.currentPhase).toBe('completed');
+      // Phase advancement is now done via updatePhase (frontend-driven)
+      await submissionSvc.updatePhase(sess!, sid, 1, 'completed');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('completed');
     });
   });
 
@@ -1321,11 +1339,13 @@ describe('ClassroomService — extended coverage', () => {
       idB = (await submissionSvc.join(session, '仪表盘学生B')).studentId;
       idC = (await submissionSvc.join(session, '仪表盘学生C')).studentId;
 
-      // A: submits task 1 (perfect) and task 2 (all correct)
+      // A: submits task 1 (perfect) → advance, then task 2 (all correct) → advance
       await submissionSvc.submit(session, idA, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session, idA, 2, 'listen');
       await submissionSvc.submit(session, idA, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session, idA, 3, 'listen');
 
-      // B: submits task 1 (all wrong)
+      // B: submits task 1 (all wrong) — no advancement
       await submissionSvc.submit(session, idB, 1, { answers: [0, 1] });
 
       // C: stays at task 1 (no submissions)
@@ -1420,17 +1440,22 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
       const sid = (await submissionSvc.join(sess!, '完成状态学生')).studentId;
 
-      // Complete all 6 tasks
+      // Complete all 5 tasks with frontend-driven phase advancement
       await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(sess!, sid, 2, 'listen');
       await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(sess!, sid, 3, 'listen');
       await submissionSvc.submit(sess!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
+      await submissionSvc.updatePhase(sess!, sid, 4, 'listen');
       await submissionSvc.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(sess!, sid, 5, 'listen');
       await submissionSvc.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.updatePhase(sess!, sid, 5, 'completed');
 
       const state = await service.getState(sess!.id);
       const student = state.students.find(s => s.id === sid);
@@ -2144,9 +2169,10 @@ describe('ClassroomService — extended coverage', () => {
       const sess = await sessionRepo.findOne({ where: { id: created.sessionId } });
       const sid = (await submissionSvc.join(sess!, 'HistoryStudent')).studentId;
 
-      // Submit task 1 perfectly
+      // Submit task 1 perfectly → frontend advances to task 2
       await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
-      // Submit task 2 with one wrong
+      await submissionSvc.updatePhase(sess!, sid, 2, 'listen');
+      // Submit task 2 with one wrong — no advancement
       await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'wrong', 'inferring'] });
 
       const state = await service.getState(sess!.id);
@@ -2190,13 +2216,18 @@ describe('ClassroomService — extended coverage', () => {
       const sid = (await submissionSvc.join(sess!, 'DoneStudent')).studentId;
 
       await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(sess!, sid, 2, 'listen');
       await submissionSvc.submit(sess!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(sess!, sid, 3, 'listen');
       await submissionSvc.submit(sess!, sid, 5, { rows: [
         { place: 'Japan', practice: 'meditation', reason: 'focus' },
         { place: 'India', practice: 'yoga', reason: 'flexibility' },
       ] });
+      await submissionSvc.updatePhase(sess!, sid, 4, 'listen');
       await submissionSvc.submit(sess!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(sess!, sid, 5, 'listen');
       await submissionSvc.submit(sess!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.updatePhase(sess!, sid, 5, 'completed');
 
       const state = await service.getState(sess!.id);
       const student = state.students.find((s: any) => s.id === sid);
@@ -2288,11 +2319,14 @@ describe('ClassroomService — extended coverage', () => {
 
     // ─── Phase 3: Alice retries with correct answer → advances ───
 
-    it('P3: Alice retries correct — response shows advancement to task 2', async () => {
+    it('P3: Alice retries correct — frontend reports advancement to task 2', async () => {
       const res = await submissionSvc.submit(session, alice, 1, { answers: [1, 0] });
       expect(res.score.total).toBe(100);
-      expect(res.currentTask).toBe(2);
-      expect(res.currentPhase).toBe('listen');
+      // Frontend reports phase advancement
+      await submissionSvc.updatePhase(session, alice, 2, 'listen');
+      const student = await studentRepo.findOne({ where: { id: alice } });
+      expect(student!.currentTask).toBe(2);
+      expect(student!.currentPhase).toBe('listen');
     });
 
     it('P3: teacher sees Alice at task 2, submission overwritten to correct', async () => {
@@ -2321,11 +2355,16 @@ describe('ClassroomService — extended coverage', () => {
     it('P4: Bob perfect + Carol wrong — divergent outcomes', async () => {
       const bobRes = await submissionSvc.submit(session, bob, 1, { answers: [1, 0] });
       expect(bobRes.score.total).toBe(100);
-      expect(bobRes.currentTask).toBe(2);
+      // Frontend reports Bob's phase advancement
+      await submissionSvc.updatePhase(session, bob, 2, 'listen');
+      const bobStudent = await studentRepo.findOne({ where: { id: bob } });
+      expect(bobStudent!.currentTask).toBe(2);
 
       const carolRes = await submissionSvc.submit(session, carol, 1, { answers: [1, 1] });
       expect(carolRes.score.total).toBe(50); // Q1 correct, Q2 wrong
-      expect(carolRes.currentTask).toBe(1); // blocked
+      // Carol doesn't advance — no updatePhase call
+      const carolStudent = await studentRepo.findOne({ where: { id: carol } });
+      expect(carolStudent!.currentTask).toBe(1); // blocked
     });
 
     it('P4: teacher dashboard reflects divergent student states', async () => {
@@ -2363,20 +2402,25 @@ describe('ClassroomService — extended coverage', () => {
     // ─── Phase 5: Alice races ahead to task 4, Bob at task 2, Carol fixes task 1 ───
 
     it('P5: Alice advances to task 4, Carol retries task 1 correctly', async () => {
-      // Alice: task 2 perfect, task 3 perfect → reaches task 4
+      // Alice: task 2 perfect → advance, task 3 perfect → advance to task 4
       await submissionSvc.submit(session, alice, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      const aliceRes = await submissionSvc.submit(session, alice, 5, {
+      await submissionSvc.updatePhase(session, alice, 3, 'listen');
+      await submissionSvc.submit(session, alice, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
-      expect(aliceRes.currentTask).toBe(4);
+      await submissionSvc.updatePhase(session, alice, 4, 'listen');
+      const aliceStudent = await studentRepo.findOne({ where: { id: alice } });
+      expect(aliceStudent!.currentTask).toBe(4);
 
-      // Carol: retry task 1 with correct answers
+      // Carol: retry task 1 with correct answers → advance to task 2
       const carolRes = await submissionSvc.submit(session, carol, 1, { answers: [1, 0] });
       expect(carolRes.score.total).toBe(100);
-      expect(carolRes.currentTask).toBe(2);
+      await submissionSvc.updatePhase(session, carol, 2, 'listen');
+      const carolStudent = await studentRepo.findOne({ where: { id: carol } });
+      expect(carolStudent!.currentTask).toBe(2);
     });
 
     it('P5: teacher sees wide spread — healthCards reflect gap', async () => {
@@ -2409,31 +2453,41 @@ describe('ClassroomService — extended coverage', () => {
     // ─── Phase 6: all complete → teacher sees all done ───
 
     it('P6: all students complete all tasks', async () => {
-      // Bob: complete tasks 2-5
+      // Bob: complete tasks 2-5 with frontend-driven phase advancement
       await submissionSvc.submit(session, bob, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session, bob, 3, 'listen');
       await submissionSvc.submit(session, bob, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
+      await submissionSvc.updatePhase(session, bob, 4, 'listen');
       await submissionSvc.submit(session, bob, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(session, bob, 5, 'listen');
       await submissionSvc.submit(session, bob, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.updatePhase(session, bob, 5, 'completed');
 
-      // Carol: complete tasks 2-5
+      // Carol: complete tasks 2-5 with frontend-driven phase advancement
       await submissionSvc.submit(session, carol, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session, carol, 3, 'listen');
       await submissionSvc.submit(session, carol, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
           { place: 'India', practice: 'yoga', reason: 'flexibility' },
         ],
       });
+      await submissionSvc.updatePhase(session, carol, 4, 'listen');
       await submissionSvc.submit(session, carol, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(session, carol, 5, 'listen');
       await submissionSvc.submit(session, carol, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.updatePhase(session, carol, 5, 'completed');
 
-      // Alice: complete tasks 4-5
+      // Alice: complete tasks 4-5 with frontend-driven phase advancement
       await submissionSvc.submit(session, alice, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(session, alice, 5, 'listen');
       await submissionSvc.submit(session, alice, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+      await submissionSvc.updatePhase(session, alice, 5, 'completed');
     });
 
     it('P6: teacher sees all students done with correct metrics', async () => {
@@ -2468,12 +2522,13 @@ describe('ClassroomService — extended coverage', () => {
       // Advance to task 2 first
       await advanceToTask(submissionSvc, sess!, sid, 2);
 
-      // 2/3 correct → ~67 → blocked
+      // 2/3 correct → ~67 → blocked (no updatePhase call)
       const partial = await submissionSvc.submit(sess!, sid, 3, {
         pairs: ['skimming', 'wrong', 'inferring'],
       });
       expect(partial.score.total).toBe(67);
-      expect(partial.currentTask).toBe(2);
+      let student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
 
       // Teacher: student still at task 2 with partial result
       const state1 = await service.getState(sess!.id);
@@ -2482,12 +2537,14 @@ describe('ClassroomService — extended coverage', () => {
       expect(['prog', 'reading']).toContain(s1!.stepHistory[2].status);
       expect(s1!.stepHistory[2].result).toBe('partial');
 
-      // Fix and resubmit
+      // Fix and resubmit → frontend reports advancement
       const correct = await submissionSvc.submit(sess!, sid, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
       expect(correct.score.total).toBe(100);
-      expect(correct.currentTask).toBe(3);
+      await submissionSvc.updatePhase(sess!, sid, 3, 'listen');
+      student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(3);
 
       // Teacher: student advanced
       const state2 = await service.getState(sess!.id);
@@ -2504,14 +2561,15 @@ describe('ClassroomService — extended coverage', () => {
 
       await advanceToTask(submissionSvc, sess!, sid, 3);
 
-      // Only 1 of 2 rows, wrong content → score ≈ 0
+      // Only 1 of 2 rows, wrong content → score ≈ 0 (no advancement)
       const partial = await submissionSvc.submit(sess!, sid, 5, {
         rows: [{ place: 'Narnia', practice: 'magic', reason: 'fun' }],
       });
       expect(partial.score.total).toBeLessThan(100);
-      expect(partial.currentTask).toBe(3);
+      let student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(3);
 
-      // Correct both rows
+      // Correct both rows → frontend reports advancement
       const correct = await submissionSvc.submit(sess!, sid, 5, {
         rows: [
           { place: 'Japan', practice: 'meditation', reason: 'focus' },
@@ -2519,7 +2577,9 @@ describe('ClassroomService — extended coverage', () => {
         ],
       });
       expect(correct.score.total).toBe(100);
-      expect(correct.currentTask).toBe(4);
+      await submissionSvc.updatePhase(sess!, sid, 4, 'listen');
+      student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(4);
 
       // Teacher: task 3 shows done/correct in stepHistory
       const state = await service.getState(sess!.id);
@@ -2540,7 +2600,8 @@ describe('ClassroomService — extended coverage', () => {
         position: 'agree', evidence: ['only_one'],
       });
       expect(partial.score.total).toBe(50);
-      expect(partial.currentTask).toBe(4);
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(4);
 
       // Teacher: student at task 4 with partial result
       const state = await service.getState(sess!.id);
@@ -2556,21 +2617,24 @@ describe('ClassroomService — extended coverage', () => {
 
       await advanceToTask(submissionSvc, sess!, sid, 5);
 
-      // Wrong order
+      // Wrong order — no advancement
       const wrong = await submissionSvc.submit(sess!, sid, 9, {
         order: ['Conclusion', 'Body', 'Introduction'],
       });
       expect(wrong.score.total).toBeLessThan(100);
-      expect(wrong.currentTask).toBe(5);
-      expect(wrong.currentPhase).not.toBe('completed');
+      let student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(5);
+      expect(student!.currentPhase).not.toBe('completed');
 
-      // Correct order → completes (task 5 is the last)
+      // Correct order → frontend reports completion (task 5 is the last)
       const correct = await submissionSvc.submit(sess!, sid, 9, {
         order: ['Introduction', 'Body', 'Conclusion'],
       });
       expect(correct.score.total).toBe(100);
-      expect(correct.currentTask).toBe(5);
-      expect(correct.currentPhase).toBe('completed');
+      await submissionSvc.updatePhase(sess!, sid, 5, 'completed');
+      student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(5);
+      expect(student!.currentPhase).toBe('completed');
 
       // Teacher: student completed, order step done
       const state = await service.getState(sess!.id);
@@ -2588,11 +2652,12 @@ describe('ClassroomService — extended coverage', () => {
       const s2 = (await submissionSvc.join(sess!, 'DimStudent2')).studentId;
       const s3 = (await submissionSvc.join(sess!, 'DimStudent3')).studentId;
 
-      // S1: both correct
+      // S1: both correct → frontend reports advancement
       await submissionSvc.submit(sess!, s1, 1, { answers: [1, 0] });
-      // S2: Q1 wrong, Q2 correct
+      await submissionSvc.updatePhase(sess!, s1, 2, 'listen');
+      // S2: Q1 wrong, Q2 correct — no advancement
       await submissionSvc.submit(sess!, s2, 1, { answers: [0, 0] });
-      // S3: Q1 correct, Q2 wrong
+      // S3: Q1 correct, Q2 wrong — no advancement
       await submissionSvc.submit(sess!, s3, 1, { answers: [1, 1] });
 
       const state = await service.getState(sess!.id);
@@ -2625,11 +2690,12 @@ describe('ClassroomService — extended coverage', () => {
       const slow = (await submissionSvc.join(sess!, 'SlowStudent')).studentId;
       const stuck = (await submissionSvc.join(sess!, 'StuckStudent')).studentId;
 
-      // Fast: completes tasks 1-3
+      // Fast: completes tasks 1-3 (advanceToTask includes updatePhase)
       await advanceToTask(submissionSvc, sess!, fast, 4);
-      // Slow: completes task 1 only
+      // Slow: completes task 1 → frontend reports advancement
       await submissionSvc.submit(sess!, slow, 1, { answers: [1, 0] });
-      // Stuck: fails task 1
+      await submissionSvc.updatePhase(sess!, slow, 2, 'listen');
+      // Stuck: fails task 1 — no advancement
       await submissionSvc.submit(sess!, stuck, 1, { answers: [0, 1] });
 
       const state = await service.getState(sess!.id);
@@ -2667,9 +2733,12 @@ describe('ClassroomService — extended coverage', () => {
 
       const res = await submissionSvc.submit(sess!, sid, 1, { text: 'my reflection' });
       expect(res.score).toBeNull();
+      // Phase advancement is now done via updatePhase (frontend-driven)
       // no-key-lesson has only 1 task → completing it marks as completed
-      expect(res.currentTask).toBe(1);
-      expect(res.currentPhase).toBe('completed');
+      await submissionSvc.updatePhase(sess!, sid, 1, 'completed');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(1);
+      expect(student!.currentPhase).toBe('completed');
 
       // Teacher: student completed, submission recorded
       const state = await service.getState(sess!.id);
@@ -2719,9 +2788,10 @@ describe('ClassroomService — extended coverage', () => {
       const studentInWrongBroadcast = wrongPayload.students.find((s: any) => s.id === sid);
       expect(studentInWrongBroadcast.currentTask).toBe(1);
 
-      // Correct answer — manually broadcast after submit
+      // Correct answer — frontend reports phase advancement, then broadcast
       broadcastReceived = new Promise<void>(r => { resolveWrite = r; });
       await submissionSvc.submit(sess!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(sess!, sid, 2, 'listen');
       await service.broadcast(created.sessionId);
       await broadcastReceived;
       expect(writtenChunks.length).toBeGreaterThan(afterWrong);
@@ -2783,8 +2853,11 @@ describe('ClassroomService — extended coverage', () => {
     it('should advance normally when submitting the current task step', async () => {
       const res = await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
       expect(res.score.total).toBe(100);
-      expect(res.currentTask).toBe(2);
-      expect(res.currentPhase).toBe('listen');
+      // Frontend reports phase advancement
+      await submissionSvc.updatePhase(session, sid, 2, 'listen');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
+      expect(student!.currentPhase).toBe('listen');
     });
   });
 
@@ -2799,8 +2872,9 @@ describe('ClassroomService — extended coverage', () => {
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
       sid = (await submissionSvc.join(session, 'ResubmitStudent')).studentId;
 
-      // Pass task 1 → advance to task 2
+      // Pass task 1 → frontend reports advance to task 2
       await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session, sid, 2, 'listen');
     });
 
     it('student should be at task 2 after passing task 1', async () => {
@@ -2811,9 +2885,10 @@ describe('ClassroomService — extended coverage', () => {
     it('re-submitting step 1 with wrong answer should NOT regress to task 1', async () => {
       const res = await submissionSvc.submit(session, sid, 1, { answers: [0, 1] });
       expect(res.score.total).toBe(0);
-      // Still at task 2
-      expect(res.currentTask).toBe(2);
-      expect(res.currentPhase).toBe('listen');
+      // Still at task 2 — check DB since submit no longer updates progress
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
+      expect(student!.currentPhase).toBe('listen');
     });
 
     it('DB submission should be overwritten with new (lower) score', async () => {
@@ -2848,8 +2923,9 @@ describe('ClassroomService — extended coverage', () => {
       session = await sessionRepo.findOne({ where: { id: created.sessionId } });
       sid = (await submissionSvc.join(session, 'TimingStudent')).studentId;
 
-      // Advance to task 2
+      // Advance to task 2 via submit + frontend-driven phase advancement
       await submissionSvc.submit(session, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session, sid, 2, 'listen');
     });
 
     it('wrong answer on task 2 should NOT change stepStartedAt', async () => {
@@ -2860,10 +2936,11 @@ describe('ClassroomService — extended coverage', () => {
       // Small delay to ensure timestamps would differ
       await new Promise(r => setTimeout(r, 10));
 
+      // Submit doesn't modify student anymore, so stepStartedAt stays unchanged
       await submissionSvc.submit(session, sid, 3, { pairs: ['wrong', 'wrong', 'wrong'] });
 
       const after = await studentRepo.findOne({ where: { id: sid } });
-      expect(after!.currentTask).toBe(2); // not advanced
+      expect(after!.currentTask).toBe(2); // not advanced (no updatePhase called)
       expect(after!.stepStartedAt).toBe(t0); // unchanged
     });
 
@@ -2876,6 +2953,8 @@ describe('ClassroomService — extended coverage', () => {
       await submissionSvc.submit(session, sid, 3, {
         pairs: ['skimming', 'scanning', 'inferring'],
       });
+      // Frontend reports phase advancement → stepStartedAt should update
+      await submissionSvc.updatePhase(session, sid, 3, 'listen');
 
       const after = await studentRepo.findOne({ where: { id: sid } });
       expect(after!.currentTask).toBe(3); // advanced
@@ -3006,23 +3085,24 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const sid = (await submissionSvc.join(session!, '三题学生')).studentId;
 
-    // T1 (idx=0) → currentTask=2
+    // T1 (idx=0) → submit + frontend-driven phase advancement
     const r1 = await submissionSvc.submit(session!, sid, 0, { answers: [0] });
     expect(r1.score.total).toBe(100);
-    expect(r1.currentTask).toBe(2);
-    expect(r1.currentPhase).toBe('listen');
+    await submissionSvc.updatePhase(session!, sid, 2, 'listen');
 
-    // T2 (idx=2) → currentTask=3
+    // T2 (idx=2) → submit + frontend-driven phase advancement
     const r2 = await submissionSvc.submit(session!, sid, 2, { answers: [1] });
     expect(r2.score.total).toBe(100);
-    expect(r2.currentTask).toBe(3);
-    expect(r2.currentPhase).toBe('listen');
+    await submissionSvc.updatePhase(session!, sid, 3, 'listen');
 
     // T3 (idx=4) → completed (maxTask=3, not hardcoded 5)
     const r3 = await submissionSvc.submit(session!, sid, 4, { answers: [2] });
     expect(r3.score.total).toBe(100);
-    expect(r3.currentTask).toBe(3);
-    expect(r3.currentPhase).toBe('completed');
+    await submissionSvc.updatePhase(session!, sid, 3, 'completed');
+
+    const student = await studentRepo.findOne({ where: { id: sid } });
+    expect(student!.currentTask).toBe(3);
+    expect(student!.currentPhase).toBe('completed');
   });
 
   it('should produce stepMetrics with 3 keys', async () => {
@@ -3043,10 +3123,13 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const sid = (await submissionSvc.join(session!, '完成检查学生')).studentId;
 
-    // Complete all 3 tasks
+    // Complete all 3 tasks with frontend-driven phase advancement
     await submissionSvc.submit(session!, sid, 0, { answers: [0] });
+    await submissionSvc.updatePhase(session!, sid, 2, 'listen');
     await submissionSvc.submit(session!, sid, 2, { answers: [1] });
+    await submissionSvc.updatePhase(session!, sid, 3, 'listen');
     await submissionSvc.submit(session!, sid, 4, { answers: [2] });
+    await submissionSvc.updatePhase(session!, sid, 3, 'completed');
 
     const state = await service.getState(session!.id);
     const student = state.students.find((s: any) => s.id === sid);
@@ -3059,10 +3142,13 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const sid = (await submissionSvc.join(session!, '健康卡学生')).studentId;
 
-    // Complete all 3 tasks
+    // Complete all 3 tasks with frontend-driven phase advancement
     await submissionSvc.submit(session!, sid, 0, { answers: [0] });
+    await submissionSvc.updatePhase(session!, sid, 2, 'listen');
     await submissionSvc.submit(session!, sid, 2, { answers: [1] });
+    await submissionSvc.updatePhase(session!, sid, 3, 'listen');
     await submissionSvc.submit(session!, sid, 4, { answers: [2] });
+    await submissionSvc.updatePhase(session!, sid, 3, 'completed');
 
     const state = await service.getState(session!.id);
     // Completed student: effectiveTask = maxTask(3), not hardcoded 5
@@ -3810,5 +3896,273 @@ describe('StudentSubmissionService — getSubmission', () => {
     const result = await submissionSvc.getSubmission(session!, joined.studentId, 1);
     expect(result!.data).toEqual({ answers: [1, 0] });
     expect(result!.score!.total).toBe(100);
+  });
+});
+
+// ── Phase sync integration: student → backend → teacher dashboard ──
+
+describe('Phase sync integration — student ↔ teacher', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let studentRepo: Repository<Student>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    studentRepo = module.get(getRepositoryToken(Student));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'phase-sync-lesson',
+        title: 'Phase Sync Test',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(FULL_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  // ── 1. Phase transitions visible on teacher dashboard ──
+
+  describe('phase transitions reflected in teacher getState()', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await submissionSvc.join(session, '同步学生')).studentId;
+    });
+
+    it('student starts at task 1, listen', async () => {
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentTask).toBe(1);
+      expect(s!.currentPhase).toBe('listen');
+    });
+
+    it('reportPhase(practice) → teacher sees practice', async () => {
+      await submissionSvc.updatePhase(session, sid, 1, 'practice');
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentPhase).toBe('practice');
+      expect(s!.currentTask).toBe(1);
+    });
+
+    it('reportPhase(discuss) → teacher sees discuss', async () => {
+      await submissionSvc.updatePhase(session, sid, 1, 'discuss');
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentPhase).toBe('discuss');
+    });
+
+    it('reportPhase(takeaway) → teacher sees takeaway', async () => {
+      await submissionSvc.updatePhase(session, sid, 1, 'takeaway');
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentPhase).toBe('takeaway');
+    });
+
+    it('reportPhase(task 2, listen) → teacher sees task advance', async () => {
+      await submissionSvc.updatePhase(session, sid, 2, 'listen');
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentTask).toBe(2);
+      expect(s!.currentPhase).toBe('listen');
+    });
+
+    it('reportPhase(completed) → teacher sees done status', async () => {
+      await submissionSvc.updatePhase(session, sid, 5, 'completed');
+      const state = await service.getState(session.id);
+      const s = state.students.find((st: any) => st.id === sid);
+      expect(s!.currentPhase).toBe('completed');
+      expect(s!.status).toBe('done');
+    });
+  });
+
+  // ── 2. Monotonicity guard — out-of-order / backward reports ignored ──
+
+  describe('monotonicity guard', () => {
+    let session: ClassroomSession;
+    let sid: string;
+
+    beforeAll(async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      sid = (await submissionSvc.join(session, '乱序学生')).studentId;
+      // Advance to task 2, discuss
+      await submissionSvc.updatePhase(session, sid, 2, 'discuss');
+    });
+
+    it('backward task report is silently ignored', async () => {
+      await submissionSvc.updatePhase(session, sid, 1, 'takeaway');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(2);
+      expect(student!.currentPhase).toBe('discuss');
+    });
+
+    it('same-task earlier phase is silently ignored', async () => {
+      await submissionSvc.updatePhase(session, sid, 2, 'listen');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentPhase).toBe('discuss');
+    });
+
+    it('duplicate (same task+phase) is silently ignored', async () => {
+      await submissionSvc.updatePhase(session, sid, 2, 'discuss');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentPhase).toBe('discuss');
+    });
+
+    it('forward phase on same task is accepted', async () => {
+      await submissionSvc.updatePhase(session, sid, 2, 'takeaway');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentPhase).toBe('takeaway');
+    });
+
+    it('forward task is accepted', async () => {
+      await submissionSvc.updatePhase(session, sid, 3, 'listen');
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentTask).toBe(3);
+      expect(student!.currentPhase).toBe('listen');
+    });
+  });
+
+  // ── 3. Crash recovery — getProgress auto-corrects stale phase after exercise completion ──
+
+  describe('crash recovery via getProgress', () => {
+    it('should advance student who completed exercise but crashed before phase report', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '崩溃学生')).studentId;
+
+      // Student is at task 1, listen (default). Submit correct answer for task 1.
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+
+      // Student entity still at task 1, listen (no updatePhase was called — browser crashed)
+      const raw = await studentRepo.findOne({ where: { id: sid } });
+      expect(raw!.currentTask).toBe(1);
+      expect(raw!.currentPhase).toBe('listen');
+
+      // getProgress detects the 100% submission and auto-corrects
+      const progress = await submissionSvc.getProgress(session!, sid);
+      expect(progress!.currentTask).toBe(2);
+      expect(progress!.currentPhase).toBe('listen');
+
+      // The correction is persisted to DB
+      const after = await studentRepo.findOne({ where: { id: sid } });
+      expect(after!.currentTask).toBe(2);
+      expect(after!.currentPhase).toBe('listen');
+    });
+
+    it('should mark completed if crashed after submitting last task', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '最后崩溃')).studentId;
+
+      // Advance through all 5 tasks via phase reports
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session!, sid, 2, 'listen');
+      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
+      await submissionSvc.updatePhase(session!, sid, 3, 'listen');
+      await submissionSvc.submit(session!, sid, 5, {
+        rows: [
+          { place: 'Japan', practice: 'meditation', reason: 'focus' },
+          { place: 'India', practice: 'yoga', reason: 'flexibility' },
+        ],
+      });
+      await submissionSvc.updatePhase(session!, sid, 4, 'listen');
+      await submissionSvc.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
+      await submissionSvc.updatePhase(session!, sid, 5, 'listen');
+
+      // Submit last task but crash before reporting 'completed'
+      await submissionSvc.submit(session!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
+
+      // getProgress should auto-correct to completed
+      const progress = await submissionSvc.getProgress(session!, sid);
+      expect(progress!.currentPhase).toBe('completed');
+      expect(progress!.currentTask).toBe(5);
+    });
+
+    it('should not trigger recovery when student is in discuss/takeaway phase', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '讨论中学生')).studentId;
+
+      // Submit exercise, then advance to discuss (past the phaseIdx <= 1 threshold)
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      await submissionSvc.updatePhase(session!, sid, 1, 'discuss');
+
+      // getProgress should NOT trigger crash recovery (phaseIdx=2 > 1)
+      const progress = await submissionSvc.getProgress(session!, sid);
+      expect(progress!.currentTask).toBe(1);
+      expect(progress!.currentPhase).toBe('discuss');
+    });
+
+    it('should not trigger recovery when exercise score < 100', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '错误答案学生')).studentId;
+
+      // Submit wrong answer — score 0, not 100
+      await submissionSvc.submit(session!, sid, 1, { answers: [0, 1] });
+
+      // getProgress should NOT auto-advance (score < 100)
+      const progress = await submissionSvc.getProgress(session!, sid);
+      expect(progress!.currentTask).toBe(1);
+      expect(progress!.currentPhase).toBe('listen');
+    });
+  });
+
+  // ── 4. Multi-student: independent phase tracking ──
+
+  describe('multi-student independent phase tracking', () => {
+    it('two students at different phases show correctly on teacher dashboard', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const idA = (await submissionSvc.join(session!, '快学生')).studentId;
+      const idB = (await submissionSvc.join(session!, '慢学生')).studentId;
+
+      // A races ahead: task 2 practice
+      await submissionSvc.updatePhase(session!, idA, 2, 'practice');
+      // B still on task 1 discuss
+      await submissionSvc.updatePhase(session!, idB, 1, 'discuss');
+
+      const state = await service.getState(session!.id);
+      const sA = state.students.find((s: any) => s.id === idA);
+      const sB = state.students.find((s: any) => s.id === idB);
+
+      expect(sA!.currentTask).toBe(2);
+      expect(sA!.currentPhase).toBe('practice');
+      expect(sB!.currentTask).toBe(1);
+      expect(sB!.currentPhase).toBe('discuss');
+    });
   });
 });

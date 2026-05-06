@@ -6,6 +6,7 @@ import { PracticePhase } from './exercise/PracticePhase'
 import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
 import { renderMd } from './renderMd'
+import { reportPhase } from '../../hooks/useClassroom'
 import type { Task } from './task-data'
 import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
@@ -103,6 +104,7 @@ const PHASE_REGISTRY: Record<string, (props: {
 function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet }: {
   task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>
 }) {
+  const ctx = useContext(SessionCtx)
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
   const phaseIds = useMemo(() => phases.map(p => p.id), [phases])
   const isRevisit = doneSet?.has(task.id) ?? false
@@ -164,9 +166,21 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
     prevDoneRef.current = new Set(donePhases)
   }, [donePhases, phases])
 
+  // Report initial phase ('listen') when task mounts
+  useEffect(() => {
+    if (isRevisit || !ctx.sessionCode || !ctx.studentId) return
+    reportPhase(ctx.sessionCode, ctx.studentId, task.id, phaseIds[0])
+  }, [task.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const markDone = useCallback((phaseId: string) => {
     setDonePhases(prev => { const next = new Set(prev); next.add(phaseId); return next })
-  }, [])
+    if (isRevisit || !ctx.sessionCode || !ctx.studentId) return
+    const idx = phaseIds.indexOf(phaseId)
+    const nextPhase = idx < phaseIds.length - 1 ? phaseIds[idx + 1] : null
+    if (nextPhase) {
+      reportPhase(ctx.sessionCode, ctx.studentId, task.id, nextPhase)
+    }
+  }, [phaseIds, task.id, isRevisit, ctx.sessionCode, ctx.studentId])
 
   const jumpTo = useCallback((phaseId: string) => {
     const phase = phases.find(p => p.id === phaseId)

@@ -202,6 +202,16 @@ export function useStudentSession(sessionCode: string): StudentSession {
   return { studentId, name, joining, joinError, join, submit, submittedSteps, lessonId }
 }
 
+// ── Phase reporting (fire-and-forget) ──
+
+export function reportPhase(sessionCode: string, studentId: string, task: number, phase: string) {
+  fetch(`${API_BASE}/${sessionCode}/phase`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId, task, phase }),
+  }).catch(() => {})
+}
+
 // ── Student progress restore ──
 
 export interface StudentProgress {

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
 import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
-import { fetchExerciseSpec, type ExerciseSpec } from '../../hooks/useClassroom'
+import { fetchExerciseSpec, reportPhase, type ExerciseSpec } from '../../hooks/useClassroom'
 import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
@@ -29,6 +29,14 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     [manifest.readingSteps],
   )
   const { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount } = useStudentTask(tasks, initialProgress)
+
+  // Report 'completed' when student reaches personal-touch screen
+  useEffect(() => {
+    if (screen === 'personal-touch' && sessionCode && studentId) {
+      reportPhase(sessionCode, studentId, taskCount, 'completed')
+    }
+  }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [textOverlay, setTextOverlay] = useState<TextOverlay | null>(null)
   const handleOverlayChange = useCallback((ov: TextOverlay | null) => setTextOverlay(ov), [])
   const [exerciseSpecs, setExerciseSpecs] = useState<Record<number, ExerciseSpec>>({})

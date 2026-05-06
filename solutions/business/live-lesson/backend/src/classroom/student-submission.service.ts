@@ -90,21 +90,6 @@ export class StudentSubmissionService {
 
     const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
     const taskNum = taskMap.stepToTask[step];
-    if (taskNum !== undefined && taskNum <= student.currentTask) {
-      const isComplete = !score || score.total === 100;
-      if (isComplete) {
-        const nextTask = taskNum + 1;
-        if (nextTask <= taskMap.maxTask && (student.currentTask === taskNum)) {
-          student.currentTask = nextTask;
-          student.currentPhase = 'listen';
-          student.stepStartedAt = new Date().toISOString();
-        } else if (student.currentTask === taskNum) {
-          student.currentTask = taskNum;
-          student.currentPhase = 'completed';
-        }
-        await this.studentRepo.save(student);
-      }
-    }
 
     await this.observationService.addSystemEvent(
       session.id, studentId, student.name, 'exercise_result',
@@ -155,11 +140,62 @@ export class StudentSubmissionService {
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
 
+  private static readonly PHASE_RANK: Record<string, number> = { listen: 0, practice: 1, discuss: 2, takeaway: 3, completed: 4 };
+
+  async updatePhase(session: ClassroomSession, studentId: string, task: number, phase: string) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) {
+      throw new NotFoundException('Student not found in this session');
+    }
+    const oldRank = (student.currentTask * 10) + (StudentSubmissionService.PHASE_RANK[student.currentPhase] ?? 0);
+    const newRank = (task * 10) + (StudentSubmissionService.PHASE_RANK[phase] ?? 0);
+    if (newRank <= oldRank) return;
+    const taskChanged = student.currentTask !== task;
+    student.currentTask = task;
+    student.currentPhase = phase;
+    if (taskChanged) {
+      student.stepStartedAt = new Date().toISOString();
+    }
+    await this.studentRepo.save(student);
+  }
+
   async getProgress(session: ClassroomSession, studentId: string) {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
     if (!student) return null;
+
+    // Crash recovery: if student completed the exercise (score=100) for their
+    // current task but currentPhase is still 'practice' or earlier (phaseIdx <= 1),
+    // the browser likely crashed before reporting the next phase. Persist the fix
+    // so teacher dashboard and subsequent getProgress calls see consistent state.
+    const PHASE_ORDER = ['listen', 'practice', 'discuss', 'takeaway'];
+    const phaseIdx = PHASE_ORDER.indexOf(student.currentPhase);
+    if (phaseIdx !== -1 && phaseIdx <= 1) {
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const stepIdx = taskMap.taskToStep[student.currentTask];
+      if (stepIdx !== undefined) {
+        const sub = await this.submissionRepo.findOne({
+          where: { sessionId: session.id, studentId, step: stepIdx },
+        });
+        const score = sub?.scoreJson as GradeResult | null;
+        if (score?.total === 100) {
+          const nextTask = student.currentTask + 1;
+          if (nextTask <= taskMap.maxTask) {
+            student.currentTask = nextTask;
+            student.currentPhase = 'listen';
+          } else {
+            student.currentPhase = 'completed';
+          }
+          student.stepStartedAt = new Date().toISOString();
+          await this.studentRepo.save(student);
+          return { currentTask: student.currentTask, currentPhase: student.currentPhase };
+        }
+      }
+    }
+
     return { currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
 
