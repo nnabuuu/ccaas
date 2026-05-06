@@ -48,8 +48,8 @@ export interface ReadingStep {
   id: string
   idx: number
   type?: 'task' | 'instruction'
-  label: string
-  labelEn: string
+  label?: string
+  labelEn?: string
   displayName?: string
   strategy: string
   duration: number

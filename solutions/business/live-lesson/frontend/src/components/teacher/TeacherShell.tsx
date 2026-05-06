@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useTeacherStream } from '../../hooks/useClassroom'
 import type { ClassroomState, StateSnapshot } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI, getCatBadgeClass, formatRelative } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI, getCatBadgeClass, formatRelative, getStepName } from './teacher-helpers'
 import { Band } from './Band'
 import { Timeline } from './Timeline'
 import { ObservationPanel } from './ObservationPanel'
@@ -53,7 +53,16 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
     return fallbackStart.current
   }, [snapshots])
 
-  const health = useMemo(() => computeHealthCards(state), [state])
+  const stepNames = useMemo(() => {
+    const map: Record<number, string> = {}
+    manifest.readingSteps
+      .filter(rs => rs.type === 'task')
+      .sort((a, b) => a.idx - b.idx)
+      .forEach((rs, i) => { map[i + 1] = getStepName(rs) })
+    return map
+  }, [manifest])
+
+  const health = useMemo(() => computeHealthCards(state, stepNames), [state, stepNames])
 
   // Build step card data — only task steps (filter out instruction steps)
   const stepCards = useMemo(() => {
@@ -169,12 +178,12 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
           <div className="health">
             <div className="hcard good">
               <div className="hcard-lb">最快进度</div>
-              <div className="hcard-v">T{health.fastest.step}</div>
+              <div className="hcard-v">{health.fastest.step}</div>
               <div className="hcard-sub"><strong>{health.fastest.count} 人</strong>已到达</div>
             </div>
             <div className="hcard">
               <div className="hcard-lb">中位进度</div>
-              <div className="hcard-v">T{health.median.step}</div>
+              <div className="hcard-v">{health.median.step}</div>
               <div className="hcard-sub"><strong>{health.median.pct}%</strong> 学生在此</div>
             </div>
             <div className={`hcard${health.stuck.count > 0 ? ' warn' : ''}`}>
@@ -206,8 +215,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                     onClick={() => setStepModalNum(sc.stepNum)}
                   >
                     <div className="sc-head">
-                      <span className="sc-sn task">{sc.stepNum}</span>
-                      <span className="sc-name">{sc.step.label}</span>
+                      <span className="sc-name">{getStepName(sc.step)}</span>
                       <span className="sc-type">{sc.step.duration} min · {sc.step.strategy || 'task'}</span>
                       <div className="sc-badges">
                         <span className={`sc-badge student-count${sc.activeCount >= 20 ? ' major' : ''}`}>{sc.activeCount} 人</span>

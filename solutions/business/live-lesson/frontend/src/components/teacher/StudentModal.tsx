@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS, getCatBadgeClass } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, getCatBadgeClass, getStepName } from './teacher-helpers'
 
 export function StudentModal({ student, manifest, state, questions, onClose }: {
   student: ClassroomState['students'][0]
@@ -11,26 +11,31 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
   onClose: () => void
 }) {
   const [selectedStep, setSelectedStep] = useState(student.currentTask)
-  const stepName = manifest.readingSteps[student.currentTask - 1]?.label || `Step ${student.currentTask}`
+  const taskSteps = manifest.readingSteps
+    .filter(rs => rs.type === 'task')
+    .sort((a, b) => a.idx - b.idx)
+  const stepName = getStepName(taskSteps[student.currentTask - 1] || {}) || `Step ${student.currentTask}`
   const studentQuestions = questions.filter(q => q.studentId === student.id)
 
-  // Per-step status for journey strip
-  const journeySteps = manifest.readingSteps.map((rs, i) => {
+  // Per-step status for journey strip (task steps only, matching backend currentTask numbering)
+  const journeySteps = taskSteps.map((rs, i) => {
     const sn = i + 1
     const sub = student.submissions?.[sn]
     if (sn < student.currentTask) {
       const score = sub?.score?.total ?? 0
-      if (score >= 80) return { sn, label: rs.label, status: 'done' as const, result: 'correct' as const, score }
-      if (score >= 40) return { sn, label: rs.label, status: 'done' as const, result: 'partial' as const, score }
-      if (sub) return { sn, label: rs.label, status: 'done' as const, result: 'partial' as const, score }
-      return { sn, label: rs.label, status: 'done' as const, result: 'correct' as const, score: 0 }
+      const name = getStepName(rs)
+      if (score >= 80) return { sn, label: name, status: 'done' as const, result: 'correct' as const, score }
+      if (score >= 40) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score }
+      if (sub) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score }
+      return { sn, label: name, status: 'done' as const, result: 'correct' as const, score: 0 }
     }
     if (sn === student.currentTask) {
+      const name = getStepName(rs)
       const isStuck = student.stepStartedAt && (Date.now() - new Date(student.stepStartedAt).getTime()) > STUCK_THRESHOLD_MS
-      if (isStuck) return { sn, label: rs.label, status: 'stuck' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
-      return { sn, label: rs.label, status: 'prog' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
+      if (isStuck) return { sn, label: name, status: 'stuck' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
+      return { sn, label: name, status: 'prog' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
     }
-    return { sn, label: rs.label, status: 'future' as const, result: 'future' as const, score: 0 }
+    return { sn, label: getStepName(rs), status: 'future' as const, result: 'future' as const, score: 0 }
   })
 
   // Needs attention?
@@ -57,7 +62,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
           <div className="mod-av">{student.name[0]}</div>
           <div className="mod-ti">
             <div className="mod-ti-n">{student.name}</div>
-            <div className="mod-ti-m">当前在 Step {student.currentTask} · {stepName}</div>
+            <div className="mod-ti-m">当前在 {stepName}</div>
           </div>
           <div className="mod-cls" onClick={onClose}>关闭 ✕</div>
         </div>
@@ -77,7 +82,6 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                   >
                     {attn && <span className="jn-attn">⚠ 需关注</span>}
                     <div className="jn-top">
-                      <span className="jn-sn task">{js.sn}</span>
                       <span className="jn-name">{js.label}</span>
                     </div>
                     <div className={`jn-status ${js.status === 'done' && js.result === 'correct' ? 'done' : js.status === 'done' && js.result === 'partial' ? 'partial' : js.status === 'prog' ? 'prog' : js.status === 'stuck' ? 'partial' : 'future'}`}>
@@ -110,7 +114,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
             <>
               {/* Left col: submission detail */}
               <div className="mod-col">
-                <div className="mod-h">作答详情 · Step {selectedStep}</div>
+                <div className="mod-h">作答详情 · {journeySteps[selectedStep - 1]?.label || `Step ${selectedStep}`}</div>
                 {selSub ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: selTotal >= 80 ? 'var(--green)' : selTotal >= 50 ? 'var(--amber)' : 'var(--red)', marginBottom: 8 }}>
@@ -159,7 +163,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                   </>
                 ) : (
                   <>
-                    <div className="mod-h">班级对比 · Step {selectedStep}</div>
+                    <div className="mod-h">班级对比 · {journeySteps[selectedStep - 1]?.label || `Step ${selectedStep}`}</div>
                     <div className="class-compare">
                       <CompareBar label="正确率" studentVal={selTotal} classVal={classAvgScore} max={100} unit="%" color={selTotal < classAvgScore - 15 ? 'var(--amber-dot)' : selTotal >= classAvgScore ? 'var(--green-dot)' : 'var(--blue)'} />
                       <CompareBar label="AI 轮次" studentVal={studentAiForStep} classVal={classAvgAi} max={Math.max(studentAiForStep, classAvgAi, 1) * 1.5} unit="" color="var(--ai-dot)" />

@@ -4,9 +4,10 @@ export const STUCK_THRESHOLD_MS = 180_000 // 3 minutes
 
 export type StudentStatus = 'done' | 'prog' | 'stuck' | 'reading'
 
-export function computeHealthCards(state: ClassroomState | null) {
+export function computeHealthCards(state: ClassroomState | null, stepNames: Record<number, string> = {}) {
+  const getName = (n: number) => stepNames[n] || `T${n}`
   if (!state || !state.students.length) {
-    return { fastest: { step: 0, count: 0 }, median: { step: 0, pct: 0 }, stuck: { count: 0, where: '' }, ai: { rounds: 0, people: 0 } }
+    return { fastest: { step: '--', count: 0 }, median: { step: '--', pct: 0 }, stuck: { count: 0, where: '' }, ai: { rounds: 0, people: 0 } }
   }
   const tasks = state.students.map(s => s.currentTask)
   const maxTask = Math.max(...tasks)
@@ -25,9 +26,9 @@ export function computeHealthCards(state: ClassroomState | null) {
   const stuckMode = stuckTasks.length ? mostCommon(stuckTasks) : 0
 
   return {
-    fastest: { step: maxTask, count: fastCount },
-    median: { step: medTask, pct: medPct },
-    stuck: { count: stuckStudents.length, where: stuckMode ? `T${stuckMode}` : '' },
+    fastest: { step: getName(maxTask), count: fastCount },
+    median: { step: getName(medTask), pct: medPct },
+    stuck: { count: stuckStudents.length, where: stuckMode ? getName(stuckMode) : '' },
     ai: { rounds: state.questions.length, people: new Set(state.questions.map(q => q.studentId)).size },
   }
 }
@@ -74,6 +75,9 @@ export function getCatBadgeClass(cat: string): string {
     default: return 'other'
   }
 }
+
+export const getStepName = (rs: { displayName?: string; label?: string }) =>
+  rs.displayName || rs.label || ''
 
 export function formatRelative(ts: string): string {
   const diff = Date.now() - new Date(ts).getTime()

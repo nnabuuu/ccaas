@@ -111,7 +111,7 @@ export function buildInstructionMap(
 
 /** Build Task[] dynamically from manifest readingSteps. */
 export function buildTasksFromManifest(
-  readingSteps: Array<{ idx: number; type?: string; label: string; labelEn?: string;
+  readingSteps: Array<{ idx: number; type?: string; label?: string; labelEn?: string;
     displayName?: string; subtitle?: string; duration?: number; description?: string;
     focusParagraphs?: string[]; exerciseLabel?: string; summary?: string;
     discuss?: any; answerKey?: any; studentView?: any }>,

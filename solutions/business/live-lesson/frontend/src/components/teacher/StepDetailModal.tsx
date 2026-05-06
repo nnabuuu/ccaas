@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS, getStudentGlobalStatus, hasAI } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, getStudentGlobalStatus, hasAI, getStepName } from './teacher-helpers'
 
 export function StepDetailModal({ stepNum, manifest, state, questions, onClose, onStudentClick }: {
   stepNum: number
@@ -11,7 +11,10 @@ export function StepDetailModal({ stepNum, manifest, state, questions, onClose, 
   onClose: () => void
   onStudentClick: (name: string) => void
 }) {
-  const step = manifest.readingSteps[stepNum - 1]
+  const taskSteps = manifest.readingSteps
+    .filter(rs => rs.type === 'task')
+    .sort((a, b) => a.idx - b.idx)
+  const step = taskSteps[stepNum - 1]
   if (!step) return null
   const metrics = state.stepMetrics?.[stepNum] as any
   const inStep = state.students.filter(s => s.currentTask === stepNum)
@@ -56,8 +59,7 @@ export function StepDetailModal({ stepNum, manifest, state, questions, onClose, 
     <div className="overlay2" onClick={(e) => { if ((e.target as HTMLElement).classList.contains('overlay2')) onClose() }}>
       <div className="modal2">
         <div className="m2-hd">
-          <span className="sc-sn task">{stepNum}</span>
-          <span className="m2-title">{step.label}</span>
+          <span className="m2-title">{getStepName(step)}</span>
           <span className="m2-desc">{step.duration} min · {step.strategy || 'task'}</span>
           <span className="m2-cls" onClick={onClose}>关闭 ✕</span>
         </div>
