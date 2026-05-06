@@ -60,6 +60,8 @@ export class ClassroomController {
 
   @Post(':code/join')
   async join(@Param('code') code: string, @Body() dto: JoinDto) {
+    // join uses resolveActiveSession (not resolveStartedSession) intentionally:
+    // students must be able to join during the 'waiting' lobby phase
     const session = await this.classroomService.resolveActiveSession(validateCode(code));
     const { _broadcast, ...result } = await this.studentSubmission.join(session, dto.name);
     if (_broadcast) this.classroomService.broadcast(session.id);
@@ -68,7 +70,7 @@ export class ClassroomController {
 
   @Post(':code/submit')
   async submit(@Param('code') code: string, @Body() dto: SubmitDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     const result = await this.studentSubmission.submit(session, dto.studentId, dto.step, dto.data);
     this.classroomService.broadcast(session.id);
     return result;
@@ -145,13 +147,13 @@ export class ClassroomController {
 
   @Post(':code/step')
   async setStep(@Param('code') code: string, @Body() dto: StepDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.classroomService.setStep(session.id, dto.step);
   }
 
   @Post(':code/notify')
   async notify(@Param('code') code: string, @Body() dto: NotifyDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.classroomService.notify(session.id, dto.message, dto.type);
   }
 }

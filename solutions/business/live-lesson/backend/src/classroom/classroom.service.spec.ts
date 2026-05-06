@@ -757,6 +757,25 @@ describe('ClassroomService — extended coverage', () => {
       await expect(service.resolveActiveSession(created.code)).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException for waiting session via resolveStartedSession', async () => {
+      const created = await service.createSession('full-lesson');
+      await expect(service.resolveStartedSession(created.code)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should resolve active session via resolveStartedSession', async () => {
+      const created = await service.createSession('full-lesson');
+      await service.startSession(created.code);
+      const session = await service.resolveStartedSession(created.code);
+      expect(session.status).toBe('active');
+    });
+
+    it('should throw BadRequestException for ended session via resolveStartedSession', async () => {
+      const created = await service.createSession('full-lesson');
+      await service.startSession(created.code);
+      await service.endSession(created.code);
+      await expect(service.resolveStartedSession(created.code)).rejects.toThrow(BadRequestException);
+    });
+
     it('should be idempotent when ending a session twice', async () => {
       const created = await service.createSession('full-lesson');
       const r1 = await service.endSession(created.code);

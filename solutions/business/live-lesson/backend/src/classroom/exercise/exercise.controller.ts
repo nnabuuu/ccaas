@@ -18,7 +18,7 @@ export class ExerciseController {
     @Param('code') code: string,
     @Param('step', ParseIntPipe) step: number,
   ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.exercise.getExerciseSpec(session, step);
   }
 
@@ -28,7 +28,7 @@ export class ExerciseController {
     @Param('step', ParseIntPipe) step: number,
     @Body() dto: CheckDto,
   ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.exercise.checkAnswer(session, dto.studentId, step, dto.data);
   }
 }

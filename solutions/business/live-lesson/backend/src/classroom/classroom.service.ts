@@ -92,6 +92,16 @@ export class ClassroomService {
     return session;
   }
 
+  async resolveStartedSession(code: string): Promise<ClassroomSession> {
+    const session = await this.resolveSession(code);
+    if (session.status !== 'active') {
+      throw new BadRequestException(
+        session.status === 'ended' ? 'Session has ended' : 'Session has not started yet',
+      );
+    }
+    return session;
+  }
+
   async getSessionInfo(code: string) {
     const session = await this.resolveSession(code);
     return {
@@ -163,6 +173,7 @@ export class ClassroomService {
     session.status = 'ended';
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
+    await this.broadcast(session.id);
     this.activeNotificationsMap.delete(session.id);
     this.lastSnapshotAt.delete(session.id);
 

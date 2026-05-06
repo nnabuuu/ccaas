@@ -15,7 +15,7 @@ export class AiAskController {
 
   @Post(':code/ai/ask')
   async aiAsk(@Param('code') code: string, @Body() dto: AiAskDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     const result = await this.aiAskService.aiAsk(session, dto.studentId, dto.step, dto.question, dto.messages);
     this.classroomService.broadcast(session.id);
     return { answer: result.answer, category: result.category };

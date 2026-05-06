@@ -16,7 +16,7 @@ export class PersonalTouchController {
 
   @Post(':code/personal-touch')
   async personalTouch(@Param('code') code: string, @Body() dto: PersonalTouchDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.personalization.getPersonalTouch(session, dto.studentId);
   }
 
@@ -25,7 +25,7 @@ export class PersonalTouchController {
     @Param('code') code: string,
     @Param('bonusStep', ParseIntPipe) bonusStep: number,
   ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.personalization.getBonusExercise(session, bonusStep);
   }
 
@@ -35,7 +35,7 @@ export class PersonalTouchController {
     @Param('bonusStep', ParseIntPipe) bonusStep: number,
     @Body() dto: BonusCheckDto,
   ) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.personalization.checkBonusAnswer(session, dto.studentId, bonusStep, dto.data);
   }
 }

@@ -15,7 +15,7 @@ export class DiscussController {
 
   @Post(':code/ai/discuss')
   async aiDiscuss(@Param('code') code: string, @Body() dto: AiDiscussDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     const result = await this.discussService.aiDiscuss(
       session,
       dto.studentId,
@@ -30,7 +30,7 @@ export class DiscussController {
 
   @Post(':code/ai/discuss-complete')
   async discussComplete(@Param('code') code: string, @Body() dto: DiscussCompleteDto) {
-    const session = await this.classroomService.resolveActiveSession(validateCode(code));
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
     const result = await this.discussService.discussComplete(
       session,
       dto.studentId,
