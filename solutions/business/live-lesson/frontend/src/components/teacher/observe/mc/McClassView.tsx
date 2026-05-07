@@ -50,7 +50,7 @@ export default function McClassView({ data, onStudentSelect }: Props) {
   }
 
   return (
-    <div className="observe-body">
+    <>
       {/* Health Cards */}
       <div className="obs-health">
         <div className="hcard green">
@@ -131,13 +131,17 @@ export default function McClassView({ data, onStudentSelect }: Props) {
                   })}
                   {wrongStudents.length > 0 && (
                     <div className="obs-q-students">
-                      {wrongStudents.map(s => (
-                        <span key={s.id}
-                          className="obs-student-chip alert"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => onStudentSelect(s.id)}
-                        >{s.name}</span>
-                      ))}
+                      {wrongStudents.map(s => {
+                        const a = s.answers?.[q.idx] || s.answers?.[String(q.idx)]
+                        const letter = a && a.selected >= 0 && a.selected < 26 ? LETTERS[a.selected] : '?'
+                        return (
+                          <span key={s.id}
+                            className="obs-student-chip alert"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => onStudentSelect(s.id)}
+                          >{s.name} → {letter}</span>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -230,6 +234,6 @@ export default function McClassView({ data, onStudentSelect }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

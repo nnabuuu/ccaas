@@ -38,7 +38,7 @@ export default function EvidenceClassView({ data, onStudentSelect }: Props) {
   const students = d.students || []
 
   return (
-    <div className="observe-body">
+    <>
       {/* Health cards */}
       <div className="obs-health">
         <div className="hcard green">
@@ -170,6 +170,6 @@ export default function EvidenceClassView({ data, onStudentSelect }: Props) {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

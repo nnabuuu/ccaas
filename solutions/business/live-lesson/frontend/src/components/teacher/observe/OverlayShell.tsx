@@ -16,15 +16,15 @@ export default function OverlayShell({ open, onClose, depth, children }: Props) 
 
   useEffect(() => {
     let raf1: number, raf2: number
-    if (open && !prevOpen.current) {
+    if (open) {
       setAnimState('entering')
       raf1 = requestAnimationFrame(() => {
         raf2 = requestAnimationFrame(() => setAnimState('open'))
       })
-    } else if (!open && prevOpen.current) {
+    } else if (prevOpen.current) {
       setAnimState('leaving')
       const t = setTimeout(() => setAnimState('closed'), 320)
-      prevOpen.current = open
+      prevOpen.current = false
       return () => clearTimeout(t)
     }
     prevOpen.current = open

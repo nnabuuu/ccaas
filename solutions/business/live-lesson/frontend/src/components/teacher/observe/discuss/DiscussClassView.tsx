@@ -40,7 +40,7 @@ export default function DiscussClassView({ data, onStudentSelect }: Props) {
   const funnelTotal = students.length || 1
 
   return (
-    <div className="observe-body">
+    <>
       {/* Health cards */}
       <div className="obs-health">
         <div className="hcard green">
@@ -160,6 +160,6 @@ export default function DiscussClassView({ data, onStudentSelect }: Props) {
           </table>
         </div>
       )}
-    </div>
+    </>
   )
 }

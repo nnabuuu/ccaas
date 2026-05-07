@@ -258,13 +258,11 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                   <div
                     key={sc.stepNum}
                     className={`step-card${isExpanded ? ' expanded' : ''}${hasAlert ? ' has-alert' : ''}`}
+                    onClick={() => setExpandedStep(isExpanded ? null : sc.stepNum)}
+                    style={{ cursor: 'pointer' }}
                   >
                     {/* ── Step Card Head ── */}
-                    <div
-                      className="sc-head"
-                      onClick={() => setExpandedStep(isExpanded ? null : sc.stepNum)}
-                      style={{ cursor: 'pointer' }}
-                    >
+                    <div className="sc-head">
                       <span className={`sc-chevron${isExpanded ? ' open' : ''}`}>▶</span>
                       <span className="sc-name">{getStepName(sc.step)}</span>
                       <span className="sc-type">{sc.step.duration} min · {sc.step.strategy || 'task'}</span>
@@ -633,7 +631,7 @@ function SubTaskRow({ label, icon, count, students, onStudentClick, questions, o
   return (
     <div
       className={`subtask-row${clickable ? ' clickable' : ''}`}
-      onClick={clickable ? onClick : undefined}
+      onClick={clickable ? (e) => { e.stopPropagation(); onClick?.() } : undefined}
     >
       <span className="str-icon">{icon}</span>
       <span className="str-label">{label}</span>

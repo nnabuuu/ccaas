@@ -31,7 +31,7 @@ export default function McStudentView({ data, studentId }: Props) {
 
   if (!student) {
     return (
-      <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 13, color: 'var(--t3)' }}>未找到该学生数据</div>
       </div>
     )

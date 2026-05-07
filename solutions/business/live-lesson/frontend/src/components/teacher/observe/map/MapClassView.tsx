@@ -42,7 +42,7 @@ export default function MapClassView({ data, onStudentSelect }: Props) {
   const totalForDist = students.length || 1
 
   return (
-    <div className="observe-body">
+    <>
       {/* Health cards */}
       <div className="obs-health">
         <div className="hcard">
@@ -265,6 +265,6 @@ export default function MapClassView({ data, onStudentSelect }: Props) {
           </table>
         </div>
       )}
-    </div>
+    </>
   )
 }
