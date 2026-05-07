@@ -16,7 +16,7 @@ describe('ManifestSchema', () => {
     const result = ManifestSchema.safeParse(manifest);
     if (!result.success) {
       const issues = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`);
-      fail(`Manifest validation failed:\n${issues.join('\n')}`);
+      throw new Error(`Manifest validation failed:\n${issues.join('\n')}`);
     }
     expect(result.success).toBe(true);
   });

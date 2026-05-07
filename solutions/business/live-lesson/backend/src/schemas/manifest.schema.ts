@@ -94,7 +94,7 @@ export const ReadingStepSchema = z.object({
   id: z.string(),
   idx: z.number(),
   type: z.enum(['task', 'instruction']).optional(),
-  label: z.string(),
+  label: z.string().optional(),
   labelEn: z.string().optional(),
   strategy: z.string().optional(),
   duration: z.number().optional(),
