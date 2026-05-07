@@ -18,6 +18,8 @@ import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
+import { StudentSubmissionService } from '../student-submission.service';
+import { GradingService } from '../exercise/grading.service';
 
 const DISCUSS_MANIFEST = {
   id: 'discuss-lesson',
@@ -47,6 +49,7 @@ describe('DiscussService', () => {
   let aiQuestionRepo: Repository<AiQuestion>;
   let aiPromptBuilder: AiPromptBuilder;
   let observationService: ObservationService;
+  let studentSubmissionService: StudentSubmissionService;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -62,7 +65,7 @@ describe('DiscussService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
-        DiscussService, ObservationService, AiPromptBuilder, ClusterClassifier, ClusterAggregator,
+        DiscussService, ObservationService, AiPromptBuilder, ClusterClassifier, ClusterAggregator, GradingService, StudentSubmissionService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -74,6 +77,7 @@ describe('DiscussService', () => {
     aiQuestionRepo = module.get(getRepositoryToken(AiQuestion));
     aiPromptBuilder = module.get(AiPromptBuilder);
     observationService = module.get(ObservationService);
+    studentSubmissionService = module.get(StudentSubmissionService);
 
     await lessonRepo.save(lessonRepo.create({
       id: 'discuss-lesson', title: 'Discuss Lesson', subject: 'English', gradeLevel: '7',
@@ -86,7 +90,7 @@ describe('DiscussService', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   async function createSessionAndStudent() {
@@ -210,6 +214,70 @@ describe('DiscussService', () => {
         service.aiDiscuss(session, 'nonexistent', 1, [{ role: 'student', text: 'hi' }], 1, 0),
       ).rejects.toThrow(NotFoundException);
     });
+
+    it('sets discussMeta.startedAt on first call', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Nice thinking!');
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: 'My answer' }],
+        1, 10,
+      );
+
+      const updated = await studentRepo.findOne({ where: { id: student.id } });
+      expect(updated!.discussMeta).not.toBeNull();
+      expect(updated!.discussMeta!.startedAt).toBeDefined();
+      expect(updated!.discussMeta!.goalReached).toBeUndefined();
+    });
+
+    it('sets discussMeta.goalReached when goal reached', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Correct! [GOAL_REACHED]');
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: 'The answer is X' }],
+        2, 30,
+      );
+
+      const updated = await studentRepo.findOne({ where: { id: student.id } });
+      expect(updated!.discussMeta!.goalReached).toBe(true);
+      expect(updated!.discussMeta!.startedAt).toBeDefined();
+    });
+
+    it('preserves existing startedAt on subsequent calls', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Tell me more');
+      jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
+      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
+      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: 'First try' }],
+        1, 10,
+      );
+
+      const after1 = await studentRepo.findOne({ where: { id: student.id } });
+      const firstStartedAt = after1!.discussMeta!.startedAt;
+
+      await service.aiDiscuss(
+        session, student.id, 1,
+        [{ role: 'student', text: 'First try' }, { role: 'ai', text: 'Tell me more' }, { role: 'student', text: 'Second try' }],
+        2, 20,
+      );
+
+      const after2 = await studentRepo.findOne({ where: { id: student.id } });
+      expect(after2!.discussMeta!.startedAt).toBe(firstStartedAt);
+    });
   });
 
   // ── discussComplete ──
@@ -253,12 +321,54 @@ describe('DiscussService', () => {
       expect(result.mcCorrect).toBe(false);
     });
 
+    it('calls updatePhase to advance student to takeaway', async () => {
+      const { session, student } = await createSessionAndStudent();
+      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
+      const updatePhaseSpy = jest.spyOn(studentSubmissionService, 'updatePhase').mockResolvedValue(undefined as any);
+
+      await service.discussComplete(session, student.id, 1, 'goal_reached', 3, 60);
+
+      expect(updatePhaseSpy).toHaveBeenCalledWith(session, student.id, 1, 'takeaway');
+    });
+
     it('throws NotFoundException for unknown student', async () => {
       const { session } = await createSessionAndStudent();
       jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
       await expect(
         service.discussComplete(session, 'nonexistent', 1, 'goal_reached', 2, 30),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── discussMeta lifecycle via updatePhase / getProgress ──
+
+  describe('discussMeta via StudentSubmissionService', () => {
+    it('getProgress() includes discussMeta', async () => {
+      const { session, student } = await createSessionAndStudent();
+      student.discussMeta = { startedAt: '2025-01-01T00:00:00.000Z' };
+      await studentRepo.save(student);
+
+      const progress = await studentSubmissionService.getProgress(session, student.id);
+      expect(progress).not.toBeNull();
+      expect(progress!.discussMeta).toEqual({ startedAt: '2025-01-01T00:00:00.000Z' });
+    });
+
+    it('updatePhase() clears discussMeta when task changes', async () => {
+      const { session, student } = await createSessionAndStudent();
+      student.discussMeta = { startedAt: '2025-01-01T00:00:00.000Z', goalReached: true };
+      await studentRepo.save(student);
+
+      // Verify the save worked
+      const check = await studentRepo.findOne({ where: { id: student.id } });
+      expect(check!.discussMeta).toEqual({ startedAt: '2025-01-01T00:00:00.000Z', goalReached: true });
+
+      // Advance to task 2 listen (higher rank than task 1 discuss)
+      await studentSubmissionService.updatePhase(session, student.id, 2, 'listen');
+
+      const updated = await studentRepo.findOne({ where: { id: student.id } });
+      expect(updated!.currentTask).toBe(2);
+      expect(updated!.currentPhase).toBe('listen');
+      expect(updated!.discussMeta).toBeNull();
     });
   });
 });

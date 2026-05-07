@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { submitAnswer, getState } from '../helpers/api-client';
+import { submitAnswer, getState, reportPhase, discussComplete } from '../helpers/api-client';
 import { createTestSession } from '../helpers/session-factory';
 import { QUIZ_CORRECT_ANSWERS } from '../helpers/constants';
 
@@ -20,13 +20,22 @@ test.describe('05 — Submit & progression', () => {
     expect(body.ok).toBe(true);
   });
 
-  test('student currentTask advances after submission', async () => {
+  test('student currentTask advances through full phase lifecycle', async () => {
+    // practice phase already completed (test 1's submitAnswer)
+    // practice → discuss
+    await reportPhase(code, studentId, 1, 'discuss');
+    // discuss → takeaway (discussComplete auto-advances + frontend reportPhase is idempotent)
+    await discussComplete(code, studentId, 1, 'goal_reached', 2, 30);
+    await reportPhase(code, studentId, 1, 'takeaway');
+    // takeaway → completed
+    await reportPhase(code, studentId, 1, 'completed');
+    // advance to next task
+    await reportPhase(code, studentId, 2, 'listen');
+
     const { status, data } = await getState(code);
     expect(status).toBe(200);
     const body = data as { students: Array<{ id: string; currentTask: number }> };
     const student = body.students.find(s => s.id === studentId);
-    expect(student).toBeDefined();
-    // After submitting step 1, currentTask should have advanced beyond task 1
     expect(student!.currentTask).toBeGreaterThan(1);
   });
 

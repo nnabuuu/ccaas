@@ -6,7 +6,7 @@ import { PracticePhase } from './exercise/PracticePhase'
 import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
 import { renderMd } from './renderMd'
-import { reportPhase } from '../../hooks/useClassroom'
+import { reportPhase, type CachedSubmission, type DiscussMeta } from '../../hooks/useClassroom'
 import type { Task } from './task-data'
 import type { PhaseConfig, BoardData } from '../../types/reading'
 import type { TextOverlay } from './TextPanel'
@@ -23,6 +23,8 @@ export const SessionCtx = createContext<{
   submit?: (step: number, data: Record<string, any>) => Promise<boolean>
   config: SessionConfig
   boardData?: BoardData | null
+  restoredSubmissions?: Record<number, CachedSubmission>
+  discussMeta?: DiscussMeta | null
 }>({ config: {} })
 
 const DEFAULT_PHASES: PhaseConfig[] = [
@@ -101,8 +103,8 @@ const PHASE_REGISTRY: Record<string, (props: {
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange, initialPhase }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void; initialPhase?: string | null
 }) {
   const ctx = useContext(SessionCtx)
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
@@ -114,11 +116,16 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
   const [donePhases, setDonePhases] = useState<Set<string>>(new Set())
   const prevDoneRef = useRef<Set<string>>(new Set())
 
-  // Reset on task change — pre-fill all phases done when revisiting a completed step
+  // Reset on task change — pre-fill phases done from persisted progress or revisit
   useEffect(() => {
     if (isRevisit) {
       const allDone = new Set(phaseIds)
       setDonePhases(allDone); prevDoneRef.current = new Set(allDone)
+    } else if (initialPhase) {
+      // Restore: all phases BEFORE the current phase are done
+      const idx = phaseIds.indexOf(initialPhase)
+      const done = new Set(phaseIds.slice(0, idx > 0 ? idx : 0))
+      setDonePhases(done); prevDoneRef.current = new Set(done)
     } else {
       setDonePhases(new Set()); prevDoneRef.current = new Set()
     }
@@ -237,7 +244,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
                 onComplete,
                 onOverlayChange,
                 taskCount,
-                isRevisit,
+                isRevisit: isRevisit || donePhases.has(phase.id),
               })}
               {showLocked && (
                 <div className="stu-phase-locked-msg">Complete {prevPhase.label} to unlock {phase.label}</div>
@@ -257,14 +264,14 @@ export function useStudentTask(
   initialProgress?: { currentTask: number; currentPhase: string } | null,
 ) {
   const [screen, setScreen] = useState<string>(() => {
-    if (!initialProgress || initialProgress.currentTask <= 1) return 'intro'
+    if (!initialProgress) return 'intro'
     const { currentTask, currentPhase } = initialProgress
     if (currentTask > tasks.length) return 'personal-touch'
     if (currentTask === tasks.length && currentPhase === 'completed') return 'personal-touch'
     return String(currentTask)
   })
   const [doneSet, setDoneSet] = useState<Set<number>>(() => {
-    if (!initialProgress || initialProgress.currentTask <= 1) return new Set()
+    if (!initialProgress) return new Set()
     const { currentTask, currentPhase } = initialProgress
     const done = new Set<number>()
     for (let i = 1; i < currentTask; i++) done.add(i)
@@ -298,11 +305,15 @@ export function useStudentTask(
 
   const currentFocus = task ? task.focus : []
 
-  return { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount }
+  // Derive initial phase for the current task (used to restore donePhases on refresh)
+  const initialPhase = initialProgress && initialProgress.currentTask === taskId
+    ? initialProgress.currentPhase : null
+
+  return { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount, initialPhase }
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange, initialPhase }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -317,6 +328,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   courseIntroView?: { title: string; body: string; keyPoints?: string[]; confirmLabel?: string } | null
   taskCount?: number
   doneSet?: Set<number>
+  initialPhase?: string | null
   onPhaseChange?: (phase: string) => void
 }) {
   const { config } = useContext(SessionCtx)
@@ -390,7 +402,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus' && (
         <BonusPhase onComplete={() => setScreen('summary')} />
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} />}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} initialPhase={initialPhase} />}
     </div>
   )
 }

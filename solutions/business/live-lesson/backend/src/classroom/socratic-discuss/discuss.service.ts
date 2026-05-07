@@ -13,6 +13,7 @@ import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-en
 import { buildTaskMap } from '../task-map.utils';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
+import { StudentSubmissionService } from '../student-submission.service';
 
 @Injectable()
 export class DiscussService {
@@ -31,6 +32,7 @@ export class DiscussService {
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly clusterClassifier: ClusterClassifier,
     private readonly clusterAggregator: ClusterAggregator,
+    private readonly studentSubmission: StudentSubmissionService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -54,6 +56,11 @@ export class DiscussService {
     }
 
     const lastStudentMsg = [...messages].reverse().find(m => m.role === 'student')?.text || '';
+
+    // ── discuss meta persistence ──
+    if (!student.discussMeta) {
+      student.discussMeta = { startedAt: new Date().toISOString() };
+    }
 
     try {
       const systemPrompt = await this.buildSocraticSystemPrompt(session, studentId, taskNum);
@@ -119,6 +126,11 @@ export class DiscussService {
           })
           .catch(e => this.logger.warn(`Cluster classify failed: ${e}`));
       }
+
+      if (goalReached) {
+        student.discussMeta = { ...student.discussMeta!, goalReached: true };
+      }
+      await this.studentRepo.save(student);
 
       if (goalReached) {
         await this.observationService.addSystemEvent(
@@ -193,6 +205,8 @@ export class DiscussService {
         ? `讨论完成: 目标达成 (${roundsUsed} 轮)`
         : `讨论完成: ${completionType === 'fallback_rounds' ? '轮次用完' : '时间到'}, MC ${mcCorrect ? '正确' : '错误'}`,
     );
+
+    await this.studentSubmission.updatePhase(session, studentId, taskNum, 'takeaway');
 
     return { ok: true, mcCorrect };
   }

@@ -157,6 +157,7 @@ export class StudentSubmissionService {
     student.currentPhase = phase;
     if (taskChanged) {
       student.stepStartedAt = new Date().toISOString();
+      student.discussMeta = null;
     }
     await this.studentRepo.save(student);
   }
@@ -190,13 +191,32 @@ export class StudentSubmissionService {
             student.currentPhase = 'completed';
           }
           student.stepStartedAt = new Date().toISOString();
+          student.discussMeta = null;
           await this.studentRepo.save(student);
-          return { currentTask: student.currentTask, currentPhase: student.currentPhase };
+          return { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: null };
         }
       }
     }
 
-    return { currentTask: student.currentTask, currentPhase: student.currentPhase };
+    return { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
+  }
+
+  async getSnapshot(session: ClassroomSession, studentId: string) {
+    const progress = await this.getProgress(session, studentId);
+    if (!progress) return null;
+
+    const submissions = await this.submissionRepo.find({
+      where: { sessionId: session.id, studentId },
+    });
+    const submissionMap: Record<number, { data: any; score: any }> = {};
+    for (const sub of submissions) {
+      submissionMap[sub.step] = {
+        data: sub.dataJson,
+        score: sub.scoreJson ?? null,
+      };
+    }
+
+    return { progress, submissions: submissionMap };
   }
 
   async getSubmission(session: ClassroomSession, studentId: string, step: number) {

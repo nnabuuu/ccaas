@@ -200,17 +200,22 @@ type Phase = 'chat' | 'fallback' | 'done'
 type Msg = { role: 'ai' | 'student'; text: string }
 
 export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: () => void; isRevisit?: boolean }) {
-  const { sessionCode, studentId, submit, config } = useContext(SessionCtx)
+  const { sessionCode, studentId, submit, config, discussMeta } = useContext(SessionCtx)
   const enableMath = config.enableMath
   const d = task.discuss
-
   const [messages, setMessages] = useState<Msg[]>([{ role: 'ai', text: d.openingQ }])
   const [input, setInput] = useState('')
   const [round, setRound] = useState(0)
-  const [startTime] = useState(Date.now())
+  const [startTime] = useState(() =>
+    discussMeta?.startedAt ? new Date(discussMeta.startedAt).getTime() : Date.now()
+  )
   const [elapsed, setElapsed] = useState(0)
-  const [phase, setPhase] = useState<Phase>(isRevisit ? 'done' : 'chat')
-  const [goalReached, setGoalReached] = useState(false)
+  const [goalReached, setGoalReached] = useState(!!discussMeta?.goalReached)
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (isRevisit) return 'done'
+    if (discussMeta?.goalReached) return 'done'
+    return 'chat'
+  })
   const [fallbackReason, setFallbackReason] = useState<'rounds' | 'time' | ''>('')
   const [, setMcAnswer] = useState<number | null>(null)
   const calledDone = useRef(!!isRevisit)
@@ -241,6 +246,18 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       setMessages(restored)
       const studentMsgCount = restored.filter(m => m.role === 'student').length
       setRound(studentMsgCount)
+
+      // ── fallback detection on restore ──
+      if (studentMsgCount >= d.maxRounds) {
+        setFallbackReason('rounds')
+        setPhase('fallback')
+      } else if (discussMeta?.startedAt && !discussMeta.goalReached) {
+        const elapsedSec = Math.floor((Date.now() - new Date(discussMeta.startedAt).getTime()) / 1000)
+        if (elapsedSec >= d.maxTimeSeconds) {
+          setFallbackReason('time')
+          setPhase('fallback')
+        }
+      }
     })
   }, [sessionCode, studentId, task.id, fetchHistory])
 

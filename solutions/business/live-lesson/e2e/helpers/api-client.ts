@@ -97,8 +97,44 @@ export async function aiDiscuss(
   });
 }
 
+// ── Student snapshot ──
+
+export async function getStudentSnapshot(code: string, studentId: string) {
+  return request('GET', `/api/classroom/${code}/students/${studentId}/snapshot`);
+}
+
+export async function getStudentProgress(code: string, studentId: string) {
+  return request('GET', `/api/classroom/${code}/students/${studentId}/progress`);
+}
+
 // ── Personal touch ──
 
 export async function personalTouch(code: string, studentId: string) {
   return request('POST', `/api/classroom/${code}/personal-touch`, { studentId });
+}
+
+// ── Phase & discuss ──
+
+export async function reportPhase(code: string, studentId: string, task: number, phase: string) {
+  return request('POST', `/api/classroom/${code}/phase`, { studentId, task, phase });
+}
+
+export async function discussComplete(
+  code: string,
+  studentId: string,
+  taskNum: number,
+  completionType: 'goal_reached' | 'fallback_rounds' | 'fallback_time',
+  roundsUsed: number,
+  timeUsedSeconds: number,
+) {
+  return request('POST', `/api/classroom/${code}/ai/discuss-complete`, {
+    studentId, taskNum, completionType, roundsUsed, timeUsedSeconds,
+  });
+}
+
+// ── Chat history ──
+
+export async function getChatHistory(code: string, studentId: string, threadId?: string) {
+  const qs = threadId ? `?studentId=${studentId}&threadId=${threadId}` : `?studentId=${studentId}`;
+  return request('GET', `/api/classroom/${code}/chat-history${qs}`);
 }

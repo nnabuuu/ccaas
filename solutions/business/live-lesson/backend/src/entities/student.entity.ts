@@ -24,6 +24,9 @@ export class Student {
   @Column({ name: 'step_started_at', nullable: true })
   stepStartedAt: string;
 
+  @Column({ type: 'simple-json', name: 'discuss_meta', nullable: true })
+  discussMeta: { startedAt: string; goalReached?: boolean } | null;
+
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt: Date;
 }

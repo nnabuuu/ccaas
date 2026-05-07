@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback, Fragment } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import { useStudentTask, TaskColumn, SessionCtx } from './TaskPanel'
 import { buildTaskToStep, buildInstructionMap, buildTasksFromManifest, type TaskExercise } from './task-data'
-import { fetchExerciseSpec, reportPhase, type ExerciseSpec } from '../../hooks/useClassroom'
+import { fetchExerciseSpec, reportPhase, type ExerciseSpec, type CachedSubmission, type DiscussMeta } from '../../hooks/useClassroom'
 import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
@@ -14,10 +14,11 @@ interface Props {
   sessionCode?: string
   studentId?: string
   submit?: (step: number, data: Record<string, unknown>) => Promise<boolean>
-  initialProgress?: { currentTask: number; currentPhase: string } | null
+  initialProgress?: { currentTask: number; currentPhase: string; discussMeta?: DiscussMeta | null } | null
+  initialSubmissions?: Record<number, CachedSubmission>
 }
 
-export default function StudentShell({ manifest, embed, sessionCode, studentId, submit, initialProgress }: Props) {
+export default function StudentShell({ manifest, embed, sessionCode, studentId, submit, initialProgress, initialSubmissions }: Props) {
   // Lazy-load KaTeX CSS only for math-enabled lessons
   useEffect(() => {
     if (!manifest.enableMath) return
@@ -28,7 +29,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     () => buildTasksFromManifest(manifest.readingSteps || []),
     [manifest.readingSteps],
   )
-  const { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount } = useStudentTask(tasks, initialProgress)
+  const { taskId, task, currentFocus, doneSet, screen, setScreen, completeTask, taskCount, initialPhase } = useStudentTask(tasks, initialProgress)
 
   // Report 'completed' when student reaches personal-touch screen
   useEffect(() => {
@@ -208,7 +209,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
       </div>
 
       {/* Main area: left col (tasks) + right col (text) */}
-      <SessionCtx.Provider value={{ sessionCode, studentId, submit, config: { enableMath: manifest.enableMath }, boardData: manifest.boardData }}>
+      <SessionCtx.Provider value={{ sessionCode, studentId, submit, config: { enableMath: manifest.enableMath }, boardData: manifest.boardData, restoredSubmissions: initialSubmissions, discussMeta: initialProgress?.discussMeta }}>
         <div className="stu-main-wrap">
           <TaskColumn
             screen={screen} setScreen={setScreen} task={enrichedTask} completeTask={completeTask}
@@ -220,6 +221,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             taskCount={taskCount}
             doneSet={doneSet}
             onPhaseChange={handlePhaseChange}
+            initialPhase={initialPhase}
           />
           <TextPanel
             title={manifest.article.title}

@@ -214,9 +214,15 @@ export function reportPhase(sessionCode: string, studentId: string, task: number
 
 // ── Student progress restore ──
 
+export interface DiscussMeta {
+  startedAt: string
+  goalReached?: boolean
+}
+
 export interface StudentProgress {
   currentTask: number
   currentPhase: string
+  discussMeta?: DiscussMeta | null
 }
 
 export async function fetchStudentProgress(
@@ -226,6 +232,31 @@ export async function fetchStudentProgress(
     const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/progress`)
     if (!res.ok) return null
     return await res.json()
+  } catch { return null }
+}
+
+// ── Session snapshot (unified restore) ──
+
+export interface SessionSnapshot {
+  progress: StudentProgress
+  submissions: Record<number, CachedSubmission>
+}
+
+export async function fetchSessionSnapshot(
+  sessionCode: string, studentId: string,
+): Promise<SessionSnapshot | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/snapshot`)
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data?.progress) return null
+    if (data.submissions) {
+      for (const [step, sub] of Object.entries(data.submissions)) {
+        const s = sub as CachedSubmission
+        cacheSubmission(sessionCode, Number(step), s.data, s.score)
+      }
+    }
+    return data
   } catch { return null }
 }
 

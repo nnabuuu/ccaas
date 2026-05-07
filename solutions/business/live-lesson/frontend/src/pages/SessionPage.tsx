@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useSessionLookup, useStudentSession, useStudentStream, fetchStudentProgress, type StudentProgress } from '../hooks/useClassroom'
+import { useSessionLookup, useStudentSession, useStudentStream, fetchSessionSnapshot, type StudentProgress, type CachedSubmission } from '../hooks/useClassroom'
 import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
 import StudentShell from '../components/student/StudentShell'
@@ -18,6 +18,7 @@ export default function SessionPage() {
 
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
   const [initialProgress, setInitialProgress] = useState<StudentProgress | null>(null)
+  const [initialSubmissions, setInitialSubmissions] = useState<Record<number, CachedSubmission>>({})
   const [_checking, setChecking] = useState(true)
   const initialized = useRef(false)
 
@@ -49,13 +50,14 @@ export default function SessionPage() {
         return
       }
 
-      const [m, progress] = await Promise.all([
+      const [m, snapshot] = await Promise.all([
         fetchManifest(s.lessonId),
-        fetchStudentProgress(s.code, saved.studentId),
+        fetchSessionSnapshot(s.code, saved.studentId),
       ])
       if (m) {
         setManifest(m)
-        setInitialProgress(progress)
+        setInitialProgress(snapshot?.progress ?? null)
+        setInitialSubmissions(snapshot?.submissions ?? {})
       } else {
         navigate('/join', { replace: true })
       }
@@ -99,6 +101,7 @@ export default function SessionPage() {
           embed={embed}
           submit={session.submit}
           initialProgress={initialProgress}
+          initialSubmissions={initialSubmissions}
         />
       )
     }

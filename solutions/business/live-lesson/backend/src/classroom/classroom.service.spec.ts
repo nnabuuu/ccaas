@@ -3315,6 +3315,129 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
     expect(result.ok).toBe(true);
     expect(result.mcCorrect).toBeUndefined();
   });
+
+  // ── persistThread + getChatHistory (discuss recovery pipeline) ──
+
+  it('persists discuss thread incrementally across rounds', async () => {
+    // Create a fresh student for this test to avoid leaking state
+    const joined2 = await submissionSvc.join(session, `ThreadStudent-${Date.now()}`);
+    const sid2 = joined2.studentId;
+    const chatMsgRepo = module.get(getRepositoryToken(ChatMessage));
+
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Reply 1');
+
+    // Round 1
+    await discussSvc.aiDiscuss(session, sid2, 1,
+      [{ role: 'student', text: 'First message' }], 1, 10);
+
+    const msgs1 = await chatMsgRepo.find({
+      where: { sessionId: session.id, studentId: sid2, threadId: 'discuss:1' },
+      order: { seq: 'ASC' },
+    });
+    expect(msgs1.length).toBe(2); // student msg + ai reply
+    expect(msgs1[0].role).toBe('student');
+    expect(msgs1[0].content).toBe('First message');
+    expect(msgs1[1].role).toBe('ai');
+    expect(msgs1[1].content).toBe('Reply 1');
+
+    // Round 2 — only new messages should be appended
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Reply 2');
+    await discussSvc.aiDiscuss(session, sid2, 1,
+      [{ role: 'student', text: 'First message' }, { role: 'ai', text: 'Reply 1' },
+       { role: 'student', text: 'Second message' }], 2, 20);
+
+    const msgs2 = await chatMsgRepo.find({
+      where: { sessionId: session.id, studentId: sid2, threadId: 'discuss:1' },
+      order: { seq: 'ASC' },
+    });
+    expect(msgs2.length).toBe(4); // 2 from round 1 + 2 new
+    expect(msgs2[2].content).toBe('Second message');
+    expect(msgs2[3].content).toBe('Reply 2');
+  });
+
+  it('getChatHistory returns persisted discuss thread grouped by threadId', async () => {
+    const joined3 = await submissionSvc.join(session, `ChatHistStudent-${Date.now()}`);
+    const sid3 = joined3.studentId;
+
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('AI response');
+    await discussSvc.aiDiscuss(session, sid3, 1,
+      [{ role: 'student', text: 'My thought' }], 1, 5);
+
+    const history = await service.getChatHistory(session.id, sid3, 'discuss:1');
+    expect(history['discuss:1']).toBeDefined();
+    expect(history['discuss:1'].length).toBe(2);
+    expect(history['discuss:1'][0].role).toBe('student');
+    expect(history['discuss:1'][0].content).toBe('My thought');
+    expect(history['discuss:1'][1].role).toBe('ai');
+    expect(history['discuss:1'][0]).toHaveProperty('seq');
+    expect(history['discuss:1'][0]).toHaveProperty('createdAt');
+  });
+
+  it('getChatHistory returns empty object when no threads exist', async () => {
+    const history = await service.getChatHistory(session.id, 'nonexistent-id');
+    expect(history).toEqual({});
+  });
+
+  it('getChatHistory filters by threadId when specified', async () => {
+    const joined4 = await submissionSvc.join(session, `FilterStudent-${Date.now()}`);
+    const sid4 = joined4.studentId;
+
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Response');
+    await discussSvc.aiDiscuss(session, sid4, 1,
+      [{ role: 'student', text: 'hello' }], 1, 5);
+
+    // Query a thread that doesn't exist for this student
+    const history = await service.getChatHistory(session.id, sid4, 'discuss:99');
+    expect(history).toEqual({});
+
+    // But the actual thread should be there
+    const real = await service.getChatHistory(session.id, sid4, 'discuss:1');
+    expect(Object.keys(real)).toEqual(['discuss:1']);
+  });
+
+  it('getChatHistory returns all threads when threadId not specified', async () => {
+    const joined5 = await submissionSvc.join(session, `AllThreadStudent-${Date.now()}`);
+    const sid5 = joined5.studentId;
+
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('R');
+    await discussSvc.aiDiscuss(session, sid5, 1,
+      [{ role: 'student', text: 'msg' }], 1, 5);
+
+    // No threadId filter → returns all threads
+    const history = await service.getChatHistory(session.id, sid5);
+    expect(Object.keys(history).length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ── discussMeta end-to-end: aiDiscuss → discussComplete → verify state ──
+
+  it('end-to-end: aiDiscuss sets discussMeta, discussComplete advances to takeaway, meta preserved on same task', async () => {
+    const joined6 = await submissionSvc.join(session, `E2EStudent-${Date.now()}`);
+    const sid6 = joined6.studentId;
+    const studentRepo = module.get(getRepositoryToken(Student));
+
+    // Advance to discuss phase
+    await submissionSvc.updatePhase(session, sid6, 1, 'discuss');
+
+    // aiDiscuss sets discussMeta.startedAt
+    jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Tell me more');
+    await discussSvc.aiDiscuss(session, sid6, 1,
+      [{ role: 'student', text: 'my answer' }], 1, 10);
+
+    const afterDiscuss = await studentRepo.findOne({ where: { id: sid6 } });
+    expect(afterDiscuss!.discussMeta).not.toBeNull();
+    expect(afterDiscuss!.discussMeta!.startedAt).toBeDefined();
+    expect(afterDiscuss!.discussMeta!.goalReached).toBeUndefined();
+
+    // discussComplete advances to takeaway (same task → meta preserved)
+    await discussSvc.discussComplete(session, sid6, 1, 'fallback_rounds', 5, 120, 0);
+
+    const afterComplete = await studentRepo.findOne({ where: { id: sid6 } });
+    expect(afterComplete!.currentPhase).toBe('takeaway');
+    expect(afterComplete!.currentTask).toBe(1);
+    // discussMeta preserved because task didn't change
+    expect(afterComplete!.discussMeta).not.toBeNull();
+    expect(afterComplete!.discussMeta!.startedAt).toBeDefined();
+  });
 });
 
 // ── Personal Touch + Bonus ──────────────────────────────────────────────────
@@ -4141,6 +4264,25 @@ describe('Phase sync integration — student ↔ teacher', () => {
       expect(progress!.currentTask).toBe(1);
       expect(progress!.currentPhase).toBe('listen');
     });
+
+    it('should clear discussMeta when crash recovery auto-advances student', async () => {
+      const created = await service.createSession('phase-sync-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '讨论崩溃学生')).studentId;
+
+      // Manually set discussMeta to simulate a student who was in discuss
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      student!.discussMeta = { startedAt: '2025-01-01T00:00:00Z', goalReached: true };
+      await studentRepo.save(student!);
+
+      // Submit correct answer (score=100) — student at listen, browser crashed
+      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+
+      // getProgress auto-advances and clears discussMeta
+      const progress = await submissionSvc.getProgress(session!, sid);
+      expect(progress!.currentTask).toBe(2);
+      expect(progress!.discussMeta).toBeNull();
+    });
   });
 
   // ── 4. Multi-student: independent phase tracking ──
@@ -4166,5 +4308,182 @@ describe('Phase sync integration — student ↔ teacher', () => {
       expect(sB!.currentTask).toBe(1);
       expect(sB!.currentPhase).toBe('discuss');
     });
+  });
+});
+
+// ── StudentSubmissionService — getSnapshot ──
+
+describe('StudentSubmissionService — getSnapshot', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'snapshot-lesson',
+        title: 'Snapshot Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(TEST_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('returns null when student does not exist', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+
+    const result = await submissionSvc.getSnapshot(session!, 'nonexistent-id');
+    expect(result).toBeNull();
+  });
+
+  it('returns progress and empty submissions for fresh student', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'FreshStudent');
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result).not.toBeNull();
+    expect(result!.progress).toEqual({ currentTask: 1, currentPhase: 'listen', discussMeta: null });
+    expect(result!.submissions).toEqual({});
+  });
+
+  it('returns progress and submission map after submitting', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'SubmittedStudent');
+
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result).not.toBeNull();
+    expect(result!.progress.currentTask).toBe(1);
+    expect(result!.submissions[1]).toBeDefined();
+    expect(result!.submissions[1].data).toEqual({ answers: [1, 0] });
+    expect(result!.submissions[1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+  });
+
+  it('includes multiple step submissions in the map', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'MultiStepStudent');
+
+    // Submit step 1 (quiz, correct answers → 100%)
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
+    // Submit step 1 again with different data (upsert)
+    await submissionSvc.submit(session!, joined.studentId, 1, { answers: [0, 1] });
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result).not.toBeNull();
+    // Should reflect the latest submission
+    expect(result!.submissions[1].data).toEqual({ answers: [0, 1] });
+  });
+
+  it('includes discussMeta in snapshot when student is in discuss phase', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'DiscussSnapshotStudent');
+    const studentRepo = module.get(getRepositoryToken(Student));
+
+    // Advance to discuss phase and set discussMeta
+    await submissionSvc.updatePhase(session!, joined.studentId, 1, 'discuss');
+    const student = await studentRepo.findOne({ where: { id: joined.studentId } });
+    student!.discussMeta = { startedAt: '2025-06-01T12:00:00Z' };
+    await studentRepo.save(student!);
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result).not.toBeNull();
+    expect(result!.progress.currentPhase).toBe('discuss');
+    expect(result!.progress.discussMeta).toEqual({ startedAt: '2025-06-01T12:00:00Z' });
+  });
+
+  it('includes goalReached in snapshot discussMeta', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'GoalSnapshotStudent');
+    const studentRepo = module.get(getRepositoryToken(Student));
+
+    await submissionSvc.updatePhase(session!, joined.studentId, 1, 'discuss');
+    const student = await studentRepo.findOne({ where: { id: joined.studentId } });
+    student!.discussMeta = { startedAt: '2025-06-01T12:00:00Z', goalReached: true };
+    await studentRepo.save(student!);
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result!.progress.discussMeta!.goalReached).toBe(true);
+  });
+
+  it('updatePhase to takeaway on same task preserves discussMeta', async () => {
+    const created = await service.createSession('snapshot-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'TakeawayPreserveStudent');
+    const studentRepo = module.get(getRepositoryToken(Student));
+
+    await submissionSvc.updatePhase(session!, joined.studentId, 1, 'discuss');
+    const student = await studentRepo.findOne({ where: { id: joined.studentId } });
+    student!.discussMeta = { startedAt: '2025-06-01T12:00:00Z', goalReached: true };
+    await studentRepo.save(student!);
+
+    // Advance to takeaway (same task) — meta should be preserved
+    await submissionSvc.updatePhase(session!, joined.studentId, 1, 'takeaway');
+
+    const after = await studentRepo.findOne({ where: { id: joined.studentId } });
+    expect(after!.currentPhase).toBe('takeaway');
+    expect(after!.discussMeta).not.toBeNull();
+    expect(after!.discussMeta!.startedAt).toBe('2025-06-01T12:00:00Z');
+    expect(after!.discussMeta!.goalReached).toBe(true);
+  });
+
+  it('submissions map has null score when grading is unavailable', async () => {
+    // Use a manifest with no answerKey
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'no-key-snapshot',
+        title: 'No Key Snapshot',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(NO_KEY_MANIFEST),
+      }),
+    );
+    const created = await service.createSession('no-key-snapshot');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const joined = await submissionSvc.join(session!, 'NoKeyStudent');
+
+    await submissionSvc.submit(session!, joined.studentId, 1, { text: 'hello' });
+
+    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    expect(result).not.toBeNull();
+    expect(result!.submissions[1]).toBeDefined();
+    expect(result!.submissions[1].score).toBeNull();
   });
 });

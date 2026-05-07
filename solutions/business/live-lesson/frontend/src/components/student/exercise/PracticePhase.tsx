@@ -64,8 +64,11 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
   // ── Revisit: cache-first submission restore ──
   const [prevSubmission, setPrevSubmission] = useState<CachedSubmission | null>(() => {
-    if (!isRevisit || !ctx.sessionCode || stepIdx === undefined) return null
-    return getCachedSubmission(ctx.sessionCode, stepIdx)
+    if (!isRevisit || stepIdx === undefined) return null
+    const fromCtx = ctx.restoredSubmissions?.[stepIdx]
+    if (fromCtx) return fromCtx
+    if (ctx.sessionCode) return getCachedSubmission(ctx.sessionCode, stepIdx)
+    return null
   })
   const [submissionChecked, setSubmissionChecked] = useState(!isRevisit || prevSubmission != null)
 

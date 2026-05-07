@@ -125,8 +125,6 @@
       "id": "i0",
       "idx": 0,
       "type": "instruction",
-      "label": "课前导读",
-      "labelEn": "Pre-reading Guide",
       "strategy": "Orientation",
       "duration": 2,
       "description": "课前导读：了解本节课的学习目标和阅读方法。",
@@ -163,8 +161,6 @@
       "id": "s1",
       "idx": 1,
       "type": "task",
-      "label": "图式激活",
-      "labelEn": "Schema Activation",
       "displayName": "Predict",
       "strategy": "Predicting",
       "duration": 5,
@@ -172,6 +168,11 @@
       "focusParagraphs": [
         "p1",
         "p2"
+      ],
+      "aiHints": [
+        { "q": "What does \"conflict\" mean?", "label": "conflict 是什么?" },
+        { "q": "I don't understand ¶2", "label": "看不懂 ¶2" },
+        { "q": "How do I start predicting?", "label": "怎么开始 predict?" }
       ],
       "exerciseLabel": "Answer the questions about ¶1-2.",
       "subtitle": "What is beauty?",
@@ -234,9 +235,26 @@
         "openingQ": "You've just read about Happiness Edem and modern media. I'm curious — why do you think the writer chose to start the text with these two very different examples? What effect does that create?",
         "openingQZh": "你觉得作者为什么选择用这两个截然不同的例子开头？这样写有什么效果？",
         "scaffolds": ["The writer starts with...", "This creates a feeling of...", "The reader might wonder..."],
+        "clusters": [
+          {
+            "id": "c1",
+            "label": "表面对比理解",
+            "description": "学生只看到两个例子的表面差异（胖vs瘦），没有识别到写作意图。示例：'因为一个地方觉得胖好看一个觉得瘦好看' / '这两个例子说明不同文化审美不同'"
+          },
+          {
+            "id": "c2",
+            "label": "读者效果感知",
+            "description": "学生感知到对比开头引发了好奇或疑问，但说不出 conflict opening 这个策略。示例：'这样开头让人想知道为什么' / '读者会想到底哪个对'"
+          },
+          {
+            "id": "c3",
+            "label": "写作策略识别",
+            "description": "学生明确识别到作者用两个对立观点开头是写作策略（conflict opening），用来制造冲突、引出核心问题。示例：'作者故意放两个相反的例子来引出问题' / 'this is a conflict opening strategy'"
+          }
+        ],
         "maxRounds": 6,
         "maxTimeSeconds": 300,
-        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should arrive at this understanding: The writer deliberately opens with two opposing beauty standards (Nigerian fattening rooms vs. slim media models) to create a CONFLICT that makes the reader question whether one idea of beauty is really better than another.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. Keep it short (2-3 sentences max).\n- If the student says something partially correct, acknowledge it warmly, then probe deeper.\n- If the student is stuck, narrow the question or offer a small clue (e.g., \"Look at how ¶1 and ¶2 contrast...\").\n- Use simple English. The student is a Chinese high school learner.\n- If the student writes in Chinese, respond in English but show you understood their Chinese.\n- If the student demonstrates full understanding of the goal, respond with exactly: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Be warm, encouraging, never condescending.\n- Do NOT number your questions. Be conversational.",
+        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should notice that the writer opens with two contrasting examples of beauty (Nigerian fattening rooms vs. slim media models) ON PURPOSE — to make readers think or question. The student does NOT need to use the term \"conflict opening.\" Recognizing the contrast is intentional and thought-provoking is enough.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. Keep it short (2-3 sentences max).\n- If the student says something partially correct, acknowledge it warmly, then probe deeper.\n- If the student is stuck, narrow the question or offer a small clue (e.g., \"Look at how ¶1 and ¶2 contrast...\").\n- Use simple English. The student is a Chinese high school learner.\n- If the student writes in Chinese, respond in English but show you understood their Chinese.\n- If the student demonstrates full understanding of the goal, respond with exactly: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Be warm, encouraging, never condescending.\n- Do NOT number your questions. Be conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
         "fallbackMC": {
           "question": "Why does the writer start the text with the story of Happiness Edem and then mention modern media beauty standards?",
           "questionZh": "作者为什么先讲 Happiness Edem 的故事，然后提到现代媒体的审美标准？",
@@ -316,8 +334,6 @@
       "idx": 2,
       "type": "task",
       "showRoles": true,
-      "label": "结构解码",
-      "labelEn": "Structural Decoding",
       "displayName": "Skim",
       "strategy": "Skimming",
       "duration": 8,
@@ -331,6 +347,11 @@
         "p6",
         "p7",
         "p8"
+      ],
+      "aiHints": [
+        { "q": "What is \"Phenomenon\"?", "label": "Phenomenon 是什么?" },
+        { "q": "What does \"It appears that\" mean?", "label": "It appears that 什么意思?" },
+        { "q": "How do I skim?", "label": "怎么 skim?" }
       ],
       "exerciseLabel": "Match each section to its function — then prove it from the text.",
       "subtitle": "Find the skeleton",
@@ -653,9 +674,26 @@
         "openingQ": "You matched the sections to their functions. But here's a deeper question: why does the writer put History BEFORE Culture? Could the order be reversed? What would change?",
         "openingQZh": "作者为什么把\"历史\"放在\"文化\"前面？顺序能不能反过来？会有什么变化？",
         "scaffolds": ["If the writer started with culture...", "History comes first because...", "The order creates..."],
+        "clusters": [
+          {
+            "id": "c1",
+            "label": "顺序无所谓",
+            "description": "学生认为段落顺序是随机的或无所谓的，没有看到结构意图。示例：'顺序反过来也一样' / 'the writer just put them in any order'"
+          },
+          {
+            "id": "c2",
+            "label": "时间先后逻辑",
+            "description": "学生用时间先后解释顺序（历史发生在前所以先写），但没有看到论证层递关系。示例：'因为历史比文化早' / 'history happened first so it comes first'"
+          },
+          {
+            "id": "c3",
+            "label": "层递论证识别",
+            "description": "学生识别出先历史后文化是为了层层递进——先证明美随时间变，再证明美随空间变，合力支撑结论。示例：'先时间再空间，论据更强' / 'each section adds a new layer to the argument'"
+          }
+        ],
         "maxRounds": 6,
         "maxTimeSeconds": 300,
-        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should realize that the writer arranges the text as Phenomenon → History → Culture → Conclusion intentionally. History (time dimension) comes before Culture (space dimension) to show that beauty changes across BOTH time AND place, building a stronger cumulative argument. The order matters because it goes from \"beauty changes over time\" to \"beauty also differs across cultures\" — each layer strengthens the conclusion.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. Keep it short (2-3 sentences max).\n- If the student says something partially correct, acknowledge it, then probe deeper.\n- If stuck, try: \"What does the History section prove? What does Culture add on top of that?\"\n- Use simple English for a Chinese high school learner.\n- If the student writes in Chinese, respond in English but show you understood.\n- If the student demonstrates full understanding, respond with exactly: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Be warm, encouraging, conversational.",
+        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should sense that the order History → Culture is intentional, not random — putting history first and culture second makes the argument more convincing or logical. They do NOT need to explicitly say \"time dimension vs space dimension\" or use the word \"cumulative.\"\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. Keep it short (2-3 sentences max).\n- If the student says something partially correct, acknowledge it, then probe deeper.\n- If stuck, try: \"What does the History section prove? What does Culture add on top of that?\"\n- Use simple English for a Chinese high school learner.\n- If the student writes in Chinese, respond in English but show you understood.\n- If the student demonstrates full understanding, respond with exactly: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Be warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
         "fallbackMC": {
           "question": "Why does the writer discuss History (¶3-4) before Culture (¶5-7)?",
           "questionZh": "作者为什么先讨论历史（¶3-4），再讨论文化（¶5-7）？",
@@ -734,8 +772,6 @@
       "idx": 3,
       "type": "task",
       "showRoles": true,
-      "label": "矩阵构建",
-      "labelEn": "Matrix Building",
       "displayName": "Scan & Build",
       "strategy": "Scanning",
       "duration": 15,
@@ -746,6 +782,11 @@
         "p5",
         "p6",
         "p7"
+      ],
+      "aiHints": [
+        { "q": "How to fill Myanmar?", "label": "Myanmar 怎么填?" },
+        { "q": "Can't find the reason", "label": "找不到 reason" },
+        { "q": "What does \"tattoo\" mean?", "label": "tattoo 是什么?" }
       ],
       "exerciseLabel": "Read ¶3-7 and fill the matrix.",
       "subtitle": "Collect evidence",
@@ -823,9 +864,26 @@
         "openingQ": "Look at your completed matrix. If someone from another planet read it, would they conclude that humans care about \"looking good\"? Or is something deeper going on?",
         "openingQZh": "看看你填好的矩阵。如果外星人读了它，他们会觉得人类只是在乎\"好看\"吗？还是有更深层的东西？",
         "scaffolds": ["These practices are really about...", "For example, in Borneo...", "Beauty connects to..."],
+        "clusters": [
+          {
+            "id": "c1",
+            "label": "外表层面理解",
+            "description": "学生认为这些审美实践只是为了好看或吸引人，停留在外表层面。示例：'they all want to look beautiful' / '这些都是为了让自己更好看'"
+          },
+          {
+            "id": "c2",
+            "label": "单一文化要素",
+            "description": "学生提到了某个文化含义（如身份或地位）但未泛化到所有实践，只停留在单个例子。示例：'Maori tattoo shows status' / '纹身代表地位'"
+          },
+          {
+            "id": "c3",
+            "label": "文化语言概括",
+            "description": "学生认识到审美实践是文化语言，表达身份、地位、归属感和价值观，不只是外表。示例：'beauty is a cultural language' / '美是一种文化表达，代表你是谁'"
+          }
+        ],
         "maxRounds": 6,
         "maxTimeSeconds": 300,
-        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should realize that beauty practices across cultures are NOT just about appearance — they reflect deeper meanings: identity (Indonesia), social status (Maori, Elizabethan England), life records (Borneo), cultural values (Myanmar). Beauty is a CULTURAL LANGUAGE that communicates who you are and where you belong.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- Try questions like: \"What does the Borneo tattoo tell others about the person?\" or \"Is the Maori tā moko about looking beautiful or about something else?\"\n- If stuck, pick one specific matrix row and ask about the \"why\" column.\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student demonstrates full understanding, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.",
+        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should realize that beauty practices have meanings beyond just looking good — like identity, status, or cultural belonging. Giving at least ONE concrete example from the text that shows deeper meaning is sufficient. They do NOT need to generalize to all practices or say \"cultural language.\"\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- Try questions like: \"What does the Borneo tattoo tell others about the person?\" or \"Is the Maori tā moko about looking beautiful or about something else?\"\n- If stuck, pick one specific matrix row and ask about the \"why\" column.\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student demonstrates full understanding, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
         "fallbackMC": {
           "question": "What do all the beauty practices in the matrix have in common?",
           "questionZh": "矩阵中所有审美实践的共同点是什么？",
@@ -906,8 +964,6 @@
       "idx": 4,
       "type": "task",
       "showRoles": true,
-      "label": "批判质疑",
-      "labelEn": "Critical Evaluation",
       "displayName": "Evaluate",
       "strategy": "Evaluating",
       "duration": 12,
@@ -915,6 +971,10 @@
       "focusParagraphs": [
         "p2",
         "p8"
+      ],
+      "aiHints": [
+        { "q": "What does \"shallow\" mean?", "label": "shallow 什么意思?" },
+        { "q": "Can I add my own ideas?", "label": "可以加自己的想法吗?" }
       ],
       "exerciseLabel": "Drag each practice onto the plane, then explain your reasoning.",
       "subtitle": "Do you agree?",
@@ -951,9 +1011,26 @@
         "openingQ": "The writer calls modern media beauty standards \"shallow.\" That's a strong word. Do you think it's fair? What would make a beauty standard \"deep\" instead of \"shallow\"?",
         "openingQZh": "作者说现代媒体审美是\"肤浅的(shallow)\"。这个词很重。你觉得公平吗？什么样的审美标准算\"深刻\"而不是\"肤浅\"？",
         "scaffolds": ["A \"shallow\" standard means...", "Based on the text...", "A \"deep\" standard would include..."],
+        "clusters": [
+          {
+            "id": "c1",
+            "label": "表面否定",
+            "description": "学生只是同意或反对'肤浅'这个词，但没有给出文本证据或解释。示例：'我觉得media beauty确实很shallow' / '肤浅是因为他们只看脸'"
+          },
+          {
+            "id": "c2",
+            "label": "单一证据引用",
+            "description": "学生能引用文中一个例子（如某个文化的审美），但没有形成完整的claim-evidence-explanation论证链。示例：'文章说Borneo的人觉得长耳垂漂亮，所以审美不一样' / '不同地方标准不同所以media太narrow'"
+          },
+          {
+            "id": "c3",
+            "label": "论证链构建",
+            "description": "学生能用文本证据构建完整论证：现代媒体美只推崇单一外表标准(slim/fair)，而忽视了不同文化中美的深层含义(身份/地位/价值观)。示例：'shallow是因为media只看一种physical standard但文章里beauty代表了cultural identity' / '深刻的标准应该像文中说的包含文化意义'"
+          }
+        ],
         "maxRounds": 8,
         "maxTimeSeconds": 360,
-        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should construct an evidence-based argument that modern media beauty is \"shallow\" because it promotes ONE physical standard (slim, fair) while ignoring the rich cultural meanings (identity, status, values) that beauty carries in different cultures. A \"deep\" beauty standard would acknowledge that beauty reflects culture, history, and identity — not just appearance.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- Push for EVIDENCE: \"Which example from your matrix supports that idea?\"\n- Push for EXPLANATION: \"So what does that prove about 'shallow'?\"\n- If the student only gives opinion, ask for a text fact.\n- If the student only gives a fact, ask what it proves.\n- Help them build the claim → evidence → explanation chain.\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student demonstrates a complete argument with evidence, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.",
+        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should express that media beauty standards are \"shallow\" because they only focus on one physical standard, while the text shows beauty can carry deeper meanings (identity, status, values). Citing ONE piece of text evidence with a basic explanation is sufficient. A full claim→evidence→explanation chain is ideal but NOT required for [GOAL_REACHED].\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- Push for EVIDENCE: \"Which example from your matrix supports that idea?\"\n- Push for EXPLANATION: \"So what does that prove about 'shallow'?\"\n- If the student only gives opinion, ask for a text fact.\n- If the student only gives a fact, ask what it proves.\n- Help them build the claim → evidence → explanation chain.\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student demonstrates a complete argument with evidence, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
         "fallbackMC": {
           "question": "Why does the writer call modern media beauty standards \"shallow\"?",
           "questionZh": "作者为什么说现代媒体审美标准是\"肤浅的\"？",
@@ -1034,14 +1111,16 @@
       "idx": 5,
       "type": "task",
       "showRoles": true,
-      "label": "复盘升华",
-      "labelEn": "Metacognitive Wrap-up",
       "displayName": "Wrap-up",
       "strategy": "Synthesizing",
       "duration": 5,
       "description": "回顾 4 步阅读策略：Predict → Skim → Scan+Matrix → Evaluate。布置作业。",
       "focusParagraphs": [
         "p8"
+      ],
+      "aiHints": [
+        { "q": "What are the 4 strategies?", "label": "4 个策略是什么?" },
+        { "q": "Do these work for other texts?", "label": "其他文章也能用吗?" }
       ],
       "exerciseLabel": "Put today's 4 reading strategies in the correct order.",
       "subtitle": "Review & transfer",
@@ -1066,9 +1145,26 @@
         "openingQ": "Imagine your friend missed today's class and asks: \"How did you manage to read such a long English article?\" How would you explain your reading process step by step?",
         "openingQZh": "假设你朋友缺课了，问你：\"你怎么读完这么长的英文文章的？\"你会怎么一步步解释？",
         "scaffolds": ["First, I looked at the title and...", "Then I read the first sentences to...", "After that I..."],
+        "clusters": [
+          {
+            "id": "c1",
+            "label": "笼统回忆",
+            "description": "学生只能笼统地说'我就一段段读的'或'我先看了标题'，无法区分不同阅读策略的目的。示例：'我就从头读到尾' / '先看标题然后读文章'"
+          },
+          {
+            "id": "c2",
+            "label": "部分策略识别",
+            "description": "学生能说出2-3个策略但遗漏某个步骤，或者能列出步骤但说不清每步的具体目的。示例：'先predict然后scan找细节最后evaluate' / '我先猜了内容然后做了matrix但忘了中间还有skim'"
+          },
+          {
+            "id": "c3",
+            "label": "完整策略表述",
+            "description": "学生能按顺序说出4个策略(Predict→Skim→Scan→Evaluate)及各自目的，并认识到这个过程可以迁移到其他文章。示例：'先predict提出问题，然后skim看结构，再scan找细节建matrix，最后evaluate用证据判断，这个方法可以用在别的文章上'"
+          }
+        ],
         "maxRounds": 5,
         "maxTimeSeconds": 240,
-        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should articulate the 4-step reading process: 1) Predicting (from title, form questions), 2) Skimming (first sentences → structure), 3) Scanning (find specific details → build matrix), 4) Evaluating (use evidence to form judgment). They should also express that these steps are reusable for other texts.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- If they name a step, ask: \"What did that step help you do specifically?\"\n- If they skip a step, ask: \"What did you do BEFORE scanning for details?\"\n- If they list all 4, ask: \"Could you use these same steps for a different article? How?\"\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student names all 4 strategies with their purposes AND mentions transferability, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.",
+        "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should recall most of the reading strategies used today (at least 3 of 4: Predict, Skim, Scan, Evaluate) and have some sense of what each one helped them do. Mentioning transferability to other texts is a bonus, NOT a requirement for [GOAL_REACHED].\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- If they name a step, ask: \"What did that step help you do specifically?\"\n- If they skip a step, ask: \"What did you do BEFORE scanning for details?\"\n- If they list all 4, ask: \"Could you use these same steps for a different article? How?\"\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student names all 4 strategies with their purposes AND mentions transferability, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
         "fallbackMC": {
           "question": "What is the correct order of the 4 reading strategies used today?",
           "questionZh": "今天用的4个阅读策略，正确顺序是什么？",
