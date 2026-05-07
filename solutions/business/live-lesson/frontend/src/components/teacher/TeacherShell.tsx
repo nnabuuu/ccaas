@@ -269,6 +269,16 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                       <span className="sc-name">{getStepName(sc.step)}</span>
                       <span className="sc-type">{sc.step.duration} min · {sc.step.strategy || 'task'}</span>
                       <div className="sc-badges">
+                        {(() => {
+                          const obsType = getObserveType(sc.step.answerKey?.type)
+                          return obsType ? (
+                            <button
+                              className="sc-observe-btn"
+                              title="查看 Observe 面板"
+                              onClick={(e) => { e.stopPropagation(); openObserve(obsType, sc.stepNum) }}
+                            >📊</button>
+                          ) : null
+                        })()}
                         <span className={`sc-badge student-count${sc.activeCount >= 20 ? ' major' : ''}`}>{sc.activeCount} 人</span>
                         <span className={`sc-badge ai-rounds${sc.aiRounds >= 20 ? ' hot' : ''}`}>
                           <span className="pip" style={{ background: 'var(--ai-dot)' }} />{sc.aiRounds} 轮
@@ -431,11 +441,11 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                           for (const d of defs) labelMap[d.id] = d.label
                           labelMap['other'] = '未分类'
 
-                          // Sort: active first, then by count
+                          // Sort by student count descending, 'other' always last
                           const sorted = [...clusterList].sort((a, b) => {
-                            if (a.activeCount > 0 && b.activeCount === 0) return -1
-                            if (a.activeCount === 0 && b.activeCount > 0) return 1
-                            return b.observationCount - a.observationCount
+                            if (a.clusterId === 'other') return 1
+                            if (b.clusterId === 'other') return -1
+                            return b.uniqueStudents - a.uniqueStudents || a.clusterId.localeCompare(b.clusterId)
                           })
 
                           // Show empty state if definitions exist but no observations
@@ -450,54 +460,37 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                             )
                           }
 
+                          const totalDiscussing = new Set(clusterList.flatMap(c => c.observations.map((o: { studentName: string }) => o.studentName))).size
+
                           return (
                             <div key={taskNum} className="qc-step-group">
                               <div className="q-step-h">
                                 <span className="step-name">{stepLabel}</span>
-                                <span className="tot">{clusterList.reduce((s, c) => s + c.observationCount, 0)} 条观察</span>
+                                <span className="tot">{totalDiscussing}人讨论中</span>
                               </div>
                               {sorted.map(cs => {
                                 const label = labelMap[cs.clusterId] || cs.clusterId
                                 const isOther = cs.clusterId === 'other'
-                                const hasActive = cs.activeCount > 0
-                                const allResolved = cs.activeCount === 0 && cs.resolvedCount > 0
-                                const cardClass = `qc-cluster-card${hasActive ? ' active' : ''}${allResolved ? ' resolved' : ''}${isOther ? ' other' : ''}`
-                                const cKey = `cs:${taskNum}:${cs.clusterId}`
-                                const isExpanded = expandedQ === cKey
+                                // Deduplicate student names from observations
+                                const studentNames = [...new Set(cs.observations.map((obs: { studentName: string }) => obs.studentName))]
+
+                                if (isOther && studentNames.length === 0) return null
 
                                 return (
-                                  <div key={cs.clusterId} className={cardClass}>
-                                    <div className="qc-head" onClick={() => setExpandedQ(isExpanded ? null : cKey)}>
+                                  <div key={cs.clusterId} className={`qc-cluster-card${isOther ? ' other' : ''}`}>
+                                    <div className="qc-head">
                                       <div className="qc-question">
-                                        {!isOther && <span className="qc-cluster-id">{cs.clusterId}</span>}
-                                        {label}
+                                        {isOther ? <span className="qc-other-label">{label}</span> : label}
                                       </div>
                                       <div className="qc-meta">
                                         <span className={`qc-count${cs.uniqueStudents >= 3 ? ' hot' : ''}`}>{cs.uniqueStudents}人</span>
-                                        {hasActive && <span className="qc-status-badge active">{cs.activeCount} active</span>}
-                                        {cs.resolvedCount > 0 && <span className="qc-status-badge resolved">{cs.resolvedCount} resolved</span>}
                                       </div>
                                     </div>
-                                    {isOther && cs.uniqueStudents >= 3 && (
-                                      <div className="qc-schema-hint">cluster schema 可能需要补充</div>
-                                    )}
-                                    {isExpanded && (
-                                      <div className="qc-expanded">
-                                        {cs.observations.map((obs, oi) => (
-                                          <div key={oi} className={`qc-obs-item${obs.status === 'resolved' ? ' resolved' : ''}`}>
-                                            <div className="qc-item-head">
-                                              <span className="q-student">{obs.studentName}</span>
-                                              <span className={`qc-obs-status ${obs.status}`}>
-                                                {obs.status === 'resolved' ? '✓' : '●'}
-                                              </span>
-                                            </div>
-                                            {obs.evidenceSpans.filter(Boolean).map((span, si) => (
-                                              <div key={si} className="qc-evidence">"{span}"</div>
-                                            ))}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                    <div className="qc-student-tags">
+                                      {studentNames.map(name => (
+                                        <span key={name} className="qc-student-tag" onClick={() => setModalStudent(name)}>{name}</span>
+                                      ))}
+                                    </div>
                                   </div>
                                 )
                               })}

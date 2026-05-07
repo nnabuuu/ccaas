@@ -47,6 +47,8 @@ export default function ObserveDrawer({ type, stepNum, manifest, state: _state, 
     .sort((a, b) => a.idx - b.idx)
   const step = taskSteps[stepNum - 1]
   const stepName = step ? getStepName(step) : `Step ${stepNum}`
+  // Extract axes from manifest for map exercises
+  const axes = step?.answerKey?.axes as { x: { neg: string; pos: string }; y: { neg: string; pos: string } } | undefined
 
   useEffect(() => {
     setLoading(true)
@@ -116,8 +118,8 @@ export default function ObserveDrawer({ type, stepNum, manifest, state: _state, 
             {view === 'student' && type === 'mc' && selectedStudent && <McStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
             {view === 'class' && type === 'evidence' && <EvidenceClassView data={data} onStudentSelect={handleStudentSelect} />}
             {view === 'student' && type === 'evidence' && selectedStudent && <EvidenceStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
-            {view === 'class' && type === 'map' && <MapClassView data={data} onStudentSelect={handleStudentSelect} />}
-            {view === 'student' && type === 'map' && selectedStudent && <MapStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
+            {view === 'class' && type === 'map' && <MapClassView data={axes && !data.axes ? { ...data, axes } : data} onStudentSelect={handleStudentSelect} />}
+            {view === 'student' && type === 'map' && selectedStudent && <MapStudentView data={axes && !data.axes ? { ...data, axes } : data} studentId={selectedStudent} onBack={handleBackToClass} />}
             {view === 'class' && type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
             {view === 'student' && type === 'discuss' && selectedStudent && <DiscussStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
           </Suspense>

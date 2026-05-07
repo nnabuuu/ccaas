@@ -5,6 +5,11 @@ export function pct(n: number, total: number): string {
   return `${Math.round((n / total) * 100)}%`
 }
 
+export function pctNum(n: number, total: number): number {
+  if (total === 0) return 0
+  return Math.round((n / total) * 100)
+}
+
 export function severityColor(severity: string): string {
   switch (severity) {
     case 'high': return 'var(--red)'
@@ -34,4 +39,24 @@ export function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = Math.round(seconds % 60)
   return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** Map coordinate [-1,1] to percentage [0,100] for positioning */
+export function coordToPct(n: number): number {
+  return ((n + 1) / 2) * 100
+}
+
+/** Deviation-based color: low=green, mid=blue, high=red */
+export function deviationColor(d: number): string {
+  if (d < 0.3) return 'var(--green-dot)'
+  if (d < 0.6) return 'var(--blue)'
+  return 'var(--red)'
+}
+
+/** Status card thresholds */
+export function statusLevel(score: number): { level: 'green' | 'blue' | 'amber' | 'red'; title: string } {
+  if (score >= 90) return { level: 'green', title: '表现优秀' }
+  if (score >= 70) return { level: 'blue', title: '大部分正确' }
+  if (score >= 40) return { level: 'amber', title: '需要关注' }
+  return { level: 'red', title: '需重点关注' }
 }
