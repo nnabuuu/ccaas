@@ -271,6 +271,7 @@ export interface ClassroomState {
     currentTask: number
     currentPhase: string
     stepStartedAt: string
+    discussMeta?: DiscussMeta | null
     submissions: Record<number, { step: number; data: any; score: any; submittedAt: string }>
   }>
   metrics: {

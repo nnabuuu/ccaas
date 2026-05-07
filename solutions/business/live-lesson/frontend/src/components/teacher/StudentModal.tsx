@@ -62,7 +62,16 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
           <div className="mod-av">{student.name[0]}</div>
           <div className="mod-ti">
             <div className="mod-ti-n">{student.name}</div>
-            <div className="mod-ti-m">当前在 {stepName}</div>
+            <div className="mod-ti-m">
+              当前在 {stepName}
+              {student.currentPhase === 'discuss' && student.discussMeta && (
+                <span style={{ marginLeft: 8, fontSize: 11, color: student.discussMeta.goalReached ? 'var(--green)' : 'var(--t3)' }}>
+                  {student.discussMeta.goalReached
+                    ? '✓ 对话达标'
+                    : (() => { const ms = Date.now() - new Date(student.discussMeta.startedAt).getTime(); return `讨论中 ${Number.isFinite(ms) && ms >= 0 ? Math.floor(ms / 60000) : 0}分钟` })()}
+                </span>
+              )}
+            </div>
           </div>
           <div className="mod-cls" onClick={onClose}>关闭 ✕</div>
         </div>

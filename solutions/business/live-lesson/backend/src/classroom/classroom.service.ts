@@ -355,6 +355,7 @@ export class ClassroomService {
           status,
           submissions: enrichedSubs,
           stepHistory,
+          discussMeta: s.discussMeta ?? null,
         };
       }),
       metrics: {
