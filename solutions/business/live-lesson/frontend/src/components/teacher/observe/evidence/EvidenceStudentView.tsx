@@ -1,5 +1,4 @@
 import type { ObserveData } from '../ObserveDrawer'
-import { scoreColor } from '../observe-helpers'
 
 interface EvidenceStudentData extends ObserveData {
   sections: Array<{ id: string; label: string }>
@@ -68,14 +67,14 @@ export default function EvidenceStudentView({ data, studentId, onBack }: Props) 
                   Evidence: {ss.evidenceHit}/{ss.evidenceTotal}
                 </div>
               )}
-              {ss.wrongPicks?.length > 0 && (
+              {(ss.wrongPicks?.length ?? 0) > 0 && (
                 <div style={{ fontSize: 9, color: 'var(--red)', marginTop: 2 }}>
-                  错选: {ss.wrongPicks.join(', ')}
+                  错选: {ss.wrongPicks!.join(', ')}
                 </div>
               )}
-              {ss.missed?.length > 0 && (
+              {(ss.missed?.length ?? 0) > 0 && (
                 <div style={{ fontSize: 9, color: 'var(--amber)', marginTop: 2 }}>
-                  遗漏: {ss.missed.join(', ')}
+                  遗漏: {ss.missed!.join(', ')}
                 </div>
               )}
             </div>

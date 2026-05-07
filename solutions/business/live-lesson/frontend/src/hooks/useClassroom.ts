@@ -537,7 +537,7 @@ export function useTeacherStream(sessionCode: string): {
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set())
   const esRef = useRef<EventSource | null>(null)
   const snapshotsRef = useRef<StateSnapshot[]>([])
-  const [snapshotsVersion, setSnapshotsVersion] = useState(0)
+  const [, setSnapshotsVersion] = useState(0)
 
   // Fetch historical snapshots on mount
   useEffect(() => {

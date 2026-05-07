@@ -1,5 +1,4 @@
 import type { ObserveData } from '../ObserveDrawer'
-import { scoreColor, formatTime } from '../observe-helpers'
 
 interface MapData extends ObserveData {
   stats: { totalStudents: number; submitted: number; avgDeviation: number; reasonedCount: number }

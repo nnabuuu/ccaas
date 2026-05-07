@@ -122,7 +122,7 @@ export function buildTasksFromManifest(
     .sort((a, b) => a.idx - b.idx)
     .map((step, i) => ({
       id: i + 1,
-      name: step.displayName || step.labelEn || step.label,
+      name: step.displayName || step.labelEn || step.label || '',
       subtitle: step.subtitle || '',
       time: step.duration ? `${step.duration} min` : '',
       focus: (step.focusParagraphs || []).map(pid => parseInt(pid.replace('p', ''))),

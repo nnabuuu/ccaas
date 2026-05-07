@@ -35,7 +35,7 @@ const TYPE_LABELS: Record<string, string> = {
   discuss: 'Discuss 观察',
 }
 
-export default function ObserveDrawer({ type, stepNum, manifest, state, sessionCode, onClose, onStudentClick }: Props) {
+export default function ObserveDrawer({ type, stepNum, manifest, state: _state, sessionCode, onClose, onStudentClick: _onStudentClick }: Props) {
   const [data, setData] = useState<ObserveData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
