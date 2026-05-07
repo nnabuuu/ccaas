@@ -130,8 +130,8 @@ describe('MatchGrader', () => {
 describe('MatrixGrader', () => {
   const grader = new MatrixGrader();
 
-  it('scores place/practice/reason dimensions', () => {
-    const r = grader.grade(
+  it('scores place/practice/reason dimensions', async () => {
+    const r = await grader.grade(
       { type: 'matrix', answers: [{ rowIdx: 0, place: 'Rome', practice: 'bath', reason: 'hygiene', isDemo: false }] },
       { rows: [{ place: 'Rome', practice: 'bathing', reason: 'hygiene rituals' }] },
     );
@@ -140,18 +140,38 @@ describe('MatrixGrader', () => {
     expect(r.byDimension.reason).toBe(100);
   });
 
-  it('skips demo rows', () => {
-    const r = grader.grade(
+  it('reads what/why fields as fallback', async () => {
+    const r = await grader.grade(
+      { type: 'matrix', answers: [{ rowIdx: 0, place: 'Rome', practice: 'bath', reason: 'hygiene', isDemo: false }] },
+      { rows: [{ place: 'Rome', what: 'bathing', why: 'hygiene rituals' }] },
+    );
+    expect(r.byDimension.practice).toBe(100);
+    expect(r.byDimension.reason).toBe(100);
+  });
+
+  it('skips demo rows', async () => {
+    const r = await grader.grade(
       { type: 'matrix', answers: [{ rowIdx: 0, place: 'X', practice: 'Y', reason: 'Z', isDemo: true }] },
       { rows: [{ place: 'wrong', practice: 'wrong', reason: 'wrong' }] },
     );
     expect(r.total).toBe(0);
   });
 
-  it('handles empty answers gracefully', () => {
-    const r = grader.grade({ type: 'matrix', answers: [] as any }, {});
+  it('handles empty answers gracefully', async () => {
+    const r = await grader.grade({ type: 'matrix', answers: [] as any }, {});
     expect(r.total).toBe(0);
     expect(r.byDimension).toEqual({ place: 0, practice: 0, reason: 0 });
+  });
+
+  it('includes cellQualities in result', async () => {
+    const r = await grader.grade(
+      { type: 'matrix', answers: [{ rowIdx: 0, place: 'Rome', practice: 'bath', reason: 'hygiene', isDemo: false }] },
+      { rows: [{ place: 'Rome', what: 'They used public baths regularly for social meetings', why: 'Bathing was central to Roman hygiene and social life' }] },
+    );
+    expect(r.cellQualities).toBeDefined();
+    expect(r.cellQualities!['0']).toBeDefined();
+    expect(r.cellQualities!['0'].whatQ).toBeGreaterThanOrEqual(0);
+    expect(r.cellQualities!['0'].whyQ).toBeGreaterThanOrEqual(0);
   });
 });
 

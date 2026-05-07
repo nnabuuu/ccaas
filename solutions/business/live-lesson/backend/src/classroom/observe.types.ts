@@ -117,6 +117,49 @@ export interface MapObserveData {
   }>;
 }
 
+export interface MatrixObserveData {
+  stats: {
+    totalStudents: number;
+    submitted: number;
+    avgCompletion: number;
+    avgQuality: number;
+    whatAvg: number;
+    whyAvg: number;
+    needAttention: number;
+  };
+  rows: Array<{
+    id: string;
+    concept: string;
+    paraRef?: string;
+    whatAvg: number;
+    whyAvg: number;
+    whatDist: [number, number, number, number];
+    whyDist: [number, number, number, number];
+  }>;
+  patterns: Array<{
+    id: string;
+    label: string;
+    count: number;
+    severity: 'high' | 'medium' | 'low';
+    students: Array<{ id: string; name: string }>;
+  }>;
+  students: Array<{
+    id: string;
+    name: string;
+    time: number;
+    submitted: boolean;
+    completion: { filled: number; total: number; pct: number };
+    avgQuality: number;
+    responses: Record<string, {
+      what: string;
+      why: string;
+      whatQ: number;
+      whyQ: number;
+    }>;
+    keyInsights: string[];
+  }>;
+}
+
 export interface DiscussObserveData {
   stats: {
     totalStudents: number;

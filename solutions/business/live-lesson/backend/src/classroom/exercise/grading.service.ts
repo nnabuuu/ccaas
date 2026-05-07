@@ -19,7 +19,7 @@ export class GradingService {
     this.graders = {
       quiz: new QuizGrader(),
       match: new MatchGrader(),
-      matrix: new MatrixGrader(),
+      matrix: new MatrixGrader(aiPromptBuilder),
       stance: new StanceGrader(),
       order: new OrderGrader(),
       'select-evidence': new SelectEvidenceGrader(),

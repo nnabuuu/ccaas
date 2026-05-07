@@ -11,6 +11,8 @@ const MapClassView = lazy(() => import('./map/MapClassView'))
 const MapStudentView = lazy(() => import('./map/MapStudentView'))
 const DiscussClassView = lazy(() => import('./discuss/DiscussClassView'))
 const DiscussStudentView = lazy(() => import('./discuss/DiscussStudentView'))
+const MatrixClassView = lazy(() => import('./matrix/MatrixClassView'))
+const MatrixStudentView = lazy(() => import('./matrix/MatrixStudentView'))
 
 export interface ObserveData {
   stats: Record<string, unknown>
@@ -31,6 +33,7 @@ const TYPE_LABELS: Record<string, string> = {
   evidence: 'Evidence 观察',
   map: 'Map 观察',
   discuss: 'Discuss 观察',
+  matrix: 'Matrix 观察',
 }
 
 function LoadingView() {
@@ -54,6 +57,7 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
+  const [view, setView] = useState<'first' | 'latest'>('first')
 
   const taskSteps = manifest.readingSteps
     .filter(rs => rs.type === 'task')
@@ -68,14 +72,15 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
     setData(null)
     setSelectedStudent(null)
 
-    fetch(`/api/classroom/${sessionCode}/steps/${stepNum}/observe/${type}`)
+    const viewParam = (type === 'mc' || type === 'evidence') ? `?view=${view}` : ''
+    fetch(`/api/classroom/${sessionCode}/steps/${stepNum}/observe/${type}${viewParam}`)
       .then(r => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`)
         return r.json()
       })
       .then(d => { setData(d); setLoading(false) })
       .catch(e => { setError(e.message); setLoading(false) })
-  }, [type, stepNum, sessionCode])
+  }, [type, stepNum, sessionCode, view])
 
   const studentIds = useMemo(
     () => (data?.students || []).map(s => s.id as string),
@@ -108,6 +113,18 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
         <div className="observe-band">
           <span className="observe-band-title">{TYPE_LABELS[type] || type}</span>
           <span className="observe-band-sub">{stepName} · Step {stepNum}</span>
+          {(type === 'mc' || type === 'evidence') && (
+            <div className="obs-view-toggle">
+              <button
+                className={`obs-vt-btn${view === 'first' ? ' active' : ''}`}
+                onClick={() => setView('first')}
+              >首次</button>
+              <button
+                className={`obs-vt-btn${view === 'latest' ? ' active' : ''}`}
+                onClick={() => setView('latest')}
+              >最新</button>
+            </div>
+          )}
           <button className="observe-band-close" onClick={onClose}>✕</button>
         </div>
         <div className="observe-body">
@@ -119,6 +136,7 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
               {type === 'evidence' && <EvidenceClassView data={data} onStudentSelect={handleStudentSelect} />}
               {type === 'map' && <MapClassView data={mapData!} onStudentSelect={handleStudentSelect} />}
               {type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
+              {type === 'matrix' && <MatrixClassView data={data} onStudentSelect={handleStudentSelect} />}
             </Suspense>
           )}
         </div>
@@ -147,6 +165,7 @@ export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, on
               {type === 'evidence' && <EvidenceStudentView data={data} studentId={selectedStudent} />}
               {type === 'map' && <MapStudentView data={mapData!} studentId={selectedStudent} />}
               {type === 'discuss' && <DiscussStudentView data={data} studentId={selectedStudent} />}
+              {type === 'matrix' && <MatrixStudentView data={data} studentId={selectedStudent} />}
             </Suspense>
           )}
         </div>

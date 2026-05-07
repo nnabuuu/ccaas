@@ -193,12 +193,13 @@ export class ClassroomController {
     @Param('code') code: string,
     @Param('step') step: string,
     @Param('type') type: string,
+    @Query('view') view?: string,
   ) {
     const parsedStep = parseInt(step, 10);
     if (isNaN(parsedStep) || parsedStep < 1) {
       throw new BadRequestException('step must be a positive number');
     }
-    const validTypes = ['mc', 'evidence', 'map', 'discuss'];
+    const validTypes = ['mc', 'evidence', 'map', 'discuss', 'matrix'];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(`type must be one of: ${validTypes.join(', ')}`);
     }
@@ -220,11 +221,19 @@ export class ClassroomController {
 
     switch (type) {
       case 'mc':
-        return this.observeService.computeMcObserve(students, subsByStudent, stepIdx, answerKey);
+        return this.observeService.computeMcObserve(
+          students, subsByStudent, stepIdx, answerKey,
+          view === 'first' ? 'first' : 'latest',
+        );
       case 'evidence':
-        return this.observeService.computeEvidenceObserve(students, subsByStudent, stepIdx, answerKey);
+        return this.observeService.computeEvidenceObserve(
+          students, subsByStudent, stepIdx, answerKey,
+          view === 'first' ? 'first' : 'latest',
+        );
       case 'map':
         return this.observeService.computeMapObserve(students, subsByStudent, stepIdx, answerKey);
+      case 'matrix':
+        return this.observeService.computeMatrixObserve(students, subsByStudent, stepIdx, answerKey);
       case 'discuss':
         return this.observeService.computeDiscussObserve(session.id, students, stepIdx);
       default:

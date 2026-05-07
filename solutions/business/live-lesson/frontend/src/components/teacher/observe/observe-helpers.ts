@@ -53,6 +53,14 @@ export function deviationColor(d: number): string {
   return 'var(--red)'
 }
 
+/** Matrix quality score helpers (0-3 scale) */
+export const Q_COLORS = ['var(--t3)', 'var(--amber)', 'var(--blue)', 'var(--green)']
+export const Q_BGS = ['var(--surface2)', 'var(--amber-soft)', 'var(--blue-soft)', 'var(--green-soft)']
+export const Q_LABELS = ['未填', '基本', '良好', '优秀']
+export function qColor(q: number): string { return Q_COLORS[q] || Q_COLORS[0] }
+export function qBg(q: number): string { return Q_BGS[q] || Q_BGS[0] }
+export function qLabel(q: number): string { return Q_LABELS[q] || Q_LABELS[0] }
+
 /** Status card thresholds */
 export function statusLevel(score: number): { level: 'green' | 'blue' | 'amber' | 'red'; title: string } {
   if (score >= 90) return { level: 'green', title: '表现优秀' }
