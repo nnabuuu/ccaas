@@ -524,7 +524,7 @@
 
 /* Status card */
 .obs-status-card { border-radius: 8px; padding: 10px 12px; border: 1px solid; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px }
-.obs-status-card .obs-sc-title { font-size: 12px; font-weight: 700 }
+.obs-status-card .obs-sc-title { font-size: 12px; font-weight: 700; color: inherit }
 .obs-status-card .obs-sc-body { font-size: 10px; line-height: 1.4 }
 .obs-status-card.green { border-color: rgba(45,102,18,.2); background: var(--green-soft); color: var(--green) }
 .obs-status-card.blue { border-color: rgba(26,95,160,.2); background: var(--blue-soft); color: var(--blue) }

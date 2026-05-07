@@ -130,7 +130,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
     if (donePhases.has('practice') && !prevDoneRef.current.has('practice')) {
       onOverlayChange?.(null)
     }
-  }, [donePhases]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [donePhases, onOverlayChange])
 
   const isUnlocked = useCallback((phase: PhaseConfig) => {
     return phase.unlockAfter === null || donePhases.has(phase.unlockAfter)
@@ -175,7 +175,7 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
   useEffect(() => {
     if (isRevisit || !ctx.sessionCode || !ctx.studentId) return
     reportPhase(ctx.sessionCode, ctx.studentId, task.id, phaseIds[0])
-  }, [task.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [task.id, isRevisit, ctx.sessionCode, ctx.studentId, phaseIds])
 
   const markDone = useCallback((phaseId: string) => {
     setDonePhases(prev => { const next = new Set(prev); next.add(phaseId); return next })

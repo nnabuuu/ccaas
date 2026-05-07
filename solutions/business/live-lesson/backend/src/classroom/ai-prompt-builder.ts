@@ -24,7 +24,7 @@ export class AiPromptBuilder {
     if (paragraphs.length > 0) {
       const articleTitle = manifest.article?.title || '';
       const articleText = paragraphs.map((p: any, i: number) => `¶${i + 1}: ${p.text}`).join('\n\n');
-      layers.push(`【课文全文】\n标题：${articleTitle}\n\n${articleText}`);
+      layers.push(`【课文全文】\n标题：${articleTitle}\n\n${articleText}\n\n（引用段落时请用 ¶N 格式，如 ¶1、¶3-5。学生端会将其渲染为可点击链接，点击后自动高亮对应段落。）`);
     }
 
     // Layer 3: Step context
