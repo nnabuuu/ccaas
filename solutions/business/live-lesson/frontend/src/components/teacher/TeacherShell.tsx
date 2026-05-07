@@ -33,7 +33,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
 
   // URL-driven observe drawer
   const [searchParams, setSearchParams] = useSearchParams()
-  const VALID_OBSERVE_TYPES = useMemo(() => new Set(['mc', 'evidence', 'map', 'discuss']), [])
+  const VALID_OBSERVE_TYPES = useMemo(() => new Set(['mc', 'evidence', 'map', 'discuss', 'matrix']), [])
   const observeParams = useMemo(() => {
     const type = searchParams.get('observe')
     const step = searchParams.get('step')

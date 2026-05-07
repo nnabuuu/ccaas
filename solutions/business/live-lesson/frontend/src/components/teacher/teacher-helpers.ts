@@ -163,7 +163,8 @@ export function getObserveType(answerKeyType?: string): string | null {
     case 'quiz': case 'match': case 'order': return 'mc'
     case 'select-evidence': return 'evidence'
     case 'map': return 'map'
-    default: return 'mc'
+    case 'matrix': return 'matrix'
+    default: return null
   }
 }
 
