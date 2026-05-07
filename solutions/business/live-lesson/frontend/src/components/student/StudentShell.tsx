@@ -37,6 +37,9 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     }
   }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [currentPhase, setCurrentPhase] = useState<string>('listen')
+  const handlePhaseChange = useCallback((phase: string) => setCurrentPhase(phase), [])
+
   const [textOverlay, setTextOverlay] = useState<TextOverlay | null>(null)
   const handleOverlayChange = useCallback((ov: TextOverlay | null) => setTextOverlay(ov), [])
   const [exerciseSpecs, setExerciseSpecs] = useState<Record<number, ExerciseSpec>>({})
@@ -152,6 +155,14 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     return enriched
   }, [task, manifest.readingSteps, taskToStep, instructionMap, exerciseSpecs])
 
+  // AI hints for current step (manifest-driven)
+  const currentAiHints = useMemo(() => {
+    if (!taskId) return undefined
+    const stepIdx = taskToStep[taskId]
+    const step = manifest.readingSteps?.find(s => s.idx === stepIdx)
+    return step?.aiHints
+  }, [taskId, taskToStep, manifest.readingSteps])
+
   // Convert focus numbers to paragraph IDs; para refs override when active
   const baseFocusIds = currentFocus.map(n => `p${n}`)
   const focusIds = paraRefIds.length > 0 ? paraRefIds : baseFocusIds
@@ -208,6 +219,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             courseIntroView={courseIntroView}
             taskCount={taskCount}
             doneSet={doneSet}
+            onPhaseChange={handlePhaseChange}
           />
           <TextPanel
             title={manifest.article.title}
@@ -220,7 +232,12 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             onToggle={() => setTextbookOpen(o => !o)}
             enableMath={manifest.enableMath}
           />
-          <AiPanel taskId={taskId || 1} />
+          <AiPanel
+            taskId={taskId || 1}
+            taskName={task?.name}
+            phase={currentPhase}
+            aiHints={currentAiHints}
+          />
         </div>
       </SessionCtx.Provider>
     </div>

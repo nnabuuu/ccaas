@@ -42,6 +42,39 @@ describe('ManifestSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('should validate a step with aiHints', () => {
+    const result = ReadingStepSchema.safeParse({
+      id: 's1', idx: 1, label: 'Test', type: 'task',
+      aiHints: [
+        { q: 'What does "conflict" mean?', label: 'conflict 是什么?' },
+        { q: 'I don\'t understand ¶2', label: '看不懂 ¶2' },
+      ],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.aiHints).toHaveLength(2);
+      expect(result.data.aiHints![0].q).toBe('What does "conflict" mean?');
+    }
+  });
+
+  it('should allow a step without aiHints (optional)', () => {
+    const result = ReadingStepSchema.safeParse({
+      id: 's1', idx: 1, label: 'Test', type: 'task',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.aiHints).toBeUndefined();
+    }
+  });
+
+  it('should reject aiHints with missing label', () => {
+    const result = ReadingStepSchema.safeParse({
+      id: 's1', idx: 1, label: 'Test', type: 'task',
+      aiHints: [{ q: 'question only' }],
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('should catch invalid answerKey type in a step', () => {
     const result = ReadingStepSchema.safeParse({
       id: 's1', idx: 1, label: 'Test', type: 'task',

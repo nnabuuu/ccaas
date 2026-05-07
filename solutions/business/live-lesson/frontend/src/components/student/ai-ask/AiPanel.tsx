@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useContext } from 'react'
+import { useState, useRef, useCallback, useContext, useEffect } from 'react'
 import { useAiAsk } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
 
@@ -9,33 +9,12 @@ interface ChatMsg {
 
 interface Props {
   taskId: number
+  taskName?: string
+  phase?: string
+  aiHints?: Array<{ q: string; label: string }>
 }
 
-/* AI presets per task */
-const AI_BANK: Record<number, Array<{ q: string; a: string }>> = {
-  1: [
-    { q: 'What does "conflict" mean?', a: 'Conflict = 冲突。Two opposite ideas of beauty: gaining weight (Nigeria) vs slim (media).' },
-    { q: 'I don\'t understand ¶2', a: '¶2: media promotes "shallow beauty ideals" — too simple, only about appearance. The writer questions this.' },
-  ],
-  2: [
-    { q: 'What is "Phenomenon"?', a: 'Phenomenon = 现象。¶1-2 describes a phenomenon: different cultures have different beauty standards.' },
-    { q: 'What does "It appears that" mean?', a: '"It appears that" = 看起来。A signal word for conclusions.' },
-  ],
-  3: [
-    { q: 'How to fill Myanmar?', a: '¶7: "women wearing metal rings around their necks." Practice = wearing metal neck rings.' },
-    { q: 'Can\'t find the reason', a: 'Some reasons are implied. Borneo: tattoos like "a diary" → reason = recording life events.' },
-  ],
-  4: [
-    { q: 'What does "shallow" mean?', a: 'Shallow = 肤浅。Media beauty is "shallow" because it only cares about looks, ignoring cultural meaning.' },
-    { q: 'Can I add my own ideas?', a: 'Yes! Text evidence + your own observations both work.' },
-  ],
-  5: [
-    { q: 'What are the 4 strategies?', a: '1. Predicting → 2. Skimming → 3. Scanning → 4. Evaluating' },
-    { q: 'Works for other texts?', a: 'Absolutely! These 4 steps work for any argumentative or expository text.' },
-  ],
-}
-
-export default function AIFloat({ taskId }: Props) {
+export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
   const { sessionCode, studentId } = useContext(SessionCtx)
   const [open, setOpen] = useState(false)
   const [msgs, setMsgs] = useState<ChatMsg[]>([])
@@ -43,103 +22,167 @@ export default function AIFloat({ taskId }: Props) {
   const chatRef = useRef<HTMLDivElement>(null)
   const { ask, loading } = useAiAsk(sessionCode || '')
 
-  const presets = AI_BANK[taskId] || []
+  const hints = aiHints || []
+  const isDiscuss = phase === 'discuss'
 
-  const addMsg = (q: string, a: string) => {
-    setMsgs(m => [...m, { t: 'q', x: q }, { t: 'a', x: a }])
-    setTimeout(() => chatRef.current && (chatRef.current.scrollTop = chatRef.current.scrollHeight), 50)
-  }
+  // Storage key for session persistence
+  const storageKey = `ai-chat-${sessionCode || 'local'}-${taskId}`
+
+  // Restore chat from sessionStorage on mount / taskId change
+  useEffect(() => {
+    const saved = sessionStorage.getItem(storageKey)
+    if (saved) {
+      try { setMsgs(JSON.parse(saved)) } catch { /* ignore corrupt data */ }
+    } else {
+      setMsgs([])
+    }
+  }, [storageKey])
+
+  // Persist chat to sessionStorage on change
+  useEffect(() => {
+    if (msgs.length > 0) {
+      sessionStorage.setItem(storageKey, JSON.stringify(msgs))
+    }
+  }, [msgs, storageKey])
+
+  const scrollToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' })
+    })
+  }, [])
 
   const sendQuestion = useCallback(async (question: string) => {
-    if (!question.trim()) return
+    if (!question.trim() || isDiscuss) return
 
-    // If we have a backend connection, use it
+    setMsgs(m => [...m, { t: 'q', x: question.trim() }])
+    setInput('')
+    scrollToBottom()
+
     if (sessionCode && studentId) {
-      setMsgs(m => [...m, { t: 'q', x: question.trim() }])
-      setInput('')
       const result = await ask(studentId, taskId, question.trim())
       setMsgs(m => [...m, { t: 'a', x: result?.answer || 'AI assistant is temporarily unavailable.' }])
-      setTimeout(() => chatRef.current && (chatRef.current.scrollTop = chatRef.current.scrollHeight), 50)
     } else {
-      // Offline mode: check if it matches a preset
-      const preset = presets.find(p => p.q === question)
-      if (preset) {
-        addMsg(preset.q, preset.a)
-      } else {
-        addMsg(question, 'Think about how the evidence in the text connects to your idea. Try using the pattern: "Based on the text, I think... because..."')
-      }
-      setInput('')
+      setMsgs(m => [...m, { t: 'a', x: 'Think about how the evidence in the text connects to your idea. Try using the pattern: "Based on the text, I think... because..."' }])
     }
-  }, [sessionCode, studentId, taskId, ask, presets])
+    scrollToBottom()
+  }, [sessionCode, studentId, taskId, ask, isDiscuss])
 
   const handleSend = () => {
-    if (!input.trim() || loading) return
+    if (!input.trim() || loading || isDiscuss) return
     sendQuestion(input.trim())
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  // Phase label for header badge
+  const phaseLabel = phase === 'discuss' ? 'Discuss'
+    : phase === 'practice' ? 'Practice'
+    : phase === 'takeaway' ? 'Takeaway'
+    : phase === 'listen' ? 'Listen'
+    : null
+
+  const stepLabel = taskName
+    ? `Step ${taskId}` + (phaseLabel ? ` · ${phaseLabel}` : '')
+    : phaseLabel || undefined
+
   return (
     <>
+      {/* Pulse ring (only when closed) */}
+      {!open && <div className="stu-ai-fab-ring" />}
+
       {/* FAB button */}
       <button
-        className="stu-ai-fab"
-        style={open ? { transform: 'rotate(45deg)' } : undefined}
+        className={`stu-ai-fab${open ? ' open' : ''}`}
         onClick={() => setOpen(!open)}
-      >
-        {open ? '+' : '?'}
-      </button>
+        aria-label={open ? 'Close AI assistant' : 'Open AI assistant'}
+      />
 
       {/* Floating panel */}
       {open && (
-        <div className="stu-ai-float-panel">
+        <div className="stu-ai-panel">
           {/* Header */}
-          <div className="stu-ai-float-hd">
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--purple)' }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--purple)', flex: 1 }}>AI Assistant</span>
+          <div className="stu-ai-hd">
+            <div className="stu-ai-avatar" />
+            <span className="stu-ai-title">AI Assistant</span>
+            {stepLabel && <span className="stu-ai-phase-badge">{stepLabel}</span>}
+            <button className="stu-ai-close" onClick={() => setOpen(false)} aria-label="Close">×</button>
           </div>
 
-          {/* Preset chips */}
-          {presets.length > 0 && (
-            <div className="stu-ai-float-chips">
-              {presets.map((pr, i) => (
+          {/* Suggestion chips */}
+          {hints.length > 0 && !isDiscuss && (
+            <div className="stu-ai-chips">
+              {hints.map((h, i) => (
                 <button
                   key={i}
-                  className="stu-ai-float-chip"
-                  onClick={() => addMsg(pr.q, pr.a)}
+                  className="stu-ai-chip"
+                  onClick={() => sendQuestion(h.q)}
                   disabled={loading}
-                >{pr.q}</button>
+                >{h.label}</button>
               ))}
             </div>
           )}
 
           {/* Chat messages */}
-          <div ref={chatRef} className="stu-ai-float-chat">
-            {msgs.length === 0 && (
-              <div style={{ fontSize: 11, color: 'var(--t3)', textAlign: 'center', padding: 16 }}>Ask me anything!</div>
+          <div ref={chatRef} className="stu-ai-chat">
+            {msgs.length === 0 && !isDiscuss && (
+              <div className="stu-ai-empty">
+                {taskName
+                  ? `Ask me anything about "${taskName}"!`
+                  : 'Ask me anything about the text!'}
+              </div>
+            )}
+            {msgs.length === 0 && isDiscuss && (
+              <div className="stu-ai-empty">
+                Chat history will be shown here.
+              </div>
             )}
             {msgs.map((m, i) => (
-              <div key={i} className={m.t === 'q' ? 'stu-ai-float-q' : 'stu-ai-float-a'}>{m.x}</div>
+              <div key={i} className={`stu-ai-msg${m.t === 'q' ? ' student' : ''}`}>
+                {m.t === 'a' && <div className="stu-ai-msg-avatar" />}
+                <div className={`stu-ai-bubble ${m.t === 'q' ? 'student' : 'ai'}`}>{m.x}</div>
+              </div>
             ))}
             {loading && (
-              <div className="stu-ai-float-a" style={{ opacity: 0.6 }}>Thinking...</div>
+              <div className="stu-ai-typing">
+                <div className="stu-ai-msg-avatar" />
+                <div className="stu-ai-typing-dots">
+                  <span /><span /><span />
+                </div>
+              </div>
             )}
           </div>
 
-          {/* Input */}
-          <div className="stu-ai-float-input">
-            <input
-              style={{ flex: 1, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, fontFamily: 'inherit', background: 'var(--bg)' }}
-              placeholder="Type your question..."
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSend()}
-              disabled={loading}
-            />
-            <button
-              style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'var(--t1)', color: 'var(--surface)', cursor: 'pointer', fontSize: 12 }}
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-            >→</button>
-          </div>
+          {/* Discuss phase hint */}
+          {isDiscuss && (
+            <div className="stu-ai-discuss-hint">
+              正在 Socratic 讨论中，可以在讨论窗口直接对话
+            </div>
+          )}
+
+          {/* Input area */}
+          {!isDiscuss && (
+            <div className="stu-ai-input">
+              <textarea
+                placeholder="Type your question..."
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                rows={1}
+              />
+              <button
+                className="stu-ai-send"
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                aria-label="Send"
+              >→</button>
+            </div>
+          )}
         </div>
       )}
     </>

@@ -63,6 +63,7 @@ export interface ReadingStep {
   subtitle?: string
   summary?: string
   showRoles?: boolean
+  aiHints?: Array<{ q: string; label: string }>
   studentView?: {
     title: string
     body: string

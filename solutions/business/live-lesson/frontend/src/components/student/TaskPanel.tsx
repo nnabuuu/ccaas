@@ -101,8 +101,8 @@ const PHASE_REGISTRY: Record<string, (props: {
 }
 
 /* ═══ TASK VIEW — main component ═══ */
-function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet }: {
-  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>
+function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayChange, taskCount, doneSet, onPhaseChange }: {
+  task: Task; onComplete: () => void; lessonId?: string; stepIdx?: number; phaseConfig?: PhaseConfig[]; onOverlayChange?: (overlay: TextOverlay | null) => void; taskCount?: number; doneSet?: Set<number>; onPhaseChange?: (phase: string) => void
 }) {
   const ctx = useContext(SessionCtx)
   const phases = phaseConfig?.length ? phaseConfig : DEFAULT_PHASES
@@ -135,6 +135,11 @@ function TaskView({ task, onComplete, lessonId, stepIdx, phaseConfig, onOverlayC
   const isUnlocked = useCallback((phase: PhaseConfig) => {
     return phase.unlockAfter === null || donePhases.has(phase.unlockAfter)
   }, [donePhases])
+
+  // Notify parent when active phase changes
+  useEffect(() => {
+    onPhaseChange?.(activePhase)
+  }, [activePhase, onPhaseChange])
 
   // IntersectionObserver for phase tracking
   useEffect(() => {
@@ -297,7 +302,7 @@ export function useStudentTask(
 }
 
 /* ═══ TASK COLUMN — rendered as a proper component ═══ */
-export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet }: {
+export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, stepIdx, articleTitle, lessonIntro, lessonSummary, phaseConfig, onOverlayChange, courseIntroView, taskCount, doneSet, onPhaseChange }: {
   screen: string
   setScreen: (s: string) => void
   task: Task | undefined
@@ -312,6 +317,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   courseIntroView?: { title: string; body: string; keyPoints?: string[]; confirmLabel?: string } | null
   taskCount?: number
   doneSet?: Set<number>
+  onPhaseChange?: (phase: string) => void
 }) {
   const { config } = useContext(SessionCtx)
   const introText = lessonIntro || ''
@@ -384,7 +390,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       {screen === 'bonus' && (
         <BonusPhase onComplete={() => setScreen('summary')} />
       )}
-      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} />}
+      {task && <TaskView key={task.id} task={task} onComplete={() => completeTask(task.id)} lessonId={lessonId} stepIdx={stepIdx} phaseConfig={phaseConfig} onOverlayChange={onOverlayChange} taskCount={taskCount} doneSet={doneSet} onPhaseChange={onPhaseChange} />}
     </div>
   )
 }

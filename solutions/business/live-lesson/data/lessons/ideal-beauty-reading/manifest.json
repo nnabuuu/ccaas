@@ -169,6 +169,11 @@
         "p1",
         "p2"
       ],
+      "aiHints": [
+        { "q": "What does \"conflict\" mean?", "label": "conflict 是什么?" },
+        { "q": "I don't understand ¶2", "label": "看不懂 ¶2" },
+        { "q": "How do I start predicting?", "label": "怎么开始 predict?" }
+      ],
       "exerciseLabel": "Answer the questions about ¶1-2.",
       "subtitle": "What is beauty?",
       "summary": "You found the central conflict: one culture values gaining weight, while modern media promotes being slim.\n\nKey question: *Is one idea of physical beauty really more attractive than another?*\n\nLet's see how the writer answers it.",
@@ -342,6 +347,11 @@
         "p6",
         "p7",
         "p8"
+      ],
+      "aiHints": [
+        { "q": "What is \"Phenomenon\"?", "label": "Phenomenon 是什么?" },
+        { "q": "What does \"It appears that\" mean?", "label": "It appears that 什么意思?" },
+        { "q": "How do I skim?", "label": "怎么 skim?" }
       ],
       "exerciseLabel": "Match each section to its function — then prove it from the text.",
       "subtitle": "Find the skeleton",
@@ -773,6 +783,11 @@
         "p6",
         "p7"
       ],
+      "aiHints": [
+        { "q": "How to fill Myanmar?", "label": "Myanmar 怎么填?" },
+        { "q": "Can't find the reason", "label": "找不到 reason" },
+        { "q": "What does \"tattoo\" mean?", "label": "tattoo 是什么?" }
+      ],
       "exerciseLabel": "Read ¶3-7 and fill the matrix.",
       "subtitle": "Collect evidence",
       "summary": "You turned paragraphs into organized evidence.\n\nYour matrix shows beauty is about culture, status, and identity.\n\nNext, use this evidence to form your own opinion.",
@@ -957,6 +972,10 @@
         "p2",
         "p8"
       ],
+      "aiHints": [
+        { "q": "What does \"shallow\" mean?", "label": "shallow 什么意思?" },
+        { "q": "Can I add my own ideas?", "label": "可以加自己的想法吗?" }
+      ],
       "exerciseLabel": "Drag each practice onto the plane, then explain your reasoning.",
       "subtitle": "Do you agree?",
       "summary": "You used evidence to support your judgment — a big step in academic reading.\n\nLet's review how you learned today.",
@@ -1098,6 +1117,10 @@
       "description": "回顾 4 步阅读策略：Predict → Skim → Scan+Matrix → Evaluate。布置作业。",
       "focusParagraphs": [
         "p8"
+      ],
+      "aiHints": [
+        { "q": "What are the 4 strategies?", "label": "4 个策略是什么?" },
+        { "q": "Do these work for other texts?", "label": "其他文章也能用吗?" }
       ],
       "exerciseLabel": "Put today's 4 reading strategies in the correct order.",
       "subtitle": "Review & transfer",

@@ -108,6 +108,11 @@ export const ReadingStepSchema = z.object({
   answerKey: AnswerKeySchema.optional(),
   // Instruction / listen content
   studentView: StudentViewSchema.optional(),
+  // AI assistant hint chips (per step)
+  aiHints: z.array(z.object({
+    q: z.string(),
+    label: z.string(),
+  })).optional(),
   // Discuss
   discuss: DiscussSchema.optional(),
   // Teacher
