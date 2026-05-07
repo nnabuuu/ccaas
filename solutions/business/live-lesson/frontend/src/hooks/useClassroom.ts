@@ -279,7 +279,7 @@ export interface ClassroomState {
     submitted: number
     inProgress: number
   }
-  stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number }>
+  stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number; byDimension?: Record<string, { good: number; partial: number; wrong: number }> }>
   questions: Array<{ studentId: string; studentName: string; step: number; question: string; answer?: string; category?: string; timestamp: string }>
   clusterStats?: Record<number, {
     definitions: Array<{ id: string; label: string }>

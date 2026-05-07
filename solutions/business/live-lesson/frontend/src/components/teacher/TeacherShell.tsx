@@ -5,15 +5,17 @@ import type { ClassroomState, StateSnapshot } from '../../hooks/useClassroom'
 import {
   STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI,
   getCatBadgeClass, formatRelative, getStepName, computePhaseDistribution,
-  getObserveType, groupStudentsByStatus, clusterQuestions,
+  getObserveType, clusterQuestions,
 } from './teacher-helpers'
 import { Band } from './Band'
 import { Timeline } from './Timeline'
 import { ObservationPanel } from './ObservationPanel'
 import { StudentModal } from './StudentModal'
+import { SummaryTab } from './summary/SummaryTab'
 import { useSearchParams } from 'react-router-dom'
 
 const ObserveDrawer = lazy(() => import('./observe/ObserveDrawer'))
+const SummaryOverlay = lazy(() => import('./summary/SummaryOverlay'))
 
 type RightTab = 'questions' | 'observation' | 'students' | 'coaching'
 
@@ -38,8 +40,20 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
     return type && step && VALID_OBSERVE_TYPES.has(type) ? { type, step: +step } : null
   }, [searchParams, VALID_OBSERVE_TYPES])
 
+  const summaryOpen = searchParams.get('summary') === 'open'
+  const openSummary = useCallback(() => {
+    setSearchParams(prev => { prev.set('summary', 'open'); return prev })
+  }, [setSearchParams])
+  const closeSummary = useCallback(() => {
+    setSearchParams(prev => { prev.delete('summary'); return prev })
+  }, [setSearchParams])
+
   const openObserve = useCallback((type: string, step: number) => {
-    setSearchParams({ observe: type, step: String(step) })
+    setSearchParams(prev => {
+      prev.set('observe', type)
+      prev.set('step', String(step))
+      return prev
+    })
   }, [setSearchParams])
 
   const closeObserve = useCallback(() => {
@@ -92,11 +106,16 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
 
   const health = useMemo(() => computeHealthCards(state, stepNames), [state, stepNames])
 
+  // Task steps (sorted, stable reference for step mapping)
+  const taskSteps = useMemo(() =>
+    manifest.readingSteps
+      .filter(rs => rs.type === 'task')
+      .sort((a, b) => a.idx - b.idx),
+    [manifest],
+  )
+
   // Build step card data
   const stepCards = useMemo(() => {
-    const taskSteps = manifest.readingSteps
-      .filter(rs => rs.type === 'task')
-      .sort((a, b) => a.idx - b.idx)
     return taskSteps.map((rs, i) => {
       const taskNum = i + 1
       const stepIdx = rs.idx
@@ -126,7 +145,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
         phaseDist,
       }
     })
-  }, [manifest, students, state, questions])
+  }, [taskSteps, students, state, questions])
 
   // Question clustering: filter out discuss, group by step, cluster similar questions
   const clusteredQuestions = useMemo(() => {
@@ -175,8 +194,6 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
     return students.find(s => s.name === modalStudent) || null
   }, [modalStudent, students])
 
-  // Student status groups for StudentStatusTab
-  const studentGroups = useMemo(() => groupStudentsByStatus(students), [students])
 
   // ── EMPTY STATE ──
   if (!state || students.length === 0) {
@@ -405,7 +422,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               })()}
             </button>
             <button className={`right-tab${rightTab === 'students' ? ' active' : ''}`} onClick={() => setRightTab('students')}>
-              学生状态
+              学生总览
             </button>
             <button className={`right-tab${rightTab === 'coaching' ? ' active' : ''}`} onClick={() => setRightTab('coaching')}>
               教学参考
@@ -566,14 +583,18 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               </div>
             )}
 
-            {/* Student Status Tab */}
-            {rightTab === 'students' && (
-              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <StudentStatusGroup label="进行中" color="var(--blue)" students={studentGroups.prog} onStudentClick={setModalStudent} questions={questions} />
-                <StudentStatusGroup label="阅读中" color="var(--lecture)" students={studentGroups.reading} onStudentClick={setModalStudent} questions={questions} />
-                <StudentStatusGroup label="卡住" color="var(--amber-dot)" students={studentGroups.stuck} onStudentClick={setModalStudent} questions={questions} />
-                <StudentStatusGroup label="已完成" color="var(--green-dot)" students={studentGroups.done} onStudentClick={setModalStudent} questions={questions} />
-              </div>
+            {/* Student Summary Tab */}
+            {rightTab === 'students' && state && (
+              <SummaryTab
+                state={state}
+                students={students}
+                questions={questions}
+                stepNames={stepNames}
+                totalSteps={stepCards.length}
+                taskSteps={taskSteps}
+                onStudentClick={setModalStudent}
+                onExpandOverlay={openSummary}
+              />
             )}
 
             {/* Coaching Tab */}
@@ -598,6 +619,23 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             manifest={manifest}
             sessionCode={sessionCode || ''}
             onClose={closeObserve}
+          />
+        </Suspense>
+      )}
+
+      {/* ═══ SUMMARY OVERLAY ═══ */}
+      {summaryOpen && state && (
+        <Suspense fallback={null}>
+          <SummaryOverlay
+            open={summaryOpen}
+            onClose={closeSummary}
+            state={state}
+            students={students}
+            questions={questions}
+            stepNames={stepNames}
+            totalSteps={stepCards.length}
+            taskSteps={taskSteps}
+            onStudentClick={setModalStudent}
           />
         </Suspense>
       )}
@@ -687,38 +725,3 @@ function ProgressBar({ dist, total }: {
   )
 }
 
-// ── Student Status Group (for right panel tab) ──
-function StudentStatusGroup({ label, color, students, onStudentClick, questions }: {
-  label: string
-  color: string
-  students: ClassroomState['students']
-  onStudentClick: (name: string) => void
-  questions: ClassroomState['questions']
-}) {
-  if (students.length === 0) return null
-  return (
-    <div>
-      <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--t3)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
-        <span style={{ width: 6, height: 6, borderRadius: 2, background: color, flexShrink: 0 }} />
-        {label} · {students.length}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-        {students.map(s => {
-          const ai = hasAI(s, questions)
-          return (
-            <div
-              key={s.id}
-              className="sdot sm"
-              style={{ background: color, color: '#fff' }}
-              title={s.name}
-              onClick={() => onStudentClick(s.name)}
-            >
-              {s.name.substring(0, 3)}
-              {ai && <span className="ai-pip" />}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
