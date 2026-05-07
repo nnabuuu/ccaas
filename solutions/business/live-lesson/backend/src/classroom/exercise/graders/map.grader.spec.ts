@@ -158,6 +158,107 @@ describe('MapGrader (rule-based, no LLM)', () => {
   });
 });
 
+describe('MapGrader with practiceItemIds', () => {
+  const grader = new MapGrader();
+
+  const keyWith4Items: MapAnswerKey = {
+    ...baseKey,
+    items: [
+      { id: 'a', label: 'Item A' },
+      { id: 'b', label: 'Item B' },
+      { id: 'c', label: 'Item C' },
+      { id: 'd', label: 'Item D' },
+    ],
+    expected: { a: [0.5, 0.5], b: [-0.5, -0.5], c: [0.3, 0.3], d: [-0.3, -0.3] },
+    practiceCount: 2,
+  };
+
+  it('grades only practiceItemIds items when provided', async () => {
+    const r = await grader.grade(keyWith4Items, {
+      placements: { b: { x: -0.5, y: -0.5 }, d: { x: -0.3, y: -0.3 } },
+      reasons: { b: 'Item B is on the left and bottom', d: 'Item D is also bottom-left' },
+      practiceItemIds: ['b', 'd'],
+    });
+    expect(r.total).toBe(100);
+    // Only b and d should be graded
+    expect(r.byDimension.b_placed).toBe(true);
+    expect(r.byDimension.d_placed).toBe(true);
+    // a and c should not appear
+    expect(r.byDimension.a_placed).toBeUndefined();
+    expect(r.byDimension.c_placed).toBeUndefined();
+  });
+
+  it('falls back to sequential slice when practiceItemIds is empty', async () => {
+    const r = await grader.grade(keyWith4Items, {
+      placements: { a: { x: 0.5, y: 0.5 }, b: { x: -0.5, y: -0.5 } },
+      reasons: { a: 'Item A is on the right and top', b: 'Item B is on the left and bottom' },
+      practiceItemIds: [],
+    });
+    expect(r.total).toBe(100);
+    // Sequential: first 2 items (a, b)
+    expect(r.byDimension.a_placed).toBe(true);
+    expect(r.byDimension.b_placed).toBe(true);
+    expect(r.byDimension.c_placed).toBeUndefined();
+  });
+
+  it('ignores invalid IDs in practiceItemIds', async () => {
+    const r = await grader.grade(keyWith4Items, {
+      placements: { a: { x: 0.5, y: 0.5 } },
+      reasons: { a: 'Item A is on the right and top' },
+      practiceItemIds: ['a', 'nonexistent'],
+    });
+    // Only 'a' is a valid item, 'nonexistent' is filtered out by allItemIds.filter()
+    expect(r.byDimension.a_placed).toBe(true);
+    expect(r.byDimension.nonexistent_placed).toBeUndefined();
+  });
+});
+
+describe('MapGrader with practiceItemIds — partial completion', () => {
+  const grader = new MapGrader();
+
+  const keyWith4Items: MapAnswerKey = {
+    ...baseKey,
+    items: [
+      { id: 'a', label: 'Item A' },
+      { id: 'b', label: 'Item B' },
+      { id: 'c', label: 'Item C' },
+      { id: 'd', label: 'Item D' },
+    ],
+    expected: { a: [0.5, 0.5], b: [-0.5, -0.5], c: [0.3, 0.3], d: [-0.3, -0.3] },
+    practiceCount: 3,
+  };
+
+  it('partial placement — some practice items not placed', async () => {
+    const r = await grader.grade(keyWith4Items, {
+      placements: { b: { x: -0.5, y: -0.5 } },
+      reasons: { b: 'Item B is on the left and bottom' },
+      practiceItemIds: ['b', 'd', 'a'],
+    });
+    // Only b is complete (placed + reasoned). d and a are missing.
+    expect(r.byDimension.b_placed).toBe(true);
+    expect(r.byDimension.b_reasoned).toBe(true);
+    expect(r.byDimension.d_placed).toBe(false);
+    expect(r.byDimension.a_placed).toBe(false);
+    expect(r.byDimension.c_placed).toBeUndefined(); // not in practiceItemIds
+    // completion = 1/3 ≈ 33
+    expect(r.total).toBeLessThan(70);
+  });
+
+  it('non-practice items excluded even if data includes them', async () => {
+    const r = await grader.grade(keyWith4Items, {
+      placements: { a: { x: 0.5, y: 0.5 }, b: { x: -0.5, y: -0.5 }, c: { x: 0.3, y: 0.3 }, d: { x: -0.3, y: -0.3 } },
+      reasons: { a: 'reason for A here xxx', b: 'reason for B here xxx', c: 'reason for C here xxx', d: 'reason for D here xxx' },
+      practiceItemIds: ['b', 'd'],
+    });
+    // Only b and d graded
+    expect(r.byDimension.b_placed).toBe(true);
+    expect(r.byDimension.d_placed).toBe(true);
+    expect(r.byDimension.a_placed).toBeUndefined();
+    expect(r.byDimension.c_placed).toBeUndefined();
+    expect(r.total).toBe(100);
+  });
+});
+
 describe('MapGrader (with LLM)', () => {
   function mockBuilder(response: string | Error): AiPromptBuilder {
     const callLlm = response instanceof Error

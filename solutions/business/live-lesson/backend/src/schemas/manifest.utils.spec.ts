@@ -1,4 +1,4 @@
-import { sanitizeAnswerKey, sanitizeManifest } from './manifest.utils';
+import { sanitizeAnswerKey, sanitizeManifest, seededShuffle } from './manifest.utils';
 
 describe('sanitizeAnswerKey', () => {
   it('returns null for invalid input', () => {
@@ -222,6 +222,141 @@ describe('sanitizeAnswerKey', () => {
       const spec = sanitizeAnswerKey(seKey)!;
       expect(spec.sections![0]).not.toHaveProperty('minHits');
     });
+  });
+});
+
+describe('seededShuffle', () => {
+  it('is deterministic — same seed produces same result', () => {
+    const arr = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    const r1 = seededShuffle(arr, 'student1:3');
+    const r2 = seededShuffle(arr, 'student1:3');
+    expect(r1).toEqual(r2);
+  });
+
+  it('different seeds produce different results', () => {
+    const arr = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    const r1 = seededShuffle(arr, 'student1:3');
+    const r2 = seededShuffle(arr, 'student2:3');
+    expect(r1).not.toEqual(r2);
+  });
+
+  it('preserves all elements (no duplicates, no missing)', () => {
+    const arr = ['a', 'b', 'c', 'd', 'e'];
+    const result = seededShuffle(arr, 'test-seed');
+    expect(result.sort()).toEqual([...arr].sort());
+  });
+
+  it('does not mutate the original array', () => {
+    const arr = ['a', 'b', 'c'];
+    const copy = [...arr];
+    seededShuffle(arr, 'seed');
+    expect(arr).toEqual(copy);
+  });
+
+  it('handles empty array', () => {
+    expect(seededShuffle([], 'seed')).toEqual([]);
+  });
+
+  it('handles single element', () => {
+    expect(seededShuffle(['x'], 'seed')).toEqual(['x']);
+  });
+});
+
+describe('sanitizeAnswerKey — map with practiceItemIds', () => {
+  const mapKey = {
+    type: 'map',
+    prompt: 'Place items',
+    axes: {
+      x: { neg: 'Left', pos: 'Right', label: 'X-axis' },
+      y: { neg: 'Bottom', pos: 'Top', label: 'Y-axis' },
+    },
+    items: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+      { id: 'd', label: 'D' },
+    ],
+    expected: { a: [0.5, 0.5], b: [-0.5, 0.5], c: [0.5, -0.5], d: [-0.5, -0.5] },
+    practiceCount: 2,
+    randomPractice: true,
+  };
+
+  it('without practiceItemIds, uses sequential slice for givenPlacements', () => {
+    const spec = sanitizeAnswerKey(mapKey)!;
+    expect(spec.practiceItemIds).toBeUndefined();
+    // Sequential: first 2 are practice (a, b), last 2 are given (c, d)
+    expect(spec.givenPlacements).toBeDefined();
+    expect(Object.keys(spec.givenPlacements!)).toEqual(['c', 'd']);
+  });
+
+  it('with practiceItemIds, builds givenPlacements from non-practice items', () => {
+    const spec = sanitizeAnswerKey(mapKey, undefined, ['b', 'd'])!;
+    expect(spec.practiceItemIds).toEqual(['b', 'd']);
+    // b, d are practice → a, c are given
+    expect(Object.keys(spec.givenPlacements!).sort()).toEqual(['a', 'c']);
+    expect(spec.givenPlacements!['a']).toEqual({ x: 0.5, y: 0.5 });
+    expect(spec.givenPlacements!['c']).toEqual({ x: 0.5, y: -0.5 });
+  });
+
+  it('returns practiceItemIds in the spec', () => {
+    const spec = sanitizeAnswerKey(mapKey, undefined, ['a', 'c'])!;
+    expect(spec.practiceItemIds).toEqual(['a', 'c']);
+  });
+
+  it('strips expected from output', () => {
+    const spec = sanitizeAnswerKey(mapKey, undefined, ['a', 'b'])! as Record<string, unknown>;
+    expect(spec.expected).toBeUndefined();
+  });
+});
+
+describe('sanitizeAnswerKey — map edge cases', () => {
+  const mapKey = {
+    type: 'map',
+    prompt: 'Place items',
+    axes: {
+      x: { neg: 'Left', pos: 'Right', label: 'X-axis' },
+      y: { neg: 'Bottom', pos: 'Top', label: 'Y-axis' },
+    },
+    items: [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+      { id: 'c', label: 'C' },
+    ],
+    expected: { a: [0.5, 0.5], b: [-0.5, 0.5], c: [0.5, -0.5] },
+    practiceCount: 2,
+  };
+
+  it('all items are practice → givenPlacements omitted', () => {
+    const spec = sanitizeAnswerKey(mapKey, undefined, ['a', 'b', 'c'])!;
+    expect(spec.practiceItemIds).toEqual(['a', 'b', 'c']);
+    expect(spec.givenPlacements).toBeUndefined();
+  });
+
+  it('practiceCount >= items.length → givenPlacements empty (sequential mode)', () => {
+    const bigCount = { ...mapKey, practiceCount: 10 };
+    const spec = sanitizeAnswerKey(bigCount)!;
+    // slice(10, 3) → empty → no givenPlacements
+    expect(spec.givenPlacements).toBeUndefined();
+    expect(spec.practiceCount).toBe(10);
+  });
+
+  it('practiceItemIds without expected → no givenPlacements', () => {
+    const noExpected = { ...mapKey, expected: undefined };
+    const spec = sanitizeAnswerKey(noExpected, undefined, ['a'])!;
+    expect(spec.practiceItemIds).toEqual(['a']);
+    expect(spec.givenPlacements).toBeUndefined();
+  });
+
+  it('empty practiceItemIds → all items get givenPlacements', () => {
+    const spec = sanitizeAnswerKey(mapKey, undefined, [])!;
+    expect(spec.practiceItemIds).toEqual([]);
+    expect(Object.keys(spec.givenPlacements!).sort()).toEqual(['a', 'b', 'c']);
+  });
+
+  it('randomPractice field is not leaked to spec', () => {
+    const withRandom = { ...mapKey, randomPractice: true };
+    const spec = sanitizeAnswerKey(withRandom)! as Record<string, unknown>;
+    expect(spec.randomPractice).toBeUndefined();
   });
 });
 

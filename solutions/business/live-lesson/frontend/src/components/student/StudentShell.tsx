@@ -102,10 +102,10 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     if (!sessionCode || !taskId) return
     const stepIdx = buildTaskToStep(manifest.readingSteps || [])[taskId]
     if (stepIdx === undefined || exerciseSpecs[stepIdx]) return
-    fetchExerciseSpec(sessionCode, stepIdx).then(spec => {
+    fetchExerciseSpec(sessionCode, stepIdx, studentId).then(spec => {
       if (spec) setExerciseSpecs(prev => ({ ...prev, [stepIdx]: spec }))
     })
-  }, [sessionCode, taskId, manifest.readingSteps, exerciseSpecs])
+  }, [sessionCode, taskId, manifest.readingSteps, exerciseSpecs, studentId])
 
   // Compute task→step map from manifest (dynamic, not hardcoded)
   const taskToStep = taskToStepRef

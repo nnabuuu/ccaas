@@ -86,6 +86,7 @@ function enrichFromApi(exercise: TaskExercise, apiSpec: ExerciseSpec): EnrichRes
     if (apiSpec.minReasonLength) ex.minReasonLength = apiSpec.minReasonLength
     if (apiSpec.givenPlacements) ex.givenPlacements = apiSpec.givenPlacements
     if (apiSpec.practiceCount) ex.practiceCount = apiSpec.practiceCount
+    if (apiSpec.practiceItemIds) ex.practiceItemIds = apiSpec.practiceItemIds
   }
   if (apiSpec.type === 'select-evidence') {
     if (apiSpec.functionOptions) ex.functionOptions = apiSpec.functionOptions
@@ -219,6 +220,7 @@ function enrichFromManifest(exercise: TaskExercise, ak: any, exerciseLabel?: str
     if (ak.minReasonLength) ex.minReasonLength = ak.minReasonLength
     if (ak.givenPlacements) ex.givenPlacements = ak.givenPlacements
     if (ak.practiceCount) ex.practiceCount = ak.practiceCount
+    if (ak.practiceItemIds) ex.practiceItemIds = ak.practiceItemIds
   }
 
   return { exercise: ex, serverCheck: false }

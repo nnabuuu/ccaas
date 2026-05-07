@@ -45,6 +45,7 @@ export interface TaskExercise {
   mapItems?: MapItem[]
   minReasonLength?: number
   givenPlacements?: Record<string, { x: number; y: number }>
+  practiceItemIds?: string[]
 }
 export interface FallbackMC {
   question: string; questionZh?: string

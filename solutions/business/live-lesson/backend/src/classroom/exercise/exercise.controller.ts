@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, ParseIntPipe } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ClassroomService } from '../classroom.service';
 import { ExerciseService } from './exercise.service';
@@ -17,9 +17,10 @@ export class ExerciseController {
   async getExercise(
     @Param('code') code: string,
     @Param('step', ParseIntPipe) step: number,
+    @Query('studentId') studentId?: string,
   ) {
     const session = await this.classroomService.resolveStartedSession(validateCode(code));
-    return this.exercise.getExerciseSpec(session, step);
+    return this.exercise.getExerciseSpec(session, step, studentId);
   }
 
   @Post(':code/steps/:step/check')

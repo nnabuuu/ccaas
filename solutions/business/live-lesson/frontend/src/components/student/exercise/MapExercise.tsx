@@ -16,6 +16,7 @@ interface Props {
   onActiveChange?: (paraRefs: number[]) => void
   givenPlacements?: Record<string, { x: number; y: number }>
   practiceCount?: number
+  practiceItemIds?: string[]
 }
 
 type Placements = Record<string, { x: number; y: number }>
@@ -27,7 +28,7 @@ function quadrantLabel(val: number, axis: MapAxis): string {
   return 'Neutral'
 }
 
-export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount }: Props) {
+export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds }: Props) {
   const placements: Placements = ans.placements || {}
   const reasons: Reasons = ans.reasons || {}
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -35,17 +36,32 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   const planeRef = useRef<HTMLDivElement>(null)
   const hasDragged = useRef(false)
 
+  // Inject practiceItemIds into ans for submission to grader
+  useEffect(() => {
+    if (practiceItemIds && !ans.practiceItemIds) {
+      setAns(prev => ({ ...prev, practiceItemIds }))
+    }
+  }, [practiceItemIds, ans.practiceItemIds, setAns])
+
   // Split items into practice (tray) and given (pre-placed)
   const givenIds = useMemo(
     () => new Set(givenPlacements ? Object.keys(givenPlacements) : []),
     [givenPlacements],
   )
-  const practiceItems = practiceCount
-    ? mapItems.slice(0, practiceCount)
-    : mapItems.filter(it => !givenIds.has(it.id))
-  const givenItems = practiceCount
-    ? mapItems.slice(practiceCount)
-    : mapItems.filter(it => givenIds.has(it.id))
+  const practiceItemIdSet = useMemo(
+    () => practiceItemIds ? new Set(practiceItemIds) : null,
+    [practiceItemIds],
+  )
+  const practiceItems = practiceItemIdSet
+    ? mapItems.filter(it => practiceItemIdSet.has(it.id))
+    : practiceCount
+      ? mapItems.slice(0, practiceCount)
+      : mapItems.filter(it => !givenIds.has(it.id))
+  const givenItems = practiceItemIdSet
+    ? mapItems.filter(it => !practiceItemIdSet.has(it.id))
+    : practiceCount
+      ? mapItems.slice(practiceCount)
+      : mapItems.filter(it => givenIds.has(it.id))
 
   const unplaced = practiceItems.filter(it => !placements[it.id])
   const placed = practiceItems.filter(it => !!placements[it.id])

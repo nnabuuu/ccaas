@@ -6,7 +6,20 @@ import type { ExerciseSpec } from './exercise-spec.schema';
 
 type AKInput = Record<string, unknown>;
 
-export function sanitizeAnswerKey(answerKey: unknown, exerciseLabel?: string): ExerciseSpec | null {
+/** Deterministic shuffle using a string seed (djb2 hash → Fisher-Yates) */
+export function seededShuffle<T>(arr: T[], seed: string): T[] {
+  let h = 5381;
+  for (let i = 0; i < seed.length; i++) h = ((h << 5) + h + seed.charCodeAt(i)) >>> 0;
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    h = ((h << 5) + h + i) >>> 0;
+    const j = h % (i + 1);
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+export function sanitizeAnswerKey(answerKey: unknown, exerciseLabel?: string, practiceItemIds?: string[]): ExerciseSpec | null {
   if (!answerKey || typeof answerKey !== 'object') return null;
   const ak = answerKey as AKInput;
   if (!ak.type || typeof ak.type !== 'string') return null;
@@ -14,7 +27,7 @@ export function sanitizeAnswerKey(answerKey: unknown, exerciseLabel?: string): E
   const sanitizer = sanitizers[ak.type];
   if (!sanitizer) return null;
 
-  const spec = sanitizer(ak);
+  const spec = ak.type === 'map' ? sanitizeMap(ak, practiceItemIds) : sanitizer(ak);
   spec.label = exerciseLabel || (ak.label as string) || '';
   return spec;
 }
@@ -134,15 +147,26 @@ function sanitizeSelectEvidence(ak: AKInput): ExerciseSpec {
   };
 }
 
-function sanitizeMap(ak: AKInput): ExerciseSpec {
+function sanitizeMap(ak: AKInput, practiceItemIds?: string[]): ExerciseSpec {
   const rawAxes = ak.axes as Record<string, Record<string, string>> | undefined;
   const items = (ak.items as Array<AKInput>) || [];
   const practiceCount = ak.practiceCount as number | undefined;
   const expected = ak.expected as Record<string, [number, number]> | undefined;
 
-  // Build givenPlacements for items beyond practiceCount
   let givenPlacements: Record<string, { x: number; y: number }> | undefined;
-  if (practiceCount && practiceCount < items.length && expected) {
+
+  if (practiceItemIds && expected) {
+    // Random practice mode: practiceItemIds specifies which items are interactive
+    const practiceSet = new Set(practiceItemIds);
+    givenPlacements = {};
+    for (const it of items) {
+      const id = it.id as string;
+      if (!practiceSet.has(id) && expected[id]) {
+        givenPlacements[id] = { x: expected[id][0], y: expected[id][1] };
+      }
+    }
+  } else if (practiceCount && practiceCount < items.length && expected) {
+    // Sequential mode: first N items are practice, rest are given
     givenPlacements = {};
     for (let i = practiceCount; i < items.length; i++) {
       const id = items[i].id as string;
@@ -168,6 +192,7 @@ function sanitizeMap(ak: AKInput): ExerciseSpec {
     })),
     minReasonLength: (ak.minReasonLength as number) || 8,
     ...(practiceCount && { practiceCount }),
+    ...(practiceItemIds && { practiceItemIds }),
     ...(givenPlacements && Object.keys(givenPlacements).length > 0 && { givenPlacements }),
   };
 }

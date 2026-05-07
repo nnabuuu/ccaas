@@ -105,7 +105,10 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     if (ex.type === 'select-evidence') return false // handled internally
     if (ex.type === 'map') {
       const items = ex.mapItems || []
-      const practice = ex.practiceCount ? items.slice(0, ex.practiceCount) : items
+      const practiceSet = ex.practiceItemIds ? new Set(ex.practiceItemIds) : null
+      const practice = practiceSet
+        ? items.filter(it => practiceSet.has(it.id))
+        : ex.practiceCount ? items.slice(0, ex.practiceCount) : items
       const pl = ans.placements || {}
       const rs = ans.reasons || {}
       const min = ex.minReasonLength || 8
@@ -376,6 +379,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           feedback={mapFeedback}
           givenPlacements={ex.givenPlacements}
           practiceCount={ex.practiceCount}
+          practiceItemIds={ex.practiceItemIds}
           onActiveChange={(refs) => {
             if (!onOverlayChange) return
             if (refs.length > 0) {

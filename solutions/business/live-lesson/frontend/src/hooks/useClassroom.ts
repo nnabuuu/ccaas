@@ -398,6 +398,7 @@ export interface ExerciseSpec {
   mapItems?: Array<{ id: string; label: string; hint?: string; refs?: number[] }>
   minReasonLength?: number
   givenPlacements?: Record<string, { x: number; y: number }>
+  practiceItemIds?: string[]
 }
 
 export interface CheckItem {
@@ -416,9 +417,12 @@ export interface CheckResult {
   items: CheckItem[]
 }
 
-export async function fetchExerciseSpec(sessionCode: string, step: number): Promise<ExerciseSpec | null> {
+export async function fetchExerciseSpec(sessionCode: string, step: number, studentId?: string): Promise<ExerciseSpec | null> {
   try {
-    const res = await fetch(`${API_BASE}/${sessionCode}/steps/${step}/exercise`)
+    const url = studentId
+      ? `${API_BASE}/${sessionCode}/steps/${step}/exercise?studentId=${studentId}`
+      : `${API_BASE}/${sessionCode}/steps/${step}/exercise`
+    const res = await fetch(url)
     if (!res.ok) return null
     return await res.json()
   } catch {

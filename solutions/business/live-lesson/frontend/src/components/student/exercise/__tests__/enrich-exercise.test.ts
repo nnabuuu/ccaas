@@ -115,6 +115,33 @@ describe('enrichExerciseFromSpec — API path', () => {
     expect(exercise.minReasonLength).toBe(20)
     expect(serverCheck).toBe(true)
   })
+
+  it('map: passes through practiceItemIds and givenPlacements from API', () => {
+    const spec: ExerciseSpec = {
+      type: 'map', label: 'Map',
+      prompt: 'Place items',
+      axes: { x: { neg: 'L', pos: 'R', label: 'X' }, y: { neg: 'D', pos: 'U', label: 'Y' } },
+      mapItems: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }, { id: 'c', label: 'C' }],
+      practiceItemIds: ['a', 'c'],
+      givenPlacements: { b: { x: 0.5, y: -0.5 } },
+      practiceCount: 2,
+    }
+    const { exercise } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.practiceItemIds).toEqual(['a', 'c'])
+    expect(exercise.givenPlacements).toEqual({ b: { x: 0.5, y: -0.5 } })
+    expect(exercise.practiceCount).toBe(2)
+  })
+
+  it('map: practiceItemIds undefined when not in spec', () => {
+    const spec: ExerciseSpec = {
+      type: 'map', label: 'Map',
+      prompt: 'Place',
+      axes: { x: { neg: 'L', pos: 'R', label: 'X' }, y: { neg: 'D', pos: 'U', label: 'Y' } },
+      mapItems: [{ id: 'a', label: 'A' }],
+    }
+    const { exercise } = enrichExerciseFromSpec(BASE, spec, undefined)
+    expect(exercise.practiceItemIds).toBeUndefined()
+  })
 })
 
 /* ═══ MANIFEST FALLBACK (7 types) ═══ */
@@ -267,6 +294,21 @@ describe('enrichExerciseFromSpec — manifest fallback', () => {
     }
     const { exercise } = enrichExerciseFromSpec(BASE, undefined, ak)
     expect(exercise.mapItems).toEqual([{ id: 'i1', label: 'I1' }])
+  })
+
+  it('map: passes through practiceItemIds from manifest ak', () => {
+    const ak = {
+      type: 'map',
+      prompt: 'Place',
+      axes: { x: { neg: 'L', pos: 'R', label: 'X' }, y: { neg: 'D', pos: 'U', label: 'Y' } },
+      mapItems: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }],
+      practiceItemIds: ['b'],
+      givenPlacements: { a: { x: 0.5, y: 0.5 } },
+      practiceCount: 1,
+    }
+    const { exercise } = enrichExerciseFromSpec(BASE, undefined, ak)
+    expect(exercise.practiceItemIds).toEqual(['b'])
+    expect(exercise.givenPlacements).toEqual({ a: { x: 0.5, y: 0.5 } })
   })
 })
 

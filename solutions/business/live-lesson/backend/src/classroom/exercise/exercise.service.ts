@@ -5,7 +5,7 @@ import { Student } from '../../entities/student.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
-import { sanitizeAnswerKey } from '../../schemas/manifest.utils';
+import { sanitizeAnswerKey, seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class ExerciseService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async getExerciseSpec(session: ClassroomSession, step: number): Promise<ExerciseSpec> {
+  async getExerciseSpec(session: ClassroomSession, step: number, studentId?: string): Promise<ExerciseSpec> {
     const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
     if (!lesson) throw new NotFoundException('Lesson not found');
 
@@ -33,7 +33,22 @@ export class ExerciseService {
       throw new NotFoundException(`No exercise found at step ${step}`);
     }
 
-    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel as string | undefined);
+    const ak = stepDef.answerKey as Record<string, unknown>;
+    let practiceItemIds: string[] | undefined;
+    if (ak.type === 'map' && ak.randomPractice && ak.practiceCount && studentId) {
+      // Validate studentId belongs to this session
+      const student = await this.studentRepo.findOne({
+        where: { id: studentId, sessionId: session.id },
+      });
+      if (!student) throw new NotFoundException('Student not found in this session');
+
+      const items = (ak.items as Array<{ id: string }>) || [];
+      const allIds = items.map(i => i.id);
+      const shuffled = seededShuffle(allIds, `${studentId}:${step}`);
+      practiceItemIds = shuffled.slice(0, ak.practiceCount as number);
+    }
+
+    const spec = sanitizeAnswerKey(stepDef.answerKey, stepDef.exerciseLabel as string | undefined, practiceItemIds);
     if (!spec) throw new NotFoundException(`Unsupported exercise type at step ${step}`);
     return spec;
   }
@@ -60,6 +75,15 @@ export class ExerciseService {
     }
 
     const ak = stepDef.answerKey as Record<string, unknown>;
+
+    // Server-side recompute of practiceItemIds — never trust client submission
+    if (ak.type === 'map' && ak.randomPractice && ak.practiceCount) {
+      const mapItems = (ak.items as Array<{ id: string }>) || [];
+      const allIds = mapItems.map(i => i.id);
+      const shuffled = seededShuffle(allIds, `${studentId}:${step}`);
+      data.practiceItemIds = shuffled.slice(0, ak.practiceCount as number);
+    }
+
     const gradeResult = await this.gradingService.grade(ak, data as Record<string, unknown>);
 
     const items = gradeResult ? this.buildCheckItems(ak, data, gradeResult) : [];
@@ -157,7 +181,10 @@ export class ExerciseService {
       case 'map': {
         const mapItems = ak.items as Array<Record<string, unknown>> | undefined;
         const practiceCount = ak.practiceCount as number | undefined;
-        const itemsToCheck = practiceCount ? (mapItems || []).slice(0, practiceCount) : (mapItems || []);
+        const submittedPracticeIds = (data.practiceItemIds || []) as string[];
+        const itemsToCheck = submittedPracticeIds.length > 0
+          ? (mapItems || []).filter(it => submittedPracticeIds.includes(it.id as string))
+          : practiceCount ? (mapItems || []).slice(0, practiceCount) : (mapItems || []);
         const result: Array<Record<string, unknown>> = itemsToCheck.map((it) => {
           const id = it.id as string;
           const placed = gradeResult.byDimension?.[`${id}_placed`] === true;
