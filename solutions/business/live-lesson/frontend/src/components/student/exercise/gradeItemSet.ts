@@ -34,6 +34,7 @@ export function formatSubmitData(
       break
     case 'select-evidence':
       result = { sections: ans.sections || {} }
+      if (ans.firstAttemptSections) result.firstAttemptSections = ans.firstAttemptSections
       break
     case 'map':
       result = { placements: ans.placements || {}, reasons: ans.reasons || {} }

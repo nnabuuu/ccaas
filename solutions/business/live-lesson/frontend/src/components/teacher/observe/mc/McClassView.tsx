@@ -30,6 +30,7 @@ interface Props {
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+const SEVERITY_ZH: Record<string, string> = { high: '高频', medium: '中频', low: '低频' }
 
 export default function McClassView({ data, onStudentSelect }: Props) {
   const d = data as McData
@@ -41,9 +42,10 @@ export default function McClassView({ data, onStudentSelect }: Props) {
 
   const [expandedQ, setExpandedQ] = useState<number | null>(null)
 
-  const correctCount = totalQ > 0
-    ? Math.round((stats.avgScore / 100) * totalQ)
-    : 0
+  const avgCorrect = totalQ > 0 ? (stats.avgScore / 100) * totalQ : 0
+  const totalCorrect = Math.round((stats.submitted ?? students.length) * avgCorrect)
+  const totalPossible = (stats.submitted ?? students.length) * totalQ
+  const highMiscCount = misconceptions.filter(m => m.severity === 'high').length
 
   const toggleQ = (idx: number) => {
     setExpandedQ(prev => prev === idx ? null : idx)
@@ -56,27 +58,28 @@ export default function McClassView({ data, onStudentSelect }: Props) {
         <div className="hcard green">
           <div className="hcard-lb">班级正确率</div>
           <div className="hcard-v">{Math.round(stats.avgScore ?? 0)}%</div>
-          <div className="hcard-sub">avg {correctCount}/{totalQ}</div>
+          <div className="hcard-sub">{totalCorrect}/{totalPossible} · avg {avgCorrect.toFixed(1)}/{totalQ}</div>
         </div>
         <div className="hcard purple">
-          <div className="hcard-lb">满分人数</div>
+          <div className="hcard-lb">满分</div>
           <div className="hcard-v">{stats.perfectCount ?? 0}</div>
-          <div className="hcard-sub">{stats.zeroCount ?? 0} 人零分</div>
+          <div className="hcard-sub">{stats.zeroCount ?? 0}人零分</div>
         </div>
         <div className="hcard">
           <div className="hcard-lb">平均用时</div>
           <div className="hcard-v">{formatTime(stats.avgTime ?? 0)}</div>
-          <div className="hcard-sub">最快 {formatTime(stats.fastestTime ?? 0)} / 最慢 {formatTime(stats.slowestTime ?? 0)}</div>
+          <div className="hcard-sub">{formatTime(stats.fastestTime ?? 0)} - {formatTime(stats.slowestTime ?? 0)}</div>
         </div>
         <div className="hcard">
           <div className="hcard-lb">误解模式</div>
           <div className="hcard-v">{misconceptions.length}</div>
+          {highMiscCount > 0 && <div className="hcard-sub">高频{highMiscCount}个</div>}
         </div>
       </div>
 
-      {/* Expandable Q-cards */}
+      {/* Q-cards: stem always visible, expand for option distribution */}
       <div className="obs-section">
-        <div className="m2-section-h">逐题分布</div>
+        <div className="m2-section-h">逐题分析</div>
         {questions.map(q => {
           const isExpanded = expandedQ === q.idx
           const wrongStudents = students.filter(s => {
@@ -87,10 +90,13 @@ export default function McClassView({ data, onStudentSelect }: Props) {
           return (
             <div key={q.idx} className="obs-q-card">
               <div className="obs-q-head" onClick={() => toggleQ(q.idx)}>
-                <span style={{ fontSize: 12, fontWeight: 700 }}>Q{q.idx + 1}</span>
-                {q.tag && <span className="obs-q-tag">{q.tag}</span>}
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, margin: '0 8px' }}>
-                  <div style={{ flex: 1, height: 5, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, flexShrink: 0, lineHeight: '20px' }}>Q{q.idx + 1}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {q.stem && <div style={{ fontSize: 12, color: 'var(--t1)', lineHeight: 1.4 }}>{q.stem}</div>}
+                  {q.tag && <div style={{ fontSize: 10, color: 'var(--t3)', marginTop: 2 }}>{q.tag}</div>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <div style={{ width: 60, height: 5, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
                     <div style={{
                       width: `${q.correctRate ?? 0}%`,
                       height: '100%',
@@ -99,18 +105,15 @@ export default function McClassView({ data, onStudentSelect }: Props) {
                       transition: 'width .3s',
                     }} />
                   </div>
+                  <span className="obs-q-rate" style={{ color: scoreColor(q.correctRate ?? 0) }}>
+                    {Math.round(q.correctRate ?? 0)}%
+                  </span>
+                  <span className={`obs-q-chevron${isExpanded ? ' open' : ''}`}>&#9654;</span>
                 </div>
-                <span className="obs-q-rate" style={{ color: scoreColor(q.correctRate ?? 0) }}>
-                  {Math.round(q.correctRate ?? 0)}%
-                </span>
-                <span className={`obs-q-chevron${isExpanded ? ' open' : ''}`}>&#9654;</span>
               </div>
 
               {isExpanded && (
                 <div className="obs-q-body">
-                  {q.stem && (
-                    <div style={{ fontSize: 10, color: 'var(--t2)', lineHeight: 1.4, marginBottom: 4 }}>{q.stem}</div>
-                  )}
                   {(q.options || []).map((opt, oi) => {
                     const dist = q.distribution?.[oi]
                     const isCorrect = oi === q.correctIdx
@@ -139,7 +142,7 @@ export default function McClassView({ data, onStudentSelect }: Props) {
                             className="obs-student-chip alert"
                             style={{ cursor: 'pointer' }}
                             onClick={() => onStudentSelect(s.id)}
-                          >{s.name} → {letter}</span>
+                          >{s.name} \u2192 {letter}</span>
                         )
                       })}
                     </div>
@@ -151,9 +154,38 @@ export default function McClassView({ data, onStudentSelect }: Props) {
         })}
       </div>
 
+      {/* Misconception Cards — before student table per design */}
+      {misconceptions.length > 0 && (
+        <div className="obs-section">
+          <div className="m2-section-h warn">误解聚类</div>
+          <div className="obs-misconceptions">
+            {misconceptions.map(m => (
+              <div key={m.id} className="obs-misconception-card"
+                style={m.severity === 'high' ? { background: 'var(--red-soft)', borderLeftColor: 'var(--red)' } : undefined}
+              >
+                <div className="obs-mc-head">
+                  <span className={`obs-severity ${m.severity}`}>{SEVERITY_ZH[m.severity] ?? m.severity}</span>
+                  <span className="obs-mc-label">{m.label}</span>
+                  <span className="obs-mc-count">{m.count}人</span>
+                </div>
+                <div className="obs-chip-grid" style={{ marginTop: 6 }}>
+                  {(m.students || []).map(s => (
+                    <span key={s.id}
+                      className="obs-student-chip warn"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => onStudentSelect(s.id)}
+                    >{s.name}</span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Student Table */}
       <div className="obs-section">
-        <div className="m2-section-h">学生答题</div>
+        <div className="m2-section-h">全部学生</div>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
             <thead>
@@ -205,35 +237,6 @@ export default function McClassView({ data, onStudentSelect }: Props) {
           </table>
         </div>
       </div>
-
-      {/* Misconception Cards */}
-      {misconceptions.length > 0 && (
-        <div className="obs-section">
-          <div className="m2-section-h warn">误解模式</div>
-          <div className="obs-misconceptions">
-            {misconceptions.map(m => (
-              <div key={m.id} className="obs-misconception-card"
-                style={m.severity === 'high' ? { background: 'var(--red-soft)', borderLeftColor: 'var(--red)' } : undefined}
-              >
-                <div className="obs-mc-head">
-                  <span className={`obs-severity ${m.severity}`}>{m.severity}</span>
-                  <span className="obs-mc-label">{m.label}</span>
-                  <span className="obs-mc-count">{m.count} 人</span>
-                </div>
-                <div className="obs-chip-grid" style={{ marginTop: 6 }}>
-                  {(m.students || []).map(s => (
-                    <span key={s.id}
-                      className="obs-student-chip warn"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => onStudentSelect(s.id)}
-                    >{s.name}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </>
   )
 }

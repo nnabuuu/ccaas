@@ -727,3 +727,31 @@
 
 .so-kp-section { display: flex; flex-direction: column; gap: 8px }
 .so-kp-list { display: flex; flex-direction: column; gap: 5px }
+
+/* ── Transition Insights: SummaryTab (compact) ── */
+.st-transition { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px }
+.st-transition-row { display: flex; align-items: baseline; gap: 6px; font-size: 11px; color: var(--t2); line-height: 1.5 }
+.st-transition-icon { flex-shrink: 0; width: 16px; height: 16px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #fff }
+.st-icon-timing { background: var(--red) }
+.st-icon-timing::before { content: 'T' }
+.st-icon-question { background: var(--blue) }
+.st-icon-question::before { content: 'Q' }
+.st-icon-ai { background: var(--ai) }
+.st-icon-ai::before { content: 'AI'; font-size: 7px }
+.st-transition-btn { margin-top: 4px; padding: 6px 10px; font-size: 10px; font-weight: 600; color: var(--t3); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; cursor: not-allowed; opacity: 0.6 }
+
+/* ── Transition Insights: SummaryOverlay (full) ── */
+.so-transition-section { display: flex; flex-direction: column; gap: 10px }
+.so-transition-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px }
+.so-transition-label { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: .3px }
+.so-transition-main { font-size: 13px; font-weight: 600; color: var(--t1) }
+.so-transition-detail { font-size: 11px; color: var(--t2) }
+.so-transition-quote { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--t2); line-height: 1.6; padding: 4px 0 }
+.so-transition-step { flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--t3); min-width: 46px }
+.so-transition-q { font-style: italic; color: var(--t1) }
+
+/* AI heat bar rows */
+.so-ai-heat-row { display: flex; align-items: center; gap: 8px }
+.so-ai-heat-name { font-size: 10px; font-weight: 600; color: var(--t2); width: 50px; flex-shrink: 0 }
+.so-ai-heat-bar { height: 100%; border-radius: 3px; background: var(--ai); transition: width .3s }
+.so-ai-heat-stat { font-size: 10px; color: var(--t3); white-space: nowrap; min-width: 70px; text-align: right }

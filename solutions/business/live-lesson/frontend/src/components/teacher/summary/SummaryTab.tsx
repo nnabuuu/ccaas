@@ -6,11 +6,19 @@ import {
   computeWeakDimensions,
   computeKnowledgePoints,
   pickQuestionCandidates,
+  computeTimingInsight,
+  pickRepresentativeQuestions,
+  computeAiHeat,
+  formatDuration,
   QUADRANT_META,
   QUADRANT_ORDER,
 } from './summary-helpers'
 import type { Quadrant } from './summary-helpers'
 import { hasAI } from '../teacher-helpers'
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max) + '…' : text
+}
 
 interface Props {
   state: ClassroomState
@@ -46,7 +54,24 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
     [quadrantData.students, weakDimensions],
   )
 
+  const timingInsight = useMemo(
+    () => computeTimingInsight(students, stepToTask, state.stepMetrics, stepNames),
+    [students, stepToTask, state.stepMetrics, stepNames],
+  )
+
+  const repQuestions = useMemo(
+    () => pickRepresentativeQuestions(questions, stepNames),
+    [questions, stepNames],
+  )
+
+  const aiHeat = useMemo(
+    () => computeAiHeat(state.stepMetrics, stepNames),
+    [state.stepMetrics, stepNames],
+  )
+
   const metrics = { ...quadrantData.metrics, weakDimensionCount: weakDimensions.length }
+
+  const hasTransitionInsights = timingInsight || repQuestions.length > 0 || aiHeat.length > 0
 
   // Group students by quadrant
   const groups = useMemo(() => {
@@ -162,6 +187,34 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
               <div className="qcr-reason">{c.reason}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Transition Insights (compact) */}
+      {hasTransitionInsights && (
+        <div className="st-transition">
+          <div className="kp-header">课堂衔接</div>
+          {timingInsight && (
+            <div className="st-transition-row">
+              <span className="st-transition-icon st-icon-timing" />
+              <span>Step {timingInsight.stepNum} 耗时最长（{timingInsight.percentage}% 学生）{timingInsight.medianTime != null ? ` · 中位 ${formatDuration(timingInsight.medianTime)}` : ''}</span>
+            </div>
+          )}
+          {repQuestions.length > 0 && (
+            <div className="st-transition-row">
+              <span className="st-transition-icon st-icon-question" />
+              <span>"{truncate(repQuestions[0].question, 30)}" — 匿名</span>
+            </div>
+          )}
+          {aiHeat.length > 0 && (
+            <div className="st-transition-row">
+              <span className="st-transition-icon st-icon-ai" />
+              <span>Step {aiHeat[0].stepNum} AI 对话最活跃（{aiHeat[0].aiRounds} 轮）</span>
+            </div>
+          )}
+          <button className="st-transition-btn" disabled>
+            生成衔接话术 →
+          </button>
         </div>
       )}
     </div>

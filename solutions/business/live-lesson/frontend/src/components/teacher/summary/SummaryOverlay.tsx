@@ -7,6 +7,10 @@ import {
   computeWeakDimensions,
   computeKnowledgePoints,
   pickQuestionCandidates,
+  computeTimingInsight,
+  pickRepresentativeQuestions,
+  computeAiHeat,
+  formatDuration,
   QUADRANT_META,
   QUADRANT_ORDER,
 } from './summary-helpers'
@@ -60,7 +64,24 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
     [quadrantData.students, weakDimensions],
   )
 
+  const timingInsight = useMemo(
+    () => computeTimingInsight(students, stepToTask, state.stepMetrics, stepNames),
+    [students, stepToTask, state.stepMetrics, stepNames],
+  )
+
+  const repQuestions = useMemo(
+    () => pickRepresentativeQuestions(questions, stepNames),
+    [questions, stepNames],
+  )
+
+  const aiHeat = useMemo(
+    () => computeAiHeat(state.stepMetrics, stepNames),
+    [state.stepMetrics, stepNames],
+  )
+
   const metrics = { ...quadrantData.metrics, weakDimensionCount: weakDimensions.length }
+
+  const hasTransitionInsights = timingInsight || repQuestions.length > 0 || aiHeat.length > 0
 
   const selectedStudent = useMemo(
     () => quadrantData.students.find(s => s.id === selectedId) || null,
@@ -336,6 +357,60 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── Transition Insights (full) ── */}
+        {hasTransitionInsights && (
+          <div className="so-transition-section">
+            <div className="so-section-h">课堂衔接线索</div>
+
+            {/* Timing hotspot */}
+            {timingInsight && (
+              <div className="so-transition-card">
+                <div className="so-transition-label">耗时热点</div>
+                <div className="so-transition-main">
+                  Step {timingInsight.stepNum} "{timingInsight.stepName}"
+                </div>
+                <div className="so-transition-detail">
+                  {timingInsight.percentage}% 学生在此步骤耗时最长
+                  {timingInsight.medianTime != null && ` · 中位 ${formatDuration(timingInsight.medianTime)}`}
+                </div>
+              </div>
+            )}
+
+            {/* Representative questions */}
+            {repQuestions.length > 0 && (
+              <div className="so-transition-card">
+                <div className="so-transition-label">值得讨论的提问</div>
+                {repQuestions.map((rq, i) => (
+                  <div key={i} className="so-transition-quote">
+                    <span className="so-transition-step">Step {rq.step}</span>
+                    <span className="so-transition-q">"{rq.question}"</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* AI heat */}
+            {aiHeat.length > 0 && (
+              <div className="so-transition-card">
+                <div className="so-transition-label">AI 互动热度</div>
+                {aiHeat.map(h => {
+                  const maxRounds = aiHeat[0].aiRounds
+                  const pct = maxRounds > 0 ? Math.round((h.aiRounds / maxRounds) * 100) : 0
+                  return (
+                    <div key={h.stepNum} className="so-ai-heat-row">
+                      <span className="so-ai-heat-name">Step {h.stepNum}</span>
+                      <div className="kp-bar-track">
+                        <div className="so-ai-heat-bar" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="so-ai-heat-stat">{h.aiRounds} 轮 · {h.aiPeople} 人</span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>

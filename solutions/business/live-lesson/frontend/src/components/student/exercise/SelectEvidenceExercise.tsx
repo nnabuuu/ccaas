@@ -39,6 +39,9 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   const funcOptions = exercise.functionOptions!
   const paragraphTokens = exercise.paragraphTokens!
 
+  const funcAttemptsRef = useRef<Record<string, number>>({})
+  const firstGradeRef = useRef<Record<string, { function: string; picked: string[]; funcAttempts: number }>>({})
+
   const [secStates, setSecStates] = useState<Record<string, SectionState>>(() => {
     const init: Record<string, SectionState> = {}
     sections.forEach(s => {
@@ -133,6 +136,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
 
   const lockFunc = () => {
     if (!state.funcChoice) return
+    funcAttemptsRef.current[currentId] = (funcAttemptsRef.current[currentId] || 0) + 1
     if (state.funcChoice === current.correctFunction) {
       updateState(currentId, { stage: 'evidence', funcWrong: false })
     } else {
@@ -148,13 +152,24 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
     setSecStates(nextStates)
 
     const completed: Record<string, { function: string; picked: string[] }> = {}
+    const firstAttemptSections: Record<string, { function: string; picked: string[]; funcAttempts: number }> = {}
     sections.forEach(s => {
       const ss = nextStates[s.id]
       if (ss.stage === 'graded') {
         completed[s.id] = { function: ss.funcChoice!, picked: Array.from(ss.picked) }
+        if (!firstGradeRef.current[s.id]) {
+          firstGradeRef.current[s.id] = {
+            function: ss.funcChoice!,
+            picked: Array.from(ss.picked),
+            funcAttempts: funcAttemptsRef.current[s.id] || 1,
+          }
+        }
       }
     })
-    onSubmit({ sections: completed })
+    for (const [id, fa] of Object.entries(firstGradeRef.current)) {
+      firstAttemptSections[id] = fa
+    }
+    onSubmit({ sections: completed, firstAttemptSections })
 
     if (sections.every(s => nextStates[s.id].stage === 'graded')) {
       onDone()

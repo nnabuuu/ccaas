@@ -195,7 +195,7 @@ export default function MapClassView({ data, onStudentSelect }: Props) {
           <div style={{ display: 'flex', gap: 12, fontSize: 9, color: 'var(--t3)' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--green-dot)', display: 'inline-block' }} />
-              高 >=70% ({highCount})
+              高 &gt;=70% ({highCount})
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--blue)', display: 'inline-block' }} />

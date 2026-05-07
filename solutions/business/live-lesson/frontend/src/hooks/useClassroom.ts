@@ -272,14 +272,14 @@ export interface ClassroomState {
     currentPhase: string
     stepStartedAt: string
     discussMeta?: DiscussMeta | null
-    submissions: Record<number, { step: number; data: any; score: any; submittedAt: string }>
+    submissions: Record<number, { step: number; data: any; score: any; submittedAt: string; duration?: number; aiRoundsCount?: number }>
   }>
   metrics: {
     total: number
     submitted: number
     inProgress: number
   }
-  stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number; byDimension?: Record<string, { good: number; partial: number; wrong: number }> }>
+  stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number; byDimension?: Record<string, { good: number; partial: number; wrong: number }>; avgTime?: number | null; medianTime?: number | null; aiRounds?: number; aiPeople?: number }>
   questions: Array<{ studentId: string; studentName: string; step: number; question: string; answer?: string; category?: string; timestamp: string }>
   clusterStats?: Record<number, {
     definitions: Array<{ id: string; label: string }>

@@ -331,3 +331,181 @@ export const QUADRANT_META: Record<Quadrant, { label: string; color: string; bgC
 }
 
 export const QUADRANT_ORDER: Quadrant[] = ['star', 'struggling', 'coasting', 'at-risk']
+
+// ── Shared Utilities ──
+
+export function formatDuration(seconds: number): string {
+  const total = Math.round(seconds)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+// ── Transition Insight Types ──
+
+export interface TimingInsight {
+  stepNum: number
+  stepName: string
+  studentCount: number   // how many students spent the most time on this step
+  percentage: number     // 0-100
+  medianTime: number | null // seconds
+}
+
+export interface RepresentativeQuestion {
+  step: number
+  stepName: string
+  question: string
+  isAnonymous: true
+  category: string | null
+}
+
+export interface AiHeatStep {
+  stepNum: number
+  stepName: string
+  aiRounds: number
+  aiPeople: number
+}
+
+// ── Transition Insight Functions ──
+
+/**
+ * Find the step where the most students spent their longest time.
+ * Returns null if no duration data is available.
+ */
+export function computeTimingInsight(
+  students: Student[],
+  stepToTask: Record<number, number>,
+  stepMetrics: StepMetrics | undefined,
+  stepNames: Record<number, string>,
+): TimingInsight | null {
+  // For each student, find the taskNum where they spent the most time
+  const longestStepCounts = new Map<number, number>()
+  let totalWithData = 0
+
+  for (const s of students) {
+    if (!s.submissions) continue
+    let maxDuration = -1
+    let maxTaskNum = -1
+
+    for (const [stepStr, sub] of Object.entries(s.submissions)) {
+      if (!sub?.duration || sub.duration <= 0) continue
+      const stepIdx = Number(stepStr)
+      const taskNum = stepToTask[stepIdx]
+      if (taskNum == null) continue
+      if (sub.duration > maxDuration) {
+        maxDuration = sub.duration
+        maxTaskNum = taskNum
+      }
+    }
+
+    if (maxTaskNum > 0) {
+      totalWithData++
+      longestStepCounts.set(maxTaskNum, (longestStepCounts.get(maxTaskNum) || 0) + 1)
+    }
+  }
+
+  if (totalWithData === 0) return null
+
+  // Find the taskNum with the highest count
+  let topTaskNum = -1
+  let topCount = 0
+  for (const [taskNum, count] of longestStepCounts) {
+    if (count > topCount) {
+      topCount = count
+      topTaskNum = taskNum
+    }
+  }
+
+  if (topTaskNum < 0) return null
+
+  const medianTime = stepMetrics?.[topTaskNum]?.medianTime ?? null
+
+  return {
+    stepNum: topTaskNum,
+    stepName: stepNames[topTaskNum] || `Step ${topTaskNum}`,
+    studentCount: topCount,
+    percentage: Math.round((topCount / totalWithData) * 100),
+    medianTime,
+  }
+}
+
+/**
+ * Pick 1-3 representative student questions worth discussing in class.
+ * Always anonymized — no student names.
+ */
+export function pickRepresentativeQuestions(
+  questions: Questions,
+  stepNames: Record<number, string>,
+  limit = 3,
+): RepresentativeQuestion[] {
+  // Filter out very short questions
+  const filtered = questions.filter(q => q.question && q.question.length >= 10)
+
+  if (filtered.length === 0) return []
+
+  // Personal keywords that indicate deeper engagement
+  const personalPattern = /我|我的|为什么|怎么|如果|难道|可是|但是|觉得/
+
+  // Score each question: personal keywords boost priority, then length as tiebreak
+  const scored = filtered.map(q => ({
+    ...q,
+    isPersonal: personalPattern.test(q.question),
+    len: q.question.length,
+  }))
+
+  // Sort: personal first, then by length descending
+  scored.sort((a, b) => {
+    if (a.isPersonal !== b.isPersonal) return a.isPersonal ? -1 : 1
+    return b.len - a.len
+  })
+
+  // Pick at most 1 per step
+  // NOTE: q.step is already a taskNum (set by backend from the AI ask endpoint).
+  // No stepToTask mapping needed here — that's only for submissions keys.
+  const seenSteps = new Set<number>()
+  const result: RepresentativeQuestion[] = []
+
+  for (const q of scored) {
+    if (result.length >= limit) break
+    const taskNum = q.step
+    if (seenSteps.has(taskNum)) continue
+    seenSteps.add(taskNum)
+
+    result.push({
+      step: taskNum,
+      stepName: stepNames[taskNum] || `Step ${taskNum}`,
+      question: q.question,
+      isAnonymous: true,
+      category: q.category ?? null,
+    })
+  }
+
+  return result
+}
+
+/**
+ * Rank steps by AI interaction density (aiRounds descending).
+ * Only includes steps that have at least 1 AI round.
+ */
+export function computeAiHeat(
+  stepMetrics: StepMetrics | undefined,
+  stepNames: Record<number, string>,
+): AiHeatStep[] {
+  if (!stepMetrics) return []
+
+  const result: AiHeatStep[] = []
+  for (const [stepStr, sm] of Object.entries(stepMetrics)) {
+    const stepNum = Number(stepStr)
+    const aiRounds = sm?.aiRounds ?? 0
+    const aiPeople = sm?.aiPeople ?? 0
+    if (aiRounds <= 0) continue
+    result.push({
+      stepNum,
+      stepName: stepNames[stepNum] || `Step ${stepNum}`,
+      aiRounds,
+      aiPeople,
+    })
+  }
+
+  return result.sort((a, b) => b.aiRounds - a.aiRounds)
+}

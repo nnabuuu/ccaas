@@ -61,6 +61,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   // Per-question timing: track when each question was first viewed
   const questionTimesRef = useRef<Record<number, number>>({})
   const [answerChanges, setAnswerChanges] = useState<Array<{ qi: number; from: number | null; to: number; at: number }>>([])
+  const firstAttemptRef = useRef<unknown[] | null>(null)
 
   // ── Revisit: cache-first submission restore ──
   const [prevSubmission, setPrevSubmission] = useState<CachedSubmission | null>(() => {
@@ -153,15 +154,30 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       submitData.answerChanges = answerChanges
     }
 
+    // Freeze first attempt answers for quiz/match
+    if ((ex.type === 'quiz' || ex.type === 'match') && !firstAttemptRef.current) {
+      firstAttemptRef.current = [...(submitData.answers || submitData.pairs || [])]
+    }
+    // Freeze first attempt order
+    if (ex.type === 'order' && !firstAttemptRef.current) {
+      firstAttemptRef.current = [...(submitData.order || [])]
+    }
+    if (firstAttemptRef.current) {
+      if (ex.type === 'order') {
+        submitData.firstAttemptOrder = firstAttemptRef.current
+      } else {
+        submitData.firstAttemptAnswers = firstAttemptRef.current
+      }
+    }
+
     // Try server-side check API when available (no local answers needed)
     if (useServerCheck && stepIdx !== undefined) {
       const checkResult = await checkAnswer(
         ctx.sessionCode!, stepIdx, ctx.studentId!, submitData,
       )
       if (checkResult) {
-        // Persist: always for soft-graded types (map/matrix/stance), on allCorrect for others
-        const softGraded = ex.type === 'map' || ex.type === 'matrix' || ex.type === 'stance'
-        if ((checkResult.allCorrect || softGraded) && ctx.submit) {
+        // Persist every check attempt so teacher observe has first-attempt data
+        if (ctx.submit) {
           ctx.submit(stepIdx, submitData)
         }
         handleCheckResult(checkResult)
