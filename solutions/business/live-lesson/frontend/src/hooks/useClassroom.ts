@@ -249,6 +249,23 @@ export interface ClassroomState {
   }
   stepMetrics: Record<number, { currentCount: number; completedCount: number; completionRate: number; avgScore: number }>
   questions: Array<{ studentId: string; studentName: string; step: number; question: string; answer?: string; category?: string; timestamp: string }>
+  clusterStats?: Record<number, {
+    definitions: Array<{ id: string; label: string }>
+    clusters: Array<{
+      clusterId: string
+      observationCount: number
+      uniqueStudents: number
+      activeCount: number
+      resolvedCount: number
+      observations: Array<{
+        studentId: string
+        studentName: string
+        clusterId: string
+        status: 'active' | 'resolved'
+        evidenceSpans: string[]
+      }>
+    }>
+  }>
   observation?: {
     logs: Array<{
       studentId: string

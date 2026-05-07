@@ -11,6 +11,8 @@ import { ObservationService } from '../observation/observation.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from '../task-map.utils';
+import { ClusterClassifier } from './cluster-classifier';
+import { ClusterAggregator } from './cluster-aggregator';
 
 @Injectable()
 export class DiscussService {
@@ -27,6 +29,8 @@ export class DiscussService {
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationService: ObservationService,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly clusterClassifier: ClusterClassifier,
+    private readonly clusterAggregator: ClusterAggregator,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -67,7 +71,8 @@ export class DiscussService {
       const reply = rawResponse.replace(/\s*\[GOAL_REACHED\]\s*/g, ' ').trim();
 
       const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      const taskMap = lesson ? buildTaskMap(JSON.parse(lesson.manifestJson)) : null;
+      const manifest = lesson ? JSON.parse(lesson.manifestJson) : null;
+      const taskMap = manifest ? buildTaskMap(manifest) : null;
       const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
       await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
         sessionId: session.id,
@@ -92,6 +97,28 @@ export class DiscussService {
         { student: lastStudentMsg, ai: reply },
         { currentStep: `task-${taskNum}`, exerciseCorrectRate: latestSub?.scoreJson?.total ?? 0, idleSeconds: 0 },
       ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
+
+      // Per-question cluster classification (fire-and-forget — off critical path)
+      const stepDefForCluster = manifest
+        ? (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx)
+        : undefined;
+      const clusters = stepDefForCluster?.discuss?.clusters;
+      if (clusters?.length) {
+        const recentContext = messages
+          .slice(-6)
+          .map(m => `${m.role}: ${m.text}`)
+          .join('\n');
+        this.clusterClassifier
+          .classify(lastStudentMsg, clusters, recentContext)
+          .then(classifyResult => {
+            if (classifyResult) {
+              this.clusterAggregator.ingest(
+                session.id, taskNum, studentId, student.name, classifyResult,
+              );
+            }
+          })
+          .catch(e => this.logger.warn(`Cluster classify failed: ${e}`));
+      }
 
       if (goalReached) {
         await this.observationService.addSystemEvent(

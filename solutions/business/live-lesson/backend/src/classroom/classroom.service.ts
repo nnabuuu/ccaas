@@ -16,6 +16,7 @@ import { ObservationService } from './observation/observation.service';
 import { MetricsAggregator } from './metrics-aggregator';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from './task-map.utils';
+import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
 
@@ -48,6 +49,7 @@ export class ClassroomService {
     private readonly snapshotRepo: Repository<ClassroomSnapshot>,
     private readonly observationService: ObservationService,
     private readonly metricsAggregator: MetricsAggregator,
+    private readonly clusterAggregator: ClusterAggregator,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -182,6 +184,7 @@ export class ClassroomService {
     );
 
     this.engine.clearSessionMeta(session.id);
+    this.clusterAggregator.cleanupSession(session.id);
     this.observeRegistryCache.delete(session.lessonId);
 
     this.logger.log(`Session ended: ${code}`);
@@ -276,6 +279,21 @@ export class ClassroomService {
       timestamp: q.askedAt instanceof Date ? q.askedAt.toISOString() : String(q.askedAt),
     }));
 
+    // Cluster stats per task step
+    const clusterStats: Record<number, { definitions: Array<{ id: string; label: string }>; clusters: ReturnType<ClusterAggregator['getClusterStats']> }> = {};
+    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
+      const stepIdx = taskMap.taskToStep[taskNum];
+      const stepDef = readingSteps.find((s) => s.idx === stepIdx) as Record<string, any> | undefined;
+      const defs: Array<{ id: string; label: string; description: string }> = stepDef?.discuss?.clusters || [];
+      const stats = this.clusterAggregator.getClusterStats(sessionId, taskNum);
+      if (defs.length > 0 || stats.length > 0) {
+        clusterStats[taskNum] = {
+          definitions: defs.map(d => ({ id: d.id, label: d.label })),
+          clusters: stats,
+        };
+      }
+    }
+
     return {
       sessionStatus: session?.status ?? 'active',
       currentStep: stepToCheck,
@@ -353,6 +371,7 @@ export class ClassroomService {
         indicatorStats: this.observationService.computeIndicatorStats(sessionId),
         indicators: this.observationService.getIndicators(sessionId),
       },
+      clusterStats,
     };
   }
 

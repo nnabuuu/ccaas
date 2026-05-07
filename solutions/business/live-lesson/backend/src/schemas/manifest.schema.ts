@@ -44,6 +44,12 @@ const StudentViewSchema = z.object({
 
 // ── Discuss ──
 
+const DiscussClusterSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string(),
+});
+
 const FallbackMCSchema = z.object({
   question: z.string(),
   questionZh: z.string().optional(),
@@ -65,6 +71,7 @@ const DiscussSchema = z.object({
   insight: z.string(),
   insightZh: z.string().optional(),
   observe: z.array(z.string()).optional(),
+  clusters: z.array(DiscussClusterSchema).optional(),
 });
 
 // ── PhaseConfig ──
@@ -187,4 +194,5 @@ export type PersonalTouch = z.infer<typeof PersonalTouchSchema>;
 export type BonusArticle = z.infer<typeof BonusArticleSchema>;
 export type BonusStep = z.infer<typeof BonusStepSchema>;
 export type Discuss = z.infer<typeof DiscussSchema>;
+export type DiscussCluster = z.infer<typeof DiscussClusterSchema>;
 export type FallbackMC = z.infer<typeof FallbackMCSchema>;

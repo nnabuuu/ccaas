@@ -8,6 +8,7 @@ import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ObservationEvent } from '../entities/observation-event.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
+import { Lesson } from '../entities/lesson.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
 import {
   ObserverEngine,
@@ -24,6 +25,7 @@ import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
+import { ObserveService } from './observe.service';
 
 // ── Exercise component ──
 import { ExerciseService } from './exercise/exercise.service';
@@ -33,6 +35,8 @@ import { GradingService } from './exercise/grading.service';
 // ── Socratic Discuss component ──
 import { DiscussService } from './socratic-discuss/discuss.service';
 import { DiscussController } from './socratic-discuss/discuss.controller';
+import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
+import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 
 // ── AI Ask component ──
 import { AiAskService } from './ai-ask/ai-ask.service';
@@ -55,7 +59,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
 @Module({
   imports: [
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot, Lesson, ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
     ClassroomController,
@@ -66,11 +70,11 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
   ],
   providers: [
     // Infra
-    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator,
+    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, ObserveService,
     // Exercise
     ExerciseService, GradingService,
     // Socratic Discuss
-    DiscussService,
+    DiscussService, ClusterClassifier, ClusterAggregator,
     // AI Ask
     AiAskService,
     // Personal Touch

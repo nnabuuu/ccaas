@@ -1,6 +1,6 @@
 # SocraticDiscuss 组件规格文档
 
-> 版本：v1.1 · 2026-05-01  
+> 版本：v1.2 · 2026-05-07
 > 位置：`surfaces/socratic-discuss.jsx`  
 > 演示：`surfaces/discuss-demo.html`
 
@@ -38,7 +38,7 @@
 > 作为学生，第一轮回答前我可以看到句型提示（scaffolds），点击后会填入输入框，帮我开始表达。
 
 ### US-8：解锁下一阶段
-> 作为课堂流系统，当 Discuss 完成（无论通过对话达标还是选择题完成），数据立即持久化，但 Takeaway 阶段不会自动解锁。学生需要点击 "Continue to Takeaway →" 按钮手动解锁下一阶段。重访时显示静态 "✓ Discuss complete" 标签。
+> 作为课堂流系统，当 Discuss 完成（无论通过对话达标还是选择题完成），`onDone` 回调被触发，解锁 Takeaway 阶段。聊天流底部显示 "✓ Discuss complete — next section unlocked" 分隔线通知。
 
 ---
 
@@ -56,7 +56,7 @@
 │  ── 路径 A：学生达标 ──                         │
 │  [🎉] 庆祝消息 "Amazing! You figured it out!"  │
 │  [AI] 解释总结 + Key Insight                   │
-│  ── [Continue to Takeaway →] 按钮 ──          │
+│  ── ✓ Discuss complete — next unlocked ──     │
 │                                              │
 │  ── 路径 B：超轮/超时 ──                        │
 │  [AI] "Let me give you a question..."         │
@@ -67,7 +67,7 @@
 │       │  [Submit]             │               │
 │       └───────────────────────┘               │
 │  [AI] 解释 + Key Insight                      │
-│  ── [Continue to Takeaway →] 按钮 ──          │
+│  ── ✓ Discuss complete — next unlocked ──     │
 │                                              │
 │  💬 [继续讨论] (可选，不阻塞流程)                │
 └──────────────────────────────────────────────┘
@@ -133,6 +133,13 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
   // 总结
   insight: string;
   insightZh?: string;
+
+  // 认知聚类（可选，备课阶段预设）
+  clusters?: Array<{
+    id: string;           // e.g. "c1", "c2"
+    label: string;        // 教师端显示：e.g. "表面对比理解"
+    description: string;  // LLM 分类用：匹配标准 + 1-2 个示例发言
+  }>;
 }
 ```
 
@@ -186,7 +193,7 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
 **状态说明：**
 - `chat`：苏格拉底对话进行中，输入框可用
 - `fallback`：选择题以 AI 气泡形式嵌在聊天流中，输入框隐藏
-- `done`：解释 + insight 显示在聊天流中，数据已持久化，学生点击 "Continue to Takeaway →" 后 `onDone()` 被调用解锁下一阶段，输入框隐藏
+- `done`：解释 + insight + 解锁通知显示在聊天流中，`onDone()` 被调用，输入框隐藏
 
 ---
 
@@ -212,8 +219,8 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
   - 嵌套的 Key Insight 卡片（amber 色）
 
 ### 4. 解锁通知
-- 非重访时为可点击的 "Continue to Takeaway →" 按钮（teal 悬浮色），重访时为静态 "✓ Discuss complete" 药丸标签
-- 两侧水平线
+- 居中分隔线样式：`── ✓ Discuss complete — next section unlocked ──`
+- 绿色药丸标签，两侧水平线
 
 ### 5. TypingIndicator
 - 三个紫色圆点的打字动画，等待 Claude 响应时显示
@@ -255,12 +262,8 @@ window.DISCUSS_CONFIGS  // 每个 task 的配置对象
 - **位置**：chatArea 外部，phase === 'done' 时显示
 - 默认折叠为按钮："💬 Still have questions? Keep discussing"
 - 展开后独立聊天区域，maxHeight 260px
-- **多轮对话实现**：
-  - 前端发送完整 `messages[]` 历史到 `POST /ai/ask`
-  - 后端用 `buildContinueChatPrompt()` + `callGlmConversation()` 进行多轮对话
-  - 对话通过 `ChatMessage` entity 持久化到 `continue:{step}` thread
-  - 刷新页面后通过 `GET /chat-history` 恢复历史
-- 不影响阶段解锁（`onDone` 在学生点击 "Continue to Takeaway →" 时触发，ContinueChat 独立于此流程）
+- AI 拥有先前对话上下文（最近 4 条消息）
+- 不影响阶段解锁（`onDone` 已经触发）
 
 ---
 
@@ -318,7 +321,7 @@ practiceDone && React.createElement(SocraticDiscuss, {
 ### 为什么允许完成后继续讨论？
 - 看到答案后产生的"恍然大悟"往往伴随新问题
 - 自由讨论是深化理解的最佳时机
-- 不阻塞流程（学生点击 "Continue to Takeaway →" 后 Takeaway 解锁，ContinueChat 独立于此）
+- 不阻塞流程（onDone 已触发，Takeaway 已解锁）
 
 ### 为什么状态栏显示轮数和时间？
 - 轻度时间压力有助于保持注意力
@@ -343,11 +346,143 @@ event: discuss_complete
 
 ---
 
-## 十五、后续扩展建议
+## 十五、Per-Question 认知聚类（Cluster Aggregation）
+
+### 概述
+
+教师端"问题聚类"面板实时展示学生在讨论中的高频认知模式。每个 Socratic Question 在备课阶段可预设 `clusters`（认知类别 schema），系统按轮次对学生发言进行 LLM 分类，聚合为 per-observation 统计供教师参考。
+
+### 架构
+
+```
+Manifest (备课)
+  └─ discuss.clusters: [{ id, label, description }]
+
+Per-turn flow:
+  Student message
+    → DiscussService.aiDiscuss()
+    → ClusterClassifier.classify(message, clusters)      ← LLM 单条分类
+        → { clusterId, confidence, evidenceSpan, eventType }
+    → ClusterAggregator.ingest(sessionId, taskNum, event) ← 内存聚合
+    → SSE broadcast → Teacher UI 渲染 cluster stats
+```
+
+### ClusterClassifier
+
+- **输入**：学生消息 + cluster 定义列表 + 可选对话上下文（最近 6 条消息）
+- **模型**：DeepSeek-Lite，`temperature: 0`，`json_object` 响应格式
+- **输出**：
+
+```typescript
+interface ClassifyResult {
+  clusterId: string;       // cluster ID 或 "other"
+  confidence: 'high' | 'medium' | 'low';
+  evidenceSpan: string;    // 学生原话中支撑判断的片段
+  eventType: 'new_signal' | 'reinforcing' | 'state_change';
+}
+```
+
+- `cluster_id` 枚举约束 — LLM 不能发明新 ID
+- `other` 桶隐式存在，不在 manifest 中定义
+- 分类在 Socratic 回复之后异步执行（fire-and-forget），不增加学生端延迟
+
+### ClusterAggregator
+
+内存索引结构：`sessionId → taskNum → Map<studentId:clusterId, ObservationState>`
+
+```typescript
+interface ObservationState {
+  studentId: string;
+  studentName: string;
+  clusterId: string;
+  status: 'active' | 'resolved';
+  evidenceSpans: string[];  // 最多保留 5 条
+  createdAt: number;
+  updatedAt: number;
+}
+```
+
+**事件路由规则**：
+
+| eventType | 行为 |
+|-----------|------|
+| `new_signal` | 创建新 observation；若已存在则追加 evidence |
+| `reinforcing` | 追加 evidence 到已有 observation；若无则创建 |
+| `state_change` | 将该学生已有 active observation 标记为 `resolved`，在目标 cluster 创建新 observation |
+
+**置信度路由**：`medium` / `low` 置信度 → 路由到 `other` 桶。
+
+**跨 cluster 迁移**：`state_change` 时，2 分钟窗口内的其他 active observation 会被标记为 `resolved`。
+
+### 教师端 UI（问题聚类 Tab）
+
+当步骤有 `clusters` 配置时，显示 per-cluster 观察卡片：
+
+```
+┌─ Task 1: Predict
+│
+│  ┌─ c1 表面对比理解                3人 (2 active · 1 resolved)
+│  │   [amber card — active observations]
+│  │   小明: "因为一个地方觉得胖好看..." (active ●)
+│  │   小刚: "作者对比了两种观点"      (resolved ✓)
+│  │
+│  ├─ c3 冲突开场策略                2人 (2 resolved)
+│  │   [green card — all resolved]
+│  │
+│  └─ other 未分类                   1人
+│       [neutral card — 高计数 = schema 需要补充]
+```
+
+**视觉规则**：
+
+| 状态 | 样式 |
+|------|------|
+| `activeCount > 0` | amber 卡片（需教师关注） |
+| `activeCount === 0 && resolvedCount > 0` | green-soft 卡片（自然解决） |
+| `other` 桶 ≥ 3 人 | 信息提示 "cluster schema 可能需要补充" |
+| `resolved` 的 observation | 降低不透明度 |
+
+当步骤没有 cluster 配置时，降级显示已有的文本相似度聚类。
+
+### 数据上报
+
+`getState()` 响应新增 `clusterStats` 字段：
+
+```typescript
+clusterStats: Record<number, {
+  definitions: Array<{ id: string; label: string }>;
+  clusters: Array<{
+    clusterId: string;
+    observationCount: number;
+    uniqueStudents: number;
+    activeCount: number;
+    resolvedCount: number;
+    observations: Array<ObservationState>;
+  }>;
+}>
+```
+
+### 文件清单
+
+| 文件 | 说明 |
+|------|------|
+| `backend/src/schemas/manifest.schema.ts` | `DiscussClusterSchema` + `clusters` 字段 |
+| `backend/src/classroom/socratic-discuss/cluster-classifier.ts` | LLM 单条分类 |
+| `backend/src/classroom/socratic-discuss/cluster-aggregator.ts` | 内存聚合 + stats |
+| `backend/src/classroom/socratic-discuss/discuss.service.ts` | 分类调用集成 |
+| `backend/src/classroom/classroom.service.ts` | `clusterStats` 注入 getState() |
+| `frontend/src/hooks/useClassroom.ts` | `clusterStats` 类型 |
+| `frontend/src/components/teacher/TeacherShell.tsx` | cluster stats UI |
+| `frontend/src/styles/teacher.css` | `.qc-cluster-card` 等样式 |
+
+---
+
+## 十六、后续扩展建议
 
 1. **自适应轮数** — 根据学生历史表现动态调整 maxRounds
 2. **语音输入** — 集成 Web Speech API，降低英文打字门槛
 3. **表达质量评估** — 在对话中评估学生的英语表达质量
 4. **多模态支架** — 允许在对话中引用/高亮文本段落
-5. **教师仪表板** — 将对话日志和达标数据汇总到教师端
-6. **A/B 测试** — 对比不同 systemPrompt 策略的达标率和平均轮数
+5. **A/B 测试** — 对比不同 systemPrompt 策略的达标率和平均轮数
+6. **Cluster schema 自动建议** — 当 `other` 桶积累足够样本后，LLM 自动提议新 cluster 定义
+7. **跨课次 cluster 趋势** — 同一班级多次课的 cluster 分布变化可视化
