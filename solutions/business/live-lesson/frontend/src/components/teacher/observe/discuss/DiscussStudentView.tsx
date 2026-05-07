@@ -16,7 +16,7 @@ interface DiscussStudentData extends ObserveData {
 interface Props {
   data: ObserveData
   studentId: string
-  onBack: () => void
+  onBack?: () => void
 }
 
 const COMPLETION_LABELS: Record<string, string> = {
@@ -25,7 +25,7 @@ const COMPLETION_LABELS: Record<string, string> = {
   fallback_rounds: '兜底选择',
 }
 
-export default function DiscussStudentView({ data, studentId, onBack }: Props) {
+export default function DiscussStudentView({ data, studentId }: Props) {
   const d = data as DiscussStudentData
   const classStats = (d.stats || {}) as DiscussStudentData['stats']
   const students = d.students || []
@@ -35,7 +35,6 @@ export default function DiscussStudentView({ data, studentId, onBack }: Props) {
     return (
       <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 13, color: 'var(--t3)' }}>未找到该学生数据</div>
-        <button className="observe-band-close" onClick={onBack}>返回</button>
       </div>
     )
   }
@@ -84,10 +83,8 @@ export default function DiscussStudentView({ data, studentId, onBack }: Props) {
     <div className="observe-split">
       {/* Left: header + conversation */}
       <div className="observe-split-left">
-        {/* Header */}
+        {/* Status badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <button className="observe-band-close" onClick={onBack} style={{ padding: '4px 8px', fontSize: 11 }}>← 返回</button>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>{student.name}</span>
           <span style={{
             fontSize: 10, fontWeight: 600, marginLeft: 'auto',
             padding: '1px 6px', borderRadius: 3,

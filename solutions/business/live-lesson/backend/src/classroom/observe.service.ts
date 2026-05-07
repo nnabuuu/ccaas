@@ -62,6 +62,8 @@ export class ObserveService {
     let zeroCount = 0;
     let totalTime = 0;
     let timeCount = 0;
+    let minTime = Infinity;
+    let maxTime = 0;
 
     // Per-question tracking
     const qDistributions: Array<Array<{ count: number; students: Array<{ id: string; name: string }> }>> = [];
@@ -105,7 +107,11 @@ export class ObserveService {
         }
       }
 
-      if (studentTime > 0) { totalTime += studentTime; timeCount++; }
+      if (studentTime > 0) {
+        totalTime += studentTime; timeCount++;
+        if (studentTime < minTime) minTime = studentTime;
+        if (studentTime > maxTime) maxTime = studentTime;
+      }
 
       // Generate key insights
       const insights: string[] = [];
@@ -169,6 +175,8 @@ export class ObserveService {
         perfectCount,
         zeroCount,
         avgTime: timeCount > 0 ? totalTime / timeCount : 0,
+        fastestTime: timeCount > 0 ? minTime : 0,
+        slowestTime: timeCount > 0 ? maxTime : 0,
       },
       questions,
       misconceptions,

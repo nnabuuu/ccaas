@@ -8,6 +8,8 @@ export interface McObserveData {
     perfectCount: number;
     zeroCount: number;
     avgTime: number;
+    fastestTime: number;
+    slowestTime: number;
   };
   questions: Array<{
     idx: number;

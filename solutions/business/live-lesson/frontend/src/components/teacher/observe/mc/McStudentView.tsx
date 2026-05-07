@@ -17,12 +17,12 @@ interface McStudentData extends ObserveData {
 interface Props {
   data: ObserveData
   studentId: string
-  onBack: () => void
+  onBack?: () => void
 }
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
-export default function McStudentView({ data, studentId, onBack }: Props) {
+export default function McStudentView({ data, studentId }: Props) {
   const d = data as McStudentData
   const students = d.students || []
   const student = students.find(s => s.id === studentId)
@@ -33,7 +33,6 @@ export default function McStudentView({ data, studentId, onBack }: Props) {
     return (
       <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 13, color: 'var(--t3)' }}>未找到该学生数据</div>
-        <button className="observe-band-close" onClick={onBack}>返回</button>
       </div>
     )
   }
@@ -59,10 +58,8 @@ export default function McStudentView({ data, studentId, onBack }: Props) {
     <div className="observe-split">
       {/* Left: header + stats + per-question cards */}
       <div className="observe-split-left">
-        {/* Header */}
+        {/* Score badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <button className="observe-band-close" onClick={onBack} style={{ padding: '4px 8px', fontSize: 11 }}>&larr; 返回</button>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>{student.name}</span>
           <span style={{
             fontSize: 12, fontWeight: 700, color: '#fff', marginLeft: 'auto',
             background: scoreColor(student.score), padding: '2px 8px', borderRadius: 4,

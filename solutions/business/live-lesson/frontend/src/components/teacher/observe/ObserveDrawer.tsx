@@ -1,7 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import type { ReadingManifest } from '../../../types/reading'
-import type { ClassroomState } from '../../../hooks/useClassroom'
 import { getStepName } from '../teacher-helpers'
+import OverlayShell from './OverlayShell'
 
 const McClassView = lazy(() => import('./mc/McClassView'))
 const McStudentView = lazy(() => import('./mc/McStudentView'))
@@ -22,10 +22,8 @@ interface Props {
   type: string
   stepNum: number
   manifest: ReadingManifest
-  state: ClassroomState
   sessionCode: string
   onClose: () => void
-  onStudentClick: (name: string) => void
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -35,11 +33,26 @@ const TYPE_LABELS: Record<string, string> = {
   discuss: 'Discuss 观察',
 }
 
-export default function ObserveDrawer({ type, stepNum, manifest, state: _state, sessionCode, onClose, onStudentClick: _onStudentClick }: Props) {
+function LoadingView() {
+  return (
+    <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</div>
+    </div>
+  )
+}
+
+function ErrorView({ error }: { error: string }) {
+  return (
+    <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ fontSize: 13, color: 'var(--red)' }}>加载失败: {error}</div>
+    </div>
+  )
+}
+
+export default function ObserveDrawer({ type, stepNum, manifest, sessionCode, onClose }: Props) {
   const [data, setData] = useState<ObserveData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<'class' | 'student'>('class')
   const [selectedStudent, setSelectedStudent] = useState<string | null>(null)
 
   const taskSteps = manifest.readingSteps
@@ -47,14 +60,12 @@ export default function ObserveDrawer({ type, stepNum, manifest, state: _state, 
     .sort((a, b) => a.idx - b.idx)
   const step = taskSteps[stepNum - 1]
   const stepName = step ? getStepName(step) : `Step ${stepNum}`
-  // Extract axes from manifest for map exercises
   const axes = step?.answerKey?.axes as { x: { neg: string; pos: string }; y: { neg: string; pos: string } } | undefined
 
   useEffect(() => {
     setLoading(true)
     setError(null)
     setData(null)
-    setView('class')
     setSelectedStudent(null)
 
     fetch(`/api/classroom/${sessionCode}/steps/${stepNum}/observe/${type}`)
@@ -66,65 +77,80 @@ export default function ObserveDrawer({ type, stepNum, manifest, state: _state, 
       .catch(e => { setError(e.message); setLoading(false) })
   }, [type, stepNum, sessionCode])
 
+  const studentIds = useMemo(
+    () => (data?.students || []).map(s => s.id as string),
+    [data],
+  )
+
+  const selectedStudentName = useMemo(
+    () => data?.students?.find(s => s.id === selectedStudent)?.name as string ?? '',
+    [data, selectedStudent],
+  )
+
+  const currentIdx = selectedStudent ? studentIds.indexOf(selectedStudent) : -1
+  const prevStudent = currentIdx > 0 ? studentIds[currentIdx - 1] : null
+  const nextStudent = currentIdx >= 0 && currentIdx < studentIds.length - 1 ? studentIds[currentIdx + 1] : null
+
   const handleStudentSelect = (studentId: string) => {
     setSelectedStudent(studentId)
-    setView('student')
   }
 
-  const handleBackToClass = () => {
-    setView('class')
+  const handleCloseStudent = () => {
     setSelectedStudent(null)
   }
 
+  const mapData = axes && data && !data.axes ? { ...data, axes } : data
+
   return (
-    <div className="observe-overlay" onClick={(e) => {
-      if ((e.target as HTMLElement).classList.contains('observe-overlay')) onClose()
-    }}>
-      <div className="observe-drawer">
-        {/* Band */}
+    <>
+      {/* Layer 0: Class observe */}
+      <OverlayShell open={true} onClose={onClose} depth={0}>
         <div className="observe-band">
           <span className="observe-band-title">{TYPE_LABELS[type] || type}</span>
           <span className="observe-band-sub">{stepName} · Step {stepNum}</span>
-          <button className="observe-band-close" onClick={onClose}>关闭 ✕</button>
+          <button className="observe-band-close" onClick={onClose}>✕</button>
         </div>
-
-        {/* Tabs */}
-        <div className="observe-tabs">
-          <button
-            className={`observe-tab${view === 'class' ? ' active' : ''}`}
-            onClick={handleBackToClass}
-          >班级总览</button>
-          <button
-            className={`observe-tab${view === 'student' ? ' active' : ''}`}
-            onClick={() => { if (selectedStudent) setView('student') }}
-            style={!selectedStudent ? { opacity: 0.4, cursor: 'default' } : undefined}
-          >个人详情</button>
+        <div className="observe-body">
+          {loading && <LoadingView />}
+          {error && <ErrorView error={error} />}
+          {data && !loading && (
+            <Suspense fallback={<LoadingView />}>
+              {type === 'mc' && <McClassView data={data} onStudentSelect={handleStudentSelect} />}
+              {type === 'evidence' && <EvidenceClassView data={data} onStudentSelect={handleStudentSelect} />}
+              {type === 'map' && <MapClassView data={mapData!} onStudentSelect={handleStudentSelect} />}
+              {type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
+            </Suspense>
+          )}
         </div>
+      </OverlayShell>
 
-        {/* Body */}
-        {loading && (
-          <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 13, color: 'var(--t3)' }}>加载中...</div>
-          </div>
-        )}
-        {error && (
-          <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 13, color: 'var(--red)' }}>加载失败: {error}</div>
-          </div>
-        )}
-        {data && !loading && (
-          <Suspense fallback={<div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}><div style={{ fontSize: 13, color: 'var(--t3)' }}>加载组件...</div></div>}>
-            {view === 'class' && type === 'mc' && <McClassView data={data} onStudentSelect={handleStudentSelect} />}
-            {view === 'student' && type === 'mc' && selectedStudent && <McStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
-            {view === 'class' && type === 'evidence' && <EvidenceClassView data={data} onStudentSelect={handleStudentSelect} />}
-            {view === 'student' && type === 'evidence' && selectedStudent && <EvidenceStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
-            {view === 'class' && type === 'map' && <MapClassView data={axes && !data.axes ? { ...data, axes } : data} onStudentSelect={handleStudentSelect} />}
-            {view === 'student' && type === 'map' && selectedStudent && <MapStudentView data={axes && !data.axes ? { ...data, axes } : data} studentId={selectedStudent} onBack={handleBackToClass} />}
-            {view === 'class' && type === 'discuss' && <DiscussClassView data={data} onStudentSelect={handleStudentSelect} />}
-            {view === 'student' && type === 'discuss' && selectedStudent && <DiscussStudentView data={data} studentId={selectedStudent} onBack={handleBackToClass} />}
-          </Suspense>
-        )}
-      </div>
-    </div>
+      {/* Layer 1: Student detail */}
+      <OverlayShell open={!!selectedStudent} onClose={handleCloseStudent} depth={1}>
+        <div className="observe-band">
+          <button
+            className="observe-band-nav"
+            disabled={!prevStudent}
+            onClick={() => prevStudent && handleStudentSelect(prevStudent)}
+          >‹</button>
+          <span className="observe-band-title">{selectedStudentName}</span>
+          <button
+            className="observe-band-nav"
+            disabled={!nextStudent}
+            onClick={() => nextStudent && handleStudentSelect(nextStudent)}
+          >›</button>
+          <button className="observe-band-close" onClick={handleCloseStudent}>✕</button>
+        </div>
+        <div className="observe-body">
+          {data && selectedStudent && (
+            <Suspense fallback={<LoadingView />}>
+              {type === 'mc' && <McStudentView data={data} studentId={selectedStudent} />}
+              {type === 'evidence' && <EvidenceStudentView data={data} studentId={selectedStudent} />}
+              {type === 'map' && <MapStudentView data={mapData!} studentId={selectedStudent} />}
+              {type === 'discuss' && <DiscussStudentView data={data} studentId={selectedStudent} />}
+            </Suspense>
+          )}
+        </div>
+      </OverlayShell>
+    </>
   )
 }

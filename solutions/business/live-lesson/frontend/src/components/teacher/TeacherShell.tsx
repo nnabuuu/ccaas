@@ -598,10 +598,8 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             type={observeParams.type}
             stepNum={observeParams.step}
             manifest={manifest}
-            state={state}
             sessionCode={sessionCode || ''}
             onClose={closeObserve}
-            onStudentClick={(name) => setModalStudent(name)}
           />
         </Suspense>
       )}

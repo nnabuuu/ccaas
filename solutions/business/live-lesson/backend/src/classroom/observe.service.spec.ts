@@ -177,7 +177,7 @@ describe('ObserveService', () => {
 
     it('empty class → all stats zero', () => {
       const r = service.computeMcObserve([], new Map(), STEP, MC_KEY);
-      expect(r.stats).toEqual({ totalStudents: 0, submitted: 0, avgScore: 0, perfectCount: 0, zeroCount: 0, avgTime: 0 });
+      expect(r.stats).toEqual({ totalStudents: 0, submitted: 0, avgScore: 0, perfectCount: 0, zeroCount: 0, avgTime: 0, fastestTime: 0, slowestTime: 0 });
       expect(r.students).toEqual([]);
       expect(r.misconceptions).toEqual([]);
     });

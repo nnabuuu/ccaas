@@ -20,10 +20,10 @@ interface MapStudentData extends ObserveData {
 interface Props {
   data: ObserveData
   studentId: string
-  onBack: () => void
+  onBack?: () => void
 }
 
-export default function MapStudentView({ data, studentId, onBack }: Props) {
+export default function MapStudentView({ data, studentId }: Props) {
   const d = data as MapStudentData
   const students = d.students || []
   const student = students.find(s => s.id === studentId)
@@ -35,7 +35,6 @@ export default function MapStudentView({ data, studentId, onBack }: Props) {
     return (
       <div className="observe-body" style={{ alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ fontSize: 13, color: 'var(--t3)' }}>未找到该学生数据</div>
-        <button className="observe-band-close" onClick={onBack}>返回</button>
       </div>
     )
   }
@@ -48,11 +47,7 @@ export default function MapStudentView({ data, studentId, onBack }: Props) {
   return (
     <div className="observe-split">
       <div className="observe-split-left">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <button className="observe-band-close" onClick={onBack} style={{ padding: '4px 8px', fontSize: 11 }}>← 返回</button>
-          <span style={{ fontSize: 14, fontWeight: 700 }}>{student.name}</span>
-        </div>
+        {/* Stats header spacer */}
 
         {/* Stats grid */}
         <div className="obs-stats-grid cols-4">
