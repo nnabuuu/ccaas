@@ -47,16 +47,17 @@ export default function TeacherPage() {
       manifest={manifest}
       lessonId={lookup.session.lessonId}
       sessionCode={lookup.session.code}
+      sessionStatus={lookup.session.status}
       embed={embed}
     />
   )
 }
 
-function TeacherPageWithSession({ manifest, sessionCode, embed }: {
-  manifest: ReadingManifest; lessonId?: string; sessionCode: string; embed: boolean
+function TeacherPageWithSession({ manifest, sessionCode, sessionStatus: initialStatus, embed }: {
+  manifest: ReadingManifest; lessonId?: string; sessionCode: string; sessionStatus: string; embed: boolean
 }) {
   const { state } = useTeacherStream(sessionCode)
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(initialStatus === 'active')
   const [starting, setStarting] = useState(false)
 
   const sessionStatus = state?.sessionStatus
