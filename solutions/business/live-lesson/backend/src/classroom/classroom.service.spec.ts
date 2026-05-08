@@ -294,7 +294,7 @@ describe('ClassroomService — persistence', () => {
 
       // Verify score persisted in DB
       const sub = await submissionRepo.findOne({
-        where: { sessionId: session.id, studentId, step: 1 },
+        where: { sessionId: session.id, studentId, step: 1, phase: 'exercise' },
       });
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
@@ -371,7 +371,7 @@ describe('ClassroomService — persistence', () => {
       expect(result.score.total).toBe(0);
 
       const sub = await submissionRepo.findOne({
-        where: { sessionId: session.id, studentId, step: 1 },
+        where: { sessionId: session.id, studentId, step: 1, phase: 'exercise' },
       });
       expect(sub!.scoreJson).toEqual({ total: 0, byDimension: { q0: false, q1: false } });
     });
@@ -619,7 +619,7 @@ describe('ClassroomService — extended coverage', () => {
 
       // Submission saved
       const sub = await submissionRepo.findOne({
-        where: { sessionId: session!.id, studentId: sid, step: 2 },
+        where: { sessionId: session!.id, studentId: sid, step: 2, phase: 'exercise' },
       });
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson).toBeNull(); // no answerKey for step 2
@@ -1094,7 +1094,7 @@ describe('ClassroomService — extended coverage', () => {
 
         // Submission still saved
         const sub = await submissionRepo.findOne({
-          where: { sessionId: sess!.id, studentId: sid, step: 1 },
+          where: { sessionId: sess!.id, studentId: sid, step: 1, phase: 'exercise' },
         });
         expect(sub).not.toBeNull();
         expect(sub!.dataJson).toEqual({ text: 'some reading' });
@@ -2847,7 +2847,7 @@ describe('ClassroomService — extended coverage', () => {
 
     it('should still persist cross-step submissions in DB', async () => {
       const sub = await submissionRepo.findOne({
-        where: { sessionId: session.id, studentId: sid, step: 9 },
+        where: { sessionId: session.id, studentId: sid, step: 9, phase: 'exercise' },
       });
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson).toBeDefined();
@@ -2896,7 +2896,7 @@ describe('ClassroomService — extended coverage', () => {
 
     it('DB submission should be overwritten with new (lower) score', async () => {
       const sub = await submissionRepo.findOne({
-        where: { sessionId: session.id, studentId: sid, step: 1 },
+        where: { sessionId: session.id, studentId: sid, step: 1, phase: 'exercise' },
       });
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson.total).toBe(0);
@@ -4487,5 +4487,238 @@ describe('StudentSubmissionService — getSnapshot', () => {
     expect(result).not.toBeNull();
     expect(result!.submissions[1]).toBeDefined();
     expect(result!.submissions[1].score).toBeNull();
+  });
+});
+
+describe('Submission phase separation — cross-module', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let studentRepo: Repository<Student>;
+  let submissionRepo: Repository<Submission>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    studentRepo = module.get(getRepositoryToken(Student));
+    submissionRepo = module.get(getRepositoryToken(Submission));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'full-lesson',
+        title: 'Full Test Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(FULL_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  beforeEach(() => {
+    mockObserverEngine.dispatch.mockClear();
+  });
+
+  it('discuss submit creates separate row, exercise score preserved', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, 'PhaseSepStudent');
+
+    // Submit exercise — score 100
+    const exResult = await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
+    expect(exResult.score.total).toBe(100);
+
+    // Submit discuss — score null
+    const discResult = await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'blah' });
+    expect(discResult.score).toBeNull();
+
+    // DB: two rows for step=1, different phases
+    const rows = await submissionRepo.find({
+      where: { sessionId: session!.id, studentId, step: 1 },
+    });
+    expect(rows).toHaveLength(2);
+    const exRow = rows.find(r => r.phase === 'exercise');
+    const discRow = rows.find(r => r.phase === 'discuss');
+    expect(exRow).toBeDefined();
+    expect(discRow).toBeDefined();
+    expect((exRow!.scoreJson as any).total).toBe(100);
+    expect(discRow!.scoreJson).toBeNull();
+
+    // getSubmission returns exercise data only
+    const sub = await submissionSvc.getSubmission(session!, studentId, 1);
+    expect(sub).not.toBeNull();
+    expect(sub!.score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+  });
+
+  it('getSnapshot returns only exercise submissions, not discuss', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, 'SnapshotSepStudent');
+
+    await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
+    await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'test' });
+
+    const snapshot = await submissionSvc.getSnapshot(session!, studentId);
+    expect(snapshot).not.toBeNull();
+    expect(Object.keys(snapshot!.submissions)).toHaveLength(1);
+    expect(snapshot!.submissions[1]).toBeDefined();
+    expect(snapshot!.submissions[1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+  });
+
+  it('getProgress crash recovery ignores discuss row and uses exercise score', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, 'CrashRecoveryStudent');
+
+    // Submit exercise (score=100) but do NOT call updatePhase — simulates crash
+    await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
+    // Submit discuss (score=null)
+    await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'crashed' });
+
+    // Student still at task 1, phase 'listen' (never updated due to crash)
+    const before = await studentRepo.findOne({ where: { id: studentId } });
+    expect(before!.currentTask).toBe(1);
+    expect(before!.currentPhase).toBe('listen');
+
+    // getProgress should detect exercise score=100 and auto-advance
+    const progress = await submissionSvc.getProgress(session!, studentId);
+    expect(progress!.currentTask).toBe(2);
+    expect(progress!.currentPhase).toBe('listen');
+  });
+
+  it('getState metrics and stepMetrics ignore discuss submissions', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId: idA } = await submissionSvc.join(session!, 'MetricsA');
+    const { studentId: idB } = await submissionSvc.join(session!, 'MetricsB');
+
+    // A: exercise score 100
+    await submissionSvc.submit(session!, idA, 1, { answers: [1, 0] });
+    await submissionSvc.updatePhase(session!, idA, 2, 'listen');
+    // A: also submit discuss
+    await submissionSvc.submit(session!, idA, 1, { phase: 'discuss', summary: 'a discuss' });
+
+    // B: exercise score 50 (1 wrong)
+    await submissionSvc.submit(session!, idB, 1, { answers: [1, 1] });
+    await submissionSvc.updatePhase(session!, idB, 2, 'listen');
+    // B: also submit discuss
+    await submissionSvc.submit(session!, idB, 1, { phase: 'discuss', summary: 'b discuss' });
+
+    const state = await service.getState(session!.id);
+
+    // stepMetrics for task 1 should reflect exercise scores only
+    const task1 = state.stepMetrics[1];
+    expect(task1.avgScore).toBe(75); // (100 + 50) / 2
+    expect(task1.completedCount).toBe(2);
+
+    // Student submissions in state should only contain exercise data
+    const studentA = state.students.find(s => s.id === idA);
+    const studentB = state.students.find(s => s.id === idB);
+    expect(studentA!.submissions[1]).toBeDefined();
+    expect(studentA!.submissions[1].score.total).toBe(100);
+    expect(studentB!.submissions[1]).toBeDefined();
+    expect(studentB!.submissions[1].score.total).toBe(50);
+  });
+
+  it('discuss submit returns null score and does not fire exercise_result', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, 'ObserverStudent');
+
+    const result = await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'test' });
+    expect(result.score).toBeNull();
+
+    // exercise_result should NOT have been dispatched
+    const exerciseCalls = mockObserverEngine.dispatch.mock.calls.filter(
+      (call: any[]) => call[0]?.type === 'exercise_result',
+    );
+    expect(exerciseCalls).toHaveLength(0);
+  });
+
+  it('re-submitting exercise overwrites exercise row, not discuss', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, 'UpsertStudent');
+
+    // First exercise submit (wrong, score 0)
+    await submissionSvc.submit(session!, studentId, 1, { answers: [0, 1] });
+    // Submit discuss
+    await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'test' });
+    // Re-submit exercise (correct, score 100)
+    await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
+
+    // DB: exercise row updated, discuss row unchanged
+    const rows = await submissionRepo.find({
+      where: { sessionId: session!.id, studentId, step: 1 },
+    });
+    expect(rows).toHaveLength(2);
+    const exRow = rows.find(r => r.phase === 'exercise');
+    const discRow = rows.find(r => r.phase === 'discuss');
+    expect((exRow!.scoreJson as any).total).toBe(100);
+    expect((exRow!.dataJson as any).answers).toEqual([1, 0]);
+    expect(discRow!.scoreJson).toBeNull();
+    expect((discRow!.dataJson as any).summary).toBe('test');
+
+    // getSubmission returns updated exercise score
+    const sub = await submissionSvc.getSubmission(session!, studentId, 1);
+    expect(sub!.score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+  });
+
+  it('multi-step: discuss on completed task does not affect next task metrics', async () => {
+    const created = await service.createSession('full-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId: id1 } = await submissionSvc.join(session!, 'MultiStepStudent1');
+    const { studentId: id2 } = await submissionSvc.join(session!, 'MultiStepStudent2');
+
+    // Both students advance to task 3
+    await advanceToTask(submissionSvc, session!, id1, 3);
+    await advanceToTask(submissionSvc, session!, id2, 3);
+
+    // Get state before discuss
+    const stateBefore = await service.getState(session!.id);
+    const task1Before = stateBefore.stepMetrics[1];
+    expect(task1Before.completedCount).toBe(2);
+
+    // Late discuss submissions for step 1 (task 1, already completed)
+    await submissionSvc.submit(session!, id1, 1, { phase: 'discuss', summary: 'late discuss 1' });
+    await submissionSvc.submit(session!, id2, 1, { phase: 'discuss', summary: 'late discuss 2' });
+
+    // Get state after discuss
+    const stateAfter = await service.getState(session!.id);
+    const task1After = stateAfter.stepMetrics[1];
+
+    // Task 1 metrics should be unchanged — completedCount still 2, not inflated to 4
+    expect(task1After.avgScore).toBe(task1Before.avgScore);
+    expect(task1After.completedCount).toBe(2);
+
+    // Task 2 metrics also unaffected
+    const task2After = stateAfter.stepMetrics[2];
+    expect(task2After.avgScore).toBe(stateBefore.stepMetrics[2].avgScore);
   });
 });
