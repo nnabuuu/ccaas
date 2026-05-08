@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useCallback, useRef } from 'react'
+import { useState, useEffect, useContext, useCallback } from 'react'
 import { SessionCtx } from '../TaskPanel'
 import { MatchExercise } from '../exercise/MatchExercise'
 import { MatrixExercise } from '../exercise/MatrixExercise'
