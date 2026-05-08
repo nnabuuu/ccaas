@@ -56,6 +56,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [submitting, setSubmitting] = useState(false)
   const [serverHints, setServerHints] = useState<ServerHintMap>({})
   const [mapFeedback, setMapFeedback] = useState<string | null>(null)
+  const [mapItemResults, setMapItemResults] = useState<Record<string, { correct: boolean; hint?: string }>>({})
   const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
   const [matrixRowResults, setMatrixRowResults] = useState<Record<number, boolean>>({})
 
@@ -296,6 +297,13 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
     } else if (ex.type === 'map') {
       const llmItem = result.items.find(it => it.idx === '_llm')
       if (llmItem?.hint) setMapFeedback(llmItem.hint)
+      // Save per-item results (correct/incorrect + LLM comment)
+      const itemResults: Record<string, { correct: boolean; hint?: string }> = {}
+      result.items.forEach(item => {
+        if (item.idx === '_llm') return
+        itemResults[item.idx as string] = { correct: item.correct, hint: item.hint }
+      })
+      setMapItemResults(itemResults)
       setSoftDone(true); setAllDone(true)
       reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
       onDone()
@@ -401,6 +409,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           givenPlacements={ex.givenPlacements}
           practiceCount={ex.practiceCount}
           practiceItemIds={ex.practiceItemIds}
+          itemResults={Object.keys(mapItemResults).length > 0 ? mapItemResults : undefined}
           onActiveChange={(refs) => {
             if (!onOverlayChange) return
             if (refs.length > 0) {

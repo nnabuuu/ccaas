@@ -67,10 +67,13 @@ export class StudentSubmissionService {
       throw new NotFoundException('Student not found in this session');
     }
 
-    const score = await this.gradeSubmission(session.lessonId, step, data);
+    const phase = data?.phase === 'discuss' ? 'discuss' : 'exercise';
+    const score = phase === 'exercise'
+      ? await this.gradeSubmission(session.lessonId, step, data)
+      : null;
 
     const existing = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step },
+      where: { sessionId: session.id, studentId, step, phase },
     });
     if (existing) {
       existing.dataJson = data;
@@ -82,60 +85,64 @@ export class StudentSubmissionService {
         lessonId: session.lessonId,
         studentId,
         step,
+        phase,
         dataJson: data,
         scoreJson: score,
       });
       await this.submissionRepo.save(submission);
     }
 
-    const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
-    const taskNum = taskMap.stepToTask[step];
+    // Observation events only for exercise submissions — discuss has its own events in DiscussService
+    if (phase === 'exercise') {
+      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+      const taskNum = taskMap.stepToTask[step];
 
-    await this.observationService.addSystemEvent(
-      session.id, studentId, student.name, 'exercise_result',
-      { step, score: score?.total ?? null },
-      `提交 Step ${step} 答案${score ? `，得分 ${score.total}%` : ''}`,
-    );
-
-    this.engine.dispatch({
-      type: 'exercise_result',
-      sessionId: session.id,
-      entityId: studentId,
-      tenantId: session.lessonId,
-      payload: { step, score: score?.total ?? null },
-    }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
-
-    const currentTask = student.currentTask;
-    if (taskNum !== undefined && currentTask > taskNum) {
       await this.observationService.addSystemEvent(
-        session.id, studentId, student.name, 'step_complete',
-        { step, taskNum, nextTask: currentTask },
-        `完成 Task ${taskNum}，进入 Task ${currentTask}`,
+        session.id, studentId, student.name, 'exercise_result',
+        { step, score: score?.total ?? null },
+        `提交 Step ${step} 答案${score ? `，得分 ${score.total}%` : ''}`,
       );
 
       this.engine.dispatch({
-        type: 'step_complete',
+        type: 'exercise_result',
         sessionId: session.id,
         entityId: studentId,
         tenantId: session.lessonId,
-        payload: { step, taskNum, nextTask: currentTask },
-      }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
+        payload: { step, score: score?.total ?? null },
+      }).catch(err => this.logger.error(`Observer dispatch exercise_result failed: ${err}`));
+
+      const currentTask = student.currentTask;
+      if (taskNum !== undefined && currentTask > taskNum) {
+        await this.observationService.addSystemEvent(
+          session.id, studentId, student.name, 'step_complete',
+          { step, taskNum, nextTask: currentTask },
+          `完成 Task ${taskNum}，进入 Task ${currentTask}`,
+        );
+
+        this.engine.dispatch({
+          type: 'step_complete',
+          sessionId: session.id,
+          entityId: studentId,
+          tenantId: session.lessonId,
+          payload: { step, taskNum, nextTask: currentTask },
+        }).catch(err => this.logger.error(`Observer dispatch step_complete failed: ${err}`));
+      }
+
+      const exerciseCorrectRate = score?.total ?? 0;
+      await this.observationService.observeTurn(
+        session.id, studentId, student.name,
+        { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%` },
+        { currentStep: `step-${step}`, exerciseCorrectRate, idleSeconds: 0 },
+      ).catch(e => this.logger.warn(`Observation observeTurn after submit failed: ${e}`));
+
+      this.engine.dispatch({
+        type: 'chat_turn',
+        sessionId: session.id,
+        entityId: studentId,
+        tenantId: session.lessonId,
+        payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
+      }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
     }
-
-    const exerciseCorrectRate = score?.total ?? 0;
-    await this.observationService.observeTurn(
-      session.id, studentId, student.name,
-      { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%` },
-      { currentStep: `step-${step}`, exerciseCorrectRate, idleSeconds: 0 },
-    ).catch(e => this.logger.warn(`Observation observeTurn after submit failed: ${e}`));
-
-    this.engine.dispatch({
-      type: 'chat_turn',
-      sessionId: session.id,
-      entityId: studentId,
-      tenantId: session.lessonId,
-      payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
-    }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
   }
@@ -179,7 +186,7 @@ export class StudentSubmissionService {
       const stepIdx = taskMap.taskToStep[student.currentTask];
       if (stepIdx !== undefined) {
         const sub = await this.submissionRepo.findOne({
-          where: { sessionId: session.id, studentId, step: stepIdx },
+          where: { sessionId: session.id, studentId, step: stepIdx, phase: 'exercise' },
         });
         const score = sub?.scoreJson as GradeResult | null;
         if (score?.total === 100) {
@@ -206,7 +213,7 @@ export class StudentSubmissionService {
     if (!progress) return null;
 
     const submissions = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId },
+      where: { sessionId: session.id, studentId, phase: 'exercise' },
     });
     const submissionMap: Record<number, { data: any; score: any }> = {};
     for (const sub of submissions) {
@@ -221,7 +228,7 @@ export class StudentSubmissionService {
 
   async getSubmission(session: ClassroomSession, studentId: string, step: number) {
     const sub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step },
+      where: { sessionId: session.id, studentId, step, phase: 'exercise' },
     });
     if (!sub) return null;
     return {

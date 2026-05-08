@@ -217,7 +217,7 @@ export class ClassroomService implements OnModuleDestroy {
     });
 
     const submissions = await this.submissionRepo.find({
-      where: { sessionId },
+      where: { sessionId, phase: 'exercise' },
     });
 
     const subsByStudent = new Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>();
@@ -451,7 +451,7 @@ export class ClassroomService implements OnModuleDestroy {
     if (resolved.surfaces.length === 0) return {};
 
     const students = await this.studentRepo.find({ where: { sessionId } });
-    const submissions = await this.submissionRepo.find({ where: { sessionId } });
+    const submissions = await this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } });
     const subsByStudent = new Map<string, Record<number, { step: number; data: unknown; score: unknown; submittedAt: string }>>();
     for (const sub of submissions) {
       if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});

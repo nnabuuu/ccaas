@@ -53,7 +53,7 @@ export class PersonalizationService {
     const personalTouch: PersonalTouch = ptParsed.data;
 
     const allSubs = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId },
+      where: { sessionId: session.id, studentId, phase: 'exercise' },
     });
     const subsByStep = new Map(allSubs.map(s => [s.step, s]));
 
@@ -159,7 +159,7 @@ export class PersonalizationService {
     const BONUS_STEP_OFFSET = 100;
     const virtualStep = BONUS_STEP_OFFSET + bonusStep;
     const existing = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step: virtualStep },
+      where: { sessionId: session.id, studentId, step: virtualStep, phase: 'exercise' },
     });
     if (existing) {
       existing.dataJson = data;
@@ -171,6 +171,7 @@ export class PersonalizationService {
         lessonId: session.lessonId,
         studentId,
         step: virtualStep,
+        phase: 'exercise',
         dataJson: data,
         scoreJson: gradeResult,
       });

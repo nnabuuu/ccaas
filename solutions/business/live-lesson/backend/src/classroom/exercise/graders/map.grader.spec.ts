@@ -299,8 +299,8 @@ describe('MapGrader (with LLM)', () => {
     expect(r.total).toBe(100);
     expect(r.llmFeedback).toBe('整体表现不错');
     expect(r.llmItems).toHaveLength(2);
-    expect(r.llmItems![0]).toEqual({ index: 0, relevant: true, reason: '理由充分' });
-    expect(r.llmItems![1]).toEqual({ index: 1, relevant: true, reason: '解释合理' });
+    expect(r.llmItems![0]).toEqual({ index: 0, id: 'a', relevant: true, reason: '理由充分' });
+    expect(r.llmItems![1]).toEqual({ index: 1, id: 'b', relevant: true, reason: '解释合理' });
   });
 
   it('blends LLM score with partial relevance (50%)', async () => {
@@ -459,7 +459,7 @@ describe('MapGrader (with LLM)', () => {
       overall: 'test',
     })));
     const r = await grader.grade(baseKey, fullData());
-    expect(r.llmItems![0]).toEqual({ index: 0, relevant: true, reason: '' });
-    expect(r.llmItems![1]).toEqual({ index: 1, relevant: false, reason: '' });
+    expect(r.llmItems![0]).toEqual({ index: 0, id: '123', relevant: true, reason: '' });
+    expect(r.llmItems![1]).toEqual({ index: 1, id: '', relevant: false, reason: '' });
   });
 });

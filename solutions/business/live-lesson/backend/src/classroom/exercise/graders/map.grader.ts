@@ -89,6 +89,7 @@ export class MapGrader implements Grader {
             llmFeedback: llmResult.overall,
             llmItems: llmResult.items.map((it, i) => ({
               index: i,
+              id: it.id,
               relevant: it.relevant,
               reason: it.comment,
             })),

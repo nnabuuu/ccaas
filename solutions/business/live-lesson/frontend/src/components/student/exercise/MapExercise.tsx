@@ -17,6 +17,7 @@ interface Props {
   givenPlacements?: Record<string, { x: number; y: number }>
   practiceCount?: number
   practiceItemIds?: string[]
+  itemResults?: Record<string, { correct: boolean; hint?: string }>
 }
 
 type Placements = Record<string, { x: number; y: number }>
@@ -28,7 +29,7 @@ function quadrantLabel(val: number, axis: MapAxis): string {
   return 'Neutral'
 }
 
-export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds }: Props) {
+export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setAns, allDone, feedback, onActiveChange, givenPlacements, practiceCount, practiceItemIds, itemResults }: Props) {
   const placements: Placements = ans.placements || {}
   const reasons: Reasons = ans.reasons || {}
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -272,6 +273,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
           const p = placements[it.id]
           const pctX = ((p.x + 1) / 2) * 100
           const pctY = ((1 - (p.y + 1) / 2)) * 100 // invert y for CSS
+          const ir = itemResults?.[it.id]
           return (
             <div
               key={it.id}
@@ -283,6 +285,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                 top: `${pctY}%`,
                 ...(activeId === it.id ? chipActiveStyle : {}),
                 ...(dragging === it.id ? { cursor: 'grabbing', zIndex: 50 } : {}),
+                ...(ir ? { borderColor: ir.correct ? 'var(--green)' : 'var(--amber, #f59e0b)' } : {}),
               }}
             >
               <span style={chipDotStyle} />
@@ -309,6 +312,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
             const reason = reasons[it.id] || ''
             const isActive = activeId === it.id
             const done = reason.trim().length >= minReasonLength
+            const ir = itemResults?.[it.id]
             return (
               <div
                 key={it.id}
@@ -317,6 +321,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                 style={{
                   ...reasonCardStyle,
                   ...(isActive ? { borderColor: 'var(--purple)', boxShadow: '0 0 0 3px var(--purple-bg)' } : {}),
+                  ...(ir ? { borderLeft: `3px solid ${ir.correct ? 'var(--green)' : 'var(--amber, #f59e0b)'}` } : {}),
                 }}
               >
                 {/* Header */}
@@ -353,6 +358,18 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
                   disabled={allDone}
                   rows={2}
                 />
+
+                {/* Per-item LLM comment */}
+                {ir?.hint && (
+                  <div style={{
+                    fontSize: 12, color: 'var(--t2)', lineHeight: 1.5,
+                    marginTop: 6, padding: '6px 8px',
+                    background: 'var(--surface)', borderRadius: 6,
+                    borderLeft: `2px solid ${ir.correct ? 'var(--green)' : 'var(--amber, #f59e0b)'}`,
+                  }}>
+                    {ir.hint}
+                  </div>
+                )}
 
                 {/* Footer */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 10, color: 'var(--t3)' }}>

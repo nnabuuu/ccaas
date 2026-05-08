@@ -185,12 +185,26 @@ export class ExerciseService {
         const itemsToCheck = submittedPracticeIds.length > 0
           ? (mapItems || []).filter(it => submittedPracticeIds.includes(it.id as string))
           : practiceCount ? (mapItems || []).slice(0, practiceCount) : (mapItems || []);
+
+        // Map LLM per-item comments by item id
+        const llmItemsMap = new Map<string, { relevant: boolean; comment: string }>();
+        if (gradeResult.llmItems) {
+          for (const li of gradeResult.llmItems) {
+            if (li.id) llmItemsMap.set(li.id, { relevant: li.relevant, comment: li.reason });
+          }
+        }
+
         const result: Array<Record<string, unknown>> = itemsToCheck.map((it) => {
           const id = it.id as string;
           const placed = gradeResult.byDimension?.[`${id}_placed`] === true;
           const reasoned = gradeResult.byDimension?.[`${id}_reasoned`] === true;
           const posScore = (gradeResult.byDimension?.[`${id}_positionScore`] as number) ?? 0;
-          return { idx: id, correct: placed && reasoned && posScore >= 50 };
+          const llmItem = llmItemsMap.get(id);
+          return {
+            idx: id,
+            correct: placed && reasoned && posScore >= 50,
+            ...(llmItem?.comment && { hint: llmItem.comment }),
+          };
         });
         if (gradeResult.llmFeedback) {
           result.push({ idx: '_llm', correct: true, hint: gradeResult.llmFeedback });

@@ -99,7 +99,7 @@ export class AiAskService {
     }
 
     const latestSub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId },
+      where: { sessionId: session.id, studentId, phase: 'exercise' },
       order: { submittedAt: 'DESC' },
     });
     const correctRate = latestSub?.scoreJson?.total ?? 0;

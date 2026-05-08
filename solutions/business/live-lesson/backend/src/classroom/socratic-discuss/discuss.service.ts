@@ -98,7 +98,7 @@ export class DiscussService {
       ).catch(e => this.logger.warn(`persistThread failed: ${e}`));
 
       const latestSub = await this.submissionRepo.findOne({
-        where: { sessionId: session.id, studentId },
+        where: { sessionId: session.id, studentId, phase: 'exercise' },
         order: { submittedAt: 'DESC' },
       });
       await this.observationService.observeTurn(
@@ -277,7 +277,7 @@ export class DiscussService {
     const stepDef = readingSteps.find((s: any) => s.idx === stepIdx);
 
     const submission = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step: stepIdx },
+      where: { sessionId: session.id, studentId, step: stepIdx, phase: 'exercise' },
     });
 
     const studentLog = this.observationService.getStudentLog(session.id, studentId);

@@ -7,6 +7,7 @@ export const GradeResultSchema = z.object({
   llmFeedback: z.string().optional(),
   llmItems: z.array(z.object({
     index: z.number(),
+    id: z.string().optional(),
     relevant: z.boolean(),
     reason: z.string(),
   })).optional(),

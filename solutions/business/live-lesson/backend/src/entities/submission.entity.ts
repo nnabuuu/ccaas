@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
 
 @Entity('reading_submissions')
-@Unique(['sessionId', 'studentId', 'step'])
+@Unique(['sessionId', 'studentId', 'step', 'phase'])
 export class Submission {
   @PrimaryGeneratedColumn()
   id: number;
@@ -17,6 +17,9 @@ export class Submission {
 
   @Column()
   step: number;
+
+  @Column({ default: 'exercise' })
+  phase: string;
 
   @Column({ type: 'simple-json', name: 'data_json' })
   dataJson: Record<string, any>;
