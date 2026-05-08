@@ -84,8 +84,15 @@ export class PersonalizationService {
       aiComment = '你完成了所有阅读策略练习，继续保持！';
     }
 
-    const currentSession = await this.sessionRepo.findOne({ where: { id: session.id } });
-    const bonusUnlocked = (currentSession?.currentStep ?? 0) < 5;
+    const BONUS_TIME_LIMIT_MIN = 15;
+    const lastSub = allSubs.length > 0
+      ? allSubs.reduce((latest, s) => s.submittedAt > latest.submittedAt ? s : latest)
+      : null;
+    const startTime = session.startedAt ?? student.joinedAt;
+    const elapsedMin = lastSub && startTime
+      ? (new Date(lastSub.submittedAt).getTime() - new Date(startTime).getTime()) / 60_000
+      : Infinity;
+    const bonusUnlocked = elapsedMin <= BONUS_TIME_LIMIT_MIN;
 
     return { strategies, tier, aiComment, bonusUnlocked };
   }

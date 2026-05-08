@@ -363,6 +363,12 @@ export class ClassroomService implements OnModuleDestroy {
           }
         }
 
+        const bonusSubs = [101, 102].filter(step => subs[step]);
+        const bonusStatus: 'none' | 'active' | 'completed' =
+          bonusSubs.length === 0 ? 'none'
+          : bonusSubs.length >= 2 ? 'completed'
+          : 'active';
+
         return {
           id: s.id,
           name: s.name,
@@ -373,6 +379,7 @@ export class ClassroomService implements OnModuleDestroy {
           submissions: enrichedSubs,
           stepHistory,
           discussMeta: s.discussMeta ?? null,
+          bonusStatus,
         };
       }),
       metrics: {
