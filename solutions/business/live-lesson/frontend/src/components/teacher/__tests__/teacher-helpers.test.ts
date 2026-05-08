@@ -10,7 +10,6 @@ import {
   computePhaseDistribution,
   getObserveType,
   getCatBadgeClass,
-  STUCK_THRESHOLD_MS,
 } from '../teacher-helpers'
 
 // ── Factories ──

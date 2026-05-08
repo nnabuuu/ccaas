@@ -10,7 +10,7 @@ import {
   formatDuration,
   pickRepresentativeQuestions,
 } from '../summary-helpers'
-import type { StudentQuadrantData, WeakDimension } from '../summary-helpers'
+import type { StudentQuadrantData } from '../summary-helpers'
 
 // ── Factories ──
 
@@ -30,15 +30,15 @@ function makeStudent(overrides: Partial<{
 
 function makeQuestion(overrides: Partial<{
   studentId: string; studentName: string; question: string
-  step: number; category: string | null; timestamp: number
+  step: number; category: string; timestamp: string
 }> = {}) {
   return {
     studentId: overrides.studentId ?? 's1',
     studentName: overrides.studentName ?? 'Alice',
     question: overrides.question ?? '这是一个足够长的测试问题用来通过长度过滤',
     step: overrides.step ?? 1,
-    category: overrides.category ?? null,
-    timestamp: overrides.timestamp ?? Date.now(),
+    category: overrides.category ?? undefined,
+    timestamp: overrides.timestamp ?? new Date().toISOString(),
   }
 }
 

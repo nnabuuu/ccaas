@@ -26,7 +26,7 @@ export function generateCoachingTips(
   if (!state || !state.students.length) return []
 
   const tips: CoachingTip[] = []
-  const { stepToTask, taskDurations } = buildStepMapping(taskSteps)
+  const { taskDurations } = buildStepMapping(taskSteps)
 
   // 1. stuck-cluster: many students stuck
   if (health.stuck.count >= 5) {
