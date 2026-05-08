@@ -124,8 +124,22 @@ export function getCatBadgeClass(cat: string): string {
     case '阅读策略': return 'strategy'
     case '课文内容': return 'content'
     case '解题求助': return 'task-help'
+    case 'discuss': return 'discuss'
     default: return 'other'
   }
+}
+
+/** Strip [discuss:socratic:rN] prefix from question text */
+export function stripDiscussTag(text: string): string {
+  return text.replace(/^\[discuss:socratic:r\d+\]\s*/, '')
+}
+
+/** Phase display labels */
+export const PHASE_LABELS: Record<string, string> = {
+  listen: '阅读中',
+  practice: '练习中',
+  discuss: '讨论中',
+  takeaway: '总结中',
 }
 
 export const getStepName = (rs: { displayName?: string; label?: string }) =>

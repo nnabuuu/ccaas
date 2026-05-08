@@ -113,6 +113,9 @@ export interface ReadingStep {
     functionOptions?: string[]
     sections?: SelectEvidenceSection[]
     paragraphTokens?: Record<string, ParagraphToken[]>
+    // Map fields
+    axes?: { x: { neg: string; pos: string }; y: { neg: string; pos: string } }
+    [key: string]: unknown
   }
 }
 

@@ -47,7 +47,7 @@ export class DiscussService {
     messages: Array<{ role: 'ai' | 'student'; text: string }>,
     round: number,
     timeUsedSeconds: number,
-  ): Promise<{ reply: string; goalReached: boolean }> {
+  ): Promise<{ reply: string; goalReached: boolean; llmFailed: boolean }> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -148,12 +148,29 @@ export class DiscussService {
         payload: { student: lastStudentMsg, ai: reply, taskNum, round },
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
-      return { reply, goalReached };
+      return { reply, goalReached, llmFailed: false };
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
+
+      // Save AiQuestion on failure (align with ai-ask behavior) so aiRoundsCount stays consistent
+      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } }).catch(() => null);
+      const manifest = lesson ? JSON.parse(lesson.manifestJson) : null;
+      const taskMap = manifest ? buildTaskMap(manifest) : null;
+      const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
+      await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
+        sessionId: session.id,
+        studentId,
+        studentName: student.name,
+        step: stepIdx,
+        question: `[discuss:socratic:r${round}] ${lastStudentMsg}`,
+        answer: null,
+        category: 'discuss',
+      })).catch(saveErr => this.logger.warn(`Failed to save AiQuestion on error: ${saveErr}`));
+
       return {
         reply: 'Sorry, let me think about that differently. Could you rephrase your answer?',
         goalReached: false,
+        llmFailed: true,
       };
     }
   }

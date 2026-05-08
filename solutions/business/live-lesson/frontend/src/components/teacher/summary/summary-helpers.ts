@@ -45,18 +45,21 @@ export interface QuestionCandidate {
 
 // ── Step Mapping ──
 
-export function buildStepMapping(taskSteps: Array<{ idx: number }>): {
+export function buildStepMapping(taskSteps: Array<{ idx: number; duration?: number }>): {
   stepToTask: Record<number, number>
   taskToStep: Record<number, number>
+  taskDurations: Record<number, number>
 } {
   const stepToTask: Record<number, number> = {}
   const taskToStep: Record<number, number> = {}
+  const taskDurations: Record<number, number> = {}
   taskSteps.forEach((rs, i) => {
     const taskNum = i + 1
     stepToTask[rs.idx] = taskNum
     taskToStep[taskNum] = rs.idx
+    if (rs.duration != null) taskDurations[taskNum] = rs.duration
   })
-  return { stepToTask, taskToStep }
+  return { stepToTask, taskToStep, taskDurations }
 }
 
 // ── Constants ──
@@ -72,6 +75,7 @@ export function computeStudentQuadrants(
   questions: Questions,
   totalSteps: number,
   stepToTask?: Record<number, number>,
+  taskDurations?: Record<number, number>,  // taskNum → expected minutes
 ): { students: StudentQuadrantData[]; metrics: SummaryMetrics } {
   const result: StudentQuadrantData[] = []
 
@@ -84,7 +88,8 @@ export function computeStudentQuadrants(
   // Compute per-student metrics
   for (const s of students) {
     const mastery = computeMastery(s, totalSteps)
-    const engagement = computeEngagement(s, totalSteps, aiCountByStudent.get(s.id) || 0)
+    const expectedDuration = taskDurations?.[s.currentTask]
+    const engagement = computeEngagement(s, totalSteps, aiCountByStudent.get(s.id) || 0, expectedDuration)
     const quadrant = classifyQuadrant(mastery, engagement)
 
     // Find weak steps (below step avg)
@@ -144,17 +149,22 @@ function computeMastery(student: Student, totalSteps: number): number {
   return Math.round(avgScore * completionRatio)
 }
 
-function computeEngagement(student: Student, totalSteps: number, aiRounds: number): number {
+function computeEngagement(student: Student, totalSteps: number, aiRounds: number, expectedDuration?: number): number {
   // progressRate: how far through the lesson (currentTask is 1-indexed)
   const progressRate = totalSteps > 0
     ? Math.min(1, student.currentTask / totalSteps)
     : 0
 
-  // stuckPenalty: 1 if stuck, 0 otherwise
+  // stuckPenalty: 0 until 1.5× expected duration, then linear ramp to 1.0 at 3.0×
   let stuckPenalty = 0
   if (student.stepStartedAt) {
     const elapsed = Date.now() - new Date(student.stepStartedAt).getTime()
-    if (elapsed > 180_000) stuckPenalty = 1
+    if (!Number.isNaN(elapsed) && elapsed > 0) {
+      const thresholdMs = (expectedDuration ?? 5) * 60_000 * 1.5
+      if (thresholdMs > 0) {
+        stuckPenalty = Math.min(1, Math.max(0, (elapsed - thresholdMs) / thresholdMs))
+      }
+    }
   }
 
   // aiActivity: normalized, cap at 1

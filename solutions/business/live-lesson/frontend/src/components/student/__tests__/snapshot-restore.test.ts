@@ -269,7 +269,7 @@ describe('Snapshot → restore integration', () => {
   })
 
   it('discuss mid-chat: phase hydrates to chat with no goalReached', () => {
-    const progress = { currentTask: 1, currentPhase: 'discuss', discussMeta: { startedAt: '2025-01-01T00:00:00.000Z' } }
+    const progress = { currentTask: 1, currentPhase: 'discuss', discussMeta: { startedAt: '2025-01-01T00:00:00.000Z' } as { startedAt: string; goalReached?: boolean } }
     const goalReached = !!progress.discussMeta?.goalReached
     const phase = goalReached ? 'done' : 'chat'
     expect(phase).toBe('chat')

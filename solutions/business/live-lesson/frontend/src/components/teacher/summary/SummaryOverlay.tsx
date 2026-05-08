@@ -24,7 +24,7 @@ interface Props {
   questions: ClassroomState['questions']
   stepNames: Record<number, string>
   totalSteps: number
-  taskSteps: Array<{ idx: number }>
+  taskSteps: Array<{ idx: number; duration?: number }>
   onStudentClick: (name: string) => void
 }
 
@@ -42,11 +42,11 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
   const dragRef = useRef<{ startX: number; startY: number; startVB: typeof DEFAULT_VB } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  const { stepToTask, taskToStep } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
+  const { stepToTask, taskToStep, taskDurations } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
 
   const quadrantData = useMemo(
-    () => computeStudentQuadrants(students, state.stepMetrics, questions, totalSteps, stepToTask),
-    [students, state.stepMetrics, questions, totalSteps, stepToTask],
+    () => computeStudentQuadrants(students, state.stepMetrics, questions, totalSteps, stepToTask, taskDurations),
+    [students, state.stepMetrics, questions, totalSteps, stepToTask, taskDurations],
   )
 
   const weakDimensions = useMemo(
@@ -430,7 +430,7 @@ function MetricCard({ label, value, color, sub }: { label: string; value: string
   )
 }
 
-function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, weakDimensions, allStudents, candidates, onStudentClick }: {
+function DetailPanel({ student, rawStudent, stepNames, totalSteps, taskToStep, weakDimensions: _weakDimensions, allStudents, candidates, onStudentClick }: {
   student: StudentQuadrantData
   rawStudent: ClassroomState['students'][number] | null
   stepNames: Record<number, string>

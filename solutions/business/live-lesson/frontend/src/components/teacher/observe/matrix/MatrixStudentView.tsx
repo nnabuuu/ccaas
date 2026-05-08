@@ -15,7 +15,7 @@ interface MatrixStudent {
   keyInsights: string[]
 }
 
-interface MatrixData extends ObserveData {
+interface MatrixData {
   stats: {
     totalStudents: number; avgCompletion: number; avgQuality: number
     whatAvg: number; whyAvg: number
@@ -30,7 +30,7 @@ interface Props {
 }
 
 export default function MatrixStudentView({ data, studentId }: Props) {
-  const d = data as MatrixData
+  const d = data as unknown as MatrixData
   const classStats = d.stats || {} as MatrixData['stats']
   const rows = d.rows || []
   const allStudents = d.students || []

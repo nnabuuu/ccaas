@@ -23,7 +23,7 @@ interface MatrixPattern {
   students: Array<{ id: string; name: string }>
 }
 
-interface MatrixData extends ObserveData {
+interface MatrixData {
   stats: {
     totalStudents: number; submitted: number; avgCompletion: number
     avgQuality: number; whatAvg: number; whyAvg: number; needAttention: number
@@ -39,7 +39,7 @@ interface Props {
 }
 
 export default function MatrixClassView({ data, onStudentSelect }: Props) {
-  const d = data as MatrixData
+  const d = data as unknown as MatrixData
   const stats = d.stats || {} as MatrixData['stats']
   const rows = d.rows || []
   const patterns = d.patterns || []

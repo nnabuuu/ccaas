@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
@@ -24,7 +24,7 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
 
 @Injectable()
-export class ClassroomService {
+export class ClassroomService implements OnModuleDestroy {
   private readonly logger = new Logger(ClassroomService.name);
   private subscribers = new Map<string, Set<Response>>();
   private heartbeatTimers = new Map<Response, NodeJS.Timeout>();
@@ -32,6 +32,12 @@ export class ClassroomService {
   private lastSnapshotAt = new Map<string, number>();
   private readonly SNAPSHOT_THROTTLE_MS = 10_000;
   private observeRegistryCache = new Map<string, Record<string, ObservationDef>>();
+  private broadcastTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  onModuleDestroy() {
+    for (const timer of this.broadcastTimers.values()) clearTimeout(timer);
+    this.broadcastTimers.clear();
+  }
 
   constructor(
     private readonly configService: ConfigService,
@@ -175,7 +181,15 @@ export class ClassroomService {
     session.status = 'ended';
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
-    await this.broadcast(session.id);
+
+    // Flush any pending debounced broadcast, then send final state immediately
+    const pending = this.broadcastTimers.get(session.id);
+    if (pending) {
+      clearTimeout(pending);
+      this.broadcastTimers.delete(session.id);
+    }
+    await this.doBroadcast(session.id);
+
     this.activeNotificationsMap.delete(session.id);
     this.lastSnapshotAt.delete(session.id);
 
@@ -517,8 +531,22 @@ export class ClassroomService {
   }
 
   // ── Broadcast (public — called by controller after domain service mutations) ──
+  // Debounced: multiple calls within 300ms collapse into a single getState + push.
+  // 45 students submitting concurrently → 1 getState instead of 45.
 
-  async broadcast(sessionId: string) {
+  broadcast(sessionId: string) {
+    const existing = this.broadcastTimers.get(sessionId);
+    if (existing) clearTimeout(existing);
+
+    this.broadcastTimers.set(sessionId, setTimeout(() => {
+      this.broadcastTimers.delete(sessionId);
+      this.doBroadcast(sessionId).catch(e =>
+        this.logger.error(`Debounced broadcast failed for ${sessionId}: ${e}`),
+      );
+    }, 300));
+  }
+
+  private async doBroadcast(sessionId: string) {
     const subs = this.subscribers.get(sessionId);
     const state = await this.getState(sessionId);
 

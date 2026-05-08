@@ -492,7 +492,7 @@ export function useAiDiscuss(sessionCode: string) {
     messages: Array<{ role: 'ai' | 'student'; text: string }>,
     round: number,
     timeUsedSeconds: number,
-  ): Promise<{ reply: string; goalReached: boolean } | null> => {
+  ): Promise<{ reply: string; goalReached: boolean; llmFailed?: boolean } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {

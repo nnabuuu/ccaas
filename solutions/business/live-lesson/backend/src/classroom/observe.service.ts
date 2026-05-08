@@ -697,7 +697,8 @@ export class ObserveService {
       if (!msgs || msgs.length === 0) continue;
 
       discussedCount++;
-      const studentMsgs = msgs.filter(m => m.role === 'user');
+      // persistThread saves role='student'; accept 'user' defensively for legacy data
+      const studentMsgs = msgs.filter(m => m.role === 'student' || m.role === 'user');
       const rounds = studentMsgs.length;
       totalRounds += rounds;
 
@@ -725,7 +726,7 @@ export class ObserveService {
       if (timeUsed > 0) { totalTime += timeUsed; timeCount++; }
 
       const conversation = msgs.map(m => ({
-        role: (m.role === 'user' ? 'student' : 'ai') as 'ai' | 'student',
+        role: (m.role === 'student' || m.role === 'user' ? 'student' : 'ai') as 'ai' | 'student',
         text: m.content,
       }));
 

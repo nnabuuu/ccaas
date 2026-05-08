@@ -981,6 +981,8 @@
       "summary": "You used evidence to support your judgment — a big step in academic reading.\n\nLet's review how you learned today.",
       "answerKey": {
         "type": "map",
+        "randomPractice": true,
+        "practiceCount": 3,
         "prompt": "Each chip below is one beauty practice from the text. Drag it onto the plane based on **two questions**, then explain *why* you placed it where you did.",
         "axes": {
           "x": { "neg": "Just appearance", "pos": "Cultural meaning", "label": "Why is it done?" },

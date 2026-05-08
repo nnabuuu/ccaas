@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import type { ReadingManifest } from '../../types/reading'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS, getCatBadgeClass, getStepName } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, getCatBadgeClass, getStepName, stripDiscussTag, PHASE_LABELS } from './teacher-helpers'
 
 export function StudentModal({ student, manifest, state, questions, onClose }: {
   student: ClassroomState['students'][0]
@@ -14,45 +14,67 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
   const taskSteps = manifest.readingSteps
     .filter(rs => rs.type === 'task')
     .sort((a, b) => a.idx - b.idx)
+
+  // Map taskNum (1-indexed) → stepIdx (manifest idx) for correct submission/question lookup
+  const taskToStepIdx = useMemo(() => {
+    const map: Record<number, number> = {}
+    taskSteps.forEach((rs, i) => { map[i + 1] = rs.idx })
+    return map
+  }, [taskSteps])
+
   const stepName = getStepName(taskSteps[student.currentTask - 1] || {}) || `Step ${student.currentTask}`
   const studentQuestions = questions.filter(q => q.studentId === student.id)
 
   // Per-step status for journey strip (task steps only, matching backend currentTask numbering)
   const journeySteps = taskSteps.map((rs, i) => {
     const sn = i + 1
-    const sub = student.submissions?.[sn]
+    const stepIdx = taskToStepIdx[sn]
+    const sub = student.submissions?.[stepIdx]
     if (sn < student.currentTask) {
       const score = sub?.score?.total ?? 0
       const name = getStepName(rs)
-      if (score >= 80) return { sn, label: name, status: 'done' as const, result: 'correct' as const, score }
-      if (score >= 40) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score }
-      if (sub) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score }
-      return { sn, label: name, status: 'done' as const, result: 'correct' as const, score: 0 }
+      if (score >= 80) return { sn, label: name, status: 'done' as const, result: 'correct' as const, score, phaseLabel: undefined }
+      if (score >= 40) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score, phaseLabel: undefined }
+      if (sub) return { sn, label: name, status: 'done' as const, result: 'partial' as const, score, phaseLabel: undefined }
+      return { sn, label: name, status: 'done' as const, result: 'correct' as const, score: 0, phaseLabel: undefined }
     }
     if (sn === student.currentTask) {
       const name = getStepName(rs)
+      const phase = student.currentPhase || 'listen'
+      const phaseLabel = PHASE_LABELS[phase]
       const isStuck = student.stepStartedAt && (Date.now() - new Date(student.stepStartedAt).getTime()) > STUCK_THRESHOLD_MS
-      if (isStuck) return { sn, label: name, status: 'stuck' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
-      return { sn, label: name, status: 'prog' as const, result: 'partial' as const, score: sub?.score?.total ?? 0 }
+      if (isStuck) return { sn, label: name, status: 'stuck' as const, result: 'partial' as const, score: sub?.score?.total ?? 0, phaseLabel }
+      return { sn, label: name, status: 'prog' as const, result: 'partial' as const, score: sub?.score?.total ?? 0, phaseLabel }
     }
-    return { sn, label: getStepName(rs), status: 'future' as const, result: 'future' as const, score: 0 }
+    return { sn, label: getStepName(rs), status: 'future' as const, result: 'future' as const, score: 0, phaseLabel: undefined }
   })
 
   // Needs attention?
   const needsAttn = (js: typeof journeySteps[0]) =>
     js.status !== 'future' && (js.result === 'partial' || (js.status as string) === 'stuck')
 
-  // Selected step data
-  const selSub = student.submissions?.[selectedStep]
+  // Selected step data — use stepIdx for submission/question lookup
+  const selStepIdx = taskToStepIdx[selectedStep]
+  const selSub = student.submissions?.[selStepIdx]
   const selByDim = selSub?.score?.byDimension || {}
   const selTotal = selSub?.score?.total ?? 0
 
-  // Class compare data
+  // First attempt data (MC/Evidence types store firstAttemptAnswers)
+  const hasFirstAttempt = (selSub?.data?.firstAttemptAnswers as any[])?.length > 0
+    || Object.keys(selSub?.data?.firstAttemptSections || {}).length > 0
+  const firstAttemptScore = hasFirstAttempt ? (selSub?.data?.firstAttemptScore as number | undefined) : undefined
+
+  // Class compare data — stepMetrics is keyed by taskNum (correct as-is)
   const stepMetrics = state.stepMetrics?.[selectedStep]
   const classAvgScore = stepMetrics?.avgScore ?? 0
-  const stepQuestions = questions.filter(q => q.step === selectedStep)
+  const stepQuestions = questions.filter(q => q.step === selStepIdx)
   const classAvgAi = stepQuestions.length > 0 ? Math.round(stepQuestions.length / Math.max(1, new Set(stepQuestions.map(q => q.studentId)).size)) : 0
-  const studentAiForStep = studentQuestions.filter(q => q.step === selectedStep).length
+  const studentStepQuestions = studentQuestions.filter(q => q.step === selStepIdx)
+  const studentAiForStep = studentStepQuestions.length
+
+  // Split discuss vs non-discuss questions for different rendering
+  const discussQs = studentStepQuestions.filter(q => q.category === 'discuss')
+  const askQs = studentStepQuestions.filter(q => q.category !== 'discuss')
 
   return (
     <div className="overlay" onClick={(e) => { if ((e.target as HTMLElement).classList.contains('overlay')) onClose() }}>
@@ -102,7 +124,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                       </span>
                       {js.status === 'done' && js.result === 'correct' ? ' 已完成' :
                        js.status === 'done' && js.result === 'partial' ? ' 部分正确' :
-                       js.status === 'prog' ? ' 进行中' :
+                       js.status === 'prog' ? ` 进行中${js.phaseLabel ? ` · ${js.phaseLabel}` : ''}` :
                        js.status === 'stuck' ? ' 需关注' : ' 未到达'}
                     </div>
                     {js.status !== 'future' && js.score > 0 && (
@@ -128,6 +150,11 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: selTotal >= 80 ? 'var(--green)' : selTotal >= 50 ? 'var(--amber)' : 'var(--red)', marginBottom: 8 }}>
                       得分: {selTotal}%
+                      {hasFirstAttempt && firstAttemptScore != null && firstAttemptScore !== selTotal && (
+                        <span style={{ fontWeight: 400, color: 'var(--t3)', marginLeft: 8 }}>
+                          (首次 {firstAttemptScore}% → 最新 {selTotal}%)
+                        </span>
+                      )}
                     </div>
                     {Object.entries(selByDim).map(([key, val]: [string, unknown]) => {
                       const dimLabels = (stepMetrics as any)?.dimensionLabels || {}
@@ -152,23 +179,46 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
 
               {/* Right col: AI chat or class compare */}
               <div className="mod-col right">
-                {studentQuestions.filter(q => q.step === selectedStep).length > 0 ? (
+                {studentStepQuestions.length > 0 ? (
                   <>
-                    <div className="mod-h">AI 对话 · {studentQuestions.filter(q => q.step === selectedStep).length} 轮</div>
-                    {studentQuestions.filter(q => q.step === selectedStep).map((q, i) => (
-                      <React.Fragment key={i}>
-                        <div className="chat-row stu">
-                          <div className="who">{q.studentName}{q.category && <span className={`cat-badge ${getCatBadgeClass(q.category)}`} style={{ marginLeft: 6 }}>{q.category}</span>}</div>
-                          <div className="chat-bubble">{q.question}</div>
-                        </div>
-                        {q.answer && (
-                          <div className="chat-row ai">
-                            <div className="who">AI 助教</div>
-                            <div className="chat-bubble">{q.answer}</div>
-                          </div>
-                        )}
-                      </React.Fragment>
-                    ))}
+                    {/* Discuss replay section */}
+                    {discussQs.length > 0 && (
+                      <>
+                        <div className="mod-h">讨论回放 · {discussQs.length} 轮</div>
+                        {discussQs.map((q, i) => (
+                          <React.Fragment key={`d${i}`}>
+                            <div className="chat-row stu">
+                              <div className="chat-bubble">{stripDiscussTag(q.question)}</div>
+                            </div>
+                            {q.answer && (
+                              <div className="chat-row ai">
+                                <div className="chat-bubble">{q.answer}</div>
+                              </div>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </>
+                    )}
+                    {/* AI Q&A section (non-discuss) */}
+                    {askQs.length > 0 && (
+                      <>
+                        <div className="mod-h">{discussQs.length > 0 ? 'AI 提问' : 'AI 对话'} · {askQs.length} 轮</div>
+                        {askQs.map((q, i) => (
+                          <React.Fragment key={`a${i}`}>
+                            <div className="chat-row stu">
+                              <div className="who">{q.studentName}{q.category && <span className={`cat-badge ${getCatBadgeClass(q.category)}`} style={{ marginLeft: 6 }}>{q.category}</span>}</div>
+                              <div className="chat-bubble">{q.question}</div>
+                            </div>
+                            {q.answer && (
+                              <div className="chat-row ai">
+                                <div className="who">AI 助教</div>
+                                <div className="chat-bubble">{q.answer}</div>
+                              </div>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </>
+                    )}
                   </>
                 ) : (
                   <>

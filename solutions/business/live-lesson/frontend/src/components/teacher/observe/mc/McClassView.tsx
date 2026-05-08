@@ -114,7 +114,7 @@ export default function McClassView({ data, onStudentSelect }: Props) {
 
               {isExpanded && (
                 <div className="obs-q-body">
-                  {(q.options || []).map((opt, oi) => {
+                  {(q.options || []).map((_opt, oi) => {
                     const dist = q.distribution?.[oi]
                     const isCorrect = oi === q.correctIdx
                     return (

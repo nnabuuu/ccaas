@@ -70,8 +70,9 @@ export async function setStep(code: string, step: number) {
 
 // ── Exercise ──
 
-export async function getExercise(code: string, step: number) {
-  return request('GET', `/api/classroom/${code}/steps/${step}/exercise`);
+export async function getExercise(code: string, step: number, studentId?: string) {
+  const qs = studentId ? `?studentId=${studentId}` : '';
+  return request('GET', `/api/classroom/${code}/steps/${step}/exercise${qs}`);
 }
 
 export async function checkAnswer(code: string, step: number, studentId: string, data: Json) {
@@ -130,6 +131,18 @@ export async function discussComplete(
   return request('POST', `/api/classroom/${code}/ai/discuss-complete`, {
     studentId, taskNum, completionType, roundsUsed, timeUsedSeconds,
   });
+}
+
+// ── Observe ──
+
+export async function observeStep(
+  code: string,
+  step: number,
+  type: 'mc' | 'evidence' | 'map' | 'matrix' | 'discuss',
+  view?: 'first' | 'latest',
+) {
+  const qs = view ? `?view=${view}` : '';
+  return request('GET', `/api/classroom/${code}/steps/${step}/observe/${type}${qs}`);
 }
 
 // ── Chat history ──

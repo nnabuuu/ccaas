@@ -26,17 +26,17 @@ interface Props {
   questions: ClassroomState['questions']
   stepNames: Record<number, string>
   totalSteps: number
-  taskSteps: Array<{ idx: number }>
+  taskSteps: Array<{ idx: number; duration?: number }>
   onStudentClick: (name: string) => void
   onExpandOverlay: () => void
 }
 
 export function SummaryTab({ state, students, questions, stepNames, totalSteps, taskSteps, onStudentClick, onExpandOverlay }: Props) {
-  const { stepToTask } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
+  const { stepToTask, taskDurations } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
 
   const quadrantData = useMemo(
-    () => computeStudentQuadrants(students, state.stepMetrics, questions, totalSteps, stepToTask),
-    [students, state.stepMetrics, questions, totalSteps, stepToTask],
+    () => computeStudentQuadrants(students, state.stepMetrics, questions, totalSteps, stepToTask, taskDurations),
+    [students, state.stepMetrics, questions, totalSteps, stepToTask, taskDurations],
   )
 
   const weakDimensions = useMemo(

@@ -322,13 +322,17 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
 
     const result = await discuss(studentId!, task.id, allMsgs, newRound, getElapsed())
     if (result) {
+      if (result.llmFailed) {
+        // LLM failed → rollback round so student isn't penalised
+        setRound(round)
+      }
       if (result.goalReached) {
         setMessages(m => [...m, { role: 'ai', text: result.reply }])
         setGoalReached(true)
         setPhase('done')
       } else {
         setMessages(m => [...m, { role: 'ai', text: result.reply }])
-        if (newRound >= d.maxRounds) {
+        if (!result.llmFailed && newRound >= d.maxRounds) {
           setFallbackReason('rounds')
           setPhase('fallback')
         }

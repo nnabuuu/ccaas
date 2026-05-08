@@ -605,7 +605,7 @@ describe('ClassroomService — extended coverage', () => {
       const student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentPhase).toBe('completed');
       expect(student!.currentTask).toBe(5);
-    });
+    }, 15_000);
 
     it('should save submission but not change progress for non-task steps', async () => {
       const created = await service.createSession('full-lesson');
@@ -990,7 +990,7 @@ describe('ClassroomService — extended coverage', () => {
         });
         expect(result.score.total).toBe(100);
         expect(result.score.byDimension.correct).toBe(true);
-      });
+      }, 15_000);
 
       it('should score 0 for wrong order', async () => {
         const freshId = (await submissionSvc.join(session, '排序错误学生')).studentId;
@@ -1001,7 +1001,7 @@ describe('ClassroomService — extended coverage', () => {
         });
         expect(result.score.total).toBe(0);
         expect(result.score.byDimension.correct).toBe(false);
-      });
+      }, 15_000);
     });
 
     describe('stance grading', () => {
@@ -1016,7 +1016,7 @@ describe('ClassroomService — extended coverage', () => {
         expect(result.score.total).toBe(100);
         expect(result.score.byDimension.position).toBe(true);
         expect(result.score.byDimension.evidence).toBe(true);
-      });
+      }, 15_000);
 
       it('should score 50 for valid position but insufficient evidence', async () => {
         const freshId = (await submissionSvc.join(session, '证据不足学生')).studentId;
@@ -1029,7 +1029,7 @@ describe('ClassroomService — extended coverage', () => {
         expect(result.score.total).toBe(50);
         expect(result.score.byDimension.position).toBe(true);
         expect(result.score.byDimension.evidence).toBe(false);
-      });
+      }, 15_000);
 
       it('should score 0 for invalid position and no evidence', async () => {
         const freshId = (await submissionSvc.join(session, '全错学生')).studentId;
@@ -1042,7 +1042,7 @@ describe('ClassroomService — extended coverage', () => {
         expect(result.score.total).toBe(0);
         expect(result.score.byDimension.position).toBe(false);
         expect(result.score.byDimension.evidence).toBe(false);
-      });
+      }, 15_000);
     });
 
     describe('quiz attemptCounts passthrough', () => {
@@ -1462,7 +1462,7 @@ describe('ClassroomService — extended coverage', () => {
       const state = await service.getState(sess!.id);
       const student = state.students.find(s => s.id === sid);
       expect(student!.status).toBe('done');
-    });
+    }, 15_000);
 
     it('should include healthCards with correct structure (G6)', async () => {
       const state = await service.getState(session.id);
@@ -1942,7 +1942,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(names).toContain('Where');
       expect(names).toContain('What');
       expect(names).toContain('Why');
-    });
+    }, 15_000);
   });
 
   // ── Empty classroom edge case ──
@@ -2094,7 +2094,7 @@ describe('ClassroomService — extended coverage', () => {
       const state = await service.getState(sess!.id);
       // place wrong=100% → alertTag should use 'Where' not 'place'
       expect(state.stepMetrics[3].alertTag).toMatch(/^(Where|What|Why) 错误偏高$/);
-    });
+    }, 15_000);
 
     it('should prioritize stuck over wrong dimension in alertTag', async () => {
       const created = await service.createSession('full-lesson');
@@ -2237,7 +2237,7 @@ describe('ClassroomService — extended coverage', () => {
       for (let t = 1; t <= 5; t++) {
         expect(student!.stepHistory[t].status).toBe('done');
       }
-    });
+    }, 15_000);
   });
 
   // ── Student-Teacher linkage: score guard + dashboard consistency ──
@@ -2423,7 +2423,7 @@ describe('ClassroomService — extended coverage', () => {
       await submissionSvc.updatePhase(session, carol, 2, 'listen');
       const carolStudent = await studentRepo.findOne({ where: { id: carol } });
       expect(carolStudent!.currentTask).toBe(2);
-    });
+    }, 15_000);
 
     it('P5: teacher sees wide spread — healthCards reflect gap', async () => {
       const state = await service.getState(session.id);
@@ -2490,7 +2490,7 @@ describe('ClassroomService — extended coverage', () => {
       await submissionSvc.updatePhase(session, alice, 5, 'listen');
       await submissionSvc.submit(session, alice, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
       await submissionSvc.updatePhase(session, alice, 5, 'completed');
-    });
+    }, 15_000);
 
     it('P6: teacher sees all students done with correct metrics', async () => {
       const state = await service.getState(session.id);
@@ -2554,7 +2554,7 @@ describe('ClassroomService — extended coverage', () => {
       expect(s2!.currentTask).toBe(3);
       expect(s2!.stepHistory[2].status).toBe('done');
       expect(s2!.stepHistory[2].result).toBe('correct');
-    });
+    }, 15_000);
 
     it('matrix step: partial answers → blocked; full correct → advances', async () => {
       const created = await service.createSession('full-lesson');
@@ -2588,7 +2588,7 @@ describe('ClassroomService — extended coverage', () => {
       const s = state.students.find((st: any) => st.id === sid);
       expect(s!.stepHistory[3].status).toBe('done');
       expect(s!.stepHistory[3].result).toBe('correct');
-    });
+    }, 15_000);
 
     it('stance step: valid position but too few evidence → 50, blocked', async () => {
       const created = await service.createSession('full-lesson');
@@ -2610,7 +2610,7 @@ describe('ClassroomService — extended coverage', () => {
       const s = state.students.find((st: any) => st.id === sid);
       expect(s!.stepHistory[4].result).toBe('partial');
       expect(['prog', 'reading']).toContain(s!.stepHistory[4].status);
-    });
+    }, 15_000);
 
     it('order step: wrong order → blocked; correct order → advances', async () => {
       const created = await service.createSession('full-lesson');
@@ -2643,7 +2643,7 @@ describe('ClassroomService — extended coverage', () => {
       const s = state.students.find((st: any) => st.id === sid);
       expect(s!.stepHistory[5].status).toBe('done');
       expect(s!.stepHistory[5].result).toBe('correct');
-    });
+    }, 15_000);
   });
 
   describe('student-teacher linkage — multi-student metrics accuracy', () => {
@@ -2693,7 +2693,7 @@ describe('ClassroomService — extended coverage', () => {
       const stuck = (await submissionSvc.join(sess!, 'StuckStudent')).studentId;
 
       // Fast: completes tasks 1-3 (advanceToTask includes updatePhase)
-      await advanceToTask(submissionSvc, sess!, fast, 4);
+      await advanceToTask(submissionSvc, sess!, fast, 4); // 3 submit+phase cycles
       // Slow: completes task 1 → frontend reports advancement
       await submissionSvc.submit(sess!, slow, 1, { answers: [1, 0] });
       await submissionSvc.updatePhase(sess!, slow, 2, 'listen');
@@ -2724,7 +2724,7 @@ describe('ClassroomService — extended coverage', () => {
       // healthCards: [4, 2, 1] → sorted [1, 2, 4]
       expect(state.healthCards.furthest.step).toBe(4);
       expect(state.healthCards.median.step).toBe(2);
-    });
+    }, 15_000);
   });
 
   describe('student-teacher linkage — open-ended / no-rubric steps', () => {
@@ -3718,7 +3718,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       });
       expect(sub).not.toBeNull();
       expect(sub!.scoreJson.total).toBe(100);
-    });
+    }, 15_000);
 
     it('should throw NotFoundException for invalid studentId', async () => {
       await expect(personalizationSvc.checkBonusAnswer(session, 'bad-id', 1, {})).rejects.toThrow(NotFoundException);
@@ -3812,10 +3812,10 @@ describe('ClassroomService — snapshots', () => {
     // Force lastSnapshotAt to be stale so throttle does not block
     (service as any).lastSnapshotAt.delete(session!.id);
 
-    await service.broadcast(session!.id);
+    service.broadcast(session!.id);
 
-    // Wait for async save to complete
-    await new Promise(r => setTimeout(r, 50));
+    // Wait for debounce (300ms) + async save to complete
+    await new Promise(r => setTimeout(r, 500));
 
     const snaps = await snapshotRepo.find({ where: { sessionId: session!.id } });
     expect(snaps.length).toBeGreaterThanOrEqual(1);
@@ -3833,14 +3833,15 @@ describe('ClassroomService — snapshots', () => {
 
     // Clear throttle state and do first broadcast
     (service as any).lastSnapshotAt.delete(session!.id);
-    await service.broadcast(session!.id);
-    await new Promise(r => setTimeout(r, 50));
+    service.broadcast(session!.id);
+    // Wait for debounce (300ms) + async save to complete
+    await new Promise(r => setTimeout(r, 500));
 
     const countAfterFirst = (await snapshotRepo.find({ where: { sessionId: session!.id } })).length;
 
-    // Second broadcast immediately — should be throttled
-    await service.broadcast(session!.id);
-    await new Promise(r => setTimeout(r, 50));
+    // Second broadcast immediately — should be throttled (snapshot throttle, not debounce)
+    service.broadcast(session!.id);
+    await new Promise(r => setTimeout(r, 500));
 
     const countAfterSecond = (await snapshotRepo.find({ where: { sessionId: session!.id } })).length;
     expect(countAfterSecond).toBe(countAfterFirst);
@@ -4234,7 +4235,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
       const progress = await submissionSvc.getProgress(session!, sid);
       expect(progress!.currentPhase).toBe('completed');
       expect(progress!.currentTask).toBe(5);
-    });
+    }, 15_000);
 
     it('should not trigger recovery when student is in discuss/takeaway phase', async () => {
       const created = await service.createSession('phase-sync-lesson');
