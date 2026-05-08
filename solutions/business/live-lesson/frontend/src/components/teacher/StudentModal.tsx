@@ -199,7 +199,7 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                         <div className="mod-h">讨论回放 · {discussQs.length} 轮</div>
                         {taskSteps[selectedStep - 1]?.discuss?.openingQ && (
                           <div className="chat-row ai">
-                            <div className="chat-bubble">{taskSteps[selectedStep - 1].discuss.openingQ}</div>
+                            <div className="chat-bubble">{taskSteps[selectedStep - 1].discuss!.openingQ}</div>
                           </div>
                         )}
                         {discussQs.map((q, i) => (

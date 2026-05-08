@@ -72,6 +72,8 @@ export interface ReadingStep {
   }
   discuss?: {
     probe: { q: string; translate?: string }
+    openingQ?: string
+    openingQZh?: string
     targetInsight?: string
     commonMisconceptions?: string[]
     scaffoldStrategies?: string[]
