@@ -47,8 +47,8 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
     const init: Record<string, SectionState> = {}
     sections.forEach(s => {
       const rd = reviewData?.sections?.[s.id]
-      if (rd) {
-        init[s.id] = { stage: 'graded', funcChoice: rd.function, funcWrong: false, picked: new Set(rd.picked || []), showHint: false }
+      if (reviewData) {
+        init[s.id] = { stage: 'graded', funcChoice: rd?.function ?? null, funcWrong: false, picked: new Set(rd?.picked || []), showHint: false }
       } else {
         init[s.id] = { stage: 'pick', funcChoice: null, funcWrong: false, picked: new Set(), showHint: false }
       }
@@ -402,10 +402,10 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
                       ? `${feedback.hit}/${feedback.totalEv} signals — enough to move on.`
                       : `${feedback.hit}/${feedback.totalEv} signals \u00b7 ${feedback.wrongPicks.length} non-signals picked.`}
                 </span>
-                {!feedback.passed && (
+                {!feedback.passed && !reviewData && (
                   <button className="se-btn-ghost" onClick={retry}>Try again</button>
                 )}
-                {feedback.passed && !feedback.perfect && (
+                {feedback.passed && !feedback.perfect && !reviewData && (
                   <button className="se-btn-ghost" onClick={retry}>Try for full marks</button>
                 )}
                 {feedback.passed && (() => {
