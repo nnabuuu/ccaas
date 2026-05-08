@@ -15,6 +15,7 @@ interface Props {
   onOverlayChange: (overlay: TextOverlay | null) => void
   onSubmit: (data: Record<string, any>) => void
   onDone: () => void
+  reviewData?: Record<string, any>
 }
 
 function md(t: string | undefined) {
@@ -34,7 +35,7 @@ function md(t: string | undefined) {
   return <>{parts}</>
 }
 
-export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, onDone }: Props) {
+export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, onDone, reviewData }: Props) {
   const sections = exercise.sections!
   const funcOptions = exercise.functionOptions!
   const paragraphTokens = exercise.paragraphTokens!
@@ -45,7 +46,12 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   const [secStates, setSecStates] = useState<Record<string, SectionState>>(() => {
     const init: Record<string, SectionState> = {}
     sections.forEach(s => {
-      init[s.id] = { stage: 'pick', funcChoice: null, funcWrong: false, picked: new Set(), showHint: false }
+      const rd = reviewData?.sections?.[s.id]
+      if (rd) {
+        init[s.id] = { stage: 'graded', funcChoice: rd.function, funcWrong: false, picked: new Set(rd.picked || []), showHint: false }
+      } else {
+        init[s.id] = { stage: 'pick', funcChoice: null, funcWrong: false, picked: new Set(), showHint: false }
+      }
     })
     return init
   })
@@ -113,7 +119,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
       tokens,
       activeParagraphs: state.stage === 'pick' ? [] : current.range,
       tokenStates,
-      onTokenClick: state.stage === 'evidence' ? (paraNum, tokenIdx) => {
+      onTokenClick: (state.stage === 'evidence' && !reviewData) ? (paraNum, tokenIdx) => {
         const tks = paragraphTokens[String(paraNum)]
         if (!tks || !current.range.includes(paraNum)) return
         const tk = tks[tokenIdx]
@@ -135,6 +141,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   useEffect(() => () => onOverlayChange(null), [onOverlayChange])
 
   const lockFunc = () => {
+    if (reviewData) return
     if (!state.funcChoice) return
     funcAttemptsRef.current[currentId] = (funcAttemptsRef.current[currentId] || 0) + 1
     if (state.funcChoice === current.correctFunction) {
@@ -145,6 +152,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   }
 
   const grade = () => {
+    if (reviewData) return
     const nextStates = {
       ...secStates,
       [currentId]: { ...secStates[currentId], stage: 'graded' as const },
@@ -175,7 +183,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
       onDone()
     }
   }
-  const retry = () => updateState(currentId, { stage: 'evidence', picked: new Set(), showHint: false })
+  const retry = () => { if (!reviewData) updateState(currentId, { stage: 'evidence', picked: new Set(), showHint: false }) }
 
   // Feedback computation
   const feedback = useMemo(() => {

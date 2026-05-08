@@ -36,7 +36,7 @@ export function restoreAns(type: string, data: Record<string, unknown>): Record<
     case 'matrix':
       return data // matrix restoration handled separately via effectiveMatrixAns
     case 'select-evidence':
-      return {} // select-evidence uses placeholder UI in review mode
+      return data // pass through so SelectEvidenceExercise can hydrate
     default:
       return data as Record<string, unknown>
   }
@@ -421,22 +421,17 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
         />
       )}
       {ex.type === 'select-evidence' && ex.sections && ex.functionOptions && ex.paragraphTokens && (
-        reviewMode ? (
-          <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600, padding: '10px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontSize: 16 }}>✓</span>Evidence analysis submitted
-          </div>
-        ) : (
-          <SelectEvidenceExercise
-            exercise={ex}
-            onOverlayChange={onOverlayChange || (() => {})}
-            onSubmit={(data) => {
-              if (stepIdx !== undefined && ctx.submit) {
-                ctx.submit(stepIdx, formatSubmitData('select-evidence', data))
-              }
-            }}
-            onDone={() => { setAllDone(true); onDone() }}
-          />
-        )
+        <SelectEvidenceExercise
+          exercise={ex}
+          onOverlayChange={onOverlayChange || (() => {})}
+          onSubmit={(data) => {
+            if (stepIdx !== undefined && ctx.submit) {
+              ctx.submit(stepIdx, formatSubmitData('select-evidence', data))
+            }
+          }}
+          onDone={() => { setAllDone(true); onDone() }}
+          reviewData={reviewMode ? prevSubmission!.data : undefined}
+        />
       )}
 
       {/* Submit/Done */}
