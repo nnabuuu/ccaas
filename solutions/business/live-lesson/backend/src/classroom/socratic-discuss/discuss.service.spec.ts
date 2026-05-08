@@ -18,6 +18,7 @@ import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
+import { CoachingService } from '../coaching.service';
 import { StudentSubmissionService } from '../student-submission.service';
 import { GradingService } from '../exercise/grading.service';
 
@@ -65,7 +66,7 @@ describe('DiscussService', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
       ],
       providers: [
-        DiscussService, ObservationService, AiPromptBuilder, ClusterClassifier, ClusterAggregator, GradingService, StudentSubmissionService,
+        DiscussService, ObservationService, AiPromptBuilder, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

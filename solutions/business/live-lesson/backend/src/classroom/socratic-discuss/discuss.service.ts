@@ -14,6 +14,7 @@ import { buildTaskMap } from '../task-map.utils';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
 import { StudentSubmissionService } from '../student-submission.service';
+import { CoachingService } from '../coaching.service';
 
 @Injectable()
 export class DiscussService {
@@ -33,6 +34,7 @@ export class DiscussService {
     private readonly clusterClassifier: ClusterClassifier,
     private readonly clusterAggregator: ClusterAggregator,
     private readonly studentSubmission: StudentSubmissionService,
+    private readonly coachingService: CoachingService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -122,6 +124,14 @@ export class DiscussService {
               this.clusterAggregator.ingest(
                 session.id, taskNum, studentId, student.name, classifyResult,
               );
+              if (classifyResult.isHighlight && classifyResult.highlightGist) {
+                this.coachingService.addHighlight(session.id, {
+                  studentId, studentName: student.name, taskNum,
+                  message: lastStudentMsg,
+                  gist: classifyResult.highlightGist,
+                  evidenceSpan: classifyResult.evidenceSpan,
+                });
+              }
             }
           })
           .catch(e => this.logger.warn(`Cluster classify failed: ${e}`));

@@ -12,6 +12,7 @@ import { Timeline } from './Timeline'
 import { ObservationPanel } from './ObservationPanel'
 import { StudentModal } from './StudentModal'
 import { SummaryTab } from './summary/SummaryTab'
+import { CoachingPanel } from './CoachingPanel'
 import { useSearchParams } from 'react-router-dom'
 
 const ObserveDrawer = lazy(() => import('./observe/ObserveDrawer'))
@@ -598,13 +599,15 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
             )}
 
             {/* Coaching Tab */}
-            {rightTab === 'coaching' && (
-              <div style={{ padding: '12px 14px' }}>
-                <div className="coach-line">
-                  <div className="coach-line-lb">暂无教学建议</div>
-                  <div className="coach-line-text">教学建议将根据课堂数据自动生成。</div>
-                </div>
-              </div>
+            {rightTab === 'coaching' && state && (
+              <CoachingPanel
+                state={state}
+                health={health}
+                stepNames={stepNames}
+                taskSteps={taskSteps}
+                questions={questions}
+                onStudentClick={setModalStudent}
+              />
             )}
           </div>
         </div>

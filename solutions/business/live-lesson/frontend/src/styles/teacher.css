@@ -755,3 +755,51 @@
 .so-ai-heat-name { font-size: 10px; font-weight: 600; color: var(--t2); width: 50px; flex-shrink: 0 }
 .so-ai-heat-bar { height: 100%; border-radius: 3px; background: var(--ai); transition: width .3s }
 .so-ai-heat-stat { font-size: 10px; color: var(--t3); white-space: nowrap; min-width: 70px; text-align: right }
+
+/* ═══ COACHING PANEL ═══ */
+
+.coach-panel { padding: 8px 14px; display: flex; flex-direction: column; gap: 16px }
+
+.coach-section-h { font-size: 11px; font-weight: 700; color: var(--t2); letter-spacing: .3px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px }
+
+.coach-llm-ts { font-weight: 400; font-size: 10px; color: var(--t3) }
+
+/* Coaching tips */
+.coach-tips { display: flex; flex-direction: column; gap: 6px }
+.coach-tip { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--t3); background: var(--surface) }
+.coach-tip.urgent { border-left-color: var(--red); background: var(--red-soft) }
+.coach-tip.important { border-left-color: var(--amber); background: var(--amber-soft) }
+.coach-tip.info { border-left-color: var(--t3); background: var(--surface) }
+.coach-tip-title { font-size: 12px; font-weight: 600; color: var(--t1); margin-bottom: 2px }
+.coach-tip-detail { font-size: 11px; color: var(--t2); line-height: 1.4 }
+.coach-tip-action { font-size: 11px; color: var(--blue); margin-top: 4px; font-weight: 500 }
+
+/* Highlight cards */
+.coach-highlights { display: flex; flex-direction: column; gap: 6px }
+.coach-highlight { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--amber-dot); background: rgba(196,138,30,.06); cursor: pointer; transition: background .15s }
+.coach-highlight:hover { background: rgba(196,138,30,.1) }
+.coach-highlight-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px }
+.coach-highlight-name { font-size: 11px; font-weight: 600; color: var(--amber); cursor: pointer }
+.coach-highlight-name:hover { text-decoration: underline }
+.coach-highlight-step { font-size: 10px; color: var(--t3) }
+.coach-highlight-gist { font-size: 12px; color: var(--t1); line-height: 1.4 }
+.coach-highlight-msg { font-size: 11px; color: var(--t2); margin-top: 4px; padding: 6px 8px; background: rgba(0,0,0,.03); border-radius: 4px; font-style: italic; line-height: 1.4 }
+
+/* LLM insight section */
+.coach-llm-section { display: flex; flex-direction: column; gap: 6px }
+.coach-llm-card { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--blue); background: var(--blue-soft) }
+
+/* Question candidates */
+.coach-candidates { display: flex; flex-direction: column; gap: 6px }
+.coach-candidate { padding: 8px 10px; border-radius: 6px; background: var(--surface); cursor: pointer; transition: background .15s }
+.coach-candidate:hover { background: var(--surface2) }
+.coach-candidate-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px }
+.coach-candidate-name { font-size: 11px; font-weight: 600; color: var(--t1) }
+.coach-candidate-intent { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px }
+.coach-candidate-intent.showcase { color: var(--green); background: var(--green-soft) }
+.coach-candidate-intent.verify { color: var(--blue); background: var(--blue-soft) }
+.coach-candidate-intent.expose { color: var(--amber); background: var(--amber-soft) }
+.coach-candidate-reason { font-size: 11px; color: var(--t2); line-height: 1.4 }
+.coach-candidate-step { font-size: 10px; font-weight: 600; color: var(--t3) }
+.coach-candidate-cat { font-size: 10px; color: var(--t3) }
+.coach-candidate-question { font-size: 12px; color: var(--t1); font-style: italic; line-height: 1.4; margin-top: 2px }

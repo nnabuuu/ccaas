@@ -298,6 +298,16 @@ export interface ClassroomState {
       }>
     }>
   }>
+  coaching?: {
+    highlights: Array<{
+      studentId: string; studentName: string; taskNum: number
+      message: string; gist: string; evidenceSpan: string; detectedAt: number
+    }>
+    llmInsights: {
+      insights: Array<{ title: string; detail: string; suggestedAction: string }>
+      generatedAt: number
+    } | null
+  } | null
   observation?: {
     logs: Array<{
       studentId: string

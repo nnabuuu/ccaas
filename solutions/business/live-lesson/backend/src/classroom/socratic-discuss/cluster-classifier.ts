@@ -7,6 +7,8 @@ export interface ClassifyResult {
   confidence: 'high' | 'medium' | 'low';
   evidenceSpan: string;
   eventType: 'new_signal' | 'reinforcing' | 'state_change';
+  isHighlight: boolean;
+  highlightGist?: string;
 }
 
 @Injectable()
@@ -39,8 +41,18 @@ RULES:
 - evidence_span: 学生原话中支撑判断的片段（原文摘录，不要改写）
 - event_type: "new_signal" = 学生首次表现出这种倾向, "reinforcing" = 继续表现已有倾向无新信息, "state_change" = 认知状态变化（从困惑到澄清，或从一种误解转向另一种）
 
+HIGHLIGHT DETECTION:
+- is_highlight: true 当学生提出了预设类别之外的、有教学信息价值的新角度或深度思考
+  - 例如：跨文化对比中学生自发引入了课文未提及的新案例
+  - 例如：学生对观点提出了有逻辑的反驳
+  - 例如：学生建立了课文不同部分之间的意外联系
+- is_highlight: false 当发言是常规的对错回答、简单重复、或离题
+- highlight_gist: 若 is_highlight 为 true，用一句中文说明该亮点的价值
+
 输出格式（纯 JSON）:
-{"cluster_id": "...", "confidence": "...", "evidence_span": "...", "event_type": "..."}
+{"cluster_id": "...", "confidence": "...", "evidence_span": "...", "event_type": "...", "is_highlight": false}
+或
+{"cluster_id": "other", "confidence": "low", "evidence_span": "...", "event_type": "new_signal", "is_highlight": true, "highlight_gist": "学生自发引入日本审美案例，扩展了课文的跨文化视角"}
 
 ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
 
@@ -59,7 +71,7 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
       parsed = JSON.parse(raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim());
     } catch {
       this.logger.warn(`Cluster classify JSON parse failed: ${raw.slice(0, 200)}`);
-      return { clusterId: 'other', confidence: 'low', evidenceSpan: '', eventType: 'new_signal' };
+      return { clusterId: 'other', confidence: 'low', evidenceSpan: '', eventType: 'new_signal', isHighlight: false };
     }
 
     const clusterId = validIds.includes(parsed.cluster_id) ? parsed.cluster_id : 'other';
@@ -71,6 +83,11 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
       ? (parsed.event_type as ClassifyResult['eventType'])
       : 'new_signal';
 
-    return { clusterId, confidence, evidenceSpan, eventType };
+    const isHighlight = parsed.is_highlight === true;
+    const highlightGist = isHighlight && typeof parsed.highlight_gist === 'string'
+      ? parsed.highlight_gist
+      : undefined;
+
+    return { clusterId, confidence, evidenceSpan, eventType, isHighlight, highlightGist };
   }
 }

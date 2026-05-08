@@ -32,6 +32,9 @@ import { ExerciseService } from './exercise/exercise.service';
 import { ExerciseController } from './exercise/exercise.controller';
 import { GradingService } from './exercise/grading.service';
 
+// ── Coaching ──
+import { CoachingService } from './coaching.service';
+
 // ── Socratic Discuss component ──
 import { DiscussService } from './socratic-discuss/discuss.service';
 import { DiscussController } from './socratic-discuss/discuss.controller';
@@ -70,7 +73,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
   ],
   providers: [
     // Infra
-    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, ObserveService,
+    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, ObserveService, CoachingService,
     // Exercise
     ExerciseService, GradingService,
     // Socratic Discuss

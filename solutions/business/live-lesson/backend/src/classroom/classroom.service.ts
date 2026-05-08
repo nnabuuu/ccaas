@@ -17,6 +17,7 @@ import { MetricsAggregator } from './metrics-aggregator';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from './task-map.utils';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { CoachingService } from './coaching.service';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
 
@@ -56,6 +57,7 @@ export class ClassroomService implements OnModuleDestroy {
     private readonly observationService: ObservationService,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
+    private readonly coachingService: CoachingService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -199,6 +201,7 @@ export class ClassroomService implements OnModuleDestroy {
 
     this.engine.clearSessionMeta(session.id);
     this.clusterAggregator.cleanupSession(session.id);
+    this.coachingService.cleanupSession(session.id);
     this.observeRegistryCache.delete(session.lessonId);
 
     this.logger.log(`Session ended: ${code}`);
@@ -387,6 +390,10 @@ export class ClassroomService implements OnModuleDestroy {
         indicators: this.observationService.getIndicators(sessionId),
       },
       clusterStats,
+      coaching: {
+        highlights: this.coachingService.getHighlights(sessionId),
+        llmInsights: this.coachingService.getCached(sessionId),
+      },
     };
   }
 
@@ -552,6 +559,15 @@ export class ClassroomService implements OnModuleDestroy {
 
     // Persist snapshot (throttled) regardless of subscriber count
     this.maybePersistSnapshot(sessionId, state);
+
+    // Fire-and-forget: maybe refresh coaching insights (pass only needed slices)
+    this.coachingService.maybeRefresh(sessionId, {
+      stepMetrics: state.stepMetrics,
+      healthCards: state.healthCards,
+      observation: state.observation,
+    }).catch(e =>
+      this.logger.warn(`Coaching refresh failed: ${e}`),
+    );
 
     if (!subs || subs.size === 0) return;
 
