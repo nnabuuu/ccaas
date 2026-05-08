@@ -197,6 +197,11 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                     {discussQs.length > 0 && (
                       <>
                         <div className="mod-h">讨论回放 · {discussQs.length} 轮</div>
+                        {taskSteps[selectedStep - 1]?.discuss?.openingQ && (
+                          <div className="chat-row ai">
+                            <div className="chat-bubble">{taskSteps[selectedStep - 1].discuss.openingQ}</div>
+                          </div>
+                        )}
                         {discussQs.map((q, i) => (
                           <React.Fragment key={`d${i}`}>
                             <div className="chat-row stu">
