@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { STUCK_THRESHOLD_MS } from './teacher-helpers'
+import { STUCK_THRESHOLD_MS, stripDiscussTag } from './teacher-helpers'
 
 type ObsMode = 'glance' | 'alert'
 
@@ -97,7 +97,7 @@ function GlanceView({ obs, students, questions }: {
       .at(-1)
     const rawDepth = depthEvent?.data?.depth
     const depth = typeof rawDepth === 'string' ? rawDepth : undefined
-    const studentMsg = q.question.replace(/^\[discuss:\w+\]\s*/, '')
+    const studentMsg = stripDiscussTag(q.question)
     return { ...q, anchors, depth, studentMsg }
   })
 

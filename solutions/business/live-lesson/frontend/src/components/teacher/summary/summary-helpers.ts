@@ -1,4 +1,5 @@
 import type { ClassroomState } from '../../../hooks/useClassroom'
+import { stripDiscussTag } from '../teacher-helpers'
 
 type Student = ClassroomState['students'][number]
 type StepMetrics = NonNullable<ClassroomState['stepMetrics']>
@@ -484,7 +485,7 @@ export function pickRepresentativeQuestions(
     result.push({
       step: taskNum,
       stepName: stepNames[taskNum] || `Step ${taskNum}`,
-      question: q.question,
+      question: stripDiscussTag(q.question),
       isAnonymous: true,
       category: q.category ?? null,
     })
