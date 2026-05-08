@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>教师端使用说明 · Teacher Guide</title>
+<link rel="stylesheet" href="surfaces/colors_and_type.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap');
+:root{
+  --bg:#f4f3ef; --surface:#fbfaf7; --surface2:#edece7;
+  --t1:#1c1c1a; --t2:#5c5b56; --t3:#9c9a92;
+  --border:rgba(28,28,26,.07); --border-strong:rgba(28,28,26,.14);
+  --teal:#0d5245; --teal-bg:#dfece8;
+  --purple:#3a3185; --purple-bg:#e9e7f3;
+  --amber:#7a4d0e; --amber-bg:#f6edda;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Plus Jakarta Sans",-apple-system,"PingFang SC",sans-serif;
+  background:var(--bg);color:var(--t1);min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:1240px;margin:0 auto;padding:56px 40px 80px}
+
+/* ============ HEADER ============ */
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:64px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mk{
+  width:42px;height:42px;border-radius:9px;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:800;letter-spacing:-.4px;
+}
+.brand-tx{display:flex;flex-direction:column;gap:2px}
+.brand-a{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.brand-b{font-size:11px;color:var(--t3);font-weight:500}
+
+.meta{display:flex;gap:28px;align-items:flex-start;text-align:right}
+.meta-pair{display:flex;flex-direction:column;gap:3px}
+.meta-lb{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.meta-v{font-size:12px;color:var(--t1);font-weight:600}
+
+/* ============ HERO ============ */
+.hero{margin-bottom:64px;max-width:840px}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:600;color:var(--t2);
+  text-transform:uppercase;letter-spacing:.6px;margin-bottom:20px;
+}
+.hero-eyebrow .pill{
+  background:var(--teal-bg);color:var(--teal);
+  padding:3px 9px;border-radius:4px;font-size:10px;letter-spacing:.4px
+}
+.hero-eyebrow .dot{width:4px;height:4px;border-radius:50%;background:var(--t3)}
+.hero h1{
+  font-family:"Fraunces",Georgia,serif;
+  font-size:64px;font-weight:500;line-height:.98;letter-spacing:-2px;
+  margin-bottom:14px;
+}
+.hero h1 em{font-style:italic;color:var(--teal);font-weight:500}
+.hero .sub{
+  font-size:19px;color:var(--t2);line-height:1.55;font-weight:400;
+  max-width:620px;margin-bottom:28px;
+}
+.hero .sub strong{color:var(--t1);font-weight:600}
+
+.cta-row{display:flex;gap:10px;align-items:center}
+.cta{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:13px 20px;border-radius:8px;
+  font-size:14px;font-weight:600;text-decoration:none;
+  transition:all .15s;
+}
+.cta.pri{background:var(--t1);color:#f0efe8}
+.cta.pri:hover{transform:translateY(-1px);box-shadow:0 10px 24px -8px rgba(28,28,26,.35)}
+.cta.pri .ar{display:inline-block;transition:transform .2s}
+.cta.pri:hover .ar{transform:translateX(3px)}
+.cta.sec{color:var(--t1);border:1px solid var(--border-strong);background:var(--surface)}
+.cta.sec:hover{background:var(--surface2)}
+
+/* ============ SECTION HEADING ============ */
+.sec-h{
+  display:flex;align-items:baseline;justify-content:space-between;
+  margin-bottom:24px;
+}
+.sec-h-l{display:flex;align-items:baseline;gap:12px}
+.sec-h .num{
+  font-family:"Fraunces",Georgia,serif;font-size:13px;color:var(--t3);
+  font-weight:500;font-style:italic;
+}
+.sec-h h2{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--t1)}
+.sec-h .en{font-size:12px;color:var(--t3);font-weight:500;margin-left:4px}
+.sec-h .hint{font-size:12px;color:var(--t3);font-weight:500}
+
+/* ============ STEP CARDS (3-col grid) ============ */
+.steps{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:72px;
+}
+.scard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:14px;
+  transition:all .18s;position:relative;overflow:hidden;
+}
+.scard:hover{border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 16px 32px -14px rgba(28,28,26,.18)}
+.scard-num{
+  width:30px;height:30px;border-radius:50%;background:var(--t1);color:#f0efe8;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;flex-shrink:0;
+}
+.scard-hd{display:flex;align-items:center;gap:10px}
+.scard h3{font-size:16px;font-weight:700;letter-spacing:-.2px;line-height:1.2}
+.scard p{font-size:13px;color:var(--t2);line-height:1.6}
+.scard p strong{color:var(--t1);font-weight:600}
+.scard-illust{
+  width:100%;aspect-ratio:16/9;
+  background:var(--bg);border-radius:6px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:12px;overflow:hidden;
+}
+.scard-illust svg{width:100%;height:100%;display:block}
+
+/* ============ LAYOUT CARD (large) ============ */
+.layout-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:28px;margin-bottom:72px;
+}
+.layout-card h3{font-size:16px;font-weight:700;margin-bottom:16px;letter-spacing:-.2px}
+.layout-svg-wrap{
+  width:100%;aspect-ratio:16/8;
+  background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  padding:16px;overflow:hidden;margin-bottom:20px;
+}
+.layout-svg-wrap svg{width:100%;height:100%;display:block}
+.layout-legend{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;
+}
+.legend-item{
+  padding:12px 14px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+}
+.legend-item-lb{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:4px}
+.legend-item-v{font-size:13px;font-weight:600;color:var(--t1);line-height:1.4}
+.legend-item-d{font-size:11px;color:var(--t2);line-height:1.5;margin-top:4px}
+
+/* ============ SUB-CARDS (2-col grid) ============ */
+.sub-cards{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:72px;
+}
+.subcard{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.subcard-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  padding:4px 9px;border-radius:4px;width:fit-content;
+}
+.subcard h4{font-size:15px;font-weight:700;letter-spacing:-.2px}
+.subcard p{font-size:12px;color:var(--t2);line-height:1.6}
+.subcard p strong{color:var(--t1);font-weight:600}
+
+/* ============ TABLE ============ */
+.info-table{
+  width:100%;border-collapse:collapse;font-size:12px;margin:12px 0;
+}
+.info-table th{
+  text-align:left;font-weight:600;color:var(--t3);font-size:10px;
+  text-transform:uppercase;letter-spacing:.4px;
+  padding:8px 12px;border-bottom:1px solid var(--border-strong);
+}
+.info-table td{
+  padding:10px 12px;border-bottom:1px solid var(--border);
+  color:var(--t2);line-height:1.5;vertical-align:top;
+}
+.info-table td:first-child{font-weight:600;color:var(--t1);white-space:nowrap}
+.info-table-wrap{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:20px 22px;margin-bottom:72px;
+}
+
+/* ============ DOT LEGEND ============ */
+.dot-row{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
+.dot-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t2)}
+.dot-item .d{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ============ BADGE ============ */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9px;font-weight:700;padding:2px 8px;border-radius:3px;
+  white-space:nowrap;
+}
+
+/* ============ MODAL CARD ============ */
+.modal-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:22px;margin-bottom:72px;
+}
+.modal-card h3{font-size:16px;font-weight:700;margin-bottom:14px;letter-spacing:-.2px}
+
+/* ============ SIGNATURE IDEA ============ */
+.sig{
+  background:#1c1c1a;color:#e8e6df;border-radius:14px;
+  padding:40px 44px;margin-bottom:64px;position:relative;overflow:hidden;
+}
+.sig::before{
+  content:'';position:absolute;top:0;right:0;width:280px;height:100%;
+  background:radial-gradient(circle at 70% 40%, rgba(13,82,69,.25) 0, transparent 50%);
+  pointer-events:none;
+}
+.sig-row{display:flex;gap:40px;align-items:flex-start;position:relative}
+.sig-l{flex:1.3}
+.sig-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#7ab5a4;margin-bottom:18px;
+}
+.sig-eyebrow .dot{width:5px;height:5px;border-radius:50%;background:#5dcaa5}
+.sig h2{
+  font-family:"Fraunces",Georgia,serif;font-size:36px;font-weight:500;
+  letter-spacing:-.8px;line-height:1.1;margin-bottom:18px;
+}
+.sig h2 em{color:#5dcaa5;font-style:italic}
+.sig p{font-size:14px;line-height:1.7;color:#b5b3a8;max-width:520px}
+.sig p strong{color:#e8e6df;font-weight:600}
+
+.sig-r{flex:1;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.sig-item{
+  display:flex;gap:14px;align-items:flex-start;
+  padding:14px 16px;border-radius:8px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+}
+.sig-item-n{
+  width:22px;height:22px;border-radius:4px;background:#5dcaa5;color:#1c1c1a;
+  font-size:11px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;
+}
+.sig-item-t{font-size:12px;line-height:1.55;color:#c8c5b5}
+.sig-item-t strong{color:#e8e6df;font-weight:700;display:block;margin-bottom:2px;font-size:13px}
+
+/* ============ NOTES STRIP ============ */
+.notes{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  padding:28px 0;border-top:1px solid var(--border);
+}
+.note-h{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--t2);margin-bottom:8px}
+.note-b{font-size:12px;color:var(--t2);line-height:1.6}
+.note-b strong{color:var(--t1);font-weight:600}
+
+footer{text-align:center;color:var(--t3);font-size:10px;padding:40px 0 0;letter-spacing:.3px}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .wrap{padding:32px 20px}
+  .hero h1{font-size:40px}
+  .steps,.sub-cards,.layout-legend,.notes{grid-template-columns:1fr}
+  .sig-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-mk">R</div>
+      <div class="brand-tx">
+        <div class="brand-a">Ruixin · 英语组</div>
+        <div class="brand-b">课堂执行平台 · Live Lesson</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="meta-pair"><span class="meta-lb">文档</span><span class="meta-v">教师端使用说明</span></div>
+      <div class="meta-pair"><span class="meta-lb">Type</span><span class="meta-v">Teacher Guide</span></div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-eyebrow">
+      <span class="pill">Teacher Guide</span>
+      <span class="dot"></span>
+      从创建到复盘 · 完整操作说明
+    </div>
+    <h1>从创建到复盘，<br>一本看完就能<em>上手</em>。</h1>
+    <p class="sub">
+      教师端是一面<strong>单向玻璃</strong>：你看得见每个学生的思维过程，但学生感受不到你的注视。系统提供信号，<strong>决策权始终在教师手中</strong>。
+    </p>
+    <div class="cta-row">
+      <a class="cta pri" href="index.html"><span class="ar">←</span> 返回首页</a>
+      <a class="cta sec" href="surfaces/teacher.html">单看教师端原型</a>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 01 — 课前准备 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">01 —</span>
+      <h2>课前准备 <span class="en">Before Class</span></h2>
+    </div>
+    <span class="hint">三步开课 · 60 秒内完成</span>
+  </div>
+
+  <div class="steps">
+
+    <!-- Step 1 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">1</div>
+        <h3>选择课程</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- course card -->
+          <rect x="40" y="20" width="200" height="118" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <rect x="56" y="36" width="80" height="5" rx="2" fill="#1c1c1a"/>
+          <rect x="56" y="48" width="120" height="3" rx="1" fill="#9c9a92"/>
+          <rect x="56" y="58" width="100" height="3" rx="1" fill="#9c9a92"/>
+          <!-- tags -->
+          <rect x="56" y="72" width="36" height="14" rx="3" fill="#dfece8"/>
+          <text x="62" y="82" font-family="Plus Jakarta Sans" font-size="6" font-weight="600" fill="#0d5245">阅读</text>
+          <rect x="98" y="72" width="42" height="14" rx="3" fill="#e9e7f3"/>
+          <text x="104" y="82" font-family="Plus Jakarta Sans" font-size="6" font-weight="600" fill="#3a3185">5 步骤</text>
+          <!-- button -->
+          <rect x="56" y="100" width="84" height="26" rx="6" fill="#1c1c1a"/>
+          <text x="72" y="117" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#f0efe8">创建课堂 →</text>
+          <!-- cursor -->
+          <path d="M148 116 l-5-14 l8 8 l6-2 z" fill="#1c1c1a" opacity=".6"/>
+        </svg>
+      </div>
+      <p>打开首页，找到目标课程卡片（如 <strong>"Ideal Beauty"</strong>），点击 <strong>「创建课堂」</strong>。</p>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">2</div>
+        <h3>分享课堂码</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- code display -->
+          <rect x="50" y="30" width="180" height="70" rx="10" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="140" y="55" font-family="Plus Jakarta Sans" font-size="8" font-weight="600" fill="#9c9a92" text-anchor="middle" letter-spacing="1">课堂码 CLASS CODE</text>
+          <text x="140" y="82" font-family="Plus Jakarta Sans" font-size="28" font-weight="800" fill="#1c1c1a" text-anchor="middle" letter-spacing="6">MPD6SU</text>
+          <!-- projector icon -->
+          <rect x="90" y="114" width="100" height="28" rx="6" fill="#f6edda"/>
+          <text x="140" y="132" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#7a4d0e" text-anchor="middle">投屏 或 口述</text>
+          <!-- student dots -->
+          <circle cx="70" y="134" r="5" fill="#dfece8" cy="128"/>
+          <circle cx="210" y="134" r="5" fill="#dfece8" cy="128"/>
+        </svg>
+      </div>
+      <p>系统生成 <strong>6 位课堂码</strong>。投屏或口头告知学生，学生通过 <strong>/join</strong> 页面输入即可加入。</p>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="scard">
+      <div class="scard-hd">
+        <div class="scard-num">3</div>
+        <h3>开始上课</h3>
+      </div>
+      <div class="scard-illust">
+        <svg viewBox="0 0 280 158" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- student list -->
+          <rect x="40" y="18" width="200" height="90" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="56" y="36" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#1c1c1a">已加入学生</text>
+          <text x="172" y="36" font-family="Plus Jakarta Sans" font-size="8" font-weight="600" fill="#0d5245">42 人</text>
+          <!-- student dots grid -->
+          <g transform="translate(56,46)">
+            <circle cx="0" cy="0" r="4" fill="#0d5245"/><circle cx="14" cy="0" r="4" fill="#0d5245"/>
+            <circle cx="28" cy="0" r="4" fill="#0d5245"/><circle cx="42" cy="0" r="4" fill="#0d5245"/>
+            <circle cx="56" cy="0" r="4" fill="#0d5245"/><circle cx="70" cy="0" r="4" fill="#0d5245"/>
+            <circle cx="84" cy="0" r="4" fill="#0d5245"/><circle cx="98" cy="0" r="4" fill="#0d5245"/>
+            <circle cx="112" cy="0" r="4" fill="#0d5245"/><circle cx="126" cy="0" r="4" fill="#0d5245"/>
+            <circle cx="0" cy="14" r="4" fill="#0d5245"/><circle cx="14" cy="14" r="4" fill="#0d5245"/>
+            <circle cx="28" cy="14" r="4" fill="#0d5245"/><circle cx="42" cy="14" r="4" fill="#0d5245"/>
+            <circle cx="56" cy="14" r="4" fill="#0d5245"/><circle cx="70" cy="14" r="4" fill="#0d5245"/>
+            <circle cx="84" cy="14" r="4" fill="#0d5245"/><circle cx="98" cy="14" r="4" fill="#0d5245"/>
+            <circle cx="112" cy="14" r="4" fill="#0d5245" opacity=".5"/><circle cx="126" cy="14" r="4" fill="#9c9a92" opacity=".3"/>
+          </g>
+          <text x="56" y="86" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">等待中... 学生随时可加入</text>
+          <!-- start button -->
+          <rect x="64" y="118" width="152" height="28" rx="7" fill="#1c1c1a"/>
+          <text x="140" y="136" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#f0efe8" text-anchor="middle">开始上课 →</text>
+        </svg>
+      </div>
+      <p>确认学生到齐后，点击 <strong>「开始上课」</strong>。也可先开始，<strong>学生随时可加入</strong>。点击后进入课堂观察台。</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 02 — 仪表盘总览 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">02 —</span>
+      <h2>仪表盘总览 <span class="en">Dashboard Layout</span></h2>
+    </div>
+    <span class="hint">四层结构 · 从上到下逐层深入</span>
+  </div>
+
+  <div class="layout-card">
+    <h3>教师观察台 · 四层布局</h3>
+    <div class="layout-svg-wrap">
+      <svg viewBox="0 0 800 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Band -->
+        <rect x="20" y="10" width="760" height="44" rx="6" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <rect x="34" y="20" width="22" height="22" rx="5" fill="#1c1c1a"/>
+        <text x="40" y="36" font-family="Plus Jakarta Sans" font-size="10" font-weight="800" fill="#f0efe8">R</text>
+        <text x="66" y="30" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#1c1c1a">Ideal Beauty · 高一(3)班</text>
+        <text x="66" y="42" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">MPD6SU · 42 人在线</text>
+        <!-- live dot -->
+        <circle cx="720" cy="32" r="4" fill="#2d6612"/>
+        <text x="700" y="36" font-family="Plus Jakarta Sans" font-size="7" fill="#2d6612" text-anchor="end">实时同步中</text>
+        <!-- mode badges -->
+        <rect x="540" y="22" width="52" height="16" rx="3" fill="#dfece8"/>
+        <text x="550" y="33" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#0d5245">观察模式</text>
+        <rect x="598" y="22" width="62" height="16" rx="3" fill="#e9e7f3"/>
+        <text x="606" y="33" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#3a3185">学生自主推进</text>
+        <!-- label A -->
+        <text x="790" y="36" font-family="Fraunces" font-style="italic" font-size="10" fill="#9c9a92" text-anchor="end">A</text>
+
+        <!-- Timeline -->
+        <rect x="20" y="62" width="760" height="32" rx="5" fill="#edece7" stroke="#e4e2d8"/>
+        <text x="36" y="82" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#1c1c1a">18:22</text>
+        <rect x="80" y="74" width="620" height="6" rx="3" fill="rgba(28,28,26,.07)"/>
+        <rect x="80" y="74" width="250" height="6" rx="3" fill="#1c1c1a"/>
+        <circle cx="330" cy="77" r="6" fill="#1c1c1a" stroke="#edece7" stroke-width="2"/>
+        <text x="744" y="82" font-family="Plus Jakarta Sans" font-size="10" font-weight="600" fill="#9c9a92" text-anchor="end">45:00</text>
+        <!-- label B -->
+        <text x="790" y="82" font-family="Fraunces" font-style="italic" font-size="10" fill="#9c9a92" text-anchor="end">B</text>
+
+        <!-- Left panel -->
+        <rect x="20" y="102" width="480" height="288" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <!-- Health Cards -->
+        <g transform="translate(36,114)">
+          <rect x="0" y="0" width="108" height="54" rx="5" fill="#e6f2dc" stroke="rgba(45,102,18,.12)"/>
+          <text x="10" y="14" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#2d6612">最快进度</text>
+          <text x="10" y="36" font-family="Plus Jakarta Sans" font-size="20" font-weight="700" fill="#1c1c1a">T5</text>
+          <text x="10" y="48" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">2 人已到达</text>
+
+          <rect x="116" y="0" width="108" height="54" rx="5" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="126" y="14" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#9c9a92">中位进度</text>
+          <text x="126" y="36" font-family="Plus Jakarta Sans" font-size="20" font-weight="700" fill="#1c1c1a">T3</text>
+          <text x="126" y="48" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">62% 学生在此</text>
+
+          <rect x="232" y="0" width="108" height="54" rx="5" fill="#f6edda" stroke="rgba(122,77,14,.12)"/>
+          <text x="242" y="14" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#7a4d0e">卡点学生</text>
+          <text x="242" y="36" font-family="Plus Jakarta Sans" font-size="20" font-weight="700" fill="#1c1c1a">7</text>
+          <text x="242" y="48" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">集中在 T3</text>
+
+          <rect x="348" y="0" width="108" height="54" rx="5" fill="#fbfaf7" stroke="#e4e2d8"/>
+          <text x="358" y="14" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#9c9a92">AI 对话</text>
+          <text x="358" y="36" font-family="Plus Jakarta Sans" font-size="20" font-weight="700" fill="#1c1c1a">52</text>
+          <text x="390" y="36" font-family="Plus Jakarta Sans" font-size="10" fill="#5c5b56">轮</text>
+          <text x="358" y="48" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">18 人触发</text>
+        </g>
+        <!-- label C -->
+        <text x="488" y="134" font-family="Fraunces" font-style="italic" font-size="10" fill="#9c9a92" text-anchor="end">C</text>
+
+        <!-- Step cards area -->
+        <g transform="translate(36,182)">
+          <text x="0" y="0" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#9c9a92" letter-spacing=".5">课堂进程 STEP CARDS</text>
+          <!-- Step card 1 -->
+          <rect x="0" y="12" width="452" height="36" rx="5" fill="#e6f2dc" stroke="rgba(45,102,18,.12)"/>
+          <circle cx="18" cy="30" r="10" fill="#1c1c1a"/>
+          <text x="18" y="34" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#f0efe8" text-anchor="middle">1</text>
+          <text x="36" y="28" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a">图式激活</text>
+          <text x="92" y="28" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">Predict · 5 min</text>
+          <text x="420" y="28" font-family="Plus Jakarta Sans" font-size="7" fill="#2d6612" text-anchor="end">42/42 ✓</text>
+          <text x="36" y="40" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">全部完成</text>
+          <!-- Step card 3 (active) -->
+          <rect x="0" y="56" width="452" height="52" rx="5" fill="#fbfaf7" stroke="#1c1c1a" stroke-width="1.5"/>
+          <circle cx="18" cy="74" r="10" fill="#1c1c1a"/>
+          <text x="18" y="78" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#f0efe8" text-anchor="middle">3</text>
+          <text x="36" y="72" font-family="Plus Jakarta Sans" font-size="9" font-weight="700" fill="#1c1c1a">矩阵构建</text>
+          <text x="92" y="72" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">Scan & Build · 15 min</text>
+          <rect x="360" y="65" width="40" height="14" rx="3" fill="#942929"/>
+          <text x="370" y="75" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#fff">1 紧急</text>
+          <rect x="404" y="65" width="40" height="14" rx="3" fill="#f6edda"/>
+          <text x="412" y="75" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#7a4d0e">2 注意</text>
+          <!-- student dots -->
+          <g transform="translate(36,86)">
+            <circle cx="0" cy="0" r="3" fill="#2d6612"/><circle cx="9" cy="0" r="3" fill="#2d6612"/>
+            <circle cx="18" cy="0" r="3" fill="#2d6612"/><circle cx="27" cy="0" r="3" fill="#1a5fa0"/>
+            <circle cx="36" cy="0" r="3" fill="#1a5fa0"/><circle cx="45" cy="0" r="3" fill="#1a5fa0"/>
+            <circle cx="54" cy="0" r="3" fill="#7a4d0e"/><circle cx="63" cy="0" r="3" fill="#7a4d0e"/>
+            <circle cx="72" cy="0" r="3" fill="#9c9a92"/><circle cx="81" cy="0" r="3" fill="#9c9a92"/>
+            <circle cx="90" cy="0" r="3" fill="#9c9a92"/><circle cx="99" cy="0" r="3" fill="#9c9a92"/>
+          </g>
+          <text x="36" y="98" font-family="Plus Jakarta Sans" font-size="6" fill="#9c9a92">26 在做 · 12 完成 · 4 卡住</text>
+          <!-- Step card 5 (future) -->
+          <rect x="0" y="116" width="452" height="36" rx="5" fill="#edece7" stroke="#e4e2d8" opacity=".6"/>
+          <circle cx="18" cy="134" r="10" fill="#edece7" stroke="#9c9a92"/>
+          <text x="18" y="138" font-family="Plus Jakarta Sans" font-size="8" font-weight="700" fill="#9c9a92" text-anchor="middle">5</text>
+          <text x="36" y="132" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#9c9a92">复盘升华</text>
+          <text x="92" y="132" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">Wrap-up · 7 min</text>
+          <text x="36" y="144" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">未开始</text>
+        </g>
+        <!-- label D -->
+        <text x="488" y="220" font-family="Fraunces" font-style="italic" font-size="10" fill="#9c9a92" text-anchor="end">D</text>
+
+        <!-- Right panel -->
+        <rect x="510" y="102" width="270" height="288" rx="8" fill="#fbfaf7" stroke="#e4e2d8"/>
+        <!-- tabs -->
+        <g transform="translate(522,114)">
+          <rect x="0" y="0" width="246" height="24" rx="4" fill="#edece7"/>
+          <rect x="2" y="2" width="60" height="20" rx="3" fill="#1c1c1a"/>
+          <text x="14" y="16" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#f0efe8">问题聚类</text>
+          <text x="76" y="16" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#9c9a92">观察要点</text>
+          <text x="132" y="16" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#9c9a92">学生总览</text>
+          <text x="188" y="16" font-family="Plus Jakarta Sans" font-size="7" font-weight="500" fill="#9c9a92">教学参考</text>
+        </g>
+        <!-- question clusters mock -->
+        <g transform="translate(522,148)">
+          <rect x="0" y="0" width="246" height="32" rx="5" fill="#e4eff8" stroke="rgba(26,95,160,.1)"/>
+          <text x="10" y="14" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#1a5fa0">概念理解</text>
+          <text x="10" y="26" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">"shallow 是什么意思？" × 6 人</text>
+
+          <rect x="0" y="40" width="246" height="32" rx="5" fill="#eceafe" stroke="rgba(58,49,133,.1)"/>
+          <text x="10" y="54" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#3a3185">课文内容</text>
+          <text x="10" y="66" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">"Myanmar 在哪里？" × 4 人</text>
+
+          <rect x="0" y="80" width="246" height="32" rx="5" fill="#f6edda" stroke="rgba(122,77,14,.1)"/>
+          <text x="10" y="94" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#7a4d0e">解题求助</text>
+          <text x="10" y="106" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">"怎么写 disagree 论据段？" × 3 人</text>
+
+          <rect x="0" y="120" width="246" height="32" rx="5" fill="#e6f2dc" stroke="rgba(45,102,18,.1)"/>
+          <text x="10" y="134" font-family="Plus Jakarta Sans" font-size="7" font-weight="600" fill="#2d6612">阅读策略</text>
+          <text x="10" y="146" font-family="Plus Jakarta Sans" font-size="7" fill="#5c5b56">"Scanning 和 Skimming 区别？" × 2 人</text>
+        </g>
+        <!-- label E -->
+        <text x="768" y="134" font-family="Fraunces" font-style="italic" font-size="10" fill="#9c9a92" text-anchor="end">E</text>
+      </svg>
+    </div>
+
+    <div class="layout-legend">
+      <div class="legend-item">
+        <div class="legend-item-lb">A · 顶栏 Band</div>
+        <div class="legend-item-v">课程 + 实时状态</div>
+        <div class="legend-item-d">班级信息、课堂码、在线人数。绿色脉冲 = 数据实时同步中。</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">B · 时间轴 Timeline</div>
+        <div class="legend-item-v">进度 + 回放</div>
+        <div class="legend-item-d">左 = 已用时间，右 = 课堂总时长。拖拽进度条可回放历史状态。</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">C · 左面板 Focus</div>
+        <div class="legend-item-v">Health Cards + Step Cards</div>
+        <div class="legend-item-d">4 张健康概览卡 + 按步骤展开的学生进度分布。</div>
+      </div>
+      <div class="legend-item">
+        <div class="legend-item-lb">E · 右面板 Overview</div>
+        <div class="legend-item-v">4 个 Tab</div>
+        <div class="legend-item-d">问题聚类、观察要点、学生总览、教学参考。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 03 — 关键面板详解 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">03 —</span>
+      <h2>关键面板详解 <span class="en">Key Panels</span></h2>
+    </div>
+    <span class="hint">5 个子系统 · 构成完整观察闭环</span>
+  </div>
+
+  <div class="sub-cards">
+
+    <!-- A. Health Cards -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--teal-bg);color:var(--teal)">A · Health Cards</span>
+      <h4>健康概览卡（4 张）</h4>
+      <p>一行四卡，<strong>3 秒掌握全班状态</strong>。位于左面板顶部。</p>
+      <table class="info-table">
+        <tr><th>卡片</th><th>含义</th><th>底色规则</th></tr>
+        <tr><td>最快进度</td><td>全班最快学生当前所在步骤</td><td style="color:var(--green)">绿底 = 有人接近完成</td></tr>
+        <tr><td>中位进度</td><td>50% 学生所在的步骤</td><td>白底 = 中性信息</td></tr>
+        <tr><td>卡点学生</td><td>被标记为"卡住"的学生总数</td><td style="color:var(--amber)">琥珀底 = 需关注</td></tr>
+        <tr><td>AI 对话</td><td>苏格拉底 AI 对话的累计轮次和触发人数</td><td>白底 = 中性信息</td></tr>
+      </table>
+    </div>
+
+    <!-- B. Step Cards -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--purple-bg);color:var(--purple)">B · Step Cards</span>
+      <h4>步骤进度卡</h4>
+      <p>每步一张卡片，显示 <strong>当前人数、完成率、学生点阵和告警标签</strong>。点击展开看详情。</p>
+
+      <div style="margin:6px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">学生点阵颜色含义</div>
+      <div class="dot-row">
+        <span class="dot-item"><span class="d" style="background:var(--green)"></span> 完成</span>
+        <span class="dot-item"><span class="d" style="background:var(--blue)"></span> 进行中</span>
+        <span class="dot-item"><span class="d" style="background:var(--amber)"></span> 卡住</span>
+        <span class="dot-item"><span class="d" style="background:var(--t3)"></span> 阅读中</span>
+      </div>
+
+      <div style="margin:6px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">告警标签</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="badge" style="background:var(--red);color:#fff">1 紧急</span>
+        <span class="badge" style="background:var(--amber-bg);color:var(--amber)">2 注意</span>
+        <span class="badge" style="background:var(--red-bg);color:var(--red)">Q1 错误偏高</span>
+        <span class="badge" style="background:var(--amber-bg);color:var(--amber)">5 人卡住</span>
+      </div>
+
+      <p style="margin-top:6px">点击 <strong>📊 按钮</strong> 打开 Observe 抽屉查看题型详细数据。</p>
+    </div>
+
+    <!-- C. Observe Drawer -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">C · Observe 抽屉</span>
+      <h4>5 种题型观察</h4>
+      <p>在 Step Card 上点击 📊 按钮，滑出右侧 Observe 抽屉，按题型展示<strong>班级视图</strong>和<strong>学生视图</strong>。</p>
+      <table class="info-table">
+        <tr><th>题型</th><th>班级视图</th><th>学生视图</th></tr>
+        <tr><td>MC (Quiz)</td><td>选项分布矩阵</td><td>个人选项 + 正误</td></tr>
+        <tr><td>Evidence</td><td>文本证据选择热力图</td><td>段落标注详情</td></tr>
+        <tr><td>Matrix</td><td>维度填充分布</td><td>单元格对比</td></tr>
+        <tr><td>Map</td><td>象限/轴位分布</td><td>个人定位 + 理由</td></tr>
+        <tr><td>Discuss</td><td>对话主题 / 达标率</td><td>逐轮对话记录</td></tr>
+      </table>
+      <p>点击学生头像/名称 → 进入<strong>个人视图</strong>（Layer 2），可用 ← → 切换学生。</p>
+    </div>
+
+    <!-- D. Right Panel 4 Tabs -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--surface2);color:var(--t2)">D · 右侧 4 Tab</span>
+      <h4>全局信号面板</h4>
+      <p>右侧面板提供全局视角，按关注维度切换 Tab。</p>
+      <table class="info-table">
+        <tr><th>Tab</th><th>核心功能</th></tr>
+        <tr><td>问题聚类</td><td>学生 AI 提问按 4 类分组（概念理解、课文内容、解题求助、阅读策略），高频问题冒泡。</td></tr>
+        <tr><td>观察要点</td><td>系统自动识别教学模式和卡点，给出干预建议。信号分紧急/注意/信息三级。</td></tr>
+        <tr><td>学生总览</td><td>四象限散点矩阵，快速定位 Star / Struggling / Coasting / At-Risk 学生。</td></tr>
+        <tr><td>教学参考</td><td>实时建议（规则引擎）+ 讨论亮点（AI 检测）+ 推荐提问候选 + 值得讨论的问题 + 深度洞察（LLM）。</td></tr>
+      </table>
+    </div>
+
+    <!-- E. Coaching Panel -->
+    <div class="subcard">
+      <span class="subcard-tag" style="background:var(--amber-bg);color:var(--amber)">E · 教学参考</span>
+      <h4>Coaching Panel</h4>
+      <p>右侧「教学参考」Tab 提供<strong>五类教学辅助信息</strong>，帮助教师实时调整教学策略。无活动数据时显示"等待课堂数据"。</p>
+
+      <div style="margin:8px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">实时建议（规则引擎）</div>
+      <p>系统根据课堂数据自动生成结构化建议，按紧急/重要/信息三级排序。</p>
+      <table class="info-table">
+        <tr><th>规则</th><th>触发条件</th><th>优先级</th></tr>
+        <tr><td>卡点聚集</td><td>5+ 人卡住超过 3 分钟</td><td style="color:var(--red)">紧急</td></tr>
+        <tr><td>高错误率</td><td>某维度错误率 > 50%</td><td style="color:var(--red)">紧急</td></tr>
+        <tr><td>步骤超时</td><td>中位用时 > 1.5× 预期时长</td><td style="color:var(--amber)">重要</td></tr>
+        <tr><td>进度差距</td><td>最快 - 中位 ≥ 2 步</td><td style="color:var(--amber)">重要</td></tr>
+        <tr><td>AI 对话密集</td><td>人均 AI 轮次 > 1.5</td><td style="color:var(--amber)">重要</td></tr>
+        <tr><td>接近完成</td><td>完成率 ≥ 90% 且 ≥ 3 人完成</td><td style="color:var(--teal)">信息</td></tr>
+      </table>
+
+      <div style="margin:8px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">讨论亮点（AI 检测）</div>
+      <p>学生在苏格拉底讨论中发表有深度的观点时，AI 自动识别并提取<strong>亮点摘要</strong>。点击卡片可展开查看原文。</p>
+
+      <div style="margin:8px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">推荐提问候选</div>
+      <p>基于四象限学生分析（Star / Struggling / Coasting / At-Risk）和薄弱维度，推荐<strong>值得课堂提问的学生</strong>。点击卡片可跳转到该学生详情。</p>
+      <table class="info-table">
+        <tr><th>意图标签</th><th>来源象限</th><th>目的</th></tr>
+        <tr><td style="color:var(--teal)">展示标杆</td><td>Star（高参与 · 高掌握）</td><td>让优秀学生分享思路，带动全班</td></tr>
+        <tr><td style="color:var(--amber)">检验掌握</td><td>Coasting（低参与 · 高掌握）</td><td>通过提问激活"隐形学生"</td></tr>
+        <tr><td style="color:var(--red)">暴露问题</td><td>Struggling（高参与 · 低掌握）</td><td>定向追问，暴露理解偏差以便纠正</td></tr>
+      </table>
+
+      <div style="margin:8px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">值得讨论的问题</div>
+      <p>从学生 AI 提问中筛选出<strong>有深度的代表性问题</strong>（≥10 字、含思辨关键词），匿名呈现，适合教师在课堂上展开集体讨论。</p>
+
+      <div style="margin:8px 0 4px;font-size:11px;font-weight:600;color:var(--t2)">深度洞察（LLM 生成）</div>
+      <p>每 30 秒节流，由 LLM 综合分析课堂数据（步骤指标、卡点、误解信号、亮点）生成 1-3 条<strong>教学建议</strong>，包含标题、情况描述和建议行动。</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 04 — 学生详情 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">04 —</span>
+      <h2>学生详情 <span class="en">Student Modal</span></h2>
+    </div>
+    <span class="hint">点击任意学生名称 → 进入个人画像</span>
+  </div>
+
+  <div class="modal-card">
+    <h3>个人视图 · 跨步骤旅程</h3>
+
+    <!-- Journey strip illustration -->
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px 20px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px">Journey Strip · 旅程条</div>
+      <svg viewBox="0 0 700 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- connector line -->
+        <line x1="50" y1="24" x2="650" y2="24" stroke="#e4e2d8" stroke-width="2"/>
+        <line x1="50" y1="24" x2="430" y2="24" stroke="#1c1c1a" stroke-width="2"/>
+        <!-- Step 1 (done) -->
+        <circle cx="50" cy="24" r="16" fill="#2d6612"/>
+        <text x="50" y="28" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">✓</text>
+        <text x="50" y="50" font-family="Plus Jakarta Sans" font-size="8" fill="#1c1c1a" text-anchor="middle" font-weight="600">T1</text>
+        <text x="50" y="60" font-family="Plus Jakarta Sans" font-size="7" fill="#2d6612" text-anchor="middle">100%</text>
+        <!-- Step 2 (done) -->
+        <circle cx="200" cy="24" r="16" fill="#2d6612"/>
+        <text x="200" y="28" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">✓</text>
+        <text x="200" y="50" font-family="Plus Jakarta Sans" font-size="8" fill="#1c1c1a" text-anchor="middle" font-weight="600">T2</text>
+        <text x="200" y="60" font-family="Plus Jakarta Sans" font-size="7" fill="#2d6612" text-anchor="middle">85%</text>
+        <!-- Step 3 (partial) -->
+        <circle cx="350" cy="24" r="16" fill="#7a4d0e"/>
+        <text x="350" y="28" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">△</text>
+        <text x="350" y="50" font-family="Plus Jakarta Sans" font-size="8" fill="#1c1c1a" text-anchor="middle" font-weight="600">T3</text>
+        <text x="350" y="60" font-family="Plus Jakarta Sans" font-size="7" fill="#7a4d0e" text-anchor="middle">60%</text>
+        <!-- alert badge -->
+        <rect x="370" y="12" width="46" height="14" rx="3" fill="#f6edda"/>
+        <text x="380" y="22" font-family="Plus Jakarta Sans" font-size="6" font-weight="600" fill="#7a4d0e">需关注</text>
+        <!-- Step 4 (in progress) -->
+        <circle cx="500" cy="24" r="16" fill="#1a5fa0"/>
+        <text x="500" y="28" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#fff" text-anchor="middle">●</text>
+        <text x="500" y="50" font-family="Plus Jakarta Sans" font-size="8" fill="#1c1c1a" text-anchor="middle" font-weight="600">T4</text>
+        <text x="500" y="60" font-family="Plus Jakarta Sans" font-size="7" fill="#1a5fa0" text-anchor="middle">进行中</text>
+        <!-- Step 5 (future) -->
+        <circle cx="650" cy="24" r="16" fill="none" stroke="#9c9a92"/>
+        <text x="650" y="28" font-family="Plus Jakarta Sans" font-size="10" font-weight="700" fill="#9c9a92" text-anchor="middle">○</text>
+        <text x="650" y="50" font-family="Plus Jakarta Sans" font-size="8" fill="#9c9a92" text-anchor="middle" font-weight="600">T5</text>
+      </svg>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px">旅程条图标含义</div>
+        <table class="info-table">
+          <tr><th>图标</th><th>状态</th><th>说明</th></tr>
+          <tr><td style="color:var(--green)">✓</td><td>完成-正确</td><td>该步骤完成且得分良好</td></tr>
+          <tr><td style="color:var(--amber)">△</td><td>完成-部分</td><td>完成但得分偏低，需关注</td></tr>
+          <tr><td style="color:var(--blue)">●</td><td>进行中</td><td>学生正在作答</td></tr>
+          <tr><td style="color:var(--amber)">⚠</td><td>卡住</td><td>学生在此步骤耗时过长</td></tr>
+          <tr><td style="color:var(--t3)">○</td><td>未开始</td><td>尚未到达此步骤</td></tr>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px">详情面板</div>
+        <table class="info-table">
+          <tr><th>区域</th><th>内容</th></tr>
+          <tr><td>作答详情</td><td>整体得分 + 每维度正误标记（✓/✗）</td></tr>
+          <tr><td>AI 对话</td><td>如有 AI 交互：对话气泡、轮次、理解度</td></tr>
+          <tr><td>班级对比</td><td>如无 AI 交互：正确率和 AI 轮次的学生 vs 班级对比条</td></tr>
+        </table>
+        <div style="margin-top:10px;font-size:11px;color:var(--t2);line-height:1.6">
+          <strong style="color:var(--t1)">颜色规则</strong><br>
+          <span style="color:var(--green)">绿色</span> 得分 ≥ 80%&nbsp;&nbsp;
+          <span style="color:var(--amber)">琥珀色</span> 40%–80%&nbsp;&nbsp;
+          <span style="color:var(--red)">红色</span> &lt; 40%
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 05 — 课后总结 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">05 —</span>
+      <h2>课后总结 <span class="en">Summary</span></h2>
+    </div>
+    <span class="hint">右面板「学生总览」Tab · 或点击展开全屏</span>
+  </div>
+
+  <div class="layout-card" style="margin-bottom:24px">
+    <h3>四象限散点矩阵 · SummaryOverlay</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px">
+          <svg viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- quadrant backgrounds -->
+            <rect x="0" y="0" width="150" height="150" rx="4" fill="#f6edda" opacity=".3"/>
+            <rect x="150" y="0" width="150" height="150" rx="4" fill="#e6f2dc" opacity=".4"/>
+            <rect x="0" y="150" width="150" height="150" rx="4" fill="#f8e6e6" opacity=".3"/>
+            <rect x="150" y="150" width="150" height="150" rx="4" fill="#e4eff8" opacity=".3"/>
+            <!-- axes -->
+            <line x1="0" y1="150" x2="300" y2="150" stroke="var(--border-strong)" stroke-dasharray="4"/>
+            <line x1="150" y1="0" x2="150" y2="300" stroke="var(--border-strong)" stroke-dasharray="4"/>
+            <!-- labels -->
+            <text x="75" y="24" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#7a4d0e" text-anchor="middle">Struggling</text>
+            <text x="75" y="36" font-family="Plus Jakarta Sans" font-size="7" fill="#7a4d0e" text-anchor="middle">高参与 · 低掌握</text>
+            <text x="225" y="24" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#2d6612" text-anchor="middle">Star</text>
+            <text x="225" y="36" font-family="Plus Jakarta Sans" font-size="7" fill="#2d6612" text-anchor="middle">高参与 · 高掌握</text>
+            <text x="75" y="274" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#942929" text-anchor="middle">At-Risk</text>
+            <text x="75" y="286" font-family="Plus Jakarta Sans" font-size="7" fill="#942929" text-anchor="middle">低参与 · 低掌握</text>
+            <text x="225" y="274" font-family="Plus Jakarta Sans" font-size="9" font-weight="600" fill="#1a5fa0" text-anchor="middle">Coasting</text>
+            <text x="225" y="286" font-family="Plus Jakarta Sans" font-size="7" fill="#1a5fa0" text-anchor="middle">低参与 · 高掌握</text>
+            <!-- axis labels -->
+            <text x="300" y="158" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92" text-anchor="end">掌握度 →</text>
+            <text x="4" y="8" font-family="Plus Jakarta Sans" font-size="7" fill="#9c9a92">↑ 参与度</text>
+            <!-- student dots -->
+            <circle cx="210" cy="60" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="230" cy="50" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="190" cy="70" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="240" cy="80" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="220" cy="40" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="200" cy="90" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="260" cy="65" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="250" cy="100" r="6" fill="#2d6612" opacity=".8"/>
+            <circle cx="80" cy="60" r="6" fill="#7a4d0e" opacity=".8"/>
+            <circle cx="60" cy="80" r="6" fill="#7a4d0e" opacity=".8"/>
+            <circle cx="100" cy="90" r="6" fill="#7a4d0e" opacity=".8"/>
+            <circle cx="40" y="186" r="6" fill="#942929" opacity=".8" cy="220"/>
+            <circle cx="80" r="6" fill="#942929" opacity=".8" cy="240"/>
+            <circle cx="60" r="6" fill="#942929" opacity=".8" cy="200"/>
+            <circle cx="220" r="6" fill="#1a5fa0" opacity=".8" cy="200"/>
+            <circle cx="240" r="6" fill="#1a5fa0" opacity=".8" cy="220"/>
+            <circle cx="200" r="6" fill="#1a5fa0" opacity=".8" cy="190"/>
+          </svg>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--t2);margin-bottom:8px">四象限含义</div>
+        <table class="info-table">
+          <tr><th>象限</th><th>特征</th><th>教学策略</th></tr>
+          <tr><td style="color:var(--green)">Star</td><td>高参与 · 高掌握</td><td>可作为小组引领者</td></tr>
+          <tr><td style="color:var(--amber)">Struggling</td><td>高参与 · 低掌握</td><td>方法有问题，需定向辅导</td></tr>
+          <tr><td style="color:var(--blue)">Coasting</td><td>低参与 · 高掌握</td><td>能力够但不投入，需激活</td></tr>
+          <tr><td style="color:var(--red)">At-Risk</td><td>低参与 · 低掌握</td><td>优先关注，可能需要课后跟进</td></tr>
+        </table>
+
+        <div style="font-size:11px;font-weight:600;color:var(--t2);margin:12px 0 8px">总结面板包含</div>
+        <table class="info-table">
+          <tr><th>模块</th><th>功能</th></tr>
+          <tr><td>指标卡片</td><td>整体掌握度、学优/学困人数、异常学生、薄弱知识点</td></tr>
+          <tr><td>知识点柱状图</td><td>每个维度的掌握率，直观看到班级薄弱点</td></tr>
+          <tr><td>推荐提问候选</td><td>系统根据薄弱维度推荐的提问目标学生及理由</td></tr>
+          <tr><td>衔接洞察</td><td>耗时热点步骤、值得讨论的提问、AI 互动热度</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:48px"></div>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SIGNATURE BLOCK -->
+  <!-- ═══════════════════════════════════════ -->
+  <section class="sig">
+    <div class="sig-row">
+      <div class="sig-l">
+        <div class="sig-eyebrow"><span class="dot"></span>Core Principle</div>
+        <h2>观察，而非<em>干预</em>。</h2>
+        <p>
+          教师端的设计哲学是<strong>单向玻璃</strong>：教师能看见每个学生的完整学习过程 —— 每次作答、每轮 AI 对话、每个卡点。但学生感受到的始终是<strong>自主推进</strong>的体验。系统提供数据和信号，<strong>决策权始终在教师手中</strong>。
+        </p>
+      </div>
+      <div class="sig-r">
+        <div class="sig-item">
+          <div class="sig-item-n">1</div>
+          <div class="sig-item-t">
+            <strong>教师端只读</strong>
+            教师观察、不直接操作学生端内容。学生按自己的节奏自主推进课程。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">2</div>
+          <div class="sig-item-t">
+            <strong>数据透明</strong>
+            每次 AI 对话、每个学生的作答过程教师都可见。AI 是助教，不是黑箱。
+          </div>
+        </div>
+        <div class="sig-item">
+          <div class="sig-item-n">3</div>
+          <div class="sig-item-t">
+            <strong>决策留给教师</strong>
+            系统提供信号（卡点、错误分布、AI 异常），教师决定何时干预、如何干预。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════ -->
+  <!-- SECTION 06 — 常见场景速查 -->
+  <!-- ═══════════════════════════════════════ -->
+  <div class="sec-h">
+    <div class="sec-h-l">
+      <span class="num">06 —</span>
+      <h2>常见场景速查 <span class="en">Quick Reference</span></h2>
+    </div>
+    <span class="hint">7 个典型时刻 · 看什么 + 做什么</span>
+  </div>
+
+  <div class="info-table-wrap">
+    <table class="info-table">
+      <tr><th>场景</th><th>看什么</th><th>做什么</th></tr>
+      <tr>
+        <td>开课 5 min</td>
+        <td>最快进度 + 中位进度</td>
+        <td>确认全班都进入了 Task 1，如有落后者口头提醒</td>
+      </tr>
+      <tr>
+        <td>某步耗时过长</td>
+        <td>卡点学生数</td>
+        <td>如果 > 5 人卡住，考虑全班暂停讲解关键概念</td>
+      </tr>
+      <tr>
+        <td>某维度错误偏高</td>
+        <td>Step 卡片的告警标签</td>
+        <td>点开 📊 观察详情看常见错误模式，决定是否针对性讲解</td>
+      </tr>
+      <tr>
+        <td>AI 对话激增</td>
+        <td>AI 对话卡片 + 问题聚类 Tab</td>
+        <td>检查学生在问什么 —— 若同类问题集中，考虑全班讲解</td>
+      </tr>
+      <tr>
+        <td>全班完成某步</td>
+        <td>Step 完成率 100%</td>
+        <td>口头推进到下一步，或让学生自主推进（学生可自动进入下一步）</td>
+      </tr>
+      <tr>
+        <td>讨论中出现亮点</td>
+        <td>教学参考 Tab → 讨论亮点卡片</td>
+        <td>点击展开原文，课堂上请该学生分享观点，带动全班讨论</td>
+      </tr>
+      <tr>
+        <td>需要提问互动</td>
+        <td>教学参考 Tab → 推荐提问候选</td>
+        <td>选择标注为"引导"或"挑战"意图的学生，针对性提问</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes">
+    <div>
+      <div class="note-h">保真度说明 · Fidelity</div>
+      <div class="note-b">本文档中的截图与 SVG 示意图基于 <strong>v0.3 交互原型</strong>，非最终产品截图。实际界面可能因数据量不同而有差异。</div>
+    </div>
+    <div>
+      <div class="note-h">适用场景 · Scope</div>
+      <div class="note-b">本指南覆盖阅读课（Reading Lesson）的教师端操作。<strong>写作课</strong>和<strong>听力课</strong>的教师端会有题型差异，核心布局一致。</div>
+    </div>
+    <div>
+      <div class="note-h">下一步 · Next</div>
+      <div class="note-b">(1) 加入<strong>课后 10 分钟复盘</strong>话术生成 (2) 教研组<strong>横向对比数据</strong> (3) <strong>家长端</strong>只读摘要。</div>
+    </div>
+  </div>
+
+  <footer>Designed for classroom observation · Ruixin English Team · Teacher Guide v1.0</footer>
+
+</div>
+
+</body>
+</html>
