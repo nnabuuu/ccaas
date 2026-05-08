@@ -14,6 +14,7 @@ interface MapStudentData extends ObserveData {
     deviations: Record<string, number>
     keyInsights: string[]
     llmFeedback?: string
+    llmItemComments?: Record<string, { relevant: boolean; comment: string }>
   }>
 }
 
@@ -145,6 +146,7 @@ export default function MapStudentView({ data, studentId }: Props) {
           const pos = placements[item.id]
           const reason = reasons[item.id]
           const dev = deviations[item.id]
+          const llmComment = student.llmItemComments?.[item.id]
           const expected = item.expected
           const badgeColor = dev != null
             ? (dev < 0.3 ? 'var(--green)' : dev < 0.6 ? 'var(--amber)' : 'var(--red)')
@@ -187,6 +189,18 @@ export default function MapStudentView({ data, studentId }: Props) {
               {reason && (
                 <div style={{ fontSize: 10, color: 'var(--t2)', marginTop: 4, lineHeight: 1.4, fontStyle: 'italic' }}>
                   "{reason}"
+                </div>
+              )}
+              {llmComment && (
+                <div style={{
+                  fontSize: 10, color: 'var(--t2)', marginTop: 4, padding: '4px 8px',
+                  background: 'var(--bg)', borderRadius: 4,
+                  borderLeft: `2px solid ${llmComment.relevant ? 'var(--green)' : 'var(--amber)'}`,
+                }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: llmComment.relevant ? 'var(--green)' : 'var(--amber)' }}>
+                    {llmComment.relevant ? '相关' : '不相关'}
+                  </span>
+                  {' '}{llmComment.comment}
                 </div>
               )}
             </div>

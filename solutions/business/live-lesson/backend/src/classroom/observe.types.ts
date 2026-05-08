@@ -114,6 +114,7 @@ export interface MapObserveData {
     avgDeviation: number;
     keyInsights: string[];
     llmFeedback?: string;
+    llmItemComments?: Record<string, { relevant: boolean; comment: string }>;
   }>;
 }
 

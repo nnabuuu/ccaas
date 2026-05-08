@@ -35,7 +35,7 @@ export class ObserveService {
     subsByStudent: Map<string, Record<number, Submission>>;
   }> {
     const students = await this.studentRepo.find({ where: { sessionId }, order: { joinedAt: 'ASC' } });
-    const submissions = await this.submissionRepo.find({ where: { sessionId } });
+    const submissions = await this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } });
     const subsByStudent = new Map<string, Record<number, Submission>>();
     for (const sub of submissions) {
       if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});
@@ -367,6 +367,12 @@ export class ObserveService {
       const reasons = data.reasons || {};
       const score = sub.scoreJson;
       const llmFeedback = score?.llmFeedback || null;
+      const llmItemComments: Record<string, { relevant: boolean; comment: string }> = {};
+      if (score?.llmItems) {
+        for (const li of score.llmItems) {
+          if (li.id) llmItemComments[li.id] = { relevant: Boolean(li.relevant), comment: li.reason || '' };
+        }
+      }
 
       let totalDev = 0;
       let devCount = 0;
@@ -414,6 +420,7 @@ export class ObserveService {
         avgDeviation: avgDev,
         keyInsights: insights,
         llmFeedback,
+        ...(Object.keys(llmItemComments).length > 0 && { llmItemComments }),
       });
     }
 
