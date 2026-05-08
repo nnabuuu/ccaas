@@ -3587,21 +3587,24 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       expect(typeof result.bonusUnlocked).toBe('boolean');
     });
 
-    it('should unlock bonus when teacher currentStep < 5', async () => {
+    it('should unlock bonus when elapsed time is within 15 minutes', async () => {
       jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('Great!');
-      // Session currentStep defaults to 0 (teacher hasn't advanced)
+      // Submission happened almost instantly after session start → elapsed ≈ 0
       const result = await personalizationSvc.getPersonalTouch(session, studentId);
       expect(result.bonusUnlocked).toBe(true);
     });
 
-    it('should NOT unlock bonus when teacher currentStep >= 5', async () => {
+    it('should NOT unlock bonus when elapsed time exceeds 15 minutes', async () => {
       jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValueOnce('Great!');
-      // Advance teacher step
-      await sessionRepo.update(session.id, { currentStep: 5 });
-      const result = await personalizationSvc.getPersonalTouch(session, studentId);
+      // Backdate session start to 20 minutes ago so elapsed > 15 min
+      const pastTime = new Date(Date.now() - 20 * 60_000).toISOString();
+      await sessionRepo.update(session.id, { startedAt: pastTime });
+      // Reload session with updated startedAt
+      const freshSession = await sessionRepo.findOne({ where: { id: session.id } });
+      const result = await personalizationSvc.getPersonalTouch(freshSession!, studentId);
       expect(result.bonusUnlocked).toBe(false);
       // Reset
-      await sessionRepo.update(session.id, { currentStep: 0 });
+      await sessionRepo.update(session.id, { startedAt: new Date().toISOString() });
     });
 
     it('should fallback gracefully when AI call fails', async () => {
