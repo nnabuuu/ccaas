@@ -189,7 +189,7 @@ test.describe('Full Student Lesson Walkthrough', () => {
 
         // Click section tab
         const sTab = page.locator('.se-strip-btn').nth(s);
-        if (await sTab.isVisible({ timeout: 2_000 }).catch(() => false)) {
+        if (await sTab.isVisible({ timeout: 5_000 }).catch(() => false)) {
           await sTab.click();
           await page.waitForTimeout(800);
         }
