@@ -93,6 +93,10 @@
 .stu-mat-td{padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:top}
 .stu-mat-in{width:100%;border:1px solid var(--border);border-radius:4px;padding:5px 7px;font-size:12px;font-family:inherit;background:var(--bg)}
 .stu-mat-in:focus{outline:none;border-color:rgba(58,49,133,.3)}
+.stu-mat-row-ok{background:var(--green-bg)}
+.stu-mat-row-ok>td:first-child{border-left:3px solid var(--green)}
+.stu-mat-row-wrong{background:var(--amber-bg)}
+.stu-mat-row-wrong>td:first-child{border-left:3px solid var(--amber)}
 
 /* ── Locate button (paragraph reference) ── */
 .stu-locate-btn{width:20px;height:20px;font-size:12px;border:none;background:none;cursor:pointer;opacity:0.6;border-radius:4px;padding:0;display:inline-flex;align-items:center;justify-content:center}
@@ -123,7 +127,7 @@
 .stu-hint-banner{font-size:12px;color:var(--amber);padding:8px 12px;background:var(--amber-bg);border-radius:6px;margin-top:6px;line-height:1.5;border:1px solid rgba(122,77,14,.12)}
 .stu-help-btn{font-size:10px;color:var(--t3);cursor:pointer;padding:3px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);font-family:inherit;display:inline-flex;align-items:center;gap:3px}
 .stu-help-btn:hover{border-color:var(--t2);color:var(--t2)}
-.stu-help-drop{position:absolute;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:8px;z-index:20;min-width:220px;font-size:12px}
+.stu-help-drop{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:8px;min-width:220px;font-size:12px}
 
 /* ── Buttons ── */
 .stu-btn{font-size:13px;padding:13px 20px;border-radius:8px;cursor:pointer;border:none;font-family:inherit;font-weight:600;width:100%}

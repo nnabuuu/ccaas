@@ -13,6 +13,7 @@ interface Props {
   ans?: Record<number, { what?: string; why?: string }>
   onAnsChange?: (rowIdx: number, field: 'what' | 'why', value: string) => void
   disabled?: boolean
+  rowResults?: Record<number, boolean>
 }
 
 /** Simple deterministic hash for student+step → consistent row selection */
@@ -38,7 +39,7 @@ function selectPracticeRows(nonDemoIndices: number[], count: number, seed: strin
   return new Set(shuffled.slice(0, count))
 }
 
-export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled }: Props) {
+export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults }: Props) {
   // Determine which rows are practice vs extra-demo
   const { practiceIndices, extraDemoIndices } = useMemo(() => {
     const nonDemoIndices = rows.map((r, i) => ({ r, i })).filter(x => !x.r.demo).map(x => x.i)
@@ -110,8 +111,12 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
               )
             }
 
+            const rowResultClass = disabled && rowResults && ri in rowResults
+              ? (rowResults[ri] ? 'stu-mat-row-ok' : 'stu-mat-row-wrong')
+              : undefined
+
             return (
-              <tr key={ri} style={isActive ? { background: 'rgba(58,49,133,.03)' } : undefined}>
+              <tr key={ri} className={rowResultClass} style={isActive && !disabled ? { background: 'rgba(58,49,133,.03)' } : undefined}>
                 <td className="stu-mat-td" style={{ fontWeight: 500, fontSize: 12 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span>{r.place}</span>

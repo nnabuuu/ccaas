@@ -57,6 +57,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [serverHints, setServerHints] = useState<ServerHintMap>({})
   const [mapFeedback, setMapFeedback] = useState<string | null>(null)
   const [matrixAns, setMatrixAns] = useState<Record<number, { what?: string; why?: string }>>({})
+  const [matrixRowResults, setMatrixRowResults] = useState<Record<number, boolean>>({})
 
   // Per-question timing: track when each question was first viewed
   const questionTimesRef = useRef<Record<number, number>>({})
@@ -279,13 +280,16 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       setWrongQs(wrong); setAns({})
     } else if (ex.type === 'matrix') {
       const newHints = { ...serverHints }
+      const rowResults: Record<number, boolean> = {}
       result.items.forEach(item => {
         const idx = toIdx(item.idx)
+        rowResults[idx] = item.correct
         if (!item.correct && (item.hint || item.hintZh)) {
           newHints[idx] = { hint: item.hint, hintZh: item.hintZh }
         }
       })
       setServerHints(newHints)
+      setMatrixRowResults(rowResults)
       setSoftDone(true); setAllDone(true)
       reportAttempt(task.id, 0, 1, ans, null, result.allCorrect)
       onDone()
@@ -379,6 +383,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
             ? (() => {})
             : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))}
           disabled={effectiveAllDone}
+          rowResults={Object.keys(matrixRowResults).length > 0 ? matrixRowResults : undefined}
         />
       )}
       {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={effectiveAns} setAns={noopSetAns} softDone={effectiveSoftDone} />}
