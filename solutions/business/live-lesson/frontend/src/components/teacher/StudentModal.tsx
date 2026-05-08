@@ -134,6 +134,18 @@ export function StudentModal({ student, manifest, state, questions, onClose }: {
                 </React.Fragment>
               )
             })}
+            {student.bonusStatus && student.bonusStatus !== 'none' && (
+              <>
+                <div className="journey-connector" />
+                <div className="journey-node">
+                  <div className="jn-top"><span className="jn-name">Bonus</span></div>
+                  <div className={`jn-status ${student.bonusStatus === 'completed' ? 'done' : 'prog'}`}>
+                    <span className="ico">{student.bonusStatus === 'completed' ? '✓' : '●'}</span>
+                    {student.bonusStatus === 'completed' ? ' 已完成' : ' 进行中'}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

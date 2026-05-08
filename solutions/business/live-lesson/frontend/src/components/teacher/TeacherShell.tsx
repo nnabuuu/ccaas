@@ -107,6 +107,12 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
 
   const health = useMemo(() => computeHealthCards(state, stepNames), [state, stepNames])
 
+  const bonusStats = useMemo(() => {
+    const active = students.filter(s => s.bonusStatus === 'active').length
+    const completed = students.filter(s => s.bonusStatus === 'completed').length
+    return { total: active + completed, active, completed }
+  }, [students])
+
   // Task steps (sorted, stable reference for step mapping)
   const taskSteps = useMemo(() =>
     manifest.readingSteps
@@ -260,6 +266,17 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               <div className="hcard-v">{health.ai.rounds} 轮</div>
               <div className="hcard-sub"><strong>{health.ai.people}</strong> 人触发</div>
             </div>
+            {bonusStats.total > 0 && (
+              <div className="hcard good">
+                <div className="hcard-lb">隐藏关卡</div>
+                <div className="hcard-v">{bonusStats.total} 人</div>
+                <div className="hcard-sub">
+                  {bonusStats.completed > 0
+                    ? <><strong>{bonusStats.completed}</strong> 已完成</>
+                    : '进行中'}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* ═══ STEP CARDS (expandable) ═══ */}
@@ -321,6 +338,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                             >
                               {s.name.substring(0, 3)}
                               {ai && <span className="ai-pip" />}
+                              {s.bonusStatus && s.bonusStatus !== 'none' && <span className="bonus-pip" />}
                             </div>
                           )
                         })}
@@ -403,6 +421,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               <div className="swim-legend-item"><span className="dot" style={{ background: 'var(--lecture)' }} />阅读中</div>
               <div className="swim-legend-item"><span className="dot" style={{ background: 'var(--amber-dot)' }} />卡住</div>
               <div className="swim-legend-item"><span className="dot" style={{ background: 'var(--ai-dot)', width: 6, height: 6, borderRadius: '50%' }} />AI 对话中</div>
+              <div className="swim-legend-item"><span className="dot" style={{ background: 'var(--amber-dot)', width: 6, height: 6, borderRadius: '50%' }} />隐藏关卡</div>
             </div>
           </div>
         </div>
@@ -697,6 +716,7 @@ function SubTaskRow({ label, icon, count, students, onStudentClick, questions, o
               >
                 {s.name.substring(0, 2)}
                 {ai && <span className="ai-pip" />}
+                {s.bonusStatus && s.bonusStatus !== 'none' && <span className="bonus-pip" />}
               </div>
             )
           })}

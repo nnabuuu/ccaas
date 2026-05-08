@@ -389,13 +389,15 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
       )}
       {screen === 'bonus-unlock' && (
         <div className="stu-task-inner" style={{ paddingTop: 32, textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔓</div>
-          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, color: 'var(--t1)' }}>Bonus Challenge Unlocked!</div>
-          <p style={{ color: 'var(--t2)', marginBottom: 4 }}>You finished ahead of the class!</p>
-          <p style={{ color: 'var(--t2)', marginBottom: 20 }}>Try your strategies on a new article: <strong>"Beyond the Plate"</strong></p>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🗝️</div>
+          <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, color: 'var(--t1)' }}>隐藏关卡</div>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12, color: 'var(--t2)' }}>Hidden Level Unlocked!</div>
+          <p style={{ color: 'var(--t2)', marginBottom: 4 }}>你比大多数同学更快完成了所有任务！</p>
+          <p style={{ color: 'var(--t2)', marginBottom: 6 }}>这里有一篇新文章等你挑战 —— 做不完也完全没问题。</p>
+          <p style={{ fontSize: 15, marginBottom: 20 }}>📖 <strong>"Beyond the Plate"</strong></p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <button className="stu-btn pri" onClick={() => setScreen('bonus')}>Start Bonus →</button>
-            <button className="stu-btn ghost" onClick={() => setScreen('summary')}>Skip to End</button>
+            <button className="stu-btn pri" onClick={() => setScreen('bonus')}>挑战一下 →</button>
+            <button className="stu-btn ghost" onClick={() => setScreen('summary')}>直接结束</button>
           </div>
         </div>
       )}

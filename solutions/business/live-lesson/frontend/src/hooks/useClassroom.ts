@@ -272,6 +272,7 @@ export interface ClassroomState {
     currentPhase: string
     stepStartedAt: string
     discussMeta?: DiscussMeta | null
+    bonusStatus?: 'none' | 'active' | 'completed'
     submissions: Record<number, { step: number; data: any; score: any; submittedAt: string; duration?: number; aiRoundsCount?: number }>
   }>
   metrics: {

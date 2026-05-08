@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext, useCallback } from 'react'
+import { useState, useEffect, useContext, useCallback, useRef } from 'react'
 import { SessionCtx } from '../TaskPanel'
 import { MatchExercise } from '../exercise/MatchExercise'
 import { MatrixExercise } from '../exercise/MatrixExercise'
@@ -34,6 +34,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
   const [attempts, setAttempts] = useState<Record<number, any[]>>({})
   const [allDone, setAllDone] = useState(false)
   const [complete, setComplete] = useState(false)
+  const [checking, setChecking] = useState(false)
 
   const fetchExercise = useCallback((step: number) => {
     if (!ctx.sessionCode) return
@@ -52,7 +53,8 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
   useEffect(() => { fetchExercise(bonusStep) }, [bonusStep, fetchExercise])
 
   const handleCheck = async () => {
-    if (!ctx.sessionCode || !ctx.studentId || !exerciseData) return
+    if (!ctx.sessionCode || !ctx.studentId || !exerciseData || checking) return
+    setChecking(true)
 
     const submitData = exerciseData.exercise.type === 'match'
       ? { answers: Object.entries(ans).map(([idx, val]) => ({ idx: Number(idx), selected: val })) }
@@ -65,9 +67,10 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: ctx.studentId, data: submitData }),
       })
-      if (!res.ok) return
+      if (!res.ok) { setChecking(false); return }
       result = await res.json()
     } catch {
+      setChecking(false)
       return
     }
 
@@ -95,6 +98,7 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
         setAns(cleared)
       }
     }
+    setChecking(false)
   }
 
   const handleNext = () => {
@@ -137,6 +141,9 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="stu-task-inner" style={{ paddingTop: 24 }}>
+      <div style={{ fontSize: 13, color: 'var(--t3)', marginBottom: 12, padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8 }}>
+        💡 这是额外挑战，做不完也没关系 —— 随时可以结束。
+      </div>
       <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>
         Bonus Step {bonusStep} · {exerciseData.strategy}
       </div>
@@ -180,15 +187,18 @@ export function BonusPhase({ onComplete }: { onComplete: () => void }) {
 
       {!allDone && (
         <button className="stu-btn pri" onClick={handleCheck} disabled={
-          ex.type === 'match' ? (ex.pairs || []).some((_: any, i: number) => !correctQs.has(i) && ans[i] === undefined) : false
+          checking || (ex.type === 'match' ? (ex.pairs || []).some((_: any, i: number) => !correctQs.has(i) && ans[i] === undefined) : false)
         }>
-          Check →
+          {checking ? 'Checking…' : 'Check →'}
         </button>
       )}
       {allDone && (
         <button className="stu-btn pri" onClick={handleNext}>
           {bonusStep === 1 ? 'Next Step →' : 'Finish →'}
         </button>
+      )}
+      {!allDone && (
+        <button className="stu-btn ghost" style={{ marginTop: 12 }} onClick={onComplete} disabled={checking}>结束课程 →</button>
       )}
     </div>
   )

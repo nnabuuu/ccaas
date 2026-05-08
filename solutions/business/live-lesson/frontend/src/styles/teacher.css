@@ -142,6 +142,7 @@
 .sdot.stuck { background: var(--amber-dot); color: #fff }
 .sdot.reading { background: var(--lecture); color: #fff }
 .sdot .ai-pip { position: absolute; top: -2px; right: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--ai-dot); border: 1.5px solid var(--surface) }
+.sdot .bonus-pip { position: absolute; bottom: -2px; left: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber-dot); border: 1.5px solid var(--surface) }
 
 /* Swim legend */
 .swim-legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 0 2px }
