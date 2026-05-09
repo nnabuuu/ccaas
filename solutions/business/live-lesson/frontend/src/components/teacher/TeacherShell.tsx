@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react'
 import type { ReadingManifest } from '../../types/reading'
-import { useTeacherStream } from '../../hooks/useClassroom'
+import { useTeacherPolling } from '../../hooks/useClassroom'
 import type { ClassroomState, StateSnapshot } from '../../hooks/useClassroom'
 import {
   STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI,
@@ -25,9 +25,11 @@ interface Props {
   embed?: boolean
   classroomState?: ClassroomState | null
   sessionCode?: string
+  onEndSession?: () => void
+  ending?: boolean
 }
 
-export default function TeacherShell({ manifest, embed, classroomState, sessionCode }: Props) {
+export default function TeacherShell({ manifest, embed, classroomState, sessionCode, onEndSession, ending }: Props) {
   const [modalStudent, setModalStudent] = useState<string | null>(null)
   const [expandedStep, setExpandedStep] = useState<number | null>(null)
   const [rightTab, setRightTab] = useState<RightTab>('questions')
@@ -65,8 +67,8 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
     })
   }, [setSearchParams])
 
-  // Self-fetch classroom state via SSE when not provided as prop
-  const { state: streamState, snapshots } = useTeacherStream(sessionCode || '')
+  // Self-fetch classroom state via polling when not provided as prop
+  const { state: streamState, snapshots } = useTeacherPolling(sessionCode || '')
 
   // Replay state management
   const [replayState, setReplayState] = useState<ClassroomState | null>(null)
@@ -206,7 +208,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
   if (!state || students.length === 0) {
     return (
       <div className="teacher-root">
-        {!embed && <Band manifest={manifest} total={0} sessionCode={sessionCode} />}
+        {!embed && <Band manifest={manifest} total={0} sessionCode={sessionCode} onEndSession={onEndSession} ending={ending} />}
         <div className="empty-state">
           <div className="empty-icon">👥</div>
           <h2>等待学生加入…</h2>
@@ -220,7 +222,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
   return (
     <div className="teacher-root">
       {/* ═══ BAND ═══ */}
-      {!embed && <Band manifest={manifest} total={total} sessionCode={sessionCode} />}
+      {!embed && <Band manifest={manifest} total={total} sessionCode={sessionCode} onEndSession={onEndSession} ending={ending} />}
 
       {/* ═══ REPLAY BANNER ═══ */}
       {!isLive && seekTimestamp && (

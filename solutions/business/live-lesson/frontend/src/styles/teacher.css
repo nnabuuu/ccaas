@@ -51,6 +51,10 @@
 .band-self { font-size: 10px; font-weight: 600; color: var(--ai); background: var(--ai-soft); padding: 2px 8px; border-radius: 3px; letter-spacing: .3px }
 .band-class { font-size: 12px; color: var(--t2); padding-left: 12px; border-left: 1px solid var(--border-strong); margin-left: 2px }
 .band-right { margin-left: auto; display: flex; align-items: center; gap: 16px }
+.band-end-btn { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 5px; border: 1px solid var(--border-strong); background: transparent; color: var(--t2); cursor: pointer; transition: all .15s; font-family: inherit }
+.band-end-btn:hover { border-color: var(--red); color: var(--red) }
+.band-end-btn.confirming { border-color: var(--red); background: var(--red); color: #fff }
+.band-end-btn:disabled { opacity: .5; cursor: wait }
 .band-live { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--green) }
 .band-live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green-dot); animation: pulse-dot 2s infinite }
 @keyframes pulse-dot { 0%, 100% { opacity: 1 } 50% { opacity: .4 } }

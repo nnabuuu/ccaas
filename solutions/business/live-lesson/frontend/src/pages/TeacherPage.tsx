@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
-import { useSessionLookup, useTeacherStream } from '../hooks/useClassroom'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useSessionLookup, useTeacherPolling } from '../hooks/useClassroom'
 import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
 import TeacherShell from '../components/teacher/TeacherShell'
@@ -56,14 +56,28 @@ export default function TeacherPage() {
 function TeacherPageWithSession({ manifest, sessionCode, sessionStatus: initialStatus, embed }: {
   manifest: ReadingManifest; lessonId?: string; sessionCode: string; sessionStatus: string; embed: boolean
 }) {
-  const { state } = useTeacherStream(sessionCode)
+  const { state } = useTeacherPolling(sessionCode)
+  const navigate = useNavigate()
   const [started, setStarted] = useState(initialStatus === 'active')
   const [starting, setStarting] = useState(false)
+  const [ending, setEnding] = useState(false)
+
+  const handleEndSession = useCallback(async () => {
+    setEnding(true)
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${sessionCode}/end`, { method: 'POST' })
+      if (!res.ok) throw new Error('结束失败')
+      navigate('/sessions')
+    } catch {
+      setEnding(false)
+      alert('结束课堂失败，请重试')
+    }
+  }, [sessionCode, navigate])
 
   const sessionStatus = state?.sessionStatus
 
   if (started || sessionStatus === 'active') {
-    return <TeacherShell manifest={manifest} sessionCode={sessionCode} embed={embed} />
+    return <TeacherShell manifest={manifest} sessionCode={sessionCode} embed={embed} onEndSession={handleEndSession} ending={ending} />
   }
 
   return (
