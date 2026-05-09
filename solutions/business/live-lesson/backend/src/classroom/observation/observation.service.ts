@@ -3,56 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ObservationEvent } from '../../entities/observation-event.entity';
-import type { ObservationDef } from '../../schemas';
-
-/** Narrowed ObservationDef with all LLM-pipeline fields required */
-type ObservationIndicator = {
-  [K in 'id' | 'type' | 'label' | 'description']-?: NonNullable<ObservationDef[K]>;
-};
-
-interface StudentEvent {
-  id: string;
-  timestamp: number;
-  updatedAt: number;
-  anchors: string[];
-  gist: string;
-  quote: string | null;
-  source: 'llm' | 'system';
-  systemType?: string;
-  data?: Record<string, unknown>;
-}
-
-interface StudentLog {
-  studentId: string;
-  studentName: string;
-  events: StudentEvent[];
-  systemMetrics: {
-    messageCount: number;
-    lastActiveAt: number;
-    exerciseCorrectRate: number;
-    currentStep: string;
-  };
-}
-
-type StudentObsStatus = 'active' | 'struggling' | 'stuck' | 'idle' | 'cruising';
-
-interface Alert {
-  timestamp: number;
-  studentName: string;
-  studentId: string;
-  severity: 'info' | 'warn' | 'urgent';
-  message: string;
-  indicatorId: string | null;
-}
-
-interface IndicatorStats {
-  indicatorId: string;
-  label: string;
-  type: 'knowledge' | 'misconception';
-  studentCount: number;
-  latestGist: string;
-  updatedAt: number;
-}
+import type { IndicatorDef, StudentEvent, StudentLog, StudentObsStatus, Alert, IndicatorStats } from '../../schemas/classroom/observation';
 
 interface ObserverLlmOutput {
   action: 'skip' | 'update' | 'append';
@@ -76,8 +27,8 @@ export class ObservationService {
 
   /** sessionId → studentId → StudentLog */
   private studentLogs = new Map<string, Map<string, StudentLog>>();
-  /** sessionId → ObservationIndicator[] */
-  private indicatorSets = new Map<string, ObservationIndicator[]>();
+  /** sessionId → IndicatorDef[] */
+  private indicatorSets = new Map<string, IndicatorDef[]>();
 
   constructor(
     @InjectRepository(ObservationEvent)
@@ -87,7 +38,7 @@ export class ObservationService {
 
   // ── Lifecycle ──
 
-  initSession(sessionId: string, indicators: ObservationIndicator[]): void {
+  initSession(sessionId: string, indicators: IndicatorDef[]): void {
     this.indicatorSets.set(sessionId, indicators);
     if (!this.studentLogs.has(sessionId)) {
       this.studentLogs.set(sessionId, new Map());
@@ -258,7 +209,7 @@ export class ObservationService {
     return logs.get(studentId) ?? null;
   }
 
-  getIndicators(sessionId: string): ObservationIndicator[] {
+  getIndicators(sessionId: string): IndicatorDef[] {
     return this.indicatorSets.get(sessionId) || [];
   }
 
@@ -422,7 +373,7 @@ export class ObservationService {
   }
 
   private async callObserverLlm(
-    indicators: ObservationIndicator[],
+    indicators: IndicatorDef[],
     existingEvents: StudentEvent[],
     latestTurn: { student: string; ai: string },
   ): Promise<ObserverLlmOutput | null> {

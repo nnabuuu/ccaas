@@ -13,7 +13,7 @@ import type {
   MapObserveData,
   MatrixObserveData,
   DiscussObserveData,
-} from './observe.types';
+} from '../schemas/classroom/observe-data';
 
 @Injectable()
 export class ObserveService {

@@ -1,15 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import type { DiscussCluster } from '../../schemas/manifest.schema';
-
-export interface ClassifyResult {
-  clusterId: string;
-  confidence: 'high' | 'medium' | 'low';
-  evidenceSpan: string;
-  eventType: 'new_signal' | 'reinforcing' | 'state_change';
-  isHighlight: boolean;
-  highlightGist?: string;
-}
+import type { ClassifyResult } from '../../schemas/classroom/clustering';
 
 @Injectable()
 export class ClusterClassifier {

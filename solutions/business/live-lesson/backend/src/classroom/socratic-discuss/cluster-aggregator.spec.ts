@@ -1,5 +1,5 @@
 import { ClusterAggregator } from './cluster-aggregator';
-import type { ClassifyResult } from './cluster-classifier';
+import type { ClassifyResult } from '../../schemas/classroom/clustering';
 
 function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
   return {

@@ -1,24 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ClassifyResult } from './cluster-classifier';
-
-export interface ObservationState {
-  studentId: string;
-  studentName: string;
-  clusterId: string;
-  status: 'active' | 'resolved';
-  evidenceSpans: string[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface ClusterStats {
-  clusterId: string;
-  observationCount: number;
-  uniqueStudents: number;
-  activeCount: number;
-  resolvedCount: number;
-  observations: ObservationState[];
-}
+import type { ObservationState, ClusterStats, ClassifyResult } from '../../schemas/classroom/clustering';
 
 @Injectable()
 export class ClusterAggregator {

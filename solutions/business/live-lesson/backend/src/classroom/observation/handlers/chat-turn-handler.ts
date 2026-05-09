@@ -1,13 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ObserverHandler } from '@kedge-agentic/observer-engine';
 import type { ObserverEvent, HandlerContext, HandlerResult } from '@kedge-agentic/observer-engine';
-
-interface IndicatorDef {
-  id: string;
-  type: 'knowledge' | 'misconception';
-  label: string;
-  description: string;
-}
+import type { IndicatorDef } from '../../../schemas/classroom/observation';
 
 interface LlmOutput {
   action: 'skip' | 'update' | 'append';

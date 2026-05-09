@@ -47,3 +47,6 @@ export {
 } from './observation.schema';
 
 export { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve } from './observation-resolver';
+
+// Classroom response types
+export * from './classroom';

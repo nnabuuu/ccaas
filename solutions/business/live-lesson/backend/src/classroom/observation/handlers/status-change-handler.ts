@@ -1,21 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ObserverHandler } from '@kedge-agentic/observer-engine';
 import type { ObserverEvent, HandlerContext, HandlerResult, Observation } from '@kedge-agentic/observer-engine';
+import type { StudentObsStatus, IndicatorDef } from '../../../schemas/classroom/observation';
 
-type StudentObsStatus = 'active' | 'struggling' | 'stuck' | 'idle' | 'cruising';
 type LlmEligibleStatus = 'active' | 'struggling' | 'stuck' | 'cruising';
 
 interface LlmStatusOutput {
   status: LlmEligibleStatus;
   summary: string;
   alertMessage: string | null;
-}
-
-interface IndicatorDef {
-  id: string;
-  type: 'knowledge' | 'misconception';
-  label: string;
-  description: string;
 }
 
 const IDLE_THRESHOLD_MS = 180_000;
