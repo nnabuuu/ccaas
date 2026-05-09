@@ -142,6 +142,7 @@ server {
 | POST | `/api/classroom/:code/personal-touch` | Personal touch feedback `{ studentId, step }` |
 | GET | `/api/classroom/:code/bonus/:bonusStep/exercise` | Bonus exercise spec |
 | POST | `/api/classroom/:code/bonus/:bonusStep/check` | Check bonus answer `{ studentId, data }` |
+| POST | `/api/classroom/:code/translate` | Translate text `{ studentId, text, step, sourceContext, phase? }` → `{ translation }` |
 
 ## Classroom State API (`GET /api/classroom/:code/state`)
 
