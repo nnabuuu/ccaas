@@ -50,6 +50,19 @@ export class ClassroomController {
     return this.classroomService.batchCheckSessions(ids, body.status);
   }
 
+  @Get('sessions')
+  listSessions(
+    @Query('status') status?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
+    const valid = ['waiting', 'active', 'ended'] as const;
+    const filtered = valid.find(v => v === status);
+    const limit = Math.min(Math.max(parseInt(limitStr || '50', 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(offsetStr || '0', 10) || 0, 0);
+    return this.classroomService.listSessions(filtered, limit, offset);
+  }
+
   @Get('sessions/:code')
   getSession(@Param('code') code: string) {
     return this.classroomService.getSessionInfo(validateCodeOrId(code));

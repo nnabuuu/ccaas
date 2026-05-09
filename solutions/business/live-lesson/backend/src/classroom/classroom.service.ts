@@ -1,4 +1,6 @@
 import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, OnModuleDestroy } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
@@ -20,6 +22,13 @@ import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
+import type {
+  CreateSessionResponse, SessionInfoResponse, StartSessionResponse,
+  EndSessionResponse, BatchCheckItem, SetStepResponse, NotifyResponse,
+  SessionListItem, SessionListResponse,
+  ClassroomStateResponse, ChatMessageResponse, SnapshotEntry,
+} from '../schemas/classroom';
+import type { SessionStatus } from '../schemas/classroom/session';
 
 const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
@@ -41,6 +50,7 @@ export class ClassroomService implements OnModuleDestroy {
   }
 
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly configService: ConfigService,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
@@ -67,7 +77,7 @@ export class ClassroomService implements OnModuleDestroy {
 
   // ── Session lifecycle ──
 
-  async createSession(lessonId: string) {
+  async createSession(lessonId: string): Promise<CreateSessionResponse> {
     for (let attempt = 0; attempt < 10; attempt++) {
       const code = this.generateCode();
       try {
@@ -112,9 +122,15 @@ export class ClassroomService implements OnModuleDestroy {
     return session;
   }
 
-  async getSessionInfo(code: string) {
+  private sessionInfoKey(code: string) { return `session-info:${code}`; }
+
+  async getSessionInfo(code: string): Promise<SessionInfoResponse> {
+    const key = this.sessionInfoKey(code);
+    const cached = await this.cache.get<Awaited<ReturnType<ClassroomService['getSessionInfo']>>>(key);
+    if (cached) return cached;
+
     const session = await this.resolveSession(code);
-    return {
+    const result = {
       sessionId: session.id,
       code: session.code,
       lessonId: session.lessonId,
@@ -122,9 +138,11 @@ export class ClassroomService implements OnModuleDestroy {
       startedAt: session.startedAt,
       createdAt: session.createdAt,
     };
+    await this.cache.set(key, result);
+    return result;
   }
 
-  async batchCheckSessions(sessionIds: string[], statusFilter?: 'waiting' | 'active') {
+  async batchCheckSessions(sessionIds: string[], statusFilter?: 'waiting' | 'active'): Promise<BatchCheckItem[]> {
     if (!sessionIds.length) return [];
 
     const SESSION_TTL_MS = 60 * 60 * 1000; // 60 min
@@ -154,7 +172,61 @@ export class ClassroomService implements OnModuleDestroy {
     }));
   }
 
-  async startSession(code: string) {
+  async listSessions(status?: SessionStatus, limit = 50, offset = 0): Promise<SessionListResponse> {
+    const where: Record<string, unknown> = {};
+    if (status) where.status = status;
+
+    const [sessions, total] = await this.sessionRepo.findAndCount({
+      where,
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    if (!sessions.length) return { items: [], total };
+
+    const sessionIds = sessions.map(s => s.id);
+
+    // Batch fetch lesson titles
+    const lessonIds = [...new Set(sessions.map(s => s.lessonId))];
+    const lessons = await this.lessonRepo.find({ where: { id: In(lessonIds) } });
+    const titleMap = new Map(lessons.map(l => [l.id, l.title]));
+
+    // Batch count students per session
+    const studentCounts: Array<{ sessionId: string; count: string }> = await this.studentRepo
+      .createQueryBuilder('s')
+      .select('s.sessionId', 'sessionId')
+      .addSelect('COUNT(*)', 'count')
+      .where('s.sessionId IN (:...ids)', { ids: sessionIds })
+      .groupBy('s.sessionId')
+      .getRawMany();
+    const countMap = new Map(studentCounts.map(r => [r.sessionId, Number(r.count)]));
+
+    const now = Date.now();
+    const items: SessionListItem[] = sessions.map(s => {
+      let duration: number | null = null;
+      if (s.startedAt) {
+        const end = s.endedAt ? new Date(s.endedAt).getTime() : now;
+        duration = Math.round((end - new Date(s.startedAt).getTime()) / 1000);
+      }
+      return {
+        sessionId: s.id,
+        code: s.code,
+        lessonId: s.lessonId,
+        lessonTitle: titleMap.get(s.lessonId) || s.lessonId,
+        status: s.status,
+        currentStep: s.currentStep ?? 0,
+        studentCount: countMap.get(s.id) || 0,
+        duration,
+        createdAt: s.createdAt,
+        startedAt: s.startedAt ?? null,
+        endedAt: s.endedAt ?? null,
+      };
+    });
+
+    return { items, total };
+  }
+
+  async startSession(code: string): Promise<StartSessionResponse> {
     const session = await this.resolveSession(code);
     if (session.status === 'ended') {
       throw new BadRequestException('Session has ended');
@@ -165,6 +237,7 @@ export class ClassroomService implements OnModuleDestroy {
     session.status = 'active';
     session.startedAt = new Date();
     await this.sessionRepo.save(session);
+    await this.cache.del(this.sessionInfoKey(code));
 
     this.initObservation(session.id, session.lessonId).catch(e =>
       this.logger.warn(`Observation init failed: ${e}`),
@@ -175,7 +248,7 @@ export class ClassroomService implements OnModuleDestroy {
     return { ok: true, status: 'active', startedAt: session.startedAt };
   }
 
-  async endSession(code: string) {
+  async endSession(code: string): Promise<EndSessionResponse> {
     const session = await this.resolveSession(code);
     if (session.status === 'ended') {
       return { ok: true, status: 'ended' };
@@ -183,6 +256,7 @@ export class ClassroomService implements OnModuleDestroy {
     session.status = 'ended';
     session.endedAt = new Date();
     await this.sessionRepo.save(session);
+    await this.cache.del(this.sessionInfoKey(code));
 
     // Flush any pending debounced broadcast, then send final state immediately
     const pending = this.broadcastTimers.get(session.id);
@@ -210,7 +284,7 @@ export class ClassroomService implements OnModuleDestroy {
 
   // ── State aggregation ──
 
-  async getState(sessionId: string, currentStep?: number) {
+  async getState(sessionId: string, currentStep?: number): Promise<ClassroomStateResponse> {
     const students = await this.studentRepo.find({
       where: { sessionId },
       order: { joinedAt: 'ASC' },
@@ -314,6 +388,9 @@ export class ClassroomService implements OnModuleDestroy {
     return {
       sessionStatus: session?.status ?? 'active',
       currentStep: stepToCheck,
+      activeNotifications: Array.from(
+        (this.activeNotificationsMap.get(sessionId) ?? new Map()).values(),
+      ),
       students: students.map(s => {
         const subs = subsByStudent.get(s.id) || {};
         const durations = studentDurations.get(s.id) || {};
@@ -410,11 +487,11 @@ export class ClassroomService implements OnModuleDestroy {
     sessionId: string,
     studentId: string,
     threadId?: string,
-  ): Promise<Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>>> {
+  ): Promise<Record<string, ChatMessageResponse[]>> {
     const where: { sessionId: string; studentId: string; threadId?: string } = { sessionId, studentId };
     if (threadId) where.threadId = threadId;
     const messages = await this.chatMessageRepo.find({ where, order: { seq: 'ASC' } });
-    const grouped: Record<string, Array<{ role: string; content: string; seq: number; createdAt: string }>> = {};
+    const grouped: Record<string, ChatMessageResponse[]> = {};
     for (const m of messages) {
       if (!grouped[m.threadId]) grouped[m.threadId] = [];
       grouped[m.threadId].push({
@@ -484,10 +561,7 @@ export class ClassroomService implements OnModuleDestroy {
     this.subscribers.get(sessionId)!.add(res);
 
     this.getState(sessionId).then(state => {
-      const activeNotifications = Array.from(
-        (this.activeNotificationsMap.get(sessionId) ?? new Map()).values(),
-      );
-      res.write(`data: ${JSON.stringify({ ...state, activeNotifications })}\n\n`);
+      res.write(`data: ${JSON.stringify(state)}\n\n`);
     }).catch(e => {
       this.logger.error(`Failed to send initial SSE state: ${e}`);
     });
@@ -512,7 +586,7 @@ export class ClassroomService implements OnModuleDestroy {
 
   // ── Teacher control ──
 
-  async setStep(sessionId: string, step: number) {
+  async setStep(sessionId: string, step: number): Promise<SetStepResponse> {
     const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
     if (session) {
       session.currentStep = step;
@@ -523,7 +597,7 @@ export class ClassroomService implements OnModuleDestroy {
     return { ok: true, currentStep: step };
   }
 
-  notify(sessionId: string, message: string, type?: string) {
+  notify(sessionId: string, message: string, type?: string): NotifyResponse {
     const notifyType = type || 'general';
     const id = `${notifyType}::${message}`;
 
@@ -616,7 +690,7 @@ export class ClassroomService implements OnModuleDestroy {
 
   // ── Snapshots ──
 
-  private maybePersistSnapshot(sessionId: string, state: Record<string, unknown>): void {
+  private maybePersistSnapshot(sessionId: string, state: ClassroomStateResponse): void {
     const now = Date.now();
     const last = this.lastSnapshotAt.get(sessionId) || 0;
     if (now - last < this.SNAPSHOT_THROTTLE_MS) return;
@@ -630,12 +704,12 @@ export class ClassroomService implements OnModuleDestroy {
     ).catch(e => this.logger.warn(`Snapshot persist failed: ${e}`));
   }
 
-  async getSnapshots(sessionId: string): Promise<Array<{ capturedAt: string; state: Record<string, unknown> }>> {
+  async getSnapshots(sessionId: string): Promise<SnapshotEntry[]> {
     const rows = await this.snapshotRepo.find({
       where: { sessionId },
       order: { capturedAt: 'ASC' },
     });
-    return rows.reduce<Array<{ capturedAt: string; state: Record<string, unknown> }>>((acc, r) => {
+    return rows.reduce<SnapshotEntry[]>((acc, r) => {
       try {
         acc.push({
           capturedAt: r.capturedAt instanceof Date ? r.capturedAt.toISOString() : String(r.capturedAt),

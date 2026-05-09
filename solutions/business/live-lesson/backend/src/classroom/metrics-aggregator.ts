@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Student } from '../entities/student.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import type { TaskMap, ResolvedObserve, ObserveSurface } from '../schemas';
+import type { StepMetrics, HealthCards } from '../schemas/classroom';
 
 export type { TaskMap };
 
@@ -22,8 +23,8 @@ export class MetricsAggregator {
     manifest: any,
     taskMap: TaskMap,
     resolvedObserves?: Record<number, ResolvedObserve>,
-  ): Record<number, Record<string, any>> {
-    const stepMetrics: Record<number, Record<string, any>> = {};
+  ): Record<number, StepMetrics> {
+    const stepMetrics: Record<number, StepMetrics> = {};
     const readingSteps: any[] = manifest?.readingSteps || [];
 
     for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
@@ -264,12 +265,7 @@ export class MetricsAggregator {
     studentStatuses: Map<string, string>,
     questions: AiQuestion[],
     maxTask: number,
-  ): {
-    furthest: { step: number; count: number };
-    median: { step: number };
-    stuck: { count: number; location: string };
-    aiTotal: { rounds: number; people: number };
-  } {
+  ): HealthCards {
     // Furthest: highest task any student has reached
     const studentTasks: number[] = [];
     for (const s of students) {

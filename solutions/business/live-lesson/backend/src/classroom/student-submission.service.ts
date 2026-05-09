@@ -10,6 +10,7 @@ import { GradingService } from './exercise/grading.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
+import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentSnapshotResponse, StudentProgressResponse } from '../schemas/classroom';
 
 @Injectable()
 export class StudentSubmissionService {
@@ -29,7 +30,7 @@ export class StudentSubmissionService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async join(session: ClassroomSession, name: string) {
+  async join(session: ClassroomSession, name: string): Promise<JoinResponse> {
     const existing = await this.studentRepo.findOne({
       where: { sessionId: session.id, name },
     });
@@ -59,7 +60,7 @@ export class StudentSubmissionService {
     return { studentId: saved.id, name: saved.name, lessonId: session.lessonId, _broadcast: true };
   }
 
-  async submit(session: ClassroomSession, studentId: string, step: number, data: Record<string, unknown>) {
+  async submit(session: ClassroomSession, studentId: string, step: number, data: Record<string, unknown>): Promise<SubmitResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -169,7 +170,7 @@ export class StudentSubmissionService {
     await this.studentRepo.save(student);
   }
 
-  async getProgress(session: ClassroomSession, studentId: string) {
+  async getProgress(session: ClassroomSession, studentId: string): Promise<StudentProgressResponse | null> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -208,7 +209,7 @@ export class StudentSubmissionService {
     return { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
   }
 
-  async getSnapshot(session: ClassroomSession, studentId: string) {
+  async getSnapshot(session: ClassroomSession, studentId: string): Promise<StudentSnapshotResponse | null> {
     const progress = await this.getProgress(session, studentId);
     if (!progress) return null;
 
@@ -226,7 +227,7 @@ export class StudentSubmissionService {
     return { progress, submissions: submissionMap };
   }
 
-  async getSubmission(session: ClassroomSession, studentId: string, step: number) {
+  async getSubmission(session: ClassroomSession, studentId: string, step: number): Promise<SubmissionResponse | null> {
     const sub = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId, step, phase: 'exercise' },
     });

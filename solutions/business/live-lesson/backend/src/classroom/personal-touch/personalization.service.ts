@@ -12,6 +12,7 @@ import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../
 import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
+import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
 
 @Injectable()
 export class PersonalizationService {
@@ -33,7 +34,7 @@ export class PersonalizationService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async getPersonalTouch(session: ClassroomSession, studentId: string) {
+  async getPersonalTouch(session: ClassroomSession, studentId: string): Promise<PersonalTouchResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -94,7 +95,8 @@ export class PersonalizationService {
       : Infinity;
     const bonusUnlocked = elapsedMin <= BONUS_TIME_LIMIT_MIN;
 
-    return { strategies, tier, aiComment, bonusUnlocked };
+    const { label, labelEn, tone } = tier;
+    return { strategies, tier: { label, labelEn, tone }, aiComment, bonusUnlocked };
   }
 
   async getBonusExercise(session: ClassroomSession, bonusStep: number) {
@@ -132,7 +134,7 @@ export class PersonalizationService {
     studentId: string,
     bonusStep: number,
     data: Record<string, unknown>,
-  ) {
+  ): Promise<CheckResultResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });

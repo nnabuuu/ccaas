@@ -7,6 +7,7 @@ import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
 import { sanitizeAnswerKey, seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
+import type { CheckResultResponse } from '../../schemas/classroom';
 
 @Injectable()
 export class ExerciseService {
@@ -58,7 +59,7 @@ export class ExerciseService {
     studentId: string,
     step: number,
     data: Record<string, unknown>,
-  ): Promise<{ type: string; allCorrect: boolean; items: Array<Record<string, unknown>> }> {
+  ): Promise<CheckResultResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });

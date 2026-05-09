@@ -435,4 +435,136 @@ describe('ObserveService', () => {
       expect(r.students[0].conversation[1].role).toBe('ai');
     });
   });
+
+  // ── computeMatrixObserve ──
+
+  describe('computeMatrixObserve', () => {
+    const STEP = 5;
+    const MATRIX_KEY = {
+      answers: [
+        { rowIdx: 0, place: 'Demo Row', isDemo: true, practice: 'demo', reason: 'demo reason' },
+        { rowIdx: 1, place: 'Row 1', whatPrompt: 'What happened?', paraRef: [1, 2] },
+        { rowIdx: 2, place: 'Row 2', whatPrompt: 'What next?' },
+      ],
+    };
+
+    function makeMatrixSub(
+      studentId: string, sessionId: string, step: number,
+      rows: Array<Record<string, string>>,
+      cellQualities?: Record<string, { whatQ: number; whyQ: number }>,
+    ): Submission {
+      const s = new Submission();
+      s.studentId = studentId; s.sessionId = sessionId; s.step = step; s.lessonId = 'L1';
+      s.dataJson = { rows };
+      s.scoreJson = cellQualities ? { cellQualities } : null;
+      return s;
+    }
+
+    it('empty class → stats zero', () => {
+      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      expect(r.stats).toEqual({
+        totalStudents: 0, submitted: 0, avgCompletion: 0,
+        avgQuality: 0, whatAvg: 0, whyAvg: 0, needAttention: 0,
+      });
+      expect(r.rows).toHaveLength(2); // only practice rows
+      expect(r.students).toEqual([]);
+      expect(r.patterns).toEqual([]);
+    });
+
+    it('filters out demo rows from practice rows', () => {
+      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      expect(r.rows.every(row => row.id !== '0')).toBe(true);
+      expect(r.rows[0].id).toBe('1');
+      expect(r.rows[1].id).toBe('2');
+    });
+
+    it('row concept uses whatPrompt when available, falls back to place', () => {
+      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      expect(r.rows[0].concept).toBe('What happened?');
+    });
+
+    it('1 student with full responses → stats and completion', () => {
+      const sA = makeStudent('s1', { id: 'mx-a', name: 'Alice' });
+      const subs = buildSubsMap(
+        makeMatrixSub('mx-a', 's1', STEP, [
+          { practice: 'demo', reason: 'demo' },    // row 0 (demo, skipped)
+          { practice: 'my what 1', reason: 'my why 1' }, // row 1
+          { practice: 'my what 2', reason: 'my why 2' }, // row 2
+        ], {
+          '1': { whatQ: 3, whyQ: 2 },
+          '2': { whatQ: 2, whyQ: 1 },
+        }),
+      );
+      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      expect(r.stats.submitted).toBe(1);
+      expect(r.stats.avgCompletion).toBe(100); // 4/4 cells filled
+      expect(r.stats.avgQuality).toBeGreaterThan(0);
+      expect(r.students[0].completion.pct).toBe(100);
+      expect(r.students[0].responses['1'].what).toBe('my what 1');
+      expect(r.students[0].responses['1'].whatQ).toBe(3);
+    });
+
+    it('student with low quality → needAttention and keyInsight', () => {
+      const sA = makeStudent('s1', { id: 'mx-low', name: 'Low' });
+      const subs = buildSubsMap(
+        makeMatrixSub('mx-low', 's1', STEP, [
+          {},                              // demo
+          { practice: 'x', reason: '' },   // minimal what, no why
+          { practice: '', reason: '' },    // empty
+        ]),
+      );
+      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      expect(r.stats.needAttention).toBeGreaterThanOrEqual(1);
+      expect(r.students[0].keyInsights.length).toBeGreaterThan(0);
+    });
+
+    it('student with empty rows → completion < 50% insight', () => {
+      const sA = makeStudent('s1', { id: 'mx-emp', name: 'Empty' });
+      const subs = buildSubsMap(
+        makeMatrixSub('mx-emp', 's1', STEP, [
+          {},
+          { practice: '', reason: '' },
+          { practice: '', reason: '' },
+        ]),
+      );
+      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      expect(r.students[0].completion.pct).toBe(0);
+      expect(r.students[0].keyInsights).toContain('完成度低于50%');
+    });
+
+    it('pattern: why_blank when ≥2 students have ≥30% why empty', () => {
+      // 2 practice rows → 1 empty why = 50% ≥ 30%
+      const students = ['mx-wb1', 'mx-wb2'].map(id => makeStudent('s1', { id, name: id }));
+      const subs = buildSubsMap(
+        ...students.map(s => makeMatrixSub(s.id, 's1', STEP, [
+          {},
+          { practice: 'filled', reason: '' },   // why empty
+          { practice: 'filled', reason: 'ok' },  // why filled
+        ])),
+      );
+      const r = service.computeMatrixObserve(students, subs, STEP, MATRIX_KEY);
+      const whyBlank = r.patterns.find(p => p.id === 'why_blank');
+      expect(whyBlank).toBeDefined();
+      expect(whyBlank!.count).toBe(2);
+    });
+
+    it('no pattern when only 1 student has why blank', () => {
+      const sA = makeStudent('s1', { id: 'mx-solo', name: 'Solo' });
+      const subs = buildSubsMap(
+        makeMatrixSub('mx-solo', 's1', STEP, [
+          {},
+          { practice: 'filled', reason: '' },
+          { practice: 'filled', reason: '' },
+        ]),
+      );
+      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      expect(r.patterns.find(p => p.id === 'why_blank')).toBeUndefined();
+    });
+
+    it('per-row paraRef is formatted as comma-separated string', () => {
+      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      expect(r.rows[0].paraRef).toBe('1, 2');
+      expect(r.rows[1].paraRef).toBeUndefined();
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import { Module, Logger, OnModuleInit } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule, getRepositoryToken } from '@nestjs/typeorm';
 import { DiscoveryModule, DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
 import { Student } from '../entities/student.entity';
@@ -61,6 +62,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
 
 @Module({
   imports: [
+    CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
     TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot, Lesson, ObservationRecord, ObserverEventRecord]),
   ],

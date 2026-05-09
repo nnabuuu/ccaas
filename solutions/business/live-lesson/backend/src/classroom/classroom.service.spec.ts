@@ -22,6 +22,7 @@ import { MetricsAggregator } from './metrics-aggregator';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
@@ -204,6 +205,7 @@ describe('ClassroomService — persistence', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -429,6 +431,7 @@ describe('ClassroomService — extended coverage', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -1272,6 +1275,38 @@ describe('ClassroomService — extended coverage', () => {
       const student = await studentRepo.findOne({ where: { id: sid } });
       expect(student!.currentTask).toBe(1);
       expect(student!.currentPhase).toBe('completed');
+    });
+  });
+
+  // ── getState() includes activeNotifications ──
+
+  describe('getState() activeNotifications', () => {
+    it('should return empty activeNotifications when none set', async () => {
+      const created = await service.createSession('full-lesson');
+      const state = await service.getState(created.sessionId);
+      expect(state.activeNotifications).toEqual([]);
+    });
+
+    it('should return activeNotifications after notify()', async () => {
+      const created = await service.createSession('full-lesson');
+      service.notify(created.sessionId, '注意词汇', 'vocab');
+      service.notify(created.sessionId, '时间提醒', 'time');
+
+      const state = await service.getState(created.sessionId);
+      expect(state.activeNotifications).toHaveLength(2);
+      expect(state.activeNotifications.map((n: any) => n.message).sort()).toEqual(['时间提醒', '注意词汇']);
+      expect(state.activeNotifications[0]).toHaveProperty('id');
+      expect(state.activeNotifications[0]).toHaveProperty('notifyType');
+      expect(state.activeNotifications[0]).toHaveProperty('timestamp');
+    });
+
+    it('should remove notification after toggle (notify same message twice)', async () => {
+      const created = await service.createSession('full-lesson');
+      service.notify(created.sessionId, '提示一', 'hint');
+      service.notify(created.sessionId, '提示一', 'hint'); // toggle off
+
+      const state = await service.getState(created.sessionId);
+      expect(state.activeNotifications).toEqual([]);
     });
   });
 
@@ -3045,6 +3080,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -3199,6 +3235,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -3522,6 +3559,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -3768,6 +3806,7 @@ describe('ClassroomService — snapshots', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -3934,6 +3973,7 @@ describe('StudentSubmissionService — getSubmission', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -4042,6 +4082,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -4328,6 +4369,7 @@ describe('StudentSubmissionService — getSnapshot', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -4505,6 +4547,7 @@ describe('Submission phase separation — cross-module', () => {
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
@@ -4723,5 +4766,210 @@ describe('Submission phase separation — cross-module', () => {
     // Task 2 metrics also unaffected
     const task2After = stateAfter.stepMetrics[2];
     expect(task2After.avgScore).toBe(stateBefore.stepMetrics[2].avgScore);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// REST polling scenarios — service-level
+// ════════════════════════════════════════════════════════════════════
+
+describe('REST polling scenarios — student', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        CacheModule.register(),
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'test-lesson',
+        title: 'Test Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(TEST_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('S1: new session → getSessionInfo → status=waiting', async () => {
+    const created = await service.createSession('test-lesson');
+    const info = await service.getSessionInfo(created.code);
+    expect(info.status).toBe('waiting');
+    expect(info.code).toBe(created.code);
+    expect(info.lessonId).toBe('test-lesson');
+    expect(info.sessionId).toBe(created.sessionId);
+  });
+
+  it('S2: startSession → getSessionInfo → status=active', async () => {
+    const created = await service.createSession('test-lesson');
+    await service.startSession(created.code);
+    const info = await service.getSessionInfo(created.code);
+    expect(info.status).toBe('active');
+    expect(info.startedAt).toBeDefined();
+  });
+
+  it('S3: endSession → getSessionInfo → status=ended', async () => {
+    const created = await service.createSession('test-lesson');
+    await service.startSession(created.code);
+    await service.endSession(created.code);
+    const info = await service.getSessionInfo(created.code);
+    expect(info.status).toBe('ended');
+  });
+});
+
+describe('REST polling scenarios — teacher getState', () => {
+  let module: TestingModule;
+  let service: ClassroomService;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let lessonRepo: Repository<Lesson>;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [
+        CacheModule.register(),
+        ConfigModule.forRoot({ isGlobal: true }),
+        TypeOrmModule.forRoot({
+          type: 'better-sqlite3',
+          database: ':memory:',
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          synchronize: true,
+          logging: false,
+        }),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+      ],
+      providers: [
+        ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+      ],
+    }).compile();
+
+    service = module.get(ClassroomService);
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    lessonRepo = module.get(getRepositoryToken(Lesson));
+
+    await lessonRepo.save(
+      lessonRepo.create({
+        id: 'test-lesson',
+        title: 'Test Lesson',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(TEST_MANIFEST),
+      }),
+    );
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('T1: empty classroom → getState → students=[], activeNotifications=[]', async () => {
+    const created = await service.createSession('test-lesson');
+    const state = await service.getState(created.sessionId);
+    expect(state.students).toEqual([]);
+    expect(state.activeNotifications).toEqual([]);
+  });
+
+  it('T2: join 1 student → getState → students.length=1', async () => {
+    const created = await service.createSession('test-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await submissionSvc.join(session!, '学生A');
+    const state = await service.getState(created.sessionId);
+    expect(state.students).toHaveLength(1);
+    expect(state.students[0].name).toBe('学生A');
+  });
+
+  it('T3: submit → getState → submissions 有数据, stepMetrics 更新', async () => {
+    const created = await service.createSession('test-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, '学生B');
+    await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
+
+    const state = await service.getState(created.sessionId);
+    const student = state.students.find(s => s.id === studentId);
+    expect(student!.submissions[1]).toBeDefined();
+    expect(student!.submissions[1].score.total).toBe(100);
+    expect(state.stepMetrics[1]).toBeDefined();
+    expect(state.stepMetrics[1].completedCount).toBe(1);
+  });
+
+  it('T4: updatePhase → getState → currentTask/currentPhase 变化', async () => {
+    const created = await service.createSession('test-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    const { studentId } = await submissionSvc.join(session!, '学生C');
+
+    // Initial state
+    let state = await service.getState(created.sessionId);
+    expect(state.students[0].currentTask).toBe(1);
+    expect(state.students[0].currentPhase).toBe('listen');
+
+    // Advance phase
+    await submissionSvc.updatePhase(session!, studentId, 1, 'practice');
+    state = await service.getState(created.sessionId);
+    expect(state.students[0].currentPhase).toBe('practice');
+  });
+
+  it('T5: notify → getState → activeNotifications.length=1', async () => {
+    const created = await service.createSession('test-lesson');
+    await service.startSession(created.code);
+    await service.notify(created.sessionId, '注意听讲', 'general');
+
+    const state = await service.getState(created.sessionId);
+    expect(state.activeNotifications).toHaveLength(1);
+    expect(state.activeNotifications[0].message).toBe('注意听讲');
+  });
+
+  it('T6: notify toggle → getState → activeNotifications=[]', async () => {
+    const created = await service.createSession('test-lesson');
+    await service.startSession(created.code);
+    await service.notify(created.sessionId, '提示信息', 'hint');
+    await service.notify(created.sessionId, '提示信息', 'hint'); // toggle off
+
+    const state = await service.getState(created.sessionId);
+    expect(state.activeNotifications).toHaveLength(0);
+  });
+
+  it('T7: multi-student → getState → metrics.total 正确', async () => {
+    const created = await service.createSession('test-lesson');
+    const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+    await submissionSvc.join(session!, '学生1');
+    await submissionSvc.join(session!, '学生2');
+    await submissionSvc.join(session!, '学生3');
+
+    const state = await service.getState(created.sessionId);
+    expect(state.students).toHaveLength(3);
+    expect(state.metrics.total).toBe(3);
   });
 });
