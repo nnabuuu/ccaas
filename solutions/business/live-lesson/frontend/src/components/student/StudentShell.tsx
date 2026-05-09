@@ -7,6 +7,7 @@ import { enrichExerciseFromSpec } from './exercise/enrich-exercise'
 import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
 import AiPanel from './ai-ask/AiPanel'
+import TranslateButton from './TranslateButton'
 
 interface Props {
   manifest: ReadingManifest
@@ -234,6 +235,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             onToggle={() => setTextbookOpen(o => !o)}
             enableMath={manifest.enableMath}
           />
+          <TranslateButton taskId={taskId || 1} phase={currentPhase} />
           <AiPanel
             taskId={taskId || 1}
             taskName={task?.name}

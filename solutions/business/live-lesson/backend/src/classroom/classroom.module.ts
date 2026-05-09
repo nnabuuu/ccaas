@@ -46,6 +46,10 @@ import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { AiAskService } from './ai-ask/ai-ask.service';
 import { AiAskController } from './ai-ask/ai-ask.controller';
 
+// ── Translate component ──
+import { TranslateService } from './translate/translate.service';
+import { TranslateController } from './translate/translate.controller';
+
 // ── Personal Touch component ──
 import { PersonalizationService } from './personal-touch/personalization.service';
 import { PersonalTouchController } from './personal-touch/personal-touch.controller';
@@ -71,6 +75,7 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
     ExerciseController,
     DiscussController,
     AiAskController,
+    TranslateController,
     PersonalTouchController,
   ],
   providers: [
@@ -82,6 +87,8 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
     DiscussService, ClusterClassifier, ClusterAggregator,
     // AI Ask
     AiAskService,
+    // Translate
+    TranslateService,
     // Personal Touch
     PersonalizationService,
     // Observation

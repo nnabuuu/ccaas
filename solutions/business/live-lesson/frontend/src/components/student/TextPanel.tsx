@@ -77,7 +77,7 @@ export default function TextPanel({ title, paragraphs, focusIds, lessonId, showR
   }
 
   return (
-    <div className="stu-text-area stu-text-overlay">
+    <div className="stu-text-area stu-text-overlay" data-translate-ctx="text-panel">
       <div className="stu-text-inner">
         <div className="stu-text-hd">
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--teal)', flex: 1 }}>Text · {title}</span>

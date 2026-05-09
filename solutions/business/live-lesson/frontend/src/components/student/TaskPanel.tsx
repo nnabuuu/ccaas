@@ -337,7 +337,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
   const title = articleTitle || 'Untitled Lesson'
 
   return (
-    <div className="stu-left-col">
+    <div className="stu-left-col" data-translate-ctx="task-panel">
       {screen === 'intro' && (
         <div className="stu-task-inner" style={{ paddingTop: 32 }}>
           <div style={{ marginBottom: 20 }}>

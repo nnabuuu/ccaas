@@ -20,6 +20,7 @@ import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-en
 import { buildTaskMap } from './task-map.utils';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { TranslateService } from './translate/translate.service';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
 import type {
@@ -68,6 +69,7 @@ export class ClassroomService implements OnModuleDestroy {
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
     private readonly coachingService: CoachingService,
+    private readonly translateService: TranslateService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -276,6 +278,7 @@ export class ClassroomService implements OnModuleDestroy {
     this.engine.clearSessionMeta(session.id);
     this.clusterAggregator.cleanupSession(session.id);
     this.coachingService.cleanupSession(session.id);
+    this.translateService.clearSession(session.id);
     this.observeRegistryCache.delete(session.lessonId);
 
     this.logger.log(`Session ended: ${code}`);

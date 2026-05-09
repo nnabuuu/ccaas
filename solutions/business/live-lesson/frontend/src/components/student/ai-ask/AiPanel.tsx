@@ -104,7 +104,7 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
 
       {/* Floating panel */}
       {open && (
-        <div className="stu-ai-panel">
+        <div className="stu-ai-panel" data-translate-ctx="ai-chat">
           {/* Header */}
           <div className="stu-ai-hd">
             <div className="stu-ai-avatar" />

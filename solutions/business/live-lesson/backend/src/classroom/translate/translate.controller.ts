@@ -1,0 +1,23 @@
+import { Controller, Post, Param, Body } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { ClassroomService } from '../classroom.service';
+import { TranslateService } from './translate.service';
+import { TranslateDto } from './dto/translate.dto';
+import { validateCode } from '../validate-code';
+
+@ApiTags('classroom')
+@Controller('classroom')
+export class TranslateController {
+  constructor(
+    private readonly classroomService: ClassroomService,
+    private readonly translateService: TranslateService,
+  ) {}
+
+  @Post(':code/translate')
+  async translate(@Param('code') code: string, @Body() dto: TranslateDto) {
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
+    return this.translateService.translate(
+      session, dto.studentId, dto.text, dto.step, dto.sourceContext, dto.phase,
+    );
+  }
+}

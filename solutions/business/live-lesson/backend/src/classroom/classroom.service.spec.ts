@@ -27,6 +27,7 @@ import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { TranslateService } from './translate/translate.service';
 
 const mockObserverEngine = {
   dispatch: jest.fn().mockResolvedValue(undefined),
@@ -218,7 +219,7 @@ describe('ClassroomService — persistence', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -444,7 +445,7 @@ describe('ClassroomService — extended coverage', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3093,7 +3094,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3248,7 +3249,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3572,7 +3573,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3819,7 +3820,7 @@ describe('ClassroomService — snapshots', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3986,7 +3987,7 @@ describe('StudentSubmissionService — getSubmission', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4095,7 +4096,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4382,7 +4383,7 @@ describe('StudentSubmissionService — getSnapshot', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4560,7 +4561,7 @@ describe('Submission phase separation — cross-module', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4796,7 +4797,7 @@ describe('REST polling scenarios — student', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4870,7 +4871,7 @@ describe('REST polling scenarios — teacher getState', () => {
       ],
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService,
+        ObservationService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
