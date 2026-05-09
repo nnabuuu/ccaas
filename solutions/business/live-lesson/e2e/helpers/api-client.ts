@@ -145,6 +145,17 @@ export async function observeStep(
   return request('GET', `/api/classroom/${code}/steps/${step}/observe/${type}${qs}`);
 }
 
+// ── Session list ──
+
+export async function listSessions(status?: string, limit?: number, offset?: number) {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (limit !== undefined) params.set('limit', String(limit));
+  if (offset !== undefined) params.set('offset', String(offset));
+  const qs = params.toString() ? `?${params}` : '';
+  return request('GET', `/api/classroom/sessions${qs}`);
+}
+
 // ── Chat history ──
 
 export async function getChatHistory(code: string, studentId: string, threadId?: string) {
