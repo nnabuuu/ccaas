@@ -18,34 +18,63 @@ export default function JoinPage() {
   const sessionFromUrl = searchParams.get('session')
   const embed = searchParams.get('embed') === '1'
 
-  const [codeInput, setCodeInput] = useState(sessionFromUrl || '')
+  const [codeInput, setCodeInput] = useState(
+    sessionFromUrl && sessionFromUrl.length <= 6 ? sessionFromUrl.toUpperCase() : '',
+  )
   const [nameInput, setNameInput] = useState('')
-  const [joinStep, setJoinStep] = useState<'code' | 'name'>('code')
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
-  const [autoLookupDone, setAutoLookupDone] = useState(false)
   const [savedSessions, setSavedSessions] = useState<SavedSessionInfo[]>([])
 
   const lookup = useSessionLookup()
+  const doLookup = lookup.lookup
   const sessionCode = lookup.session?.code ?? ''
   const session = useStudentSession(sessionCode)
   const checkedRef = useRef(false)
+  const lastLookedUpCode = useRef('')
+  const lookupGenRef = useRef(0)
+  const nameRef = useRef<HTMLInputElement>(null)
 
-  // Auto-lookup if session code is in URL
+  const codeNormalized = codeInput.trim().toUpperCase()
+  const codeValid = !!(lookup.session && lookup.session.code === codeNormalized)
+
+  // Auto-validate code when 6 chars entered
   useEffect(() => {
-    if (sessionFromUrl && !autoLookupDone) {
-      setAutoLookupDone(true)
-      lookup.lookup(sessionFromUrl).then(s => {
+    const code = codeInput.trim().toUpperCase()
+    let cancelled = false
+    if (code.length === 6 && code !== lastLookedUpCode.current) {
+      lastLookedUpCode.current = code
+      setManifest(null)
+      const gen = ++lookupGenRef.current
+      doLookup(code).then(s => {
+        if (cancelled || gen !== lookupGenRef.current) return
         if (s) {
           fetchManifest(s.lessonId).then(m => {
-            if (m) {
-              setManifest(m)
-              setJoinStep('name')
-            }
+            if (!cancelled && gen === lookupGenRef.current && m) setManifest(m)
           })
         }
       })
     }
-  }, [sessionFromUrl, autoLookupDone, lookup])
+    if (code.length < 6) {
+      lastLookedUpCode.current = ''
+    }
+    return () => { cancelled = true }
+  }, [codeInput, doLookup])
+
+  // Handle full sessionId from URL (> 6 chars)
+  useEffect(() => {
+    if (!sessionFromUrl || sessionFromUrl.length <= 6) return
+    let cancelled = false
+    doLookup(sessionFromUrl).then(s => {
+      if (cancelled || !s) return
+      // Set code input and ref before state update triggers auto-validate
+      lastLookedUpCode.current = s.code
+      setCodeInput(s.code)
+      fetchManifest(s.lessonId).then(m => { if (!cancelled && m) setManifest(m) })
+    })
+    return () => { cancelled = true }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Check localStorage for saved sessions → batch-verify with backend → show restore options
   useEffect(() => {
@@ -55,7 +84,6 @@ export default function JoinPage() {
     const keys = Object.keys(localStorage).filter(k => k.startsWith('classroom:session:'))
     if (keys.length === 0) return
 
-    // Collect sessionIds and local names from localStorage
     const localMap = new Map<string, { key: string; name: string }>()
     for (const key of keys) {
       try {
@@ -77,7 +105,6 @@ export default function JoinPage() {
         if (!resp.ok) return
         const activeSessions: Array<{ sessionId: string; code: string; title: string }> = await resp.json()
 
-        // Clean up ended/missing sessions from localStorage
         const activeIds = new Set(activeSessions.map(s => s.sessionId))
         for (const [id, { key }] of localMap) {
           if (!activeIds.has(id)) localStorage.removeItem(key)
@@ -95,119 +122,96 @@ export default function JoinPage() {
     checkAll()
   }, [sessionFromUrl])
 
-  const handleCodeSubmit = useCallback(async () => {
-    const code = codeInput.trim().toUpperCase()
-    if (code.length !== 6) return
-    const s = await lookup.lookup(code)
-    if (s) {
-      const m = await fetchManifest(s.lessonId)
-      if (m) {
-        setManifest(m)
-        setJoinStep('name')
-      }
-    }
-  }, [codeInput, lookup])
-
   const handleJoin = useCallback(async () => {
-    if (session.joining) return
+    const ls = lookup.session
+    if (session.joining || !codeValid || !ls) return
     const trimmed = nameInput.trim()
     if (!trimmed) return
-    await session.join(trimmed)
-    const sid = lookup.session?.sessionId
-    if (!sid) return
-    // Patch localStorage with sessionId for restore
-    const key = `classroom:session:${lookup.session!.code}`
+    const ok = await session.join(trimmed)
+    if (!ok) return
+    const key = `classroom:session:${ls.code}`
     try {
       const existing = JSON.parse(localStorage.getItem(key) || '{}')
-      localStorage.setItem(key, JSON.stringify({ ...existing, sessionId: sid }))
+      localStorage.setItem(key, JSON.stringify({ ...existing, sessionId: ls.sessionId }))
     } catch { /* noop */ }
-    const qs = embed ? `?embed=1` : ''
-    navigate(`/session/${sid}${qs}`, { replace: true })
-  }, [nameInput, session, navigate, lookup.session, embed])
+    const qs = embed ? '?embed=1' : ''
+    navigate(`/session/${ls.sessionId}${qs}`, { replace: true })
+  }, [nameInput, session, navigate, lookup.session, embed, codeValid])
 
   return (
     <div className="stu-join-overlay">
       <div className="stu-join-card" style={{ width: 360 }}>
-        {joinStep === 'code' && (
+        {savedSessions.length > 0 && (
+          <div className="stu-restore-list">
+            {savedSessions.map(s => (
+              <div key={s.sessionId} className="stu-restore-card">
+                <div className="stu-restore-info">
+                  <span className="stu-restore-title">「{s.title}」</span>
+                  {s.studentName && <span className="stu-restore-name">{s.studentName}</span>}
+                </div>
+                <button
+                  className="stu-btn-sm pri"
+                  onClick={() => {
+                    const qs = embed ? '?embed=1' : ''
+                    navigate(`/session/${s.sessionId}${qs}`, { replace: true })
+                  }}
+                >
+                  继续上次
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="stu-join-title">加入课堂</div>
+        <div className="stu-join-sub">输入课堂码和姓名加入</div>
+        <input
+          className="stu-join-input stu-join-code"
+          placeholder="课堂码..."
+          value={codeInput}
+          onChange={e => setCodeInput(e.target.value.toUpperCase().slice(0, 6))}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && codeNormalized.length === 6) {
+              nameRef.current?.focus()
+            }
+          }}
+          autoFocus
+          maxLength={6}
+        />
+        {codeNormalized.length === 6 && (
           <>
-            {savedSessions.length > 0 && (
-              <div className="stu-restore-list">
-                {savedSessions.map(s => (
-                  <div key={s.sessionId} className="stu-restore-card">
-                    <div className="stu-restore-info">
-                      <span className="stu-restore-title">「{s.title}」</span>
-                      {s.studentName && <span className="stu-restore-name">{s.studentName}</span>}
-                    </div>
-                    <button
-                      className="stu-btn-sm pri"
-                      onClick={() => {
-                        const qs = embed ? '?embed=1' : ''
-                        navigate(`/session/${s.sessionId}${qs}`, { replace: true })
-                      }}
-                    >
-                      继续上次
-                    </button>
-                  </div>
-                ))}
+            {lookup.loading && (
+              <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>验证中...</div>
+            )}
+            {codeValid && (
+              <div style={{ fontSize: 12, color: 'var(--green, #22c55e)', marginBottom: 10 }}>
+                ✓{manifest ? ` 「${manifest.title}」` : ''}
               </div>
             )}
-            <div className="stu-join-title">加入课堂</div>
-            <div className="stu-join-sub">输入老师提供的 6 位课堂码</div>
-            <input
-              className="stu-join-input stu-join-code"
-              placeholder="课堂码..."
-              value={codeInput}
-              onChange={e => setCodeInput(e.target.value.toUpperCase().slice(0, 6))}
-              onKeyDown={e => e.key === 'Enter' && handleCodeSubmit()}
-              autoFocus
-              maxLength={6}
-            />
-            {lookup.error && (
-              <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{lookup.error}</div>
+            {!lookup.loading && lookup.error && (
+              <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>
+                ✗ {lookup.error}
+              </div>
             )}
-            <button
-              className="stu-btn pri"
-              onClick={handleCodeSubmit}
-              disabled={lookup.loading || codeInput.trim().length !== 6}
-            >
-              {lookup.loading ? '验证中...' : '下一步'}
-            </button>
           </>
         )}
-
-        {joinStep === 'name' && manifest && (
-          <>
-            <div className="stu-join-title">{manifest.title}</div>
-            <div className="stu-join-sub">
-              课堂码 <span className="session-code-sm">{sessionCode}</span> · 输入姓名加入
-            </div>
-            <input
-              className="stu-join-input"
-              placeholder="你的姓名..."
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleJoin()}
-              autoFocus
-            />
-            {session.joinError && (
-              <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{session.joinError}</div>
-            )}
-            <button
-              className="stu-btn pri"
-              onClick={handleJoin}
-              disabled={session.joining || !nameInput.trim()}
-            >
-              {session.joining ? '加入中...' : '加入课堂'}
-            </button>
-            <button
-              className="stu-btn ghost"
-              onClick={() => { setJoinStep('code'); setCodeInput('') }}
-              style={{ marginTop: 8 }}
-            >
-              ← 重新输入课堂码
-            </button>
-          </>
+        <input
+          ref={nameRef}
+          className="stu-join-input"
+          placeholder="你的姓名..."
+          value={nameInput}
+          onChange={e => setNameInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleJoin()}
+        />
+        {session.joinError && (
+          <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{session.joinError}</div>
         )}
+        <button
+          className="stu-btn pri"
+          onClick={handleJoin}
+          disabled={session.joining || !codeValid || !nameInput.trim()}
+        >
+          {session.joining ? '加入中...' : '加入课堂'}
+        </button>
       </div>
     </div>
   )

@@ -117,7 +117,7 @@ interface StudentSession {
   name: string | null
   joining: boolean
   joinError: string | null
-  join: (name: string) => Promise<void>
+  join: (name: string) => Promise<boolean>
   submit: (step: number, data: Record<string, any>) => Promise<boolean>
   submittedSteps: Set<number>
   lessonId: string | null
@@ -155,7 +155,7 @@ export function useStudentSession(sessionCode: string): StudentSession {
   const [joinError, setJoinError] = useState<string | null>(null)
   const [submittedSteps, setSubmittedSteps] = useState<Set<number>>(new Set())
 
-  const join = useCallback(async (studentName: string) => {
+  const join = useCallback(async (studentName: string): Promise<boolean> => {
     setJoining(true)
     setJoinError(null)
     try {
@@ -174,8 +174,10 @@ export function useStudentSession(sessionCode: string): StudentSession {
         name: data.name,
         lessonId: data.lessonId,
       }))
+      return true
     } catch (e) {
       setJoinError(e instanceof Error ? e.message : '网络错误，请重试')
+      return false
     } finally {
       setJoining(false)
     }
@@ -455,6 +457,29 @@ export async function checkAnswer(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentId, data }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+// ── Translate API (student) ──
+
+export async function translateText(
+  sessionCode: string,
+  studentId: string,
+  text: string,
+  step: number,
+  sourceContext: string,
+  phase?: string,
+): Promise<{ translation: string } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/translate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, text, step, sourceContext, phase }),
     })
     if (!res.ok) return null
     return await res.json()
