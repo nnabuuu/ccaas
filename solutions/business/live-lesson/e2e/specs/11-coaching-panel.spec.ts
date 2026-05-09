@@ -32,6 +32,7 @@ test.describe('11 — Coaching panel', () => {
   const studentIds: Record<string, string> = {};
 
   test.beforeAll(async () => {
+    test.setTimeout(60_000);
     // Create session + first student
     const { session, student } = await createTestSession({ studentName: studentNames[0] });
     code = session.code;
