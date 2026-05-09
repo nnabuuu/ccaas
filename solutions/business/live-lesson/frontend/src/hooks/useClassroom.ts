@@ -356,38 +356,41 @@ export interface ClassroomState {
   }
 }
 
-// ── Student SSE stream hook (named events) ──
+// ── Student polling hook (replaces SSE) ──
 
-export function useStudentStream(sessionCode: string, initialStatus?: 'waiting' | 'active' | 'ended') {
-  const [currentStep, setCurrentStep] = useState<number | null>(null)
-  const [notification, setNotification] = useState<{ message: string; notifyType: string } | null>(null)
+export function useStudentPolling(sessionCode: string, initialStatus?: 'waiting' | 'active' | 'ended') {
   const [sessionStatus, setSessionStatus] = useState<'waiting' | 'active' | 'ended' | null>(initialStatus ?? null)
 
   useEffect(() => {
+    if (initialStatus) setSessionStatus(initialStatus)
+  }, [initialStatus])
+
+  useEffect(() => {
     if (!sessionCode) return
-    const es = new EventSource(`${API_BASE}/${sessionCode}/stream`)
-    es.onmessage = (event) => {
+    let cancelled = false
+    let timer: ReturnType<typeof setInterval> | null = null
+
+    const poll = async () => {
       try {
-        const data = JSON.parse(event.data)
-        if (data.sessionStatus) setSessionStatus(data.sessionStatus)
+        const res = await fetch(`${API_BASE}/sessions/${sessionCode}`)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (cancelled) return
+        if (data.status) {
+          setSessionStatus(data.status)
+          if (data.status === 'active' || data.status === 'ended') {
+            if (timer) clearInterval(timer)
+          }
+        }
       } catch { /* noop */ }
     }
-    es.addEventListener('step_sync', (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data)
-        setCurrentStep(data.currentStep)
-      } catch { /* noop */ }
-    })
-    es.addEventListener('notification', (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data)
-        setNotification(data)
-      } catch { /* noop */ }
-    })
-    return () => es.close()
+
+    poll()
+    timer = setInterval(poll, 3000)
+    return () => { cancelled = true; if (timer) clearInterval(timer) }
   }, [sessionCode])
 
-  return { currentStep, notification, sessionStatus }
+  return { sessionStatus }
 }
 
 // ── Exercise API hooks (student) ──
@@ -573,18 +576,17 @@ export interface StateSnapshot {
   state: ClassroomState
 }
 
-// ── Teacher stream hook ──
+// ── Teacher polling hook (replaces SSE) ──
 
-export function useTeacherStream(sessionCode: string): {
+export function useTeacherPolling(sessionCode: string): {
   state: ClassroomState | null
   activeNotificationIds: Set<string>
   snapshots: StateSnapshot[]
 } {
   const [state, setState] = useState<ClassroomState | null>(null)
   const [activeNotificationIds, setActiveNotificationIds] = useState<Set<string>>(new Set())
-  const esRef = useRef<EventSource | null>(null)
   const snapshotsRef = useRef<StateSnapshot[]>([])
-  const [, setSnapshotsVersion] = useState(0)
+  const [, bump] = useState(0)
 
   // Fetch historical snapshots on mount
   useEffect(() => {
@@ -596,66 +598,46 @@ export function useTeacherStream(sessionCode: string): {
           timestamp: new Date(h.capturedAt).getTime(),
           state: h.state,
         }))
-        setSnapshotsVersion(v => v + 1)
+        bump(c => c + 1)
       })
       .catch(() => { /* noop */ })
   }, [sessionCode])
 
+  // Poll full state
   useEffect(() => {
     if (!sessionCode) return
-    const es = new EventSource(`${API_BASE}/${sessionCode}/stream`)
-    esRef.current = es
+    let cancelled = false
 
-    es.onmessage = (event) => {
+    const poll = async () => {
       try {
-        const data = JSON.parse(event.data)
+        const res = await fetch(`${API_BASE}/${sessionCode}/state`)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (cancelled) return
         setState(data)
+
+        // Sync activeNotifications
         if (data.activeNotifications) {
           setActiveNotificationIds(new Set(data.activeNotifications.map((n: any) => n.id)))
         }
-        // Accumulate snapshot in memory (dedup + cap)
+
+        // Accumulate snapshot (dedup + cap)
         const ts = Date.now()
-        const lastTs = snapshotsRef.current.length > 0
-          ? snapshotsRef.current[snapshotsRef.current.length - 1].timestamp
-          : 0
-        if (ts > lastTs) {
+        const last = snapshotsRef.current[snapshotsRef.current.length - 1]
+        if (!last || ts - last.timestamp >= 2000) {
           snapshotsRef.current.push({ timestamp: ts, state: data })
           if (snapshotsRef.current.length > 600) {
-            // Thin first half: keep every 2nd entry
             const half = Math.floor(snapshotsRef.current.length / 2)
             snapshotsRef.current = snapshotsRef.current.filter((_, i) => i >= half || i % 2 === 0)
           }
-          setSnapshotsVersion(v => v + 1)
+          bump(c => c + 1)
         }
       } catch { /* noop */ }
     }
 
-    es.addEventListener('notification', (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data)
-        setActiveNotificationIds(prev => new Set(prev).add(data.id))
-      } catch { /* noop */ }
-    })
-
-    es.addEventListener('notification_revoke', (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data)
-        setActiveNotificationIds(prev => {
-          const next = new Set(prev)
-          next.delete(data.id)
-          return next
-        })
-      } catch { /* noop */ }
-    })
-
-    es.onerror = () => {
-      // EventSource auto-reconnects
-    }
-
-    return () => {
-      es.close()
-      esRef.current = null
-    }
+    poll()
+    const timer = setInterval(poll, 3000)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [sessionCode])
 
   return { state, activeNotificationIds, snapshots: snapshotsRef.current }

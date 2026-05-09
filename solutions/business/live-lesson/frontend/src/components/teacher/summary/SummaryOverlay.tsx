@@ -224,11 +224,11 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                 onMouseDown={handleMouseDown}
                 style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
               >
-                {/* Quadrant backgrounds (y is inverted: 0=top=high engagement) */}
-                <rect x="50" y="0" width="50" height="50" fill="var(--green-soft)" opacity="0.5" />
-                <rect x="0" y="0" width="50" height="50" fill="var(--amber-soft)" opacity="0.5" />
-                <rect x="50" y="50" width="50" height="50" fill="var(--blue-soft)" opacity="0.5" />
-                <rect x="0" y="50" width="50" height="50" fill="var(--red-soft)" opacity="0.5" />
+                {/* Quadrant backgrounds (y is inverted: 0=top=high engagement) — double-click to zoom */}
+                <rect x="50" y="0" width="50" height="50" fill="var(--green-soft)" opacity="0.5" style={{ cursor: 'zoom-in' }} onDoubleClick={() => focusQuadrant('star')} />
+                <rect x="0" y="0" width="50" height="50" fill="var(--amber-soft)" opacity="0.5" style={{ cursor: 'zoom-in' }} onDoubleClick={() => focusQuadrant('struggling')} />
+                <rect x="50" y="50" width="50" height="50" fill="var(--blue-soft)" opacity="0.5" style={{ cursor: 'zoom-in' }} onDoubleClick={() => focusQuadrant('coasting')} />
+                <rect x="0" y="50" width="50" height="50" fill="var(--red-soft)" opacity="0.5" style={{ cursor: 'zoom-in' }} onDoubleClick={() => focusQuadrant('at-risk')} />
 
                 {/* Axes */}
                 <line x1="0" y1="50" x2="100" y2="50" stroke="var(--border-strong)" strokeWidth="0.3" />
@@ -272,12 +272,6 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                   )
                 })}
               </svg>
-              {/* Quadrant double-click zones */}
-              <div className="so-quadrant-zones">
-                {QUADRANT_ORDER.map(q => (
-                  <div key={q} className={`so-qzone so-qzone-${q}`} onDoubleClick={() => focusQuadrant(q)} />
-                ))}
-              </div>
             </div>
 
             {/* Interaction hints */}

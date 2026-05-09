@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import '../styles/teacher.css'
 
 const API_BASE = '/api'
@@ -174,6 +174,8 @@ export default function CourseSelectionPage() {
               创建后会生成课堂码，学生可通过{' '}
               <a href="/join" target="_blank" rel="noopener" style={{ color: '#1a5fa0', textDecoration: 'underline' }}>/join</a>
               {' '}加入
+              <span style={{ margin: '0 6px', color: '#d5d3cc' }}>|</span>
+              <Link to="/sessions" style={{ color: '#1a5fa0', textDecoration: 'underline' }}>查看历史课堂</Link>
             </p>
           </div>
         ) : (

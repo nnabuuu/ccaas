@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useSessionLookup, useStudentSession, useStudentStream, fetchSessionSnapshot, type StudentProgress, type CachedSubmission } from '../hooks/useClassroom'
+import { useSessionLookup, useStudentSession, useStudentPolling, fetchSessionSnapshot, type StudentProgress, type CachedSubmission } from '../hooks/useClassroom'
 import { fetchManifest } from '../hooks/useManifest'
 import type { ReadingManifest } from '../types/reading'
 import StudentShell from '../components/student/StudentShell'
@@ -65,7 +65,15 @@ export default function SessionPage() {
   }, [sessionId, navigate, embed, lookup, fetchManifest])
 
   const lookupStatus = lookup.session?.status as 'waiting' | 'active' | 'ended' | undefined
-  const stream = useStudentStream(sessionCode, lookupStatus)
+  const stream = useStudentPolling(sessionCode, lookupStatus)
+
+  // Retry UI when polling hasn't returned status yet
+  const [showRetry, setShowRetry] = useState(false)
+  useEffect(() => {
+    if (stream.sessionStatus !== null) { setShowRetry(false); return }
+    const t = setTimeout(() => setShowRetry(true), 3000)
+    return () => clearTimeout(t)
+  }, [stream.sessionStatus])
 
   if (manifest && sessionCode && session.studentId) {
     if (stream.sessionStatus === 'waiting') {
@@ -106,11 +114,12 @@ export default function SessionPage() {
       )
     }
 
-    // SSE not connected yet
+    // Polling hasn't returned status yet
     return (
       <div className="stu-join-overlay">
         <div className="stu-join-card" style={{ width: 360, textAlign: 'center' }}>
-          <div className="stu-join-title">连接中...</div>
+          <div className="stu-join-title">{showRetry ? '连接失败' : '连接中...'}</div>
+          {showRetry && <button className="stu-join-btn" onClick={() => window.location.reload()} style={{ marginTop: 16 }}>重新连接</button>}
         </div>
       </div>
     )
