@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { DiscoveryModule } from '@nestjs/core';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -13,8 +14,13 @@ import { ExerciseService } from './exercise/exercise.service';
 import { DiscussService } from './socratic-discuss/discuss.service';
 import { AiAskService } from './ai-ask/ai-ask.service';
 import { PersonalizationService } from './personal-touch/personalization.service';
-import { ObservationService } from './observation/observation.service';
-import { ObserveService } from './observe.service';
+import { ObservationQueryService } from './observation/observation-query.service';
+import { ObserveRegistry } from './observe/observe-registry';
+import { McObserveHandler } from './observe/handlers/mc.handler';
+import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
+import { MapObserveHandler } from './observe/handlers/map.handler';
+import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { GradingService } from './exercise/grading.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
@@ -27,7 +33,6 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
-import { ObservationEvent } from '../entities/observation-event.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -127,9 +132,12 @@ const FULL_MANIFEST = {
   ],
 };
 
+import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
+
 const ALL_ENTITIES = [
   Lesson, Student, Submission, ClassroomSession,
-  AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot,
+  AiQuestion, ChatMessage, ClassroomSnapshot,
+  ObservationRecord, ObserverEventRecord,
 ];
 
 describe('Classroom polling — HTTP integration', () => {
@@ -139,6 +147,7 @@ describe('Classroom polling — HTTP integration', () => {
   beforeAll(async () => {
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         CacheModule.register(),
         ConfigModule.forRoot({ isGlobal: true }),
         TypeOrmModule.forRoot({
@@ -154,7 +163,8 @@ describe('Classroom polling — HTTP integration', () => {
       providers: [
         ClassroomService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,
-        ObservationService, ObserveService, GradingService,
+        ObservationQueryService, ObserveRegistry, McObserveHandler, EvidenceObserveHandler,
+        MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
         AiPromptBuilder, MetricsAggregator, ClusterClassifier,
         ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },

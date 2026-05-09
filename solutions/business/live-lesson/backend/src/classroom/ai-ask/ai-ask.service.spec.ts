@@ -5,14 +5,12 @@ import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AiAskService } from './ai-ask.service';
-import { ObservationService } from '../observation/observation.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
-import { ObservationEvent } from '../../entities/observation-event.entity';
 import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
@@ -49,7 +47,6 @@ describe('AiAskService', () => {
   let sessionRepo: Repository<ClassroomSession>;
   let aiQuestionRepo: Repository<AiQuestion>;
   let aiPromptBuilder: AiPromptBuilder;
-  let observationService: ObservationService;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
@@ -58,14 +55,14 @@ describe('AiAskService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot]),
       ],
       providers: [
-        AiAskService, ObservationService, AiPromptBuilder,
+        AiAskService, AiPromptBuilder,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -76,7 +73,6 @@ describe('AiAskService', () => {
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     aiQuestionRepo = module.get(getRepositoryToken(AiQuestion));
     aiPromptBuilder = module.get(AiPromptBuilder);
-    observationService = module.get(ObservationService);
 
     await lessonRepo.save(lessonRepo.create({
       id: 'ask-lesson', title: 'Ask Lesson', subject: 'English', gradeLevel: '7',
@@ -90,6 +86,7 @@ describe('AiAskService', () => {
 
   beforeEach(() => {
     jest.restoreAllMocks();
+    mockObserverEngine.dispatch.mockClear();
   });
 
   let chatMessageRepo: Repository<ChatMessage>;
@@ -119,7 +116,6 @@ describe('AiAskService', () => {
         answer: 'The answer is B because...',
         category: '理解',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const result = await service.aiAsk(session, student.id, 1, 'What is the answer?');
 
@@ -141,7 +137,6 @@ describe('AiAskService', () => {
         answer: 'AI 助教暂时无法回答，请稍后再试。',
         category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const result = await service.aiAsk(session, student.id, 1, 'Hello');
 
@@ -154,7 +149,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'test question');
 
@@ -163,20 +157,22 @@ describe('AiAskService', () => {
       );
     });
 
-    it('calls observeTurn with correct step context', async () => {
+    it('dispatches chat_turn event with correct payload', async () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue('【理解】answer');
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'answer', category: '理解',
       });
-      const observeSpy = jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'Why?');
 
-      expect(observeSpy).toHaveBeenCalledWith(
-        session.id, student.id, student.name,
-        { student: 'Why?', ai: 'answer' },
-        expect.objectContaining({ currentStep: 'step-1' }),
+      expect(mockObserverEngine.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'chat_turn',
+          sessionId: session.id,
+          entityId: student.id,
+          payload: expect.objectContaining({ student: 'Why?', ai: 'answer' }),
+        }),
       );
     });
 
@@ -194,7 +190,6 @@ describe('AiAskService', () => {
         answer: '答案是 B，因为文中提到...',
         category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const messages = [
         { role: 'student', text: 'Why is the answer B?' },
@@ -221,7 +216,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'single-turn reply', category: '理解',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'Hello?', []);
 
@@ -234,7 +228,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: '多轮回复', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const messages = [
         { role: 'student', text: 'First question' },
@@ -261,7 +254,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'single reply', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'solo question');
 
@@ -274,7 +266,6 @@ describe('AiAskService', () => {
     it('returns fallback on callLlmConversation failure (multi-turn)', async () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValue(new Error('timeout'));
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       const result = await service.aiAsk(
         session, student.id, 1, 'test',
@@ -291,7 +282,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'ok', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'q', [
         { role: 'student', text: 'hello' },
@@ -309,17 +299,18 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
-      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'follow-up', [
         { role: 'student', text: 'follow-up' },
       ]);
 
-      expect(addSysEvt).toHaveBeenCalledWith(
-        session.id, student.id, student.name, 'continue_chat_turn',
-        expect.objectContaining({ step: 1, messageCount: 1 }),
-        expect.stringContaining('延伸讨论'),
+      expect(mockObserverEngine.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'continue_chat_turn',
+          sessionId: session.id,
+          entityId: student.id,
+          payload: expect.objectContaining({ step: 1, messageCount: 1 }),
+        }),
       );
     });
 
@@ -329,12 +320,12 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
-      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'solo question');
 
-      expect(addSysEvt).not.toHaveBeenCalled();
+      expect(mockObserverEngine.dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'continue_chat_turn' }),
+      );
     });
 
     it('uses continue-chat prompt (not ask prompt) for multi-turn', async () => {
@@ -343,7 +334,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       await service.aiAsk(session, student.id, 1, 'q', [
         { role: 'student', text: 'hi' },
@@ -361,7 +351,6 @@ describe('AiAskService', () => {
       jest.spyOn(aiPromptBuilder, 'parseCategoryFromResponse').mockReturnValue({
         answer: 'reply', category: '其他',
       });
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
 
       // First round
       await service.aiAsk(session, student.id, 1, 'q1', [

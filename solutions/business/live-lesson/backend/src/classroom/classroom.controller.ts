@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { Response } from 'express';
 import { ClassroomService } from './classroom.service';
 import { StudentSubmissionService } from './student-submission.service';
-import { ObserveService } from './observe.service';
+import { ObserveRegistry } from './observe/observe-registry';
 import { Lesson } from '../entities/lesson.entity';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { JoinDto } from './dto/join.dto';
@@ -32,7 +32,7 @@ export class ClassroomController {
   constructor(
     private readonly classroomService: ClassroomService,
     private readonly studentSubmission: StudentSubmissionService,
-    private readonly observeService: ObserveService,
+    private readonly observeRegistry: ObserveRegistry,
     @InjectRepository(Lesson)
     private readonly lessonRepo: Repository<Lesson>,
   ) {}
@@ -212,11 +212,6 @@ export class ClassroomController {
     if (isNaN(parsedStep) || parsedStep < 1) {
       throw new BadRequestException('step must be a positive number');
     }
-    const validTypes = ['mc', 'evidence', 'map', 'discuss', 'matrix'];
-    if (!validTypes.includes(type)) {
-      throw new BadRequestException(`type must be one of: ${validTypes.join(', ')}`);
-    }
-
     const session = await this.classroomService.resolveSession(validateCode(code));
 
     // Load manifest to get answerKey
@@ -224,34 +219,21 @@ export class ClassroomController {
     const stepIdx = taskMap.taskToStep[parsedStep];
     if (stepIdx == null) throw new NotFoundException('Step not found');
 
-    type StepDef = { idx: number; answerKey?: Record<string, unknown> | null };
+    type StepDef = { idx: number; answerKey?: unknown };
     const readingSteps: StepDef[] = (manifest?.readingSteps as StepDef[]) || [];
     const stepDef = readingSteps.find(s => s.idx === stepIdx);
-    const answerKey = stepDef?.answerKey;
+    const answerKey = (stepDef?.answerKey as import('../schemas/answer-key.schema').AnswerKey) ?? null;
 
-    // Load students and submissions
-    const { students, subsByStudent } = await this.observeService.loadObserveData(session.id);
+    const { students, subsByStudent } = await this.observeRegistry.loadObserveData(session.id);
 
-    switch (type) {
-      case 'mc':
-        return this.observeService.computeMcObserve(
-          students, subsByStudent, stepIdx, answerKey,
-          view === 'first' ? 'first' : 'latest',
-        );
-      case 'evidence':
-        return this.observeService.computeEvidenceObserve(
-          students, subsByStudent, stepIdx, answerKey,
-          view === 'first' ? 'first' : 'latest',
-        );
-      case 'map':
-        return this.observeService.computeMapObserve(students, subsByStudent, stepIdx, answerKey);
-      case 'matrix':
-        return this.observeService.computeMatrixObserve(students, subsByStudent, stepIdx, answerKey);
-      case 'discuss':
-        return this.observeService.computeDiscussObserve(session.id, students, stepIdx);
-      default:
-        throw new BadRequestException('Unknown observe type');
-    }
+    return this.observeRegistry.compute(type, {
+      sessionId: session.id,
+      students,
+      subsByStudent,
+      stepIdx,
+      answerKey,
+      view: view === 'first' ? 'first' : 'latest',
+    });
   }
 
   /** Load manifest helper used by observe endpoint */

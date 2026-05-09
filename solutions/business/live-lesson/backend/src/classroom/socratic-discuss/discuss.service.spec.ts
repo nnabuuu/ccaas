@@ -5,17 +5,16 @@ import { NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DiscussService } from './discuss.service';
-import { ObservationService } from '../observation/observation.service';
+import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
-import { ObservationEvent } from '../../entities/observation-event.entity';
 import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
-import { OBSERVER_ENGINE } from '@kedge-agentic/observer-engine';
+import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engine';
 import { ClusterClassifier } from './cluster-classifier';
 import { ClusterAggregator } from './cluster-aggregator';
 import { CoachingService } from '../coaching.service';
@@ -49,7 +48,7 @@ describe('DiscussService', () => {
   let sessionRepo: Repository<ClassroomSession>;
   let aiQuestionRepo: Repository<AiQuestion>;
   let aiPromptBuilder: AiPromptBuilder;
-  let observationService: ObservationService;
+  let observationQuery: ObservationQueryService;
   let studentSubmissionService: StudentSubmissionService;
 
   beforeAll(async () => {
@@ -59,14 +58,14 @@ describe('DiscussService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        DiscussService, ObservationService, AiPromptBuilder, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService,
+        DiscussService, ObservationQueryService, AiPromptBuilder, ClusterClassifier, ClusterAggregator, CoachingService, GradingService, StudentSubmissionService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -77,7 +76,7 @@ describe('DiscussService', () => {
     sessionRepo = module.get(getRepositoryToken(ClassroomSession));
     aiQuestionRepo = module.get(getRepositoryToken(AiQuestion));
     aiPromptBuilder = module.get(AiPromptBuilder);
-    observationService = module.get(ObservationService);
+    observationQuery = module.get(ObservationQueryService);
     studentSubmissionService = module.get(StudentSubmissionService);
 
     await lessonRepo.save(lessonRepo.create({
@@ -114,8 +113,8 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Good observation!');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('system prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -139,9 +138,8 @@ describe('DiscussService', () => {
         'You got it! [GOAL_REACHED]',
       );
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -154,13 +152,12 @@ describe('DiscussService', () => {
       expect(result.reply).toContain('You got it!');
     });
 
-    it('fires addSystemEvent on goal_reached', async () => {
+    it('fires discuss_complete dispatch on goal_reached', async () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Done [GOAL_REACHED]');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
-      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -168,10 +165,13 @@ describe('DiscussService', () => {
         2, 45,
       );
 
-      expect(addSysEvt).toHaveBeenCalledWith(
-        session.id, student.id, student.name, 'discuss_complete',
-        expect.objectContaining({ completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: 2 }),
-        expect.stringContaining('目标达成'),
+      expect(mockObserverEngine.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'discuss_complete',
+          sessionId: session.id,
+          entityId: student.id,
+          payload: expect.objectContaining({ completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: 2 }),
+        }),
       );
     });
 
@@ -179,8 +179,8 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Reply');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -197,7 +197,7 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockRejectedValue(new Error('LLM down'));
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       const result = await service.aiDiscuss(
         session, student.id, 1,
@@ -220,8 +220,8 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Nice thinking!');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -239,9 +239,8 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Correct! [GOAL_REACHED]');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -258,8 +257,8 @@ describe('DiscussService', () => {
       const { session, student } = await createSessionAndStudent();
       jest.spyOn(aiPromptBuilder, 'callLlmConversation').mockResolvedValue('Tell me more');
       jest.spyOn(aiPromptBuilder, 'buildSocraticPrompt').mockReturnValue('prompt');
-      jest.spyOn(observationService, 'observeTurn').mockResolvedValue(undefined);
-      jest.spyOn(observationService, 'getStudentLog').mockReturnValue(null);
+
+      jest.spyOn(observationQuery, 'getStudentLogs').mockResolvedValue([]);
 
       await service.aiDiscuss(
         session, student.id, 1,
@@ -286,23 +285,24 @@ describe('DiscussService', () => {
   describe('discussComplete', () => {
     it('saves observation event with correct completionType', async () => {
       const { session, student } = await createSessionAndStudent();
-      const addSysEvt = jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
 
       const result = await service.discussComplete(
         session, student.id, 1, 'fallback_rounds', 5, 120,
       );
 
       expect(result.ok).toBe(true);
-      expect(addSysEvt).toHaveBeenCalledWith(
-        session.id, student.id, student.name, 'discuss_complete',
-        expect.objectContaining({ completionType: 'fallback_rounds', method: 'fallback_mc', goalReached: false, roundsUsed: 5 }),
-        expect.any(String),
+      expect(mockObserverEngine.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'discuss_complete',
+          sessionId: session.id,
+          entityId: student.id,
+          payload: expect.objectContaining({ completionType: 'fallback_rounds', method: 'fallback_mc', goalReached: false, roundsUsed: 5 }),
+        }),
       );
     });
 
     it('checks MC correctIndex when mcSelectedIndex provided', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
 
       const result = await service.discussComplete(
         session, student.id, 1, 'fallback_rounds', 5, 120, 2,
@@ -313,7 +313,6 @@ describe('DiscussService', () => {
 
     it('returns mcCorrect false for wrong MC answer', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
 
       const result = await service.discussComplete(
         session, student.id, 1, 'fallback_time', 3, 90, 0,
@@ -324,7 +323,6 @@ describe('DiscussService', () => {
 
     it('calls updatePhase to advance student to takeaway', async () => {
       const { session, student } = await createSessionAndStudent();
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
       const updatePhaseSpy = jest.spyOn(studentSubmissionService, 'updatePhase').mockResolvedValue(undefined as any);
 
       await service.discussComplete(session, student.id, 1, 'goal_reached', 3, 60);
@@ -334,7 +332,6 @@ describe('DiscussService', () => {
 
     it('throws NotFoundException for unknown student', async () => {
       const { session } = await createSessionAndStudent();
-      jest.spyOn(observationService, 'addSystemEvent').mockResolvedValue(undefined);
       await expect(
         service.discussComplete(session, 'nonexistent', 1, 'goal_reached', 2, 30),
       ).rejects.toThrow(NotFoundException);

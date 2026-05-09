@@ -14,7 +14,7 @@ import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
-import { ObservationService } from './observation/observation.service';
+import { ObservationQueryService } from './observation/observation-query.service';
 import { MetricsAggregator } from './metrics-aggregator';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from './task-map.utils';
@@ -65,7 +65,7 @@ export class ClassroomService implements OnModuleDestroy {
     private readonly chatMessageRepo: Repository<ChatMessage>,
     @InjectRepository(ClassroomSnapshot)
     private readonly snapshotRepo: Repository<ClassroomSnapshot>,
-    private readonly observationService: ObservationService,
+    private readonly observationQuery: ObservationQueryService,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
     private readonly coachingService: CoachingService,
@@ -271,9 +271,7 @@ export class ClassroomService implements OnModuleDestroy {
     this.activeNotificationsMap.delete(session.id);
     this.lastSnapshotAt.delete(session.id);
 
-    this.observationService.cleanupSession(session.id).catch(e =>
-      this.logger.warn(`Observation cleanup failed: ${e}`),
-    );
+    this.observationQuery.clearSession(session.id);
 
     this.engine.clearSessionMeta(session.id);
     this.clusterAggregator.cleanupSession(session.id);
@@ -471,10 +469,8 @@ export class ClassroomService implements OnModuleDestroy {
       healthCards,
       questions: questionRecords,
       observation: {
-        logs: this.observationService.getStudentLogs(sessionId),
-        alerts: this.observationService.generateAlerts(sessionId),
-        indicatorStats: this.observationService.computeIndicatorStats(sessionId),
-        indicators: this.observationService.getIndicators(sessionId),
+        ...(await this.observationQuery.getObservationDashboard(sessionId)),
+        indicators: this.observationQuery.getIndicators(sessionId),
       },
       clusterStats,
       coaching: {
@@ -752,7 +748,7 @@ export class ClassroomService implements OnModuleDestroy {
         );
 
       if (indicators.length > 0) {
-        this.observationService.initSession(sessionId, indicators);
+        this.observationQuery.setIndicators(sessionId, indicators);
       }
 
       this.observeRegistryCache.set(lessonId, buildRegistry(manifest));

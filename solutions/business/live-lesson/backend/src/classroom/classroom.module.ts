@@ -7,7 +7,6 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
-import { ObservationEvent } from '../entities/observation-event.entity';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationRecord, ObserverEventRecord } from '@kedge-agentic/observer-engine';
@@ -26,7 +25,12 @@ import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
-import { ObserveService } from './observe.service';
+import { ObserveRegistry } from './observe/observe-registry';
+import { McObserveHandler } from './observe/handlers/mc.handler';
+import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
+import { MapObserveHandler } from './observe/handlers/map.handler';
+import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 
 // ── Exercise component ──
 import { ExerciseService } from './exercise/exercise.service';
@@ -55,7 +59,7 @@ import { PersonalizationService } from './personal-touch/personalization.service
 import { PersonalTouchController } from './personal-touch/personal-touch.controller';
 
 // ── Observation component ──
-import { ObservationService } from './observation/observation.service';
+import { ObservationQueryService } from './observation/observation-query.service';
 import { OpenAiLlmGateway } from './observation/adapters/openai-llm-gateway';
 import { ClassroomNotifySink } from './observation/adapters/classroom-notify-sink';
 import { JoinHandler } from './observation/handlers/join-handler';
@@ -63,12 +67,13 @@ import { ExerciseHandler } from './observation/handlers/exercise-handler';
 import { StepCompleteHandler } from './observation/handlers/step-complete-handler';
 import { ChatTurnHandler } from './observation/handlers/chat-turn-handler';
 import { StatusChangeHandler } from './observation/handlers/status-change-handler';
+import { SystemEventHandler } from './observation/handlers/system-event-handler';
 
 @Module({
   imports: [
     CacheModule.register({ ttl: 10_000 }),
     DiscoveryModule,
-    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationEvent, ClassroomSnapshot, Lesson, ObservationRecord, ObserverEventRecord]),
+    TypeOrmModule.forFeature([Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot, Lesson, ObservationRecord, ObserverEventRecord]),
   ],
   controllers: [
     ClassroomController,
@@ -80,7 +85,9 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
   ],
   providers: [
     // Infra
-    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, ObserveService, CoachingService,
+    ClassroomService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService,
+    // Observe handlers + registry
+    ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler,
     // Exercise
     ExerciseService, GradingService,
     // Socratic Discuss
@@ -92,8 +99,8 @@ import { StatusChangeHandler } from './observation/handlers/status-change-handle
     // Personal Touch
     PersonalizationService,
     // Observation
-    ObservationService, OpenAiLlmGateway, ClassroomNotifySink,
-    JoinHandler, ExerciseHandler, StepCompleteHandler, ChatTurnHandler, StatusChangeHandler,
+    ObservationQueryService, OpenAiLlmGateway, ClassroomNotifySink,
+    JoinHandler, ExerciseHandler, StepCompleteHandler, ChatTurnHandler, StatusChangeHandler, SystemEventHandler,
     {
       provide: OBSERVER_ENGINE,
       useFactory: (

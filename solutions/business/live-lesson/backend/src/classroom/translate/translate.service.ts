@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { ObservationService } from '../observation/observation.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
 /** Simple LRU cache scoped per session */
 class LruCache {
@@ -14,7 +14,6 @@ class LruCache {
   get(key: string): string | undefined {
     const val = this.map.get(key);
     if (val !== undefined) {
-      // Move to end (most recently used)
       this.map.delete(key);
       this.map.set(key, val);
     }
@@ -40,8 +39,8 @@ export class TranslateService {
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    private readonly observationService: ObservationService,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
   async translate(
@@ -80,11 +79,13 @@ export class TranslateService {
 
     cache.set(normalized, translation);
 
-    this.observationService.addSystemEvent(
-      session.id, studentId, student.name, 'translate_request',
-      { step, sourceContext, phase: phase ?? null, textLength: text.length },
-      `翻译请求: "${text.slice(0, 30)}${text.length > 30 ? '...' : ''}"`,
-    ).catch(e => this.logger.warn(`Observation translate_request failed: ${e}`));
+    this.engine.dispatch({
+      type: 'translate_request',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { step, sourceContext, phase: phase ?? null, textLength: text.length },
+    }).catch(e => this.logger.warn(`Observer dispatch translate_request failed: ${e}`));
 
     return { translation };
   }

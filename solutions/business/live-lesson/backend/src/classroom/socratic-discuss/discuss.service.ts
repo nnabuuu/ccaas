@@ -7,7 +7,7 @@ import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { ObservationService } from '../observation/observation.service';
+import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from '../task-map.utils';
@@ -29,7 +29,7 @@ export class DiscussService {
     private readonly aiQuestionRepo: Repository<AiQuestion>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
-    private readonly observationService: ObservationService,
+    private readonly observationQuery: ObservationQueryService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly clusterClassifier: ClusterClassifier,
     private readonly clusterAggregator: ClusterAggregator,
@@ -97,16 +97,6 @@ export class DiscussService {
         session.id, studentId, `discuss:${taskNum}`, messages, reply,
       ).catch(e => this.logger.warn(`persistThread failed: ${e}`));
 
-      const latestSub = await this.submissionRepo.findOne({
-        where: { sessionId: session.id, studentId, phase: 'exercise' },
-        order: { submittedAt: 'DESC' },
-      });
-      await this.observationService.observeTurn(
-        session.id, studentId, student.name,
-        { student: lastStudentMsg, ai: reply },
-        { currentStep: `task-${taskNum}`, exerciseCorrectRate: latestSub?.scoreJson?.total ?? 0, idleSeconds: 0 },
-      ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
-
       // Per-question cluster classification (fire-and-forget — off critical path)
       const stepDefForCluster = manifest
         ? (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx)
@@ -143,11 +133,13 @@ export class DiscussService {
       await this.studentRepo.save(student);
 
       if (goalReached) {
-        await this.observationService.addSystemEvent(
-          session.id, studentId, student.name, 'discuss_complete',
-          { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
-          `讨论完成: 目标达成 (${round} 轮)`,
-        );
+        this.engine.dispatch({
+          type: 'discuss_complete',
+          sessionId: session.id,
+          entityId: studentId,
+          tenantId: session.lessonId,
+          payload: { taskNum, completionType: 'goal_reached', method: 'socratic', goalReached: true, roundsUsed: round, timeUsedSeconds },
+        }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
       }
 
       this.engine.dispatch({
@@ -217,9 +209,12 @@ export class DiscussService {
       }
     }
 
-    await this.observationService.addSystemEvent(
-      session.id, studentId, student.name, 'discuss_complete',
-      {
+    this.engine.dispatch({
+      type: 'discuss_complete',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: {
         taskNum,
         completionType,
         method: completionType === 'goal_reached' ? 'socratic' : 'fallback_mc',
@@ -228,10 +223,7 @@ export class DiscussService {
         timeUsedSeconds,
         ...(mcSelectedIndex !== undefined && { mcSelectedIndex, mcCorrect }),
       },
-      completionType === 'goal_reached'
-        ? `讨论完成: 目标达成 (${roundsUsed} 轮)`
-        : `讨论完成: ${completionType === 'fallback_rounds' ? '轮次用完' : '时间到'}, MC ${mcCorrect ? '正确' : '错误'}`,
-    );
+    }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
 
     await this.studentSubmission.updatePhase(session, studentId, taskNum, 'takeaway');
 
@@ -280,7 +272,8 @@ export class DiscussService {
       where: { sessionId: session.id, studentId, step: stepIdx, phase: 'exercise' },
     });
 
-    const studentLog = this.observationService.getStudentLog(session.id, studentId);
+    const allLogs = await this.observationQuery.getStudentLogs(session.id);
+    const studentLog = allLogs.find(l => l.studentId === studentId) ?? null;
     let priorObservationContext: string | null = null;
     if (studentLog?.events.length) {
       const relevantEvents = studentLog.events

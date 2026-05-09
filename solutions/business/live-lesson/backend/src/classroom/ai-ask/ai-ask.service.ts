@@ -7,7 +7,6 @@ import { AiQuestion } from '../../entities/ai-question.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
-import { ObservationService } from '../observation/observation.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
@@ -24,7 +23,6 @@ export class AiAskService {
     private readonly aiQuestionRepo: Repository<AiQuestion>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
-    private readonly observationService: ObservationService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
@@ -91,23 +89,14 @@ export class AiAskService {
         ]);
       });
 
-      await this.observationService.addSystemEvent(
-        session.id, studentId, student.name, 'continue_chat_turn',
-        { step, messageCount: messages.length },
-        `延伸讨论: step-${step}`,
-      ).catch(e => this.logger.warn(`Observation continue_chat_turn failed: ${e}`));
+      this.engine.dispatch({
+        type: 'continue_chat_turn',
+        sessionId: session.id,
+        entityId: studentId,
+        tenantId: session.lessonId,
+        payload: { step, messageCount: messages.length },
+      }).catch(err => this.logger.error(`Observer dispatch continue_chat_turn failed: ${err}`));
     }
-
-    const latestSub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, phase: 'exercise' },
-      order: { submittedAt: 'DESC' },
-    });
-    const correctRate = latestSub?.scoreJson?.total ?? 0;
-    await this.observationService.observeTurn(
-      session.id, studentId, student.name,
-      { student: question, ai: parsed.answer },
-      { currentStep: `step-${step}`, exerciseCorrectRate: correctRate, idleSeconds: 0 },
-    ).catch(e => this.logger.warn(`Observation observeTurn failed: ${e}`));
 
     this.engine.dispatch({
       type: 'chat_turn',

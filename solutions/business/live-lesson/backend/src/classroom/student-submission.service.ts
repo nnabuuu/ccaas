@@ -5,7 +5,6 @@ import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { Lesson } from '../entities/lesson.entity';
-import { ObservationService } from './observation/observation.service';
 import { GradingService } from './exercise/grading.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
@@ -21,7 +20,6 @@ export class StudentSubmissionService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
-    private readonly observationService: ObservationService,
     private readonly gradingService: GradingService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
@@ -44,10 +42,6 @@ export class StudentSubmissionService {
       name,
     });
     const saved = await this.studentRepo.save(student);
-
-    this.observationService.addSystemEvent(
-      session.id, saved.id, saved.name, 'join', {}, `${saved.name} 加入课堂`,
-    );
 
     this.engine.dispatch({
       type: 'student_join',
@@ -98,12 +92,6 @@ export class StudentSubmissionService {
       const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
       const taskNum = taskMap.stepToTask[step];
 
-      await this.observationService.addSystemEvent(
-        session.id, studentId, student.name, 'exercise_result',
-        { step, score: score?.total ?? null },
-        `提交 Step ${step} 答案${score ? `，得分 ${score.total}%` : ''}`,
-      );
-
       this.engine.dispatch({
         type: 'exercise_result',
         sessionId: session.id,
@@ -114,12 +102,6 @@ export class StudentSubmissionService {
 
       const currentTask = student.currentTask;
       if (taskNum !== undefined && currentTask > taskNum) {
-        await this.observationService.addSystemEvent(
-          session.id, studentId, student.name, 'step_complete',
-          { step, taskNum, nextTask: currentTask },
-          `完成 Task ${taskNum}，进入 Task ${currentTask}`,
-        );
-
         this.engine.dispatch({
           type: 'step_complete',
           sessionId: session.id,
@@ -130,12 +112,6 @@ export class StudentSubmissionService {
       }
 
       const exerciseCorrectRate = score?.total ?? 0;
-      await this.observationService.observeTurn(
-        session.id, studentId, student.name,
-        { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%` },
-        { currentStep: `step-${step}`, exerciseCorrectRate, idleSeconds: 0 },
-      ).catch(e => this.logger.warn(`Observation observeTurn after submit failed: ${e}`));
-
       this.engine.dispatch({
         type: 'chat_turn',
         sessionId: session.id,

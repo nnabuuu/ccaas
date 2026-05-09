@@ -1,11 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { DiscoveryModule } from '@nestjs/core';
 import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ObserveService } from './observe.service';
+import { ObserveRegistry } from './observe/observe-registry';
+import { McObserveHandler } from './observe/handlers/mc.handler';
+import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
+import { MapObserveHandler } from './observe/handlers/map.handler';
+import { MatrixObserveHandler } from './observe/handlers/matrix.handler';
+import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
+import type { AnswerKey } from '../schemas/answer-key.schema';
 
 // ── Factory helpers ──
 
@@ -69,44 +76,55 @@ function buildSubsMap(...subs: Submission[]): Map<string, Record<number, Submiss
 // ── Answer keys ──
 
 const MC_KEY = {
+  type: 'quiz',
   answers: [
-    { correct: 1, options: ['A', 'B', 'C', 'D'], questionText: 'Q1' },
-    { correct: 0, options: ['X', 'Y', 'Z'], questionText: 'Q2' },
+    { questionIdx: 0, correct: 1, options: ['A', 'B', 'C', 'D'], questionText: 'Q1' },
+    { questionIdx: 1, correct: 0, options: ['X', 'Y', 'Z'], questionText: 'Q2' },
   ],
-};
+} as AnswerKey;
 
 const EV_KEY = {
+  type: 'select-evidence',
+  functionOptions: ['cause-effect', 'compare-contrast'],
   sections: [
-    { id: 'sec1', label: 'S1', correctFunction: 'cause-effect' },
-    { id: 'sec2', label: 'S2', correctFunction: 'compare-contrast' },
+    { id: 'sec1', label: 'S1', range: [1], correctFunction: 'cause-effect' },
+    { id: 'sec2', label: 'S2', range: [2], correctFunction: 'compare-contrast' },
   ],
   paragraphTokens: {
     sec1: [
-      { t: 'rain', kind: 'key', paraId: 'sec1', idx: 0 },
-      { t: 'fell', kind: 'neutral', paraId: 'sec1', idx: 1 },
+      { t: 'rain', kind: 'key' },
+      { t: 'fell', kind: 'neutral' },
     ],
-    sec2: [{ t: 'sun', kind: 'key', paraId: 'sec2', idx: 0 }],
+    sec2: [{ t: 'sun', kind: 'key' }],
   },
-};
+} as AnswerKey;
 
 const MAP_KEY = {
+  type: 'map',
+  prompt: 'Place items on the map',
   items: [{ id: 'i1', label: 'I1' }, { id: 'i2', label: 'I2' }],
   expected: { i1: [3, 4] as [number, number], i2: [1, 2] as [number, number] },
   axes: { x: { neg: 'L', pos: 'R', label: 'X' }, y: { neg: 'B', pos: 'T', label: 'Y' } },
-};
+} as AnswerKey;
 
 // ── Tests ──
 
-describe('ObserveService', () => {
+describe('Observe Handlers (via ObserveRegistry)', () => {
   let module: TestingModule;
-  let service: ObserveService;
-  let studentRepo: Repository<Student>;
-  let subRepo: Repository<Submission>;
+  let registry: ObserveRegistry;
   let chatRepo: Repository<ChatMessage>;
+
+  // Direct handler references for tests that call compute directly
+  let mcHandler: McObserveHandler;
+  let evidenceHandler: EvidenceObserveHandler;
+  let mapHandler: MapObserveHandler;
+  let matrixHandler: MatrixObserveHandler;
+  let discussHandler: DiscussObserveHandler;
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
       imports: [
+        DiscoveryModule,
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
@@ -116,67 +134,51 @@ describe('ObserveService', () => {
         }),
         TypeOrmModule.forFeature([Student, Submission, ChatMessage]),
       ],
-      providers: [ObserveService],
+      providers: [
+        ObserveRegistry,
+        McObserveHandler, EvidenceObserveHandler, MapObserveHandler,
+        MatrixObserveHandler, DiscussObserveHandler,
+      ],
     }).compile();
 
-    service = module.get(ObserveService);
-    studentRepo = module.get(getRepositoryToken(Student));
-    subRepo = module.get(getRepositoryToken(Submission));
+    await module.init();
+
+    registry = module.get(ObserveRegistry);
     chatRepo = module.get(getRepositoryToken(ChatMessage));
+
+    mcHandler = module.get(McObserveHandler);
+    evidenceHandler = module.get(EvidenceObserveHandler);
+    mapHandler = module.get(MapObserveHandler);
+    matrixHandler = module.get(MatrixObserveHandler);
+    discussHandler = module.get(DiscussObserveHandler);
   });
 
   afterAll(() => module.close());
 
-  // ── loadObserveData ──
+  // ── Registry ──
 
-  describe('loadObserveData', () => {
-    it('returns students ordered by joinedAt ASC', async () => {
-      const sid = 'load-order';
-      const late = await studentRepo.save(studentRepo.create({
-        sessionId: sid, lessonId: 'L1', name: 'Late', currentTask: 1, currentPhase: 'p',
-      }));
-      await studentRepo.save(studentRepo.create({
-        sessionId: sid, lessonId: 'L1', name: 'Early', currentTask: 1, currentPhase: 'p',
-      }));
-      await studentRepo.query(
-        `UPDATE reading_students SET joined_at = datetime('now', '+1 hour') WHERE id = ?`, [late.id],
-      );
-
-      const { students } = await service.loadObserveData(sid);
-      expect(students).toHaveLength(2);
-      expect(students[0].name).toBe('Early');
-      expect(students[1].name).toBe('Late');
+  describe('ObserveRegistry', () => {
+    it('discovers all 5 handler types', () => {
+      const types = registry.getSupportedTypes().sort();
+      expect(types).toEqual(['discuss', 'evidence', 'map', 'matrix', 'mc']);
     });
 
-    it('builds subsByStudent map: studentId → { [step]: Submission }', async () => {
-      const sid = 'load-map';
-      const s = await studentRepo.save(studentRepo.create({
-        sessionId: sid, lessonId: 'L1', name: 'A', currentTask: 1, currentPhase: 'p',
-      }));
-      await subRepo.save(subRepo.create({
-        sessionId: sid, studentId: s.id, lessonId: 'L1', step: 1,
-        dataJson: { answers: [0] }, scoreJson: { total: 50 },
-      }));
-      await subRepo.save(subRepo.create({
-        sessionId: sid, studentId: s.id, lessonId: 'L1', step: 2,
-        dataJson: { answers: [1] }, scoreJson: { total: 100 },
-      }));
-
-      const { subsByStudent } = await service.loadObserveData(sid);
-      expect(subsByStudent.size).toBe(1);
-      const map = subsByStudent.get(s.id)!;
-      expect(map[1].scoreJson).toEqual({ total: 50 });
-      expect(map[2].scoreJson).toEqual({ total: 100 });
+    it('throws BadRequestException for unknown type', async () => {
+      await expect(
+        registry.compute('unknown', { sessionId: '', students: [], subsByStudent: new Map(), stepIdx: 0, answerKey: null, view: 'latest' }),
+      ).rejects.toThrow('Unknown observe type: unknown');
     });
   });
 
   // ── computeMcObserve ──
 
-  describe('computeMcObserve', () => {
+  describe('McObserveHandler', () => {
     const STEP = 1;
+    const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
+      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MC_KEY, view });
 
     it('empty class → all stats zero', () => {
-      const r = service.computeMcObserve([], new Map(), STEP, MC_KEY);
+      const r = mcHandler.compute(ctx([], new Map()));
       expect(r.stats).toEqual({ totalStudents: 0, submitted: 0, avgScore: 0, perfectCount: 0, zeroCount: 0, avgTime: 0, fastestTime: 0, slowestTime: 0 });
       expect(r.students).toEqual([]);
       expect(r.misconceptions).toEqual([]);
@@ -189,13 +191,13 @@ describe('ObserveService', () => {
         makeMcSub('mc-b', 's1', STEP, [0, 0], 50, { questionTimes: { 0: 15, 1: 15 } }),
         makeMcSub('mc-c', 's1', STEP, [1, 1], 50),
       );
-      const r = service.computeMcObserve([sA, sB, sC], subs, STEP, MC_KEY);
+      const r = mcHandler.compute(ctx([sA, sB, sC], subs));
       expect(r.stats.totalStudents).toBe(3);
       expect(r.stats.submitted).toBe(3);
       expect(r.stats.avgScore).toBeCloseTo(200 / 3);
       expect(r.stats.perfectCount).toBe(1);
       expect(r.stats.zeroCount).toBe(0);
-      expect(r.stats.avgTime).toBe(30); // (30+30)/2, C has no time
+      expect(r.stats.avgTime).toBe(30);
     });
 
     it('question distribution counts and percentages', () => {
@@ -204,19 +206,17 @@ describe('ObserveService', () => {
         makeMcSub('qd-a', 's1', STEP, [1, 0], 100),
         makeMcSub('qd-b', 's1', STEP, [0, 0], 50),
       );
-      const r = service.computeMcObserve([sA, sB], subs, STEP, MC_KEY);
-      // Q1 correct=1: A→1, B→0 → dist[0]=1 dist[1]=1 → correctRate=50%
+      const r = mcHandler.compute(ctx([sA, sB], subs));
       expect(r.questions[0].distribution[0].count).toBe(1);
       expect(r.questions[0].distribution[1].count).toBe(1);
       expect(r.questions[0].correctRate).toBe(50);
-      // Q2 correct=0: both→0 → correctRate=100%
       expect(r.questions[1].correctRate).toBe(100);
     });
 
     it('misconception ≥3 same wrong option; severity=high when ≥5', () => {
       const students = Array.from({ length: 5 }, (_, i) => makeStudent('s1', { id: `mis-${i}`, name: `S${i}` }));
       const subs = buildSubsMap(...students.map(s => makeMcSub(s.id, 's1', STEP, [0, 0], 50)));
-      const r = service.computeMcObserve(students, subs, STEP, MC_KEY);
+      const r = mcHandler.compute(ctx(students, subs));
       const mc = r.misconceptions.find(m => m.id === 'q0_opt0');
       expect(mc).toBeDefined();
       expect(mc!.count).toBe(5);
@@ -226,14 +226,14 @@ describe('ObserveService', () => {
     it('misconception severity=medium when count 3–4', () => {
       const students = Array.from({ length: 3 }, (_, i) => makeStudent('s1', { id: `med-${i}`, name: `S${i}` }));
       const subs = buildSubsMap(...students.map(s => makeMcSub(s.id, 's1', STEP, [0, 0], 50)));
-      const r = service.computeMcObserve(students, subs, STEP, MC_KEY);
+      const r = mcHandler.compute(ctx(students, subs));
       const mc = r.misconceptions.find(m => m.id === 'q0_opt0');
       expect(mc!.severity).toBe('medium');
     });
 
     it('student with no submission → skipped in results', () => {
       const sA = makeStudent('s1', { id: 'no-sub', name: 'NoSub' });
-      const r = service.computeMcObserve([sA], new Map(), STEP, MC_KEY);
+      const r = mcHandler.compute(ctx([sA], new Map()));
       expect(r.stats.totalStudents).toBe(1);
       expect(r.stats.submitted).toBe(0);
       expect(r.students).toHaveLength(0);
@@ -244,7 +244,7 @@ describe('ObserveService', () => {
       const subs = buildSubsMap(
         makeMcSub('chg', 's1', STEP, [1, 0], 100, { answerChanges: [{ qi: 0, from: 0, to: 1 }] }),
       );
-      const r = service.computeMcObserve([sA], subs, STEP, MC_KEY);
+      const r = mcHandler.compute(ctx([sA], subs));
       expect(r.students[0].answers['0'].changed).toBe(true);
       expect(r.students[0].answers['1'].changed).toBe(false);
     });
@@ -254,7 +254,7 @@ describe('ObserveService', () => {
       const subs = buildSubsMap(
         makeMcSub('ins', 's1', STEP, [0, 1], 0, { answerChanges: [{ qi: 0, from: 1, to: 0 }] }),
       );
-      const r = service.computeMcObserve([sA], subs, STEP, MC_KEY);
+      const r = mcHandler.compute(ctx([sA], subs));
       expect(r.students[0].keyInsights).toContain('2 题答错');
       expect(r.students[0].keyInsights).toContain('改过 1 次答案');
     });
@@ -262,11 +262,13 @@ describe('ObserveService', () => {
 
   // ── computeEvidenceObserve ──
 
-  describe('computeEvidenceObserve', () => {
+  describe('EvidenceObserveHandler', () => {
     const STEP = 2;
+    const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
+      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: EV_KEY, view });
 
     it('empty class → stats zero', () => {
-      const r = service.computeEvidenceObserve([], new Map(), STEP, EV_KEY);
+      const r = evidenceHandler.compute(ctx([], new Map()));
       expect(r.stats.totalStudents).toBe(0);
       expect(r.stats.allDone).toBe(0);
       expect(r.stats.funcWrongCount).toBe(0);
@@ -281,17 +283,17 @@ describe('ObserveService', () => {
         }),
         makeEvSub('ev-b', 's1', STEP, {
           sec1: { function: 'cause-effect', picked: [] },
-          sec2: { function: 'cause-effect', picked: [] }, // wrong func
+          sec2: { function: 'cause-effect', picked: [] },
         }),
       );
-      const r = service.computeEvidenceObserve([sA, sB], subs, STEP, EV_KEY);
+      const r = evidenceHandler.compute(ctx([sA, sB], subs));
       expect(r.stats.allDone).toBe(2);
-      expect(r.sections[0].funcCorrectRate).toBe(100); // sec1: 2/2
-      expect(r.sections[1].funcCorrectRate).toBe(50);  // sec2: 1/2
-      expect(r.stats.evidenceHitRate).toBe(50); // A:2/2 + B:0/2 = 2/4
+      expect(r.sections[0].funcCorrectRate).toBe(100);
+      expect(r.sections[1].funcCorrectRate).toBe(50);
+      expect(r.stats.evidenceHitRate).toBe(50);
     });
 
-    it('funcWrongCount counts unique students not sections (M3 regression)', () => {
+    it('funcWrongCount counts unique students not sections', () => {
       const sA = makeStudent('s1', { id: 'fw', name: 'A' });
       const subs = buildSubsMap(
         makeEvSub('fw', 's1', STEP, {
@@ -299,8 +301,8 @@ describe('ObserveService', () => {
           sec2: { function: 'WRONG', picked: [] },
         }),
       );
-      const r = service.computeEvidenceObserve([sA], subs, STEP, EV_KEY);
-      expect(r.stats.funcWrongCount).toBe(1); // 1 student, not 2 sections
+      const r = evidenceHandler.compute(ctx([sA], subs));
+      expect(r.stats.funcWrongCount).toBe(1);
     });
 
     it('student missing a section → completed:false', () => {
@@ -308,7 +310,7 @@ describe('ObserveService', () => {
       const subs = buildSubsMap(
         makeEvSub('miss', 's1', STEP, { sec1: { function: 'cause-effect', picked: ['sec1:0'] } }),
       );
-      const r = service.computeEvidenceObserve([sA], subs, STEP, EV_KEY);
+      const r = evidenceHandler.compute(ctx([sA], subs));
       expect(r.students[0].completed).toBe(false);
       expect(r.stats.perfectAll).toBe(0);
     });
@@ -321,31 +323,30 @@ describe('ObserveService', () => {
           sec2: { function: 'compare-contrast', picked: ['sec2:0'] },
         }),
       );
-      const r = service.computeEvidenceObserve([sA], subs, STEP, EV_KEY);
+      const r = evidenceHandler.compute(ctx([sA], subs));
       expect(r.students[0].sections['sec1'].missed).toContain('rain');
     });
   });
 
   // ── computeMapObserve ──
 
-  describe('computeMapObserve', () => {
+  describe('MapObserveHandler', () => {
     const STEP = 3;
+    const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>) =>
+      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MAP_KEY, view: 'latest' as const });
 
     it('empty class → stats zero', () => {
-      const r = service.computeMapObserve([], new Map(), STEP, MAP_KEY);
+      const r = mapHandler.compute(ctx([], new Map()));
       expect(r.stats).toEqual({ totalStudents: 0, submitted: 0, avgDeviation: 0, reasonedCount: 0 });
     });
 
     it('2 students → avgDeviation = Euclidean distance average', () => {
-      // expected: i1=[3,4], i2=[1,2]
-      // A: i1@[0,0]→dev=5, i2@[1,2]→dev=0 → avg=2.5
-      // B: i1@[3,4]→dev=0, i2@[4,6]→dev=5 → avg=2.5
       const [sA, sB] = ['mp-a', 'mp-b'].map(id => makeStudent('s1', { id, name: id }));
       const subs = buildSubsMap(
         makeMapSub('mp-a', 's1', STEP, { i1: [0, 0], i2: [1, 2] }),
         makeMapSub('mp-b', 's1', STEP, { i1: [3, 4], i2: [4, 6] }),
       );
-      const r = service.computeMapObserve([sA, sB], subs, STEP, MAP_KEY);
+      const r = mapHandler.compute(ctx([sA, sB], subs));
       expect(r.stats.submitted).toBe(2);
       expect(r.stats.avgDeviation).toBeCloseTo(2.5);
       expect(r.students[0].avgDeviation).toBeCloseTo(2.5);
@@ -354,22 +355,22 @@ describe('ObserveService', () => {
     it('student with reasoning → reasoned:true, counted in reasonedCount', () => {
       const sA = makeStudent('s1', { id: 'rsn', name: 'A' });
       const subs = buildSubsMap(makeMapSub('rsn', 's1', STEP, { i1: [3, 4] }, { i1: 'Because it fits' }));
-      const r = service.computeMapObserve([sA], subs, STEP, MAP_KEY);
+      const r = mapHandler.compute(ctx([sA], subs));
       expect(r.students[0].reasoned).toBe(true);
       expect(r.stats.reasonedCount).toBe(1);
     });
 
     it('deviation > 2 → keyInsight "偏差较大"', () => {
       const sA = makeStudent('s1', { id: 'dev', name: 'A' });
-      const subs = buildSubsMap(makeMapSub('dev', 's1', STEP, { i1: [0, 0] })); // dev=5
-      const r = service.computeMapObserve([sA], subs, STEP, MAP_KEY);
+      const subs = buildSubsMap(makeMapSub('dev', 's1', STEP, { i1: [0, 0] }));
+      const r = mapHandler.compute(ctx([sA], subs));
       expect(r.students[0].keyInsights).toContain('偏差较大');
     });
   });
 
   // ── computeDiscussObserve ──
 
-  describe('computeDiscussObserve', () => {
+  describe('DiscussObserveHandler', () => {
     const STEP = 4;
 
     async function insertChat(
@@ -382,9 +383,12 @@ describe('ObserveService', () => {
       );
     }
 
+    const ctx = (sessionId: string, students: Student[]) =>
+      ({ sessionId, students, subsByStudent: new Map(), stepIdx: STEP, answerKey: null, view: 'latest' as const });
+
     it('no messages → stats zero, empty students', async () => {
       const sA = makeStudent('empty-d', { id: 'disc-none', name: 'A' });
-      const r = await service.computeDiscussObserve('empty-d', [sA], STEP);
+      const r = await discussHandler.compute(ctx('empty-d', [sA]));
       expect(r.stats.discussedCount).toBe(0);
       expect(r.stats.goalReachedCount).toBe(0);
       expect(r.students).toEqual([]);
@@ -396,18 +400,16 @@ describe('ObserveService', () => {
       const t0 = new Date('2024-01-01T10:00:00Z');
       const t1 = new Date('2024-01-01T10:00:30Z');
       const t2 = new Date('2024-01-01T10:01:00Z');
-      // A: 2 user msgs → rounds=2, time=60s
       await insertChat(sid, 'disc-a', STEP, 'user', 'Hello', 1, t0);
       await insertChat(sid, 'disc-a', STEP, 'assistant', 'Hi', 2, t1);
       await insertChat(sid, 'disc-a', STEP, 'user', 'More', 3, t2);
-      // B: 1 user msg → rounds=1, time=30s
       await insertChat(sid, 'disc-b', STEP, 'user', 'Hey', 1, t0);
       await insertChat(sid, 'disc-b', STEP, 'assistant', 'What', 2, t1);
 
-      const r = await service.computeDiscussObserve(sid, [sA, sB], STEP);
+      const r = await discussHandler.compute(ctx(sid, [sA, sB]));
       expect(r.stats.discussedCount).toBe(2);
       expect(r.stats.avgRounds).toBe(1.5);
-      expect(r.stats.avgTime).toBe(45); // (60+30)/2
+      expect(r.stats.avgTime).toBe(45);
     });
 
     it('last message "goal_reached" → goalReached:true', async () => {
@@ -418,7 +420,7 @@ describe('ObserveService', () => {
       await insertChat(sid, 'disc-g', STEP, 'user', 'I think so', 1, t0);
       await insertChat(sid, 'disc-g', STEP, 'assistant', 'Correct! goal_reached', 2, t1);
 
-      const r = await service.computeDiscussObserve(sid, [sA], STEP);
+      const r = await discussHandler.compute(ctx(sid, [sA]));
       expect(r.students[0].goalReached).toBe(true);
       expect(r.stats.goalReachedCount).toBe(1);
     });
@@ -430,7 +432,7 @@ describe('ObserveService', () => {
       await insertChat(sid, 'disc-r', STEP, 'user', 'Hello', 1, t0);
       await insertChat(sid, 'disc-r', STEP, 'assistant', 'Hi', 2, t0);
 
-      const r = await service.computeDiscussObserve(sid, [sA], STEP);
+      const r = await discussHandler.compute(ctx(sid, [sA]));
       expect(r.students[0].conversation[0].role).toBe('student');
       expect(r.students[0].conversation[1].role).toBe('ai');
     });
@@ -438,15 +440,16 @@ describe('ObserveService', () => {
 
   // ── computeMatrixObserve ──
 
-  describe('computeMatrixObserve', () => {
+  describe('MatrixObserveHandler', () => {
     const STEP = 5;
     const MATRIX_KEY = {
+      type: 'matrix',
       answers: [
         { rowIdx: 0, place: 'Demo Row', isDemo: true, practice: 'demo', reason: 'demo reason' },
         { rowIdx: 1, place: 'Row 1', whatPrompt: 'What happened?', paraRef: [1, 2] },
         { rowIdx: 2, place: 'Row 2', whatPrompt: 'What next?' },
       ],
-    };
+    } as AnswerKey;
 
     function makeMatrixSub(
       studentId: string, sessionId: string, step: number,
@@ -460,26 +463,29 @@ describe('ObserveService', () => {
       return s;
     }
 
+    const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>) =>
+      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MATRIX_KEY, view: 'latest' as const });
+
     it('empty class → stats zero', () => {
-      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([], new Map()));
       expect(r.stats).toEqual({
         totalStudents: 0, submitted: 0, avgCompletion: 0,
         avgQuality: 0, whatAvg: 0, whyAvg: 0, needAttention: 0,
       });
-      expect(r.rows).toHaveLength(2); // only practice rows
+      expect(r.rows).toHaveLength(2);
       expect(r.students).toEqual([]);
       expect(r.patterns).toEqual([]);
     });
 
     it('filters out demo rows from practice rows', () => {
-      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([], new Map()));
       expect(r.rows.every(row => row.id !== '0')).toBe(true);
       expect(r.rows[0].id).toBe('1');
       expect(r.rows[1].id).toBe('2');
     });
 
     it('row concept uses whatPrompt when available, falls back to place', () => {
-      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([], new Map()));
       expect(r.rows[0].concept).toBe('What happened?');
     });
 
@@ -487,17 +493,17 @@ describe('ObserveService', () => {
       const sA = makeStudent('s1', { id: 'mx-a', name: 'Alice' });
       const subs = buildSubsMap(
         makeMatrixSub('mx-a', 's1', STEP, [
-          { practice: 'demo', reason: 'demo' },    // row 0 (demo, skipped)
-          { practice: 'my what 1', reason: 'my why 1' }, // row 1
-          { practice: 'my what 2', reason: 'my why 2' }, // row 2
+          { practice: 'demo', reason: 'demo' },
+          { practice: 'my what 1', reason: 'my why 1' },
+          { practice: 'my what 2', reason: 'my why 2' },
         ], {
           '1': { whatQ: 3, whyQ: 2 },
           '2': { whatQ: 2, whyQ: 1 },
         }),
       );
-      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([sA], subs));
       expect(r.stats.submitted).toBe(1);
-      expect(r.stats.avgCompletion).toBe(100); // 4/4 cells filled
+      expect(r.stats.avgCompletion).toBe(100);
       expect(r.stats.avgQuality).toBeGreaterThan(0);
       expect(r.students[0].completion.pct).toBe(100);
       expect(r.students[0].responses['1'].what).toBe('my what 1');
@@ -508,12 +514,12 @@ describe('ObserveService', () => {
       const sA = makeStudent('s1', { id: 'mx-low', name: 'Low' });
       const subs = buildSubsMap(
         makeMatrixSub('mx-low', 's1', STEP, [
-          {},                              // demo
-          { practice: 'x', reason: '' },   // minimal what, no why
-          { practice: '', reason: '' },    // empty
+          {},
+          { practice: 'x', reason: '' },
+          { practice: '', reason: '' },
         ]),
       );
-      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([sA], subs));
       expect(r.stats.needAttention).toBeGreaterThanOrEqual(1);
       expect(r.students[0].keyInsights.length).toBeGreaterThan(0);
     });
@@ -527,22 +533,21 @@ describe('ObserveService', () => {
           { practice: '', reason: '' },
         ]),
       );
-      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([sA], subs));
       expect(r.students[0].completion.pct).toBe(0);
       expect(r.students[0].keyInsights).toContain('完成度低于50%');
     });
 
     it('pattern: why_blank when ≥2 students have ≥30% why empty', () => {
-      // 2 practice rows → 1 empty why = 50% ≥ 30%
       const students = ['mx-wb1', 'mx-wb2'].map(id => makeStudent('s1', { id, name: id }));
       const subs = buildSubsMap(
         ...students.map(s => makeMatrixSub(s.id, 's1', STEP, [
           {},
-          { practice: 'filled', reason: '' },   // why empty
-          { practice: 'filled', reason: 'ok' },  // why filled
+          { practice: 'filled', reason: '' },
+          { practice: 'filled', reason: 'ok' },
         ])),
       );
-      const r = service.computeMatrixObserve(students, subs, STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx(students, subs));
       const whyBlank = r.patterns.find(p => p.id === 'why_blank');
       expect(whyBlank).toBeDefined();
       expect(whyBlank!.count).toBe(2);
@@ -557,12 +562,12 @@ describe('ObserveService', () => {
           { practice: 'filled', reason: '' },
         ]),
       );
-      const r = service.computeMatrixObserve([sA], subs, STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([sA], subs));
       expect(r.patterns.find(p => p.id === 'why_blank')).toBeUndefined();
     });
 
     it('per-row paraRef is formatted as comma-separated string', () => {
-      const r = service.computeMatrixObserve([], new Map(), STEP, MATRIX_KEY);
+      const r = matrixHandler.compute(ctx([], new Map()));
       expect(r.rows[0].paraRef).toBe('1, 2');
       expect(r.rows[1].paraRef).toBeUndefined();
     });
