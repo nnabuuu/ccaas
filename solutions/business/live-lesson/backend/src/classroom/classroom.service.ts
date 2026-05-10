@@ -1,4 +1,4 @@
-import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, forwardRef } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
@@ -12,7 +12,7 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
-import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
+import { ClassroomBroadcastService } from './classroom-broadcast.service';
 import { Lesson } from '../entities/lesson.entity';
 import { ObservationQueryService } from './observation/observation-query.service';
 import { MetricsAggregator } from './metrics-aggregator';
@@ -35,20 +35,10 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
 
 @Injectable()
-export class ClassroomService implements OnModuleDestroy {
+export class ClassroomService {
   private readonly logger = new Logger(ClassroomService.name);
-  private subscribers = new Map<string, Set<Response>>();
-  private heartbeatTimers = new Map<Response, NodeJS.Timeout>();
   private activeNotificationsMap = new Map<string, Map<string, { id: string; message: string; notifyType: string; timestamp: string }>>();
-  private lastSnapshotAt = new Map<string, number>();
-  private readonly SNAPSHOT_THROTTLE_MS = 10_000;
   private observeRegistryCache = new Map<string, Record<string, ObservationDef>>();
-  private broadcastTimers = new Map<string, ReturnType<typeof setTimeout>>();
-
-  onModuleDestroy() {
-    for (const timer of this.broadcastTimers.values()) clearTimeout(timer);
-    this.broadcastTimers.clear();
-  }
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
@@ -63,8 +53,8 @@ export class ClassroomService implements OnModuleDestroy {
     private readonly aiQuestionRepo: Repository<AiQuestion>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
-    @InjectRepository(ClassroomSnapshot)
-    private readonly snapshotRepo: Repository<ClassroomSnapshot>,
+    @Inject(forwardRef(() => ClassroomBroadcastService))
+    private readonly broadcastService: ClassroomBroadcastService,
     private readonly observationQuery: ObservationQueryService,
     private readonly metricsAggregator: MetricsAggregator,
     private readonly clusterAggregator: ClusterAggregator,
@@ -261,15 +251,10 @@ export class ClassroomService implements OnModuleDestroy {
     await this.cache.del(this.sessionInfoKey(code));
 
     // Flush any pending debounced broadcast, then send final state immediately
-    const pending = this.broadcastTimers.get(session.id);
-    if (pending) {
-      clearTimeout(pending);
-      this.broadcastTimers.delete(session.id);
-    }
-    await this.doBroadcast(session.id);
+    await this.broadcastService.flushAndBroadcast(session.id);
 
     this.activeNotificationsMap.delete(session.id);
-    this.lastSnapshotAt.delete(session.id);
+    this.broadcastService.cleanupSession(session.id);
 
     this.observationQuery.clearSession(session.id);
 
@@ -545,42 +530,10 @@ export class ClassroomService implements OnModuleDestroy {
     );
   }
 
-  // ── SSE ──
+  // ── SSE (delegated to BroadcastService) ──
 
   subscribe(sessionId: string, res: Response) {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-    res.flushHeaders();
-
-    if (!this.subscribers.has(sessionId)) {
-      this.subscribers.set(sessionId, new Set());
-    }
-    this.subscribers.get(sessionId)!.add(res);
-
-    this.getState(sessionId).then(state => {
-      res.write(`data: ${JSON.stringify(state)}\n\n`);
-    }).catch(e => {
-      this.logger.error(`Failed to send initial SSE state: ${e}`);
-    });
-
-    const heartbeat = setInterval(() => {
-      res.write(': heartbeat\n\n');
-    }, 30000);
-    this.heartbeatTimers.set(res, heartbeat);
-
-    res.on('close', () => {
-      this.subscribers.get(sessionId)?.delete(res);
-      const timer = this.heartbeatTimers.get(res);
-      if (timer) {
-        clearInterval(timer);
-        this.heartbeatTimers.delete(res);
-      }
-      this.logger.debug(`SSE subscriber disconnected for session ${sessionId}`);
-    });
-
-    this.logger.debug(`SSE subscriber connected for session ${sessionId}`);
+    this.broadcastService.subscribe(sessionId, res);
   }
 
   // ── Teacher control ──
@@ -617,108 +570,20 @@ export class ClassroomService implements OnModuleDestroy {
     }
   }
 
-  // ── Broadcast (public — called by controller after domain service mutations) ──
-  // Debounced: multiple calls within 300ms collapse into a single getState + push.
-  // 45 students submitting concurrently → 1 getState instead of 45.
+  // ── Broadcast (delegated to BroadcastService) ──
 
   broadcast(sessionId: string) {
-    const existing = this.broadcastTimers.get(sessionId);
-    if (existing) clearTimeout(existing);
-
-    this.broadcastTimers.set(sessionId, setTimeout(() => {
-      this.broadcastTimers.delete(sessionId);
-      this.doBroadcast(sessionId).catch(e =>
-        this.logger.error(`Debounced broadcast failed for ${sessionId}: ${e}`),
-      );
-    }, 300));
-  }
-
-  private async doBroadcast(sessionId: string) {
-    const subs = this.subscribers.get(sessionId);
-    const state = await this.getState(sessionId);
-
-    // Persist snapshot (throttled) regardless of subscriber count
-    this.maybePersistSnapshot(sessionId, state);
-
-    // Fire-and-forget: maybe refresh coaching insights (pass only needed slices)
-    this.coachingService.maybeRefresh(sessionId, {
-      stepMetrics: state.stepMetrics,
-      healthCards: state.healthCards,
-      observation: state.observation,
-    }).catch(e =>
-      this.logger.warn(`Coaching refresh failed: ${e}`),
-    );
-
-    if (!subs || subs.size === 0) return;
-
-    const payload = `data: ${JSON.stringify(state)}\n\n`;
-
-    for (const res of subs) {
-      try {
-        res.write(payload);
-      } catch {
-        subs.delete(res);
-        const timer = this.heartbeatTimers.get(res);
-        if (timer) {
-          clearInterval(timer);
-          this.heartbeatTimers.delete(res);
-        }
-      }
-    }
+    this.broadcastService.broadcast(sessionId);
   }
 
   broadcastNamed(sessionId: string, eventName: string, payload: any) {
-    const subs = this.subscribers.get(sessionId);
-    if (!subs || subs.size === 0) return;
-
-    const message = `event: ${eventName}\ndata: ${JSON.stringify(payload)}\n\n`;
-
-    for (const res of subs) {
-      try {
-        res.write(message);
-      } catch {
-        subs.delete(res);
-        const timer = this.heartbeatTimers.get(res);
-        if (timer) {
-          clearInterval(timer);
-          this.heartbeatTimers.delete(res);
-        }
-      }
-    }
+    this.broadcastService.broadcastNamed(sessionId, eventName, payload);
   }
 
-  // ── Snapshots ──
-
-  private maybePersistSnapshot(sessionId: string, state: ClassroomStateResponse): void {
-    const now = Date.now();
-    const last = this.lastSnapshotAt.get(sessionId) || 0;
-    if (now - last < this.SNAPSHOT_THROTTLE_MS) return;
-    this.lastSnapshotAt.set(sessionId, now);
-    this.snapshotRepo.save(
-      this.snapshotRepo.create({
-        sessionId,
-        capturedAt: new Date(now),
-        stateJson: JSON.stringify(state),
-      }),
-    ).catch(e => this.logger.warn(`Snapshot persist failed: ${e}`));
-  }
+  // ── Snapshots (delegated to BroadcastService) ──
 
   async getSnapshots(sessionId: string): Promise<SnapshotEntry[]> {
-    const rows = await this.snapshotRepo.find({
-      where: { sessionId },
-      order: { capturedAt: 'ASC' },
-    });
-    return rows.reduce<SnapshotEntry[]>((acc, r) => {
-      try {
-        acc.push({
-          capturedAt: r.capturedAt instanceof Date ? r.capturedAt.toISOString() : String(r.capturedAt),
-          state: JSON.parse(r.stateJson),
-        });
-      } catch {
-        this.logger.warn(`Skipping corrupted snapshot ${r.id}`);
-      }
-      return acc;
-    }, []);
+    return this.broadcastService.getSnapshots(sessionId);
   }
 
   // ── Private helpers ──

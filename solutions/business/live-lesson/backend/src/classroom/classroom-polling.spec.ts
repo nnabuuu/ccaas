@@ -9,6 +9,7 @@ import request from 'supertest';
 import { ClassroomController } from './classroom.controller';
 import { ExerciseController } from './exercise/exercise.controller';
 import { ClassroomService } from './classroom.service';
+import { ClassroomBroadcastService } from './classroom-broadcast.service';
 import { StudentSubmissionService } from './student-submission.service';
 import { ExerciseService } from './exercise/exercise.service';
 import { DiscussService } from './socratic-discuss/discuss.service';
@@ -161,7 +162,7 @@ describe('Classroom polling — HTTP integration', () => {
       ],
       controllers: [ClassroomController, ExerciseController],
       providers: [
-        ClassroomService, StudentSubmissionService, ExerciseService,
+        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService,
         DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, ObserveRegistry, McObserveHandler, EvidenceObserveHandler,
         MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
