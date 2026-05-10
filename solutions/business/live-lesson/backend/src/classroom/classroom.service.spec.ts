@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { ClassroomService } from './classroom.service';
 import { ClassroomBroadcastService } from './classroom-broadcast.service';
+import { ClassroomStateService } from './classroom-state.service';
 import { StudentSubmissionService } from './student-submission.service';
 import { ExerciseService } from './exercise/exercise.service';
 import { DiscussService } from './socratic-discuss/discuss.service';
@@ -218,7 +219,7 @@ describe('ClassroomService — persistence', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -444,7 +445,7 @@ describe('ClassroomService — extended coverage', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -3093,7 +3094,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -3248,7 +3249,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -3572,7 +3573,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -3820,7 +3821,7 @@ describe('ClassroomService — snapshots', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -3988,7 +3989,7 @@ describe('StudentSubmissionService — getSubmission', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -4097,7 +4098,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -4384,7 +4385,7 @@ describe('StudentSubmissionService — getSnapshot', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -4562,7 +4563,7 @@ describe('Submission phase separation — cross-module', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -4798,7 +4799,7 @@ describe('REST polling scenarios — student', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
@@ -4872,7 +4873,7 @@ describe('REST polling scenarios — teacher getState', () => {
         TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
       ],
       providers: [
-        ClassroomService, ClassroomBroadcastService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+        ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
         ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],

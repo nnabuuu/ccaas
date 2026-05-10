@@ -1,27 +1,18 @@
-import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThan } from 'typeorm';
 import { randomInt } from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { Student } from '../entities/student.entity';
-import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
-import { AiQuestion } from '../entities/ai-question.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
 import { ClassroomBroadcastService } from './classroom-broadcast.service';
+import { ClassroomStateService } from './classroom-state.service';
 import { Lesson } from '../entities/lesson.entity';
-import { ObservationQueryService } from './observation/observation-query.service';
-import { MetricsAggregator } from './metrics-aggregator';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
-import { buildTaskMap } from './task-map.utils';
-import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
-import { CoachingService } from './coaching.service';
 import { TranslateService } from './translate/translate.service';
-import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type { Response } from 'express';
 import type {
   CreateSessionResponse, SessionInfoResponse, StartSessionResponse,
@@ -37,28 +28,18 @@ const CODE_LENGTH = 6;
 @Injectable()
 export class ClassroomService {
   private readonly logger = new Logger(ClassroomService.name);
-  private activeNotificationsMap = new Map<string, Map<string, { id: string; message: string; notifyType: string; timestamp: string }>>();
-  private observeRegistryCache = new Map<string, Record<string, ObservationDef>>();
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly configService: ConfigService,
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
-    @InjectRepository(Submission)
-    private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(ClassroomSession)
     private readonly sessionRepo: Repository<ClassroomSession>,
-    @InjectRepository(AiQuestion)
-    private readonly aiQuestionRepo: Repository<AiQuestion>,
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
-    @Inject(forwardRef(() => ClassroomBroadcastService))
     private readonly broadcastService: ClassroomBroadcastService,
-    private readonly observationQuery: ObservationQueryService,
-    private readonly metricsAggregator: MetricsAggregator,
-    private readonly clusterAggregator: ClusterAggregator,
-    private readonly coachingService: CoachingService,
+    private readonly stateService: ClassroomStateService,
     private readonly translateService: TranslateService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
@@ -76,7 +57,7 @@ export class ClassroomService {
         const session = this.sessionRepo.create({ code, lessonId, status: 'waiting' });
         const saved = await this.sessionRepo.save(session);
         this.logger.log(`Session created: ${saved.code} for lesson ${lessonId}`);
-        await this.initObservation(saved.id, lessonId);
+        await this.stateService.initObservation(saved.id, lessonId);
         return { sessionId: saved.id, code: saved.code, lessonId: saved.lessonId, status: saved.status };
       } catch (err: any) {
         if (err?.message?.includes('UNIQUE') || err?.code === 'SQLITE_CONSTRAINT') continue;
@@ -231,7 +212,7 @@ export class ClassroomService {
     await this.sessionRepo.save(session);
     await this.cache.del(this.sessionInfoKey(code));
 
-    this.initObservation(session.id, session.lessonId).catch(e =>
+    this.stateService.initObservation(session.id, session.lessonId).catch(e =>
       this.logger.warn(`Observation init failed: ${e}`),
     );
 
@@ -253,216 +234,24 @@ export class ClassroomService {
     // Flush any pending debounced broadcast, then send final state immediately
     await this.broadcastService.flushAndBroadcast(session.id);
 
-    this.activeNotificationsMap.delete(session.id);
+    this.stateService.cleanupSession(session.id, session.lessonId);
     this.broadcastService.cleanupSession(session.id);
 
-    this.observationQuery.clearSession(session.id);
-
     this.engine.clearSessionMeta(session.id);
-    this.clusterAggregator.cleanupSession(session.id);
-    this.coachingService.cleanupSession(session.id);
     this.translateService.clearSession(session.id);
-    this.observeRegistryCache.delete(session.lessonId);
 
     this.logger.log(`Session ended: ${code}`);
     return { ok: true, status: 'ended' };
   }
 
-  // ── State aggregation ──
+  // ── State aggregation (delegated to StateService) ──
 
   async getState(sessionId: string, currentStep?: number): Promise<ClassroomStateResponse> {
-    const students = await this.studentRepo.find({
-      where: { sessionId },
-      order: { joinedAt: 'ASC' },
-    });
+    return this.stateService.getState(sessionId, currentStep);
+  }
 
-    const submissions = await this.submissionRepo.find({
-      where: { sessionId, phase: 'exercise' },
-    });
-
-    const subsByStudent = new Map<string, Record<number, { step: number; data: any; score: any; submittedAt: string }>>();
-    for (const sub of submissions) {
-      if (!subsByStudent.has(sub.studentId)) {
-        subsByStudent.set(sub.studentId, {});
-      }
-      subsByStudent.get(sub.studentId)![sub.step] = {
-        step: sub.step,
-        data: sub.dataJson,
-        score: sub.scoreJson ?? null,
-        submittedAt: sub.submittedAt instanceof Date
-          ? sub.submittedAt.toISOString()
-          : String(sub.submittedAt),
-      };
-    }
-
-    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
-    const stepToCheck = currentStep ?? session?.currentStep ?? 0;
-
-    let manifest: any = null;
-    if (session?.lessonId) {
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      if (lesson) {
-        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
-      }
-    }
-    const taskMap = buildTaskMap(manifest);
-
-    const total = students.length;
-    let submitted = 0;
-    for (const s of students) {
-      const subs = subsByStudent.get(s.id);
-      if (subs && subs[stepToCheck]) {
-        submitted++;
-      }
-    }
-
-    const questions = await this.aiQuestionRepo.find({
-      where: { sessionId },
-      order: { askedAt: 'ASC' },
-    });
-
-    const studentDurations = this.metricsAggregator.computeStudentDurations(students, subsByStudent, taskMap);
-    const registry = (session?.lessonId && this.observeRegistryCache.get(session.lessonId)) || buildRegistry(manifest);
-    const readingSteps: Array<Record<string, unknown>> = manifest?.readingSteps || [];
-    const resolvedObserves: Record<number, ResolvedObserve> = {};
-    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-      const stepIdx = taskMap.taskToStep[taskNum];
-      const stepDef = readingSteps.find((s) => s.idx === stepIdx);
-      resolvedObserves[taskNum] = resolveObserve(stepDef, registry);
-    }
-    const stepMetrics = this.metricsAggregator.buildStepMetrics(total, students, subsByStudent, questions, studentDurations, manifest, taskMap, resolvedObserves);
-    const medianTimes = this.metricsAggregator.extractMedianTimes(stepMetrics);
-
-    const studentStatuses = new Map<string, string>();
-    for (const s of students) {
-      studentStatuses.set(s.id, this.metricsAggregator.computeStudentStatus(s, subsByStudent.get(s.id), medianTimes, taskMap));
-    }
-
-    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-      stepMetrics[taskNum].alertTag = this.metricsAggregator.computeAlertTag(
-        taskNum, stepMetrics[taskNum], students, studentStatuses,
-      );
-    }
-
-    const healthCards = this.metricsAggregator.computeHealthCards(students, studentStatuses, questions, taskMap.maxTask);
-
-    const questionRecords = questions.map(q => ({
-      studentId: q.studentId,
-      studentName: q.studentName,
-      step: q.step,
-      question: q.question,
-      answer: q.answer,
-      category: q.category,
-      timestamp: q.askedAt instanceof Date ? q.askedAt.toISOString() : String(q.askedAt),
-    }));
-
-    // Cluster stats per task step
-    const clusterStats: Record<number, { definitions: Array<{ id: string; label: string }>; clusters: ReturnType<ClusterAggregator['getClusterStats']> }> = {};
-    for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-      const stepIdx = taskMap.taskToStep[taskNum];
-      const stepDef = readingSteps.find((s) => s.idx === stepIdx) as Record<string, any> | undefined;
-      const defs: Array<{ id: string; label: string; description: string }> = stepDef?.discuss?.clusters || [];
-      const stats = this.clusterAggregator.getClusterStats(sessionId, taskNum);
-      if (defs.length > 0 || stats.length > 0) {
-        clusterStats[taskNum] = {
-          definitions: defs.map(d => ({ id: d.id, label: d.label })),
-          clusters: stats,
-        };
-      }
-    }
-
-    return {
-      sessionStatus: session?.status ?? 'active',
-      currentStep: stepToCheck,
-      activeNotifications: Array.from(
-        (this.activeNotificationsMap.get(sessionId) ?? new Map()).values(),
-      ),
-      students: students.map(s => {
-        const subs = subsByStudent.get(s.id) || {};
-        const durations = studentDurations.get(s.id) || {};
-        const status = studentStatuses.get(s.id) || 'prog';
-
-        const enrichedSubs: Record<number, any> = {};
-        for (const [stepStr, sub] of Object.entries(subs)) {
-          const stepNum = Number(stepStr);
-          const dur = durations[stepNum] ?? null;
-          enrichedSubs[stepNum] = {
-            ...sub,
-            duration: dur,
-            timeFormatted: dur != null ? this.metricsAggregator.formatDuration(dur) : null,
-            result: this.metricsAggregator.deriveResult(sub.score),
-            aiRoundsCount: questions.filter(q => q.studentId === s.id && q.step === stepNum).length,
-          };
-        }
-
-        const stepHistory: Record<number, any> = {};
-        for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
-          const taskStepIdx = taskMap.taskToStep[taskNum];
-          const sub = subs[taskStepIdx];
-          const aiCount = questions.filter(q => q.studentId === s.id && q.step === taskStepIdx).length;
-
-          if (sub && (s.currentTask > taskNum || s.currentPhase === 'completed')) {
-            const score = sub.score;
-            const dur = durations[taskStepIdx];
-            stepHistory[taskNum] = {
-              status: 'done',
-              result: this.metricsAggregator.deriveResult(score),
-              time: dur != null ? this.metricsAggregator.formatDuration(dur) : null,
-              aiRounds: aiCount,
-            };
-          } else if (s.currentTask === taskNum) {
-            const isStuck = studentStatuses.get(s.id) === 'stuck';
-            const score = sub?.score;
-            const dur = sub ? durations[taskStepIdx] : undefined;
-            stepHistory[taskNum] = {
-              status: isStuck ? 'stuck' : (s.currentPhase === 'listen' ? 'reading' : 'prog'),
-              aiRounds: aiCount,
-              ...(sub ? { result: this.metricsAggregator.deriveResult(score), time: dur != null ? this.metricsAggregator.formatDuration(dur) : null } : {}),
-            };
-          } else if (s.currentTask > taskNum || s.currentPhase === 'completed') {
-            stepHistory[taskNum] = { status: 'done', aiRounds: aiCount };
-          } else {
-            stepHistory[taskNum] = { status: 'future' };
-          }
-        }
-
-        const bonusSubs = [101, 102].filter(step => subs[step]);
-        const bonusStatus: 'none' | 'active' | 'completed' =
-          bonusSubs.length === 0 ? 'none'
-          : bonusSubs.length >= 2 ? 'completed'
-          : 'active';
-
-        return {
-          id: s.id,
-          name: s.name,
-          currentTask: s.currentTask,
-          currentPhase: s.currentPhase,
-          stepStartedAt: s.stepStartedAt,
-          status,
-          submissions: enrichedSubs,
-          stepHistory,
-          discussMeta: s.discussMeta ?? null,
-          bonusStatus,
-        };
-      }),
-      metrics: {
-        total,
-        submitted,
-        inProgress: total - submitted,
-      },
-      stepMetrics,
-      healthCards,
-      questions: questionRecords,
-      observation: {
-        ...(await this.observationQuery.getObservationDashboard(sessionId)),
-        indicators: this.observationQuery.getIndicators(sessionId),
-      },
-      clusterStats,
-      coaching: {
-        highlights: this.coachingService.getHighlights(sessionId),
-        llmInsights: this.coachingService.getCached(sessionId),
-      },
-    };
+  async getSurfaces(sessionId: string, taskNum: number) {
+    return this.stateService.getSurfaces(sessionId, taskNum);
   }
 
   // ── Chat history ──
@@ -488,48 +277,6 @@ export class ClassroomService {
     return grouped;
   }
 
-  // ── Surfaces (on-demand observe data) ──
-
-  async getSurfaces(sessionId: string, taskNum: number) {
-    const session = await this.sessionRepo.findOne({ where: { id: sessionId } });
-    if (!session) throw new NotFoundException('Session not found');
-
-    let manifest: Record<string, unknown> | null = null;
-    if (session.lessonId) {
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      if (lesson) {
-        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
-      }
-    }
-    const taskMap = buildTaskMap(manifest);
-    const stepIdx = taskMap.taskToStep[taskNum];
-    if (stepIdx == null) return {};
-
-    const surfaceRegistry = (session.lessonId && this.observeRegistryCache.get(session.lessonId)) || buildRegistry(manifest);
-    const readingSteps = (manifest?.readingSteps || []) as Array<Record<string, unknown>>;
-    const stepDef = readingSteps.find((s) => s.idx === stepIdx);
-    const resolved = resolveObserve(stepDef, surfaceRegistry);
-    if (resolved.surfaces.length === 0) return {};
-
-    const students = await this.studentRepo.find({ where: { sessionId } });
-    const submissions = await this.submissionRepo.find({ where: { sessionId, phase: 'exercise' } });
-    const subsByStudent = new Map<string, Record<number, { step: number; data: unknown; score: unknown; submittedAt: string }>>();
-    for (const sub of submissions) {
-      if (!subsByStudent.has(sub.studentId)) subsByStudent.set(sub.studentId, {});
-      subsByStudent.get(sub.studentId)![sub.step] = {
-        step: sub.step,
-        data: sub.dataJson,
-        score: sub.scoreJson ?? null,
-        submittedAt: sub.submittedAt instanceof Date ? sub.submittedAt.toISOString() : String(sub.submittedAt),
-      };
-    }
-
-    return this.metricsAggregator.buildSurfaces(
-      taskNum, subsByStudent, stepIdx, resolved.surfaces,
-      students.map(s => ({ id: s.id, name: s.name })),
-    );
-  }
-
   // ── SSE (delegated to BroadcastService) ──
 
   subscribe(sessionId: string, res: Response) {
@@ -553,19 +300,15 @@ export class ClassroomService {
     const notifyType = type || 'general';
     const id = `${notifyType}::${message}`;
 
-    if (!this.activeNotificationsMap.has(sessionId)) {
-      this.activeNotificationsMap.set(sessionId, new Map());
-    }
-    const sessionNotifs = this.activeNotificationsMap.get(sessionId)!;
+    const active = this.stateService.toggleNotification(sessionId, id, message, notifyType);
 
-    if (sessionNotifs.has(id)) {
-      sessionNotifs.delete(id);
+    if (!active) {
       this.broadcastNamed(sessionId, 'notification_revoke', { id });
       return { ok: true, active: false, id };
     } else {
-      const timestamp = new Date().toISOString();
-      sessionNotifs.set(id, { id, message, notifyType, timestamp });
-      this.broadcastNamed(sessionId, 'notification', { id, message, notifyType, timestamp });
+      const notifications = this.stateService.getActiveNotifications(sessionId);
+      const notif = notifications.find(n => n.id === id)!;
+      this.broadcastNamed(sessionId, 'notification', { id, message, notifyType, timestamp: notif.timestamp });
       return { ok: true, active: true, id };
     }
   }
@@ -587,41 +330,6 @@ export class ClassroomService {
   }
 
   // ── Private helpers ──
-
-  private async initObservation(sessionId: string, lessonId: string): Promise<void> {
-    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
-    if (!lesson) return;
-    try {
-      let manifest = JSON.parse(lesson.manifestJson);
-
-      // Fallback: try disk manifest if DB manifest has no observation data
-      const hasObsData = manifest.observations || manifest.observationIndicators || manifest.observeDefinitions;
-      if (!hasObsData) {
-        try {
-          const diskPath = path.resolve(process.cwd(), '../data/lessons', lessonId, 'manifest.json');
-          if (fs.existsSync(diskPath)) {
-            const diskManifest = JSON.parse(fs.readFileSync(diskPath, 'utf-8'));
-            const diskHasObs = diskManifest.observations || diskManifest.observationIndicators || diskManifest.observeDefinitions;
-            if (diskHasObs) manifest = diskManifest;
-          }
-        } catch { /* disk read failed, continue */ }
-      }
-
-      const indicators = resolveGlobalObservations(manifest)
-        .filter((d): d is typeof d & { id: string; label: string; type: 'knowledge' | 'misconception'; description: string } =>
-          !!d.id && !!d.label && !!d.type && !!d.description,
-        );
-
-      if (indicators.length > 0) {
-        this.observationQuery.setIndicators(sessionId, indicators);
-      }
-
-      this.observeRegistryCache.set(lessonId, buildRegistry(manifest));
-      this.engine.setSessionMeta(sessionId, { indicators, lessonId });
-    } catch (e) {
-      this.logger.warn(`Observation init parse/setup failed for ${lessonId}: ${e}`);
-    }
-  }
 
   private generateCode(): string {
     let code = '';

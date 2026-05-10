@@ -1,16 +1,16 @@
-import { Injectable, Inject, Logger, OnModuleDestroy, forwardRef } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { CoachingService } from './coaching.service';
-import { ClassroomService } from './classroom.service';
+import { ClassroomStateService } from './classroom-state.service';
 import type { Response } from 'express';
 import type { ClassroomStateResponse, SnapshotEntry } from '../schemas/classroom';
 
 /**
  * SSE transport layer + snapshot persistence.
  * Owns all SSE connection state (subscribers, heartbeats, debounce timers).
- * Delegates to ClassroomService.getState() for broadcast payloads.
+ * Delegates to ClassroomStateService.getState() for broadcast payloads.
  */
 @Injectable()
 export class ClassroomBroadcastService implements OnModuleDestroy {
@@ -23,8 +23,7 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
   private readonly SNAPSHOT_THROTTLE_MS = 10_000;
 
   constructor(
-    @Inject(forwardRef(() => ClassroomService))
-    private readonly classroomService: ClassroomService,
+    private readonly stateService: ClassroomStateService,
     @InjectRepository(ClassroomSnapshot)
     private readonly snapshotRepo: Repository<ClassroomSnapshot>,
     private readonly coachingService: CoachingService,
@@ -53,7 +52,7 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
     }
     this.subscribers.get(sessionId)!.add(res);
 
-    this.classroomService.getState(sessionId).then(state => {
+    this.stateService.getState(sessionId).then(state => {
       res.write(`data: ${JSON.stringify(state)}\n\n`);
     }).catch(e => {
       this.logger.error(`Failed to send initial SSE state: ${e}`);
@@ -93,7 +92,7 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
 
   private async doBroadcast(sessionId: string) {
     const subs = this.subscribers.get(sessionId);
-    const state = await this.classroomService.getState(sessionId);
+    const state = await this.stateService.getState(sessionId);
 
     this.maybePersistSnapshot(sessionId, state);
 

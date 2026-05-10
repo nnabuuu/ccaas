@@ -22,6 +22,7 @@ import type { ObserverEvent, HandlerContext, HandlerResult, LlmGateway, NotifySi
 // ── Infra ──
 import { ClassroomService } from './classroom.service';
 import { ClassroomBroadcastService } from './classroom-broadcast.service';
+import { ClassroomStateService } from './classroom-state.service';
 import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
 import { AiPromptBuilder } from './ai-prompt-builder';
@@ -86,7 +87,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
   ],
   providers: [
     // Infra
-    ClassroomService, ClassroomBroadcastService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService,
+    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService,
     // Observe handlers + registry
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler,
     // Exercise
