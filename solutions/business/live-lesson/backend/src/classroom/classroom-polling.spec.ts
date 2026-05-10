@@ -29,6 +29,7 @@ import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { ManifestCacheService } from './manifest-cache.service';
 import { TranslateService } from './translate/translate.service';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -168,7 +169,7 @@ describe('Classroom polling — HTTP integration', () => {
         ObservationQueryService, ObserveRegistry, McObserveHandler, EvidenceObserveHandler,
         MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler, GradingService,
         AiPromptBuilder, MetricsAggregator, ClusterClassifier,
-        ClusterAggregator, CoachingService, TranslateService,
+        ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();

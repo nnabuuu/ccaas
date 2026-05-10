@@ -8,6 +8,7 @@ import { ChatMessage } from '../../entities/chat-message.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class AiAskService {
     @InjectRepository(ChatMessage)
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly manifestCache: ManifestCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -115,12 +117,10 @@ export class AiAskService {
     builder: (manifest: any, step: number) => string,
   ): Promise<string> {
     try {
-      const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
-      if (!lesson) {
+      const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+      if (!manifest) {
         return this.aiPromptBuilder.buildFallbackPrompt();
       }
-
-      const manifest = JSON.parse(lesson.manifestJson);
       return builder(manifest, step);
     } catch {
       return this.aiPromptBuilder.buildFallbackPrompt();

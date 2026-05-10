@@ -26,26 +26,27 @@ export function buildTaskMap(manifest: any): TaskMap {
 }
 
 const MAX_CACHE_SIZE = 100;
-const taskMapCache = new Map<string, TaskMap>();
+const TTL_MS = 5 * 60_000;
+const taskMapCache = new Map<string, { map: TaskMap; cachedAt: number }>();
 
-/** Get TaskMap for a lesson, with caching. */
+/** Get TaskMap for a lesson, with caching and TTL. */
 export async function getCachedTaskMap(
   lessonId: string,
   lessonRepo: Repository<Lesson>,
 ): Promise<TaskMap> {
   const cached = taskMapCache.get(lessonId);
-  if (cached) return cached;
+  if (cached && Date.now() - cached.cachedAt < TTL_MS) return cached.map;
 
   const lesson = await lessonRepo.findOne({ where: { id: lessonId } });
   let manifest: any = null;
   if (lesson) {
-    try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+    try { manifest = JSON.parse(lesson.manifestJson); } catch { /* caller handles null manifest */ }
   }
   const taskMap = buildTaskMap(manifest);
   if (taskMapCache.size >= MAX_CACHE_SIZE) {
     const firstKey = taskMapCache.keys().next().value;
     if (firstKey !== undefined) taskMapCache.delete(firstKey);
   }
-  taskMapCache.set(lessonId, taskMap);
+  taskMapCache.set(lessonId, { map: taskMap, cachedAt: Date.now() });
   return taskMap;
 }

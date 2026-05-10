@@ -9,6 +9,7 @@ import { ObservationQueryService } from './observation/observation-query.service
 import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { ManifestCacheService } from './manifest-cache.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
@@ -64,6 +65,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         { provide: MetricsAggregator, useValue: {} },
         { provide: ClusterAggregator, useValue: mockClusterAggregator },
         { provide: CoachingService, useValue: mockCoachingService },
+        { provide: ManifestCacheService, useValue: { getManifest: jest.fn().mockResolvedValue(null), invalidate: jest.fn() } },
       ],
     }).compile();
 
@@ -236,6 +238,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         MetricsAggregator,
         ClusterAggregator,
         CoachingService,
+        ManifestCacheService,
         AiPromptBuilder,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],

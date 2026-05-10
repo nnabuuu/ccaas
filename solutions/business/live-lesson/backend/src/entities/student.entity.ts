@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, VersionColumn, Unique } from 'typeorm';
 
 @Entity('reading_students')
 @Unique(['sessionId', 'name'])
@@ -26,6 +26,9 @@ export class Student {
 
   @Column({ type: 'simple-json', name: 'discuss_meta', nullable: true })
   discussMeta: { startedAt: string; goalReached?: boolean } | null;
+
+  @VersionColumn()
+  version: number;
 
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt: Date;

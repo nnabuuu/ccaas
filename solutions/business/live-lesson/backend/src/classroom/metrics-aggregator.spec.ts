@@ -27,7 +27,9 @@ function makeTaskMap(maxTask = 3): TaskMap {
     taskToStep[i] = stepIdx;
     taskSteps.push(stepIdx);
   }
-  return { stepToTask, taskToStep, taskSteps, maxTask };
+  const advanceOn: Record<number, 'submit' | 'confirm'> = {};
+  for (const step of taskSteps) advanceOn[step] = 'confirm';
+  return { stepToTask, taskToStep, taskSteps, maxTask, advanceOn };
 }
 
 function makeSubsByStudent(

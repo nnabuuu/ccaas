@@ -5,6 +5,7 @@ import { Student } from '../../entities/student.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { GradingService } from './grading.service';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { sanitizeAnswerKey, seededShuffle } from '../../schemas/manifest.utils';
 import type { ExerciseSpec, GradeResult } from '../../schemas';
 import type { CheckResultResponse } from '../../schemas/classroom';
@@ -17,6 +18,7 @@ export class ExerciseService {
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
     private readonly gradingService: GradingService,
+    private readonly manifestCache: ManifestCacheService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -24,10 +26,8 @@ export class ExerciseService {
   }
 
   async getExerciseSpec(session: ClassroomSession, step: number, studentId?: string): Promise<ExerciseSpec> {
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
-
-    const manifest = JSON.parse(lesson.manifestJson);
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
     const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
     const stepDef = steps.find((s) => s.idx === step);
     if (!stepDef?.answerKey) {
@@ -65,10 +65,9 @@ export class ExerciseService {
     });
     if (!student) throw new NotFoundException('Student not found in this session');
 
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
 
-    const manifest = JSON.parse(lesson.manifestJson);
     const steps: Array<Record<string, unknown>> = manifest.readingSteps || [];
     const stepDef = steps.find((s) => s.idx === step);
     if (!stepDef?.answerKey) {
@@ -153,7 +152,7 @@ export class ExerciseService {
       }
 
       case 'order': {
-        const orderItems = ak.items as string[];
+        const orderItems = Array.isArray(ak.items) ? ak.items.map(String) : [];
         const correctOrder = (ak.correctOrder || []) as number[];
         const studentOrder = (data.order || []) as unknown[];
         return correctOrder.map((expectedIdx, pos) => {

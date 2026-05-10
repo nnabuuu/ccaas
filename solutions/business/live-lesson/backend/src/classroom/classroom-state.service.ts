@@ -12,6 +12,7 @@ import { ObservationQueryService } from './observation/observation-query.service
 import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { ManifestCacheService } from './manifest-cache.service';
 import { buildTaskMap } from './task-map.utils';
 import { resolveObserve, buildRegistry, resolveGlobalObservations, type ResolvedObserve, type ObservationDef } from '../schemas';
 import type {
@@ -41,6 +42,7 @@ export class ClassroomStateService {
     private readonly clusterAggregator: ClusterAggregator,
     private readonly observationQuery: ObservationQueryService,
     private readonly coachingService: CoachingService,
+    private readonly manifestCache: ManifestCacheService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -117,9 +119,10 @@ export class ClassroomStateService {
 
     let manifest: any = null;
     if (session?.lessonId) {
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      if (lesson) {
-        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+      try {
+        manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+      } catch (e) {
+        this.logger.error(`Failed to load manifest for lesson ${session.lessonId}: ${e}`);
       }
     }
     const taskMap = buildTaskMap(manifest);
@@ -288,9 +291,10 @@ export class ClassroomStateService {
 
     let manifest: Record<string, unknown> | null = null;
     if (session.lessonId) {
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      if (lesson) {
-        try { manifest = JSON.parse(lesson.manifestJson); } catch {}
+      try {
+        manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+      } catch (e) {
+        this.logger.error(`Failed to load manifest for lesson ${session.lessonId}: ${e}`);
       }
     }
     const taskMap = buildTaskMap(manifest);
@@ -325,10 +329,9 @@ export class ClassroomStateService {
   // ── Init observation (called by ClassroomService) ──
 
   async initObservation(sessionId: string, lessonId: string): Promise<void> {
-    const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
-    if (!lesson) return;
     try {
-      let manifest = JSON.parse(lesson.manifestJson);
+      let manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+      if (!manifest) return;
 
       // Fallback: try disk manifest if DB manifest has no observation data
       const hasObsData = manifest.observations || manifest.observationIndicators || manifest.observeDefinitions;
@@ -340,7 +343,7 @@ export class ClassroomStateService {
             const diskHasObs = diskManifest.observations || diskManifest.observationIndicators || diskManifest.observeDefinitions;
             if (diskHasObs) manifest = diskManifest;
           }
-        } catch { /* disk read failed, continue */ }
+        } catch (e) { this.logger.warn(`Disk manifest read failed for ${lessonId}: ${e}`); }
       }
 
       const indicators = resolveGlobalObservations(manifest)

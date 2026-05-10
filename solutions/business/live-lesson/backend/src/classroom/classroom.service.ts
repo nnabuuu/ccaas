@@ -1,9 +1,9 @@
-import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, ConflictException, BadRequestException, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, MoreThan } from 'typeorm';
+import { Repository, In, MoreThan, LessThan } from 'typeorm';
 import { randomInt } from 'crypto';
 import { Student } from '../entities/student.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
@@ -26,8 +26,9 @@ const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 30 chars, no 0/O/1/I/L
 const CODE_LENGTH = 6;
 
 @Injectable()
-export class ClassroomService {
+export class ClassroomService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ClassroomService.name);
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
@@ -46,6 +47,36 @@ export class ClassroomService {
 
   private get lessonRepo(): Repository<Lesson> {
     return this.sessionRepo.manager.getRepository(Lesson);
+  }
+
+  onModuleInit() {
+    this.cleanupTimer = setInterval(() => {
+      this.cleanupStaleSessions().catch(e =>
+        this.logger.warn(`Stale session cleanup failed: ${e}`),
+      );
+    }, 5 * 60_000);
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+  }
+
+  private async cleanupStaleSessions(): Promise<void> {
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60_000);
+    const staleSessions = await this.sessionRepo.find({
+      where: { status: 'ended', endedAt: LessThan(tenMinutesAgo) },
+      select: ['id', 'lessonId'],
+    });
+    for (const session of staleSessions) {
+      this.stateService.cleanupSession(session.id, session.lessonId);
+      this.broadcastService.cleanupSession(session.id);
+    }
+    if (staleSessions.length > 0) {
+      this.logger.log(`Cleaned up ${staleSessions.length} stale session(s)`);
+    }
   }
 
   // ── Session lifecycle ──

@@ -9,6 +9,7 @@ import { Lesson } from '../../entities/lesson.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { ObservationQueryService } from '../observation/observation-query.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import { buildTaskMap } from '../task-map.utils';
 import { ClusterClassifier } from './cluster-classifier';
@@ -31,6 +32,7 @@ export class DiscussService {
     private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly observationQuery: ObservationQueryService,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly manifestCache: ManifestCacheService,
     private readonly clusterClassifier: ClusterClassifier,
     private readonly clusterAggregator: ClusterAggregator,
     private readonly studentSubmission: StudentSubmissionService,
@@ -79,8 +81,7 @@ export class DiscussService {
       const goalReached = rawResponse.includes('[GOAL_REACHED]');
       const reply = rawResponse.replace(/\s*\[GOAL_REACHED\]\s*/g, ' ').trim();
 
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      const manifest = lesson ? JSON.parse(lesson.manifestJson) : null;
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
       const taskMap = manifest ? buildTaskMap(manifest) : null;
       const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
       await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
@@ -155,8 +156,7 @@ export class DiscussService {
       this.logger.warn(`AI discuss call failed: ${e}`);
 
       // Save AiQuestion on failure (align with ai-ask behavior) so aiRoundsCount stays consistent
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } }).catch(() => null);
-      const manifest = lesson ? JSON.parse(lesson.manifestJson) : null;
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo).catch(() => null);
       const taskMap = manifest ? buildTaskMap(manifest) : null;
       const stepIdx = taskMap?.taskToStep[taskNum] ?? taskNum;
       await this.aiQuestionRepo.save(this.aiQuestionRepo.create({
@@ -196,9 +196,8 @@ export class DiscussService {
     let mcCorrect: boolean | undefined;
 
     if (mcSelectedIndex !== undefined) {
-      const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-      if (lesson) {
-        const manifest = JSON.parse(lesson.manifestJson);
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+      if (manifest) {
         const taskMap = buildTaskMap(manifest);
         const stepIdx = taskMap.taskToStep[taskNum];
         const stepDef = (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx);
@@ -259,10 +258,9 @@ export class DiscussService {
     studentId: string,
     taskNum: number,
   ): Promise<string> {
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) return this.aiPromptBuilder.buildDiscussFallbackPrompt('probeReply');
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) return this.aiPromptBuilder.buildDiscussFallbackPrompt('probeReply');
 
-    const manifest = JSON.parse(lesson.manifestJson);
     const readingSteps = manifest.readingSteps || [];
     const taskMap = buildTaskMap(manifest);
     const stepIdx = taskMap.taskToStep[taskNum] ?? taskNum;

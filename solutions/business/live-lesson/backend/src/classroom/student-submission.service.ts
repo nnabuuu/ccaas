@@ -6,6 +6,7 @@ import { Submission } from '../entities/submission.entity';
 import { ClassroomSession } from '../entities/classroom-session.entity';
 import { Lesson } from '../entities/lesson.entity';
 import { GradingService } from './exercise/grading.service';
+import { ManifestCacheService } from './manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
@@ -21,6 +22,7 @@ export class StudentSubmissionService {
     @InjectRepository(Submission)
     private readonly submissionRepo: Repository<Submission>,
     private readonly gradingService: GradingService,
+    private readonly manifestCache: ManifestCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -67,25 +69,18 @@ export class StudentSubmissionService {
       ? await this.gradeSubmission(session.lessonId, step, data)
       : null;
 
-    const existing = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId, step, phase },
-    });
-    if (existing) {
-      existing.dataJson = data;
-      existing.scoreJson = score;
-      await this.submissionRepo.save(existing);
-    } else {
-      const submission = this.submissionRepo.create({
+    await this.submissionRepo.upsert(
+      {
         sessionId: session.id,
         lessonId: session.lessonId,
         studentId,
         step,
         phase,
-        dataJson: data,
-        scoreJson: score,
-      });
-      await this.submissionRepo.save(submission);
-    }
+        dataJson: data as any,
+        scoreJson: score as any,
+      },
+      ['sessionId', 'studentId', 'step', 'phase'],
+    );
 
     // Observation events only for exercise submissions — discuss has its own events in DiscussService
     if (phase === 'exercise') {
@@ -134,23 +129,32 @@ export class StudentSubmissionService {
   private static readonly PHASE_RANK: Record<string, number> = { listen: 0, practice: 1, discuss: 2, takeaway: 3, completed: 4 };
 
   async updatePhase(session: ClassroomSession, studentId: string, task: number, phase: string) {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
-    if (!student) {
-      throw new NotFoundException('Student not found in this session');
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const student = await this.studentRepo.findOne({
+        where: { id: studentId, sessionId: session.id },
+      });
+      if (!student) {
+        throw new NotFoundException('Student not found in this session');
+      }
+      const oldRank = (student.currentTask * 10) + (StudentSubmissionService.PHASE_RANK[student.currentPhase] ?? 0);
+      const newRank = (task * 10) + (StudentSubmissionService.PHASE_RANK[phase] ?? 0);
+      if (newRank <= oldRank) return;
+      const taskChanged = student.currentTask !== task;
+      student.currentTask = task;
+      student.currentPhase = phase;
+      if (taskChanged) {
+        student.stepStartedAt = new Date().toISOString();
+        student.discussMeta = null;
+      }
+      try {
+        await this.studentRepo.save(student);
+        return;
+      } catch (e: any) {
+        if (e.name === 'OptimisticLockVersionMismatchError') continue;
+        throw e;
+      }
     }
-    const oldRank = (student.currentTask * 10) + (StudentSubmissionService.PHASE_RANK[student.currentPhase] ?? 0);
-    const newRank = (task * 10) + (StudentSubmissionService.PHASE_RANK[phase] ?? 0);
-    if (newRank <= oldRank) return;
-    const taskChanged = student.currentTask !== task;
-    student.currentTask = task;
-    student.currentPhase = phase;
-    if (taskChanged) {
-      student.stepStartedAt = new Date().toISOString();
-      student.discussMeta = null;
-    }
-    await this.studentRepo.save(student);
+    this.logger.warn(`updatePhase failed after 3 retries for student ${studentId}`);
   }
 
   async getProgress(session: ClassroomSession, studentId: string, includeSubmissions?: boolean): Promise<StudentProgressResponse | null> {
@@ -193,12 +197,10 @@ export class StudentSubmissionService {
 
   private async gradeSubmission(lessonId: string, step: number, data: Record<string, unknown>): Promise<GradeResult | null> {
     try {
-      const lesson = await this.lessonRepo.findOne({ where: { id: lessonId } });
-      if (!lesson) return null;
+      const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+      if (!manifest) return null;
 
-      const manifest = JSON.parse(lesson.manifestJson);
       const readingSteps = manifest.readingSteps || [];
-
       const stepDef = readingSteps.find((s: any) => s.idx === step);
       if (!stepDef || !stepDef.answerKey) return null;
 

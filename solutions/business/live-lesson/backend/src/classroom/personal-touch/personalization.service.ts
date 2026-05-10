@@ -7,6 +7,7 @@ import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { sanitizeAnswerKey } from '../../schemas/manifest.utils';
 import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../schemas';
 import type { PersonalTouch, GradeResult } from '../../schemas';
@@ -27,6 +28,7 @@ export class PersonalizationService {
     private readonly sessionRepo: Repository<ClassroomSession>,
     private readonly gradingService: GradingService,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly manifestCache: ManifestCacheService,
     private readonly exerciseService: ExerciseService,
   ) {}
 
@@ -40,10 +42,8 @@ export class PersonalizationService {
     });
     if (!student) throw new NotFoundException('Student not found in this session');
 
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
-
-    const manifest = JSON.parse(lesson.manifestJson);
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
     const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
 
     const ptParsed = PersonalTouchSchema.safeParse(manifest.personalTouch);
@@ -100,10 +100,9 @@ export class PersonalizationService {
   }
 
   async getBonusExercise(session: ClassroomSession, bonusStep: number) {
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
 
-    const manifest = JSON.parse(lesson.manifestJson);
     const rawBonusSteps: unknown[] = manifest.bonusSteps || [];
 
     if (bonusStep < 1 || bonusStep > rawBonusSteps.length) {
@@ -140,10 +139,9 @@ export class PersonalizationService {
     });
     if (!student) throw new NotFoundException('Student not found in this session');
 
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
 
-    const manifest = JSON.parse(lesson.manifestJson);
     const rawBonusSteps: unknown[] = manifest.bonusSteps || [];
 
     if (bonusStep < 1 || bonusStep > rawBonusSteps.length) {

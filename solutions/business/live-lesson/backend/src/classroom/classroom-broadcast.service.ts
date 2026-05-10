@@ -21,6 +21,7 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
   private broadcastTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private lastSnapshotAt = new Map<string, number>();
   private readonly SNAPSHOT_THROTTLE_MS = 10_000;
+  private readonly MAX_SNAPSHOTS_PER_SESSION = 200;
 
   constructor(
     private readonly stateService: ClassroomStateService,
@@ -160,13 +161,30 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
         capturedAt: new Date(now),
         stateJson: JSON.stringify(state),
       }),
-    ).catch(e => this.logger.warn(`Snapshot persist failed: ${e}`));
+    ).then(() => this.pruneSnapshots(sessionId))
+      .catch(e => this.logger.warn(`Snapshot persist failed: ${e}`));
   }
 
-  async getSnapshots(sessionId: string): Promise<SnapshotEntry[]> {
+  private async pruneSnapshots(sessionId: string): Promise<void> {
+    const count = await this.snapshotRepo.count({ where: { sessionId } });
+    if (count <= this.MAX_SNAPSHOTS_PER_SESSION) return;
+    const excess = count - this.MAX_SNAPSHOTS_PER_SESSION;
+    const oldest = await this.snapshotRepo.find({
+      where: { sessionId },
+      order: { capturedAt: 'ASC' },
+      take: excess,
+      select: ['id'],
+    });
+    if (oldest.length > 0) {
+      await this.snapshotRepo.remove(oldest);
+    }
+  }
+
+  async getSnapshots(sessionId: string, limit = 100): Promise<SnapshotEntry[]> {
     const rows = await this.snapshotRepo.find({
       where: { sessionId },
       order: { capturedAt: 'ASC' },
+      take: limit,
     });
     return rows.reduce<SnapshotEntry[]>((acc, r) => {
       try {

@@ -30,11 +30,14 @@ export class LessonService implements OnModuleInit {
     const dirs = fs.readdirSync(dataDir, { withFileTypes: true })
       .filter(d => d.isDirectory());
 
+    const existingLessons = await this.repo.find({ select: ['id', 'lessonType', 'description'] });
+    const existingMap = new Map(existingLessons.map(l => [l.id, l]));
+
     for (const dir of dirs) {
       const manifestPath = path.join(dataDir, dir.name, 'manifest.json');
       if (!fs.existsSync(manifestPath)) continue;
 
-      const existing = await this.repo.findOne({ where: { id: dir.name } });
+      const existing = existingMap.get(dir.name);
       if (existing) {
         // Backfill lessonType and description from manifest
         try {

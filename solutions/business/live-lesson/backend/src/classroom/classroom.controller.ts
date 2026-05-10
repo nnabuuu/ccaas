@@ -14,6 +14,7 @@ import { PhaseDto } from './dto/phase.dto';
 import { StepDto } from './dto/step.dto';
 import { NotifyDto } from './dto/notify.dto';
 import { validateCode } from './validate-code';
+import { ManifestCacheService } from './manifest-cache.service';
 import { buildTaskMap } from './task-map.utils';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -33,6 +34,7 @@ export class ClassroomController {
     private readonly classroomService: ClassroomService,
     private readonly studentSubmission: StudentSubmissionService,
     private readonly observeRegistry: ObserveRegistry,
+    private readonly manifestCache: ManifestCacheService,
     @InjectRepository(Lesson)
     private readonly lessonRepo: Repository<Lesson>,
   ) {}
@@ -227,14 +229,9 @@ export class ClassroomController {
 
   /** Load manifest helper used by observe endpoint */
   private async loadManifestForSession(session: { lessonId: string }): Promise<{ manifest: Record<string, unknown>; taskMap: ReturnType<typeof buildTaskMap> }> {
-    const lesson = await this.lessonRepo.findOne({ where: { id: session.lessonId } });
-    if (!lesson) throw new NotFoundException('Lesson not found');
-    try {
-      const manifest = JSON.parse(lesson.manifestJson);
-      return { manifest, taskMap: buildTaskMap(manifest) };
-    } catch {
-      throw new NotFoundException('Invalid manifest');
-    }
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) throw new NotFoundException('Lesson not found');
+    return { manifest, taskMap: buildTaskMap(manifest) };
   }
 
   @Post(':code/step')

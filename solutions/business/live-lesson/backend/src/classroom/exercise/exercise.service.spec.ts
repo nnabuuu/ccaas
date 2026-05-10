@@ -7,6 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ExerciseService } from './exercise.service';
 import { GradingService } from './grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
@@ -132,6 +133,7 @@ describe('ExerciseService', () => {
       providers: [
         ExerciseService,
         GradingService,
+        ManifestCacheService,
         {
           provide: AiPromptBuilder,
           useValue: { callLlm: jest.fn().mockRejectedValue(new Error('not configured in test')) },

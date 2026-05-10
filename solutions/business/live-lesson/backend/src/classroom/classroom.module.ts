@@ -27,6 +27,7 @@ import { StudentSubmissionService } from './student-submission.service';
 import { ClassroomController } from './classroom.controller';
 import { AiPromptBuilder } from './ai-prompt-builder';
 import { MetricsAggregator } from './metrics-aggregator';
+import { ManifestCacheService } from './manifest-cache.service';
 import { ObserveRegistry } from './observe/observe-registry';
 import { McObserveHandler } from './observe/handlers/mc.handler';
 import { EvidenceObserveHandler } from './observe/handlers/evidence.handler';
@@ -87,7 +88,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
   ],
   providers: [
     // Infra
-    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService,
+    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, ManifestCacheService,
     // Observe handlers + registry
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler,
     // Exercise
