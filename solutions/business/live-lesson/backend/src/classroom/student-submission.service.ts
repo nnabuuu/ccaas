@@ -9,7 +9,7 @@ import { GradingService } from './exercise/grading.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
-import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentSnapshotResponse, StudentProgressResponse } from '../schemas/classroom';
+import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../schemas/classroom';
 
 @Injectable()
 export class StudentSubmissionService {
@@ -119,6 +119,13 @@ export class StudentSubmissionService {
         tenantId: session.lessonId,
         payload: { student: JSON.stringify(data), ai: `得分 ${exerciseCorrectRate}%`, step },
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
+
+      // Auto-advance: if advanceOn === 'submit' and score is 100%, advance to discuss
+      if (score?.total === 100 && taskMap.advanceOn[step] === 'submit' && taskNum !== undefined) {
+        await this.updatePhase(session, studentId, taskNum, 'discuss');
+        const updated = await this.studentRepo.findOne({ where: { id: studentId, sessionId: session.id } });
+        return { ok: true, score, currentTask: updated?.currentTask ?? taskNum, currentPhase: updated?.currentPhase ?? 'discuss' };
+      }
     }
 
     return { ok: true, score, currentTask: student.currentTask, currentPhase: student.currentPhase };
@@ -146,61 +153,28 @@ export class StudentSubmissionService {
     await this.studentRepo.save(student);
   }
 
-  async getProgress(session: ClassroomSession, studentId: string): Promise<StudentProgressResponse | null> {
+  async getProgress(session: ClassroomSession, studentId: string, includeSubmissions?: boolean): Promise<StudentProgressResponse | null> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
     if (!student) return null;
 
-    // Crash recovery: if student completed the exercise (score=100) for their
-    // current task but currentPhase is still 'practice' or earlier (phaseIdx <= 1),
-    // the browser likely crashed before reporting the next phase. Persist the fix
-    // so teacher dashboard and subsequent getProgress calls see consistent state.
-    const PHASE_ORDER = ['listen', 'practice', 'discuss', 'takeaway'];
-    const phaseIdx = PHASE_ORDER.indexOf(student.currentPhase);
-    if (phaseIdx !== -1 && phaseIdx <= 1) {
-      const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
-      const stepIdx = taskMap.taskToStep[student.currentTask];
-      if (stepIdx !== undefined) {
-        const sub = await this.submissionRepo.findOne({
-          where: { sessionId: session.id, studentId, step: stepIdx, phase: 'exercise' },
-        });
-        const score = sub?.scoreJson as GradeResult | null;
-        if (score?.total === 100) {
-          const nextTask = student.currentTask + 1;
-          if (nextTask <= taskMap.maxTask) {
-            student.currentTask = nextTask;
-            student.currentPhase = 'listen';
-          } else {
-            student.currentPhase = 'completed';
-          }
-          student.stepStartedAt = new Date().toISOString();
-          student.discussMeta = null;
-          await this.studentRepo.save(student);
-          return { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: null };
-        }
-      }
+    const result: StudentProgressResponse = { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
+    if (includeSubmissions) {
+      result.submissions = await this.buildSubmissionMap(session.id, studentId);
     }
-
-    return { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
+    return result;
   }
 
-  async getSnapshot(session: ClassroomSession, studentId: string): Promise<StudentSnapshotResponse | null> {
-    const progress = await this.getProgress(session, studentId);
-    if (!progress) return null;
-
+  private async buildSubmissionMap(sessionId: string, studentId: string): Promise<Record<number, { data: unknown; score: GradeResult | null }>> {
     const submissions = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId, phase: 'exercise' },
+      where: { sessionId, studentId, phase: 'exercise' },
     });
-    const submissionMap: Record<number, { data: any; score: any }> = {};
+    const map: Record<number, { data: unknown; score: GradeResult | null }> = {};
     for (const sub of submissions) {
-      submissionMap[sub.step] = {
-        data: sub.dataJson,
-        score: sub.scoreJson ?? null,
-      };
+      map[sub.step] = { data: sub.dataJson, score: (sub.scoreJson as GradeResult) ?? null };
     }
-
-    return { progress, submissions: submissionMap };
+    return map;
   }
 
   async getSubmission(session: ClassroomSession, studentId: string, step: number): Promise<SubmissionResponse | null> {

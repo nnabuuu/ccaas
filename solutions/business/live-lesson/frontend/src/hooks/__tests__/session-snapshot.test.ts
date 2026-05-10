@@ -20,7 +20,7 @@ afterEach(() => { vi.restoreAllMocks() })
 describe('fetchSessionSnapshot', () => {
   it('returns progress and submissions on success', async () => {
     const apiResponse = {
-      progress: { currentTask: 2, currentPhase: 'practice' },
+      currentTask: 2, currentPhase: 'practice',
       submissions: {
         1: { data: { answers: [1, 0] }, score: { total: 100 } },
       },
@@ -31,15 +31,18 @@ describe('fetchSessionSnapshot', () => {
     } as Response)
 
     const result = await fetchSessionSnapshot('ABC123', 'stu-1')
-    expect(result).toEqual(apiResponse)
+    expect(result).toEqual({
+      progress: { currentTask: 2, currentPhase: 'practice' },
+      submissions: { 1: { data: { answers: [1, 0] }, score: { total: 100 } } },
+    })
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/classroom/ABC123/students/stu-1/snapshot',
+      '/api/classroom/ABC123/students/stu-1/progress?include=submissions',
     )
   })
 
   it('caches submissions to localStorage on success', async () => {
     const apiResponse = {
-      progress: { currentTask: 2, currentPhase: 'discuss' },
+      currentTask: 2, currentPhase: 'discuss',
       submissions: {
         1: { data: { answers: [1, 0] }, score: { total: 100 } },
         3: { data: { pairs: ['a', 'b'] }, score: null },
@@ -73,24 +76,21 @@ describe('fetchSessionSnapshot', () => {
   })
 
   it('returns snapshot with empty submissions map', async () => {
-    const apiResponse = {
-      progress: { currentTask: 1, currentPhase: 'listen' },
-      submissions: {},
-    }
+    const apiResponse = { currentTask: 1, currentPhase: 'listen', submissions: {} }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(apiResponse),
     } as Response)
 
     const result = await fetchSessionSnapshot('CODE', 'stu-1')
-    expect(result).toEqual(apiResponse)
+    expect(result).toEqual({
+      progress: { currentTask: 1, currentPhase: 'listen' },
+      submissions: {},
+    })
   })
 
   it('does not crash when API returns null submissions', async () => {
-    const apiResponse = {
-      progress: { currentTask: 1, currentPhase: 'listen' },
-      submissions: null,
-    }
+    const apiResponse = { currentTask: 1, currentPhase: 'listen', discussMeta: null }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: () => Promise.resolve(apiResponse),
@@ -103,11 +103,9 @@ describe('fetchSessionSnapshot', () => {
 
   it('preserves discussMeta in progress from snapshot API', async () => {
     const apiResponse = {
-      progress: {
-        currentTask: 1,
-        currentPhase: 'discuss',
-        discussMeta: { startedAt: '2025-01-01T00:00:00Z', goalReached: true },
-      },
+      currentTask: 1,
+      currentPhase: 'discuss',
+      discussMeta: { startedAt: '2025-01-01T00:00:00Z', goalReached: true },
       submissions: {},
     }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -124,11 +122,9 @@ describe('fetchSessionSnapshot', () => {
 
   it('preserves discussMeta: null for non-discuss phases', async () => {
     const apiResponse = {
-      progress: {
-        currentTask: 1,
-        currentPhase: 'listen',
-        discussMeta: null,
-      },
+      currentTask: 1,
+      currentPhase: 'listen',
+      discussMeta: null,
       submissions: {},
     }
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
@@ -150,7 +146,7 @@ describe('fetchSessionSnapshot', () => {
     expect(result).toBeNull()
   })
 
-  it('returns null when API response missing progress field', async () => {
+  it('returns null when API response missing currentTask field', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ submissions: {} }),

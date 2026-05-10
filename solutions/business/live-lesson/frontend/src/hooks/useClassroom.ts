@@ -227,16 +227,6 @@ export interface StudentProgress {
   discussMeta?: DiscussMeta | null
 }
 
-export async function fetchStudentProgress(
-  sessionCode: string, studentId: string,
-): Promise<StudentProgress | null> {
-  try {
-    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/progress`)
-    if (!res.ok) return null
-    return await res.json()
-  } catch { return null }
-}
-
 // ── Session snapshot (unified restore) ──
 
 export interface SessionSnapshot {
@@ -248,17 +238,18 @@ export async function fetchSessionSnapshot(
   sessionCode: string, studentId: string,
 ): Promise<SessionSnapshot | null> {
   try {
-    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/snapshot`)
+    const res = await fetch(`${API_BASE}/${sessionCode}/students/${studentId}/progress?include=submissions`)
     if (!res.ok) return null
     const data = await res.json()
-    if (!data?.progress) return null
-    if (data.submissions) {
-      for (const [step, sub] of Object.entries(data.submissions)) {
+    if (data?.currentTask == null) return null
+    const { submissions, ...progress } = data
+    if (submissions) {
+      for (const [step, sub] of Object.entries(submissions)) {
         const s = sub as CachedSubmission
         cacheSubmission(sessionCode, Number(step), s.data, s.score)
       }
     }
-    return data
+    return { progress, submissions: submissions ?? {} }
   } catch { return null }
 }
 

@@ -4230,108 +4230,102 @@ describe('Phase sync integration — student ↔ teacher', () => {
     });
   });
 
-  // ── 3. Crash recovery — getProgress auto-corrects stale phase after exercise completion ──
+  // ── 3. getProgress is pure read (no side-effects) ──
 
-  describe('crash recovery via getProgress', () => {
-    it('should advance student who completed exercise but crashed before phase report', async () => {
+  describe('getProgress is pure read', () => {
+    it('should NOT auto-advance when student has score=100 but phase is stale', async () => {
       const created = await service.createSession('phase-sync-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await submissionSvc.join(session!, '崩溃学生')).studentId;
+      const sid = (await submissionSvc.join(session!, '纯读学生')).studentId;
 
-      // Student is at task 1, listen (default). Submit correct answer for task 1.
+      // Submit correct answer (score=100) but no updatePhase call
       await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
 
-      // Student entity still at task 1, listen (no updatePhase was called — browser crashed)
-      const raw = await studentRepo.findOne({ where: { id: sid } });
-      expect(raw!.currentTask).toBe(1);
-      expect(raw!.currentPhase).toBe('listen');
-
-      // getProgress detects the 100% submission and auto-corrects
+      // getProgress should return current state without modifying it
       const progress = await submissionSvc.getProgress(session!, sid);
-      expect(progress!.currentTask).toBe(2);
+      expect(progress!.currentTask).toBe(1);
       expect(progress!.currentPhase).toBe('listen');
 
-      // The correction is persisted to DB
+      // DB should remain unchanged
       const after = await studentRepo.findOne({ where: { id: sid } });
-      expect(after!.currentTask).toBe(2);
+      expect(after!.currentTask).toBe(1);
       expect(after!.currentPhase).toBe('listen');
     });
 
-    it('should mark completed if crashed after submitting last task', async () => {
+    it('should return submissions for frontend recovery when includeSubmissions=true', async () => {
       const created = await service.createSession('phase-sync-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await submissionSvc.join(session!, '最后崩溃')).studentId;
+      const sid = (await submissionSvc.join(session!, '恢复学生')).studentId;
 
-      // Advance through all 5 tasks via phase reports
       await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
-      await submissionSvc.updatePhase(session!, sid, 2, 'listen');
-      await submissionSvc.submit(session!, sid, 3, { pairs: ['skimming', 'scanning', 'inferring'] });
-      await submissionSvc.updatePhase(session!, sid, 3, 'listen');
-      await submissionSvc.submit(session!, sid, 5, {
-        rows: [
-          { place: 'Japan', practice: 'meditation', reason: 'focus' },
-          { place: 'India', practice: 'yoga', reason: 'flexibility' },
-        ],
-      });
-      await submissionSvc.updatePhase(session!, sid, 4, 'listen');
-      await submissionSvc.submit(session!, sid, 7, { position: 'agree', evidence: ['e1', 'e2'] });
-      await submissionSvc.updatePhase(session!, sid, 5, 'listen');
 
-      // Submit last task but crash before reporting 'completed'
-      await submissionSvc.submit(session!, sid, 9, { order: ['Introduction', 'Body', 'Conclusion'] });
-
-      // getProgress should auto-correct to completed
-      const progress = await submissionSvc.getProgress(session!, sid);
-      expect(progress!.currentPhase).toBe('completed');
-      expect(progress!.currentTask).toBe(5);
-    }, 15_000);
-
-    it('should not trigger recovery when student is in discuss/takeaway phase', async () => {
-      const created = await service.createSession('phase-sync-lesson');
-      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await submissionSvc.join(session!, '讨论中学生')).studentId;
-
-      // Submit exercise, then advance to discuss (past the phaseIdx <= 1 threshold)
-      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
-      await submissionSvc.updatePhase(session!, sid, 1, 'discuss');
-
-      // getProgress should NOT trigger crash recovery (phaseIdx=2 > 1)
-      const progress = await submissionSvc.getProgress(session!, sid);
-      expect(progress!.currentTask).toBe(1);
-      expect(progress!.currentPhase).toBe('discuss');
-    });
-
-    it('should not trigger recovery when exercise score < 100', async () => {
-      const created = await service.createSession('phase-sync-lesson');
-      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await submissionSvc.join(session!, '错误答案学生')).studentId;
-
-      // Submit wrong answer — score 0, not 100
-      await submissionSvc.submit(session!, sid, 1, { answers: [0, 1] });
-
-      // getProgress should NOT auto-advance (score < 100)
-      const progress = await submissionSvc.getProgress(session!, sid);
+      // Frontend can derive "practice done" from submissions[step].score.total === 100
+      const progress = await submissionSvc.getProgress(session!, sid, true);
       expect(progress!.currentTask).toBe(1);
       expect(progress!.currentPhase).toBe('listen');
+      expect(progress!.submissions![1].score).toEqual(expect.objectContaining({ total: 100 }));
+    });
+  });
+
+  // ── 3b. submit() auto-advance with advanceOn: 'submit' ──
+
+  describe('submit auto-advance with advanceOn policy', () => {
+    it('should auto-advance to discuss when advanceOn=submit and score=100', async () => {
+      // Create a lesson with advanceOn: 'submit' on the first task step
+      const advanceManifest = {
+        ...FULL_MANIFEST,
+        id: 'advance-on-lesson',
+        readingSteps: FULL_MANIFEST.readingSteps.map((s, i) =>
+          i === 0 ? { ...s, type: 'task', advanceOn: 'submit' } : { ...s, type: 'task' },
+        ),
+      };
+      await lessonRepo.save(lessonRepo.create({
+        id: 'advance-on-lesson',
+        title: 'Advance On Test',
+        subject: 'English',
+        gradeLevel: '7',
+        manifestJson: JSON.stringify(advanceManifest),
+      }));
+
+      const created = await service.createSession('advance-on-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '自动进阶学生')).studentId;
+
+      // Advance to practice so updatePhase from submit works (practice → discuss)
+      await submissionSvc.updatePhase(session!, sid, 1, 'practice');
+
+      // Submit correct answer → should auto-advance to discuss
+      const result = await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      expect(result.score!.total).toBe(100);
+      expect(result.currentPhase).toBe('discuss');
+      expect(result.currentTask).toBe(1);
+
+      // Verify DB state
+      const student = await studentRepo.findOne({ where: { id: sid } });
+      expect(student!.currentPhase).toBe('discuss');
     });
 
-    it('should clear discussMeta when crash recovery auto-advances student', async () => {
+    it('should NOT auto-advance when advanceOn=confirm (default)', async () => {
       const created = await service.createSession('phase-sync-lesson');
       const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-      const sid = (await submissionSvc.join(session!, '讨论崩溃学生')).studentId;
+      const sid = (await submissionSvc.join(session!, '确认学生')).studentId;
 
-      // Manually set discussMeta to simulate a student who was in discuss
-      const student = await studentRepo.findOne({ where: { id: sid } });
-      student!.discussMeta = { startedAt: '2025-01-01T00:00:00Z', goalReached: true };
-      await studentRepo.save(student!);
+      await submissionSvc.updatePhase(session!, sid, 1, 'practice');
+      const result = await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+      expect(result.score!.total).toBe(100);
+      // Phase stays at practice — student must explicitly advance
+      expect(result.currentPhase).toBe('practice');
+    });
 
-      // Submit correct answer (score=100) — student at listen, browser crashed
-      await submissionSvc.submit(session!, sid, 1, { answers: [1, 0] });
+    it('should NOT auto-advance when score < 100 even with advanceOn=submit', async () => {
+      const created = await service.createSession('advance-on-lesson');
+      const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
+      const sid = (await submissionSvc.join(session!, '错误学生')).studentId;
 
-      // getProgress auto-advances and clears discussMeta
-      const progress = await submissionSvc.getProgress(session!, sid);
-      expect(progress!.currentTask).toBe(2);
-      expect(progress!.discussMeta).toBeNull();
+      await submissionSvc.updatePhase(session!, sid, 1, 'practice');
+      const result = await submissionSvc.submit(session!, sid, 1, { answers: [0, 1] });
+      expect(result.score!.total).toBe(0);
+      expect(result.currentPhase).toBe('practice');
     });
   });
 
@@ -4361,9 +4355,9 @@ describe('Phase sync integration — student ↔ teacher', () => {
   });
 });
 
-// ── StudentSubmissionService — getSnapshot ──
+// ���─ StudentSubmissionService — getProgress with submissions ──
 
-describe('StudentSubmissionService — getSnapshot', () => {
+describe('StudentSubmissionService — getProgress with submissions', () => {
   let module: TestingModule;
   let service: ClassroomService;
   let submissionSvc: StudentSubmissionService;
@@ -4415,7 +4409,7 @@ describe('StudentSubmissionService — getSnapshot', () => {
     const created = await service.createSession('snapshot-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
 
-    const result = await submissionSvc.getSnapshot(session!, 'nonexistent-id');
+    const result = await submissionSvc.getProgress(session!, 'nonexistent-id', true);
     expect(result).toBeNull();
   });
 
@@ -4424,9 +4418,11 @@ describe('StudentSubmissionService — getSnapshot', () => {
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const joined = await submissionSvc.join(session!, 'FreshStudent');
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
     expect(result).not.toBeNull();
-    expect(result!.progress).toEqual({ currentTask: 1, currentPhase: 'listen', discussMeta: null });
+    expect(result!.currentTask).toBe(1);
+    expect(result!.currentPhase).toBe('listen');
+    expect(result!.discussMeta).toBeNull();
     expect(result!.submissions).toEqual({});
   });
 
@@ -4437,12 +4433,12 @@ describe('StudentSubmissionService — getSnapshot', () => {
 
     await submissionSvc.submit(session!, joined.studentId, 1, { answers: [1, 0] });
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
     expect(result).not.toBeNull();
-    expect(result!.progress.currentTask).toBe(1);
-    expect(result!.submissions[1]).toBeDefined();
-    expect(result!.submissions[1].data).toEqual({ answers: [1, 0] });
-    expect(result!.submissions[1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+    expect(result!.currentTask).toBe(1);
+    expect(result!.submissions![1]).toBeDefined();
+    expect(result!.submissions![1].data).toEqual({ answers: [1, 0] });
+    expect(result!.submissions![1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
   });
 
   it('includes multiple step submissions in the map', async () => {
@@ -4455,13 +4451,13 @@ describe('StudentSubmissionService — getSnapshot', () => {
     // Submit step 1 again with different data (upsert)
     await submissionSvc.submit(session!, joined.studentId, 1, { answers: [0, 1] });
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
     expect(result).not.toBeNull();
     // Should reflect the latest submission
-    expect(result!.submissions[1].data).toEqual({ answers: [0, 1] });
+    expect(result!.submissions![1].data).toEqual({ answers: [0, 1] });
   });
 
-  it('includes discussMeta in snapshot when student is in discuss phase', async () => {
+  it('includes discussMeta when student is in discuss phase', async () => {
     const created = await service.createSession('snapshot-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const joined = await submissionSvc.join(session!, 'DiscussSnapshotStudent');
@@ -4473,13 +4469,13 @@ describe('StudentSubmissionService — getSnapshot', () => {
     student!.discussMeta = { startedAt: '2025-06-01T12:00:00Z' };
     await studentRepo.save(student!);
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
     expect(result).not.toBeNull();
-    expect(result!.progress.currentPhase).toBe('discuss');
-    expect(result!.progress.discussMeta).toEqual({ startedAt: '2025-06-01T12:00:00Z' });
+    expect(result!.currentPhase).toBe('discuss');
+    expect(result!.discussMeta).toEqual({ startedAt: '2025-06-01T12:00:00Z' });
   });
 
-  it('includes goalReached in snapshot discussMeta', async () => {
+  it('includes goalReached in discussMeta', async () => {
     const created = await service.createSession('snapshot-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const joined = await submissionSvc.join(session!, 'GoalSnapshotStudent');
@@ -4490,8 +4486,8 @@ describe('StudentSubmissionService — getSnapshot', () => {
     student!.discussMeta = { startedAt: '2025-06-01T12:00:00Z', goalReached: true };
     await studentRepo.save(student!);
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
-    expect(result!.progress.discussMeta!.goalReached).toBe(true);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
+    expect(result!.discussMeta!.goalReached).toBe(true);
   });
 
   it('updatePhase to takeaway on same task preserves discussMeta', async () => {
@@ -4532,10 +4528,10 @@ describe('StudentSubmissionService — getSnapshot', () => {
 
     await submissionSvc.submit(session!, joined.studentId, 1, { text: 'hello' });
 
-    const result = await submissionSvc.getSnapshot(session!, joined.studentId);
+    const result = await submissionSvc.getProgress(session!, joined.studentId, true);
     expect(result).not.toBeNull();
-    expect(result!.submissions[1]).toBeDefined();
-    expect(result!.submissions[1].score).toBeNull();
+    expect(result!.submissions![1]).toBeDefined();
+    expect(result!.submissions![1].score).toBeNull();
   });
 });
 
@@ -4626,7 +4622,7 @@ describe('Submission phase separation — cross-module', () => {
     expect(sub!.score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
   });
 
-  it('getSnapshot returns only exercise submissions, not discuss', async () => {
+  it('getProgress with submissions returns only exercise submissions, not discuss', async () => {
     const created = await service.createSession('full-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
     const { studentId } = await submissionSvc.join(session!, 'SnapshotSepStudent');
@@ -4634,32 +4630,32 @@ describe('Submission phase separation — cross-module', () => {
     await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
     await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'test' });
 
-    const snapshot = await submissionSvc.getSnapshot(session!, studentId);
-    expect(snapshot).not.toBeNull();
-    expect(Object.keys(snapshot!.submissions)).toHaveLength(1);
-    expect(snapshot!.submissions[1]).toBeDefined();
-    expect(snapshot!.submissions[1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
+    const result = await submissionSvc.getProgress(session!, studentId, true);
+    expect(result).not.toBeNull();
+    expect(Object.keys(result!.submissions!)).toHaveLength(1);
+    expect(result!.submissions![1]).toBeDefined();
+    expect(result!.submissions![1].score).toEqual({ total: 100, byDimension: { q0: true, q1: true } });
   });
 
-  it('getProgress crash recovery ignores discuss row and uses exercise score', async () => {
+  it('getProgress does NOT auto-advance — returns raw state with submissions for frontend recovery', async () => {
     const created = await service.createSession('full-lesson');
     const session = await sessionRepo.findOne({ where: { id: created.sessionId } });
-    const { studentId } = await submissionSvc.join(session!, 'CrashRecoveryStudent');
+    const { studentId } = await submissionSvc.join(session!, 'NoAutoAdvanceStudent');
 
     // Submit exercise (score=100) but do NOT call updatePhase — simulates crash
     await submissionSvc.submit(session!, studentId, 1, { answers: [1, 0] });
-    // Submit discuss (score=null)
-    await submissionSvc.submit(session!, studentId, 1, { phase: 'discuss', summary: 'crashed' });
 
     // Student still at task 1, phase 'listen' (never updated due to crash)
     const before = await studentRepo.findOne({ where: { id: studentId } });
     expect(before!.currentTask).toBe(1);
     expect(before!.currentPhase).toBe('listen');
 
-    // getProgress should detect exercise score=100 and auto-advance
-    const progress = await submissionSvc.getProgress(session!, studentId);
-    expect(progress!.currentTask).toBe(2);
+    // getProgress is now pure read — does NOT auto-advance
+    const progress = await submissionSvc.getProgress(session!, studentId, true);
+    expect(progress!.currentTask).toBe(1);
     expect(progress!.currentPhase).toBe('listen');
+    // Frontend uses submissions to derive "practice done" state
+    expect(progress!.submissions![1].score).toEqual(expect.objectContaining({ total: 100 }));
   });
 
   it('getState metrics and stepMetrics ignore discuss submissions', async () => {

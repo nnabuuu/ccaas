@@ -17,7 +17,6 @@ export type {
   JoinResponse,
   SubmitResponse,
   SubmissionResponse,
-  StudentSnapshotResponse,
   StudentProgressResponse,
   ChatMessageResponse,
   SnapshotEntry,

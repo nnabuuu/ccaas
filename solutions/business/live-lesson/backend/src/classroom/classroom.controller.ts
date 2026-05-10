@@ -123,28 +123,17 @@ export class ClassroomController {
     return this.studentSubmission.getSubmission(session, studentId, parsedStep);
   }
 
-  @Get(':code/students/:studentId/snapshot')
-  async getStudentSnapshot(
-    @Param('code') code: string,
-    @Param('studentId') studentId: string,
-  ) {
-    if (!studentId || !UUID_RE.test(studentId)) {
-      throw new BadRequestException('studentId must be a valid UUID');
-    }
-    const session = await this.classroomService.resolveSession(validateCodeOrId(code));
-    return this.studentSubmission.getSnapshot(session, studentId);
-  }
-
   @Get(':code/students/:studentId/progress')
   async getStudentProgress(
     @Param('code') code: string,
     @Param('studentId') studentId: string,
+    @Query('include') include?: string,
   ) {
     if (!studentId || !UUID_RE.test(studentId)) {
       throw new BadRequestException('studentId must be a valid UUID');
     }
     const session = await this.classroomService.resolveSession(validateCodeOrId(code));
-    return this.studentSubmission.getProgress(session, studentId);
+    return this.studentSubmission.getProgress(session, studentId, include === 'submissions');
   }
 
   @Get(':code/chat-history')

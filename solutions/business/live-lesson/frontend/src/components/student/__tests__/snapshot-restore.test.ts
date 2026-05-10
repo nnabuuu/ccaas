@@ -105,7 +105,7 @@ const PHASE_IDS = ['listen', 'practice', 'discuss', 'takeaway']
 describe('Snapshot → restore integration', () => {
   it('full flow: fetch snapshot → derive task state → resolve submissions → restore answers', async () => {
     const snapshotResponse = {
-      progress: { currentTask: 2, currentPhase: 'practice' },
+      currentTask: 2, currentPhase: 'practice',
       submissions: {
         1: { data: { answers: [1] }, score: { total: 100, byDimension: { q0: true } } },
       },
@@ -144,7 +144,7 @@ describe('Snapshot → restore integration', () => {
 
   it('localStorage is populated as side effect of fetchSessionSnapshot', async () => {
     const snapshotResponse = {
-      progress: { currentTask: 1, currentPhase: 'discuss' },
+      currentTask: 1, currentPhase: 'discuss',
       submissions: {
         1: { data: { answers: [0, 2] }, score: { total: 50 } },
       },

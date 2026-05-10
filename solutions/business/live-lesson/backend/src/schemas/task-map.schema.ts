@@ -8,4 +8,6 @@ export interface TaskMap {
   taskSteps: number[];
   /** total number of tasks */
   maxTask: number;
+  /** step idx -> advanceOn policy ('submit' | 'confirm'), defaults to 'confirm' */
+  advanceOn: Record<number, 'submit' | 'confirm'>;
 }

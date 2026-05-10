@@ -532,12 +532,13 @@ describe('Classroom polling — HTTP integration', () => {
       await reportPhase(code, studentId, 1, 'discuss');
     });
 
-    it('J9: get snapshot → has progress + submissions', async () => {
+    it('J9: get progress?include=submissions → flat fields + submissions', async () => {
       const res = await request(server())
-        .get(`/classroom/${code}/students/${studentId}/snapshot`)
+        .get(`/classroom/${code}/students/${studentId}/progress?include=submissions`)
         .expect(200);
 
-      expect(res.body.progress).toBeDefined();
+      expect(res.body.currentTask).toBeDefined();
+      expect(res.body.currentPhase).toBeDefined();
       expect(res.body.submissions).toBeDefined();
       expect(res.body.submissions[1]).toBeDefined();
     });

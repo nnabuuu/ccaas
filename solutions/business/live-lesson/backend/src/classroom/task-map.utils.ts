@@ -12,15 +12,17 @@ export function buildTaskMap(manifest: any): TaskMap {
   const stepToTask: Record<number, number> = {};
   const taskToStep: Record<number, number> = {};
   const taskSteps: number[] = [];
+  const advanceOn: Record<number, 'submit' | 'confirm'> = {};
 
   taskDefs.forEach((def: any, i: number) => {
     const taskNum = i + 1;
     stepToTask[def.idx] = taskNum;
     taskToStep[taskNum] = def.idx;
     taskSteps.push(def.idx);
+    advanceOn[def.idx] = def.advanceOn === 'submit' ? 'submit' : 'confirm';
   });
 
-  return { stepToTask, taskToStep, taskSteps, maxTask: taskDefs.length };
+  return { stepToTask, taskToStep, taskSteps, maxTask: taskDefs.length, advanceOn };
 }
 
 const MAX_CACHE_SIZE = 100;

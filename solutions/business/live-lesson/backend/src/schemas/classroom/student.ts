@@ -22,15 +22,11 @@ export interface SubmissionResponse {
   submittedAt: string;
 }
 
-export interface StudentSnapshotResponse {
-  progress: StudentProgressResponse;
-  submissions: Record<number, { data: unknown; score: GradeResult | null }>;
-}
-
 export interface StudentProgressResponse {
   currentTask: number;
   currentPhase: string;
   discussMeta: Record<string, unknown> | null;
+  submissions?: Record<number, { data: unknown; score: GradeResult | null }>;
 }
 
 export interface ChatMessageResponse {

@@ -65,18 +65,23 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const [answerChanges, setAnswerChanges] = useState<Array<{ qi: number; from: number | null; to: number; at: number }>>([])
   const firstAttemptRef = useRef<unknown[] | null>(null)
 
-  // ── Revisit: cache-first submission restore ──
+  // ── Revisit / recovery: cache-first submission restore ──
+  // Also load previous submission when phase=practice + score=100 (page reload recovery)
+  const hasRestoredScore100 = stepIdx !== undefined
+    && ctx.restoredSubmissions?.[stepIdx]?.score?.total === 100
+  const shouldRestore = isRevisit || hasRestoredScore100
+
   const [prevSubmission, setPrevSubmission] = useState<CachedSubmission | null>(() => {
-    if (!isRevisit || stepIdx === undefined) return null
+    if (!shouldRestore || stepIdx === undefined) return null
     const fromCtx = ctx.restoredSubmissions?.[stepIdx]
     if (fromCtx) return fromCtx
     if (ctx.sessionCode) return getCachedSubmission(ctx.sessionCode, stepIdx)
     return null
   })
-  const [submissionChecked, setSubmissionChecked] = useState(!isRevisit || prevSubmission != null)
+  const [submissionChecked, setSubmissionChecked] = useState(!shouldRestore || prevSubmission != null)
 
   useEffect(() => {
-    if (!isRevisit || prevSubmission || !ctx.sessionCode || !ctx.studentId || stepIdx === undefined) return
+    if (!shouldRestore || prevSubmission || !ctx.sessionCode || !ctx.studentId || stepIdx === undefined) return
     let cancelled = false
     getSubmission(ctx.sessionCode, ctx.studentId, stepIdx).then(sub => {
       if (cancelled) return
@@ -84,9 +89,9 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       setSubmissionChecked(true)
     })
     return () => { cancelled = true }
-  }, [isRevisit, prevSubmission, ctx.sessionCode, ctx.studentId, stepIdx])
+  }, [shouldRestore, prevSubmission, ctx.sessionCode, ctx.studentId, stepIdx])
 
-  const reviewMode = !!(isRevisit && prevSubmission)
+  const reviewMode = !!(shouldRestore && prevSubmission)
 
   // Derive effective state for review mode (pre-filled, locked answers)
   const effectiveAns = reviewMode ? restoreAns(ex.type, prevSubmission.data) : ans
@@ -317,8 +322,8 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
   const attemptCount = (qi: number) => (attempts[qi] || []).length
 
-  // Loading state: revisit requested but submission not yet loaded from API
-  if (isRevisit && !submissionChecked) {
+  // Loading state: revisit/recovery requested but submission not yet loaded from API
+  if (shouldRestore && !submissionChecked) {
     return (
       <div id="phase-practice">
         <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>

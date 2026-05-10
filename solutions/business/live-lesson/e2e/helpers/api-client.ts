@@ -98,14 +98,11 @@ export async function aiDiscuss(
   });
 }
 
-// ── Student snapshot ──
+// ── Student progress ──
 
-export async function getStudentSnapshot(code: string, studentId: string) {
-  return request('GET', `/api/classroom/${code}/students/${studentId}/snapshot`);
-}
-
-export async function getStudentProgress(code: string, studentId: string) {
-  return request('GET', `/api/classroom/${code}/students/${studentId}/progress`);
+export async function getStudentProgress(code: string, studentId: string, include?: 'submissions') {
+  const qs = include ? `?include=${include}` : '';
+  return request('GET', `/api/classroom/${code}/students/${studentId}/progress${qs}`);
 }
 
 // ── Personal touch ──

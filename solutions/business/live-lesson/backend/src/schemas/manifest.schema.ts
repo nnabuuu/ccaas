@@ -101,6 +101,8 @@ export const ReadingStepSchema = z.object({
   description: z.string().optional(),
   focusParagraphs: z.array(z.string()).optional(),
   showRoles: z.boolean().optional(),
+  // Phase advance policy: 'submit' auto-advances on 100%, 'confirm' (default) requires explicit next
+  advanceOn: z.enum(['submit', 'confirm']).optional(),
   // Task exercise fields
   exerciseLabel: z.string().optional(),
   subtitle: z.string().optional(),

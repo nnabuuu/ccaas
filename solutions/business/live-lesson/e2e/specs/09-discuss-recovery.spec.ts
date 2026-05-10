@@ -3,7 +3,6 @@ import {
   submitAnswer,
   reportPhase,
   aiDiscuss,
-  getStudentSnapshot,
   getStudentProgress,
   getChatHistory,
   discussComplete,
@@ -52,12 +51,12 @@ test.describe('09 — Discuss recovery (discussMeta + chat persistence)', () => 
     }
   });
 
-  test('snapshot includes discussMeta from progress', async () => {
-    const { status, data } = await getStudentSnapshot(code, studentId);
+  test('progress?include=submissions includes discussMeta', async () => {
+    const { status, data } = await getStudentProgress(code, studentId, 'submissions');
     expect(status).toBe(200);
-    const body = data as { progress: { discussMeta: { startedAt: string; goalReached?: boolean } | null }; submissions: Record<string, unknown> };
-    expect(body.progress.discussMeta).not.toBeNull();
-    expect(body.progress.discussMeta!.startedAt).toBeDefined();
+    const body = data as { currentTask: number; currentPhase: string; discussMeta: { startedAt: string; goalReached?: boolean } | null; submissions: Record<string, unknown> };
+    expect(body.discussMeta).not.toBeNull();
+    expect(body.discussMeta!.startedAt).toBeDefined();
   });
 
   test('chat history persists discuss thread after aiDiscuss', async () => {
