@@ -28,6 +28,7 @@ import { OBSERVER_ENGINE, ObservationRecord } from '@kedge-agentic/observer-engi
 import { ClusterClassifier } from './socratic-discuss/cluster-classifier';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { ManifestCacheService } from './manifest-cache.service';
 import { TranslateService } from './translate/translate.service';
 
 const mockObserverEngine = {
@@ -220,7 +221,7 @@ describe('ClassroomService — persistence', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -446,7 +447,7 @@ describe('ClassroomService — extended coverage', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -1127,6 +1128,8 @@ describe('ClassroomService — extended coverage', () => {
 
         // Remove the lesson → gradeSubmission will hit !lesson branch
         await lessonRepo.delete('ephemeral-lesson');
+        // Invalidate manifest cache so the deleted lesson isn't served from memory
+        module.get(ManifestCacheService).invalidate('ephemeral-lesson');
 
         const result = await submissionSvc.submit(sess!, sid, 1, { answers: [0] });
         expect(result.score).toBeNull();
@@ -3095,7 +3098,7 @@ describe('ClassroomService — 3-task lesson (dynamic TaskMap)', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3250,7 +3253,7 @@ describe('ClassroomService — aiDiscuss Socratic', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3574,7 +3577,7 @@ describe('ClassroomService — Personal Touch & Bonus', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3822,7 +3825,7 @@ describe('ClassroomService — snapshots', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -3990,7 +3993,7 @@ describe('StudentSubmissionService — getSubmission', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4099,7 +4102,7 @@ describe('Phase sync integration — student ↔ teacher', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4380,7 +4383,7 @@ describe('StudentSubmissionService — getProgress with submissions', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4560,7 +4563,7 @@ describe('Submission phase separation — cross-module', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4796,7 +4799,7 @@ describe('REST polling scenarios — student', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4870,7 +4873,7 @@ describe('REST polling scenarios — teacher getState', () => {
       ],
       providers: [
         ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
-        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, TranslateService,
+        ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
       ],
     }).compile();
@@ -4971,5 +4974,252 @@ describe('REST polling scenarios — teacher getState', () => {
     const state = await service.getState(created.sessionId);
     expect(state.students).toHaveLength(3);
     expect(state.metrics.total).toBe(3);
+  });
+});
+
+/** Shared module builder for anti-pattern remediation tests. */
+async function buildAntiPatternTestModule(): Promise<TestingModule> {
+  return Test.createTestingModule({
+    imports: [
+      CacheModule.register(),
+      ConfigModule.forRoot({ isGlobal: true }),
+      TypeOrmModule.forRoot({
+        type: 'better-sqlite3',
+        database: ':memory:',
+        entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot],
+        synchronize: true,
+        logging: false,
+      }),
+      TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ObservationRecord, ClassroomSnapshot]),
+    ],
+    providers: [
+      ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, ExerciseService, DiscussService, AiAskService, PersonalizationService,
+      ObservationQueryService, GradingService, AiPromptBuilder, MetricsAggregator, ClusterClassifier, ClusterAggregator, CoachingService, ManifestCacheService, TranslateService,
+      { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },
+    ],
+  }).compile();
+}
+
+async function seedLesson(lessonRepo: Repository<Lesson>, id: string, title: string) {
+  await lessonRepo.save(
+    lessonRepo.create({
+      id,
+      title,
+      subject: 'English',
+      gradeLevel: '7',
+      manifestJson: JSON.stringify(TEST_MANIFEST),
+    }),
+  );
+}
+
+describe('StudentSubmissionService — updatePhase optimistic lock', () => {
+  let module: TestingModule;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let studentRepo: Repository<Student>;
+
+  beforeAll(async () => {
+    module = await buildAntiPatternTestModule();
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    studentRepo = module.get(getRepositoryToken(Student));
+    await seedLesson(module.get(getRepositoryToken(Lesson)), 'opt-lesson', 'Optimistic Lock Lesson');
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  async function seedSessionAndStudent(): Promise<{ session: ClassroomSession; studentId: string }> {
+    const session = sessionRepo.create({
+      code: Math.random().toString(36).slice(2, 8).toUpperCase(),
+      lessonId: 'opt-lesson',
+      status: 'active',
+      currentStep: 1,
+    });
+    const saved = await sessionRepo.save(session);
+    const joined = await submissionSvc.join(saved, 'TestStudent');
+    return { session: saved, studentId: joined.studentId };
+  }
+
+  it('updatePhase advances phase on success', async () => {
+    const { session, studentId } = await seedSessionAndStudent();
+
+    await submissionSvc.updatePhase(session, studentId, 1, 'discuss');
+
+    const student = await studentRepo.findOne({ where: { id: studentId } });
+    expect(student!.currentPhase).toBe('discuss');
+  });
+
+  it('updatePhase does not regress phase', async () => {
+    const { session, studentId } = await seedSessionAndStudent();
+
+    // Advance to task 2 / discuss
+    await submissionSvc.updatePhase(session, studentId, 2, 'discuss');
+
+    // Attempt regression to task 1 / listen — should be ignored
+    await submissionSvc.updatePhase(session, studentId, 1, 'listen');
+
+    const student = await studentRepo.findOne({ where: { id: studentId } });
+    expect(student!.currentTask).toBe(2);
+    expect(student!.currentPhase).toBe('discuss');
+  });
+
+  it('updatePhase retries on version conflict (concurrent update)', async () => {
+    const { session, studentId } = await seedSessionAndStudent();
+
+    // Spy on studentRepo.save to simulate a version conflict on the first attempt
+    const originalSave = studentRepo.save.bind(studentRepo);
+    let attempt = 0;
+    jest.spyOn(studentRepo, 'save').mockImplementation(async (entity: any) => {
+      attempt++;
+      if (attempt === 1) {
+        const err = new Error('version mismatch');
+        err.name = 'OptimisticLockVersionMismatchError';
+        throw err;
+      }
+      return originalSave(entity);
+    });
+
+    await submissionSvc.updatePhase(session, studentId, 1, 'discuss');
+
+    const student = await studentRepo.findOne({ where: { id: studentId } });
+    expect(student!.currentPhase).toBe('discuss');
+    expect(attempt).toBe(2); // first failed, second succeeded
+
+    jest.restoreAllMocks();
+  });
+});
+
+describe('StudentSubmissionService — submit upsert', () => {
+  let module: TestingModule;
+  let submissionSvc: StudentSubmissionService;
+  let sessionRepo: Repository<ClassroomSession>;
+  let submissionRepo: Repository<Submission>;
+
+  beforeAll(async () => {
+    module = await buildAntiPatternTestModule();
+    submissionSvc = module.get(StudentSubmissionService);
+    sessionRepo = module.get(getRepositoryToken(ClassroomSession));
+    submissionRepo = module.get(getRepositoryToken(Submission));
+    await seedLesson(module.get(getRepositoryToken(Lesson)), 'upsert-lesson', 'Upsert Test Lesson');
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('submit overwrites existing submission for same (session, student, step, phase)', async () => {
+    const session = await sessionRepo.save(sessionRepo.create({
+      code: 'UPSRT1',
+      lessonId: 'upsert-lesson',
+      status: 'active',
+      currentStep: 1,
+    }));
+    const joined = await submissionSvc.join(session, 'UpsertStudent');
+
+    // First submission
+    await submissionSvc.submit(session, joined.studentId, 1, { answers: [0, 0] });
+    // Second submission — same step, same phase (exercise) → should upsert
+    await submissionSvc.submit(session, joined.studentId, 1, { answers: [1, 0] });
+
+    const rows = await submissionRepo.find({
+      where: { sessionId: session.id, studentId: joined.studentId, step: 1, phase: 'exercise' },
+    });
+    expect(rows).toHaveLength(1);
+    // Latest data wins
+    expect(rows[0].dataJson).toEqual({ answers: [1, 0] });
+  });
+
+  it('submit creates separate rows for different phases', async () => {
+    const session = await sessionRepo.save(sessionRepo.create({
+      code: 'UPSRT2',
+      lessonId: 'upsert-lesson',
+      status: 'active',
+      currentStep: 1,
+    }));
+    const joined = await submissionSvc.join(session, 'PhaseStudent');
+
+    // Exercise submission
+    await submissionSvc.submit(session, joined.studentId, 1, { answers: [1, 0] });
+    // Discuss submission (different phase)
+    await submissionSvc.submit(session, joined.studentId, 1, { phase: 'discuss', message: 'hello' });
+
+    const rows = await submissionRepo.find({
+      where: { sessionId: session.id, studentId: joined.studentId, step: 1 },
+    });
+    expect(rows).toHaveLength(2);
+
+    const phases = rows.map(r => r.phase).sort();
+    expect(phases).toEqual(['discuss', 'exercise']);
+  });
+});
+
+describe('ClassroomBroadcastService — pruneSnapshots', () => {
+  let module: TestingModule;
+  let broadcastSvc: ClassroomBroadcastService;
+  let snapshotRepo: Repository<ClassroomSnapshot>;
+
+  beforeAll(async () => {
+    module = await buildAntiPatternTestModule();
+    broadcastSvc = module.get(ClassroomBroadcastService);
+    snapshotRepo = module.get(getRepositoryToken(ClassroomSnapshot));
+  });
+
+  afterAll(async () => {
+    await module.close();
+  });
+
+  it('pruneSnapshots removes excess snapshots beyond MAX', async () => {
+    const sessionId = 'prune-session-1';
+    const TOTAL = 205;
+
+    // Insert 205 snapshots
+    const snapshots = Array.from({ length: TOTAL }, (_, i) =>
+      snapshotRepo.create({
+        sessionId,
+        capturedAt: new Date(Date.now() - (TOTAL - i) * 1000),
+        stateJson: JSON.stringify({ i }),
+      }),
+    );
+    await snapshotRepo.save(snapshots);
+
+    // Invoke private pruneSnapshots
+    await (broadcastSvc as any).pruneSnapshots(sessionId);
+
+    const remaining = await snapshotRepo.count({ where: { sessionId } });
+    expect(remaining).toBeLessThanOrEqual(200);
+  });
+
+  it('pruneSnapshots keeps newest, removes oldest', async () => {
+    const sessionId = 'prune-session-2';
+    const TOTAL = 205;
+    const baseTime = Date.now() - TOTAL * 1000;
+
+    // Insert 205 with sequential timestamps
+    const snapshots = Array.from({ length: TOTAL }, (_, i) =>
+      snapshotRepo.create({
+        sessionId,
+        capturedAt: new Date(baseTime + i * 1000),
+        stateJson: JSON.stringify({ seq: i }),
+      }),
+    );
+    await snapshotRepo.save(snapshots);
+
+    await (broadcastSvc as any).pruneSnapshots(sessionId);
+
+    const remaining = await snapshotRepo.find({
+      where: { sessionId },
+      order: { capturedAt: 'ASC' },
+    });
+    expect(remaining).toHaveLength(TOTAL - 5); // MAX_SNAPSHOTS_PER_SESSION = 200
+
+    // The 5 oldest (seq 0..4) should be gone; oldest surviving = seq 5
+    const oldestState = JSON.parse(remaining[0].stateJson);
+    expect(oldestState.seq).toBe(5);
+
+    // The newest (seq 204) should still be present
+    const newestState = JSON.parse(remaining[remaining.length - 1].stateJson);
+    expect(newestState.seq).toBe(204);
   });
 });
