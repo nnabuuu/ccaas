@@ -60,21 +60,21 @@ export default function JoinPage() {
     return () => { cancelled = true }
   }, [codeInput, doLookup])
 
-  // Handle full sessionId from URL (> 6 chars)
+  // Handle full sessionId from URL (> 6 chars) — run once on mount
+  const urlLookupDone = useRef(false)
   useEffect(() => {
+    if (urlLookupDone.current) return
     if (!sessionFromUrl || sessionFromUrl.length <= 6) return
+    urlLookupDone.current = true
     let cancelled = false
     doLookup(sessionFromUrl).then(s => {
       if (cancelled || !s) return
-      // Set code input and ref before state update triggers auto-validate
       lastLookedUpCode.current = s.code
       setCodeInput(s.code)
       fetchManifest(s.lessonId).then(m => { if (!cancelled && m) setManifest(m) })
     })
     return () => { cancelled = true }
-    // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [sessionFromUrl, doLookup])
 
   // Check localStorage for saved sessions → batch-verify with backend → show restore options
   useEffect(() => {
