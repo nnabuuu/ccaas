@@ -142,7 +142,8 @@ server {
 | POST | `/api/classroom/:code/personal-touch` | Personal touch feedback `{ studentId, step }` |
 | GET | `/api/classroom/:code/bonus/:bonusStep/exercise` | Bonus exercise spec |
 | POST | `/api/classroom/:code/bonus/:bonusStep/check` | Check bonus answer `{ studentId, data }` |
-| POST | `/api/classroom/:code/translate` | Translate text `{ studentId, text, step, sourceContext, phase? }` → `{ translation }` |
+| POST | `/api/classroom/:code/translate` | Translate text `{ studentId, text, step, sourceContext, phase? }` → `{ definition, contextAnalysis, suggestedQuestions }` |
+| POST | `/api/classroom/:code/translate/chat` | Translate follow-up `{ studentId, step, originalText, question, sourceContext }` → `{ reply }` |
 
 ## Classroom State API (`GET /api/classroom/:code/state`)
 

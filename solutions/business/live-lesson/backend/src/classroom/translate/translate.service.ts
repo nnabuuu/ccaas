@@ -1,17 +1,27 @@
 import { Injectable, Inject, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { createHash } from 'crypto';
 import { Student } from '../../entities/student.entity';
+import { Lesson } from '../../entities/lesson.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiPromptBuilder } from '../ai-prompt-builder';
+import { ManifestCacheService } from '../manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 
-/** Simple LRU cache scoped per session */
-class LruCache {
-  private map = new Map<string, string>();
+export interface TranslateResponse {
+  definition: string;
+  contextAnalysis: string;
+  suggestedQuestions: string[];
+}
+
+/** Generic LRU cache scoped per session */
+class LruCache<T> {
+  private map = new Map<string, T>();
   constructor(private readonly maxSize: number) {}
 
-  get(key: string): string | undefined {
+  get(key: string): T | undefined {
     const val = this.map.get(key);
     if (val !== undefined) {
       this.map.delete(key);
@@ -20,7 +30,7 @@ class LruCache {
     return val;
   }
 
-  set(key: string, value: string): void {
+  set(key: string, value: T): void {
     if (this.map.has(key)) this.map.delete(key);
     this.map.set(key, value);
     if (this.map.size > this.maxSize) {
@@ -33,13 +43,16 @@ class LruCache {
 @Injectable()
 export class TranslateService {
   private readonly logger = new Logger(TranslateService.name);
-  /** sessionId → LRU cache of normalized text → translation */
-  private caches = new Map<string, LruCache>();
+  /** sessionId → LRU cache of normalized text → TranslateResponse */
+  private caches = new Map<string, LruCache<TranslateResponse>>();
 
   constructor(
     @InjectRepository(Student)
     private readonly studentRepo: Repository<Student>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly aiPromptBuilder: AiPromptBuilder,
+    private readonly manifestCache: ManifestCacheService,
     @Inject(OBSERVER_ENGINE) private readonly engine: ObserverEngine,
   ) {}
 
@@ -50,7 +63,7 @@ export class TranslateService {
     step: number,
     sourceContext: string,
     phase?: string,
-  ): Promise<{ translation: string }> {
+  ): Promise<TranslateResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -62,22 +75,49 @@ export class TranslateService {
     const cache = this.getCache(session.id);
     const cached = cache.get(normalized);
     if (cached) {
-      return { translation: cached };
+      return cached;
     }
 
-    let translation: string;
+    // Load manifest for contextual prompts
+    const lessonRepo = this.studentRepo.manager.getRepository(Lesson);
+    const manifest = await this.manifestCache.getManifest(session.lessonId, lessonRepo);
+
+    let result: TranslateResponse;
     try {
-      translation = await this.aiPromptBuilder.callLlm(
-        'You are a translation assistant. Translate the following English text to Simplified Chinese (简体中文). Output ONLY the translation, nothing else.',
-        text,
-        { maxTokens: 512, temperature: 0.3 },
-      );
+      if (manifest) {
+        const readingSteps = manifest.readingSteps || [];
+        const stepDef = readingSteps.find((s: any) => s.idx === step);
+        const systemPrompt = this.aiPromptBuilder.buildTranslatePrompt(manifest, stepDef);
+        const userMessage = `学生在【${sourceContext}】中选中了：「${text}」`;
+
+        const raw = await this.aiPromptBuilder.callLlm(systemPrompt, userMessage, {
+          maxTokens: 512,
+          temperature: 0.3,
+          responseFormat: { type: 'json_object' },
+        });
+
+        result = this.parseTranslateResponse(raw);
+      } else {
+        // Fallback: no manifest available — simpler prompt
+        const raw = await this.aiPromptBuilder.callLlm(
+          `你是一位英语阅读教学助教。将以下英文翻译为中文并分析。
+返回 JSON: { "definition": "中文释义", "contextAnalysis": "分析", "suggestedQuestions": ["追问1", "追问2"] }
+输出纯 JSON，不加 markdown 代码块。`,
+          text,
+          { maxTokens: 512, temperature: 0.3, responseFormat: { type: 'json_object' } },
+        );
+        result = this.parseTranslateResponse(raw);
+      }
     } catch (e) {
       this.logger.warn(`Translation LLM call failed: ${e}`);
-      return { translation: '翻译服务暂时不可用，请稍后再试。' };
+      return {
+        definition: '翻译服务暂时不可用，请稍后再试。',
+        contextAnalysis: '',
+        suggestedQuestions: [],
+      };
     }
 
-    cache.set(normalized, translation);
+    cache.set(normalized, result);
 
     this.engine.dispatch({
       type: 'translate_request',
@@ -87,19 +127,144 @@ export class TranslateService {
       payload: { step, sourceContext, phase: phase ?? null, textLength: text.length },
     }).catch(e => this.logger.warn(`Observer dispatch translate_request failed: ${e}`));
 
-    return { translation };
+    return result;
+  }
+
+  async translateChat(
+    session: ClassroomSession,
+    studentId: string,
+    step: number,
+    originalText: string,
+    question: string,
+    sourceContext: string,
+  ): Promise<{ reply: string }> {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) {
+      throw new NotFoundException('Student not found in this session');
+    }
+
+    // Thread ID: translate:{step}:{sha256(text).slice(0,8)}
+    const textHash = createHash('sha256').update(originalText.trim().toLowerCase()).digest('hex').slice(0, 8);
+    const threadId = `translate:${step}:${textHash}`;
+
+    // Load chat history (cap at 20 messages = 10 turns to bound context window)
+    const MAX_CHAT_HISTORY = 20;
+    const history = await this.chatMessageRepo.find({
+      where: { sessionId: session.id, studentId, threadId },
+      order: { seq: 'ASC' },
+    });
+    const trimmedHistory = history.slice(-MAX_CHAT_HISTORY);
+
+    // Load manifest + stepDef
+    const lessonRepo = this.studentRepo.manager.getRepository(Lesson);
+    const manifest = await this.manifestCache.getManifest(session.lessonId, lessonRepo);
+
+    // Get cached definition for system prompt context
+    const normalized = originalText.trim().toLowerCase();
+    const cache = this.getCache(session.id);
+    const cachedTranslation = cache.get(normalized);
+    const definition = cachedTranslation?.definition ?? originalText;
+
+    // Build system prompt
+    let systemPrompt: string;
+    if (manifest) {
+      const readingSteps = manifest.readingSteps || [];
+      const stepDef = readingSteps.find((s: any) => s.idx === step);
+      systemPrompt = this.aiPromptBuilder.buildTranslateChatPrompt(manifest, stepDef, originalText, definition);
+    } else {
+      systemPrompt = `你是一位英语阅读教学助教，帮助中学生理解生词和短语。
+学生查询的词/短语：「${originalText}」
+释义：${definition}
+用中文回答，简洁明了，不超过 200 字。`;
+    }
+
+    // Build messages array from trimmed history + new question
+    // DB stores 'student'/'ai'; LLM expects 'user'/'assistant'
+    const messages: Array<{ role: 'assistant' | 'user'; content: string }> = trimmedHistory.map(m => ({
+      role: m.role === 'ai' ? 'assistant' as const : 'user' as const,
+      content: m.content,
+    }));
+    messages.push({ role: 'user', content: question });
+
+    let reply: string;
+    try {
+      reply = await this.aiPromptBuilder.callLlmConversation(systemPrompt, messages, {
+        maxTokens: 512,
+        temperature: 0.5,
+      });
+    } catch (e) {
+      this.logger.warn(`Translate chat LLM call failed: ${e}`);
+      return { reply: 'AI 助教暂时无法回答，请稍后再试。' };
+    }
+
+    // Persist student message + AI reply (seq computed inside transaction to avoid races)
+    await this.chatMessageRepo.manager.transaction(async em => {
+      const repo = em.getRepository(ChatMessage);
+      const maxResult = await repo
+        .createQueryBuilder('m')
+        .select('MAX(m.seq)', 'max')
+        .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId = :tid', {
+          sid: session.id, stid: studentId, tid: threadId,
+        })
+        .getRawOne();
+      const nextSeq = (maxResult?.max ?? -1) + 1;
+      await repo.save(repo.create({
+        sessionId: session.id,
+        studentId,
+        threadId,
+        role: 'student',
+        content: question,
+        seq: nextSeq,
+      }));
+      await repo.save(repo.create({
+        sessionId: session.id,
+        studentId,
+        threadId,
+        role: 'ai',
+        content: reply,
+        seq: nextSeq + 1,
+      }));
+    });
+
+    this.engine.dispatch({
+      type: 'translate_chat_turn',
+      sessionId: session.id,
+      entityId: studentId,
+      tenantId: session.lessonId,
+      payload: { step, threadId, sourceContext, questionLength: question.length },
+    }).catch(e => this.logger.warn(`Observer dispatch translate_chat_turn failed: ${e}`));
+
+    return { reply };
   }
 
   clearSession(sessionId: string): void {
     this.caches.delete(sessionId);
   }
 
-  private getCache(sessionId: string): LruCache {
+  private getCache(sessionId: string): LruCache<TranslateResponse> {
     let cache = this.caches.get(sessionId);
     if (!cache) {
-      cache = new LruCache(200);
+      cache = new LruCache<TranslateResponse>(200);
       this.caches.set(sessionId, cache);
     }
     return cache;
+  }
+
+  private parseTranslateResponse(raw: string): TranslateResponse {
+    try {
+      const cleaned = raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();
+      const parsed = JSON.parse(cleaned);
+      return {
+        definition: typeof parsed.definition === 'string' ? parsed.definition : raw.trim(),
+        contextAnalysis: typeof parsed.contextAnalysis === 'string' ? parsed.contextAnalysis : '',
+        suggestedQuestions: Array.isArray(parsed.suggestedQuestions)
+          ? parsed.suggestedQuestions.filter((q: unknown) => typeof q === 'string')
+          : [],
+      };
+    } catch {
+      return { definition: raw.trim(), contextAnalysis: '', suggestedQuestions: [] };
+    }
   }
 }

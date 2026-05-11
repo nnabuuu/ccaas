@@ -257,6 +257,64 @@ Do NOT include a followUpQuestion key.`);
     return base + `\n\nRespond with a JSON object: {"reply": "your reply", "quality": "pass or retry", "depth": "surface or partial or deep"}`;
   }
 
+  /**
+   * Build system prompt for translate endpoint.
+   * Stable per lesson+step — DeepSeek prefix caching shares this across requests.
+   * sourceContext goes in the user message (variable per request).
+   */
+  buildTranslatePrompt(manifest: any, stepDef: any): string {
+    const layers: string[] = [];
+
+    // L1: Translate-specific role
+    layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+
+    // L2-L3: Reuse article + step context from base layers
+    const base = this.buildBaseContextLayers(manifest, stepDef);
+    if (base[1]) layers.push(base[1]); // L2: article full text
+    if (base[2]) layers.push(base[2]); // L3: step context
+
+    // L4: JSON output schema
+    layers.push(`【输出格式】
+返回 JSON: { "definition": "...", "contextAnalysis": "...", "suggestedQuestions": ["...", "..."] }
+- definition: 中文释义，结合课文语境（不超过 50 字）
+- contextAnalysis: 该词/短语在课文中的作用和含义分析（不超过 100 字）
+- suggestedQuestions: 2-3 个帮助深入理解的追问（中文）
+- 输出纯 JSON，不加 markdown 代码块`);
+
+    return layers.join('\n\n');
+  }
+
+  /**
+   * Build system prompt for translate chat (follow-up questions).
+   * Stable per lesson+step+word — shares DeepSeek cache with translate calls (L1-L3 identical).
+   */
+  buildTranslateChatPrompt(
+    manifest: any,
+    stepDef: any,
+    originalText: string,
+    definition: string,
+  ): string {
+    const layers: string[] = [];
+
+    // L1-L3: Same as translate (shared prefix cache)
+    layers.push(`你是一位英语阅读教学助教，帮助中学生理解阅读中遇到的生词和短语。`);
+    const base = this.buildBaseContextLayers(manifest, stepDef);
+    if (base[1]) layers.push(base[1]);
+    if (base[2]) layers.push(base[2]);
+
+    // L4: Original word + cached definition
+    layers.push(`【翻译上下文】\n学生查询的词/短语：「${originalText}」\n释义：${definition}`);
+
+    // L5: Chat rules
+    layers.push(`【回答规则】
+- 用中文回答
+- 简洁明了，不超过 200 字
+- 结合课文语境解释
+- 帮助学生深入理解该词/短语的用法和含义`);
+
+    return layers.join('\n\n');
+  }
+
   parseCategoryFromResponse(response: string): { category: string; answer: string } {
     const match = response.match(/^【(.+?)】/);
     if (match) {

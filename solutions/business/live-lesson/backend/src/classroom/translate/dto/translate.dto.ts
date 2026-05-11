@@ -1,8 +1,7 @@
-import { IsString, IsInt, Min, Max, MaxLength, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsInt, IsUUID, Min, Max, MaxLength, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class TranslateDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsUUID()
   studentId: string;
 
   @IsString()

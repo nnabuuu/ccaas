@@ -168,6 +168,19 @@ export async function translate(
   });
 }
 
+export async function translateChat(
+  code: string,
+  studentId: string,
+  step: number,
+  originalText: string,
+  question: string,
+  sourceContext: string,
+) {
+  return request('POST', `/api/classroom/${code}/translate/chat`, {
+    studentId, step, originalText, question, sourceContext,
+  });
+}
+
 // ── Chat history ──
 
 export async function getChatHistory(code: string, studentId: string, threadId?: string) {

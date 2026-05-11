@@ -145,7 +145,7 @@ export class ClassroomController {
     @Query('threadId') threadId?: string,
   ) {
     if (!studentId) throw new BadRequestException('studentId is required');
-    if (threadId && !/^(discuss|continue):\d+$/.test(threadId)) {
+    if (threadId && !/^(discuss|continue):\d+$|^translate:\d+:[a-f0-9]{8}$/.test(threadId)) {
       throw new BadRequestException('Invalid threadId format');
     }
     const session = await this.classroomService.resolveSession(validateCode(code));

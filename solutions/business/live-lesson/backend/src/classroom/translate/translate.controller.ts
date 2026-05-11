@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { ClassroomService } from '../classroom.service';
 import { TranslateService } from './translate.service';
 import { TranslateDto } from './dto/translate.dto';
+import { TranslateChatDto } from './dto/translate-chat.dto';
 import { validateCode } from '../validate-code';
 
 @ApiTags('classroom')
@@ -18,6 +19,14 @@ export class TranslateController {
     const session = await this.classroomService.resolveStartedSession(validateCode(code));
     return this.translateService.translate(
       session, dto.studentId, dto.text, dto.step, dto.sourceContext, dto.phase,
+    );
+  }
+
+  @Post(':code/translate/chat')
+  async translateChat(@Param('code') code: string, @Body() dto: TranslateChatDto) {
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
+    return this.translateService.translateChat(
+      session, dto.studentId, dto.step, dto.originalText, dto.question, dto.sourceContext,
     );
   }
 }
