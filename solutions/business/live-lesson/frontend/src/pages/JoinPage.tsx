@@ -24,6 +24,7 @@ export default function JoinPage() {
   const [nameInput, setNameInput] = useState('')
   const [manifest, setManifest] = useState<ReadingManifest | null>(null)
   const [savedSessions, setSavedSessions] = useState<SavedSessionInfo[]>([])
+  const [showGuide, setShowGuide] = useState(false)
 
   const lookup = useSessionLookup()
   const doLookup = lookup.lookup
@@ -212,6 +213,133 @@ export default function JoinPage() {
         >
           {session.joining ? '加入中...' : '加入课堂'}
         </button>
+
+        <button className="stu-join-guide-toggle" onClick={() => setShowGuide(true)}>
+          ？不知道怎么操作？
+        </button>
+
+        {showGuide && (
+          <div className="stu-join-guide-backdrop" onClick={() => setShowGuide(false)}>
+            <div className="stu-join-guide-modal" onClick={e => e.stopPropagation()}>
+              <div className="stu-join-guide-modal-hd">
+                <div className="stu-join-guide-modal-title">四步加入课堂</div>
+                <button className="stu-join-guide-modal-close" onClick={() => setShowGuide(false)}>✕</button>
+              </div>
+              <div className="stu-join-guide-grid">
+                {/* Step 1: Enter code */}
+                <div className="stu-join-guide-step">
+                  <div className="stu-join-guide-hd">
+                    <div className="stu-join-guide-num">1</div>
+                    <div className="stu-join-guide-title">输入课堂码</div>
+                  </div>
+                  <div className="stu-join-guide-illust jg-s1">
+                    <svg viewBox="0 0 220 124" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <filter id="jg1s" x="-5%" y="-2%" width="110%" height="112%">
+                          <feDropShadow dx="0" dy="3" stdDeviation="6" floodColor="#1c1c1a" floodOpacity=".06" />
+                        </filter>
+                      </defs>
+                      <rect x="8" y="4" width="204" height="116" rx="8" fill="#fbfaf7" filter="url(#jg1s)" stroke="#e4e2d8" strokeWidth=".5" />
+                      <text x="110" y="22" fontFamily="Plus Jakarta Sans" fontSize="12" fontWeight="700" fill="#1c1c1a" textAnchor="middle">加入课堂</text>
+                      <text x="110" y="32" fontFamily="Plus Jakarta Sans" fontSize="6.5" fill="#9c9a92" textAnchor="middle">输入课堂码和姓名加入</text>
+                      <rect x="20" y="38" width="180" height="26" rx="5" fill="#fff" stroke="#e4e2d8" />
+                      <text className="jg-code" x="110" y="56" fontFamily="SF Mono,Menlo,monospace" fontSize="14" fontWeight="600" fill="#1c1c1a" textAnchor="middle" letterSpacing=".3em">MPD6SU</text>
+                      <rect className="jg-cursor" x="152" y="44" width="1.5" height="14" rx=".75" fill="#0d5245" />
+                      <g className="jg-check">
+                        <text x="62" y="77" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#0d5245" fontWeight="600">✓ Ideal Beauty</text>
+                      </g>
+                      <rect x="20" y="82" width="180" height="18" rx="5" fill="#fff" stroke="#e4e2d8" />
+                      <text x="30" y="94" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#9c9a92">你的姓名...</text>
+                      <rect x="20" y="104" width="180" height="14" rx="5" fill="#d5d4cf" />
+                      <text x="110" y="114" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#fff" textAnchor="middle" opacity=".6">加入课堂</text>
+                    </svg>
+                  </div>
+                  <div className="stu-join-guide-desc">输入老师提供的 <b>6 位课堂码</b></div>
+                </div>
+
+                {/* Step 2: Enter name */}
+                <div className="stu-join-guide-step">
+                  <div className="stu-join-guide-hd">
+                    <div className="stu-join-guide-num">2</div>
+                    <div className="stu-join-guide-title">输入姓名</div>
+                  </div>
+                  <div className="stu-join-guide-illust jg-s2">
+                    <svg viewBox="0 0 220 124" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <filter id="jg2s" x="-5%" y="-2%" width="110%" height="112%">
+                          <feDropShadow dx="0" dy="3" stdDeviation="6" floodColor="#1c1c1a" floodOpacity=".06" />
+                        </filter>
+                      </defs>
+                      <rect x="8" y="4" width="204" height="116" rx="8" fill="#fbfaf7" filter="url(#jg2s)" stroke="#e4e2d8" strokeWidth=".5" />
+                      <text x="110" y="22" fontFamily="Plus Jakarta Sans" fontSize="12" fontWeight="700" fill="#1c1c1a" textAnchor="middle">加入课堂</text>
+                      <text x="110" y="32" fontFamily="Plus Jakarta Sans" fontSize="6.5" fill="#9c9a92" textAnchor="middle">输入课堂码和姓名加入</text>
+                      <rect x="20" y="38" width="180" height="26" rx="5" fill="#fff" stroke="#e4e2d8" />
+                      <text x="110" y="56" fontFamily="SF Mono,Menlo,monospace" fontSize="14" fontWeight="600" fill="#1c1c1a" textAnchor="middle" letterSpacing=".3em">MPD6SU</text>
+                      <text x="62" y="77" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#0d5245" fontWeight="600">✓ Ideal Beauty</text>
+                      <rect x="20" y="82" width="180" height="18" rx="5" fill="#fff" stroke="#0d5245" />
+                      <text className="jg-name" x="30" y="94" fontFamily="Plus Jakarta Sans" fontSize="8" fill="#1c1c1a">张三</text>
+                      <rect className="jg-btn" x="20" y="104" width="180" height="14" rx="5" fill="#9c9a92" />
+                      <text className="jg-btn-text" x="110" y="114" fontFamily="Plus Jakarta Sans" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle">加入课堂</text>
+                    </svg>
+                  </div>
+                  <div className="stu-join-guide-desc">输入名字，点击<b>「加入课堂」</b></div>
+                </div>
+
+                {/* Step 3: Waiting lobby */}
+                <div className="stu-join-guide-step">
+                  <div className="stu-join-guide-hd">
+                    <div className="stu-join-guide-num">3</div>
+                    <div className="stu-join-guide-title">等待大厅</div>
+                  </div>
+                  <div className="stu-join-guide-illust jg-s3">
+                    <svg viewBox="0 0 220 124" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <filter id="jg3s" x="-5%" y="-2%" width="110%" height="112%">
+                          <feDropShadow dx="0" dy="3" stdDeviation="6" floodColor="#1c1c1a" floodOpacity=".06" />
+                        </filter>
+                      </defs>
+                      <rect x="8" y="4" width="204" height="116" rx="8" fill="#fbfaf7" filter="url(#jg3s)" stroke="#e4e2d8" strokeWidth=".5" />
+                      <text x="110" y="30" fontFamily="Plus Jakarta Sans" fontSize="12" fontWeight="700" fill="#1c1c1a" textAnchor="middle">Ideal Beauty</text>
+                      <text x="110" y="44" fontFamily="Plus Jakarta Sans" fontSize="8" fill="#5c5b56" textAnchor="middle">张三</text>
+                      <circle className="jg-pulse-dot" cx="62" cy="64" r="3.5" fill="#0d5245" />
+                      <text x="72" y="68" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#9c9a92">等待老师开始上课</text>
+                      <rect x="70" y="80" width="80" height="14" rx="4" fill="#edece7" />
+                      <text x="110" y="90" fontFamily="SF Mono,Menlo,monospace" fontSize="7" fontWeight="600" fill="#9c9a92" textAnchor="middle" letterSpacing=".1em">MPD6SU</text>
+                    </svg>
+                  </div>
+                  <div className="stu-join-guide-desc">加入后等待老师开始课堂</div>
+                </div>
+
+                {/* Step 4: Enter classroom */}
+                <div className="stu-join-guide-step">
+                  <div className="stu-join-guide-hd">
+                    <div className="stu-join-guide-num">4</div>
+                    <div className="stu-join-guide-title">进入课堂</div>
+                  </div>
+                  <div className="stu-join-guide-illust jg-s4">
+                    <svg viewBox="0 0 220 124" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <g className="jg-expand" transform="translate(8,4)">
+                        <rect x="0" y="0" width="204" height="116" rx="8" fill="#fbfaf7" stroke="#e4e2d8" strokeWidth=".5" />
+                        <rect x="4" y="4" width="196" height="14" rx="3" fill="#edece7" />
+                        <text x="12" y="14" fontFamily="Plus Jakarta Sans" fontSize="6" fontWeight="600" fill="#1c1c1a">Ideal Beauty</text>
+                        <g transform="translate(130,9)">
+                          <circle className="jg-dot1" cx="0" cy="2" r="2.5" fill="#e4e2d8" />
+                          <circle className="jg-dot2" cx="10" cy="2" r="2.5" fill="#e4e2d8" />
+                          <circle className="jg-dot3" cx="20" cy="2" r="2.5" fill="#e4e2d8" />
+                        </g>
+                        <rect x="4" y="22" width="96" height="90" rx="4" fill="#dfece8" opacity=".6" />
+                        <text x="52" y="72" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#0d5245" textAnchor="middle">任务区</text>
+                        <rect x="104" y="22" width="96" height="90" rx="4" fill="#edece7" opacity=".6" />
+                        <text x="152" y="72" fontFamily="Plus Jakarta Sans" fontSize="7" fill="#9c9a92" textAnchor="middle">课文</text>
+                      </g>
+                    </svg>
+                  </div>
+                  <div className="stu-join-guide-desc">自动进入<b>左任务区 + 右课文</b>布局</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
