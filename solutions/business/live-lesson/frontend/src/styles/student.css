@@ -324,6 +324,29 @@
   .jg-s1 .jg-cursor,.jg-s1 .jg-check,.jg-s2 .jg-btn,.jg-s2 .jg-btn-text,.jg-s3 .jg-pulse-dot,.jg-s4 .jg-expand,.jg-s4 .jg-dot1,.jg-s4 .jg-dot2,.jg-s4 .jg-dot3{animation:none}
 }
 
+/* ── Help guide (操作说明 modal) ── */
+.stu-help-guide-btn{font-size:11px;color:var(--t3);cursor:pointer;padding:4px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);font-family:inherit;font-weight:500;transition:all .15s;margin-left:auto;flex-shrink:0}
+.stu-help-guide-btn:hover{border-color:var(--t2);color:var(--t1);background:var(--surface2)}
+.stu-help-guide-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:24px;animation:jg-fade-in .15s ease-out}
+.stu-help-guide-modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:28px;box-shadow:0 16px 48px rgba(0,0,0,.18);max-width:1100px;width:100%;max-height:calc(100vh - 48px);overflow-y:auto;animation:jg-modal-in .2s ease-out}
+.stu-help-guide-hd{display:flex;align-items:center;margin-bottom:18px}
+.stu-help-guide-title{font-size:18px;font-weight:700;color:var(--t1)}
+.stu-help-guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stu-help-guide-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.stu-help-guide-card-hd{display:flex;align-items:center;gap:8px}
+.stu-help-guide-icon{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.stu-help-guide-icon.amber{background:var(--amber-bg);color:var(--amber)}
+.stu-help-guide-icon.purple{background:var(--purple-bg);color:var(--purple)}
+.stu-help-guide-icon.teal{background:var(--teal-bg);color:var(--teal)}
+.stu-help-guide-card-title{font-size:14px;font-weight:700;color:var(--t1)}
+.stu-help-guide-illust{width:100%;aspect-ratio:2/1;background:var(--surface);border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+.stu-help-guide-illust svg{width:100%;height:100%;display:block}
+.stu-help-guide-steps{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t2);line-height:1.4;flex-wrap:wrap}
+.stu-help-guide-steps b{color:var(--t1);font-weight:600}
+.stu-help-guide-arrow{color:var(--t3);font-size:10px;flex-shrink:0}
+.stu-help-guide-dismiss{margin-top:16px}
+@media(max-width:760px){.stu-help-guide-grid{grid-template-columns:1fr}}
+
 /* ── Lobby pulse animation ── */
 .stu-lobby-pulse{width:40px;height:40px;border-radius:50%;background:var(--teal);margin:0 auto;animation:stu-pulse 2s ease-in-out infinite}
 @keyframes stu-pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.3);opacity:1}}
@@ -515,3 +538,27 @@
 .stu-tr-send{width:28px;height:28px;border-radius:6px;border:none;background:var(--amber);color:#fff;cursor:pointer;font-size:12px;font-weight:600;flex-shrink:0;transition:opacity .15s}
 .stu-tr-send:disabled{opacity:.35;cursor:default}
 .stu-tr-send:hover:not(:disabled){opacity:.85}
+
+/* ── Spotlight Tour ── */
+.stu-tour-overlay{position:fixed;inset:0;z-index:90;cursor:pointer}
+.stu-tour-svg{position:absolute;inset:0;width:100%;height:100%}
+.stu-tour-mask{fill:rgba(0,0,0,.55)}
+.stu-tour-tooltip{position:fixed;z-index:91;width:280px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px 14px;box-shadow:0 12px 40px rgba(0,0,0,.18);cursor:default;animation:stu-tour-fade-in .2s ease-out}
+.stu-tour-title{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:6px}
+.stu-tour-body{font-size:13px;color:var(--t2);line-height:1.6}
+.stu-tour-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px}
+.stu-tour-dots{display:flex;gap:6px}
+.stu-tour-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background .2s}
+.stu-tour-dot.active{background:var(--t1)}
+.stu-tour-skip{font-size:12px;color:var(--t3);cursor:pointer;background:none;border:none;font-family:inherit;padding:2px 4px;transition:color .15s}
+.stu-tour-skip:hover{color:var(--t1)}
+
+/* Tour arrow: right (tooltip is to the right of cutout) */
+.stu-tour-arrow-right::before{content:'';position:absolute;left:-7px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-right:7px solid var(--surface);filter:drop-shadow(-2px 0 1px rgba(0,0,0,.06))}
+/* Tour arrow: left (tooltip is to the left of cutout) */
+.stu-tour-arrow-left::before{content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:7px solid var(--surface);filter:drop-shadow(2px 0 1px rgba(0,0,0,.06))}
+/* Tour arrow: top (tooltip is above cutout) */
+.stu-tour-arrow-top::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:7px solid var(--surface);filter:drop-shadow(0 2px 1px rgba(0,0,0,.06))}
+
+@keyframes stu-tour-fade-in{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.stu-tour-tooltip{animation:none}}

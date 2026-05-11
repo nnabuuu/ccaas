@@ -8,18 +8,22 @@ import TextPanel from './TextPanel'
 import type { TextOverlay } from './TextPanel'
 import AiPanel from './ai-ask/AiPanel'
 import TranslateButton from './TranslateButton'
+import HelpGuide from './HelpGuide'
+import SpotlightTour from './SpotlightTour'
+import type { TourStep } from './SpotlightTour'
 
 interface Props {
   manifest: ReadingManifest
   embed?: boolean
   sessionCode?: string
   studentId?: string
+  studentName?: string
   submit?: (step: number, data: Record<string, unknown>) => Promise<boolean>
   initialProgress?: { currentTask: number; currentPhase: string; discussMeta?: DiscussMeta | null } | null
   initialSubmissions?: Record<number, CachedSubmission>
 }
 
-export default function StudentShell({ manifest, embed, sessionCode, studentId, submit, initialProgress, initialSubmissions }: Props) {
+export default function StudentShell({ manifest, embed, sessionCode, studentId, studentName, submit, initialProgress, initialSubmissions }: Props) {
   // Lazy-load KaTeX CSS only for math-enabled lessons
   useEffect(() => {
     if (!manifest.enableMath) return
@@ -169,6 +173,14 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   const baseFocusIds = currentFocus.map(n => `p${n}`)
   const focusIds = paraRefIds.length > 0 ? paraRefIds : baseFocusIds
 
+  // Spotlight Tour steps
+  const tourSteps = useMemo<TourStep[]>(() => [
+    { selector: '.stu-left-col', title: '这是你的任务区', body: '课程内容、练习、讨论都在左侧完成', arrow: 'right' },
+    { selector: '.stu-text-rail', title: '点这里查看课文', body: '点击「T」展开课文原文，做题时自动高亮相关段落', arrow: 'left', onEnter: () => setTextbookOpen(false) },
+    { selector: '.stu-tr-fab, .stu-ai-fab', title: '遇到不懂的词？', body: '选中课文词句后点「译」翻译，点 ✦ 向 AI 提问', arrow: 'top' },
+  ], [setTextbookOpen])
+  const handleTourComplete = useCallback(() => setTextbookOpen(true), [])
+
   return (
     <div className="stu-root">
       {/* Top bar */}
@@ -182,6 +194,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               <span style={{ color: 'var(--t3)', fontWeight: 400, marginLeft: 6 }}>{task.time}</span>
             </div>
           )}
+          <HelpGuide />
         </div>
       )}
 
@@ -244,6 +257,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           />
         </div>
       </SessionCtx.Provider>
+      <SpotlightTour steps={tourSteps} storageKey={studentName ? `spotlight-tour-seen-${studentName}` : undefined} onComplete={handleTourComplete} />
     </div>
   )
 }

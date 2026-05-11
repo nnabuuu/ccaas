@@ -106,6 +106,7 @@ export default function SessionPage() {
           manifest={manifest}
           sessionCode={sessionCode}
           studentId={session.studentId ?? undefined}
+          studentName={session.name ?? undefined}
           embed={embed}
           submit={session.submit}
           initialProgress={initialProgress}
