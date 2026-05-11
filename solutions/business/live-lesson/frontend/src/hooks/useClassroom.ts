@@ -458,6 +458,12 @@ export async function checkAnswer(
 
 // ── Translate API (student) ──
 
+export interface TranslateResponse {
+  definition: string
+  contextAnalysis: string
+  suggestedQuestions: string[]
+}
+
 export async function translateText(
   sessionCode: string,
   studentId: string,
@@ -465,12 +471,33 @@ export async function translateText(
   step: number,
   sourceContext: string,
   phase?: string,
-): Promise<{ translation: string } | null> {
+): Promise<TranslateResponse | null> {
   try {
     const res = await fetch(`${API_BASE}/${sessionCode}/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ studentId, text, step, sourceContext, phase }),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+export async function translateChat(
+  sessionCode: string,
+  studentId: string,
+  step: number,
+  originalText: string,
+  question: string,
+  sourceContext: string,
+): Promise<{ reply: string } | null> {
+  try {
+    const res = await fetch(`${API_BASE}/${sessionCode}/translate/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, step, originalText, question, sourceContext }),
     })
     if (!res.ok) return null
     return await res.json()
