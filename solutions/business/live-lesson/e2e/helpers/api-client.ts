@@ -153,6 +153,21 @@ export async function listSessions(status?: string, limit?: number, offset?: num
   return request('GET', `/api/classroom/sessions${qs}`);
 }
 
+// ── Translate ──
+
+export async function translate(
+  code: string,
+  studentId: string,
+  text: string,
+  step: number,
+  sourceContext: string,
+  phase?: string,
+) {
+  return request('POST', `/api/classroom/${code}/translate`, {
+    studentId, text, step, sourceContext, ...(phase && { phase }),
+  });
+}
+
 // ── Chat history ──
 
 export async function getChatHistory(code: string, studentId: string, threadId?: string) {
