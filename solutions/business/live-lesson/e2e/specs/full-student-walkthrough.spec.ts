@@ -52,10 +52,9 @@ test.describe('Full Student Lesson Walkthrough', () => {
 
     // ── JOIN ─────────────────────────────────────────────────
     await page.goto('/join');
-    await expect(page.getByText('加入课堂')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.stu-join-title')).toHaveText('加入课堂', { timeout: 15_000 });
     await page.getByPlaceholder('课堂码...').fill(code);
-    await page.getByRole('button', { name: '下一步' }).click();
-    await expect(page.getByPlaceholder('你的姓名...')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('✓')).toBeVisible({ timeout: 10_000 });
     await page.getByPlaceholder('你的姓名...').fill('Playwright Student');
     await page.getByRole('button', { name: '加入课堂' }).click();
     await page.waitForURL(/\/session\//, { timeout: 15_000 });

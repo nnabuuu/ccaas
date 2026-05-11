@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eu
+# pipefail requires bash 4+; macOS ships bash 3.2
+if (set -o pipefail 2>/dev/null); then set -o pipefail; fi
 
 # ============================================================
 # live-lesson E2E Harness

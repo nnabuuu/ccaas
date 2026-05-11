@@ -28,7 +28,7 @@ test.describe('01 — Smoke tests', () => {
 
   test('JoinPage renders code input', async ({ page }) => {
     await page.goto('/join');
-    await expect(page.getByText('加入课堂')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('.stu-join-title')).toHaveText('加入课堂', { timeout: 15_000 });
     await expect(page.getByPlaceholder('课堂码...')).toBeVisible();
   });
 });

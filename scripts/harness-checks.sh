@@ -184,19 +184,19 @@ else
   echo "  [8/12] Skipping coverage check (use --full to enable)"
 fi
 
-# Check 9: E2E smoke tests (ideal-beauty-poc) — only with --e2e
+# Check 9: E2E tests (live-lesson) — only with --e2e
 if [ "$E2E_MODE" = true ]; then
-  echo "  [9/12] Running E2E smoke tests (ideal-beauty-poc)..."
-  E2E_SCRIPT="$(dirname "$0")/../solutions/business/ideal-beauty-poc/scripts/run-e2e.sh"
-  if [ -x "$E2E_SCRIPT" ]; then
+  echo "  [9/12] Running E2E tests (live-lesson)..."
+  E2E_SCRIPT="$(dirname "$0")/../solutions/business/live-lesson/e2e/run-e2e.sh"
+  if [ -f "$E2E_SCRIPT" ]; then
     if bash "$E2E_SCRIPT"; then
       echo "  OK"
     else
-      echo "  ERROR: E2E smoke tests failed"
+      echo "  ERROR: E2E tests failed"
       ERRORS=$((ERRORS + 1))
     fi
   else
-    echo "  WARNING: run-e2e.sh not found or not executable, skipping"
+    echo "  WARNING: live-lesson run-e2e.sh not found, skipping"
   fi
 else
   echo "  [9/12] Skipping E2E (use --e2e to enable)"

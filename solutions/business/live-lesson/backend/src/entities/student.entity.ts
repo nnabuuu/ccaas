@@ -27,7 +27,7 @@ export class Student {
   @Column({ type: 'simple-json', name: 'discuss_meta', nullable: true })
   discussMeta: { startedAt: string; goalReached?: boolean } | null;
 
-  @VersionColumn()
+  @VersionColumn({ default: 1 })
   version: number;
 
   @CreateDateColumn({ name: 'joined_at' })
