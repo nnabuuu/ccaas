@@ -168,6 +168,19 @@ export interface DiscussObserveData {
     goalReachedCount: number;
     avgRounds: number;
     avgTime: number;
+    fallbackCount: number;
+    medianTime: number;
+    goalReachedRate: number;
+  };
+  clusterCoverage?: {
+    definitions: Array<{ id: string; label: string }>;
+    classCoverage: Array<{
+      clusterId: string;
+      label: string;
+      hitCount: number;
+      hitRate: number;
+    }>;
+    overallRate: number;
   };
   students: Array<{
     id: string;
@@ -179,5 +192,6 @@ export interface DiscussObserveData {
     completionType: 'goal_reached' | 'fallback_rounds' | 'fallback_time' | '';
     conversation: Array<{ role: 'ai' | 'student'; text: string }>;
     keyInsights: string[];
+    clusterHits?: Array<{ id: string; label: string; hit: boolean }>;
   }>;
 }

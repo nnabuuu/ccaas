@@ -5,6 +5,7 @@ import type { AnswerKey } from '../../schemas/answer-key.schema';
 
 export interface ObserveContext {
   sessionId: string;
+  lessonId: string;
   students: Student[];
   subsByStudent: Map<string, Record<number, Submission>>;
   stepIdx: number;

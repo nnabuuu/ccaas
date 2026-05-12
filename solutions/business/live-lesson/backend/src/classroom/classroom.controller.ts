@@ -219,6 +219,7 @@ export class ClassroomController {
 
     return this.observeRegistry.compute(type, {
       sessionId: session.id,
+      lessonId: session.lessonId,
       students,
       subsByStudent,
       stepIdx,

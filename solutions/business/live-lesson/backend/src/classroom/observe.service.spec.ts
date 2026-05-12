@@ -12,6 +12,9 @@ import { DiscussObserveHandler } from './observe/handlers/discuss.handler';
 import { Student } from '../entities/student.entity';
 import { Submission } from '../entities/submission.entity';
 import { ChatMessage } from '../entities/chat-message.entity';
+import { Lesson } from '../entities/lesson.entity';
+import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
+import { ManifestCacheService } from './manifest-cache.service';
 import type { AnswerKey } from '../schemas/answer-key.schema';
 
 // ── Factory helpers ──
@@ -128,16 +131,17 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Student, Submission, ChatMessage],
+          entities: [Student, Submission, ChatMessage, Lesson],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Student, Submission, ChatMessage]),
+        TypeOrmModule.forFeature([Student, Submission, ChatMessage, Lesson]),
       ],
       providers: [
         ObserveRegistry,
         McObserveHandler, EvidenceObserveHandler, MapObserveHandler,
         MatrixObserveHandler, DiscussObserveHandler,
+        ClusterAggregator, ManifestCacheService,
       ],
     }).compile();
 
@@ -165,7 +169,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
 
     it('throws BadRequestException for unknown type', async () => {
       await expect(
-        registry.compute('unknown', { sessionId: '', students: [], subsByStudent: new Map(), stepIdx: 0, answerKey: null, view: 'latest' }),
+        registry.compute('unknown', { sessionId: '', lessonId: 'L1', students: [], subsByStudent: new Map(), stepIdx: 0, answerKey: null, view: 'latest' }),
       ).rejects.toThrow('Unknown observe type: unknown');
     });
   });
@@ -175,7 +179,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
   describe('McObserveHandler', () => {
     const STEP = 1;
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
-      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MC_KEY, view });
+      ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MC_KEY, view });
 
     it('empty class → all stats zero', () => {
       const r = mcHandler.compute(ctx([], new Map()));
@@ -265,7 +269,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
   describe('EvidenceObserveHandler', () => {
     const STEP = 2;
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>, view: 'first' | 'latest' = 'latest') =>
-      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: EV_KEY, view });
+      ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: EV_KEY, view });
 
     it('empty class → stats zero', () => {
       const r = evidenceHandler.compute(ctx([], new Map()));
@@ -333,7 +337,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
   describe('MapObserveHandler', () => {
     const STEP = 3;
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>) =>
-      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MAP_KEY, view: 'latest' as const });
+      ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MAP_KEY, view: 'latest' as const });
 
     it('empty class → stats zero', () => {
       const r = mapHandler.compute(ctx([], new Map()));
@@ -384,7 +388,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
     }
 
     const ctx = (sessionId: string, students: Student[]) =>
-      ({ sessionId, students, subsByStudent: new Map(), stepIdx: STEP, answerKey: null, view: 'latest' as const });
+      ({ sessionId, lessonId: 'L1', students, subsByStudent: new Map(), stepIdx: STEP, answerKey: null, view: 'latest' as const });
 
     it('no messages → stats zero, empty students', async () => {
       const sA = makeStudent('empty-d', { id: 'disc-none', name: 'A' });
@@ -436,6 +440,276 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
       expect(r.students[0].conversation[0].role).toBe('student');
       expect(r.students[0].conversation[1].role).toBe('ai');
     });
+
+    // ── New stats fields ──
+
+    it('fallbackCount counts fallback_rounds completions', async () => {
+      const sid = 'disc-fb';
+      const [sA, sB, sC] = ['fb-a', 'fb-b', 'fb-c'].map(id => makeStudent(sid, { id, name: id }));
+      const t0 = new Date('2024-01-01T10:00:00Z');
+      const t1 = new Date('2024-01-01T10:00:30Z');
+      // sA: goal_reached
+      await insertChat(sid, 'fb-a', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'fb-a', STEP, 'assistant', 'goal_reached', 2, t1);
+      // sB: fallback_rounds
+      await insertChat(sid, 'fb-b', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'fb-b', STEP, 'assistant', 'fallback', 2, t1);
+      // sC: fallback_time
+      await insertChat(sid, 'fb-c', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'fb-c', STEP, 'assistant', 'fallback_time', 2, t1);
+
+      const r = await discussHandler.compute(ctx(sid, [sA, sB, sC]));
+      expect(r.stats.fallbackCount).toBe(2);
+      expect(r.stats.goalReachedCount).toBe(1);
+      expect(r.students.find(s => s.id === 'fb-b')!.completionType).toBe('fallback_rounds');
+      expect(r.students.find(s => s.id === 'fb-c')!.completionType).toBe('fallback_time');
+    });
+
+    it('goalReachedRate = goalReachedCount / discussedCount', async () => {
+      const sid = 'disc-rate';
+      const students = ['rate-a', 'rate-b', 'rate-c', 'rate-d'].map(id => makeStudent(sid, { id, name: id }));
+      const t0 = new Date('2024-01-01T10:00:00Z');
+      const t1 = new Date('2024-01-01T10:01:00Z');
+      // 3 discussed, 1 not (no messages)
+      await insertChat(sid, 'rate-a', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'rate-a', STEP, 'assistant', 'goal_reached', 2, t1);
+      await insertChat(sid, 'rate-b', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'rate-b', STEP, 'assistant', 'goal_reached', 2, t1);
+      await insertChat(sid, 'rate-c', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'rate-c', STEP, 'assistant', 'nope', 2, t1);
+
+      const r = await discussHandler.compute(ctx(sid, students));
+      expect(r.stats.discussedCount).toBe(3);
+      expect(r.stats.goalReachedCount).toBe(2);
+      expect(r.stats.goalReachedRate).toBeCloseTo(2 / 3);
+    });
+
+    it('goalReachedRate = 0 when no students discussed', async () => {
+      const sid = 'disc-rate0';
+      const sA = makeStudent(sid, { id: 'rate0-a', name: 'A' });
+      const r = await discussHandler.compute(ctx(sid, [sA]));
+      expect(r.stats.goalReachedRate).toBe(0);
+    });
+
+    it('medianTime with odd count (3 students)', async () => {
+      const sid = 'disc-med-odd';
+      const students = ['med-a', 'med-b', 'med-c'].map(id => makeStudent(sid, { id, name: id }));
+      // times: 10s, 30s, 60s → median = 30
+      await insertChat(sid, 'med-a', STEP, 'user', 'msg', 1, new Date('2024-01-01T10:00:00Z'));
+      await insertChat(sid, 'med-a', STEP, 'assistant', 'r', 2, new Date('2024-01-01T10:00:10Z'));
+      await insertChat(sid, 'med-b', STEP, 'user', 'msg', 1, new Date('2024-01-01T10:00:00Z'));
+      await insertChat(sid, 'med-b', STEP, 'assistant', 'r', 2, new Date('2024-01-01T10:00:30Z'));
+      await insertChat(sid, 'med-c', STEP, 'user', 'msg', 1, new Date('2024-01-01T10:00:00Z'));
+      await insertChat(sid, 'med-c', STEP, 'assistant', 'r', 2, new Date('2024-01-01T10:01:00Z'));
+
+      const r = await discussHandler.compute(ctx(sid, students));
+      expect(r.stats.medianTime).toBe(30);
+    });
+
+    it('medianTime with even count (2 students)', async () => {
+      const sid = 'disc-med-even';
+      const students = ['mde-a', 'mde-b'].map(id => makeStudent(sid, { id, name: id }));
+      // times: 20s, 40s → median = 30
+      await insertChat(sid, 'mde-a', STEP, 'user', 'msg', 1, new Date('2024-01-01T10:00:00Z'));
+      await insertChat(sid, 'mde-a', STEP, 'assistant', 'r', 2, new Date('2024-01-01T10:00:20Z'));
+      await insertChat(sid, 'mde-b', STEP, 'user', 'msg', 1, new Date('2024-01-01T10:00:00Z'));
+      await insertChat(sid, 'mde-b', STEP, 'assistant', 'r', 2, new Date('2024-01-01T10:00:40Z'));
+
+      const r = await discussHandler.compute(ctx(sid, students));
+      expect(r.stats.medianTime).toBe(30);
+    });
+
+    it('medianTime = 0 when no students have measurable time', async () => {
+      const sid = 'disc-med0';
+      const sA = makeStudent(sid, { id: 'med0-a', name: 'A' });
+      const r = await discussHandler.compute(ctx(sid, [sA]));
+      expect(r.stats.medianTime).toBe(0);
+    });
+
+    // ── Cluster coverage ──
+
+    it('no manifest → clusterCoverage undefined', async () => {
+      const sid = 'disc-noman';
+      const sA = makeStudent(sid, { id: 'noman-a', name: 'A' });
+      const t0 = new Date('2024-01-01T10:00:00Z');
+      await insertChat(sid, 'noman-a', STEP, 'user', 'msg', 1, t0);
+      await insertChat(sid, 'noman-a', STEP, 'assistant', 'r', 2, t0);
+
+      const r = await discussHandler.compute(ctx(sid, [sA]));
+      expect(r.clusterCoverage).toBeUndefined();
+    });
+
+    describe('with manifest clusters', () => {
+      const LESSON_ID = 'test-lesson-cluster';
+      const CLUSTER_SESSION = 'disc-cluster';
+      let clusterAggregator: ClusterAggregator;
+      let lessonRepo: Repository<Lesson>;
+
+      const clusterCtx = (sessionId: string, students: Student[]) =>
+        ({ sessionId, lessonId: LESSON_ID, students, subsByStudent: new Map(), stepIdx: STEP, answerKey: null, view: 'latest' as const });
+
+      beforeAll(async () => {
+        clusterAggregator = module.get(ClusterAggregator);
+        lessonRepo = module.get(getRepositoryToken(Lesson));
+
+        // Insert a lesson with clusters defined at STEP
+        const manifest = {
+          id: LESSON_ID,
+          readingSteps: [
+            {
+              idx: STEP,
+              type: 'task',
+              answerKey: { type: 'quiz', answers: [] },
+              discuss: {
+                clusters: [
+                  { id: 'c1', label: '比喻手法', description: 'metaphor' },
+                  { id: 'c2', label: '对比分析', description: 'contrast' },
+                  { id: 'c3', label: '象征意义', description: 'symbolism' },
+                ],
+              },
+            },
+          ],
+        };
+
+        const lesson = new Lesson();
+        lesson.id = LESSON_ID;
+        lesson.title = 'Test';
+        lesson.subject = 'test';
+        lesson.gradeLevel = '7';
+        lesson.manifestJson = JSON.stringify(manifest);
+        await lessonRepo.save(lesson);
+      });
+
+      it('clusterCoverage populated with correct definitions', async () => {
+        const sid = 'disc-cl-def';
+        const sA = makeStudent(sid, { id: 'cl-def-a', name: 'A' });
+        const t0 = new Date('2024-01-01T10:00:00Z');
+        const t1 = new Date('2024-01-01T10:00:30Z');
+        await insertChat(sid, 'cl-def-a', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-def-a', STEP, 'assistant', 'r', 2, t1);
+
+        const r = await discussHandler.compute(clusterCtx(sid, [sA]));
+        expect(r.clusterCoverage).toBeDefined();
+        expect(r.clusterCoverage!.definitions).toHaveLength(3);
+        expect(r.clusterCoverage!.definitions.map(d => d.id)).toEqual(['c1', 'c2', 'c3']);
+      });
+
+      it('per-student clusterHits reflect aggregator state', async () => {
+        const sid = 'disc-cl-hit';
+        const [sA, sB] = ['cl-hit-a', 'cl-hit-b'].map(id => makeStudent(sid, { id, name: id }));
+        const t0 = new Date('2024-01-01T10:00:00Z');
+        const t1 = new Date('2024-01-01T10:00:30Z');
+        await insertChat(sid, 'cl-hit-a', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-hit-a', STEP, 'assistant', 'r', 2, t1);
+        await insertChat(sid, 'cl-hit-b', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-hit-b', STEP, 'assistant', 'r', 2, t1);
+
+        // Seed aggregator: sA hits c1 + c2, sB hits c1 only
+        // taskNum = 1 because STEP=4 is the first (and only) task step
+        clusterAggregator.ingest(sid, 1, 'cl-hit-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c1', confidence: 'high', evidenceSpan: 'e1',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-hit-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c2', confidence: 'high', evidenceSpan: 'e2',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-hit-b', 'B', {
+          eventType: 'new_signal', clusterId: 'c1', confidence: 'high', evidenceSpan: 'e3',
+        } as any);
+
+        const r = await discussHandler.compute(clusterCtx(sid, [sA, sB]));
+
+        // Student A: c1=hit, c2=hit, c3=miss
+        const hitsA = r.students.find(s => s.id === 'cl-hit-a')!.clusterHits!;
+        expect(hitsA).toHaveLength(3);
+        expect(hitsA.find(h => h.id === 'c1')!.hit).toBe(true);
+        expect(hitsA.find(h => h.id === 'c2')!.hit).toBe(true);
+        expect(hitsA.find(h => h.id === 'c3')!.hit).toBe(false);
+
+        // Student B: c1=hit, c2=miss, c3=miss
+        const hitsB = r.students.find(s => s.id === 'cl-hit-b')!.clusterHits!;
+        expect(hitsB.find(h => h.id === 'c1')!.hit).toBe(true);
+        expect(hitsB.find(h => h.id === 'c2')!.hit).toBe(false);
+      });
+
+      it('classCoverage hitCount and hitRate are correct', async () => {
+        const sid = 'disc-cl-agg';
+        const [sA, sB] = ['cl-agg-a', 'cl-agg-b'].map(id => makeStudent(sid, { id, name: id }));
+        const t0 = new Date('2024-01-01T10:00:00Z');
+        const t1 = new Date('2024-01-01T10:00:30Z');
+        await insertChat(sid, 'cl-agg-a', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-agg-a', STEP, 'assistant', 'r', 2, t1);
+        await insertChat(sid, 'cl-agg-b', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-agg-b', STEP, 'assistant', 'r', 2, t1);
+
+        // Both hit c1, only sA hits c2
+        clusterAggregator.ingest(sid, 1, 'cl-agg-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c1', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-agg-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c2', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-agg-b', 'B', {
+          eventType: 'new_signal', clusterId: 'c1', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+
+        const r = await discussHandler.compute(clusterCtx(sid, [sA, sB]));
+        const cov = r.clusterCoverage!;
+
+        // c1: 2 of 2 students → hitRate = 1.0
+        const c1 = cov.classCoverage.find(c => c.clusterId === 'c1')!;
+        expect(c1.hitCount).toBe(2);
+        expect(c1.hitRate).toBe(1);
+
+        // c2: 1 of 2 students → hitRate = 0.5
+        const c2 = cov.classCoverage.find(c => c.clusterId === 'c2')!;
+        expect(c2.hitCount).toBe(1);
+        expect(c2.hitRate).toBe(0.5);
+
+        // c3: 0 of 2 students
+        const c3 = cov.classCoverage.find(c => c.clusterId === 'c3')!;
+        expect(c3.hitCount).toBe(0);
+        expect(c3.hitRate).toBe(0);
+      });
+
+      it('overallRate = mean of per-student coverage rates', async () => {
+        const sid = 'disc-cl-ovr';
+        const [sA, sB] = ['cl-ovr-a', 'cl-ovr-b'].map(id => makeStudent(sid, { id, name: id }));
+        const t0 = new Date('2024-01-01T10:00:00Z');
+        const t1 = new Date('2024-01-01T10:00:30Z');
+        await insertChat(sid, 'cl-ovr-a', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-ovr-a', STEP, 'assistant', 'r', 2, t1);
+        await insertChat(sid, 'cl-ovr-b', STEP, 'user', 'msg', 1, t0);
+        await insertChat(sid, 'cl-ovr-b', STEP, 'assistant', 'r', 2, t1);
+
+        // sA hits 2/3, sB hits 1/3 → overall = (2/3 + 1/3) / 2 = 0.5
+        clusterAggregator.ingest(sid, 1, 'cl-ovr-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c1', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-ovr-a', 'A', {
+          eventType: 'new_signal', clusterId: 'c2', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+        clusterAggregator.ingest(sid, 1, 'cl-ovr-b', 'B', {
+          eventType: 'new_signal', clusterId: 'c3', confidence: 'high', evidenceSpan: 'e',
+        } as any);
+
+        const r = await discussHandler.compute(clusterCtx(sid, [sA, sB]));
+        expect(r.clusterCoverage!.overallRate).toBeCloseTo(0.5);
+      });
+
+      it('no discussed students → clusterCoverage present with zero rates', async () => {
+        const sid = 'disc-cl-empty';
+        const sA = makeStudent(sid, { id: 'cl-emp-a', name: 'A' });
+        // No chat messages → 0 discussed students
+        const r = await discussHandler.compute(clusterCtx(sid, [sA]));
+        // Cluster definitions exist → coverage block is present, but all zeros
+        expect(r.clusterCoverage).toBeDefined();
+        expect(r.clusterCoverage!.overallRate).toBe(0);
+        for (const c of r.clusterCoverage!.classCoverage) {
+          expect(c.hitCount).toBe(0);
+          expect(c.hitRate).toBe(0);
+        }
+      });
+    });
   });
 
   // ── computeMatrixObserve ──
@@ -464,7 +738,7 @@ describe('Observe Handlers (via ObserveRegistry)', () => {
     }
 
     const ctx = (students: Student[], subs: Map<string, Record<number, Submission>>) =>
-      ({ sessionId: 's1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MATRIX_KEY, view: 'latest' as const });
+      ({ sessionId: 's1', lessonId: 'L1', students, subsByStudent: subs, stepIdx: STEP, answerKey: MATRIX_KEY, view: 'latest' as const });
 
     it('empty class → stats zero', () => {
       const r = matrixHandler.compute(ctx([], new Map()));

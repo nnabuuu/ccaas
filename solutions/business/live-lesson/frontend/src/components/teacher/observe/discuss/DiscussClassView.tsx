@@ -1,12 +1,21 @@
 import type { ObserveData } from '../ObserveDrawer'
 import { formatTime, pct } from '../observe-helpers'
 
+interface ClusterCoverage {
+  definitions: Array<{ id: string; label: string }>
+  classCoverage: Array<{
+    clusterId: string; label: string; hitCount: number; hitRate: number
+  }>
+  overallRate: number
+}
+
 interface DiscussData extends ObserveData {
   stats: {
     totalStudents: number; discussedCount: number; goalReachedCount: number
     fallbackCount: number; avgRounds: number; medianTime: number; avgTime: number
-    misconceptionCount: number
+    goalReachedRate: number
   }
+  clusterCoverage?: ClusterCoverage
   students: Array<{
     id: string; name: string; method: 'socratic' | 'fallback'
     goalReached: boolean; roundsUsed: number; timeUsedSeconds: number
@@ -59,10 +68,31 @@ export default function DiscussClassView({ data, onStudentSelect }: Props) {
           <div className="hcard-sub">中位用时 {stats.medianTime != null ? formatTime(stats.medianTime) : '—'}</div>
         </div>
         <div className="hcard">
-          <div className="hcard-lb">误解聚类</div>
-          <div className="hcard-v">{stats.misconceptionCount || 0}</div>
+          <div className="hcard-lb">达标率</div>
+          <div className="hcard-v">{Math.round((stats.goalReachedRate ?? 0) * 100)}%</div>
         </div>
       </div>
+
+      {/* Cluster coverage */}
+      {d.clusterCoverage && d.clusterCoverage.classCoverage.length > 0 && (
+        <div>
+          <div className="m2-section-h">维度覆盖</div>
+          <div className="obs-cluster-grid">
+            {d.clusterCoverage.classCoverage.map(c => (
+              <div key={c.clusterId} className="obs-cluster-bar">
+                <div className="obs-cb-label" title={c.label}>{c.label}</div>
+                <div className="obs-cb-track">
+                  <div className="obs-cb-fill" style={{ width: pct(c.hitCount, stats.discussedCount) }} />
+                </div>
+                <div className="obs-cb-val">{c.hitCount}/{stats.discussedCount}</div>
+              </div>
+            ))}
+          </div>
+          <div className="obs-cluster-overall">
+            整体覆盖率 {Math.round((d.clusterCoverage.overallRate ?? 0) * 100)}%
+          </div>
+        </div>
+      )}
 
       {/* Result funnel */}
       {students.length > 0 && (

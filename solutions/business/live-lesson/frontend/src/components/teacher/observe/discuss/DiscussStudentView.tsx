@@ -10,6 +10,7 @@ interface DiscussStudentData extends ObserveData {
     completionType: string
     conversation: Array<{ role: 'ai' | 'student'; text: string; round?: number }>
     keyInsights: string[]
+    clusterHits?: Array<{ id: string; label: string; hit: boolean }>
   }>
 }
 
@@ -31,6 +32,18 @@ export default function DiscussStudentView({ data, studentId }: Props) {
   const students = d.students || []
   const student = students.find(s => s.id === studentId)
 
+  const conversation = useMemo(() => student?.conversation || [], [student?.conversation])
+
+  const enrichedMessages = useMemo(() => {
+    let prevRound = 0
+    return conversation.map((msg, i) => {
+      const msgRound = msg.round ?? (Math.floor(i / 2) + 1)
+      const showRoundMarker = msgRound > prevRound
+      if (showRoundMarker) prevRound = msgRound
+      return { ...msg, idx: i, showRoundMarker, roundNum: msgRound }
+    })
+  }, [conversation])
+
   if (!student) {
     return (
       <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -39,7 +52,6 @@ export default function DiscussStudentView({ data, studentId }: Props) {
     )
   }
 
-  const conversation = useMemo(() => student?.conversation || [], [student?.conversation])
   const isFallback = student.completionType === 'fallback_rounds' || student.method === 'fallback'
   const isReached = student.goalReached && !isFallback
   const completionLabel = COMPLETION_LABELS[student.completionType] || student.completionType || '—'
@@ -67,17 +79,6 @@ export default function DiscussStudentView({ data, studentId }: Props) {
   const goalReachedRate = classStats.goalReachedRate ?? 0
   const maxRounds = Math.max(student.roundsUsed || 0, classAvgRounds, 1)
   const maxTime = Math.max(student.timeUsedSeconds || 0, classAvgTime, 1)
-
-  // Pre-compute round boundaries outside render
-  const enrichedMessages = useMemo(() => {
-    let prevRound = 0
-    return conversation.map((msg, i) => {
-      const msgRound = msg.round ?? (Math.floor(i / 2) + 1)
-      const showRoundMarker = msgRound > prevRound
-      if (showRoundMarker) prevRound = msgRound
-      return { ...msg, idx: i, showRoundMarker, roundNum: msgRound }
-    })
-  }, [conversation])
 
   return (
     <div className="observe-split">
@@ -154,6 +155,20 @@ export default function DiscussStudentView({ data, studentId }: Props) {
           <div className="obs-sc-title">{statusCard.title}</div>
           <div className="obs-sc-body">{statusCard.body}</div>
         </div>
+
+        {/* Cluster hits */}
+        {student.clusterHits && student.clusterHits.length > 0 && (
+          <>
+            <div className="m2-section-h">维度探索</div>
+            <div className="obs-stu-clusters">
+              {student.clusterHits.map(c => (
+                <div key={c.id} className={`obs-sc-dot ${c.hit ? 'hit' : ''}`} title={c.label}>
+                  {c.label}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Key insights */}
         <div className="m2-section-h">关键发现</div>
