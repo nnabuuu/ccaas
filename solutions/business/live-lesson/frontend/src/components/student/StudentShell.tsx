@@ -43,6 +43,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
     }
   }, [screen]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const [helpOpen, setHelpOpen] = useState(false)
   const [currentPhase, setCurrentPhase] = useState<string>('listen')
   const handlePhaseChange = useCallback((phase: string) => setCurrentPhase(phase), [])
 
@@ -177,9 +178,15 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   const tourSteps = useMemo<TourStep[]>(() => [
     { selector: '.stu-left-col', title: '这是你的任务区', body: '课程内容、练习、讨论都在左侧完成', arrow: 'right' },
     { selector: '.stu-text-rail', title: '点这里查看课文', body: '点击「T」展开课文原文，做题时自动高亮相关段落', arrow: 'left', onEnter: () => setTextbookOpen(false) },
-    { selector: '.stu-tr-fab, .stu-ai-fab', title: '遇到不懂的词？', body: '选中课文词句后点「译」翻译，点 ✦ 向 AI 提问', arrow: 'top' },
+    { selector: '.stu-toolbar-h', title: '遇到不懂的词？', body: '选中课文词句后点「译」翻译，点 ✦ 向 AI 提问', arrow: 'top' },
   ], [setTextbookOpen])
   const handleTourComplete = useCallback(() => setTextbookOpen(true), [])
+  const tourStorageKey = studentName ? `spotlight-tour-seen-${studentName}` : 'spotlight-tour-seen'
+  const [tourKey, setTourKey] = useState(0)
+  const replayTour = useCallback(() => {
+    try { localStorage.removeItem(tourStorageKey) } catch { /* noop */ }
+    setTourKey(k => k + 1)
+  }, [tourStorageKey])
 
   return (
     <div className="stu-root">
@@ -194,7 +201,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               <span style={{ color: 'var(--t3)', fontWeight: 400, marginLeft: 6 }}>{task.time}</span>
             </div>
           )}
-          <HelpGuide />
+          <HelpGuide onReplayTour={replayTour} open={helpOpen} onOpenChange={setHelpOpen} />
         </div>
       )}
 
@@ -248,16 +255,19 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             onToggle={() => setTextbookOpen(o => !o)}
             enableMath={manifest.enableMath}
           />
-          <TranslateButton taskId={taskId || 1} phase={currentPhase} />
-          <AiPanel
-            taskId={taskId || 1}
-            taskName={task?.name}
-            phase={currentPhase}
-            aiHints={currentAiHints}
-          />
+          <div className="stu-toolbar-h">
+            <button className="stu-help-fab" onClick={() => setHelpOpen(true)} title="帮助">?</button>
+            <TranslateButton taskId={taskId || 1} phase={currentPhase} />
+            <AiPanel
+              taskId={taskId || 1}
+              taskName={task?.name}
+              phase={currentPhase}
+              aiHints={currentAiHints}
+            />
+          </div>
         </div>
       </SessionCtx.Provider>
-      <SpotlightTour steps={tourSteps} storageKey={studentName ? `spotlight-tour-seen-${studentName}` : undefined} onComplete={handleTourComplete} />
+      <SpotlightTour key={tourKey} steps={tourSteps} storageKey={tourStorageKey} onComplete={handleTourComplete} />
     </div>
   )
 }
