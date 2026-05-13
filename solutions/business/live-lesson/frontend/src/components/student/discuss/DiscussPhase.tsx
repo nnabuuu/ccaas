@@ -5,6 +5,7 @@ import type { ClusterProgress } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, FallbackMC } from '../task-data'
 import DiscussGuide from './DiscussGuide'
+import { formatTime, computeUrgency, determineInitialPhase, detectFallbackOnRestore, deriveCompletionType, filterMessagesForApi, findNewHits, mcOptionClass } from './discuss-helpers'
 
 /* ═══ TYPING INDICATOR ═══ */
 export function TypingIndicator() {
@@ -22,17 +23,9 @@ export function TypingIndicator() {
   )
 }
 
-/* ═══ TIME FORMATTER ═══ */
-function formatTime(sec: number) {
-  const m = Math.floor(sec / 60)
-  const s = sec % 60
-  return `${m}:${s < 10 ? '0' : ''}${s}`
-}
-
 /* ═══ STATUS BAR ═══ */
 function StatusBar({ round, maxRounds, elapsed, maxTime }: { round: number; maxRounds: number; elapsed: number; maxTime: number }) {
-  const urgency = Math.max(round / maxRounds, elapsed / maxTime)
-  const color = urgency < 0.5 ? 'var(--green)' : urgency < 0.8 ? 'var(--amber)' : 'var(--red)'
+  const { color } = computeUrgency(round, maxRounds, elapsed, maxTime)
   return (
     <div className="sd-status-bar">
       <div className="sd-status-pill" style={{ background: color + '18', color }}>{`Round ${round}/${maxRounds}`}</div>
@@ -75,10 +68,7 @@ function FallbackMCView({ config, onComplete }: { config: FallbackMC; onComplete
       </div>
       {config.options.map((opt, i) => {
         const isRight = i === config.correctIndex
-        let cls = 'sd-mc-option'
-        if (submitted && isRight) cls += ' correct'
-        else if (submitted && selected === i && !isRight) cls += ' wrong'
-        else if (selected === i) cls += ' selected'
+        const cls = mcOptionClass(i, selected, submitted, config.correctIndex)
         return (
           <div key={i} className={cls} style={submitted ? { cursor: 'default' } : undefined} onClick={submitted ? undefined : () => setSelected(i)}>
             <span className="sd-mc-radio" style={
@@ -235,11 +225,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   )
   const [elapsed, setElapsed] = useState(0)
   const [goalReached, setGoalReached] = useState(!!discussMeta?.goalReached)
-  const [phase, setPhase] = useState<Phase>(() => {
-    if (isRevisit) return 'done'
-    if (discussMeta?.goalReached) return 'done'
-    return 'chat'
-  })
+  const [phase, setPhase] = useState<Phase>(() => determineInitialPhase(!!isRevisit, !!discussMeta?.goalReached))
   const [fallbackReason, setFallbackReason] = useState<'rounds' | 'time' | ''>('')
   const [, setMcAnswer] = useState<number | null>(null)
   const calledDone = useRef(!!isRevisit)
@@ -282,15 +268,16 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       setRound(studentMsgCount)
 
       // ── fallback detection on restore ──
-      if (studentMsgCount >= d.maxRounds) {
-        setFallbackReason('rounds')
+      const fallback = detectFallbackOnRestore({
+        studentMsgCount,
+        maxRounds: d.maxRounds,
+        startedAt: discussMeta?.startedAt,
+        goalReached: discussMeta?.goalReached,
+        maxTimeSeconds: d.maxTimeSeconds,
+      })
+      if (fallback.phase === 'fallback') {
+        setFallbackReason(fallback.reason)
         setPhase('fallback')
-      } else if (discussMeta?.startedAt && !discussMeta.goalReached) {
-        const elapsedSec = Math.floor((Date.now() - new Date(discussMeta.startedAt).getTime()) / 1000)
-        if (elapsedSec >= d.maxTimeSeconds) {
-          setFallbackReason('time')
-          setPhase('fallback')
-        }
       }
     })
   }, [sessionCode, studentId, task.id, fetchHistory])
@@ -331,7 +318,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         skipped: false,
         rounds: round,
         goalReached,
-        completionType: goalReached ? 'goal_reached' : (fallbackReason === 'rounds' ? 'fallback_rounds' : 'fallback_time'),
+        completionType: deriveCompletionType(goalReached, fallbackReason as 'rounds' | 'time' | ''),
         taskId: task.id,
       })
     }
@@ -357,9 +344,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       const studentMsg: Msg = { role: 'student', text }
       setMessages(m => [...m, studentMsg])
       // Filter to only ai/student messages (strip notifications + extra fields) for backend
-      const allMsgs = [...messages, studentMsg]
-        .filter(m => m.role !== 'notification')
-        .map(m => ({ role: m.role as 'ai' | 'student', text: m.text }))
+      const allMsgs = filterMessagesForApi([...messages, studentMsg])
 
       if (!useAi) {
         setMessages(m => [...m, { role: 'ai', text: 'AI discussion requires an active classroom session.' }])
@@ -382,7 +367,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       if (studentId) {
         const data = await fetchProgress(studentId, task.id)
         if (data?.clusters) {
-          newHits = data.clusters.filter(c => c.hit && !prevHitIds.has(c.id))
+          newHits = findNewHits(prevHitIds, data.clusters)
           setClusters(data.clusters)
         }
       }
