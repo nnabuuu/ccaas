@@ -311,6 +311,8 @@ export interface ClassroomState {
         clusterId: string
         status: 'active' | 'resolved'
         evidenceSpans: string[]
+        isHighlight?: boolean
+        highlightGist?: string
       }>
     }>
   }>
@@ -318,6 +320,7 @@ export interface ClassroomState {
     highlights: Array<{
       studentId: string; studentName: string; taskNum: number
       message: string; gist: string; evidenceSpan: string; detectedAt: number
+      clusterId?: string
     }>
     llmInsights: {
       insights: Array<{ title: string; detail: string; suggestedAction: string }>

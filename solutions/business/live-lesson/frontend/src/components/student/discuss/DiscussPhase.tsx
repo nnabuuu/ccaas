@@ -1,8 +1,10 @@
 import { useState, useEffect, useContext, useRef, useCallback } from 'react'
 import { renderMd } from '../renderMd'
-import { useAiAsk, useAiDiscuss, useDiscussComplete, useChatHistory } from '../../../hooks/useClassroom'
+import { useAiAsk, useAiDiscuss, useDiscussComplete, useChatHistory, useDiscussProgress } from '../../../hooks/useClassroom'
+import type { ClusterProgress } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, FallbackMC } from '../task-data'
+import DiscussGuide from './DiscussGuide'
 
 /* ═══ TYPING INDICATOR ═══ */
 export function TypingIndicator() {
@@ -195,9 +197,31 @@ function ContinueChat({ taskId }: { taskId: number }) {
   )
 }
 
+/* ═══ CLUSTER TRACKER (bar-style) ═══ */
+function ClusterTracker({ clusters }: { clusters: ClusterProgress[] }) {
+  if (clusters.length === 0) return null
+  const hitCount = clusters.filter(c => c.hit).length
+  const allHit = hitCount === clusters.length
+  return (
+    <div className="sd-tracker">
+      <div className="sd-tracker-label" style={allHit ? { color: 'var(--green)' } : undefined}>
+        {allHit ? 'All Points Discovered!' : 'Discussion Points'}
+      </div>
+      <div className="sd-tracker-bar">
+        {clusters.map(c => (
+          <div key={c.id} className={`sd-tracker-point${c.hit ? ' hit' : ''}`} title={c.label} />
+        ))}
+        <span className="sd-tracker-count">
+          <span className="num">{hitCount}</span>/{clusters.length}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 /* ═══ MAIN: DISCUSS PHASE ═══ */
 type Phase = 'chat' | 'fallback' | 'done'
-type Msg = { role: 'ai' | 'student'; text: string }
+type Msg = { role: 'ai' | 'student' | 'notification'; text: string; highlight?: { score: number; gist: string } }
 
 export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: () => void; isRevisit?: boolean }) {
   const { sessionCode, studentId, submit, config, discussMeta } = useContext(SessionCtx)
@@ -220,12 +244,18 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const [, setMcAnswer] = useState<number | null>(null)
   const calledDone = useRef(!!isRevisit)
   const submittedRef = useRef(!!isRevisit)
+  const sendingRef = useRef(false)
   const msgEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const [guideOpen, setGuideOpen] = useState(false)
+  const [clusters, setClusters] = useState<ClusterProgress[]>([])
+  const [nudge, setNudge] = useState<string | null>(null)
 
   const { discuss, loading } = useAiDiscuss(sessionCode || '')
   const { complete } = useDiscussComplete(sessionCode || '')
   const { fetchHistory } = useChatHistory(sessionCode || '')
+  const { fetchProgress } = useDiscussProgress(sessionCode || '')
   const useAi = !!(sessionCode && studentId)
 
   const getElapsed = useCallback(() => Math.floor((Date.now() - startTime) / 1000), [startTime])
@@ -243,6 +273,10 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         role: m.role as 'ai' | 'student',
         text: m.content,
       }))
+      // Ensure opening question is present (may be missing from chat_messages)
+      if (restored[0]?.text !== d.openingQ) {
+        restored.unshift({ role: 'ai', text: d.openingQ })
+      }
       setMessages(restored)
       const studentMsgCount = restored.filter(m => m.role === 'student').length
       setRound(studentMsgCount)
@@ -260,6 +294,14 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
       }
     })
   }, [sessionCode, studentId, task.id, fetchHistory])
+
+  // Fetch cluster progress on mount
+  useEffect(() => {
+    if (!sessionCode || !studentId) return
+    fetchProgress(studentId, task.id).then(data => {
+      if (data?.clusters) setClusters(data.clusters)
+    })
+  }, [sessionCode, studentId, task.id, fetchProgress])
 
   // Timer — pauses while AI is loading so students aren't penalised for latency
   useEffect(() => {
@@ -306,39 +348,74 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   // Send message
   const send = async () => {
     const text = input.trim()
-    if (!text || loading || phase !== 'chat') return
+    if (!text || loading || sendingRef.current || phase !== 'chat') return
+    sendingRef.current = true
+    try {
+      const newRound = round + 1
+      setRound(newRound)
+      setInput('')
+      const studentMsg: Msg = { role: 'student', text }
+      setMessages(m => [...m, studentMsg])
+      // Filter to only ai/student messages (strip notifications + extra fields) for backend
+      const allMsgs = [...messages, studentMsg]
+        .filter(m => m.role !== 'notification')
+        .map(m => ({ role: m.role as 'ai' | 'student', text: m.text }))
 
-    const newRound = round + 1
-    setRound(newRound)
-    setInput('')
-    const studentMsg: Msg = { role: 'student', text }
-    const allMsgs = [...messages, studentMsg]
-    setMessages(allMsgs)
-
-    if (!useAi) {
-      setMessages(m => [...m, { role: 'ai', text: 'AI discussion requires an active classroom session.' }])
-      return
-    }
-
-    const result = await discuss(studentId!, task.id, allMsgs, newRound, getElapsed())
-    if (result) {
-      if (result.llmFailed) {
-        // LLM failed → rollback round so student isn't penalised
-        setRound(round)
+      if (!useAi) {
+        setMessages(m => [...m, { role: 'ai', text: 'AI discussion requires an active classroom session.' }])
+        return
       }
-      if (result.goalReached) {
-        setMessages(m => [...m, { role: 'ai', text: result.reply }])
-        setGoalReached(true)
-        setPhase('done')
-      } else {
-        setMessages(m => [...m, { role: 'ai', text: result.reply }])
-        if (!result.llmFailed && newRound >= d.maxRounds) {
-          setFallbackReason('rounds')
-          setPhase('fallback')
+
+      const prevHitIds = new Set(clusters.filter(c => c.hit).map(c => c.id))
+
+      const result = await discuss(studentId!, task.id, allMsgs, newRound, getElapsed())
+      if (!result) {
+        setRound(round)
+        setMessages(m => [...m, { role: 'ai', text: 'Sorry, let me think about that differently. Could you rephrase your answer?' }])
+        return
+      }
+
+      if (result.llmFailed) setRound(round)
+
+      // Fetch cluster progress (awaited so we can detect new hits for inline notifications)
+      let newHits: ClusterProgress[] = []
+      if (studentId) {
+        const data = await fetchProgress(studentId, task.id)
+        if (data?.clusters) {
+          newHits = data.clusters.filter(c => c.hit && !prevHitIds.has(c.id))
+          setClusters(data.clusters)
         }
       }
-    } else {
-      setMessages(m => [...m, { role: 'ai', text: 'Sorry, let me think about that differently. Could you rephrase your answer?' }])
+
+      // Nudge
+      if (result.nudge?.hint) setNudge(result.nudge.hint)
+      else setNudge(null)
+
+      // Single batch: highlight + point-discovered notifications + AI reply
+      setMessages(m => {
+        const updated = [...m]
+        if (result.highlight) {
+          const lastStudentIdx = updated.findLastIndex(msg => msg.role === 'student')
+          if (lastStudentIdx >= 0) {
+            updated[lastStudentIdx] = { ...updated[lastStudentIdx], highlight: result.highlight }
+          }
+        }
+        for (let i = 0; i < newHits.length; i++) {
+          updated.push({ role: 'notification', text: `Point ${prevHitIds.size + i + 1} discovered` })
+        }
+        updated.push({ role: 'ai', text: result.reply })
+        return updated
+      })
+
+      if (result.goalReached) {
+        setGoalReached(true)
+        setPhase('done')
+      } else if (!result.llmFailed && newRound >= d.maxRounds) {
+        setFallbackReason('rounds')
+        setPhase('fallback')
+      }
+    } finally {
+      sendingRef.current = false
     }
   }
 
@@ -364,7 +441,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   }
 
   return (
-    <div id="phase-discuss">
+    <div id="phase-discuss" data-translate-ctx="discuss">
       <div className="stu-section-label"><span>Discuss</span><div className="stu-section-line" /></div>
 
       <div className="sd-chat-area">
@@ -375,21 +452,37 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           {d.openingQZh && (
             <button className="sd-help-btn" title={d.openingQZh} onClick={() => alert(d.openingQZh)}>中文</button>
           )}
+          <button className="sd-guide-btn" onClick={() => setGuideOpen(true)} aria-label="Discussion guide">?</button>
         </div>
+        <DiscussGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
 
         {/* Status bar */}
         {phase === 'chat' && <StatusBar round={round} maxRounds={d.maxRounds} elapsed={elapsed} maxTime={d.maxTimeSeconds} />}
 
+        {/* Cluster progress tracker (visible in all phases) */}
+        <ClusterTracker clusters={clusters} />
+
         {/* Messages */}
         <div className="sd-msg-list">
-          {messages.map((msg, i) => msg.role === 'ai' ? (
+          {messages.map((msg, i) => msg.role === 'notification' ? (
+            <div key={i} className="sd-point-discovered">
+              <span>{msg.text}</span>
+            </div>
+          ) : msg.role === 'ai' ? (
             <div key={i} className="sd-msg-row">
               <div className="sd-avatar ai">S</div>
               <div className="sd-bubble ai">{renderMd(msg.text, { math: enableMath })}</div>
             </div>
           ) : (
             <div key={i} className="sd-msg-row student">
-              <div className="sd-bubble student">{msg.text}</div>
+              <div className="sd-bubble student" style={{ position: 'relative' }}>
+                {msg.text}
+                {msg.highlight && (
+                  <span className="sd-highlight-badge" title={msg.highlight.gist}>
+                    ✦ +{msg.highlight.score}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
 
@@ -467,6 +560,15 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         {/* Scaffold chips */}
         {phase === 'chat' && round === 0 && d.scaffolds && d.scaffolds.length > 0 && (
           <ScaffoldChips scaffolds={d.scaffolds} onPick={handleScaffold} />
+        )}
+
+        {/* Nudge chip */}
+        {phase === 'chat' && nudge && (
+          <div className="sd-nudge-chip">
+            <span>💡</span>
+            <span className="sd-nudge-text">{nudge}</span>
+            <button className="sd-nudge-close" onClick={() => setNudge(null)}>×</button>
+          </div>
         )}
 
         {/* Input */}

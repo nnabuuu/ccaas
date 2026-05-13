@@ -4,21 +4,21 @@ import { useTeacherPolling } from '../../hooks/useClassroom'
 import type { ClassroomState, StateSnapshot } from '../../hooks/useClassroom'
 import {
   STUCK_THRESHOLD_MS, computeHealthCards, getStudentGlobalStatus, hasAI,
-  getCatBadgeClass, formatRelative, getStepName, computePhaseDistribution,
-  getObserveType, clusterQuestions,
+  getStepName, computePhaseDistribution,
+  getObserveType, countHighlights,
 } from './teacher-helpers'
 import { Band } from './Band'
 import { Timeline } from './Timeline'
-import { ObservationPanel } from './ObservationPanel'
+import { DiscussInsightTab } from './DiscussInsightTab'
 import { StudentModal } from './StudentModal'
 import { SummaryTab } from './summary/SummaryTab'
-import { CoachingPanel } from './CoachingPanel'
+import { ClassroomStatusTab } from './ClassroomStatusTab'
 import { useSearchParams } from 'react-router-dom'
 
 const ObserveDrawer = lazy(() => import('./observe/ObserveDrawer'))
 const SummaryOverlay = lazy(() => import('./summary/SummaryOverlay'))
 
-type RightTab = 'questions' | 'observation' | 'students' | 'coaching'
+type RightTab = 'discuss' | 'analysis' | 'status'
 
 interface Props {
   manifest: ReadingManifest
@@ -32,7 +32,7 @@ interface Props {
 export default function TeacherShell({ manifest, embed, classroomState, sessionCode, onEndSession, ending }: Props) {
   const [modalStudent, setModalStudent] = useState<string | null>(null)
   const [expandedStep, setExpandedStep] = useState<number | null>(null)
-  const [rightTab, setRightTab] = useState<RightTab>('questions')
+  const [rightTab, setRightTab] = useState<RightTab>('discuss')
 
   // URL-driven observe drawer
   const [searchParams, setSearchParams] = useSearchParams()
@@ -156,31 +156,11 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
     })
   }, [taskSteps, students, state, questions])
 
-  // Question clustering: filter out discuss, group by step, cluster similar questions
-  const clusteredQuestions = useMemo(() => {
-    const askQuestions = questions.filter(q => q.category !== 'discuss')
+  // Highlight count for tab badge
+  const highlightCount = useMemo(() => countHighlights(state?.clusterStats), [state?.clusterStats])
 
-    const byStep: Record<number, typeof askQuestions> = {}
-    for (const q of askQuestions) {
-      const s = q.step ?? 0
-      if (!byStep[s]) byStep[s] = []
-      byStep[s].push(q)
-    }
-
-    return Object.entries(byStep)
-      .map(([step, qs]) => {
-        const clusters = clusterQuestions(qs)
-        return { step: Number(step), clusters, total: qs.length }
-      })
-      .sort((a, b) => a.step - b.step)
-  }, [questions])
-
-  const totalAskQuestions = useMemo(
-    () => clusteredQuestions.reduce((sum, g) => sum + g.total, 0),
-    [clusteredQuestions],
-  )
-
-  const [expandedQ, setExpandedQ] = useState<string | null>(null)
+  // Urgent alert count for tab badge
+  const urgentAlertCount = state?.observation?.alerts?.filter(a => a.severity === 'urgent').length ?? 0
 
   // Listen for sync messages
   useEffect(() => {
@@ -432,181 +412,32 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
         <div className="overview">
           {/* Tab Bar */}
           <div className="right-tab-bar">
-            <button className={`right-tab${rightTab === 'questions' ? ' active' : ''}`} onClick={() => setRightTab('questions')}>
-              问题聚类
-              {totalAskQuestions > 0 && <span className="right-tab-cnt">{totalAskQuestions}</span>}
+            <button className={`right-tab${rightTab === 'discuss' ? ' active' : ''}`} onClick={() => setRightTab('discuss')}>
+              讨论洞察
+              {highlightCount > 0 && <span className="right-tab-cnt" style={{ color: 'var(--amber)' }}>✦ {highlightCount}</span>}
             </button>
-            <button className={`right-tab${rightTab === 'observation' ? ' active' : ''}`} onClick={() => setRightTab('observation')}>
-              观察要点
-              {(() => {
-                const urgentCount = state.observation?.alerts?.filter(a => a.severity === 'urgent').length ?? 0
-                return urgentCount > 0 ? <span className="obs-badge urgent">{urgentCount}</span> : null
-              })()}
+            <button className={`right-tab${rightTab === 'analysis' ? ' active' : ''}`} onClick={() => setRightTab('analysis')}>
+              学生分析
             </button>
-            <button className={`right-tab${rightTab === 'students' ? ' active' : ''}`} onClick={() => setRightTab('students')}>
-              学生总览
-            </button>
-            <button className={`right-tab${rightTab === 'coaching' ? ' active' : ''}`} onClick={() => setRightTab('coaching')}>
-              教学参考
+            <button className={`right-tab${rightTab === 'status' ? ' active' : ''}`} onClick={() => setRightTab('status')}>
+              课堂状态
+              {urgentAlertCount > 0 && <span className="obs-badge urgent">{urgentAlertCount}</span>}
             </button>
           </div>
 
           <div className="ov-body">
-            {/* Questions Tab — cluster stats + fallback text-similarity */}
-            {rightTab === 'questions' && (
-              <div className="queue-section">
-                <div className="queue-h">
-                  <span className="lb">问题聚类 · 按 Step</span>
-                  <span className="cnt">{totalAskQuestions}</span>
-                </div>
-                <div className="queue">
-                  {/* ── Cluster Stats (per-question LLM classification) ── */}
-                  {state.clusterStats && Object.keys(state.clusterStats).length > 0 && (
-                    <div className="qc-cluster-stats">
-                      {Object.entries(state.clusterStats)
-                        .sort(([a], [b]) => Number(a) - Number(b))
-                        .map(([taskNumStr, data]) => {
-                          const taskNum = Number(taskNumStr)
-                          const stepLabel = stepNames[taskNum] || `Task ${taskNum}`
-                          const defs = data.definitions
-                          const clusterList = data.clusters
-
-                          if (defs.length === 0 && clusterList.length === 0) return null
-
-                          // Build label map from definitions
-                          const labelMap: Record<string, string> = {}
-                          for (const d of defs) labelMap[d.id] = d.label
-                          labelMap['other'] = '未分类'
-
-                          // Sort by student count descending, 'other' always last
-                          const sorted = [...clusterList].sort((a, b) => {
-                            if (a.clusterId === 'other') return 1
-                            if (b.clusterId === 'other') return -1
-                            return b.uniqueStudents - a.uniqueStudents || a.clusterId.localeCompare(b.clusterId)
-                          })
-
-                          // Show empty state if definitions exist but no observations
-                          if (defs.length > 0 && clusterList.length === 0) {
-                            return (
-                              <div key={taskNum} className="qc-step-group">
-                                <div className="q-step-h">
-                                  <span className="step-name">{stepLabel}</span>
-                                  <span className="tot">暂无观察数据</span>
-                                </div>
-                              </div>
-                            )
-                          }
-
-                          const totalDiscussing = new Set(clusterList.flatMap(c => c.observations.map((o: { studentName: string }) => o.studentName))).size
-
-                          return (
-                            <div key={taskNum} className="qc-step-group">
-                              <div className="q-step-h">
-                                <span className="step-name">{stepLabel}</span>
-                                <span className="tot">{totalDiscussing}人讨论中</span>
-                              </div>
-                              {sorted.map(cs => {
-                                const label = labelMap[cs.clusterId] || cs.clusterId
-                                const isOther = cs.clusterId === 'other'
-                                // Deduplicate student names from observations
-                                const studentNames = [...new Set(cs.observations.map((obs: { studentName: string }) => obs.studentName))]
-
-                                if (isOther && studentNames.length === 0) return null
-
-                                return (
-                                  <div key={cs.clusterId} className={`qc-cluster-card${isOther ? ' other' : ''}`}>
-                                    <div className="qc-head">
-                                      <div className="qc-question">
-                                        {isOther ? <span className="qc-other-label">{label}</span> : label}
-                                      </div>
-                                      <div className="qc-meta">
-                                        <span className={`qc-count${cs.uniqueStudents >= 3 ? ' hot' : ''}`}>{cs.uniqueStudents}人</span>
-                                      </div>
-                                    </div>
-                                    <div className="qc-student-tags">
-                                      {studentNames.map(name => (
-                                        <span key={name} className="qc-student-tag" onClick={() => setModalStudent(name)}>{name}</span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          )
-                        })}
-                    </div>
-                  )}
-
-                  {/* ── Fallback: text-similarity clustering (no cluster defs) ── */}
-                  {totalAskQuestions === 0 && (!state.clusterStats || Object.keys(state.clusterStats).length === 0) && (
-                    <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: 'var(--t3)' }}>
-                      暂无学生提问
-                    </div>
-                  )}
-                  {clusteredQuestions.map(group => {
-                    const stepLabel = stepNames[group.step] || `Step ${group.step}`
-                    return (
-                      <div key={group.step} className="qc-step-group">
-                        <div className="q-step-h">
-                          <span className="step-name">{stepLabel}</span>
-                          <span className="tot">{group.total} 条提问</span>
-                        </div>
-                        {group.clusters.map((cluster, ci) => {
-                          const qKey = `${group.step}:${ci}`
-                          const isQExpanded = expandedQ === qKey
-                          const isHot = cluster.students.length >= 3
-                          return (
-                            <div key={ci} className={`qc-cluster${isHot ? ' qc-hot' : ''}`}>
-                              <div className="qc-head" onClick={() => setExpandedQ(isQExpanded ? null : qKey)}>
-                                <div className="qc-question">{cluster.representative.question}</div>
-                                <div className="qc-meta">
-                                  <span className={`qc-count${isHot ? ' hot' : ''}`}>{cluster.students.length}人提问</span>
-                                  <span className={`cat-badge ${getCatBadgeClass(cluster.category)}`}>{cluster.category}</span>
-                                </div>
-                              </div>
-                              <div className="qc-students">
-                                {cluster.students.map(name => (
-                                  <span key={name} className="qc-student-tag">{name}</span>
-                                ))}
-                              </div>
-                              {isQExpanded && (
-                                <div className="qc-expanded">
-                                  {cluster.items.map((item, ii) => (
-                                    <div key={ii} className="qc-item">
-                                      <div className="qc-item-head">
-                                        <span className="q-student">{item.studentName}</span>
-                                        <span className="qmeta">{formatRelative(item.timestamp)}</span>
-                                      </div>
-                                      <div className="qq">{item.question}</div>
-                                      {item.answer && (
-                                        <div className="q-answer">
-                                          <span className="q-answer-label">AI 回答：</span>
-                                          {item.answer}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+            {/* Tab 1: 讨论洞察 */}
+            {rightTab === 'discuss' && (
+              <DiscussInsightTab
+                state={state}
+                stepNames={stepNames}
+                questions={questions}
+                onStudentClick={setModalStudent}
+              />
             )}
 
-            {/* Observation Tab */}
-            {rightTab === 'observation' && (
-              <div style={{ padding: '12px 14px' }}>
-                <ObservationPanel state={state} />
-              </div>
-            )}
-
-            {/* Student Summary Tab */}
-            {rightTab === 'students' && state && (
+            {/* Tab 2: 学生分析 */}
+            {rightTab === 'analysis' && state && (
               <SummaryTab
                 state={state}
                 students={students}
@@ -619,14 +450,13 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
               />
             )}
 
-            {/* Coaching Tab */}
-            {rightTab === 'coaching' && state && (
-              <CoachingPanel
+            {/* Tab 3: 课堂状态 */}
+            {rightTab === 'status' && state && (
+              <ClassroomStatusTab
                 state={state}
                 health={health}
                 stepNames={stepNames}
                 taskSteps={taskSteps}
-                questions={questions}
                 onStudentClick={setModalStudent}
               />
             )}

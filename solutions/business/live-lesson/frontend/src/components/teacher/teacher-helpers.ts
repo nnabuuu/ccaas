@@ -182,6 +182,18 @@ export function getObserveType(answerKeyType?: string): string | null {
   }
 }
 
+/** Count all isHighlight observations across all cluster stats */
+export function countHighlights(clusterStats: ClassroomState['clusterStats']): number {
+  if (!clusterStats) return 0
+  let count = 0
+  for (const data of Object.values(clusterStats)) {
+    for (const cluster of data.clusters) {
+      count += cluster.observations.filter(o => o.isHighlight).length
+    }
+  }
+  return count
+}
+
 /** Group students by their current status */
 export function groupStudentsByStatus(students: ClassroomState['students']): Record<StudentStatus, ClassroomState['students']> {
   const groups: Record<StudentStatus, ClassroomState['students']> = {

@@ -4,6 +4,7 @@ import AudioButton from './AudioButton'
 import { DiscussPhase } from './discuss/DiscussPhase'
 import { PracticePhase } from './exercise/PracticePhase'
 import { PersonalTouchScreen } from './personal-touch/PersonalTouchScreen'
+import { SummaryScreen } from './personal-touch/SummaryScreen'
 import { BonusPhase } from './personal-touch/BonusPhase'
 import { renderMd } from './renderMd'
 import { reportPhase, type CachedSubmission, type DiscussMeta } from '../../hooks/useClassroom'
@@ -41,7 +42,7 @@ function ListenPhase({ task, onDone, lessonId, isRevisit }: { task: Task; onDone
   const handleClick = () => { setDone(true); onDone() }
   const iv = task.instructionView
   return (
-    <div id="phase-listen">
+    <div id="phase-listen" data-translate-ctx="instruction">
       <div className="stu-section-label"><span>Listen</span><div className="stu-section-line" /></div>
       {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-intro.mp3`} />}
       <div className="stu-instr-card">
@@ -78,7 +79,7 @@ function TakeawayPhase({ task, onComplete, lessonId, taskCount }: { task: Task; 
   const { config, boardData } = useContext(SessionCtx)
   const total = taskCount ?? 5
   return (
-    <div id="phase-takeaway">
+    <div id="phase-takeaway" data-translate-ctx="takeaway">
       <div className="stu-section-label"><span>Takeaway</span><div className="stu-section-line" /></div>
       <div style={{ marginBottom: 16 }}>
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/step-${task.id}-summary.mp3`} />}
@@ -372,14 +373,7 @@ export function TaskColumn({ screen, setScreen, task, completeTask, lessonId, st
         </div>
       )}
       {screen === 'summary' && (
-        <div className="stu-task-inner" style={{ paddingTop: 32 }}>
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Complete</div>
-            <div style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.4px', marginBottom: 16 }}>Great job today!</div>
-            {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-summary.mp3`} />}
-            <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>{renderMd(summaryText, { math: config.enableMath })}</div>
-          </div>
-        </div>
+        <SummaryScreen lessonSummary={summaryText} lessonId={lessonId} enableMath={config.enableMath} />
       )}
       {screen === 'personal-touch' && (
         <PersonalTouchScreen onContinue={(bonusUnlocked) => {

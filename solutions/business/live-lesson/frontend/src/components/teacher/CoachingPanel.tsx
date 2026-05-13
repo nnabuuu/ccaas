@@ -21,6 +21,7 @@ interface Props {
   onStudentClick: (name: string) => void
 }
 
+/** @deprecated Replaced by ClassroomStatusTab + DiscussInsightTab in the 3-tab redesign. Kept for reference. */
 export function CoachingPanel({ state, health, stepNames, taskSteps, questions, onStudentClick }: Props) {
   const [expandedHighlight, setExpandedHighlight] = useState<number | null>(null)
 

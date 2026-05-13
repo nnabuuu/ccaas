@@ -443,6 +443,7 @@ export function computeTimingInsight(
 /**
  * Pick 1-3 representative student questions worth discussing in class.
  * Always anonymized — no student names.
+ * @deprecated Cluster coverage in DiscussInsightTab replaces this. Kept for SummaryOverlay.
  */
 export function pickRepresentativeQuestions(
   questions: Questions,

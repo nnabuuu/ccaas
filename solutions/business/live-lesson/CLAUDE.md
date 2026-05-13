@@ -89,14 +89,13 @@ Aggregates raw observations into:
 
 ## Teacher Dashboard
 
-4-tab architecture on `TeacherPage`:
+3-tab architecture on `TeacherPage`:
 
 | Tab | Component | Data Source |
 |-----|-----------|-------------|
-| 问题聚类 | `CoachingPanel` | `CoachingService` highlights + LLM insights |
-| 观察要点 | `ObservationPanel` | `ObservationQueryService` dashboard |
-| 学生总览 | `StudentModal` | `ClassroomStateService.getState()` students array |
-| 教学参考 | `summary/` | Manifest surfaces + observe data |
+| 讨论洞察 | `DiscussInsightTab` | `ClusterAggregator` stats + observation logs + questions |
+| 学生分析 | `SummaryTab` | Quadrants, candidates, weak dimensions |
+| 课堂状态 | `ClassroomStatusTab` | Alerts + coaching tips + LLM insights + indicators |
 
 Additional features:
 - **Timeline**: `Timeline.tsx` — snapshot replay, scrub through session history via `GET /:code/snapshots`

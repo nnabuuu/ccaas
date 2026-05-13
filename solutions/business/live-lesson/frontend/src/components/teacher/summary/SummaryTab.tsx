@@ -7,7 +7,6 @@ import {
   computeKnowledgePoints,
   pickQuestionCandidates,
   computeTimingInsight,
-  pickRepresentativeQuestions,
   computeAiHeat,
   formatDuration,
   QUADRANT_META,
@@ -15,10 +14,6 @@ import {
 } from './summary-helpers'
 import type { Quadrant } from './summary-helpers'
 import { hasAI } from '../teacher-helpers'
-
-function truncate(text: string, max: number): string {
-  return text.length > max ? text.slice(0, max) + '…' : text
-}
 
 interface Props {
   state: ClassroomState
@@ -59,11 +54,6 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
     [students, stepToTask, state.stepMetrics, stepNames],
   )
 
-  const repQuestions = useMemo(
-    () => pickRepresentativeQuestions(questions, stepNames),
-    [questions, stepNames],
-  )
-
   const aiHeat = useMemo(
     () => computeAiHeat(state.stepMetrics, stepNames),
     [state.stepMetrics, stepNames],
@@ -71,7 +61,7 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
 
   const metrics = { ...quadrantData.metrics, weakDimensionCount: weakDimensions.length }
 
-  const hasTransitionInsights = timingInsight || repQuestions.length > 0 || aiHeat.length > 0
+  const hasTransitionInsights = timingInsight || aiHeat.length > 0
 
   // Group students by quadrant
   const groups = useMemo(() => {
@@ -190,6 +180,22 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
         </div>
       )}
 
+      {/* Weak Dimensions (compact bar view) */}
+      {weakDimensions.length > 0 && (
+        <div className="weak-dim-section">
+          <div className="kp-header">薄弱维度</div>
+          {weakDimensions.slice(0, 5).map(wd => (
+            <div key={`${wd.stepNum}-${wd.dimension}`} className="weak-dim">
+              <span className="dim-label" title={`${wd.stepName} · ${wd.dimension}`}>{wd.dimension}</span>
+              <div className="dim-bar">
+                <div className="dim-fill" style={{ width: `${wd.wrongRate}%` }} />
+              </div>
+              <span className="dim-pct">{wd.wrongRate}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Transition Insights (compact) */}
       {hasTransitionInsights && (
         <div className="st-transition">
@@ -198,12 +204,6 @@ export function SummaryTab({ state, students, questions, stepNames, totalSteps, 
             <div className="st-transition-row">
               <span className="st-transition-icon st-icon-timing" />
               <span>Step {timingInsight.stepNum} 耗时最长（{timingInsight.percentage}% 学生）{timingInsight.medianTime != null ? ` · 中位 ${formatDuration(timingInsight.medianTime)}` : ''}</span>
-            </div>
-          )}
-          {repQuestions.length > 0 && (
-            <div className="st-transition-row">
-              <span className="st-transition-icon st-icon-question" />
-              <span>"{truncate(repQuestions[0].question, 30)}" — 匿名</span>
             </div>
           )}
           {aiHeat.length > 0 && (

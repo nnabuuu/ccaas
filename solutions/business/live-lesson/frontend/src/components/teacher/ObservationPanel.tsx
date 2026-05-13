@@ -4,6 +4,7 @@ import { STUCK_THRESHOLD_MS, stripDiscussTag } from './teacher-helpers'
 
 type ObsMode = 'glance' | 'alert'
 
+/** @deprecated Replaced by ClassroomStatusTab in the 3-tab redesign. Kept for reference. */
 export function ObservationPanel({ state }: { state: ClassroomState }) {
   const [mode, setMode] = useState<ObsMode>('glance')
   const obs = state.observation
