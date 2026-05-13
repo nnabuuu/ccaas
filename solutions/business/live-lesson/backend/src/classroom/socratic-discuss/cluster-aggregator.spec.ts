@@ -55,6 +55,99 @@ describe('ClusterAggregator', () => {
     });
   });
 
+  // ── isHighlight capture ──
+
+  describe('isHighlight capture', () => {
+    it('stores isHighlight=false by default', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent());
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(false);
+      expect(obs.highlightGist).toBeFalsy();
+    });
+
+    it('stores isHighlight=true and highlightGist on new_signal', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        isHighlight: true,
+        highlightGist: '学生自发引入跨文化对比',
+      }));
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(true);
+      expect(obs.highlightGist).toBe('学生自发引入跨文化对比');
+    });
+
+    it('upgrades isHighlight from false to true on subsequent message', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ isHighlight: false }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        isHighlight: true,
+        highlightGist: '后续发言展现深度思考',
+      }));
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(true);
+      expect(obs.highlightGist).toBe('后续发言展现深度思考');
+    });
+
+    it('does not downgrade isHighlight from true to false', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        isHighlight: true,
+        highlightGist: '亮点发言',
+      }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ isHighlight: false }));
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(true);
+      expect(obs.highlightGist).toBe('亮点发言');
+    });
+
+    it('stores isHighlight on reinforcing (no prior record)', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        eventType: 'reinforcing',
+        isHighlight: true,
+        highlightGist: 'reinforcing 亮点',
+      }));
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(true);
+      expect(obs.highlightGist).toBe('reinforcing 亮点');
+    });
+
+    it('upgrades isHighlight on reinforcing (existing record)', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ isHighlight: false }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        eventType: 'reinforcing',
+        isHighlight: true,
+        highlightGist: 'reinforcing 升级',
+      }));
+      const obs = agg.getClusterStats('s1', 1)[0].observations[0];
+      expect(obs.isHighlight).toBe(true);
+      expect(obs.highlightGist).toBe('reinforcing 升级');
+    });
+
+    it('stores isHighlight on state_change (new cluster entry)', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ clusterId: 'c1' }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        eventType: 'state_change',
+        clusterId: 'c2',
+        isHighlight: true,
+        highlightGist: 'state_change 亮点',
+      }));
+      const c2 = agg.getClusterStats('s1', 1).find(s => s.clusterId === 'c2');
+      expect(c2).toBeDefined();
+      expect(c2!.observations[0].isHighlight).toBe(true);
+      expect(c2!.observations[0].highlightGist).toBe('state_change 亮点');
+    });
+
+    it('highlight in "other" cluster (超越预设 scenario)', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        clusterId: 'c1',
+        confidence: 'low',
+        isHighlight: true,
+        highlightGist: '超越预设的深度见解',
+      }));
+      const stats = agg.getClusterStats('s1', 1);
+      expect(stats[0].clusterId).toBe('other');
+      expect(stats[0].observations[0].isHighlight).toBe(true);
+      expect(stats[0].observations[0].highlightGist).toBe('超越预设的深度见解');
+    });
+  });
+
   // ── confidence remapping ──
 
   describe('confidence remapping', () => {
@@ -148,6 +241,93 @@ describe('ClusterAggregator', () => {
     });
   });
 
+  // ── getStudentClusters ──
+
+  describe('getStudentClusters', () => {
+    const defs = [
+      { id: 'c1', label: 'Cluster One' },
+      { id: 'c2', label: 'Cluster Two' },
+      { id: 'c3', label: 'Cluster Three' },
+    ];
+
+    it('returns all clusters with hit=false when no data', () => {
+      const result = agg.getStudentClusters('s1', 1, 'stu1', defs);
+      expect(result).toEqual([
+        { id: 'c1', label: 'Cluster One', hit: false },
+        { id: 'c2', label: 'Cluster Two', hit: false },
+        { id: 'c3', label: 'Cluster Three', hit: false },
+      ]);
+    });
+
+    it('marks hit clusters correctly', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ clusterId: 'c1' }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ clusterId: 'c3' }));
+      const result = agg.getStudentClusters('s1', 1, 'stu1', defs);
+      expect(result).toEqual([
+        { id: 'c1', label: 'Cluster One', hit: true },
+        { id: 'c2', label: 'Cluster Two', hit: false },
+        { id: 'c3', label: 'Cluster Three', hit: true },
+      ]);
+    });
+
+    it('does not count other students hits', () => {
+      agg.ingest('s1', 1, 'stu2', 'Bob', makeEvent({ clusterId: 'c1' }));
+      const result = agg.getStudentClusters('s1', 1, 'stu1', defs);
+      expect(result.every(c => !c.hit)).toBe(true);
+    });
+  });
+
+  // ── recordHit / getConsecutiveMisses ──
+
+  describe('consecutiveMisses', () => {
+    it('returns 0 with no history', () => {
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(0);
+    });
+
+    it('counts consecutive false entries from end', () => {
+      agg.recordHit('s1', 1, 'stu1', true);
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu1', false);
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(2);
+    });
+
+    it('resets count when a hit occurs', () => {
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu1', true);
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(0);
+    });
+
+    it('isolates by student', () => {
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu2', true);
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(2);
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu2')).toBe(0);
+    });
+  });
+
+  // ── getUnhitClusterIds ──
+
+  describe('getUnhitClusterIds', () => {
+    const defs = [
+      { id: 'c1', label: 'L1' },
+      { id: 'c2', label: 'L2' },
+      { id: 'c3', label: 'L3' },
+    ];
+
+    it('returns all clusters when none hit', () => {
+      const result = agg.getUnhitClusterIds('s1', 1, 'stu1', defs);
+      expect(result).toHaveLength(3);
+    });
+
+    it('excludes hit clusters', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ clusterId: 'c2' }));
+      const result = agg.getUnhitClusterIds('s1', 1, 'stu1', defs);
+      expect(result.map(c => c.id)).toEqual(['c1', 'c3']);
+    });
+  });
+
   // ── cleanupSession ──
 
   describe('cleanupSession', () => {
@@ -162,6 +342,13 @@ describe('ClusterAggregator', () => {
       agg.ingest('s2', 1, 'stu2', 'Bob', makeEvent());
       agg.cleanupSession('s1');
       expect(agg.getClusterStats('s2', 1)).toHaveLength(1);
+    });
+
+    it('clears miss history for session', () => {
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.recordHit('s1', 1, 'stu1', false);
+      agg.cleanupSession('s1');
+      expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(0);
     });
   });
 });

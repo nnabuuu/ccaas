@@ -20,13 +20,13 @@ describe('CoachingService', () => {
   describe('addHighlight / getHighlights', () => {
     it('stores and retrieves highlights', () => {
       service.addHighlight('s1', {
-        studentId: 'stu1', studentName: 'Alice', taskNum: 1,
+        studentId: 'stu1', studentName: 'Alice', taskNum: 1, clusterId: 'c1',
         message: 'I think...', gist: 'Interesting point', evidenceSpan: 'evidence',
       });
       const highlights: DiscussionHighlight[] = service.getHighlights('s1');
       expect(highlights).toHaveLength(1);
       expect(highlights[0]).toMatchObject({
-        studentId: 'stu1', studentName: 'Alice', gist: 'Interesting point',
+        studentId: 'stu1', studentName: 'Alice', gist: 'Interesting point', clusterId: 'c1',
       });
       expect(highlights[0].detectedAt).toBeGreaterThan(0);
     });
@@ -38,7 +38,7 @@ describe('CoachingService', () => {
     it('caps highlights at 100 per session', () => {
       for (let i = 0; i < 110; i++) {
         service.addHighlight('s1', {
-          studentId: `stu${i}`, studentName: `S${i}`, taskNum: 1,
+          studentId: `stu${i}`, studentName: `S${i}`, taskNum: 1, clusterId: 'c1',
           message: 'm', gist: `g${i}`, evidenceSpan: 'e',
         });
       }
@@ -138,14 +138,14 @@ describe('CoachingService', () => {
   describe('cleanupSession', () => {
     it('removes highlights and cache for session', async () => {
       service.addHighlight('s1', {
-        studentId: 'stu1', studentName: 'A', taskNum: 1,
+        studentId: 'stu1', studentName: 'A', taskNum: 1, clusterId: 'c1',
         message: 'm', gist: 'g', evidenceSpan: 'e',
       });
       const llmResponse = JSON.stringify({ insights: [{ title: 'T', detail: 'D', suggestedAction: 'A' }] });
       ai = makeMockAiPromptBuilder(llmResponse);
       service = new CoachingService(ai);
       service.addHighlight('s1', {
-        studentId: 'stu1', studentName: 'A', taskNum: 1,
+        studentId: 'stu1', studentName: 'A', taskNum: 1, clusterId: 'c1',
         message: 'm', gist: 'g', evidenceSpan: 'e',
       });
       await service.maybeRefresh('s1', {

@@ -6,6 +6,8 @@ export interface ObservationState {
   clusterId: string;
   status: 'active' | 'resolved';
   evidenceSpans: string[];
+  isHighlight: boolean;
+  highlightGist?: string;
   createdAt: number;
   updatedAt: number;
 }

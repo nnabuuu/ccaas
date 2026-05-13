@@ -4,6 +4,7 @@ export interface DiscussionHighlight {
   studentId: string;
   studentName: string;
   taskNum: number;
+  clusterId: string;
   message: string;
   gist: string;
   evidenceSpan: string;

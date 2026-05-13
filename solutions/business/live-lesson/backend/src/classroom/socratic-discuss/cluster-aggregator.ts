@@ -5,6 +5,8 @@ import type { ObservationState, ClusterStats, ClassifyResult } from '../../schem
 export class ClusterAggregator {
   // sessionId → taskNum → Map<`${studentId}:${clusterId}`, ObservationState>
   private sessions = new Map<string, Map<number, Map<string, ObservationState>>>();
+  // `${sessionId}:${taskNum}:${studentId}` → boolean[] (true = new cluster hit)
+  private missHistory = new Map<string, boolean[]>();
 
   ingest(
     sessionId: string,
@@ -29,12 +31,18 @@ export class ClusterAggregator {
             clusterId: effectiveClusterId,
             status: 'active',
             evidenceSpans: [event.evidenceSpan],
+            isHighlight: event.isHighlight,
+            highlightGist: event.highlightGist,
             createdAt: Date.now(),
             updatedAt: Date.now(),
           });
         } else {
           existing.evidenceSpans.push(event.evidenceSpan);
           if (existing.evidenceSpans.length > 5) existing.evidenceSpans = existing.evidenceSpans.slice(-5);
+          if (event.isHighlight) {
+            existing.isHighlight = true;
+            existing.highlightGist = event.highlightGist ?? existing.highlightGist;
+          }
           existing.updatedAt = Date.now();
         }
         break;
@@ -43,6 +51,10 @@ export class ClusterAggregator {
         if (existing) {
           existing.evidenceSpans.push(event.evidenceSpan);
           if (existing.evidenceSpans.length > 5) existing.evidenceSpans = existing.evidenceSpans.slice(-5);
+          if (event.isHighlight) {
+            existing.isHighlight = true;
+            existing.highlightGist = event.highlightGist ?? existing.highlightGist;
+          }
           existing.updatedAt = Date.now();
         } else {
           // LLM said reinforcing but no prior record — treat as new_signal
@@ -52,6 +64,8 @@ export class ClusterAggregator {
             clusterId: effectiveClusterId,
             status: 'active',
             evidenceSpans: [event.evidenceSpan],
+            isHighlight: event.isHighlight,
+            highlightGist: event.highlightGist,
             createdAt: Date.now(),
             updatedAt: Date.now(),
           });
@@ -91,8 +105,61 @@ export class ClusterAggregator {
     }));
   }
 
+  /**
+   * Returns per-student cluster hit status for the discuss progress tracker.
+   * `clusterDefs` supplies the full list from manifest so unhit clusters appear too.
+   */
+  getStudentClusters(
+    sessionId: string,
+    taskNum: number,
+    studentId: string,
+    clusterDefs: Array<{ id: string; label: string }>,
+  ): Array<{ id: string; label: string; hit: boolean }> {
+    const index = this.sessions.get(sessionId)?.get(taskNum);
+    return clusterDefs.map(c => ({
+      id: c.id,
+      label: c.label,
+      hit: !!index?.has(`${studentId}:${c.id}`),
+    }));
+  }
+
+  recordHit(sessionId: string, taskNum: number, studentId: string, isNewSignal: boolean): void {
+    const key = `${sessionId}:${taskNum}:${studentId}`;
+    const history = this.missHistory.get(key) || [];
+    history.push(isNewSignal);
+    if (history.length > 20) history.shift();
+    this.missHistory.set(key, history);
+  }
+
+  getConsecutiveMisses(sessionId: string, taskNum: number, studentId: string): number {
+    const key = `${sessionId}:${taskNum}:${studentId}`;
+    const history = this.missHistory.get(key) || [];
+    let count = 0;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (!history[i]) count++;
+      else break;
+    }
+    return count;
+  }
+
+  /**
+   * Returns cluster IDs this student has NOT yet hit.
+   */
+  getUnhitClusterIds(
+    sessionId: string,
+    taskNum: number,
+    studentId: string,
+    clusterDefs: Array<{ id: string; label: string; description?: string }>,
+  ): Array<{ id: string; label: string; description?: string }> {
+    const index = this.sessions.get(sessionId)?.get(taskNum);
+    return clusterDefs.filter(c => !index?.has(`${studentId}:${c.id}`));
+  }
+
   cleanupSession(sessionId: string): void {
     this.sessions.delete(sessionId);
+    const prefix = `${sessionId}:`;
+    const toDelete = [...this.missHistory.keys()].filter(k => k.startsWith(prefix));
+    for (const key of toDelete) this.missHistory.delete(key);
   }
 
   private ensureIndex(
@@ -138,6 +205,8 @@ export class ClusterAggregator {
         clusterId: newClusterId,
         status: 'active',
         evidenceSpans: [event.evidenceSpan],
+        isHighlight: event.isHighlight,
+        highlightGist: event.highlightGist,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       });

@@ -51,7 +51,13 @@ export class DiscussService {
     messages: Array<{ role: 'ai' | 'student'; text: string }>,
     round: number,
     timeUsedSeconds: number,
-  ): Promise<{ reply: string; goalReached: boolean; llmFailed: boolean }> {
+  ): Promise<{
+    reply: string;
+    goalReached: boolean;
+    llmFailed: boolean;
+    highlight?: { score: number; gist: string };
+    nudge?: { hint: string };
+  }> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
@@ -98,7 +104,10 @@ export class DiscussService {
         session.id, studentId, `discuss:${taskNum}`, messages, reply,
       ).catch(e => this.logger.warn(`persistThread failed: ${e}`));
 
-      // Per-question cluster classification (fire-and-forget — off critical path)
+      // Per-question cluster classification — await with 3s timeout for highlight/nudge
+      let highlight: { score: number; gist: string } | undefined;
+      let nudge: { hint: string } | undefined;
+
       const stepDefForCluster = manifest
         ? (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx)
         : undefined;
@@ -108,24 +117,48 @@ export class DiscussService {
           .slice(-6)
           .map(m => `${m.role}: ${m.text}`)
           .join('\n');
-        this.clusterClassifier
-          .classify(lastStudentMsg, clusters, recentContext)
-          .then(classifyResult => {
-            if (classifyResult) {
-              this.clusterAggregator.ingest(
-                session.id, taskNum, studentId, student.name, classifyResult,
+        try {
+          const timeout = new Promise<null>(r => setTimeout(() => r(null), 3000));
+          const classifyResult = await Promise.race([
+            this.clusterClassifier.classify(lastStudentMsg, clusters, recentContext),
+            timeout,
+          ]);
+          if (classifyResult) {
+            const isNewSignal = classifyResult.eventType === 'new_signal' && classifyResult.confidence === 'high';
+            this.clusterAggregator.ingest(
+              session.id, taskNum, studentId, student.name, classifyResult,
+            );
+            this.clusterAggregator.recordHit(session.id, taskNum, studentId, isNewSignal);
+            if (classifyResult.isHighlight && classifyResult.highlightGist) {
+              const effectiveClusterId = classifyResult.confidence === 'high' ? classifyResult.clusterId : 'other';
+              highlight = { score: 1, gist: classifyResult.highlightGist };
+              this.coachingService.addHighlight(session.id, {
+                studentId, studentName: student.name, taskNum,
+                clusterId: effectiveClusterId,
+                message: lastStudentMsg,
+                gist: classifyResult.highlightGist,
+                evidenceSpan: classifyResult.evidenceSpan,
+              });
+            }
+            // Nudge: consecutive misses >= 2 → suggest an unhit cluster
+            const misses = this.clusterAggregator.getConsecutiveMisses(session.id, taskNum, studentId);
+            if (misses >= 2) {
+              const unhit = this.clusterAggregator.getUnhitClusterIds(
+                session.id, taskNum, studentId, clusters,
               );
-              if (classifyResult.isHighlight && classifyResult.highlightGist) {
-                this.coachingService.addHighlight(session.id, {
-                  studentId, studentName: student.name, taskNum,
-                  message: lastStudentMsg,
-                  gist: classifyResult.highlightGist,
-                  evidenceSpan: classifyResult.evidenceSpan,
-                });
+              if (unhit.length > 0) {
+                const pick = unhit[Math.floor(Math.random() * unhit.length)];
+                nudge = { hint: `试着从「${pick.label}」的角度想想？` };
               }
             }
-          })
-          .catch(e => this.logger.warn(`Cluster classify failed: ${e}`));
+          } else {
+            // Timeout — record as miss, no highlight
+            this.clusterAggregator.recordHit(session.id, taskNum, studentId, false);
+          }
+        } catch (e) {
+          this.logger.warn(`Cluster classify failed: ${e}`);
+          this.clusterAggregator.recordHit(session.id, taskNum, studentId, false);
+        }
       }
 
       if (goalReached) {
@@ -151,7 +184,7 @@ export class DiscussService {
         payload: { student: lastStudentMsg, ai: reply, taskNum, round },
       }).catch(err => this.logger.error(`Observer dispatch chat_turn failed: ${err}`));
 
-      return { reply, goalReached, llmFailed: false };
+      return { reply, goalReached, llmFailed: false, highlight, nudge };
     } catch (e) {
       this.logger.warn(`AI discuss call failed: ${e}`);
 
@@ -175,6 +208,26 @@ export class DiscussService {
         llmFailed: true,
       };
     }
+  }
+
+  async getDiscussProgress(
+    session: { id: string; lessonId: string },
+    studentId: string,
+    taskNum: number,
+  ): Promise<{ clusters: Array<{ id: string; label: string; hit: boolean }> }> {
+    const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+    if (!manifest) return { clusters: [] };
+    const taskMap = buildTaskMap(manifest);
+    const stepIdx = taskMap.taskToStep[taskNum] ?? taskNum;
+    const stepDef = (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx);
+    const clusters = stepDef?.discuss?.clusters;
+    if (!clusters?.length) return { clusters: [] };
+
+    return {
+      clusters: this.clusterAggregator.getStudentClusters(
+        session.id, taskNum, studentId, clusters,
+      ),
+    };
   }
 
   async discussComplete(
