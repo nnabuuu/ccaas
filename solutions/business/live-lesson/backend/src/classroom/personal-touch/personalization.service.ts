@@ -60,7 +60,7 @@ export class PersonalizationService {
     studentId: string,
   ): Promise<{
     strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>;
-    tier: { label: string; labelEn: string; tone: string };
+    tier: { label: string; labelEn: string; tone: 'gold' | 'blue' | 'neutral' };
   } | null> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
     if (!manifest) return null;
@@ -92,7 +92,7 @@ export class PersonalizationService {
     const sortedTiers = [...personalTouch.tiers].sort((a, b) => b.minScore - a.minScore);
     const tier = sortedTiers.find(t => avg >= t.minScore) || { label: '', labelEn: '', tone: 'neutral' as const };
 
-    return { strategies, tier: { label: tier.label, labelEn: tier.labelEn, tone: tier.tone } };
+    return { strategies, tier: { label: tier.label, labelEn: tier.labelEn, tone: tier.tone as 'gold' | 'blue' | 'neutral' } };
   }
 
   async getPersonalTouch(session: ClassroomSession, studentId: string): Promise<PersonalTouchResponse> {
@@ -279,7 +279,7 @@ export class PersonalizationService {
       const elapsed = Math.round(
         (new Date(lastSubArr[0].submittedAt).getTime() - new Date(student.joinedAt).getTime()) / 1000,
       );
-      if (elapsed > 0) totalTime = elapsed;
+      if (elapsed >= 0) totalTime = elapsed;
     }
 
     return {

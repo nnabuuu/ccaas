@@ -25,6 +25,7 @@ function tierEmoji(tone: string): string {
 
 function formatMinutes(totalSeconds: number): string {
   const min = Math.round(totalSeconds / 60)
+  if (min < 1) return '< 1 min'
   return `${min} min`
 }
 
@@ -39,10 +40,12 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
 
   useEffect(() => {
     if (!ctx.sessionCode || !ctx.studentId) { setFailed(true); return }
-    fetch(`/api/classroom/${ctx.sessionCode}/students/${ctx.studentId}/recap`)
+    const ac = new AbortController()
+    fetch(`/api/classroom/${ctx.sessionCode}/students/${ctx.studentId}/recap`, { signal: ac.signal })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) setRecap(d); else setFailed(true) })
-      .catch(() => setFailed(true))
+      .catch(e => { if (e.name !== 'AbortError') setFailed(true) })
+    return () => ac.abort()
   }, [ctx.sessionCode, ctx.studentId])
 
   const hasStats = recap && (recap.aiStats.translateCount > 0 || recap.aiStats.askCount > 0 || recap.aiStats.discussRounds > 0)
