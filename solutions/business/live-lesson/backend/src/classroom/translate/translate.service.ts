@@ -6,6 +6,7 @@ import { Student } from '../../entities/student.entity';
 import { Lesson } from '../../entities/lesson.entity';
 import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
+import { jsonrepair } from 'jsonrepair';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
@@ -71,7 +72,8 @@ export class TranslateService {
       throw new NotFoundException('Student not found in this session');
     }
 
-    const normalized = text.trim().toLowerCase();
+    text = text.trim();
+    const normalized = text.toLowerCase();
     const cache = this.getCache(session.id);
     const cached = cache.get(normalized);
     if (cached) {
@@ -88,10 +90,21 @@ export class TranslateService {
         const readingSteps = manifest.readingSteps || [];
         const stepDef = readingSteps.find((s: any) => s.idx === step);
         const systemPrompt = this.aiPromptBuilder.buildTranslatePrompt(manifest, stepDef);
-        const userMessage = `学生在【${sourceContext}】中选中了：「${text}」`;
+        const contextLabels: Record<string, string> = {
+          'text-panel': '课文正文',
+          'instruction': '教学指导',
+          'practice': '练习题',
+          'discuss': '讨论区',
+          'takeaway': '课堂总结',
+          'ai-chat': 'AI助手对话',
+          'task-panel': '任务面板',
+        };
+        const label = contextLabels[sourceContext] ?? '未知区域';
+        const stepName = stepDef?.label ? `Task ${step}（${stepDef.label}）` : `Task ${step}`;
+        const userMessage = `学生在 ${stepName} 的【${label}】中选中了：「${text}」`;
 
         const raw = await this.aiPromptBuilder.callLlm(systemPrompt, userMessage, {
-          maxTokens: 512,
+          maxTokens: 2000,
           temperature: 0.3,
           responseFormat: { type: 'json_object' },
         });
@@ -104,7 +117,7 @@ export class TranslateService {
 返回 JSON: { "definition": "中文释义", "contextAnalysis": "分析", "suggestedQuestions": ["追问1", "追问2"] }
 输出纯 JSON，不加 markdown 代码块。`,
           text,
-          { maxTokens: 512, temperature: 0.3, responseFormat: { type: 'json_object' } },
+          { maxTokens: 2000, temperature: 0.3, responseFormat: { type: 'json_object' } },
         );
         result = this.parseTranslateResponse(raw);
       }
@@ -124,7 +137,14 @@ export class TranslateService {
       sessionId: session.id,
       entityId: studentId,
       tenantId: session.lessonId,
-      payload: { step, sourceContext, phase: phase ?? null, textLength: text.length },
+      payload: {
+        step,
+        sourceContext,
+        phase: phase ?? null,
+        text,
+        definition: result.definition,
+        contextAnalysis: result.contextAnalysis,
+      },
     }).catch(e => this.logger.warn(`Observer dispatch translate_request failed: ${e}`));
 
     return result;
@@ -255,7 +275,8 @@ export class TranslateService {
   private parseTranslateResponse(raw: string): TranslateResponse {
     try {
       const cleaned = raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim();
-      const parsed = JSON.parse(cleaned);
+      const repaired = jsonrepair(cleaned);
+      const parsed = JSON.parse(repaired);
       return {
         definition: typeof parsed.definition === 'string' ? parsed.definition : raw.trim(),
         contextAnalysis: typeof parsed.contextAnalysis === 'string' ? parsed.contextAnalysis : '',

@@ -9,10 +9,12 @@ import { ExerciseService } from '../exercise/exercise.service';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
+import { CoachingService } from '../coaching.service';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { ClassroomSnapshot } from '../../entities/classroom-snapshot.entity';
 import { Lesson } from '../../entities/lesson.entity';
 
@@ -76,13 +78,13 @@ describe('PersonalizationService', () => {
         TypeOrmModule.forRoot({
           type: 'better-sqlite3',
           database: ':memory:',
-          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ClassroomSnapshot],
+          entities: [Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot],
           synchronize: true,
           logging: false,
         }),
-        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ClassroomSnapshot]),
+        TypeOrmModule.forFeature([Lesson, Student, Submission, ClassroomSession, AiQuestion, ChatMessage, ClassroomSnapshot]),
       ],
-      providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService],
+      providers: [PersonalizationService, ExerciseService, GradingService, AiPromptBuilder, ManifestCacheService, CoachingService],
     }).compile();
 
     service = module.get(PersonalizationService);

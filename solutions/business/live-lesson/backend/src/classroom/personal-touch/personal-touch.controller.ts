@@ -20,6 +20,15 @@ export class PersonalTouchController {
     return this.personalization.getPersonalTouch(session, dto.studentId);
   }
 
+  @Get(':code/students/:studentId/recap')
+  async getStudentRecap(
+    @Param('code') code: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
+    return this.personalization.getStudentRecap(session, studentId);
+  }
+
   @Get(':code/bonus/:bonusStep/exercise')
   async getBonusExercise(
     @Param('code') code: string,

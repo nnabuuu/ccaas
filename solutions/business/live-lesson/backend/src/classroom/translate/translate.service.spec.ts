@@ -154,6 +154,32 @@ describe('TranslateService', () => {
       expect(result.suggestedQuestions).toEqual([]);
     });
 
+    it('repairs truncated JSON via jsonrepair (mid-string)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      // Simulate LLM hitting token limit mid-question string
+      const truncated = '{"definition":"被...轰炸；充斥着","contextAnalysis":"在杂志和媒体中","suggestedQuestions":["Q1完整","Q2完整","你认为';
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue(truncated);
+
+      const result = await service.translate(session, student.id, 'bombarded', 1, 'text-panel');
+      expect(result.definition).toBe('被...轰炸；充斥着');
+      expect(result.contextAnalysis).toBe('在杂志和媒体中');
+      expect(result.suggestedQuestions).toContain('Q1完整');
+      expect(result.suggestedQuestions).toContain('Q2完整');
+      // The truncated third question should be recovered (partial content)
+      expect(result.suggestedQuestions.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('repairs truncated JSON via jsonrepair (mid-array)', async () => {
+      const { session, student } = await createSessionAndStudent();
+      // Truncated right after second question, before closing bracket
+      const truncated = '{"definition":"测试","contextAnalysis":"分析","suggestedQuestions":["问题一","问题二"';
+      jest.spyOn(aiPromptBuilder, 'callLlm').mockResolvedValue(truncated);
+
+      const result = await service.translate(session, student.id, 'test', 1, 'text-panel');
+      expect(result.definition).toBe('测试');
+      expect(result.suggestedQuestions).toEqual(['问题一', '问题二']);
+    });
+
     it('filters non-string items in suggestedQuestions', async () => {
       const { session, student } = await createSessionAndStudent();
       const json = JSON.stringify({
@@ -249,7 +275,8 @@ describe('TranslateService', () => {
       await service.translate(session, student.id, 'test word', 1, 'task-panel');
 
       const userMsg = callSpy.mock.calls[0][1];
-      expect(userMsg).toContain('task-panel');
+      expect(userMsg).toContain('任务面板');
+      expect(userMsg).toContain('Task 1');
       expect(userMsg).toContain('test word');
     });
 
@@ -325,7 +352,9 @@ describe('TranslateService', () => {
             step: 1,
             sourceContext: 'text-panel',
             phase: 'exercise',
-            textLength: 5,
+            text: 'hello',
+            definition: '词',
+            contextAnalysis: '',
           }),
         }),
       );

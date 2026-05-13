@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query, BadRequestException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ClassroomService } from '../classroom.service';
 import { DiscussService } from './discuss.service';
@@ -12,6 +12,19 @@ export class DiscussController {
     private readonly classroomService: ClassroomService,
     private readonly discussService: DiscussService,
   ) {}
+
+  @Get(':code/discuss-progress')
+  async getDiscussProgress(
+    @Param('code') code: string,
+    @Query('studentId') studentId: string,
+    @Query('taskNum') taskNumStr: string,
+  ) {
+    if (!studentId) throw new BadRequestException('studentId is required');
+    const taskNum = parseInt(taskNumStr, 10);
+    if (isNaN(taskNum)) throw new BadRequestException('taskNum must be a number');
+    const session = await this.classroomService.resolveStartedSession(validateCode(code));
+    return this.discussService.getDiscussProgress(session, studentId, taskNum);
+  }
 
   @Post(':code/ai/discuss')
   async aiDiscuss(@Param('code') code: string, @Body() dto: AiDiscussDto) {

@@ -276,8 +276,8 @@ Do NOT include a followUpQuestion key.`);
     // L4: JSON output schema
     layers.push(`【输出格式】
 返回 JSON: { "definition": "...", "contextAnalysis": "...", "suggestedQuestions": ["...", "..."] }
-- definition: 中文释义，结合课文语境（不超过 50 字）
-- contextAnalysis: 该词/短语在课文中的作用和含义分析（不超过 100 字）
+- definition: 中文释义，结合上下文语境（不超过 50 字）
+- contextAnalysis: 该词/短语在当前语境中的含义分析（不超过 100 字）
 - suggestedQuestions: 2-3 个帮助深入理解的追问（中文）
 - 输出纯 JSON，不加 markdown 代码块`);
 

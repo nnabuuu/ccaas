@@ -1,13 +1,16 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, MoreThanOrEqual, Not, Or, Repository } from 'typeorm';
 import { Student } from '../../entities/student.entity';
 import { Submission } from '../../entities/submission.entity';
 import { ClassroomSession } from '../../entities/classroom-session.entity';
 import { Lesson } from '../../entities/lesson.entity';
+import { AiQuestion } from '../../entities/ai-question.entity';
+import { ChatMessage } from '../../entities/chat-message.entity';
 import { GradingService } from '../exercise/grading.service';
 import { AiPromptBuilder } from '../ai-prompt-builder';
 import { ManifestCacheService } from '../manifest-cache.service';
+import { CoachingService } from '../coaching.service';
 import { sanitizeAnswerKey } from '../../schemas/manifest.utils';
 import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../schemas';
 import type { PersonalTouch, GradeResult } from '../../schemas';
@@ -15,6 +18,16 @@ import { getCachedTaskMap } from '../task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
 import { buildCheckItems } from '../exercise/build-check-items';
 import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
+
+const BONUS_STEP_OFFSET = 100;
+
+export interface RecapResponse {
+  tier: { label: string; labelEn: string; tone: string } | null;
+  highlights: Array<{ taskNum: number; gist: string; evidenceSpan: string }>;
+  aiStats: { translateCount: number; askCount: number; discussRounds: number };
+  totalTime: number | null;
+  bonusCompleted: boolean;
+}
 
 @Injectable()
 export class PersonalizationService {
@@ -27,10 +40,15 @@ export class PersonalizationService {
     private readonly submissionRepo: Repository<Submission>,
     @InjectRepository(ClassroomSession)
     private readonly sessionRepo: Repository<ClassroomSession>,
+    @InjectRepository(AiQuestion)
+    private readonly aiQuestionRepo: Repository<AiQuestion>,
+    @InjectRepository(ChatMessage)
+    private readonly chatMessageRepo: Repository<ChatMessage>,
     private readonly gradingService: GradingService,
     private readonly aiPromptBuilder: AiPromptBuilder,
     private readonly manifestCache: ManifestCacheService,
     private readonly exerciseService: ExerciseService,
+    private readonly coachingService: CoachingService,
   ) {}
 
   private get lessonRepo(): Repository<Lesson> {
@@ -184,5 +202,101 @@ export class PersonalizationService {
     const allCorrect = gradeResult ? gradeResult.total === 100 : false;
 
     return { type: stepDef.answerKey.type, allCorrect, items };
+  }
+
+  async getStudentRecap(session: ClassroomSession, studentId: string) {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) throw new NotFoundException('Student not found in this session');
+
+    // ── Tier (reuse personal-touch scoring logic) ──
+    let tier: { label: string; labelEn: string; tone: string } | null = null;
+    try {
+      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
+      if (manifest) {
+        const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
+        const ptParsed = PersonalTouchSchema.safeParse(manifest.personalTouch);
+        if (ptParsed.success) {
+          const personalTouch: PersonalTouch = ptParsed.data;
+          const allSubs = await this.submissionRepo.find({
+            where: { sessionId: session.id, studentId, phase: 'exercise' },
+          });
+          const subsByStep = new Map(allSubs.map(s => [s.step, s]));
+          const scores: number[] = [];
+          for (const sl of personalTouch.strategyLabels) {
+            const stepNum = taskMap.taskToStep[sl.taskIdx];
+            if (stepNum === undefined) continue;
+            const sub = subsByStep.get(stepNum);
+            scores.push(sub?.scoreJson?.total ?? 0);
+          }
+          const avg = scores.length > 0
+            ? scores.reduce((sum, s) => sum + s, 0) / scores.length
+            : 0;
+          const sortedTiers = [...personalTouch.tiers].sort((a, b) => b.minScore - a.minScore);
+          const matched = sortedTiers.find(t => avg >= t.minScore);
+          if (matched && matched.label) {
+            tier = { label: matched.label, labelEn: matched.labelEn, tone: matched.tone };
+          }
+        }
+      }
+    } catch (e) {
+      this.logger.warn(`Recap tier computation failed: ${e}`);
+    }
+
+    // ── Highlights ──
+    const allHighlights = this.coachingService.getHighlights(session.id);
+    const highlights = allHighlights
+      .filter(h => h.studentId === studentId)
+      .map(h => ({ taskNum: h.taskNum, gist: h.gist, evidenceSpan: h.evidenceSpan }));
+
+    // ── AI Stats ──
+    const askCount = await this.aiQuestionRepo.count({
+      where: { sessionId: session.id, studentId, category: Not('discuss') },
+    });
+
+    const translateThreads: { cnt: string }[] = await this.chatMessageRepo
+      .createQueryBuilder('m')
+      .select('COUNT(DISTINCT m.threadId)', 'cnt')
+      .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId LIKE :prefix', {
+        sid: session.id, stid: studentId, prefix: 'translate:%',
+      })
+      .getRawMany();
+    const translateCount = parseInt(translateThreads[0]?.cnt ?? '0', 10);
+
+    const discussRounds = await this.submissionRepo.count({
+      where: { sessionId: session.id, studentId, phase: 'discuss' },
+    });
+
+    // ── Total time ──
+    let totalTime: number | null = null;
+    const allSubs = await this.submissionRepo.find({
+      where: { sessionId: session.id, studentId },
+      order: { submittedAt: 'DESC' },
+      take: 1,
+    });
+    if (allSubs.length > 0 && student.joinedAt) {
+      const lastSub = allSubs[0];
+      totalTime = Math.round(
+        (new Date(lastSub.submittedAt).getTime() - new Date(student.joinedAt).getTime()) / 1000,
+      );
+      if (totalTime < 0) totalTime = null;
+    }
+
+    // ── Bonus completed ──
+    const BONUS_STEP_OFFSET = 100;
+    const bonusSub = await this.submissionRepo.findOne({
+      where: { sessionId: session.id, studentId },
+      order: { step: 'DESC' },
+    });
+    const bonusCompleted = bonusSub ? bonusSub.step >= BONUS_STEP_OFFSET + 1 : false;
+
+    return {
+      tier,
+      highlights,
+      aiStats: { translateCount, askCount, discussRounds },
+      totalTime,
+      bonusCompleted,
+    };
   }
 }
