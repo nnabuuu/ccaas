@@ -83,9 +83,9 @@ describe('restoreAns', () => {
 
   /* ── select-evidence ── */
   describe('select-evidence', () => {
-    it('returns empty object (review mode uses placeholder UI)', () => {
-      expect(restoreAns('select-evidence', { sections: { s1: 'describe' } }))
-        .toEqual({})
+    it('passes data through so SelectEvidenceExercise can hydrate', () => {
+      const data = { sections: { s1: 'describe' } }
+      expect(restoreAns('select-evidence', data)).toBe(data)
     })
   })
 

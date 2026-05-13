@@ -10,6 +10,7 @@ import { ManifestCacheService } from './manifest-cache.service';
 import { OBSERVER_ENGINE, type ObserverEngine } from '@kedge-agentic/observer-engine';
 import type { GradeResult } from '../schemas';
 import { getCachedTaskMap } from './task-map.utils';
+import { buildCheckItems } from './exercise/build-check-items';
 import type { JoinResponse, SubmitResponse, SubmissionResponse, StudentProgressResponse } from '../schemas/classroom';
 
 @Injectable()
@@ -165,18 +166,39 @@ export class StudentSubmissionService {
 
     const result: StudentProgressResponse = { currentTask: student.currentTask, currentPhase: student.currentPhase, discussMeta: student.discussMeta ?? null };
     if (includeSubmissions) {
-      result.submissions = await this.buildSubmissionMap(session.id, studentId);
+      result.submissions = await this.buildSubmissionMap(session.id, session.lessonId, studentId);
     }
     return result;
   }
 
-  private async buildSubmissionMap(sessionId: string, studentId: string): Promise<Record<number, { data: unknown; score: GradeResult | null }>> {
+  private async buildSubmissionMap(
+    sessionId: string, lessonId: string, studentId: string,
+  ): Promise<Record<number, { data: unknown; score: GradeResult | null; checkItems?: Array<Record<string, unknown>> }>> {
     const submissions = await this.submissionRepo.find({
       where: { sessionId, studentId, phase: 'exercise' },
     });
-    const map: Record<number, { data: unknown; score: GradeResult | null }> = {};
+
+    // Load manifest once to recompute checkItems from persisted data
+    const manifest = await this.manifestCache.getManifest(lessonId, this.lessonRepo);
+    const readingSteps: Array<Record<string, unknown>> = manifest?.readingSteps || [];
+
+    const map: Record<number, { data: unknown; score: GradeResult | null; checkItems?: Array<Record<string, unknown>> }> = {};
     for (const sub of submissions) {
-      map[sub.step] = { data: sub.dataJson, score: (sub.scoreJson as GradeResult) ?? null };
+      const score = (sub.scoreJson as GradeResult) ?? null;
+      let checkItems: Array<Record<string, unknown>> | undefined;
+
+      if (score) {
+        const stepDef = readingSteps.find((s) => s.idx === sub.step);
+        if (stepDef?.answerKey) {
+          try {
+            checkItems = buildCheckItems(stepDef.answerKey as Record<string, unknown>, sub.dataJson as Record<string, unknown>, score);
+          } catch (e) {
+            this.logger.debug(`buildCheckItems failed for step ${sub.step}: ${e}`);
+          }
+        }
+      }
+
+      map[sub.step] = { data: sub.dataJson, score, ...(checkItems && { checkItems }) };
     }
     return map;
   }

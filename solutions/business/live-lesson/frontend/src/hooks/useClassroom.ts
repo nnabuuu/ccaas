@@ -9,11 +9,18 @@ const CACHE_PREFIX = 'sub:'
 export interface CachedSubmission {
   data: Record<string, unknown>
   score: Record<string, unknown> | null
+  checkItems?: CheckItem[]
 }
 
-export function cacheSubmission(sessionCode: string, step: number, data: Record<string, unknown>, score: Record<string, unknown> | null) {
+export function cacheSubmission(
+  sessionCode: string, step: number,
+  data: Record<string, unknown>, score: Record<string, unknown> | null,
+  checkItems?: CheckItem[],
+) {
   try {
-    localStorage.setItem(`${CACHE_PREFIX}${sessionCode}:${step}`, JSON.stringify({ data, score }))
+    const entry: CachedSubmission = { data, score }
+    if (checkItems) entry.checkItems = checkItems
+    localStorage.setItem(`${CACHE_PREFIX}${sessionCode}:${step}`, JSON.stringify(entry))
   } catch { /* quota exceeded — best effort */ }
 }
 
@@ -24,6 +31,7 @@ export function getCachedSubmission(sessionCode: string, step: number): CachedSu
   } catch { return null }
 }
 
+/** Fallback single-step fetch. Does NOT include checkItems (only fetchSessionSnapshot does). */
 export async function getSubmission(
   sessionCode: string, studentId: string, step: number,
 ): Promise<CachedSubmission | null> {
@@ -155,6 +163,20 @@ export function useStudentSession(sessionCode: string): StudentSession {
   const [joinError, setJoinError] = useState<string | null>(null)
   const [submittedSteps, setSubmittedSteps] = useState<Set<number>>(new Set())
 
+  // Restore submittedSteps from localStorage cache on mount
+  useEffect(() => {
+    if (!sessionCode) return
+    const steps = new Set<number>()
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i)
+      if (key?.startsWith(`${CACHE_PREFIX}${sessionCode}:`)) {
+        const step = Number(key.split(':').pop())
+        if (!isNaN(step)) steps.add(step)
+      }
+    }
+    if (steps.size > 0) setSubmittedSteps(steps)
+  }, [sessionCode])
+
   const join = useCallback(async (studentName: string): Promise<boolean> => {
     setJoining(true)
     setJoinError(null)
@@ -246,7 +268,7 @@ export async function fetchSessionSnapshot(
     if (submissions) {
       for (const [step, sub] of Object.entries(submissions)) {
         const s = sub as CachedSubmission
-        cacheSubmission(sessionCode, Number(step), s.data, s.score)
+        cacheSubmission(sessionCode, Number(step), s.data, s.score, s.checkItems)
       }
     }
     return { progress, submissions: submissions ?? {} }
@@ -549,7 +571,7 @@ export function useAiDiscuss(sessionCode: string) {
     messages: Array<{ role: 'ai' | 'student'; text: string }>,
     round: number,
     timeUsedSeconds: number,
-  ): Promise<{ reply: string; goalReached: boolean; llmFailed?: boolean } | null> => {
+  ): Promise<{ reply: string; goalReached: boolean; llmFailed?: boolean; highlight?: { score: number; gist: string }; nudge?: { hint: string } } | null> => {
     if (!sessionCode) return null
     setLoading(true)
     try {
@@ -568,6 +590,31 @@ export function useAiDiscuss(sessionCode: string) {
   }, [sessionCode])
 
   return { discuss, loading }
+}
+
+// ── Discuss progress hook (cluster tracker) ──
+
+export interface ClusterProgress {
+  id: string
+  label: string
+  hit: boolean
+}
+
+export function useDiscussProgress(sessionCode: string) {
+  const fetchProgress = useCallback(async (
+    studentId: string, taskNum: number,
+  ): Promise<{ clusters: ClusterProgress[] } | null> => {
+    if (!sessionCode) return null
+    try {
+      const res = await fetch(`${API_BASE}/${sessionCode}/discuss-progress?studentId=${encodeURIComponent(studentId)}&taskNum=${taskNum}`)
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      return null
+    }
+  }, [sessionCode])
+
+  return { fetchProgress }
 }
 
 // ── Discuss completion reporting hook ──

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchSessionSnapshot, getCachedSubmission } from '../useClassroom'
+import { fetchSessionSnapshot, getCachedSubmission, cacheSubmission, type CheckResult } from '../useClassroom'
 
 /* ── localStorage mock ── */
 
@@ -154,5 +154,42 @@ describe('fetchSessionSnapshot', () => {
 
     const result = await fetchSessionSnapshot('CODE', 'stu-1')
     expect(result).toBeNull()
+  })
+
+  it('stores checkItems from backend response in localStorage', async () => {
+    const checkItems = [{ idx: 0, correct: true }, { idx: 1, correct: true }]
+    const apiResponse = {
+      currentTask: 2, currentPhase: 'discuss',
+      submissions: {
+        1: { data: { answers: [1, 0] }, score: { total: 100 }, checkItems },
+      },
+    }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(apiResponse),
+    } as Response)
+
+    await fetchSessionSnapshot('CODE', 'stu-1')
+
+    const cached = getCachedSubmission('CODE', 1)
+    expect(cached!.checkItems).toEqual(checkItems)
+  })
+
+  it('submission without checkItems caches without checkItems field', async () => {
+    const apiResponse = {
+      currentTask: 2, currentPhase: 'discuss',
+      submissions: {
+        1: { data: { answers: [1, 0] }, score: { total: 100 } },
+      },
+    }
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(apiResponse),
+    } as Response)
+
+    await fetchSessionSnapshot('CODE', 'stu-1')
+
+    const cached = getCachedSubmission('CODE', 1)
+    expect(cached!.checkItems).toBeUndefined()
   })
 })

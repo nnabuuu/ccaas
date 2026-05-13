@@ -26,7 +26,7 @@ export interface StudentProgressResponse {
   currentTask: number;
   currentPhase: string;
   discussMeta: Record<string, unknown> | null;
-  submissions?: Record<number, { data: unknown; score: GradeResult | null }>;
+  submissions?: Record<number, { data: unknown; score: GradeResult | null; checkItems?: Array<Record<string, unknown>> }>;
 }
 
 export interface ChatMessageResponse {

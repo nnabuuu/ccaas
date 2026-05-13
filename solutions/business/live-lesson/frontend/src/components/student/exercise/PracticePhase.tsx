@@ -4,7 +4,7 @@ import { SessionCtx } from '../TaskPanel'
 import type { Task, TaskExercise, ServerHintMap } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
 import { gradeItemSet, reportAttempt, formatSubmitData } from './gradeItemSet'
-import { checkAnswer, type CheckResult, type CachedSubmission, getCachedSubmission, getSubmission } from '../../../hooks/useClassroom'
+import { checkAnswer, cacheSubmission, type CheckResult, type CachedSubmission, getCachedSubmission, getSubmission } from '../../../hooks/useClassroom'
 import { QuizExercise } from './QuizExercise'
 import { MatchExercise } from './MatchExercise'
 import { MatrixExercise } from './MatrixExercise'
@@ -12,6 +12,8 @@ import { StanceExercise } from './StanceExercise'
 import { OrderExercise } from './OrderExercise'
 import { SelectEvidenceExercise } from './SelectEvidenceExercise'
 import { MapExercise } from './MapExercise'
+
+const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
 
 /** Reverse formatSubmitData: convert persisted submission data back to component ans state */
 export function restoreAns(type: string, data: Record<string, unknown>): Record<string, unknown> {
@@ -93,14 +95,67 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
 
   const reviewMode = !!(shouldRestore && prevSubmission)
 
+  // Restore firstAttemptRef from submission data (in effect to avoid ref mutation in render)
+  useEffect(() => {
+    if (!reviewMode || !prevSubmission?.data) return
+    const fa = prevSubmission.data.firstAttemptAnswers ?? prevSubmission.data.firstAttemptOrder
+    if (fa && !firstAttemptRef.current) {
+      firstAttemptRef.current = fa as unknown[] | null
+    }
+  }, [reviewMode, prevSubmission])
+
   // Derive effective state for review mode (pre-filled, locked answers)
   const effectiveAns = reviewMode ? restoreAns(ex.type, prevSubmission.data) : ans
   const effectiveMatrixAns = reviewMode && ex.type === 'matrix'
     ? (prevSubmission.data.rows || {}) as Record<number, { what?: string; why?: string }>
     : matrixAns
+
+  // Derive check-result feedback for review mode restore
+  const restoredCheck = reviewMode && prevSubmission?.checkItems
+    ? {
+        type: ex.type,
+        allCorrect: prevSubmission.score?.total === 100
+          || prevSubmission.checkItems.every(it => it.correct),
+        items: prevSubmission.checkItems,
+      } as CheckResult
+    : undefined
+
   const effectiveCorrectQs = reviewMode && (ex.type === 'quiz' || ex.type === 'match')
-    ? new Set((ex.type === 'quiz' ? ex.questions! : ex.pairs!).map((_, i) => i))
+    ? (() => {
+        if (restoredCheck?.items) {
+          return new Set(restoredCheck.items.filter(it => it.correct).map(it => toIdx(it.idx)))
+        }
+        return new Set((ex.type === 'quiz' ? ex.questions! : ex.pairs!).map((_, i) => i))
+      })()
     : correctQs
+
+  const effectiveWrongQs = reviewMode && restoredCheck
+    ? new Set(restoredCheck.items.filter(it => !it.correct).map(it => toIdx(it.idx)))
+    : wrongQs
+
+  const effectiveMatrixRowResults = reviewMode && restoredCheck && ex.type === 'matrix'
+    ? (() => {
+        const r: Record<number, boolean> = {}
+        restoredCheck.items.forEach(it => { r[toIdx(it.idx)] = it.correct })
+        return r
+      })()
+    : matrixRowResults
+
+  const effectiveMapFeedback = reviewMode && restoredCheck && ex.type === 'map'
+    ? (restoredCheck.items.find(it => it.idx === '_llm')?.hint ?? mapFeedback)
+    : mapFeedback
+
+  const effectiveMapItemResults = reviewMode && restoredCheck && ex.type === 'map'
+    ? (() => {
+        const r: Record<string, { correct: boolean; hint?: string }> = {}
+        restoredCheck.items.forEach(it => {
+          if (it.idx === '_llm') return
+          r[it.idx as string] = { correct: it.correct, hint: it.hint }
+        })
+        return r
+      })()
+    : mapItemResults
+
   const effectiveAllDone = reviewMode || allDone
   const effectiveSoftDone = reviewMode || softDone
 
@@ -184,8 +239,14 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       )
       if (checkResult) {
         // Persist every check attempt so teacher observe has first-attempt data
+        // Await so its cacheSubmission finishes before we overwrite with checkItems
         if (ctx.submit) {
-          ctx.submit(stepIdx, submitData)
+          await ctx.submit(stepIdx, submitData)
+        }
+        // Cache checkItems for restore on refresh (after submit to avoid losing score)
+        if (ctx.sessionCode) {
+          const existing = getCachedSubmission(ctx.sessionCode, stepIdx)
+          cacheSubmission(ctx.sessionCode, stepIdx, submitData, existing?.score ?? null, checkResult.items)
         }
         handleCheckResult(checkResult)
         return
@@ -228,8 +289,6 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
       onDone()
     }
   }
-
-  const toIdx = (v: unknown) => typeof v === 'number' ? v : parseInt(String(v), 10)
 
   /** Handle server-side check result — update local state based on per-item feedback */
   const handleCheckResult = (result: CheckResult) => {
@@ -325,7 +384,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   // Loading state: revisit/recovery requested but submission not yet loaded from API
   if (shouldRestore && !submissionChecked) {
     return (
-      <div id="phase-practice">
+      <div id="phase-practice" data-translate-ctx="practice">
         <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
         <div style={{ fontSize: 13, color: 'var(--t3)', padding: '16px 0' }}>Loading previous answers...</div>
       </div>
@@ -358,7 +417,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
   const noopSetAns: typeof setAns = reviewMode ? () => {} : trackedSetAns
 
   return (
-    <div id="phase-practice">
+    <div id="phase-practice" data-translate-ctx="practice">
       <div className="stu-section-label"><span>Practice</span><div className="stu-section-line" /></div>
       <div style={{ fontSize: 13, color: 'var(--t2)', marginBottom: 12 }}>{linkParas(ex.label)}</div>
 
@@ -368,7 +427,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           ans={effectiveAns}
           setAns={noopSetAns}
           correctQs={effectiveCorrectQs}
-          wrongQs={wrongQs}
+          wrongQs={effectiveWrongQs}
           attemptCount={attemptCount}
           serverHints={serverHints}
         />
@@ -379,7 +438,7 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           ans={effectiveAns}
           setAns={noopSetAns}
           correctQs={effectiveCorrectQs}
-          wrongQs={wrongQs}
+          wrongQs={effectiveWrongQs}
           attemptCount={attemptCount}
           serverHints={serverHints}
         />
@@ -396,11 +455,11 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
             ? (() => {})
             : (ri, field, val) => setMatrixAns(prev => ({ ...prev, [ri]: { ...prev[ri], [field]: val } }))}
           disabled={effectiveAllDone}
-          rowResults={Object.keys(matrixRowResults).length > 0 ? matrixRowResults : undefined}
+          rowResults={Object.keys(effectiveMatrixRowResults).length > 0 ? effectiveMatrixRowResults : undefined}
         />
       )}
       {ex.type === 'stance' && <StanceExercise stanceQ={ex.stanceQ!} stanceQZh={ex.stanceQZh} stanceOpts={ex.stanceOpts!} evidence={ex.evidence!} ans={effectiveAns} setAns={noopSetAns} softDone={effectiveSoftDone} />}
-      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={effectiveAns} setAns={noopSetAns} done={effectiveAllDone} wrongPositions={wrongQs} attemptCount={(attempts[0] || []).length} />}
+      {ex.type === 'order' && <OrderExercise items={ex.items!} ans={effectiveAns} setAns={noopSetAns} done={effectiveAllDone} wrongPositions={effectiveWrongQs} attemptCount={(attempts[0] || []).length} />}
       {ex.type === 'map' && ex.axes && ex.mapItems && (
         <MapExercise
           prompt={ex.prompt || ''}
@@ -410,11 +469,11 @@ export function PracticePhase({ task, onDone, stepIdx, onOverlayChange, isRevisi
           ans={effectiveAns}
           setAns={noopSetAns}
           allDone={effectiveAllDone}
-          feedback={mapFeedback}
+          feedback={effectiveMapFeedback}
           givenPlacements={ex.givenPlacements}
           practiceCount={ex.practiceCount}
           practiceItemIds={ex.practiceItemIds}
-          itemResults={Object.keys(mapItemResults).length > 0 ? mapItemResults : undefined}
+          itemResults={Object.keys(effectiveMapItemResults).length > 0 ? effectiveMapItemResults : undefined}
           onActiveChange={(refs) => {
             if (!onOverlayChange) return
             if (refs.length > 0) {

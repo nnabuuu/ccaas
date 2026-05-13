@@ -13,6 +13,7 @@ import { PersonalTouchSchema, BonusArticleSchema, BonusStepSchema } from '../../
 import type { PersonalTouch, GradeResult } from '../../schemas';
 import { getCachedTaskMap } from '../task-map.utils';
 import { ExerciseService } from '../exercise/exercise.service';
+import { buildCheckItems } from '../exercise/build-check-items';
 import type { PersonalTouchResponse, CheckResultResponse } from '../../schemas/classroom';
 
 @Injectable()
@@ -179,7 +180,7 @@ export class PersonalizationService {
     }
 
     const ak = stepDef.answerKey as Record<string, unknown>;
-    const items = gradeResult ? this.exerciseService.buildCheckItems(ak, data, gradeResult) : [];
+    const items = gradeResult ? buildCheckItems(ak, data, gradeResult) : [];
     const allCorrect = gradeResult ? gradeResult.total === 100 : false;
 
     return { type: stepDef.answerKey.type, allCorrect, items };
