@@ -1,0 +1,423 @@
+/* ═══ OVERVIEW COLUMN (right) ═══ */
+.overview { border-left: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden }
+.ov-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column }
+
+/* Queue */
+.queue-section { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0 }
+.queue-h { display: flex; align-items: center; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0 }
+.queue-h .lb { font-size: 10px; font-weight: 700; color: var(--t2); letter-spacing: .3px }
+.queue-h .cnt { font-size: 9px; color: var(--t3); background: var(--surface2); padding: 1px 5px; border-radius: 8px; font-weight: 600; margin-left: auto }
+.queue { flex: 1; overflow-y: auto; padding: 4px 8px 8px }
+.q-step-h { display: flex; align-items: center; gap: 6px; padding: 8px 6px 4px; font-size: 9px; font-weight: 700; color: var(--t2); position: sticky; top: 0; background: var(--surface); z-index: 1 }
+.q-step-h .sn { width: 14px; height: 14px; border-radius: 50%; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center }
+.q-step-h .sn.task { background: var(--t1); color: var(--surface) }
+.q-step-h .step-name { flex: 1 }
+.q-step-h .tot { font-weight: 500; color: var(--t3) }
+.qrow { display: flex; align-items: flex-start; gap: 5px; padding: 4px 6px 4px 26px; border-radius: 4px; cursor: pointer }
+.qrow:hover { background: var(--bg) }
+.qrow .qn { font-size: 11px; font-weight: 700; color: var(--t1); min-width: 16px; text-align: right; flex-shrink: 0 }
+.qrow.hi .qn { color: var(--amber) }
+.qrow .qq { font-size: 10px; font-weight: 500; color: var(--t1); line-height: 1.35; flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.qrow .qmeta { font-size: 8px; color: var(--t3); flex-shrink: 0 }
+.qrow .trend { color: var(--amber); font-weight: 700 }
+.qrow .hi-tag { font-size: 7px; font-weight: 700; color: var(--amber); background: var(--amber-soft); padding: 1px 4px; border-radius: 2px; flex-shrink: 0; margin-top: 1px }
+.qrow .q-student { font-size: 10px; font-weight: 600; color: var(--t2); flex-shrink: 0; min-width: 48px }
+
+/* Category badges */
+.cat-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500 }
+.cat-badge.concept { background: var(--blue-soft); color: var(--blue) }
+.cat-badge.strategy { background: var(--green-soft); color: var(--green) }
+.cat-badge.content { background: var(--ai-soft); color: var(--ai) }
+.cat-badge.task-help { background: var(--amber-soft); color: var(--amber) }
+.cat-badge.other { background: var(--surface2); color: var(--t3) }
+
+/* Expandable answer in queue */
+.q-answer { padding: 6px 12px 8px 26px; font-size: 11px; color: var(--t2); line-height: 1.55; background: var(--bg); border-radius: 0 0 4px 4px; margin: -2px 6px 4px 6px }
+.q-answer-label { font-size: 9px; font-weight: 600; color: var(--ai); text-transform: uppercase; letter-spacing: .3px; display: block; margin-bottom: 3px }
+
+/* ═══ RIGHT PANEL TABS ═══ */
+.right-tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; padding: 0 8px }
+.right-tab { background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 10px; font-size: 10px; font-weight: 600; color: var(--t3); cursor: pointer; display: flex; align-items: center; gap: 4px; white-space: nowrap; font-family: inherit }
+.right-tab:hover { color: var(--t2) }
+.right-tab.active { color: var(--t1); border-bottom-color: var(--t1) }
+.right-tab-cnt { font-size: 9px; background: var(--surface2); padding: 1px 5px; border-radius: 8px; font-weight: 600 }
+
+/* ═══ SUMMARY TAB ═══ */
+
+.summary-expand-btn { width: 100%; padding: 7px 12px; font-size: 11px; font-weight: 600; color: var(--blue); background: var(--blue-soft); border: 1px solid rgba(26,95,160,.15); border-radius: 6px; cursor: pointer; text-align: center; transition: all .15s; font-family: inherit }
+.summary-expand-btn:hover { background: rgba(26,95,160,.12); border-color: rgba(26,95,160,.3) }
+
+.summary-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+.sm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px }
+.sm-label { font-size: 9px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px }
+.sm-value { font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -.3px }
+.sm-sub { font-size: 9px; color: var(--t3) }
+
+.quadrant-group { display: flex; flex-direction: column; gap: 6px }
+.qg-header { font-size: 10px; font-weight: 600; color: var(--t3); display: flex; align-items: center; gap: 5px }
+.qg-dot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0 }
+.qg-students { display: flex; flex-wrap: wrap; gap: 3px }
+
+/* Knowledge point bars */
+.kp-section { display: flex; flex-direction: column; gap: 6px }
+.kp-header { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px }
+.kp-bar-row { display: flex; align-items: center; gap: 8px }
+.kp-label { font-size: 10px; color: var(--t2); width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.kp-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden }
+.kp-bar-fill { height: 100%; border-radius: 3px; transition: width .3s }
+.kp-pct { font-size: 10px; font-weight: 600; color: var(--t2); width: 32px; text-align: right }
+
+/* Recommend card (shared between tab and overlay) */
+.qc-recommend-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .15s }
+.qc-recommend-card:hover { border-color: var(--border-strong) }
+.qcr-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px }
+.qcr-name { font-size: 12px; font-weight: 600; color: var(--t1) }
+.qcr-intent { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px }
+.qcr-intent.showcase { background: var(--green-soft); color: var(--green) }
+.qcr-intent.verify { background: var(--blue-soft); color: var(--blue) }
+.qcr-intent.expose { background: var(--amber-soft); color: var(--amber) }
+.qcr-reason { font-size: 10px; color: var(--t2); line-height: 1.5 }
+
+/* ═══ SUMMARY OVERLAY ═══ */
+
+.so-root { display: flex; flex-direction: column; height: 100%; padding: 20px 28px; overflow-y: auto; gap: 18px }
+
+.so-header { display: flex; align-items: center; gap: 12px }
+.so-header-left { display: flex; align-items: center; gap: 12px }
+.so-title { font-size: 16px; font-weight: 700; color: var(--t1) }
+.so-progress { font-size: 11px; color: var(--t3); font-weight: 500; margin-left: auto }
+.so-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: var(--t2) }
+.so-close:hover { background: var(--surface2); color: var(--t1) }
+
+.so-metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px }
+
+.so-matrix-row { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; min-height: 320px }
+
+.so-matrix-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; padding: 12px }
+.so-matrix-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px }
+.so-matrix-label { font-size: 12px; font-weight: 600; color: var(--t2) }
+.so-zoom-controls { display: flex; align-items: center; gap: 4px }
+.so-zoom-controls button { height: 22px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 11px; color: var(--t2); font-family: inherit }
+.so-zoom-controls button:hover { background: var(--surface2); color: var(--t1) }
+.so-zoom-level { font-size: 10px; color: var(--t3); min-width: 32px; text-align: center; font-variant-numeric: tabular-nums }
+.so-matrix-chart { position: relative; flex: 1; min-height: 260px }
+.so-matrix-svg { width: 100%; height: 100%; user-select: none }
+.so-matrix-hints { display: flex; justify-content: space-between; padding: 6px 2px 0; font-size: 10px; color: var(--t3) }
+
+.so-quadrant-zones { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; pointer-events: none }
+.so-qzone { pointer-events: auto; cursor: zoom-in }
+.so-qzone-star { grid-column: 2; grid-row: 1 }
+.so-qzone-struggling { grid-column: 1; grid-row: 1 }
+.so-qzone-coasting { grid-column: 2; grid-row: 2 }
+.so-qzone-at-risk { grid-column: 1; grid-row: 2 }
+
+.so-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column }
+.so-detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1 }
+.so-detail-content { display: flex; flex-direction: column; gap: 14px }
+.so-detail-head { display: flex; align-items: center; gap: 8px }
+.so-detail-name { font-size: 15px; font-weight: 700; color: var(--t1) }
+.so-detail-name:hover { text-decoration: underline }
+.so-detail-tag { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 4px }
+.so-detail-section { display: flex; flex-direction: column; gap: 6px }
+.so-detail-section-h { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: .3px }
+.so-weak-list { display: flex; flex-direction: column; gap: 6px }
+.so-weak-item { padding-left: 2px }
+.so-weak-name { font-size: 11px; font-weight: 600; color: var(--t1) }
+.so-weak-name::before { content: '• '; color: var(--red) }
+.so-weak-detail { font-size: 10px; color: var(--t3); padding-left: 10px; margin-top: 1px }
+.so-detail-reason { font-size: 11px; color: var(--t2); line-height: 1.6 }
+.so-detail-open-btn { margin-top: auto; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--t1); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; text-align: center }
+.so-detail-open-btn:hover { background: var(--surface2) }
+
+.so-action-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px }
+.so-action-col { display: flex; flex-direction: column; gap: 8px }
+.so-section-h { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px }
+.so-empty-hint { font-size: 11px; color: var(--t3) }
+
+.so-reteach-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border) }
+.so-reteach-card.danger { background: var(--red-soft); border-color: rgba(148,41,41,.15) }
+.so-reteach-card.warn { background: var(--amber-soft); border-color: rgba(122,77,14,.15) }
+.so-reteach-dim { font-size: 11px; font-weight: 600; color: var(--t1) }
+.so-reteach-pct { font-size: 10px; font-weight: 600 }
+.so-reteach-card.danger .so-reteach-pct { color: var(--red) }
+.so-reteach-card.warn .so-reteach-pct { color: var(--amber) }
+
+.so-kp-section { display: flex; flex-direction: column; gap: 8px }
+.so-kp-list { display: flex; flex-direction: column; gap: 5px }
+
+/* ── Transition Insights: SummaryTab (compact) ── */
+.st-transition { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px }
+.st-transition-row { display: flex; align-items: baseline; gap: 6px; font-size: 11px; color: var(--t2); line-height: 1.5 }
+.st-transition-icon { flex-shrink: 0; width: 16px; height: 16px; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; color: #fff }
+.st-icon-timing { background: var(--red) }
+.st-icon-timing::before { content: 'T' }
+.st-icon-question { background: var(--blue) }
+.st-icon-question::before { content: 'Q' }
+.st-icon-ai { background: var(--ai) }
+.st-icon-ai::before { content: 'AI'; font-size: 7px }
+.st-transition-btn { margin-top: 4px; padding: 6px 10px; font-size: 10px; font-weight: 600; color: var(--t3); background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; cursor: not-allowed; opacity: 0.6 }
+
+/* ── Transition Insights: SummaryOverlay (full) ── */
+.so-transition-section { display: flex; flex-direction: column; gap: 10px }
+.so-transition-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px }
+.so-transition-label { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: .3px }
+.so-transition-main { font-size: 13px; font-weight: 600; color: var(--t1) }
+.so-transition-detail { font-size: 11px; color: var(--t2) }
+.so-transition-quote { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--t2); line-height: 1.6; padding: 4px 0 }
+.so-transition-step { flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--t3); min-width: 46px }
+.so-transition-q { font-style: italic; color: var(--t1) }
+
+/* AI heat bar rows */
+.so-ai-heat-row { display: flex; align-items: center; gap: 8px }
+.so-ai-heat-name { font-size: 10px; font-weight: 600; color: var(--t2); width: 50px; flex-shrink: 0 }
+.so-ai-heat-bar { height: 100%; border-radius: 3px; background: var(--ai); transition: width .3s }
+.so-ai-heat-stat { font-size: 10px; color: var(--t3); white-space: nowrap; min-width: 70px; text-align: right }
+
+/* ═══ COACHING PANEL ═══ */
+
+.coach-panel { padding: 8px 14px; display: flex; flex-direction: column; gap: 16px }
+
+.coach-section-h { font-size: 11px; font-weight: 700; color: var(--t2); letter-spacing: .3px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px }
+
+.coach-llm-ts { font-weight: 400; font-size: 10px; color: var(--t3) }
+
+/* Coaching tips */
+.coach-tips { display: flex; flex-direction: column; gap: 6px }
+.coach-tip { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--t3); background: var(--surface) }
+.coach-tip.urgent { border-left-color: var(--red); background: var(--red-soft) }
+.coach-tip.important { border-left-color: var(--amber); background: var(--amber-soft) }
+.coach-tip.info { border-left-color: var(--t3); background: var(--surface) }
+.coach-tip-title { font-size: 12px; font-weight: 600; color: var(--t1); margin-bottom: 2px }
+.coach-tip-detail { font-size: 11px; color: var(--t2); line-height: 1.4 }
+.coach-tip-action { font-size: 11px; color: var(--blue); margin-top: 4px; font-weight: 500 }
+
+/* Highlight cards */
+.coach-highlights { display: flex; flex-direction: column; gap: 6px }
+.coach-highlight { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--amber-dot); background: rgba(196,138,30,.06); cursor: pointer; transition: background .15s }
+.coach-highlight:hover { background: rgba(196,138,30,.1) }
+.coach-highlight-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px }
+.coach-highlight-name { font-size: 11px; font-weight: 600; color: var(--amber); cursor: pointer }
+.coach-highlight-name:hover { text-decoration: underline }
+.coach-highlight-step { font-size: 10px; color: var(--t3) }
+.coach-highlight-gist { font-size: 12px; color: var(--t1); line-height: 1.4 }
+.coach-highlight-msg { font-size: 11px; color: var(--t2); margin-top: 4px; padding: 6px 8px; background: rgba(0,0,0,.03); border-radius: 4px; font-style: italic; line-height: 1.4 }
+
+/* LLM insight section */
+.coach-llm-section { display: flex; flex-direction: column; gap: 6px }
+.coach-llm-card { padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--blue); background: var(--blue-soft) }
+
+/* Question candidates */
+.coach-candidates { display: flex; flex-direction: column; gap: 6px }
+.coach-candidate { padding: 8px 10px; border-radius: 6px; background: var(--surface); cursor: pointer; transition: background .15s }
+.coach-candidate:hover { background: var(--surface2) }
+.coach-candidate-top { display: flex; align-items: center; gap: 6px; margin-bottom: 3px }
+.coach-candidate-name { font-size: 11px; font-weight: 600; color: var(--t1) }
+.coach-candidate-intent { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px }
+.coach-candidate-intent.showcase { color: var(--green); background: var(--green-soft) }
+.coach-candidate-intent.verify { color: var(--blue); background: var(--blue-soft) }
+.coach-candidate-intent.expose { color: var(--amber); background: var(--amber-soft) }
+.coach-candidate-reason { font-size: 11px; color: var(--t2); line-height: 1.4 }
+.coach-candidate-step { font-size: 10px; font-weight: 600; color: var(--t3) }
+.coach-candidate-cat { font-size: 10px; color: var(--t3) }
+.coach-candidate-question { font-size: 12px; color: var(--t1); font-style: italic; line-height: 1.4; margin-top: 2px }
+
+/* ═══ 3-TAB REDESIGN ═══ */
+
+/* ── Highlight markers on student chips ── */
+.qc-student-tag.highlight { border-color: var(--amber-dot); color: var(--amber); font-weight: 600 }
+.qc-student-tag.highlight::after { content: " ✦"; color: var(--amber-dot); font-size: 9px }
+
+/* ── Beyond-preset cluster card ── */
+.qc-cluster-card.beyond { border-left: 3px solid var(--amber-dot); background: var(--amber-soft) }
+.beyond-label { font-size: 10px; font-weight: 700; color: var(--amber); display: flex; align-items: center; gap: 4px }
+.beyond-label::before { content: "✦"; font-size: 12px }
+
+/* ── Highlight gist ── */
+.hl-gist { font-size: 11px; color: var(--t2); line-height: 1.5; font-style: italic }
+.hl-meta { font-size: 10px; color: var(--t3); margin-bottom: 2px; display: flex; gap: 6px }
+.hl-meta .name { font-weight: 600; color: var(--amber) }
+
+/* ── Discussion feed ── */
+.discuss-feed { display: flex; flex-direction: column; gap: 4px; margin-top: 8px }
+.discuss-feed-h { font-size: 11px; font-weight: 700; color: var(--t2); padding: 6px 0 4px }
+.df-entry { padding: 5px 0; border-bottom: 1px solid var(--border) }
+.df-entry:last-child { border-bottom: none }
+.df-meta { font-size: 10px; color: var(--t3); display: flex; gap: 6px; margin-bottom: 2px }
+.df-meta .name { font-weight: 600; color: var(--t1) }
+.df-msg { font-size: 11px; color: var(--t2); line-height: 1.5 }
+
+/* ── Alert item (ClassroomStatusTab) ── */
+.status-alert-list { display: flex; flex-direction: column; gap: 2px }
+.alert-item { display: flex; gap: 8px; padding: 7px 0; border-bottom: 1px solid var(--border); align-items: flex-start }
+.alert-item:last-child { border-bottom: none }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px }
+.alert-dot.urgent { background: var(--red) }
+.alert-dot.warn { background: var(--amber-dot) }
+.alert-dot.info { background: var(--green-dot) }
+.alert-text { flex: 1 }
+.alert-title { font-size: 11px; font-weight: 600 }
+.alert-source { font-size: 10px; color: var(--t3); margin-top: 1px }
+
+/* ── Insight card (ClassroomStatusTab) ── */
+.insight-section { padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px }
+.insight-card { background: var(--ai-soft); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px }
+.insight-header { font-size: 10px; font-weight: 700; color: var(--ai); margin-bottom: 4px; display: flex; justify-content: space-between }
+.insight-body { font-size: 11px; color: var(--t2); line-height: 1.5 }
+.insight-action { font-size: 10px; font-weight: 600; color: var(--ai); margin-top: 4px }
+
+/* ── Indicator bars (ClassroomStatusTab) ── */
+.indicator-section { padding-top: 8px; border-top: 1px solid var(--border); margin-top: 8px }
+.indicator-bar { display: flex; align-items: center; gap: 6px; padding: 4px 0 }
+.indicator-label { font-size: 10px; font-weight: 600; width: 88px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.indicator-label.knowledge { color: var(--green) }
+.indicator-label.misconception { color: var(--red) }
+.bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden }
+.bar-fill { height: 100%; border-radius: 3px }
+.bar-fill.knowledge { background: var(--green) }
+.bar-fill.misconception { background: var(--red) }
+.indicator-pct { font-size: 10px; font-weight: 600; color: var(--t3); width: 32px; text-align: right }
+
+/* ── Weak dimension compact (SummaryTab) ── */
+.weak-dim-section { margin-top: 10px }
+.weak-dim { display: flex; align-items: center; gap: 6px; padding: 4px 0 }
+.weak-dim .dim-label { font-size: 10px; font-weight: 600; width: 72px; flex-shrink: 0 }
+.weak-dim .dim-bar { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden }
+.weak-dim .dim-fill { height: 100%; background: var(--amber); border-radius: 3px }
+.weak-dim .dim-pct { font-size: 10px; font-weight: 600; color: var(--amber); width: 28px; text-align: right }
+
+/* ── Status tab section headers ── */
+.status-section { margin-bottom: 12px }
+.status-section-h { font-size: 11px; font-weight: 700; color: var(--t2); padding: 6px 0 4px; display: flex; justify-content: space-between; align-items: center }
+.status-section-h .cnt { font-size: 10px; color: var(--t3); font-weight: 500 }
+
+/* ═══ DESIGN V2 — COMPACT FIXES ═══ */
+
+/* ── Panel header (compact tab header with expand button) ── */
+.panel-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--surface) }
+.panel-header .title { font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 4px }
+.expand-btn { font-size: 11px; color: var(--blue); cursor: pointer; display: flex; align-items: center; gap: 3px; background: none; border: none; font-family: inherit; font-weight: 500; padding: 4px 8px; border-radius: 4px; transition: background .12s }
+.expand-btn:hover { background: var(--surface2) }
+
+/* ── Discuss feed: highlight entries ── */
+.df-entry.is-highlight { background: var(--amber-soft); border-radius: 4px; padding: 5px 6px; margin: 2px -6px }
+.df-entry.is-highlight .df-msg { color: var(--amber); font-weight: 600 }
+.df-entry.is-highlight .df-msg::after { content: " ✦"; color: var(--amber-dot); font-weight: 700 }
+.df-time { font-size: 10px; color: var(--t3); font-weight: 500; flex-shrink: 0 }
+
+/* ── Feed "more" link ── */
+.feed-more { font-size: 10px; font-weight: 600; color: var(--blue); text-align: right; padding-top: 6px; cursor: pointer }
+.feed-more:hover { text-decoration: underline }
+
+/* ── Quadrant 2×2 grid (design spec) ── */
+.quadrant-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0 }
+.quadrant { background: var(--surface2); border-radius: 8px; padding: 6px 8px; min-height: 48px }
+.quadrant-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px }
+.quadrant.star .quadrant-title { color: var(--green) }
+.quadrant.struggling .quadrant-title { color: var(--amber) }
+.quadrant.coasting .quadrant-title { color: var(--blue) }
+.quadrant.atrisk .quadrant-title { color: var(--red) }
+.quadrant-names { font-size: 10px; color: var(--t2); display: flex; flex-wrap: wrap; gap: 3px }
+.quadrant-names .q-chip { padding: 1px 6px; border-radius: 4px; background: var(--surface); cursor: pointer; font-weight: 500 }
+.quadrant-names .q-chip:hover { color: var(--t1); box-shadow: 0 0 0 1px var(--border-strong) }
+
+/* ── Summary stats row (design: 2-stat instead of 4-card) ── */
+.summary-row { display: flex; justify-content: space-around; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); margin-bottom: 6px }
+.summary-stat { text-align: center }
+.summary-stat .val { font-size: 18px; font-weight: 800 }
+.summary-stat .lbl { font-size: 10px; color: var(--t3); font-weight: 500 }
+
+/* ── Question candidate (design spec: q-tag badges) ── */
+.q-candidate { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid var(--border); cursor: pointer }
+.q-candidate:last-child { border-bottom: none }
+.q-candidate:hover { background: var(--surface2); border-radius: 4px }
+.q-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.3px }
+.q-tag.clarify, .q-tag.expose { background: var(--amber-soft); color: var(--amber) }
+.q-tag.push, .q-tag.verify { background: rgba(26,95,160,.1); color: var(--blue) }
+.q-tag.showcase { background: var(--green-soft); color: var(--green) }
+.q-info .q-name { font-size: 11px; font-weight: 600 }
+.q-info .q-reason { font-size: 10px; color: var(--t3) }
+
+/* ── Indicator explanation note ── */
+.indicator-note { font-size: 9px; color: var(--t3); margin-top: 6px; line-height: 1.4 }
+
+/* ═══ DESIGN V2 — DRAWER COMPONENTS ═══ */
+
+/* ── Drawer header ── */
+.drawer-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); flex-shrink: 0 }
+.drawer-header .title { font-size: 15px; font-weight: 700 }
+.drawer-close { font-size: 11px; color: var(--t3); cursor: pointer; background: none; border: none; font-family: inherit; padding: 4px 8px; border-radius: 4px }
+.drawer-close:hover { background: var(--surface); color: var(--t1) }
+
+/* ── Drawer layout ── */
+.drawer-body { padding: 16px 20px; overflow-y: auto; flex: 1 }
+.drawer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px }
+
+/* ── Subsection label ── */
+.subsection { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0 4px; display: flex; align-items: center; gap: 6px }
+.subsection .icon { font-size: 12px }
+
+/* ── Evidence span ── */
+.evidence { font-size: 10px; color: var(--t2); background: var(--surface); border-left: 2px solid var(--ai-dot); padding: 3px 8px; margin: 3px 0; line-height: 1.4 }
+
+/* ── Beyond gist (in cluster card) ── */
+.beyond-gist { font-size: 10px; color: var(--t2); font-style: italic; padding: 2px 0 2px 8px; border-left: 2px solid var(--amber-dot); margin: 3px 0; line-height: 1.4 }
+
+/* ── Highlight full card (drawer) ── */
+.highlight-full-card { background: var(--amber-soft); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border: 1px solid rgba(196,138,30,.15) }
+.highlight-full-card .hf-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px }
+.highlight-full-card .hf-name { font-size: 11px; font-weight: 700; color: var(--amber) }
+.highlight-full-card .hf-time { font-size: 10px; color: var(--t3) }
+.highlight-full-card .hf-gist { font-size: 11px; font-weight: 600; color: var(--t1); margin-bottom: 4px }
+.highlight-full-card .hf-evidence { font-size: 10px; color: var(--t2); background: var(--surface); border-left: 2px solid var(--amber-dot); padding: 4px 8px; margin: 4px 0; line-height: 1.4 }
+.highlight-full-card .hf-message { font-size: 10px; color: var(--t3); margin-top: 4px; line-height: 1.4 }
+
+/* ── Matrix table (drawer) ── */
+.matrix-table { width: 100%; border-collapse: collapse; font-size: 11px }
+.matrix-table th { text-align: left; font-weight: 700; padding: 6px 8px; border-bottom: 1px solid var(--border-strong); font-size: 10px; color: var(--t3) }
+.matrix-table td { padding: 5px 8px; border-bottom: 1px solid var(--border) }
+.matrix-table .hit { color: var(--green); font-weight: 600 }
+.matrix-table .miss { color: var(--t3) }
+.matrix-table .hit-highlight { color: var(--amber); font-weight: 700 }
+.matrix-table .student-name { font-weight: 600; cursor: pointer }
+.matrix-table .student-name:hover { color: var(--blue) }
+
+/* ── Relationship diagram ── */
+.rel-diagram { background: var(--surface2); border-radius: 8px; padding: 12px; margin: 12px 0; font-size: 11px }
+.rel-diagram .rel-title { font-size: 10px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px }
+.rel-path { display: flex; align-items: center; gap: 6px; padding: 4px 0; font-size: 10px; flex-wrap: wrap }
+.rel-path .rel-arrow { color: var(--t3); flex-shrink: 0 }
+.rel-path .rel-cond { font-weight: 600; padding: 1px 6px; border-radius: 4px; flex-shrink: 0 }
+.rel-path .rel-cond.normal { background: rgba(74,67,135,.1); color: var(--ai) }
+.rel-path .rel-cond.cluster-hl { background: var(--green-soft); color: var(--green) }
+.rel-path .rel-cond.beyond { background: var(--amber-soft); color: var(--amber) }
+.rel-path .rel-result { color: var(--t2) }
+
+/* ── Timeline (drawer) ── */
+.drawer-timeline { position: relative; padding-left: 16px; border-left: 2px solid var(--border-strong) }
+.drawer-tl-item { position: relative; padding: 6px 0 6px 12px }
+.drawer-tl-item::before { content: ""; position: absolute; left: -21px; top: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border-strong) }
+.drawer-tl-item.discuss::before { background: rgba(74,67,135,.15); border-color: var(--ai) }
+.drawer-tl-item.exercise::before { background: var(--green-soft); border-color: var(--green) }
+.drawer-tl-item.alert::before { background: var(--red-soft); border-color: var(--red) }
+.drawer-tl-item.highlight::before { background: var(--amber-soft); border-color: var(--amber-dot) }
+.drawer-tl-item.highlight .drawer-tl-text { color: var(--amber); font-weight: 600 }
+.drawer-tl-time { font-size: 10px; color: var(--t3) }
+.drawer-tl-text { font-size: 11px }
+.drawer-tl-text strong { color: var(--t1) }
+.tl-gist-tag { display: inline-block; font-size: 9px; font-weight: 600; color: var(--amber); background: var(--amber-soft); padding: 1px 6px; border-radius: 4px; margin-left: 4px }
+
+/* ── Student status chips (drawer) ── */
+.status-chips { display: flex; flex-wrap: wrap; gap: 4px }
+.s-chip { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 6px; cursor: pointer }
+.s-chip:hover { opacity: .8 }
+.s-chip.active { background: var(--green-soft); color: var(--green) }
+.s-chip.struggling { background: var(--amber-soft); color: var(--amber) }
+.s-chip.stuck { background: var(--red-soft); color: var(--red) }
+.s-chip.cruising { background: rgba(26,95,160,.1); color: var(--blue) }
+.s-chip.idle { background: var(--surface2); color: var(--idle) }
+
+/* ── Highlight badge ── */
+.highlight-badge { font-size: 10px; font-weight: 700; color: var(--amber); background: var(--amber-soft); padding: 1px 7px; border-radius: 8px; margin-left: 6px }
+
+/* ── Divider ── */
+.drawer-divider { height: 1px; background: var(--border); margin: 12px 0 }

@@ -1,6 +1,38 @@
 import type { ClassroomState } from '../../hooks/useClassroom'
 
 export const STUCK_THRESHOLD_MS = 180_000 // 3 minutes
+export const HIGHLIGHT_MATCH_TOLERANCE_MS = 120_000 // 2 minutes
+
+/** Build a lookup map from highlights: studentName → detectedAt timestamps */
+export function buildHighlightLookup(highlights: Array<{ studentName: string; detectedAt: number }>): Map<string, number[]> {
+  const map = new Map<string, number[]>()
+  for (const h of highlights) {
+    const arr = map.get(h.studentName) ?? []
+    arr.push(h.detectedAt)
+    map.set(h.studentName, arr)
+  }
+  return map
+}
+
+/** Check if a (studentName, timestamp) pair matches any highlight within tolerance */
+export function isHighlightMatch(lookup: Map<string, number[]>, name: string, ts: number): boolean {
+  const times = lookup.get(name)
+  return times ? times.some(t => Math.abs(t - ts) < HIGHLIGHT_MATCH_TOLERANCE_MS) : false
+}
+
+/** Find the matching highlight object for a (studentName, timestamp) pair — single O(1) map + O(k) scan */
+export function findHighlightGist(
+  lookup: Map<string, number[]>,
+  highlights: Array<{ studentName: string; detectedAt: number; gist?: string }>,
+  name: string,
+  ts: number,
+): string | undefined {
+  const times = lookup.get(name)
+  if (!times) return undefined
+  const matchTs = times.find(t => Math.abs(t - ts) < HIGHLIGHT_MATCH_TOLERANCE_MS)
+  if (matchTs === undefined) return undefined
+  return highlights.find(h => h.studentName === name && h.detectedAt === matchTs)?.gist
+}
 
 export type StudentStatus = 'done' | 'prog' | 'stuck' | 'reading'
 

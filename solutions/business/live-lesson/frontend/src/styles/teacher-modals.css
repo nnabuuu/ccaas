@@ -1,0 +1,101 @@
+/* ═══ EMPTY STATE ═══ */
+.empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--t2) }
+.empty-icon { font-size: 48px; opacity: 0.6 }
+.empty-state h2 { font-size: 18px; font-weight: 700; color: var(--t1) }
+.empty-state p { font-size: 13px; color: var(--t3); line-height: 1.6 }
+.empty-state strong { color: var(--t1); font-weight: 700; font-size: 16px }
+
+/* ═══ STUDENT MODAL ═══ */
+.overlay { position: fixed; inset: 0; background: rgba(28,28,26,.5); display: flex; align-items: center; justify-content: center; padding: 32px; z-index: 100; backdrop-filter: blur(2px) }
+.modal { background: var(--bg); border-radius: 14px; width: 100%; max-width: 1060px; height: 680px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px -10px rgba(28,28,26,.3) }
+.mod-hd { display: flex; align-items: center; gap: 14px; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface) }
+.mod-av { width: 36px; height: 36px; border-radius: 8px; background: var(--t1); color: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700 }
+.mod-ti { flex: 1 }
+.mod-ti-n { font-size: 15px; font-weight: 600 }
+.mod-ti-m { font-size: 11px; color: var(--t3); margin-top: 2px }
+.mod-cls { cursor: pointer; padding: 6px 12px; font-size: 12px; color: var(--t2); border-radius: 6px }
+.mod-cls:hover { background: var(--surface2); color: var(--t1) }
+.mod-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column }
+
+/* ═══ JOURNEY STRIP ═══ */
+.journey { padding: 16px 24px 12px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0 }
+.journey-strip { display: flex; align-items: stretch; gap: 0; position: relative }
+.journey-node { flex: 1; display: flex; flex-direction: column; padding: 10px 12px; border-radius: 8px; cursor: pointer; border: 1.5px solid var(--border); position: relative; transition: all .12s; background: var(--surface) }
+.journey-node:hover { border-color: var(--border-strong); background: var(--surface2) }
+.journey-node.act { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 0 0 2px rgba(26,95,160,.12) }
+.journey-node.needs-attn { border-color: var(--amber-dot) }
+.journey-node.needs-attn .jn-attn { display: flex }
+.journey-node.future { opacity: .45; border-style: dashed }
+.journey-connector { width: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center }
+.journey-connector::before { content: ""; width: 12px; height: 2px; background: var(--border-strong); border-radius: 1px }
+.journey-connector.future::before { background: var(--surface2); border: none; height: 1px; border-top: 1px dashed var(--border-strong) }
+
+.jn-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px }
+.jn-sn { width: 18px; height: 18px; border-radius: 50%; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.jn-sn.task { background: var(--t1); color: var(--surface) }
+.journey-node.act .jn-sn.task { background: var(--blue) }
+.jn-name { font-size: 11px; font-weight: 700; color: var(--t1) }
+.jn-status { font-size: 9px; font-weight: 600; display: flex; align-items: center; gap: 3px; margin-bottom: 4px }
+.jn-status.done { color: var(--green) }
+.jn-status.prog { color: var(--blue) }
+.jn-status.partial { color: var(--amber) }
+.jn-status.future { color: var(--t3) }
+.jn-status .ico { font-size: 10px }
+.jn-meta { display: flex; gap: 10px; font-size: 9px; color: var(--t3) }
+.jn-meta strong { color: var(--t2); font-weight: 600 }
+.jn-attn { display: none; position: absolute; top: -6px; right: -4px; font-size: 7px; font-weight: 700; color: var(--amber); background: var(--amber-soft); border: 1px solid rgba(196,138,30,.3); padding: 1px 5px; border-radius: 3px; white-space: nowrap; align-items: center; gap: 2px; animation: attn-pulse 2s infinite }
+@keyframes attn-pulse { 0%, 100% { opacity: 1 } 50% { opacity: .6 } }
+
+/* ═══ DETAIL AREA (modal lower) ═══ */
+.mod-step-content { flex: 1; overflow: hidden; display: grid; grid-template-columns: 1fr 1fr; min-height: 0 }
+.mod-col { padding: 20px 24px; overflow-y: auto }
+.mod-col.right { background: var(--surface); border-left: 1px solid var(--border) }
+.mod-h { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 12px }
+.mod-empty { padding: 40px 24px; text-align: center; color: var(--t3); font-size: 12px; grid-column: 1 / -1; display: flex; align-items: center; justify-content: center }
+
+/* Result badges */
+.result-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px }
+.result-badge.correct { background: var(--green-soft); color: var(--green) }
+.result-badge.partial { background: var(--amber-soft); color: var(--amber) }
+.result-badge.wrong { background: var(--red-soft); color: var(--red) }
+.result-badge.empty { background: var(--surface2); color: var(--t3) }
+
+/* Chat in modal */
+.chat-row { margin-bottom: 12px }
+.chat-row .who { font-size: 10px; color: var(--t3); margin-bottom: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .3px }
+.chat-bubble { padding: 9px 13px; border-radius: 10px; font-size: 12.5px; line-height: 1.55 }
+.chat-row.stu .chat-bubble { background: var(--t1); color: var(--surface); display: inline-block; max-width: 90% }
+.chat-row.ai .chat-bubble { background: var(--bg); border: 1px solid var(--border); color: var(--t2) }
+
+/* Class comparison */
+.class-compare { display: flex; flex-direction: column; gap: 10px }
+.cc-row { display: flex; align-items: center; gap: 8px }
+.cc-label { font-size: 10px; color: var(--t3); width: 56px; flex-shrink: 0 }
+.cc-bar-wrap { flex: 1; position: relative; height: 20px; display: flex; align-items: center }
+.cc-bar-bg { position: absolute; width: 100%; height: 6px; background: var(--surface2); border-radius: 3px }
+.cc-bar-class { position: absolute; height: 6px; border-radius: 3px; background: var(--border-strong); opacity: .5 }
+.cc-bar-student { position: absolute; height: 6px; border-radius: 3px }
+.cc-marker { position: absolute; width: 2px; height: 14px; border-radius: 1px; background: var(--t3); top: 3px }
+.cc-val { font-size: 10px; font-weight: 600; color: var(--t1); width: 40px; text-align: right; flex-shrink: 0 }
+.cc-legend { display: flex; gap: 12px; margin-top: 4px }
+.cc-legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--t3) }
+.cc-legend-item .d { width: 8px; height: 4px; border-radius: 2px }
+
+/* ═══ STEP DETAIL MODAL ═══ */
+.overlay2 { position: fixed; inset: 0; background: rgba(28,28,26,.5); display: flex; align-items: center; justify-content: center; padding: 32px; z-index: 90; backdrop-filter: blur(2px) }
+.modal2 { background: var(--bg); border-radius: 14px; width: 100%; max-width: 720px; max-height: 80vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px -10px rgba(28,28,26,.3) }
+.m2-hd { display: flex; align-items: center; gap: 10px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface) }
+.m2-hd .sc-sn { width: 24px; height: 24px; font-size: 11px }
+.m2-title { font-size: 14px; font-weight: 700; flex: 1 }
+.m2-desc { font-size: 11px; color: var(--t2) }
+.m2-cls { cursor: pointer; padding: 6px 12px; font-size: 12px; color: var(--t2); border-radius: 6px }
+.m2-cls:hover { background: var(--surface2); color: var(--t1) }
+.m2-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px }
+.m2-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px }
+.m2-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; text-align: center }
+.m2-stat-n { font-size: 18px; font-weight: 700; color: var(--t1); line-height: 1 }
+.m2-stat-lb { font-size: 8px; color: var(--t3); text-transform: uppercase; letter-spacing: .3px; margin-top: 3px }
+.m2-section { margin-bottom: 2px }
+.m2-section-h { font-size: 9px; font-weight: 700; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px }
+.m2-students { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px }
+.m2-students .sdot { min-width: 44px }

@@ -13,10 +13,14 @@ import { DiscussInsightTab } from './DiscussInsightTab'
 import { StudentModal } from './StudentModal'
 import { SummaryTab } from './summary/SummaryTab'
 import { ClassroomStatusTab } from './ClassroomStatusTab'
-import { useSearchParams } from 'react-router-dom'
+import { SubTaskRow } from './SubTaskRow'
+import { ProgressBar } from './ProgressBar'
+import { useDrawerState } from './useDrawerState'
 
 const ObserveDrawer = lazy(() => import('./observe/ObserveDrawer'))
 const SummaryOverlay = lazy(() => import('./summary/SummaryOverlay'))
+const DiscussInsightDrawer = lazy(() => import('./DiscussInsightDrawer'))
+const ClassroomStatusDrawer = lazy(() => import('./ClassroomStatusDrawer'))
 
 type RightTab = 'discuss' | 'analysis' | 'status'
 
@@ -34,38 +38,12 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
   const [expandedStep, setExpandedStep] = useState<number | null>(null)
   const [rightTab, setRightTab] = useState<RightTab>('discuss')
 
-  // URL-driven observe drawer
-  const [searchParams, setSearchParams] = useSearchParams()
-  const VALID_OBSERVE_TYPES = useMemo(() => new Set(['mc', 'evidence', 'map', 'discuss', 'matrix']), [])
-  const observeParams = useMemo(() => {
-    const type = searchParams.get('observe')
-    const step = searchParams.get('step')
-    return type && step && VALID_OBSERVE_TYPES.has(type) ? { type, step: +step } : null
-  }, [searchParams, VALID_OBSERVE_TYPES])
-
-  const summaryOpen = searchParams.get('summary') === 'open'
-  const openSummary = useCallback(() => {
-    setSearchParams(prev => { prev.set('summary', 'open'); return prev })
-  }, [setSearchParams])
-  const closeSummary = useCallback(() => {
-    setSearchParams(prev => { prev.delete('summary'); return prev })
-  }, [setSearchParams])
-
-  const openObserve = useCallback((type: string, step: number) => {
-    setSearchParams(prev => {
-      prev.set('observe', type)
-      prev.set('step', String(step))
-      return prev
-    })
-  }, [setSearchParams])
-
-  const closeObserve = useCallback(() => {
-    setSearchParams(prev => {
-      prev.delete('observe')
-      prev.delete('step')
-      return prev
-    })
-  }, [setSearchParams])
+  const {
+    observeParams, summaryOpen, openSummary, closeSummary,
+    discussDrawerOpen, openDiscussDrawer, closeDiscussDrawer,
+    statusDrawerOpen, openStatusDrawer, closeStatusDrawer,
+    openObserve, closeObserve,
+  } = useDrawerState()
 
   // Self-fetch classroom state via polling when not provided as prop
   const { state: streamState, snapshots } = useTeacherPolling(sessionCode || '')
@@ -173,7 +151,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
       }
     }
     window.addEventListener('message', onMessage)
-    try { window.parent?.postMessage({ type: 'ready', role: 'teacher' }, '*') } catch { /* noop */ }
+    try { window.parent?.postMessage({ type: 'ready', role: 'teacher' }, window.location.origin) } catch { /* noop */ }
     return () => window.removeEventListener('message', onMessage)
   }, [])
 
@@ -433,6 +411,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                 stepNames={stepNames}
                 questions={questions}
                 onStudentClick={setModalStudent}
+                onExpandDrawer={openDiscussDrawer}
               />
             )}
 
@@ -458,6 +437,7 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
                 stepNames={stepNames}
                 taskSteps={taskSteps}
                 onStudentClick={setModalStudent}
+                onExpandDrawer={openStatusDrawer}
               />
             )}
           </div>
@@ -494,6 +474,31 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
         </Suspense>
       )}
 
+      {/* ═══ DISCUSS INSIGHT DRAWER ═══ */}
+      {discussDrawerOpen && state && (
+        <Suspense fallback={null}>
+          <DiscussInsightDrawer
+            open={discussDrawerOpen}
+            onClose={closeDiscussDrawer}
+            state={state}
+            stepNames={stepNames}
+            onStudentClick={setModalStudent}
+          />
+        </Suspense>
+      )}
+
+      {/* ═══ CLASSROOM STATUS DRAWER ═══ */}
+      {statusDrawerOpen && state && (
+        <Suspense fallback={null}>
+          <ClassroomStatusDrawer
+            open={statusDrawerOpen}
+            onClose={closeStatusDrawer}
+            state={state}
+            onStudentClick={setModalStudent}
+          />
+        </Suspense>
+      )}
+
       {/* ═══ STUDENT MODAL ═══ */}
       {modalStudent && modalStudentData && (
         <StudentModal
@@ -504,78 +509,6 @@ export default function TeacherShell({ manifest, embed, classroomState, sessionC
           onClose={() => setModalStudent(null)}
         />
       )}
-    </div>
-  )
-}
-
-// ── SubTask Row ──
-function SubTaskRow({ label, icon, count, students, onStudentClick, questions, onClick, clickable, avgScore }: {
-  label: string
-  icon: string
-  count: number
-  students: ClassroomState['students']
-  onStudentClick: (name: string) => void
-  questions: ClassroomState['questions']
-  onClick?: () => void
-  clickable?: boolean
-  avgScore?: number
-}) {
-  return (
-    <div
-      className={`subtask-row${clickable ? ' clickable' : ''}`}
-      onClick={clickable ? (e) => { e.stopPropagation(); onClick?.() } : undefined}
-    >
-      <span className="str-icon">{icon}</span>
-      <span className="str-label">{label}</span>
-      <span className="str-count">{count}</span>
-      {avgScore != null && avgScore > 0 && (
-        <span className="str-score" style={{ color: avgScore >= 80 ? 'var(--green)' : avgScore >= 50 ? 'var(--amber)' : 'var(--red)' }}>
-          {Math.round(avgScore)}%
-        </span>
-      )}
-      {clickable && <span className="str-arrow">→</span>}
-      {students.length > 0 && (
-        <div className="str-dots">
-          {students.slice(0, 8).map(s => {
-            const status = getStudentGlobalStatus(s)
-            const ai = hasAI(s, questions)
-            return (
-              <div
-                key={s.id}
-                className={`sdot sm ${status}`}
-                title={s.name}
-                onClick={(e) => { e.stopPropagation(); onStudentClick(s.name) }}
-              >
-                {s.name.substring(0, 2)}
-                {ai && <span className="ai-pip" />}
-                {s.bonusStatus && s.bonusStatus !== 'none' && <span className="bonus-pip" />}
-              </div>
-            )
-          })}
-          {students.length > 8 && <span className="sdot-more">+{students.length - 8}</span>}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Progress Distribution Bar ──
-function ProgressBar({ dist, total }: {
-  dist: { listen: number; practice: number; discuss: number; takeaway: number; completed: number }
-  total: number
-}) {
-  if (total === 0) return null
-  const all = dist.listen + dist.practice + dist.discuss + dist.takeaway + dist.completed
-  if (all === 0) return null
-  const base = Math.max(all, total)
-  const pct = (n: number) => `${(n / base) * 100}%`
-  return (
-    <div className="phase-bar" title={`Listen:${dist.listen} Practice:${dist.practice} Discuss:${dist.discuss} Takeaway:${dist.takeaway} Done:${dist.completed}`}>
-      {dist.listen > 0 && <div className="pb-seg listen" style={{ width: pct(dist.listen) }} />}
-      {dist.practice > 0 && <div className="pb-seg practice" style={{ width: pct(dist.practice) }} />}
-      {dist.discuss > 0 && <div className="pb-seg discuss" style={{ width: pct(dist.discuss) }} />}
-      {dist.takeaway > 0 && <div className="pb-seg takeaway" style={{ width: pct(dist.takeaway) }} />}
-      {dist.completed > 0 && <div className="pb-seg completed" style={{ width: pct(dist.completed) }} />}
     </div>
   )
 }

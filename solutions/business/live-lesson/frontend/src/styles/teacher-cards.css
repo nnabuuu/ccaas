@@ -1,0 +1,96 @@
+/* ═══ STEP CARDS ═══ */
+.step-cards { display: flex; flex-direction: column; gap: 6px }
+.step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: all .15s }
+.step-card:hover { border-color: var(--border-strong); box-shadow: 0 2px 8px rgba(28,28,26,.06) }
+.step-card.expanded { border-color: rgba(26,95,160,.3); box-shadow: 0 2px 8px rgba(28,28,26,.06) }
+.step-card.has-alert { border-color: rgba(122,77,14,.25) }
+
+.sc-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px 0 }
+.sc-chevron { font-size: 9px; color: var(--t3); transition: transform .2s; flex-shrink: 0 }
+.sc-chevron.open { transform: rotate(90deg) }
+.sc-sn { width: 22px; height: 22px; border-radius: 50%; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.sc-sn.task { background: var(--t1); color: var(--surface) }
+.sc-name { font-size: 13px; font-weight: 700; color: var(--t1) }
+.sc-type { font-size: 9px; color: var(--t2); font-weight: 500 }
+.sc-badges { display: flex; gap: 5px; margin-left: auto; flex-shrink: 0; align-items: center }
+.sc-badge { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 3px; white-space: nowrap; display: flex; align-items: center; gap: 3px }
+.sc-badge.student-count { background: var(--surface2); color: var(--t2) }
+.sc-badge.student-count.major { background: var(--blue-soft); color: var(--blue) }
+.sc-badge.ai-rounds { background: var(--ai-soft); color: var(--ai) }
+.sc-badge.ai-rounds.hot { background: rgba(148,41,41,.1); color: var(--red) }
+.sc-badge.alert-tag { background: var(--amber-soft); color: var(--amber) }
+.sc-badge .pip { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0 }
+
+.sc-metrics { display: flex; align-items: center; gap: 14px; padding: 6px 14px; font-size: 10px; color: var(--t3) }
+.sc-metric { display: flex; align-items: center; gap: 3px }
+.sc-metric strong { color: var(--t2); font-weight: 600 }
+
+.sc-dots { padding: 4px 14px 10px; display: flex; flex-wrap: wrap; gap: 3px; align-items: flex-start; align-content: flex-start; min-height: 0 }
+.sc-dots:empty { display: none }
+
+/* Student dots */
+.sdot { min-width: 42px; height: 24px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; cursor: pointer; position: relative; transition: transform .1s; padding: 0 4px; letter-spacing: -.1px }
+.sdot:hover { transform: scale(1.06); z-index: 1 }
+.sdot.done { background: var(--green-dot); color: #fff }
+.sdot.prog { background: var(--blue); color: #fff }
+.sdot.stuck { background: var(--amber-dot); color: #fff }
+.sdot.reading { background: var(--lecture); color: #fff }
+.sdot .ai-pip { position: absolute; top: -2px; right: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--ai-dot); border: 1.5px solid var(--surface) }
+.sdot .bonus-pip { position: absolute; bottom: -2px; left: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--amber-dot); border: 1.5px solid var(--surface) }
+
+/* Swim legend */
+.swim-legend { display: flex; gap: 12px; flex-wrap: wrap; padding: 0 2px }
+.swim-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--t2) }
+.swim-legend-item .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0 }
+
+/* ═══ PATTERNS ═══ */
+.patterns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.pat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px }
+.pat.alert { border-color: rgba(122,77,14,.2) }
+.pat-h { font-size: 9px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; display: flex; align-items: center; gap: 5px }
+.pat-h .dot { width: 5px; height: 5px; border-radius: 50% }
+.pat-h.warn { color: var(--amber) }
+.pat-h.warn .dot { background: var(--amber-dot) }
+.pat-h.info { color: var(--blue) }
+.pat-h.info .dot { background: var(--blue) }
+.pat-body { font-size: 11px; line-height: 1.5; color: var(--t2) }
+.pat-body strong { color: var(--t1); font-weight: 600 }
+.pat-metric { display: flex; align-items: baseline; gap: 5px; margin-top: 5px; padding-top: 5px; border-top: 1px solid var(--border) }
+.pat-metric .n { font-size: 15px; font-weight: 700; color: var(--t1) }
+.pat-metric .unit { font-size: 10px; color: var(--t3) }
+
+/* ═══ COACHING ═══ */
+.coaching { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden }
+.coaching-toggle { display: flex; align-items: center; gap: 10px; padding: 9px 14px; cursor: pointer; font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .5px; user-select: none }
+.coaching-toggle:hover { background: var(--surface2) }
+.coaching-toggle .arrow { transition: transform .2s; font-size: 9px }
+.coaching-toggle.open .arrow { transform: rotate(90deg) }
+.coaching-body { display: none; padding: 0 14px 14px; flex-direction: column; gap: 8px }
+.coaching-body.open { display: flex }
+.coach-line { background: var(--t1); color: #f0efe8; border-radius: 8px; padding: 10px 12px }
+.coach-line-lb { font-size: 8px; font-weight: 600; color: rgba(240,239,232,.4); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px }
+.coach-line-text { font-size: 12px; line-height: 1.5; color: rgba(240,239,232,.88) }
+
+/* ═══ STEP EXPAND & SUBTASK ROWS ═══ */
+.step-expanded { padding: 4px 14px 10px; display: flex; flex-direction: column; gap: 2px }
+.subtask-row { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 11px; color: var(--t2); transition: background .12s }
+.subtask-row.clickable { cursor: pointer }
+.subtask-row.clickable:hover { background: var(--surface2) }
+.subtask-row.completed { color: var(--t3) }
+.str-icon { font-size: 12px; flex-shrink: 0; width: 18px; text-align: center }
+.str-label { font-weight: 600; min-width: 60px; color: var(--t1) }
+.str-count { font-size: 10px; font-weight: 700; color: var(--t1); min-width: 20px }
+.str-score { font-size: 10px; font-weight: 600 }
+.str-arrow { font-size: 10px; color: var(--t3); margin-left: auto }
+.str-dots { display: flex; gap: 2px; flex-wrap: wrap; margin-left: auto; max-width: 260px }
+.sdot.sm { min-width: 32px; height: 20px; font-size: 9px; border-radius: 4px }
+.sdot-more { font-size: 9px; color: var(--t3); display: flex; align-items: center; padding: 0 4px }
+
+/* Phase progress bar (stacked) */
+.phase-bar { display: flex; height: 4px; border-radius: 2px; overflow: hidden; margin: 2px 14px 4px }
+.pb-seg { height: 100%; min-width: 2px; transition: width .3s }
+.pb-seg.listen { background: var(--lecture) }
+.pb-seg.practice { background: var(--blue) }
+.pb-seg.discuss { background: var(--ai-dot) }
+.pb-seg.takeaway { background: var(--teal) }
+.pb-seg.completed { background: var(--green-dot) }
