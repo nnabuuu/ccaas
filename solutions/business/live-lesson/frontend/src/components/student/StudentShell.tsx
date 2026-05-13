@@ -253,7 +253,6 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
             enableMath={manifest.enableMath}
           />
           <div className="stu-toolbar-h">
-            <button className="stu-help-fab" onClick={() => setHelpOpen(true)} title="帮助">?</button>
             <TranslateButton taskId={taskId || 1} phase={currentPhase} />
             <AiPanel
               taskId={taskId || 1}

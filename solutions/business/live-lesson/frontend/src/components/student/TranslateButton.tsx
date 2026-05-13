@@ -1,10 +1,37 @@
 import { useState, useEffect, useCallback, useRef, useContext } from 'react'
+import { createPortal } from 'react-dom'
 import { translateText, translateChat, type TranslateResponse } from '../../hooks/useClassroom'
 import { SessionCtx } from './TaskPanel'
 
-type Mode = 'idle' | 'selecting' | 'loading' | 'showing'
+type Mode = 'idle' | 'selecting' | 'showing'
 
 const MAX_CHARS = 500
+
+/** Popover height budget (max-height 420 + gap) */
+const POP_H = 430
+/** Popover width budget (width 340 + margin) */
+const POP_W = 356
+/** Minimum edge padding */
+const EDGE_PAD = 8
+
+export interface Viewport { innerWidth: number; innerHeight: number }
+
+/**
+ * Calculate popover position so it stays within the viewport.
+ * - Prefers below the selection; flips above if it won't fit.
+ * - Clamps horizontally to keep the popover on-screen.
+ */
+export function calcPopoverPos(
+  rect: { top: number; bottom: number; left: number },
+  vp: Viewport,
+): { top: number; left: number } {
+  const below = rect.bottom + EDGE_PAD
+  const top = below + POP_H > vp.innerHeight
+    ? Math.max(EDGE_PAD, rect.top - POP_H)
+    : below
+  const left = Math.max(EDGE_PAD, Math.min(rect.left, vp.innerWidth - POP_W))
+  return { top, left }
+}
 
 interface ChatMsg { t: 'q' | 'a'; x: string }
 
@@ -29,8 +56,12 @@ export default function TranslateButton({ taskId, phase }: Props) {
   const chatEndRef = useRef<HTMLDivElement>(null)
   const cooldownTimer = useRef<ReturnType<typeof setTimeout>>(null)
   const chatLoadingRef = useRef(false)
+  const cancelledRef = useRef(false)
+  const fabRef = useRef<HTMLButtonElement>(null)
 
   const reset = useCallback(() => {
+    cancelledRef.current = true
+    chatLoadingRef.current = false
     setMode('idle')
     setResult(null)
     setWarning('')
@@ -83,6 +114,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
     setChatLoading(true)
     setChatInput('')
     const reply = await translateChat(sessionCode, studentId, taskId, selectedText, question, sourceCtx)
+    if (cancelledRef.current) { chatLoadingRef.current = false; return }
     if (reply) {
       setChatMsgs(prev => [...prev, { t: 'a', x: reply.reply }])
     } else {
@@ -116,33 +148,26 @@ export default function TranslateButton({ taskId, phase }: Props) {
       const range = sel?.getRangeAt(0)
       if (range) {
         const rect = range.getBoundingClientRect()
-        const top = rect.bottom + 8
-        setPopoverPos({
-          top: top + 430 > window.innerHeight ? rect.top - 430 : top,
-          left: Math.min(rect.left, window.innerWidth - 356),
-        })
+        setPopoverPos(calcPopoverPos(rect, window))
       }
 
       const ctx = detectContext(sel?.anchorNode ?? null)
       setSelectedText(text)
       setSourceCtx(ctx)
-      setMode('loading')
+      cancelledRef.current = false
+      setResult(null)
+      setMode('showing')
       document.body.style.cursor = ''
 
       if (sessionCode && studentId) {
         const res = await translateText(sessionCode, studentId, text, taskId, ctx, phase)
-        if (res) {
-          setResult(res)
-          setMode('showing')
-        } else {
-          setResult({ definition: '翻译失败，请重试', contextAnalysis: '', suggestedQuestions: [] })
-          setMode('showing')
-        }
+        if (cancelledRef.current) return
+        setResult(res ?? { definition: '翻译失败，请重试', contextAnalysis: '', suggestedQuestions: [] })
       } else {
         setResult({ definition: '未连接课堂', contextAnalysis: '', suggestedQuestions: [] })
-        setMode('showing')
       }
 
+      if (cancelledRef.current) return
       setCooldown(true)
       if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
       cooldownTimer.current = setTimeout(() => setCooldown(false), 2000)
@@ -180,24 +205,35 @@ export default function TranslateButton({ taskId, phase }: Props) {
     if (cooldownTimer.current) clearTimeout(cooldownTimer.current)
   }, [])
 
+  // Toggle .translate class on parent toolbar
+  useEffect(() => {
+    const toolbar = fabRef.current?.closest('.stu-toolbar-h')
+    if (!toolbar) return
+    if (mode !== 'idle') {
+      toolbar.classList.add('translate')
+    } else {
+      toolbar.classList.remove('translate')
+    }
+    return () => { toolbar.classList.remove('translate') }
+  }, [mode])
+
   const hasChatStarted = chatMsgs.length > 0
 
   return (
     <>
-      {/* Banner (selecting mode) */}
-      {mode === 'selecting' && (
-        <div className={`stu-tr-banner${warning ? ' warn' : ''}`}>
-          {warning || '请选择需要翻译的文字（最多500字）'}
-        </div>
+      {/* Overlay + Banner (selecting mode) — portaled to escape toolbar stacking context */}
+      {mode === 'selecting' && createPortal(
+        <>
+          <div className="stu-tr-overlay" />
+          <div className={`stu-tr-banner${warning ? ' warn' : ''}`}>
+            {warning || '👆 选择页面上的文字即可翻译'}
+          </div>
+        </>,
+        document.body,
       )}
 
-      {/* Loading banner */}
-      {mode === 'loading' && (
-        <div className="stu-tr-banner">翻译中...</div>
-      )}
-
-      {/* Popover */}
-      {mode === 'showing' && popoverPos && result && (
+      {/* Popover — portaled to escape toolbar stacking context */}
+      {mode === 'showing' && popoverPos && createPortal(
         <div
           ref={popoverRef}
           className="stu-tr-popover"
@@ -211,14 +247,23 @@ export default function TranslateButton({ taskId, phase }: Props) {
 
           {/* Definition + context analysis */}
           <div className="stu-tr-popover-body">
-            <div className="stu-tr-def">{result.definition}</div>
-            {result.contextAnalysis && (
-              <div className="stu-tr-ctx">{result.contextAnalysis}</div>
+            {result ? (
+              <>
+                <div className="stu-tr-def">{result.definition}</div>
+                {result.contextAnalysis && (
+                  <div className="stu-tr-ctx">{result.contextAnalysis}</div>
+                )}
+              </>
+            ) : (
+              <div className="stu-tr-loading">
+                <div className="stu-tr-skel" />
+                <div className="stu-tr-skel short" />
+              </div>
             )}
           </div>
 
           {/* Suggested question chips — hide after chat starts */}
-          {!hasChatStarted && result.suggestedQuestions.length > 0 && (
+          {result && !hasChatStarted && result.suggestedQuestions.length > 0 && (
             <div className="stu-tr-chips">
               {result.suggestedQuestions.map((q, i) => (
                 <button key={i} className="stu-tr-chip" onClick={() => sendChat(q)}>{q}</button>
@@ -227,7 +272,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
           )}
 
           {/* Chat messages */}
-          {hasChatStarted && (
+          {result && hasChatStarted && (
             <div className="stu-tr-chat">
               {chatMsgs.map((m, i) => (
                 <div key={i} className={`stu-tr-msg ${m.t === 'q' ? 'student' : ''}`}>
@@ -246,7 +291,7 @@ export default function TranslateButton({ taskId, phase }: Props) {
           )}
 
           {/* Chat input — show after first interaction */}
-          {hasChatStarted && (
+          {result && hasChatStarted && (
             <div className="stu-tr-input">
               <input
                 type="text"
@@ -270,11 +315,21 @@ export default function TranslateButton({ taskId, phase }: Props) {
               >→</button>
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* Inline status text — visible when translate is active */}
+      {mode !== 'idle' && (
+        <span className="stu-tr-inline">
+          <span className="stu-tr-inline-dot" />
+          {mode === 'selecting' ? '选词中…' : '查看释义'}
+        </span>
       )}
 
       {/* FAB */}
       <button
+        ref={fabRef}
         className={`stu-tr-fab${mode !== 'idle' ? ' active' : ''}`}
         onClick={toggleMode}
         disabled={cooldown}
