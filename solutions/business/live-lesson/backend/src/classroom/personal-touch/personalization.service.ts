@@ -55,21 +55,18 @@ export class PersonalizationService {
     return this.studentRepo.manager.getRepository(Lesson);
   }
 
-  async getPersonalTouch(session: ClassroomSession, studentId: string): Promise<PersonalTouchResponse> {
-    const student = await this.studentRepo.findOne({
-      where: { id: studentId, sessionId: session.id },
-    });
-    if (!student) throw new NotFoundException('Student not found in this session');
-
+  private async computeTierAndStrategies(
+    session: ClassroomSession,
+    studentId: string,
+  ): Promise<{
+    strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>;
+    tier: { label: string; labelEn: string; tone: string };
+  } | null> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
-    if (!manifest) throw new NotFoundException('Lesson not found');
+    if (!manifest) return null;
     const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
-
     const ptParsed = PersonalTouchSchema.safeParse(manifest.personalTouch);
-    if (!ptParsed.success) {
-      this.logger.warn(`personalTouch schema invalid: ${ptParsed.error.message}`);
-      return { strategies: [], tier: { label: '', labelEn: '', tone: 'neutral' }, aiComment: '', bonusUnlocked: false };
-    }
+    if (!ptParsed.success) return null;
     const personalTouch: PersonalTouch = ptParsed.data;
 
     const allSubs = await this.submissionRepo.find({
@@ -95,6 +92,22 @@ export class PersonalizationService {
     const sortedTiers = [...personalTouch.tiers].sort((a, b) => b.minScore - a.minScore);
     const tier = sortedTiers.find(t => avg >= t.minScore) || { label: '', labelEn: '', tone: 'neutral' as const };
 
+    return { strategies, tier: { label: tier.label, labelEn: tier.labelEn, tone: tier.tone } };
+  }
+
+  async getPersonalTouch(session: ClassroomSession, studentId: string): Promise<PersonalTouchResponse> {
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId, sessionId: session.id },
+    });
+    if (!student) throw new NotFoundException('Student not found in this session');
+
+    const computed = await this.computeTierAndStrategies(session, studentId);
+    if (!computed) {
+      this.logger.warn(`personalTouch schema invalid or lesson not found`);
+      return { strategies: [], tier: { label: '', labelEn: '', tone: 'neutral' }, aiComment: '', bonusUnlocked: false };
+    }
+    const { strategies, tier } = computed;
+
     let aiComment = '';
     try {
       const { system, user } = this.aiPromptBuilder.buildPersonalTouchPrompt(strategies);
@@ -105,6 +118,9 @@ export class PersonalizationService {
     }
 
     const BONUS_TIME_LIMIT_MIN = 15;
+    const allSubs = await this.submissionRepo.find({
+      where: { sessionId: session.id, studentId, phase: 'exercise' },
+    });
     const lastSub = allSubs.length > 0
       ? allSubs.reduce((latest, s) => s.submittedAt > latest.submittedAt ? s : latest)
       : null;
@@ -114,8 +130,7 @@ export class PersonalizationService {
       : Infinity;
     const bonusUnlocked = elapsedMin <= BONUS_TIME_LIMIT_MIN;
 
-    const { label, labelEn, tone } = tier;
-    return { strategies, tier: { label, labelEn, tone }, aiComment, bonusUnlocked };
+    return { strategies, tier, aiComment, bonusUnlocked };
   }
 
   async getBonusExercise(session: ClassroomSession, bonusStep: number) {
@@ -175,7 +190,6 @@ export class PersonalizationService {
 
     const gradeResult = await this.gradingService.grade(stepDef.answerKey, data);
 
-    const BONUS_STEP_OFFSET = 100;
     const virtualStep = BONUS_STEP_OFFSET + bonusStep;
     const existing = await this.submissionRepo.findOne({
       where: { sessionId: session.id, studentId, step: virtualStep, phase: 'exercise' },
@@ -204,99 +218,76 @@ export class PersonalizationService {
     return { type: stepDef.answerKey.type, allCorrect, items };
   }
 
-  async getStudentRecap(session: ClassroomSession, studentId: string) {
+  async getStudentRecap(session: ClassroomSession, studentId: string): Promise<RecapResponse> {
     const student = await this.studentRepo.findOne({
       where: { id: studentId, sessionId: session.id },
     });
     if (!student) throw new NotFoundException('Student not found in this session');
 
-    // ── Tier (reuse personal-touch scoring logic) ──
-    let tier: { label: string; labelEn: string; tone: string } | null = null;
+    // ── Tier (shared logic with getPersonalTouch) ──
+    let tier: RecapResponse['tier'] = null;
     try {
-      const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
-      if (manifest) {
-        const taskMap = await getCachedTaskMap(session.lessonId, this.lessonRepo);
-        const ptParsed = PersonalTouchSchema.safeParse(manifest.personalTouch);
-        if (ptParsed.success) {
-          const personalTouch: PersonalTouch = ptParsed.data;
-          const allSubs = await this.submissionRepo.find({
-            where: { sessionId: session.id, studentId, phase: 'exercise' },
-          });
-          const subsByStep = new Map(allSubs.map(s => [s.step, s]));
-          const scores: number[] = [];
-          for (const sl of personalTouch.strategyLabels) {
-            const stepNum = taskMap.taskToStep[sl.taskIdx];
-            if (stepNum === undefined) continue;
-            const sub = subsByStep.get(stepNum);
-            scores.push(sub?.scoreJson?.total ?? 0);
-          }
-          const avg = scores.length > 0
-            ? scores.reduce((sum, s) => sum + s, 0) / scores.length
-            : 0;
-          const sortedTiers = [...personalTouch.tiers].sort((a, b) => b.minScore - a.minScore);
-          const matched = sortedTiers.find(t => avg >= t.minScore);
-          if (matched && matched.label) {
-            tier = { label: matched.label, labelEn: matched.labelEn, tone: matched.tone };
-          }
-        }
+      const computed = await this.computeTierAndStrategies(session, studentId);
+      if (computed?.tier.label) {
+        tier = computed.tier;
       }
     } catch (e) {
       this.logger.warn(`Recap tier computation failed: ${e}`);
     }
 
-    // ── Highlights ──
+    // ── Highlights (in-memory, sync) ──
     const allHighlights = this.coachingService.getHighlights(session.id);
     const highlights = allHighlights
       .filter(h => h.studentId === studentId)
       .map(h => ({ taskNum: h.taskNum, gist: h.gist, evidenceSpan: h.evidenceSpan }));
 
-    // ── AI Stats ──
-    const askCount = await this.aiQuestionRepo.count({
-      where: { sessionId: session.id, studentId, category: Not('discuss') },
-    });
+    // ── Parallelized DB queries ──
+    const [askCount, translateRow, discussRounds, lastSubArr, bonusCount] = await Promise.all([
+      // AI Ask count — include NULL category rows (Or handles SQL NULL correctly)
+      this.aiQuestionRepo.count({
+        where: { sessionId: session.id, studentId, category: Or(Not('discuss'), IsNull()) },
+      }),
+      // Translate thread count
+      this.chatMessageRepo
+        .createQueryBuilder('m')
+        .select('COUNT(DISTINCT m.threadId)', 'cnt')
+        .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId LIKE :prefix', {
+          sid: session.id, stid: studentId, prefix: 'translate:%',
+        })
+        .getRawOne() as Promise<{ cnt: string } | undefined>,
+      // Discuss rounds
+      this.submissionRepo.count({
+        where: { sessionId: session.id, studentId, phase: 'discuss' },
+      }),
+      // Last submission (for total time)
+      this.submissionRepo.find({
+        where: { sessionId: session.id, studentId },
+        order: { submittedAt: 'DESC' },
+        take: 1,
+      }),
+      // Bonus completed
+      this.submissionRepo.count({
+        where: { sessionId: session.id, studentId, step: MoreThanOrEqual(BONUS_STEP_OFFSET + 1) },
+      }),
+    ]);
 
-    const translateThreads: { cnt: string }[] = await this.chatMessageRepo
-      .createQueryBuilder('m')
-      .select('COUNT(DISTINCT m.threadId)', 'cnt')
-      .where('m.sessionId = :sid AND m.studentId = :stid AND m.threadId LIKE :prefix', {
-        sid: session.id, stid: studentId, prefix: 'translate:%',
-      })
-      .getRawMany();
-    const translateCount = parseInt(translateThreads[0]?.cnt ?? '0', 10);
-
-    const discussRounds = await this.submissionRepo.count({
-      where: { sessionId: session.id, studentId, phase: 'discuss' },
-    });
+    const translateCount = parseInt(translateRow?.cnt ?? '0', 10);
 
     // ── Total time ──
     let totalTime: number | null = null;
-    const allSubs = await this.submissionRepo.find({
-      where: { sessionId: session.id, studentId },
-      order: { submittedAt: 'DESC' },
-      take: 1,
-    });
-    if (allSubs.length > 0 && student.joinedAt) {
-      const lastSub = allSubs[0];
-      totalTime = Math.round(
-        (new Date(lastSub.submittedAt).getTime() - new Date(student.joinedAt).getTime()) / 1000,
+    if (lastSubArr.length > 0 && student.joinedAt) {
+      const elapsed = Math.round(
+        (new Date(lastSubArr[0].submittedAt).getTime() - new Date(student.joinedAt).getTime()) / 1000,
       );
-      if (totalTime < 0) totalTime = null;
+      if (elapsed > 0) totalTime = elapsed;
     }
-
-    // ── Bonus completed ──
-    const BONUS_STEP_OFFSET = 100;
-    const bonusSub = await this.submissionRepo.findOne({
-      where: { sessionId: session.id, studentId },
-      order: { step: 'DESC' },
-    });
-    const bonusCompleted = bonusSub ? bonusSub.step >= BONUS_STEP_OFFSET + 1 : false;
 
     return {
       tier,
       highlights,
       aiStats: { translateCount, askCount, discussRounds },
       totalTime,
-      bonusCompleted,
+      bonusCompleted: bonusCount > 0,
     };
   }
 }
