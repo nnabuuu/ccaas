@@ -9,8 +9,7 @@ import type { TextOverlay } from './TextPanel'
 import AiPanel from './ai-ask/AiPanel'
 import TranslateButton from './TranslateButton'
 import HelpGuide from './HelpGuide'
-import SpotlightTour from './SpotlightTour'
-import type { TourStep } from './SpotlightTour'
+import StudentGuide from './StudentGuide'
 
 interface Props {
   manifest: ReadingManifest
@@ -174,19 +173,17 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
   const baseFocusIds = currentFocus.map(n => `p${n}`)
   const focusIds = paraRefIds.length > 0 ? paraRefIds : baseFocusIds
 
-  // Spotlight Tour steps
-  const tourSteps = useMemo<TourStep[]>(() => [
-    { selector: '.stu-left-col', title: '这是你的任务区', body: '课程内容、练习、讨论都在左侧完成', arrow: 'right' },
-    { selector: '.stu-text-rail', title: '点这里查看课文', body: '点击「T」展开课文原文，做题时自动高亮相关段落', arrow: 'left', onEnter: () => setTextbookOpen(false) },
-    { selector: '.stu-toolbar-h', title: '遇到不懂的词？', body: '选中课文词句后点「译」翻译，点 ✦ 向 AI 提问', arrow: 'top' },
-  ], [setTextbookOpen])
-  const handleTourComplete = useCallback(() => setTextbookOpen(true), [])
-  const tourStorageKey = studentName ? `spotlight-tour-seen-${studentName}` : 'spotlight-tour-seen'
-  const [tourKey, setTourKey] = useState(0)
-  const replayTour = useCallback(() => {
-    try { localStorage.removeItem(tourStorageKey) } catch { /* noop */ }
-    setTourKey(k => k + 1)
-  }, [tourStorageKey])
+  // Student Guide (replaces SpotlightTour)
+  const guideKey = studentName ? `student-guide-seen-${studentName}` : 'student-guide-seen'
+  const [guideOpen, setGuideOpen] = useState(() => {
+    try { return localStorage.getItem(guideKey) !== '1' } catch { return true }
+  })
+  const handleGuideClose = useCallback(() => {
+    try { localStorage.setItem(guideKey, '1') } catch { /* noop */ }
+    setGuideOpen(false)
+    setTextbookOpen(true)
+  }, [guideKey])
+  const replayGuide = useCallback(() => setGuideOpen(true), [])
 
   return (
     <div className="stu-root">
@@ -201,7 +198,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
               <span style={{ color: 'var(--t3)', fontWeight: 400, marginLeft: 6 }}>{task.time}</span>
             </div>
           )}
-          <HelpGuide onReplayTour={replayTour} open={helpOpen} onOpenChange={setHelpOpen} />
+          <HelpGuide onReplayGuide={replayGuide} open={helpOpen} onOpenChange={setHelpOpen} />
         </div>
       )}
 
@@ -267,7 +264,7 @@ export default function StudentShell({ manifest, embed, sessionCode, studentId, 
           </div>
         </div>
       </SessionCtx.Provider>
-      <SpotlightTour key={tourKey} steps={tourSteps} storageKey={tourStorageKey} onComplete={handleTourComplete} />
+      <StudentGuide open={guideOpen} onClose={handleGuideClose} manifest={manifest} />
     </div>
   )
 }

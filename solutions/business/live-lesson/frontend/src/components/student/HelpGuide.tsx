@@ -369,8 +369,8 @@ const features: Feature[] = [
 
 /* ── Component ── */
 
-export default function HelpGuide({ onReplayTour, open: controlledOpen, onOpenChange }: {
-  onReplayTour?: () => void
+export default function HelpGuide({ onReplayGuide, open: controlledOpen, onOpenChange }: {
+  onReplayGuide?: () => void
   open?: boolean
   onOpenChange?: (v: boolean) => void
 }) {
@@ -427,8 +427,8 @@ export default function HelpGuide({ onReplayTour, open: controlledOpen, onOpenCh
             </div>
 
             <div className="stu-help-guide-footer">
-              {onReplayTour && (
-                <button className="stu-btn sec stu-help-guide-replay" onClick={() => { setIsOpen(false); onReplayTour() }}>重看引导</button>
+              {onReplayGuide && (
+                <button className="stu-btn sec stu-help-guide-replay" onClick={() => { setIsOpen(false); onReplayGuide() }}>重看引导</button>
               )}
               <button className="stu-btn pri stu-help-guide-dismiss" onClick={() => setIsOpen(false)}>我知道了</button>
             </div>
