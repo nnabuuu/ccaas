@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Summary Overlay — 学生自学总览 Design Spec</title>
+<style>
+/* ── Project CSS Variables (from teacher-base.css) ── */
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.08);
+  --border-strong: rgba(28, 28, 26, 0.14);
+
+  --amber:     #7a4d0e;
+  --amber-soft: #f6edda;
+  --amber-dot: #c48a1e;
+  --green:     #2d6612;
+  --green-soft: #e6f2dc;
+  --green-dot: #5a9a3a;
+  --red:       #942929;
+  --red-soft:  #f8e6e6;
+  --blue:      #1a5fa0;
+  --blue-soft: #e4eff8;
+  --ai:        #4a4387;
+  --ai-soft:   #ecebf5;
+  --ai-dot:    #7a72b5;
+  --teal:      #0d5245;
+  --teal-soft: #ddf1eb;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  line-height: 1.5;
+  padding: 24px;
+}
+
+/* ── Design spec header ── */
+.spec-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.spec-header h1 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.spec-header p { font-size: 12px; color: var(--t3); }
+
+/* ═══ SUMMARY OVERLAY STYLES ═══ */
+
+.so-root { display: flex; flex-direction: column; padding: 20px 28px; gap: 18px; background: var(--bg); border-radius: 16px; border: 1px solid var(--border-strong); }
+
+.so-header { display: flex; align-items: center; gap: 12px; }
+.so-header-left { display: flex; align-items: center; gap: 12px; }
+.so-title { font-size: 16px; font-weight: 700; color: var(--t1); }
+.so-progress { font-size: 11px; color: var(--t3); font-weight: 500; margin-left: auto; }
+.so-close { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; color: var(--t2); }
+.so-close:hover { background: var(--surface2); color: var(--t1); }
+
+.so-metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+.sm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.sm-label { font-size: 9px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; }
+.sm-value { font-size: 20px; font-weight: 700; line-height: 1.2; letter-spacing: -.3px; }
+.sm-sub { font-size: 9px; color: var(--t3); }
+
+.so-matrix-row { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; min-height: 320px; }
+
+.so-matrix-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; padding: 12px; }
+.so-matrix-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.so-matrix-label { font-size: 12px; font-weight: 600; color: var(--t2); }
+.so-zoom-controls { display: flex; align-items: center; gap: 4px; }
+.so-zoom-controls button { height: 22px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 11px; color: var(--t2); font-family: inherit; }
+.so-zoom-controls button:hover { background: var(--surface2); color: var(--t1); }
+.so-zoom-level { font-size: 10px; color: var(--t3); min-width: 32px; text-align: center; font-variant-numeric: tabular-nums; }
+.so-matrix-chart { position: relative; flex: 1; min-height: 260px; }
+.so-matrix-svg { width: 100%; height: 100%; user-select: none; cursor: default; }
+.so-matrix-hints { display: flex; justify-content: space-between; padding: 6px 2px 0; font-size: 10px; color: var(--t3); }
+
+.so-detail { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; }
+.so-detail-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+.so-detail-content { display: flex; flex-direction: column; gap: 14px; }
+.so-detail-head { display: flex; align-items: center; gap: 8px; }
+.so-detail-name { font-size: 15px; font-weight: 700; color: var(--t1); cursor: pointer; }
+.so-detail-name:hover { text-decoration: underline; }
+.so-detail-tag { font-size: 9px; font-weight: 600; padding: 2px 7px; border-radius: 4px; }
+.so-detail-section { display: flex; flex-direction: column; gap: 6px; }
+.so-detail-section-h { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: .3px; }
+.so-weak-list { display: flex; flex-direction: column; gap: 6px; }
+.so-weak-item { padding-left: 2px; }
+.so-weak-name { font-size: 11px; font-weight: 600; color: var(--t1); }
+.so-weak-name::before { content: '• '; color: var(--red); }
+.so-weak-detail { font-size: 10px; color: var(--t3); padding-left: 10px; margin-top: 1px; }
+.so-detail-reason { font-size: 11px; color: var(--t2); line-height: 1.6; }
+.so-detail-open-btn { margin-top: auto; padding: 8px 12px; font-size: 11px; font-weight: 600; color: var(--t1); background: transparent; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; text-align: center; font-family: inherit; }
+.so-detail-open-btn:hover { background: var(--surface2); }
+
+/* Stats grid (reused from observe) */
+.obs-stats-grid { display: grid; gap: 8px; }
+.obs-stats-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.obs-stat-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; text-align: center; }
+.obs-stat-cell .obs-stat-v { font-size: 18px; font-weight: 700; color: var(--t1); line-height: 1; }
+.obs-stat-cell .obs-stat-l { font-size: 8px; color: var(--t3); text-transform: uppercase; letter-spacing: .3px; margin-top: 3px; }
+
+.so-action-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.so-action-col { display: flex; flex-direction: column; gap: 8px; }
+.so-section-h { font-size: 10px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+.so-empty-hint { font-size: 11px; color: var(--t3); }
+
+.qc-recommend-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; transition: border-color .15s; }
+.qc-recommend-card:hover { border-color: var(--border-strong); }
+.qcr-head { display: flex; align-items: center; gap: 8px; }
+.qcr-name { font-size: 12px; font-weight: 600; color: var(--t1); }
+.qcr-intent { font-size: 9px; font-weight: 600; padding: 1px 6px; border-radius: 3px; }
+.qcr-intent.showcase { background: var(--green-soft); color: var(--green); }
+.qcr-intent.verify { background: var(--blue-soft); color: var(--blue); }
+.qcr-intent.expose { background: var(--amber-soft); color: var(--amber); }
+
+.so-reteach-card { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); }
+.so-reteach-card.danger { background: var(--red-soft); border-color: rgba(148,41,41,.15); }
+.so-reteach-card.warn { background: var(--amber-soft); border-color: rgba(122,77,14,.15); }
+.so-reteach-dim { font-size: 11px; font-weight: 600; color: var(--t1); }
+.so-reteach-pct { font-size: 10px; font-weight: 600; }
+.so-reteach-card.danger .so-reteach-pct { color: var(--red); }
+.so-reteach-card.warn .so-reteach-pct { color: var(--amber); }
+
+.so-kp-section { display: flex; flex-direction: column; gap: 8px; }
+.so-kp-list { display: flex; flex-direction: column; gap: 5px; }
+.kp-bar-row { display: flex; align-items: center; gap: 8px; }
+.kp-label { font-size: 10px; color: var(--t2); width: 90px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kp-bar-track { flex: 1; height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.kp-bar-fill { height: 100%; border-radius: 3px; transition: width .3s; }
+.kp-pct { font-size: 10px; font-weight: 600; color: var(--t2); width: 32px; text-align: right; }
+
+.so-transition-section { display: flex; flex-direction: column; gap: 10px; }
+.so-transition-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.so-transition-label { font-size: 10px; font-weight: 600; color: var(--t3); letter-spacing: .3px; }
+.so-transition-main { font-size: 13px; font-weight: 600; color: var(--t1); }
+.so-transition-detail { font-size: 11px; color: var(--t2); }
+.so-transition-quote { display: flex; align-items: baseline; gap: 8px; font-size: 11px; color: var(--t2); line-height: 1.6; padding: 4px 0; }
+.so-transition-step { flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--t3); min-width: 46px; }
+.so-transition-q { font-style: italic; color: var(--t1); }
+
+.so-ai-heat-row { display: flex; align-items: center; gap: 8px; }
+.so-ai-heat-name { font-size: 10px; font-weight: 600; color: var(--t2); width: 50px; flex-shrink: 0; }
+.so-ai-heat-bar { height: 100%; border-radius: 3px; background: var(--ai); transition: width .3s; }
+.so-ai-heat-stat { font-size: 10px; color: var(--t3); white-space: nowrap; min-width: 70px; text-align: right; }
+
+.so-depth-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; }
+.so-depth-row:hover { background: var(--surface2); }
+.so-depth-rank { width: 18px; height: 18px; border-radius: 50%; background: var(--amber-soft); color: var(--amber); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.so-depth-name { font-size: 12px; font-weight: 600; color: var(--t1); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.so-depth-stats { display: flex; gap: 6px; flex-shrink: 0; }
+.so-depth-hl { font-size: 10px; color: var(--amber); font-weight: 600; }
+.so-depth-tp { font-size: 10px; color: var(--green); font-weight: 600; }
+
+/* ── Annotations ── */
+.annotation {
+  margin-top: 24px;
+  padding: 12px 16px;
+  background: var(--ai-soft);
+  border: 1px solid rgba(74,67,135,.15);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--ai);
+  line-height: 1.6;
+}
+.annotation h3 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+.annotation ul { padding-left: 16px; margin: 4px 0; }
+.annotation li { margin-bottom: 3px; }
+.annotation code { background: rgba(74,67,135,.1); padding: 1px 4px; border-radius: 3px; font-size: 10px; }
+
+.section-divider {
+  margin: 32px 0 16px;
+  padding: 8px 0;
+  border-top: 2px solid var(--border-strong);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t2);
+}
+</style>
+</head>
+<body>
+
+<div class="spec-header">
+  <h1>Summary Overlay — 学生自学总览</h1>
+  <p>SummaryOverlay.tsx · 教师端全屏总览面板 · 包含散点图 + 详情 + 推荐 + 知识点 + 课堂线索</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 1: Full Overlay Layout                 -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="so-root">
+
+  <!-- ── Header ── -->
+  <div class="so-header">
+    <div class="so-header-left">
+      <span class="so-title">学生自学总览</span>
+    </div>
+    <span class="so-progress">8 / 12 已提交</span>
+    <button class="so-close">✕</button>
+  </div>
+
+  <!-- ── Metrics Row (4 cards) ── -->
+  <div class="so-metrics-row">
+    <div class="sm-card">
+      <div class="sm-label">整体掌握度</div>
+      <div class="sm-value" style="color: var(--green)">72%</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">学优 / 学困</div>
+      <div class="sm-value" style="color: var(--t1)">3 / 2</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">异常学生</div>
+      <div class="sm-value" style="color: var(--blue)">1</div>
+      <div class="sm-sub">游刃有余</div>
+    </div>
+    <div class="sm-card">
+      <div class="sm-label">薄弱知识点</div>
+      <div class="sm-value" style="color: var(--red)">2</div>
+      <div class="sm-sub">错误率 >30%</div>
+    </div>
+  </div>
+
+  <!-- ── Matrix + Detail Panel ── -->
+  <div class="so-matrix-row">
+
+    <!-- SVG Scatter Plot -->
+    <div class="so-matrix-wrap">
+      <div class="so-matrix-bar">
+        <span class="so-matrix-label">学生分布 · 12 人</span>
+        <div class="so-zoom-controls">
+          <button>−</button>
+          <span class="so-zoom-level">100%</span>
+          <button>+</button>
+          <button>重置</button>
+        </div>
+      </div>
+
+      <div class="so-matrix-chart">
+        <svg class="so-matrix-svg" viewBox="-10 -10 120 120" preserveAspectRatio="xMidYMid meet">
+          <!-- Quadrant backgrounds -->
+          <rect x="50" y="0" width="50" height="50" fill="var(--green-soft)" opacity="0.5" style="cursor: zoom-in" />
+          <rect x="0" y="0" width="50" height="50" fill="var(--amber-soft)" opacity="0.5" style="cursor: zoom-in" />
+          <rect x="50" y="50" width="50" height="50" fill="var(--blue-soft)" opacity="0.5" style="cursor: zoom-in" />
+          <rect x="0" y="50" width="50" height="50" fill="var(--red-soft)" opacity="0.5" style="cursor: zoom-in" />
+
+          <!-- Axes -->
+          <line x1="0" y1="50" x2="100" y2="50" stroke="var(--border-strong)" stroke-width="0.3" />
+          <line x1="50" y1="0" x2="50" y2="100" stroke="var(--border-strong)" stroke-width="0.3" />
+
+          <!-- Axis labels -->
+          <text x="100" y="104" font-size="3.5" fill="var(--t3)" text-anchor="end">掌握度 →</text>
+          <text x="-2" y="2" font-size="3.5" fill="var(--t3)" text-anchor="start">↑ 参与度</text>
+
+          <!-- Quadrant labels -->
+          <text x="75" y="6" font-size="3" fill="var(--green)" text-anchor="middle" opacity="0.7" font-weight="500">学优 3</text>
+          <text x="25" y="6" font-size="3" fill="var(--amber)" text-anchor="middle" opacity="0.7" font-weight="500">努力但困惑 · 4</text>
+          <text x="75" y="97" font-size="3" fill="var(--blue)" text-anchor="middle" opacity="0.7" font-weight="500">游刃有余 · 1</text>
+          <text x="25" y="97" font-size="3" fill="var(--red)" text-anchor="middle" opacity="0.7" font-weight="500">需要关注 · 2</text>
+
+          <!-- Student dots — star quadrant (high mastery, high engagement) -->
+          <g style="cursor: pointer">
+            <circle cx="82" cy="15" r="3.5" fill="var(--green)" stroke="var(--t1)" stroke-width="0.6" opacity="1" />
+            <text x="85.5" y="16" font-size="3" fill="var(--t1)" font-weight="700">张三</text>
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="70" cy="22" r="2.5" fill="var(--green)" opacity="0.85" />
+            <text x="73.5" y="23" font-size="3" fill="var(--t1)" font-weight="500">李四</text>
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="88" cy="28" r="2.5" fill="var(--green)" opacity="0.85" />
+          </g>
+
+          <!-- struggling quadrant (low mastery, high engagement) -->
+          <g style="cursor: pointer">
+            <circle cx="25" cy="18" r="2.5" fill="var(--amber)" opacity="0.85" />
+            <text x="28.5" y="19" font-size="3" fill="var(--t1)" font-weight="500">王五</text>
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="35" cy="25" r="2.5" fill="var(--amber)" opacity="0.85" />
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="18" cy="30" r="2.5" fill="var(--amber)" opacity="0.85" />
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="40" cy="12" r="2.5" fill="var(--amber)" opacity="0.85" />
+          </g>
+
+          <!-- coasting quadrant (high mastery, low engagement) -->
+          <g style="cursor: pointer">
+            <circle cx="72" cy="68" r="2.5" fill="var(--blue)" opacity="0.85" />
+            <text x="75.5" y="69" font-size="3" fill="var(--t1)" font-weight="500">赵六</text>
+          </g>
+
+          <!-- at-risk quadrant (low mastery, low engagement) -->
+          <g style="cursor: pointer">
+            <circle cx="20" cy="75" r="2.5" fill="var(--red)" opacity="0.85" />
+          </g>
+          <g style="cursor: pointer">
+            <circle cx="30" cy="82" r="2.5" fill="var(--red)" opacity="0.85" />
+          </g>
+
+          <!-- extra dots -->
+          <g style="cursor: pointer">
+            <circle cx="60" cy="35" r="2.5" fill="var(--green)" opacity="0.85" />
+          </g>
+        </svg>
+      </div>
+
+      <div class="so-matrix-hints">
+        <span>滚轮缩放 · 拖拽平移 · 双击聚焦象限</span>
+        <span>点击姓名 → 详情</span>
+      </div>
+    </div>
+
+    <!-- Detail Panel (selected student) -->
+    <div class="so-detail">
+      <div class="so-detail-content">
+        <div class="so-detail-head">
+          <span class="so-detail-name">张三</span>
+          <span class="so-detail-tag" style="background: var(--green-soft); color: var(--green)">学优</span>
+        </div>
+
+        <div class="obs-stats-grid cols-4" style="margin-top: 10px">
+          <div class="obs-stat-cell">
+            <div class="obs-stat-v" style="color: var(--green)">82%</div>
+            <div class="obs-stat-l">掌握度</div>
+          </div>
+          <div class="obs-stat-cell">
+            <div class="obs-stat-v" style="color: var(--green)">85%</div>
+            <div class="obs-stat-l">参与度</div>
+          </div>
+          <div class="obs-stat-cell">
+            <div class="obs-stat-v" style="color: var(--t3)">—</div>
+            <div class="obs-stat-l">用时</div>
+          </div>
+          <div class="obs-stat-cell">
+            <div class="obs-stat-v">5 / 6</div>
+            <div class="obs-stat-l">完整度</div>
+          </div>
+        </div>
+
+        <div class="so-detail-section">
+          <div class="so-detail-section-h">关键卡点</div>
+          <div class="so-weak-list">
+            <div class="so-weak-item">
+              <div class="so-weak-name">黄金比例</div>
+              <div class="so-weak-detail">得分 45%</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="so-detail-section">
+          <div class="so-detail-section-h">推荐理由</div>
+          <div class="so-detail-reason">掌握度 82%，可作为标杆展示正确路径</div>
+        </div>
+
+        <button class="so-detail-open-btn">查看学生详情 ↗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Candidates + Reteach ── -->
+  <div class="so-action-row">
+    <div class="so-action-col">
+      <div class="so-section-h">推荐提问候选</div>
+      <div class="qc-recommend-card">
+        <div class="qcr-head">
+          <span class="qcr-name">张三</span>
+          <span class="qcr-intent showcase">展示</span>
+        </div>
+      </div>
+      <div class="qc-recommend-card">
+        <div class="qcr-head">
+          <span class="qcr-name">王五</span>
+          <span class="qcr-intent expose">暴露</span>
+        </div>
+      </div>
+      <div class="qc-recommend-card">
+        <div class="qcr-head">
+          <span class="qcr-name">赵六</span>
+          <span class="qcr-intent verify">验证</span>
+        </div>
+      </div>
+    </div>
+    <div class="so-action-col">
+      <div class="so-section-h">建议重讲</div>
+      <div class="so-reteach-card danger">
+        <span class="so-reteach-dim">黄金比例 · Q1</span>
+        <span class="so-reteach-pct">错误率 52%</span>
+      </div>
+      <div class="so-reteach-card warn">
+        <span class="so-reteach-dim">对称性 · P1</span>
+        <span class="so-reteach-pct">错误率 35%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Knowledge Point Bars ── -->
+  <div class="so-kp-section">
+    <div class="so-section-h">知识点掌握情况</div>
+    <div class="so-kp-list">
+      <div class="kp-bar-row">
+        <span class="kp-label">对称性</span>
+        <div class="kp-bar-track">
+          <div class="kp-bar-fill" style="width: 85%; background: var(--green-dot)"></div>
+        </div>
+        <span class="kp-pct">85%</span>
+      </div>
+      <div class="kp-bar-row">
+        <span class="kp-label">比例关系</span>
+        <div class="kp-bar-track">
+          <div class="kp-bar-fill" style="width: 68%; background: var(--t3)"></div>
+        </div>
+        <span class="kp-pct">68%</span>
+      </div>
+      <div class="kp-bar-row">
+        <span class="kp-label">黄金比例</span>
+        <div class="kp-bar-track">
+          <div class="kp-bar-fill" style="width: 42%; background: var(--amber-dot)"></div>
+        </div>
+        <span class="kp-pct">42%</span>
+      </div>
+      <div class="kp-bar-row">
+        <span class="kp-label">透视原理</span>
+        <div class="kp-bar-track">
+          <div class="kp-bar-fill" style="width: 30%; background: var(--red)"></div>
+        </div>
+        <span class="kp-pct">30%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Transition Insights ── -->
+  <div class="so-transition-section">
+    <div class="so-section-h">课堂衔接线索</div>
+
+    <!-- Timing hotspot -->
+    <div class="so-transition-card">
+      <div class="so-transition-label">耗时热点</div>
+      <div class="so-transition-main">Step 3 "黄金比例练习"</div>
+      <div class="so-transition-detail">42% 学生在此步骤耗时最长 · 中位 4:32</div>
+    </div>
+
+    <!-- Representative questions -->
+    <div class="so-transition-card">
+      <div class="so-transition-label">值得讨论的提问</div>
+      <div class="so-transition-quote">
+        <span class="so-transition-step">Step 2</span>
+        <span class="so-transition-q">"对称轴为什么不能穿过圆心？"</span>
+      </div>
+      <div class="so-transition-quote">
+        <span class="so-transition-step">Step 4</span>
+        <span class="so-transition-q">"黄金比例和 Fibonacci 有什么关系？"</span>
+      </div>
+    </div>
+
+    <!-- AI heat -->
+    <div class="so-transition-card">
+      <div class="so-transition-label">AI 互动热度</div>
+      <div class="so-ai-heat-row">
+        <span class="so-ai-heat-name">Step 3</span>
+        <div class="kp-bar-track">
+          <div class="so-ai-heat-bar" style="width: 100%"></div>
+        </div>
+        <span class="so-ai-heat-stat">18 轮 · 6 人</span>
+      </div>
+      <div class="so-ai-heat-row">
+        <span class="so-ai-heat-name">Step 1</span>
+        <div class="kp-bar-track">
+          <div class="so-ai-heat-bar" style="width: 55%"></div>
+        </div>
+        <span class="so-ai-heat-stat">10 轮 · 4 人</span>
+      </div>
+      <div class="so-ai-heat-row">
+        <span class="so-ai-heat-name">Step 2</span>
+        <div class="kp-bar-track">
+          <div class="so-ai-heat-bar" style="width: 33%"></div>
+        </div>
+        <span class="so-ai-heat-stat">6 轮 · 3 人</span>
+      </div>
+    </div>
+
+    <!-- Depth interaction Top 5 -->
+    <div class="so-transition-card">
+      <div class="so-transition-label">深度互动 Top 3</div>
+      <div class="so-depth-row">
+        <span class="so-depth-rank">1</span>
+        <span class="so-depth-name">张三</span>
+        <span class="so-depth-stats">
+          <span class="so-depth-hl">2 亮点</span>
+          <span class="so-depth-tp">3 命中</span>
+        </span>
+      </div>
+      <div class="so-depth-row">
+        <span class="so-depth-rank">2</span>
+        <span class="so-depth-name">王五</span>
+        <span class="so-depth-stats">
+          <span class="so-depth-hl">1 亮点</span>
+          <span class="so-depth-tp">2 命中</span>
+        </span>
+      </div>
+      <div class="so-depth-row">
+        <span class="so-depth-rank">3</span>
+        <span class="so-depth-name">李四</span>
+        <span class="so-depth-stats">
+          <span class="so-depth-tp">2 命中</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- SECTION 2: Empty Detail Panel State            -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="section-divider">空状态：未选中学生</div>
+
+<div style="display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; min-height: 200px;">
+  <div class="so-matrix-wrap" style="min-height: 200px;">
+    <div class="so-matrix-bar">
+      <span class="so-matrix-label">学生分布 · 12 人</span>
+      <div class="so-zoom-controls">
+        <button>−</button>
+        <span class="so-zoom-level">100%</span>
+        <button>+</button>
+        <button>重置</button>
+      </div>
+    </div>
+    <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: var(--t3); font-size: 11px;">
+      (散点图区域)
+    </div>
+  </div>
+  <div class="so-detail">
+    <div class="so-detail-empty">
+      <div style="font-size: 13px; font-weight: 600; color: var(--t2); margin-bottom: 6px;">点击学生查看详情</div>
+      <div style="font-size: 11px; color: var(--t3);">在左侧矩阵中点击学生圆点</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- ANNOTATIONS                                     -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="annotation">
+  <h3>交互说明</h3>
+  <ul>
+    <li><strong>散点图点击</strong>：点击学生圆点 → 右侧 Detail Panel 显示该学生详情（drag threshold 3px 防误触）</li>
+    <li><strong>散点图拖拽</strong>：鼠标按下拖动 ≥3px 触发平移，光标变为 <code>grabbing</code>；静止时光标为 <code>default</code></li>
+    <li><strong>滚轮缩放</strong>：鼠标滚轮放大/缩小，范围 50%–400%</li>
+    <li><strong>双击象限</strong>：聚焦到对应象限区域（光标 <code>zoom-in</code>）</li>
+    <li><strong>Detail Panel 姓名</strong>：点击姓名 → 打开 StudentModal</li>
+    <li><strong>Detail Panel 按钮</strong>："查看学生详情 ↗" → 调用 <code>onStudentClick(name)</code></li>
+    <li><strong>推荐卡片</strong>：点击推荐候选卡片 → 选中学生 + 打开 StudentModal</li>
+    <li><strong>深度互动排行</strong>：点击行 → 选中学生 + 打开 StudentModal</li>
+  </ul>
+</div>
+
+<div class="annotation">
+  <h3>布局规格</h3>
+  <ul>
+    <li>外层容器 <code>.so-root</code>：flex column，padding 20px 28px，gap 18px</li>
+    <li>Metrics 行：4 列等宽 grid，gap 10px</li>
+    <li>Matrix 行：<code>1.55fr 1fr</code> grid，gap 16px，最小高度 320px</li>
+    <li>Action 行：<code>1.3fr 1fr</code> grid，gap 16px</li>
+    <li>SVG viewBox：<code>-10 -10 120 120</code>（数据范围 0-100，留 10 单位边距）</li>
+    <li>学生圆点半径：普通 2.5，选中 3.5（带 0.6px 描边）</li>
+    <li>命名显示：每象限最多显示 1 个代表性学生名字 + 选中学生名字</li>
+  </ul>
+</div>
+
+<div class="annotation">
+  <h3>颜色映射</h3>
+  <ul>
+    <li><strong>学优 (star)</strong>：<code>var(--green)</code> 圆点 / <code>var(--green-soft)</code> 背景</li>
+    <li><strong>努力但困惑 (struggling)</strong>：<code>var(--amber)</code> 圆点 / <code>var(--amber-soft)</code> 背景</li>
+    <li><strong>游刃有余 (coasting)</strong>：<code>var(--blue)</code> 圆点 / <code>var(--blue-soft)</code> 背景</li>
+    <li><strong>需要关注 (at-risk)</strong>：<code>var(--red)</code> 圆点 / <code>var(--red-soft)</code> 背景</li>
+    <li><strong>AI 互动</strong>：<code>var(--ai)</code> 条形</li>
+    <li><strong>掌握度阈值</strong>：≥70% green, ≥40% amber, &lt;40% red</li>
+    <li><strong>参与度阈值</strong>：≥60% green, ≥30% amber, &lt;30% red</li>
+  </ul>
+</div>
+
+<div class="annotation">
+  <h3>关键文件</h3>
+  <ul>
+    <li><code>SummaryOverlay.tsx</code> — 组件主文件（散点图 + Detail Panel + 推荐 + 线索）</li>
+    <li><code>summary-helpers.ts</code> — 数据计算（象限分类、知识点、候选推荐、AI 热度、深度排名）</li>
+    <li><code>teacher-right-panel.css</code> — 所有 <code>.so-*</code> 样式定义</li>
+    <li><code>teacher-observe.css</code> — <code>.obs-stats-grid</code>、<code>.kp-*</code> 共享样式</li>
+  </ul>
+</div>
+
+</body>
+</html>

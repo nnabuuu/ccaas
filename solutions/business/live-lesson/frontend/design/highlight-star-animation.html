@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Highlight Star Animation — Design Spec</title>
+<style>
+/* ── Project CSS Variables (from reading-tokens.css) ── */
+:root {
+  --bg:       #f4f3ef;
+  --surface:  #fbfaf7;
+  --surface2: #edece7;
+  --t1:       #1c1c1a;
+  --t2:       #5c5b56;
+  --t3:       #9c9a92;
+  --border:   rgba(28, 28, 26, 0.07);
+  --border-strong: rgba(28, 28, 26, 0.14);
+
+  --blue:   #1a5fa0;   --blue-bg:   #e4eff8;
+  --green:  #2d6612;   --green-bg:  #e6f2dc;
+  --amber:  #7a4d0e;   --amber-bg:  #f6edda;
+  --red:    #942929;    --red-bg:    #f8e6e6;
+  --purple: #3a3185;    --purple-bg: #eceafe;
+
+  --r-xs: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px;
+}
+
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Plus Jakarta Sans", -apple-system, "PingFang SC", sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  line-height: 1.5;
+  padding: 32px 24px 64px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 22px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.subtitle {
+  text-align: center;
+  font-size: 13px;
+  color: var(--t3);
+  margin-bottom: 40px;
+}
+
+/* ── Demo Section ── */
+.demo-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 28px 24px;
+  margin-bottom: 28px;
+}
+.demo-section h2 {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.demo-section .desc {
+  font-size: 12px;
+  color: var(--t3);
+  margin-bottom: 20px;
+}
+.demo-area {
+  border-radius: var(--r-lg);
+  padding: 24px;
+  min-height: 120px;
+  position: relative;
+  margin-bottom: 12px;
+  overflow: visible;
+}
+.demo-area.light { background: var(--bg); }
+.demo-area.dark  {
+  background: #1c1c1a;
+  color: rgba(240, 239, 232, 0.85);
+}
+
+.trigger-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.trigger-btn {
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--t1);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.trigger-btn:hover { background: var(--surface2); }
+.trigger-btn:active { transform: scale(0.97); }
+
+.spec-note {
+  font-size: 11px;
+  color: var(--t3);
+  line-height: 1.6;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border-radius: var(--r-md);
+}
+.spec-note code {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 10px;
+  background: rgba(28,28,26,0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+
+/* ═══════════════════════════════════════════
+   Mock Chat Area (simulate DiscussPhase layout)
+   ═══════════════════════════════════════════ */
+
+.mock-chat-area {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: visible;
+}
+.dark .mock-chat-area {
+  background: #2a2a28;
+  border-color: #3a3a38;
+}
+
+.mock-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+}
+.dark .mock-chat-header {
+  border-color: #3a3a38;
+}
+.mock-chat-header .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--purple);
+}
+
+.mock-tracker-section {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.dark .mock-tracker-section {
+  border-color: #3a3a38;
+}
+.mock-tracker-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--t3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.mock-msg-list {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 120px;
+}
+
+.mock-msg-list .sd-bubble {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 80%;
+}
+.mock-msg-list .sd-bubble.ai {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px 12px 12px 12px;
+  align-self: flex-start;
+}
+.dark .mock-msg-list .sd-bubble.ai {
+  background: #1c1c1a;
+  border-color: #3a3a38;
+}
+.mock-msg-list .sd-bubble.student {
+  background: #2a8a8a;
+  color: #fff;
+  border-radius: 12px 2px 12px 12px;
+  align-self: flex-end;
+}
+
+.mock-msg-list .chat-bubble {
+  align-self: flex-end;
+}
+
+.mock-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+.dark .mock-input-row {
+  border-color: #3a3a38;
+}
+.mock-input-row .mock-input {
+  flex: 1;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg);
+  padding: 0 12px;
+  font-size: 12px;
+  color: var(--t3);
+  display: flex;
+  align-items: center;
+}
+.dark .mock-input-row .mock-input {
+  background: #1c1c1a;
+  border-color: #3a3a38;
+}
+.mock-input-row .mock-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--purple);
+  border: none;
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ═══════════════════════════════════════════
+   Chat Bubble
+   ═══════════════════════════════════════════ */
+
+.chat-bubble {
+  position: relative;
+  background: var(--blue-bg);
+  border-radius: 16px 16px 4px 16px;
+  padding: 12px 16px;
+  font-size: 14px;
+  max-width: 320px;
+  color: var(--t1);
+  margin-left: auto;
+}
+.dark .chat-bubble {
+  background: #2a3a4a;
+  color: rgba(240,239,232,0.85);
+}
+
+/* Inline highlight flash on the bubble when AI recognizes it */
+.chat-bubble.flash {
+  animation: bubble-flash 0.6s ease-out;
+}
+@keyframes bubble-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(122, 77, 14, 0.3); }
+  40%  { box-shadow: 0 0 0 6px rgba(122, 77, 14, 0.15); }
+  100% { box-shadow: 0 0 0 0 rgba(122, 77, 14, 0); }
+}
+
+/* Badge that briefly appears on message before star flies away */
+.sd-highlight-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: var(--amber-bg);
+  border: 1px solid rgba(122, 77, 14, 0.15);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sd-highlight-badge.pop {
+  animation: badge-pop-shrink 0.7s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+
+/* Pop in, hold briefly, then shrink away (star will fly from here) */
+@keyframes badge-pop-shrink {
+  0%   { transform: scale(0); opacity: 0; }
+  25%  { transform: scale(1.3); opacity: 1; }
+  50%  { transform: scale(1); opacity: 1; }
+  75%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.5); opacity: 0; }
+}
+
+
+/* ═══════════════════════════════════════════
+   Flying Star (absolute positioned, JS animated)
+   ═══════════════════════════════════════════ */
+
+.flying-star {
+  position: fixed;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--amber);
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(0 0 6px rgba(122, 77, 14, 0.4));
+  will-change: transform, opacity;
+}
+
+/* Trail particles left behind during flight */
+.flying-star .trail {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--amber);
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+/* ═══════════════════════════════════════════
+   Progress Tracker with Star Slot
+   ═══════════════════════════════════════════ */
+
+.progress-tracker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  max-width: 360px;
+  position: relative;
+}
+
+.sd-tracker-point {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface2);
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+  overflow: visible;
+}
+.dark .sd-tracker-point {
+  background: #3a3a38;
+}
+.sd-tracker-point.hit {
+  background: var(--green);
+}
+
+/* Star collection slot on the right of the tracker */
+.tracker-star-slot {
+  flex-shrink: 0;
+  width: 0;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: width 0.35s cubic-bezier(.34,1.56,.64,1),
+              opacity 0.3s ease;
+  opacity: 0;
+  position: relative;
+}
+.tracker-star-slot.visible {
+  width: 44px;
+  opacity: 1;
+}
+.tracker-star-slot .star-count {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--amber);
+  white-space: nowrap;
+  background: var(--amber-bg);
+  border: 1px solid rgba(122, 77, 14, 0.12);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+.dark .tracker-star-slot .star-count {
+  background: rgba(122, 77, 14, 0.2);
+  color: #e8b84a;
+}
+
+/* Star-slot collect pulse when a star arrives */
+.tracker-star-slot.collect .star-count {
+  animation: slot-collect 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes slot-collect {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Count number bump when value changes */
+.count-num {
+  display: inline-block;
+}
+.count-num.bump {
+  animation: count-bump 0.35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes count-bump {
+  0%   { transform: scale(1) translateY(0); }
+  25%  { transform: scale(0.5) translateY(4px); opacity: 0.3; }
+  50%  { transform: scale(1.4) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* Floating "+1" indicator */
+.star-plus-indicator {
+  position: absolute;
+  top: -4px; right: -4px;
+  font-size: 10px; font-weight: 700;
+  color: var(--amber);
+  pointer-events: none;
+  animation: plus-float 0.6s ease-out forwards;
+}
+@keyframes plus-float {
+  0%   { opacity: 1; transform: translateY(0) scale(0.8); }
+  100% { opacity: 0; transform: translateY(-16px) scale(1); }
+}
+
+.sd-tracker-point.animating {
+  animation: dot-nudge 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+
+@keyframes dot-nudge {
+  0%   { transform: scaleY(1); }
+  40%  { transform: scaleY(1.15) scaleX(1.03); }
+  100% { transform: scaleY(1); }
+}
+
+
+/* ═══════════════════════════════════════════
+   Point Discovered Notification
+   ═══════════════════════════════════════════ */
+
+.sd-point-discovered {
+  text-align: center;
+  padding: 6px 0;
+}
+.sd-point-discovered .notif {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-bg);
+  padding: 5px 16px;
+  border-radius: 100px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(20px) scale(0.8);
+}
+.dark .sd-point-discovered .notif {
+  background: rgba(45,102,18,0.2);
+  color: #5dcaa5;
+}
+
+.sd-point-discovered .notif::before {
+  content: '';
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45,102,18,0.15) 0%, transparent 70%);
+  top: 50%;
+  left: 30%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+.notif-star {
+  font-size: 10px;
+  display: inline-block;
+  opacity: 0;
+}
+
+.notif .point-num {
+  font-weight: 800;
+  font-size: 12px;
+}
+
+.sd-point-discovered .notif.animate {
+  animation: notif-enter 0.6s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+.sd-point-discovered .notif.animate::before {
+  animation: notif-shimmer 2s ease-in-out 0.4s infinite;
+}
+.sd-point-discovered .notif.animate .notif-star {
+  animation: star-twinkle 1.5s ease-in-out 0.3s infinite;
+}
+.sd-point-discovered .notif.animate .notif-star.right {
+  animation-delay: 0.6s;
+}
+
+@keyframes notif-enter {
+  0%   { opacity: 0; transform: translateY(20px) scale(0.8); }
+  50%  { opacity: 1; transform: translateY(-4px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes notif-shimmer {
+  0%, 100% { opacity: 0.3; left: 20%; }
+  50%      { opacity: 0.7; left: 70%; }
+}
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.8) rotate(0deg); }
+  50%      { opacity: 1; transform: scale(1.2) rotate(20deg); }
+}
+
+
+/* ═══════════════════════════════════════════
+   Demo 3: Sequence
+   ═══════════════════════════════════════════ */
+
+.seq-step {
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+.seq-step.active { opacity: 1; }
+.sequence-label {
+  font-size: 11px;
+  color: var(--t3);
+  text-align: center;
+  margin-top: 8px;
+  min-height: 16px;
+}
+
+/* ═══════════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-highlight-badge.pop { animation: none; opacity: 0; }
+  .chat-bubble.flash { animation: none; }
+  .flying-star { display: none; }
+  .tracker-star-slot { transition: none; }
+  .tracker-star-slot.collect .star-count { animation: none; }
+  .sd-tracker-point.animating { animation: none; }
+  .sd-point-discovered .notif.animate {
+    animation: none; opacity: 1; transform: none;
+  }
+  .sd-point-discovered .notif.animate::before { animation: none; }
+  .sd-point-discovered .notif.animate .notif-star { animation: none; opacity: 0.6; }
+  .count-num.bump { animation: none; }
+  .star-plus-indicator { animation: none; opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<h1>Highlight Star Animation — Design Spec</h1>
+<p class="subtitle">苏格拉底讨论 · 亮点正反馈动画 · 飞星收集设计稿</p>
+
+<!-- ═══════════════════════════════════════════
+     Demo 1: Point Discovered + Flying Star to Tracker
+     ═══════════════════════════════════════════ -->
+<section class="demo-section" id="demo1">
+  <h2>Demo 1 — Point Discovered + Star Fly to Collect</h2>
+  <p class="desc">要点发现通知弹入 → 星星从通知飞到进度条右侧星星槽 · 槽位首次出现时展开</p>
+
+  <!-- Light variant -->
+  <div class="demo-area light" id="demo1-light">
+    <div class="mock-chat-area">
+      <div class="mock-chat-header">
+        <span class="dot"></span> Socratic Discussion
+      </div>
+      <div class="mock-tracker-section">
+        <div class="mock-tracker-label">Discussion Points</div>
+        <div class="progress-tracker" id="tracker1-light">
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="tracker-star-slot" id="slot1-light">
+            <span class="star-count">✦ <span class="count-num" id="count1-light">0</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="mock-msg-list">
+        <div class="sd-bubble ai">That's an interesting point. Can you elaborate on the author's use of metaphor?</div>
+        <div class="sd-bubble student">I think the "digital bridge" metaphor shows how technology connects people across distances.</div>
+        <div class="sd-point-discovered">
+          <span class="notif" id="notif1-light">
+            <span class="notif-star left">✦</span>
+            Point <span class="point-num">3</span> Discovered!
+            <span class="notif-star right">✦</span>
+          </span>
+        </div>
+      </div>
+      <div class="mock-input-row">
+        <div class="mock-input">Type your response...</div>
+        <div class="mock-send-btn">→</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dark variant -->
+  <div class="demo-area dark" id="demo1-dark">
+    <div class="mock-chat-area">
+      <div class="mock-chat-header">
+        <span class="dot"></span> Socratic Discussion
+      </div>
+      <div class="mock-tracker-section">
+        <div class="mock-tracker-label">Discussion Points</div>
+        <div class="progress-tracker" id="tracker1-dark">
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="tracker-star-slot" id="slot1-dark">
+            <span class="star-count">✦ <span class="count-num" id="count1-dark">0</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="mock-msg-list">
+        <div class="sd-bubble ai">That's an interesting point. Can you elaborate on the author's use of metaphor?</div>
+        <div class="sd-bubble student">I think the "digital bridge" metaphor shows how technology connects people across distances.</div>
+        <div class="sd-point-discovered">
+          <span class="notif" id="notif1-dark">
+            <span class="notif-star left">✦</span>
+            Point <span class="point-num">3</span> Discovered!
+            <span class="notif-star right">✦</span>
+          </span>
+        </div>
+      </div>
+      <div class="mock-input-row">
+        <div class="mock-input">Type your response...</div>
+        <div class="mock-send-btn">→</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trigger-row">
+    <button class="trigger-btn" onclick="triggerFlyingStar('light')">+1 (Light)</button>
+    <button class="trigger-btn" onclick="triggerFlyingStar('dark')">+1 (Dark)</button>
+    <button class="trigger-btn" onclick="triggerFlyingStar('light', 2)">+2 (Light)</button>
+    <button class="trigger-btn" onclick="triggerFlyingStar('dark', 2)">+2 (Dark)</button>
+    <button class="trigger-btn" onclick="resetDemo1()">Reset</button>
+  </div>
+
+  <div class="spec-note">
+    <strong>Flow:</strong> Notification <code>notif-enter 0.6s</code> → pause <code>0.3s</code> →
+    Slot reveals <code>0.35s</code> (first time) → Star flies from notification to slot <code>0.5s</code> arc → collect pulse <code>0.4s</code> + count+1<br>
+    <strong>Flight path:</strong> <code>cubic-bezier ease-out</code> + <code>sin(π)</code> Y arc + trail particles<br>
+    <strong>Star slot:</strong> <code>width: 0→44px</code> on first highlight, stays visible after. Notification remains visible.<br>
+    <strong>Star flies upward</strong> from notification (message list) to tracker star slot.
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     Demo 2: Progress Tracker Dot Hit
+     ═══════════════════════════════════════════ -->
+<section class="demo-section" id="demo2">
+  <h2>Demo 2 — Progress Tracker Dot (Target Point Hit)</h2>
+  <p class="desc">Target Point 命中 · 涟漪扩散 + 短暂放大 + 闪光条纹</p>
+
+  <div class="demo-area light">
+    <div class="mock-tracker-section" style="border: none; padding: 0;">
+      <div class="mock-tracker-label">Discussion Points</div>
+      <div class="progress-tracker" id="tracker2-light">
+        <div class="sd-tracker-point" data-idx="0"></div>
+        <div class="sd-tracker-point" data-idx="1"></div>
+        <div class="sd-tracker-point" data-idx="2"></div>
+        <div class="sd-tracker-point" data-idx="3"></div>
+        <div class="sd-tracker-point" data-idx="4"></div>
+        <div class="tracker-star-slot visible">
+          <span class="star-count">✦ <span class="count-num">2</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-area dark">
+    <div class="mock-tracker-section" style="border: none; padding: 0;">
+      <div class="mock-tracker-label">Discussion Points</div>
+      <div class="progress-tracker" id="tracker2-dark">
+        <div class="sd-tracker-point" data-idx="0"></div>
+        <div class="sd-tracker-point" data-idx="1"></div>
+        <div class="sd-tracker-point" data-idx="2"></div>
+        <div class="sd-tracker-point" data-idx="3"></div>
+        <div class="sd-tracker-point" data-idx="4"></div>
+        <div class="tracker-star-slot visible">
+          <span class="star-count">✦ <span class="count-num">2</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="trigger-row">
+    <button class="trigger-btn" onclick="triggerDot('light')">Hit Next (Light)</button>
+    <button class="trigger-btn" onclick="triggerDot('dark')">Hit Next (Dark)</button>
+    <button class="trigger-btn" onclick="resetDots()">Reset All</button>
+  </div>
+
+  <div class="spec-note">
+    Duration: <code>0.4s</code> · Subtle nudge: <code>scaleY(1→1.15→1)</code> spring<br>
+    Background transition: <code>surface2 → green</code> · No ripple or shimmer — clean and quiet
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     Demo 3: Full Sequence
+     ═══════════════════════════════════════════ -->
+<section class="demo-section" id="demo3">
+  <h2>Demo 3 — Full Sequence</h2>
+  <p class="desc">完整场景模拟: 消息发送 → 消息闪光 → Dot变绿 → Point Discovered通知 → ✦从通知飞到Tracker</p>
+
+  <div class="demo-area light" id="demo4-area">
+    <div class="mock-chat-area" style="max-width: 400px;">
+      <!-- Header (always visible) -->
+      <div class="mock-chat-header">
+        <span class="dot"></span> Socratic Discussion
+      </div>
+
+      <!-- Tracker section -->
+      <div class="mock-tracker-section seq-step" id="seq-tracker-wrap">
+        <div class="mock-tracker-label">Discussion Points</div>
+        <div class="progress-tracker" id="seq-tracker">
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point hit"></div>
+          <div class="sd-tracker-point" id="seq-dot-target"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="sd-tracker-point"></div>
+          <div class="tracker-star-slot" id="seq-slot">
+            <span class="star-count">✦ <span class="count-num" id="seq-count">0</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message list -->
+      <div class="mock-msg-list">
+        <div class="sd-bubble ai">Can you explain what the author means by "digital bridge"?</div>
+
+        <!-- Student bubble (seq-step) -->
+        <div class="seq-step" id="seq-bubble-wrap">
+          <div class="chat-bubble" id="seq-bubble" style="opacity:0; transform:translateY(12px);">
+            The author uses the metaphor of a "digital bridge" to show how online communities can unite people.
+          </div>
+        </div>
+
+        <!-- Point discovered (seq-step) -->
+        <div class="seq-step" id="seq-notif-wrap">
+          <div class="sd-point-discovered">
+            <span class="notif" id="seq-notif">
+              <span class="notif-star left">✦</span>
+              Point <span class="point-num">3</span> Discovered!
+              <span class="notif-star right">✦</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mock input -->
+      <div class="mock-input-row">
+        <div class="mock-input">Type your response...</div>
+        <div class="mock-send-btn">→</div>
+      </div>
+    </div>
+
+    <div class="sequence-label" id="seq-label"></div>
+  </div>
+
+  <div class="trigger-row">
+    <button class="trigger-btn" onclick="playSequence()">Play Sequence</button>
+  </div>
+
+  <div class="spec-note">
+    Timing: Bubble in <code>0.4s</code> → pause → Flash <code>0.6s</code> →
+    Dot hit <code>0.4s</code> → Notification <code>0.6s</code> → pause →
+    Slot reveal + Star flight <code>0.5s</code> → Collect pulse<br>
+    Total: ~<code>4.5s</code><br>
+    <strong>Star flies upward</strong> from notification (message list) to tracker star slot.
+  </div>
+</section>
+
+
+<script>
+/* ═══════════════════════════════════════════
+   Utility
+   ═══════════════════════════════════════════ */
+const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
+
+/* ═══════════════════════════════════════════
+   Scene 1: Point Discovered + Flying Star to Tracker
+   ═══════════════════════════════════════════ */
+
+const starCounts = { light: 0, dark: 0 };
+
+async function triggerFlyingStar(theme, amount = 1) {
+  const notif = document.getElementById(`notif1-${theme}`);
+  const slot = document.getElementById(`slot1-${theme}`);
+  const countEl = document.getElementById(`count1-${theme}`);
+
+  // 1) Notification enters
+  notif.classList.remove('animate');
+  notif.style.opacity = '0';
+  notif.style.transform = 'translateY(20px) scale(0.8)';
+  void notif.offsetWidth;
+  notif.classList.add('animate');
+
+  // 2) Pause to let user read
+  await delay(900);
+
+  // 3) Reveal star slot (first time → expand)
+  const isFirst = !slot.classList.contains('visible');
+  if (isFirst) {
+    slot.classList.add('visible');
+  }
+  await delay(isFirst ? 250 : 50);
+
+  // 4) Fly star from notification center to star slot
+  const notifRect = notif.getBoundingClientRect();
+  const startX = notifRect.left + notifRect.width / 2;
+  const startY = notifRect.top + notifRect.height / 2;
+
+  const slotRect = slot.getBoundingClientRect();
+  const endX = slotRect.left + slotRect.width / 2;
+  const endY = slotRect.top + slotRect.height / 2;
+
+  await flyStarAnimated(startX, startY, endX, endY);
+
+  // 5) Collect pulse + count increment
+  collectStar(slot, countEl, theme, amount);
+}
+
+function spawnTrailParticle(x, y) {
+  const p = document.createElement('span');
+  p.style.cssText = `
+    position:fixed; left:${x}px; top:${y}px;
+    width:3px; height:3px; border-radius:50%;
+    background: var(--amber); opacity:0.7;
+    pointer-events:none; z-index:999;
+    transition: all 0.4s ease-out;
+    transform: translate(-50%,-50%);
+  `;
+  document.body.appendChild(p);
+  requestAnimationFrame(() => {
+    p.style.opacity = '0';
+    p.style.transform = `translate(${-8 + Math.random()*16}px, ${4 + Math.random()*12}px) scale(0)`;
+  });
+  setTimeout(() => p.remove(), 450);
+}
+
+function animateCountIncrement(countEl, newValue) {
+  countEl.classList.remove('bump');
+  void countEl.offsetWidth;
+  countEl.classList.add('bump');
+  setTimeout(() => { countEl.textContent = newValue; }, 90);
+  setTimeout(() => countEl.classList.remove('bump'), 400);
+}
+
+function showPlusIndicator(slot, amount) {
+  const ind = document.createElement('span');
+  ind.className = 'star-plus-indicator';
+  ind.textContent = `+${amount}`;
+  slot.appendChild(ind);
+  setTimeout(() => ind.remove(), 650);
+}
+
+function collectStar(slot, countEl, theme, amount = 1) {
+  starCounts[theme] += amount;
+  animateCountIncrement(countEl, starCounts[theme]);
+  showPlusIndicator(slot, amount);
+
+  // Collect pulse
+  slot.classList.remove('collect');
+  void slot.offsetWidth;
+  slot.classList.add('collect');
+  setTimeout(() => slot.classList.remove('collect'), 450);
+}
+
+function resetDemo1() {
+  ['light', 'dark'].forEach(theme => {
+    const notif = document.getElementById(`notif1-${theme}`);
+    const slot = document.getElementById(`slot1-${theme}`);
+    const countEl = document.getElementById(`count1-${theme}`);
+
+    notif.classList.remove('animate');
+    notif.style.opacity = '0';
+    notif.style.transform = 'translateY(20px) scale(0.8)';
+    slot.classList.remove('visible', 'collect');
+    countEl.textContent = '0';
+    starCounts[theme] = 0;
+  });
+}
+
+
+/* ═══════════════════════════════════════════
+   Scene 2: Progress Tracker Dot
+   ═══════════════════════════════════════════ */
+
+const dotCounters = { light: 0, dark: 0 };
+
+function triggerDot(theme) {
+  const tracker = document.getElementById(`tracker2-${theme}`);
+  const dots = tracker.querySelectorAll('.sd-tracker-point');
+  const idx = dotCounters[theme];
+  if (idx >= dots.length) return;
+
+  const dot = dots[idx];
+  dot.classList.add('hit', 'animating');
+
+  setTimeout(() => {
+    dot.classList.remove('animating');
+  }, 450);
+
+  dotCounters[theme]++;
+}
+
+function resetDots() {
+  ['light', 'dark'].forEach(theme => {
+    const tracker = document.getElementById(`tracker2-${theme}`);
+    tracker.querySelectorAll('.sd-tracker-point').forEach(dot => {
+      dot.classList.remove('hit', 'animating');
+    });
+    dotCounters[theme] = 0;
+  });
+}
+
+
+/* ═══════════════════════════════════════════
+   Scene 3: Full Sequence
+   ═══════════════════════════════════════════ */
+
+let seqRunning = false;
+
+async function playSequence() {
+  if (seqRunning) return;
+  seqRunning = true;
+
+  const bubble = document.getElementById('seq-bubble');
+  const tracker = document.getElementById('seq-tracker');
+  const dot = document.getElementById('seq-dot-target');
+  const slot = document.getElementById('seq-slot');
+  const countEl = document.getElementById('seq-count');
+  const notif = document.getElementById('seq-notif');
+  const label = document.getElementById('seq-label');
+  const bubbleWrap = document.getElementById('seq-bubble-wrap');
+  const trackerWrap = document.getElementById('seq-tracker-wrap');
+  const notifWrap = document.getElementById('seq-notif-wrap');
+
+  // Reset all
+  bubble.style.opacity = '0';
+  bubble.style.transform = 'translateY(12px)';
+  bubble.style.transition = 'none';
+  bubble.classList.remove('flash');
+  notif.classList.remove('animate');
+  notif.style.opacity = '0';
+  notif.style.transform = 'translateY(20px) scale(0.8)';
+  dot.classList.remove('hit', 'animating');
+  tracker.classList.remove('shimmer');
+  slot.classList.remove('visible', 'collect');
+  countEl.textContent = '0';
+  bubbleWrap.classList.remove('active');
+  trackerWrap.classList.remove('active');
+  notifWrap.classList.remove('active');
+  label.textContent = '';
+  void bubble.offsetWidth;
+
+  // Step 1: Show tracker
+  trackerWrap.classList.add('active');
+  label.textContent = '① 进度条可见（星星槽隐藏）';
+  await delay(800);
+
+  // Step 2: Bubble slides in
+  label.textContent = '② 学生发送消息...';
+  bubbleWrap.classList.add('active');
+  bubble.style.transition = 'all 0.4s cubic-bezier(.34,1.56,.64,1)';
+  bubble.style.opacity = '1';
+  bubble.style.transform = 'translateY(0)';
+  await delay(900);
+
+  // Step 3: Flash (visual feedback only)
+  label.textContent = '③ AI 识别亮点 → 消息闪光';
+  bubble.classList.add('flash');
+  await delay(700);
+
+  // Step 4: Dot turns green
+  label.textContent = '④ Target Point 命中 → Dot 变绿';
+  dot.classList.add('hit', 'animating');
+  await delay(500);
+  dot.classList.remove('animating');
+
+  // Step 5: Point discovered notification
+  label.textContent = '⑤ "Point 3 Discovered!" 通知弹入';
+  notifWrap.classList.add('active');
+  notif.classList.add('animate');
+  await delay(900);
+
+  // Step 6: Star flies from notification to tracker star slot
+  label.textContent = '⑥ ✦ 从通知飞到进度条星星槽';
+  const notifRect = notif.getBoundingClientRect();
+  const startX = notifRect.left + notifRect.width / 2;
+  const startY = notifRect.top + notifRect.height / 2;
+
+  slot.classList.add('visible');
+  await delay(250);
+
+  const slotRect = slot.getBoundingClientRect();
+  const endX = slotRect.left + slotRect.width / 2;
+  const endY = slotRect.top + slotRect.height / 2;
+
+  await flyStarAnimated(startX, startY, endX, endY);
+  animateCountIncrement(countEl, 1);
+  showPlusIndicator(slot, 1);
+  slot.classList.remove('collect');
+  void slot.offsetWidth;
+  slot.classList.add('collect');
+  await delay(400);
+  slot.classList.remove('collect');
+
+  // Done
+  label.textContent = '✓ 序列完成 — 再次点击重播';
+  seqRunning = false;
+}
+
+function flyStarAnimated(sx, sy, ex, ey) {
+  return new Promise(resolve => {
+    const star = document.createElement('span');
+    star.className = 'flying-star';
+    star.textContent = '✦';
+    star.style.left = sx + 'px';
+    star.style.top = sy + 'px';
+    star.style.transform = 'translate(-50%, -50%) scale(1.3)';
+    star.style.opacity = '1';
+    document.body.appendChild(star);
+
+    const duration = 500;
+    const startTime = performance.now();
+    const dx = ex - sx;
+    const dy = ey - sy;
+
+    function animate(now) {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      const arcY = -50 * Math.sin(t * Math.PI);
+
+      star.style.left = (sx + dx * ease) + 'px';
+      star.style.top = (sy + dy * ease + arcY) + 'px';
+      star.style.transform = `translate(-50%, -50%) scale(${1.3 - 0.7 * t})`;
+
+      if (t > 0.1 && t < 0.85 && Math.random() > 0.5) {
+        spawnTrailParticle(sx + dx * ease, sy + dy * ease + arcY);
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        star.remove();
+        resolve();
+      }
+    }
+    requestAnimationFrame(animate);
+  });
+}
+</script>
+</body>
+</html>
