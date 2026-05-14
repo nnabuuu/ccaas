@@ -58,10 +58,9 @@
 | ¶7 | detail | 缅甸颈环=优雅；印尼磨牙=文化身份 | — |
 | ¶8 | **key** | 总结：人类改变外貌的深层原因 | `It appears that` |
 
-### 2.2 文章骨架（四段结构）
+### 2.2 文章骨架（三段结构）
 
 ```
-¶1-2  Phenomenon  — 两种对立审美 + 核心问题
 ¶3-4  History     — 跨时间维度（古埃及 → 1600s 欧洲）
 ¶5-7  Culture     — 跨空间维度（婆罗洲 → 毛利 → 缅甸 → 印尼）
 ¶8    Conclusion  — "人类改变外貌是为了文化身份，不只是好看"
@@ -270,17 +269,16 @@ AI 开场问题：
 **🧑‍🎓 学生端看到什么**
 
 - 屏幕左侧：课文全文（8 段），可点击的词元高亮交互
-- 屏幕右侧：4 个功能卡片（Phenomenon / History / Culture / Conclusion）
+- 屏幕右侧：3 个功能卡片（History / Culture / Conclusion）
 - 操作：① 为每个区段选择正确的功能标签 ② 在文本中圈选支撑证据（信号词）
 - 圈选到 `evidence` 词元 → 绿色高亮 ✅
 - 圈选到 `distractor` 词元 → 橙色提示"这是细节不是信号词"
 - 每个词元附有 `why` 解释，错选时显示
 
-**四个区段**：
+**三个区段**：
 
 | 区段 | 段落 | 正确功能 | 关键信号词 |
 |------|------|----------|-----------|
-| ¶1-2 | p1-p2 | Phenomenon | `fattening room`, `slim women with a fair complexion`, `shallow beauty ideals`, 核心问句 |
 | ¶3-4 | p3-p4 | History | `change over time`, `different periods of history`, `Egyptian paintings`, `the early 1600s` |
 | ¶5-7 | p5-p7 | Culture | `different cultures around the world`, `Borneo`, `New Zealand's Maoris`, `Myanmar`, `Indonesia` |
 | ¶8 | p8 | Conclusion | `It appears that`, `show social position or display group identity`, `Whether it is... or...` |
@@ -309,7 +307,7 @@ AI 开场问题：
 
 | 期望触发指标 | 学生信号 | 教师仪表盘呈现 |
 |-------------|---------|---------------|
-| **K2** 信号词与文章结构 | 能解释 History 在 Culture 前的原因（时间→空间，层层递进） | ✅ `gist: "理解了四段结构的刻意编排"` |
+| **K2** 信号词与文章结构 | 能解释 History 在 Culture 前的原因（时间→空间，层层递进） | ✅ `gist: "理解了三段结构的刻意编排"` |
 | **M2** 信号词辨识困难 | 混淆时间信号词和地点信号词，把 ¶5-7 归为 History | ⚠️ 告警：`"混淆时间/地点信号词"` |
 
 > **教师动作建议**：如果大量学生触发 M2，说明信号词教学需要加强；可通过 quickAction「信号词提示」发全班广播。
@@ -655,7 +653,7 @@ quiz 题型的每道题配有两级提示：
 | ID | 标签 | 描述 |
 |----|------|------|
 | K1 | 冲突识别与预测 | 识别 ¶1-2 对立观点，理解冲突开头的写作意图 |
-| K2 | 信号词与文章结构 | 通过首句信号词识别四段结构，区分时间词和地点词 |
+| K2 | 信号词与文章结构 | 通过首句信号词识别三段结构，区分时间词和地点词 |
 | K3 | 矩阵信息定向提取 | 用 scanning 从 ¶3-7 提取 Place×Practice×Reason 三维信息 |
 | K4 | 审美深层规律洞察 | 从 Reason 列归纳：审美是文化身份/社会地位/财富的表达 |
 | K5 | 证据支撑的批判立场 | 对 "shallow beauty ideals" 形成有据立场，引用 ≥2 条证据 |
@@ -876,7 +874,7 @@ POST /sessions  POST /start  POST /join   POST /submit etc.   POST /end
 | 步骤 | 列结构 | 说明 |
 |------|--------|------|
 | Step 1 图式激活 | 现象(cool) / 对照(warm) / 悬念(accent) | 核心问句 + 媒体 vs 现实对比 |
-| Step 2 结构解码 | 信号词(cool) / 骨架(accent) | 四段结构可视化 |
+| Step 2 结构解码 | 信号词(cool) / 骨架(accent) | 三段结构可视化 |
 | Step 3 矩阵构建 | 矩阵(neutral) / 学生答题(warm) | 实时矩阵对比 |
 | Step 4 批判质疑 | 论点(cool) / 立场(accent) / 评分点(muted) | 议论段模板 |
 | Step 5 复盘升华 | 方法(cool) / 文本(muted) / 主题(accent) | 策略总结 + ¶8 主旨 |

@@ -274,13 +274,13 @@ GradingService → [Type]Grader → GradeResult { total, byDimension }
 ```jsonc
 {
   "type": "select-evidence",
-  "functionOptions": ["Phenomenon", "History", "Culture", "Conclusion"],
+  "functionOptions": ["History", "Culture", "Conclusion"],
   "sections": [
     {
-      "id": "p12",                      // section 唯一标识
-      "label": "¶1-2",                  // 前端显示标签
-      "range": [1, 2],                  // 覆盖的段落编号
-      "correctFunction": "Phenomenon",  // 正确的 function 选择
+      "id": "p34",                      // section 唯一标识
+      "label": "¶3-4",                  // 前端显示标签
+      "range": [3, 4],                  // 覆盖的段落编号
+      "correctFunction": "History",     // 正确的 function 选择
       "hint": "英文提示",
       "hintZh": "中文提示",
       "aiCorrect": "全部正确时的 AI 反馈（支持 **markdown**）",
@@ -498,7 +498,7 @@ POST /api/classroom/:code/submit { studentId, step, data }
 | `matrix` | `{ rows: [...] }` | 来自 ans.rows |
 | `stance` | `{ position: 'I agree', evidence: [0, 2, 5] }` | position = 立场文本（字符串），evidence = 证据索引数组 |
 | `order` | `{ order: ['Predicting', 'Skimming', ...] }` | 学生排列的 items 文本标签（字符串数组或 `{label}` 对象数组） |
-| `select-evidence` | `{ sections: { "p12": { function: "Phenomenon", picked: ["1:4", "2:1"] } } }` | key=sectionId, picked=`paraNum:tokenIdx` 数组 |
+| `select-evidence` | `{ sections: { "p34": { function: "History", picked: ["3:1", "3:3"] } } }` | key=sectionId, picked=`paraNum:tokenIdx` 数组 |
 | `map` | `{ placements: { "kohl": { x: 0.55, y: -0.2 } }, reasons: { "kohl": "..." } }` | placements=坐标对象, reasons=理由文本 |
 
 ### 评分对照表

@@ -108,13 +108,12 @@
 - 3 个 key points + TTS
 
 **Practice 阶段** — Select-Evidence 练习：
-- 任务：把 4 个段落组 (¶1-2, ¶3-4, ¶5-7, ¶8) 分别匹配到功能标签
-- 功能选项：`Phenomenon`, `History`, `Culture`, `Conclusion`
+- 任务：把 3 个段落组 (¶3-4, ¶5-7, ¶8) 分别匹配到功能标签
+- 功能选项：`History`, `Culture`, `Conclusion`
 - 正确答案：
 
 | 段落组 | 功能 | 关键信号 |
 |--------|------|----------|
-| ¶1-2 | Phenomenon | 两个对立审美 + 核心问句 |
 | ¶3-4 | History | "change over time", "Egyptian", "1600s", "Elizabethan" |
 | ¶5-7 | Culture | "different cultures around the world", Borneo, NZ, Myanmar, Indonesia |
 | ¶8 | Conclusion | "It appears that", 总结句 |
@@ -128,13 +127,13 @@
 - 最多 6 轮
 
 **Takeaway**:
-> Text structure: Phenomenon → History → Culture → Conclusion. The writer builds an argument step by step.
+> Text structure: History → Culture → Conclusion. The writer builds an argument step by step.
 
 ### 老师看到什么
 
 - Speech line: "Read only the first sentence of each paragraph. Find the signal words."
 - 4 个快捷操作：只读首句！/ 信号词提示 / 文章结构 / 再给 2 分钟
-- 3 张 cue card：Skimming 方法、四段结构表、过渡话术
+- 3 张 cue card：Skimming 方法、三段结构表、过渡话术
 - 实时看到每个学生的段落功能匹配情况和高亮选词
 
 ---
@@ -309,7 +308,7 @@
 | Step | 练习类型 | 交互方式 | 评分维度 |
 |------|----------|----------|----------|
 | 1 图式激活 | `quiz` (3 道选择题) | 点选 | 按题目：Q1, Q2, Q3 各对错 |
-| 2 结构解码 | `select-evidence` (4 组段落匹配) | 选功能标签 + 高亮证据词 | 按段落组 (¶1-2, ¶3-4, ¶5-7, ¶8) |
+| 2 结构解码 | `select-evidence` (3 组段落匹配) | 选功能标签 + 高亮证据词 | 按段落组 (¶3-4, ¶5-7, ¶8) |
 | 3 矩阵构建 | `matrix` (6 行三列) | 填写文本 | 按行 (1600s Europe, Borneo, NZ Maori, Myanmar, Indonesia) |
 | 4 批判质疑 | `map` (7 chip 拖拽 + 写理由) | 拖拽到二维坐标 + 文本输入 | 按 chip (位置偏差 + 理由长度) |
 | 5 复盘升华 | `order` (4 项排序) | 拖拽排序 | 整体顺序是否正确 |

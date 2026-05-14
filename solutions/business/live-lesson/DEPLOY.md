@@ -443,9 +443,9 @@ curl -N https://live-lesson.edunest.cn/api/classroom/<session-code>/stream
 1. 在 `data/lessons/<lesson-id>/` 下创建 `manifest.json`
 2. 重启 backend（seed 逻辑在启动时运行，只 insert 不 update）
 
-### 更新已有课程
+### 更新已有课程（保留旧 session 数据）
 
-Seed 逻辑只做 insert-if-not-exists，更新需手动：
+Seed 逻辑只做 insert-if-not-exists，更新 manifest 需手动：
 
 ```bash
 cd /root/ccaas/solutions/business/live-lesson/backend
@@ -463,6 +463,51 @@ console.log('Updated', lessonId);
 # 然后重启 backend
 pm2 restart live-lesson-backend
 ```
+
+### 重新 seed 课程（清除旧数据）
+
+当 manifest 结构变化较大（如删除/新增 section）且不需要保留历史 session 数据时，
+删除 DB 中的 lesson 行，让 backend 启动时重新 seed：
+
+```bash
+cd /root/ccaas/solutions/business/live-lesson/backend
+
+# 1. 删除 lesson 行（seed 会重新插入）
+node -e "
+const DB = require('better-sqlite3');
+const db = new DB('data/live-lesson.db');
+db.prepare('DELETE FROM lessons WHERE id = ?').run('ideal-beauty-reading');
+db.close();
+console.log('Deleted lesson row');
+"
+
+# 2. 重启 backend — onModuleInit 自动从 manifest.json 重新 seed
+pm2 restart live-lesson-backend
+
+# 3. 验证
+curl http://localhost:3007/api/lessons/ideal-beauty-reading/manifest | python3 -m json.tool | head -5
+```
+
+> **注意**：此操作不会删除 classroom_sessions / submissions 等关联表数据。
+> 如需完全清理某节课的所有历史数据，额外执行：
+>
+> ```bash
+> node -e "
+> const DB = require('better-sqlite3');
+> const db = new DB('data/live-lesson.db');
+> const codes = db.prepare('SELECT code FROM classroom_sessions WHERE lesson_id = ?').all('ideal-beauty-reading').map(r => r.code);
+> if (codes.length) {
+>   const ph = codes.map(() => '?').join(',');
+>   db.prepare('DELETE FROM reading_submissions WHERE session_id IN (' + ph + ')').run(...codes);
+>   db.prepare('DELETE FROM reading_ai_questions WHERE session_id IN (' + ph + ')').run(...codes);
+>   db.prepare('DELETE FROM discuss_highlights WHERE session_id IN (' + ph + ')').run(...codes);
+>   db.prepare('DELETE FROM discuss_target_hits WHERE session_id IN (' + ph + ')').run(...codes);
+>   db.prepare('DELETE FROM classroom_sessions WHERE lesson_id = ?').run('ideal-beauty-reading');
+>   console.log('Cleaned', codes.length, 'sessions');
+> } else { console.log('No sessions to clean'); }
+> db.close();
+> "
+> ```
 
 ---
 

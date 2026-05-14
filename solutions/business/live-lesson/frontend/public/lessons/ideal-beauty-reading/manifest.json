@@ -252,6 +252,18 @@
             "description": "学生明确识别到作者用两个对立观点开头是写作策略（conflict opening），用来制造冲突、引出核心问题。示例：'作者故意放两个相反的例子来引出问题' / 'this is a conflict opening strategy'"
           }
         ],
+        "targetPoints": [
+          {
+            "id": "tp_1_1",
+            "label": "识别冲突开头",
+            "description": "学生提到两种审美标准之间存在对立/冲突/对比。示例：'一个说胖好看一个说瘦好看，两个完全相反' / 'the writer puts two opposite ideas together'"
+          },
+          {
+            "id": "tp_1_2",
+            "label": "核心问题意识",
+            "description": "学生意识到作者通过对比引出核心问题：是否有唯一正确的审美标准。示例：'作者想让读者想哪种审美才是对的' / 'the question is whether one beauty standard is better'"
+          }
+        ],
         "maxRounds": 6,
         "maxTimeSeconds": 300,
         "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should notice that the writer opens with two contrasting examples of beauty (Nigerian fattening rooms vs. slim media models) ON PURPOSE — to make readers think or question. The student does NOT need to use the term \"conflict opening.\" Recognizing the contrast is intentional and thought-provoking is enough.\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. Keep it short (2-3 sentences max).\n- If the student says something partially correct, acknowledge it warmly, then probe deeper.\n- If the student is stuck, narrow the question or offer a small clue (e.g., \"Look at how ¶1 and ¶2 contrast...\").\n- Use simple English. The student is a Chinese high school learner.\n- If the student writes in Chinese, respond in English but show you understood their Chinese.\n- If the student demonstrates full understanding of the goal, respond with exactly: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Be warm, encouraging, never condescending.\n- Do NOT number your questions. Be conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
@@ -337,7 +349,7 @@
       "displayName": "Skim",
       "strategy": "Skimming",
       "duration": 8,
-      "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：Phenomenon → History → Culture → Conclusion。",
+      "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：History → Culture → Conclusion。",
       "focusParagraphs": [
         "p1",
         "p2",
@@ -349,36 +361,20 @@
         "p8"
       ],
       "aiHints": [
-        { "q": "What is \"Phenomenon\"?", "label": "Phenomenon 是什么?" },
         { "q": "What does \"It appears that\" mean?", "label": "It appears that 什么意思?" },
         { "q": "How do I skim?", "label": "怎么 skim?" }
       ],
       "exerciseLabel": "Match each section to its function — then prove it from the text.",
       "subtitle": "Find the skeleton",
-      "summary": "Text structure: Phenomenon → History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
+      "summary": "Text structure: History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
       "answerKey": {
         "type": "select-evidence",
         "functionOptions": [
-          "Phenomenon",
           "History",
           "Culture",
           "Conclusion"
         ],
         "sections": [
-          {
-            "id": "p12",
-            "label": "¶1-2",
-            "range": [
-              1,
-              2
-            ],
-            "correctFunction": "Phenomenon",
-            "minHits": 2,
-            "hint": "Look for the two opposing IDEALS + the pivot question + the named ISSUE.",
-            "hintZh": "找两个对立的\"美的标准\" + 转折问句 + 被命名的问题。",
-            "aiCorrect": "Right — these phrases set up TWO opposing ideals + the named issue (\"shallow beauty ideals\"). That tension is the **phenomenon** the rest of the text investigates.",
-            "aiPartial": "Look for the **conflict-makers** — the two opposing ideals + the question that pivots between them."
-          },
           {
             "id": "p34",
             "label": "¶3-4",
@@ -423,60 +419,6 @@
           }
         ],
         "paragraphTokens": {
-          "1": [
-            {
-              "t": "Nigerian teenager Happiness Edem had just one aim in life: to put on weight. So she spent six months in a "
-            },
-            {
-              "t": "\"fattening room\"",
-              "kind": "pick"
-            },
-            {
-              "t": " where her daily routine was to sleep, eat and grow fat. She went in weighing 60 kg, but came out weighing twice that. "
-            },
-            {
-              "t": "In some parts of Africa",
-              "kind": "distractor",
-              "why": "A place — but ¶1-2 isn't about places. It's about the conflict between two ideals."
-            },
-            {
-              "t": ", "
-            },
-            {
-              "t": "being fat is desirable because it is a sign of attractiveness in women and power and wealth in men",
-              "kind": "evidence",
-              "why": "Names ONE side of the conflict — a clear beauty ideal stated as fact. Sets up the contrast."
-            },
-            {
-              "t": "."
-            }
-          ],
-          "2": [
-            {
-              "t": "However, in magazines and in the media we are bombarded with images of "
-            },
-            {
-              "t": "slim women with a fair complexion",
-              "kind": "evidence",
-              "why": "Names the OTHER side of the conflict. Together with ¶1's fat-as-beauty, this is the phenomenon."
-            },
-            {
-              "t": " and handsome, broad-shouldered young men. It is fairly rare to see short-sighted, middle-aged models. Some people question these "
-            },
-            {
-              "t": "shallow beauty ideals",
-              "kind": "evidence",
-              "why": "The exact phrase the article will question. ¶1-2 sets up this issue — that's what makes them the Phenomenon section."
-            },
-            {
-              "t": ". "
-            },
-            {
-              "t": "Is one idea of physical beauty really more attractive than another?",
-              "kind": "evidence",
-              "why": "A pivot — the writer's central question that the rest of the article investigates."
-            }
-          ],
           "3": [
             {
               "t": "Ideas about physical beauty "
@@ -670,7 +612,7 @@
         }
       },
       "discuss": {
-        "goal": "Student should understand that the writer organizes the text from Phenomenon → History → Culture → Conclusion, building an argument step by step rather than just listing random examples.",
+        "goal": "Student should understand that the writer organizes the text from History → Culture → Conclusion, building an argument step by step rather than just listing random examples.",
         "openingQ": "You matched the sections to their functions. But here's a deeper question: why does the writer put History BEFORE Culture? Could the order be reversed? What would change?",
         "openingQZh": "作者为什么把\"历史\"放在\"文化\"前面？顺序能不能反过来？会有什么变化？",
         "scaffolds": ["If the writer started with culture...", "History comes first because...", "The order creates..."],
@@ -689,6 +631,18 @@
             "id": "c3",
             "label": "层递论证识别",
             "description": "学生识别出先历史后文化是为了层层递进——先证明美随时间变，再证明美随空间变，合力支撑结论。示例：'先时间再空间，论据更强' / 'each section adds a new layer to the argument'"
+          }
+        ],
+        "targetPoints": [
+          {
+            "id": "tp_2_1",
+            "label": "顺序非随机",
+            "description": "学生认识到History在Culture之前不是偶然的，而是有意为之。示例：'这个顺序是故意的' / 'the order is not random, it's on purpose'"
+          },
+          {
+            "id": "tp_2_2",
+            "label": "层递论证效果",
+            "description": "学生解释了先时间后空间的论证效果：先证明美随时间变，再证明美随空间变，层层递进使论证更有力。示例：'先说历史上变了，再说不同地方也不同，加在一起更convincing' / 'history proves change over time, culture proves change across places'"
           }
         ],
         "maxRounds": 6,
@@ -714,7 +668,7 @@
         "speechLine": "Now read only the **first sentence** of each paragraph. Find the **signal words**.",
         "focusType": "signal-words",
         "focusTitle": "信号词 & 文章骨架",
-        "focusSubtitle": "首句 + 转折词 → 四段结构",
+        "focusSubtitle": "首句 + 转折词 → 三段结构",
         "quickActions": [
           {
             "emoji": "👁",
@@ -731,7 +685,7 @@
           {
             "emoji": "🏗",
             "label": "文章结构",
-            "message": "文章骨架：¶1-2 现象 → ¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？",
+            "message": "文章骨架：¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？",
             "type": "hint"
           },
           {
@@ -747,12 +701,12 @@
             "body": "核心公式：首句 + 信号词 = 段落功能\n\n不要逐字读！3 分钟拿到全文骨架 vs 30 分钟逐字读。\n提问：\"What does 'change over time' tell you about ¶3?\""
           },
           {
-            "title": "四段结构",
-            "body": "¶1-2: Phenomenon — 现象对比（Nigeria vs Media）\n¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（show social position / display group identity）"
+            "title": "三段结构",
+            "body": "¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（show social position / display group identity）"
           },
           {
             "title": "过渡到 Step 3",
-            "body": "确认学生找到四段结构后：\n\"Good, we now have the skeleton. Let's fill in the flesh — each group focuses on 2-3 paragraphs and builds a matrix.\""
+            "body": "确认学生找到三段结构后：\n\"Good, we now have the skeleton. Let's fill in the flesh — each group focuses on 2-3 paragraphs and builds a matrix.\""
           }
         ]
       },
@@ -881,6 +835,18 @@
             "description": "学生认识到审美实践是文化语言，表达身份、地位、归属感和价值观，不只是外表。示例：'beauty is a cultural language' / '美是一种文化表达，代表你是谁'"
           }
         ],
+        "targetPoints": [
+          {
+            "id": "tp_3_1",
+            "label": "超越外表",
+            "description": "学生提到审美实践不只是为了好看，还有更深的含义。示例：'not just about looking good' / '不只是外表的事'"
+          },
+          {
+            "id": "tp_3_2",
+            "label": "具体文化含义",
+            "description": "学生能举出至少一个具体的文化含义（身份identity、地位status、归属belonging、价值观values）。示例：'Maori tattoo shows your family status' / '纹身代表你的社会地位'"
+          }
+        ],
         "maxRounds": 6,
         "maxTimeSeconds": 300,
         "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should realize that beauty practices have meanings beyond just looking good — like identity, status, or cultural belonging. Giving at least ONE concrete example from the text that shows deeper meaning is sufficient. They do NOT need to generalize to all practices or say \"cultural language.\"\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- Try questions like: \"What does the Borneo tattoo tell others about the person?\" or \"Is the Maori tā moko about looking beautiful or about something else?\"\n- If stuck, pick one specific matrix row and ask about the \"why\" column.\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student demonstrates full understanding, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
@@ -981,6 +947,8 @@
       "summary": "You used evidence to support your judgment — a big step in academic reading.\n\nLet's review how you learned today.",
       "answerKey": {
         "type": "map",
+        "randomPractice": true,
+        "practiceCount": 3,
         "prompt": "Each chip below is one beauty practice from the text. Drag it onto the plane based on **two questions**, then explain *why* you placed it where you did.",
         "axes": {
           "x": { "neg": "Just appearance", "pos": "Cultural meaning", "label": "Why is it done?" },
@@ -1026,6 +994,23 @@
             "id": "c3",
             "label": "论证链构建",
             "description": "学生能用文本证据构建完整论证：现代媒体美只推崇单一外表标准(slim/fair)，而忽视了不同文化中美的深层含义(身份/地位/价值观)。示例：'shallow是因为media只看一种physical standard但文章里beauty代表了cultural identity' / '深刻的标准应该像文中说的包含文化意义'"
+          }
+        ],
+        "targetPoints": [
+          {
+            "id": "tp_4_1",
+            "label": "shallow含义理解",
+            "description": "学生理解shallow指现代媒体只推崇单一外表标准，忽视文化深度。示例：'shallow means only one standard' / '肤浅就是只看一种外表'"
+          },
+          {
+            "id": "tp_4_2",
+            "label": "文本证据引用",
+            "description": "学生引用文中至少一个具体例子来支撑论点。示例：'like Borneo people think long earlobes are beautiful, that's different from media' / '文章说Maori纹身代表地位，这比media标准深刻'"
+          },
+          {
+            "id": "tp_4_3",
+            "label": "论证链意识",
+            "description": "学生展现claim→evidence→explanation的论证结构意识。示例：'media is shallow because (claim) the text shows (evidence) different cultures have deeper meanings (explanation)'"
           }
         ],
         "maxRounds": 8,
@@ -1162,6 +1147,23 @@
             "description": "学生能按顺序说出4个策略(Predict→Skim→Scan→Evaluate)及各自目的，并认识到这个过程可以迁移到其他文章。示例：'先predict提出问题，然后skim看结构，再scan找细节建matrix，最后evaluate用证据判断，这个方法可以用在别的文章上'"
           }
         ],
+        "targetPoints": [
+          {
+            "id": "tp_5_1",
+            "label": "策略命名",
+            "description": "学生能说出至少3个阅读策略的名称（Predict/Skim/Scan/Evaluate）。示例：'we did predict, skim, scan and evaluate' / '我们用了预测、略读、寻读'"
+          },
+          {
+            "id": "tp_5_2",
+            "label": "策略目的区分",
+            "description": "学生能解释不同策略各自的目的，而不只是列出名称。示例：'predict是先猜内容，skim是看结构' / 'scanning helps find specific details for the matrix'"
+          },
+          {
+            "id": "tp_5_3",
+            "label": "可迁移认知",
+            "description": "学生意识到这套策略可以用于其他文章，不只是这一篇。示例：'这个方法可以用在别的文章上' / 'I can use these steps for any article'"
+          }
+        ],
         "maxRounds": 5,
         "maxTimeSeconds": 240,
         "systemPrompt": "You are a Socratic English reading tutor for a Chinese high school student reading \"Ideal Beauty.\"\n\nLEARNING GOAL: The student should recall most of the reading strategies used today (at least 3 of 4: Predict, Skim, Scan, Evaluate) and have some sense of what each one helped them do. Mentioning transferability to other texts is a bonus, NOT a requirement for [GOAL_REACHED].\n\nRULES:\n- NEVER state the answer directly. Guide through questions.\n- Ask ONE focused question per turn. 2-3 sentences max.\n- If they name a step, ask: \"What did that step help you do specifically?\"\n- If they skip a step, ask: \"What did you do BEFORE scanning for details?\"\n- If they list all 4, ask: \"Could you use these same steps for a different article? How?\"\n- Use simple English for a Chinese high school learner.\n- If Chinese input, respond in English but show understanding.\n- If the student names all 4 strategies with their purposes AND mentions transferability, respond with: [GOAL_REACHED] followed by a brief congratulatory summary.\n- Warm, encouraging, conversational.\n- IMPORTANT: Give [GOAL_REACHED] when the student shows meaningful partial understanding — they don't need perfect or complete articulation. If they grasp the core idea even roughly, that counts. Err on the side of encouraging the student rather than blocking them.",
@@ -1294,7 +1296,7 @@
             {
               "id": "C",
               "title": "骨架",
-              "subtitle": "四段结构",
+              "subtitle": "三段结构",
               "tone": "accent",
               "width": 2
             }
@@ -1613,11 +1615,6 @@
         "data": {
           "arrow": "right",
           "steps": [
-            {
-              "paragraph": "¶1-2",
-              "label": "Phenomenon",
-              "sub": "Media vs Reality"
-            },
             {
               "paragraph": "¶3-4",
               "label": "History",
@@ -2192,7 +2189,7 @@
       "id": "K2",
       "type": "knowledge",
       "label": "信号词与文章结构",
-      "description": "通过首句信号词识别四段结构：Phenomenon→History→Culture→Conclusion。区分时间词(change over time)和地点词(different cultures)"
+      "description": "通过首句信号词识别三段结构：History→Culture→Conclusion。区分时间词(change over time)和地点词(different cultures)"
     },
     {
       "id": "K3",
