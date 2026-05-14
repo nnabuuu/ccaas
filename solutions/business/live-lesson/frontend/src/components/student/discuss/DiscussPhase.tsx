@@ -6,6 +6,7 @@ import { SessionCtx } from '../TaskPanel'
 import type { Task, FallbackMC } from '../task-data'
 import DiscussGuide from './DiscussGuide'
 import { formatTime, computeUrgency, determineInitialPhase, detectFallbackOnRestore, deriveCompletionType, filterMessagesForApi, findNewHits, mcOptionClass } from './discuss-helpers'
+import { runStarAnimation } from './star-animation'
 
 /* ═══ TYPING INDICATOR ═══ */
 export function TypingIndicator() {
@@ -187,8 +188,12 @@ function ContinueChat({ taskId }: { taskId: number }) {
   )
 }
 
-/* ═══ CLUSTER TRACKER (bar-style) ═══ */
-function ClusterTracker({ clusters }: { clusters: ClusterProgress[] }) {
+/* ═══ CLUSTER TRACKER (bar-style + star slot) ═══ */
+function ClusterTracker({ clusters, starSlotRef, countRef }: {
+  clusters: ClusterProgress[]
+  starSlotRef: React.RefObject<HTMLDivElement | null>
+  countRef: React.RefObject<HTMLSpanElement | null>
+}) {
   if (clusters.length === 0) return null
   const hitCount = clusters.filter(c => c.hit).length
   const allHit = hitCount === clusters.length
@@ -201,9 +206,11 @@ function ClusterTracker({ clusters }: { clusters: ClusterProgress[] }) {
         {clusters.map(c => (
           <div key={c.id} className={`sd-tracker-point${c.hit ? ' hit' : ''}`} title={c.label} />
         ))}
-        <span className="sd-tracker-count">
-          <span className="num">{hitCount}</span>/{clusters.length}
-        </span>
+        {/* Star slot: .visible added imperatively by animation */}
+        <div ref={starSlotRef} className="sd-star-slot">
+          {/* count-num textContent is managed imperatively by star-animation.ts — do not add React children */}
+          <span className="sd-star-count">✦ <span className="count-num" ref={countRef} /></span>
+        </div>
       </div>
     </div>
   )
@@ -237,6 +244,15 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const [guideOpen, setGuideOpen] = useState(false)
   const [clusters, setClusters] = useState<ClusterProgress[]>([])
   const [nudge, setNudge] = useState<string | null>(null)
+
+  // Star animation refs (imperative — not tied to React render cycle)
+  const starSlotRef = useRef<HTMLDivElement>(null)
+  const countRef = useRef<HTMLSpanElement>(null)
+  const starCountRef = useRef(0)
+  const animAbortRef = useRef<AbortController | null>(null)
+
+  // Abort any running star animation on unmount
+  useEffect(() => () => animAbortRef.current?.abort(), [])
 
   const { discuss, loading } = useAiDiscuss(sessionCode || '')
   const { complete } = useDiscussComplete(sessionCode || '')
@@ -282,11 +298,21 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
     })
   }, [sessionCode, studentId, task.id, fetchHistory])
 
-  // Fetch target point progress on mount
+  // Fetch target point progress on mount — restore star slot if hits exist
   useEffect(() => {
     if (!sessionCode || !studentId) return
     fetchProgress(studentId, task.id).then(data => {
-      if (data?.targetPoints) setClusters(data.targetPoints)
+      if (data?.targetPoints) {
+        setClusters(data.targetPoints)
+        const hitCount = data.targetPoints.filter((c: ClusterProgress) => c.hit).length
+        if (hitCount > 0) {
+          starCountRef.current = hitCount
+          requestAnimationFrame(() => {
+            if (starSlotRef.current) starSlotRef.current.classList.add('visible')
+            if (countRef.current) countRef.current.textContent = String(hitCount)
+          })
+        }
+      }
     })
   }, [sessionCode, studentId, task.id, fetchProgress])
 
@@ -364,11 +390,13 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
 
       // Fetch target point progress (awaited so we can detect new hits for inline notifications)
       let newHits: ClusterProgress[] = []
+      let updatedClusters = clusters
       if (studentId) {
         const data = await fetchProgress(studentId, task.id)
         if (data?.targetPoints) {
-          newHits = findNewHits(prevHitIds, data.targetPoints)
-          setClusters(data.targetPoints)
+          updatedClusters = data.targetPoints
+          newHits = findNewHits(prevHitIds, updatedClusters)
+          setClusters(updatedClusters)
         }
       }
 
@@ -391,6 +419,55 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         updated.push({ role: 'ai', text: result.reply })
         return updated
       })
+
+      // ── Animation orchestration (imperative, after React renders) ──
+      // Scope all queries to #phase-discuss to avoid matching elements from other components
+      const scope = document.getElementById('phase-discuss')
+
+      if (result.highlight) {
+        requestAnimationFrame(() => {
+          const bubbles = scope?.querySelectorAll('.sd-bubble.student')
+          const last = bubbles?.[bubbles.length - 1]
+          if (last) {
+            last.classList.add('flash')
+            setTimeout(() => last.classList.remove('flash'), 650)
+          }
+        })
+      }
+
+      if (newHits.length > 0) {
+        // Dot nudge animation (use updatedClusters, not stale `clusters` closure)
+        const bar = scope?.querySelector('.sd-tracker-bar')
+        if (bar) {
+          newHits.forEach(hit => {
+            const idx = updatedClusters.findIndex(c => c.id === hit.id)
+            const dot = bar.querySelectorAll('.sd-tracker-point')[idx]
+            if (dot) {
+              dot.classList.add('animating')
+              setTimeout(() => dot.classList.remove('animating'), 450)
+            }
+          })
+        }
+
+        // Star fly-in animation (runs after React paints the notification)
+        animAbortRef.current?.abort()
+        animAbortRef.current = new AbortController()
+        const signal = animAbortRef.current.signal
+        const newTotal = updatedClusters.filter(c => c.hit).length
+        starCountRef.current = newTotal
+        requestAnimationFrame(() => {
+          const notifs = scope?.querySelectorAll('.sd-notif')
+          const latestNotif = notifs?.[notifs.length - 1] as HTMLSpanElement | undefined
+          runStarAnimation(
+            starSlotRef.current,
+            countRef.current,
+            latestNotif ?? null,
+            newTotal,
+            newHits.length,
+            signal,
+          )
+        })
+      }
 
       if (result.goalReached) {
         setGoalReached(true)
@@ -445,13 +522,17 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         {phase === 'chat' && <StatusBar round={round} maxRounds={d.maxRounds} elapsed={elapsed} maxTime={d.maxTimeSeconds} />}
 
         {/* Cluster progress tracker (visible in all phases) */}
-        <ClusterTracker clusters={clusters} />
+        <ClusterTracker clusters={clusters} starSlotRef={starSlotRef} countRef={countRef} />
 
         {/* Messages */}
         <div className="sd-msg-list">
           {messages.map((msg, i) => msg.role === 'notification' ? (
             <div key={i} className="sd-point-discovered">
-              <span>{msg.text}</span>
+              <span className="sd-notif">
+                <span className="sd-notif-star left">✦</span>
+                {msg.text}
+                <span className="sd-notif-star right">✦</span>
+              </span>
             </div>
           ) : msg.role === 'ai' ? (
             <div key={i} className="sd-msg-row">

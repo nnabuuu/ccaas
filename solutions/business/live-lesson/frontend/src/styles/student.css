@@ -670,16 +670,43 @@
 .sd-tracker-bar{display:flex;gap:6px;align-items:center}
 .sd-tracker-point{flex:1;height:6px;border-radius:3px;background:var(--surface2);transition:background .4s ease}
 .sd-tracker-point.hit{background:var(--green)}
-.sd-tracker-count{font-size:11px;font-weight:700;color:var(--t3);margin-left:4px;white-space:nowrap}
-.sd-tracker-count .num{color:var(--green)}
+/* ── Star Slot (replaces sd-tracker-count) ── */
+.sd-star-slot{flex-shrink:0;width:0;height:24px;display:flex;align-items:center;justify-content:center;overflow:hidden;transition:width .35s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;opacity:0;position:relative}
+.sd-star-slot.visible{width:44px;opacity:1;overflow:visible}
+.sd-star-count{display:flex;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--amber);white-space:nowrap;background:var(--amber-bg);border:1px solid rgba(122,77,14,.12);padding:2px 8px;border-radius:100px}
+/* Collect pulse */
+.sd-star-slot.collect .sd-star-count{animation:sd-slot-collect .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes sd-slot-collect{0%{transform:scale(1)}40%{transform:scale(1.25)}100%{transform:scale(1)}}
+/* Count bump */
+.count-num{display:inline-block}
+.count-num.bump{animation:sd-count-bump .35s cubic-bezier(.34,1.56,.64,1)}
+@keyframes sd-count-bump{0%{transform:scale(1) translateY(0);opacity:1}25%{transform:scale(.5) translateY(4px);opacity:.3}50%{transform:scale(1.4) translateY(-2px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+/* "+N" floating indicator */
+.sd-plus-indicator{position:absolute;top:-4px;right:-4px;font-size:10px;font-weight:700;color:var(--amber);pointer-events:none;animation:sd-plus-float .6s ease-out forwards}
+@keyframes sd-plus-float{0%{opacity:1;transform:translateY(0) scale(.8)}100%{opacity:0;transform:translateY(-16px) scale(1)}}
+/* Flying star */
+.sd-flying-star{position:fixed;font-size:16px;font-weight:700;color:var(--amber);pointer-events:none;z-index:1000;filter:drop-shadow(0 0 6px rgba(122,77,14,.4));will-change:transform,opacity}
+
 /* ── Point Discovered Notification ── */
 .sd-point-discovered{text-align:center;padding:6px 0}
-.sd-point-discovered span{display:inline-block;font-size:10px;font-weight:700;color:var(--green);background:var(--green-bg);padding:3px 12px;border-radius:100px;animation:sd-point-pop .35s cubic-bezier(.34,1.56,.64,1)}
-@keyframes sd-point-pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.sd-notif{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--green);background:var(--green-bg);padding:5px 16px;border-radius:100px;position:relative;overflow:hidden;animation:sd-notif-enter .6s cubic-bezier(.34,1.56,.64,1) forwards}
+.sd-notif .point-num{font-weight:800;font-size:12px}
+.sd-notif-star{font-size:10px;display:inline-block;animation:sd-star-twinkle 1.5s ease-in-out .3s infinite}
+.sd-notif-star.right{animation-delay:.6s}
+@keyframes sd-notif-enter{0%{opacity:0;transform:translateY(20px) scale(.8)}50%{opacity:1;transform:translateY(-4px) scale(1.03)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes sd-star-twinkle{0%,100%{opacity:.4;transform:scale(.8) rotate(0deg)}50%{opacity:1;transform:scale(1.2) rotate(20deg)}}
+
+/* ── Bubble Flash ── */
+.sd-bubble.student.flash{animation:sd-bubble-flash .6s ease-out}
+@keyframes sd-bubble-flash{0%{box-shadow:0 0 0 0 rgba(122,77,14,.3)}40%{box-shadow:0 0 0 6px rgba(122,77,14,.15)}100%{box-shadow:0 0 0 0 rgba(122,77,14,0)}}
+
+/* ── Dot Nudge ── */
+.sd-tracker-point.animating{animation:sd-dot-nudge .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes sd-dot-nudge{0%{transform:scaleY(1)}40%{transform:scaleY(1.15) scaleX(1.03)}100%{transform:scaleY(1)}}
 
 /* ── Highlight Badge ── */
-.sd-highlight-badge{position:absolute;top:-8px;right:-6px;padding:2px 6px;border-radius:8px;background:var(--amber-bg);border:1px solid rgba(122,77,14,.15);color:var(--amber);font-size:10px;font-weight:700;white-space:nowrap;animation:sd-badge-pop .35s cubic-bezier(.34,1.56,.64,1)}
-@keyframes sd-badge-pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2);opacity:1}100%{transform:scale(1)}}
+.sd-highlight-badge{position:absolute;top:-8px;right:-6px;padding:2px 6px;border-radius:8px;background:var(--amber-bg);border:1px solid rgba(122,77,14,.15);color:var(--amber);font-size:10px;font-weight:700;white-space:nowrap;animation:sd-badge-pop-shrink .7s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes sd-badge-pop-shrink{0%{transform:scale(0);opacity:0}25%{transform:scale(1.3);opacity:1}50%{transform:scale(1);opacity:1}75%{transform:scale(1);opacity:1}100%{transform:scale(.5);opacity:0}}
 
 /* ── Nudge Chip ── */
 .sd-nudge-chip{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--amber-bg);border-top:1px solid rgba(122,77,14,.12);font-size:13px;color:var(--amber);animation:sd-nudge-in .3s ease-out}
@@ -687,7 +714,19 @@
 .sd-nudge-close{width:20px;height:20px;border-radius:50%;border:none;background:rgba(122,77,14,.12);color:var(--amber);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;line-height:1}
 .sd-nudge-close:hover{background:rgba(122,77,14,.2)}
 @keyframes sd-nudge-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-@media(prefers-reduced-motion:reduce){.sd-guide-card,.sd-guide-popup,.sd-guide-backdrop,.sd-point-discovered span,.sd-highlight-badge,.sd-nudge-chip,.sum-section{animation:none}}
+@media(prefers-reduced-motion:reduce){
+  .sd-guide-card,.sd-guide-popup,.sd-guide-backdrop,.sd-nudge-chip,.sum-section{animation:none}
+  .sd-star-slot{transition:none}
+  .sd-star-slot.collect .sd-star-count{animation:none}
+  .count-num.bump{animation:none}
+  .sd-plus-indicator{animation:none;opacity:0}
+  .sd-flying-star{display:none}
+  .sd-notif{animation:none;opacity:1;transform:none}
+  .sd-notif-star{animation:none;opacity:.6}
+  .sd-bubble.student.flash{animation:none}
+  .sd-tracker-point.animating{animation:none}
+  .sd-highlight-badge{animation:none;opacity:1;transform:scale(1)}
+}
 
 /* ── Summary Screen (post-lesson recap) ── */
 .sum-header{margin-bottom:24px;animation:sd-guide-slide-up .3s ease-out both}
