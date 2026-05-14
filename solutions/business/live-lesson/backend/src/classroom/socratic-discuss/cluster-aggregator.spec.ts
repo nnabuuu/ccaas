@@ -1,5 +1,5 @@
 import { ClusterAggregator } from './cluster-aggregator';
-import type { ClassifyResult } from '../../schemas/classroom/clustering';
+import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 
 function makeEvent(overrides: Partial<ClassifyResult> = {}): ClassifyResult {
   return {
@@ -328,6 +328,125 @@ describe('ClusterAggregator', () => {
     });
   });
 
+  // ── targetPoint ingestion ──
+
+  describe('targetPoint ingestion', () => {
+    const tpHit = (overrides: Partial<TargetPointHit> = {}): TargetPointHit => ({
+      targetPointId: 'tp_1_1',
+      confidence: 'high',
+      evidenceSpan: 'tp evidence',
+      ...overrides,
+    });
+
+    it('creates targetPoint state on first ingest', () => {
+      const defs = [{ id: 'tp_1_1', label: 'Point A' }, { id: 'tp_1_2', label: 'Point B' }];
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [tpHit()],
+      }));
+      const result = agg.getStudentTargetPoints('s1', 1, 'stu1', defs);
+      expect(result).toEqual([
+        { id: 'tp_1_1', label: 'Point A', hit: true },
+        { id: 'tp_1_2', label: 'Point B', hit: false },
+      ]);
+    });
+
+    it('high confidence marks hit=true, low confidence does not', () => {
+      const defs = [{ id: 'tp_1_1', label: 'A' }, { id: 'tp_1_2', label: 'B' }];
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [
+          tpHit({ targetPointId: 'tp_1_1', confidence: 'high' }),
+          tpHit({ targetPointId: 'tp_1_2', confidence: 'low' }),
+        ],
+      }));
+      const result = agg.getStudentTargetPoints('s1', 1, 'stu1', defs);
+      expect(result[0].hit).toBe(true);
+      expect(result[1].hit).toBe(false);
+    });
+
+    it('already-hit stays hit on subsequent low-confidence ingest', () => {
+      const defs = [{ id: 'tp_1_1', label: 'A' }];
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [tpHit({ confidence: 'high' })],
+      }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [tpHit({ confidence: 'low' })],
+      }));
+      expect(agg.getStudentTargetPoints('s1', 1, 'stu1', defs)[0].hit).toBe(true);
+    });
+
+    it('caps evidenceSpans at 3', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ targetPointHits: [tpHit({ evidenceSpan: 'e1' })] }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ targetPointHits: [tpHit({ evidenceSpan: 'e2' })] }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ targetPointHits: [tpHit({ evidenceSpan: 'e3' })] }));
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({ targetPointHits: [tpHit({ evidenceSpan: 'e4' })] }));
+      // Internal state only — verify via stats that no crash occurs
+      const stats = agg.getTargetPointStats('s1', 1);
+      expect(stats).toHaveLength(1);
+    });
+  });
+
+  // ── getStudentTargetPoints ──
+
+  describe('getStudentTargetPoints', () => {
+    const defs = [
+      { id: 'tp_1_1', label: 'Point A' },
+      { id: 'tp_1_2', label: 'Point B' },
+      { id: 'tp_2_1', label: 'Point C' },
+    ];
+
+    it('returns all defs with hit=false when no data', () => {
+      const result = agg.getStudentTargetPoints('s1', 1, 'stu1', defs);
+      expect(result).toEqual([
+        { id: 'tp_1_1', label: 'Point A', hit: false },
+        { id: 'tp_1_2', label: 'Point B', hit: false },
+        { id: 'tp_2_1', label: 'Point C', hit: false },
+      ]);
+    });
+
+    it('does not count other students hits', () => {
+      agg.ingest('s1', 1, 'stu2', 'Bob', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'high', evidenceSpan: 'e' }],
+      }));
+      const result = agg.getStudentTargetPoints('s1', 1, 'stu1', defs);
+      expect(result.every(tp => !tp.hit)).toBe(true);
+    });
+  });
+
+  // ── getTargetPointStats ──
+
+  describe('getTargetPointStats', () => {
+    it('returns empty for unknown session', () => {
+      expect(agg.getTargetPointStats('unknown', 1)).toEqual([]);
+    });
+
+    it('groups by targetPointId and deduplicates students', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'high', evidenceSpan: 'e1' }],
+      }));
+      agg.ingest('s1', 1, 'stu2', 'Bob', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'high', evidenceSpan: 'e2' }],
+      }));
+      // Duplicate ingest for stu1 — should not double-count
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'high', evidenceSpan: 'e3' }],
+      }));
+
+      const stats = agg.getTargetPointStats('s1', 1);
+      expect(stats).toHaveLength(1);
+      expect(stats[0].targetPointId).toBe('tp_1_1');
+      expect(stats[0].uniqueStudents).toBe(2);
+      expect(stats[0].students).toHaveLength(2);
+    });
+
+    it('excludes non-hit target points', () => {
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'low', evidenceSpan: 'e' }],
+      }));
+      const stats = agg.getTargetPointStats('s1', 1);
+      expect(stats).toEqual([]);
+    });
+  });
+
   // ── cleanupSession ──
 
   describe('cleanupSession', () => {
@@ -349,6 +468,16 @@ describe('ClusterAggregator', () => {
       agg.recordHit('s1', 1, 'stu1', false);
       agg.cleanupSession('s1');
       expect(agg.getConsecutiveMisses('s1', 1, 'stu1')).toBe(0);
+    });
+
+    it('clears targetPoint data for session', () => {
+      const defs = [{ id: 'tp_1_1', label: 'A' }];
+      agg.ingest('s1', 1, 'stu1', 'Alice', makeEvent({
+        targetPointHits: [{ targetPointId: 'tp_1_1', confidence: 'high', evidenceSpan: 'e' }],
+      }));
+      agg.cleanupSession('s1');
+      expect(agg.getStudentTargetPoints('s1', 1, 'stu1', defs)[0].hit).toBe(false);
+      expect(agg.getTargetPointStats('s1', 1)).toEqual([]);
     });
   });
 });

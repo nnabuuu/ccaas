@@ -1,12 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import type { ObservationState, ClusterStats, ClassifyResult } from '../../schemas/classroom/clustering';
 
+interface TargetPointState {
+  studentId: string;
+  studentName: string;
+  targetPointId: string;
+  hit: boolean;
+  evidenceSpans: string[];
+  firstHitAt: number;
+}
+
 @Injectable()
 export class ClusterAggregator {
+  private static readonly MAX_CLUSTER_EVIDENCE = 5;
+  private static readonly MAX_TP_EVIDENCE = 3;
   // sessionId → taskNum → Map<`${studentId}:${clusterId}`, ObservationState>
   private sessions = new Map<string, Map<number, Map<string, ObservationState>>>();
   // `${sessionId}:${taskNum}:${studentId}` → boolean[] (true = new cluster hit)
   private missHistory = new Map<string, boolean[]>();
+  // sessionId → taskNum → Map<`${studentId}:${tpId}`, TargetPointState>
+  private targetPointSessions = new Map<string, Map<number, Map<string, TargetPointState>>>();
 
   ingest(
     sessionId: string,
@@ -38,7 +51,7 @@ export class ClusterAggregator {
           });
         } else {
           existing.evidenceSpans.push(event.evidenceSpan);
-          if (existing.evidenceSpans.length > 5) existing.evidenceSpans = existing.evidenceSpans.slice(-5);
+          if (existing.evidenceSpans.length > ClusterAggregator.MAX_CLUSTER_EVIDENCE) existing.evidenceSpans = existing.evidenceSpans.slice(-ClusterAggregator.MAX_CLUSTER_EVIDENCE);
           if (event.isHighlight) {
             existing.isHighlight = true;
             existing.highlightGist = event.highlightGist ?? existing.highlightGist;
@@ -50,7 +63,7 @@ export class ClusterAggregator {
       case 'reinforcing':
         if (existing) {
           existing.evidenceSpans.push(event.evidenceSpan);
-          if (existing.evidenceSpans.length > 5) existing.evidenceSpans = existing.evidenceSpans.slice(-5);
+          if (existing.evidenceSpans.length > ClusterAggregator.MAX_CLUSTER_EVIDENCE) existing.evidenceSpans = existing.evidenceSpans.slice(-ClusterAggregator.MAX_CLUSTER_EVIDENCE);
           if (event.isHighlight) {
             existing.isHighlight = true;
             existing.highlightGist = event.highlightGist ?? existing.highlightGist;
@@ -81,6 +94,33 @@ export class ClusterAggregator {
           event,
         );
         break;
+    }
+
+    // Ingest target point hits (binary: only high-confidence marks as hit)
+    if (event.targetPointHits?.length) {
+      const tpIndex = this.ensureTargetPointIndex(sessionId, taskNum);
+      for (const hit of event.targetPointHits) {
+        const tpKey = `${studentId}:${hit.targetPointId}`;
+        const existing = tpIndex.get(tpKey);
+        if (existing) {
+          if (hit.confidence === 'high' && !existing.hit) {
+            existing.hit = true;
+            existing.firstHitAt = Date.now();
+          }
+          if (hit.confidence === 'high' && existing.evidenceSpans.length < ClusterAggregator.MAX_TP_EVIDENCE) {
+            existing.evidenceSpans.push(hit.evidenceSpan);
+          }
+        } else {
+          tpIndex.set(tpKey, {
+            studentId,
+            studentName,
+            targetPointId: hit.targetPointId,
+            hit: hit.confidence === 'high',
+            evidenceSpans: hit.evidenceSpan ? [hit.evidenceSpan] : [],
+            firstHitAt: hit.confidence === 'high' ? Date.now() : 0,
+          });
+        }
+      }
     }
   }
 
@@ -155,11 +195,64 @@ export class ClusterAggregator {
     return clusterDefs.filter(c => !index?.has(`${studentId}:${c.id}`));
   }
 
+  getStudentTargetPoints(
+    sessionId: string,
+    taskNum: number,
+    studentId: string,
+    defs: Array<{ id: string; label: string }>,
+  ): Array<{ id: string; label: string; hit: boolean }> {
+    const index = this.targetPointSessions.get(sessionId)?.get(taskNum);
+    return defs.map(tp => ({
+      id: tp.id,
+      label: tp.label,
+      hit: !!index?.get(`${studentId}:${tp.id}`)?.hit,
+    }));
+  }
+
+  getTargetPointStats(
+    sessionId: string,
+    taskNum: number,
+  ): Array<{ targetPointId: string; uniqueStudents: number; students: Array<{ studentId: string; studentName: string }> }> {
+    const index = this.targetPointSessions.get(sessionId)?.get(taskNum);
+    if (!index) return [];
+
+    const byTp = new Map<string, Array<{ studentId: string; studentName: string }>>();
+    for (const state of index.values()) {
+      if (!state.hit) continue;
+      const list = byTp.get(state.targetPointId) || [];
+      if (!list.some(s => s.studentId === state.studentId)) {
+        list.push({ studentId: state.studentId, studentName: state.studentName });
+      }
+      byTp.set(state.targetPointId, list);
+    }
+
+    return [...byTp.entries()].map(([targetPointId, students]) => ({
+      targetPointId,
+      uniqueStudents: students.length,
+      students,
+    }));
+  }
+
   cleanupSession(sessionId: string): void {
     this.sessions.delete(sessionId);
+    this.targetPointSessions.delete(sessionId);
     const prefix = `${sessionId}:`;
     const toDelete = [...this.missHistory.keys()].filter(k => k.startsWith(prefix));
     for (const key of toDelete) this.missHistory.delete(key);
+  }
+
+  private ensureTargetPointIndex(
+    sessionId: string,
+    taskNum: number,
+  ): Map<string, TargetPointState> {
+    if (!this.targetPointSessions.has(sessionId)) {
+      this.targetPointSessions.set(sessionId, new Map());
+    }
+    const taskMap = this.targetPointSessions.get(sessionId)!;
+    if (!taskMap.has(taskNum)) {
+      taskMap.set(taskNum, new Map());
+    }
+    return taskMap.get(taskNum)!;
   }
 
   private ensureIndex(
