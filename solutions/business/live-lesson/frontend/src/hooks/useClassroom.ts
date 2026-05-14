@@ -241,6 +241,7 @@ export function reportPhase(sessionCode: string, studentId: string, task: number
 export interface DiscussMeta {
   startedAt: string
   goalReached?: boolean
+  completionType?: 'goal_reached' | 'fallback_rounds' | 'fallback_time'
 }
 
 export interface StudentProgress {

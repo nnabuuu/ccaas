@@ -25,7 +25,7 @@ export class Student {
   stepStartedAt: string;
 
   @Column({ type: 'simple-json', name: 'discuss_meta', nullable: true })
-  discussMeta: { startedAt: string; goalReached?: boolean } | null;
+  discussMeta: { startedAt: string; goalReached?: boolean; completionType?: 'goal_reached' | 'fallback_rounds' | 'fallback_time' } | null;
 
   @VersionColumn({ default: 1 })
   version: number;

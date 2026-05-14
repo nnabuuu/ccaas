@@ -232,7 +232,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   )
   const [elapsed, setElapsed] = useState(0)
   const [goalReached, setGoalReached] = useState(!!discussMeta?.goalReached)
-  const [phase, setPhase] = useState<Phase>(() => determineInitialPhase(!!isRevisit, !!discussMeta?.goalReached))
+  const [phase, setPhase] = useState<Phase>(() => determineInitialPhase(!!isRevisit, !!discussMeta?.goalReached, discussMeta?.completionType))
   const [fallbackReason, setFallbackReason] = useState<'rounds' | 'time' | ''>('')
   const [, setMcAnswer] = useState<number | null>(null)
   const calledDone = useRef(!!isRevisit)
@@ -289,6 +289,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
         maxRounds: d.maxRounds,
         startedAt: discussMeta?.startedAt,
         goalReached: discussMeta?.goalReached,
+        completionType: discussMeta?.completionType,
         maxTimeSeconds: d.maxTimeSeconds,
       })
       if (fallback.phase === 'fallback') {

@@ -165,7 +165,7 @@ export class DiscussService {
       }
 
       if (goalReached) {
-        student.discussMeta = { ...student.discussMeta!, goalReached: true };
+        student.discussMeta = { ...student.discussMeta!, goalReached: true, completionType: 'goal_reached' as const };
       }
       await this.studentRepo.save(student);
 
@@ -287,6 +287,12 @@ export class DiscussService {
         ...(mcSelectedIndex !== undefined && { mcSelectedIndex, mcCorrect }),
       },
     }).catch(err => this.logger.error(`Observer dispatch discuss_complete failed: ${err}`));
+
+    student.discussMeta = {
+      ...student.discussMeta!,
+      completionType,
+    };
+    await this.studentRepo.save(student);
 
     await this.studentSubmission.updatePhase(session, studentId, taskNum, 'takeaway');
     this.stateCache.markDirty(session.id);

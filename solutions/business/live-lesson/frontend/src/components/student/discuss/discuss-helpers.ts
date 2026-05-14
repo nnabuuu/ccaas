@@ -26,9 +26,11 @@ export function computeUrgency(
 export function determineInitialPhase(
   isRevisit: boolean,
   goalReached: boolean,
+  completionType?: string,
 ): 'chat' | 'done' {
   if (isRevisit) return 'done'
   if (goalReached) return 'done'
+  if (completionType === 'fallback_rounds' || completionType === 'fallback_time') return 'done'
   return 'chat'
 }
 
@@ -43,9 +45,12 @@ export function detectFallbackOnRestore(opts: {
   maxRounds: number
   startedAt?: string
   goalReached?: boolean
+  completionType?: string
   maxTimeSeconds: number
   now?: number
 }): FallbackResult {
+  // Already completed discuss (goal reached or MC submitted) — no need to show fallback again
+  if (opts.completionType) return { phase: 'chat', reason: '' }
   if (opts.studentMsgCount >= opts.maxRounds) {
     return { phase: 'fallback', reason: 'rounds' }
   }
