@@ -212,32 +212,32 @@ describe('filterMessagesForApi', () => {
 
 describe('findNewHits', () => {
   it('returns all hit items when prev is empty', () => {
-    const prev = new Set<number>()
+    const prev = new Set<string>()
     const clusters = [
-      { id: 1, hit: true },
-      { id: 2, hit: true },
-      { id: 3, hit: false },
+      { id: 'tp_1_1', hit: true },
+      { id: 'tp_1_2', hit: true },
+      { id: 'tp_2_1', hit: false },
     ]
     const result = findNewHits(prev, clusters)
-    expect(result).toEqual([{ id: 1, hit: true }, { id: 2, hit: true }])
+    expect(result).toEqual([{ id: 'tp_1_1', hit: true }, { id: 'tp_1_2', hit: true }])
   })
 
   it('returns only truly new hits when prev has some', () => {
-    const prev = new Set([1])
+    const prev = new Set(['tp_1_1'])
     const clusters = [
-      { id: 1, hit: true },
-      { id: 2, hit: true },
-      { id: 3, hit: false },
+      { id: 'tp_1_1', hit: true },
+      { id: 'tp_1_2', hit: true },
+      { id: 'tp_2_1', hit: false },
     ]
     const result = findNewHits(prev, clusters)
-    expect(result).toEqual([{ id: 2, hit: true }])
+    expect(result).toEqual([{ id: 'tp_1_2', hit: true }])
   })
 
   it('excludes items where hit is false', () => {
-    const prev = new Set<number>()
+    const prev = new Set<string>()
     const clusters = [
-      { id: 1, hit: false },
-      { id: 2, hit: false },
+      { id: 'tp_1_1', hit: false },
+      { id: 'tp_1_2', hit: false },
     ]
     const result = findNewHits(prev, clusters)
     expect(result).toEqual([])

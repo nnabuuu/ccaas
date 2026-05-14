@@ -282,11 +282,11 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
     })
   }, [sessionCode, studentId, task.id, fetchHistory])
 
-  // Fetch cluster progress on mount
+  // Fetch target point progress on mount
   useEffect(() => {
     if (!sessionCode || !studentId) return
     fetchProgress(studentId, task.id).then(data => {
-      if (data?.clusters) setClusters(data.clusters)
+      if (data?.targetPoints) setClusters(data.targetPoints)
     })
   }, [sessionCode, studentId, task.id, fetchProgress])
 
@@ -362,13 +362,13 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
 
       if (result.llmFailed) setRound(round)
 
-      // Fetch cluster progress (awaited so we can detect new hits for inline notifications)
+      // Fetch target point progress (awaited so we can detect new hits for inline notifications)
       let newHits: ClusterProgress[] = []
       if (studentId) {
         const data = await fetchProgress(studentId, task.id)
-        if (data?.clusters) {
-          newHits = findNewHits(prevHitIds, data.clusters)
-          setClusters(data.clusters)
+        if (data?.targetPoints) {
+          newHits = findNewHits(prevHitIds, data.targetPoints)
+          setClusters(data.targetPoints)
         }
       }
 

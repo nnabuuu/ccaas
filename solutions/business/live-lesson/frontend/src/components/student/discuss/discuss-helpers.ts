@@ -81,8 +81,8 @@ export function filterMessagesForApi(
 
 // ── findNewHits ──
 
-export function findNewHits<T extends { id: number; hit: boolean }>(
-  prevHitIds: Set<number>,
+export function findNewHits<T extends { id: string; hit: boolean }>(
+  prevHitIds: Set<string>,
   currentClusters: T[],
 ): T[] {
   return currentClusters.filter(c => c.hit && !prevHitIds.has(c.id))

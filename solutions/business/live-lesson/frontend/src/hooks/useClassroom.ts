@@ -315,6 +315,12 @@ export interface ClassroomState {
         highlightGist?: string
       }>
     }>
+    targetPointDefs: Array<{ id: string; label: string }>
+    targetPointStats: Array<{
+      targetPointId: string
+      uniqueStudents: number
+      students: Array<{ studentId: string; studentName: string }>
+    }>
   }>
   coaching?: {
     highlights: Array<{
@@ -595,7 +601,7 @@ export function useAiDiscuss(sessionCode: string) {
   return { discuss, loading }
 }
 
-// ── Discuss progress hook (cluster tracker) ──
+// ── Discuss progress hook (discuss points tracker) ──
 
 export interface ClusterProgress {
   id: string
@@ -606,7 +612,7 @@ export interface ClusterProgress {
 export function useDiscussProgress(sessionCode: string) {
   const fetchProgress = useCallback(async (
     studentId: string, taskNum: number,
-  ): Promise<{ clusters: ClusterProgress[] } | null> => {
+  ): Promise<{ clusters: ClusterProgress[]; targetPoints: ClusterProgress[] } | null> => {
     if (!sessionCode) return null
     try {
       const res = await fetch(`${API_BASE}/${sessionCode}/discuss-progress?studentId=${encodeURIComponent(studentId)}&taskNum=${taskNum}`)
