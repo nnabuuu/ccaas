@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiPromptBuilder } from '../ai-prompt-builder';
-import type { DiscussCluster } from '../../schemas/manifest.schema';
-import type { ClassifyResult } from '../../schemas/classroom/clustering';
+import type { DiscussCluster, TargetPoint } from '../../schemas/manifest.schema';
+import type { ClassifyResult, TargetPointHit } from '../../schemas/classroom/clustering';
 
 @Injectable()
 export class ClusterClassifier {
@@ -13,12 +13,29 @@ export class ClusterClassifier {
     studentMessage: string,
     clusters: DiscussCluster[],
     conversationContext?: string,
+    targetPoints?: TargetPoint[],
   ): Promise<ClassifyResult> {
     const validIds = [...clusters.map(c => c.id), 'other'];
+    const validTpIds = targetPoints?.map(tp => tp.id) ?? [];
 
     const clusterDefs = clusters
       .map(c => `${c.id}: ${c.label}\n  ${c.description}`)
       .join('\n\n');
+
+    const targetPointSection = targetPoints?.length
+      ? `\nTARGET POINTS (内容要点):
+${targetPoints.map(tp => `${tp.id}: ${tp.label}\n  ${tp.description}`).join('\n\n')}
+
+TARGET POINT RULES:
+- 一条发言可以同时命中 0 个或多个 target point（与 cluster 互斥不同）
+- target_point_hits: 数组，每个元素 {"target_point_id": "...", "confidence": "high|medium|low", "evidence_span": "..."}
+- 只输出有命中的 target point，未命中的不要列出
+- target_point_id 必须是 [${validTpIds.join(', ')}] 之一\n`
+      : '';
+
+    const outputFormat = targetPoints?.length
+      ? `{"cluster_id": "...", "confidence": "...", "evidence_span": "...", "event_type": "...", "is_highlight": false, "target_point_hits": [{"target_point_id": "tp_1_1", "confidence": "high", "evidence_span": "..."}]}`
+      : `{"cluster_id": "...", "confidence": "...", "evidence_span": "...", "event_type": "...", "is_highlight": false}`;
 
     const systemPrompt = `你是教学观察助手。判断学生发言最匹配哪个预设类别。
 
@@ -40,9 +57,9 @@ HIGHLIGHT DETECTION:
   - 例如：学生建立了课文不同部分之间的意外联系
 - is_highlight: false 当发言是常规的对错回答、简单重复、或离题
 - highlight_gist: 若 is_highlight 为 true，用一句中文说明该亮点的价值
-
+${targetPointSection}
 输出格式（纯 JSON）:
-{"cluster_id": "...", "confidence": "...", "evidence_span": "...", "event_type": "...", "is_highlight": false}
+${outputFormat}
 或
 {"cluster_id": "other", "confidence": "low", "evidence_span": "...", "event_type": "new_signal", "is_highlight": true, "highlight_gist": "学生自发引入日本审美案例，扩展了课文的跨文化视角"}
 
@@ -50,20 +67,20 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
 
     const raw = await this.aiPromptBuilder.callLlm(systemPrompt, studentMessage, {
       responseFormat: { type: 'json_object' },
-      maxTokens: 200,
+      maxTokens: targetPoints?.length ? 300 : 200,
       temperature: 0,
     });
 
-    return this.parseResult(raw, validIds);
+    return this.parseResult(raw, validIds, validTpIds);
   }
 
-  private parseResult(raw: string, validIds: string[]): ClassifyResult {
+  private parseResult(raw: string, validIds: string[], validTpIds: string[] = []): ClassifyResult {
     let parsed: any;
     try {
       parsed = JSON.parse(raw.replace(/^```(?:json)?\s*\n?|\n?```\s*$/g, '').trim());
     } catch {
       this.logger.warn(`Cluster classify JSON parse failed: ${raw.slice(0, 200)}`);
-      return { clusterId: 'other', confidence: 'low', evidenceSpan: '', eventType: 'new_signal', isHighlight: false };
+      return { clusterId: 'other', confidence: 'low', evidenceSpan: '', eventType: 'new_signal', isHighlight: false, targetPointHits: [] };
     }
 
     const clusterId = validIds.includes(parsed.cluster_id) ? parsed.cluster_id : 'other';
@@ -80,6 +97,22 @@ ${conversationContext ? `CONVERSATION CONTEXT:\n${conversationContext}` : ''}`;
       ? parsed.highlight_gist
       : undefined;
 
-    return { clusterId, confidence, evidenceSpan, eventType, isHighlight, highlightGist };
+    const targetPointHits: TargetPointHit[] = [];
+    if (Array.isArray(parsed.target_point_hits)) {
+      for (const hit of parsed.target_point_hits) {
+        if (
+          validTpIds.includes(hit.target_point_id) &&
+          ['high', 'medium', 'low'].includes(hit.confidence)
+        ) {
+          targetPointHits.push({
+            targetPointId: hit.target_point_id,
+            confidence: hit.confidence,
+            evidenceSpan: typeof hit.evidence_span === 'string' ? hit.evidence_span : '',
+          });
+        }
+      }
+    }
+
+    return { clusterId, confidence, evidenceSpan, eventType, isHighlight, highlightGist, targetPointHits };
   }
 }
