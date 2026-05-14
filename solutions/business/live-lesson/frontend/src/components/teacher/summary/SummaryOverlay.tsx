@@ -32,6 +32,7 @@ interface Props {
 const DEFAULT_VB = { x: -10, y: -10, w: 120, h: 120 }
 const MIN_ZOOM = 0.5
 const MAX_ZOOM = 4
+const DRAG_THRESHOLD = 3 // px — ignore micro-movements so clicks on dots work
 
 export default function SummaryOverlay({ open, onClose, state, students, questions, stepNames, totalSteps, taskSteps, onStudentClick }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -39,7 +40,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
   const viewBoxRef = useRef(viewBox)
   useEffect(() => { viewBoxRef.current = viewBox }, [viewBox])
   const svgRef = useRef<SVGSVGElement>(null)
-  const dragRef = useRef<{ startX: number; startY: number; startVB: typeof DEFAULT_VB } | null>(null)
+  const dragRef = useRef<{ startX: number; startY: number; startVB: typeof DEFAULT_VB; active: boolean } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
   const { stepToTask, taskToStep, taskDurations } = useMemo(() => buildStepMapping(taskSteps), [taskSteps])
@@ -148,23 +149,29 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
   // ── Drag to pan ──
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return
-    dragRef.current = { startX: e.clientX, startY: e.clientY, startVB: { ...viewBoxRef.current } }
-    setIsDragging(true)
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startVB: { ...viewBoxRef.current }, active: false }
   }, [])
 
   useEffect(() => {
     if (!open) return
     const handleMouseMove = (e: MouseEvent) => {
       if (!dragRef.current || !svgRef.current) return
+      const dx = e.clientX - dragRef.current.startX
+      const dy = e.clientY - dragRef.current.startY
+      if (!dragRef.current.active) {
+        if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return
+        dragRef.current.active = true
+        setIsDragging(true)
+      }
       const svgRect = svgRef.current.getBoundingClientRect()
       const scaleX = viewBoxRef.current.w / svgRect.width
       const scaleY = viewBoxRef.current.h / svgRect.height
-      const dx = (e.clientX - dragRef.current.startX) * scaleX
-      const dy = (e.clientY - dragRef.current.startY) * scaleY
+      const svgDx = dx * scaleX
+      const svgDy = dy * scaleY
       setViewBox({
         ...dragRef.current.startVB,
-        x: dragRef.current.startVB.x - dx,
-        y: dragRef.current.startVB.y - dy,
+        x: dragRef.current.startVB.x - svgDx,
+        y: dragRef.current.startVB.y - svgDy,
       })
     }
     const handleMouseUp = () => { dragRef.current = null; setIsDragging(false) }
@@ -222,7 +229,7 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
                 preserveAspectRatio="xMidYMid meet"
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
-                style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                style={{ cursor: isDragging ? 'grabbing' : 'default' }}
               >
                 {/* Quadrant backgrounds (y is inverted: 0=top=high engagement) — double-click to zoom */}
                 <rect x="50" y="0" width="50" height="50" fill="var(--green-soft)" opacity="0.5" style={{ cursor: 'zoom-in' }} onDoubleClick={() => focusQuadrant('star')} />
