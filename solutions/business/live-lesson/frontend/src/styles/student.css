@@ -623,7 +623,6 @@
 .stu-guide-callout.amber strong{color:var(--amber)}
 .stu-guide-callout.teal{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(26,110,94,.15)}
 .stu-guide-callout.teal strong{color:var(--teal)}
-.stu-guide-tip{padding:0 28px 16px}
 @media(max-width:768px){.stu-guide-strip{grid-template-columns:1fr}}
 
 /* ── Discuss Guide Modal (sd-guide-*) ── */
@@ -631,7 +630,8 @@
 .sd-guide-btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-bg)}
 .sd-guide-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:24px;animation:sd-guide-fade-in .2s ease-out}
 .sd-guide-backdrop.closing{animation:sd-guide-fade-out .15s ease-in forwards}
-.sd-guide-popup{width:100%;max-width:820px;max-height:90vh;overflow-y:auto;background:var(--surface);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);display:flex;flex-direction:column;animation:sd-guide-scale-up .25s cubic-bezier(.34,1.56,.64,1)}
+.sd-guide-popup{width:100%;max-width:820px;max-height:90vh;overflow-y:auto;scrollbar-width:none;background:var(--surface);border-radius:14px;box-shadow:0 16px 48px rgba(0,0,0,.12),0 0 0 1px rgba(0,0,0,.04);display:flex;flex-direction:column;animation:sd-guide-scale-up .25s cubic-bezier(.34,1.56,.64,1)}
+.sd-guide-popup::-webkit-scrollbar{display:none}
 .sd-guide-popup.closing{animation:sd-guide-scale-down .15s ease-in forwards}
 .sd-guide-header{display:flex;align-items:baseline;gap:12px;padding:24px 28px 18px;border-bottom:1px solid var(--border)}
 .sd-guide-header h3{font-size:18px;font-weight:700;color:var(--t1)}

@@ -164,11 +164,6 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
         aria-modal="true"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="sd-guide-header">
-          <h3>欢迎来到学习空间</h3>
-        </div>
-
         {/* Mission Box */}
         <div className="stu-guide-mission">
           <div className="stu-guide-mission-box">
@@ -190,9 +185,6 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
             )}
           </div>
         </div>
-
-        {/* Section label */}
-        <div className="sd-guide-section-label">你的学习区域</div>
 
         {/* Cards */}
         <div className="sd-guide-cards">
@@ -217,14 +209,6 @@ export default function StudentGuide({ open, onClose, manifest }: Props) {
           <div className="stu-guide-callout amber">
             <span className="stu-guide-callout-icon">&#x1F3C6;</span>
             <span><strong>深度互动奖</strong> 课程结束后，我们会评选 <strong>5 位与 AI 互动最有深度的同学</strong>，给予奖励。不是比谁说得多，而是比谁想得深！</span>
-          </div>
-        </div>
-
-        {/* Tip */}
-        <div className="stu-guide-tip">
-          <div className="stu-guide-callout teal">
-            <span className="stu-guide-callout-icon">&#x1F4A1;</span>
-            <span>随时点击底部的 <strong>&ldquo;?&rdquo;</strong> 按钮可以重新打开这个指南。</span>
           </div>
         </div>
 
