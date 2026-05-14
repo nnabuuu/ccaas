@@ -447,16 +447,15 @@ export default function SummaryOverlay({ open, onClose, state, students, questio
         )}
       </div>
     </OverlayShell>
+    {/* Rendered after OverlayShell so DOM order places it on top (both use position:fixed) */}
     {modalStudent && modalStudentData && (
-      <div style={{ position: 'relative', zIndex: 200 }}>
-        <StudentModal
-          student={modalStudentData}
-          manifest={manifest}
-          state={state}
-          questions={questions}
-          onClose={() => setModalStudent(null)}
-        />
-      </div>
+      <StudentModal
+        student={modalStudentData}
+        manifest={manifest}
+        state={state}
+        questions={questions}
+        onClose={() => setModalStudent(null)}
+      />
     )}
   </>
   )
