@@ -27,6 +27,7 @@ export interface RecapResponse {
   aiStats: { translateCount: number; askCount: number; discussRounds: number };
   totalTime: number | null;
   bonusCompleted: boolean;
+  aiRecap: string;
 }
 
 @Injectable()
@@ -224,12 +225,14 @@ export class PersonalizationService {
     });
     if (!student) throw new NotFoundException('Student not found in this session');
 
-    // ── Tier (shared logic with getPersonalTouch) ──
+    // ── Tier + strategies (shared logic with getPersonalTouch) ──
     let tier: RecapResponse['tier'] = null;
+    let strategies: Array<{ task: number; strategy: string; score: number; attempts: number }> = [];
     try {
       const computed = await this.computeTierAndStrategies(session, studentId);
-      if (computed?.tier.label) {
-        tier = computed.tier;
+      if (computed) {
+        strategies = computed.strategies;
+        if (computed.tier.label) tier = computed.tier;
       }
     } catch (e) {
       this.logger.warn(`Recap tier computation failed: ${e}`);
@@ -282,12 +285,29 @@ export class PersonalizationService {
       if (elapsed >= 0) totalTime = elapsed;
     }
 
+    // ── AI Recap (personalized summary, 5s timeout to avoid blocking student) ──
+    const aiStats = { translateCount, askCount, discussRounds };
+    let aiRecap = '';
+    try {
+      const { system, user } = this.aiPromptBuilder.buildRecapPrompt({
+        strategies, highlights, aiStats, tier,
+      });
+      const timeout = new Promise<string>(r => setTimeout(() => r(''), 5000));
+      aiRecap = await Promise.race([
+        this.aiPromptBuilder.callLlm(system, user, { maxTokens: 512, temperature: 0.8 }),
+        timeout,
+      ]);
+    } catch (e) {
+      this.logger.warn(`Recap AI summary failed: ${e}`);
+    }
+
     return {
       tier,
       highlights,
-      aiStats: { translateCount, askCount, discussRounds },
+      aiStats,
       totalTime,
       bonusCompleted: bonusCount > 0,
+      aiRecap,
     };
   }
 }

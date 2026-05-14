@@ -356,6 +356,62 @@ Do NOT include a followUpQuestion key.`);
     }
   }
 
+  /** Build prompt for recap AI summary (综合回顾 + 分模块点评 + 成长建议) */
+  buildRecapPrompt(data: {
+    strategies: Array<{ task: number; strategy: string; score: number; attempts: number }>;
+    highlights: Array<{ taskNum: number; gist: string; evidenceSpan: string }>;
+    aiStats: { translateCount: number; askCount: number; discussRounds: number };
+    tier: { label: string; labelEn: string; tone: string } | null;
+  }): { system: string; user: string } {
+    const system = `你是英语阅读教学助教，正在为学生写课后个性化回顾总结。
+
+输出格式——用 markdown，分三段，每段带加粗小标题：
+1. **综合回顾**：1-2 句，概括这节课的整体表现，语气温暖肯定
+2. **课堂亮点**：2-3 句，分别点评 Practice（得分、策略掌握）、Discussion（引用讨论发言）、AI 工具使用情况
+3. **成长方向**：1 句，基于薄弱项给出一条具体可行的建议
+
+规则：
+- 用中文
+- 总共不超过 200 字
+- 不要使用"同学"称呼，直接用"你"
+- 如果讨论亮点为空，跳过讨论点评，改为鼓励下次多参与
+- 如果 AI 统计全为 0，鼓励下次尝试
+- 语气鼓励、真诚，避免套话`;
+
+    const parts: string[] = [];
+
+    // Practice data
+    if (data.strategies.length > 0) {
+      const lines = data.strategies.map(
+        s => `Task ${s.task} - ${s.strategy}: ${s.score}%, ${s.attempts} 次尝试`,
+      );
+      parts.push(`【练习表现】\n${lines.join('\n')}`);
+    } else {
+      parts.push(`【练习表现】无数据`);
+    }
+
+    if (data.tier) {
+      parts.push(`【综合等级】${data.tier.labelEn} (${data.tier.label})`);
+    }
+
+    // Discussion highlights
+    if (data.highlights.length > 0) {
+      const hlLines = data.highlights.map(
+        h => `Task ${h.taskNum}: "${h.evidenceSpan}"`,
+      );
+      parts.push(`【讨论亮点】\n${hlLines.join('\n')}`);
+    } else {
+      parts.push(`【讨论亮点】无`);
+    }
+
+    // AI stats
+    parts.push(`【AI 工具使用】翻译 ${data.aiStats.translateCount} 次，提问 ${data.aiStats.askCount} 次，讨论 ${data.aiStats.discussRounds} 轮`);
+
+    const user = `请根据以下数据为这位学生写课后回顾：\n\n${parts.join('\n\n')}`;
+
+    return { system, user };
+  }
+
   /**
    * Parse with LLM repair fallback: sync parse → code-fence strip → LLM repair → raw fallback.
    * When JSON.parse fails, sends the raw text back to the LLM with the target schema
