@@ -128,7 +128,7 @@ export default function LessonPage() {
 
   if (!lessonId) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-surface-0 text-text-primary">
+      <div className="min-h-screen flex items-center justify-center bg-surface-0 text-text-primary">
         <p>课程未找到</p>
       </div>
     )
@@ -146,7 +146,7 @@ export default function LessonPage() {
     : null
 
   return (
-    <div className="min-h-[100dvh] h-[100dvh] flex flex-col bg-surface-0">
+    <div className="min-h-screen h-screen flex flex-col bg-surface-0">
       {/* Header: back + title | progress pills | connection dot */}
       <header className="flex items-center justify-between px-5 py-2.5 bg-surface-0 border-b border-white/[0.04] flex-shrink-0 gap-4">
         <div className="flex items-center gap-3 flex-shrink-0">

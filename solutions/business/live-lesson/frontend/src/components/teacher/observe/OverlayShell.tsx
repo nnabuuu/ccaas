@@ -42,7 +42,7 @@ export default function OverlayShell({ open, onClose, depth, children }: Props) 
         data-testid={`overlay-backdrop-${depth}`}
         onClick={onClose}
         style={{
-          position: 'fixed', inset: 0, zIndex: 100 + depth * 10,
+          position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 100 + depth * 10,
           background: `rgba(28,28,26,${depth === 0 ? '.18' : '.12'})`,
           opacity: isVisible ? 1 : 0,
           transition: 'opacity .3s ease',

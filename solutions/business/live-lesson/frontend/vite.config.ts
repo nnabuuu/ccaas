@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
   const backendUrl = new URL(BACKEND_TARGET)
 
   return {
+    build: {
+      target: ['es2020', 'chrome80', 'firefox78'],
+    },
     plugins: [
       {
         name: 'fix-linkparas-reexport',
