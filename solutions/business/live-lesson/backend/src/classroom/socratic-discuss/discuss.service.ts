@@ -112,7 +112,8 @@ export class DiscussService {
         ? (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx)
         : undefined;
       const clusters = stepDefForCluster?.discuss?.clusters;
-      if (clusters?.length) {
+      const targetPoints = stepDefForCluster?.discuss?.targetPoints;
+      if (clusters?.length || targetPoints?.length) {
         const recentContext = messages
           .slice(-6)
           .map(m => `${m.role}: ${m.text}`)
@@ -120,7 +121,7 @@ export class DiscussService {
         try {
           const timeout = new Promise<null>(r => setTimeout(() => r(null), 3000));
           const classifyResult = await Promise.race([
-            this.clusterClassifier.classify(lastStudentMsg, clusters, recentContext),
+            this.clusterClassifier.classify(lastStudentMsg, clusters || [], recentContext, targetPoints),
             timeout,
           ]);
           if (classifyResult) {
@@ -144,7 +145,7 @@ export class DiscussService {
             const misses = this.clusterAggregator.getConsecutiveMisses(session.id, taskNum, studentId);
             if (misses >= 2) {
               const unhit = this.clusterAggregator.getUnhitClusterIds(
-                session.id, taskNum, studentId, clusters,
+                session.id, taskNum, studentId, clusters || [],
               );
               if (unhit.length > 0) {
                 const pick = unhit[Math.floor(Math.random() * unhit.length)];
@@ -214,19 +215,25 @@ export class DiscussService {
     session: { id: string; lessonId: string },
     studentId: string,
     taskNum: number,
-  ): Promise<{ clusters: Array<{ id: string; label: string; hit: boolean }> }> {
+  ): Promise<{
+    clusters: Array<{ id: string; label: string; hit: boolean }>;
+    targetPoints: Array<{ id: string; label: string; hit: boolean }>;
+  }> {
     const manifest = await this.manifestCache.getManifest(session.lessonId, this.lessonRepo);
-    if (!manifest) return { clusters: [] };
+    if (!manifest) return { clusters: [], targetPoints: [] };
     const taskMap = buildTaskMap(manifest);
     const stepIdx = taskMap.taskToStep[taskNum] ?? taskNum;
     const stepDef = (manifest.readingSteps || []).find((s: any) => s.idx === stepIdx);
     const clusters = stepDef?.discuss?.clusters;
-    if (!clusters?.length) return { clusters: [] };
+    const tpDefs = stepDef?.discuss?.targetPoints;
 
     return {
-      clusters: this.clusterAggregator.getStudentClusters(
-        session.id, taskNum, studentId, clusters,
-      ),
+      clusters: clusters?.length
+        ? this.clusterAggregator.getStudentClusters(session.id, taskNum, studentId, clusters)
+        : [],
+      targetPoints: tpDefs?.length
+        ? this.clusterAggregator.getStudentTargetPoints(session.id, taskNum, studentId, tpDefs)
+        : [],
     };
   }
 

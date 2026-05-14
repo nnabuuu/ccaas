@@ -177,16 +177,25 @@ export class ClassroomStateService {
     }));
 
     // Cluster stats per task step
-    const clusterStats: Record<number, { definitions: Array<{ id: string; label: string }>; clusters: ReturnType<ClusterAggregator['getClusterStats']> }> = {};
+    const clusterStats: Record<number, {
+      definitions: Array<{ id: string; label: string }>;
+      clusters: ReturnType<ClusterAggregator['getClusterStats']>;
+      targetPointDefs: Array<{ id: string; label: string }>;
+      targetPointStats: ReturnType<ClusterAggregator['getTargetPointStats']>;
+    }> = {};
     for (let taskNum = 1; taskNum <= taskMap.maxTask; taskNum++) {
       const stepIdx = taskMap.taskToStep[taskNum];
       const stepDef = readingSteps.find((s) => s.idx === stepIdx) as Record<string, any> | undefined;
       const defs: Array<{ id: string; label: string; description: string }> = stepDef?.discuss?.clusters || [];
+      const tpDefs: Array<{ id: string; label: string; description: string }> = stepDef?.discuss?.targetPoints || [];
       const stats = this.clusterAggregator.getClusterStats(sessionId, taskNum);
-      if (defs.length > 0 || stats.length > 0) {
+      const tpStats = this.clusterAggregator.getTargetPointStats(sessionId, taskNum);
+      if (defs.length > 0 || stats.length > 0 || tpDefs.length > 0 || tpStats.length > 0) {
         clusterStats[taskNum] = {
           definitions: defs.map(d => ({ id: d.id, label: d.label })),
           clusters: stats,
+          targetPointDefs: tpDefs.map(d => ({ id: d.id, label: d.label })),
+          targetPointStats: tpStats,
         };
       }
     }
