@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import MapGuide from './MapGuide'
+import { readGuideSeen, markGuideSeen } from './guide-helpers'
 
 
 interface MapAxis { neg: string; pos: string; label: string }
@@ -36,7 +37,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
   const [activeId, setActiveId] = useState<string | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
   const [guideOpen, setGuideOpen] = useState(false)
-  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-map') } catch { return false } })())
+  const guideSeen = useRef(readGuideSeen('guide-seen-map'))
   const planeRef = useRef<HTMLDivElement>(null)
   const hasDragged = useRef(false)
 
@@ -200,7 +201,7 @@ export function MapExercise({ prompt, axes, mapItems, minReasonLength, ans, setA
           aria-label="Map exercise guide"
           onClick={() => {
             setGuideOpen(true)
-            try { localStorage.setItem('guide-seen-map', '1') } catch { /* */ }
+            markGuideSeen('guide-seen-map')
             guideSeen.current = true
           }}
         >?</button>

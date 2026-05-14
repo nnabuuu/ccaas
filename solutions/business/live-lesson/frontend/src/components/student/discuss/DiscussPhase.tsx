@@ -5,6 +5,7 @@ import type { ClusterProgress } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
 import type { Task, FallbackMC } from '../task-data'
 import DiscussGuide from './DiscussGuide'
+import { readGuideSeen, markGuideSeen } from '../exercise/guide-helpers'
 import { formatTime, computeUrgency, determineInitialPhase, detectFallbackOnRestore, deriveCompletionType, filterMessagesForApi, findNewHits, mcOptionClass } from './discuss-helpers'
 import { runStarAnimation } from './star-animation'
 
@@ -242,7 +243,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const [guideOpen, setGuideOpen] = useState(false)
-  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-discuss') } catch { return false } })())
+  const guideSeen = useRef(readGuideSeen('guide-seen-discuss'))
   const [clusters, setClusters] = useState<ClusterProgress[]>([])
   const [nudge, setNudge] = useState<string | null>(null)
 
@@ -518,7 +519,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
           )}
           <button className={`sd-guide-btn${phase === 'chat' && round === 0 && !guideOpen && !guideSeen.current ? ' pulse' : ''}`} onClick={() => {
             setGuideOpen(true)
-            try { localStorage.setItem('guide-seen-discuss', '1') } catch { /* */ }
+            markGuideSeen('guide-seen-discuss')
             guideSeen.current = true
           }} aria-label="Discussion guide">?</button>
         </div>

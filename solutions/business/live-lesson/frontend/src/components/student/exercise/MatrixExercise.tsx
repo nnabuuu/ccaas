@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react'
 import HelpButton from '../HelpButton'
 import { scrollToParas } from '../utils/linkParas'
 import MatrixGuide from './MatrixGuide'
+import { readGuideSeen, markGuideSeen } from './guide-helpers'
 
 import type { TaskMatrixRow, ServerHintMap } from '../task-data'
 
@@ -42,7 +43,7 @@ function selectPracticeRows(nonDemoIndices: number[], count: number, seed: strin
 
 export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, serverHints, ans = {}, onAnsChange, disabled, rowResults }: Props) {
   const [guideOpen, setGuideOpen] = useState(false)
-  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-matrix') } catch { return false } })())
+  const guideSeen = useRef(readGuideSeen('guide-seen-matrix'))
 
   // Determine which rows are practice vs extra-demo
   const { practiceIndices, extraDemoIndices } = useMemo(() => {
@@ -83,7 +84,7 @@ export function MatrixExercise({ rows, practiceCount, studentId, stepIdx, server
           aria-label="Matrix exercise guide"
           onClick={() => {
             setGuideOpen(true)
-            try { localStorage.setItem('guide-seen-matrix', '1') } catch { /* */ }
+            markGuideSeen('guide-seen-matrix')
             guideSeen.current = true
           }}
         >?</button>

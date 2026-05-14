@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import type { TaskExercise } from '../task-data'
 import type { TextOverlay } from '../TextPanel'
 import SelectEvidenceGuide from './SelectEvidenceGuide'
+import { readGuideSeen, markGuideSeen } from './guide-helpers'
 
 interface SectionState {
   stage: 'pick' | 'evidence' | 'graded'
@@ -59,7 +60,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
   const [currentId, setCurrentId] = useState(sections[0].id)
   const [correctFlash, setCorrectFlash] = useState<string | null>(null)
   const [guideOpen, setGuideOpen] = useState(false)
-  const guideSeen = useRef((() => { try { return !!localStorage.getItem('guide-seen-se') } catch { return false } })())
+  const guideSeen = useRef(readGuideSeen('guide-seen-se'))
   const [shakeKey, setShakeKey] = useState(0)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -264,7 +265,7 @@ export function SelectEvidenceExercise({ exercise, onOverlayChange, onSubmit, on
             aria-label="Select evidence guide"
             onClick={() => {
               setGuideOpen(true)
-              try { localStorage.setItem('guide-seen-se', '1') } catch { /* */ }
+              markGuideSeen('guide-seen-se')
               guideSeen.current = true
             }}
           >?</button>

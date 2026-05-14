@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useContext, useEffect } from 'react'
 import { useAiAsk } from '../../../hooks/useClassroom'
 import { SessionCtx } from '../TaskPanel'
+import { aiChatStorageKey, readChatMessages, writeChatMessages } from '../exercise/guide-helpers'
 
 interface ChatMsg {
   t: 'q' | 'a'
@@ -26,22 +27,17 @@ export default function AIFloat({ taskId, taskName, phase, aiHints }: Props) {
   const isDiscuss = phase === 'discuss'
 
   // Storage key for session persistence
-  const storageKey = `ai-chat-${sessionCode || 'local'}-${taskId}`
+  const storageKey = aiChatStorageKey(sessionCode, taskId)
 
   // Restore chat from localStorage on mount / taskId change
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(storageKey)
-      if (saved) setMsgs(JSON.parse(saved))
-      else setMsgs([])
-    } catch { setMsgs([]) }
+    const restored = readChatMessages<ChatMsg>(storageKey)
+    setMsgs(restored)
   }, [storageKey])
 
   // Persist chat to localStorage on change
   useEffect(() => {
-    if (msgs.length > 0) {
-      try { localStorage.setItem(storageKey, JSON.stringify(msgs)) } catch { /* quota */ }
-    }
+    if (msgs.length > 0) writeChatMessages(storageKey, msgs)
   }, [msgs, storageKey])
 
   const scrollToBottom = useCallback(() => {
