@@ -349,7 +349,7 @@
       "displayName": "Skim",
       "strategy": "Skimming",
       "duration": 8,
-      "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：Phenomenon → History → Culture → Conclusion。",
+      "description": "只读 ¶3-8 首句 + 关键转折词，提炼文章骨架：History → Culture → Conclusion。",
       "focusParagraphs": [
         "p1",
         "p2",
@@ -361,36 +361,20 @@
         "p8"
       ],
       "aiHints": [
-        { "q": "What is \"Phenomenon\"?", "label": "Phenomenon 是什么?" },
         { "q": "What does \"It appears that\" mean?", "label": "It appears that 什么意思?" },
         { "q": "How do I skim?", "label": "怎么 skim?" }
       ],
       "exerciseLabel": "Match each section to its function — then prove it from the text.",
       "subtitle": "Find the skeleton",
-      "summary": "Text structure: Phenomenon → History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
+      "summary": "Text structure: History → Culture → Conclusion.\n\nThe writer builds an argument step by step. Next, let's collect the evidence.",
       "answerKey": {
         "type": "select-evidence",
         "functionOptions": [
-          "Phenomenon",
           "History",
           "Culture",
           "Conclusion"
         ],
         "sections": [
-          {
-            "id": "p12",
-            "label": "¶1-2",
-            "range": [
-              1,
-              2
-            ],
-            "correctFunction": "Phenomenon",
-            "minHits": 2,
-            "hint": "Look for the two opposing IDEALS + the pivot question + the named ISSUE.",
-            "hintZh": "找两个对立的\"美的标准\" + 转折问句 + 被命名的问题。",
-            "aiCorrect": "Right — these phrases set up TWO opposing ideals + the named issue (\"shallow beauty ideals\"). That tension is the **phenomenon** the rest of the text investigates.",
-            "aiPartial": "Look for the **conflict-makers** — the two opposing ideals + the question that pivots between them."
-          },
           {
             "id": "p34",
             "label": "¶3-4",
@@ -435,60 +419,6 @@
           }
         ],
         "paragraphTokens": {
-          "1": [
-            {
-              "t": "Nigerian teenager Happiness Edem had just one aim in life: to put on weight. So she spent six months in a "
-            },
-            {
-              "t": "\"fattening room\"",
-              "kind": "pick"
-            },
-            {
-              "t": " where her daily routine was to sleep, eat and grow fat. She went in weighing 60 kg, but came out weighing twice that. "
-            },
-            {
-              "t": "In some parts of Africa",
-              "kind": "distractor",
-              "why": "A place — but ¶1-2 isn't about places. It's about the conflict between two ideals."
-            },
-            {
-              "t": ", "
-            },
-            {
-              "t": "being fat is desirable because it is a sign of attractiveness in women and power and wealth in men",
-              "kind": "evidence",
-              "why": "Names ONE side of the conflict — a clear beauty ideal stated as fact. Sets up the contrast."
-            },
-            {
-              "t": "."
-            }
-          ],
-          "2": [
-            {
-              "t": "However, in magazines and in the media we are bombarded with images of "
-            },
-            {
-              "t": "slim women with a fair complexion",
-              "kind": "evidence",
-              "why": "Names the OTHER side of the conflict. Together with ¶1's fat-as-beauty, this is the phenomenon."
-            },
-            {
-              "t": " and handsome, broad-shouldered young men. It is fairly rare to see short-sighted, middle-aged models. Some people question these "
-            },
-            {
-              "t": "shallow beauty ideals",
-              "kind": "evidence",
-              "why": "The exact phrase the article will question. ¶1-2 sets up this issue — that's what makes them the Phenomenon section."
-            },
-            {
-              "t": ". "
-            },
-            {
-              "t": "Is one idea of physical beauty really more attractive than another?",
-              "kind": "evidence",
-              "why": "A pivot — the writer's central question that the rest of the article investigates."
-            }
-          ],
           "3": [
             {
               "t": "Ideas about physical beauty "
@@ -682,7 +612,7 @@
         }
       },
       "discuss": {
-        "goal": "Student should understand that the writer organizes the text from Phenomenon → History → Culture → Conclusion, building an argument step by step rather than just listing random examples.",
+        "goal": "Student should understand that the writer organizes the text from History → Culture → Conclusion, building an argument step by step rather than just listing random examples.",
         "openingQ": "You matched the sections to their functions. But here's a deeper question: why does the writer put History BEFORE Culture? Could the order be reversed? What would change?",
         "openingQZh": "作者为什么把\"历史\"放在\"文化\"前面？顺序能不能反过来？会有什么变化？",
         "scaffolds": ["If the writer started with culture...", "History comes first because...", "The order creates..."],
@@ -738,7 +668,7 @@
         "speechLine": "Now read only the **first sentence** of each paragraph. Find the **signal words**.",
         "focusType": "signal-words",
         "focusTitle": "信号词 & 文章骨架",
-        "focusSubtitle": "首句 + 转折词 → 四段结构",
+        "focusSubtitle": "首句 + 转折词 → 三段结构",
         "quickActions": [
           {
             "emoji": "👁",
@@ -755,7 +685,7 @@
           {
             "emoji": "🏗",
             "label": "文章结构",
-            "message": "文章骨架：¶1-2 现象 → ¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？",
+            "message": "文章骨架：¶3-4 历史 → ¶5-7 文化 → ¶8 结论。你找到了吗？",
             "type": "hint"
           },
           {
@@ -771,12 +701,12 @@
             "body": "核心公式：首句 + 信号词 = 段落功能\n\n不要逐字读！3 分钟拿到全文骨架 vs 30 分钟逐字读。\n提问：\"What does 'change over time' tell you about ¶3?\""
           },
           {
-            "title": "四段结构",
-            "body": "¶1-2: Phenomenon — 现象对比（Nigeria vs Media）\n¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（show social position / display group identity）"
+            "title": "三段结构",
+            "body": "¶3-4: History — 跨时间（Egypt, 1600s Europe）\n¶5-7: Culture — 跨空间（Borneo, Maori, Myanmar, Indonesia）\n¶8: Conclusion — 总结（show social position / display group identity）"
           },
           {
             "title": "过渡到 Step 3",
-            "body": "确认学生找到四段结构后：\n\"Good, we now have the skeleton. Let's fill in the flesh — each group focuses on 2-3 paragraphs and builds a matrix.\""
+            "body": "确认学生找到三段结构后：\n\"Good, we now have the skeleton. Let's fill in the flesh — each group focuses on 2-3 paragraphs and builds a matrix.\""
           }
         ]
       },
@@ -1018,7 +948,7 @@
       "answerKey": {
         "type": "map",
         "randomPractice": true,
-        "practiceCount": 3,
+        "practiceCount": 1,
         "prompt": "Each chip below is one beauty practice from the text. Drag it onto the plane based on **two questions**, then explain *why* you placed it where you did.",
         "axes": {
           "x": { "neg": "Just appearance", "pos": "Cultural meaning", "label": "Why is it done?" },
@@ -1366,7 +1296,7 @@
             {
               "id": "C",
               "title": "骨架",
-              "subtitle": "四段结构",
+              "subtitle": "三段结构",
               "tone": "accent",
               "width": 2
             }
@@ -1685,11 +1615,6 @@
         "data": {
           "arrow": "right",
           "steps": [
-            {
-              "paragraph": "¶1-2",
-              "label": "Phenomenon",
-              "sub": "Media vs Reality"
-            },
             {
               "paragraph": "¶3-4",
               "label": "History",
@@ -2264,7 +2189,7 @@
       "id": "K2",
       "type": "knowledge",
       "label": "信号词与文章结构",
-      "description": "通过首句信号词识别四段结构：Phenomenon→History→Culture→Conclusion。区分时间词(change over time)和地点词(different cultures)"
+      "description": "通过首句信号词识别三段结构：History→Culture→Conclusion。区分时间词(change over time)和地点词(different cultures)"
     },
     {
       "id": "K3",
