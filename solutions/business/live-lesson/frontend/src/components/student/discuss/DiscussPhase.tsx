@@ -175,7 +175,7 @@ function ContinueChat({ taskId }: { taskId: number }) {
       <div className="sd-input-row">
         <textarea
           className="sd-input"
-          placeholder={loading ? 'Waiting for AI...' : 'Ask anything... (English or 中文)'}
+          placeholder={loading ? 'Waiting for AI...' : 'Ask anything...'}
           value={input}
           rows={1}
           disabled={loading}
@@ -643,7 +643,7 @@ export function DiscussPhase({ task, onDone, isRevisit }: { task: Task; onDone: 
             <textarea
               ref={inputRef}
               className="sd-input"
-              placeholder="Share your thinking... (English or 中文 both OK)"
+              placeholder="Share your thinking..."
               value={input}
               rows={1}
               onChange={e => setInput(e.target.value)}
