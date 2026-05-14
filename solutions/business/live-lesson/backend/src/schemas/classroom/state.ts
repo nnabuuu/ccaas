@@ -5,6 +5,7 @@ import type { SessionStatus } from './session';
 import type { StudentLog, Alert, IndicatorStats, IndicatorDef } from './observation';
 import type { DiscussionHighlight, CoachingInsight } from './coaching';
 import type { ClusterStats } from './clustering';
+import type { DepthLeaderboard } from './depth-ranking';
 
 // ── Notification ──
 
@@ -134,4 +135,5 @@ export interface ClassroomStateResponse {
   observation: ObservationBlock;
   clusterStats: Record<number, ClusterStatsBlock>;
   coaching: CoachingBlock;
+  depthLeaderboard: DepthLeaderboard | null;
 }

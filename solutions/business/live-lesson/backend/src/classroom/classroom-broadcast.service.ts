@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ClassroomSnapshot } from '../entities/classroom-snapshot.entity';
 import { CoachingService } from './coaching.service';
+import { DepthRankingService } from './depth-ranking.service';
 import { ClassroomStateService } from './classroom-state.service';
 import type { Response } from 'express';
 import type { ClassroomStateResponse, SnapshotEntry } from '../schemas/classroom';
@@ -28,6 +29,7 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
     @InjectRepository(ClassroomSnapshot)
     private readonly snapshotRepo: Repository<ClassroomSnapshot>,
     private readonly coachingService: CoachingService,
+    private readonly depthRankingService: DepthRankingService,
   ) {}
 
   onModuleDestroy() {
@@ -104,6 +106,9 @@ export class ClassroomBroadcastService implements OnModuleDestroy {
     }).catch(e =>
       this.logger.warn(`Coaching refresh failed: ${e}`),
     );
+
+    this.depthRankingService.maybeRefresh(sessionId)
+      .catch(e => this.logger.warn(`Depth ranking refresh failed: ${e}`));
 
     if (!subs || subs.size === 0) return;
 

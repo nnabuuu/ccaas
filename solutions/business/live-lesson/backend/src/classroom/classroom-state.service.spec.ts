@@ -9,6 +9,7 @@ import { ObservationQueryService } from './observation/observation-query.service
 import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { DepthRankingService } from './depth-ranking.service';
 import { ManifestCacheService } from './manifest-cache.service';
 import { StateCacheService } from './state-cache.service';
 import { AiPromptBuilder } from './ai-prompt-builder';
@@ -69,6 +70,7 @@ describe('ClassroomStateService — unit (mocked deps)', () => {
         { provide: MetricsAggregator, useValue: {} },
         { provide: ClusterAggregator, useValue: mockClusterAggregator },
         { provide: CoachingService, useValue: mockCoachingService },
+        { provide: DepthRankingService, useValue: { cleanupSession: jest.fn(), getCached: jest.fn().mockReturnValue(null) } },
         { provide: ManifestCacheService, useValue: { getManifest: jest.fn().mockResolvedValue(null), invalidate: jest.fn() } },
       ],
     }).compile();
@@ -243,6 +245,7 @@ describe('ClassroomStateService — integration (SQLite)', () => {
         MetricsAggregator,
         ClusterAggregator,
         CoachingService,
+        DepthRankingService,
         ManifestCacheService,
         AiPromptBuilder,
         { provide: OBSERVER_ENGINE, useValue: mockObserverEngine },

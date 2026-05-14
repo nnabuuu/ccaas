@@ -72,6 +72,12 @@ export type {
   CoachingInsight,
 } from './coaching';
 
+// Depth ranking
+export type {
+  DepthLeaderboardEntry,
+  DepthLeaderboard,
+} from './depth-ranking';
+
 // Clustering
 export type {
   ObservationState,

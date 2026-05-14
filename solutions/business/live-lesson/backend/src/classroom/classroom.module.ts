@@ -48,6 +48,9 @@ import { StateCacheService } from './state-cache.service';
 // ── Coaching ──
 import { CoachingService } from './coaching.service';
 
+// ── Depth Ranking ──
+import { DepthRankingService } from './depth-ranking.service';
+
 // ── Socratic Discuss component ──
 import { DiscussService } from './socratic-discuss/discuss.service';
 import { DiscussController } from './socratic-discuss/discuss.controller';
@@ -93,7 +96,7 @@ import { SystemEventHandler } from './observation/handlers/system-event-handler'
   ],
   providers: [
     // Infra
-    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, ManifestCacheService, StateCacheService,
+    ClassroomService, ClassroomBroadcastService, ClassroomStateService, StudentSubmissionService, AiPromptBuilder, MetricsAggregator, CoachingService, DepthRankingService, ManifestCacheService, StateCacheService,
     // Observe handlers + registry
     ObserveRegistry, McObserveHandler, EvidenceObserveHandler, MapObserveHandler, MatrixObserveHandler, DiscussObserveHandler,
     // Exercise

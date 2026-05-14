@@ -12,6 +12,7 @@ import { ObservationQueryService } from './observation/observation-query.service
 import { MetricsAggregator } from './metrics-aggregator';
 import { ClusterAggregator } from './socratic-discuss/cluster-aggregator';
 import { CoachingService } from './coaching.service';
+import { DepthRankingService } from './depth-ranking.service';
 import { ManifestCacheService } from './manifest-cache.service';
 import { StateCacheService } from './state-cache.service';
 import { buildTaskMap } from './task-map.utils';
@@ -43,6 +44,7 @@ export class ClassroomStateService {
     private readonly clusterAggregator: ClusterAggregator,
     private readonly observationQuery: ObservationQueryService,
     private readonly coachingService: CoachingService,
+    private readonly depthRankingService: DepthRankingService,
     private readonly manifestCache: ManifestCacheService,
     private readonly stateCache: StateCacheService,
   ) {}
@@ -86,6 +88,7 @@ export class ClassroomStateService {
     this.observationQuery.clearSession(sessionId);
     this.clusterAggregator.cleanupSession(sessionId);
     this.coachingService.cleanupSession(sessionId);
+    this.depthRankingService.cleanupSession(sessionId);
     this.observeRegistryCache.delete(lessonId);
     this.stateCache.clear(sessionId);
   }
@@ -303,6 +306,7 @@ export class ClassroomStateService {
         highlights: await this.coachingService.getHighlights(sessionId),
         llmInsights: this.coachingService.getCached(sessionId),
       },
+      depthLeaderboard: this.depthRankingService.getCached(sessionId),
     };
     if (currentStep === undefined) {
       this.stateCache.set(sessionId, result);
