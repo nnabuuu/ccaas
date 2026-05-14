@@ -15,6 +15,7 @@ interface RecapData {
   aiStats: { translateCount: number; askCount: number; discussRounds: number }
   totalTime: number | null
   bonusCompleted: boolean
+  aiRecap: string
 }
 
 function tierEmoji(tone: string): string {
@@ -71,9 +72,19 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
         )}
       </div>
 
-      {/* Section 2 — Highlights */}
-      {recap && !failed && (
+      {/* Section 2 — AI Recap */}
+      {recap && !failed && recap.aiRecap && (
         <div className="sum-section" style={{ animationDelay: '80ms', marginBottom: 24 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your Recap</div>
+          <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)' }}>
+            {renderMd(recap.aiRecap, { math: enableMath })}
+          </div>
+        </div>
+      )}
+
+      {/* Section 3 — Highlights */}
+      {recap && !failed && (
+        <div className="sum-section" style={{ animationDelay: recap.aiRecap ? '160ms' : '80ms', marginBottom: 24 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your Best Moments</div>
           {recap.highlights.length > 0 ? (
             recap.highlights.map((h, i) => (
@@ -93,9 +104,9 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
         </div>
       )}
 
-      {/* Section 3 — AI Stats */}
+      {/* Section 4 — AI Stats */}
       {recap && !failed && (
-        <div className="sum-section" style={{ animationDelay: '160ms', marginBottom: 24 }}>
+        <div className="sum-section" style={{ animationDelay: recap.aiRecap ? '240ms' : '160ms', marginBottom: 24 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Your AI Engagement</div>
           {hasStats ? (
             <div className="sum-stats">
@@ -120,8 +131,8 @@ export function SummaryScreen({ lessonSummary, lessonId, enableMath }: {
         </div>
       )}
 
-      {/* Section 4 — Takeaway (always shown) */}
-      <div className="sum-section" style={{ animationDelay: recap && !failed ? '240ms' : '0ms', marginBottom: 20 }}>
+      {/* Section 5 — Takeaway (always shown) */}
+      <div className="sum-section" style={{ animationDelay: recap && !failed ? (recap.aiRecap ? '320ms' : '240ms') : '0ms', marginBottom: 20 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--t3)', textTransform: 'uppercase', letterSpacing: '.8px', marginBottom: 10 }}>Takeaway</div>
         {lessonId && <AudioButton src={`/api/lessons/${lessonId}/audio/lesson-summary.mp3`} />}
         <div style={{ fontSize: 14, lineHeight: 1.85, color: 'var(--t2)', whiteSpace: 'pre-line' }}>

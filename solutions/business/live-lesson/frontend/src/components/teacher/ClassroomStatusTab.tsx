@@ -13,6 +13,7 @@ interface Props {
   stepNames: Record<number, string>
   taskSteps: Array<{ idx: number; duration?: number }>
   onStudentClick: (name: string) => void
+  onExpandDrawer?: () => void
 }
 
 type MergedItem = {
@@ -27,7 +28,7 @@ const SEVERITY_ORDER: Record<string, number> = { urgent: 0, warn: 1, info: 2 }
 const EMPTY_ALERTS: NonNullable<ClassroomState['observation']>['alerts'] = []
 const EMPTY_INDICATORS: NonNullable<ClassroomState['observation']>['indicatorStats'] = []
 
-export function ClassroomStatusTab({ state, health, stepNames, taskSteps, onStudentClick }: Props) {
+export function ClassroomStatusTab({ state, health, stepNames, taskSteps, onStudentClick, onExpandDrawer }: Props) {
   const tips = useMemo(
     () => generateCoachingTips(state, health, stepNames, taskSteps),
     [state, health, stepNames, taskSteps],
@@ -81,8 +82,22 @@ export function ClassroomStatusTab({ state, health, stepNames, taskSteps, onStud
     )
   }
 
+  const urgentCount = useMemo(() => alerts.filter(a => a.severity === 'urgent').length, [alerts])
+
   return (
-    <div style={{ padding: '12px 14px' }}>
+    <div>
+      {/* ── Panel Header ── */}
+      <div className="panel-header">
+        <span className="title">
+          课堂状态
+          {urgentCount > 0 && <span className="obs-badge urgent" style={{ marginLeft: 6 }}>{urgentCount}</span>}
+        </span>
+        {onExpandDrawer && (
+          <button className="expand-btn" onClick={onExpandDrawer}>展开 ↗</button>
+        )}
+      </div>
+
+      <div style={{ padding: '12px 14px' }}>
       {/* ── Merged alerts + tips ── */}
       {mergedItems.length > 0 && (
         <div className="status-section">
@@ -163,8 +178,13 @@ export function ClassroomStatusTab({ state, health, stepNames, taskSteps, onStud
                 </div>
               )
             })}
+          <p className="indicator-note">
+            注: 此指标基于 LLM 从学生对话中提取的 indicator_hit，衡量的是"说话中流露出的理解程度"，
+            不同于学生分析中基于练习对错率的掌握度。
+          </p>
         </div>
       )}
+      </div>
     </div>
   )
 }

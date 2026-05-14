@@ -1,23 +1,37 @@
 import { useState, useMemo } from 'react'
 import type { ClassroomState } from '../../hooks/useClassroom'
-import { clusterQuestions, getCatBadgeClass, formatRelative, stripDiscussTag } from './teacher-helpers'
+import { clusterQuestions, getCatBadgeClass, formatRelative, stripDiscussTag, countHighlights, buildHighlightLookup, isHighlightMatch } from './teacher-helpers'
+
+function formatAbsTime(ts: number): string {
+  return new Date(ts).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+}
 
 interface Props {
   state: ClassroomState
   stepNames: Record<number, string>
   questions: ClassroomState['questions']
   onStudentClick: (name: string) => void
+  onExpandDrawer?: () => void
 }
 
-export function DiscussInsightTab({ state, stepNames, questions, onStudentClick }: Props) {
+export function DiscussInsightTab({ state, stepNames, questions, onStudentClick, onExpandDrawer }: Props) {
   const [expandedQ, setExpandedQ] = useState<string | null>(null)
 
   // ── Cluster Stats (LLM-classified) ──
   const hasClusterStats = state.clusterStats && Object.keys(state.clusterStats).length > 0
 
+  // Highlight count for header badge
+  const highlightCount = useMemo(() => countHighlights(state.clusterStats), [state.clusterStats])
+
+  // Build highlight lookup: studentName → detectedAt timestamps
+  const highlightLookup = useMemo(
+    () => buildHighlightLookup(state.coaching?.highlights ?? []),
+    [state.coaching],
+  )
+
   // ── Discussion feed (observation logs discuss events + discuss questions) ──
   const discussFeed = useMemo(() => {
-    const entries: Array<{ studentName: string; msg: string; timestamp: number; type: 'obs' | 'question' }> = []
+    const entries: Array<{ studentName: string; msg: string; timestamp: number; type: 'obs' | 'question'; isHighlight: boolean }> = []
 
     // From observation logs: discuss-related events
     if (state.observation?.logs) {
@@ -29,6 +43,7 @@ export function DiscussInsightTab({ state, stepNames, questions, onStudentClick 
               msg: evt.gist,
               timestamp: evt.timestamp,
               type: 'obs',
+              isHighlight: isHighlightMatch(highlightLookup, log.studentName, evt.timestamp),
             })
           }
         }
@@ -38,17 +53,19 @@ export function DiscussInsightTab({ state, stepNames, questions, onStudentClick 
     // From questions with category 'discuss'
     for (const q of questions) {
       if (q.category === 'discuss') {
+        const ts = new Date(q.timestamp).getTime()
         entries.push({
           studentName: q.studentName,
           msg: stripDiscussTag(q.question),
-          timestamp: new Date(q.timestamp).getTime(),
+          timestamp: ts,
           type: 'question',
+          isHighlight: isHighlightMatch(highlightLookup, q.studentName, ts),
         })
       }
     }
 
     return entries.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10)
-  }, [state.observation, questions])
+  }, [state.observation, questions, highlightLookup])
 
   // ── Fallback text-similarity clustering ──
   const askQuestions = useMemo(() => questions.filter(q => q.category !== 'discuss'), [questions])
@@ -78,14 +95,32 @@ export function DiscussInsightTab({ state, stepNames, questions, onStudentClick 
 
   if (isEmpty) {
     return (
-      <div style={{ padding: '24px 14px', textAlign: 'center', color: 'var(--t3)', fontSize: 12 }}>
-        暂无讨论数据…学生开始讨论后将自动显示洞察
+      <div>
+        <div className="panel-header">
+          <span className="title">讨论洞察</span>
+          {onExpandDrawer && <button className="expand-btn" onClick={onExpandDrawer}>展开 ↗</button>}
+        </div>
+        <div style={{ padding: '24px 14px', textAlign: 'center', color: 'var(--t3)', fontSize: 12 }}>
+          暂无讨论数据…学生开始讨论后将自动显示洞察
+        </div>
       </div>
     )
   }
 
   return (
-    <div style={{ padding: '12px 14px' }}>
+    <div>
+      {/* ── Panel Header ── */}
+      <div className="panel-header">
+        <span className="title">
+          讨论洞察
+          {highlightCount > 0 && <span className="highlight-badge">✦ {highlightCount}</span>}
+        </span>
+        {onExpandDrawer && (
+          <button className="expand-btn" onClick={onExpandDrawer}>展开 ↗</button>
+        )}
+      </div>
+
+      <div style={{ padding: '12px 14px' }}>
       {/* ── Cluster Stats (per-question LLM classification) ── */}
       {hasClusterStats && (
         <div className="qc-cluster-stats">
@@ -202,16 +237,19 @@ export function DiscussInsightTab({ state, stepNames, questions, onStudentClick 
         <div className="discuss-feed">
           <div className="discuss-feed-h">讨论动态</div>
           {discussFeed.map((entry, i) => (
-            <div key={i} className="df-entry">
+            <div key={i} className={`df-entry${entry.isHighlight ? ' is-highlight' : ''}`}>
               <div className="df-meta">
+                <span className="df-time">{formatAbsTime(entry.timestamp)}</span>
                 <span className="name" onClick={() => onStudentClick(entry.studentName)} style={{ cursor: 'pointer' }}>
                   {entry.studentName}
                 </span>
-                <span>{formatRelative(new Date(entry.timestamp).toISOString())}</span>
               </div>
               <div className="df-msg">{entry.msg}</div>
             </div>
           ))}
+          {onExpandDrawer && (
+            <div className="feed-more" onClick={onExpandDrawer}>查看完整回放 →</div>
+          )}
         </div>
       )}
 
@@ -284,6 +322,7 @@ export function DiscussInsightTab({ state, stepNames, questions, onStudentClick 
           暂无学生提问
         </div>
       )}
+      </div>
     </div>
   )
 }
