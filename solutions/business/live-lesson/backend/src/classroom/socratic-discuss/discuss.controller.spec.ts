@@ -9,7 +9,7 @@ const mockClassroomService = {
 };
 
 const mockDiscussService = {
-  getDiscussProgress: jest.fn().mockResolvedValue({ clusters: [] }),
+  getDiscussProgress: jest.fn().mockResolvedValue({ clusters: [], targetPoints: [] }),
   aiDiscuss: jest.fn().mockResolvedValue({ reply: 'test', goalReached: false }),
   discussComplete: jest.fn().mockResolvedValue({ ok: true }),
 };
@@ -31,7 +31,7 @@ describe('DiscussController', () => {
     const result = await controller.getDiscussProgress('ABC234', 'stu-1', '3');
     expect(mockClassroomService.resolveStartedSession).toHaveBeenCalledWith('ABC234');
     expect(mockDiscussService.getDiscussProgress).toHaveBeenCalledWith(fakeSession, 'stu-1', 3);
-    expect(result).toEqual({ clusters: [] });
+    expect(result).toEqual({ clusters: [], targetPoints: [] });
   });
 
   it('getDiscussProgress throws when studentId is missing', async () => {

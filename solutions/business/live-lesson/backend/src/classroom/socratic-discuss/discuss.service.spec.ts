@@ -29,7 +29,17 @@ const DISCUSS_MANIFEST = {
     {
       idx: 1, label: 'Task 1', strategy: 'quiz', type: 'task',
       answerKey: { type: 'quiz', answers: [{ questionIdx: 0, correct: 1, questionText: 'Q1', options: ['A', 'B'] }] },
-      discuss: { fallbackMC: { correctIndex: 2, options: ['A', 'B', 'C'] } },
+      discuss: {
+        fallbackMC: { correctIndex: 2, options: ['A', 'B', 'C'] },
+        clusters: [
+          { id: 'c1', label: 'Theme' },
+          { id: 'c2', label: 'Evidence' },
+        ],
+        targetPoints: [
+          { id: 'tp1', label: 'Identify metaphor' },
+          { id: 'tp2', label: 'Author intent' },
+        ],
+      },
     },
   ],
 };
@@ -336,6 +346,76 @@ describe('DiscussService', () => {
       await expect(
         service.discussComplete(session, 'nonexistent', 1, 'goal_reached', 2, 30),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── getDiscussProgress ──
+
+  describe('getDiscussProgress', () => {
+    it('returns both clusters and targetPoints empty when no data ingested', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const result = await service.getDiscussProgress(session, student.id, 1);
+      expect(result.clusters).toEqual([
+        { id: 'c1', label: 'Theme', hit: false },
+        { id: 'c2', label: 'Evidence', hit: false },
+      ]);
+      expect(result.targetPoints).toEqual([
+        { id: 'tp1', label: 'Identify metaphor', hit: false },
+        { id: 'tp2', label: 'Author intent', hit: false },
+      ]);
+    });
+
+    it('returns clusters with correct hit status after ingest', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const aggregator = module.get(ClusterAggregator);
+      aggregator.ingest(session.id, 1, student.id, student.name, {
+        clusterId: 'c1',
+        eventType: 'new_signal',
+        confidence: 'high',
+        evidenceSpan: 'student mentioned theme',
+        isHighlight: false,
+      } as any);
+
+      const result = await service.getDiscussProgress(session, student.id, 1);
+      expect(result.clusters).toEqual([
+        { id: 'c1', label: 'Theme', hit: true },
+        { id: 'c2', label: 'Evidence', hit: false },
+      ]);
+    });
+
+    it('returns targetPoints with correct hit status after ingest', async () => {
+      const { session, student } = await createSessionAndStudent();
+      const aggregator = module.get(ClusterAggregator);
+      aggregator.ingest(session.id, 1, student.id, student.name, {
+        clusterId: 'other',
+        eventType: 'new_signal',
+        confidence: 'low',
+        evidenceSpan: '',
+        isHighlight: false,
+        targetPointHits: [
+          { targetPointId: 'tp1', confidence: 'high', evidenceSpan: 'found the metaphor' },
+        ],
+      } as any);
+
+      const result = await service.getDiscussProgress(session, student.id, 1);
+      expect(result.targetPoints).toEqual([
+        { id: 'tp1', label: 'Identify metaphor', hit: true },
+        { id: 'tp2', label: 'Author intent', hit: false },
+      ]);
+    });
+
+    it('returns empty arrays for missing manifest (unknown lessonId)', async () => {
+      const session = await sessionRepo.save(sessionRepo.create({
+        lessonId: 'nonexistent-lesson', code: Math.random().toString(36).slice(2, 8).toUpperCase(),
+        status: 'active', currentStep: 0,
+      }));
+      const student = await studentRepo.save(studentRepo.create({
+        sessionId: session.id, lessonId: session.lessonId,
+        name: `Bob-${Date.now()}`, currentTask: 1, currentPhase: 'discuss',
+      }));
+
+      const result = await service.getDiscussProgress(session, student.id, 1);
+      expect(result).toEqual({ clusters: [], targetPoints: [] });
     });
   });
 
